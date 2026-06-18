@@ -2,12 +2,9 @@
 pandas
 numpy
 scipy
-vollib
-greeks-package
 
 # API & Networking
 requests
-webull-openapi-python-sdk
 
 # Backend
 fastapi

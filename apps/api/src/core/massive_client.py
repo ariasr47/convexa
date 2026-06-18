@@ -93,8 +93,9 @@ class MassiveDataInterface:
             return historical_underlying_metrics
 
         except Exception as e:
-            logger.info(
-                f"SDK Ingestion: Successfully parsed {len(historical_underlying_metrics)} bars sequentially for the realized variance engine.")
+            logger.error(
+                f"SDK Exception during daily bar ingestion for {ticker_upper}: {str(e)} "
+                f"(returning {len(historical_underlying_metrics)} bars collected before failure)")
             return historical_underlying_metrics
 
     def _days_to_expiry(self, expiry_str: str) -> float:

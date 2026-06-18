@@ -259,6 +259,7 @@ class QuantEngine:
         """Simulates price shifts (+/- 20%) over the full array to isolate the true zero-gamma line."""
         price_shifts = np.linspace(current_spot * 0.80, current_spot * 1.20, 100)
         previous_gex = None
+        previous_spot = None
         flip_price = current_spot
 
         for test_spot in price_shifts:
@@ -283,8 +284,16 @@ class QuantEngine:
                     continue
 
             if previous_gex is not None and np.sign(current_gex) != np.sign(previous_gex):
-                flip_price = test_spot
+                # Linearly interpolate the zero crossing between the two bracketing
+                # grid points rather than snapping to the coarse grid step.
+                gex_span = current_gex - previous_gex
+                if gex_span != 0.0:
+                    flip_price = previous_spot + (-previous_gex) * (test_spot - previous_spot) / gex_span
+                else:
+                    flip_price = test_spot
                 break
+
             previous_gex = current_gex
+            previous_spot = test_spot
 
         return round(float(flip_price), 2)
