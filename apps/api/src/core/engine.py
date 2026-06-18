@@ -298,13 +298,15 @@ class QuantEngine:
         if not strike_gex_map:
             return self._empty_gex_result()
 
-        # Walls are defined by gamma exposure (matching InsiderFinance's definition):
-        # the strike with the most call gamma (resistance) and the most put gamma
-        # (support; put_gex is stored negative, so the largest magnitude is the min).
-        # Using gamma rather than OI also avoids deep LEAP strikes polluting the result,
-        # since LEAP gamma is negligible even when their OI is large.
-        call_wall = float(max(strike_gex_map, key=lambda k: strike_gex_map[k]["call_gex"]))
-        put_wall = float(min(strike_gex_map, key=lambda k: strike_gex_map[k]["put_gex"]))
+        # Walls are the extremes of the per-strike NET gamma profile (call gamma plus the
+        # negative put gamma at each strike), aggregated across all expirations -- matching
+        # the InsiderFinance Strike Profile chart: the most positive net-GEX strike is the
+        # call wall (resistance), the most negative is the put wall (support). Using NET
+        # (not call-only / put-only) is what separates the walls: at the round ATM strike
+        # heavy calls and puts offset, so the extremes land on the OTM call/put
+        # concentrations. LEAP strikes can't pollute this since their gamma is negligible.
+        call_wall = float(max(strike_gex_map, key=lambda k: strike_gex_map[k]["net_gex"]))
+        put_wall = float(min(strike_gex_map, key=lambda k: strike_gex_map[k]["net_gex"]))
 
         # Peak GEX strike = the strike with the most total (gross) gamma exposure; the
         # price magnet. This is the gamma-based concentration metric (distinct from walls).
