@@ -3,6 +3,7 @@ import sys
 import logging
 import json
 import os
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,11 +86,19 @@ async def market_data_engine_loop():
                 # Formulate structural proxy for Volatility Risk Premium (VRP)
                 iv_hv_ratio = round(atm_iv / hv_30d, 4) if hv_30d > 0.0 else 0.0
 
+                # Derive a human-readable UTC timestamp from the nanosecond epoch value.
+                snapshot_ns = int(market_data["timestamp"])
+                timestamp_iso = (
+                    datetime.fromtimestamp(snapshot_ns / 1e9, tz=timezone.utc).isoformat()
+                    if snapshot_ns > 0 else None
+                )
+
                 # Commit mutations down to shared memory
                 current_market_state.update({
                     "ticker": market_data["ticker"],
                     "price": market_data["synchronized_spot"],
-                    "timestamp": market_data["timestamp"],
+                    "timestamp": snapshot_ns,
+                    "timestamp_iso": timestamp_iso,
 
                     "call_wall": gex_metrics["call_wall"],
                     "put_wall": gex_metrics["put_wall"],

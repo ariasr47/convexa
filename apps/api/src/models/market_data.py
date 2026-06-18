@@ -5,7 +5,8 @@ class MarketState(BaseModel):
     # Core Data
     ticker: str
     price: float
-    timestamp: float
+    timestamp: int  # nanoseconds since epoch (int avoids float64 precision loss at 19 digits)
+    timestamp_iso: Optional[str] = None  # human-readable UTC ISO-8601 for the consuming AI
 
     # Dealer Liquidity Levels (Structural Constraints)
     call_wall: float
