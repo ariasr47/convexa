@@ -105,6 +105,7 @@ async def market_data_engine_loop():
                     "peak_gex_strike": gex_metrics["peak_gex_strike"],
                     "gamma_flip": gex_metrics["gamma_flip"],
                     "max_pain": gex_metrics["max_pain"],
+                    "max_pain_expiration": gex_metrics["max_pain_expiration"],
                     "net_gex": gex_metrics["net_gex"],
                     "call_gex": gex_metrics["call_gex"],
                     "put_gex": gex_metrics["put_gex"],

@@ -149,16 +149,17 @@ class QuantEngine:
         return {
             "net_gex": 0.0, "call_gex": 0.0, "put_gex": 0.0, "total_gex": 0.0,
             "call_wall": 0.0, "put_wall": 0.0, "peak_gex_strike": 0.0,
-            "gamma_flip": 0.0, "max_pain": 0.0,
+            "gamma_flip": 0.0, "max_pain": 0.0, "max_pain_expiration": None,
             "net_vanna": 0.0, "net_charm": 0.0, "net_volga": 0.0, "put_call_ratio": 0.0,
         }
 
     @staticmethod
     def _calculate_max_pain(strike_oi_map: dict) -> float:
         """
-        Max pain = the expiration price that minimizes the total intrinsic payout to
-        option holders across all open interest. Aggregated over all expirations here
-        (a simplification; a per-expiration max pain can be added later if needed).
+        Max pain = the price that minimizes total intrinsic payout to option holders,
+        given a single expiration's per-strike OI ({strike: {call_oi, put_oi}}). Max
+        pain is a per-expiration concept, so the caller passes one expiration's map;
+        aggregating all expirations would let deep LEAP OI distort the result.
         """
         strikes = sorted(strike_oi_map.keys())
         if not strikes:
@@ -195,7 +196,8 @@ class QuantEngine:
         total_net_gex, total_net_vanna, total_net_charm, total_net_volga = 0.0, 0.0, 0.0, 0.0
         total_call_gex, total_put_gex = 0.0, 0.0
         strike_gex_map = {}
-        strike_oi_map = {}
+        exp_oi_map = {}   # expiration -> {strike: {call_oi, put_oi}}, for per-expiration max pain
+        exp_dte = {}      # expiration -> days to expiry
         filtered_contracts = []
 
         total_call_oi = 0
@@ -214,19 +216,24 @@ class QuantEngine:
                 contract_type = contract["contract_type"].lower()
                 open_interest = contract["open_interest"]
 
-                # Open-interest metrics (put/call ratio, max pain, per-strike OI) count
-                # EVERY contract, including ones Massive could not price greeks for --
-                # open interest exists independently of greek availability, and dropping
-                # unpriced (typically deep-ITM) contracts would bias these aggregates.
-                if strike not in strike_oi_map:
-                    strike_oi_map[strike] = {"call_oi": 0, "put_oi": 0}
+                # Open-interest metrics (put/call ratio, max pain) count EVERY contract,
+                # including ones Massive could not price greeks for -- open interest
+                # exists independently of greek availability, and dropping unpriced
+                # (typically deep-ITM) contracts would bias these aggregates. OI is kept
+                # per-expiration so max pain can be computed on a single expiration.
+                if expiry not in exp_oi_map:
+                    exp_oi_map[expiry] = {}
+                    exp_dte[expiry] = days_to_expiry
+                strikes_oi = exp_oi_map[expiry]
+                if strike not in strikes_oi:
+                    strikes_oi[strike] = {"call_oi": 0, "put_oi": 0}
 
                 if contract_type in ['call', 'c']:
                     total_call_oi += open_interest
-                    strike_oi_map[strike]["call_oi"] += open_interest
+                    strikes_oi[strike]["call_oi"] += open_interest
                 elif contract_type in ['put', 'p']:
                     total_put_oi += open_interest
-                    strike_oi_map[strike]["put_oi"] += open_interest
+                    strikes_oi[strike]["put_oi"] += open_interest
 
                 # GEX and the higher-order greeks require a priced gamma; skip unpriced
                 # contracts here only (their OI was already counted above).
@@ -298,8 +305,16 @@ class QuantEngine:
         ))
 
         gamma_flip = self._find_gamma_flip(filtered_contracts, current_spot, q)
-        max_pain = self._calculate_max_pain(strike_oi_map)
         pc_ratio = round(total_put_oi / total_call_oi, 2) if total_call_oi > 0 else 0.0
+
+        # Max pain on the nearest (future, non-empty) expiration -- the standard
+        # per-expiration definition; avoids LEAP OI distorting an all-chain aggregate.
+        future_exps = {e: d for e, d in exp_dte.items() if d > 0 and e}
+        if future_exps:
+            max_pain_expiration = min(future_exps, key=future_exps.get)
+            max_pain = self._calculate_max_pain(exp_oi_map[max_pain_expiration])
+        else:
+            max_pain_expiration, max_pain = None, 0.0
 
         # Gross split: total_gex sums magnitudes (put_gex is stored negative), matching
         # the "Call GEX / Put GEX / Total GEX" breakdown shown on retail dashboards.
@@ -315,6 +330,7 @@ class QuantEngine:
             "peak_gex_strike": peak_gex_strike,
             "gamma_flip": gamma_flip,
             "max_pain": max_pain,
+            "max_pain_expiration": max_pain_expiration,
             "net_vanna": round(total_net_vanna, 2),
             "net_charm": round(total_net_charm, 2),
             "net_volga": round(total_net_volga, 2),
