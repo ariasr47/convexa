@@ -109,7 +109,7 @@ class QuantEngine:
         if not intraday_bars:
             return {}
 
-        try:
+        try:        
             latest_session = max(b["session"] for b in intraday_bars)
             rows = [
                 b for b in intraday_bars
@@ -379,7 +379,13 @@ class QuantEngine:
         }
 
     def _find_gamma_flip(self, contracts: list, current_spot: float, q: float = 0.0) -> float:
-        """Simulates price shifts (+/- 20%) over the full array to isolate the true zero-gamma line."""
+        """
+        Finds the zero-gamma level by repricing net GEX across +/-20% spot shifts and
+        locating where it crosses zero. The net-gamma profile is often choppy near spot
+        (many sign changes across discrete high-OI strikes), so we return the crossing
+        NEAREST to the current spot -- the actionable regime boundary -- rather than the
+        lowest crossing in the scan.
+        """
         price_shifts = np.linspace(current_spot * 0.80, current_spot * 1.20, 100)
         previous_gex = None
         previous_spot = None
@@ -428,13 +434,11 @@ class QuantEngine:
             logger.info("Gamma flip: no zero crossing found in +/-20% scan; defaulting to spot")
             return round(float(current_spot), 2)
 
-        first_cross = crossings[0][0]
+        # The regime boundary that matters is the crossing nearest the current spot.
         nearest_cross = min(crossings, key=lambda c: abs(c[0] - current_spot))[0]
         logger.info(
-            f"Gamma flip diagnostics: {len(crossings)} crossing(s) {crossings} | "
-            f"first(from -20%)={first_cross} | nearest-to-spot={nearest_cross} | "
-            f"spot={current_spot:.2f} | returning first={first_cross}"
+            f"Gamma flip ${nearest_cross} (nearest to spot ${current_spot:.2f} "
+            f"of {len(crossings)} zero crossing(s))"
         )
-
-        # Behavior unchanged for now: return the first crossing from the bottom of the scan.
-        return first_cross
+        logger.debug(f"Gamma flip crossings: {crossings}")
+        return nearest_cross
