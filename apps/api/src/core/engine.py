@@ -273,10 +273,13 @@ class QuantEngine:
         if not strike_gex_map:
             return self._empty_gex_result()
 
-        # Walls are defined by open-interest concentration (matches the common retail
-        # convention, e.g. InsiderFinance): the strikes holding the most call / put OI.
-        call_wall = float(max(strike_oi_map, key=lambda k: strike_oi_map[k]["call_oi"]))
-        put_wall = float(max(strike_oi_map, key=lambda k: strike_oi_map[k]["put_oi"]))
+        # Walls are defined by gamma exposure (matching InsiderFinance's definition):
+        # the strike with the most call gamma (resistance) and the most put gamma
+        # (support; put_gex is stored negative, so the largest magnitude is the min).
+        # Using gamma rather than OI also avoids deep LEAP strikes polluting the result,
+        # since LEAP gamma is negligible even when their OI is large.
+        call_wall = float(max(strike_gex_map, key=lambda k: strike_gex_map[k]["call_gex"]))
+        put_wall = float(min(strike_gex_map, key=lambda k: strike_gex_map[k]["put_gex"]))
 
         # Peak GEX strike = the strike with the most total (gross) gamma exposure; the
         # price magnet. This is the gamma-based concentration metric (distinct from walls).
