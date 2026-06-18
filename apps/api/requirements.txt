@@ -1,0 +1,20 @@
+# Data Handling & Math
+pandas
+numpy
+scipy
+vollib
+greeks-package
+
+# API & Networking
+requests
+webull-openapi-python-sdk
+
+# Backend
+fastapi
+uvicorn
+pydantic
+
+# Utilities
+python-dotenv
+
+massive
