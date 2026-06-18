@@ -68,7 +68,7 @@ class QuantEngine:
         Expects ascending chronological ordering where the latest close is at the end.
         """
         if not closing_prices or len(closing_prices) < 31:
-            logger.warning(f"Insufficient close price history provided. Elements: {len(closing_prices) if closing_prices else 0}")
+            logger.warning(f"30-day HV: insufficient price history ({len(closing_prices) if closing_prices else 0} closes, need 31); returning 0")
             return 0.0
 
         try:
@@ -90,7 +90,7 @@ class QuantEngine:
             return round(float(annualized_hv), 4)
 
         except Exception as e:
-            logger.error(f"Error computing quantitative 30-day realized volatility: {str(e)}")
+            logger.error(f"30-day HV: computation failed: {e}")
             return 0.0
 
     def calculate_vwap_bands(self, intraday_bars: list, regular_hours_only: bool = True,
@@ -121,7 +121,7 @@ class QuantEngine:
 
             if len(rows) < min_bars:
                 logger.warning(
-                    f"VWAP: only {len(rows)} bars for session {latest_session}; insufficient for stable bands.")
+                    f"VWAP: only {len(rows)} bars in session {latest_session} (need {min_bars}); skipping bands")
                 return {}
 
             vol = np.array([b["v"] for b in rows], dtype=float)
@@ -141,7 +141,7 @@ class QuantEngine:
                 "vwap_lower_3": round(vwap - 3.0 * sigma, 2),
             }
         except Exception as e:
-            logger.error(f"Error computing session-anchored VWAP bands: {str(e)}")
+            logger.error(f"VWAP: failed to compute session-anchored bands: {e}")
             return {}
 
     def process_gex_profile(self, market_data: dict, max_days_to_expiry: float = None,

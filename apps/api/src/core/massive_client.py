@@ -33,7 +33,7 @@ class MassiveDataInterface:
     def __init__(self):
         self.api_key = os.getenv("MASSIVE_API_KEY")
         if not self.api_key:
-            logger.error("CRITICAL: MASSIVE_API_KEY missing from environment variables!")
+            logger.error("MASSIVE_API_KEY is not set; all Massive API calls will fail")
         # Unified SDK Session initialization
         self.client = RESTClient(self.api_key)
 
@@ -69,7 +69,7 @@ class MassiveDataInterface:
         historical_underlying_metrics: list[UnderlyingBarMetrics] = []
 
         try:
-            logger.info(f"SDK Query: Streaming daily custom bars for {ticker_upper} from {from_date} to {to_date}")
+            logger.info(f"[{ticker_upper}] Fetching daily bars ({from_date} to {to_date})")
 
             bars_generator = self.client.list_aggs(
                 ticker_upper,
@@ -88,7 +88,7 @@ class MassiveDataInterface:
                 vwap_val = extract(bar, "vwap")
                 historical_underlying_metrics.append(UnderlyingBarMetrics(close=close_val, vwap=vwap_val))
 
-            logger.info(f"SDK Ingestion: Successfully parsed {len(historical_underlying_metrics)} bars sequentially for the realized variance engine.")
+            logger.info(f"[{ticker_upper}] Fetched {len(historical_underlying_metrics)} daily bars")
 
             return historical_underlying_metrics
 
@@ -121,7 +121,7 @@ class MassiveDataInterface:
 
         rows: list[dict] = []
         try:
-            logger.info(f"SDK Query: Streaming 1-minute bars for {ticker_upper} from {from_date} to {to_date}")
+            logger.info(f"[{ticker_upper}] Fetching 1-minute bars ({from_date} to {to_date})")
             bars = self.client.list_aggs(ticker_upper, 1, "minute", from_date, to_date, True, "asc", 50000)
 
             et_zone = zoneinfo.ZoneInfo("America/New_York")
@@ -139,11 +139,11 @@ class MassiveDataInterface:
                     "v": float(vol),
                 })
 
-            logger.info(f"SDK Ingestion: parsed {len(rows)} intraday bars for the VWAP engine.")
+            logger.info(f"[{ticker_upper}] Fetched {len(rows)} intraday bars")
             return rows
 
         except Exception as e:
-            logger.error(f"SDK Exception during intraday bar ingestion: {str(e)}")
+            logger.error(f"[{ticker_upper}] Failed to fetch intraday bars: {e}")
             return rows
 
     def fetch_synchronized_options_market_state(self, underlying: str) -> dict:
@@ -164,7 +164,7 @@ class MassiveDataInterface:
         snapshot_timestamp = 0
 
         try:
-            logger.info(f"Initiating full-chain SDK ingestion for: {underlying_upper}")
+            logger.info(f"[{underlying_upper}] Fetching option chain")
 
             # Single auto-paginated pass over the entire option chain.
             chain = self.client.list_snapshot_options_chain(
@@ -205,7 +205,7 @@ class MassiveDataInterface:
                 })
 
             if not all_contracts:
-                logger.warning(f"No valid option contracts compiled for {underlying_upper}.")
+                logger.warning(f"[{underlying_upper}] No valid option contracts returned")
                 return {}
 
             # --- Spot reconciliation: outside RTH the snapshot's underlying price
@@ -215,19 +215,22 @@ class MassiveDataInterface:
             final_target_spot = synchronized_spot_price
 
             if self._is_market_closed(snapshot_timestamp):
-                logger.info(f"Market closed for timestamp ({snapshot_timestamp}). Querying cash close bar.")
+                logger.info(f"[{underlying_upper}] Market closed at snapshot time; using official cash close")
                 try:
                     ticker_snapshot = self.client.get_snapshot_ticker("stocks", underlying_upper)
                     day_bar = extract(ticker_snapshot, "day", {})
                     cash_close = extract(day_bar, "close")
                     if cash_close is not None and float(cash_close) > 0:
-                        final_target_spot = float(cash_close)
                         logger.info(
-                            f"Reconciliation complete. ${synchronized_spot_price} -> close ${final_target_spot}")
+                            f"[{underlying_upper}] Spot reconciled: snapshot ${synchronized_spot_price:.2f} "
+                            f"-> cash close ${float(cash_close):.2f}")
+                        final_target_spot = float(cash_close)
                 except Exception as sdk_err:
-                    logger.warning(f"Cash-close reconciliation failed, keeping snapshot spot: {sdk_err}")
+                    logger.warning(
+                        f"[{underlying_upper}] Cash-close lookup failed; keeping snapshot spot "
+                        f"${synchronized_spot_price:.2f}: {sdk_err}")
             else:
-                logger.info(f"Market active. Using synchronized snapshot spot: ${final_target_spot}")
+                logger.info(f"[{underlying_upper}] Market open; using live snapshot spot ${final_target_spot:.2f}")
 
             # --- ATM IV: take the NEAREST tenor that is at least MIN_DTE out (avoids
             # 0DTE/expiring noise), not the highest-OI expiration. This keeps the IV
@@ -270,5 +273,5 @@ class MassiveDataInterface:
             }
 
         except Exception as e:
-            logger.error(f"SDK exception during options chain extraction: {str(e)}")
+            logger.error(f"[{underlying_upper}] Failed to fetch option chain: {e}")
             return {}

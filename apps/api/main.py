@@ -12,15 +12,18 @@ from src.core.engine import QuantEngine
 from src.core.massive_client import MassiveDataInterface
 from src.models.market_data import MarketState
 
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter)
-stream_handler.flush = sys.stdout.flush
-
 logger = logging.getLogger("GammaFlowAsync")
 logger.setLevel(logging.INFO)
-logger.addHandler(stream_handler)
 logger.propagate = False
+
+# Configure the handler exactly once. This module can be imported more than once
+# under uvicorn's reloader, and re-adding a handler each time is what causes every
+# log line to be printed twice.
+if not logger.handlers:
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
 
 quant_engine = QuantEngine(risk_free_rate=0.045)
 data_provider = MassiveDataInterface()
@@ -33,7 +36,7 @@ async def market_data_engine_loop():
 
     while True:
         try:
-            logger.info(f"Requesting synchronized macro frame for {target_ticker}")
+            logger.info(f"[{target_ticker}] Starting market data refresh")
 
             # 1. Gather Option Chain Snapshot Framework via SDK Client
             market_data = await asyncio.to_thread(
@@ -52,17 +55,13 @@ async def market_data_engine_loop():
 
             if market_data and market_data.get("synchronized_spot", 0) > 0:
                 contracts = market_data.get("contracts", [])
-                exp_counts = {}
-                for c in contracts:
-                    exp = c.get("expiration_date")
-                    exp_counts[exp] = exp_counts.get(exp, 0) + 1
+                expirations = sorted({c.get("expiration_date") for c in contracts if c.get("expiration_date")})
+                nearest_exp = expirations[0] if expirations else "n/a"
 
-                sorted_exps = dict(sorted(exp_counts.items()))
-
-                logger.info(f"--- SDK CHAIN RECONCILIATION VERIFICATION ---")
-                logger.info(f"Total Unique Expiration Dates: {len(sorted_exps)}")
-                logger.info(f"Nearest Expiration Cycle: {list(sorted_exps.keys())[:1]}")
-                logger.info(f"---------------------------------------------")
+                logger.info(
+                    f"[{target_ticker}] Option chain: {len(contracts)} contracts across "
+                    f"{len(expirations)} expirations (nearest {nearest_exp})"
+                )
 
                 # Compute core structural hedging levels using state-locked spot references
                 gex_metrics = quant_engine.process_gex_profile(market_data)
@@ -78,7 +77,7 @@ async def market_data_engine_loop():
                 # Compute the session-anchored VWAP and volume-weighted deviation bands
                 vwap_bands = quant_engine.calculate_vwap_bands(intraday_bars)
                 if not vwap_bands:
-                    logger.warning("Intraday VWAP bands unavailable this cycle; emitting null VWAP fields.")
+                    logger.warning(f"[{target_ticker}] VWAP bands unavailable (no/sparse intraday bars); VWAP fields set to null")
 
                 # Massive returns IV as a decimal (0.486); express as a percentage to match hv_30d.
                 atm_iv = market_data["atm_iv"] * 100.0
@@ -124,23 +123,25 @@ async def market_data_engine_loop():
                     "news_summary": None
                 })
 
+                s = current_market_state
                 logger.info(
-                    f"Frame Complete. Spot Locked: ${current_market_state['price']} | "
-                    f"HV_30d: {current_market_state['hv_30d']}% | "
-                    f"Net GEX: ${current_market_state['net_gex']}"
+                    f"[{target_ticker}] Refresh complete | spot ${s['price']:.2f} | "
+                    f"net GEX ${s['net_gex'] / 1e6:,.1f}M | gamma flip ${s['gamma_flip']:.2f} | "
+                    f"call/put wall ${s['call_wall']:.0f}/${s['put_wall']:.0f} | "
+                    f"ATM IV {s['atm_iv']:.2f}% | HV30 {s['hv_30d']:.2f}% | IV/HV {s['iv_hv_ratio']:.2f}"
                 )
 
                 with open("market_data.json", "w") as f:
                     json.dump(current_market_state, f, indent=4)
 
             else:
-                logger.warning("Empty data frame received from provider.")
+                logger.warning(f"[{target_ticker}] No option-chain data returned; skipping this cycle")
 
         except asyncio.CancelledError:
-            logger.info("Engine loop task cancelled via server lifespan shutdown.")
+            logger.info("Market data loop cancelled on shutdown")
             break
         except Exception as e:
-            logger.error(f"Error encountered during refresh loop: {str(e)}")
+            logger.error(f"[{target_ticker}] Market data refresh failed: {e}", exc_info=True)
 
         await asyncio.sleep(900)
 
@@ -152,18 +153,18 @@ async def lifespan(app: FastAPI):
         try:
             with open("market_data.json", "r") as f:
                 current_market_state.update(json.load(f))
-            logger.info("Successfully seeded local memory from market_data.json cache on startup.")
+            logger.info("Loaded cached market state from market_data.json on startup")
         except Exception as e:
-            logger.warning(f"Failed to bootstrap memory cache from disk: {e}")
+            logger.warning(f"Could not load cached market state from market_data.json: {e}")
 
     engine_task = asyncio.create_task(market_data_engine_loop())
     yield
-    logger.info("Initiating structural cleanup sequence...")
+    logger.info("Shutting down; stopping market data loop")
     engine_task.cancel()
     try:
         await engine_task
     except asyncio.CancelledError:
-        logger.info("Background options ingestion thread terminated safely.")
+        logger.info("Market data loop stopped")
 
 
 app = FastAPI(
