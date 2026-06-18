@@ -79,9 +79,8 @@ async def market_data_engine_loop():
                 # Compute statistical deviation bands around our active VWAP anchor
                 vwap_bands = quant_engine.calculate_vwap_bands(latest_raw_vwap, historical_closes)
 
-                # Standardize implied formatting for numerical ratio uniformity
-                raw_iv = market_data["atm_iv"]
-                atm_iv = raw_iv * 100.0 if raw_iv <= 2.0 else raw_iv
+                # Massive returns IV as a decimal (0.486); express as a percentage to match hv_30d.
+                atm_iv = market_data["atm_iv"] * 100.0
 
                 # Formulate structural proxy for Volatility Risk Premium (VRP)
                 iv_hv_ratio = round(atm_iv / hv_30d, 4) if hv_30d > 0.0 else 0.0

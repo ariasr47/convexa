@@ -1,6 +1,5 @@
 import os
 import logging
-from collections import defaultdict
 from datetime import datetime, time, timezone, timedelta
 import zoneinfo
 from typing import Any
@@ -98,133 +97,137 @@ class MassiveDataInterface:
                 f"SDK Ingestion: Successfully parsed {len(historical_underlying_metrics)} bars sequentially for the realized variance engine.")
             return historical_underlying_metrics
 
+    def _days_to_expiry(self, expiry_str: str) -> float:
+        """Calendar days from now (UTC) to an option's expiration date. Negative on parse failure."""
+        try:
+            expiry = datetime.strptime(expiry_str[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            return (expiry - datetime.now(timezone.utc)).total_seconds() / 86400.0
+        except Exception:
+            return -1.0
+
     def fetch_synchronized_options_market_state(self, underlying: str) -> dict:
         """
-        Queries the Massive API v3 Options Chain Snapshot using our deterministic
-        strike-slicing pagination loop, with session-aware close price reconciliation.
+        Queries the Massive v3 Options Chain Snapshot for an underlying and returns a
+        normalized payload (spot, timestamp, ATM IV, and the full contract list).
+
+        The SDK's list_snapshot_options_chain auto-follows next_url, so a single pass
+        over the returned generator yields the entire chain across all strikes and
+        expirations. No manual strike pagination is required.
+
+        Implied volatility is returned by the API as a decimal (e.g. 0.486 == 48.6%);
+        it is passed through unscaled here and standardized downstream in the engine.
         """
         underlying_upper = underlying.upper()
         all_contracts = []
         synchronized_spot_price = 0.0
         snapshot_timestamp = 0
 
-        # Pagination controls
-        current_strike_floor = 0.0
-        has_more_pages = True
-        page_count = 0
-
         try:
-            logger.info(f"Initiating full-chain SDK deep ingestion for: {underlying_upper}")
+            logger.info(f"Initiating full-chain SDK ingestion for: {underlying_upper}")
 
-            while has_more_pages:
-                page_count += 1
+            # Single auto-paginated pass over the entire option chain.
+            chain = self.client.list_snapshot_options_chain(
+                underlying_upper,
+                params={"limit": 250},
+            )
 
-                # Native SDK Options Chain processing
-                chain_page = self.client.list_snapshot_options_chain(
-                    underlying_upper,
-                    params={
-                        "limit": 250,
-                        "sort": "strike_price",
-                        "order": "asc",
-                        "strike_price.gt": current_strike_floor
-                    }
-                )
-
-                page_contracts_found = 0
-                max_strike_in_page = current_strike_floor
-
-                for contract in chain_page:
-                    page_contracts_found += 1
-
-                    # Capture the synchronized spot asset and timestamp on first contract view
-                    if synchronized_spot_price == 0.0:
-                        underlying_asset = extract(contract, "underlying_asset", {})
-                        synchronized_spot_price = float(extract(underlying_asset, "price", 0.0))
+            for contract in chain:
+                # Capture the synchronized spot + snapshot timestamp from the first
+                # contract that carries a valid underlying price.
+                if synchronized_spot_price <= 0.0:
+                    underlying_asset = extract(contract, "underlying_asset", {})
+                    px = float(extract(underlying_asset, "price", 0.0))
+                    if px > 0.0:
+                        synchronized_spot_price = px
                         snapshot_timestamp = int(extract(underlying_asset, "last_updated", 0))
 
-                    details = extract(contract, "details", {})
-                    greeks = extract(contract, "greeks", {})
+                details = extract(contract, "details", {})
+                greeks = extract(contract, "greeks", {})
 
-                    strike = float(extract(details, "strike_price", 0.0))
-                    if strike > max_strike_in_page:
-                        max_strike_in_page = strike
+                # GEX/greeks aggregation requires gamma; skip contracts the API
+                # has not priced.
+                if not greeks or extract(greeks, "gamma") is None:
+                    continue
 
-                    if not greeks or extract(greeks, "gamma") is None:
-                        continue
-
-                    contract_dict = {
-                        "strike_price": strike,
-                        "contract_type": extract(details, "contract_type", "").lower(),
-                        "expiration_date": extract(details, "expiration_date", ""),
-                        "open_interest": int(extract(contract, "open_interest", 0)),
-                        "implied_volatility": float(extract(contract, "implied_volatility", 0.0)),
-                        "greeks": {
-                            "delta": float(extract(greeks, "delta", 0.0)),
-                            "gamma": float(extract(greeks, "gamma", 0.0)),
-                            "theta": float(extract(greeks, "theta", 0.0)),
-                            "vega": float(extract(greeks, "vega", 0.0))
-                        }
-                    }
-                    all_contracts.append(contract_dict)
-
-                if page_contracts_found < 250 or max_strike_in_page == current_strike_floor:
-                    has_more_pages = False
-                else:
-                    current_strike_floor = max_strike_in_page
+                all_contracts.append({
+                    "strike_price": float(extract(details, "strike_price", 0.0)),
+                    "contract_type": extract(details, "contract_type", "").lower(),
+                    "expiration_date": extract(details, "expiration_date", ""),
+                    "open_interest": int(extract(contract, "open_interest", 0)),
+                    "implied_volatility": float(extract(contract, "implied_volatility", 0.0)),
+                    "greeks": {
+                        "delta": float(extract(greeks, "delta", 0.0)),
+                        "gamma": float(extract(greeks, "gamma", 0.0)),
+                        "theta": float(extract(greeks, "theta", 0.0)),
+                        "vega": float(extract(greeks, "vega", 0.0)),
+                    },
+                })
 
             if not all_contracts:
                 logger.warning(f"No valid option contracts compiled for {underlying_upper}.")
                 return {}
 
-            # --- DYNAMIC TARGET SPOT PRICING CONSTRAINTS RECONCILIATION ---
+            # --- Spot reconciliation: outside RTH the snapshot's underlying price
+            # reflects post/pre-market drift, so prefer the official cash close.
+            # Note: snapshot greeks were priced at the snapshot spot, so they are
+            # slightly inconsistent with an overridden close; acceptable when closed.
             final_target_spot = synchronized_spot_price
 
             if self._is_market_closed(snapshot_timestamp):
-                logger.info(
-                    f"Market Closed state active for timestamp ({snapshot_timestamp}). Querying cash close bar.")
+                logger.info(f"Market closed for timestamp ({snapshot_timestamp}). Querying cash close bar.")
                 try:
-                    # Native SDK call to Single Ticker Snapshot endpoint
                     ticker_snapshot = self.client.get_snapshot_ticker("stocks", underlying_upper)
-
                     day_bar = extract(ticker_snapshot, "day", {})
                     cash_close = extract(day_bar, "close")
-
                     if cash_close is not None and float(cash_close) > 0:
                         final_target_spot = float(cash_close)
                         logger.info(
-                            f"Reconciliation Complete. Overriding post-market drift price ${synchronized_spot_price} -> Close: ${final_target_spot}")
+                            f"Reconciliation complete. ${synchronized_spot_price} -> close ${final_target_spot}")
                 except Exception as sdk_err:
-                    logger.warning(
-                        f"Failed to isolate cash close via SDK, maintaining synchronized spot fallback: {sdk_err}")
+                    logger.warning(f"Cash-close reconciliation failed, keeping snapshot spot: {sdk_err}")
             else:
-                logger.info(
-                    f"Market Active. Utilizing perfectly synchronized option snapshot spot: ${final_target_spot}")
+                logger.info(f"Market active. Using synchronized snapshot spot: ${final_target_spot}")
 
-            # ATM IV Isolation Sequence
-            expiration_oi_map = defaultdict(int)
-            for c in all_contracts:
-                expiration_oi_map[c["expiration_date"]] += c["open_interest"]
+            # --- ATM IV: take the NEAREST tenor that is at least MIN_DTE out (avoids
+            # 0DTE/expiring noise), not the highest-OI expiration. This keeps the IV
+            # horizon roughly aligned with the 30d HV used for the IV/HV ratio.
+            MIN_DTE = 7.0
+            expirations = {c["expiration_date"] for c in all_contracts if c["expiration_date"]}
+            dte_map = {e: self._days_to_expiry(e) for e in expirations}
 
-            if not expiration_oi_map:
-                return {}
+            eligible = {e: d for e, d in dte_map.items() if d >= MIN_DTE}
+            if eligible:
+                target_expiration = min(eligible, key=eligible.get)   # nearest >= MIN_DTE
+            elif dte_map:
+                target_expiration = max(dte_map, key=dte_map.get)      # fallback: furthest available
+            else:
+                target_expiration = None
 
-            primary_front_expiration = max(expiration_oi_map, key=expiration_oi_map.get)
-            front_month_contracts = [c for c in all_contracts if c["expiration_date"] == primary_front_expiration]
-
-            atm_contract = min(
-                front_month_contracts,
-                key=lambda x: abs(x["strike_price"] - final_target_spot)
-            )
-            atm_iv = atm_contract["implied_volatility"]
+            atm_iv = 0.0
+            atm_dte = None
+            if target_expiration is not None:
+                atm_dte = round(dte_map[target_expiration], 2)
+                # Live IV quotes only, within the chosen tenor.
+                tenor = [
+                    c for c in all_contracts
+                    if c["expiration_date"] == target_expiration and c["implied_volatility"] > 0.0
+                ]
+                if tenor:
+                    atm_strike = min(tenor, key=lambda x: abs(x["strike_price"] - final_target_spot))["strike_price"]
+                    # Average call+put IV at the ATM strike to mitigate vertical skew.
+                    strike_ivs = [c["implied_volatility"] for c in tenor if c["strike_price"] == atm_strike]
+                    atm_iv = sum(strike_ivs) / len(strike_ivs)
 
             return {
                 "ticker": underlying_upper,
                 "synchronized_spot": final_target_spot,
                 "timestamp": snapshot_timestamp,
-                "atm_iv": atm_iv,
-                "contracts": all_contracts
+                "atm_iv": atm_iv,                       # decimal form, e.g. 0.486
+                "atm_iv_expiration": target_expiration, # tenor used for ATM IV (transparency)
+                "atm_iv_dte": atm_dte,                  # calendar days to that expiration
+                "contracts": all_contracts,
             }
 
         except Exception as e:
-            logger.error(f"SDK Exception during paginated options extraction: {str(e)}")
+            logger.error(f"SDK exception during options chain extraction: {str(e)}")
             return {}

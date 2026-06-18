@@ -153,8 +153,8 @@ class QuantEngine:
                 # Primary Dollar GEX Scale Formula: Gamma * OI * 100 * Spot^2 * 0.01 [cite: 14]
                 dollar_gex = api_gamma * open_interest * 100 * (current_spot ** 2) * 0.01
 
-                sigma = iv / 100.0 if iv > 2.0 else iv
-                sigma = max(sigma, 0.0001)
+                # IV arrives as a decimal from the data layer (e.g. 0.486).
+                sigma = max(iv, 0.0001)
                 d1, d2 = self._d1_d2(current_spot, strike, t_years, self.r, sigma)
 
                 vanna = self._calc_vanna(d1, d2, sigma)
@@ -232,7 +232,7 @@ class QuantEngine:
 
                     t = self._calculate_time_to_expiry(str(expiry))
                     flag = 'c' if contract_type in ['call', 'c'] else 'p'
-                    sigma = iv / 100.0 if iv > 2.0 else iv
+                    sigma = iv  # decimal IV from the data layer
 
                     calc_gamma = bs_gamma(flag, test_spot, strike, t, self.r, sigma)
                     gex_val = calc_gamma * open_interest * 100 * (test_spot ** 2) * 0.01
