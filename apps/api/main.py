@@ -95,10 +95,16 @@ async def market_data_engine_loop():
                     if snapshot_ns > 0 else None
                 )
 
+                # price = current (live/delayed) spot for display; gex_spot = the spot the
+                # GEX/greek levels were actually computed at (the cash close after hours).
+                # They coincide during RTH and differ after hours by post-close drift.
+                display_spot = market_data.get("current_spot") or market_data["synchronized_spot"]
+
                 # Commit mutations down to shared memory
                 current_market_state.update({
                     "ticker": market_data["ticker"],
-                    "price": market_data["synchronized_spot"],
+                    "price": display_spot,
+                    "gex_spot": market_data["synchronized_spot"],
                     "timestamp": snapshot_ns,
                     "timestamp_iso": timestamp_iso,
 

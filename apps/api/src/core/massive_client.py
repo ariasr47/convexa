@@ -213,10 +213,12 @@ class MassiveDataInterface:
                 logger.warning(f"[{underlying_upper}] No valid option contracts returned")
                 return {}
 
-            # --- Spot reconciliation: outside RTH the snapshot's underlying price
-            # reflects post/pre-market drift, so prefer the official cash close.
-            # Note: snapshot greeks were priced at the snapshot spot, so they are
-            # slightly inconsistent with an overridden close; acceptable when closed.
+            # --- Spot for GEX/greek calculations. Outside RTH the options have stopped
+            # trading, so the closing greeks correspond to the cash close -- pairing them
+            # with the official close (not the drifting after-hours underlying) keeps the
+            # calculations consistent with the gamma the greeks were priced at. The live
+            # snapshot underlying is returned separately as current_spot (for display).
+            # During RTH the two coincide.
             final_target_spot = synchronized_spot_price
 
             if self._is_market_closed(snapshot_timestamp):
@@ -269,7 +271,8 @@ class MassiveDataInterface:
 
             return {
                 "ticker": underlying_upper,
-                "synchronized_spot": final_target_spot,
+                "synchronized_spot": final_target_spot,        # spot for GEX/greeks (cash close when market closed)
+                "current_spot": synchronized_spot_price,       # live/delayed snapshot underlying (for display)
                 "timestamp": snapshot_timestamp,
                 "atm_iv": atm_iv,                       # decimal form, e.g. 0.486
                 "atm_iv_expiration": target_expiration, # tenor used for ATM IV (transparency)

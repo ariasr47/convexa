@@ -4,7 +4,8 @@ from typing import Optional
 class MarketState(BaseModel):
     # Core Data
     ticker: str
-    price: float
+    price: float           # current (live/delayed) spot for display
+    gex_spot: Optional[float] = None  # spot the GEX/greek levels were computed at (cash close after hours; == price during RTH)
     timestamp: int  # nanoseconds since epoch (int avoids float64 precision loss at 19 digits)
     timestamp_iso: Optional[str] = None  # human-readable UTC ISO-8601 for the consuming AI
 
