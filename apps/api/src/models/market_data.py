@@ -13,8 +13,8 @@ class MarketState(BaseModel):
     put_wall: float        # strike with the most put open interest (OI-based wall)
     peak_gex_strike: Optional[float] = None  # strike with the most gross gamma (price magnet)
     gamma_flip: float
-    max_pain: Optional[float] = None         # nearest-expiration price minimizing total option payout
-    max_pain_expiration: Optional[str] = None  # which expiration max_pain is computed for
+    max_pain: Optional[float] = None         # nearest-monthly-OPEX price minimizing total option payout
+    max_pain_expiration: Optional[str] = None  # which (monthly) expiration max_pain is computed for
     net_gex: float
 
     # Gross gamma breakdown (mirrors the Call/Put/Total GEX shown on retail dashboards)

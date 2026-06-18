@@ -154,6 +154,15 @@ class QuantEngine:
         }
 
     @staticmethod
+    def _is_monthly_expiration(expiry_str: str) -> bool:
+        """True if the date is a standard monthly OPEX (the 3rd Friday of the month)."""
+        try:
+            d = datetime.strptime(expiry_str[:10], "%Y-%m-%d")
+            return d.weekday() == 4 and 15 <= d.day <= 21
+        except Exception:
+            return False
+
+    @staticmethod
     def _calculate_max_pain(strike_oi_map: dict) -> float:
         """
         Max pain = the price that minimizes total intrinsic payout to option holders,
@@ -307,11 +316,15 @@ class QuantEngine:
         gamma_flip = self._find_gamma_flip(filtered_contracts, current_spot, q)
         pc_ratio = round(total_put_oi / total_call_oi, 2) if total_call_oi > 0 else 0.0
 
-        # Max pain on the nearest (future, non-empty) expiration -- the standard
-        # per-expiration definition; avoids LEAP OI distorting an all-chain aggregate.
+        # Max pain on the nearest MONTHLY expiration (3rd-Friday OPEX). Monthly OPEX
+        # carries the deepest, most stable OI and is the conventional max-pain reference;
+        # near-dated weeklies/0DTE give noisy levels. Falls back to the nearest expiration
+        # only if the chain has no monthly. (Avoids LEAP OI distorting an all-chain sum.)
         future_exps = {e: d for e, d in exp_dte.items() if d > 0 and e}
-        if future_exps:
-            max_pain_expiration = min(future_exps, key=future_exps.get)
+        monthly_exps = {e: d for e, d in future_exps.items() if self._is_monthly_expiration(e)}
+        target_exps = monthly_exps or future_exps
+        if target_exps:
+            max_pain_expiration = min(target_exps, key=target_exps.get)
             max_pain = self._calculate_max_pain(exp_oi_map[max_pain_expiration])
         else:
             max_pain_expiration, max_pain = None, 0.0
