@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-do
 import { styled } from '@mui/material/styles';
 import {
   AppBar, Toolbar, Typography, Container, Box, Card, CardContent,
-  Chip, CircularProgress, TextField, Stack, Alert,
+  Chip, CircularProgress, TextField, Stack, Alert, Button, ButtonGroup,
   FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
 } from '@mui/material';
 import { getTicker, TickerBundle } from '@org/api';
@@ -60,20 +60,25 @@ function TickerDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState<TickerBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [symbol, setSymbol] = useState(ticker);
-  // Selected expirations to scope the GEX profile. [] means "all" (no filter sent).
-  const [selected, setSelected] = useState<string[]>([]);
+  // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
+  const [selected, setSelected] = useState<string[] | null>(null);
 
   const load = useCallback(() => {
-    getTicker(ticker, { expirations: selected })
+    if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
+    setLoading(true);
+    getTicker(ticker, { expirations: selected ?? undefined })
       .then((d) => { setData(d); setError(null); })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, [ticker, selected]);
 
-  // Reset the expiration filter (back to "all") whenever the ticker changes.
-  useEffect(() => { setSelected([]); setData(null); }, [ticker]);
+  // Reset the filter to "all" whenever the ticker changes; clear data so we show a spinner.
+  useEffect(() => { setSelected(null); setData(null); }, [ticker]);
 
-  // (Re)load on ticker/selection change, then poll on the cache cadence.
+  // (Re)load on ticker/selection change, then poll on the cache cadence. Data is updated
+  // in place (not cleared) on a re-filter, so the view doesn't flicker between fetches.
   useEffect(() => {
     load();
     const id = setInterval(load, POLL_MS);
@@ -85,8 +90,8 @@ function TickerDashboard() {
   const sig = data?.signals;
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
-  // What the Select shows as "checked": the explicit selection, or every date when "all".
-  const checked = selected.length ? selected : allDates;
+  const noneSelected = selected !== null && selected.length === 0;
+  const checked = selected ?? allDates; // dates shown ticked in the menu
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -96,18 +101,22 @@ function TickerDashboard() {
           onChange={(e) => setSymbol(e.target.value.toUpperCase())}
           onKeyDown={(e) => { if (e.key === 'Enter' && symbol) navigate(`/${symbol}`); }}
         />
-        <FormControl size="small" sx={{ minWidth: 220 }} disabled={!allDates.length}>
+        <FormControl size="small" sx={{ minWidth: 240 }} disabled={!allDates.length}>
           <InputLabel>Expirations</InputLabel>
           <Select
             multiple
+            displayEmpty
             value={checked}
             input={<OutlinedInput label="Expirations" />}
             onChange={(e) => {
               const v = (typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value);
-              // All checked -> store [] ("all", no filter); otherwise the chosen subset.
-              setSelected(v.length === allDates.length ? [] : v);
+              // Every date ticked -> null ("all", no filter); otherwise the explicit subset (incl. []).
+              setSelected(v.length === allDates.length ? null : v);
             }}
-            renderValue={() => (selected.length === 0 ? 'All expirations' : `${selected.length} selected`)}
+            renderValue={() =>
+              selected === null ? 'All expirations'
+              : selected.length === 0 ? 'None selected'
+              : `${selected.length} of ${allDates.length}`}
             MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360 } } } }}
           >
             {data?.expirations.map((e) => (
@@ -118,6 +127,11 @@ function TickerDashboard() {
             ))}
           </Select>
         </FormControl>
+        <ButtonGroup size="small" variant="outlined" disabled={!allDates.length}>
+          <Button onClick={() => setSelected(null)} disabled={selected === null}>All</Button>
+          <Button onClick={() => setSelected([])} disabled={noneSelected}>Clear</Button>
+        </ButtonGroup>
+        {loading && <CircularProgress size={18} />}
         {sig?.regime && (
           <Chip
             label={sig.regime.replace('_', ' ')}
@@ -134,12 +148,18 @@ function TickerDashboard() {
       {error && <Alert severity="error">{error}</Alert>}
       {!data && !error && <CircularProgress />}
 
-      {m && (
+      {noneSelected && (
+        <Alert severity="info">
+          No expirations selected — pick one or more above, or click <strong>All</strong>.
+        </Alert>
+      )}
+
+      {!noneSelected && m && (
         <>
           <Typography variant="h1" gutterBottom>
             {m.ticker} · ${m.price?.toFixed(2)}
             <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-              (levels @ ${m.gex_spot?.toFixed(2)} · {selected.length === 0 ? 'all expirations' : `${selected.length} expirations`})
+              (levels @ ${m.gex_spot?.toFixed(2)} · {selected === null ? 'all expirations' : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`})
             </Typography>
           </Typography>
 
