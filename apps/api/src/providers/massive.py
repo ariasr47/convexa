@@ -1,20 +1,21 @@
+"""
+Massive adapter: implements MarketDataProvider against the Massive REST SDK.
+
+All Massive-specific concerns -- auth, the v3 options-chain snapshot shape, market-phase
+spot selection, the `extract` payload helper -- are sealed in here. The rest of GammaFlow
+only sees the normalized contracts from `base.py`.
+"""
 import os
 import logging
 from datetime import datetime, time, timezone, timedelta
 import zoneinfo
-from typing import Any
 
 from dotenv import load_dotenv
 
 # Native SDK Client Import
 from massive import RESTClient
 
-from typing import TypedDict
-
-class UnderlyingBarMetrics(TypedDict):
-    close: float
-    vwap: float
-
+from .base import MarketDataProvider, OptionsMarketState, UnderlyingBar, IntradayBar
 
 load_dotenv()
 logger = logging.getLogger("GammaFlowAsync")
@@ -29,7 +30,9 @@ def extract(obj, key, default=None):
     return getattr(obj, key, default)
 
 
-class MassiveDataInterface:
+class MassiveProvider(MarketDataProvider):
+    name = "massive"
+
     def __init__(self):
         self.api_key = os.getenv("MASSIVE_API_KEY")
         if not self.api_key:
@@ -56,7 +59,7 @@ class MassiveDataInterface:
             return "after_close"  # today's session just completed
         return "closed_pre"       # before the open -> last completed session is the prior day
 
-    def fetch_historical_underlying_metrics(self, ticker: str) -> list[UnderlyingBarMetrics]:
+    def fetch_daily_bars(self, ticker: str) -> list[UnderlyingBar]:
         """
         Queries the Custom Bars API natively via the Massive RESTClient generator loop.
         Applies direct keyword argument pass-throughs as required by the native SDK.
@@ -68,7 +71,7 @@ class MassiveDataInterface:
         from_date = (now - timedelta(days=60)).strftime("%Y-%m-%d")
         to_date = now.strftime("%Y-%m-%d")
 
-        historical_underlying_metrics: list[UnderlyingBarMetrics] = []
+        daily_bars: list[UnderlyingBar] = []
 
         try:
             logger.info(f"[{ticker_upper}] Fetching daily bars ({from_date} to {to_date})")
@@ -88,17 +91,17 @@ class MassiveDataInterface:
             for bar in bars_generator:
                 close_val = extract(bar, "close")
                 vwap_val = extract(bar, "vwap")
-                historical_underlying_metrics.append(UnderlyingBarMetrics(close=close_val, vwap=vwap_val))
+                daily_bars.append(UnderlyingBar(close=close_val, vwap=vwap_val))
 
-            logger.info(f"[{ticker_upper}] Fetched {len(historical_underlying_metrics)} daily bars")
+            logger.info(f"[{ticker_upper}] Fetched {len(daily_bars)} daily bars")
 
-            return historical_underlying_metrics
+            return daily_bars
 
         except Exception as e:
             logger.error(
                 f"SDK Exception during daily bar ingestion for {ticker_upper}: {str(e)} "
-                f"(returning {len(historical_underlying_metrics)} bars collected before failure)")
-            return historical_underlying_metrics
+                f"(returning {len(daily_bars)} bars collected before failure)")
+            return daily_bars
 
     def _days_to_expiry(self, expiry_str: str) -> float:
         """Calendar days from now (UTC) to an option's expiration date. Negative on parse failure."""
@@ -108,7 +111,7 @@ class MassiveDataInterface:
         except Exception:
             return -1.0
 
-    def fetch_intraday_session_bars(self, ticker: str) -> list[dict]:
+    def fetch_intraday_bars(self, ticker: str) -> list[IntradayBar]:
         """
         Streams 1-minute bars over a short trailing window so the engine can build a
         session-anchored VWAP and volume-weighted deviation bands. A multi-day window
@@ -121,7 +124,7 @@ class MassiveDataInterface:
         from_date = (now - timedelta(days=4)).strftime("%Y-%m-%d")
         to_date = now.strftime("%Y-%m-%d")
 
-        rows: list[dict] = []
+        rows: list[IntradayBar] = []
         try:
             logger.info(f"[{ticker_upper}] Fetching 1-minute bars ({from_date} to {to_date})")
             bars = self.client.list_aggs(ticker_upper, 1, "minute", from_date, to_date, True, "asc", 50000)
@@ -134,12 +137,12 @@ class MassiveDataInterface:
                 if ts_ms is None or vw is None or vol is None:
                     continue
                 et = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc).astimezone(et_zone)
-                rows.append({
-                    "session": et.date().isoformat(),
-                    "minute": et.time(),
-                    "vw": float(vw),
-                    "v": float(vol),
-                })
+                rows.append(IntradayBar(
+                    session=et.date().isoformat(),
+                    minute=et.time(),
+                    vw=float(vw),
+                    v=float(vol),
+                ))
 
             logger.info(f"[{ticker_upper}] Fetched {len(rows)} intraday bars")
             return rows
@@ -148,7 +151,7 @@ class MassiveDataInterface:
             logger.error(f"[{ticker_upper}] Failed to fetch intraday bars: {e}")
             return rows
 
-    def fetch_synchronized_options_market_state(self, underlying: str) -> dict:
+    def fetch_options_market_state(self, ticker: str) -> OptionsMarketState | dict:
         """
         Queries the Massive v3 Options Chain Snapshot for an underlying and returns a
         normalized payload (spot, timestamp, ATM IV, and the full contract list).
@@ -160,7 +163,7 @@ class MassiveDataInterface:
         Implied volatility is returned by the API as a decimal (e.g. 0.486 == 48.6%);
         it is passed through unscaled here and standardized downstream in the engine.
         """
-        underlying_upper = underlying.upper()
+        underlying_upper = ticker.upper()
         all_contracts = []
         synchronized_spot_price = 0.0
         snapshot_timestamp = 0

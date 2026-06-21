@@ -9,8 +9,8 @@ from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.engine import QuantEngine
-from src.core.massive_client import MassiveDataInterface
 from src.core.signals import generate_signals, evaluate_gate
+from src.providers import get_provider
 from src.models.market_data import MarketState
 
 logger = logging.getLogger("GammaFlowAsync")
@@ -27,13 +27,15 @@ if not logger.handlers:
     logger.addHandler(stream_handler)
 
 quant_engine = QuantEngine(risk_free_rate=0.045)
-data_provider = MassiveDataInterface()
+# Data source is chosen via the DATA_PROVIDER env var (default "massive"); main.py only
+# depends on the MarketDataProvider port, never a concrete vendor SDK.
+data_provider = get_provider()
 
 DATA_DIR = "data"
 
 # --- Polling / freshness / gate config (env-overridable) ---
 # Cache TTL should match the consumer's poll interval (default 60s): repeated polls within
-# the window are served from memory with no Massive call.
+# the window are served from memory with no upstream call.
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "60"))
 # Snapshot age (now - options snapshot time) beyond which the data is flagged stale and the
 # AI gate is forced off. Default ~15-min delay + slack; drop to ~120 on a real-time tier.
@@ -138,9 +140,9 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
     Synchronous (does blocking SDK I/O); endpoints run it in a worker thread.
     """
     logger.info(f"[{ticker}] On-demand refresh (min_dte={min_dte}, max_dte={max_dte})")
-    market_data = data_provider.fetch_synchronized_options_market_state(ticker)
-    underlying_history = data_provider.fetch_historical_underlying_metrics(ticker)
-    intraday_bars = data_provider.fetch_intraday_session_bars(ticker)
+    market_data = data_provider.fetch_options_market_state(ticker)
+    underlying_history = data_provider.fetch_daily_bars(ticker)
+    intraday_bars = data_provider.fetch_intraday_bars(ticker)
 
     if not market_data or market_data.get("synchronized_spot", 0) <= 0:
         logger.warning(f"[{ticker}] No option-chain data returned")
