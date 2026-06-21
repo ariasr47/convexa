@@ -11,6 +11,26 @@ import { GexProfileChart } from './gex-profile-chart';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 
+/** Conventional DTE label: 0 = expires today (0DTE), 1 = tomorrow, else N days. */
+function dteLabel(dte: number | null): string | undefined {
+  if (dte == null) return undefined;
+  if (dte <= 0) return 'expires today · 0DTE';
+  if (dte === 1) return '1 day to expiry';
+  return `${dte} days to expiry`;
+}
+
+/** Compact, human-readable age from seconds, e.g. 242779 -> "2d 19h". */
+function humanAge(seconds: number | null): string {
+  if (seconds == null) return 'unknown age';
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const h = Math.floor(m / 60);
+  const d = Math.floor(h / 24);
+  if (d >= 1) return `${d}d ${h % 24}h`;
+  if (h >= 1) return `${h}h ${m % 60}m`;
+  return `${m}m`;
+}
+
 // Example of MUI's styled() API (the styled-components-style authoring experience, on
 // MUI's Emotion engine). Color reacts to a prop, the way you'd do in styled-components.
 const StatTile = styled(Card)<{ accent?: 'up' | 'down' | 'neutral' }>(
@@ -93,7 +113,7 @@ function TickerDashboard() {
             {data?.expirations.map((e) => (
               <MenuItem key={e.date} value={e.date}>
                 <Checkbox checked={checked.includes(e.date)} />
-                <ListItemText primary={e.date} secondary={e.dte != null ? `${e.dte}d to expiry` : undefined} />
+                <ListItemText primary={e.date} secondary={dteLabel(e.dte)} />
               </MenuItem>
             ))}
           </Select>
@@ -106,7 +126,7 @@ function TickerDashboard() {
         )}
         {fresh?.stale && (
           <Alert severity="warning" sx={{ py: 0 }}>
-            snapshot {fresh.data_age_seconds}s old — levels may be unreliable
+            data is {humanAge(fresh.data_age_seconds)} old — levels may be unreliable
           </Alert>
         )}
       </Stack>
