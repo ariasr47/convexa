@@ -4,6 +4,7 @@ import time
 import logging
 import json
 import os
+import zoneinfo
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,11 +51,19 @@ _cache: dict = {}
 _last_fingerprint: dict = {}
 
 
-def _dte_days(date_str: str) -> float | None:
-    """Calendar days from now (UTC) to an expiration date (YYYY-MM-DD); None on parse failure."""
+_EXCHANGE_TZ = zoneinfo.ZoneInfo("America/New_York")
+
+
+def _dte_days(date_str: str) -> int | None:
+    """
+    Whole CALENDAR days to an expiration date (YYYY-MM-DD), measured in exchange time.
+    This is the conventional DTE: an option expiring today is 0 (0DTE), tomorrow is 1, etc.
+    -- options settle end-of-day on the expiration date, so a fractional "to midnight"
+    figure would understate the real time remaining. None on parse failure.
+    """
     try:
-        d = datetime.strptime(date_str[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-        return round((d - datetime.now(timezone.utc)).total_seconds() / 86400.0, 1)
+        expiry = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
+        return (expiry - datetime.now(_EXCHANGE_TZ).date()).days
     except Exception:
         return None
 
@@ -171,10 +180,12 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
         f"[{ticker}] Option chain: {len(contracts)} contracts across {len(all_exps)} expirations "
         f"(nearest {all_exps[0] if all_exps else 'n/a'}, farthest {all_exps[-1] if all_exps else 'n/a'})"
     )
-    # Available expirations (future only) for the UI selector: date + days to expiry.
-    available_expirations = [
-        {"date": e, "dte": _dte_days(e)} for e in all_exps if (_dte_days(e) or -1) >= 0
-    ]
+    # Available expirations (today + future) for the UI selector: date + calendar DTE.
+    available_expirations = []
+    for e in all_exps:
+        dte = _dte_days(e)
+        if dte is not None and dte >= 0:
+            available_expirations.append({"date": e, "dte": dte})
 
     state, profile = _build_market_state(
         ticker, market_data, underlying_history, intraday_bars, min_dte, max_dte, expirations)
