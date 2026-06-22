@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { styled } from '@mui/material/styles';
+import { styled, useTheme } from '@mui/material/styles';
 import {
   AppBar, Toolbar, Typography, Container, Box, Card, CardContent,
   Chip, CircularProgress, TextField, Stack, Alert, Button, ButtonGroup, Tooltip,
@@ -8,7 +8,10 @@ import {
   Switch, FormControlLabel,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { getTicker, streamTicker, TickerBundle, LiveUpdate } from '@org/api';
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
+} from 'recharts';
+import { getTicker, streamTicker, TickerBundle, LiveUpdate, IvSkew, TermStructure } from '@org/api';
 import { GexProfileChart } from './gex-profile-chart';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
@@ -33,6 +36,73 @@ const OFFLINE_CHIP_TOOLTIP =
   'The live stream dropped. The positioning levels and the GEX chart below are still current ' +
   'as of the last data load — only live price, spread, net flow and the live gamma flip are ' +
   'paused. Reconnecting automatically; no refresh needed.';
+
+// ---- DEX · Vol/OI · IV skew · Term structure (all neutral, snapshot — never live) ----------
+// These four ride the REST bundle, carry NO side/direction, and are excluded from the live
+// offline treatment. Each is independently nullable → its own "unavailable this cycle".
+const fmtDexM = (v: number | null) => (v == null ? '—' : `$${(v / 1e6).toFixed(1)}M`);
+const fmtThresh = (t: number) => (Number.isInteger(t) ? t.toFixed(1) : String(t)); // 1 -> "1.0"
+const TERM_BUCKETS = [7, 14, 30, 60, 90]; // nominal display tenors, each mapped to nearest point
+
+// IV skew "what vol is paying for" word from slope (put_iv − call_iv); small neutral band.
+const SKEW_BAND = 0.5; // IV points
+function skewState(slope: number): 'fear' | 'greed' | 'balanced' {
+  if (slope > SKEW_BAND) return 'fear';
+  if (slope < -SKEW_BAND) return 'greed';
+  return 'balanced';
+}
+const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
+  fear: 'downside hedging is bid (fear)',
+  greed: 'upside is bid (greed/complacency)',
+  balanced: 'balanced',
+};
+const TERM_STATE_CLAUSE: Record<'contango' | 'backwardation' | 'flat', string> = {
+  contango: 'Upward = contango: near-term vol calm vs longer tenors — "normal."',
+  backwardation: 'Downward = backwardation: near-term vol elevated — near-term stress / event.',
+  flat: 'Flat.',
+};
+
+const netDexTip = (callDex: number | null, putDex: number | null) =>
+  `Net dealer delta exposure — the delta analogue of GEX. Shows which way dealer hedging ` +
+  `pressure leans across the selected expirations (call ${fmtDexM(callDex)}, put ${fmtDexM(putDex)}). ` +
+  `Positioning context only: the hedging implication is indirect — this is not a buy/sell signal ` +
+  `and does not mean "dealers are bullish, go long." Moves with the expiration window, like GEX. ` +
+  `Snapshot from the last chain load.`;
+const volOiTip = (threshold: number, n: number) =>
+  `Chain-wide option volume ÷ open interest — turnover intensity: how much of today's trading is ` +
+  `fresh vs standing positions. Activity only — no side, no direction; never bullish/bearish or ` +
+  `"smart money." Uses the full chain (ignores the expiration filter). ${n} strike(s) show ` +
+  `unusual activity (Vol/OI ≥ ${fmtThresh(threshold)}×) — see Fresh positioning below.`;
+const freshCaption = (threshold: number) =>
+  `Strikes trading heavily versus standing open interest (Vol/OI ≥ ${fmtThresh(threshold)}×). ` +
+  `Activity, not direction — no side implied.`;
+const skewTip = (s: IvSkew) =>
+  `IV skew at the ${s.dte}-DTE tenor (${s.expiration}): downside IV ${s.put_iv.toFixed(1)}% vs ` +
+  `upside IV ${s.call_iv.toFixed(1)}% (±25-delta${s.reference === 'moneyness' ? ', fixed-moneyness fallback' : ''}). ` +
+  `A read of what volatility is paying for — ${SKEW_PHRASE[skewState(s.slope)]} — not a ` +
+  `price-direction call. Single snapshot, no history.`;
+const termTip = (t: TermStructure) => {
+  const near = t.points[0];
+  const far = t.points[t.points.length - 1];
+  return `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
+    `${t.near_iv.toFixed(1)}% vs far (${far?.dte}d) ${t.far_iv.toFixed(1)}%. Cross-tenor by ` +
+    `definition (ignores the expiration filter). Single snapshot, no history.`;
+};
+
+/** Sample the nominal display tenors to the nearest available point; dedupe, plot points at
+ *  their REAL dte/atm_iv (never fabricate an absent bucket). Ascending by dte. */
+function sampleTermPoints(points: TermStructure['points']): TermStructure['points'] {
+  const seen = new Set<number>();
+  const out: TermStructure['points'] = [];
+  for (const b of TERM_BUCKETS) {
+    let best: TermStructure['points'][number] | null = null;
+    for (const p of points) {
+      if (best == null || Math.abs(p.dte - b) < Math.abs(best.dte - b)) best = p;
+    }
+    if (best && !seen.has(best.dte)) { seen.add(best.dte); out.push(best); }
+  }
+  return out.sort((a, b) => a.dte - b.dte);
+}
 
 /** Conventional DTE label: 0 = expires today (0DTE), 1 = tomorrow, else N days. */
 function dteLabel(dte: number | null): string | undefined {
@@ -173,9 +243,19 @@ function TickerDashboard() {
     return () => { if (gapTimer) clearTimeout(gapTimer); unsub(); };
   }, [ticker, selected]);
 
+  const theme = useTheme();
   const m = data?.market_state;
   const fresh = data?.meta.freshness;
   const sig = data?.signals;
+
+  // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N. Full-chain
+  // (these rows are not window-scoped). Term-structure display points sampled to nominal tenors.
+  const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
+  const unusualStrikes = (data?.strike_profile.strikes ?? [])
+    .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
+    .sort((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
+    .slice(0, 8);
+  const termSampled = m?.term_structure ? sampleTermPoints(m.term_structure.points) : [];
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
@@ -184,6 +264,19 @@ function TickerDashboard() {
   // the last payload's `live:true` must not keep live values on screen as if current.
   const isLive = (live?.live ?? false) && !streamOffline;
   const ls = liveStatus(live);          // session-aware live/stale status for the chip
+
+  // Hover label for a term-structure point: real tenor + expiration + ATM IV (auditable).
+  const TermPointTooltip = ({ active, payload }:
+    { active?: boolean; payload?: { payload: { dte: number; expiration: string; atm_iv: number } }[] }) => {
+    if (!active || !payload?.length) return null;
+    const p = payload[0].payload;
+    return (
+      <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
+        <Typography variant="caption" color="text.secondary">{p.dte}d · {p.expiration}</Typography>
+        <Typography variant="body2">ATM IV {p.atm_iv.toFixed(1)}%</Typography>
+      </Box>
+    );
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -314,10 +407,26 @@ function TickerDashboard() {
               info="Best ask minus best bid. Wider = a thinner, more volatile market." />
             <Stat label="Net GEX" value={`$${(m.net_gex / 1e6).toFixed(1)}M`} accent={m.net_gex >= 0 ? 'up' : 'down'}
               info="Total dealer gamma across the chain. Positive = dealers dampen moves (range-bound); negative = they amplify moves (trending)." />
+            <Stat label="Net DEX"
+              value={m.net_dex == null ? 'unavailable' : `$${(m.net_dex / 1e6).toFixed(1)}M`} accent="neutral"
+              info={netDexTip(m.call_dex, m.put_dex)} />
             <Stat label="Max pain" value={`$${m.max_pain ?? '—'}`} accent="neutral"
               info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry." />
             <Stat label="IV / HV" value={m.iv_hv_ratio.toFixed(2)} accent="neutral"
               info="Implied volatility ÷ recent realized volatility. >1 = options look expensive (favor selling); <1 = cheap (favor buying)." />
+            <Stat label="Vol/OI"
+              value={m.chain_vol_oi_ratio == null ? 'unavailable' : `${m.chain_vol_oi_ratio.toFixed(2)}×`}
+              accent="neutral" info={volOiTip(volOiThreshold, unusualStrikes.length)} />
+            <Stat label="IV skew"
+              value={m.iv_skew == null ? 'unavailable'
+                : `${m.iv_skew.slope >= 0 ? '+' : '−'}${Math.abs(m.iv_skew.slope).toFixed(1)} pts · ${skewState(m.iv_skew.slope)}`}
+              accent="neutral"
+              info={m.iv_skew == null ? 'IV skew unavailable this cycle.' : skewTip(m.iv_skew)} />
+            <Stat label="Term structure"
+              value={m.term_structure == null ? 'unavailable'
+                : m.term_structure.points.length < 2 ? '—' : m.term_structure.state}
+              accent="neutral"
+              info={m.term_structure == null ? 'Term structure unavailable this cycle.' : termTip(m.term_structure)} />
             <Stat label="VWAP" value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'} accent="neutral"
               info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference." />
             {data?.off_exchange?.ratio_pct != null && (
@@ -340,6 +449,75 @@ function TickerDashboard() {
               liveSpot={isLive ? live!.mid : null}
             />
           )}
+
+          {/* Term structure — cross-tenor ATM-IV curve (ignores the DTE filter). Static bundle
+              field; never offline-dimmed. Sampled to nominal tenors; absent buckets omitted. */}
+          <Box sx={{ mt: 3 }}>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+              <Typography variant="h6">Term structure</Typography>
+              {m.term_structure && (
+                <Tooltip arrow title={termTip(m.term_structure)}>
+                  <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
+                </Tooltip>
+              )}
+            </Stack>
+            {m.term_structure == null || termSampled.length === 0 ? (
+              <Typography variant="body2" color="text.disabled">Term structure unavailable this cycle.</Typography>
+            ) : (
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    ATM IV by tenor · {m.term_structure.points.length < 2 ? '—' : m.term_structure.state}
+                  </Typography>
+                  <ResponsiveContainer width="100%" height={130}>
+                    <LineChart data={termSampled} margin={{ top: 10, right: 20, bottom: 4, left: 0 }}>
+                      <XAxis dataKey="dte" tickFormatter={(d) => `${d}d`}
+                        tick={{ fontSize: 11, fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} />
+                      <YAxis width={42} tickFormatter={(v) => `${Number(v).toFixed(0)}%`}
+                        tick={{ fontSize: 11, fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} domain={['auto', 'auto']} />
+                      <RTooltip cursor={{ stroke: theme.palette.divider }} content={<TermPointTooltip />} />
+                      <Line type="monotone" dataKey="atm_iv" stroke={theme.palette.text.secondary}
+                        strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
+
+          {/* Fresh positioning (Vol/OI) — full-chain unusual strikes (≥ cutoff). Static bundle
+              field; activity only, no side/direction; catches strikes outside the chart window. */}
+          <Box sx={{ mt: 3 }}>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
+              <Typography variant="h6">Fresh positioning (Vol/OI)</Typography>
+              <Tooltip arrow title={volOiTip(volOiThreshold, unusualStrikes.length)}>
+                <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
+              </Tooltip>
+            </Stack>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              {freshCaption(volOiThreshold)}
+            </Typography>
+            {m.chain_vol_oi_ratio == null ? (
+              <Typography variant="body2" color="text.disabled">Vol/OI unavailable this cycle.</Typography>
+            ) : unusualStrikes.length === 0 ? (
+              <Typography variant="body2" color="text.disabled">
+                No strikes above the {fmtThresh(volOiThreshold)}× Vol/OI cutoff this session.
+              </Typography>
+            ) : (
+              <Stack spacing={1}>
+                {/* Ranked by Vol/OI desc (server rows); blank-OI strikes never appear (null filtered). */}
+                {unusualStrikes.map((s) => (
+                  <Card key={s.strike} variant="outlined">
+                    <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                      <Typography variant="body2">
+                        ${s.strike} · Vol/OI {(s.vol_oi_ratio as number).toFixed(2)}× · {s.volume?.toLocaleString() ?? '—'} contracts
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </Box>
 
           {/* Off-exchange blocks — rides the REST bundle only (never the live stream) and has
               no offline state of its own; it ages with the bundle freshness indicator. Hidden

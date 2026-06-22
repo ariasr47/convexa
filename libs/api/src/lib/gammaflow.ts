@@ -5,6 +5,28 @@
  * the app is unaffected.
  */
 
+/** IV skew at a single anchor tenor (nearest expiration >= 7 DTE). `slope` = put-side IV −
+ *  call-side IV, in IV points; `reference` records which rule produced the reference IVs.
+ *  Display-only; the FE derives the fear/greed/balanced word from `slope`. */
+export interface IvSkew {
+  slope: number;    // put_iv − call_iv, in IV points
+  put_iv: number;   // downside reference IV (%)
+  call_iv: number;  // upside reference IV (%)
+  dte: number;
+  expiration: string; // YYYY-MM-DD
+  reference: '25d' | 'moneyness';
+}
+
+/** Cross-tenor ATM-IV curve (ignores the DTE filter). `points` ascending by dte; sparse/absent
+ *  tenors are omitted, never faked. `state` is server-emitted. */
+export interface TermStructure {
+  points: { dte: number; expiration: string; atm_iv: number }[];
+  state: 'contango' | 'backwardation' | 'flat';
+  near_iv: number; // near-tenor ATM IV (%)
+  far_iv: number;  // far-tenor ATM IV (%)
+  slope: number;   // far_iv − near_iv (sign-bearing)
+}
+
 export interface MarketState {
   ticker: string;
   price: number;
@@ -21,6 +43,11 @@ export interface MarketState {
   call_gex: number | null;
   put_gex: number | null;
   total_gex: number | null;
+  // DEX — net dealer delta exposure ($), scoped to the SELECTED DTE/expiration window (same
+  // contracts as net_gex/walls). null when vendor delta is missing chain-wide (best-effort).
+  net_dex: number | null;
+  call_dex: number | null;
+  put_dex: number | null;
   net_vanna: number | null;
   net_charm: number | null;
   net_volga: number | null;
@@ -36,6 +63,13 @@ export interface MarketState {
   iv_hv_ratio: number;
   net_flow: number | null;
   put_call_ratio: number;
+  // Vol/OI — FULL CHAIN (ignores the DTE filter; same basis as max_pain / put_call_ratio).
+  chain_vol_oi_ratio: number | null; // total option volume / total OI; null if no vendor volume
+  total_volume: number | null;       // full-chain session option volume
+  vol_oi_unusual_threshold: number;  // single cutoff above which a strike is "unusual" (default 1.0)
+  // IV Skew (single anchor tenor) + Term Structure (cross-tenor). Independently nullable.
+  iv_skew: IvSkew | null;
+  term_structure: TermStructure | null;
 }
 
 export interface StrikeRow {
@@ -46,6 +80,12 @@ export interface StrikeRow {
   call_oi: number;
   put_oi: number;
   total_oi: number;
+  // DEX (window-scoped, same rows as net_gex) + Vol/OI (full-chain). Independently nullable.
+  net_dex: number | null;
+  call_dex?: number | null;
+  put_dex?: number | null;
+  volume: number | null;       // per-strike session volume
+  vol_oi_ratio: number | null; // volume / total_oi; null when total_oi <= 0 OR no volume
 }
 
 export interface Setup {

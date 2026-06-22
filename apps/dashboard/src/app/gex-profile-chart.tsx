@@ -28,6 +28,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
   const theme = useTheme();
   const green = theme.palette.success.main;
   const red = theme.palette.error.main;
+  const slate = theme.palette.text.secondary; // neutral — DEX is positioning context, not direction
 
   const data = useMemo(() => {
     // A readable window around spot, but ALWAYS wide enough to include the walls it labels
@@ -49,12 +50,32 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
 
   if (!data.length) return null;
 
+  // Per-strike DEX rides the same rows as GEX; show the series only when delta is present
+  // (null chain-wide => omit the series, no error — GEX/profile unaffected).
+  const hasDex = data.some((s) => s.net_dex != null);
+
   const LegendDot = ({ color, label }: { color: string; label: string }) => (
     <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
       <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: color }} />
       <Typography variant="caption" color="text.secondary">{label}</Typography>
     </Stack>
   );
+
+  // Custom tooltip: GEX + (when present) DEX, Vol/OI and volume per strike, for auditability.
+  // DEX is labeled distinctly because it is delta-exposure, a different unit from gamma GEX.
+  const ProfileTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: StrikeRow }[] }) => {
+    if (!active || !payload?.length) return null;
+    const r = payload[0].payload;
+    return (
+      <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
+        <Typography variant="caption" color="text.secondary">Strike ${r.strike}</Typography>
+        <Typography variant="body2">Net GEX (gamma): ${fmtM(r.net_gex)}</Typography>
+        {r.net_dex != null && <Typography variant="body2">Net DEX (delta): ${fmtM(r.net_dex)}</Typography>}
+        {r.vol_oi_ratio != null && <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>}
+        {r.volume != null && <Typography variant="body2">Volume: {r.volume.toLocaleString()} contracts</Typography>}
+      </Box>
+    );
+  };
 
   return (
     <Card variant="outlined" sx={{ mt: 3 }}>
@@ -70,27 +91,22 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
           <Stack direction="row" spacing={2}>
             <LegendDot color={green} label="Call-dominated (net +)" />
             <LegendDot color={red} label="Put-dominated (net −)" />
+            {hasDex && <LegendDot color={slate} label="Net DEX (delta)" />}
           </Stack>
         </Stack>
         <ResponsiveContainer width="100%" height={Math.max(360, data.length * 22)}>
           <BarChart layout="vertical" data={data} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
-            <XAxis type="number" tickFormatter={fmtM} stroke={theme.palette.text.secondary} />
+            <XAxis xAxisId="gex" type="number" tickFormatter={fmtM} stroke={theme.palette.text.secondary} />
+            {/* Secondary axis for DEX — different unit (delta vs gamma) → its own scale, drawn on top. */}
+            {hasDex && (
+              <XAxis xAxisId="dex" type="number" orientation="top" tickFormatter={fmtM} stroke={slate} />
+            )}
             <YAxis
               type="category" dataKey="strike" width={56}
               tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
             />
-            <Tooltip
-              cursor={{ fill: theme.palette.action.hover }}
-              formatter={(v) => fmtM(Number(v))}
-              labelFormatter={(l) => `Strike $${l}`}
-              contentStyle={{
-                background: theme.palette.background.paper,
-                border: `1px solid ${theme.palette.divider}`,
-              }}
-              labelStyle={{ color: theme.palette.text.secondary }}
-              itemStyle={{ color: theme.palette.text.primary }}
-            />
-            <ReferenceLine x={0} stroke={theme.palette.divider} />
+            <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<ProfileTooltip />} />
+            <ReferenceLine xAxisId="gex" x={0} stroke={theme.palette.divider} />
             <ReferenceLine
               y={nearest(spot)} stroke={theme.palette.primary.main} strokeDasharray="4 3"
               label={{ value: `spot $${spot.toFixed(0)}`, position: 'right', fontSize: 11, fill: theme.palette.primary.main }}
@@ -105,7 +121,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
                 label={{ value: `live $${liveSpot.toFixed(0)}`, position: 'right', fontSize: 11, fill: theme.palette.info.main }}
               />
             )}
-            <Bar dataKey="net_gex" name="Net GEX" isAnimationActive={false}>
+            <Bar dataKey="net_gex" name="Net GEX" xAxisId="gex" isAnimationActive={false}>
               {data.map((s) => (
                 <Cell
                   key={s.strike}
@@ -116,6 +132,11 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
                 />
               ))}
             </Bar>
+            {/* Net DEX series — single neutral color (no directional green/red). */}
+            {hasDex && (
+              <Bar dataKey="net_dex" name="Net DEX (delta)" xAxisId="dex"
+                fill={slate} fillOpacity={0.5} isAnimationActive={false} />
+            )}
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
