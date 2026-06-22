@@ -16,6 +16,25 @@ Placeholders to fill before pasting:
 
 ---
 
+## Choosing the entry point (Architect-first vs PM-first)
+The **default is Architect-first** (sections 1→5 below), because most GammaFlow features are
+**feasibility-gated**: what's buildable is dominated by data/vendor coverage and the math
+invariants (gamma sourcing, rates, DTE-filter scope, dark-pool-is-context). Front-loading that
+constraint envelope stops the PM from writing acceptance criteria the data can't satisfy (e.g.
+"show the live overnight price" — not a product call, a sourcing fact).
+
+**Flip to PM-first (section 2b) when the dominant uncertainty is product, not feasibility** — the
+user need is fuzzy, several product shapes are plausible, and all of them are technically cheap.
+There, Architect-first only adds latency. Rule of thumb:
+- **feasibility / data / invariant-dominated** → Architect first (default).
+- **product / UX / discovery-dominated** → PM first (section 2b); the Architect validates next.
+
+Only the *order* changes. Every role still reads `GAMMAFLOW_CONTEXT.md`, writes exactly one contract
+into `.claude/contracts/{FEATURE}/`, and hands off via a compressor. From the UX/Tech-Writer onward
+(section 3+) both orderings are identical.
+
+---
+
 ## 1. Architect (Session 1)
 ```text
 Read these files for full context, then act as a senior Software Architect:
@@ -58,6 +77,43 @@ the next role must not violate.
 When the contract is locked, run compressor #2 (Session-Transition) from
 .claude/COMPRESSOR_PROMPTS.md targeting the UX/Tech-Writer, then stop.
 ```
+
+## 2b. Product Manager — PM-first entry (exploratory features only)
+Use this **instead of** sections 1+2 when the dominant uncertainty is product, not feasibility
+(see "Choosing the entry point" above). The PM is the first role; the Architect runs *after* and
+validates feasibility. Everything from section 3 (UX/Tech-Writer) onward is unchanged.
+```text
+Read these files for full context, then act as a strict Product Manager opening a NEW feature
+(PM-first entry — there is NO ARCHITECTURE_CONTRACT yet; you are the first role):
+- .claude/GAMMAFLOW_CONTEXT.md      (standing ground truth)
+- .claude/OPEN_THREADS.md           (background: what's open / resolved — do not reopen "resolved")
+
+Goal: {GOAL}
+
+Use this entry only when the dominant uncertainty is PRODUCT, not feasibility (fuzzy user need,
+several plausible product shapes, all technically cheap). Your job: user stories, feature scope,
+dashboard behavior, and acceptance criteria — each one observable without reading code. Do NOT
+write code or get into mathematical derivations.
+
+Because no Architect has set the constraint envelope yet, you MUST:
+- Restate the binding constraints from GAMMAFLOW_CONTEXT this feature must respect (gamma sourcing,
+  rates, DTE-filter scope, dark-pool-is-context, live-vs-cached isolation), and avoid acceptance
+  criteria that obviously violate them.
+- Collect every technical/data/feasibility assumption your scope leans on into an explicit
+  "Feasibility questions for the Architect" section — flag them, do NOT resolve them yourself (no
+  data structures, endpoints, payload shapes, math, or UI/layout).
+
+Write your output to .claude/contracts/{FEATURE}/PRODUCT_CONTRACT.md. Stay in your lane.
+
+When the contract is locked, run compressor #2 (Session-Transition) from
+.claude/COMPRESSOR_PROMPTS.md targeting the ARCHITECT (not the UX/Tech-Writer). The Architect
+writes ARCHITECTURE_CONTRACT.md, answers your feasibility questions, and bounces any un-buildable
+acceptance criterion back to you as an amendment before the pipeline continues to UX. Then stop.
+```
+> Handoff note for the flipped flow: when the Architect runs next, it targets the **UX/Tech-Writer**
+> (section 1's "targeting the Product Manager" line is for the default order — the PM has already run
+> here). Any feasibility conflict the Architect finds is a **PRODUCT_CONTRACT amendment**, bounced
+> back to the PM, not a silent Architect-side scope change.
 
 ## 3. UX/Tech-Writer (Session 3)
 ```text
