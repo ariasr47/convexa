@@ -64,6 +64,7 @@ export interface Signals {
   distances: Record<string, number | null>;
   setups: Setup[];
   opportunity_score: number;
+  dark_pool_confluence?: { off_exchange_price: number; coincides_with: string; level: number }[];
 }
 
 export interface AiEval {
@@ -90,6 +91,21 @@ export interface Expiration {
   dte: number | null;
 }
 
+export interface OffExchangeLevel {
+  price: number;
+  shares: number;
+  share_of_offex_pct: number;
+  proximity_pct: number;
+}
+
+export interface OffExchange {
+  ratio_pct: number | null;     // off-exchange share of total volume in the window
+  offex_shares: number;
+  total_shares: number;
+  levels: OffExchangeLevel[];
+  note: string;
+}
+
 export interface TickerBundle {
   market_state: MarketState;
   signals: Signals;
@@ -97,12 +113,14 @@ export interface TickerBundle {
   expirations: Expiration[]; // all future expirations available for the selector
   ai_eval: AiEval;
   meta: Meta;
+  off_exchange?: OffExchange; // present only when dark_pool is enabled
 }
 
 export interface TickerQuery {
   minDte?: number;
   maxDte?: number;
   expirations?: string[]; // explicit YYYY-MM-DD dates; omitted/empty = all
+  darkPool?: boolean;     // include off-exchange context + confluence (default backend setting)
 }
 
 export class ApiError extends Error {
@@ -159,12 +177,13 @@ export function streamTicker(
 /** Full bundle for one ticker, optionally filtered by DTE window or explicit expirations. */
 export async function getTicker(
   symbol: string,
-  { minDte, maxDte, expirations }: TickerQuery = {}
+  { minDte, maxDte, expirations, darkPool }: TickerQuery = {}
 ): Promise<TickerBundle> {
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));
   if (maxDte != null) params.set('max_dte', String(maxDte));
   if (expirations && expirations.length) params.set('expirations', expirations.join(','));
+  if (darkPool != null) params.set('dark_pool', String(darkPool));
   const qs = params.toString();
   const res = await fetch(`/api/ticker/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
   if (!res.ok) {

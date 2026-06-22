@@ -5,6 +5,7 @@ import {
   AppBar, Toolbar, Typography, Container, Box, Card, CardContent,
   Chip, CircularProgress, TextField, Stack, Alert, Button, ButtonGroup, Tooltip,
   FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
+  Switch, FormControlLabel,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { getTicker, streamTicker, TickerBundle, LiveUpdate } from '@org/api';
@@ -96,15 +97,17 @@ function TickerDashboard() {
   const [live, setLive] = useState<LiveUpdate | null>(null);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
+  // Dark-pool (off-exchange) context: off => excluded from the bundle AND the opportunity score.
+  const [darkPool, setDarkPool] = useState(true);
 
   const load = useCallback(() => {
     if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
     setLoading(true);
-    getTicker(ticker, { expirations: selected ?? undefined })
+    getTicker(ticker, { expirations: selected ?? undefined, darkPool })
       .then((d) => { setData(d); setError(null); })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [ticker, selected]);
+  }, [ticker, selected, darkPool]);
 
   // Reset the filter to "all" whenever the ticker changes; clear data so we show a spinner.
   useEffect(() => { setSelected(null); setData(null); }, [ticker]);
@@ -172,6 +175,12 @@ function TickerDashboard() {
           <Button onClick={() => setSelected(null)} disabled={selected === null}>All</Button>
           <Button onClick={() => setSelected([])} disabled={noneSelected}>Clear</Button>
         </ButtonGroup>
+        <Tooltip arrow title="Include off-exchange (dark-pool) volume context. Off = excluded from the opportunity score and from what the downstream AI sees.">
+          <FormControlLabel
+            control={<Switch size="small" checked={darkPool} onChange={(e) => setDarkPool(e.target.checked)} />}
+            label="Dark pool" sx={{ ml: 0 }}
+          />
+        </Tooltip>
         {loading && <CircularProgress size={18} />}
         {sig?.regime && (
           <Tooltip arrow title="Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers amplify moves → trending, don't fade.">
@@ -237,6 +246,12 @@ function TickerDashboard() {
               info="Implied volatility ÷ recent realized volatility. >1 = options look expensive (favor selling); <1 = cheap (favor buying)." />
             <Stat label="VWAP" value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'} accent="neutral"
               info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference." />
+            {data?.off_exchange?.ratio_pct != null && (
+              <Stat label="Off-exchange %" value={`${data.off_exchange.ratio_pct}%`} accent="neutral"
+                info={`Share of recent volume printed off-lit (dark pools/ATS + internalized retail). Top levels: ${
+                  data.off_exchange.levels.slice(0, 3).map((l) => `$${l.price} (${l.share_of_offex_pct}%)`).join(', ') || '—'
+                }. Side/intent unknown — context only, not a directional signal.`} />
+            )}
             <Stat label="Opportunity" value={`${sig?.opportunity_score ?? 0}`} accent="neutral"
               info="0–100 triage score for how actionable the setup is now (closeness to a key level + volatility extremity + confluence). Not a trade signal." />
           </Box>
