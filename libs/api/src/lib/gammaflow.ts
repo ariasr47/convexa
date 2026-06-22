@@ -125,7 +125,9 @@ export interface LiveUpdate {
   sell_vol: number;
   flow_window_s: number;
   spot_ts: number;
-  feed: string;        // "realtime" | "delayed"
+  live: boolean;            // true only if a real tick arrived recently (else mid is stale)
+  tick_age_s: number | null;
+  feed: string;             // "realtime" | "delayed"
   ts: number;
   gamma_flip: number | null;
 }

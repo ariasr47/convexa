@@ -100,6 +100,7 @@ function TickerDashboard() {
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
+  const isLive = live?.live ?? false;   // a real tick arrived recently (vs. stale last-known)
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
@@ -147,8 +148,13 @@ function TickerDashboard() {
           />
         )}
         {live && (
-          <Chip size="small" variant="outlined" color="info"
-            label={`● ${live.feed}${live.mid ? ` · $${live.mid.toFixed(2)}` : ''}`} />
+          isLive ? (
+            <Chip size="small" variant="outlined" color="info"
+              label={`● live ${live.feed} · $${live.mid?.toFixed(2)}`} />
+          ) : (
+            <Chip size="small" variant="outlined" color="warning"
+              label={`○ no live ticks${live.mid ? ` · last $${live.mid.toFixed(2)}` : ''}`} />
+          )
         )}
         {fresh?.stale && (
           <Alert severity="warning" sx={{ py: 0 }}>
@@ -169,7 +175,7 @@ function TickerDashboard() {
       {!noneSelected && m && (
         <>
           <Typography variant="h1" gutterBottom>
-            {m.ticker} · ${(live?.mid ?? m.price)?.toFixed(2)}
+            {m.ticker} · ${(isLive ? live!.mid : m.price)?.toFixed(2)}
             <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
               (levels @ ${m.gex_spot?.toFixed(2)} · {selected === null ? 'all expirations' : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`})
             </Typography>
@@ -179,13 +185,13 @@ function TickerDashboard() {
             <Stat label="Call wall" value={`$${m.call_wall}`} accent="up" />
             <Stat label="Put wall" value={`$${m.put_wall}`} accent="down" />
             <Stat
-              label={live?.gamma_flip != null ? 'Gamma flip (live)' : 'Gamma flip'}
+              label={isLive ? 'Gamma flip (live)' : 'Gamma flip'}
               value={`$${live?.gamma_flip ?? m.gamma_flip}`} accent="neutral" />
             <Stat
               label={`Net flow (${live ? Math.round(live.flow_window_s / 60) : 5}m)`}
-              value={live ? `${live.net_flow >= 0 ? '+' : ''}${live.net_flow.toLocaleString()}` : '—'}
-              accent={!live ? 'neutral' : live.net_flow >= 0 ? 'up' : 'down'} />
-            <Stat label="Spread" value={live?.spread != null ? `$${live.spread.toFixed(2)}` : '—'} accent="neutral" />
+              value={isLive ? `${live!.net_flow >= 0 ? '+' : ''}${live!.net_flow.toLocaleString()}` : '—'}
+              accent={!isLive ? 'neutral' : live!.net_flow >= 0 ? 'up' : 'down'} />
+            <Stat label="Spread" value={isLive && live?.spread != null ? `$${live.spread.toFixed(2)}` : '—'} accent="neutral" />
             <Stat label="Net GEX" value={`$${(m.net_gex / 1e6).toFixed(1)}M`} accent={m.net_gex >= 0 ? 'up' : 'down'} />
             <Stat label="Max pain" value={`$${m.max_pain ?? '—'}`} accent="neutral" />
             <Stat label="IV / HV" value={m.iv_hv_ratio.toFixed(2)} accent="neutral" />
@@ -199,7 +205,7 @@ function TickerDashboard() {
               callWall={m.call_wall}
               putWall={m.put_wall}
               gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-              liveSpot={live?.mid ?? null}
+              liveSpot={isLive ? live!.mid : null}
             />
           )}
 
