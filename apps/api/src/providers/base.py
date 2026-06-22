@@ -11,7 +11,7 @@ The TypedDicts ARE the contract. An adapter is correct iff it returns these shap
 """
 from abc import ABC, abstractmethod
 from datetime import time
-from typing import Optional, TypedDict
+from typing import AsyncIterator, Literal, Optional, TypedDict
 
 
 class OptionGreeks(TypedDict):
@@ -64,17 +64,41 @@ class IntradayBar(TypedDict):
     v: float            # volume for the bar
 
 
+class TradePrint(TypedDict):
+    """A single executed trade, normalized across vendors (for order-flow backfill)."""
+    price: float
+    size: float
+    timestamp: int          # nanoseconds since epoch
+    conditions: list[int]
+
+
+class StreamEvent(TypedDict, total=False):
+    """One real-time event off the stock stream. `kind` discriminates the payload:
+    - "quote": NBBO update -> bid/ask/bid_size/ask_size
+    - "trade": execution    -> price/size
+    All carry `ts` (ns)."""
+    kind: Literal["quote", "trade"]
+    ts: int
+    bid: float
+    ask: float
+    bid_size: float
+    ask_size: float
+    price: float
+    size: float
+
+
 class MarketDataProvider(ABC):
     """
     Port every market-data source implements. Adapters do all vendor-specific work
     (auth, SDK calls, market-phase/spot selection, payload mapping) internally and return
     only the normalized contracts above.
 
-    Methods are synchronous and may block on network I/O; main.py runs them in a worker
-    thread. They should NOT raise on a missing/unknown symbol -- return an empty
+    The fetch_* methods are synchronous and may block on network I/O; main.py runs them in a
+    worker thread. They should NOT raise on a missing/unknown symbol -- return an empty
     OptionsMarketState ({} or synchronized_spot <= 0) / empty lists so callers can 404.
     """
     name: str = "base"
+    feed_label: str = "unknown"   # "realtime" | "delayed" -- for freshness reporting
 
     @abstractmethod
     def fetch_options_market_state(self, ticker: str) -> OptionsMarketState | dict:
@@ -87,3 +111,17 @@ class MarketDataProvider(ABC):
     @abstractmethod
     def fetch_intraday_bars(self, ticker: str) -> list[IntradayBar]:
         """1-minute bars over a short trailing window for VWAP bands."""
+
+    @abstractmethod
+    def fetch_recent_trades(self, ticker: str, lookback_seconds: int) -> list[TradePrint]:
+        """Recent executed trades (ascending) over a trailing window, to seed order flow."""
+
+    @abstractmethod
+    async def stream_stock(self, ticker: str) -> AsyncIterator[StreamEvent]:
+        """
+        Async stream of live NBBO quotes + trades for one stock ticker. Yields StreamEvents
+        until the consumer stops iterating (which must tear the underlying connection down).
+        Implemented as an async generator.
+        """
+        raise NotImplementedError
+        yield  # pragma: no cover  (marks this as an async generator for typing)

@@ -6,16 +6,23 @@ spot selection, the `extract` payload helper -- are sealed in here. The rest of 
 only sees the normalized contracts from `base.py`.
 """
 import os
+import asyncio
 import logging
 from datetime import datetime, time, timezone, timedelta
+from typing import AsyncIterator
 import zoneinfo
 
 from dotenv import load_dotenv
 
 # Native SDK Client Import
 from massive import RESTClient
+from massive.websocket import WebSocketClient
+from massive.websocket.models import Feed, Market
 
-from .base import MarketDataProvider, OptionsMarketState, UnderlyingBar, IntradayBar
+from .base import (
+    MarketDataProvider, OptionsMarketState, UnderlyingBar, IntradayBar,
+    TradePrint, StreamEvent,
+)
 
 load_dotenv()
 logger = logging.getLogger("GammaFlowAsync")
@@ -39,6 +46,9 @@ class MassiveProvider(MarketDataProvider):
             logger.error("MASSIVE_API_KEY is not set; all Massive API calls will fail")
         # Unified SDK Session initialization
         self.client = RESTClient(self.api_key)
+        # Live websocket feed: realtime (Advanced plan) or delayed, from DATA_FEED env.
+        self._feed = (os.getenv("DATA_FEED", "realtime") or "realtime").lower()
+        self.feed_label = "realtime" if self._feed == "realtime" else "delayed"
 
     def _current_market_phase(self) -> str:
         """
@@ -306,3 +316,73 @@ class MassiveProvider(MarketDataProvider):
         except Exception as e:
             logger.error(f"[{underlying_upper}] Failed to fetch option chain: {e}")
             return {}
+
+    def fetch_recent_trades(self, ticker: str, lookback_seconds: int) -> list[TradePrint]:
+        """Recent executed trades (ascending) over a trailing window, to seed order flow."""
+        ticker_upper = ticker.upper()
+        now_ns = int(datetime.now(timezone.utc).timestamp() * 1e9)
+        start_ns = now_ns - int(lookback_seconds * 1e9)
+        out: list[TradePrint] = []
+        try:
+            trades = self.client.list_trades(
+                ticker_upper, timestamp_gte=start_ns, timestamp_lte=now_ns,
+                order="asc", sort="timestamp", limit=50000,
+            )
+            for tr in trades:
+                price = extract(tr, "price")
+                size = extract(tr, "size")
+                ts = extract(tr, "sip_timestamp") or extract(tr, "participant_timestamp")
+                if price is None or size is None or ts is None:
+                    continue
+                out.append(TradePrint(
+                    price=float(price), size=float(size), timestamp=int(ts),
+                    conditions=extract(tr, "conditions") or [],
+                ))
+            logger.info(f"[{ticker_upper}] Backfilled {len(out)} trades over last {lookback_seconds}s")
+            return out
+        except Exception as e:
+            logger.error(f"[{ticker_upper}] Failed to backfill trades: {e}")
+            return out
+
+    async def stream_stock(self, ticker: str) -> AsyncIterator[StreamEvent]:
+        """
+        Live NBBO quotes + trades for one stock ticker via the Massive WebSocket. Bridges the
+        SDK's callback/reconnect loop into an async generator through an asyncio.Queue; closing
+        the generator cancels the connect task and closes the socket.
+        """
+        ticker_upper = ticker.upper()
+        feed = Feed.RealTime if self._feed == "realtime" else Feed.Delayed
+        ws = WebSocketClient(api_key=self.api_key, feed=feed, market=Market.Stocks)
+        ws.subscribe(f"Q.{ticker_upper}", f"T.{ticker_upper}")
+        queue: asyncio.Queue = asyncio.Queue()
+
+        async def processor(msgs):
+            for m in msgs:
+                ev = getattr(m, "event_type", None)
+                if ev == "Q":
+                    queue.put_nowait(StreamEvent(
+                        kind="quote", ts=getattr(m, "timestamp", 0) or 0,
+                        bid=getattr(m, "bid_price", 0.0) or 0.0,
+                        ask=getattr(m, "ask_price", 0.0) or 0.0,
+                        bid_size=float(getattr(m, "bid_size", 0) or 0),
+                        ask_size=float(getattr(m, "ask_size", 0) or 0),
+                    ))
+                elif ev == "T":
+                    queue.put_nowait(StreamEvent(
+                        kind="trade", ts=getattr(m, "timestamp", 0) or 0,
+                        price=getattr(m, "price", 0.0) or 0.0,
+                        size=float(getattr(m, "size", 0) or 0),
+                    ))
+
+        task = asyncio.create_task(ws.connect(processor))
+        logger.info(f"[{ticker_upper}] Opened {self.feed_label} stock stream (Q+T)")
+        try:
+            while True:
+                yield await queue.get()
+        finally:
+            task.cancel()
+            try:
+                await ws.close()
+            except Exception:
+                pass
+            logger.info(f"[{ticker_upper}] Closed stock stream")

@@ -1,0 +1,231 @@
+"""
+Real-time layer: live spot, order flow, and live GEX levels for ONE active ticker.
+
+Architecture (see plan): the options chain is REST-polled slowly; the spot streams live over
+the stock WebSocket. Each LiveSession holds a live NBBO + a rolling window of signed trades
+(net flow), periodically refreshes the cached option chain, and on a throttle reprices the
+gamma levels at the live mid via QuantEngine.compute_levels_at_spot. Payloads fan out to SSE
+subscriber queues. LiveHub keeps exactly one session per ticker, ref-counted by subscribers.
+"""
+import asyncio
+import time
+import logging
+from collections import deque
+
+logger = logging.getLogger("GammaFlowAsync")
+
+
+class LiveSession:
+    def __init__(self, ticker, provider, engine, *, flow_window, throttle, chain_refresh):
+        self.ticker = ticker
+        self.provider = provider
+        self.engine = engine
+        self.flow_window = flow_window      # seconds of trades kept for rolling net flow
+        self.throttle = throttle            # seconds between broadcasts
+        self.chain_refresh = chain_refresh  # seconds between option-chain REST refreshes
+
+        # Live NBBO + derived spot.
+        self.bid = self.ask = 0.0
+        self.bid_size = self.ask_size = 0.0
+        self.mid = 0.0
+        self.spot_ts = 0                    # ns of last quote
+
+        # Rolling signed-trade flow: deque of (ts_seconds, signed_size).
+        self.trades: deque = deque()
+        self.last_trade_price = None
+        self.buy_vol = 0.0
+        self.sell_vol = 0.0
+
+        # Cached priced option contracts (refreshed on the slow chain loop).
+        self.contracts: list = []
+
+        # subscriber queue -> filter tuple (min_dte, max_dte, expirations_tuple)
+        self.subscribers: dict = {}
+        self._tasks: list = []
+        self._stopped = asyncio.Event()
+
+    # --- lifecycle ---------------------------------------------------------
+    async def start(self):
+        await self._refresh_chain()   # initial chain + seed mid from snapshot
+        await self._seed_flow()       # backfill recent trades for net flow
+        self._tasks = [
+            asyncio.create_task(self._stream_loop()),
+            asyncio.create_task(self._broadcast_loop()),
+            asyncio.create_task(self._chain_loop()),
+        ]
+        logger.info(f"[{self.ticker}] Live session started ({self.provider.feed_label})")
+
+    async def stop(self):
+        self._stopped.set()
+        for t in self._tasks:
+            t.cancel()
+        await asyncio.gather(*self._tasks, return_exceptions=True)
+
+    # --- data acquisition --------------------------------------------------
+    async def _refresh_chain(self):
+        md = await asyncio.to_thread(self.provider.fetch_options_market_state, self.ticker)
+        if md and md.get("synchronized_spot", 0) > 0:
+            self.contracts = [c for c in md.get("contracts", [])
+                              if (c.get("greeks") or {}).get("gamma") is not None]
+            if self.mid <= 0:  # no live quote yet -> seed from the snapshot spot
+                self.mid = md.get("current_spot") or md.get("synchronized_spot") or 0.0
+
+    async def _chain_loop(self):
+        try:
+            while not self._stopped.is_set():
+                await asyncio.sleep(self.chain_refresh)
+                await self._refresh_chain()
+        except asyncio.CancelledError:
+            pass
+
+    async def _seed_flow(self):
+        try:
+            trades = await asyncio.to_thread(
+                self.provider.fetch_recent_trades, self.ticker, self.flow_window)
+        except Exception as e:
+            logger.warning(f"[{self.ticker}] flow seed failed: {e}")
+            return
+        for tr in trades:  # backfill: tick rule (no time-aligned NBBO)
+            p = tr["price"]
+            if self.last_trade_price is not None and p != self.last_trade_price:
+                sign = 1.0 if p > self.last_trade_price else -1.0
+                self.trades.append((tr["timestamp"] / 1e9, sign * tr["size"]))
+            self.last_trade_price = p
+        self._recompute_flow(time.time())
+
+    async def _stream_loop(self):
+        try:
+            async for ev in self.provider.stream_stock(self.ticker):
+                if ev["kind"] == "quote":
+                    self.bid, self.ask = ev.get("bid", 0.0), ev.get("ask", 0.0)
+                    self.bid_size, self.ask_size = ev.get("bid_size", 0.0), ev.get("ask_size", 0.0)
+                    self.spot_ts = ev.get("ts", 0)
+                    if self.bid > 0 and self.ask > 0:
+                        self.mid = (self.bid + self.ask) / 2.0
+                elif ev["kind"] == "trade":
+                    self._on_trade(ev)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"[{self.ticker}] stream loop error: {e}")
+
+    def _on_trade(self, ev):
+        p, size = ev.get("price", 0.0), ev.get("size", 0.0)
+        if p <= 0 or size <= 0:
+            return
+        # Quote rule against the live NBBO; tick-rule fallback at the midpoint.
+        if self.ask > 0 and p >= self.ask:
+            sign = 1.0
+        elif self.bid > 0 and p <= self.bid:
+            sign = -1.0
+        elif self.last_trade_price is not None and p != self.last_trade_price:
+            sign = 1.0 if p > self.last_trade_price else -1.0
+        else:
+            sign = 0.0
+        self.last_trade_price = p
+        if sign != 0.0:
+            self.trades.append((time.time(), sign * size))
+
+    def _recompute_flow(self, now):
+        cutoff = now - self.flow_window
+        while self.trades and self.trades[0][0] < cutoff:
+            self.trades.popleft()
+        self.buy_vol = sum(s for _, s in self.trades if s > 0)
+        self.sell_vol = -sum(s for _, s in self.trades if s < 0)
+
+    # --- broadcast ---------------------------------------------------------
+    async def _broadcast_loop(self):
+        try:
+            while not self._stopped.is_set():
+                await asyncio.sleep(self.throttle)
+                now = time.time()
+                self._recompute_flow(now)
+                base = {
+                    "ticker": self.ticker,
+                    "mid": round(self.mid, 2) if self.mid else None,
+                    "bid": self.bid or None,
+                    "ask": self.ask or None,
+                    "spread": round(self.ask - self.bid, 4) if (self.bid > 0 and self.ask > 0) else None,
+                    "net_flow": round(self.buy_vol - self.sell_vol),
+                    "buy_vol": round(self.buy_vol),
+                    "sell_vol": round(self.sell_vol),
+                    "flow_window_s": self.flow_window,
+                    "spot_ts": self.spot_ts,
+                    "feed": self.provider.feed_label,
+                    "ts": int(now * 1000),
+                }
+                # Reprice levels once per distinct filter, then fan out.
+                levels_cache: dict = {}
+                for q, filt in list(self.subscribers.items()):
+                    if filt not in levels_cache:
+                        levels_cache[filt] = self._levels_for_filter(filt)
+                    payload = {**base, **levels_cache[filt]}
+                    if not q.full():
+                        q.put_nowait(payload)
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            logger.error(f"[{self.ticker}] broadcast loop error: {e}")
+
+    def _levels_for_filter(self, filt):
+        # Only the gamma flip is live-recomputed: it's the spot-sensitive regime trigger and
+        # uses the same analytic gamma as the bundle (so they stay consistent). Walls stay on
+        # the bundle (vendor gamma); the UI measures price-vs-wall from the live mid.
+        if self.mid <= 0 or not self.contracts:
+            return {"gamma_flip": None}
+        contracts = self._filter_contracts(*filt)
+        return {"gamma_flip": self.engine._find_gamma_flip(contracts, self.mid)}
+
+    def _filter_contracts(self, min_dte, max_dte, exps):
+        if min_dte is None and max_dte is None and not exps:
+            return self.contracts
+        out = []
+        for c in self.contracts:
+            days = self.engine._calculate_time_to_expiry(str(c.get("expiration_date", ""))) * 365.0
+            if min_dte is not None and days < min_dte:
+                continue
+            if max_dte is not None and days > max_dte:
+                continue
+            if exps and c.get("expiration_date", "")[:10] not in exps:
+                continue
+            out.append(c)
+        return out
+
+
+class LiveHub:
+    """One LiveSession per ticker, ref-counted by SSE subscribers."""
+    def __init__(self, provider, engine, *, flow_window, throttle, chain_refresh):
+        self.provider = provider
+        self.engine = engine
+        self.flow_window = flow_window
+        self.throttle = throttle
+        self.chain_refresh = chain_refresh
+        self.sessions: dict = {}
+        self._lock = asyncio.Lock()
+
+    async def subscribe(self, ticker: str, filt: tuple) -> asyncio.Queue:
+        async with self._lock:
+            sess = self.sessions.get(ticker)
+            if sess is None:
+                sess = LiveSession(ticker, self.provider, self.engine,
+                                   flow_window=self.flow_window, throttle=self.throttle,
+                                   chain_refresh=self.chain_refresh)
+                await sess.start()
+                self.sessions[ticker] = sess
+            q: asyncio.Queue = asyncio.Queue(maxsize=100)
+            sess.subscribers[q] = filt
+            return q
+
+    async def unsubscribe(self, ticker: str, q: asyncio.Queue):
+        async with self._lock:
+            sess = self.sessions.get(ticker)
+            if not sess:
+                return
+            sess.subscribers.pop(q, None)
+            if not sess.subscribers:
+                await sess.stop()
+                self.sessions.pop(ticker, None)
+                logger.info(f"[{ticker}] Live session stopped (no subscribers)")
+
+    def active_tickers(self) -> list:
+        return list(self.sessions)

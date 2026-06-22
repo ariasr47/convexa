@@ -8,9 +8,11 @@ import zoneinfo
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Path, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from src.core.engine import QuantEngine
 from src.core.signals import generate_signals, evaluate_gate
+from src.core.live import LiveHub
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -44,11 +46,20 @@ STALE_AFTER_SECONDS = int(os.getenv("STALE_AFTER_SECONDS", "1200"))
 # opportunity_score at/above which a snapshot is worth escalating to the strategy AI.
 GATE_SCORE = int(os.getenv("GATE_SCORE", "50"))
 
+# --- Live (real-time) config ---
+FLOW_WINDOW_SECONDS = int(os.getenv("FLOW_WINDOW_SECONDS", "300"))   # rolling net-flow window
+LIVE_THROTTLE_SECONDS = float(os.getenv("LIVE_THROTTLE_SECONDS", "1.5"))  # SSE broadcast cadence
+CHAIN_REFRESH_SECONDS = int(os.getenv("CHAIN_REFRESH_SECONDS", "120"))    # live chain re-fetch
+
 # In-memory state. Mutated only from the event loop (after awaiting the worker thread), so
 # no locking is needed. _cache is keyed by (ticker, min_dte, max_dte); _last_fingerprint
 # tracks the last DISTINCT fingerprint per ticker for the `changed` dedupe flag.
 _cache: dict = {}
 _last_fingerprint: dict = {}
+
+# Real-time hub: one live stream/session per active ticker, ref-counted by SSE subscribers.
+live_hub = LiveHub(data_provider, quant_engine, flow_window=FLOW_WINDOW_SECONDS,
+                   throttle=LIVE_THROTTLE_SECONDS, chain_refresh=CHAIN_REFRESH_SECONDS)
 
 
 _EXCHANGE_TZ = zoneinfo.ZoneInfo("America/New_York")
@@ -345,6 +356,46 @@ async def get_signals(
     expirations: str | None = _Expirations,
 ):
     return (await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations)))["signals"]
+
+
+@app.get("/api/stream/{ticker}")
+async def stream_ticker(
+    ticker: str = Path(..., description="Underlying symbol, e.g. TSLA"),
+    min_dte: int | None = _MinDTE,
+    max_dte: int | None = _MaxDTE,
+    expirations: str | None = _Expirations,
+):
+    """
+    Server-Sent Events stream of the live payload (mid, spread, net_flow, and the gamma flip
+    repriced at the live mid over the requested DTE/expiration filter). One stock stream per
+    ticker is shared across subscribers; it tears down when the last subscriber disconnects.
+
+    Disconnect handling: we do NOT poll request.is_disconnected() (it fights Starlette's own
+    disconnect listener for the single ASGI receive channel). Instead Starlette cancels this
+    generator on client disconnect, and the `finally` unsubscribes -> the session stops when
+    its last subscriber leaves.
+    """
+    t = ticker.upper()
+    filt = (min_dte, max_dte, _parse_expirations(expirations))
+    queue = await live_hub.subscribe(t, filt)
+
+    async def event_gen():
+        try:
+            yield ": connected\n\n"
+            while True:
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield f"data: {json.dumps(payload)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": heartbeat\n\n"   # keep the connection alive between events
+        finally:
+            await live_hub.unsubscribe(t, queue)
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
 
 
 # Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
