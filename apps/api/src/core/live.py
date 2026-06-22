@@ -10,13 +10,42 @@ subscriber queues. LiveHub keeps exactly one session per ticker, ref-counted by 
 import asyncio
 import time
 import logging
+import zoneinfo
 from collections import deque
+from datetime import datetime
 
 logger = logging.getLogger("GammaFlowAsync")
 
 # A spot is "live" only if a Q/T tick arrived within this many seconds; otherwise it's a
 # stale last-known value (market closed, or the feed doesn't cover this session).
 LIVE_TICK_MAX_AGE = 30.0
+
+_ET = zoneinfo.ZoneInfo("America/New_York")
+
+
+def classify_session() -> str:
+    """
+    Current US-equities session in exchange time, so the UI can explain *why* there are no
+    live ticks rather than just showing a frozen price:
+      premarket  4:00-9:30   | regular 9:30-16:00 | afterhours 16:00-20:00  (Massive covers these)
+      overnight  20:00-4:00  -> NOT covered by Massive (Blue Ocean ATS territory)
+      closed     weekend
+    Note: no holiday calendar -- a market holiday reads as its weekday session (the UI then
+    shows "no live ticks", which is acceptable).
+    """
+    now = datetime.now(_ET)
+    wd, hm = now.weekday(), now.hour * 60 + now.minute  # wd: 0=Mon..6=Sun
+    if wd == 5:                       # Saturday
+        return "closed"
+    if wd == 6 and hm < 20 * 60:      # Sunday before the 8pm overnight open
+        return "closed"
+    if 4 * 60 <= hm < 9 * 60 + 30:
+        return "premarket"
+    if 9 * 60 + 30 <= hm < 16 * 60:
+        return "regular"
+    if 16 * 60 <= hm < 20 * 60:
+        return "afterhours"
+    return "overnight"               # 20:00-04:00 -- outside Massive coverage
 
 
 class LiveSession:
@@ -166,6 +195,7 @@ class LiveSession:
                     "spot_ts": self.spot_ts,
                     "live": is_live,
                     "tick_age_s": int(tick_age) if tick_age is not None else None,
+                    "market_session": classify_session(),
                     "feed": self.provider.feed_label,
                     "ts": int(now * 1000),
                 }
