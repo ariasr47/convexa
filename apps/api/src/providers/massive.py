@@ -199,11 +199,18 @@ class MassiveProvider(MarketDataProvider):
 
                 details = extract(contract, "details", {})
                 greeks = extract(contract, "greeks", {})
+                day = extract(contract, "day", {})
 
                 strike = float(extract(details, "strike_price", 0.0))
                 contract_type = extract(details, "contract_type", "").lower()
                 if strike <= 0.0 or contract_type not in ("call", "put"):
                     continue  # malformed contract
+
+                # Session option volume from the snapshot's `day` block (already in the
+                # parsed payload -- no extra request). None when the vendor omits it, so the
+                # engine's Vol/OI degrades to null rather than misreading a 0.
+                raw_volume = extract(day, "volume", None)
+                volume = float(raw_volume) if raw_volume is not None else None
 
                 # Contracts Massive could not price greeks for (often deep ITM) are still
                 # kept so their open interest counts toward put/call ratio and max pain.
@@ -216,6 +223,7 @@ class MassiveProvider(MarketDataProvider):
                     "expiration_date": extract(details, "expiration_date", ""),
                     "open_interest": int(extract(contract, "open_interest", 0)),
                     "implied_volatility": float(extract(contract, "implied_volatility", 0.0)) if has_greeks else 0.0,
+                    "volume": volume,
                     "greeks": {
                         "delta": float(extract(greeks, "delta", 0.0)) if has_greeks else None,
                         "gamma": float(extract(greeks, "gamma", 0.0)) if has_greeks else None,

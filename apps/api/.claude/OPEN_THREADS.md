@@ -50,10 +50,11 @@ controllable mock backend behind the Vite proxy. Glossary + GAMMAFLOW_CONTEXT re
 (interface-contract amendment); the FE empty-state copy binds to it and only falls back to the
 5000 display constant for a pre-amendment bundle. **Archived** under `_archive/` (per DoD).
 
-## 4. DEX · Vol/OI · IV skew · Term structure (FE SHIPPED — backend lane in progress)
-Contracts in `.claude/contracts/dex-voloi-skew-term/`. Four always-on, **neutral, snapshot**
-positioning reads added to the cached bundle — **no toggle, no side/direction, no score/gate/setup
-wiring**, and **excluded from the live-offline treatment** (static fields, like Net GEX).
+## 4. DEX · Vol/OI · IV skew · Term structure (SHIPPED + ARCHIVED — closed)
+Contracts archived at `.claude/contracts/_archive/dex-voloi-skew-term/` (both lanes done). Four
+always-on, **neutral, snapshot** positioning reads added to the cached bundle — **no toggle, no
+side/direction, no score/gate/setup wiring**, and **excluded from the live-offline treatment**
+(static fields, like Net GEX).
 **Frontend (repo `C:\Dev\gammaflow-web`, committed):** `MarketState`/`StrikeRow` extended in
 `libs/api/src/lib/gammaflow.ts`; in `apps/dashboard/src/app/app.tsx` four neutral tiles (Net DEX
 `$X.XM`, Vol/OI `×`, IV skew `slope pts · fear|greed|balanced` derived from `slope`, Term structure
@@ -64,10 +65,14 @@ excluded); `gex-profile-chart.tsx` gains a per-strike **Net DEX** series (neutra
 + DEX/Vol-OI/volume in the tooltip. Each metric **independently nullable** → its own "unavailable
 this cycle"; on an SSE drop the four stay fully visible and **un-dimmed.** Verified default, per-
 metric null, sparse term, empty Vol/OI, and a live-stream drop via a controllable mock backend.
-**Still open:** the **backend lane is uncommitted** in the `C:\Dev\GammaFlow` working tree
-(`main.py`, `src/core/engine.py`, `src/models/market_data.py`, `src/providers/base.py`,
-`massive.py`). **Archive `.claude/contracts/dex-voloi-skew-term/` once the backend lane lands**
-(per DoD — both lanes).
+**Backend lane SHIPPED** (`C:\Dev\GammaFlow`): `OptionContract.volume` added to the provider port +
+`massive.py` (from snapshot `day.volume`, no new fetch); `engine.process_gex_profile` derives DEX
+(vendor delta, signed sum, window-scoped) and Vol/OI (full-chain) in the GEX pass, + guarded
+`compute_iv_skew` / `compute_term_structure` helpers; `MarketState` model + `_build_market_state`
+surface all fields; `VOL_OI_UNUSUAL_THRESHOLD` env (1.0). `signals.py` untouched — verified score +
+`state_fingerprint` byte-identical with/without the four. Verified live (TSLA) + synthetically
+(window scope, per-metric nulls, sparse term, vol_oi null-rule). Glossary + GAMMAFLOW_CONTEXT
+refreshed; contract archived.
 
 ## 5. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the

@@ -19,7 +19,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 - `src/providers/base.py` — `MarketDataProvider` **port** (ABC) + TypedDict contracts. Vendor
   swaps = one new adapter; engine/signals/main never import a vendor SDK.
 - `src/providers/massive.py` — Massive (Polygon-style) **adapter**; `__init__.py` = `get_provider()` factory (`DATA_PROVIDER` env).
-- `src/core/engine.py` — `QuantEngine`: GEX profile, greeks, vectorized gamma flip.
+- `src/core/engine.py` — `QuantEngine`: GEX profile, greeks, vectorized gamma flip, + DEX & Vol/OI
+  (in the GEX pass) and `compute_iv_skew` / `compute_term_structure` (guarded, full-chain helpers).
 - `src/core/signals.py` — regime/vol-regime/setups/opportunity-score + AI gate + fingerprint.
 - `src/core/live.py` — `LiveSession`/`LiveHub`: live NBBO mid, rolling net flow, live flip,
   session classifier; one ref-counted session per ticker (8s grace teardown).
@@ -60,6 +61,11 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   GEX = max gross-gamma strike. Vanna/charm/volga computed in-house (vendor gives only 1st-order).
 - Max pain = nearest **monthly OPEX** payout-minimizing strike; PCR = put OI / call OI. **Max
   pain & PCR stay full-chain**; the DTE/expiration filter shapes only the gamma structure.
+- Dollar DEX = `delta·OI·100·S` using **VENDOR delta** (signed: calls +, puts −, so the net is a
+  signed sum — no analytic repricing). Window-scoped like GEX; `S = synchronized_spot`. Vol/OI is
+  **full-chain** (`volume/total_oi`, null when no volume or OI ≤ 0). IV skew = put−call IV at ±25Δ
+  (moneyness fallback) on the ≥7-DTE ATM tenor; term structure = ATM-IV-by-tenor across all
+  expirations (`flat` band ≈1% of near IV). These four touch **no** gamma/flip/wall math.
 - 30-day HV = stdev of daily log returns (ddof=1) ×√252 ×100. ATM IV = avg call+put IV at the
   ATM strike of the nearest tenor ≥ 7 DTE. IV/HV: >1.10 rich, <0.90 cheap.
 - VWAP (session-anchored, ≥10 RTH 1-min bars): VWAP ± 2σ/3σ volume-weighted bands.
@@ -103,6 +109,12 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 - AI gate + glossary + `prompts/strategy_prompt.md` hand-off contract (AI external).
 - Dark-pool/off-exchange ratio + levels + capped confluence + largest-notional **block prints**
   (top-5, `blocks[]`: price/shares/notional/signed proximity/age — display-only, unscored), UI toggle.
+- **Four always-on positioning metrics** in the bundle (no toggle, no side, **unscored**, each
+  independently nullable): **DEX** (`net_dex`/`call_dex`/`put_dex` + per-strike, vendor delta,
+  window-scoped like GEX), **Vol/OI** (`chain_vol_oi_ratio`/`total_volume`/`vol_oi_unusual_threshold`
+  + per-strike `volume`/`vol_oi_ratio`, **full-chain**), **IV skew** (`iv_skew` at the nearest
+  ≥7-DTE tenor, ±25Δ w/ moneyness fallback), **term structure** (`term_structure` ATM-IV-by-tenor
+  curve + contango/backwardation/flat, cross-tenor).
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
@@ -110,7 +122,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `STALE_AFTER_SECONDS` (1200; drop to ~120 on real-time), `GATE_SCORE` (50),
   `FLOW_WINDOW_SECONDS` (300), `LIVE_THROTTLE_SECONDS` (1.5), `CHAIN_REFRESH_SECONDS` (120),
   `INCLUDE_DARK_POOL` (true), `DARKPOOL_LOOKBACK_SECONDS` (3600), `BLOCK_MIN_SHARES` (5000;
-  fixed institutional-size threshold for an off-exchange block print).
+  fixed institutional-size threshold for an off-exchange block print), `VOL_OI_UNUSUAL_THRESHOLD`
+  (1.0; cutoff above which a strike's vol/OI reads "unusual", echoed as `vol_oi_unusual_threshold`).
 - **Add a vendor:** implement `MarketDataProvider` in `src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend

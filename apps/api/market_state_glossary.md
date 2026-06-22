@@ -122,6 +122,40 @@ get `ai_eval` + `meta` in one call.
   include internalized retail; blocks add nothing to `opportunity_score` in v1. Do not infer
   accumulation/distribution. Blocks travel in the cached bundle (REST), never in the live stream.
 
+## Dealer delta structure (secondary — vendor-delta-based)
+- `net_dex` — net dealer **delta** exposure (the delta analogue of `net_gex`), signed, in $ per
+  the same scaling as dollar GEX, over the **selected DTE/expiration window** (moves with the
+  gamma structure). `call_dex`/`put_dex` = gross split. **Positioning context, not an instruction:**
+  it indicates which way dealer hedging pressure leans; the hedging implication is indirect. **Do
+  not** read it as "dealers are bullish/bearish, so buy/sell." `null` when vendor delta is missing
+  chain-wide (best-effort). Reliability: below the gamma structure (uses 1st-order vendor delta).
+- `strike_profile[].net_dex` — per-strike DEX on the same rows as `net_gex`.
+
+## Turnover (Vol/OI — activity, NOT direction)
+- `chain_vol_oi_ratio` — chain-wide option **volume ÷ open interest** (full chain, ignores the DTE
+  filter — same basis as PCR/max pain). Turnover intensity / fresh-positioning intensity. **No side,
+  no direction** — never bullish/bearish or "smart money." `null` when the vendor reports no
+  per-contract volume.
+- `total_volume` — full-chain session option volume. `vol_oi_unusual_threshold` — the single
+  cutoff (default 1.0) above which a strike is flagged "unusual / fresh positioning."
+- `strike_profile[].vol_oi_ratio` / `.volume` — per strike; `null` when OI ≤ 0 or no volume (blank,
+  not zero, not flagged). Reliability: context heuristic; single session, no history.
+
+## Volatility surface (single snapshot, no history)
+- `iv_skew` — `{ slope (put-side IV − call-side IV, IV pts), put_iv, call_iv, dte, expiration,
+  reference }` at the nearest tenor ≥ 7 DTE (±25-delta, fixed-moneyness fallback; `reference`
+  records which). A read of **what volatility is paying for**: downside richer = fear/hedging bid;
+  upside richer/flat = greed/complacency; near-symmetric = balanced. **Not a price-direction call.**
+  `null` when too few/zero-IV contracts at the tenor.
+- `term_structure` — `{ points: [{ dte, expiration, atm_iv }], state, near_iv, far_iv, slope }`:
+  ATM IV across expirations (cross-tenor; ignores the DTE filter). `contango` = near-term vol calm
+  vs longer ("normal"); `backwardation` = near-term vol elevated ("near-term stress / event");
+  `flat` within ~1% of near IV. **Single snapshot, no trend/history.** Sparse/absent tenors are
+  omitted, never faked; `null` when no usable tenor.
+
+**Reliability note:** all four are **display + AI-context only** — none feeds `opportunity_score`,
+setups, the AI gate, or `state_fingerprint`.
+
 # `/api/signals` — pre-digested setups for ONE ticker
 
 This is the backend's interpretation of `market_state` (same source of truth). Prefer

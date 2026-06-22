@@ -1,6 +1,32 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
+class IvSkew(BaseModel):
+    """Put-vs-call IV skew at a single anchor tenor (nearest expiration >= 7 DTE)."""
+    slope: float                      # put_iv - call_iv, in IV points (downside richer => +)
+    put_iv: float                     # downside reference IV (%)
+    call_iv: float                    # upside reference IV (%)
+    dte: Optional[int] = None         # tenor used (calendar days)
+    expiration: str
+    reference: str                    # "25d" | "moneyness" -- which reference rule produced the IVs
+
+
+class TermPoint(BaseModel):
+    dte: int
+    expiration: str
+    atm_iv: float                     # ATM IV at this tenor (%)
+
+
+class TermStructure(BaseModel):
+    """Cross-tenor ATM-IV curve (full available curve, ascending by DTE)."""
+    points: list[TermPoint]
+    state: str                        # "contango" | "backwardation" | "flat" (server-emitted)
+    near_iv: float                    # near-tenor ATM IV (%)
+    far_iv: float                     # far-tenor ATM IV (%)
+    slope: float                      # far_iv - near_iv
+
+
 class MarketState(BaseModel):
     # Core Data
     ticker: str
@@ -40,6 +66,21 @@ class MarketState(BaseModel):
     # min_dte/max_dte the caller requested, for transparency. Does not affect max pain.
     dte_min: Optional[int] = None
     dte_max: Optional[int] = None
+
+    # Net dealer DELTA exposure ($), window-scoped like GEX. Vendor delta (no analytic
+    # repricing). Independently nullable: null when vendor delta is missing chain-wide.
+    net_dex: Optional[float] = None          # signed sum (calls +, puts -)
+    call_dex: Optional[float] = None         # gross call-side dollar DEX (>= 0)
+    put_dex: Optional[float] = None          # gross put-side dollar DEX (<= 0)
+
+    # Vol/OI -- FULL CHAIN (independent of the DTE window; same basis as max_pain / PCR).
+    total_volume: Optional[float] = None        # full-chain session option volume; null if vendor has none
+    chain_vol_oi_ratio: Optional[float] = None  # total_volume / total OI; null if no volume or no OI
+    vol_oi_unusual_threshold: float = 1.0       # cutoff above which a strike's vol/OI reads "unusual"
+
+    # IV skew (single anchor tenor) + term structure (cross-tenor). Independently nullable.
+    iv_skew: Optional[IvSkew] = None
+    term_structure: Optional[TermStructure] = None
 
     # Volatility & Sentiment
     atm_iv: float

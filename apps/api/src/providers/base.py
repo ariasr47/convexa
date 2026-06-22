@@ -30,6 +30,7 @@ class OptionContract(TypedDict):
     expiration_date: str        # "YYYY-MM-DD"
     open_interest: int
     implied_volatility: float   # DECIMAL form (0.486 == 48.6%); 0.0 when unpriced
+    volume: Optional[float]     # session traded volume; None when the vendor doesn't report it
     greeks: OptionGreeks
 
 

@@ -163,6 +163,9 @@ class QuantEngine:
             "call_wall": 0.0, "put_wall": 0.0, "peak_gex_strike": 0.0,
             "gamma_flip": 0.0, "max_pain": 0.0, "max_pain_expiration": None,
             "net_vanna": 0.0, "net_charm": 0.0, "net_volga": 0.0, "put_call_ratio": 0.0,
+            # New always-on metrics: all unavailable when there is no usable chain.
+            "net_dex": None, "call_dex": None, "put_dex": None,
+            "total_volume": None, "chain_vol_oi_ratio": None,
             "strike_profile": [],
         }
 
@@ -239,6 +242,16 @@ class QuantEngine:
         total_call_oi = 0
         total_put_oi = 0
 
+        # --- DEX (window-scoped, like GEX): dealer dollar delta exposure. Vendor delta carries
+        # its own sign (calls +, puts -), so the signed sum nets directly -- no extra put
+        # negation (that is how GEX gets its calls-+/puts-- convention; delta provides it here).
+        total_net_dex, total_call_dex, total_put_dex = 0.0, 0.0, 0.0
+        dex_contributors = 0          # contracts with a usable vendor delta; 0 => DEX null chain-wide
+        # --- Vol/OI (FULL CHAIN, independent of the DTE filter): session volume by strike.
+        strike_volume_map = {}        # strike -> summed session volume (full chain)
+        total_volume = 0.0
+        volume_available = False       # any contract reported volume; else Vol/OI null chain-wide
+
         # Exchange "today" (UTC date is close enough; the t-floor below covers the
         # midnight edge). Contracts expiring before today are dropped entirely.
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -278,6 +291,15 @@ class QuantEngine:
                     total_put_oi += open_interest
                     strikes_oi[strike]["put_oi"] += open_interest
 
+                # Vol/OI is FULL-CHAIN (same basis as max pain / PCR): accumulate session
+                # volume here, BEFORE the DTE filter, so the window selection can't shape it.
+                contract_volume = contract.get("volume")
+                if contract_volume is not None:
+                    volume_available = True
+                    v = float(contract_volume)
+                    total_volume += v
+                    strike_volume_map[strike] = strike_volume_map.get(strike, 0.0) + v
+
                 # DTE window applies to the gamma structure only (walls, peak GEX,
                 # net/call/put GEX, and the gamma flip via filtered_contracts). It is
                 # placed AFTER the OI accounting so max pain and the put/call ratio stay
@@ -297,6 +319,26 @@ class QuantEngine:
                 iv = contract["implied_volatility"]
 
                 filtered_contracts.append(contract)
+
+                # DEX (window-scoped): dollar dealer delta = delta * OI * 100 * spot, using
+                # VENDOR delta (no analytic repricing). Vendor delta is signed (call +, put -),
+                # so it nets directly. A contract with no vendor delta contributes 0 and is
+                # skipped for DEX only -- GEX above is unaffected.
+                api_delta = (contract.get("greeks") or {}).get("delta")
+                if api_delta is not None:
+                    dollar_dex = api_delta * open_interest * 100 * current_spot
+                    dex_contributors += 1
+                    total_net_dex += dollar_dex
+                    sg = strike_gex_map.setdefault(
+                        strike, {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0,
+                                 "call_dex": 0.0, "put_dex": 0.0, "net_dex": 0.0})
+                    sg["net_dex"] += dollar_dex
+                    if contract_type in ['call', 'c']:
+                        total_call_dex += dollar_dex
+                        sg["call_dex"] += dollar_dex
+                    else:
+                        total_put_dex += dollar_dex
+                        sg["put_dex"] += dollar_dex
 
                 # Primary Dollar GEX Scale Formula: Gamma * OI * 100 * Spot^2 * 0.01 [cite: 14]
                 dollar_gex = api_gamma * open_interest * 100 * (current_spot ** 2) * 0.01
@@ -328,7 +370,8 @@ class QuantEngine:
                 total_net_volga += dollar_volga
 
                 if strike not in strike_gex_map:
-                    strike_gex_map[strike] = {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0}
+                    strike_gex_map[strike] = {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0,
+                                              "call_dex": 0.0, "put_dex": 0.0, "net_dex": 0.0}
 
                 if contract_type in ['call', 'c']:
                     strike_gex_map[strike]["call_gex"] += dollar_gex
@@ -382,9 +425,20 @@ class QuantEngine:
         # the "Call GEX / Put GEX / Total GEX" breakdown shown on retail dashboards.
         total_gex = abs(total_call_gex) + abs(total_put_gex)
 
-        # Per-strike profile (net/call/put GEX + call/put OI), all expirations, for the
-        # UI Strike Profile chart and wall diagnostics. OI is summed across expirations
-        # (priced + unpriced); GEX comes from priced contracts in strike_gex_map.
+        # DEX null semantics: if not a single contract carried a vendor delta, DEX is
+        # unavailable chain-wide -> null aggregates AND null per-strike rows (FE shows DEX
+        # "unavailable" while GEX is untouched). Otherwise emit the signed dollar exposures.
+        dex_available = dex_contributors > 0
+        # Vol/OI null semantics: if the vendor reported no per-contract volume anywhere, the
+        # whole Vol/OI metric is null (FE renders blank, not zero). Full-chain OI basis.
+        total_chain_oi = total_call_oi + total_put_oi
+        chain_vol_oi_ratio = (round(total_volume / total_chain_oi, 4)
+                              if volume_available and total_chain_oi > 0 else None)
+
+        # Per-strike profile (net/call/put GEX + call/put OI, + DEX & Vol/OI), all
+        # expirations, for the UI Strike Profile chart and wall diagnostics. OI is summed
+        # across expirations (priced + unpriced); GEX/DEX come from priced contracts in
+        # strike_gex_map (window-scoped); volume is full-chain.
         strike_oi_total = {}
         for strikes in exp_oi_map.values():
             for k, oi in strikes.items():
@@ -392,10 +446,20 @@ class QuantEngine:
                 acc["call_oi"] += oi["call_oi"]
                 acc["put_oi"] += oi["put_oi"]
 
+        _empty_g = {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0,
+                    "call_dex": 0.0, "put_dex": 0.0, "net_dex": 0.0}
         strike_profile = []
         for k in sorted(set(strike_gex_map) | set(strike_oi_total)):
-            g = strike_gex_map.get(k, {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0})
+            g = strike_gex_map.get(k, _empty_g)
             o = strike_oi_total.get(k, {"call_oi": 0, "put_oi": 0})
+            total_oi = o["call_oi"] + o["put_oi"]
+
+            # Per-strike Vol/OI: null when volume unavailable chain-wide, this strike has no
+            # volume, or total_oi <= 0 (FE renders blank, never a misleading 0).
+            strike_vol = strike_volume_map.get(k) if volume_available else None
+            vol_oi_ratio = (round(strike_vol / total_oi, 4)
+                            if (strike_vol and strike_vol > 0 and total_oi > 0) else None)
+
             strike_profile.append({
                 "strike": k,
                 "net_gex": round(g["net_gex"], 2),
@@ -403,7 +467,12 @@ class QuantEngine:
                 "put_gex": round(g["put_gex"], 2),
                 "call_oi": o["call_oi"],
                 "put_oi": o["put_oi"],
-                "total_oi": o["call_oi"] + o["put_oi"],
+                "total_oi": total_oi,
+                "net_dex": round(g["net_dex"], 2) if dex_available else None,
+                "call_dex": round(g["call_dex"], 2) if dex_available else None,
+                "put_dex": round(g["put_dex"], 2) if dex_available else None,
+                "volume": int(strike_vol) if (volume_available and strike_vol is not None) else None,
+                "vol_oi_ratio": vol_oi_ratio,
             })
 
         return {
@@ -421,6 +490,11 @@ class QuantEngine:
             "net_charm": round(total_net_charm, 2),
             "net_volga": round(total_net_volga, 2),
             "put_call_ratio": pc_ratio,
+            "net_dex": round(total_net_dex, 2) if dex_available else None,
+            "call_dex": round(total_call_dex, 2) if dex_available else None,
+            "put_dex": round(total_put_dex, 2) if dex_available else None,
+            "total_volume": round(total_volume, 2) if volume_available else None,
+            "chain_vol_oi_ratio": chain_vol_oi_ratio,
             "strike_profile": strike_profile,
         }
 
@@ -509,3 +583,120 @@ class QuantEngine:
         )
         logger.debug(f"Gamma flip crossings: {crossings}")
         return nearest_cross
+
+    # 25-delta reference targets and the fixed-moneyness fallback offset (≈ ±5% OTM).
+    _SKEW_DELTA = 0.25
+    _SKEW_MONEYNESS = 0.05
+    # Term-structure flat band: |far − near| within this fraction of near IV reads as "flat".
+    _TERM_FLAT_REL = 0.01
+
+    def compute_iv_skew(self, contracts: list, spot: float, anchor_expiration: str,
+                        anchor_dte: int | None) -> dict | None:
+        """
+        Put-vs-call IV skew at a single anchor tenor (the nearest expiration >= 7 DTE the
+        provider already picked for ATM IV). Reference IVs come from the ±25-delta call/put
+        (vendor delta to bucket); when delta is unusable at the tenor it falls back to a fixed
+        ≈±5%-OTM moneyness pick. `slope = put_iv − call_iv` in IV points (downside richer => +).
+
+        Guarded + best-effort: returns None on too few / zero-IV contracts at the tenor (the FE
+        renders skew "unavailable"); never raises into the bundle. Full-chain input — the anchor
+        tenor is independent of the DTE window.
+        """
+        try:
+            if not anchor_expiration or spot <= 0:
+                return None
+            tenor = [c for c in contracts
+                     if (c.get("expiration_date") or "")[:10] == anchor_expiration[:10]
+                     and c.get("implied_volatility", 0.0) > 0.0]
+            calls = [c for c in tenor if c["contract_type"] in ("call", "c")]
+            puts = [c for c in tenor if c["contract_type"] in ("put", "p")]
+            if not calls or not puts:
+                return None
+
+            def _delta(c):
+                return (c.get("greeks") or {}).get("delta")
+
+            calls_d = [c for c in calls if _delta(c) is not None]
+            puts_d = [c for c in puts if _delta(c) is not None]
+
+            if calls_d and puts_d:
+                call_ref = min(calls_d, key=lambda c: abs(_delta(c) - self._SKEW_DELTA))
+                put_ref = min(puts_d, key=lambda c: abs(_delta(c) - (-self._SKEW_DELTA)))
+                reference = "25d"
+            else:
+                # Fixed-moneyness fallback: ≈5% OTM call (above spot) and put (below spot).
+                call_ref = min(calls, key=lambda c: abs(c["strike_price"] - spot * (1 + self._SKEW_MONEYNESS)))
+                put_ref = min(puts, key=lambda c: abs(c["strike_price"] - spot * (1 - self._SKEW_MONEYNESS)))
+                reference = "moneyness"
+
+            call_iv = call_ref["implied_volatility"] * 100.0
+            put_iv = put_ref["implied_volatility"] * 100.0
+            return {
+                "slope": round(put_iv - call_iv, 4),
+                "put_iv": round(put_iv, 4),
+                "call_iv": round(call_iv, 4),
+                "dte": int(anchor_dte) if anchor_dte is not None else None,
+                "expiration": anchor_expiration[:10],
+                "reference": reference,
+            }
+        except Exception as e:
+            logger.error(f"IV skew: computation failed: {e}")
+            return None
+
+    def compute_term_structure(self, contracts: list, spot: float) -> dict | None:
+        """
+        ATM-IV-by-tenor curve across ALL available expirations (cross-tenor; ignores the DTE
+        window). Per expiration: ATM IV = avg of call+put IV at the strike nearest spot (IV>0
+        only), mirroring the provider's ATM-IV selection. Emits the FULL curve ascending by DTE
+        (the FE samples display buckets); sparse/absent tenors are simply omitted, never faked.
+
+        `state` is server-emitted: contango (far > near), backwardation (far < near), or flat
+        (within _TERM_FLAT_REL of near IV). Guarded + best-effort: None when no usable tenor.
+        """
+        try:
+            if spot <= 0:
+                return None
+            by_exp: dict = {}
+            for c in contracts:
+                exp = (c.get("expiration_date") or "")[:10]
+                if not exp or c.get("implied_volatility", 0.0) <= 0.0:
+                    continue
+                by_exp.setdefault(exp, []).append(c)
+
+            points = []
+            for exp, rows in by_exp.items():
+                dte = round(self._calculate_time_to_expiry(exp) * 365.0)
+                if dte <= 0:
+                    continue
+                atm_strike = min(rows, key=lambda c: abs(c["strike_price"] - spot))["strike_price"]
+                ivs = [c["implied_volatility"] for c in rows if c["strike_price"] == atm_strike]
+                if not ivs:
+                    continue
+                atm_iv = (sum(ivs) / len(ivs)) * 100.0
+                points.append({"dte": dte, "expiration": exp, "atm_iv": round(atm_iv, 4)})
+
+            if not points:
+                return None
+            points.sort(key=lambda p: p["dte"])
+
+            near_iv = points[0]["atm_iv"]
+            far_iv = points[-1]["atm_iv"]
+            slope = far_iv - near_iv
+            rel = slope / near_iv if near_iv > 0 else 0.0
+            if rel > self._TERM_FLAT_REL:
+                state = "contango"
+            elif rel < -self._TERM_FLAT_REL:
+                state = "backwardation"
+            else:
+                state = "flat"
+
+            return {
+                "points": points,
+                "state": state,
+                "near_iv": round(near_iv, 4),
+                "far_iv": round(far_iv, 4),
+                "slope": round(slope, 4),
+            }
+        except Exception as e:
+            logger.error(f"Term structure: computation failed: {e}")
+            return None

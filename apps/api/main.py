@@ -62,6 +62,12 @@ DARKPOOL_LOOKBACK_SECONDS = int(os.getenv("DARKPOOL_LOOKBACK_SECONDS", "3600")) 
 # Fixed in v1 (no ADV-relative sizing); display-only, never feeds the opportunity score.
 BLOCK_MIN_SHARES = int(os.getenv("BLOCK_MIN_SHARES", "5000"))
 
+# --- Vol/OI config ---
+# Single explainable cutoff above which a strike's volume/OI ratio reads as "unusual".
+# Echoed to the FE as `vol_oi_unusual_threshold` so the caption ("Vol/OI >= Nx") and the
+# unusual-strike selection stay server-defined. Operator-tunable; no ADV/percentile model in v1.
+VOL_OI_UNUSUAL_THRESHOLD = float(os.getenv("VOL_OI_UNUSUAL_THRESHOLD", "1.0"))
+
 # In-memory state. Mutated only from the event loop (after awaiting the worker thread), so
 # no locking is needed. _cache is keyed by (ticker, min_dte, max_dte); _last_fingerprint
 # tracks the last DISTINCT fingerprint per ticker for the `changed` dedupe flag.
@@ -105,6 +111,15 @@ def _build_market_state(ticker: str, market_data: dict, underlying_history: list
         market_data, max_days_to_expiry=max_dte, min_days_to_expiry=min_dte,
         expirations=set(expirations) if expirations else None)
 
+    # IV skew + term structure: cross-/single-tenor metrics on the FULL chain (independent of the
+    # DTE window). Each is its own best-effort helper returning None on failure -- isolated from
+    # GEX and from each other. The skew anchor reuses the provider's ATM-IV tenor (nearest >= 7 DTE).
+    all_contracts = market_data.get("contracts", [])
+    sync_spot = market_data["synchronized_spot"]
+    iv_skew = quant_engine.compute_iv_skew(
+        all_contracts, sync_spot, market_data.get("atm_iv_expiration"), market_data.get("atm_iv_dte"))
+    term_structure = quant_engine.compute_term_structure(all_contracts, sync_spot)
+
     historical_closes = [b["close"] for b in underlying_history if b.get("close") is not None]
     hv_30d = quant_engine.calculate_historical_volatility_30d(historical_closes)
 
@@ -145,6 +160,21 @@ def _build_market_state(ticker: str, market_data: dict, underlying_history: list
         "net_charm": gex_metrics["net_charm"],
         "net_volga": gex_metrics["net_volga"],
         "put_call_ratio": gex_metrics["put_call_ratio"],
+
+        # DEX — net dealer dollar delta exposure (window-scoped, like GEX). Independently
+        # nullable: null when vendor delta is missing chain-wide; GEX is untouched.
+        "net_dex": gex_metrics["net_dex"],
+        "call_dex": gex_metrics["call_dex"],
+        "put_dex": gex_metrics["put_dex"],
+
+        # Vol/OI — full-chain session volume vs OI (independent of the DTE window).
+        "total_volume": gex_metrics["total_volume"],
+        "chain_vol_oi_ratio": gex_metrics["chain_vol_oi_ratio"],
+        "vol_oi_unusual_threshold": VOL_OI_UNUSUAL_THRESHOLD,
+
+        # IV skew (single anchor tenor) + term structure (cross-tenor). Independently nullable.
+        "iv_skew": iv_skew,
+        "term_structure": term_structure,
 
         "vwap": vwap_bands.get("vwap"),
         "vwap_upper_2": vwap_bands.get("vwap_upper_2"),
