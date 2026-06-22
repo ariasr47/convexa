@@ -50,7 +50,26 @@ controllable mock backend behind the Vite proxy. Glossary + GAMMAFLOW_CONTEXT re
 (interface-contract amendment); the FE empty-state copy binds to it and only falls back to the
 5000 display constant for a pre-amendment bundle. **Archived** under `_archive/` (per DoD).
 
-## 4. Smaller deferred items (proposed, not implemented)
+## 4. DEX · Vol/OI · IV skew · Term structure (FE SHIPPED — backend lane in progress)
+Contracts in `.claude/contracts/dex-voloi-skew-term/`. Four always-on, **neutral, snapshot**
+positioning reads added to the cached bundle — **no toggle, no side/direction, no score/gate/setup
+wiring**, and **excluded from the live-offline treatment** (static fields, like Net GEX).
+**Frontend (repo `C:\Dev\gammaflow-web`, committed):** `MarketState`/`StrikeRow` extended in
+`libs/api/src/lib/gammaflow.ts`; in `apps/dashboard/src/app/app.tsx` four neutral tiles (Net DEX
+`$X.XM`, Vol/OI `×`, IV skew `slope pts · fear|greed|balanced` derived from `slope`, Term structure
+`contango|backwardation|flat`, `—` when sparse), a **Term-structure mini-card** (ATM-IV-by-tenor,
+sampled to nominal 7/14/30/60/90 DTE nearest-available, absent buckets omitted/never faked) and a
+**Fresh positioning (Vol/OI)** list (strikes ≥ `vol_oi_unusual_threshold`, ranked desc, blank-OI
+excluded); `gex-profile-chart.tsx` gains a per-strike **Net DEX** series (neutral, secondary X-axis)
++ DEX/Vol-OI/volume in the tooltip. Each metric **independently nullable** → its own "unavailable
+this cycle"; on an SSE drop the four stay fully visible and **un-dimmed.** Verified default, per-
+metric null, sparse term, empty Vol/OI, and a live-stream drop via a controllable mock backend.
+**Still open:** the **backend lane is uncommitted** in the `C:\Dev\GammaFlow` working tree
+(`main.py`, `src/core/engine.py`, `src/models/market_data.py`, `src/providers/base.py`,
+`massive.py`). **Archive `.claude/contracts/dex-voloi-skew-term/` once the backend lane lands**
+(per DoD — both lanes).
+
+## 5. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
@@ -62,7 +81,7 @@ controllable mock backend behind the Vite proxy. Glossary + GAMMAFLOW_CONTEXT re
 - **Multi-session dark-pool accumulation map:** current dark-pool is a bounded recent window;
   true multi-session block history needs a heavier batched pull. Future.
 
-## 5. Resolved decisions (do NOT revisit)
+## 6. Resolved decisions (do NOT revisit)
 - **Live spot = NBBO mid, not last trade** — smoother, better for anchoring; Webull shows last
   trade, hence small benign differences. Keep mid; do not add last-trade.
 - **Gamma sourcing** — vendor gamma for walls/profile, analytic BS for the flip; the divergence

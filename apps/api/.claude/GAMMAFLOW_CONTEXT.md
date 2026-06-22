@@ -28,13 +28,19 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 **Frontend** (`gammaflow-web/`, Nx monorepo, React 19 + Vite + MUI/Emotion):
 - `apps/dashboard/src/app/app.tsx` — dashboard (toolbar, stat tiles, setups, **Off-exchange
-  blocks** section), polls bundle (60s) + subscribes SSE. **Stream isolation:** live-derived
-  tiles (price/net flow/spread/live flip) + one `⚠ Live offline` chip degrade on an SSE drop
-  (payload-gap watchdog >15s; dimmed + `⏸ offline`, never blanked), while the GEX chart + every
-  static tile + the blocks section keep rendering the last bundle; cold-start failure is the
-  only blank screen (error + Retry), a post-success poll failure keeps the bundle behind a soft
-  "Couldn't refresh" warning.
-- `apps/dashboard/src/app/gex-profile-chart.tsx` — recharts horizontal net-GEX-by-strike.
+  blocks** section), polls bundle (60s) + subscribes SSE. Also four **always-on neutral
+  positioning tiles** — `Net DEX`, `Vol/OI`, `IV skew` (slope → fear/greed/balanced), `Term
+  structure` (contango/backwardation/flat) — plus a **Term-structure mini-card** (ATM-IV-by-tenor,
+  sampled to 7/14/30/60/90 DTE nearest) and a **Fresh positioning (Vol/OI)** unusual-strike list.
+  These are static bundle reads (no toggle, no side, no score wiring), independently nullable
+  (each → its own "unavailable this cycle"), and **excluded from the live-offline treatment.**
+  **Stream isolation:** live-derived tiles (price/net flow/spread/live flip) + one `⚠ Live offline`
+  chip degrade on an SSE drop (payload-gap watchdog >15s; dimmed + `⏸ offline`, never blanked),
+  while the GEX chart + every static tile/section keep rendering the last bundle; cold-start failure
+  is the only blank screen (error + Retry), a post-success poll failure keeps the bundle behind a
+  soft "Couldn't refresh" warning.
+- `apps/dashboard/src/app/gex-profile-chart.tsx` — recharts horizontal net-GEX-by-strike, plus a
+  per-strike **Net DEX** series (neutral, secondary X-axis) and DEX/Vol-OI/volume in the tooltip.
 - `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`.
 - Vite dev proxy `/api → 127.0.0.1:8000` (no CORS); SSE via `EventSource`.
 
