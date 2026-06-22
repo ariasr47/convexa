@@ -14,6 +14,10 @@ from collections import deque
 
 logger = logging.getLogger("GammaFlowAsync")
 
+# A spot is "live" only if a Q/T tick arrived within this many seconds; otherwise it's a
+# stale last-known value (market closed, or the feed doesn't cover this session).
+LIVE_TICK_MAX_AGE = 30.0
+
 
 class LiveSession:
     def __init__(self, ticker, provider, engine, *, flow_window, throttle, chain_refresh):
@@ -29,6 +33,7 @@ class LiveSession:
         self.bid_size = self.ask_size = 0.0
         self.mid = 0.0
         self.spot_ts = 0                    # ns of last quote
+        self.last_tick_wall = None          # wall-clock secs of the last Q/T actually received
 
         # Rolling signed-trade flow: deque of (ts_seconds, signed_size).
         self.trades: deque = deque()
@@ -96,6 +101,7 @@ class LiveSession:
     async def _stream_loop(self):
         try:
             async for ev in self.provider.stream_stock(self.ticker):
+                self.last_tick_wall = time.time()  # a real tick arrived
                 if ev["kind"] == "quote":
                     self.bid, self.ask = ev.get("bid", 0.0), ev.get("ask", 0.0)
                     self.bid_size, self.ask_size = ev.get("bid_size", 0.0), ev.get("ask_size", 0.0)
@@ -135,11 +141,18 @@ class LiveSession:
 
     # --- broadcast ---------------------------------------------------------
     async def _broadcast_loop(self):
-        try:
-            while not self._stopped.is_set():
+        # Per-tick try/except: one bad tick must NOT exit the loop, which would leave a
+        # registered-but-silent session that new subscribers join and get nothing from.
+        while not self._stopped.is_set():
+            try:
                 await asyncio.sleep(self.throttle)
                 now = time.time()
                 self._recompute_flow(now)
+                # "live" iff a real Q/T tick arrived recently. When the market is closed (or
+                # the feed lacks this session, e.g. overnight), mid is a stale last-known value
+                # and we must NOT present it as live.
+                tick_age = (now - self.last_tick_wall) if self.last_tick_wall else None
+                is_live = tick_age is not None and tick_age < LIVE_TICK_MAX_AGE
                 base = {
                     "ticker": self.ticker,
                     "mid": round(self.mid, 2) if self.mid else None,
@@ -151,6 +164,8 @@ class LiveSession:
                     "sell_vol": round(self.sell_vol),
                     "flow_window_s": self.flow_window,
                     "spot_ts": self.spot_ts,
+                    "live": is_live,
+                    "tick_age_s": int(tick_age) if tick_age is not None else None,
                     "feed": self.provider.feed_label,
                     "ts": int(now * 1000),
                 }
@@ -162,10 +177,10 @@ class LiveSession:
                     payload = {**base, **levels_cache[filt]}
                     if not q.full():
                         q.put_nowait(payload)
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            logger.error(f"[{self.ticker}] broadcast loop error: {e}")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"[{self.ticker}] broadcast tick error: {e}")
 
     def _levels_for_filter(self, filt):
         # Only the gamma flip is live-recomputed: it's the spot-sensitive regime trigger and
@@ -193,7 +208,16 @@ class LiveSession:
 
 
 class LiveHub:
-    """One LiveSession per ticker, ref-counted by SSE subscribers."""
+    """
+    One LiveSession per ticker, ref-counted by SSE subscribers. Teardown is deferred by a
+    short GRACE period: when the last subscriber leaves we schedule a stop, but a new
+    subscriber arriving within the window cancels it and reuses the live session. This
+    absorbs React StrictMode's mount/unmount/remount, fast ticker switch-backs, and brief
+    reconnects -- which would otherwise tear down and rebuild the (expensive) ws stream
+    repeatedly, leaving racey gaps with no data.
+    """
+    GRACE_SECONDS = 8.0
+
     def __init__(self, provider, engine, *, flow_window, throttle, chain_refresh):
         self.provider = provider
         self.engine = engine
@@ -201,10 +225,14 @@ class LiveHub:
         self.throttle = throttle
         self.chain_refresh = chain_refresh
         self.sessions: dict = {}
+        self._pending_stop: dict = {}   # ticker -> scheduled-stop task
         self._lock = asyncio.Lock()
 
     async def subscribe(self, ticker: str, filt: tuple) -> asyncio.Queue:
         async with self._lock:
+            pending = self._pending_stop.pop(ticker, None)
+            if pending:
+                pending.cancel()        # a new subscriber arrived within the grace window
             sess = self.sessions.get(ticker)
             if sess is None:
                 sess = LiveSession(ticker, self.provider, self.engine,
@@ -222,10 +250,21 @@ class LiveHub:
             if not sess:
                 return
             sess.subscribers.pop(q, None)
-            if not sess.subscribers:
+            if not sess.subscribers and ticker not in self._pending_stop:
+                self._pending_stop[ticker] = asyncio.create_task(self._delayed_stop(ticker))
+
+    async def _delayed_stop(self, ticker: str):
+        try:
+            await asyncio.sleep(self.GRACE_SECONDS)
+        except asyncio.CancelledError:
+            return                      # subscriber returned; keep the session alive
+        async with self._lock:
+            self._pending_stop.pop(ticker, None)
+            sess = self.sessions.get(ticker)
+            if sess and not sess.subscribers:
                 await sess.stop()
                 self.sessions.pop(ticker, None)
-                logger.info(f"[{ticker}] Live session stopped (no subscribers)")
+                logger.info(f"[{ticker}] Live session stopped (grace elapsed, no subscribers)")
 
     def active_tickers(self) -> list:
         return list(self.sessions)
