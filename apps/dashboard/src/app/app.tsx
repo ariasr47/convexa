@@ -16,9 +16,9 @@ const POLL_MS = 60_000; // matches the backend cache TTL
 // the market isn't ticking (`live:false`), so an onmessage gap this long means the transport
 // dropped — not a quiet session. Used to flip the single "Live offline" connection state.
 const STREAM_OFFLINE_MS = 15_000;
-// Display fallback for the blocks empty-state copy. The block threshold is BLOCK_MIN_SHARES on
-// the backend (env-tunable, default 5000) and is NOT carried in the off_exchange payload — see
-// the contract-gap note in the handoff. Mirrors the backend default; correct for stock config.
+// Fallback for the blocks empty-state copy when a (pre-amendment) bundle omits the threshold.
+// The live threshold now rides the payload as off_exchange.block_min_shares; this only covers an
+// older/partial bundle that predates that field. Mirrors the backend default.
 const BLOCK_MIN_SHARES_DISPLAY = 5000;
 
 const BLOCKS_TOOLTIP =
@@ -363,7 +363,7 @@ function TickerDashboard() {
                 </Typography>
               ) : !(data.off_exchange.blocks?.length) ? (
                 <Typography variant="body2" color="text.disabled">
-                  No blocks ≥ {BLOCK_MIN_SHARES_DISPLAY.toLocaleString()} shares in the recent window.
+                  No blocks ≥ {(data.off_exchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in the recent window.
                 </Typography>
               ) : (
                 <Stack spacing={1}>

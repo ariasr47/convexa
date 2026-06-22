@@ -115,6 +115,7 @@ export interface OffExchange {
   total_shares: number;
   levels: OffExchangeLevel[];
   blocks: BlockPrint[];         // largest-notional first, top-5; may be [] (none ≥ threshold)
+  block_min_shares: number;     // active block threshold (shares) for this cycle; label "no blocks ≥ N"
   note: string;
 }
 
