@@ -180,11 +180,15 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   ROLE_LAUNCH intro + §6 invariant. *Value H (cost) · Effort M–L.* **Invariant honored:** §3+§5 are
   `always` — sharding never drops a binding rule. **Deferred:** ledger sharding (the Promoted-canon
   index is already compact, so minor); auto-deriving `Context tags` from the BRIEF's free text.
-- **system-6 · Adversarial Security/red-team role (different model)** — a session whose whole mindset is
-  "what could be made to go wrong?": least-privilege per role, injection from fetched/external content,
-  data leakage — run on a **different base model** so its blind spots don't correlate with the builders'.
-  *Impact:* the only structural fix for correlated error (one model, all hats — SYSTEM_ANALYSIS §5).
-  *Value H (correctness) · Effort M.*
+- **system-6 · Adversarial Security/red-team role (different model)** — `⏸ DEFERRED until live
+  (decided 2026-06-23)`: pre-live, a different-model red-team adds model cost/overhead with low payoff —
+  no real data, no external exposure, no untrusted input surface yet. **Re-promote on the "going live"
+  lifted-constraint trigger** (handling real funds/data, public exposure, or untrusted external content).
+  A session whose whole mindset is "what could be made to go wrong?": least-privilege per role, injection
+  from fetched/external content, data leakage — run on a **different base model** so its blind spots
+  don't correlate with the builders'. *Impact:* the only structural fix for correlated error (one model,
+  all hats — SYSTEM_ANALYSIS §5). *Value H (correctness, once live) · Effort M.* **Note:** the QA role's
+  "run on a different model" guidance is a partial pre-payment on the de-correlation benefit.
 - **system-7 · Promoted-canon demotion path** — a trigger that demotes a graduated invariant (via
   GATE Z) when a runtime signal or a later bounce contradicts it, so the ledger tracks *truth*, not just
   *recurrence*. *Impact:* stops compounding memory from calcifying a wrong-but-repeated decision into

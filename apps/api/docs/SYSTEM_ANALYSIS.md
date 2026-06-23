@@ -104,7 +104,9 @@ Ordered by leverage, deliberately sequenced.
 - **Tier 2 — fix the economics:** shard the ground truth + ledger so a session loads only the canon
   its `BRIEF.md` cites (retrieval). Decouples per-session cost from total system size.
 - **Tier 3 — diversify judgement:** a Security/red-team role on a *different* model, to break
-  correlated error.
+  correlated error. **⏸ DEFERRED until live (2026-06-23)** — pre-live the different-model cost/overhead
+  outweighs the payoff (no real data/exposure/untrusted input yet); re-promote on the "going live"
+  trigger. Tiers 4–5 may proceed ahead of it (this defers Tier 3, not the later tiers).
 - **Tier 4 — close the flywheel:** wire observability metrics back into GATE I (Discovery harvests
   from reality), and add a **demotion path** so a promoted invariant contradicted by a runtime signal
   or a bounce gets demoted — memory tracks truth, not just recurrence.
