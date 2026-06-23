@@ -159,8 +159,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   ground-truth); server-internals-in-FE / UI-in-BE lane-purity warns; promoted-canon single-source
   (every ledger Promoted key has prose in GAMMAFLOW_CONTEXT §5). *Value M · Effort M.* Pairs with the
   §B ledger-crossing hook (same script surface). **Deferred extensions:** AC↔component-state mapping
-  check; optional `settings.json` PreToolUse/Stop hook to auto-run it (offer made); the legacy 4
-  archived features predate `_MANIFEST.md` (flag only on `--all`, not on live gating).
+  check (now tracked + broadened as **system-10**, AC↔test traceability); optional `settings.json`
+  PreToolUse/Stop hook to auto-run it (offer made); the legacy 4 archived features predate `_MANIFEST.md`
+  (flag only on `--all`, not on live gating).
 - **system-4 · Lane enforcement via role subagents** — `✓ LANDED (2026-06-23, tools-allowlist half)`:
   `.claude/agents/{gammaflow-architect,gammaflow-pm,gammaflow-ux,gammaflow-backend,gammaflow-frontend}.md`
   + the earlier `qa-verify.md`. Contract authors (architect/pm/ux) + QA have **no `Edit`/`Bash`** (cannot
@@ -221,3 +222,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Binding:** do NOT promote before system-1…system-6 land (see the sequencing note above) — this one
   removes the human review the system currently leans on for correctness; the **lite path above is the
   adopted interim** until then.
+- **system-10 · Contract-linter AC↔test traceability check** — `PROPOSED (2026-06-23), unscheduled`.
+  Mechanize the standing **FE-tests rule's** AC↔test traceability (GAMMAFLOW_CONTEXT §7; committed
+  `d69e240`) that QA enforces by judgment today: extend `contract_lint.py` (system-3) so every
+  `PRODUCT_CONTRACT` AC (and every required case in the FRONTEND_EXECUTION_CONTRACT "Tests to write"
+  matrix) must map to **≥1 colocated `*.spec.tsx` test** — an uncovered AC fails the check even if the
+  suite is green. **Resurrects system-3's own deferred AC↔component-state mapping extension.** *Impact:*
+  an uncovered AC can't slip past a green suite; closes the residual that traceability is currently
+  human-judged. *Value M · Effort M.* **Build-system class:** trading-decision cull **N/A** — judge on
+  build-system correctness. **Design notes / depends-on:** (a) runs at **GATE Q (post-build)**, not the
+  inter-role handoffs — the tests don't exist until the FE builds, so it's a QA-invoked mode of the
+  linter, complementing the runtime conformance check (system-1); (b) needs a stable **AC-id/anchor
+  convention** in `PRODUCT_CONTRACT` so an AC can be matched to a named test (likely the first sub-step);
+  (c) **cross-repo read** — the linter runs in this repo but the specs live in `C:\Dev\gammaflow-web`
+  (reads aren't fenced). Follow-on to the FE-tests rule + system-2/3.
