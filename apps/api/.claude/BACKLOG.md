@@ -26,6 +26,13 @@
 
 ---
 
+## Last GATE I — 2026-06-23 (pull: local latency visualization)
+**Chosen → `latency-visualizer`** — carve the *visualization* slice out of §D "Observability
+extensions," pulled by a concrete need (watch the already-measured bundle-stage latency locally +
+free, pre-live). Brief at `.claude/contracts/latency-visualizer/BRIEF.md`; entry = architect-first
+(stateless-client vs persisted-history is the pivotal call). Trading-decision cull N/A (operator
+tooling — judged on operational value). The export/alerting/persistence rest of §D stays parked.
+
 ## Last GATE I — 2026-06-22 (pipeline had drained; 4 features archived)
 **Chosen → `trader-personas`** (the only candidate clearing both decision-impact + feasibility;
 Value H × Effort M). Brief at `.claude/contracts/trader-personas/BRIEF.md`; entry = architect-first.
@@ -42,7 +49,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
-- *(empty — pipeline drained; next feature TBD at the next GATE I)*
+- **latency-visualizer** — `→ promoted (GATE I, 2026-06-23) → .claude/contracts/latency-visualizer/`.
+  Local, free visualization of the bundle-stage latency the shipped observability already exposes:
+  per-stage p50/p95/max trends on the operator route `/_ops/metrics`, no external/paid APM. *Value M
+  (operational) · Effort S–M.* **Invariant watch:** `[operator-vs-trader-path-separation]`,
+  `[best-effort-isolated-or-null]`, stateless-server/ephemeral-metrics. *Entry:* architect-first
+  (stateless-client vs persisted-history is the pivotal call). Carved from §D.
 - **trader-personas** — `✓ SHIPPED + ARCHIVED (2026-06-22)` → `_archive/trader-personas/`. Both lanes
   landed (backend `1026190`; frontend `6dcdbe1`/`1233718`); persona reframes the AI hand-off only,
   gate/score/tier/fingerprint byte-identical, FE-rendered assembly. Seams it left → section D.
@@ -86,7 +98,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   order path — a deliberate scope shift, not an increment. Park until going live. (`OPEN_THREADS` §5)
 - **Observability extensions** — OTel/Prometheus export, latency/headroom alert thresholds,
   persisted cross-restart baselines. *Value M · Effort M.* Pull when operating the service in earnest.
-  (`OPEN_THREADS` §6)
+  (`OPEN_THREADS` §6) **Note:** the *local visualization* slice was carved out → `latency-visualizer`
+  (§A, promoted 2026-06-23); what remains here is **export + alerting + cross-restart persistence**
+  (the parts that imply external infra / going-live ops).
 - **Multi-ticker scanner** — the observability baseline data supports it. *Value M · Effort M-L.*
   **Invariant watch:** revisits the deliberate "single-ticker, on-demand" decision (the watchlist scan
   was dropped for being too slow) — re-justify before promoting. (`OPEN_THREADS` §6, `GAMMAFLOW_CONTEXT` §5)
