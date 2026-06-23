@@ -45,7 +45,20 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   soft "Couldn't refresh" warning.
 - `apps/dashboard/src/app/gex-profile-chart.tsx` — recharts horizontal net-GEX-by-strike, plus a
   per-strike **Net DEX** series (neutral, secondary X-axis) and DEX/Vol-OI/volume in the tooltip.
-- `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`.
+- `apps/dashboard/src/app/ghost-trade/` — **paper-sim ghost-trade tracker** (no real order anywhere).
+  Client-local durable store (`localStorage`, versioned, exportable) for the open `GhostTrade` +
+  append-only `DecisionRecord[]` (survive reload + SSE drop). `useGhostTrade` owns the honest **mark
+  ladder** (snapshot anchor → modeled between snapshots off the live underlying × cached greeks →
+  theoretical BS → last-known offline → frozen overnight/closed), P/L = (mark−entry)×100×qty,
+  edge-detected **reassessment alerts** (once per event; suppressed while stale/offline/closed), the
+  operator-mediated **reassessment boundary** (build request → paste verdict → Accept maps Exit/Trim/
+  Add-capped/Roll/Hold), and the **opportunity tier** read (`signals.opportunity_tier`). Components:
+  `GhostTradePanel`, `TradeEntryDialog`, `OpportunityTier` (tier emphasis + Prime banner). Tracked
+  contract stats come from `GET /api/contract` (filter-independent; 404 → tracking-unavailable,
+  `option_quote:null` → theoretical mark). Isolation: an SSE drop degrades only P/L + current mark
+  (⏸ last known); the trade record/stats/history + GEX chart + all tiles persist.
+- `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`,
+  `fetchTrackedContract`.
 - Vite dev proxy `/api → 127.0.0.1:8000` (no CORS); SSE via `EventSource`.
 
 **Transport:** heavy bundle over REST (polled ~60s, cached); light live payload over **SSE**.

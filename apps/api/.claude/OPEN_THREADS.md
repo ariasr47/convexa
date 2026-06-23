@@ -74,8 +74,8 @@ surface all fields; `VOL_OI_UNUSUAL_THRESHOLD` env (1.0). `signals.py` untouched
 (window scope, per-metric nulls, sparse term, vol_oi null-rule). Glossary + GAMMAFLOW_CONTEXT
 refreshed; contract archived.
 
-## 5. Ghost-trade tracker / sim (BACKEND SHIPPED + interface resolved — FE lane ready to re-launch)
-Contracts in `.claude/contracts/trade-tracker-sim/`. The FE lane had **paused** pending three
+## 5. Ghost-trade tracker / sim (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/trade-tracker-sim/`. The FE lane had **paused** pending three
 "Interface's to finalize" transports (bounce-back: `INTERFACE_AMENDMENTS_REQUESTED.md`). **The
 backend lane resolved all of them** with concrete, contract-compliant choices, now pinned in
 `INTERFACE_CONTRACT.md` → "Backend resolution amendment" (additive — breaks no prior FE assumption):
@@ -95,11 +95,20 @@ backend lane resolved all of them** with concrete, contract-compliant choices, n
 missing→404, tier bands, position_eval once-per-event, full isolation) + entry gate/`opportunity_score`/
 `state_fingerprint` byte-identical to pre-feature; **no order path, no LLM call** (grep-confirmed).
 Glossary + GAMMAFLOW_CONTEXT refreshed.
-**Still open:** FE lane (durable store, mark/P-L math, alerts, accept/reject mapping, entry/panel/
-history/Prime banner) — ready to re-launch against the live backend (or a mock mirroring it).
-**Archive `.claude/contracts/trade-tracker-sim/` only once the FE lane also ships.** Deferred seams
-(specified, not built): broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay, recorded-
-verdict reassessment, server-side trade store.
+**Frontend SHIPPED** (`C:\Dev\gammaflow-web`, committed): `apps/dashboard/src/app/ghost-trade/` —
+client-local durable store (localStorage, versioned, exportable; survives reload + SSE drop); honest
+mark ladder (snapshot→modeled→theoretical→last-known→frozen) + P/L = (mark−entry)×100×qty;
+`useGhostTrade` (tracked-contract fetch via `fetchTrackedContract`, edge-detected alerts armed once
+per event + suppressed on stale/offline/closed, reassessment build→paste-verdict→Accept mapping
+Exit/Trim/Add-capped/Roll/Hold, decision records); `GhostTradePanel`/`TradeEntryDialog`/
+`OpportunityTier` (tier emphasis + Prime banner de-duped on entry into Prime). Bundle position context
+fed via `getTicker` `pos_*`. Isolation verified: SSE drop degrades only P/L + current mark (⏸ last
+known) while the trade record/stats/history + GEX chart + all tiles persist. Verified via a
+controllable mock: entry, reload-persist, SSE drop+self-heal, overnight freeze, tracking-unavailable,
+reassess Accept (Add capped), tiers + Prime banner, decision history + Export. `SIMULATED` everywhere;
+no real-order path. Glossary + GAMMAFLOW_CONTEXT refreshed; **contract archived** under `_archive/`.
+Deferred seams (specified, not built): broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay,
+recorded-verdict reassessment, server-side trade store.
 
 ## 6. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
