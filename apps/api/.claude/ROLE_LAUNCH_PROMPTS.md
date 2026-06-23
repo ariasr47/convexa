@@ -195,8 +195,10 @@ Because the Architect ran first, you MUST:
 You are FIRST to write the PRODUCT_CONTRACT, so write it into the existing
 .claude/contracts/{FEATURE}/ folder; there is no inbound PRODUCT_CONTRACT skeleton — you set its
 structure. Stay in your lane (no UI layout, no endpoints, no code). Make every acceptance criterion
-observable without reading code, and restate any product-level constraint the next role must not
-violate.
+observable without reading code — and treat each AC as the REQUIRED BEHAVIORAL TEST the frontend must
+cover and QA will trace: one observable behavior apiece, with the degraded/edge variations (stale,
+offline, empty, error, null/404) as their own ACs, not buried. Restate any product-level constraint the
+next role must not violate.
 
 When the contract is locked, run compressor #2 (Session-Transition) from
 .claude/COMPRESSOR_PROMPTS.md targeting the UX/Tech-Writer, then stop.
@@ -226,7 +228,9 @@ There is no inbound skeleton — you set the structure.
 
 Your job (stay in lane — NO code, math derivations, data structures, endpoints, payload/field
 names, or UI layout): user stories, feature scope (In / Out / Future-dated), dashboard behavior,
-and acceptance criteria. Every acceptance criterion MUST be observable without reading code.
+and acceptance criteria. Every acceptance criterion MUST be observable without reading code — and is
+the REQUIRED BEHAVIORAL TEST the frontend must cover and QA will trace: one observable behavior apiece,
+with the degraded/edge variations (stale, offline, empty, error, null/404) as their own ACs, not buried.
 
 Be a STRICT PM — decide, don't survey:
 - Where a sensible default exists, MAKE the product call and record it in a "Product decisions made
@@ -269,7 +273,10 @@ UI/interaction design and user-facing copy. Your job: component states (default 
 offline / empty / error), where each datum surfaces, microcopy and labels (honoring binding
 framing — e.g. dark-pool blocks are "context, not a signal"), tooltip/glossary text, and the exact
 degraded-state wording for live-stream loss vs bundle-fetch loss. Map each acceptance criterion to
-the component state(s) that satisfy it.
+the component state(s) that satisfy it — this mapping IS the required-tests matrix. In the
+FRONTEND_EXECUTION_CONTRACT's "Tests to write" note (emitted by compressor #3) enumerate the required
+cases (each AC × component state × edge/invariant) so the FE implements them and never decides the
+requirement set; QA traces every AC to ≥1 passing test at GATE Q.
 
 Stay in your lane: no server internals, no math, no final endpoint/payload schema decisions beyond
 naming the fields the UI must consume.
@@ -375,10 +382,12 @@ Method:
   (the live BE omits/mistypes a field the interface promises) is a GATE Q FAIL → bounce to Backend.
 - Also check the binding invariants (BRIEF "Invariant watch" + the promoted canon). A green AC list
   over a broken invariant is still a FAIL.
-- Re-run the frontend test suite (standing rule — tests are part of the FE deliverable): in
-  C:\Dev\gammaflow-web run `npx nx test dashboard` (and `nx test api` if libs/api was touched). Missing
-  tests for observable FE behavior, or a failing suite, is a GATE Q FAIL → bounce to Frontend. Spot-check
-  the tests exercise the contract's component states + degraded paths, not just a render smoke test.
+- Re-run the frontend test suite + check AC↔test traceability (standing rule — tests are part of the FE
+  deliverable): in C:\Dev\gammaflow-web run `npx nx test dashboard` (and `nx test api` if libs/api was
+  touched); a failing suite is a GATE Q FAIL → bounce to Frontend. Then verify traceability (NOT a
+  spot-check): every PRODUCT_CONTRACT AC + every required case in the FRONTEND_EXECUTION_CONTRACT's
+  "Tests to write" matrix maps to ≥1 named, passing test. An AC with no corresponding test is a FAIL even
+  if the green suite passes — name the uncovered AC in the bounce.
 
 Write .claude/contracts/{FEATURE}/QA_REPORT.md: a table (AC verbatim · verdict · evidence), a summary
 (n PASS / n FAIL / n UNVERIFIABLE), and an explicit overall GATE Q verdict — PASS only if every AC is

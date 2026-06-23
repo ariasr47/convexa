@@ -37,11 +37,13 @@ Method:
    (the live BE omits/mistypes a field the interface promises = what the FE consumes) is a GATE Q FAIL
    → bounce to Backend. Also check the binding invariants from the BRIEF "Invariant watch" + the
    promoted canon (`GAMMAFLOW_CONTEXT.md` §5). A green AC list over a broken invariant is still a FAIL.
-4. **Frontend test suite (standing rule):** tests are part of the FE deliverable. In `C:\Dev\gammaflow-web`
-   run `npx nx test dashboard` (and `nx test api` if the feature touched `libs/api`). **No tests for a
-   feature that has observable FE behavior, or a failing suite, is a GATE Q FAIL → bounce to Frontend.**
-   Spot-check that the tests actually exercise the contract's component states + degraded paths (not just
-   a render smoke test); a suite that passes by asserting nothing doesn't count.
+4. **Frontend test suite + AC↔test traceability (standing rule):** tests are part of the FE deliverable.
+   In `C:\Dev\gammaflow-web` run `npx nx test dashboard` (and `nx test api` if the feature touched
+   `libs/api`); a failing suite is a GATE Q FAIL → bounce to Frontend. Then check **traceability, not a
+   spot-check**: every PRODUCT_CONTRACT AC (and every required case in the FRONTEND_EXECUTION_CONTRACT's
+   "Tests to write" matrix) must map to **≥1 named, passing test**. An AC with no corresponding test is a
+   GATE Q FAIL **even if the green suite passes** — note which AC is uncovered in the bounce. A suite that
+   passes by asserting nothing doesn't count.
 
 Output — write ONLY:
 - `.claude/contracts/{FEATURE}/QA_REPORT.md` — a table (AC verbatim · verdict · evidence), a summary

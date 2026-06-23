@@ -237,9 +237,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   executioner writes unit + component + **flow-integration** tests for each feature; the
   flow-integration test is the centerpiece — it drives the actual user flow end-to-end through every
   edge case, mocking only the network boundary (never a live backend). Assert the contract's component
-  states + degraded paths + promoted invariants, not a coverage %; QA re-runs the suite at GATE Q.
-  **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the critical flow; optional before
-  then (the BE↔FE seam is already verified by `interface_conformance.py`).
+  states + degraded paths + promoted invariants, not a coverage %. **The FE does not decide the
+  requirement set:** required tests are specified by the contract chain — the PM's ACs (each AC = a
+  required behavioral test) + the UX-authored FRONTEND_EXECUTION_CONTRACT "Tests to write" matrix +
+  the promoted invariants. The FE implements that set (a floor) and may add its own unit tests (a
+  ceiling), but never silently drops a required case (untestable → GATE Z bounce). QA enforces
+  **AC↔test traceability** at GATE Q: every AC maps to ≥1 named passing test (an uncovered AC is a FAIL
+  even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
+  critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
 - Two git repos: `C:\Dev\GammaFlow` (backend) and `C:\Dev\gammaflow-web` (frontend); no remotes.
 
 ## 8. Downstream-AI contract

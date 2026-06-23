@@ -16,6 +16,9 @@ Lane (hard):
 - Read `GAMMAFLOW_CONTEXT.md` + `OPEN_THREADS.md` (+ the `ARCHITECTURE_CONTRACT.md` in §2).
 - Produce ONLY `.claude/contracts/{FEATURE}/PRODUCT_CONTRACT.md`: user stories, scope (In / Out /
   Future-dated), dashboard behavior, and acceptance criteria — every AC observable WITHOUT reading code.
+  **Each AC is the required behavioral test** the FE must cover and QA traces, so write them
+  test-traceable: one observable behavior apiece, and split out the degraded/edge variations (stale,
+  offline, empty, error, null/404) as their own ACs rather than burying them — they are the test cases.
 - Resolve the Architect's "open questions for the PM" (§2) in a "Product decisions made here" section,
   or (in §2b) keep "Product decisions" strictly separate from "Feasibility questions for the Architect."
 - NO code, math derivations, data structures, endpoints, payload/field names, or UI layout. You have no

@@ -37,9 +37,13 @@ Lane (hard):
     plus cold-start-fail vs post-success-refresh-fail, 404/no-quote, per-field nulls. These are the
     manual mock checks every shipped lane did by hand, made re-runnable.
   Assert the contract's observable behaviors + the promoted invariants (live-vs-static isolation,
-  best-effort-isolated-or-null) — not a coverage %. **E2E:** Playwright (`@nx/playwright`) is the chosen
-  tool for real-browser flow tests — adopted nearer go-live for the critical happy path + key edge cases,
-  optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
+  best-effort-isolated-or-null) — not a coverage %. **You don't decide the requirement set:** the
+  required cases come from the PM's ACs + the FRONTEND_EXECUTION_CONTRACT's "Tests to write" matrix +
+  the promoted invariants — cover ALL of them (a floor), then add your own unit tests for internal logic
+  (a ceiling you may raise). Never silently drop a required case; if one is genuinely untestable, bounce
+  it via GATE Z (note it for amendment), don't omit it. **E2E:** Playwright (`@nx/playwright`) is the
+  chosen tool for real-browser flow tests — adopted nearer go-live for the critical happy path + key edge
+  cases, optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
 - Run the project the standard way (`npx nx serve dashboard`) and verify the live-loss / stale /
   cold-start states behave as specified. Report what you changed + how you verified (include the
   `nx test` result). No outbound contract; run no compressor.
