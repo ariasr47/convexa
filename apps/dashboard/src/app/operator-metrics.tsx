@@ -4,16 +4,16 @@
  * never triggers a bundle fetch or any compute. Honest-presentation: no fabricated/zeroed number
  * as real (empty → `—`), `skipped` shown as skipped, low headroom is factual & non-alerting.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
-  AppBar, Toolbar, Container, Box, Card, CardContent, Stack, Typography, Chip, Button, Tooltip,
+  AppBar, Toolbar, Container, Box, Card, CardContent, Stack, Typography, Chip, Tooltip,
   Table, TableHead, TableBody, TableRow, TableCell, CircularProgress, Alert, Collapse, IconButton,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {
-  fetchMetrics, MetricsAggregate, MetricsScope, RecentTrace, StageName, StageKind,
-} from '@org/api';
+import { MetricsScope, RecentTrace, StageName, StageKind } from '@org/api';
+import { useLatencyTrend } from './operator-metrics/useLatencyTrend';
+import { LatencyTrend } from './operator-metrics/LatencyTrend';
 
 const fmtMs = (n: number | null | undefined) => (n == null ? '—' : n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`);
 const ioCpu = (kind: StageKind) => (kind.startsWith('io_') ? 'I/O' : 'CPU');
@@ -147,16 +147,11 @@ function TraceRow({ t }: { t: RecentTrace }) {
 }
 
 export function OperatorMetrics() {
-  const [data, setData] = useState<MetricsAggregate | null>(null);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // The latency-trend hook owns the page's SINGLE fetcher (one GET /api/_metrics per cadence). The
+  // snapshot tables below render from its latest poll result (`data`) — no second fetch.
+  const trend = useLatencyTrend();
+  const { data, error, loading } = trend;
   const [openTickers, setOpenTickers] = useState<Record<string, boolean>>({});
-
-  const load = useCallback(() => {
-    setLoading(true);
-    fetchMetrics().then((d) => { setData(d); setError(false); }).catch(() => setError(true)).finally(() => setLoading(false));
-  }, []);
-  useEffect(() => { load(); }, [load]);
 
   const header = (
     <AppBar position="static" elevation={0} color="default">
@@ -164,7 +159,6 @@ export function OperatorMetrics() {
         <Typography variant="h6" sx={{ flexGrow: 1 }}>GammaFlow · Operator Metrics</Typography>
         {data && <Chip size="small" color={data.instrumentation_enabled ? 'success' : 'default'} label={`Instrumentation: ${data.instrumentation_enabled ? 'ON' : 'OFF'}`} sx={{ mr: 1 }} />}
         <Chip size="small" variant="outlined" label="read-only" sx={{ mr: 1 }} />
-        <Button size="small" onClick={load}>Refresh</Button>
       </Toolbar>
     </AppBar>
   );
@@ -172,23 +166,28 @@ export function OperatorMetrics() {
   let body: React.ReactNode;
   if (loading && !data) {
     body = <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}><CircularProgress size={18} /><Typography variant="body2">Loading metrics…</Typography></Stack>;
-  } else if (error) {
+  } else if (error && !data) {
+    // Cold-load failure only (no prior poll). A failed poll AFTER a success keeps `data` and the
+    // trend shows its own soft "couldn't refresh" — the page does not blank.
     body = (
       <Alert severity="warning">
         Metrics readout unavailable.
         <Typography variant="caption" sx={{ display: 'block' }}>Operator tool only — the trader bundle and SSE are unaffected.</Typography>
       </Alert>
     );
-  } else if (data && !data.instrumentation_enabled) {
-    body = (
-      <Alert severity="info">
-        Instrumentation disabled — no metrics are being recorded. Enable it via the observability flag to populate this readout.
-      </Alert>
-    );
   } else if (data) {
     const empty = data.window.request_count === 0;
     body = (
       <Stack spacing={2}>
+        {/* Latency trend — first child; its poll loop is the page's single fetcher. */}
+        <LatencyTrend trend={trend} />
+
+        {!data.instrumentation_enabled ? (
+          <Alert severity="info">
+            Instrumentation disabled — no metrics are being recorded. Enable it via the observability flag to populate this readout.
+          </Alert>
+        ) : (
+        <>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           <Tooltip arrow title={WINDOW_TIP}><InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} /></Tooltip>
           <Typography variant="body2" color="text.secondary">
@@ -247,6 +246,8 @@ export function OperatorMetrics() {
               </Card>
             )}
           </>
+        )}
+        </>
         )}
       </Stack>
     );
