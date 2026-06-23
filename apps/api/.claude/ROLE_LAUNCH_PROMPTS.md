@@ -7,6 +7,10 @@ work, writes its outbound contract, then runs the matching **compressor** from
 
 Pipeline: **Architect → Product Manager → UX/Tech-Writer → Backend & Frontend Executioners.**
 
+> To **automate** the hand-offs (audit → compress → write the next contract → route), open a session
+> as the Orchestrator (`.claude/ORCHESTRATOR.md`) and announce the transition; it drives these
+> prompts + the compressors for you instead of manual copy-paste.
+
 Placeholders to fill before pasting:
 - `{FEATURE}` = kebab folder name under `.claude/contracts/` (e.g. `dark-pool-stream-isolation`).
 - `{GOAL}` = one short paragraph: what this feature must accomplish for the user/system.
