@@ -55,6 +55,13 @@
 | `best-effort-isolated-or-null` | trader-personas | S | persona assembly failure → default one-size prompt, never an HTTP error, never blocks bundle/gate/hand-off | yes |
 | `ai-external-no-llm` | trader-personas | S | persona assembles text only; AI external, **no LLM call** (already canon CONTEXT §8) | yes |
 | `live-vs-static-isolation` | trader-personas | S | persona is presentation-only — fully usable from last bundle, never marked offline | yes |
+| `operator-vs-trader-path-separation` | latency-visualizer | S | trend on `/_ops/metrics` only, never linked from a trader route; the page's sole network call stays `GET /api/_metrics`; no control triggers a vendor fetch / recompute / cache mutation / trader-route call | yes |
+| `best-effort-isolated-or-null` | latency-visualizer | S | a failed poll keeps the last series behind a soft notice + self-heals (no retry storm, no error page); never affects the page, snapshot tables, or any other surface; the in-browser series is ephemeral (only Export persists, to the operator's machine) | yes |
+
+> Note (GATE S, latency-visualizer): `operator-vs-trader-path-separation` now has **2 binding:yes
+> instances** (backend-observability, latency-visualizer) → crosses the "≥2 if all binding" promotion
+> threshold; flagged for the Orchestrator to graduate into canon (CONTEXT §5 + THREADS §9) at the
+> next gateway.
 
 > Seeded retroactively 2026-06-22 from the five archived features (`OPEN_THREADS.md` §3–§7). Going
 > forward, the Orchestrator appends a row per binding decision at each gateway (ORCHESTRATOR §0 step 7).

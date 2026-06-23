@@ -140,6 +140,20 @@ window/uptime caption, instrumentation ON/OFF, glossary tooltips. Honest present
 Verified via a controllable mock (trader unchanged; readout populated/empty/unknown/disabled/
 unavailable/trace warm-vs-cold); endpoint path + readout field names cross-checked against the
 shipped backend. **Archived** under `_archive/` (per DoD).
+**Local-visualization slice SHIPPED (latency-visualizer, FE-only `NO_BACKEND_CHANGE`, 2026-06-23,
+committed `39f1b17`; contract `_archive/latency-visualizer/`):** a `LatencyTrend` card atop
+`/_ops/metrics` trends the existing `GET /api/_metrics` windowed snapshots locally. `useLatencyTrend`
+is now the page's **single fetcher** (one stable poll loop feeds both the trend and the snapshot
+tables — still only `GET /api/_metrics`, once per cadence); bounded **ephemeral** in-browser ring
+buffer (raw per-scope snapshots → metric/percentile/scope/stage switches re-derive with no refetch);
+gaps = broken line (never 0/interpolated), restart = broken line + `Service restarted` marker (never
+stitched), stale-repeat distinct, headroom `unknown`, failed poll keeps-last + self-heals (no retry
+storm), auto-pause when hidden, local JSON Export (no server state); non-semantic palette, no
+thresholds/alerts; persistent windowed-snapshot caveat + ephemerality + non-alerting copy. Verified
+all states via a drivable mock (single 5s-cadence `GET /api/_metrics`, kill-backend→failed-poll→
+self-heal→restart-break, headroom unknown, stale-repeat, off-gap, export). GATE S logged
+`[operator-vs-trader-path-separation]` (now 2 binding:yes → at promotion threshold) +
+`[best-effort-isolated-or-null]`.
 **Deferred (specified, not built):** OTel/Prometheus export, latency/headroom alert thresholds,
 persisted/cross-restart baselines, the multi-ticker scanner (baseline data supports it).
 

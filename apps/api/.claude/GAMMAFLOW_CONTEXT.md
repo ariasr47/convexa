@@ -70,7 +70,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   side-effect-free (`fetchMetrics` → `GET /api/_metrics` only): global + per-ticker stage tables
   (I/O|CPU from `kind`, p50/p95/max/count/ok-err-skip), total/cache/vendor lines, recent-traces with
   warm/cold inspect. Honest: empty → `—`, `skipped` shown, headroom `null` → `unknown`, non-alerting.
-  The **trader dashboard ignores** the new `meta.trace_id`/`meta.timings` (renders neither).
+  The **trader dashboard ignores** the new `meta.trace_id`/`meta.timings` (renders neither). Tops the
+  page with a **`LatencyTrend`** card (`operator-metrics/`): a local, in-browser, **ephemeral** trend
+  of the windowed snapshots. `useLatencyTrend` is the page's **single fetcher** — one stable poll loop
+  (still only `GET /api/_metrics`, once per cadence) feeding both the trend and the snapshot tables;
+  a bounded serializable ring buffer stores raw per-scope snapshots so metric/percentile/scope/stage
+  switches re-derive with no refetch. Gaps = broken line (`connectNulls=false`, never 0/interpolated),
+  restart = broken line + `Service restarted` marker (never stitched), stale-repeat distinct, headroom
+  `unknown`, failed poll keeps the last series + self-heals (no retry storm), local JSON Export (no
+  server state), auto-pause when hidden; non-semantic palette, no thresholds/alerts. Clears on
+  reload (expected). NO_BACKEND_CHANGE — `/api/_metrics` consumed unchanged.
 - `apps/dashboard/src/app/personas/` — **trader personas**: a prompt-layer presentation overlay,
   assembled **FE-side** (locus PINNED FE-rendered). A faithful **embedded** decomposed hand-off
   template (Default renders today's prompt byte-identical; A1 disposition slot relocated) + 7 built-in

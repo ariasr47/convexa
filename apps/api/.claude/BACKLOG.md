@@ -49,12 +49,14 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
-- **latency-visualizer** — `→ promoted (GATE I, 2026-06-23) → .claude/contracts/latency-visualizer/`.
-  Local, free visualization of the bundle-stage latency the shipped observability already exposes:
-  per-stage p50/p95/max trends on the operator route `/_ops/metrics`, no external/paid APM. *Value M
-  (operational) · Effort S–M.* **Invariant watch:** `[operator-vs-trader-path-separation]`,
-  `[best-effort-isolated-or-null]`, stateless-server/ephemeral-metrics. *Entry:* architect-first
-  (stateless-client vs persisted-history is the pivotal call). Carved from §D.
+- **latency-visualizer** — `✓ SHIPPED + ARCHIVED (2026-06-23)` → `_archive/latency-visualizer/`.
+  FE-only (`NO_BACKEND_CHANGE`): a local, ephemeral `LatencyTrend` card atop `/_ops/metrics` that
+  trends the existing `GET /api/_metrics` windowed snapshots (per-stage/total/cache/vendor-latency
+  p50/p95/max + headroom) via one stable poll loop (the page's single fetcher) + a bounded in-browser
+  ring buffer; honest gaps / restart-break / stale-repeat, non-alerting, local Export only. Held
+  `[operator-vs-trader-path-separation]` + `[best-effort-isolated-or-null]` (both logged at GATE S).
+  **Parked (rest of §D):** OTel/Prometheus export, latency/headroom alert thresholds, persisted/
+  cross-restart history, server-side store.
 - **trader-personas** — `✓ SHIPPED + ARCHIVED (2026-06-22)` → `_archive/trader-personas/`. Both lanes
   landed (backend `1026190`; frontend `6dcdbe1`/`1233718`); persona reframes the AI hand-off only,
   gate/score/tier/fingerprint byte-identical, FE-rendered assembly. Seams it left → section D.
