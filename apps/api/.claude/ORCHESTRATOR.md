@@ -56,7 +56,9 @@ gateway you name.
 - **Operating mode (system-9-lite, adopted):** run each role as a **fresh spawn** of its
   `.claude/agents/gammaflow-*` subagent (+ a `context_for.py` pack), discarded after each handoff —
   never a long-lived role session. The conductor stays manual (you); the role work is disposable +
-  fresh. See `ROLE_LAUNCH_PROMPTS.md` "Running a role — the LITE path."
+  fresh. See `ROLE_LAUNCH_PROMPTS.md` "Running a role — the LITE path." **Exception:** GATE I
+  (Discovery) has no subagent — the conductor runs it **inline** (rationale in §3 GATE I); every other
+  gateway spawns its lane-fenced subagent.
 - **Variable (per feature — what I produce):** `.claude/contracts/{FEATURE}/` containing some of
   `ARCHITECTURE_CONTRACT.md`, `PRODUCT_CONTRACT.md`, `UX_BLUEPRINT.md`, **`INTERFACE_CONTRACT.md`
   (the FE↔BE single source of truth — both lanes bind to it)**, `BACKEND_EXECUTION_CONTRACT.md`,
@@ -96,10 +98,27 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 > right?) stays in the gateway; the ledger makes recurrence mechanical instead of remembered.
 
 ### GATE I — Discovery / roadmap (PRE-pipeline)  → entry role (Architect-first or PM-first)
-> The only divergent gate. It exists so that, when the in-mind queue drains, there's a repeatable
-> method for advancing the roadmap instead of ad-hoc whim. I **route to** a discovery session and
-> **package** its output; the generative thinking happens there, not in me (same separation as
-> every other gate — see §6).
+> The only divergent gate — and the **one role the conductor runs INLINE itself**, not as a fresh
+> `gammaflow-*` subagent. This is a deliberate, reasoned exception to fresh-subagent-per-gateway
+> (system-9-lite), on three concrete grounds:
+> 1. **Inputs = the conductor's boot state.** Discovery's audit set (CONTEXT + OPEN_THREADS + BACKLOG +
+>    LEDGER) is exactly what the conductor reconstructs at boot. A discovery subagent would re-read all of
+>    it cold — paying max context for the one step whose inputs the conductor already holds.
+> 2. **It precedes the BRIEF that sharding needs.** GATE I runs *before* any `BRIEF.md` exists, so it
+>    cannot use the system-5 sharded pack (`context_for.py` keys off the BRIEF's `Context tags:`). It needs
+>    the whole canon — again, already in hand.
+> 3. **No code to lane-fence from.** Its only outputs (`BACKLOG.md` + the chosen `BRIEF.md`) are the
+>    conductor's own `.claude/` planning surface; the tool-fence that justifies the author subagents
+>    (can't `Edit` `src/`) buys nothing here.
+>
+> So GATE I's generative work — harvest → cull → score → cull-to-one — happens **in the conductor**; the
+> discipline that replaces the lane fence is the explicit method below + the decision-impact cull (the
+> same bar that resists shiny features the way the AI gate resists over-trading). The one piece that MAY
+> still be delegated is the optional grooming-time feasibility consult to an Architect session (step 3) —
+> a read, not a contract. **Honesty caveat:** because choose-and-route both sit in the conductor, the cull
+> has no independent reviewer; when the conductor is a human this is the human's strategic call (where you
+> *want* the human), and when it's an AI conductor the decision-impact test + the BRIEF's written
+> `Invariant watch` are the only checks — keep the cull verdicts explicit so a later session can audit them.
 - **Trigger:** "what's next / groom the backlog / roadmap review / out of queued work."
 - **Use when:** the active pipeline has drained, or on a periodic review, to generate + cull the
   next wave of features/improvements.

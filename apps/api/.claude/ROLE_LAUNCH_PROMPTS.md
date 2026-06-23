@@ -5,7 +5,10 @@ pipeline. Each role reads the constant ground truth + its inbound contract, does
 work, writes its outbound contract, then runs the matching **compressor** from
 `.claude/COMPRESSOR_PROMPTS.md` to hand off to the next role.
 
-Pipeline: **Architect → Product Manager → UX/Tech-Writer → Backend & Frontend Executioners.**
+Pipeline: **Discovery (GATE I, conductor-inline) → Architect → Product Manager → UX/Tech-Writer →
+{Backend ‖ Frontend Executioners} → QA/Verify (GATE Q) → Ship.** Discovery has no launch prompt below —
+it is the conductor's own inline opening move (ORCHESTRATOR §3 GATE I); the prompts here cover the five
+spawned roles + QA.
 
 > To **automate** the hand-offs (audit → compress → write the next contract → route), open a session
 > as the Orchestrator (`.claude/ORCHESTRATOR.md`) and announce the transition; it drives these
@@ -53,6 +56,9 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
 | Frontend (fan-out)  | `gammaflow-frontend`  | §5            | UI code (binds interface)       |
 | QA / Verify (GATE Q)| `qa-verify`           | §6            | QA_REPORT.md                    |
 
+- **Discovery has no subagent:** the table starts at the Architect because GATE I (Discovery) runs
+  **inline in the conductor**, not as a spawn — its inputs are the conductor's boot state and it precedes
+  the BRIEF that the pack keys off (full rationale: ORCHESTRATOR §3 GATE I). Every gateway below spawns.
 - **Lean context, not the whole canon:** give each spawn the pack —
   `.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print` (always-load invariant floor
   + the BRIEF's `Context tags:`); it falls back to the floor if no tags.
@@ -286,9 +292,15 @@ is wrong, flag it, don't silently diverge). Honor every constraint in GAMMAFLOW_
 sourcing, rates, DTE-filter scope, best-effort dark-pool, path isolation). Do not touch UI.
 
 Run the project the standard way and verify your output matches the INTERFACE_CONTRACT (shape,
-presence rules, and the failure/degradation semantics). Report what you changed and how you
-verified it. If you discover an interface gap, note it for a contract amendment rather than
-breaking the frontend's assumptions.
+presence rules, and the failure/degradation semantics). Before reporting done, run the same
+machine check QA will run at GATE Q — with the backend up:
+`.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
+.claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000` — and make it PASS
+(it proves the live response emits every field the interface promises = what the FE consumes). A
+self-caught conformance FAIL now is one you fix in-lane instead of bouncing back from QA later.
+Report what you changed and how you verified it (include the conformance result). If you discover
+the interface itself is wrong/incomplete, note it for a contract amendment rather than silently
+diverging or breaking the frontend's assumptions.
 ```
 
 ## 5. Frontend Executioner
@@ -305,8 +317,12 @@ MUST persist on live-stream loss; only live fields show offline/stale; never bla
 refresh once a bundle has loaded; auto-reconnect). Do not touch server internals or math.
 
 Run the project the standard way and verify the live-loss / stale / cold-start states behave as
-specified against the acceptance criteria. Report what you changed and how you verified it. If a
-needed field is missing from the interface, flag it for a contract amendment — do not invent it.
+specified against the acceptance criteria. The reliable way (used by every shipped FE lane) is a
+controllable mock backend behind the Vite proxy that emits exactly the INTERFACE_CONTRACT shape, so
+you can drive each degraded path on demand — SSE drop, per-field nulls, 404/no-quote, cold-start
+failure vs post-success refresh failure — and confirm the static surface keeps rendering while only
+live fields degrade. Report what you changed and how you verified it (name the states you exercised).
+If a needed field is missing from the interface, flag it for a contract amendment — do not invent it.
 ```
 
 ## 6. QA / Verify (GATE Q — runs after BOTH executioners, before ship)

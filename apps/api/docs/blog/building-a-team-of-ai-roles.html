@@ -132,10 +132,10 @@
 <hr>
 <h2>The big idea: a team made of <em>fresh experts</em></h2>
 <p>Instead of one endless chat, GammaFlow is built by a <strong>relay of specialists</strong> — each one a separate AI session that plays exactly <em>one</em> role and then hands off:</p>
-<ul><li><strong>Discovery</strong> explores the raw idea and checks it's worth doing — and doable at all.</li><li><strong>The Architect</strong> decides how the system should be shaped.</li><li><strong>The Product Manager</strong> decides what we're building and for whom.</li><li><strong>The UX / Tech-Writer</strong> decides how it looks, behaves, and what every label says.</li><li><strong>The Builders</strong> (one for the back end, one for the front end) write the actual code.</li></ul>
-<p>And quietly running the whole thing is one more session that <em>isn't</em> really on that list — the <strong>Orchestrator</strong>. More on that in a moment.</p>
+<ul><li><strong>The Architect</strong> decides how the system should be shaped.</li><li><strong>The Product Manager</strong> decides what we're building and for whom.</li><li><strong>The UX / Tech-Writer</strong> decides how it looks, behaves, and what every label says.</li><li><strong>The Builders</strong> (one for the back end, one for the front end) write the actual code.</li><li><strong>The Inspector (QA)</strong> takes the finished feature and the original checklist and confirms, point by point, that it really does what it promised — and is allowed to fail it.</li></ul>
+<p>And running the whole thing is one more session that <em>isn't</em> really on that list — the <strong>Orchestrator</strong>. It even does a quick <strong>Discovery</strong> pass up front to decide what's worth building next. More on both in a moment.</p>
 <p>Here's the part that sounds strange but is the secret sauce: <strong>each session starts with no memory of the others.</strong> It doesn't get the messy chat history. It gets a clean, written <strong>handoff document</strong> — and nothing else.</p>
-<p>That's not a limitation we tolerate. It's the design. A fresh expert with a clear brief is sharper than a tired one drowning in everything that came before.</p>
+<p>That's not a limitation we tolerate. It's the design. A fresh expert with a clear brief is sharper than a tired one drowning in everything that came before. And we've since made that fresh start <em>mechanical</em>: each role now runs as a <strong>sandboxed worker</strong> with only the tools its job needs — the Architect literally <em>cannot</em> edit or run code, a builder in one repository literally <em>cannot</em> write into the other. The clean brief isn't just good manners any more; it's a fence.</p>
 <figure><svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
   <title>The role relay: how a feature moves through specialist sessions</title>
   <desc>An Architect passes an Architecture Contract to a Product Manager, who passes a Product Contract to a UX/Tech-Writer, who passes a UX Blueprint into a Split step. The Split produces execution contracts and forks into a Backend Builder and a Frontend Builder that build in parallel, both bound to one shared Interface Contract.</desc>
@@ -232,14 +232,15 @@
 </svg>
 <figcaption>A relay of specialists passing contracts down the line</figcaption></figure>
 <p>Notice two things in that picture:</p>
-<p>1. <strong>Each role stays in its lane.</strong> The Architect never writes screen layouts. The Product Manager never writes code or math. The designer never decides server internals. Lanes keep each handoff clean and keep anyone from quietly overruling a decision that wasn't theirs to make. 2. <strong>At the end, the work forks in two.</strong> Once the design is locked, a single step called the <strong>Split</strong> produces one <strong>Interface Contract</strong> — a shared spec — plus a to-do list for each builder. Then the back-end and front-end builders work <strong>at the same time, without talking to each other.</strong> They don't need to. They both agree on the same spec, so their halves snap together at the end.</p>
+<p>1. <strong>Each role stays in its lane</strong> — and now the lane is enforced by the tools each one is handed, not just by asking nicely. The Architect never writes screen layouts. The Product Manager never writes code or math. The designer never decides server internals. Lanes keep each handoff clean and keep anyone from quietly overruling a decision that wasn't theirs to make. 2. <strong>At the end, the work forks in two.</strong> Once the design is locked, a single step called the <strong>Split</strong> produces one <strong>Interface Contract</strong> — a shared spec — plus a to-do list for each builder. Then the back-end and front-end builders work <strong>at the same time, without talking to each other.</strong> They don't need to. They both agree on the same spec, so their halves snap together at the end.</p>
 <hr>
 <h2>The conductor: the session that runs the others</h2>
 <p>Here's a subtlety worth calling out. We actually have a session we call the <strong>"Project Manager"</strong> — but in practice it doesn't write product scope at all. It's the <strong>Orchestrator</strong>: the conductor that decides which specialist runs next, hands each one its brief, checks the work at each <strong>gate</strong>, and carries the result on to the next. (Confusing, we know — the <em>Product</em> Manager writes the plan; the <em>Project</em> Manager runs the show. Think director, not screenwriter.)</p>
-<p>It's also where the pipeline really begins. Before anyone designs or builds, a <strong>Discovery</strong> session explores the raw idea: is it worth doing, is it even possible, how big is it? Only ideas that survive that triage get a brief and enter the relay.</p>
-<figure><svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>The orchestrated pipeline: a conductor session routes discovery, thinking, and building through gates</title>
-  <desc>An Orchestrator session (the Project Manager) runs across the top, conducting a pipeline: Discovery, Architect, Product, UX, then a Split into a Backend Builder and Frontend Builder bound to one Interface Contract. A gate-check sits between every handoff, and a constant ground-truth file underlies every session.</desc>
+<p>It's also where the pipeline really begins — but with a twist. Unlike every other specialist, <strong>Discovery isn't a separate hire; it's the conductor's own opening move.</strong> Before anyone designs or builds, the conductor itself grooms the backlog: gather the candidate ideas, throw out the ones that don't improve a real decision, score what's left, and pick exactly <em>one</em> to build next. Only that survivor gets a brief and enters the relay.</p>
+<p>Why keep this one job in-house when everything else is delegated to a fresh specialist? Three plain reasons. The raw material Discovery needs — the rulebook, the list of open questions, the running idea-pool — is exactly what the conductor already has open on its desk. It happens <em>before</em> there's a brief to hand a new hire. And its only output is that short brief, which the conductor has to carry into the relay anyway. Delegating it would just mean a new specialist re-reading everything the conductor already read, to produce a note the conductor then re-reads. So Discovery stays at the conductor's desk — the one deliberate exception to "every job is a fresh, separate expert."</p>
+<figure><svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>The orchestrated pipeline: a conductor runs discovery itself, then routes thinking and building through mechanical gates, with QA before ship</title>
+  <desc>An Orchestrator session (the Project Manager) runs across the top, conducting a pipeline. Discovery is the conductor's own opening move, shown attached to the orchestrator rather than as a separate hire. Then Architect, Product, and UX think stations, a Split into a Backend Builder and Frontend Builder bound to one Interface Contract, then a QA Verify step and Ship. A mechanical gate-check — a linter — sits between every handoff, and a constant ground-truth file underlies every session.</desc>
   <style>
     text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
     .h1{fill:#23252B;font-size:23px;font-weight:700}
@@ -249,116 +250,137 @@
     .leg{fill:#5C6470;font-size:11px}
     .bart{fill:#FFFFFF;font-size:13px;font-weight:700}
     .bars{fill:#E7E9F1;font-size:11px}
-    .gate{fill:#4B5575;font-size:9px;font-weight:700}
+    .gate{fill:#6A7286;font-size:10px;font-weight:700}
   </style>
   <defs>
     <marker id="aT" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#2E6F69"/></marker>
     <marker id="aB" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#B4562B"/></marker>
+    <marker id="aV" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#6D5BAE"/></marker>
   </defs>
-  <rect x="1" y="1" width="958" height="558" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="598" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
   <text class="h1" x="34" y="44">One session conducts the rest</text>
-  <text class="sub" x="34" y="68">The Orchestrator never builds anything itself — it routes the work, runs the gates, and packages each handoff.</text>
+  <text class="sub" x="34" y="68">The Orchestrator never builds anything itself — it grooms discovery, routes the work, runs the gates, and packages each handoff.</text>
 
   <!-- legend -->
   <g>
-    <rect x="600" y="30" width="13" height="13" rx="3" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/><text class="leg" x="618" y="40">orchestrate &amp; gates</text>
-    <rect x="600" y="50" width="13" height="13" rx="3" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/><text class="leg" x="618" y="60">think &amp; design</text>
-    <rect x="600" y="70" width="13" height="13" rx="3" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/><text class="leg" x="618" y="80">build</text>
+    <rect x="600" y="26" width="13" height="13" rx="3" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/><text class="leg" x="618" y="36">orchestrate &amp; gates</text>
+    <rect x="600" y="46" width="13" height="13" rx="3" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/><text class="leg" x="618" y="56">think &amp; design</text>
+    <rect x="600" y="66" width="13" height="13" rx="3" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/><text class="leg" x="618" y="76">build</text>
+    <rect x="788" y="46" width="13" height="13" rx="3" fill="#ECEAF6" stroke="#6D5BAE" stroke-width="2"/><text class="leg" x="806" y="56">verify</text>
   </g>
 
   <!-- Orchestrator bar -->
-  <rect x="28" y="116" width="904" height="50" rx="12" fill="#4B5575"/>
-  <text class="bart" x="480" y="140" text-anchor="middle">ORCHESTRATOR — the conductor (our “Project Manager”)</text>
-  <text class="bars" x="480" y="157" text-anchor="middle">routes the work · runs the gates · packages every handoff · never writes code or scope itself</text>
+  <rect x="28" y="100" width="904" height="50" rx="12" fill="#4B5575"/>
+  <text class="bart" x="480" y="124" text-anchor="middle">ORCHESTRATOR — the conductor (our "Project Manager")</text>
+  <text class="bars" x="480" y="141" text-anchor="middle">grooms discovery itself · routes the work · runs the gates · packages every handoff · never writes code or scope</text>
 
-  <!-- batons down from orchestrator (dotted) -->
+  <!-- Discovery: the conductor's OWN move — solid link up to the bar, slate (not a teal think-station) -->
+  <line x1="80" y1="150" x2="80" y2="224" stroke="#4B5575" stroke-width="2"/>
+  <rect x="28" y="224" width="120" height="56" rx="10" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/>
+  <text class="ct" x="88" y="248" text-anchor="middle" fill="#3a4262">Discovery</text>
+  <text class="cs" x="88" y="265" text-anchor="middle">the conductor's own move</text>
+
+  <!-- Discovery -> Architect (solid link is the conductor's; this handoff has its own gate) -->
+  <g stroke="#5C6470" stroke-width="2">
+    <line x1="148" y1="252" x2="156" y2="252"/><line x1="168" y1="252" x2="186" y2="252" marker-end="url(#aT)"/>
+  </g>
+
+  <!-- batons down from orchestrator to think stations (dotted) -->
   <g stroke="#9AA0B5" stroke-width="1.3" stroke-dasharray="3 3">
-    <line x1="80" y1="166" x2="80" y2="270"/>
-    <line x1="228" y1="166" x2="228" y2="270"/>
-    <line x1="376" y1="166" x2="376" y2="270"/>
-    <line x1="524" y1="166" x2="524" y2="270"/>
-    <line x1="600" y1="166" x2="600" y2="270"/>
-    <line x1="739" y1="166" x2="739" y2="246"/>
+    <line x1="240" y1="150" x2="240" y2="224"/>
+    <line x1="388" y1="150" x2="388" y2="224"/>
+    <line x1="536" y1="150" x2="536" y2="224"/>
+    <line x1="612" y1="150" x2="612" y2="228"/>
   </g>
 
   <!-- think stations -->
   <g>
-    <rect x="28" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-    <text class="ct" x="80" y="296" text-anchor="middle">Discovery</text>
-    <text class="cs" x="80" y="313" text-anchor="middle">ideas · feasibility</text>
+    <rect x="188" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="240" y="248" text-anchor="middle">Architect</text>
+    <text class="cs" x="240" y="265" text-anchor="middle">system shape</text>
   </g>
   <g>
-    <rect x="176" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-    <text class="ct" x="228" y="296" text-anchor="middle">Architect</text>
-    <text class="cs" x="228" y="313" text-anchor="middle">system shape</text>
+    <rect x="336" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="388" y="248" text-anchor="middle">Product</text>
+    <text class="cs" x="388" y="265" text-anchor="middle">scope · stories</text>
   </g>
   <g>
-    <rect x="324" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-    <text class="ct" x="376" y="296" text-anchor="middle">Product</text>
-    <text class="cs" x="376" y="313" text-anchor="middle">scope · stories</text>
-  </g>
-  <g>
-    <rect x="472" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-    <text class="ct" x="524" y="296" text-anchor="middle">UX / Writer</text>
-    <text class="cs" x="524" y="313" text-anchor="middle">design · words</text>
+    <rect x="484" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="536" y="248" text-anchor="middle">UX / Writer</text>
+    <text class="cs" x="536" y="265" text-anchor="middle">design · words</text>
   </g>
 
-  <!-- gates between -->
-  <g>
-    <polygon points="152,290 162,300 152,310 142,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
-    <polygon points="300,290 310,300 300,310 290,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
-    <polygon points="448,290 458,300 448,310 438,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+  <!-- gates + arrows between think stations -->
+  <g fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6">
+    <polygon points="313,242 323,252 313,262 303,252"/>
+    <polygon points="461,242 471,252 461,262 451,252"/>
   </g>
-  <!-- pipeline arrows -->
   <g stroke="#2E6F69" stroke-width="2">
-    <line x1="132" y1="300" x2="141" y2="300"/><line x1="163" y1="300" x2="175" y2="300" marker-end="url(#aT)"/>
-    <line x1="280" y1="300" x2="289" y2="300"/><line x1="311" y1="300" x2="323" y2="300" marker-end="url(#aT)"/>
-    <line x1="428" y1="300" x2="437" y2="300"/><line x1="459" y1="300" x2="471" y2="300" marker-end="url(#aT)"/>
-    <line x1="576" y1="300" x2="586" y2="300" marker-end="url(#aT)" stroke="#B4562B"/>
+    <line x1="292" y1="252" x2="302" y2="252"/><line x1="324" y1="252" x2="335" y2="252" marker-end="url(#aT)"/>
+    <line x1="440" y1="252" x2="450" y2="252"/><line x1="472" y1="252" x2="483" y2="252" marker-end="url(#aT)"/>
+    <line x1="588" y1="252" x2="598" y2="252" marker-end="url(#aT)" stroke="#B4562B"/>
   </g>
-  <text class="gate" x="300" y="333" text-anchor="middle" fill="#6A7286">a gate-check between every handoff</text>
+  <!-- the gate between Discovery and Architect too -->
+  <polygon points="157,242 167,252 157,262 147,252" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+  <text class="gate" x="368" y="300" text-anchor="middle">a mechanical gate-check (a linter) between every handoff</text>
 
   <!-- SPLIT -->
-  <polygon points="600,276 632,300 600,324 568,300" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="600" y="304" text-anchor="middle" fill="#7A3A1E" font-size="10.5" font-weight="700" font-family="'Segoe UI',sans-serif">SPLIT</text>
+  <polygon points="612,228 644,252 612,276 580,252" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <text x="612" y="256" text-anchor="middle" fill="#7A3A1E" font-size="10.5" font-weight="700" font-family="'Segoe UI',sans-serif">SPLIT</text>
 
   <!-- builders -->
-  <path d="M632,300 C648,300 648,270 662,270" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
-  <path d="M632,300 C648,300 648,352 662,352" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M644,252 C660,252 660,222 674,222" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M644,252 C660,252 660,304 674,304" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
   <g>
-    <rect x="664" y="248" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-    <text class="ct" x="739" y="275" text-anchor="middle">Backend Builder</text>
+    <rect x="676" y="200" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <text class="ct" x="751" y="227" text-anchor="middle">Backend Builder</text>
   </g>
   <g>
-    <rect x="664" y="330" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-    <text class="ct" x="739" y="357" text-anchor="middle">Frontend Builder</text>
+    <rect x="676" y="282" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <text class="ct" x="751" y="309" text-anchor="middle">Frontend Builder</text>
   </g>
   <!-- interface spine -->
-  <line x1="814" y1="270" x2="836" y2="306" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
-  <line x1="814" y1="352" x2="836" y2="316" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
-  <rect x="838" y="252" width="94" height="118" rx="10" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="885" y="300" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Interface</text>
-  <text x="885" y="316" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Contract</text>
-  <text x="885" y="338" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">both build</text>
-  <text x="885" y="350" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">to this</text>
+  <line x1="826" y1="222" x2="848" y2="258" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <line x1="826" y1="304" x2="848" y2="268" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <rect x="850" y="204" width="82" height="118" rx="10" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <text x="891" y="252" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Interface</text>
+  <text x="891" y="268" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Contract</text>
+  <text x="891" y="290" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">both build</text>
+  <text x="891" y="302" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">to this</text>
+
+  <!-- QA + Ship tail -->
+  <path d="M751,326 C751,360 689,360 689,388" stroke="#6D5BAE" stroke-width="2" fill="none" marker-end="url(#aV)"/>
+  <g>
+    <rect x="624" y="390" width="134" height="48" rx="10" fill="#ECEAF6" stroke="#6D5BAE" stroke-width="2"/>
+    <text class="ct" x="691" y="411" text-anchor="middle" fill="#3a3160">QA / Verify</text>
+    <text class="cs" x="691" y="428" text-anchor="middle" fill="#6a619a">checks every box · fixes nothing</text>
+  </g>
+  <line x1="758" y1="414" x2="788" y2="414" stroke="#6D5BAE" stroke-width="2" marker-end="url(#aV)"/>
+  <g>
+    <rect x="790" y="390" width="120" height="48" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="850" y="411" text-anchor="middle" fill="#1c4f4a">Ship</text>
+    <text class="cs" x="850" y="428" text-anchor="middle" fill="#3a6b66">+ archive</text>
+  </g>
+  <text class="gate" x="624" y="462" fill="#6a619a">Nothing ships without a passing QA check.</text>
 
   <!-- ground truth bar + batons up -->
   <g stroke="#7FB2AC" stroke-width="1.3" stroke-dasharray="3 3">
-    <line x1="80" y1="329" x2="80" y2="466"/>
-    <line x1="228" y1="329" x2="228" y2="466"/>
-    <line x1="376" y1="329" x2="376" y2="466"/>
-    <line x1="524" y1="329" x2="524" y2="466"/>
-    <line x1="739" y1="374" x2="739" y2="466"/>
+    <line x1="88" y1="252" x2="88" y2="506"/>
+    <line x1="240" y1="280" x2="240" y2="506"/>
+    <line x1="388" y1="280" x2="388" y2="506"/>
+    <line x1="536" y1="280" x2="536" y2="506"/>
+    <line x1="751" y1="326" x2="751" y2="390"/>
+    <line x1="850" y1="438" x2="850" y2="506"/>
   </g>
-  <rect x="28" y="470" width="904" height="46" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-  <text x="480" y="492" text-anchor="middle" fill="#1c4f4a" font-size="13" font-weight="700" font-family="'Segoe UI',sans-serif">THE CONSTANT GROUND TRUTH</text>
-  <text x="480" y="508" text-anchor="middle" fill="#3a6b66" font-size="11" font-family="'Segoe UI',sans-serif">one shared rulebook — read first by every session, discovery to build</text>
+  <rect x="28" y="510" width="904" height="48" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <text x="480" y="533" text-anchor="middle" fill="#1c4f4a" font-size="13" font-weight="700" font-family="'Segoe UI',sans-serif">THE CONSTANT GROUND TRUTH</text>
+  <text x="480" y="549" text-anchor="middle" fill="#3a6b66" font-size="11" font-family="'Segoe UI',sans-serif">one shared rulebook — read first by every session (now just the slice each one needs), discovery to ship</text>
 </svg>
-<figcaption>The orchestrator conducts discovery, thinking and building through gates, over a shared ground truth</figcaption></figure>
-<p>So the fuller picture is: the Orchestrator sits <em>above</em> the relay, Discovery sits at the <em>front</em> of it, and a <strong>gate-check</strong> sits between every handoff — a quick "is this brief actually complete, and did everyone stay in their lane?" before the next expert is allowed to start.</p>
+<figcaption>The orchestrator runs discovery itself, then conducts thinking and building through gates, over a shared ground truth</figcaption></figure>
+<p>So the fuller picture is: the Orchestrator sits <em>above</em> the relay, Discovery is its own first move, and a <strong>gate-check</strong> sits between every handoff — a quick "is this brief actually complete, and did everyone stay in their lane?" before the next expert is allowed to start. And as we'll see, that gate-check is no longer just a human judgment call.</p>
 <hr>
 <h2>How we remember things — without carrying baggage</h2>
-<p>If every session starts fresh, how does anything survive? Two pieces.</p>
+<p>If every session starts fresh, how does anything survive? A few pieces.</p>
 <p><strong>1. One constant rulebook.</strong> There's a single file every session reads first — the <em>ground truth</em>. It holds the things that are always true about the product: how the math works, what must never change, the conventions, the hard-won decisions. It's the one thing that's the same for everyone, every time.</p>
 <p><strong>2. A squeeze step (we call it a "compressor").</strong> When a session finishes its messy, back-and-forth work, we don't save the whole transcript. We run it through a step that <strong>keeps the decisions and throws away the debate</strong> — the options we considered, the dead-ends, the "wait, what about…" — all of it gets boiled down into a small, dense handoff document. The next session reads <em>that</em>, not the noise.</p>
 <figure><svg viewBox="0 0 960 470" xmlns="http://www.w3.org/2000/svg" role="img">
@@ -445,7 +467,9 @@
 </svg>
 <figcaption>A constant ground-truth file plus a compress step that keeps decisions and drops noise</figcaption></figure>
 <p>The result is a kind of memory that doesn't rot. Nothing important is lost, and nothing is ever re-explained. Each new session inherits a tidy summary and the shared rulebook — and starts clean.</p>
-<p>There's now a third piece, and it's the one we're proudest of: <strong>a rule that promotes itself.</strong> Every binding decision a session locks gets jotted in a running ledger. When the same decision has earned its keep across enough features, it <em>graduates</em> on its own — its wording is lifted into the shared rulebook, and from then on every future session inherits it for free. Nobody has to remember to write it down; sheer recurrence does the writing. It's the cow-path rule: walk the same shortcut across the grass enough times, and eventually someone paves it. (This one started life on the wish-list further down — it's since become real.)</p>
+<p><strong>3. A rule that promotes itself.</strong> Every binding decision a session locks gets jotted in a running ledger. When the same decision has earned its keep across enough features, it <em>graduates</em> on its own — its wording is lifted into the shared rulebook, and from then on every future session inherits it for free. Nobody has to remember to write it down; sheer recurrence does the writing. It's the cow-path rule: walk the same shortcut across the grass enough times, and eventually someone paves it.</p>
+<p>*<em>4. …and a rule that </em>demotes<em> itself.<strong> A graduated rule is a default, not a cage. The first time reality contradicts one — the inspector catches it failing, or a later expert formally overturns it — the rule gets </strong>demoted</em><em> right back out of the rulebook, with a note explaining why. Recurrence promotes; reality can always demote. The memory tracks what's </em>true<em>, not merely what's been </em>repeated*.</p>
+<p>There's one cost lurking in all this: if the rulebook only ever grows, every fresh session pays to read more of it. So sessions no longer swallow the whole thing. Each one is handed just the <em>slice</em> its brief calls for — plus the short list of rules that must <strong>never</strong> be skipped, no matter the task. The rulebook stays one file; what each expert actually loads is a focused excerpt. Knowledge compounds without the reading bill compounding with it.</p>
 <hr>
 <h2>It's not a straight line: gateways</h2>
 <p>The relay isn't a fixed conveyor belt. At each gate, the Orchestrator looks at two things — <strong>the goal</strong>, and <strong>where the work stands right now</strong> — and picks the route:</p>
@@ -543,119 +567,96 @@
 <p>Same set of specialists, same rulebook — but the <em>path</em> through them flexes to fit the job. That's what stops a small change from paying the price of a big one, and a big change from skipping the rigor it needs.</p>
 <hr>
 <h2>The guardrails that keep it honest</h2>
-<p>A relay only works if the batons are trustworthy. A few habits make them so:</p>
-<ul><li><strong>Stay in your lane.</strong> Every role is <em>told</em> what it may not touch. The result is that no single session can quietly break a decision made upstream.</li><li><strong>Bounce, don't bulldoze.</strong> If a later role spots a problem in an earlier decision, it doesn't just override it — it sends a labeled <strong>amendment</strong> back to the role that owns that call. (In one of our features, the designer flagged that a prompt was assuming <em>every</em> trader is reckless; that got bounced back to the Architect, formally accepted, and only <em>then</em> did design continue.)</li><li><strong>One source of truth for the seam.</strong> When two builders work in parallel, the <strong>Interface Contract</strong> is the single referee. If it's not in the contract, it's not real. That's what lets the two halves be built blind to each other and still fit.</li><li><strong>Best-effort everywhere.</strong> Every feature is designed so that if one piece fails, the rest of the product keeps working and just shows an honest "unavailable" — never a blank screen, never a fake number.</li></ul>
+<p>A relay only works if the batons are trustworthy. When we first wrote this section, these were <em>habits</em> — things we asked each role to honor. Most of them are now <strong>enforced</strong>, not just requested:</p>
+<ul><li><strong>Stay in your lane — now sandboxed.</strong> Every role runs with only the tools its job needs. A thinking role can read and write documents but <em>cannot run or edit code at all</em>; a builder working in one repository <em>cannot write into the other</em>. A lane violation isn't something a reviewer catches after the fact — it's blocked before it can happen.</li><li><strong>Every handoff gets a linter.</strong> Before the next expert is allowed to start, an automatic check reads the brief: are the required pieces present, did both halves actually bind to the shared spec, is a newly-promoted rule properly written into the rulebook? A structural gap stops the relay until it's fixed — no waiting for a human to notice.</li><li>*<em>The two halves are </em>proven<em> to fit, not assumed to.</em><em> The scariest moment in any parallel build is the join. So the shared Interface Contract now carries a machine-checkable list of exactly what the back end must emit, and a tool runs the </em>live* server against it. "It integrates" stopped being a hope and became a check that has to pass — run by the builder before it dares claim done, and again by the inspector before ship.</li><li><strong>An inspector signs off before anything ships.</strong> A fresh session — pointedly <em>not</em> one of the builders — takes the finished feature and the original checklist and confirms, item by item, that it does what it promised against the actually-running software. It fixes <em>nothing</em>: a failure bounces back to the builder like any other amendment, and the inspector re-checks the fix. Nothing reaches "shipped" without its sign-off. (This was the very first name on our "next hires" wish-list. It's on staff now.)</li><li><strong>Bounce, don't bulldoze.</strong> If a later role spots a problem in an earlier decision, it doesn't just override it — it sends a labeled <strong>amendment</strong> back to the role that owns that call. (In one of our features, the designer flagged that a prompt was assuming <em>every</em> trader is reckless; that got bounced back to the Architect, formally accepted, and only <em>then</em> did design continue.)</li><li><strong>Best-effort everywhere.</strong> Every feature is designed so that if one piece fails, the rest of the product keeps working and just shows an honest "unavailable" — never a blank screen, never a fake number.</li></ul>
 <hr>
 <h2>Why this is a genuinely great way to build</h2>
-<ul><li><strong>Quality stays high as the project grows.</strong> Each session is short and focused, so it never hits the "tired and confused" stage of a long chat.</li><li><strong>The work is reviewable.</strong> Because every handoff is a written document, a human can read exactly what was decided and why — before a line of code is written.</li><li><strong>Two builders, half the wall-clock.</strong> Decoupling the back end and front end behind one spec means they're built in parallel.</li><li><strong>Knowledge compounds instead of leaking.</strong> The compress step means today's decisions are tomorrow's starting point — not something someone has to remember and re-explain.</li><li><strong>It's honest by construction.</strong> Lanes, amendments, and a shared rulebook make it hard for a mistake to hide and easy for a person to step in at any handoff.</li></ul>
+<ul><li><strong>Quality stays high as the project grows.</strong> Each session is short and focused, so it never hits the "tired and confused" stage of a long chat.</li><li><strong>The work is reviewable.</strong> Because every handoff is a written document, a human can read exactly what was decided and why — before a line of code is written.</li><li><strong>Two builders, half the wall-clock.</strong> Decoupling the back end and front end behind one spec means they're built in parallel.</li><li><strong>Knowledge compounds instead of leaking.</strong> The compress step means today's decisions are tomorrow's starting point — not something someone has to remember and re-explain.</li><li><strong>It's honest by construction — and increasingly self-checking.</strong> Lanes, amendments, a shared rulebook, a linter, a live integration check, and an inspector make it hard for a mistake to hide and easy for a person to step in at any handoff.</li></ul>
 <hr>
 <h2>The next hires: who we'd add to the team</h2>
-<p>A good studio grows by adding the <em>right</em> specialists — not by piling more work on the ones it already has. Three hires would make this team noticeably sharper, and they're the next thing we're building toward.</p>
-<figure><svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>The next hires: design-tool-equipped thinkers, a QA inspector, and a security reviewer</title>
-  <desc>Three future roles for the AI team. First, the Discovery and UX roles gain design tools: Discovery maps journeys in Miro, UX draws flow and state diagrams in Miro and high-fidelity screens in Figma, and builders read those screens read-only in Dev Mode; anything read back off a board is treated as data, not instructions. Second, a QA inspector runs after the builders, confirms the feature against its checklist point by point, and bounces gaps back without fixing code. Third, a security reviewer runs before every ship, red-teaming the feature, enforcing least access, and stopping outside content from hijacking a session. The relay grows so QA slots in just before Ship.</desc>
+<p>A good studio grows by adding the <em>right</em> specialists — not by piling more work on the ones it already has. Since the first draft of this post we've already made a couple of those hires: the <strong>QA inspector</strong> above, plus the whole sandbox-and-linter apparatus that now <em>enforces</em> the lanes instead of merely requesting them. Two specialists are still ahead of us.</p>
+<figure><svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>The next hires: design-tool-equipped thinkers and a security reviewer — with QA and automated checks already on staff</title>
+  <desc>Two future roles for the AI team. First, the Discovery and UX roles gain design tools: Discovery maps journeys in Miro, UX draws flow and state diagrams in Miro and high-fidelity screens in Figma, and builders read those screens read-only in Dev Mode; anything read back off a board is treated as data, not instructions. Second, a security reviewer that red-teams each feature before ship, enforces least access, and stops outside content from hijacking a session — held until the product goes live. A footer strip shows what has already shipped since the post: the QA inspector, automated gate-checks, and sandboxed lanes.</desc>
   <style>
     text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
     .h1{fill:#23252B;font-size:23px;font-weight:700}
     .sub{fill:#707684;font-size:13.5px}
-    .ct{fill:#23252B;font-size:16px;font-weight:700}
-    .cs{fill:#707684;font-size:11.5px}
-    .bd{fill:#3a4150;font-size:12px}
-    .ft{font-size:11px;font-weight:600}
+    .ct{fill:#23252B;font-size:18px;font-weight:700}
+    .cs{fill:#707684;font-size:12px}
+    .bd{fill:#3a4150;font-size:12.5px}
+    .ft{font-size:11.5px;font-weight:600}
     .cap{fill:#8A8170;font-size:12px}
-    .relay{font-size:14px;font-weight:600}
+    .done{font-size:13px;font-weight:700}
   </style>
   <rect x="1" y="1" width="958" height="558" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
 
   <text class="h1" x="40" y="48">The next hires</text>
-  <text class="sub" x="40" y="72">Three specialists we'd add next — each a fresh expert, each in a lane of its own.</text>
+  <text class="sub" x="40" y="72">Two specialists still ahead of us — each a fresh expert, each in a lane of its own.</text>
 
   <!-- ============ CARD 1 — DESIGN TOOLS (teal) ============ -->
-  <rect x="40" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-  <rect x="56" y="118" width="86" height="19" rx="9" fill="#DCEBE8" stroke="#2E6F69"/>
-  <text x="99" y="131.5" text-anchor="middle" class="ft" fill="#1c4f4a">DESIGN</text>
-  <text class="ct" x="56" y="166">Thinkers who draw</text>
-  <text class="cs" x="56" y="185">Discovery &amp; UX, in Miro + Figma</text>
-  <line x1="56" y1="198" x2="304" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="56" y="222">• Discovery maps the user</text>
-  <text class="bd" x="56" y="239">   journey in Miro</text>
-  <text class="bd" x="56" y="263">• UX draws flow &amp; state</text>
-  <text class="bd" x="56" y="280">   diagrams in Miro</text>
-  <text class="bd" x="56" y="304">• UX designs hi-fi screens</text>
-  <text class="bd" x="56" y="321">   in Figma</text>
-  <text class="bd" x="56" y="345">• Builders read them in</text>
-  <text class="bd" x="56" y="362">   Dev Mode — read-only</text>
-  <line x1="56" y1="402" x2="304" y2="402" stroke="#E7E2D8"/>
-  <text x="180" y="425" text-anchor="middle" class="ft" fill="#1c4f4a">Fetched text = data, not commands</text>
+  <rect x="40" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+  <rect x="60" y="120" width="86" height="20" rx="10" fill="#DCEBE8" stroke="#2E6F69"/>
+  <text x="103" y="134" text-anchor="middle" class="ft" fill="#1c4f4a">DESIGN</text>
+  <text class="ct" x="60" y="172">Thinkers who draw</text>
+  <text class="cs" x="60" y="192">Discovery &amp; UX, live in Miro + Figma</text>
+  <line x1="60" y1="206" x2="450" y2="206" stroke="#E7E2D8"/>
+  <text class="bd" x="60" y="234">• Discovery maps the user journey in Miro</text>
+  <text class="bd" x="60" y="262">• UX draws flow &amp; state diagrams in Miro</text>
+  <text class="bd" x="60" y="290">• UX designs high-fidelity screens in Figma</text>
+  <text class="bd" x="60" y="318">• Builders read them in Dev Mode — read-only</text>
+  <line x1="60" y1="356" x2="450" y2="356" stroke="#E7E2D8"/>
+  <text x="255" y="386" text-anchor="middle" class="ft" fill="#1c4f4a">Anything fetched back = data, never commands</text>
 
-  <!-- ============ CARD 2 — QA (violet) ============ -->
-  <rect x="340" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#6D5BAE" stroke-width="2"/>
-  <rect x="356" y="118" width="86" height="19" rx="9" fill="#ECEAF6" stroke="#6D5BAE"/>
-  <text x="399" y="131.5" text-anchor="middle" class="ft" fill="#4A3A86">QUALITY</text>
-  <text class="ct" x="356" y="166">A QA inspector</text>
-  <text class="cs" x="356" y="185">runs after the builders</text>
-  <line x1="356" y1="198" x2="604" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="356" y="222">• Takes the finished build</text>
-  <text class="bd" x="356" y="239">   + the original checklist</text>
-  <text class="bd" x="356" y="263">• Confirms each item,</text>
-  <text class="bd" x="356" y="280">   point by point</text>
-  <text class="bd" x="356" y="304">• Never edits the code —</text>
-  <text class="bd" x="356" y="321">   files a bounce-back</text>
-  <line x1="356" y1="402" x2="604" y2="402" stroke="#E7E2D8"/>
-  <text x="480" y="425" text-anchor="middle" class="ft" fill="#4A3A86">No marking your own homework</text>
+  <!-- ============ CARD 2 — SECURITY (amber) ============ -->
+  <rect x="490" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#B4862B" stroke-width="2"/>
+  <rect x="510" y="120" width="92" height="20" rx="10" fill="#F6EEDD" stroke="#B4862B"/>
+  <text x="556" y="134" text-anchor="middle" class="ft" fill="#7A5A12">SECURITY</text>
+  <text class="ct" x="510" y="172">A skeptic on staff</text>
+  <text class="cs" x="510" y="192">red-teams each feature before it ships</text>
+  <line x1="510" y1="206" x2="900" y2="206" stroke="#E7E2D8"/>
+  <text class="bd" x="510" y="234">• "What could be made to go wrong?"</text>
+  <text class="bd" x="510" y="262">• Least access per role (least-privilege)</text>
+  <text class="bd" x="510" y="290">• Outside text can't hijack a session</text>
+  <text class="bd" x="510" y="318">• Ideally a different AI model — uncorrelated</text>
+  <line x1="510" y1="356" x2="900" y2="356" stroke="#E7E2D8"/>
+  <text x="705" y="386" text-anchor="middle" class="ft" fill="#7A5A12">Held until we go live — real money / data / web</text>
 
-  <!-- ============ CARD 3 — SECURITY (amber) ============ -->
-  <rect x="640" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#B4862B" stroke-width="2"/>
-  <rect x="656" y="118" width="86" height="19" rx="9" fill="#F6EEDD" stroke="#B4862B"/>
-  <text x="699" y="131.5" text-anchor="middle" class="ft" fill="#7A5A12">SECURITY</text>
-  <text class="ct" x="656" y="166">A security reviewer</text>
-  <text class="cs" x="656" y="185">runs before every ship</text>
-  <line x1="656" y1="198" x2="904" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="656" y="222">• Red-teams each feature</text>
-  <text class="bd" x="656" y="239">   before it ships</text>
-  <text class="bd" x="656" y="263">• Least access per role</text>
-  <text class="bd" x="656" y="280">   (least-privilege)</text>
-  <text class="bd" x="656" y="304">• Outside text can't</text>
-  <text class="bd" x="656" y="321">   hijack a session</text>
-  <line x1="656" y1="402" x2="904" y2="402" stroke="#E7E2D8"/>
-  <text x="780" y="425" text-anchor="middle" class="ft" fill="#7A5A12">A smoke detector, pre-smoke</text>
-
-  <!-- ============ FOOTER — how the relay grows ============ -->
-  <line x1="40" y1="478" x2="920" y2="478" stroke="#E7E2D8"/>
-  <text class="cap" x="480" y="502" text-anchor="middle">How the relay grows — QA slots in just before Ship</text>
-  <text class="relay" x="480" y="530" text-anchor="middle">
-    <tspan fill="#4A5160">Discovery &#8594; Architect &#8594; PM &#8594; UX &#8594; Builders &#8594; </tspan><tspan fill="#6D5BAE" font-weight="700">QA</tspan><tspan fill="#4A5160"> &#8594; Ship</tspan>
-  </text>
+  <!-- ============ FOOTER — already shipped ============ -->
+  <rect x="40" y="446" width="880" height="74" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.5"/>
+  <text class="done" x="64" y="478" fill="#1c4f4a">Already joined — shipped since this post</text>
+  <g class="cs" fill="#2c4f4a" font-size="12.5" font-weight="600">
+    <text x="64" y="502">✓ QA inspector</text>
+    <text x="250" y="502">✓ Automated gate-checks (linter + live integration check)</text>
+    <text x="700" y="502">✓ Sandboxed lanes</text>
+  </g>
 </svg>
-<figcaption>Three future roles: design-tool-equipped thinkers, a QA inspector, and a security reviewer</figcaption></figure>
+<figcaption>Two future hires — design-tool-equipped thinkers and a security reviewer — with the QA inspector and automated checks already on staff</figcaption></figure>
 <p><strong>Give the thinkers a drawing board.</strong> Right now the Discovery and UX/Tech-Writer roles describe things in words. The next step is to let them <em>draw</em> — live. Discovery would sketch the user's journey and cluster raw ideas on a <strong>Miro</strong> board; the UX/Tech-Writer would turn the plan into real flow and component-state diagrams in Miro, and into high-fidelity screens in <strong>Figma</strong>. The neat part is the division of labour: the AI authors the <em>diagrams</em> — the boxes-and-arrows that explain how something behaves — while the polished, pixel-perfect screens live in Figma, where a human or the agent can refine them. Either way the front-end builder reads those screens straight out of Figma's "Dev Mode," so design and code never drift apart. One rule travels with this capability: anything a role <em>reads back</em> off a shared board or file is treated as <strong>information, never as instructions</strong> — a stranger can't smuggle a command onto a canvas and have a session obey it.</p>
-<p><strong>Hire an inspector (QA).</strong> Today the builders check their own work. That's the one spot where our "no marking your own homework" principle quietly slips. So we'd add a <strong>QA</strong> role: a fresh session whose only job is to take the finished feature and the original checklist of <em>what it must do</em>, and confirm — point by point — that it actually does. Crucially, QA doesn't <em>fix</em> anything. If something fails, it writes up the gap and bounces it back to the builder, exactly like every other handoff. An inspector who also does the repairs is no inspector at all.</p>
-<p><strong>Put a skeptic on staff (Security).</strong> The more our roles reach out into the wider world — design tools, live market data, the web — the more it pays to have one session whose entire mindset is <em>"what could go wrong, or be made to go wrong?"</em> A <strong>Security reviewer</strong> would red-team each feature before it ships: checking that every role holds the <em>least</em> access it needs, that outside content can't hijack a session, and that nothing private leaks out. It's the smoke detector you install before you smell smoke.</p>
+<p><strong>Put a skeptic on staff (Security).</strong> The more our roles reach out into the wider world — design tools, live market data, the web — the more it pays to have one session whose entire mindset is <em>"what could go wrong, or be made to go wrong?"</em> A <strong>Security reviewer</strong> would red-team each feature before it ships: checking that every role holds the <em>least</em> access it needs, that outside content can't hijack a session, and that nothing private leaks out. We're deliberately holding this hire until the product goes live — handles real money, real data, or the open web — because before then, a dedicated red-teamer (ideally on a <em>different</em> AI model, so its blind spots don't match the builders') costs more than it would catch. We know exactly when to make the hire: the day any of those three things enters the picture.</p>
 <p>None of these break the model — they <em>are</em> the model: one more fresh expert, one more clean handoff, one more lane nobody else is allowed to cross.</p>
 <hr>
 <h2>Where this goes next</h2>
-<p>The version above is real and working today. The interesting part is that it's a <em>foundation</em> you can keep compounding. A few directions that make it dramatically better — and one that's already crossed from wish-list to working:</p>
-<ul><li><strong>Automated gate-checks.</strong> Today a gate is a human judgment call. Tomorrow it's also a <em>linter for handoffs</em> — an automatic check that a contract is complete and that no role coloured outside its lane, before the next session is even allowed to start.</li><li><strong>Parallel feature lanes.</strong> One Orchestrator can run several features at once, scheduling sessions and using a shared "open threads" list so two features never quietly collide.</li><li><strong>A memory that compounds — ✓ now shipped.</strong> When the same decision keeps showing up across features, it <em>graduates</em> from a one-off note into the shared rulebook automatically — so the system literally gets wiser with every feature it ships. This one is live today (see <em>a rule that promotes itself</em> above); in the flywheel below it's lit up, while the other three are still ahead of us.</li><li><strong>Close the loop with reality.</strong> The product already measures its own performance. Feed those live metrics back into Discovery and ideas stop being guesses — the loop becomes <strong>build → measure → discover → build</strong>, a flywheel that speeds up as it spins.</li></ul>
+<p>The version above is real and working today. The interesting part is that it's a <em>foundation</em> you can keep compounding — and two of the upgrades we once dreamed about have already crossed from wish-list to working:</p>
+<ul><li><strong>Automated gate-checks — ✓ now shipped.</strong> A gate used to be a pure human judgment call. Now it's also a <em>linter for handoffs</em> plus a live integration check — automatic proof that a contract is complete, that no role coloured outside its lane, and that the two halves actually fit, before the next session is even allowed to start.</li><li><strong>A memory that compounds — ✓ now shipped.</strong> When the same decision keeps showing up across features it <em>graduates</em> into the shared rulebook automatically — and, just as importantly, gets <em>demoted</em> the moment reality contradicts it. The system literally gets wiser with every feature, without calcifying a wrong-but-repeated rule into law.</li><li><strong>Close the loop with reality.</strong> Still ahead: the product already measures its own performance, but those live metrics don't yet flow back into Discovery. Wire them in and ideas stop being guesses — the loop becomes <strong>build → measure → discover → build</strong>, a flywheel grounded in what actually happened.</li><li><strong>Parallel feature lanes.</strong> Still ahead, and deliberately last: one Orchestrator running several features at once. It's the upgrade that finally removes the human-as-conductor — which is exactly why it waits until every guardrail above is proven, so we never trade away our main error-correction mechanism for raw speed.</li></ul>
 <figure><svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>The evolution: a compounding flywheel of discover, decide, build, measure, with four upgrades</title>
-  <desc>A central loop turns through four stages: Discover, Decide, Build, Measure, then back to Discover. Four upgrades surround it: automated gate-checks, parallel feature lanes, a memory that compounds by promoting proven decisions into the rulebook, and production metrics that feed the next idea.</desc>
+  <title>The evolution: a compounding flywheel of discover, decide, build, measure — two upgrades shipped, two still ahead</title>
+  <desc>A central loop turns through four stages: Discover, Decide, Build, Measure, then back to Discover. Four upgrades surround it. Two are now shipped (shown in teal with a check): automated gate-checks — a linter plus a live integration check — and a memory that compounds by promoting proven decisions into the rulebook and demoting them when reality disagrees. Two are still ahead (shown grey): parallel feature lanes, and production metrics fed back into discovery to close the loop.</desc>
   <style>
     text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
     .h1{fill:#23252B;font-size:23px;font-weight:700}
     .sub{fill:#707684;font-size:13px}
     .stage{fill:#1f2937;font-size:14px;font-weight:700}
-    .stages{fill:#5C6470;font-size:10px}
     .ctr{fill:#1c4f4a;font-size:14px;font-weight:700}
-    .ctrs{fill:#3a6b66;font-size:10.5px}
-    .upt{fill:#3a4262;font-size:13px;font-weight:700}
-    .ups{fill:#4B5575;font-size:11px}
+    .upt{font-size:13px;font-weight:700}
+    .ups{font-size:11px}
   </style>
   <defs>
     <marker id="fc" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#2E6F69"/></marker>
   </defs>
   <rect x="1" y="1" width="958" height="538" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
   <text class="h1" x="34" y="44">Where this goes next</text>
-  <text class="sub" x="34" y="68">Turn the relay into a flywheel — each loop cheaper and smarter than the last.</text>
+  <text class="sub" x="34" y="68">Turn the relay into a flywheel — each loop cheaper and smarter than the last. Two upgrades shipped; two still ahead.</text>
 
   <!-- center loop -->
   <circle cx="480" cy="312" r="120" fill="none" stroke="#BFD8D4" stroke-width="2" stroke-dasharray="2 4"/>
@@ -666,19 +667,19 @@
   <!-- four stages on the loop -->
   <g>
     <circle cx="480" cy="192" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-    <text class="stage" x="480" y="190" text-anchor="middle">Discover</text>
+    <text class="stage" x="480" y="197" text-anchor="middle">Discover</text>
   </g>
   <g>
     <circle cx="600" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-    <text class="stage" x="600" y="316" text-anchor="middle">Decide</text>
+    <text class="stage" x="600" y="317" text-anchor="middle">Decide</text>
   </g>
   <g>
     <circle cx="480" cy="432" r="30" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-    <text class="stage" x="480" y="436" text-anchor="middle">Build</text>
+    <text class="stage" x="480" y="437" text-anchor="middle">Build</text>
   </g>
   <g>
     <circle cx="360" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-    <text class="stage" x="360" y="316" text-anchor="middle">Measure</text>
+    <text class="stage" x="360" y="317" text-anchor="middle">Measure</text>
   </g>
   <!-- clockwise arrows between stages -->
   <g fill="none" stroke="#2E6F69" stroke-width="2.5">
@@ -688,42 +689,50 @@
     <path d="M388,288 A120,120 0 0 1 450,200" marker-end="url(#fc)"/>
   </g>
 
-  <!-- four upgrade cards in corners -->
+  <!-- LEFT = shipped (teal) -->
   <g>
-    <rect x="34" y="118" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-    <text class="upt" x="50" y="144">Automated gate-checks</text>
-    <text class="ups" x="50" y="164">a “contract linter” catches gaps</text>
-    <text class="ups" x="50" y="180">before the next session starts</text>
+    <rect x="34" y="112" width="240" height="84" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="upt" x="50" y="136" fill="#1c4f4a">Automated gate-checks</text>
+    <text class="ups" x="50" y="156" fill="#2E6F69" font-weight="700">✓ shipped</text>
+    <text class="ups" x="50" y="174" fill="#3a6b66">a handoff linter + a live</text>
+    <text class="ups" x="50" y="189" fill="#3a6b66">integration check, before each step</text>
   </g>
   <g>
-    <rect x="694" y="118" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-    <text class="upt" x="710" y="144">Parallel feature lanes</text>
-    <text class="ups" x="710" y="164">many features in flight at once,</text>
-    <text class="ups" x="710" y="180">scheduled by the orchestrator</text>
+    <rect x="34" y="426" width="240" height="84" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="upt" x="50" y="450" fill="#1c4f4a">Memory that compounds</text>
+    <text class="ups" x="50" y="470" fill="#2E6F69" font-weight="700">✓ shipped</text>
+    <text class="ups" x="50" y="488" fill="#3a6b66">proven decisions graduate to canon —</text>
+    <text class="ups" x="50" y="503" fill="#3a6b66">and demote when reality disagrees</text>
+  </g>
+
+  <!-- RIGHT = still ahead (grey) -->
+  <g>
+    <rect x="686" y="112" width="240" height="84" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="702" y="136" fill="#3a4262">Parallel feature lanes</text>
+    <text class="ups" x="702" y="156" fill="#8A8FA3" font-weight="700">↗ on the roadmap (last)</text>
+    <text class="ups" x="702" y="174" fill="#4B5575">many features in flight at once,</text>
+    <text class="ups" x="702" y="189" fill="#4B5575">scheduled by the orchestrator</text>
   </g>
   <g>
-    <rect x="34" y="430" width="232" height="74" rx="11" fill="#DCEBE8" stroke="#2E6F69"/>
-    <text class="upt" x="50" y="456" fill="#1c4f4a">Memory that compounds</text>
-    <text class="ups" x="50" y="476" fill="#2E6F69" font-weight="700">&#10003; now shipped — proven</text>
-    <text class="ups" x="50" y="492" fill="#3a6b66">decisions graduate to canon</text>
-  </g>
-  <g>
-    <rect x="694" y="430" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-    <text class="upt" x="710" y="456">Metrics close the loop</text>
-    <text class="ups" x="710" y="476">live performance data feeds</text>
-    <text class="ups" x="710" y="492">the next round of ideas</text>
+    <rect x="686" y="426" width="240" height="84" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="702" y="450" fill="#3a4262">Metrics close the loop</text>
+    <text class="ups" x="702" y="470" fill="#8A8FA3" font-weight="700">↗ on the roadmap</text>
+    <text class="ups" x="702" y="488" fill="#4B5575">live performance data feeds</text>
+    <text class="ups" x="702" y="503" fill="#4B5575">the next round of ideas</text>
   </g>
 
   <!-- connectors from cards to nearest stage -->
+  <g stroke="#2E6F69" stroke-width="1.4" stroke-dasharray="3 3">
+    <line x1="274" y1="154" x2="452" y2="188"/>
+    <line x1="274" y1="468" x2="452" y2="432"/>
+  </g>
   <g stroke="#9AA0B5" stroke-width="1.4" stroke-dasharray="3 3">
-    <line x1="266" y1="155" x2="452" y2="188"/>
-    <line x1="694" y1="155" x2="624" y2="296"/>
-    <line x1="266" y1="467" x2="452" y2="432"/>
-    <line x1="694" y1="467" x2="386" y2="324"/>
+    <line x1="686" y1="154" x2="624" y2="296"/>
+    <line x1="686" y1="468" x2="386" y2="324"/>
   </g>
 </svg>
-<figcaption>A compounding flywheel of discover, decide, build, measure, with four upgrades around it</figcaption></figure>
-<p>To be clear, the flywheel doesn't <em>replace</em> the relay — it <strong>is</strong> the relay, run lap after lap. Its four stations map straight onto the team you already met: <strong>Discover</strong> is the Discovery role grooming the backlog, <strong>Decide</strong> is the Architect / PM / UX thinking, <strong>Build</strong> is the two builders, and <strong>Measure</strong> is the live metrics plus that self-promoting memory. The relay is one lap; the flywheel is what happens across many — each turn a little smarter than the one before.</p>
+<figcaption>A compounding flywheel of discover, decide, build, measure — two upgrades shipped, two still ahead</figcaption></figure>
+<p>To be clear, the flywheel doesn't <em>replace</em> the relay — it <strong>is</strong> the relay, run lap after lap. Its four stations map straight onto the team you already met: <strong>Discover</strong> is the conductor grooming the backlog, <strong>Decide</strong> is the Architect / PM / UX thinking, <strong>Build</strong> is the two builders and the inspector, and <strong>Measure</strong> is the live metrics plus that self-promoting (and self-demoting) memory. The relay is one lap; the flywheel is what happens across many — each turn a little smarter than the one before.</p>
 <p>The endgame isn't "AI writes code faster." It's a small, self-improving studio that gets <strong>cheaper, safer, and smarter every time it ships</strong> — because every loop leaves behind better rules, better checks, and better questions.</p>
 <hr>
 <h2>The one-sentence version</h2>

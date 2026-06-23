@@ -29,8 +29,11 @@ Run at the Exit of Architect and PM. Targets the next role's needs.
 Compress THIS session into a contract for the next role: {TARGET_ROLE}.
 Reader has ONLY .claude/GAMMAFLOW_CONTEXT.md + this contract.
 Include exactly the sections {TARGET_ROLE} needs to act (use that contract's template in
-.claude/contracts/{FEATURE}/). Restate any binding constraint they must not violate. Stay in
-your lane: the Architect emits no UI/endpoints; the PM emits no code/math. EXCLUDE your
+.claude/contracts/{FEATURE}/). Restate any binding constraint they must not violate — explicitly
+including the promoted-canon keys this feature touches (the BRIEF's `Invariant watch`: e.g.
+best-effort-isolated-or-null, additive-keeps-score-byte-identical, live-vs-static-isolation,
+operator-vs-trader-path-separation) so the next role inherits them without re-reading the ledger.
+Stay in your lane: the Architect emits no UI/endpoints; the PM emits no code/math. EXCLUDE your
 rationale — ship decisions, not deliberation.
 Write to .claude/contracts/{FEATURE}/{CONTRACT_NAME}.md; print the path + a 5-bullet summary.
 ```
@@ -42,13 +45,22 @@ Run at the Exit of the UX/Tech-Writer session. Emits the FE↔BE glue + two lane
 Compress THIS session into THREE files for decoupled execution:
 1) .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md — the FE↔BE data contract ONLY:
    endpoints, payload fields (names, types, presence rules), and error/SSE semantics. Both
-   sides bind to this; it is the single source of integration truth.
+   sides bind to this; it is the single source of integration truth. It MUST embed a
+   machine-checkable `## Conformance spec` fenced ```json block mapping each endpoint → its
+   required field paths/types/presence (dot-paths; `name[]` for array fan-out; `type|null`
+   unions; trailing `?` for optional), so interface_conformance.py (system-1) can verify the
+   live backend against it at GATE Q and the executioners can self-check before reporting done.
+   (A NO_BACKEND_CHANGE interface that only consumes an existing endpoint may point at that
+   endpoint's existing spec instead of restating it.)
 2) .claude/contracts/{FEATURE}/BACKEND_EXECUTION_CONTRACT.md — server work only; references
    the interface contract for what it must EMIT; contains NO UI detail.
 3) .claude/contracts/{FEATURE}/FRONTEND_EXECUTION_CONTRACT.md — UI work only; references the
-   interface contract for what it CONSUMES + the component states; contains NO server internals.
+   interface contract for what it CONSUMES + the component states (default/loading/stale/
+   offline/empty/error); contains NO server internals.
 Each must be self-contained against GAMMAFLOW_CONTEXT.md + the interface contract. EXCLUDE
-rationale. Print the three paths.
+rationale. Print the three paths. (contract_lint.py runs next at GATE U·X: it ERRORs if an
+execution contract isn't bound to the interface and WARNs if a locked interface lacks the
+Conformance spec block — so emit the block now.)
 ```
 
 ## 4. Session-Resume Compressor (continue long work in a fresh tab)

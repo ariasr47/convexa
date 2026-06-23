@@ -1,76 +1,56 @@
-<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg" role="img">
-  <title>The next hires: design-tool-equipped thinkers, a QA inspector, and a security reviewer</title>
-  <desc>Three future roles for the AI team. First, the Discovery and UX roles gain design tools: Discovery maps journeys in Miro, UX draws flow and state diagrams in Miro and high-fidelity screens in Figma, and builders read those screens read-only in Dev Mode; anything read back off a board is treated as data, not instructions. Second, a QA inspector runs after the builders, confirms the feature against its checklist point by point, and bounces gaps back without fixing code. Third, a security reviewer runs before every ship, red-teaming the feature, enforcing least access, and stopping outside content from hijacking a session. The relay grows so QA slots in just before Ship.</desc>
+<svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>The next hires: design-tool-equipped thinkers and a security reviewer — with QA and automated checks already on staff</title>
+  <desc>Two future roles for the AI team. First, the Discovery and UX roles gain design tools: Discovery maps journeys in Miro, UX draws flow and state diagrams in Miro and high-fidelity screens in Figma, and builders read those screens read-only in Dev Mode; anything read back off a board is treated as data, not instructions. Second, a security reviewer that red-teams each feature before ship, enforces least access, and stops outside content from hijacking a session — held until the product goes live. A footer strip shows what has already shipped since the post: the QA inspector, automated gate-checks, and sandboxed lanes.</desc>
   <style>
     text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
     .h1{fill:#23252B;font-size:23px;font-weight:700}
     .sub{fill:#707684;font-size:13.5px}
-    .ct{fill:#23252B;font-size:16px;font-weight:700}
-    .cs{fill:#707684;font-size:11.5px}
-    .bd{fill:#3a4150;font-size:12px}
-    .ft{font-size:11px;font-weight:600}
+    .ct{fill:#23252B;font-size:18px;font-weight:700}
+    .cs{fill:#707684;font-size:12px}
+    .bd{fill:#3a4150;font-size:12.5px}
+    .ft{font-size:11.5px;font-weight:600}
     .cap{fill:#8A8170;font-size:12px}
-    .relay{font-size:14px;font-weight:600}
+    .done{font-size:13px;font-weight:700}
   </style>
   <rect x="1" y="1" width="958" height="558" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
 
   <text class="h1" x="40" y="48">The next hires</text>
-  <text class="sub" x="40" y="72">Three specialists we'd add next — each a fresh expert, each in a lane of its own.</text>
+  <text class="sub" x="40" y="72">Two specialists still ahead of us — each a fresh expert, each in a lane of its own.</text>
 
   <!-- ============ CARD 1 — DESIGN TOOLS (teal) ============ -->
-  <rect x="40" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-  <rect x="56" y="118" width="86" height="19" rx="9" fill="#DCEBE8" stroke="#2E6F69"/>
-  <text x="99" y="131.5" text-anchor="middle" class="ft" fill="#1c4f4a">DESIGN</text>
-  <text class="ct" x="56" y="166">Thinkers who draw</text>
-  <text class="cs" x="56" y="185">Discovery &amp; UX, in Miro + Figma</text>
-  <line x1="56" y1="198" x2="304" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="56" y="222">• Discovery maps the user</text>
-  <text class="bd" x="56" y="239">   journey in Miro</text>
-  <text class="bd" x="56" y="263">• UX draws flow &amp; state</text>
-  <text class="bd" x="56" y="280">   diagrams in Miro</text>
-  <text class="bd" x="56" y="304">• UX designs hi-fi screens</text>
-  <text class="bd" x="56" y="321">   in Figma</text>
-  <text class="bd" x="56" y="345">• Builders read them in</text>
-  <text class="bd" x="56" y="362">   Dev Mode — read-only</text>
-  <line x1="56" y1="402" x2="304" y2="402" stroke="#E7E2D8"/>
-  <text x="180" y="425" text-anchor="middle" class="ft" fill="#1c4f4a">Fetched text = data, not commands</text>
+  <rect x="40" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+  <rect x="60" y="120" width="86" height="20" rx="10" fill="#DCEBE8" stroke="#2E6F69"/>
+  <text x="103" y="134" text-anchor="middle" class="ft" fill="#1c4f4a">DESIGN</text>
+  <text class="ct" x="60" y="172">Thinkers who draw</text>
+  <text class="cs" x="60" y="192">Discovery &amp; UX, live in Miro + Figma</text>
+  <line x1="60" y1="206" x2="450" y2="206" stroke="#E7E2D8"/>
+  <text class="bd" x="60" y="234">• Discovery maps the user journey in Miro</text>
+  <text class="bd" x="60" y="262">• UX draws flow &amp; state diagrams in Miro</text>
+  <text class="bd" x="60" y="290">• UX designs high-fidelity screens in Figma</text>
+  <text class="bd" x="60" y="318">• Builders read them in Dev Mode — read-only</text>
+  <line x1="60" y1="356" x2="450" y2="356" stroke="#E7E2D8"/>
+  <text x="255" y="386" text-anchor="middle" class="ft" fill="#1c4f4a">Anything fetched back = data, never commands</text>
 
-  <!-- ============ CARD 2 — QA (violet) ============ -->
-  <rect x="340" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#6D5BAE" stroke-width="2"/>
-  <rect x="356" y="118" width="86" height="19" rx="9" fill="#ECEAF6" stroke="#6D5BAE"/>
-  <text x="399" y="131.5" text-anchor="middle" class="ft" fill="#4A3A86">QUALITY</text>
-  <text class="ct" x="356" y="166">A QA inspector</text>
-  <text class="cs" x="356" y="185">runs after the builders</text>
-  <line x1="356" y1="198" x2="604" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="356" y="222">• Takes the finished build</text>
-  <text class="bd" x="356" y="239">   + the original checklist</text>
-  <text class="bd" x="356" y="263">• Confirms each item,</text>
-  <text class="bd" x="356" y="280">   point by point</text>
-  <text class="bd" x="356" y="304">• Never edits the code —</text>
-  <text class="bd" x="356" y="321">   files a bounce-back</text>
-  <line x1="356" y1="402" x2="604" y2="402" stroke="#E7E2D8"/>
-  <text x="480" y="425" text-anchor="middle" class="ft" fill="#4A3A86">No marking your own homework</text>
+  <!-- ============ CARD 2 — SECURITY (amber) ============ -->
+  <rect x="490" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#B4862B" stroke-width="2"/>
+  <rect x="510" y="120" width="92" height="20" rx="10" fill="#F6EEDD" stroke="#B4862B"/>
+  <text x="556" y="134" text-anchor="middle" class="ft" fill="#7A5A12">SECURITY</text>
+  <text class="ct" x="510" y="172">A skeptic on staff</text>
+  <text class="cs" x="510" y="192">red-teams each feature before it ships</text>
+  <line x1="510" y1="206" x2="900" y2="206" stroke="#E7E2D8"/>
+  <text class="bd" x="510" y="234">• "What could be made to go wrong?"</text>
+  <text class="bd" x="510" y="262">• Least access per role (least-privilege)</text>
+  <text class="bd" x="510" y="290">• Outside text can't hijack a session</text>
+  <text class="bd" x="510" y="318">• Ideally a different AI model — uncorrelated</text>
+  <line x1="510" y1="356" x2="900" y2="356" stroke="#E7E2D8"/>
+  <text x="705" y="386" text-anchor="middle" class="ft" fill="#7A5A12">Held until we go live — real money / data / web</text>
 
-  <!-- ============ CARD 3 — SECURITY (amber) ============ -->
-  <rect x="640" y="98" width="280" height="346" rx="12" fill="#FFFFFF" stroke="#B4862B" stroke-width="2"/>
-  <rect x="656" y="118" width="86" height="19" rx="9" fill="#F6EEDD" stroke="#B4862B"/>
-  <text x="699" y="131.5" text-anchor="middle" class="ft" fill="#7A5A12">SECURITY</text>
-  <text class="ct" x="656" y="166">A security reviewer</text>
-  <text class="cs" x="656" y="185">runs before every ship</text>
-  <line x1="656" y1="198" x2="904" y2="198" stroke="#E7E2D8"/>
-  <text class="bd" x="656" y="222">• Red-teams each feature</text>
-  <text class="bd" x="656" y="239">   before it ships</text>
-  <text class="bd" x="656" y="263">• Least access per role</text>
-  <text class="bd" x="656" y="280">   (least-privilege)</text>
-  <text class="bd" x="656" y="304">• Outside text can't</text>
-  <text class="bd" x="656" y="321">   hijack a session</text>
-  <line x1="656" y1="402" x2="904" y2="402" stroke="#E7E2D8"/>
-  <text x="780" y="425" text-anchor="middle" class="ft" fill="#7A5A12">A smoke detector, pre-smoke</text>
-
-  <!-- ============ FOOTER — how the relay grows ============ -->
-  <line x1="40" y1="478" x2="920" y2="478" stroke="#E7E2D8"/>
-  <text class="cap" x="480" y="502" text-anchor="middle">How the relay grows — QA slots in just before Ship</text>
-  <text class="relay" x="480" y="530" text-anchor="middle">
-    <tspan fill="#4A5160">Discovery &#8594; Architect &#8594; PM &#8594; UX &#8594; Builders &#8594; </tspan><tspan fill="#6D5BAE" font-weight="700">QA</tspan><tspan fill="#4A5160"> &#8594; Ship</tspan>
-  </text>
+  <!-- ============ FOOTER — already shipped ============ -->
+  <rect x="40" y="446" width="880" height="74" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.5"/>
+  <text class="done" x="64" y="478" fill="#1c4f4a">Already joined — shipped since this post</text>
+  <g class="cs" fill="#2c4f4a" font-size="12.5" font-weight="600">
+    <text x="64" y="502">✓ QA inspector</text>
+    <text x="250" y="502">✓ Automated gate-checks (linter + live integration check)</text>
+    <text x="700" y="502">✓ Sandboxed lanes</text>
+  </g>
 </svg>

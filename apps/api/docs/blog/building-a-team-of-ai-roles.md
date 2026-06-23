@@ -28,35 +28,42 @@ So we stopped doing that.
 Instead of one endless chat, GammaFlow is built by a **relay of specialists** — each
 one a separate AI session that plays exactly *one* role and then hands off:
 
-- **Discovery** explores the raw idea and checks it's worth doing — and doable at all.
 - **The Architect** decides how the system should be shaped.
 - **The Product Manager** decides what we're building and for whom.
 - **The UX / Tech-Writer** decides how it looks, behaves, and what every label says.
 - **The Builders** (one for the back end, one for the front end) write the actual code.
+- **The Inspector (QA)** takes the finished feature and the original checklist and
+  confirms, point by point, that it really does what it promised — and is allowed to fail it.
 
-And quietly running the whole thing is one more session that *isn't* really on that
-list — the **Orchestrator**. More on that in a moment.
+And running the whole thing is one more session that *isn't* really on that list — the
+**Orchestrator**. It even does a quick **Discovery** pass up front to decide what's worth
+building next. More on both in a moment.
 
 Here's the part that sounds strange but is the secret sauce: **each session starts with
 no memory of the others.** It doesn't get the messy chat history. It gets a clean,
 written **handoff document** — and nothing else.
 
 That's not a limitation we tolerate. It's the design. A fresh expert with a clear brief
-is sharper than a tired one drowning in everything that came before.
+is sharper than a tired one drowning in everything that came before. And we've since made
+that fresh start *mechanical*: each role now runs as a **sandboxed worker** with only the
+tools its job needs — the Architect literally *cannot* edit or run code, a builder in one
+repository literally *cannot* write into the other. The clean brief isn't just good manners
+any more; it's a fence.
 
 ![A relay of specialists passing contracts down the line](img/role-relay.svg)
 
 Notice two things in that picture:
 
-1. **Each role stays in its lane.** The Architect never writes screen layouts. The
-   Product Manager never writes code or math. The designer never decides server
-   internals. Lanes keep each handoff clean and keep anyone from quietly overruling a
-   decision that wasn't theirs to make.
-2. **At the end, the work forks in two.** Once the design is locked, a single step
-   called the **Split** produces one **Interface Contract** — a shared spec — plus a
-   to-do list for each builder. Then the back-end and front-end builders work **at the
-   same time, without talking to each other.** They don't need to. They both agree on
-   the same spec, so their halves snap together at the end.
+1. **Each role stays in its lane** — and now the lane is enforced by the tools each one is
+   handed, not just by asking nicely. The Architect never writes screen layouts. The
+   Product Manager never writes code or math. The designer never decides server internals.
+   Lanes keep each handoff clean and keep anyone from quietly overruling a decision that
+   wasn't theirs to make.
+2. **At the end, the work forks in two.** Once the design is locked, a single step called
+   the **Split** produces one **Interface Contract** — a shared spec — plus a to-do list for
+   each builder. Then the back-end and front-end builders work **at the same time, without
+   talking to each other.** They don't need to. They both agree on the same spec, so their
+   halves snap together at the end.
 
 ---
 
@@ -69,22 +76,33 @@ its brief, checks the work at each **gate**, and carries the result on to the ne
 (Confusing, we know — the *Product* Manager writes the plan; the *Project* Manager runs
 the show. Think director, not screenwriter.)
 
-It's also where the pipeline really begins. Before anyone designs or builds, a
-**Discovery** session explores the raw idea: is it worth doing, is it even possible, how
-big is it? Only ideas that survive that triage get a brief and enter the relay.
+It's also where the pipeline really begins — but with a twist. Unlike every other
+specialist, **Discovery isn't a separate hire; it's the conductor's own opening move.**
+Before anyone designs or builds, the conductor itself grooms the backlog: gather the
+candidate ideas, throw out the ones that don't improve a real decision, score what's left,
+and pick exactly *one* to build next. Only that survivor gets a brief and enters the relay.
 
-![The orchestrator conducts discovery, thinking and building through gates, over a shared ground truth](img/orchestrated-pipeline.svg)
+Why keep this one job in-house when everything else is delegated to a fresh specialist?
+Three plain reasons. The raw material Discovery needs — the rulebook, the list of open
+questions, the running idea-pool — is exactly what the conductor already has open on its
+desk. It happens *before* there's a brief to hand a new hire. And its only output is that
+short brief, which the conductor has to carry into the relay anyway. Delegating it would
+just mean a new specialist re-reading everything the conductor already read, to produce a
+note the conductor then re-reads. So Discovery stays at the conductor's desk — the one
+deliberate exception to "every job is a fresh, separate expert."
 
-So the fuller picture is: the Orchestrator sits *above* the relay, Discovery sits at the
-*front* of it, and a **gate-check** sits between every handoff — a quick "is this brief
-actually complete, and did everyone stay in their lane?" before the next expert is
-allowed to start.
+![The orchestrator runs discovery itself, then conducts thinking and building through gates, over a shared ground truth](img/orchestrated-pipeline.svg)
+
+So the fuller picture is: the Orchestrator sits *above* the relay, Discovery is its own
+first move, and a **gate-check** sits between every handoff — a quick "is this brief
+actually complete, and did everyone stay in their lane?" before the next expert is allowed
+to start. And as we'll see, that gate-check is no longer just a human judgment call.
 
 ---
 
 ## How we remember things — without carrying baggage
 
-If every session starts fresh, how does anything survive? Two pieces.
+If every session starts fresh, how does anything survive? A few pieces.
 
 **1. One constant rulebook.** There's a single file every session reads first — the
 *ground truth*. It holds the things that are always true about the product: how the math
@@ -103,14 +121,24 @@ The result is a kind of memory that doesn't rot. Nothing important is lost, and 
 is ever re-explained. Each new session inherits a tidy summary and the shared rulebook —
 and starts clean.
 
-There's now a third piece, and it's the one we're proudest of: **a rule that promotes
-itself.** Every binding decision a session locks gets jotted in a running ledger. When the
-same decision has earned its keep across enough features, it *graduates* on its own — its
-wording is lifted into the shared rulebook, and from then on every future session inherits
-it for free. Nobody has to remember to write it down; sheer recurrence does the writing.
-It's the cow-path rule: walk the same shortcut across the grass enough times, and eventually
-someone paves it. (This one started life on the wish-list further down — it's since become
-real.)
+**3. A rule that promotes itself.** Every binding decision a session locks gets jotted in a
+running ledger. When the same decision has earned its keep across enough features, it
+*graduates* on its own — its wording is lifted into the shared rulebook, and from then on
+every future session inherits it for free. Nobody has to remember to write it down; sheer
+recurrence does the writing. It's the cow-path rule: walk the same shortcut across the grass
+enough times, and eventually someone paves it.
+
+**4. …and a rule that *demotes* itself.** A graduated rule is a default, not a cage. The
+first time reality contradicts one — the inspector catches it failing, or a later expert
+formally overturns it — the rule gets **demoted** right back out of the rulebook, with a note
+explaining why. Recurrence promotes; reality can always demote. The memory tracks what's
+*true*, not merely what's been *repeated*.
+
+There's one cost lurking in all this: if the rulebook only ever grows, every fresh session
+pays to read more of it. So sessions no longer swallow the whole thing. Each one is handed
+just the *slice* its brief calls for — plus the short list of rules that must **never** be
+skipped, no matter the task. The rulebook stays one file; what each expert actually loads is
+a focused excerpt. Knowledge compounds without the reading bill compounding with it.
 
 ---
 
@@ -136,21 +164,37 @@ from skipping the rigor it needs.
 
 ## The guardrails that keep it honest
 
-A relay only works if the batons are trustworthy. A few habits make them so:
+A relay only works if the batons are trustworthy. When we first wrote this section, these
+were *habits* — things we asked each role to honor. Most of them are now **enforced**, not
+just requested:
 
-- **Stay in your lane.** Every role is *told* what it may not touch. The result is that
-  no single session can quietly break a decision made upstream.
+- **Stay in your lane — now sandboxed.** Every role runs with only the tools its job needs.
+  A thinking role can read and write documents but *cannot run or edit code at all*; a builder
+  working in one repository *cannot write into the other*. A lane violation isn't something a
+  reviewer catches after the fact — it's blocked before it can happen.
+- **Every handoff gets a linter.** Before the next expert is allowed to start, an automatic
+  check reads the brief: are the required pieces present, did both halves actually bind to the
+  shared spec, is a newly-promoted rule properly written into the rulebook? A structural gap
+  stops the relay until it's fixed — no waiting for a human to notice.
+- **The two halves are *proven* to fit, not assumed to.** The scariest moment in any parallel
+  build is the join. So the shared Interface Contract now carries a machine-checkable list of
+  exactly what the back end must emit, and a tool runs the *live* server against it. "It
+  integrates" stopped being a hope and became a check that has to pass — run by the builder
+  before it dares claim done, and again by the inspector before ship.
+- **An inspector signs off before anything ships.** A fresh session — pointedly *not* one of
+  the builders — takes the finished feature and the original checklist and confirms, item by
+  item, that it does what it promised against the actually-running software. It fixes *nothing*:
+  a failure bounces back to the builder like any other amendment, and the inspector re-checks
+  the fix. Nothing reaches "shipped" without its sign-off. (This was the very first name on our
+  "next hires" wish-list. It's on staff now.)
 - **Bounce, don't bulldoze.** If a later role spots a problem in an earlier decision, it
-  doesn't just override it — it sends a labeled **amendment** back to the role that owns
-  that call. (In one of our features, the designer flagged that a prompt was assuming
-  *every* trader is reckless; that got bounced back to the Architect, formally accepted,
-  and only *then* did design continue.)
-- **One source of truth for the seam.** When two builders work in parallel, the
-  **Interface Contract** is the single referee. If it's not in the contract, it's not
-  real. That's what lets the two halves be built blind to each other and still fit.
-- **Best-effort everywhere.** Every feature is designed so that if one piece fails, the
-  rest of the product keeps working and just shows an honest "unavailable" — never a
-  blank screen, never a fake number.
+  doesn't just override it — it sends a labeled **amendment** back to the role that owns that
+  call. (In one of our features, the designer flagged that a prompt was assuming *every* trader
+  is reckless; that got bounced back to the Architect, formally accepted, and only *then* did
+  design continue.)
+- **Best-effort everywhere.** Every feature is designed so that if one piece fails, the rest
+  of the product keeps working and just shows an honest "unavailable" — never a blank screen,
+  never a fake number.
 
 ---
 
@@ -164,80 +208,79 @@ A relay only works if the batons are trustworthy. A few habits make them so:
   spec means they're built in parallel.
 - **Knowledge compounds instead of leaking.** The compress step means today's decisions
   are tomorrow's starting point — not something someone has to remember and re-explain.
-- **It's honest by construction.** Lanes, amendments, and a shared rulebook make it hard
-  for a mistake to hide and easy for a person to step in at any handoff.
+- **It's honest by construction — and increasingly self-checking.** Lanes, amendments, a
+  shared rulebook, a linter, a live integration check, and an inspector make it hard for a
+  mistake to hide and easy for a person to step in at any handoff.
 
 ---
 
 ## The next hires: who we'd add to the team
 
-A good studio grows by adding the *right* specialists — not by piling more work on
-the ones it already has. Three hires would make this team noticeably sharper, and
-they're the next thing we're building toward.
+A good studio grows by adding the *right* specialists — not by piling more work on the
+ones it already has. Since the first draft of this post we've already made a couple of those
+hires: the **QA inspector** above, plus the whole sandbox-and-linter apparatus that now
+*enforces* the lanes instead of merely requesting them. Two specialists are still ahead of us.
 
-![Three future roles: design-tool-equipped thinkers, a QA inspector, and a security reviewer](img/the-next-hires.svg)
+![Two future hires — design-tool-equipped thinkers and a security reviewer — with the QA inspector and automated checks already on staff](img/the-next-hires.svg)
 
-**Give the thinkers a drawing board.** Right now the Discovery and UX/Tech-Writer
-roles describe things in words. The next step is to let them *draw* — live. Discovery
-would sketch the user's journey and cluster raw ideas on a **Miro** board; the
-UX/Tech-Writer would turn the plan into real flow and component-state diagrams in
-Miro, and into high-fidelity screens in **Figma**. The neat part is the division of
-labour: the AI authors the *diagrams* — the boxes-and-arrows that explain how
-something behaves — while the polished, pixel-perfect screens live in Figma, where a
-human or the agent can refine them. Either way the front-end builder reads those
-screens straight out of Figma's "Dev Mode," so design and code never drift apart. One
-rule travels with this capability: anything a role *reads back* off a shared board or
-file is treated as **information, never as instructions** — a stranger can't smuggle a
-command onto a canvas and have a session obey it.
+**Give the thinkers a drawing board.** Right now the Discovery and UX/Tech-Writer roles
+describe things in words. The next step is to let them *draw* — live. Discovery would sketch
+the user's journey and cluster raw ideas on a **Miro** board; the UX/Tech-Writer would turn
+the plan into real flow and component-state diagrams in Miro, and into high-fidelity screens
+in **Figma**. The neat part is the division of labour: the AI authors the *diagrams* — the
+boxes-and-arrows that explain how something behaves — while the polished, pixel-perfect screens
+live in Figma, where a human or the agent can refine them. Either way the front-end builder
+reads those screens straight out of Figma's "Dev Mode," so design and code never drift apart.
+One rule travels with this capability: anything a role *reads back* off a shared board or file
+is treated as **information, never as instructions** — a stranger can't smuggle a command onto
+a canvas and have a session obey it.
 
-**Hire an inspector (QA).** Today the builders check their own work. That's the one
-spot where our "no marking your own homework" principle quietly slips. So we'd add a
-**QA** role: a fresh session whose only job is to take the finished feature and the
-original checklist of *what it must do*, and confirm — point by point — that it
-actually does. Crucially, QA doesn't *fix* anything. If something fails, it writes up
-the gap and bounces it back to the builder, exactly like every other handoff. An
-inspector who also does the repairs is no inspector at all.
+**Put a skeptic on staff (Security).** The more our roles reach out into the wider world —
+design tools, live market data, the web — the more it pays to have one session whose entire
+mindset is *"what could go wrong, or be made to go wrong?"* A **Security reviewer** would
+red-team each feature before it ships: checking that every role holds the *least* access it
+needs, that outside content can't hijack a session, and that nothing private leaks out. We're
+deliberately holding this hire until the product goes live — handles real money, real data, or
+the open web — because before then, a dedicated red-teamer (ideally on a *different* AI model,
+so its blind spots don't match the builders') costs more than it would catch. We know exactly
+when to make the hire: the day any of those three things enters the picture.
 
-**Put a skeptic on staff (Security).** The more our roles reach out into the wider
-world — design tools, live market data, the web — the more it pays to have one session
-whose entire mindset is *"what could go wrong, or be made to go wrong?"* A **Security
-reviewer** would red-team each feature before it ships: checking that every role holds
-the *least* access it needs, that outside content can't hijack a session, and that
-nothing private leaks out. It's the smoke detector you install before you smell smoke.
-
-None of these break the model — they *are* the model: one more fresh expert, one more
-clean handoff, one more lane nobody else is allowed to cross.
+None of these break the model — they *are* the model: one more fresh expert, one more clean
+handoff, one more lane nobody else is allowed to cross.
 
 ---
 
 ## Where this goes next
 
 The version above is real and working today. The interesting part is that it's a
-*foundation* you can keep compounding. A few directions that make it dramatically better —
-and one that's already crossed from wish-list to working:
+*foundation* you can keep compounding — and two of the upgrades we once dreamed about have
+already crossed from wish-list to working:
 
-- **Automated gate-checks.** Today a gate is a human judgment call. Tomorrow it's also a
-  *linter for handoffs* — an automatic check that a contract is complete and that no role
-  coloured outside its lane, before the next session is even allowed to start.
-- **Parallel feature lanes.** One Orchestrator can run several features at once, scheduling
-  sessions and using a shared "open threads" list so two features never quietly collide.
-- **A memory that compounds — ✓ now shipped.** When the same decision keeps showing up
-  across features, it *graduates* from a one-off note into the shared rulebook automatically
-  — so the system literally gets wiser with every feature it ships. This one is live today
-  (see *a rule that promotes itself* above); in the flywheel below it's lit up, while the
-  other three are still ahead of us.
-- **Close the loop with reality.** The product already measures its own performance. Feed
-  those live metrics back into Discovery and ideas stop being guesses — the loop becomes
-  **build → measure → discover → build**, a flywheel that speeds up as it spins.
+- **Automated gate-checks — ✓ now shipped.** A gate used to be a pure human judgment call.
+  Now it's also a *linter for handoffs* plus a live integration check — automatic proof that a
+  contract is complete, that no role coloured outside its lane, and that the two halves actually
+  fit, before the next session is even allowed to start.
+- **A memory that compounds — ✓ now shipped.** When the same decision keeps showing up across
+  features it *graduates* into the shared rulebook automatically — and, just as importantly, gets
+  *demoted* the moment reality contradicts it. The system literally gets wiser with every feature,
+  without calcifying a wrong-but-repeated rule into law.
+- **Close the loop with reality.** Still ahead: the product already measures its own performance,
+  but those live metrics don't yet flow back into Discovery. Wire them in and ideas stop being
+  guesses — the loop becomes **build → measure → discover → build**, a flywheel grounded in what
+  actually happened.
+- **Parallel feature lanes.** Still ahead, and deliberately last: one Orchestrator running several
+  features at once. It's the upgrade that finally removes the human-as-conductor — which is exactly
+  why it waits until every guardrail above is proven, so we never trade away our main
+  error-correction mechanism for raw speed.
 
-![A compounding flywheel of discover, decide, build, measure, with four upgrades around it](img/evolution-flywheel.svg)
+![A compounding flywheel of discover, decide, build, measure — two upgrades shipped, two still ahead](img/evolution-flywheel.svg)
 
 To be clear, the flywheel doesn't *replace* the relay — it **is** the relay, run lap after
 lap. Its four stations map straight onto the team you already met: **Discover** is the
-Discovery role grooming the backlog, **Decide** is the Architect / PM / UX thinking, **Build**
-is the two builders, and **Measure** is the live metrics plus that self-promoting memory. The
-relay is one lap; the flywheel is what happens across many — each turn a little smarter than
-the one before.
+conductor grooming the backlog, **Decide** is the Architect / PM / UX thinking, **Build** is
+the two builders and the inspector, and **Measure** is the live metrics plus that
+self-promoting (and self-demoting) memory. The relay is one lap; the flywheel is what happens
+across many — each turn a little smarter than the one before.
 
 The endgame isn't "AI writes code faster." It's a small, self-improving studio that gets
 **cheaper, safer, and smarter every time it ships** — because every loop leaves behind
