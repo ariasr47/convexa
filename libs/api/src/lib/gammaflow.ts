@@ -127,6 +127,31 @@ export interface AiEval {
   score_threshold: number;
 }
 
+// ---- Backend observability (operator-only; the trader FE IGNORES these) ---------------------
+// Fixed stage vocabulary + kind taxonomy (the operator readout maps io_* → "I/O", else → "CPU").
+export type StageName = 'vendor_fetch' | 'engine_build' | 'off_exchange' | 'signals' | 'persist' | 'serialize_wrap';
+export type StageKind = 'io_vendor' | 'cpu_engine' | 'cpu_signals' | 'io_disk' | 'serialize';
+
+export interface MetaTimingStage {
+  stage: StageName;
+  kind: StageKind;
+  duration_ms: number;
+  status: 'ok' | 'error' | 'skipped';
+}
+export interface MetaTimingVendorCall {
+  name: string;
+  duration_ms: number;
+  http_status: number;
+  retries: number;
+  rate_limit?: { remaining: number; limit: number } | null; // vendor-specific; optional/nullable
+}
+/** Per-stage breakdown — present on `meta` ONLY when the verbose/debug switch is set. */
+export interface MetaTimings {
+  total_ms: number;
+  stages: MetaTimingStage[];
+  vendor_calls: MetaTimingVendorCall[];
+}
+
 export interface Meta {
   served_at: string;
   cache: { hit: boolean; age_seconds: number; ttl_seconds: number };
@@ -136,6 +161,10 @@ export interface Meta {
     stale: boolean;
     stale_after_seconds: number;
   };
+  // Operator correlation id (present when instrumentation is enabled) + optional verbose per-stage
+  // timings. Additive + optional so bundles parse cleanly; the TRADER dashboard renders neither.
+  trace_id?: string;
+  timings?: MetaTimings;
 }
 
 export interface Expiration {
@@ -313,4 +342,53 @@ export async function fetchTrackedContract(
   if (res.status === 404) return null; // not in snapshot
   if (!res.ok) throw new ApiError(`Contract lookup failed (${res.status})`, res.status);
   return (await res.json()) as TrackedContract;
+}
+
+// ---- Operator metrics readout (observability; read-only, side-effect-free) -------------------
+// NOTE: the endpoint path is the INTERFACE_CONTRACT's *example* (`/api/_metrics`); the Interface
+// left it as "e.g." and the backend lane hasn't pinned it yet. Flagged for confirmation — if the
+// backend finalizes a different path, change only this constant.
+export const METRICS_ENDPOINT = '/api/_metrics';
+
+export interface MetricsLatency { p50_ms: number; p95_ms: number; max_ms: number; count: number; }
+export interface MetricsStage {
+  stage: StageName; kind: StageKind;
+  p50_ms: number; p95_ms: number; max_ms: number; count: number;
+  ok: number; error: number; skipped: number;
+}
+export interface MetricsCache { hits: number; misses: number; hit_ratio: number; current_data_age_seconds: number; }
+export interface MetricsVendor {
+  call_count: number; latency_p50_ms: number; latency_p95_ms: number;
+  min_rate_limit_headroom: { remaining: number; limit: number } | null; // null ⇒ "unknown"
+}
+export interface MetricsScope {
+  latency_total: MetricsLatency;
+  stages: MetricsStage[];
+  cache: MetricsCache;
+  vendor: MetricsVendor;
+}
+export interface RecentTrace {
+  trace_id: string;
+  ticker: string;
+  dims: { min_dte: number | null; max_dte: number | null; expirations_present: boolean; dark_pool: boolean };
+  cache_hit: boolean;
+  cache_age_seconds: number;
+  total_ms: number;
+  computed_trace_id?: string | null; // on a cache hit: lineage to the miss-trace that computed it
+}
+export interface MetricsAggregate {
+  instrumentation_enabled: boolean;
+  window: { size_desc: string; uptime_seconds: number; request_count: number };
+  global: MetricsScope;
+  per_ticker: Record<string, MetricsScope>;
+  recent_traces?: RecentTrace[];
+}
+
+/** Read-only operator metrics readout. Side-effect-free: GETs the readout only — never triggers a
+ *  bundle fetch, recompute, or cache mutation. Throws on any non-2xx (caller → "Metrics readout
+ *  unavailable."). */
+export async function fetchMetrics(): Promise<MetricsAggregate> {
+  const res = await fetch(METRICS_ENDPOINT);
+  if (!res.ok) throw new ApiError(`Metrics readout failed (${res.status})`, res.status);
+  return (await res.json()) as MetricsAggregate;
 }

@@ -17,6 +17,7 @@ import { useGhostTrade } from './ghost-trade/useGhostTrade';
 import { GhostTradePanel } from './ghost-trade/GhostTradePanel';
 import { TradeEntryDialog } from './ghost-trade/TradeEntryDialog';
 import { PrimeBanner, tierMeta, OPPORTUNITY_TIER_INFO } from './ghost-trade/OpportunityTier';
+import { OperatorMetrics } from './operator-metrics';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s (the live broadcast throttle) even when
@@ -654,7 +655,9 @@ function TickerDashboard() {
   );
 }
 
-export function App() {
+// Trader app (the GammaFlow dashboard). The operator metrics readout is a SEPARATE surface,
+// deliberately NOT under this AppBar and NOT linked from here.
+function TraderApp() {
   return (
     <>
       <AppBar position="static" elevation={0}>
@@ -665,6 +668,16 @@ export function App() {
         <Route path="/:ticker" element={<TickerDashboard />} />
       </Routes>
     </>
+  );
+}
+
+export function App() {
+  return (
+    <Routes>
+      {/* Operator-only readout — off the trader routes, unlinked from the trader UI. */}
+      <Route path="/_ops/metrics" element={<OperatorMetrics />} />
+      <Route path="/*" element={<TraderApp />} />
+    </Routes>
   );
 }
 
