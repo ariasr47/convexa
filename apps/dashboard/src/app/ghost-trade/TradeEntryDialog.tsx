@@ -18,13 +18,28 @@ const DISCLAIMER =
   'Paper trade — no broker, no real money. Filled at the option mid; fees, slippage, taxes and ' +
   'assignment are not modeled.';
 
+/** The entry pre-fill seam. Originally `{ expiration, strike, right }`; extended (FE-execution lane,
+ *  UX_BLUEPRINT §5) to also seed qty/stop/target from an AI rec. Every seeded field stays editable.
+ *  `provenance`/`sizingNote` are set only for an AI-sourced prefill (render the source chip + sizing
+ *  copy); a manual/Prime prefill leaves them undefined. */
+export interface EntryPrefill {
+  expiration: string;
+  strike: number;
+  right: OptionRight;
+  qty?: number;
+  stop?: number | null;
+  target?: number | null;
+  provenance?: string;
+  sizingNote?: string;
+}
+
 interface Props {
   open: boolean;
   ticker: string;
   expirations: string[];
   strikes: number[];
   spot: number;
-  prefill?: { expiration: string; strike: number; right: OptionRight };
+  prefill?: EntryPrefill;
   onClose: () => void;
   onConfirm: (form: NewTradeForm) => void;
 }
@@ -34,17 +49,22 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
   const [strike, setStrike] = useState<number | ''>('');
   const [right, setRight] = useState<OptionRight>('call');
   const [qty, setQty] = useState(1);
+  const [stop, setStop] = useState<number | ''>('');
+  const [target, setTarget] = useState<number | ''>('');
   const [fill, setFill] = useState<{ mark: number; basis: MarkBasis } | null>(null);
   const [fillState, setFillState] = useState<'idle' | 'loading' | 'error'>('idle');
 
-  // Reset fields each time the dialog opens (honor the Prime prefill).
+  // Reset fields each time the dialog opens (honor the Prime / AI prefill). A strike the prefill
+  // names that isn't in the chain list still seeds — the user can adjust to the nearest listed one.
   useEffect(() => {
     if (!open) return;
     const nearest = strikes.length ? strikes.reduce((b, s) => (Math.abs(s - spot) < Math.abs(b - spot) ? s : b), strikes[0]) : '';
-    setExpiration(prefill?.expiration ?? expirations[0] ?? '');
+    setExpiration(prefill?.expiration || expirations[0] || '');
     setStrike(prefill?.strike ?? nearest);
     setRight(prefill?.right ?? 'call');
-    setQty(1);
+    setQty(prefill?.qty && prefill.qty >= 1 ? prefill.qty : 1);
+    setStop(prefill?.stop ?? '');
+    setTarget(prefill?.target ?? '');
     setFill(null);
     setFillState('idle');
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -74,9 +94,10 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
           <span>Open simulated trade · {ticker}</span>
           <Chip size="small" color="default" variant="outlined" label="SIMULATED" title={SIMULATED_TIP} />
+          {prefill?.provenance && <Chip size="small" color="primary" variant="outlined" label={prefill.provenance} />}
         </Stack>
       </DialogTitle>
       <DialogContent>
@@ -102,6 +123,21 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
             onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
             slotProps={{ htmlInput: { min: 1 } }}
           />
+          {/* Risk plan — editable; seeded from an AI rec's exit_plan when Accepted, blank for a
+              manual entry. Not an input to the mark/P-L math (v1); recorded with the trade. */}
+          <Stack direction="row" spacing={2}>
+            <TextField
+              size="small" type="number" label="Stop (optional)" value={stop}
+              onChange={(e) => setStop(e.target.value === '' ? '' : Number(e.target.value))} fullWidth
+            />
+            <TextField
+              size="small" type="number" label="Target (optional)" value={target}
+              onChange={(e) => setTarget(e.target.value === '' ? '' : Number(e.target.value))} fullWidth
+            />
+          </Stack>
+          {prefill?.sizingNote && (
+            <Typography variant="caption" color="text.secondary">{prefill.sizingNote}</Typography>
+          )}
           <Box>
             {fillState === 'error' ? (
               <Typography variant="body2" color="error">Couldn't load the chain for entry — try again.</Typography>
@@ -127,7 +163,10 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
         <Button onClick={onClose}>Cancel</Button>
         <Button
           variant="contained" disabled={!canConfirm}
-          onClick={() => fill && onConfirm({ expiration, strike: Number(strike), right, qty, entryMark: fill.mark, entryBasis: fill.basis })}
+          onClick={() => fill && onConfirm({
+            expiration, strike: Number(strike), right, qty, entryMark: fill.mark, entryBasis: fill.basis,
+            stop: stop === '' ? null : Number(stop), target: target === '' ? null : Number(target),
+          })}
         >
           Open simulated trade
         </Button>

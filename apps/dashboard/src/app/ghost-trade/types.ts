@@ -20,6 +20,10 @@ export interface GhostTrade {
   entry_mark: number; // option mid (or theoretical) at entry — the fill basis
   entry_basis: MarkBasis;
   entry_time: string; // ISO-8601
+  // Optional risk plan seeded from an AI rec's exit_plan (UX_BLUEPRINT §5) and editable at entry.
+  // Additive + optional: older records simply lack them; not used by the mark/P-L math (v1).
+  stop?: number | null;
+  target?: number | null;
   status: 'open' | 'closed';
   realized_pl_dollar?: number;
   realized_pl_pct?: number;

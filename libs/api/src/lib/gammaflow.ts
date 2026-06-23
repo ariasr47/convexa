@@ -431,3 +431,128 @@ export interface Handoff {
   reassessment: HandoffPrompt;
   fallback?: boolean;
 }
+
+// ---- AI recommendations (in-app risk-first ENTRY rec; INTERFACE_CONTRACT §1) -----------------
+// Three NEW endpoints. The LLM call is a best-effort, isolated, gated consumer: every rec/status/
+// export endpoint is ALWAYS HTTP 200 for an LLM/cap/key fault (the `status`/`over_limit`/
+// `in_app_enabled` fields distinguish them) and NEVER a 5xx that would break the bundle/SSE/page.
+// A transport-level fault (network / non-2xx) is the only "unavailable" the FE synthesizes itself.
+// **No API key is ever sent or received** — the request body carries only identifiers + gating ctx.
+
+export type RecStatusKind = 'produced' | 'unavailable' | 'gated_off';
+export type RecDecision = 'trade' | 'no_trade';
+export type RecBias = 'long' | 'short' | 'neutral' | 'volatility';
+export type RecConfidence = 'low' | 'medium' | 'high';
+export type RecGateState = 'available' | 'no_fresh_edge' | 'cooling_down';
+
+/** POST body for a rec request. Carries NO bundle payload and NO key — only identifiers + the
+ *  gating context already on the page (INTERFACE §1.1). */
+export interface RecRequest {
+  persona_id: string | null;       // the persona framing THIS read (per-query override ≠ active)
+  snapshot_fingerprint: string;    // ai_eval.state_fingerprint of the bundle on the page (pin/validate)
+  dte_min: number | null;          // the DTE window already on the page (carried, not new)
+  dte_max: number | null;
+  dark_pool: boolean;              // whether off-exchange context is included (mirrors the page)
+  override: boolean;               // true ⇒ "Ask anyway" on a no_fresh_edge gate
+}
+
+/** The risk-first strategy artifact. `decision: 'no_trade'` ⇒ trade fields null/empty + rationale. */
+export interface RecStrategy {
+  decision: RecDecision;
+  bias: RecBias;
+  structure: string | null;
+  strikes: number[];               // concrete strike(s); [] allowed for no_trade
+  expiration: string | null;       // YYYY-MM-DD within [dte_min,dte_max]; null for no_trade
+  entry_trigger: string | null;
+  invalidation_level: number | null;
+  max_risk: string | null;
+  position_size: string | null;
+  exit_plan: { target: number | null; stop: number | null };
+  time_horizon: string | null;
+  confidence: RecConfidence | null;
+  rationale: string;
+}
+
+export interface RecPersona { id: string | null; name: string; }
+export interface RecGate { state: RecGateState; cooldown_remaining_seconds: number; reasons: string[]; }
+export interface RecCap { over_limit: boolean; remaining_today: number; resets_at: string; }
+
+/** Always HTTP 200. `status` drives the panel state machine; `strategy` present iff produced. */
+export interface RecResponse {
+  status: RecStatusKind;
+  persona: RecPersona;
+  as_of: string | null;            // snapshot_iso the rec is pinned to (echoes the bundle's freshness)
+  pinned_fingerprint: string;      // state_fingerprint the rec was generated from (staleness key)
+  stale_born: boolean;             // bundle was already stale at generation time (honest-at-birth)
+  strategy: RecStrategy | null;    // present iff status === 'produced'
+  unavailable_reason: string | null; // present iff status === 'unavailable'; NEVER leaks key text
+  gate: RecGate;                   // gating snapshot AT THE TIME OF THIS RESPONSE
+  cap: RecCap;
+}
+
+/** The structured export that feeds BOTH the in-app call and the manual hand-off (INTERFACE §1.2).
+ *  Triggers NO LLM call, costs nothing, available even when in-app AI is unavailable. Egress
+ *  invariant: ONLY {context, persona_prompt, glossary} (+ identifiers + egress_note). */
+export interface RecExport {
+  ticker: string;
+  as_of: string | null;
+  context: unknown;                // serialization of the cached bundle (null stays null, no recompute)
+  persona_prompt: string;          // assembled persona prompt (server-side, canonical-sourced)
+  glossary: string;                // field-level reference
+  egress_note: string;             // "Complete list of what leaves the machine…"
+}
+
+/** Gating + cap + availability without requesting a rec (INTERFACE §1.3). Side-effect-free, 200. */
+export interface RecStatus {
+  availability: { in_app_enabled: boolean }; // false ⇒ no key configured / feature off → inert in-app
+  gate: RecGate;
+  cap: RecCap;
+}
+
+/** Request a rec (in-app LLM call). ALWAYS 200 for produced/no_trade/unavailable/gated_off — the
+ *  `status` field distinguishes them. A non-2xx / network fault throws `ApiError`; the rec hook
+ *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent. */
+export async function requestRecommendation(symbol: string, body: RecRequest): Promise<RecResponse> {
+  const res = await fetch(`/api/recommendation/${symbol.toUpperCase()}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new ApiError(`Recommendation request failed (${res.status})`, res.status);
+  return (await res.json()) as RecResponse;
+}
+
+/** The structured state export (the always-available floor). 200 when a bundle exists; 404 if the
+ *  ticker was never fetched. Triggers no LLM call. */
+export async function fetchRecExport(
+  symbol: string,
+  { personaId }: { personaId?: string | null } = {},
+): Promise<RecExport> {
+  const params = new URLSearchParams();
+  if (personaId) params.set('persona_id', personaId);
+  const qs = params.toString();
+  const res = await fetch(`/api/recommendation/export/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
+  if (!res.ok) throw new ApiError(`Export unavailable (${res.status})`, res.status);
+  return (await res.json()) as RecExport;
+}
+
+/** Gating + cap + availability (drives the action's enabled/de-emphasized/disabled presentation).
+ *  Cheap, side-effect-free, always 200. Throws only on a transport fault (caller degrades to inert). */
+export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
+  const res = await fetch(`/api/recommendation/status/${symbol.toUpperCase()}`);
+  if (!res.ok) throw new ApiError(`Status unavailable (${res.status})`, res.status);
+  return (await res.json()) as RecStatus;
+}
+
+/** Canonical persona source (EXISTING endpoint, INTERFACE §1.4). This feature single-sources the
+ *  per-query persona list from it; the FE-embedded presets are the offline / assembly-failure
+ *  fallback only. Best-effort: throws on any transport/shape fault so the caller falls back. The
+ *  payload may be `PersonaDefinition[]` or `{ personas: PersonaDefinition[] }` — both are accepted. */
+export async function fetchPersonas(): Promise<PersonaDefinition[]> {
+  const res = await fetch('/api/personas');
+  if (!res.ok) throw new ApiError(`Personas unavailable (${res.status})`, res.status);
+  const payload = (await res.json()) as unknown;
+  const list = Array.isArray(payload) ? payload : (payload as { personas?: unknown })?.personas;
+  if (!Array.isArray(list) || list.length === 0) throw new ApiError('Malformed personas payload', 200);
+  return list as PersonaDefinition[];
+}

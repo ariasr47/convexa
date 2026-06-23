@@ -11,15 +11,20 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
 } from 'recharts';
-import { getTicker, streamTicker, TickerBundle, LiveUpdate, IvSkew, TermStructure, OptionRight } from '@org/api';
+import { getTicker, streamTicker, TickerBundle, LiveUpdate, IvSkew, TermStructure, RecResponse } from '@org/api';
 import { GexProfileChart } from './gex-profile-chart';
 import { useGhostTrade } from './ghost-trade/useGhostTrade';
 import { GhostTradePanel } from './ghost-trade/GhostTradePanel';
-import { TradeEntryDialog } from './ghost-trade/TradeEntryDialog';
+import { TradeEntryDialog, EntryPrefill } from './ghost-trade/TradeEntryDialog';
 import { PrimeBanner, tierMeta, OPPORTUNITY_TIER_INFO } from './ghost-trade/OpportunityTier';
 import { OperatorMetrics } from './operator-metrics';
 import { usePersona } from './personas/usePersona';
 import { PersonaPicker, HandoffDialog, PersonaCustomizeForm } from './personas/components';
+import { AiRecPanel, useReadPersonas } from './ai-rec/AiRecPanel';
+import { useAiRecommendation } from './ai-rec/useAiRecommendation';
+import { StateExportDrawer } from './ai-rec/StateExportDrawer';
+import { recToPrefill } from './ai-rec/prefill';
+import { COPY } from './ai-rec/copy';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s (the live broadcast throttle) even when
@@ -221,6 +226,25 @@ function TickerDashboard() {
   // synchronous + bundle-independent, so it triggers NO getTicker/streamTicker and NO recompute.
   const persona = usePersona();
 
+  // AI recommendation (in-app risk-first ENTRY rec). The rec surface is an INDEPENDENTLY NULLABLE
+  // sibling card: its hook catches any fault and renders `unavailable` here, never touching the
+  // chart/tiles/ghost-trade/live stream. Per-query read persona is canonical-sourced (embed
+  // fallback) and presentation-only — it never recomputes the bundle.
+  const { personas: readPersonas } = useReadPersonas(persona.personas);
+  const [readPersonaId, setReadPersonaId] = useState('default');
+  useEffect(() => { setReadPersonaId(persona.activeId); }, [persona.activeId]);
+  const aiRec = useAiRecommendation(ticker, data, {
+    personaId: persona.activeId === 'default' ? null : persona.activeId,
+    personaName: persona.active.name,
+    dteMin: data?.market_state.dte_min ?? null,
+    dteMax: data?.market_state.dte_max ?? null,
+    darkPool,
+  });
+  // Shared export drawer (the always-available floor): opened from the rec panel AND the persona
+  // HandoffDialog — the SAME export feeds both paths. Triggers no in-app LLM call.
+  const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({ open: false, personaId: null });
+  const openExport = useCallback((personaId: string | null) => setExportDrawer({ open: true, personaId }), []);
+
   // Persona DTE pre-fill: a visible, clearable staged window for the NEXT load. One-shot ref so it
   // applies ONLY on an explicit ticker navigation — never on the 60s poll and never on a persona
   // switch (so it can't retro-mutate the current view or recompute the bundle by itself).
@@ -294,7 +318,7 @@ function TickerDashboard() {
   // Ghost-trade entry dialog + Prime banner (over-trading guard: the banner shows only on the
   // change INTO Prime + prime_prompt_eligible, is dismissible, and never re-shows every poll).
   const [entryOpen, setEntryOpen] = useState(false);
-  const [entryPrefill, setEntryPrefill] = useState<{ expiration: string; strike: number; right: OptionRight } | undefined>();
+  const [entryPrefill, setEntryPrefill] = useState<EntryPrefill | undefined>();
   const [showPrimeBanner, setShowPrimeBanner] = useState(false);
   const prevTierRef = useRef<string | null>(null);
   const tradeOpen = gt.trade?.status === 'open';
@@ -304,8 +328,16 @@ function TickerDashboard() {
     if (t !== 'prime') setShowPrimeBanner(false);
     prevTierRef.current = t ?? null;
   }, [sig?.opportunity_tier, sig?.prime_prompt_eligible]);
-  const openEntry = (prefill?: { expiration: string; strike: number; right: OptionRight }) => {
+  const openEntry = (prefill?: EntryPrefill) => {
     setEntryPrefill(prefill); setEntryOpen(true);
+  };
+  // Accept an AI rec → pre-fill the SHIPPED ghost-trade entry dialog (every field editable). Nothing
+  // is tracked until the user confirms (mandatory `Open simulated trade`); cancel leaves nothing.
+  // No Accept path exists for a no_trade rec (the panel omits the control).
+  const onAcceptRec = (rec: RecResponse, personaName: string) => {
+    if (!rec.strategy) return;
+    const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
+    if (pf) openEntry(pf);
   };
   const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
@@ -526,6 +558,18 @@ function TickerDashboard() {
               P/L + mark degrade with the live stream only. */}
           <GhostTradePanel gt={gt} data={data} live={live} isLive={isLive} streamOffline={streamOffline} onOpenEntry={() => openEntry()} briefing={persona.active.name} />
 
+          {/* AI recommendation — a dedicated, independently-nullable sibling card. A rec
+              error/timeout/over-cap/no-key degrades ONLY this surface; everything above and below
+              keeps rendering the bundle. The rec is a STATIC artifact: stale on a newer bundle,
+              untouched on an SSE drop. */}
+          <AiRecPanel
+            ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
+            activePersonaId={persona.activeId}
+            dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+            onAccept={onAcceptRec} onViewExport={openExport}
+            readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
+          />
+
           {data?.strike_profile && (
             <GexProfileChart
               strikes={data.strike_profile.strikes}
@@ -695,13 +739,22 @@ function TickerDashboard() {
         onConfirm={(form) => { gt.openTrade(form); setEntryOpen(false); }}
       />
 
-      {/* Persona hand-off viewer + customize — presentation-only, off the compute path. */}
+      {/* Persona hand-off viewer + customize — presentation-only, off the compute path. The
+          hand-off dialog now also opens the SAME structured export drawer (augmenting the manual
+          hand-off; the export feeds both the in-app call and this copy-paste path). */}
       <HandoffDialog
         open={handoffOpen} onClose={() => setHandoffOpen(false)}
         handoff={persona.handoff} data={data} stale={fresh?.stale ?? false}
         dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+        onViewExport={() => openExport(persona.handoff.persona.id)}
       />
       <PersonaCustomizeForm open={customizeOpen} onClose={() => setCustomizeOpen(false)} persona={persona} />
+
+      {/* The structured-state export floor — reachable from the rec panel AND the hand-off dialog. */}
+      <StateExportDrawer
+        open={exportDrawer.open} ticker={ticker} personaId={exportDrawer.personaId}
+        onClose={() => setExportDrawer((s) => ({ ...s, open: false }))}
+      />
     </Container>
   );
 }

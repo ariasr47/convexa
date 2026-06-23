@@ -27,6 +27,10 @@ export interface NewTradeForm {
   qty: number;
   entryMark: number;
   entryBasis: MarkBasis;
+  // Optional risk plan (editable; seeded from an AI rec when Accepted). Additive — manual entries
+  // leave them undefined. Not an input to the mark/P-L math.
+  stop?: number | null;
+  target?: number | null;
 }
 
 export function useGhostTrade(
@@ -130,6 +134,7 @@ export function useGhostTrade(
       id: newId(), ticker: ticker.toUpperCase(), expiration: f.expiration, strike: f.strike,
       right: f.right, side: 'long', qty: f.qty, entry_mark: f.entryMark, entry_basis: f.entryBasis,
       entry_time: new Date().toISOString(), status: 'open', schema_version: SCHEMA_VERSION,
+      stop: f.stop ?? null, target: f.target ?? null,
     };
     persist(t);
     recordDecision({ event_type: 'open' }, t, f.entryMark, f.entryBasis);

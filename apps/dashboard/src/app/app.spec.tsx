@@ -107,12 +107,19 @@ beforeEach(() => {
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes('/api/ticker/')) {
-        return new Response(JSON.stringify(makeBundle()), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
+      const json = (body: unknown) =>
+        new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if (url.includes('/api/ticker/')) return json(makeBundle());
+      // The AI-rec surface reads gate/cap/availability + the canonical persona list on mount. Benign
+      // defaults keep the panel in its idle/available state without touching the rest of the page.
+      if (url.includes('/api/recommendation/status/')) {
+        return json({
+          availability: { in_app_enabled: true },
+          gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+          cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
         });
       }
+      if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
       // Any other endpoint isn't expected in the default flow — fail loudly if one slips in.
       throw new Error(`Unexpected fetch in test: ${url}`);
     }),

@@ -74,8 +74,8 @@ function SectionBadges({ handoff, tab }: { handoff: Handoff; tab: 'entry' | 'rea
   );
 }
 
-export function HandoffDialog({ open, onClose, handoff, data, stale, dataAge }:
-  { open: boolean; onClose: () => void; handoff: Handoff; data: TickerBundle | null; stale: boolean; dataAge: string | null }) {
+export function HandoffDialog({ open, onClose, handoff, data, stale, dataAge, onViewExport }:
+  { open: boolean; onClose: () => void; handoff: Handoff; data: TickerBundle | null; stale: boolean; dataAge: string | null; onViewExport?: () => void }) {
   const [tab, setTab] = useState<'entry' | 'reassessment'>('entry');
   const [toast, setToast] = useState(false);
   const prompt = tab === 'entry' ? handoff.entry : handoff.reassessment;
@@ -121,6 +121,7 @@ export function HandoffDialog({ open, onClose, handoff, data, stale, dataAge }:
         )}
       </DialogContent>
       <DialogActions>
+        {onViewExport && <Button onClick={onViewExport} sx={{ mr: 'auto' }}>View what's sent</Button>}
         <Button onClick={copy} disabled={!data}>Copy</Button>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
