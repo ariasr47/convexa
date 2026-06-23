@@ -1,0 +1,117 @@
+<svg viewBox="0 0 960 560" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>The orchestrated pipeline: a conductor session routes discovery, thinking, and building through gates</title>
+  <desc>An Orchestrator session (the Project Manager) runs across the top, conducting a pipeline: Discovery, Architect, Product, UX, then a Split into a Backend Builder and Frontend Builder bound to one Interface Contract. A gate-check sits between every handoff, and a constant ground-truth file underlies every session.</desc>
+  <style>
+    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .h1{fill:#23252B;font-size:23px;font-weight:700}
+    .sub{fill:#707684;font-size:13px}
+    .ct{fill:#1f2937;font-size:13px;font-weight:600}
+    .cs{fill:#5C6470;font-size:10px}
+    .leg{fill:#5C6470;font-size:11px}
+    .bart{fill:#FFFFFF;font-size:13px;font-weight:700}
+    .bars{fill:#E7E9F1;font-size:11px}
+    .gate{fill:#4B5575;font-size:9px;font-weight:700}
+  </style>
+  <defs>
+    <marker id="aT" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#2E6F69"/></marker>
+    <marker id="aB" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#B4562B"/></marker>
+  </defs>
+  <rect x="1" y="1" width="958" height="558" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <text class="h1" x="34" y="44">One session conducts the rest</text>
+  <text class="sub" x="34" y="68">The Orchestrator never builds anything itself — it routes the work, runs the gates, and packages each handoff.</text>
+
+  <!-- legend -->
+  <g>
+    <rect x="600" y="30" width="13" height="13" rx="3" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/><text class="leg" x="618" y="40">orchestrate &amp; gates</text>
+    <rect x="600" y="50" width="13" height="13" rx="3" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/><text class="leg" x="618" y="60">think &amp; design</text>
+    <rect x="600" y="70" width="13" height="13" rx="3" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/><text class="leg" x="618" y="80">build</text>
+  </g>
+
+  <!-- Orchestrator bar -->
+  <rect x="28" y="116" width="904" height="50" rx="12" fill="#4B5575"/>
+  <text class="bart" x="480" y="140" text-anchor="middle">ORCHESTRATOR — the conductor (our “Project Manager”)</text>
+  <text class="bars" x="480" y="157" text-anchor="middle">routes the work · runs the gates · packages every handoff · never writes code or scope itself</text>
+
+  <!-- batons down from orchestrator (dotted) -->
+  <g stroke="#9AA0B5" stroke-width="1.3" stroke-dasharray="3 3">
+    <line x1="80" y1="166" x2="80" y2="270"/>
+    <line x1="228" y1="166" x2="228" y2="270"/>
+    <line x1="376" y1="166" x2="376" y2="270"/>
+    <line x1="524" y1="166" x2="524" y2="270"/>
+    <line x1="600" y1="166" x2="600" y2="270"/>
+    <line x1="739" y1="166" x2="739" y2="246"/>
+  </g>
+
+  <!-- think stations -->
+  <g>
+    <rect x="28" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="80" y="296" text-anchor="middle">Discovery</text>
+    <text class="cs" x="80" y="313" text-anchor="middle">ideas · feasibility</text>
+  </g>
+  <g>
+    <rect x="176" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="228" y="296" text-anchor="middle">Architect</text>
+    <text class="cs" x="228" y="313" text-anchor="middle">system shape</text>
+  </g>
+  <g>
+    <rect x="324" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="376" y="296" text-anchor="middle">Product</text>
+    <text class="cs" x="376" y="313" text-anchor="middle">scope · stories</text>
+  </g>
+  <g>
+    <rect x="472" y="271" width="104" height="58" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <text class="ct" x="524" y="296" text-anchor="middle">UX / Writer</text>
+    <text class="cs" x="524" y="313" text-anchor="middle">design · words</text>
+  </g>
+
+  <!-- gates between -->
+  <g>
+    <polygon points="152,290 162,300 152,310 142,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+    <polygon points="300,290 310,300 300,310 290,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+    <polygon points="448,290 458,300 448,310 438,300" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+  </g>
+  <!-- pipeline arrows -->
+  <g stroke="#2E6F69" stroke-width="2">
+    <line x1="132" y1="300" x2="141" y2="300"/><line x1="163" y1="300" x2="175" y2="300" marker-end="url(#aT)"/>
+    <line x1="280" y1="300" x2="289" y2="300"/><line x1="311" y1="300" x2="323" y2="300" marker-end="url(#aT)"/>
+    <line x1="428" y1="300" x2="437" y2="300"/><line x1="459" y1="300" x2="471" y2="300" marker-end="url(#aT)"/>
+    <line x1="576" y1="300" x2="586" y2="300" marker-end="url(#aT)" stroke="#B4562B"/>
+  </g>
+  <text class="gate" x="300" y="333" text-anchor="middle" fill="#6A7286">a gate-check between every handoff</text>
+
+  <!-- SPLIT -->
+  <polygon points="600,276 632,300 600,324 568,300" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <text x="600" y="304" text-anchor="middle" fill="#7A3A1E" font-size="10.5" font-weight="700" font-family="'Segoe UI',sans-serif">SPLIT</text>
+
+  <!-- builders -->
+  <path d="M632,300 C648,300 648,270 662,270" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M632,300 C648,300 648,352 662,352" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <g>
+    <rect x="664" y="248" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <text class="ct" x="739" y="275" text-anchor="middle">Backend Builder</text>
+  </g>
+  <g>
+    <rect x="664" y="330" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <text class="ct" x="739" y="357" text-anchor="middle">Frontend Builder</text>
+  </g>
+  <!-- interface spine -->
+  <line x1="814" y1="270" x2="836" y2="306" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <line x1="814" y1="352" x2="836" y2="316" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <rect x="838" y="252" width="94" height="118" rx="10" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <text x="885" y="300" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Interface</text>
+  <text x="885" y="316" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Contract</text>
+  <text x="885" y="338" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">both build</text>
+  <text x="885" y="350" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">to this</text>
+
+  <!-- ground truth bar + batons up -->
+  <g stroke="#7FB2AC" stroke-width="1.3" stroke-dasharray="3 3">
+    <line x1="80" y1="329" x2="80" y2="466"/>
+    <line x1="228" y1="329" x2="228" y2="466"/>
+    <line x1="376" y1="329" x2="376" y2="466"/>
+    <line x1="524" y1="329" x2="524" y2="466"/>
+    <line x1="739" y1="374" x2="739" y2="466"/>
+  </g>
+  <rect x="28" y="470" width="904" height="46" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <text x="480" y="492" text-anchor="middle" fill="#1c4f4a" font-size="13" font-weight="700" font-family="'Segoe UI',sans-serif">THE CONSTANT GROUND TRUTH</text>
+  <text x="480" y="508" text-anchor="middle" fill="#3a6b66" font-size="11" font-family="'Segoe UI',sans-serif">one shared rulebook — read first by every session, discovery to build</text>
+</svg>

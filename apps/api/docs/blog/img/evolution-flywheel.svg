@@ -1,0 +1,86 @@
+<svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>The evolution: a compounding flywheel of discover, decide, build, measure, with four upgrades</title>
+  <desc>A central loop turns through four stages: Discover, Decide, Build, Measure, then back to Discover. Four upgrades surround it: automated gate-checks, parallel feature lanes, a memory that compounds by promoting proven decisions into the rulebook, and production metrics that feed the next idea.</desc>
+  <style>
+    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .h1{fill:#23252B;font-size:23px;font-weight:700}
+    .sub{fill:#707684;font-size:13px}
+    .stage{fill:#1f2937;font-size:14px;font-weight:700}
+    .stages{fill:#5C6470;font-size:10px}
+    .ctr{fill:#1c4f4a;font-size:14px;font-weight:700}
+    .ctrs{fill:#3a6b66;font-size:10.5px}
+    .upt{fill:#3a4262;font-size:13px;font-weight:700}
+    .ups{fill:#4B5575;font-size:11px}
+  </style>
+  <defs>
+    <marker id="fc" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#2E6F69"/></marker>
+  </defs>
+  <rect x="1" y="1" width="958" height="538" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <text class="h1" x="34" y="44">Where this goes next</text>
+  <text class="sub" x="34" y="68">Turn the relay into a flywheel — each loop cheaper and smarter than the last.</text>
+
+  <!-- center loop -->
+  <circle cx="480" cy="312" r="120" fill="none" stroke="#BFD8D4" stroke-width="2" stroke-dasharray="2 4"/>
+  <circle cx="480" cy="312" r="64" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <text class="ctr" x="480" y="306" text-anchor="middle">Compounding</text>
+  <text class="ctr" x="480" y="324" text-anchor="middle">flywheel</text>
+
+  <!-- four stages on the loop -->
+  <g>
+    <circle cx="480" cy="192" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <text class="stage" x="480" y="190" text-anchor="middle">Discover</text>
+  </g>
+  <g>
+    <circle cx="600" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <text class="stage" x="600" y="316" text-anchor="middle">Decide</text>
+  </g>
+  <g>
+    <circle cx="480" cy="432" r="30" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <text class="stage" x="480" y="436" text-anchor="middle">Build</text>
+  </g>
+  <g>
+    <circle cx="360" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <text class="stage" x="360" y="316" text-anchor="middle">Measure</text>
+  </g>
+  <!-- clockwise arrows between stages -->
+  <g fill="none" stroke="#2E6F69" stroke-width="2.5">
+    <path d="M510,200 A120,120 0 0 1 572,288" marker-end="url(#fc)"/>
+    <path d="M572,336 A120,120 0 0 1 510,424" marker-end="url(#fc)"/>
+    <path d="M450,424 A120,120 0 0 1 388,336" marker-end="url(#fc)"/>
+    <path d="M388,288 A120,120 0 0 1 450,200" marker-end="url(#fc)"/>
+  </g>
+
+  <!-- four upgrade cards in corners -->
+  <g>
+    <rect x="34" y="118" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="50" y="144">Automated gate-checks</text>
+    <text class="ups" x="50" y="164">a “contract linter” catches gaps</text>
+    <text class="ups" x="50" y="180">before the next session starts</text>
+  </g>
+  <g>
+    <rect x="694" y="118" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="710" y="144">Parallel feature lanes</text>
+    <text class="ups" x="710" y="164">many features in flight at once,</text>
+    <text class="ups" x="710" y="180">scheduled by the orchestrator</text>
+  </g>
+  <g>
+    <rect x="34" y="430" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="50" y="456">Memory that compounds</text>
+    <text class="ups" x="50" y="476">proven decisions graduate</text>
+    <text class="ups" x="50" y="492">into the shared rulebook</text>
+  </g>
+  <g>
+    <rect x="694" y="430" width="232" height="74" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
+    <text class="upt" x="710" y="456">Metrics close the loop</text>
+    <text class="ups" x="710" y="476">live performance data feeds</text>
+    <text class="ups" x="710" y="492">the next round of ideas</text>
+  </g>
+
+  <!-- connectors from cards to nearest stage -->
+  <g stroke="#9AA0B5" stroke-width="1.4" stroke-dasharray="3 3">
+    <line x1="266" y1="155" x2="452" y2="188"/>
+    <line x1="694" y1="155" x2="624" y2="296"/>
+    <line x1="266" y1="467" x2="452" y2="432"/>
+    <line x1="694" y1="467" x2="386" y2="324"/>
+  </g>
+</svg>
