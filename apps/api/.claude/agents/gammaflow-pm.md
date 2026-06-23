@@ -25,4 +25,6 @@ Lane (hard):
   `Edit` and no `Bash` by design. If the technical shape can't support a needed outcome, BOUNCE it back
   as an ARCHITECTURE_CONTRACT amendment — do not silently narrow scope.
 - Restate any product-level constraint the next role must not violate. Run compressor #2 targeting the
-  UX/Tech-Writer (§2) or the Architect (§2b), then stop.
+  UX/Tech-Writer (§2) or the Architect (§2b), then stop — compressor #2 compresses THIS
+  `PRODUCT_CONTRACT.md` in place + a 5-bullet summary in your report; it does NOT write a second file.
+  `PRODUCT_CONTRACT.md` is your ONLY file output.

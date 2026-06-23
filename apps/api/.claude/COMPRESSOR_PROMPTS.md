@@ -24,6 +24,11 @@ Write it to .claude/contracts/{FEATURE}/{CONTRACT_NAME}.md, then print the path 
 
 ## 2. Session-Transition Compressor (role → role)
 Run at the Exit of Architect and PM. Targets the next role's needs.
+> **This does NOT create a new file.** Your role's PRIMARY contract IS the compressed handoff:
+> `{CONTRACT_NAME}` here = your own `ARCHITECTURE_CONTRACT.md` (Architect) or `PRODUCT_CONTRACT.md` (PM).
+> "Run compressor #2" means *write that one contract in compressed, next-role-targeted form, then print
+> a 5-bullet summary in your report* — do not emit a second handoff file (e.g. `*_INPUT.md`). Only
+> compressor #3 (the UX Split) legitimately emits multiple files (the three execution contracts).
 
 ```text
 Compress THIS session into a contract for the next role: {TARGET_ROLE}.
@@ -35,7 +40,9 @@ best-effort-isolated-or-null, additive-keeps-score-byte-identical, live-vs-stati
 operator-vs-trader-path-separation) so the next role inherits them without re-reading the ledger.
 Stay in your lane: the Architect emits no UI/endpoints; the PM emits no code/math. EXCLUDE your
 rationale — ship decisions, not deliberation.
-Write to .claude/contracts/{FEATURE}/{CONTRACT_NAME}.md; print the path + a 5-bullet summary.
+{CONTRACT_NAME} = your role's existing primary contract (ARCHITECTURE_CONTRACT.md for the Architect,
+PRODUCT_CONTRACT.md for the PM) — write/finalize THAT one file in compressed form; do NOT create a
+second handoff file. Print its path + a 5-bullet summary.
 ```
 
 ## 3. Split Context Compressor (decoupled execution)

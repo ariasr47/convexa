@@ -403,6 +403,10 @@ GATE Z, then GATE Q re-runs on the fix). Then stop.
 ### Notes
 - **Backend and Frontend run in parallel** — both bind to the same `INTERFACE_CONTRACT.md`, so neither
   blocks the other. That decoupling is the whole point of compressor #3.
+- **Compressor #2 does NOT emit a new file.** When the Architect/PM "runs compressor #2," their primary
+  contract (`ARCHITECTURE_CONTRACT.md` / `PRODUCT_CONTRACT.md`) IS the compressed handoff — compress it
+  in place and print the 5-bullet summary in the report; never write a second `*_INPUT.md`. Only
+  **compressor #3** (the UX Split) emits multiple files (the three execution contracts).
 - Executioners have **no outbound contract** (they ship code, not a handoff) and therefore run **no
   compressor** — the pipeline ends at integration.
 - If a role finds its inbound contract wrong or incomplete, the fix is a **contract amendment** (bounce
