@@ -316,13 +316,26 @@ the exact degraded-state behavior from the FRONTEND_EXECUTION_CONTRACT (static G
 MUST persist on live-stream loss; only live fields show offline/stale; never blank on a failed
 refresh once a bundle has loaded; auto-reconnect). Do not touch server internals or math.
 
+Automated tests are PART OF THE DELIVERABLE for every feature (standing rule — the FE repo is wired
+for Vitest + jsdom + Testing Library via @nx/vite). Colocate `*.spec.tsx`/`*.spec.ts` with the code
+and write, at the level each fits best:
+- unit — pure logic (hooks' reducers/derivations, mark-ladder math, persona assembleHandoff,
+  ring-buffer/formatters), deterministic, no DOM;
+- component — render each component state from the contract (default/loading/stale/offline/empty/
+  error) + the key interactions, asserting observable output (Testing Library);
+- integration — mock the network boundary (fetch / EventSource at the client seam, NEVER a live
+  backend) to drive SSE-drop→live-tiles-dim-while-static-persists, cold-start-fail vs post-success-
+  refresh-fail, 404/no-quote, per-field nulls.
+Assert the contract's observable behaviors + the promoted invariants (live-vs-static isolation,
+best-effort-isolated-or-null), not a coverage %. E2E (Playwright/Cypress) is not required by default.
+Run `npx nx test dashboard` (and `nx test api` if you touched libs/api) and make it GREEN before
+reporting done — QA will re-run it at GATE Q.
+
 Run the project the standard way and verify the live-loss / stale / cold-start states behave as
-specified against the acceptance criteria. The reliable way (used by every shipped FE lane) is a
-controllable mock backend behind the Vite proxy that emits exactly the INTERFACE_CONTRACT shape, so
-you can drive each degraded path on demand — SSE drop, per-field nulls, 404/no-quote, cold-start
-failure vs post-success refresh failure — and confirm the static surface keeps rendering while only
-live fields degrade. Report what you changed and how you verified it (name the states you exercised).
-If a needed field is missing from the interface, flag it for a contract amendment — do not invent it.
+specified against the acceptance criteria. A controllable mock backend behind the Vite proxy (used by
+every shipped FE lane) lets you drive each degraded path manually too. Report what you changed and how
+you verified it — name the states you exercised AND include the `nx test` result. If a needed field is
+missing from the interface, flag it for a contract amendment — do not invent it.
 ```
 
 ## 6. QA / Verify (GATE Q — runs after BOTH executioners, before ship)
@@ -357,6 +370,10 @@ Method:
   (the live BE omits/mistypes a field the interface promises) is a GATE Q FAIL → bounce to Backend.
 - Also check the binding invariants (BRIEF "Invariant watch" + the promoted canon). A green AC list
   over a broken invariant is still a FAIL.
+- Re-run the frontend test suite (standing rule — tests are part of the FE deliverable): in
+  C:\Dev\gammaflow-web run `npx nx test dashboard` (and `nx test api` if libs/api was touched). Missing
+  tests for observable FE behavior, or a failing suite, is a GATE Q FAIL → bounce to Frontend. Spot-check
+  the tests exercise the contract's component states + degraded paths, not just a render smoke test.
 
 Write .claude/contracts/{FEATURE}/QA_REPORT.md: a table (AC verbatim · verdict · evidence), a summary
 (n PASS / n FAIL / n UNVERIFIABLE), and an explicit overall GATE Q verdict — PASS only if every AC is

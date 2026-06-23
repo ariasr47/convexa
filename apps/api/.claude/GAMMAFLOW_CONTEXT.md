@@ -231,6 +231,11 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend
   `npx nx serve dashboard` (Vite :4200, proxies /api). Node via nvm-windows at `C:\nvm4w\nodejs`.
+- **Frontend tests (standing rule — part of every FE feature):** `npx nx test dashboard`
+  (and `nx test api` for `libs/api`) — Vitest + jsdom + Testing Library + v8 coverage, already wired via
+  `@nx/vite`; colocated `*.spec.tsx`/`*.spec.ts`. The FE executioner writes unit/component/integration
+  tests for each feature (assert the contract's component states + degraded paths + promoted invariants,
+  not a coverage %); QA re-runs the suite at GATE Q. E2E (Playwright/Cypress) not required by default.
 - Two git repos: `C:\Dev\GammaFlow` (backend) and `C:\Dev\gammaflow-web` (frontend); no remotes.
 
 ## 8. Downstream-AI contract

@@ -56,7 +56,9 @@ Compress THIS session into THREE files for decoupled execution:
    the interface contract for what it must EMIT; contains NO UI detail.
 3) .claude/contracts/{FEATURE}/FRONTEND_EXECUTION_CONTRACT.md — UI work only; references the
    interface contract for what it CONSUMES + the component states (default/loading/stale/
-   offline/empty/error); contains NO server internals.
+   offline/empty/error); contains NO server internals. Include a short "Tests to write" note
+   listing the component states + degraded paths the FE lane must cover (Vitest + Testing Library
+   — unit/component/integration; tests are part of the FE deliverable, re-run at GATE Q).
 Each must be self-contained against GAMMAFLOW_CONTEXT.md + the interface contract. EXCLUDE
 rationale. Print the three paths. (contract_lint.py runs next at GATE U·X: it ERRORs if an
 execution contract isn't bound to the interface and WARNs if a locked interface lacks the
