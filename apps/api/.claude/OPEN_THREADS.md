@@ -110,9 +110,9 @@ no real-order path. Glossary + GAMMAFLOW_CONTEXT refreshed; **contract archived*
 Deferred seams (specified, not built): broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay,
 recorded-verdict reassessment, server-side trade store.
 
-## 6. Backend observability (BACKEND SHIPPED — coordinate FE archive)
-Contracts in `.claude/contracts/backend-observability/`. Operator-facing bundle-pipeline
-instrumentation; **trader path + computed values + cache + SSE unchanged.**
+## 6. Backend observability (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/backend-observability/`. Operator-facing
+bundle-pipeline instrumentation; **trader path + computed values + cache + SSE unchanged.**
 **Backend shipped** (`C:\Dev\GammaFlow`): new `src/core/observability.py` (span/timer ContextVar
 trace, process-local rolling `MetricsAggregate`, structured emitter; `engine/signals/darkpool`
 untouched — Level-1). `main.py` times the six stages (`vendor_fetch`/`engine_build`/`off_exchange`/
@@ -128,8 +128,18 @@ roll-up, readout read-only (0 vendor fetches), OFF ⇒ byte-identical bundle, fo
 (operator section) + GAMMAFLOW_CONTEXT refreshed.
 **Finalized (were "Interface's call"):** verbose switch `?debug=1`; readout `GET /api/_metrics`; env
 flag names + window default — pinned in INTERFACE_CONTRACT (amendment note) + operator doc.
-**Still open:** FE operator readout page (`apps/dashboard/src/app/operator-metrics` is in progress).
-**Archive `.claude/contracts/backend-observability/` once the FE lane also lands.**
+**Frontend SHIPPED** (`C:\Dev\gammaflow-web`, committed): **Obligation 1** — `Meta` gains optional
+`trace_id?` + `timings?` (StageName/StageKind/MetaTimings) so bundles parse cleanly; the **trader
+dashboard renders neither** (verified unchanged with trace_id/verbose-timings present, no leak, no
+console errors). **Obligation 2** — `fetchMetrics` (read-only `GET /api/_metrics`, side-effect-free)
++ `operator-metrics.tsx` on route **`/_ops/metrics`** (its own AppBar, OFF the trader routes, not
+linked): global + per-ticker stage tables (stage · I/O|CPU from `kind` · p50/p95/max/count ·
+ok/err/skip), total/cache/vendor lines, recent-traces with warm/cold inspect + lineage,
+window/uptime caption, instrumentation ON/OFF, glossary tooltips. Honest presentation: empty → `—`
+(not 0), `skipped` shown, headroom `null` → `unknown`, low headroom factual + **non-alerting**.
+Verified via a controllable mock (trader unchanged; readout populated/empty/unknown/disabled/
+unavailable/trace warm-vs-cold); endpoint path + readout field names cross-checked against the
+shipped backend. **Archived** under `_archive/` (per DoD).
 **Deferred (specified, not built):** OTel/Prometheus export, latency/headroom alert thresholds,
 persisted/cross-restart baselines, the multi-ticker scanner (baseline data supports it).
 

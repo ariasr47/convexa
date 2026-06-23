@@ -61,8 +61,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   contract stats come from `GET /api/contract` (filter-independent; 404 → tracking-unavailable,
   `option_quote:null` → theoretical mark). Isolation: an SSE drop degrades only P/L + current mark
   (⏸ last known); the trade record/stats/history + GEX chart + all tiles persist.
+- `apps/dashboard/src/app/operator-metrics.tsx` — **operator-only** metrics readout on route
+  `/_ops/metrics` (its own AppBar, OFF the trader routes, not linked from the trader UI). Read-only +
+  side-effect-free (`fetchMetrics` → `GET /api/_metrics` only): global + per-ticker stage tables
+  (I/O|CPU from `kind`, p50/p95/max/count/ok-err-skip), total/cache/vendor lines, recent-traces with
+  warm/cold inspect. Honest: empty → `—`, `skipped` shown, headroom `null` → `unknown`, non-alerting.
+  The **trader dashboard ignores** the new `meta.trace_id`/`meta.timings` (renders neither).
 - `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`,
-  `fetchTrackedContract`.
+  `fetchTrackedContract`, `fetchMetrics`; `Meta` tolerates optional `trace_id?`/`timings?`.
 - Vite dev proxy `/api → 127.0.0.1:8000` (no CORS); SSE via `EventSource`.
 
 **Transport:** heavy bundle over REST (polled ~60s, cached); light live payload over **SSE**.
