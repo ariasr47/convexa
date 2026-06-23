@@ -110,7 +110,30 @@ no real-order path. Glossary + GAMMAFLOW_CONTEXT refreshed; **contract archived*
 Deferred seams (specified, not built): broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay,
 recorded-verdict reassessment, server-side trade store.
 
-## 6. Smaller deferred items (proposed, not implemented)
+## 6. Backend observability (BACKEND SHIPPED — coordinate FE archive)
+Contracts in `.claude/contracts/backend-observability/`. Operator-facing bundle-pipeline
+instrumentation; **trader path + computed values + cache + SSE unchanged.**
+**Backend shipped** (`C:\Dev\GammaFlow`): new `src/core/observability.py` (span/timer ContextVar
+trace, process-local rolling `MetricsAggregate`, structured emitter; `engine/signals/darkpool`
+untouched — Level-1). `main.py` times the six stages (`vendor_fetch`/`engine_build`/`off_exchange`/
+`signals`/`persist`/`serialize_wrap`), creates the trace at serve entry, carries it into
+`to_thread`, folds on the loop after the response; `meta.trace_id` (always when enabled) +
+`meta.timings` (`?debug=1`); read-only `GET /api/_metrics`. `base.py` optional `metrics_sink` +
+`VendorCallMetric` seam (no signature change); `massive.py` documents it surfaces no rate-limit
+headroom (SDK exposes no response headers ⇒ readout `min_rate_limit_headroom: null` = "unknown").
+Env: `OBSERVABILITY_ENABLED` (ON), `METRICS_WINDOW_SIZE` (500), `METRICS_RECENT_TRACES` (25).
+Verified: miss records all 6 stages / hit records only `serialize_wrap` (+ lineage), per-ticker→global
+roll-up, readout read-only (0 vendor fetches), OFF ⇒ byte-identical bundle, forced span exception ⇒
+200 + identical values, SSE uninstrumented, structured logs additive (not doubled). Glossary
+(operator section) + GAMMAFLOW_CONTEXT refreshed.
+**Finalized (were "Interface's call"):** verbose switch `?debug=1`; readout `GET /api/_metrics`; env
+flag names + window default — pinned in INTERFACE_CONTRACT (amendment note) + operator doc.
+**Still open:** FE operator readout page (`apps/dashboard/src/app/operator-metrics` is in progress).
+**Archive `.claude/contracts/backend-observability/` once the FE lane also lands.**
+**Deferred (specified, not built):** OTel/Prometheus export, latency/headroom alert thresholds,
+persisted/cross-restart baselines, the multi-ticker scanner (baseline data supports it).
+
+## 7. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
@@ -122,7 +145,7 @@ recorded-verdict reassessment, server-side trade store.
 - **Multi-session dark-pool accumulation map:** current dark-pool is a bounded recent window;
   true multi-session block history needs a heavier batched pull. Future.
 
-## 7. Resolved decisions (do NOT revisit)
+## 8. Resolved decisions (do NOT revisit)
 - **Live spot = NBBO mid, not last trade** — smoother, better for anchoring; Webull shows last
   trade, hence small benign differences. Keep mid; do not add last-trade.
 - **Gamma sourcing** — vendor gamma for walls/profile, analytic BS for the flip; the divergence

@@ -92,3 +92,24 @@
   verbose per-stage `meta.timings` switch default **OFF**.
 - **Structured logs:** carry `trace_id` (+ ticker/stage/duration/status); request summary at INFO,
   per-stage at DEBUG; **additive** to the existing human-readable lines, **not doubling** them.
+
+---
+
+## Backend resolution amendment (names finalized — binding)
+
+> Filed by the Backend Executioner. The contract left the verbose-switch name, the readout endpoint,
+> and the env flag/window names as examples ("Interface's call / operator-doc"). The backend pins
+> them below; additive, so no FE assumption breaks.
+
+- **Verbose switch:** `GET /api/ticker/{ticker}?debug=1` (bool query param, default off) → adds
+  `meta.timings`. Unknown/absent ⇒ no timings.
+- **Readout endpoint:** `GET /api/_metrics` (read-only, side-effect-free, operator-gated) → the
+  readout JSON shape above.
+- **Env config:** `OBSERVABILITY_ENABLED` (default `true`; off ⇒ no `meta.trace_id`/`timings`, no
+  metrics recorded, bundle byte-identical) · `METRICS_WINDOW_SIZE` (default `500`, the rolling
+  request-window size; `window.size_desc` = "last ~500 req") · `METRICS_RECENT_TRACES` (default `25`).
+- **Vendor headroom:** the Massive SDK exposes no response rate-limit headers, so
+  `min_rate_limit_headroom` is `null` ("unknown"); the optional `metrics_sink` seam on the provider
+  port is ready for a transport that does expose them (no port signature change).
+- **`meta.timings.vendor_calls[].http_status`/`rate_limit`** are emitted as `null` for Massive
+  (vendor-specific, optional/nullable per this contract) — the FE type may treat them as nullable.

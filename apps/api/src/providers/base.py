@@ -119,6 +119,20 @@ class OffExchange(TypedDict):
     note: str
 
 
+class VendorCallMetric(TypedDict, total=False):
+    """
+    Normalized telemetry for one logical vendor call (observability seam). All vendor-specific
+    fields are OPTIONAL: an adapter emits only what its SDK/transport exposes. `name` + `duration_ms`
+    are captured at the call site regardless; `rate_limit` is None when the vendor doesn't report it
+    (the operator readout then shows "unknown", never a fabricated number).
+    """
+    name: str
+    duration_ms: float
+    http_status: Optional[int]
+    retries: int
+    rate_limit: Optional[dict]   # {"remaining": int, "limit": int} | None
+
+
 class StreamEvent(TypedDict, total=False):
     """One real-time event off the stock stream. `kind` discriminates the payload:
     - "quote": NBBO update -> bid/ask/bid_size/ask_size
@@ -146,6 +160,14 @@ class MarketDataProvider(ABC):
     """
     name: str = "base"
     feed_label: str = "unknown"   # "realtime" | "delayed" -- for freshness reporting
+
+    # Optional observability seam (additive — NOT a method-signature change, so "add a vendor =
+    # one adapter, nothing else changes" still holds). When an orchestrator sets this to a sink
+    # exposing `record_vendor_call(name, duration_ms, http_status=, retries=, rate_limit=)`, an
+    # adapter MAY enrich its vendor calls with rate-limit headroom / http_status / retries that
+    # only it (seeing raw responses) can know. Adapters that don't implement it emit nothing;
+    # logical call count + wall latency are captured at the orchestration call site regardless.
+    metrics_sink: object = None
 
     @abstractmethod
     def fetch_options_market_state(self, ticker: str) -> OptionsMarketState | dict:

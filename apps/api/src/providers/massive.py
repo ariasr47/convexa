@@ -40,6 +40,15 @@ def extract(obj, key, default=None):
 class MassiveProvider(MarketDataProvider):
     name = "massive"
 
+    # Observability seam (base.MarketDataProvider.metrics_sink): the Massive SDK's model iterators
+    # do NOT surface response rate-limit headers (the client only retains request headers), so this
+    # adapter emits no rate-limit headroom / http_status through the optional sink -- the operator
+    # readout's `min_rate_limit_headroom` is therefore `null` ("unknown"), which is the honest
+    # result. Logical vendor-call COUNT + wall LATENCY are still captured at the orchestration call
+    # site (main.compute_ticker), independent of this seam. A future transport that exposes the
+    # headers (e.g. a direct-HTTP adapter) can populate `metrics_sink.record_vendor_call(...)` with
+    # no change to the port.
+
     def __init__(self):
         self.api_key = os.getenv("MASSIVE_API_KEY")
         if not self.api_key:

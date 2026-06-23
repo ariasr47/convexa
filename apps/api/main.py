@@ -15,6 +15,7 @@ from src.core.signals import (generate_signals, evaluate_gate,
                               compute_opportunity_tier, position_fingerprint)
 from src.core.live import LiveHub
 from src.core.darkpool import analyze_off_exchange
+from src.core import observability as obs
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -76,6 +77,15 @@ VOL_OI_UNUSUAL_THRESHOLD = float(os.getenv("VOL_OI_UNUSUAL_THRESHOLD", "1.0"))
 TIER_WATCH_SCORE = int(os.getenv("TIER_WATCH_SCORE", "25"))
 TIER_ACTIONABLE_SCORE = int(os.getenv("TIER_ACTIONABLE_SCORE", str(GATE_SCORE)))
 TIER_PRIME_SCORE = int(os.getenv("TIER_PRIME_SCORE", "75"))
+
+# --- Backend observability config ---
+# Instrumentation default ON (off => no trace_id/timings, no metrics recorded, bundle identical).
+# `?debug=1` per request adds the verbose `meta.timings` block. The aggregate is a rolling window
+# of the last METRICS_WINDOW_SIZE requests (process-local, resets on restart).
+OBSERVABILITY_ENABLED = os.getenv("OBSERVABILITY_ENABLED", "true").lower() == "true"
+METRICS_WINDOW_SIZE = int(os.getenv("METRICS_WINDOW_SIZE", "500"))
+METRICS_RECENT_TRACES = int(os.getenv("METRICS_RECENT_TRACES", "25"))
+obs.configure(OBSERVABILITY_ENABLED, METRICS_WINDOW_SIZE, METRICS_RECENT_TRACES)
 
 # In-memory state. Mutated only from the event loop (after awaiting the worker thread), so
 # no locking is needed. _cache is keyed by (ticker, min_dte, max_dte); _last_fingerprint
@@ -239,9 +249,16 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
     """
     logger.info(f"[{ticker}] On-demand refresh (min_dte={min_dte}, max_dte={max_dte}, "
                 f"expirations={len(expirations) if expirations else 'all'}, dark_pool={dark_pool})")
-    market_data = data_provider.fetch_options_market_state(ticker)
-    underlying_history = data_provider.fetch_daily_bars(ticker)
-    intraday_bars = data_provider.fetch_intraday_bars(ticker)
+    # vendor_fetch (I/O): the three chain/bar fetches; each logical call also timed for the vendor
+    # metrics section. (fetch_recent_trades for dark_pool is timed under the off_exchange stage +
+    # the vendor section, since it happens after engine_build.)
+    with obs.span("vendor_fetch"):
+        with obs.vendor_call("fetch_options_market_state"):
+            market_data = data_provider.fetch_options_market_state(ticker)
+        with obs.vendor_call("fetch_daily_bars"):
+            underlying_history = data_provider.fetch_daily_bars(ticker)
+        with obs.vendor_call("fetch_intraday_bars"):
+            intraday_bars = data_provider.fetch_intraday_bars(ticker)
 
     if not market_data or market_data.get("synchronized_spot", 0) <= 0:
         logger.warning(f"[{ticker}] No option-chain data returned")
@@ -260,8 +277,10 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
         if dte is not None and dte >= 0:
             available_expirations.append({"date": e, "dte": dte})
 
-    state, profile = _build_market_state(
-        ticker, market_data, underlying_history, intraday_bars, min_dte, max_dte, expirations)
+    # engine_build (CPU): GEX/greeks/walls/flip/DEX/Vol-OI/skew/term + HV + VWAP.
+    with obs.span("engine_build", count=len(contracts)):
+        state, profile = _build_market_state(
+            ticker, market_data, underlying_history, intraday_bars, min_dte, max_dte, expirations)
 
     # Off-exchange ("dark pool") context — only when enabled. Derived from the trade tape
     # (trf-reported prints); used as a capped confluence bonus and passed to the AI. Omitted
@@ -270,18 +289,29 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
     # BEST-EFFORT + ISOLATED: any failure here (trade-fetch error, parse error, empty tape)
     # is caught and yields off_exchange = None, leaving market_state + strike_profile and the
     # rest of the bundle fully intact. This must never turn into an HTTP error.
+    #
+    # Instrumentation: the off_exchange STAGE wraps the existing try/except (preserving the
+    # None-on-failure semantics); the recent-trades fetch is also timed in the vendor section.
+    # When dark_pool is off the stage is recorded as `skipped` (never a fabricated 0).
     off_exchange = None
     if dark_pool:
-        try:
-            trades = data_provider.fetch_recent_trades(ticker, DARKPOOL_LOOKBACK_SECONDS)
-            off_exchange = analyze_off_exchange(
-                trades, state["price"], block_min_shares=BLOCK_MIN_SHARES)
-        except Exception:
-            logger.exception(f"[{ticker}] Off-exchange computation failed; omitting off_exchange "
-                             f"(bundle unaffected)")
-            off_exchange = None
+        with obs.span("off_exchange"):
+            try:
+                with obs.vendor_call("fetch_recent_trades"):
+                    trades = data_provider.fetch_recent_trades(ticker, DARKPOOL_LOOKBACK_SECONDS)
+                off_exchange = analyze_off_exchange(
+                    trades, state["price"], block_min_shares=BLOCK_MIN_SHARES)
+            except Exception:
+                logger.exception(f"[{ticker}] Off-exchange computation failed; omitting off_exchange "
+                                 f"(bundle unaffected)")
+                off_exchange = None
+    else:
+        obs.mark_skipped("off_exchange")
 
-    sig = generate_signals(state, off_exchange)
+    # signals (CPU): setups/score + the AI entry gate.
+    with obs.span("signals"):
+        sig = generate_signals(state, off_exchange)
+        ai_eval = evaluate_gate(sig, GATE_SCORE)  # `changed` + staleness filled in at serve time
 
     top = sig["setups"][0]["name"] if sig["setups"] else "none"
     logger.info(
@@ -291,13 +321,15 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
         f"regime {sig['regime']} | score {sig['opportunity_score']} | top: {top}"
     )
 
-    _write_ticker_files(ticker, state, profile, sig)
+    # persist (I/O): write the per-ticker JSON files to disk.
+    with obs.span("persist"):
+        _write_ticker_files(ticker, state, profile, sig)
     bundle = {
         "market_state": state,
         "signals": sig,
         "strike_profile": {"ticker": ticker, "spot": state["price"], "strikes": profile},
         "expirations": available_expirations,  # for the UI expiration selector (all future dates)
-        "ai_eval": evaluate_gate(sig, GATE_SCORE),  # `changed` + staleness filled in at serve time
+        "ai_eval": ai_eval,
     }
     if off_exchange is not None:
         bundle["off_exchange"] = off_exchange  # present only when dark_pool is enabled
@@ -334,7 +366,7 @@ def _parse_expirations(csv: str | None) -> tuple | None:
 
 async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
                  expirations: tuple | None = None, dark_pool: bool = False,
-                 position_ctx: dict | None = None) -> dict:
+                 position_ctx: dict | None = None, verbose: bool = False) -> dict:
     """
     Cache-aware serve path: returns the full wrapped bundle (market_state + signals +
     strike_profile + expirations + ai_eval + meta [+ off_exchange]) for one ticker. Computes
@@ -343,37 +375,58 @@ async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
 
     position_ctx (optional, request-time overlay; NOT part of the cache key) carries an open
     ghost position so the envelope can add `position_eval` -- a sibling of `ai_eval`.
+
+    Observability: a request-local RequestTrace is created here, carried via a ContextVar into the
+    worker thread (so the six stage spans inside compute_ticker fill it), and folded into the
+    process-local aggregate after the response is assembled. All best-effort -- a None trace (when
+    instrumentation is disabled) makes every span a no-op and the bundle byte-identical.
     """
     t = ticker.upper()
     key = (t, min_dte, max_dte, expirations, dark_pool)
     now = time.time()
 
-    entry = _cache.get(key)
-    hit = entry is not None and (now - entry["computed_at"]) < CACHE_TTL_SECONDS
+    trace = obs.new_trace(t, {"min_dte": min_dte, "max_dte": max_dte,
+                              "expirations_present": expirations is not None, "dark_pool": dark_pool})
+    token = obs.set_current(trace)
+    try:
+        entry = _cache.get(key)
+        hit = entry is not None and (now - entry["computed_at"]) < CACHE_TTL_SECONDS
 
-    if not hit:
-        bundle = await asyncio.to_thread(compute_ticker, t, min_dte, max_dte, expirations, dark_pool)
-        if bundle is None:
-            raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
-        # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
-        # the cached bundle (so it isn't duplicated per filter key or ever serialized).
-        _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
-        # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
-        fingerprint = bundle["ai_eval"]["state_fingerprint"]
-        changed = fingerprint != _last_fingerprint.get(t)
-        _last_fingerprint[t] = fingerprint
-        entry = {"bundle": bundle, "computed_at": now, "changed": changed}
-        _cache[key] = entry
-        # Opportunistically drop other expired keys so the cache can't grow unbounded.
-        for k in [k for k, e in _cache.items() if now - e["computed_at"] >= CACHE_TTL_SECONDS]:
-            _cache.pop(k, None)
+        if not hit:
+            bundle = await asyncio.to_thread(compute_ticker, t, min_dte, max_dte, expirations, dark_pool)
+            if bundle is None:
+                raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
+            # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
+            # the cached bundle (so it isn't duplicated per filter key or ever serialized).
+            _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
+            # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
+            fingerprint = bundle["ai_eval"]["state_fingerprint"]
+            changed = fingerprint != _last_fingerprint.get(t)
+            _last_fingerprint[t] = fingerprint
+            entry = {"bundle": bundle, "computed_at": now, "changed": changed,
+                     "trace_id": trace.trace_id if trace else None}
+            _cache[key] = entry
+            # Opportunistically drop other expired keys so the cache can't grow unbounded.
+            for k in [k for k, e in _cache.items() if now - e["computed_at"] >= CACHE_TTL_SECONDS]:
+                _cache.pop(k, None)
+        elif trace is not None:
+            # Cache HIT: no compute ran; lineage points back to the trace that produced the bundle.
+            trace.computed_trace_id = entry.get("trace_id")
 
-    return _wrap(entry, hit, now, t, position_ctx)
+        wrapped = _wrap(entry, hit, now, t, position_ctx, trace=trace, verbose=verbose)
+        # Fold the finished trace into the aggregate on the event loop (single-writer, lock-free),
+        # then emit the additive structured request-summary log line.
+        obs.fold(trace)
+        obs.emit_request_log(trace)
+        return wrapped
+    finally:
+        obs.reset_current(token)
 
 
 def _wrap(entry: dict, hit: bool, now: float, ticker: str,
-          position_ctx: dict | None = None) -> dict:
+          position_ctx: dict | None = None, trace=None, verbose: bool = False) -> dict:
     """Assemble the response envelope at serve time so freshness/age are always current."""
+    _sw_start = time.perf_counter()   # serialize_wrap stage timer (the envelope build)
     bundle = entry["bundle"]
     state = bundle["market_state"]
 
@@ -425,6 +478,23 @@ def _wrap(entry: dict, hit: bool, now: float, ticker: str,
     }
     if "off_exchange" in bundle:   # present only when dark_pool was enabled at compute time
         wrapped["off_exchange"] = bundle["off_exchange"]
+
+    # Observability (best-effort): close the serialize_wrap stage and stamp the envelope. On a
+    # cache HIT this is the ONLY stage recorded for the trace (near-zero compute), distinguishing
+    # hit from miss cost. `meta.trace_id` is always present when instrumentation is enabled;
+    # `meta.timings` only with the verbose switch. A failure here never affects the served bundle.
+    if trace is not None:
+        try:
+            sw_ms = (time.perf_counter() - _sw_start) * 1000.0
+            trace.add_stage("serialize_wrap", "serialize", sw_ms, "ok")
+            trace.cache_hit = hit
+            trace.cache_age_seconds = int(now - entry["computed_at"])
+            trace.finish()
+            wrapped["meta"]["trace_id"] = trace.trace_id
+            if verbose:
+                wrapped["meta"]["timings"] = trace.timings_block()
+        except Exception:
+            logger.debug("observability: envelope stamping failed", exc_info=True)
     return wrapped
 
 
@@ -491,17 +561,18 @@ async def get_ticker_bundle(
     pos_strike: float | None = Query(None, description="Open ghost position: strike."),
     pos_right: str | None = Query(None, description="Open ghost position: 'call' or 'put'."),
     pos_pl_pct: float | None = Query(None, description="Open ghost position: current P/L %, for the position_eval band."),
+    debug: bool = Query(False, description="Operator verbose switch: add per-stage meta.timings (default off)."),
 ):
     """Full bundle (market_state + signals + strike_profile + expirations + ai_eval +
     position_eval [+ off_exchange]). Pass the `pos_*` params (held contract + P/L%) to receive
-    `position_eval`; omit them for `position_eval: null`."""
+    `position_eval`; omit them for `position_eval: null`. `?debug=1` adds operator `meta.timings`."""
     position_ctx = None
     if pos_expiration and pos_strike is not None and pos_right:
         position_ctx = {"expiration": pos_expiration[:10], "strike": pos_strike,
                         "right": pos_right.lower(), "pl_pct": pos_pl_pct,
                         "dte": _dte_days(pos_expiration)}
     return await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool,
-                        position_ctx=position_ctx)
+                        position_ctx=position_ctx, verbose=debug)
 
 
 @app.get("/api/market-data", response_model=MarketState)
@@ -595,6 +666,19 @@ async def get_tracked_contract(
         "iv": iv if iv else None,      # 0.0 (unpriced) -> null
         "dte": _dte_days(exp10),
     }
+
+
+@app.get("/api/_metrics")
+async def get_metrics_readout():
+    """
+    Operator metrics readout (read-only, side-effect-free): the rolling MetricsAggregate snapshot
+    — total + per-stage p50/p95/max/count, cache hit/miss/ratio/age, vendor call count/latency/min
+    rate-limit headroom (or null ⇒ "unknown"), per-ticker rolled up to global, and recent traces.
+
+    Reading this NEVER triggers a vendor fetch, recompute, or cache mutation. Operator-gated (not
+    linked from the trader UI). The window is process-local + ephemeral (resets on restart).
+    """
+    return obs.readout()
 
 
 @app.get("/api/stream/{ticker}")

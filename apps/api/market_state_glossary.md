@@ -221,3 +221,40 @@ reasoning over these fields rather than re-deriving regime/levels yourself.
 **How to read it:** lead with `regime`, take the top 1–2 `setups`, confirm direction against `distances` (is price actually near the level the setup names?) and `vol_regime` (does the structure fit — sell premium only when `iv_rich`, buy only when `iv_cheap`). An empty `setups` list means no clean edge right now — say so rather than forcing a trade.
 
 **Caveat:** `conviction`/`opportunity_score` are heuristic, not probabilities. Treat them as triage, not certainty; size and stop accordingly.
+
+---
+
+# Operator observability (NOT trader/AI-facing — ignore for trade decisions)
+
+> The trader bundle's computed values, cache semantics, and SSE are **unchanged**. The only
+> bundle-path additions are `meta.trace_id` (always, when instrumentation is enabled) and an
+> optional `meta.timings` block (verbose only). The trading AI should **ignore both**. This section
+> documents the operator metrics readout (`GET /api/_metrics`).
+
+- **Pipeline stages (fixed vocabulary):** `vendor_fetch` (vendor REST: chain + daily/intraday bars,
+  + recent trades when dark_pool) · `engine_build` (GEX/greeks/walls/flip/DEX/Vol-OI/skew/term + HV +
+  VWAP) · `off_exchange` (off-exchange/blocks pass; `skipped` when dark_pool off — never a fake 0) ·
+  `signals` (setups/score + gate) · `persist` (writes the ticker JSON files to disk) ·
+  `serialize_wrap` (envelope + tiering + position_eval + serialization).
+- **I/O vs CPU tag (`kind`):** `io_vendor`/`io_disk` → **I/O** (network/disk — parallelizable and/or
+  cacheable at fan-out); `cpu_engine`/`cpu_signals`/`serialize` → **CPU** (needs worker/process
+  parallelism). Load-bearing for a future multi-ticker scanner's fan-out plan.
+- **Percentiles:** `p50_ms`/`p95_ms` (+ `max_ms`, `count`) per stage and for the total, over the
+  rolling window; p95 catches the slow tail a mean hides.
+- **Cache:** `hits`/`misses`/`hit_ratio` + `current_data_age_seconds`. A cache-HIT trace records only
+  `serialize_wrap` (near-zero compute) so warm vs cold cost is never conflated.
+- **Rate-limit headroom:** `vendor.min_rate_limit_headroom` = the tightest `{remaining, limit}` seen
+  this window (bounds safe scanner fan-out). **Best-effort:** `null` ⇒ render **"unknown"**, never a
+  fabricated number. (Massive's SDK doesn't surface rate-limit headers, so it reads `unknown`.)
+- **Trace id (correlation):** one `trace_id` per served bundle, appearing in that request's structured
+  logs (`trace request …`), its verbose `meta.timings`, and the readout's `recent_traces`. On a cache
+  hit, `computed_trace_id` points back to the miss-trace that produced the served bundle.
+- **Per-ticker → global:** `per_ticker[TICKER]` rolls up into `global` (same shape).
+- **Ephemeral window:** the aggregate is **process-local and resets on restart** (a live baseline
+  tool, not a historical store). `window.uptime_seconds` reflects this.
+- **Config:** `OBSERVABILITY_ENABLED` (env, default **ON**; off ⇒ no `trace_id`/`timings`, no metrics,
+  bundle byte-identical) · `METRICS_WINDOW_SIZE` (default **500** requests) · `METRICS_RECENT_TRACES`
+  (default 25) · per-request verbose switch **`?debug=1`** (default off ⇒ no `meta.timings`).
+- **Isolation:** every span/metric/emit is best-effort — an instrumentation failure leaves the bundle
+  **200 with identical computed values** (only the affected span/metric missing); reading the readout
+  is side-effect-free (no vendor fetch, no recompute, no cache mutation); **SSE is not instrumented**.

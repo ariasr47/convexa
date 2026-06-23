@@ -28,6 +28,10 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 - `src/core/live.py` — `LiveSession`/`LiveHub`: live NBBO mid, rolling net flow, live flip,
   session classifier; one ref-counted session per ticker (8s grace teardown).
 - `src/core/darkpool.py` — off-exchange (TRF) volume ratio + volume-by-price.
+- `src/core/observability.py` — bundle-pipeline instrumentation: span/timer primitive (ContextVar
+  trace), per-request `RequestTrace`, process-local rolling `MetricsAggregate` (p50/p95 per stage &
+  total, cache hit/miss, vendor latency + min rate-limit headroom; per-ticker rolls up to global),
+  structured emitter. `engine/signals/darkpool` do NOT import it (Level-1, orchestration-boundary only).
 - `src/models/market_data.py` — `MarketState` Pydantic response model.
 
 **Frontend** (`gammaflow-web/`, Nx monorepo, React 19 + Vite + MUI/Emotion):
@@ -139,6 +143,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `position_eval{changed,fingerprint}|null` (sibling of `ai_eval`, via `pos_*` query params);
   `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
   path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
+- **Backend observability** (operator-facing; trader path unchanged): the six bundle stages
+  (`vendor_fetch` io_vendor, `engine_build`/`off_exchange` cpu_engine, `signals` cpu_signals,
+  `persist` io_disk, `serialize_wrap` serialize) are timed into a per-request trace; `meta.trace_id`
+  (always when enabled) + `meta.timings` (only with `?debug=1`); read-only `GET /api/_metrics`
+  rolling readout (p50/p95/max/count per stage+total, cache hit/miss/ratio/age, vendor count/latency/
+  min rate-limit headroom→null="unknown" for Massive, per-ticker→global, recent traces w/ lineage);
+  additive structured `trace request` log lines. Best-effort (never a non-200), **SSE uninstrumented**,
+  ephemeral (resets on restart), computed values frozen.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
@@ -149,7 +161,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   fixed institutional-size threshold for an off-exchange block print), `VOL_OI_UNUSUAL_THRESHOLD`
   (1.0; cutoff above which a strike's vol/OI reads "unusual", echoed as `vol_oi_unusual_threshold`),
   `TIER_WATCH_SCORE` (25) / `TIER_ACTIONABLE_SCORE` (=`GATE_SCORE`) / `TIER_PRIME_SCORE` (75;
-  opportunity-tier bands — Prime also requires `ai_eval.ready`).
+  opportunity-tier bands — Prime also requires `ai_eval.ready`), `OBSERVABILITY_ENABLED` (true;
+  off ⇒ no `meta.trace_id`/`timings`, no metrics, bundle identical), `METRICS_WINDOW_SIZE` (500;
+  rolling-window request count), `METRICS_RECENT_TRACES` (25). Per-request verbose switch: `?debug=1`.
 - **Add a vendor:** implement `MarketDataProvider` in `src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend
