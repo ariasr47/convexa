@@ -26,6 +26,16 @@
 
 ---
 
+## Last GATE I — 2026-06-23 (owner request: in-app AI recommendations)
+**Chosen → `ai-recommendations`** — owner-directed (not a queue-drain cull): an in-app query to a
+downstream LLM (latest Claude) for a **risk-first ENTRY recommendation**, fed the active persona's
+assembled prompt + a **JSON export of the ticker's computed state**, rendered in the dashboard; the
+manual hand-off is retained + augmented by the same JSON export; on-demand with `ai_eval` guardrails.
+**Reverses promoted canon `ai-external-no-llm` by explicit owner decision** (GammaFlow may now call an
+LLM via an isolated, gated, consumer-only path) → pending formal demotion at GATE S. Trading-decision
+cull: passes (improves the entry decision). Effort L · entry = architect-first. Brief at
+`.claude/contracts/ai-recommendations/BRIEF.md`; routed to the Architect (GATE A·X).
+
 ## Last GATE I — 2026-06-23 (pull: local latency visualization)
 **Chosen → `latency-visualizer`** — carve the *visualization* slice out of §D "Observability
 extensions," pulled by a concrete need (watch the already-measured bundle-stage latency locally +
@@ -49,6 +59,11 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **ai-recommendations** — `IN PIPELINE (GATE I → Architect, 2026-06-23)`. In-app downstream-LLM query
+  for a risk-first **entry** recommendation: active-persona prompt + a JSON export of the ticker's
+  computed state → rendered rec; manual hand-off retained + augmented by the JSON export; on-demand with
+  `ai_eval` guardrails. **Relaxes `ai-external-no-llm`** (owner decision; pending GATE S demotion). First
+  LLM integration (secrets/egress/cost/latency/isolation). Brief at `.claude/contracts/ai-recommendations/`.
 - **latency-visualizer** — `✓ SHIPPED + ARCHIVED (2026-06-23)` → `_archive/latency-visualizer/`.
   FE-only (`NO_BACKEND_CHANGE`): a local, ephemeral `LatencyTrend` card atop `/_ops/metrics` that
   trends the existing `GET /api/_metrics` windowed snapshots (per-stage/total/cache/vendor-latency
