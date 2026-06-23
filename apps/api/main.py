@@ -11,7 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from src.core.engine import QuantEngine
-from src.core.signals import generate_signals, evaluate_gate
+from src.core.signals import (generate_signals, evaluate_gate,
+                              compute_opportunity_tier, position_fingerprint)
 from src.core.live import LiveHub
 from src.core.darkpool import analyze_off_exchange
 from src.providers import get_provider
@@ -68,11 +69,26 @@ BLOCK_MIN_SHARES = int(os.getenv("BLOCK_MIN_SHARES", "5000"))
 # unusual-strike selection stay server-defined. Operator-tunable; no ADV/percentile model in v1.
 VOL_OI_UNUSUAL_THRESHOLD = float(os.getenv("VOL_OI_UNUSUAL_THRESHOLD", "1.0"))
 
+# --- Opportunity-tier bands (ghost-trade escalation ladder) ---
+# Operator-config score thresholds mapping opportunity_score -> a fixed tier vocabulary
+# (dormant|watch|actionable|prime). ACTIONABLE defaults to the AI gate score; PRIME also
+# requires ai_eval.ready. Display/dedupe overlay only -- does not change the score or the gate.
+TIER_WATCH_SCORE = int(os.getenv("TIER_WATCH_SCORE", "25"))
+TIER_ACTIONABLE_SCORE = int(os.getenv("TIER_ACTIONABLE_SCORE", str(GATE_SCORE)))
+TIER_PRIME_SCORE = int(os.getenv("TIER_PRIME_SCORE", "75"))
+
 # In-memory state. Mutated only from the event loop (after awaiting the worker thread), so
 # no locking is needed. _cache is keyed by (ticker, min_dte, max_dte); _last_fingerprint
 # tracks the last DISTINCT fingerprint per ticker for the `changed` dedupe flag.
 _cache: dict = {}
 _last_fingerprint: dict = {}
+# Filter-INDEPENDENT full chain snapshot per ticker, captured on every compute, so the
+# tracked-contract lookup can resolve a held contract even when it's outside the display
+# window -- WITHOUT a new vendor fetch. Keyed by ticker (the snapshot ignores the DTE filter).
+_snapshot_cache: dict = {}
+# Last DISTINCT position-aware fingerprint per ticker, for the position_eval `changed` dedupe
+# (sibling of _last_fingerprint; the entry gate's dedupe is untouched).
+_last_position_fingerprint: dict = {}
 
 # Real-time hub: one live stream/session per active ticker, ref-counted by SSE subscribers.
 live_hub = LiveHub(data_provider, quant_engine, flow_window=FLOW_WINDOW_SECONDS,
@@ -285,6 +301,10 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
     }
     if off_exchange is not None:
         bundle["off_exchange"] = off_exchange  # present only when dark_pool is enabled
+    # Stash the full chain snapshot (filter-independent) for the tracked-contract lookup; the
+    # serve path moves it into _snapshot_cache (keyed by ticker) and strips it from the cached
+    # bundle so it isn't duplicated per filter key or surfaced in any response.
+    bundle["_snapshot"] = market_data
     return bundle
 
 
@@ -313,12 +333,16 @@ def _parse_expirations(csv: str | None) -> tuple | None:
 
 
 async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
-                 expirations: tuple | None = None, dark_pool: bool = False) -> dict:
+                 expirations: tuple | None = None, dark_pool: bool = False,
+                 position_ctx: dict | None = None) -> dict:
     """
     Cache-aware serve path: returns the full wrapped bundle (market_state + signals +
     strike_profile + expirations + ai_eval + meta [+ off_exchange]) for one ticker. Computes
     on cache-miss (in a worker thread, since the SDK blocks), serves from memory within
     CACHE_TTL_SECONDS. 404 when the symbol has no option chain.
+
+    position_ctx (optional, request-time overlay; NOT part of the cache key) carries an open
+    ghost position so the envelope can add `position_eval` -- a sibling of `ai_eval`.
     """
     t = ticker.upper()
     key = (t, min_dte, max_dte, expirations, dark_pool)
@@ -331,6 +355,9 @@ async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
         bundle = await asyncio.to_thread(compute_ticker, t, min_dte, max_dte, expirations, dark_pool)
         if bundle is None:
             raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
+        # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
+        # the cached bundle (so it isn't duplicated per filter key or ever serialized).
+        _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
         # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
         fingerprint = bundle["ai_eval"]["state_fingerprint"]
         changed = fingerprint != _last_fingerprint.get(t)
@@ -341,10 +368,11 @@ async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
         for k in [k for k, e in _cache.items() if now - e["computed_at"] >= CACHE_TTL_SECONDS]:
             _cache.pop(k, None)
 
-    return _wrap(entry, hit, now)
+    return _wrap(entry, hit, now, t, position_ctx)
 
 
-def _wrap(entry: dict, hit: bool, now: float) -> dict:
+def _wrap(entry: dict, hit: bool, now: float, ticker: str,
+          position_ctx: dict | None = None) -> dict:
     """Assemble the response envelope at serve time so freshness/age are always current."""
     bundle = entry["bundle"]
     state = bundle["market_state"]
@@ -360,12 +388,32 @@ def _wrap(entry: dict, hit: bool, now: float) -> dict:
         ai_eval["ready"] = False
         ai_eval["reasons"] = list(ai_eval["reasons"]) + ["stale data"]
 
+    # --- Opportunity tiering (best-effort overlay; never breaks the bundle). Computed at
+    # serve time so it reflects the finalized ai_eval.ready (Prime forced off when stale).
+    # Copy `signals` so the cached object -- and the entry-gate fingerprint computed from it
+    # -- stay untouched.
+    signals = dict(bundle["signals"])
+    try:
+        tier = compute_opportunity_tier(
+            signals.get("opportunity_score") or 0, bool(ai_eval.get("ready")),
+            watch=TIER_WATCH_SCORE, actionable=TIER_ACTIONABLE_SCORE, prime=TIER_PRIME_SCORE)
+        signals["opportunity_tier"] = tier
+        signals["prime_prompt_eligible"] = tier == "prime"
+    except Exception:
+        logger.exception(f"[{ticker}] Opportunity tiering failed; emitting dormant")
+        tier = "dormant"
+        signals["opportunity_tier"] = None
+        signals["prime_prompt_eligible"] = False
+
     wrapped = {
         "market_state": state,
-        "signals": bundle["signals"],
+        "signals": signals,
         "strike_profile": bundle["strike_profile"],
         "expirations": bundle.get("expirations", []),
         "ai_eval": ai_eval,
+        # position_eval: sibling of ai_eval, present only with an open-position context; else
+        # null. Best-effort -- any failure yields null, never an error.
+        "position_eval": _position_eval(ticker, state, tier, position_ctx),
         "meta": {
             "served_at": datetime.fromtimestamp(now, tz=timezone.utc).isoformat(),
             "cache": {"hit": hit, "age_seconds": int(now - entry["computed_at"]),
@@ -378,6 +426,48 @@ def _wrap(entry: dict, hit: bool, now: float) -> dict:
     if "off_exchange" in bundle:   # present only when dark_pool was enabled at compute time
         wrapped["off_exchange"] = bundle["off_exchange"]
     return wrapped
+
+
+def _position_eval(ticker: str, state: dict, tier: str,
+                   position_ctx: dict | None) -> dict | None:
+    """
+    position_eval = {changed, fingerprint} for an OPEN ghost position. Reuses the de-dupe
+    primitive over a position-aware fingerprint (held contract vs walls/flip, P/L band, DTE
+    band, tier) so reassessment alerts fire ONCE per material event. Sibling of ai_eval -- it
+    does not alter the entry gate. Absent context => None. Best-effort: any failure => None.
+    """
+    if not position_ctx:
+        return None
+    try:
+        fp = position_fingerprint(
+            state, strike=position_ctx.get("strike"), right=position_ctx.get("right"),
+            pl_pct=position_ctx.get("pl_pct"), dte=position_ctx.get("dte"), tier=tier)
+        # Raw de-dupe, mirroring ai_eval.changed: flips once when the position fingerprint
+        # changes vs the last distinct compute, then stays false while it persists. Stale/
+        # overnight ALERT suppression is the FE's job (UX blueprint §E) -- the backend does not
+        # special-case it here, keeping `changed` meaning exactly "the picture moved."
+        changed = fp != _last_position_fingerprint.get(ticker)
+        _last_position_fingerprint[ticker] = fp
+        return {"changed": changed, "fingerprint": fp}
+    except Exception:
+        logger.exception(f"[{ticker}] position_eval failed; emitting null")
+        return None
+
+
+async def _ensure_snapshot(ticker: str) -> dict:
+    """
+    Return the filter-independent full chain snapshot for `ticker`, refreshing it via the
+    normal serve path when stale (no extra vendor fetch when warm). Raises 404 when the symbol
+    has no option chain (propagates the serve-path 404).
+    """
+    t = ticker.upper()
+    snap = _snapshot_cache.get(t)
+    if snap is None or (time.time() - snap["computed_at"]) >= CACHE_TTL_SECONDS:
+        await _serve(t, None, None, None, INCLUDE_DARK_POOL)  # populates _snapshot_cache on miss
+        snap = _snapshot_cache.get(t)
+    if snap is None:
+        raise HTTPException(status_code=404, detail=f"No option-chain snapshot available for {t}.")
+    return snap
 
 
 # Shared filter query params. min_dte/max_dte bound the gamma-structure window (None = full
@@ -397,9 +487,21 @@ async def get_ticker_bundle(
     max_dte: int | None = _MaxDTE,
     expirations: str | None = _Expirations,
     dark_pool: bool = _DarkPool,
+    pos_expiration: str | None = Query(None, description="Open ghost position: contract expiration (YYYY-MM-DD)."),
+    pos_strike: float | None = Query(None, description="Open ghost position: strike."),
+    pos_right: str | None = Query(None, description="Open ghost position: 'call' or 'put'."),
+    pos_pl_pct: float | None = Query(None, description="Open ghost position: current P/L %, for the position_eval band."),
 ):
-    """Full bundle (market_state + signals + strike_profile + expirations [+ off_exchange])."""
-    return await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool)
+    """Full bundle (market_state + signals + strike_profile + expirations + ai_eval +
+    position_eval [+ off_exchange]). Pass the `pos_*` params (held contract + P/L%) to receive
+    `position_eval`; omit them for `position_eval: null`."""
+    position_ctx = None
+    if pos_expiration and pos_strike is not None and pos_right:
+        position_ctx = {"expiration": pos_expiration[:10], "strike": pos_strike,
+                        "right": pos_right.lower(), "pl_pct": pos_pl_pct,
+                        "dte": _dte_days(pos_expiration)}
+    return await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool,
+                        position_ctx=position_ctx)
 
 
 @app.get("/api/market-data", response_model=MarketState)
@@ -433,6 +535,66 @@ async def get_signals(
     dark_pool: bool = _DarkPool,
 ):
     return (await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool))["signals"]
+
+
+@app.get("/api/contract/{ticker}")
+async def get_tracked_contract(
+    ticker: str = Path(..., description="Underlying symbol, e.g. TSLA"),
+    expiration: str = Query(..., description="Contract expiration, YYYY-MM-DD."),
+    strike: float = Query(..., description="Contract strike (bare number)."),
+    right: str = Query(..., description="Contract right: 'call' or 'put'."),
+):
+    """
+    Tracked-contract stats for one option, resolved from the **full chain snapshot**
+    (filter-INDEPENDENT — a held contract resolves even when outside the current DTE window)
+    with **no new vendor fetch**. Returns `option_quote{bid,ask,mid}|null`, per-greek
+    `greeks`, `iv`, and `dte`.
+
+    Presence semantics (binding):
+    - Contract **not in the snapshot** -> HTTP 404 (the FE shows "tracking unavailable").
+    - Contract **present but no NBBO quote** -> 200 with `option_quote: null` (NOT an error;
+      the FE falls back to a theoretical mark).
+    """
+    t = ticker.upper()
+    right_l = right.lower()
+    if right_l in ("c", "call"):
+        right_l = "call"
+    elif right_l in ("p", "put"):
+        right_l = "put"
+    else:
+        raise HTTPException(status_code=422, detail="right must be 'call' or 'put'.")
+
+    snap = await _ensure_snapshot(t)   # raises 404 if the symbol has no chain
+    exp10 = expiration[:10]
+    match = next(
+        (c for c in snap["market_data"].get("contracts", [])
+         if (c.get("expiration_date") or "")[:10] == exp10
+         and abs(float(c.get("strike_price") or 0) - strike) < 1e-6
+         and (c.get("contract_type") or "").lower() == right_l),
+        None,
+    )
+    if match is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Contract not in current snapshot: {t} {exp10} {strike} {right_l}.")
+
+    # option_quote: present only with a usable NBBO mid (needs both sides); else null.
+    q = match.get("quote") or {}
+    bid, ask = q.get("bid"), q.get("ask")
+    option_quote = None
+    if bid is not None and ask is not None:
+        option_quote = {"bid": bid, "ask": ask, "mid": round((bid + ask) / 2.0, 4)}
+
+    g = match.get("greeks") or {}
+    iv = match.get("implied_volatility")
+    return {
+        "ticker": t, "expiration": exp10, "strike": strike, "right": right_l,
+        "option_quote": option_quote,
+        "greeks": {"delta": g.get("delta"), "gamma": g.get("gamma"),
+                   "theta": g.get("theta"), "vega": g.get("vega")},
+        "iv": iv if iv else None,      # 0.0 (unpriced) -> null
+        "dte": _dte_days(exp10),
+    }
 
 
 @app.get("/api/stream/{ticker}")

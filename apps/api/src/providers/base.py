@@ -23,6 +23,14 @@ class OptionGreeks(TypedDict):
     vega: Optional[float]
 
 
+class OptionQuote(TypedDict):
+    """The option's NBBO quote from the chain snapshot. OPTIONAL on a contract: consumers
+    derive `mid = (bid+ask)/2` and fall back to a theoretical mark when it (or the whole
+    quote) is absent -- never an error. bid/ask may be None individually."""
+    bid: Optional[float]
+    ask: Optional[float]
+
+
 class OptionContract(TypedDict):
     """One option contract, normalized across vendors."""
     strike_price: float
@@ -31,6 +39,7 @@ class OptionContract(TypedDict):
     open_interest: int
     implied_volatility: float   # DECIMAL form (0.486 == 48.6%); 0.0 when unpriced
     volume: Optional[float]     # session traded volume; None when the vendor doesn't report it
+    quote: Optional[OptionQuote]  # option NBBO bid/ask (for the tracked-contract mark); None if absent
     greeks: OptionGreeks
 
 

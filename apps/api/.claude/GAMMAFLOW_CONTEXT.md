@@ -15,13 +15,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 ## 2. Architecture
 **Backend** (FastAPI, repo root + `src/`):
-- `main.py` — endpoints, response envelope, 60s in-memory cache, config, the `LiveHub`.
+- `main.py` — endpoints, response envelope, 60s in-memory cache, config, the `LiveHub`, the
+  filter-independent `/api/contract/{ticker}` tracked-contract lookup (off a ticker-keyed snapshot
+  cache), serve-time opportunity tiering + `position_eval`.
 - `src/providers/base.py` — `MarketDataProvider` **port** (ABC) + TypedDict contracts. Vendor
   swaps = one new adapter; engine/signals/main never import a vendor SDK.
 - `src/providers/massive.py` — Massive (Polygon-style) **adapter**; `__init__.py` = `get_provider()` factory (`DATA_PROVIDER` env).
 - `src/core/engine.py` — `QuantEngine`: GEX profile, greeks, vectorized gamma flip, + DEX & Vol/OI
   (in the GEX pass) and `compute_iv_skew` / `compute_term_structure` (guarded, full-chain helpers).
-- `src/core/signals.py` — regime/vol-regime/setups/opportunity-score + AI gate + fingerprint.
+- `src/core/signals.py` — regime/vol-regime/setups/opportunity-score + AI gate + fingerprint, +
+  `compute_opportunity_tier` (dormant→prime bands) & `position_fingerprint` (open-position dedupe).
 - `src/core/live.py` — `LiveSession`/`LiveHub`: live NBBO mid, rolling net flow, live flip,
   session classifier; one ref-counted session per ticker (8s grace teardown).
 - `src/core/darkpool.py` — off-exchange (TRF) volume ratio + volume-by-price.
@@ -115,6 +118,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   + per-strike `volume`/`vol_oi_ratio`, **full-chain**), **IV skew** (`iv_skew` at the nearest
   ≥7-DTE tenor, ±25Δ w/ moneyness fallback), **term structure** (`term_structure` ATM-IV-by-tenor
   curve + contango/backwardation/flat, cross-tenor).
+- **Ghost-trade tracker (sim) backend surface** (FE owns the durable store + mark/P-L math): the
+  filter-independent `GET /api/contract/{ticker}` tracked-contract lookup (`option_quote{bid,ask,mid}
+  |null`, greeks, iv, dte — 404 if not in snapshot, `option_quote:null` if no NBBO); the provider-port
+  **option NBBO quote** (`OptionContract.quote` from Massive `last_quote`, no new fetch); backend-emitted
+  `signals.opportunity_tier` (dormant→watch→actionable→prime) + `prime_prompt_eligible`;
+  `position_eval{changed,fingerprint}|null` (sibling of `ai_eval`, via `pos_*` query params);
+  `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
+  path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
@@ -123,7 +134,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `FLOW_WINDOW_SECONDS` (300), `LIVE_THROTTLE_SECONDS` (1.5), `CHAIN_REFRESH_SECONDS` (120),
   `INCLUDE_DARK_POOL` (true), `DARKPOOL_LOOKBACK_SECONDS` (3600), `BLOCK_MIN_SHARES` (5000;
   fixed institutional-size threshold for an off-exchange block print), `VOL_OI_UNUSUAL_THRESHOLD`
-  (1.0; cutoff above which a strike's vol/OI reads "unusual", echoed as `vol_oi_unusual_threshold`).
+  (1.0; cutoff above which a strike's vol/OI reads "unusual", echoed as `vol_oi_unusual_threshold`),
+  `TIER_WATCH_SCORE` (25) / `TIER_ACTIONABLE_SCORE` (=`GATE_SCORE`) / `TIER_PRIME_SCORE` (75;
+  opportunity-tier bands — Prime also requires `ai_eval.ready`).
 - **Add a vendor:** implement `MarketDataProvider` in `src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend
@@ -132,8 +145,10 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 ## 8. Downstream-AI contract
 - `market_state_glossary.md` = field-level reference (reliability order, regimes, envelope,
-  off_exchange). `prompts/strategy_prompt.md` = when to invoke (gate + dedupe) + required
-  risk-first output schema. The AI is **external** — GammaFlow defines the contract + gate only,
+  off_exchange, ghost-trade tracker). `prompts/strategy_prompt.md` = when to invoke (gate + dedupe) +
+  required risk-first output schema (entry). `prompts/reassessment_prompt.md` = the position-aware
+  sibling: an OPEN trade + current `market_state` + decision digest → risk-first verdict ∈
+  {Hold,Trim,Add,Exit,Roll}. The AI is **external** — GammaFlow defines the contract + gate only,
   it does **not** call an LLM.
 
 ## 9. Open items / under consideration

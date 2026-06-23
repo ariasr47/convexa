@@ -156,6 +156,38 @@ get `ai_eval` + `meta` in one call.
 **Reliability note:** all four are **display + AI-context only** — none feeds `opportunity_score`,
 setups, the AI gate, or `state_fingerprint`.
 
+## Ghost-trade tracker (simulation — paper only)
+- The ghost trade is a **simulated** long single-leg option (no broker, no real order, **no real
+  order path exists anywhere in the API**). Fill basis = option **mid**; the **100× multiplier** is
+  included; **fees/slippage/taxes/assignment are not modeled.** One open ghost trade per ticker. The
+  trade + decision history are a **client-local durable store**; the server stays stateless.
+- **Tracked-contract stats** (`GET /api/contract/{ticker}?expiration&strike&right`): the held
+  contract's `option_quote{bid,ask,mid}|null`, `greeks`, `iv`, `dte`, resolved from the **full chain
+  snapshot** — **filter-independent** (a held contract keeps resolving even when outside the DTE
+  window) and **no new vendor fetch**. Contract not in the snapshot → 404; present but no NBBO →
+  `option_quote: null` (use a theoretical mark — not an error).
+- **Modeled mark:** live P/L uses the option's snapshot NBBO mid (exact at each ~2-min chain
+  snapshot — the *anchor*), **estimated between snapshots** from the live underlying move + the
+  contract's greeks (the *modeled* state), or **theoretical** (Black-Scholes from cached IV) when no
+  quote exists. It is **not a real traded price**, is labeled accordingly, **freezes honestly**
+  overnight/closed, and goes **offline (last known)** on a live-stream drop — never frozen-as-live.
+  The interpolation itself is the FE's; the backend only surfaces the quote + greeks + IV.
+- **Position eval** (`position_eval{changed,fingerprint}`) is a sibling of `ai_eval`, present only
+  while a trade is open (pass the held contract via the `pos_*` query params): a coarse
+  position-aware fingerprint (held contract vs walls/flip, P/L band, DTE band, tier) + `changed`,
+  used to fire reassessment **alerts once per event** (same de-dupe as the entry gate). It does
+  **not** alter the entry gate. Stale/overnight alert suppression is applied by the FE.
+- **Reassessment** routes the open position + current `market_state` through the **external-AI
+  boundary** (`prompts/reassessment_prompt.md`, an extension of the existing hand-off) and returns a
+  risk-first verdict ∈ {Hold, Trim, Add, Exit, Roll} (Roll's replacement must be in the current
+  snapshot). GammaFlow does **not** call an LLM; the verdict may be operator-mediated. **Nothing is
+  auto-applied** — the user accepts or rejects, recorded in a versioned, exportable decision history.
+- **Opportunity tiers:** `signals.opportunity_tier` ∈ `Dormant → Watch → Actionable → Prime`,
+  derived from `opportunity_score` (operator env bands) + `ai_eval.ready` (**Prime also requires
+  `ready`**). `signals.prime_prompt_eligible` is true only at Prime and gates the guided sim-entry
+  prompt (FE fires it only on the change **into** Prime, de-duped). Display/context — not a trade
+  instruction; the tier does not change `opportunity_score` or the entry gate.
+
 # `/api/signals` — pre-digested setups for ONE ticker
 
 This is the backend's interpretation of `market_state` (same source of truth). Prefer

@@ -103,3 +103,46 @@ capture (Q13): `event_type`, `clock_time` (supplied "now"), full contract identi
 - **Provider-port amendment:** add an **optional option NBBO quote** (bid/ask → mid) to the
   per-contract option in the provider port; the Massive adapter maps `last_quote` (no new request);
   every adapter honors it; absent ⇒ theoretical-mark fallback, never an error.
+
+---
+
+## Backend resolution amendment (transports finalized — unblocks the FE lane)
+
+> Filed by the Backend Executioner. The three "Interface's to finalize" transports + the tier
+> source were left open (see `INTERFACE_AMENDMENTS_REQUESTED.md`). The backend implementation pins
+> them to concrete, contract-compliant choices below; these are now **binding**. Additive only — no
+> previously-specified shape changes, so nothing the FE had already assumed is broken.
+
+**1. Tracked-contract stats endpoint — FINAL.**
+`GET /api/contract/{ticker}?expiration={YYYY-MM-DD}&strike={number}&right={call|put}` (`c`/`p` also
+accepted; `right` lower-cased). Returns the **bare object** of the §"Tracked-contract stats" shape
+(same envelope style as `/api/market-data`, `/api/strike-profile` — not wrapped). Presence:
+- Contract **not in the snapshot** → **HTTP 404** (FE → "tracking unavailable").
+- Contract **present, no NBBO** → **200** with `option_quote: null` (FE → theoretical mark; not an
+  error). `mid = round((bid+ask)/2, 4)` and is present only when **both** sides exist.
+- Unpriced contract (no greeks) → `greeks.*: null`, `iv: null`; still 200.
+- Bad `right` → 422. Resolved from the **full snapshot** (filter-independent); no new vendor fetch.
+
+**2. Reassessment transport — FINAL = option (a), operator-mediated artifact.** No endpoint
+round-trip. The request/verdict **shapes are unchanged**; the hand-off spec is
+`prompts/reassessment_prompt.md` (sibling of `strategy_prompt.md`). The FE assembles the copyable
+`reassessment_request` from data it already holds (durable trade + bundle `market_state` + decision
+digest), the operator runs the AI externally, and the FE ingests a pasted `recommendation`.
+`recommendation.status ∈ {pending|ready|failed}` stays in the shape for the operator integration; in
+phase-1 the FE treats a pasted verdict as `ready`. (A future endpoint/webhook can implement the same
+boundary without changing these shapes.)
+
+**3. `opportunity_tier` / `prime_prompt_eligible` — FINAL = backend-emitted.** The bundle emits
+`signals.opportunity_tier` + `signals.prime_prompt_eligible`; the FE **consumes** them (no FE-side
+band math, no band-config field needed). Bands are **operator env config on the backend**:
+`TIER_WATCH_SCORE` (25), `TIER_ACTIONABLE_SCORE` (= `GATE_SCORE`, 50), `TIER_PRIME_SCORE` (75); Prime
+additionally requires `ai_eval.ready`. Computed at **serve time** so Prime is forced off on stale
+data. `prime_prompt_eligible == (opportunity_tier == "prime")`.
+
+**4. `position_eval` delivery — FINAL = query params on the bundle route.**
+`GET /api/ticker/{ticker}?pos_expiration={YYYY-MM-DD}&pos_strike={number}&pos_right={call|put}&pos_pl_pct={number}`.
+All of expiration/strike/right present ⇒ `position_eval` is computed (P/L% optional, only sharpens
+the band); any missing ⇒ `position_eval: null`. `changed` is the **raw** de-dupe (mirrors
+`ai_eval.changed`: flips once when the position fingerprint moves); **stale/overnight alert
+suppression is the FE's job** (UX §E), not gated server-side. The FE MAY instead de-dupe on its own
+client fingerprint and ignore `position_eval` — both are supported.

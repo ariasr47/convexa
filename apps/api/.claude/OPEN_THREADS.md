@@ -74,7 +74,34 @@ surface all fields; `VOL_OI_UNUSUAL_THRESHOLD` env (1.0). `signals.py` untouched
 (window scope, per-metric nulls, sparse term, vol_oi null-rule). Glossary + GAMMAFLOW_CONTEXT
 refreshed; contract archived.
 
-## 5. Smaller deferred items (proposed, not implemented)
+## 5. Ghost-trade tracker / sim (BACKEND SHIPPED + interface resolved — FE lane ready to re-launch)
+Contracts in `.claude/contracts/trade-tracker-sim/`. The FE lane had **paused** pending three
+"Interface's to finalize" transports (bounce-back: `INTERFACE_AMENDMENTS_REQUESTED.md`). **The
+backend lane resolved all of them** with concrete, contract-compliant choices, now pinned in
+`INTERFACE_CONTRACT.md` → "Backend resolution amendment" (additive — breaks no prior FE assumption):
+1. **Tracked-contract:** `GET /api/contract/{ticker}?expiration&strike&right`, bare-object response;
+   **not-in-snapshot → 404**, **present-but-no-NBBO → 200 `option_quote:null`**; filter-independent,
+   no new fetch.
+2. **Reassessment:** option **(a) operator-mediated artifact** — `prompts/reassessment_prompt.md`; no
+   endpoint round-trip; shapes unchanged.
+3. **Tiers:** **backend-emitted** `signals.opportunity_tier` + `prime_prompt_eligible`; bands are
+   backend env (`TIER_WATCH_SCORE`/`TIER_ACTIONABLE_SCORE`/`TIER_PRIME_SCORE`).
+4. **`position_eval`:** `pos_*` query params on `/api/ticker`; absent ⇒ null (FE may also de-dupe on
+   its own fingerprint).
+**Backend shipped** (`C:\Dev\GammaFlow`): `OptionContract.quote` (Massive `last_quote`, no new fetch);
+`/api/contract` lookup off a ticker-keyed snapshot cache; `compute_opportunity_tier` +
+`position_fingerprint` in `signals.py`; serve-time tiering + `position_eval` in `_wrap`;
+`reassessment_prompt.md`. Verified live (TSLA: contract inside/outside window, no-NBBO→null,
+missing→404, tier bands, position_eval once-per-event, full isolation) + entry gate/`opportunity_score`/
+`state_fingerprint` byte-identical to pre-feature; **no order path, no LLM call** (grep-confirmed).
+Glossary + GAMMAFLOW_CONTEXT refreshed.
+**Still open:** FE lane (durable store, mark/P-L math, alerts, accept/reject mapping, entry/panel/
+history/Prime banner) — ready to re-launch against the live backend (or a mock mirroring it).
+**Archive `.claude/contracts/trade-tracker-sim/` only once the FE lane also ships.** Deferred seams
+(specified, not built): broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay, recorded-
+verdict reassessment, server-side trade store.
+
+## 6. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
@@ -86,7 +113,7 @@ refreshed; contract archived.
 - **Multi-session dark-pool accumulation map:** current dark-pool is a bounded recent window;
   true multi-session block history needs a heavier batched pull. Future.
 
-## 6. Resolved decisions (do NOT revisit)
+## 7. Resolved decisions (do NOT revisit)
 - **Live spot = NBBO mid, not last trade** — smoother, better for anchoring; Webull shows last
   trade, hence small benign differences. Keep mid; do not add last-trade.
 - **Gamma sourcing** — vendor gamma for walls/profile, analytic BS for the flip; the divergence

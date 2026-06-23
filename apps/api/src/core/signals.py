@@ -279,6 +279,74 @@ def state_fingerprint(sig: dict) -> str:
     return hashlib.sha1(raw.encode()).hexdigest()[:12]
 
 
+# --- Opportunity tiering + position-aware eval (ghost-trade tracker) -----------------------
+# These are DISPLAY/dedupe overlays. They do NOT alter opportunity_score, the entry gate, or
+# the entry `state_fingerprint`. Tier bands are operator config (passed in from main.py); the
+# tier vocabulary is fixed: dormant | watch | actionable | prime.
+TIER_ORDER = ("dormant", "watch", "actionable", "prime")
+
+
+def compute_opportunity_tier(score: int, ai_ready: bool, *, watch: int,
+                             actionable: int, prime: int) -> str:
+    """
+    Map opportunity_score (+ the entry gate's `ready`) onto a fixed escalation tier.
+    Bands are operator config. **Prime additionally requires `ai_ready`** (actionable) so the
+    top tier only fires when the rule layer agrees there is an edge -- not on score alone.
+    """
+    if score >= prime and ai_ready:
+        return "prime"
+    if score >= actionable:
+        return "actionable"
+    if score >= watch:
+        return "watch"
+    return "dormant"
+
+
+def _pl_band(pl_pct) -> str:
+    """Coarse P/L bucket (percent) so the position fingerprint only flips on a material move."""
+    if pl_pct is None:
+        return "na"
+    for hi, label in ((-50, "<-50"), (-25, "-50:-25"), (-10, "-25:-10"),
+                      (10, "-10:10"), (25, "10:25"), (50, "25:50")):
+        if pl_pct < hi:
+            return label
+    return ">=50"
+
+
+def _dte_band(dte) -> str:
+    """Coarse DTE bucket so the fingerprint flips once at each horizon threshold, not daily."""
+    if dte is None:
+        return "na"
+    for hi in (1, 7, 21, 45):
+        if dte <= hi:
+            return f"<={hi}"
+    return ">45"
+
+
+def position_fingerprint(state: dict, *, strike, right, pl_pct, dte, tier: str) -> str:
+    """
+    Coarse, stable hash of an OPEN position's material picture -- the sibling of
+    `state_fingerprint`, used to fire reassessment alerts once per event (de-dupe). It folds
+    only the held contract's side of each level (call/put wall, gamma flip), the P/L band, the
+    DTE band, and the current tier, so a 60s poll on a quiet position yields an identical
+    fingerprint and it only flips on a material change. Reuses the entry gate's `_sign`
+    coarsening; it does NOT touch the entry gate's own fingerprint or semantics.
+    """
+    def rel(level):
+        return _sign(strike - level) if (level and strike) else 0
+    parts = [
+        right,
+        rel(state.get("call_wall")),
+        rel(state.get("put_wall")),
+        rel(state.get("gamma_flip")),
+        _pl_band(pl_pct),
+        _dte_band(dte),
+        tier,
+    ]
+    raw = "|".join(str(p) for p in parts)
+    return hashlib.sha1(raw.encode()).hexdigest()[:12]
+
+
 def evaluate_gate(sig: dict, score_threshold: int = DEFAULT_GATE_SCORE) -> dict:
     """
     Cheap rule-layer gate that decides whether a snapshot is worth escalating to the

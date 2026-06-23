@@ -212,6 +212,18 @@ class MassiveProvider(MarketDataProvider):
                 raw_volume = extract(day, "volume", None)
                 volume = float(raw_volume) if raw_volume is not None else None
 
+                # Option NBBO quote from the snapshot's `last_quote` block (already parsed --
+                # no extra request). Feeds the tracked-contract mark; absent => None so the
+                # consumer falls back to a theoretical mark (never an error).
+                lq = extract(contract, "last_quote", None)
+                quote = None
+                if lq is not None:
+                    q_bid = extract(lq, "bid", None)
+                    q_ask = extract(lq, "ask", None)
+                    if q_bid is not None or q_ask is not None:
+                        quote = {"bid": float(q_bid) if q_bid is not None else None,
+                                 "ask": float(q_ask) if q_ask is not None else None}
+
                 # Contracts Massive could not price greeks for (often deep ITM) are still
                 # kept so their open interest counts toward put/call ratio and max pain.
                 # Greeks are set to None so the engine excludes them from GEX/greeks only.
@@ -224,6 +236,7 @@ class MassiveProvider(MarketDataProvider):
                     "open_interest": int(extract(contract, "open_interest", 0)),
                     "implied_volatility": float(extract(contract, "implied_volatility", 0.0)) if has_greeks else 0.0,
                     "volume": volume,
+                    "quote": quote,
                     "greeks": {
                         "delta": float(extract(greeks, "delta", 0.0)) if has_greeks else None,
                         "gamma": float(extract(greeks, "gamma", 0.0)) if has_greeks else None,
