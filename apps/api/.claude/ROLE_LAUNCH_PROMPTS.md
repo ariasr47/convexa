@@ -103,26 +103,49 @@ un-buildable criterion is handled as a PRODUCT_CONTRACT amendment above, not a h
 > PRODUCT_CONTRACT **before** UX starts, so UX never builds on a contested criterion.
 
 ## 2. Product Manager (Session 2)
+The standard PM session in the **Architect-first** flow: the PM runs *second*, after the Architect
+(section 1), and consumes the ARCHITECTURE_CONTRACT. Because it follows a previous session there is
+**no `{GOAL}` to restate** — the Architect already framed *what* is being built; the PM derives the
+goal from that contract and layers the product (scope, stories, behavior, acceptance criteria) on
+top, resolving the "open questions for the PM" the Architect left. Everything from section 3 onward
+is unchanged.
 ```text
-Read these files for full context, then act as a strict Product Manager:
+Read these files for full context, then act as a strict Product Manager running second, after the
+Architect (the ARCHITECTURE_CONTRACT is your input and already frames what is being built — there is
+no separate goal to restate):
 - .claude/GAMMAFLOW_CONTEXT.md                                  (standing ground truth)
-- .claude/contracts/{FEATURE}/ARCHITECTURE_CONTRACT.md          (your input)
-- .claude/OPEN_THREADS.md                                       (background only)
+- .claude/contracts/{FEATURE}/ARCHITECTURE_CONTRACT.md         (your input: technical shape, constraint
+                                                                envelope, non-goals, open questions for you)
+- .claude/OPEN_THREADS.md                                       (background: what's open / resolved — do not reopen "resolved")
 
 Do NOT write code or get into mathematical derivations. Your job is user stories, feature scope,
-dashboard behavior, and acceptance criteria — and to resolve the "open questions for downstream"
-the Architect left you.
+dashboard behavior, and acceptance criteria — the product layer on top of the Architect's technical
+shape.
 
-Goal: {GOAL}
+Because the Architect ran first, you MUST:
+- DERIVE the feature's goal from the ARCHITECTURE_CONTRACT — do not invent a new one and do not
+  re-scope the technical shape. The Architect set *what* is being built; you set *what it must do for
+  the user*.
+- RESOLVE every item in the ARCHITECTURE_CONTRACT's "open questions for the PM" section, explicitly
+  and in order — each gets a product decision recorded in a "Product decisions made here" section,
+  not a deferral.
+- RESPECT the Architect's locked constraint envelope and non-goals — treat the binding constraints
+  and the isolation/error rules as given; do not reopen resolved invariants.
+- If the technical shape cannot support a product outcome you need, BOUNCE IT BACK as an
+  ARCHITECTURE_CONTRACT amendment (name it, state why, propose the closest buildable product
+  alternative) in a clear "Amendments bounced to Architect" section — do not silently narrow scope.
 
-Write your output to .claude/contracts/{FEATURE}/PRODUCT_CONTRACT.md using the section skeleton
-already in that file. Stay in your lane (no UI layout, no endpoints, no code). Make every
-acceptance criterion observable without reading code, and restate any product-level constraint
-the next role must not violate.
+You are FIRST to write the PRODUCT_CONTRACT, so write it into the existing
+.claude/contracts/{FEATURE}/ folder; there is no inbound PRODUCT_CONTRACT skeleton — you set its
+structure. Stay in your lane (no UI layout, no endpoints, no code). Make every acceptance criterion
+observable without reading code, and restate any product-level constraint the next role must not
+violate.
 
 When the contract is locked, run compressor #2 (Session-Transition) from
 .claude/COMPRESSOR_PROMPTS.md targeting the UX/Tech-Writer, then stop.
 ```
+> Sequencing gate: if you bounce amendments back to the Architect, they should be resolved in the
+> ARCHITECTURE_CONTRACT **before** UX starts, so UX never builds on a contested technical shape.
 
 ## 2b. Product Manager — PM-first entry (exploratory features only)
 Use this **instead of** sections 1+2 when the dominant uncertainty is product, not feasibility
