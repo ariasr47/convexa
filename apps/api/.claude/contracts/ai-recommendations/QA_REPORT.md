@@ -145,3 +145,14 @@ All 18 product ACs pass. All binding invariants hold. However, the FRONTEND_EXEC
 **Owning lane:** Frontend
 
 **Note:** T18 covers (a) for the post-rec case. T16 confirms no bundle re-fetch on persona override. E3 as a named test distinct from T18 is the gap. Adding a named E3 test (which can reuse T18/T16 observations in a combined assertion) would close this.
+
+---
+
+## GATE Q RE-RUN (E3 fix) — Orchestrator targeted re-verify, 2026-06-23
+
+The Frontend lane added the missing named test (gammaflow-web commit `a2f6ae3`, test-only — no feature code touched). Targeted re-verify by the Orchestrator (only a test was added; the de-correlated QA's 18-AC + conformance + invariant verification above is unchanged and still stands):
+- `ai-rec.spec.tsx` now **23 tests** including **`E3 score/fingerprint unchanged with and without a rec, and across persona override` — PASS** (2212 ms).
+- `npx nx test dashboard` — **26/26 green** (2 files).
+- Traceability now complete: every required matrix row (T1–T18 + E1–E7) maps to ≥1 named passing test.
+
+**RESOLVED. OVERALL GATE Q VERDICT: PASS.** → routes to GATE S (ship).
