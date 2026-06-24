@@ -98,6 +98,13 @@ first move, and a **gate-check** sits between every handoff — a quick "is this
 actually complete, and did everyone stay in their lane?" before the next expert is allowed
 to start. And as we'll see, that gate-check is no longer just a human judgment call.
 
+One more thing about the conductor, since it's the part you actually *talk to*: it has learned
+to **speak plainly to anyone.** Whenever it reports what just happened or asks you to make a
+call, it leads with a plain-English summary — what changed, what it means, what's next — with
+no gate names or file paths, and *only then* the technical detail for whoever wants it. Whether
+you're an engineer or have never seen the system, you can follow the build without learning the
+jargon first. (This post is written in exactly that voice — and on purpose.)
+
 ---
 
 ## How we remember things — without carrying baggage
@@ -198,6 +205,36 @@ just requested:
 
 ---
 
+## The shared workshop: one monorepo, run by Nx
+
+A relay of specialists needs somewhere to work — and we put all of them in **one workshop.** The
+back end, the front end, the shared rulebook, the checks: a single project folder (a *monorepo*)
+rather than a scatter of separate repositories. The tool that runs that workshop is **Nx.**
+
+Nx earns its place for the ordinary reasons — it understands how every part of the project depends
+on every other, and it can build and test just the parts a change actually touches instead of
+redoing everything. But the reason it fits *this* system so well is the part most teams overlook:
+**Nx enforces the walls between the parts.** We label each area — *this is back end, this is front
+end, this is shared* — and Nx's boundary rule means the front-end builder *cannot* import the back
+end's internals even if it tried. The build itself rejects it.
+
+Look at what that does to our lanes. We already sandbox each role so it only has the tools its job
+needs. Now the *code* carries the same discipline: even inside a builder's own sandbox, the
+structure of the workshop won't let the front half reach into the back half. Two independent walls
+enforcing one rule — the role can't cross the lane, and neither can the code. It's the same move
+you'll have spotted everywhere in this system: take a rule you'd otherwise just *trust* people to
+follow, and turn it into something the machine simply won't allow.
+
+One workshop buys two more things. There's a single **fence** around everything — the write-guard
+that stops a session wandering outside the project covers the whole thing at once, with no per-repo
+bookkeeping. And the specialists get a **map**: Nx exposes a live picture of how the project fits
+together (and a tool the AI can actually call), so a builder asks "what does my change affect, and
+which tests should I run?" instead of guessing. A fresh expert with no memory of the last session
+still gets its bearings in seconds. (It's also what made the next trick possible — folding both
+halves into one workshop is exactly what later let us lift the whole method out as a reusable kit.)
+
+---
+
 ## Why this is a genuinely great way to build
 
 - **Quality stays high as the project grows.** Each session is short and focused, so it
@@ -288,6 +325,34 @@ better rules, better checks, and better questions.
 
 ---
 
+## From one studio to a franchise
+
+Everything so far describes a studio that builds *one* product. But the studio itself — the
+conductor, the roles, the rulebook structure, the checks — has nothing to do with options trading.
+It's just a way of working. So we pulled it loose.
+
+The whole method had started life tangled up with GammaFlow: its files and its trading vocabulary
+baked into the same folders as the generic machinery. We separated them. Everything reusable became
+a standalone **kit** — identical for any project. Everything specific to *this* product moved into a
+single small **settings file** plus the project's own rulebook. And the dividing line is enforced
+the way everything else around here is: a checker refuses to let a project-specific detail sneak
+back into the shared parts, so the kit can't quietly re-tangle itself with one product.
+
+Now opening the studio in a brand-new project is close to a single command — copy the kit in, fill
+in the settings file, and the same disciplined relay is running on something completely different: a
+different language, a different domain, the same playbook.
+
+Here's the recursive part, and it's our favourite. **The kit improves itself with its own method.**
+It keeps its own backlog of upgrades, its own changelog that records *why* each change was made, and
+a tool that tells any project "you're running an old version of the studio — here's how to catch
+up." A refinement discovered while building one product flows back into the kit and out to every
+other project that uses it. So the studio doesn't only get smarter *within* a project, the way the
+self-promoting rulebook does — it gets smarter *across every project at once.* That's the franchise:
+the same well-run studio opening in new towns, with every branch's lessons quietly improving the
+playbook for all of them.
+
+---
+
 ## The one-sentence version
 
 > We turned a single overwhelmed conversation into a **relay of focused experts**, gave
@@ -300,4 +365,5 @@ every specialist is brilliant, well-briefed, and never too tired to do their bes
 ---
 
 *GammaFlow is a single-ticker options-analytics dashboard. This post is about how it's
-**built**, not what it does — the same approach would work for almost any software.*
+**built**, not what it does — the same approach would work for almost any software. In fact it's now
+packaged as a reusable kit, so it can.*
