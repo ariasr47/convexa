@@ -1,8 +1,8 @@
 # ai-recommendations — pipeline manifest
 Entry:        architect-first
-Stage:        GATE Q PASS (after E3 fix + re-verify) → ready for GATE S (ship).
-              Frontend E3 fix: gammaflow-web a2f6ae3 (test-only); nx test dashboard 26/26 green, E3 passing;
-              traceability complete. 18/18 ACs PASS, conformance 4/4, all invariants clean.
+Stage:        SHIPPED + ARCHIVED (GATE S @ 2026-06-23). Backend eec3a3a; frontend 42212f5 + a2f6ae3.
+              QA PASS (Sonnet, de-correlated). Demoted `ai-external-no-llm` (system-7, narrowed). Canon
+              refreshed: CONTEXT §2/§6/§7/§8, OPEN_THREADS §7b, DECISION_LEDGER (Demoted + rows), BACKLOG §A.
 Repos:        both
 Brief:        BRIEF.md present
 Contracts:

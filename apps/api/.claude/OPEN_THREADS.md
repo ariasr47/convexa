@@ -200,6 +200,34 @@ the operator-editable canonical data. (Not blocking; behaviour is correct today.
 **Deferred (specified, not built):** multi-device sync, operator-shared persona library, richer
 customization, per-persona acceptance analytics.
 
+## 7b. In-app AI recommendations (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/ai-recommendations/`. GammaFlow's **first in-app LLM
+call** — a best-effort, isolated, gated, **advisory consumer** of already-computed state. **Demoted the
+`ai-external-no-llm` canon** (system-7, narrowed not erased — CONTEXT §8 + DECISION_LEDGER "Demoted").
+**Backend** (`C:\Dev\GammaFlow`, commit `eec3a3a`): new one-way-leaf `src/core/ai_recommendation.py`
+(`signals`/`engine`/`live`/`darkpool` don't import it) — `LLMProvider` seam (Anthropic forced tool-use
+structured output; `StubLLMProvider` for keyless/no-cost verify), read+serialize state exporter (no
+recompute), `ai_eval`-derived gating + 60s cooldown + 50/day cap (env-configurable); `POST
+/api/recommendation/{ticker}` (best-effort, always-200 + `status`), `GET …/export/{ticker}` (no-LLM floor,
+404 if un-fetched), `GET …/status/{ticker}`. Server-side `ANTHROPIC_API_KEY` (never in browser, gitignored).
+Verified live: conformance 4/4, score/tier/`state_fingerprint` byte-identical, forced fault → 200 + clean
+status (bundle/SSE intact), import-boundary AST-checked, egress/404. **Frontend** (`C:\Dev\gammaflow-web`,
+commits `42212f5` + `a2f6ae3`): `apps/dashboard/src/app/ai-rec/*` (`AiRecPanel`, `StateExportDrawer`,
+`useAiRecommendation`, `copy`, `prefill`) — the 12-state rec surface, gating/cap/availability UI from
+`/status`, **Accept** → the shipped `TradeEntryDialog` prefill seam (paper-sim, editable, mandatory
+confirm, `SIMULATED`), manual export floor; persona from canonical `GET /api/personas`; new `@org/api`
+fetchers. Tests: `ai-rec.spec.tsx` (T1–T18 + E1–E7, incl. E3) — `nx test dashboard` 26/26 green. **QA
+(GATE Q)**: verified by a fresh qa-verify on **Sonnet** (de-correlated) — 18/18 ACs, conformance 4/4,
+invariants clean; initial FAIL on the missing E3 named test (the AC↔test traceability rule catching a gap
+a green suite hid) RESOLVED + re-verified → **PASS**. **GATE Z**: the conformance-spec convention was
+reconciled to **standalone-file canonical** (`.claude/tools/conformance/ai_recommendations.json`;
+`interface_conformance.py` gained POST-body support); the full doc/linter standardization is tracked as
+BACKLOG §E **system-12**.
+**Deferred seams (specified, not built):** BYO-key / per-user credentials (provider-port-like seam);
+in-app LLM **reassessment** of an open position (entry only shipped — the position-aware sibling reuses
+the same surface); token streaming (whole-rec render shipped); AI-rec acceptance/outcome analytics
+(leverages the ghost-trade decision history); a vendor/model swap behind the LLM seam.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped

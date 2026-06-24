@@ -38,6 +38,13 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   decomposed FIXED/PERSONA hand-off template + the 7 built-in `PersonaDefinition`s + the A1 disposition
   map, served at `GET /api/personas`. A **non-input to scoring by construction** — imports only
   `logging`/`os`; never touches signals/score/gate/fingerprint/engine. No LLM call.
+- `src/core/ai_recommendation.py` — the **in-app AI-recommendation** proxy + state-export serializer:
+  an isolated, best-effort, **one-way leaf** (`signals`/`engine`/`live`/`darkpool` do NOT import it —
+  the structural guarantee of score byte-identity). An `LLMProvider` seam (`AnthropicLLMProvider` via
+  forced tool-use structured output; `StubLLMProvider` for keyless/no-cost verification), the
+  read+serialize context exporter (no recompute), process-local cooldown/daily-cap, and `ai_eval`-derived
+  gating. Imports only `personas`/stdlib/lazy `anthropic`; reads `ANTHROPIC_API_KEY` only here. Served by
+  the three `/api/recommendation/*` endpoints in `main.py`.
 - `src/models/market_data.py` — `MarketState` Pydantic response model.
 
 **Frontend** (`gammaflow-web/`, Nx monorepo, React 19 + Vite + MUI/Emotion):
@@ -213,6 +220,19 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   byte-identical across personas), **no recompute** on switch, **no `meta.handoff`, no `?persona=`**.
   A1: the "prone to greed…" disposition is lifted out of the universal risk floor into the disposition
   slot (Default + conservative only). No LLM call; SSE untouched.
+- **In-app AI recommendations** (GammaFlow's first LLM call — isolated/gated/advisory): on demand for the
+  current ticker, the dashboard queries a downstream LLM (latest Claude) for a **risk-first ENTRY rec**,
+  framed by the active **persona** and fed a **JSON export** of the already-computed state. New isolated
+  one-way-leaf module `src/core/ai_recommendation.py` (`signals`/`engine`/`live`/`darkpool` don't import
+  it); `POST /api/recommendation/{ticker}` (best-effort, always-200 + `status` produced/unavailable/
+  gated_off), `GET /api/recommendation/export/{ticker}` (no-LLM export floor, 404 if un-fetched), `GET
+  /api/recommendation/status/{ticker}` (gating/cap/availability). Server-side `ANTHROPIC_API_KEY` (never
+  in the browser); `ai_eval`-derived gating + 60s cooldown + 50/day cap (operator-configurable). The rec
+  is a **static artifact** pinned to its snapshot (stale on a newer bundle, untouched on SSE drop). The FE
+  renders it risk-first and lets the trader **Accept** it into the **paper-sim ghost-trade tracker** (a
+  pre-filled, editable, mandatory-confirm entry — `SIMULATED`, no real-order path). The manual hand-off
+  stays as the always-available floor. Score/tier/`state_fingerprint` byte-identical with/without it.
+  Persona single-sourced from `GET /api/personas`. No real order, ever.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
@@ -227,6 +247,10 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   opportunity-tier bands — Prime also requires `ai_eval.ready`), `OBSERVABILITY_ENABLED` (true;
   off ⇒ no `meta.trace_id`/`timings`, no metrics, bundle identical), `METRICS_WINDOW_SIZE` (500;
   rolling-window request count), `METRICS_RECENT_TRACES` (25). Per-request verbose switch: `?debug=1`.
+  **AI recommendations:** `ANTHROPIC_API_KEY` (server-side only, never in the browser; absent ⇒ in-app
+  rec `unavailable:no_key`, manual export floor still works), `AI_REC_MODEL` (latest Claude),
+  `AI_REC_COOLDOWN_SECONDS` (60), `AI_REC_DAILY_CAP` (50), `AI_REC_TIMEOUT_SECONDS` (60),
+  `AI_REC_IN_APP_ENABLED` (true), `AI_REC_STUB` (off; stub LLM provider for keyless/no-cost verification).
 - **Add a vendor:** implement `MarketDataProvider` in `src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend
@@ -256,8 +280,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   {Hold,Trim,Add,Exit,Roll}. Both prompts are **decomposed** into FIXED vs PERSONA sections (trader
   personas; A1): the FIXED floor/schema/cap carry no trader characterization, and the disposition +
   framing are persona-variable slots. `src/core/personas.py` / `GET /api/personas` ship the
-  decomposed template + 7 `PersonaDefinition`s; the FE assembles per-persona text. The AI is
-  **external** — GammaFlow defines the contract + gate only, it does **not** call an LLM.
+  decomposed template + 7 `PersonaDefinition`s; the FE assembles per-persona text.
+- **AI-call boundary (narrowed 2026-06-23 — `ai-external-no-llm` demoted, system-7):** GammaFlow **MAY
+  now call an LLM**, but **only** as a best-effort, isolated, gated, **advisory consumer** of
+  already-computed state — the `ai-recommendations` in-app rec (`POST /api/recommendation/{ticker}` +
+  `/export` + `/status`) via an isolated one-way-leaf proxy with a **server-side** key. The LLM **never**
+  feeds `signals`/score/tier/gate/`state_fingerprint`, **never** recomputes or fetches, **never** rides
+  the SSE path, **never** auto-acts (Accept = paper-sim ghost trade + confirm), and the key **never**
+  reaches the browser. Otherwise the AI remains **external** — GammaFlow defines the contract + gate —
+  and the manual copy-paste hand-off **remains valid**, now augmented by the same structured JSON export.
+  (Was: "does not call an LLM." See DECISION_LEDGER "Demoted.")
 
 ## 9. Open items / under consideration
 <!-- shard: tags=open,roadmap,vendor,overnight -->

@@ -29,8 +29,9 @@
 | `operator-vs-trader-path-separation` | an operator/diagnostic surface stays off every trader/bundle route + unlinked from the trader UI; read-only + side-effect-free (no vendor fetch / recompute / cache mutation / trader-route call); trader path + SSE untouched | CONTEXT §5 · THREADS §9 | 2026-06-23 | backend-observability, latency-visualizer (2 binding) |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
-> `ai-external-no-llm` (CONTEXT §8) · `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split`
-> (CONTEXT §3 / THREADS §9).
+> `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
+> (`ai-external-no-llm` was here until **2026-06-23** — now **DEMOTED / narrowed** by `ai-recommendations`;
+> see the Demoted table.)
 
 ## Demoted (contradicted by reality — system-7)
 > The inverse of graduation: memory must track **truth**, not just recurrence. A promoted invariant that
@@ -44,10 +45,12 @@
 
 | key | demoted | contradicting evidence (feature · gate) | disposition |
 |-----|---------|------------------------------------------|-------------|
-| *(none yet)* | | | |
+| `ai-external-no-llm` | 2026-06-23 | `ai-recommendations` · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM." | **NARROWED, not erased.** New rule: GammaFlow MAY call an LLM **only** as a best-effort, isolated, gated, **advisory consumer** of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning rows (trade-tracker-sim, trader-personas — "no LLM call") retained as provenance: they still comply (they made no call). |
 
 ## Watch list (keys logged, not yet at threshold)
-- *(none — `operator-vs-trader-path-separation` graduated 2026-06-23 at the latency-visualizer GATE S.)*
+- `no-real-order-path` — 1 binding instance (`ai-recommendations`: Accept = paper-sim ghost trade + confirm,
+  SIMULATED, no broker path). Adjacent to the ghost-trade "no order path" rule (trade-tracker-sim, logged
+  under `ai-external-no-llm`); promote if a future feature reaffirms it as a distinct invariant.
 
 ## Ledger (append-only — one row per binding decision instance)
 | key | feature | gate | statement (as locked) | binding |
@@ -71,11 +74,24 @@
 | `live-vs-static-isolation` | trader-personas | S | persona is presentation-only — fully usable from last bundle, never marked offline | yes |
 | `operator-vs-trader-path-separation` | latency-visualizer | S | trend on `/_ops/metrics` only, never linked from a trader route; the page's sole network call stays `GET /api/_metrics`; no control triggers a vendor fetch / recompute / cache mutation / trader-route call | yes |
 | `best-effort-isolated-or-null` | latency-visualizer | S | a failed poll keeps the last series behind a soft notice + self-heals (no retry storm, no error page); never affects the page, snapshot tables, or any other surface; the in-browser series is ephemeral (only Export persists, to the operator's machine) | yes |
+| `additive-keeps-score-byte-identical` | ai-recommendations | S | the in-app LLM rec is a pure CONSUMER in a one-way-leaf module `signals`/`engine`/`live`/`darkpool` do NOT import; `opportunity_score`/`opportunity_tier`/`state_fingerprint` byte-identical with vs without a rec (verified live + via the E3 test) | yes |
+| `best-effort-isolated-or-null` | ai-recommendations | S | LLM timeout/error/over-cap/no-key → HTTP 200 + a `status` field (never 5xx); the rec surface degrades ALONE; bundle/SSE/chart/tiles/tracker intact; manual export floor always works | yes |
+| `live-vs-static-isolation` | ai-recommendations | S | a rec is a static artifact pinned to its snapshot — stale on a newer bundle, UNTOUCHED on an SSE drop, never silently refreshes/re-runs | yes |
+| `no-real-order-path` | ai-recommendations | S | "action" = Accept into the paper-sim ghost-trade tracker + mandatory confirm; `SIMULATED`; advisory; no broker/order path (watch-list key) | yes |
+| `ai-external-no-llm` | ai-recommendations | S | **DEMOTION trigger** — GammaFlow now CALLS an LLM (isolated/gated/advisory consumer); narrows the rule, see Demoted table | yes |
 
 > Note (GATE S, latency-visualizer): `operator-vs-trader-path-separation` reached **2 binding:yes
 > instances** (backend-observability, latency-visualizer) → crossed the "≥2 if all binding" threshold.
 > **RESOLVED — GRADUATED by the Orchestrator 2026-06-23** into CONTEXT §5 + THREADS §9 (see Promoted
 > canon above). The executioner detected/flagged; the Orchestrator held the promotion pen.
+
+> Note (GATE S, ai-recommendations, 2026-06-23): first **DEMOTION** (system-7). `ai-external-no-llm`
+> ("GammaFlow does not call an LLM") is contradicted by `ai-recommendations` — by explicit owner decision,
+> GammaFlow now calls an LLM as an isolated/gated/advisory consumer. The rule is **NARROWED** (not erased)
+> in CONTEXT §8 and moved to the Demoted table; provenance rows retained. DETECT tally: the three
+> promoted keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`,
+> `live-vs-static-isolation`) each gained an instance but are already canon → **no new graduations** this
+> ship; `no-real-order-path` logged to the watch list (1 instance).
 
 > Seeded retroactively 2026-06-22 from the five archived features (`OPEN_THREADS.md` §3–§7). Going
 > forward, the Orchestrator appends a row per binding decision at each gateway (ORCHESTRATOR §0 step 7).
