@@ -1,0 +1,16 @@
+# Data Handling & Math
+numpy
+scipy
+
+# API & Networking
+requests
+
+# Backend
+fastapi
+uvicorn
+pydantic
+
+# Utilities
+python-dotenv
+
+massive

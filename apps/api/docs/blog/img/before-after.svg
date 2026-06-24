@@ -1,0 +1,90 @@
+<svg viewBox="0 0 960 430" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Why the relay works: one giant conversation versus a relay of focused roles</title>
+  <desc>Left panel, one giant conversation: a single overloaded session juggling every role at once, with a context meter almost full, where roles blur, context overflows and errors hide. Right panel, a relay of roles: a tidy sequence of focused sessions each with a light context meter, giving one job each, light context, and clean checkable handoffs.</desc>
+  <style>
+    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .h1{fill:#23252B;font-size:23px;font-weight:700}
+    .sub{fill:#707684;font-size:13.5px}
+    .pt{font-size:16px;font-weight:700}
+    .bul{fill:#4A5160;font-size:13px}
+    .small{fill:#5C6470;font-size:11px}
+    .meter{fill:#6B7280;font-size:11px;font-weight:600}
+    .chip{fill:#1f2937;font-size:12px;font-weight:600}
+  </style>
+  <rect x="1" y="1" width="958" height="428" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <text class="h1" x="36" y="46">Why a relay beats a marathon</text>
+  <text class="sub" x="36" y="70">Same work, two ways to organise it.</text>
+
+  <!-- ===== LEFT: one giant conversation ===== -->
+  <rect x="28" y="92" width="430" height="312" rx="13" fill="#FBEDE4" stroke="#E3B79E"/>
+  <text class="pt" x="52" y="124" fill="#9A3B16">One giant conversation</text>
+
+  <!-- overloaded blob with crammed hats -->
+  <circle cx="150" cy="216" r="66" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <g font-size="10.5" font-weight="700" fill="#7A3A1E" text-anchor="middle">
+    <text x="128" y="196">Architect</text>
+    <text x="176" y="200">PM</text>
+    <text x="122" y="222">UX</text>
+    <text x="172" y="226">Backend</text>
+    <text x="150" y="248">Frontend</text>
+  </g>
+  <!-- tangle -->
+  <path d="M104,180 C200,150 120,260 210,250 C150,275 200,200 96,232" fill="none" stroke="#C77A52" stroke-width="1.3" opacity="0.7"/>
+
+  <!-- context meter near full -->
+  <text class="meter" x="248" y="170">context window</text>
+  <rect x="248" y="178" width="184" height="16" rx="8" fill="#F0E2D9" stroke="#D8B49E"/>
+  <rect x="250" y="180" width="166" height="12" rx="6" fill="#C0552B"/>
+  <text class="small" x="248" y="212" fill="#9A3B16">almost full — and still climbing</text>
+
+  <g class="bul" fill="#7A4634">
+    <text x="248" y="250">• roles blur together</text>
+    <text x="248" y="274">• context overflows</text>
+    <text x="248" y="298">• early mistakes hide</text>
+    <text x="248" y="322">• hard to review</text>
+  </g>
+  <text class="small" x="52" y="382" fill="#9A3B16">One mind, holding everything, getting tired.</text>
+
+  <!-- ===== RIGHT: relay of roles ===== -->
+  <rect x="500" y="92" width="432" height="312" rx="13" fill="#E4F0EE" stroke="#A9CFC9"/>
+  <text class="pt" x="524" y="124" fill="#1c5650">A relay of roles</text>
+
+  <!-- four tidy sessions with mini meters -->
+  <g>
+    <rect x="524" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="chip" x="567" y="176" text-anchor="middle">Think</text>
+    <rect x="536" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
+    <rect x="536" y="186" width="20" height="8" rx="4" fill="#2E6F69"/>
+  </g>
+  <g>
+    <rect x="624" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="chip" x="667" y="176" text-anchor="middle">Plan</text>
+    <rect x="636" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
+    <rect x="636" y="186" width="22" height="8" rx="4" fill="#2E6F69"/>
+  </g>
+  <g>
+    <rect x="724" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="chip" x="767" y="176" text-anchor="middle">Design</text>
+    <rect x="736" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
+    <rect x="736" y="186" width="24" height="8" rx="4" fill="#2E6F69"/>
+  </g>
+  <g>
+    <rect x="824" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <text class="chip" x="867" y="176" text-anchor="middle">Build</text>
+    <rect x="836" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
+    <rect x="836" y="186" width="22" height="8" rx="4" fill="#2E6F69"/>
+  </g>
+  <!-- connectors -->
+  <line x1="610" y1="179" x2="623" y2="179" stroke="#2E6F69" stroke-width="2"/>
+  <line x1="710" y1="179" x2="723" y2="179" stroke="#2E6F69" stroke-width="2"/>
+  <line x1="810" y1="179" x2="823" y2="179" stroke="#2E6F69" stroke-width="2"/>
+  <text class="small" x="524" y="228" fill="#1c5650">each meter stays light — every session resets</text>
+
+  <g class="bul" fill="#2c4f4a">
+    <text x="524" y="262">• one clear job each</text>
+    <text x="524" y="286">• context stays light</text>
+    <text x="524" y="310">• clean, checkable handoffs</text>
+    <text x="524" y="334">• a fresh expert every step</text>
+  </g>
+  <text class="small" x="524" y="382" fill="#1c5650">Many focused minds, each sharp for one task.</text>
+</svg>

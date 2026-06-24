@@ -1,0 +1,33 @@
+{
+  "_comment": "Conformance spec for the shipped /api/_metrics readout (backend-observability). Demonstrates the system-1 runtime check + doubles as a regression spec for the existing operator endpoint. Going forward, each feature's INTERFACE_CONTRACT.md embeds its own spec under a '## Conformance spec' heading.",
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_metrics",
+      "required": {
+        "instrumentation_enabled": "boolean",
+        "window.size_desc": "string",
+        "window.uptime_seconds": "number",
+        "window.request_count": "number",
+        "global.latency_total.p50_ms": "number",
+        "global.latency_total.p95_ms": "number",
+        "global.latency_total.max_ms": "number",
+        "global.latency_total.count": "number",
+        "global.stages[].stage": "string",
+        "global.stages[].kind": "string",
+        "global.stages[].p95_ms": "number",
+        "global.stages[].count": "number",
+        "global.cache.hits": "number",
+        "global.cache.misses": "number",
+        "global.cache.hit_ratio": "number",
+        "global.cache.current_data_age_seconds": "number",
+        "global.vendor.call_count": "number",
+        "global.vendor.latency_p50_ms": "number",
+        "global.vendor.latency_p95_ms": "number",
+        "global.vendor.min_rate_limit_headroom": "object|null",
+        "per_ticker": "object",
+        "recent_traces": "array"
+      }
+    }
+  ]
+}

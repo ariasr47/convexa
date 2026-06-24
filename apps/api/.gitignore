@@ -1,0 +1,27 @@
+# Secrets & credentials
+.env
+.env.*
+conf/token.txt
+*.key
+*.pem
+# Generated runtime state (per-ticker JSON rewritten on each on-demand request)
+data/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+# IDE
+.idea/
+.vscode/
+# Transient Claude preview launcher (regenerated per preview run); keep the docs/contracts
+.claude/launch.json
+# OS
+Thumbs.db
+.DS_Store
