@@ -184,17 +184,19 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   modify or run code); executioners get the build toolset (Read/Grep/Glob/Edit/Write/Bash). Wired into
   ROLE_LAUNCH intro + ORCHESTRATOR §1/§6. *Value M · Effort M.* Keeps each role's fresh-context
   isolation (subagents start clean).
-- **system-4b · PreToolUse path-guard hooks** — `✓ LANDED (2026-06-23, cross-repo fence) →
-  .claude/tools/path_guard.py + .claude/settings.json`. A PreToolUse hook on `Write|Edit|MultiEdit|
-  NotebookEdit` blocks any write whose resolved target is OUTSIDE this repo root (exit 2) — so a session
-  in the backend repo can't write the frontend repo or arbitrary disk paths (Reads are never blocked).
-  Tested both directions; fail-open on malformed input. **Scope honesty:** a session-global hook can't
-  see WHICH role/subagent is active, so it enforces the **cross-repo / out-of-repo** fence robustly but
-  NOT per-role intra-repo rules (e.g. "the architect can't touch `src/`") — that residual stays on the
-  tool-allowlist (no `Edit`) + the role prompt. **Mirror needed:** copy `path_guard.py` + the settings
-  hook into `C:\Dev\gammaflow-web/.claude/` (identical; REPO_ROOT is computed per-repo) so the frontend
-  repo fences symmetrically — done from a gammaflow-web session, not here (that write is what the fence
-  forbids). *Value M · Effort S.* **Activation:** new `settings.json` ⇒ open `/hooks` once or restart.
+- **system-4b · PreToolUse path-guard hook** — `✓ LANDED (2026-06-23) → .claude/tools/path_guard.js +
+  .claude/settings.json`. `↻ UPDATED by the monorepo merge (2026-06-24)`: now a single **workspace
+  fence** (`path_guard.js`; the Python `path_guard.py` is retired as a tool). A PreToolUse hook on
+  `Write|Edit|MultiEdit|NotebookEdit` blocks any write whose resolved target is OUTSIDE the monorepo
+  root (exit 2), with carve-outs for `~/.claude/projects/**/memory` and `~/.claude/plans` (Reads are
+  never blocked). Tested; fail-open on malformed input. **Scope honesty:** a session-global hook can't
+  see WHICH role/subagent is active, so it enforces the **out-of-workspace** fence robustly but NOT
+  per-role intra-lane rules (e.g. "the architect can't touch `src/`") — that residual stays on the
+  tool-allowlist (no `Edit`) + the role prompt. **Cross-repo fence + the gammaflow-web mirror are now
+  N/A** — both lanes share one repo, so there is no second repo to fence against or mirror into.
+  Lane separation between `apps/api` and `apps/dashboard` is instead reinforced mechanically by the
+  ESLint `@nx/enforce-module-boundaries` rule on the project tags. *Value M · Effort S.*
+  **Activation:** new `settings.json` ⇒ open `/hooks` once or restart.
 - **system-5 · Ground-truth + ledger sharding (retrieval)** — `✓ LANDED (2026-06-23, logical-slice) →
   .claude/tools/context_for.py`. Each `## N.` section in `GAMMAFLOW_CONTEXT.md` carries an inline
   `<!-- shard: tags=...; always -->` annotation; the tool assembles the minimal pack from the BRIEF's
@@ -250,22 +252,19 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   inter-role handoffs — the tests don't exist until the FE builds, so it's a QA-invoked mode of the
   linter, complementing the runtime conformance check (system-1); (b) needs a stable **AC-id/anchor
   convention** in `PRODUCT_CONTRACT` so an AC can be matched to a named test (likely the first sub-step);
-  (c) **cross-repo read** — the linter runs in this repo but the specs live in `C:\Dev\gammaflow-web`
-  (reads aren't fenced). Follow-on to the FE-tests rule + system-2/3.
-- **system-11 · Cross-repo role-context on dispatch** — `PARKED for consideration (2026-06-23) — do NOT
-  encode until decided`. Dispatching an executioner for the FRONTEND repo must use `spawn_task --cwd`
-  (the Agent tool can't cross the path_guard fence — ORCHESTRATOR §2), which **bypasses the role
-  framework**: no `gammaflow-frontend` lane/subagent, no `context_for.py` pack, no role launch prompt,
-  and the chip is named by action, not role. **Question to settle:** should a cross-repo *executioner
-  (feature)* brief be REQUIRED to (a) re-adopt the role — instruct the spawned session to read
-  `ROLE_LAUNCH_PROMPTS.md §5` + the INTERFACE/FRONTEND_EXECUTION contracts + run
-  `context_for.py {FEATURE} --print` itself — and (b) title the chip `gammaflow-frontend · {FEATURE}`
-  for traceability (maintenance tasks keep the action-name)? *Impact:* closes the implicit "spawn_task
-  drops the role context" hole so cross-repo feature work carries the same lane/context discipline as
-  in-repo work. *Value M · Effort S (a convention + ORCHESTRATOR §2 edit; no code).* **Build-system
-  class:** trading-decision cull **N/A**. **Origin:** raised 2026-06-23 after two *maintenance* tasks
-  (test-tooling setup, path-guard parity) were dispatched ad-hoc with bespoke briefs; user deferred for
-  further consideration. Relates to system-9-lite + the ORCHESTRATOR §2 cross-repo dispatch convention.
+  (c) the linter and the FE specs now live in **one repo** (post-merge: `apps/dashboard` specs read
+  from the workspace root) — no cross-repo read to worry about. Follow-on to the FE-tests rule + system-2/3.
+- **system-11 · Cross-repo role-context on dispatch** — `✓ RESOLVED by the monorepo merge (2026-06-24)
+  — dissolved, not implemented`. The whole problem was an artifact of the two-repo split: dispatching a
+  FRONTEND executioner required `spawn_task --cwd` (the Agent tool couldn't cross the path_guard
+  cross-repo fence), which **bypassed the role framework** (no `gammaflow-frontend` subagent, no
+  `context_for.py` pack, no role launch prompt, chip named by action not role). Folding the backend
+  into the Nx workspace put **both lanes under one repo root**: the frontend lane now spawns as a
+  `gammaflow-frontend` **Agent subagent** with automatic report-back — same role/context discipline as
+  every other lane, no `spawn_task`, no polling. The "spawn_task drops the role context" hole is gone
+  because spawn_task-for-frontend is gone (ORCHESTRATOR §2). *Outcome:* the parked question is moot.
+  **Origin:** raised 2026-06-23 after two *maintenance* tasks were dispatched ad-hoc; the merge
+  (plan `ok-let-s-do-option-dapper-treasure`) was the chosen structural fix.
 - **system-12 · system-1 standalone-spec standardization** — `DECIDED 2026-06-23 (standalone = canonical),
   partial`. The conformance spec drifted: docs say "embed a `## Conformance spec` ```json block in
   INTERFACE_CONTRACT.md," but the shipped precedent (`.claude/tools/conformance/api_metrics.json`) and the

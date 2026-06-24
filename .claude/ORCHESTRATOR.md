@@ -23,7 +23,7 @@
 5. **Write** the output contract(s) to the exact paths in §3 (correct repo — see §2).
 6. **Update** `.claude/contracts/{FEATURE}/_MANIFEST.md` (§4).
 7. **Gate-check (mechanical, system-3):** run
-   `.venv/Scripts/python.exe .claude/tools/contract_lint.py {FEATURE}`. A non-zero exit (**ERROR** —
+   `apps/api/.venv/Scripts/python.exe .claude/tools/contract_lint.py {FEATURE}`. A non-zero exit (**ERROR** —
    missing file/manifest key, an execution contract not bound to the interface, a promoted key missing
    from canon) **blocks the handoff**; fix the structural violation before routing. WARNINGs
    (lane-purity heuristics) are advisory — judge them.
@@ -75,28 +75,23 @@ exist (Architect-first default; PM-first for product-dominated features) — see
 gateway after them is **QA/Verify (GATE Q)**, then **SHIP (GATE S)** — QA is a fresh session, never the
 builder verifying itself.
 
-## 2. Two repos (route writes correctly)
-- **Backend** work + all `.claude/` contracts live in `C:\Dev\GammaFlow` (this repo).
-- **Frontend** code lives in `C:\Dev\gammaflow-web`. Contracts still live in *this* repo's
-  `.claude/contracts/{FEATURE}/`; only the *implementation* is in the web repo.
-- When auditing "what was built," read backend files here and frontend files under
-  `C:\Dev\gammaflow-web`. Neither repo has a remote.
-- **Cross-repo dispatch + reconciliation — by ARTIFACT, not notification.** The two spawn paths trade
-  off callback vs cross-repo reach; pick by where the work writes:
-  - **In-repo work** (backend + `.claude/` contracts — this repo): spawn the role as a `gammaflow-*`
-    **subagent via the Agent tool**. Its final report returns to the conductor automatically (sync
-    result; or `run_in_background` ⇒ a `<task-notification>` on completion), and `path_guard` allows the
-    writes. This is the system-9-lite path — use it whenever the work stays in this repo.
-  - **Cross-repo work** (`C:\Dev\gammaflow-web`): the Agent tool can't reach it (an Agent runs in *this*
-    repo's session, so `path_guard` blocks the frontend write), so dispatch with **`spawn_task` +
-    `cwd: C:\Dev\gammaflow-web`** — the only way past the fence. But a spawned task is an INDEPENDENT
-    sibling session: **no result returned, no completion notification, and not in the conductor's
-    TaskList** (`dismiss_task` only withdraws an un-started chip). So the brief MUST leave a **durable
-    signal** — a commit on a named branch and/or a status line in `OPEN_THREADS.md` or the feature
-    `_MANIFEST.md` — and the conductor **reconciles by POLLING that artifact** on its next run
-    (`git -C C:\Dev\gammaflow-web log`, or read the marker; reads across repos are never fenced). Do NOT
-    wait for a ping that never comes — the conductor↔cross-repo link is the artifact, consistent with
-    this system's "state in files, not chat" premise.
+## 2. One Nx monorepo (route writes correctly)
+- **Backend** code lives under `apps/api` (the Python service; `npx nx serve api` on :8000).
+- **Frontend** code lives under `apps/dashboard` (React; `npx nx serve dashboard` on :4200). The
+  shared TS API client is `libs/api` (`@org/api`).
+- **All `.claude/` contracts** live in `.claude/contracts/{FEATURE}/` at the workspace root — the
+  single FE↔BE truth, shared by both lanes.
+- When auditing "what was built," read backend files under `apps/api` and frontend files under
+  `apps/dashboard`. One git repo (`monorepo-merge` branch during the merge); no remote.
+- **Dispatch — both lanes are in-repo Agent subagents now (report-back, no polling).** Since the
+  merge folded both lanes under one workspace root, `path_guard.js` covers both — there is no
+  cross-repo fence to route around. Spawn either role (`gammaflow-backend`, `gammaflow-frontend`,
+  …) as a **subagent via the Agent tool**: its final report returns to the conductor automatically
+  (sync result; or `run_in_background` ⇒ a `<task-notification>` on completion), and the fence allows
+  the writes. This is the system-9-lite path for **every** lane.
+  - **`spawn_task`-for-frontend is RETIRED.** It existed only to reach the separate web repo past the
+    fence; with one repo it is no longer used. (Durable-signal/artifact reconciliation is still fine
+    if you deliberately fire-and-forget, but it is no longer *required* for the frontend lane.)
 
 ---
 
@@ -200,10 +195,10 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
      (system-1) can verify the live backend against it at GATE Q. (A `NO_BACKEND_CHANGE` interface that
      consumes an existing endpoint may point at that endpoint's existing spec instead.)
   2. `BACKEND_EXECUTION_CONTRACT.md` — server work only; references the interface for what it
-     EMITS; NO UI detail. (→ repo `C:\Dev\GammaFlow`.)
+     EMITS; NO UI detail. (→ `apps/api`.)
   3. `FRONTEND_EXECUTION_CONTRACT.md` — UI work + component states (default/loading/stale/offline/
      empty/error) only; references the interface for what it CONSUMES; NO server internals.
-     (→ repo `C:\Dev\gammaflow-web`.)
+     (→ `apps/dashboard`.)
 - **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §4) and Frontend (§5) **in parallel**.
 
 ### GATE M — Math / Infra drift fast-path: Architect → Backend (skip PM + UX)   *(= your Routine B)*
@@ -229,7 +224,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Use when:** component states, layout, copy, or stream-degradation behavior change with **no
   engine/endpoint change**.
 - **Audit:** `GAMMAFLOW_CONTEXT.md` (the stream-isolation + live-vs-stale rules), `UX_BLUEPRINT.md`,
-  the named frontend files under `C:\Dev\gammaflow-web` (e.g. `apps/dashboard/src/app/app.tsx`).
+  the named frontend files under `apps/dashboard` (e.g. `apps/dashboard/src/app/app.tsx`).
 - **Compress:** compile exact visual expectations, state changes, and component touchpoints.
 - **Write:** overwrite `FRONTEND_EXECUTION_CONTRACT.md` (new design blueprint + component states).
 - **Token-saving isolation:** backend untouched — flag `NO_BACKEND_CHANGE` in the manifest; do not
@@ -260,12 +255,13 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Trigger:** "both lanes built / QA it / verify the feature before ship."
 - **Use when:** the executioners report done — **always before GATE S** (ship now requires a QA pass).
 - **Audit:** `PRODUCT_CONTRACT.md` (the ACs — the checklist), `INTERFACE_CONTRACT.md`, both execution
-  contracts, the shipped code in both repos, the BRIEF "Invariant watch" + the promoted canon (§5).
+  contracts, the shipped code in both lanes (`apps/api` + `apps/dashboard`), the BRIEF "Invariant
+  watch" + the promoted canon (§5).
 - **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §6; subagent `.claude/agents/qa-verify.md`)
   — a different session from the builders (no marking own homework; ideally a different model →
   foreshadows system-6). Confirms every AC point-by-point, **fixes nothing**.
-- **Runtime conformance (system-1):** against the running backend, run
-  `.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
+- **Runtime conformance (system-1):** against the running backend (`npx nx serve api`), run
+  `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
   .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000`. A conformance
   **FAIL** (the live BE does not emit a field the interface promises / the FE consumes) is a **GATE Q
   FAIL** → bounce to Backend. Integration is now **verified, not asserted**.
@@ -384,12 +380,14 @@ NEXT      : <role(s) to launch> — launch prompt below
 - **Lane enforcement via subagents (system-4 + 4b):** each role has a tool-fenced subagent in
   `.claude/agents/` — contract authors (architect/pm/ux) + QA have no `Edit`/`Bash` (cannot modify or
   run code); executioners get the build toolset. **system-4b** adds a `.claude/settings.json` PreToolUse
-  hook (`.claude/tools/path_guard.py`) that blocks any write outside this repo root — the cross-repo
-  fence (a backend session can't write the frontend repo). What's still trusted (not mechanized): the
-  per-role *intra*-repo rule (e.g. an author Write-ing into `src/`) — a session-global hook can't see the
-  active role, so that residual rests on the tool-allowlist + prompt.
+  hook (`.claude/tools/path_guard.js`) that blocks any write outside the monorepo root — the workspace
+  fence. (The old cross-repo fence is moot now that both lanes share one repo; lane separation between
+  `apps/api` and `apps/dashboard` is reinforced mechanically by the ESLint `@nx/enforce-module-boundaries`
+  rule keyed to the project tags.) What's still trusted (not mechanized): the per-role *intra*-lane rule
+  (e.g. an author Write-ing into `src/`) — a session-global hook can't see the active role, so that
+  residual rests on the tool-allowlist + prompt.
 - **Ground-truth retrieval (system-5):** a session may load the minimal context pack via
-  `.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print` instead of re-reading all of
+  `apps/api/.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print` instead of re-reading all of
   `GAMMAFLOW_CONTEXT.md` (selected from the BRIEF's `Context tags:` + the section shard tags). The
   invariant-bearing sections (§3 math, §5 decisions/promoted invariants) are **`always`-load** — sharding
   cuts tokens by relevance but NEVER drops a binding rule a feature could violate. Decouples per-session
@@ -398,4 +396,5 @@ NEXT      : <role(s) to launch> — launch prompt below
   session (GATE Q, `ROLE_LAUNCH_PROMPTS.md` §6) — never the builder's self-verification. QA confirms
   every AC point-by-point and **repairs nothing**; a failing AC bounces via GATE Z and GATE Q re-runs
   on the fix. (Run QA on a different model where possible — de-correlates blind spots, system-6.)
-- Frontend writes target `C:\Dev\gammaflow-web`; contracts always live in this repo.
+- Frontend writes target `apps/dashboard`, backend writes target `apps/api`; contracts always live
+  in `.claude/contracts/` at the workspace root.

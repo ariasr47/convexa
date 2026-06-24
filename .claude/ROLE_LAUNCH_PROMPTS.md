@@ -15,7 +15,7 @@ spawned roles + QA.
 > prompts + the compressors for you instead of manual copy-paste.
 
 > **Context retrieval (system-5):** instead of re-reading all of `GAMMAFLOW_CONTEXT.md`, a session can
-> load the minimal pack — `.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print`
+> load the minimal pack — `apps/api/.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print`
 > (the always-load invariant floor §3+§5 + the sections the BRIEF's `Context tags:` select). Opt-in; the
 > whole file stays valid + single-source. Decouples per-session token cost from canon size.
 
@@ -23,8 +23,9 @@ spawned roles + QA.
 > (`gammaflow-architect` · `gammaflow-pm` · `gammaflow-ux` · `gammaflow-backend` · `gammaflow-frontend`
 > · `qa-verify`). A role spawned via the Agent tool is mechanically held to its lane — contract authors
 > (architect/pm/ux) + QA have **no `Edit` and no `Bash`** (cannot modify or run code); executioners get
-> the build toolset. Tool-allowlists are the per-tool guard; the cross-repo write fence (a backend agent
-> can't write the frontend repo) is enforced by the `path_guard.py` PreToolUse hook (system-4b, LANDED).
+> the build toolset. Tool-allowlists are the per-tool guard; the workspace write fence (no writes outside
+> the monorepo root) is enforced by the `path_guard.js` PreToolUse hook (system-4b, LANDED). Both lanes
+> (`apps/api`, `apps/dashboard`) live in one repo, so each spawns as an in-repo Agent subagent.
 > Running each role still works as a manual session with the prompts below — the subagents just make the
 > lane enforceable when spawned.
 
@@ -60,11 +61,11 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
   **inline in the conductor**, not as a spawn — its inputs are the conductor's boot state and it precedes
   the BRIEF that the pack keys off (full rationale: ORCHESTRATOR §3 GATE I). Every gateway below spawns.
 - **Lean context, not the whole canon:** give each spawn the pack —
-  `.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print` (always-load invariant floor
+  `apps/api/.venv/Scripts/python.exe .claude/tools/context_for.py {FEATURE} --print` (always-load invariant floor
   + the BRIEF's `Context tags:`); it falls back to the floor if no tags.
 - **You still run the gates between spawns:** `contract_lint.py` at every gateway; at GATE Q
-  `interface_conformance.py` + the `qa-verify` spawn. Lanes are tool-fenced (the subagents) + cross-repo
-  path-fenced (`path_guard.py`).
+  `interface_conformance.py` + the `qa-verify` spawn. Lanes are tool-fenced (the subagents) + workspace
+  path-fenced (`path_guard.js`).
 - **Discard, don't continue:** never reuse a subagent across gateways or features. The handoff is the
   written contract on disk, not a living session.
 - **vs full system-9:** the *conductor is still you* (manual transitions + approvals). system-9 automates
@@ -301,7 +302,7 @@ sourcing, rates, DTE-filter scope, best-effort dark-pool, path isolation). Do no
 Run the project the standard way and verify your output matches the INTERFACE_CONTRACT (shape,
 presence rules, and the failure/degradation semantics). Before reporting done, run the same
 machine check QA will run at GATE Q — with the backend up:
-`.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
+`apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
 .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000` — and make it PASS
 (it proves the live response emits every field the interface promises = what the FE consumes). A
 self-caught conformance FAIL now is one you fix in-lane instead of bouncing back from QA later.
@@ -370,20 +371,20 @@ against the real built/running feature. You VERIFY; you FIX NOTHING — no code 
 no "making the AC pass." Treat each builder's self-verification as UNVERIFIED until you observe it.
 
 Method:
-- Run the project the standard way (backend .venv/Scripts/python.exe main.py; frontend npx nx serve
+- Run the project the standard way (backend npx nx serve api; frontend npx nx serve
   dashboard) and OBSERVE. The ACs are written to be observable without reading code — verify by
   observation first; read code only to explain a failure.
 - For EACH acceptance criterion, verbatim and in order, assign exactly one verdict:
   PASS (observed to hold — cite evidence) · FAIL (observed not to hold — expected vs actual + repro) ·
   UNVERIFIABLE (couldn't exercise it — say precisely why).
 - Verify INTERFACE_CONTRACT integration with the runtime conformance check (system-1): with the
-  backend running, run `.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
+  backend running, run `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --contract
   .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000`. A conformance FAIL
   (the live BE omits/mistypes a field the interface promises) is a GATE Q FAIL → bounce to Backend.
 - Also check the binding invariants (BRIEF "Invariant watch" + the promoted canon). A green AC list
   over a broken invariant is still a FAIL.
 - Re-run the frontend test suite + check AC↔test traceability (standing rule — tests are part of the FE
-  deliverable): in C:\Dev\gammaflow-web run `npx nx test dashboard` (and `nx test api` if libs/api was
+  deliverable): from the workspace root run `npx nx test dashboard` (and `nx test @org/api` if libs/api was
   touched); a failing suite is a GATE Q FAIL → bounce to Frontend. Then verify traceability (NOT a
   spot-check): every PRODUCT_CONTRACT AC + every required case in the FRONTEND_EXECUTION_CONTRACT's
   "Tests to write" matrix maps to ≥1 named, passing test. An AC with no corresponding test is a FAIL even

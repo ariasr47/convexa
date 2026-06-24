@@ -16,7 +16,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 ## 2. Architecture
 <!-- shard: tags=architecture,backend,frontend,api,engine,signals,live,sse,providers,observability,ui -->
-**Backend** (FastAPI, repo root + `src/`):
+**Backend** (FastAPI, `apps/api/` + `apps/api/src/`):
 - `main.py` — endpoints, response envelope, 60s in-memory cache, config, the `LiveHub`, the
   filter-independent `/api/contract/{ticker}` tracked-contract lookup (off a ticker-keyed snapshot
   cache), serve-time opportunity tiering + `position_eval`.
@@ -47,7 +47,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   the three `/api/recommendation/*` endpoints in `main.py`.
 - `src/models/market_data.py` — `MarketState` Pydantic response model.
 
-**Frontend** (`gammaflow-web/`, Nx monorepo, React 19 + Vite + MUI/Emotion):
+**Frontend** (`apps/dashboard/` in the Nx monorepo, React 19 + Vite + MUI/Emotion):
 - `apps/dashboard/src/app/app.tsx` — dashboard (toolbar, stat tiles, setups, **Off-exchange
   blocks** section), polls bundle (60s) + subscribes SSE. Also four **always-on neutral
   positioning tiles** — `Net DEX`, `Vol/OI`, `IV skew` (slope → fear/greed/balanced), `Term
@@ -251,10 +251,12 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   rec `unavailable:no_key`, manual export floor still works), `AI_REC_MODEL` (latest Claude),
   `AI_REC_COOLDOWN_SECONDS` (60), `AI_REC_DAILY_CAP` (50), `AI_REC_TIMEOUT_SECONDS` (60),
   `AI_REC_IN_APP_ENABLED` (true), `AI_REC_STUB` (off; stub LLM provider for keyless/no-cost verification).
-- **Add a vendor:** implement `MarketDataProvider` in `src/providers/<name>.py`, register in
+- **Add a vendor:** implement `MarketDataProvider` in `apps/api/src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
-- **Run:** backend `.venv/Scripts/python.exe main.py` (uvicorn :8000); frontend
-  `npx nx serve dashboard` (Vite :4200, proxies /api). Node via nvm-windows at `C:\nvm4w\nodejs`.
+- **Run:** backend `npx nx serve api` (uvicorn :8000, i.e. `apps/api/.venv/Scripts/python.exe
+  main.py`); frontend `npx nx serve dashboard` (Vite :4200, proxies /api). Node via nvm-windows.
+  Backend venv: `cd apps/api && py -m venv .venv && .venv/Scripts/python.exe -m pip install -r
+  requirements.txt`.
 - **Frontend tests (standing rule — part of every FE feature):** `npx nx test dashboard`
   (and `nx test api` for `libs/api`) — Vitest + jsdom + Testing Library (+ `@testing-library/user-event`
   + `jest-dom`) + v8 coverage, wired via `@nx/vite`; colocated `*.spec.tsx`/`*.spec.ts`. The FE
@@ -269,7 +271,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   **AC↔test traceability** at GATE Q: every AC maps to ≥1 named passing test (an uncovered AC is a FAIL
   even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
   critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
-- Two git repos: `C:\Dev\GammaFlow` (backend) and `C:\Dev\gammaflow-web` (frontend); no remotes.
+- One Nx monorepo: backend `apps/api`, frontend `apps/dashboard`, shared TS client `libs/api`
+  (`@org/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
+  `C:\Dev\GammaFlow` is history only.)
 
 ## 8. Downstream-AI contract
 <!-- shard: tags=ai,prompt,strategy,reassessment,glossary,personas -->

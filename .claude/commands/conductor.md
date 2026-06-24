@@ -12,7 +12,8 @@ from disk — assume no memory of prior sessions:
 Operating mode = **system-9-lite**: run each role as a FRESH `gammaflow-*` subagent (via the Agent
 tool) per gateway — never a long-lived session — each given a `context_for.py` pack; run the mechanical
 gates (`contract_lint.py`, `interface_conformance.py`, the `qa-verify` spawn) between roles per
-ORCHESTRATOR §0/§3. Lanes are tool-fenced (subagents) + cross-repo path-fenced (`path_guard.py`).
+ORCHESTRATOR §0/§3. Lanes are tool-fenced (subagents) + workspace path-fenced (`path_guard.js`); both
+the backend (`apps/api`) and frontend (`apps/dashboard`) lanes now spawn as in-repo Agent subagents.
 
 First: read every `_MANIFEST.md` under `.claude/contracts/` (live, not `_archive/`) and report the
 current pipeline state — which features are live + their stage + any open amendments/QA status, and
