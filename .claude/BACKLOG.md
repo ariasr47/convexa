@@ -147,6 +147,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 > judge each on **correctness, throughput, or cost of the build system**, not trading edge (same
 > convention as the §B Decision-Ledger hook). Sibling already in the pool: the **Decision-Ledger
 > crossing-detection hook** (§B) is the DETECT-step mechanization and belongs to this class.
+>
+> **Roadmap home moved (2026-06-24, system-13):** the **project-neutral** framework roadmap now lives in
+> the kit's `KIT_BACKLOG.md` (`C:\Dev\delivery-kit`) — that is the framework's own GATE I pool, groomed
+> via the kit-evolution loop (`docs/AUTHORING.md` there). The `system-N` entries below are **retained as
+> GammaFlow's instantiation + provenance** (the evidence that earned each one); generic framework
+> improvements are proposed/culled in `KIT_BACKLOG.md`, not here.
 > **Binding sequencing:** *system-1 … system-6 land before system-9* — automating the conductor before
 > the mechanical gates + adversarial roles removes the human review that currently provides
 > error-correction (SYSTEM_ANALYSIS §7).
