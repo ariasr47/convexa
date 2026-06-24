@@ -1,23 +1,35 @@
-<!-- nx configuration start-->
-<!-- Leave the start & end comments to automatically receive updates. -->
+# GammaFlow monorepo — Claude guide
 
-# General Guidelines for working with Nx
+This is a single **Nx 23 polyglot monorepo** (the GammaFlow backend + web frontend, merged).
 
-- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
-- When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
-- Prefix nx commands with the workspace's package manager (e.g., `pnpm nx build`, `npm exec nx test`) - avoids using globally installed CLI
-- You have access to the Nx MCP server and its tools, use them to help the user
-- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
-- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
+## Nx guidance
 
-## Scaffolding & Generators
+General Nx working rules (prefer `nx run`/`run-many`/`affected`, the `nx-workspace` /
+`nx-generate` skills, `nx_docs`, the Nx MCP) live in [AGENTS.md](AGENTS.md) — that file is
+Nx-auto-maintained; read it and follow it. This file is not duplicated into it on purpose.
 
-- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
+## Layout
 
-## When to use nx_docs
+- `apps/api` — **Python** FastAPI backend (`nx serve api` → uvicorn :8000). Not an npm
+  workspace member; it has its own `.venv` (`cd apps/api && py -m venv .venv &&
+.venv/Scripts/python.exe -m pip install -r requirements.txt`). Nx project name `api`
+  (distinct from the TS lib `@org/api`). No pytest suite — verified by app-run +
+  `.claude/tools/interface_conformance.py`.
+- `apps/dashboard` — React 19 + Vite + MUI frontend (`nx serve dashboard` → :4200, proxies
+  `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
+- `apps/dashboard-e2e` — Playwright e2e for the dashboard.
+- `libs/api` — `@org/api`, the shared TS API client (consumed as source).
+- `.claude/` — the GammaFlow delivery-orchestration system (ORCHESTRATOR, contracts, agents,
+  tools, role prompts). The conductor + lane subagents drive feature delivery from here.
 
-- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
-- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
-- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
+## Lane separation (enforced)
 
-<!-- nx configuration end-->
+Project **tags** (`scope:frontend|backend|shared`, `type:app|lib|e2e`) drive the ESLint
+`@nx/enforce-module-boundaries` rule (`eslint.config.mjs`): apps may only import libs, the
+shared lib stays self-contained, frontend may import frontend + shared. Writes are fenced to
+the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
+
+## Convenience scripts
+
+`npm run dev` (serve all), `test`, `lint`, `format` / `format:check`, `graph`, plus
+`serve:api` / `serve:dashboard`.

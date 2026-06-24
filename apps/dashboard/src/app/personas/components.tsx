@@ -35,7 +35,7 @@ export function PersonaPicker({ persona, onOpenCustomize }:
         <Select
           label="Persona"
           value={activeId}
-          onChange={(e) => { const v = String(e.target.value); v === CUSTOMIZE_VALUE ? onOpenCustomize() : setActive(v); }}
+          onChange={(e) => { const v = String(e.target.value); if (v === CUSTOMIZE_VALUE) onOpenCustomize(); else setActive(v); }}
           renderValue={() => active.name}
         >
           <MenuItem value="default">Default (no persona)</MenuItem>

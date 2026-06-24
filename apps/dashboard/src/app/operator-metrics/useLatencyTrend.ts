@@ -134,7 +134,7 @@ export function useLatencyTrend() {
 
   const togglePause = useCallback(() => setPaused((p) => !p), []);
   const toggleStage = useCallback((st: string) => setHiddenStages((prev) => {
-    const next = new Set(prev); next.has(st) ? next.delete(st) : next.add(st); return next;
+    const next = new Set(prev); if (next.has(st)) next.delete(st); else next.add(st); return next;
   }), []);
 
   // Available scopes = global + tickers present in the latest poll (absent ticker not selectable).

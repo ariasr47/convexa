@@ -3,5 +3,6 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "implicitDependencies": ["@org/dashboard"],
+  "tags": ["scope:frontend", "type:e2e"],
   "targets": {}
 }
