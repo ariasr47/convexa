@@ -157,7 +157,17 @@ from this canonical source. No `?persona=` param is added to the bundle route; p
 
 ---
 
-## 3. Conformance spec (machine-checkable — for system-1 `interface_conformance.py`)
+## 3. Conformance spec
+
+**Runnable spec (canonical — what system-1 executes):**
+`.claude/tools/conformance/ai_recommendations.json` (flat schema). Run:
+`interface_conformance.py --spec .claude/tools/conformance/ai_recommendations.json --url http://127.0.0.1:8000`.
+
+The JSON below is **human + QA reference**, not the runnable source. `interface_conformance.py` validates
+field **presence / type / array-fan-out** from the flat standalone spec; the richer **enums / conditional
+nullability / `forbidden_fields` / egress** assertions here are verified by **QA at GATE Q** (the flat
+checker does not execute them). Keep the two in sync — the standalone `.json` is the source of truth for
+the automated check. (Convention: standalone-file = canonical, per BACKLOG §E system-12.)
 
 ```json
 {

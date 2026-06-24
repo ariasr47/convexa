@@ -17,6 +17,11 @@ from src.core.live import LiveHub
 from src.core.darkpool import analyze_off_exchange
 from src.core import observability as obs
 from src.core import personas as personas_lib
+# AI Recommendations: the ISOLATED best-effort in-app LLM proxy + state-export serializer. This is
+# a one-way LEAF — engine/signals/live/darkpool do NOT import it (the structural guarantee of score
+# byte-identity); main.py imports it ONLY for the three recommendation endpoints, never on the
+# bundle/SSE path. The key (ANTHROPIC_API_KEY) is read ONLY inside this module.
+from src.core import ai_recommendation as ai_rec
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -681,6 +686,129 @@ async def get_personas():
     are byte-identical across personas) and triggers no recompute. No vendor fetch, no LLM call.
     """
     return personas_lib.readout()
+
+
+# ----------------------------------------------------------------------------- AI Recommendations
+# Three NEW best-effort, isolated, gated endpoints (INTERFACE §1.1/§1.2/§1.3). They are pure
+# CONSUMERS of the already-computed cached bundle: they never write to or influence signals /
+# opportunity_score / opportunity_tier / ai_eval / state_fingerprint / the gate, and never touch the
+# SSE path. Every LLM/cap/key fault is a contained HTTP 200 (status field), NEVER a 5xx.
+
+from pydantic import BaseModel
+
+
+class RecRequest(BaseModel):
+    """INTERFACE §1.1 request body. Carries NO bundle payload and NO key — only identifiers + the
+    gating context the FE already has on the page."""
+    persona_id: str | None = None
+    snapshot_fingerprint: str
+    dte_min: int | None = None
+    dte_max: int | None = None
+    dark_pool: bool = True
+    override: bool = False
+
+
+def _latest_cache_entry_for(ticker: str, dte_min: int | None, dte_max: int | None,
+                            dark_pool: bool):
+    """
+    Return the (key, entry) of an EXISTING cached bundle for `ticker` — preferring the exact filter
+    key the page is on (dte_min/dte_max/dark_pool), else the freshest cached entry for the ticker
+    across any filter key. None when the ticker has never been computed. Pure READ of the cache; no
+    recompute, no vendor fetch. (Mirrors the dashboard's own cached state — the rec/export path must
+    be OFF the bundle critical path and must not trigger a new vendor fetch.)
+    """
+    t = ticker.upper()
+    exact = (t, dte_min, dte_max, None, dark_pool)
+    if exact in _cache:
+        return exact, _cache[exact]
+    candidates = [(k, e) for k, e in _cache.items() if k[0] == t]
+    if not candidates:
+        return None
+    # Freshest computed entry for this ticker.
+    return max(candidates, key=lambda ke: ke[1]["computed_at"])
+
+
+async def _served_bundle_for_rec(ticker: str, dte_min: int | None, dte_max: int | None,
+                                 dark_pool: bool) -> dict:
+    """
+    Obtain the ALREADY-CACHED, serve-wrapped bundle for the recommendation/export/status path — the
+    same cached MarketState/signals/strike_profile/meta the dashboard holds (60s cache).
+
+    BINDING (BACKEND §1.1/§1.2): NO new vendor fetch on the rec path. We READ the freshest EXISTING
+    cached bundle for the ticker and re-wrap it (serve-time envelope: meta/freshness/finalized
+    ai_eval) WITHOUT recomputing — even past the TTL (a rec is a static artifact pinned to whatever
+    snapshot is on the page; honest-at-birth `stale_born` captures staleness). Only when the ticker
+    has NEVER been computed do we compute once via the normal serve path (cold start; 404 if no
+    chain). This keeps the multi-second-LLM/slow-vendor concerns off the bundle critical path.
+    """
+    t = ticker.upper()
+    found = _latest_cache_entry_for(t, dte_min, dte_max, dark_pool)
+    if found is None:
+        # Cold start: never been computed. One compute via the normal path (raises 404 if no chain).
+        return await _serve(t, dte_min, dte_max, None, dark_pool)
+    _key, entry = found
+    # Read-only re-wrap of the EXISTING cached bundle. No recompute, no vendor fetch. A None trace
+    # makes the wrap's observability spans no-ops; freshness/stale are recomputed from the snapshot
+    # timestamp so `stale_born` is honest even on an aged cache entry.
+    return _wrap(entry, hit=True, now=time.time(), ticker=t, position_ctx=None, trace=None)
+
+
+@app.post("/api/recommendation/{ticker}")
+async def post_recommendation(
+    body: RecRequest,
+    ticker: str = Path(..., description="Underlying symbol, e.g. SPY"),
+):
+    """
+    Request an in-app AI recommendation (INTERFACE §1.1). ALWAYS HTTP 200 for produced / no_trade /
+    unavailable / gated_off — the `status` field distinguishes them; an LLM/cap/key fault is a
+    contained `unavailable`, never a 5xx that breaks the bundle/SSE/page. Serializes ALREADY-CACHED
+    state (no recompute, no new vendor fetch, null stays null). The key is server-side only.
+    """
+    t = ticker.upper()
+    bundle = await _served_bundle_for_rec(t, body.dte_min, body.dte_max, body.dark_pool)
+    # The LLM call is blocking + multi-second; run it OFF the event loop so it can never stall the
+    # cached bundle or the SSE stream. The proxy owns its own bounded timeout.
+    return await asyncio.to_thread(
+        ai_rec.generate_recommendation, t, bundle,
+        persona_id=body.persona_id, dte_min=body.dte_min, dte_max=body.dte_max,
+        override=body.override, snapshot_fingerprint=body.snapshot_fingerprint)
+
+
+@app.get("/api/recommendation/export/{ticker}")
+async def get_recommendation_export(
+    ticker: str = Path(..., description="Underlying symbol, e.g. SPY"),
+    persona_id: str | None = Query(None, description="Persona framing for the prompt (default: Default)."),
+    min_dte: int | None = _MinDTE,
+    max_dte: int | None = _MaxDTE,
+    dark_pool: bool = _DarkPool,
+):
+    """
+    The structured state export (INTERFACE §1.2) — the floor that feeds BOTH the in-app call and the
+    manual hand-off. Triggers NO LLM call, costs nothing, available even when in-app AI is
+    unavailable. Read+serialize of the cached bundle; null stays null. 200 when a bundle exists, 404
+    if the ticker was never fetched. Egress is ONLY {context, persona_prompt, glossary} + identifiers.
+    """
+    t = ticker.upper()
+    bundle = await _served_bundle_for_rec(t, min_dte, max_dte, dark_pool)  # 404 if no chain
+    return ai_rec.build_export(t, bundle, persona_id)
+
+
+@app.get("/api/recommendation/status/{ticker}")
+async def get_recommendation_status(
+    ticker: str = Path(..., description="Underlying symbol, e.g. SPY"),
+    min_dte: int | None = _MinDTE,
+    max_dte: int | None = _MaxDTE,
+    dark_pool: bool = _DarkPool,
+):
+    """
+    Gating + cap + availability (INTERFACE §1.3) WITHOUT requesting a rec. Cheap, side-effect-free,
+    always HTTP 200. Derives gate.state from the EXISTING ai_eval machinery (read-only) + the
+    cooldown window; reports the daily cap and in-app availability. The FE drives the action's
+    enabled/disabled presentation from this.
+    """
+    t = ticker.upper()
+    bundle = await _served_bundle_for_rec(t, min_dte, max_dte, dark_pool)  # 404 if no chain
+    return ai_rec.status_payload(bundle.get("ai_eval"))
 
 
 @app.get("/api/_metrics")

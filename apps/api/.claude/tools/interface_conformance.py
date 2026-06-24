@@ -116,7 +116,13 @@ def fetch(base: str, ep: dict):
     url = base.rstrip("/") + path
     if ep.get("query"):
         url += "?" + urllib.parse.urlencode(ep["query"])
-    req = urllib.request.Request(url, method=ep.get("method", "GET"))
+    # Optional JSON request body (for POST/PUT endpoints). Absent ⇒ no body (GET semantics
+    # unchanged), so this is fully backward-compatible with every existing flat spec.
+    data, headers = None, {}
+    if ep.get("body") is not None:
+        data = json.dumps(ep["body"]).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, method=ep.get("method", "GET"), data=data, headers=headers)
     with urllib.request.urlopen(req, timeout=30) as resp:
         if resp.status != 200:
             raise Fail(f"HTTP {resp.status}")

@@ -265,3 +265,20 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   class:** trading-decision cull **N/A**. **Origin:** raised 2026-06-23 after two *maintenance* tasks
   (test-tooling setup, path-guard parity) were dispatched ad-hoc with bespoke briefs; user deferred for
   further consideration. Relates to system-9-lite + the ORCHESTRATOR §2 cross-repo dispatch convention.
+- **system-12 · system-1 standalone-spec standardization** — `DECIDED 2026-06-23 (standalone = canonical),
+  partial`. The conformance spec drifted: docs say "embed a `## Conformance spec` ```json block in
+  INTERFACE_CONTRACT.md," but the shipped precedent (`.claude/tools/conformance/api_metrics.json`) and the
+  ONLY runnable form is a **standalone flat-schema file**. The UX (following the docs) embedded a rich
+  nested block the tool can't run — heading `## 3. Conformance spec` breaks system-1's `##\s*Conformance
+  spec` regex (yet system-3's linter accepted it: the two **disagree** on detection), and the nested
+  enums/conditional/forbidden_fields schema isn't the tool's flat `{path_params,query,body,required}`.
+  **Owner decision (2026-06-23):** the runnable spec is a committed standalone `.claude/tools/conformance/
+  {feature}.json`; the interface's `## Conformance spec` section REFERENCES it (rich content stays as QA
+  reference). **Done:** ai-recommendations interface points at its standalone spec; the backend added
+  POST-body support to `interface_conformance.py` (additive, kept; `api_metrics.json` still passes).
+  **Remaining (do before the next GATE U·X):** reconcile the authoring docs — `COMPRESSOR_PROMPTS #3`,
+  `gammaflow-ux.md`, `ORCHESTRATOR §6 / GATE U·X / GATE Q`, `BACKLOG system-1` — to the standalone
+  convention; tighten `contract_lint` M7 to verify the interface references an EXISTING standalone spec
+  (it currently only string-matches "Conformance spec"); align the system-1 heading regex with system-3's
+  looser detection so they agree. *Value M · Effort S–M.* **Build-system class:** trading-decision cull
+  N/A. Surfaced by the backend executioner at the ai-recommendations fan-out (GATE Z).
