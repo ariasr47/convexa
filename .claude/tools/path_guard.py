@@ -1,5 +1,11 @@
 #!/usr/bin/env python
-r"""path_guard.py — PreToolUse hook: lane-fence file writes to this repo (system-4b).
+r"""path_guard.py — RETIRED as the active hook (kept as a reference tool).
+
+After the monorepo merge the active PreToolUse fence is `.claude/tools/path_guard.js` (node is
+workspace-native; it carries the memory + plans carve-outs and computes the root from __dirname).
+This Python version is retained for reference/parity only — it is NOT wired in settings.json.
+
+path_guard.py — PreToolUse hook: lane-fence file writes to this repo (system-4b).
 
 Completes the lane enforcement the per-role tool-allowlists (system-4) start. Tool-allowlists say WHICH
 tools a role may use; this says WHERE they may write. It blocks Write/Edit/MultiEdit/NotebookEdit whose
