@@ -30,6 +30,36 @@
 
 ---
 
+## Last GATE I — 2026-06-25 (owner request: ticker-page load UX + latency; gamma question raised)
+**Chosen → `ticker-load-experience`** — owner-directed redirect (displaces `scanner` as the next Track-A
+item; scanner stays queued, not dropped). Make `/ticker/:symbol` load fast + feel instant + show a trusted
+price. Three additive moves: (1) **skeleton-first load** (replace the single full-page spinner —
+`TickerDashboard.tsx:497,512` — with per-component skeletons that render independently); (2) **latency**
+— parallelize the 3–4 **sequential** vendor fetches (`main.py:261-267` + `off_exchange`; vendor I/O is the
+dominant cold-miss cost) + trim on-path `persist`, measured against `/_ops/metrics` p50/p95; (3) **live
+last-trade** readout alongside the mid (surface `live.py:160`'s already-tracked `last_trade_price`, never
+broadcast today) + reflect the **real-time options tier** in freshness/cache config. Decision-impact cull:
+passes (speed + trust of the primary surface; observable via TTFMP + a measured `vendor_fetch` drop + a
+visible broker-matching last-trade). Feasibility pass (skeletons = MUI; parallelize = `asyncio.gather` over
+existing `to_thread`; last-trade = surface one field; config = env — magnitude needs a live key, the
+architecture doesn't). Effort M · entry = **architect-first** (skeleton-vs-split [split is a trap w/o
+request-coalescing — `_serve` has no in-flight dedup], fetch-parallelization shape, last-trade as a
+display-only sibling of the mid). **Invariant watch:** `additive-keeps-score-byte-identical`,
+`best-effort-isolated-or-null`, `live-vs-static-isolation`; **`live-spot=NBBO-mid` HONORED** (last-trade is
+additive display — mid stays the levels anchor; carve-out, not a reversal); **`gamma-sourcing-split` NOT
+touched** (→ Track 2). Brief at `.claude/contracts/ticker-load-experience/BRIEF.md`; routing to the
+Architect (GATE A·X).
+
+**New parked track → `gamma-unification` (measure-first; see §C below).** Owner asked: with the advanced
+real-time tier + full chain, compute our OWN analytic gamma for the walls so they're consistent with the
+flip. Finding: the engine **already** computes analytic BS gamma (`engine.py:_calc_gamma`/`_gex_curve`) for
+the flip + vanna/charm/volga; only the walls/net-GEX use **vendor** gamma (`engine.py:316`). Unifying =
+point the walls at the math we already run. **Owner decision (2026-06-25): MEASURE FIRST** — spike that
+computes analytic gamma alongside vendor gamma and quantifies wall/flip divergence on real tickers, BEFORE
+any canon change. Honors the standing "measure the divergence before calibrating" rule (§9). Only after the
+numbers: a GATE Z reopen/demotion of the locked **`gamma-sourcing-split`** rule, then a GATE M
+implementation. Not bundled into `ticker-load-experience` (different risk class — core math).
+
 ## Last GATE I — 2026-06-24 (OWNER PIVOT: positions-centric, brokerage-connected, multi-page) — PROGRAM
 **Strategic repositioning.** GammaFlow shifts from a single-ticker GEX dashboard into a **multi-page
 product**: connect your brokerage positions → get **AI recommendations** built on the GEX profile +
@@ -119,9 +149,13 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **`ticker-load-experience`** — `← NEXT (chosen 2026-06-25)`, in pipeline at GATE A·X. Ticker-page load
+  UX (skeletons + independent component render) + latency (parallelize vendor fetches) + live last-trade +
+  real-time-tier config. FE-led, both lanes; architect-first. Brief at
+  `.claude/contracts/ticker-load-experience/BRIEF.md`.
 - **OWNER PIVOT program (positions-centric, multi-page):** Track A = `app-shell-landing` ✓ SHIPPED →
-  **`scanner` (NEXT)** → `positions-page-expansion`; Track B (gated) = `broker-connect`. See the "Last
-  GATE I — OWNER PIVOT" note above.
+  `scanner` (still queued, was-next; deferred behind the owner's 2026-06-25 ticker-load redirect) →
+  `positions-page-expansion`; Track B (gated) = `broker-connect`. See the "Last GATE I — OWNER PIVOT" note.
 - **app-shell-landing** — `✓ SHIPPED + ARCHIVED (2026-06-24)` → `_archive/app-shell-landing/`. FE-only
   rebrand → **Convexa** (UI-only) + multi-page IA: `/` landing, `AppShell` nav, relocated `/ticker/:symbol`
   + `/positions`, static `/scanner` stub. Page-scoped SSE; store persists across nav; `NO_BACKEND_CHANGE`.
@@ -184,6 +218,16 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 - **Flip fixed-IV-under-spot-move modeling** — the latent choice of holding IV fixed while repricing
   across the spot grid in the flip search. *Impact:* flip fidelity. *Value TBD · Effort L.*
   **Blocked-on:** measure the divergence first before any calibration (per §9 — judged immaterial so far).
+- **`gamma-unification` — own analytic gamma for the walls (consistent flip)** — `RAISED 2026-06-25
+  (owner); MEASURE-FIRST`. Today walls/net-GEX use **vendor** gamma (`engine.py:316`) while the flip +
+  vanna/charm/volga use our **analytic** BS gamma (`engine.py:_calc_gamma`/`_gex_curve`) — the documented,
+  locked `gamma-sourcing-split`. Owner wants them unified (one gamma model → walls & flip consistent),
+  enabled by the advanced real-time tier (full chain + fresh IV) and de-blocking the Databento path (no
+  vendor greeks). *Impact:* consistency + vendor independence. *Value M-H · Effort M (impl) + S (spike).*
+  **Step 1 (owner-decided): a MEASUREMENT SPIKE** — compute analytic gamma alongside vendor gamma, quantify
+  wall/net-GEX/flip divergence on real tickers (needs a live `MASSIVE_API_KEY`). **Then** GATE Z reopen/
+  demotion of `gamma-sourcing-split` → GATE M implementation. **Risk:** American-exercise/illiquid-IV model
+  fidelity; reopens locked core-math canon (CONTEXT §3 / THREADS §9). Honors §9's "measure before calibrating."
 
 ### D. Shipped-feature seams (park until a concrete need pulls them)
 - **Ghost-trade → real path** — broker `FillSource`/`PositionStore`, `BundleFeed`+clock replay,
