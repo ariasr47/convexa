@@ -22,7 +22,7 @@ import {
   Container, Box, Card, CardContent,
   Chip, CircularProgress, TextField, Stack, Alert, Button, ButtonGroup, Tooltip,
   FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
-  Switch, FormControlLabel, Typography,
+  Switch, FormControlLabel, Typography, Skeleton,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
@@ -64,8 +64,17 @@ const PROXIMITY_TOOLTIP =
   'glance whether it overlaps a wall or the gamma flip.';
 const OFFLINE_CHIP_TOOLTIP =
   'The live stream dropped. The positioning levels and the GEX chart below are still current ' +
-  'as of the last data load — only live price, spread, net flow and the live gamma flip are ' +
-  'paused. Reconnecting automatically; no refresh needed.';
+  'as of the last data load — only live price, the last trade, spread, net flow and the live ' +
+  'gamma flip are paused. Reconnecting automatically; no refresh needed.';
+
+// Last-trade readout copy (UX_BLUEPRINT §4.1). The readout is a DISPLAY-ONLY, live-derived sibling
+// of the anchor price; the anchor (NBBO mid) stays the headline/levels basis (`live-spot=NBBO-mid`).
+const LAST_TRADE_TOOLTIP =
+  'The last actual trade printed for this ticker, live off the trade tape — use it to reconcile ' +
+  "against your broker's last trade (e.g. Webull). This is a readout only: the headline price and " +
+  'every level (walls, gamma flip, max pain) stay anchored to the NBBO mid, not to this print. ' +
+  'Empty between trades, overnight, and before the session’s first print — it never shows a ' +
+  'stale number as current. Pauses with the live stream if it drops.';
 
 // ---- DEX · Vol/OI · IV skew · Term structure (all neutral, snapshot — never live) ----------
 // These four ride the REST bundle, carry NO side/direction, and are excluded from the live
@@ -193,12 +202,94 @@ function Stat({ label, value, accent, info, offline, accentColor }:
   return info ? <Tooltip title={info} arrow placement="top">{tile}</Tooltip> : tile;
 }
 
+// ---- Skeleton-first load (AC-Skel-1..5) -----------------------------------------------------
+// COLD-LOAD placeholders. These render only while a source has NOT YET resolved (`data == null`
+// for the bundle regions; `live == null` for the SSE last-trade line). They are the LOADING look:
+// an animated MUI shimmer — visually distinct from EMPTY (resolved-null muted text, no shimmer)
+// and from OFFLINE (real values dimmed to 50% + `⏸`). The cold skeleton class must NEVER appear
+// post-load and the offline dim must NEVER appear pre-load (`live-vs-static-isolation`, AC-Skel-3/4).
+//
+// A tile-shaped skeleton in the stat grid: matches the StatTile footprint so the structure is
+// already laid out before any data arrives (AC-Skel-1). `data-testid="cold-skeleton"` marks the
+// LOADING class for the tests that assert LOADING ≠ EMPTY ≠ OFFLINE.
+function StatSkeleton() {
+  return (
+    <StatTile accent="neutral" variant="outlined" data-testid="cold-skeleton">
+      <CardContent>
+        <Skeleton variant="text" width="60%" sx={{ fontSize: '0.75rem' }} />
+        <Skeleton variant="text" width="45%" sx={{ fontSize: '1.25rem' }} />
+      </CardContent>
+    </StatTile>
+  );
+}
+
+// The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1). Rendered in place of the
+// real grid while the REST bundle has not resolved, so the page paints its structure immediately.
+function StatGridSkeleton() {
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}>
+      {Array.from({ length: 12 }).map((_, i) => <StatSkeleton key={i} />)}
+    </Box>
+  );
+}
+
+// ---- Live last-trade readout (AC-LastTrade-1..5) --------------------------------------------
+// A SECONDARY, display-only line beside the headline anchor. It is LIVE-DERIVED (rides SSE only):
+//   - LOADING (cold, SSE not yet attached, `live == null`)        → short text skeleton (shimmer)
+//   - DEFAULT (`live.last_trade` is a number)                     → `● Last trade $X` (live dot)
+//   - LIVE-EMPTY (stream up, `last_trade == null`)                → `Last trade — no recent print`
+//   - OFFLINE (`streamOffline`, last-known print)                 → `⏸ Last trade $X` dimmed 50%
+// It NEVER renders as the `variant="h1"` headline; it never freezes a stale value as current
+// (LIVE-EMPTY shows the honest empty, not a prior number); on a feed drop it degrades WITH the
+// other live tiles. It is DISPLAY-ONLY and never feeds the anchor/levels/flip (`live-spot=NBBO-mid`).
+function LastTradeReadout({ live, streamOffline }:
+  { live: LiveUpdate | null; streamOffline: boolean }) {
+  // Cold-load: SSE has not delivered a payload yet → LOADING shimmer (distinct from LIVE-EMPTY).
+  if (live == null) {
+    return <Skeleton variant="text" width={140} data-testid="last-trade-skeleton" sx={{ fontSize: '0.875rem' }} />;
+  }
+  const lt = live.last_trade;
+  // OFFLINE: the transport dropped — show the last-known print explicitly paused + dimmed, paired
+  // with the page's single `⚠ Live offline` chip. When there is no print to show, fall through to
+  // the honest empty rather than fabricate a number.
+  if (streamOffline) {
+    return (
+      <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
+        <Typography component="span" variant="body2" color="text.secondary"
+          data-testid="last-trade" sx={{ opacity: 0.5 }}>
+          {lt != null ? `⏸ Last trade $${lt.toFixed(2)}` : 'Last trade — no recent print'}
+        </Typography>
+      </Tooltip>
+    );
+  }
+  // LIVE-EMPTY: stream up but no recent print — honest empty, never a stale value styled current.
+  if (lt == null) {
+    return (
+      <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
+        <Typography component="span" variant="body2" color="text.secondary" data-testid="last-trade">
+          Last trade — no recent print
+        </Typography>
+      </Tooltip>
+    );
+  }
+  // DEFAULT: a live print beside the anchor, with the info-colored live dot.
+  return (
+    <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
+      <Typography component="span" variant="body2" color="text.secondary" data-testid="last-trade">
+        <Box component="span" sx={{ color: 'info.main' }}>●</Box> Last trade ${lt.toFixed(2)}
+      </Typography>
+    </Tooltip>
+  );
+}
+
 // Session-aware live status: explains WHY there are (or aren't) live ticks, instead of a
 // frozen price that silently contradicts an overnight-capable platform like Webull.
 function liveStatus(live: LiveUpdate | null):
   { color: 'info' | 'warning' | 'default'; label: string; tip: string } | null {
   if (!live) return null;
-  const last = live.mid != null ? ` · last $${live.mid.toFixed(2)}` : '';
+  // This segment is the NBBO MID (not the last trade) — labelled `· mid $X` so it can never be
+  // confused with the new print-driven "Last trade" readout (UX §4.1 copy correction).
+  const last = live.mid != null ? ` · mid $${live.mid.toFixed(2)}` : '';
   if (live.live) {
     const s: Record<string, string> = { premarket: 'pre-market', regular: 'open',
       afterhours: 'after-hours', overnight: 'overnight' };
@@ -494,7 +585,22 @@ export function TickerDashboard() {
           Couldn't refresh — showing data from {humanAge(fresh?.data_age_seconds ?? null)} ago. Retrying automatically.
         </Alert>
       )}
-      {!data && !error && <CircularProgress />}
+
+      {/* COLD-LOAD skeleton (AC-Skel-1): when nothing has loaded and there is no error, the page
+          paints its full STRUCTURE — the headline frame + last-trade line + the stat-grid tiles —
+          as shimmer placeholders. There is NO full-page `<CircularProgress/>` gating the body (the
+          removed monolithic gate). Each region fills the moment ITS source resolves: the last-trade
+          line on the first SSE payload (`live != null`), the rest on the REST bundle (`data != null`).
+          The skeleton class never appears post-load (`!data` only). */}
+      {!data && !error && !noneSelected && (
+        <Box data-testid="cold-load">
+          <Box sx={{ mb: 1 }}>
+            <Skeleton variant="text" width={280} sx={{ fontSize: '3rem' }} />
+            <LastTradeReadout live={live} streamOffline={streamOffline} />
+          </Box>
+          <StatGridSkeleton />
+        </Box>
+      )}
 
       {noneSelected && (
         <Alert severity="info">
@@ -514,12 +620,20 @@ export function TickerDashboard() {
           {showPrimeBanner && !tradeOpen && (
             <PrimeBanner onSimulate={() => openEntry()} onDismiss={() => setShowPrimeBanner(false)} />
           )}
-          <Typography variant="h1" gutterBottom>
+          {/* Headline ANCHOR (NBBO mid when live, else the bundle's static price). The last-trade
+              readout below is a DISPLAY-ONLY sibling and NEVER feeds this anchor (`live-spot=NBBO-mid`,
+              AC-LastTrade-5). */}
+          <Typography variant="h1">
             {m.ticker} · ${(isLive ? live!.mid : m.price)?.toFixed(2)}
             <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
               (levels @ ${m.gex_spot?.toFixed(2)} · {selected === null ? 'all expirations' : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`})
             </Typography>
           </Typography>
+          {/* SECONDARY last-trade line (AC-LastTrade-4) — subordinate to the h1 anchor; live-derived,
+              honestly-nullable, degrades WITH the live tiles on a stream drop (AC-LastTrade-1/2/3). */}
+          <Box sx={{ mb: 2 }}>
+            <LastTradeReadout live={live} streamOffline={streamOffline} />
+          </Box>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}>
             <Stat label="Call wall" value={`$${m.call_wall}`} accent="up"

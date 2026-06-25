@@ -1,0 +1,47 @@
+{
+  "_comment": "Runnable (system-1) conformance spec for ticker-load-experience, projected from .claude/contracts/ticker-load-experience/INTERFACE_CONTRACT.md '## 6. Conformance spec' into the flat schema interface_conformance.py executes ({method,path,path_params,query,body,required}). The ONLY wire delta in this feature is the SSE /api/stream last_trade field (number|null), which the HTTP harness cannot probe (no SSE subscription) — it is bound in INTERFACE_CONTRACT §2 and verified off-harness by the FE component/flow tests + the BE live-payload check. The runnable assertions here are the REGRESSION FLOOR that bounds the feature: (1) the REST bundle stays byte-stable on its score/tier/gate/fingerprint path (AC-Invariant-1's wire face — pre-warm/concurrency/coalescing must NOT change what compute_ticker produces), and (2) the operator /api/_metrics readout still parses (the §5 observability-honesty surface a pre-warmed acquisition rides). Uses SPY (a liquid ticker; fetch once before running, e.g. curl http://127.0.0.1:8000/api/ticker/SPY).",
+  "version": "1.0",
+  "feature": "ticker-load-experience",
+  "endpoints": [
+    {
+      "id": "bundle_byte_identity_floor",
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": {"ticker": "SPY"},
+      "query": {"min_dte": "7", "max_dte": "45", "dark_pool": "true"},
+      "required": {
+        "market_state": "object",
+        "market_state.ticker": "string",
+        "market_state.price": "number",
+        "market_state.gamma_flip": "number",
+        "market_state.call_wall": "number",
+        "market_state.put_wall": "number",
+        "signals": "object",
+        "signals.opportunity_score": "number",
+        "signals.opportunity_tier": "string",
+        "signals.prime_prompt_eligible": "boolean",
+        "ai_eval": "object",
+        "ai_eval.ready": "boolean",
+        "ai_eval.state_fingerprint": "string",
+        "meta": "object",
+        "meta.freshness": "object",
+        "meta.freshness.stale": "boolean",
+        "meta.freshness.stale_after_seconds": "number"
+      }
+    },
+    {
+      "id": "metrics_observability_floor",
+      "method": "GET",
+      "path": "/api/_metrics",
+      "required": {
+        "instrumentation_enabled": "boolean",
+        "global": "object",
+        "global.cache.hits": "number",
+        "global.cache.misses": "number",
+        "global.vendor.call_count": "number",
+        "per_ticker": "object",
+        "recent_traces": "array"
+      }
+    }
+  ]
+}

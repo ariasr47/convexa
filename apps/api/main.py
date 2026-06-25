@@ -14,6 +14,7 @@ from src.core.engine import QuantEngine
 from src.core.signals import (generate_signals, evaluate_gate,
                               compute_opportunity_tier, position_fingerprint)
 from src.core.live import LiveHub
+from src.core import chain_store
 from src.core.darkpool import analyze_off_exchange
 from src.core import observability as obs
 from src.core import personas as personas_lib
@@ -50,8 +51,9 @@ DATA_DIR = "data"
 # the window are served from memory with no upstream call.
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "60"))
 # Snapshot age (now - options snapshot time) beyond which the data is flagged stale and the
-# AI gate is forced off. Default ~15-min delay + slack; drop to ~120 on a real-time tier.
-STALE_AFTER_SECONDS = int(os.getenv("STALE_AFTER_SECONDS", "1200"))
+# AI gate is forced off. Real-time tier: ~120s so the stale warning stops firing spuriously
+# mid-session (ticker-load-experience INTERFACE §4, AC-Stale-1/2). Operator-overridable via env.
+STALE_AFTER_SECONDS = int(os.getenv("STALE_AFTER_SECONDS", "120"))
 # opportunity_score at/above which a snapshot is worth escalating to the strategy AI.
 GATE_SCORE = int(os.getenv("GATE_SCORE", "50"))
 
@@ -59,6 +61,17 @@ GATE_SCORE = int(os.getenv("GATE_SCORE", "50"))
 FLOW_WINDOW_SECONDS = int(os.getenv("FLOW_WINDOW_SECONDS", "300"))   # rolling net-flow window
 LIVE_THROTTLE_SECONDS = float(os.getenv("LIVE_THROTTLE_SECONDS", "1.5"))  # SSE broadcast cadence
 CHAIN_REFRESH_SECONDS = int(os.getenv("CHAIN_REFRESH_SECONDS", "120"))    # live chain re-fetch
+
+# --- Chain pre-warm (ticker-load-experience ARCH §4 / INTERFACE §4) ---
+# A cold REST bundle request short-circuits its chain fetch to the live session's shared chain
+# snapshot ONLY when that snapshot's capture age is within this budget. BINDING freshness gate:
+# the budget MUST be ≤ CHAIN_REFRESH_SECONDS (the live refresh cadence) AND ≤ STALE_AFTER_SECONDS
+# (the bundle staleness contract) — never serve a chain the freshness contract would flag stale.
+# Default = min(both); env override is additionally clamped to that ceiling.
+_PREWARM_DEFAULT = min(CHAIN_REFRESH_SECONDS, STALE_AFTER_SECONDS)
+CHAIN_PREWARM_MAX_AGE_SECONDS = min(
+    int(os.getenv("CHAIN_PREWARM_MAX_AGE_SECONDS", str(_PREWARM_DEFAULT))),
+    CHAIN_REFRESH_SECONDS, STALE_AFTER_SECONDS)
 
 # --- Dark-pool / off-exchange config ---
 # Default inclusion; per-request `dark_pool` query param overrides. When excluded, the
@@ -105,6 +118,11 @@ _snapshot_cache: dict = {}
 # Last DISTINCT position-aware fingerprint per ticker, for the position_eval `changed` dedupe
 # (sibling of _last_fingerprint; the entry gate's dedupe is untouched).
 _last_position_fingerprint: dict = {}
+# In-flight compute de-duplication (ARCH §3 request-coalescing), keyed by the SAME full cache key
+# (ticker, min_dte, max_dte, expirations, dark_pool). Concurrent misses on one key await a single
+# shared compute future instead of each running the full vendor load. Event-loop-resident, lock-free
+# (single writer per key); the entry is removed as soon as its compute settles.
+_inflight: dict = {}
 
 # Real-time hub: one live stream/session per active ticker, ref-counted by SSE subscribers.
 live_hub = LiveHub(data_provider, quant_engine, flow_window=FLOW_WINDOW_SECONDS,
@@ -236,13 +254,86 @@ def _write_ticker_files(ticker: str, state: dict, profile: list, sig: dict):
         json.dump({"ticker": ticker, "spot": state["price"], "strikes": profile}, f, indent=4)
 
 
-def compute_ticker(ticker: str, min_dte: int | None = None,
+async def _acquire_vendor_inputs(ticker: str, dark_pool: bool) -> tuple:
+    """
+    Acquire the three INDEPENDENT vendor inputs (chain / daily bars / intraday bars) for one
+    ticker, on the event loop, and return (market_data, underlying_history, intraday_bars).
+
+    Two ticker-load-experience moves live here (ARCH §4 + §5.1), acquisition-only — neither
+    touches the `compute_ticker` transform; same inputs in → byte-identical bundle out:
+
+    - CHAIN PRE-WARM (§4): if a live session for this ticker holds a FRESH shared chain snapshot
+      (capture age ≤ CHAIN_PREWARM_MAX_AGE_SECONDS), the chain INPUT is short-circuited to it
+      (a near-zero-cost shared-hit) instead of paying the ~3.5s cold chain re-fetch. Best-effort:
+      any miss/stale/store error falls back to a normal vendor fetch with no error surfaced
+      (`[best-effort-isolated-or-null]`). The shared market_data is READ-ONLY (never mutated).
+
+    - 3-FETCH CONCURRENCY (§5.1): the three fetches overlap (gather of `to_thread` calls) rather
+      than running sequentially. Per-stage best-effort isolation SURVIVES concurrency: each fetch
+      keeps its own None/empty fallback and one fetch's failure NEVER cancels or corrupts the
+      others (`return_exceptions=True` + per-call containment, never a fail-fast gather). When the
+      chain is a pre-warm hit, only daily + intraday are fetched concurrently.
+
+    Observability honesty (§6): the `vendor_fetch` span wraps the concurrent acquisition; each
+    fetch keeps its own `vendor_call` timing. A pre-warmed chain records a `shared_hit` vendor_call
+    whose near-zero duration reflects reality (not a fabricated vendor latency), and a `chain_source`
+    marker is stamped on the trace for the operator readout — purely additive, operator-only.
+    """
+    prewarmed = chain_store.get_fresh(ticker, CHAIN_PREWARM_MAX_AGE_SECONDS)
+    chain_source = "shared_hit" if prewarmed is not None else "vendor_fetch"
+
+    async def _chain():
+        # PRE-WARM hit: a fresh shared snapshot exists → use it as the chain INPUT (read-only),
+        # short-circuiting the chain fetch. Recorded as a near-zero-cost shared-hit so the operator
+        # trace stays honest about where the time went.
+        if prewarmed is not None:
+            with obs.vendor_call("fetch_options_market_state[shared_hit]"):
+                return prewarmed
+        with obs.vendor_call("fetch_options_market_state"):
+            return await asyncio.to_thread(data_provider.fetch_options_market_state, ticker)
+
+    async def _daily():
+        with obs.vendor_call("fetch_daily_bars"):
+            return await asyncio.to_thread(data_provider.fetch_daily_bars, ticker)
+
+    async def _intraday():
+        with obs.vendor_call("fetch_intraday_bars"):
+            return await asyncio.to_thread(data_provider.fetch_intraday_bars, ticker)
+
+    with obs.span("vendor_fetch"):
+        # return_exceptions=True so one fetch's failure never cancels its siblings (per-stage
+        # best-effort isolation survives concurrency — ARCH §5.1). Each result is then normalized
+        # to its existing empty/None fallback, identical to the prior sequential semantics.
+        market_data, underlying_history, intraday_bars = await asyncio.gather(
+            _chain(), _daily(), _intraday(), return_exceptions=True)
+
+    if isinstance(market_data, Exception):
+        # Chain fetch failed → no usable chain, the existing no-chain 404 path (callers 404).
+        logger.warning(f"[{ticker}] Option-chain fetch failed: {market_data}")
+        market_data = None
+    if isinstance(underlying_history, Exception):
+        logger.warning(f"[{ticker}] Daily-bars fetch failed; HV degrades to null: {underlying_history}")
+        underlying_history = []
+    if isinstance(intraday_bars, Exception):
+        logger.warning(f"[{ticker}] Intraday-bars fetch failed; VWAP degrades to null: {intraday_bars}")
+        intraday_bars = []
+
+    return market_data, underlying_history, intraday_bars, chain_source
+
+
+def compute_ticker(ticker: str, market_data: dict | None,
+                   underlying_history: list, intraday_bars: list,
+                   min_dte: int | None = None,
                    max_dte: int | None = None,
                    expirations: tuple | None = None,
                    dark_pool: bool = False) -> dict | None:
     """
-    Fetch + compute everything for ONE ticker on demand and return the full bundle.
+    Compute everything for ONE ticker from PRE-FETCHED vendor inputs and return the full bundle.
     Returns None when the symbol has no usable option chain (so callers can 404).
+
+    The vendor acquisition (chain/daily/intraday) now happens in `_acquire_vendor_inputs` on the
+    event loop (concurrent + pre-warm-aware); this function is the SOLE transform and is unchanged
+    in what it produces — same `market_data` in → byte-identical bundle out (AC-Invariant-1).
 
     `expirations` (a tuple of YYYY-MM-DD dates) restricts the gamma structure to those
     expirations; None uses the full chain (subject to min/max DTE).
@@ -251,20 +342,10 @@ def compute_ticker(ticker: str, min_dte: int | None = None,
     and apply its (capped) confluence bonus to the opportunity score. When False, it is
     omitted entirely -- not in the bundle and not in scoring.
 
-    Synchronous (does blocking SDK I/O); endpoints run it in a worker thread.
+    Synchronous (CPU + the dark-pool recent-trades I/O + disk persist); run in a worker thread.
     """
     logger.info(f"[{ticker}] On-demand refresh (min_dte={min_dte}, max_dte={max_dte}, "
                 f"expirations={len(expirations) if expirations else 'all'}, dark_pool={dark_pool})")
-    # vendor_fetch (I/O): the three chain/bar fetches; each logical call also timed for the vendor
-    # metrics section. (fetch_recent_trades for dark_pool is timed under the off_exchange stage +
-    # the vendor section, since it happens after engine_build.)
-    with obs.span("vendor_fetch"):
-        with obs.vendor_call("fetch_options_market_state"):
-            market_data = data_provider.fetch_options_market_state(ticker)
-        with obs.vendor_call("fetch_daily_bars"):
-            underlying_history = data_provider.fetch_daily_bars(ticker)
-        with obs.vendor_call("fetch_intraday_bars"):
-            intraday_bars = data_provider.fetch_intraday_bars(ticker)
 
     if not market_data or market_data.get("synchronized_spot", 0) <= 0:
         logger.warning(f"[{ticker}] No option-chain data returned")
@@ -370,6 +451,47 @@ def _parse_expirations(csv: str | None) -> tuple | None:
     return tuple(items) or None
 
 
+async def _compute_entry(t: str, key: tuple, min_dte: int | None, max_dte: int | None,
+                         expirations: tuple | None, dark_pool: bool, now: float, trace) -> dict:
+    """
+    Run ONE full compute for a cache miss and install the resulting `_cache` entry, returning it.
+    Owned by the request that won the in-flight slot for `key` (ARCH §3 coalescing); concurrent
+    misses on the same key await its future rather than re-running this.
+
+    Acquisition (chain pre-warm + 3-fetch concurrency) happens here on the event loop; the
+    `compute_ticker` transform then runs in a worker thread. Same inputs → byte-identical bundle.
+    """
+    market_data, underlying_history, intraday_bars, chain_source = \
+        await _acquire_vendor_inputs(t, dark_pool)
+    # Observability honesty (ARCH §4.4 / §6): mark how the chain was acquired (shared-hit vs
+    # vendor fetch) on the trace dims — additive, operator-only, never a trader-facing field.
+    if trace is not None:
+        try:
+            trace.dims["chain_source"] = chain_source
+        except Exception:
+            pass
+
+    bundle = await asyncio.to_thread(
+        compute_ticker, t, market_data, underlying_history, intraday_bars,
+        min_dte, max_dte, expirations, dark_pool)
+    if bundle is None:
+        raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
+    # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
+    # the cached bundle (so it isn't duplicated per filter key or ever serialized).
+    _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
+    # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
+    fingerprint = bundle["ai_eval"]["state_fingerprint"]
+    changed = fingerprint != _last_fingerprint.get(t)
+    _last_fingerprint[t] = fingerprint
+    entry = {"bundle": bundle, "computed_at": now, "changed": changed,
+             "trace_id": trace.trace_id if trace else None}
+    _cache[key] = entry
+    # Opportunistically drop other expired keys so the cache can't grow unbounded.
+    for k in [k for k, e in _cache.items() if now - e["computed_at"] >= CACHE_TTL_SECONDS]:
+        _cache.pop(k, None)
+    return entry
+
+
 async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
                  expirations: tuple | None = None, dark_pool: bool = False,
                  position_ctx: dict | None = None, verbose: bool = False) -> dict:
@@ -399,22 +521,29 @@ async def _serve(ticker: str, min_dte: int | None, max_dte: int | None,
         hit = entry is not None and (now - entry["computed_at"]) < CACHE_TTL_SECONDS
 
         if not hit:
-            bundle = await asyncio.to_thread(compute_ticker, t, min_dte, max_dte, expirations, dark_pool)
-            if bundle is None:
-                raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
-            # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
-            # the cached bundle (so it isn't duplicated per filter key or ever serialized).
-            _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
-            # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
-            fingerprint = bundle["ai_eval"]["state_fingerprint"]
-            changed = fingerprint != _last_fingerprint.get(t)
-            _last_fingerprint[t] = fingerprint
-            entry = {"bundle": bundle, "computed_at": now, "changed": changed,
-                     "trace_id": trace.trace_id if trace else None}
-            _cache[key] = entry
-            # Opportunistically drop other expired keys so the cache can't grow unbounded.
-            for k in [k for k, e in _cache.items() if now - e["computed_at"] >= CACHE_TTL_SECONDS]:
-                _cache.pop(k, None)
+            # REQUEST-COALESCING (ARCH §3): concurrent misses on the SAME full filter key await ONE
+            # shared compute future instead of each running the full vendor load. The first miss
+            # owns the future; later misses arriving before it resolves await the same result.
+            # Same inputs → same output, fewer redundant computes (AC-Coalesce-1, AC-Invariant-1).
+            inflight = _inflight.get(key)
+            if inflight is not None:
+                entry = await inflight   # coalesced: ride the in-flight compute's result
+                if trace is not None:
+                    # Coalesced miss: this request ran no compute of its own; its lineage points at
+                    # the trace that actually produced the shared bundle (honest attribution).
+                    trace.computed_trace_id = entry.get("trace_id")
+            else:
+                fut = asyncio.get_event_loop().create_future()
+                _inflight[key] = fut
+                try:
+                    entry = await _compute_entry(t, key, min_dte, max_dte, expirations,
+                                                 dark_pool, now, trace)
+                    fut.set_result(entry)
+                except BaseException as e:
+                    fut.set_exception(e)
+                    raise
+                finally:
+                    _inflight.pop(key, None)
         elif trace is not None:
             # Cache HIT: no compute ran; lineage points back to the trace that produced the bundle.
             trace.computed_trace_id = entry.get("trace_id")

@@ -52,7 +52,7 @@ function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return {
     ticker: 'TSLA', mid: 251, bid: null, ask: null, spread: 0.05, net_flow: 1200, buy_vol: 0, sell_vol: 0,
     flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime',
-    ts: Date.now(), gamma_flip: 248, ...over,
+    ts: Date.now(), gamma_flip: 248, last_trade: 251, ...over,
   };
 }
 

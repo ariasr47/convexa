@@ -274,6 +274,13 @@ export interface LiveUpdate {
   feed: string;             // "realtime" | "delayed"
   ts: number;
   gamma_flip: number | null;
+  // The last actual TRADE print price off the live trade tape (NOT the NBBO mid). LIVE-DERIVED:
+  // rides SSE only, degrades with the other live fields on a stream drop, inherits the payload-level
+  // `live`/`tick_age_s` honesty flags. `null` is the honest "no recent print" state (between trades,
+  // overnight, before the session's first print) — NEVER an error. DISPLAY-ONLY: it must never feed
+  // the headline anchor, the levels, the live gamma-flip, the GEX chart's liveSpot, or any score
+  // input — the NBBO `mid` stays the anchor (`live-spot=NBBO-mid`). Always present, value nullable.
+  last_trade: number | null;
 }
 
 /**

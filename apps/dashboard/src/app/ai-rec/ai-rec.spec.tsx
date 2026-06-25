@@ -200,7 +200,7 @@ function installBackend(cfg: BackendCfg) {
 const liveUpdate = (over: Record<string, unknown> = {}) => ({
   ticker: 'TSLA', mid: 250.5, bid: 250.4, ask: 250.6, spread: 0.2, net_flow: 100, buy_vol: 10,
   sell_vol: 5, flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular',
-  feed: 'realtime', ts: 1, gamma_flip: 248, ...over,
+  feed: 'realtime', ts: 1, gamma_flip: 248, last_trade: 250.5, ...over,
 });
 
 async function flush() { await act(async () => { await Promise.resolve(); await Promise.resolve(); }); }

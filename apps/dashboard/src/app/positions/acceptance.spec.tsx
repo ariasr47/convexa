@@ -65,7 +65,7 @@ function installBackend(contractFor: (s: number, r: string) => TrackedContract |
   }));
 }
 function pushLive(over: Partial<LiveUpdate> = {}) {
-  const u: LiveUpdate = { ticker: 'TSLA', mid: 250, bid: null, ask: null, spread: null, net_flow: 0, buy_vol: 0, sell_vol: 0, flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime', ts: Date.now(), gamma_flip: 248, ...over };
+  const u: LiveUpdate = { ticker: 'TSLA', mid: 250, bid: null, ask: null, spread: null, net_flow: 0, buy_vol: 0, sell_vol: 0, flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime', ts: Date.now(), gamma_flip: 248, last_trade: 250, ...over };
   act(() => { esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(u) } as MessageEvent)); });
 }
 

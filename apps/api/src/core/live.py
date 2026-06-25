@@ -14,6 +14,8 @@ import zoneinfo
 from collections import deque
 from datetime import datetime
 
+from src.core import chain_store
+
 logger = logging.getLogger("GammaFlowAsync")
 
 # A spot is "live" only if a Q/T tick arrived within this many seconds; otherwise it's a
@@ -99,6 +101,11 @@ class LiveSession:
     async def _refresh_chain(self):
         md = await asyncio.to_thread(self.provider.fetch_options_market_state, self.ticker)
         if md and md.get("synchronized_spot", 0) > 0:
+            # PRODUCER (ARCH §4): stash the FULL UNFILTERED market_data into the process-local
+            # shared chain store BEFORE greeks-filtering, so a cold REST bundle request for this
+            # ticker can short-circuit its chain fetch to this fresh snapshot. Read-only to
+            # consumers; best-effort (a store fault never affects the live path).
+            chain_store.put(self.ticker, md)
             self.contracts = [c for c in md.get("contracts", [])
                               if (c.get("greeks") or {}).get("gamma") is not None]
             if self.mid <= 0:  # no live quote yet -> seed from the snapshot spot
@@ -185,6 +192,14 @@ class LiveSession:
                 base = {
                     "ticker": self.ticker,
                     "mid": round(self.mid, 2) if self.mid else None,
+                    # last_trade (ticker-load-experience INTERFACE §2): the last actual TRADE print
+                    # off the live tape — a DISPLAY-ONLY sibling of the NBBO mid, NOT the anchor.
+                    # Always present (key emitted every payload); null between prints / overnight /
+                    # pre-first-print. HARD BOUNDARY (`live-spot=NBBO-mid`): this is a readout only —
+                    # it MUST NOT feed self.mid, the levels, the live gamma-flip reprice, or net-flow
+                    # sign logic (those stay on self.mid). Rides the existing payload-level
+                    # live/tick_age_s/market_session honesty flags; carries no separate age.
+                    "last_trade": round(self.last_trade_price, 2) if self.last_trade_price else None,
                     "bid": self.bid or None,
                     "ask": self.ask or None,
                     "spread": round(self.ask - self.bid, 4) if (self.bid > 0 and self.ask > 0) else None,
@@ -294,6 +309,9 @@ class LiveHub:
             if sess and not sess.subscribers:
                 await sess.stop()
                 self.sessions.pop(ticker, None)
+                # Best-effort evict the shared chain snapshot this session owned. Harmless if it
+                # races a fresh write — the consumer's freshness gate rejects anything stale anyway.
+                chain_store.evict(ticker)
                 logger.info(f"[{ticker}] Live session stopped (grace elapsed, no subscribers)")
 
     def active_tickers(self) -> list:
