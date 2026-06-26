@@ -78,6 +78,8 @@ beforeEach(() => {
     }
     if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
+    // user-accounts: the app reads who-am-I once on mount (non-blocking; never the trader path).
+    if (url.includes('/api/auth/session')) return json({ authenticated: false, user: null, google_available: false, settings: null });
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -87,6 +89,13 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+
+/** Did the app issue any NON-AUTH fetch? The who-am-I session read fires on mount everywhere (a
+ *  contract-mandated, non-blocking auth concern), so "the page makes no network call" means no
+ *  trader/bundle/etc. fetch — the session read is excluded. */
+function calledNonAuth(): boolean {
+  return fetchMock.mock.calls.some((c) => !String(c[0]).includes('/api/auth/'));
+}
 
 function renderAt(path: string) {
   return render(
@@ -113,7 +122,7 @@ describe('routes', () => {
     // It did NOT redirect into a ticker: no nav shell, no ticker headline / no bundle fetch.
     expect(screen.queryByTestId('app-shell')).toBeNull();
     expect(screen.queryByLabelText('Ticker')).toBeNull();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(calledNonAuth()).toBe(false); // no trader/bundle fetch (the who-am-I read is excluded)
   });
 
   it('"/ticker/TSLA" renders Ticker viewer in shell', async () => {
@@ -275,7 +284,7 @@ describe('landing', () => {
     // Acknowledged state in place — still on the landing, no navigation, no network call.
     expect(screen.getByTestId('waitlist-ack')).toBeInTheDocument();
     expect(screen.getByTestId('landing')).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(calledNonAuth()).toBe(false); // no broker flow / trader fetch (who-am-I excluded)
   });
 
   it('Scanner presented as coming-soon', () => {
@@ -293,8 +302,9 @@ describe('scanner', () => {
   it('static coming-soon, no network', () => {
     renderAt('/scanner');
     expect(screen.getByTestId('scanner-placeholder')).toBeInTheDocument();
-    // The AC-Scan-1 requirement: the page issues NO fetch and opens NO EventSource.
-    expect(fetchMock).not.toHaveBeenCalled();
+    // The AC-Scan-1 requirement: the PAGE issues NO fetch and opens NO EventSource. (The app-level
+    // who-am-I read is an auth concern, not the Scanner page — excluded.)
+    expect(calledNonAuth()).toBe(false);
     expect(openedEventSources).toBe(0);
     // No spinner/skeleton/loading affordance.
     expect(screen.queryByRole('progressbar')).toBeNull();

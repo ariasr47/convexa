@@ -6,9 +6,9 @@ import json
 import os
 import zoneinfo
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import FastAPI, HTTPException, Path, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 
 from src.core.engine import QuantEngine
 from src.core.signals import (generate_signals, evaluate_gate,
@@ -23,6 +23,14 @@ from src.core import personas as personas_lib
 # byte-identity); main.py imports it ONLY for the three recommendation endpoints, never on the
 # bundle/SSE path. The key (ANTHROPIC_API_KEY) is read ONLY inside this module.
 from src.core import ai_recommendation as ai_rec
+# Auth (user-accounts): the ONE-WAY LEAF (ARCHITECTURE §6). engine/signals/live/darkpool/
+# chain_store/the bundle-compute path NEVER import this; main.py is the only orchestration boundary
+# that imports it — to mount the auth router, resolve the session cookie, and enforce the two gated
+# surfaces. No auth datum (user/session/setting) can become a scoring input (the module boundary is
+# the structural guarantee of score byte-identity). The session-signing key / Google secret are read
+# only inside src/auth/, never serialized into any payload, never reach the browser.
+from src import auth
+from src.auth.router import router as auth_router
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -441,6 +449,51 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount the auth surface (user-accounts) — /api/auth/*. The auth subpackage is a leaf the engine/
+# scoring path never imports (ARCHITECTURE §6); this is the single orchestration boundary that wires
+# it. Eagerly build the service so the in-memory store (single shared connection) is created once at
+# boot; a config error surfaces here rather than mid-request. Absent Google creds ⇒ google_available
+# false, NO crash (AC-G2).
+app.include_router(auth_router)
+try:
+    auth.get_service()
+except Exception:
+    logger.warning("auth: service init deferred (will retry on first request)", exc_info=False)
+
+
+def _resolve_auth(request: Request):
+    """
+    Resolve the (optional) session cookie → ResolvedSession for a GATED action. BEST-EFFORT in the
+    AC-J1 sense: an auth-subsystem fault must surface 503 `auth_unavailable` on a gated action (the
+    honest "couldn't reach sign-in"), NEVER a misleading 200/bad-credentials, and NEVER touch the
+    trader bundle/SSE path. Returns (resolved | None-on-fault). The (None-on-fault) signal lets the
+    caller emit 503 vs the 403 of a cleanly-anonymous request.
+    """
+    try:
+        svc = auth.get_service()
+        return svc.resolve_session(request.cookies.get(auth.COOKIE_NAME)), True
+    except Exception:
+        logger.warning("auth: gated-action session resolution faulted", exc_info=False)
+        return None, False
+
+
+def _gate_or_response(request: Request):
+    """
+    Enforce the auth gate on a state/cost-bearing action (ARCHITECTURE §8a). Returns:
+      - None when a VALID session is present (proceed), or
+      - a JSONResponse carrying the auth error class (403 auth_required when cleanly anonymous,
+        503 auth_unavailable when the subsystem faulted — AC-E1/E4/E7, AC-J1 gated side).
+    The auth gate is the OUTERMOST precondition; the caller runs its own logic only past it.
+    """
+    resolved, ok = _resolve_auth(request)
+    if not ok:
+        err = auth.errors.auth_unavailable()
+        return JSONResponse(status_code=err.status, content=err.envelope())
+    if resolved is None or not resolved.authenticated:
+        err = auth.errors.auth_required()
+        return JSONResponse(status_code=err.status, content=err.envelope())
+    return None
 
 
 def _parse_expirations(csv: str | None) -> tuple | None:
@@ -885,6 +938,7 @@ async def _served_bundle_for_rec(ticker: str, dte_min: int | None, dte_max: int 
 @app.post("/api/recommendation/{ticker}")
 async def post_recommendation(
     body: RecRequest,
+    request: Request,
     ticker: str = Path(..., description="Underlying symbol, e.g. SPY"),
 ):
     """
@@ -892,7 +946,17 @@ async def post_recommendation(
     unavailable / gated_off — the `status` field distinguishes them; an LLM/cap/key fault is a
     contained `unavailable`, never a 5xx that breaks the bundle/SSE/page. Serializes ALREADY-CACHED
     state (no recompute, no new vendor fetch, null stays null). The key is server-side only.
+
+    AUTH GATE (user-accounts, ARCHITECTURE §8a / D6f): the session gate is the OUTERMOST precondition.
+    With no valid session this returns 403 `auth_required` and does NOT invoke the LLM and does NOT
+    run or surface ai-rec's existing ai_eval/cooldown/cap/no_key gating (those compose AFTER auth —
+    AC-E4). A failing auth subsystem surfaces 503 `auth_unavailable` (AC-J1 gated side). With a valid
+    session it proceeds into the EXISTING ai-rec gating UNCHANGED (AC-E5). The non-LLM export floor
+    (`GET /api/recommendation/export/{ticker}`) stays anonymous-usable (AC-E6).
     """
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
     t = ticker.upper()
     bundle = await _served_bundle_for_rec(t, body.dte_min, body.dte_max, body.dark_pool)
     # The LLM call is blocking + multi-second; run it OFF the event loop so it can never stall the
@@ -901,6 +965,27 @@ async def post_recommendation(
         ai_rec.generate_recommendation, t, bundle,
         persona_id=body.persona_id, dte_min=body.dte_min, dte_max=body.dte_max,
         override=body.override, snapshot_fingerprint=body.snapshot_fingerprint)
+
+
+@app.post("/api/positions/sim-trade/gate")
+async def positions_sim_trade_gate(request: Request):
+    """
+    Server-side auth gate for the Positions sim-trade WRITE actions (ARCHITECTURE §8a / D6e/D6a).
+
+    Positions data is CLIENT-LOCAL this phase (no server positions store — ARCHITECTURE §3.3); the
+    server enforcement of record is the auth check on the state/cost-bearing write request (open/
+    edit/close a sim position, place a resting limit, save a named view, accept an AI rec into the
+    tracker). The Positions ROUTE is NOT gated (viewable anonymously, AC-E3) — only these writes.
+
+    Outcome: 200 `{authorized:true}` with a valid session (the FE then runs its existing mandatory-
+    confirm SIMULATED flow), 403 `auth_required` when cleanly anonymous (AC-E1/E7), 503
+    `auth_unavailable` on a subsystem fault (AC-J1). No broker/order/execution path is added —
+    `[no-real-order-path]` untouched; Positions stays SIMULATED.
+    """
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
+    return {"authorized": True}
 
 
 @app.get("/api/recommendation/export/{ticker}")

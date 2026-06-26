@@ -26,8 +26,14 @@ import { AppShell } from './shell/AppShell';
 import { TickerDashboard } from './ticker/TickerDashboard';
 import { PositionsPage } from './positions/PositionsPage';
 import { Scanner } from './scanner/Scanner';
+import { SettingsPage } from './auth/SettingsPage';
+import { AuthProvider } from './auth/AuthContext';
+import { AuthDialogProvider } from './auth/AuthDialogProvider';
+import { AppThemeProvider } from './auth/ThemeProvider';
 
-export function App() {
+/** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
+ *  (supplied by <App/>). */
+export function AppRoutes() {
   return (
     <Routes>
       {/* Operator-only readout — off the trader shell, unlinked. FIRST so `/*` never shadows it. */}
@@ -43,8 +49,30 @@ export function App() {
         <Route path="/ticker/:ticker" element={<TickerDashboard />} />
         <Route path="/positions" element={<PositionsPage />} />
         <Route path="/scanner" element={<Scanner />} />
+        {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
+        <Route path="/settings" element={<SettingsPage />} />
       </Route>
     </Routes>
+  );
+}
+
+/**
+ * App — the route table wrapped in the auth + theme + sign-in-dialog providers. AuthProvider owns the
+ * non-blocking who-am-I read; AppThemeProvider applies the effective theme (server-wins signed-in,
+ * client-local anonymous); AuthDialogProvider owns the shared sign-in dialog. These compose INSIDE the
+ * Router (supplied by main.tsx in prod / the test harness), so the whole app — and every test that
+ * renders <App/> — gets a self-contained, anonymous-capable auth surface. who-am-I never blocks the
+ * trader path (AC-J1).
+ */
+export function App() {
+  return (
+    <AuthProvider>
+      <AppThemeProvider>
+        <AuthDialogProvider>
+          <AppRoutes />
+        </AuthDialogProvider>
+      </AppThemeProvider>
+    </AuthProvider>
   );
 }
 

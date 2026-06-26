@@ -96,6 +96,10 @@ beforeEach(() => {
     const url = String(input);
     const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
     const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
+    // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
+    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
+    if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/ticker/')) return json(makeBundle(tk));
     if (url.includes('/api/recommendation/status/')) {
       return json({

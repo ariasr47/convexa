@@ -163,6 +163,17 @@ function installBackend(cfg: BackendCfg) {
 
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
+    // user-accounts: the app now reads who-am-I on mount. These ai-rec tests exercise the SIGNED-IN
+    // path (the auth gate is OUTERMOST over ai-rec; it is covered separately in the auth suite), so a
+    // stable signed-in session lets the existing ai-rec behaviors run unchanged.
+    if (url.includes('/api/auth/session')) {
+      return json({
+        authenticated: true,
+        user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] },
+        google_available: false,
+        settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+      });
+    }
     if (url.includes('/api/ticker/')) {
       calls.ticker++;
       return json(typeof state.bundle === 'function' ? state.bundle() : state.bundle);

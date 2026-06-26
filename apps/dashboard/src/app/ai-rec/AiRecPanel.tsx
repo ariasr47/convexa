@@ -21,6 +21,9 @@ import {
   COPY, personaChip, asOfChip, cooldownLabel, cooldownCaption, capTitle, CAP_CAPTION, staleStrip,
   staleBornStrip, friendlyResetTime, retryInCooldown, retryWhenReset,
 } from './copy';
+import { useGate } from '../auth/useGate';
+import { SignInPrompt } from '../auth/SignInPrompt';
+import { AUTH_COPY } from '../auth/copy';
 
 /** Canonical persona source with the FE embed as the offline / assembly-failure fallback (E7).
  *  Tries `GET /api/personas` once; on any fault, keeps the embedded presets. Non-blocking. */
@@ -58,12 +61,22 @@ export function AiRecPanel({
 }: Props) {
   const { rec, loading, stale, inAppEnabled, cap, effectiveGateState, cooldownRemaining, gate } = ai;
 
+  // Auth gate is OUTERMOST over ai-rec's own gating (D6f, AC-E4/E5). Logged-out ⇒ the "ask AI" control
+  // shows a sign-in prompt and the LLM is NOT invoked; ai-rec's cooldown/cap/no_key are NOT shown. The
+  // manual export floor stays anonymous-usable (AC-E6) — that control lives in the header, ungated.
+  const authGate = useGate();
+
   const activeName = personas.find((p) => p.id === activePersonaId)?.name ?? 'Default (no persona)';
   const readName = personas.find((p) => p.id === readPersonaId)?.name ?? activeName;
   const readPersonaIdForRequest = readPersonaId === 'default' ? null : readPersonaId;
 
+  // Guard the LLM invoke: logged-out ⇒ prompt + no invoke; a server 403 (stale cookie) ⇒ same prompt
+  // and nothing produced (AC-E7). Auth FIRST, then ai-rec's existing gating runs inside `ai.request`.
   const doRequest = (o: RecRequestOpts = {}) =>
-    ai.request({ ...o, personaId: readPersonaIdForRequest, personaName: readName });
+    void authGate.guard(
+      AUTH_COPY.askAi.gate,
+      () => ai.request({ ...o, personaId: readPersonaIdForRequest, personaName: readName }),
+    );
 
   // Exactly one body state.
   const phase =
@@ -112,7 +125,9 @@ export function AiRecPanel({
         {hasRec && rec && (
           <RecResult
             rec={rec} stale={stale} dataAge={dataAge} bundle={bundle}
-            onAccept={() => onAccept(rec, rec.persona.name)} onDismiss={ai.dismiss}
+            onAccept={() => authGate.guard(
+              AUTH_COPY.positions.gateAcceptRec, () => onAccept(rec, rec.persona.name),
+            )} onDismiss={ai.dismiss}
             onViewExport={() => onViewExport(readPersonaIdForRequest)}
             onFresh={() => doRequest({ override: false })}
             freshDisabled={!inAppEnabled || cap.over_limit || cooldownRemaining > 0}
@@ -124,13 +139,33 @@ export function AiRecPanel({
         {phase !== 'loading' && phase !== 'unavailable' && (
           <>
             {!hasRec && <SnapshotHint bundle={bundle} />}
-            <ActionRegion
-              inAppEnabled={inAppEnabled} cap={cap} effectiveGateState={effectiveGateState}
-              cooldownRemaining={cooldownRemaining} reasons={gate.reasons}
-              compact={hasRec} ticker={ticker}
-              onGet={() => doRequest({ override: false })}
-              onAskAnyway={() => doRequest({ override: true })}
-            />
+            {/* Auth OUTERMOST: logged-out (or a server 403 on a stale cookie) ⇒ sign-in prompt ONLY —
+                no cooldown/cap/no_key (AC-E4/E7). The prompt also shows when a server rejection set
+                `promptText` even if the FE still believed it was signed-in. */}
+            {!authGate.allowed || authGate.promptText ? (
+              <Box sx={{ mt: hasRec ? 2 : 1 }} data-testid="ai-rec-auth-gate">
+                <Tooltip arrow describeChild title={AUTH_COPY.askAi.tooltip}>
+                  <span>
+                    <Button variant="contained" size="small" disabled data-testid="ai-rec-get-disabled">
+                      {COPY.action.get}
+                    </Button>
+                  </span>
+                </Tooltip>
+                <SignInPrompt
+                  text={authGate.promptText ?? AUTH_COPY.askAi.gate}
+                  onSignIn={() => authGate.signIn(AUTH_COPY.askAi.gate)}
+                  testid="ai-rec-signin-prompt"
+                />
+              </Box>
+            ) : (
+              <ActionRegion
+                inAppEnabled={inAppEnabled} cap={cap} effectiveGateState={effectiveGateState}
+                cooldownRemaining={cooldownRemaining} reasons={gate.reasons}
+                compact={hasRec} ticker={ticker}
+                onGet={() => doRequest({ override: false })}
+                onAskAnyway={() => doRequest({ override: true })}
+              />
+            )}
           </>
         )}
       </CardContent>

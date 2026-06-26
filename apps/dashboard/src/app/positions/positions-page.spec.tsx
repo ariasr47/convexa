@@ -98,6 +98,10 @@ beforeEach(() => {
     const url = String(input);
     const json = (b: unknown, status = 200) => new Response(b === null ? 'null' : JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
     const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
+    // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
+    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
+    if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/ticker/')) return json(makeBundle(tk));
     if (url.includes('/api/recommendation/status/')) {
       return json({ availability: { in_app_enabled: true }, gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] }, cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' } });

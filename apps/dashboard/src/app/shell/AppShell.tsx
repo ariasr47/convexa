@@ -13,6 +13,7 @@
 import { AppBar, Toolbar, Box, Stack } from '@mui/material';
 import { Link as RouterLink, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
+import { AccountControl } from '../auth/AccountControl';
 
 interface NavEntry {
   label: string;
@@ -77,6 +78,11 @@ export function AppShell() {
               );
             })}
           </Stack>
+
+          {/* Account control (UX_BLUEPRINT §2.1) — top-right. Loading / Sign in / account menu.
+              Non-blocking: the rest of the app renders regardless of who-am-I. */}
+          <Box sx={{ flexGrow: 1 }} />
+          <AccountControl />
         </Toolbar>
       </AppBar>
 

@@ -55,6 +55,22 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   gating. Imports only `personas`/stdlib/lazy `anthropic`; reads `ANTHROPIC_API_KEY` only here. Served by
   the three `/api/recommendation/*` endpoints in `main.py`.
 - `src/models/market_data.py` — `MarketState` Pydantic response model.
+- `src/auth/` — **user accounts subpackage** (the project's first stateful surface + credential store; a
+  **one-way leaf** the engine/signals/live/darkpool/bundle/SSE path NEVER imports — `main.py` is the sole
+  orchestration boundary that mounts it). `ports.py` = three storage ports (`UserStore`/`SessionStore`/
+  `UserSettingsStore`) + normalized record dataclasses, mirroring the `MarketDataProvider` port pattern;
+  `sqlite_store.py` = the ONLY adapter this phase — a single shared `:memory:` sqlite3 connection
+  (`check_same_thread=False`, lock-guarded; persists across requests for the process lifetime, **resets on
+  restart**), with the persistent adapter registered as a seam but not built; `__init__.py` = env-selected
+  store factory (`ACCOUNT_STORE`, default `memory`, like `get_provider()`/`DATA_PROVIDER`); `passwords.py`
+  = argon2 hashing (always-hash dummy-verify → non-enumerating timing); `cookies.py` = HMAC-signed opaque
+  session-id cookie; `service.py` = signup/login/logout/session-resolution (idle+absolute expiry,
+  server-authoritative revocation) + settings (server-wins) + Google identity mapping (known-sub→login /
+  verified-email→auto-link / else create); `google_oauth.py` = server-side Authorization-Code flow,
+  **config-gated OFF when creds absent** (no crash; `available()` False); `errors.py` = the auth error
+  class; `router.py` = the `/api/auth/*` endpoints (signed HTTP-only Secure SameSite cookie). `main.py`
+  also wires the auth gate as the **outermost** precondition on `POST /api/recommendation/{ticker}` and adds
+  `POST /api/positions/sim-trade/gate` (the session-resolving gate the FE Positions write actions call).
 
 **Frontend** (`apps/dashboard/` in the Nx monorepo, React 19 + Vite + MUI/Emotion):
 - **Multi-page shell (Convexa, 2026-06-24):** `app/app.tsx` is now the **route table** (single
@@ -127,9 +143,23 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   overridable DTE pre-fill chip (one-shot on explicit navigation, never recomputes). NOTE: the FE
   embeds the template/presets rather than consuming the backend's `GET /api/personas` — correct
   output, but dual-sourced (see OPEN_THREADS thread 7 reconciliation flag).
+- `apps/dashboard/src/app/auth/` — **user-accounts UI** (hybrid access; anonymous browsing unchanged).
+  `AuthContext` (non-blocking who-am-I read; **degrade-to-anonymous** on failure; server-wins settings),
+  `AuthDialog`/`AuthDialogProvider`/`AccountControl` (login by **email** / signup; username optional
+  display-only; non-enumerating 401), `GoogleButton` (first-class **present-but-disabled-when-unconfigured**,
+  driven by `google_available` — config-flip, no rebuild), `useGate`/`SignInPrompt` (the shared gated-action
+  helper — awaits a **server gate** before any local write; 403→prompt+abort), `SettingsPage`/`useSettings`/
+  `localPrefs`/`ThemeProvider`/`copy`/`validation` (the 3 light prefs — active persona / default ticker /
+  theme; server-wins signed-in, client-local anonymous, **per-account isolated**, score-neutral). Gating is
+  wired into `positions/PortfolioPanel` + `CustomizationToolbar` (open-position / save-view / accept-rec
+  writes call `POST /api/positions/sim-trade/gate`; D6d "stored in this browser, not tied to your account
+  yet" disclosure) and `ai-rec/AiRecPanel` (ask-AI **auth-outermost** — a logged-out call shows "sign in",
+  never ai-rec cooldown/cap/no_key; manual export floor stays anonymous).
 - `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`,
   `fetchTrackedContract`, `fetchMetrics`; `Meta` tolerates optional `trace_id?`/`timings?`;
-  `PersonaDefinition`/`Handoff` persona types.
+  `PersonaDefinition`/`Handoff` persona types; **auth surface** (`getSession`, `signup`, `login`, `logout`,
+  `saveSettings`, `simTradeGate`; `SessionStatus`/`AuthUser`/`UserSettings`/`AuthError` types — bundle/SSE
+  fetchers gained no header/param).
 - Vite dev proxy `/api → 127.0.0.1:8000` (no CORS); SSE via `EventSource`.
 
 **Transport:** heavy bundle over REST (polled ~60s, cached); light live payload over **SSE**.
@@ -196,6 +226,20 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `market_state`/`strike_profile` and the SSE path untouched.
 - **Vectorized gamma flip** — ~330× faster than the scalar loop, identical output.
 - **Vendor-agnostic provider port** — so Massive↔another vendor is a contained swap.
+- **User accounts = a contained state store outside the trading path** (user-accounts, 2026-06-25). The
+  project's first stateful backend surface + credential store. **The "stateless server" property is narrowed
+  to the TRADING/BUNDLE path** (bundle, SSE, ghost-trade math stay stateless / recompute-from-vendor /
+  client-local); auth/sessions/settings live in a **one-way-leaf** `src/auth/` subpackage behind three
+  swappable ports (`UserStore`/`SessionStore`/`UserSettingsStore`), in-memory SQLite the only adapter this
+  phase (**resets on restart** — accepted prototype). **Auth has its OWN error class** — endpoints return
+  real HTTP statuses (401 non-enumerating bad-creds / 403 gated / 409 dup email), an explicit **carve-out**
+  on `[best-effort-isolated-or-null]` (the null-not-error rule governs added BUNDLE computations; an
+  auth-subsystem failure still degrades the trader path to anonymous, bundle/SSE intact). Passwords are
+  argon2-hashed (never plaintext/never logged); Google secret + session-signing key are server-side only.
+  **Access is hybrid:** anonymous browsing (Landing/Ticker/Scanner) is unchanged; only the sim Positions
+  WRITE actions + the "ask AI" call require a session, **enforced server-side** (not FE-only — see the
+  `server-side-gate-enforcement` watch-list key). Score/tier/`state_fingerprint` byte-identical
+  anonymous-vs-signed-in; no setting is ever a scoring input.
 
 ### Standing build invariants (promoted from the Decision Ledger — apply to EVERY new feature)
 > Graduated via the recurrence rule in `.claude/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
@@ -283,6 +327,21 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   live fields on an SSE drop); the previously-mislabeled chip `· last $X` (actually the mid) is relabeled
   `· mid $X`. QA PASS (Sonnet, de-correlated — 26/26 ACs, conformance 2/2, `nx test dashboard` 196/196).
   *(2026-06-25.)*
+- **User accounts (auth + sessions + per-user settings)** — the project's first stateful backend surface.
+  Email/username+password **signup & login** + **logout**, a persisted **server-side session** (signed
+  HTTP-only cookie over a session table; survives reload, clears on logout, stale cookie ⇒ anonymous),
+  **"Continue with Google"** wired end-to-end but **config-gated OFF** (no Google client provisioned →
+  present-but-disabled, no crash; enable later via env, no rebuild), and **per-user light prefs** (active
+  persona / default ticker / theme — server-wins signed-in, anonymous unchanged, per-account isolated).
+  Backed by **in-memory SQLite** behind a three-port swap seam (`src/auth/`, a one-way leaf; resets on
+  restart — accepted prototype). **Hybrid access:** anonymous browsing (Landing/Ticker/Scanner) unchanged;
+  the **sim Positions WRITE actions + the "ask AI" call require a session, enforced server-side** (the
+  auth gate is outermost over ai-rec's existing cap/gate). Passwords argon2-hashed (never plaintext/logged);
+  Google secret + session key server-side only. Additive — `opportunity_score`/`opportunity_tier`/
+  `state_fingerprint` byte-identical anonymous-vs-signed-in (score 24, fp `79373ef9194e`); no setting is a
+  scoring input; `no-real-order-path` untouched (Positions stays `SIMULATED`). QA PASS (Sonnet,
+  de-correlated; AC-E7 server-gate FAIL bounced+fixed, GATE Q re-run 30/30, conformance 2/2, `dashboard`
+  246/246 + `@org/api` 7/7). *(2026-06-25.)*
 - **Backend observability** (operator-facing; trader path unchanged): the six bundle stages
   (`vendor_fetch` io_vendor, `engine_build`/`off_exchange` cpu_engine, `signals` cpu_signals,
   `persist` io_disk, `serialize_wrap` serialize) are timed into a per-request trace; `meta.trace_id`
@@ -332,6 +391,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   rec `unavailable:no_key`, manual export floor still works), `AI_REC_MODEL` (latest Claude),
   `AI_REC_COOLDOWN_SECONDS` (60), `AI_REC_DAILY_CAP` (50), `AI_REC_TIMEOUT_SECONDS` (60),
   `AI_REC_IN_APP_ENABLED` (true), `AI_REC_STUB` (off; stub LLM provider for keyless/no-cost verification).
+  **Auth (user accounts):** `ACCOUNT_STORE` (store backend selector, default `memory` = in-memory SQLite
+  that resets on restart; the persistent adapter is a registered seam, not built), `AUTH_SESSION_SIGNING_KEY`
+  (server-side HMAC key for the session cookie; absent ⇒ an **ephemeral per-process key** so cookies also
+  reset on restart — set it once a persistent store lands), session-lifetime knobs (idle + absolute expiry),
+  and the **Google OAuth** creds `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI`
+  (server-side only, gitignored; **absent ⇒ "Continue with Google" present-but-disabled**, no crash —
+  mirrors the `ANTHROPIC_API_KEY`-absent ⇒ ai-rec `no_key` pattern; provision to enable, no rebuild). New
+  backend deps: **`argon2-cffi`** (password hashing) + **`authlib`** (OAuth) in `apps/api/requirements.txt`
+  (re-run the venv `pip install -r requirements.txt`). A raw password / hash / signing key / Google secret
+  never appears in a response or a log line.
 - **Add a vendor:** implement `MarketDataProvider` in `apps/api/src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `npx nx serve api` (uvicorn :8000, i.e. `apps/api/.venv/Scripts/python.exe

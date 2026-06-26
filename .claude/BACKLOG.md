@@ -175,6 +175,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **`user-accounts`** — `✓ SHIPPED + ARCHIVED (2026-06-25)` → `_archive/user-accounts/`. Both lanes: the
+  project's first stateful backend surface — email/username+password auth + server-side sessions + per-user
+  light prefs (active persona / default ticker / theme) over in-memory SQLite behind a 3-port swap seam
+  (`src/auth/` one-way leaf; resets on restart); **Google OAuth wired but config-gated OFF** (enable via env,
+  no rebuild); **hybrid access** (anonymous browsing open; sim Positions WRITE actions + "ask AI" require a
+  session, server-enforced). Additive — score/tier/`state_fingerprint` byte-identical. QA PASS (Sonnet,
+  de-correlated; AC-E7 server-gate FAIL bounced+fixed → GATE Q re-run 30/30, conformance 2/2, `dashboard`
+  246/246 + `@org/api` 7/7). GATE S: narrowed the "stateless server" property to the trading path; new
+  watch-list key `server-side-gate-enforcement`. Seams → OPEN_THREADS §7f. **Unblocks Track B
+  `broker-connect`** (the accounts prerequisite is now met; broker-connect stays gated on the Webull-access
+  verification + the system-6 go-live trigger).
 - **`ticker-load-experience`** — `✓ SHIPPED + ARCHIVED (2026-06-25)` → `_archive/ticker-load-experience/`.
   Both lanes (commit `10971f3`): chain pre-warm (cold 7.8s→1.2s on an active session) + 3-fetch concurrency
   + request-coalescing + skeleton-first load + live `last_trade` readout + real-time freshness config.

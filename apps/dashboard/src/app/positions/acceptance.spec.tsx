@@ -15,6 +15,8 @@ import type { TickerBundle, LiveUpdate, TrackedContract, StrikeRow } from '@org/
 import { usePortfolio } from './usePortfolio';
 import { PortfolioPanel } from './PortfolioPanel';
 import { __resetMemory, allPositions, decisionsForPosition } from './store';
+import { AuthProvider } from '../auth/AuthContext';
+import { AuthDialogProvider } from '../auth/AuthDialogProvider';
 
 const theme = createTheme();
 
@@ -54,6 +56,15 @@ function installBackend(contractFor: (s: number, r: string) => TrackedContract |
   const json = (b: unknown, status = 200) => new Response(b === null ? 'null' : JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    // user-accounts: the Positions WRITE actions gate on who-am-I. These acceptance tests exercise the
+    // SIGNED-IN write path (gating is covered separately in the auth suite), so a stable signed-in
+    // session lets the existing write behaviors run unchanged.
+    if (url.includes('/api/auth/session')) {
+      return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    }
+    // user-accounts (AC-E7): the Positions sim-trade WRITE now awaits the SERVER gate before the local
+    // write. Signed-in path ⇒ authorize so the existing write behaviors run unchanged.
+    if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/contract/')) {
       const u = new URL(url, 'http://x'); const s = Number(u.searchParams.get('strike')); const r = u.searchParams.get('right') ?? 'call';
       const res = contractFor(s, r);
@@ -78,7 +89,11 @@ function Harness({ forceOffline = false }: { forceOffline?: boolean }) {
   const pf = usePortfolio('TSLA', data, live, isLive, forceOffline);
   return (
     <ThemeProvider theme={theme}>
-      <PortfolioPanel pf={pf} data={data} live={live} isLive={isLive} streamOffline={forceOffline} ticker="TSLA" entryOpen={entryOpen} onEntryOpen={setEntryOpen} />
+      <AuthProvider>
+        <AuthDialogProvider>
+          <PortfolioPanel pf={pf} data={data} live={live} isLive={isLive} streamOffline={forceOffline} ticker="TSLA" entryOpen={entryOpen} onEntryOpen={setEntryOpen} />
+        </AuthDialogProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
@@ -563,7 +578,10 @@ describe('F. live lock + invariants', () => {
     await openManual(user, '6', 255);
     const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[0]));
     // No bundle/ticker/scoring request is ever issued by the portfolio; only the contract lookup.
+    // (The who-am-I session read AND the sim-trade write gate are AUTH-class concerns, not scoring
+    // paths — excluded here. The auth gate carries no scoring input and never touches /api/ticker.)
     expect(calls.some((u) => u.includes('/api/ticker/'))).toBe(false);
-    expect(calls.every((u) => u.includes('/api/contract/'))).toBe(true);
+    const nonAuth = calls.filter((u) => !u.includes('/api/auth/') && !u.includes('/api/positions/sim-trade/gate'));
+    expect(nonAuth.every((u) => u.includes('/api/contract/'))).toBe(true);
   });
 });

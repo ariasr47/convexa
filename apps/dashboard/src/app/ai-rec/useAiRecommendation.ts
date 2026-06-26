@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   TickerBundle, RecResponse, RecStatus, RecGate, RecCap, requestRecommendation, fetchRecStatus,
+  AuthError,
 } from '@org/api';
 
 export interface RecRequestOpts {
@@ -110,7 +111,15 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       });
       setRec(res);
       applyGating(res.gate, res.cap);
-    } catch {
+    } catch (err) {
+      // user-accounts (D6f): an AUTH-class outcome (403 auth_required / 503 auth_unavailable) is the
+      // OUTERMOST gate — rethrow so the caller's auth gate shows the sign-in / "couldn't reach" prompt
+      // and NEVER ai-rec's `unavailable`/cooldown/cap. Reset loading first so the panel re-renders the
+      // gate region rather than the spinner.
+      if (err instanceof AuthError) {
+        setLoading(false);
+        throw err;
+      }
       // Transport fault → synthesize the `unavailable` artifact (caught, never thrown to the page).
       setRec({
         status: 'unavailable',

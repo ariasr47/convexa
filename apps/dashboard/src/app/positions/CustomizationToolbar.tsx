@@ -32,7 +32,16 @@ const STRATEGIES: { key: Strategy; label: string }[] = [
   { key: 'long_call', label: 'Long call' }, { key: 'long_put', label: 'Long put' },
 ];
 
-export function CustomizationToolbar({ pf, positions }: { pf: Portfolio; positions: Position[] }) {
+interface ToolbarProps {
+  pf: Portfolio;
+  positions: Position[];
+  /** Gate a save-view WRITE (UX_BLUEPRINT §2.6): logged-out ⇒ run shows the sign-in prompt instead of
+   *  saving. Defaults to running the action directly (e.g. in isolated renders). */
+  guardSaveView?: (run: () => void) => void;
+}
+
+export function CustomizationToolbar({ pf, positions, guardSaveView }: ToolbarProps) {
+  const guard = guardSaveView ?? ((run: () => void) => run());
   const { working, activeView, custom, hasUnsavedChanges } = pf;
   const [colAnchor, setColAnchor] = useState<null | HTMLElement>(null);
   const [viewAnchor, setViewAnchor] = useState<null | HTMLElement>(null);
@@ -80,7 +89,7 @@ export function CustomizationToolbar({ pf, positions }: { pf: Portfolio; positio
           ))}
           <Divider />
           {hasUnsavedChanges && !activeView.builtin && (
-            <MenuItem onClick={() => { pf.saveChanges(); setViewAnchor(null); }} data-testid="save-changes">
+            <MenuItem onClick={() => { guard(() => pf.saveChanges()); setViewAnchor(null); }} data-testid="save-changes">
               Save changes to '{activeView.name}'
             </MenuItem>
           )}
@@ -180,7 +189,7 @@ export function CustomizationToolbar({ pf, positions }: { pf: Portfolio; positio
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setSaveAsOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled={!name.trim()} onClick={() => { pf.saveAsNewView(name.trim()); setSaveAsOpen(false); }} data-testid="save-view-confirm">
+          <Button variant="contained" disabled={!name.trim()} onClick={() => { const n = name.trim(); setSaveAsOpen(false); guard(() => pf.saveAsNewView(n)); }} data-testid="save-view-confirm">
             Save view
           </Button>
         </DialogActions>

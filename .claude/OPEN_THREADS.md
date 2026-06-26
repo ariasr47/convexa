@@ -289,6 +289,45 @@ parallelization (vendor-capability-blocked, adapter-internal); `engine.process_g
 finding logged (BACKLOG §B):** pre-existing ~9th-sig-digit float-ordering jitter in `net_vanna`/`net_charm`/
 `net_volga` (does NOT affect `opportunity_score`/score inputs/`state_fingerprint`; engine untouched here).
 
+## 7f. User accounts — auth + sessions + per-user settings (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/user-accounts/`. Owner-directed 2026-06-25: the project's
+**first stateful backend surface + first credential store**. Advances the OWNER PIVOT (accounts are the
+prerequisite for Track B `broker-connect`).
+**Backend** (`apps/api`): new one-way-leaf `src/auth/` subpackage (`ports.py` 3 storage ports +
+`sqlite_store.py` single-shared `:memory:` adapter + env factory `__init__.py` mirroring the provider port;
+`passwords.py` argon2; `cookies.py` HMAC signed cookie; `service.py` signup/login/logout/session-resolution
++ settings + Google identity mapping; `google_oauth.py` Authorization-Code flow **config-gated OFF**;
+`errors.py`; `router.py` `/api/auth/*`). `main.py` mounts the router (sole boundary that imports the leaf),
+wires the auth gate **outermost** on `POST /api/recommendation/{ticker}`, and adds `POST
+/api/positions/sim-trade/gate`. New deps `argon2-cffi` + `authlib`. Verified: conformance 2/2, score
+byte-identical anonymous-vs-signed-in (score 24, fp `79373ef9194e`), import-boundary 0/12 scoring modules
+import auth, 47 runtime assertions, security-floor log scan clean.
+**Frontend** (`apps/dashboard` + `libs/api`): `src/app/auth/` (AuthContext degrade-to-anonymous; login-by-email
+/ signup; GoogleButton present-but-disabled-when-unconfigured; useGate **server-gate-before-write**; the
+3 light-pref Settings + ThemeProvider) + gating wired into Positions writes + the ai-rec ask-AI path; `@org/api`
+auth surface (incl. `simTradeGate`). `nx test dashboard` 246/246 + `@org/api` 7/7.
+**QA (GATE Q)** on Sonnet (de-correlated from the Opus builders): initial **FAIL on AC-E7** — the Positions
+sim-trade write gate was **FE-only** (never called the server endpoint) → **GATE Z bounce to Frontend** →
+FE wired `POST /api/positions/sim-trade/gate` into the write path (403 aborts the local write) → **GATE Q
+RE-RUN PASS** 30/30, conformance 2/2, both suites green, AC-E7 → 3 named tests.
+**GATE Z (cross-feature, resolved):** the auth gate makes `POST /api/recommendation/{ticker}` return 403 to
+anonymous, so the archived `ai_recommendations.json` conformance spec (which asserted anonymous 200) was
+amended — that POST removed from the **anonymous** sweep (now verified under user-accounts' signed-in tests);
+the export/status/personas reads stay anonymous-200 and are still checked.
+**GATE S:** the three touched promoted keys (`additive-keeps-score-byte-identical`,
+`best-effort-isolated-or-null` WITH the auth-error-class carve-out, `no-real-order-path` → now 3 binding)
+each gained an instance → **no new graduation**. The informal "stateless server" property is **narrowed to
+the trading path** (auth = a contained, swappable state store outside it — a descriptive narrowing, NOT a
+Promoted-canon demotion; single-sourced in CONTEXT §5). New watch-list key `server-side-gate-enforcement`.
+**Deferred seams (specified, not built):** provision the real **Google Cloud OAuth client** (then Google
+flips on, config-only) + the account-linking **explicit-confirm** consent UX; the **persistent-DB adapter**
+(behind the existing ports — replaces the reset-on-restart in-memory store; set `AUTH_SESSION_SIGNING_KEY`
+for cross-restart cookies); **password-reset / email-verification** (Future — needs durable store + email
+sender); **"log out everywhere"** + multi-device session sync (SessionStore supports revoke-all); migrating
+the **heavy client-local stores** (positions portfolio, saved views) to be account-scoped server-side; and —
+on the **go-live trigger** (real persistence / public exposure) — the deferred **Security/red-team role
+(system-6)** + first-class credential handling.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped

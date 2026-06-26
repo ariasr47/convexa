@@ -15,3 +15,13 @@ python-dotenv
 tzdata  # IANA tz database for zoneinfo on Windows (no system tz db)
 
 massive
+
+# --- user-accounts (auth subpackage; server-side only) ---
+# Password hashing for the credential store. argon2-cffi ships prebuilt wheels (no compiler
+# needed on Windows) and is a current, well-vetted KDF. Used ONLY inside src/auth/ — never logs
+# or returns plaintext (BACKEND_EXECUTION_CONTRACT §4).
+argon2-cffi
+# Google OAuth Authorization-Code flow (server-side, config-gated OFF when creds absent —
+# BACKEND_EXECUTION_CONTRACT §6). Authlib's requests client handles the code→token exchange;
+# the browser never sees the client secret or Google tokens.
+authlib

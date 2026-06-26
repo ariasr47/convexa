@@ -255,6 +255,157 @@ export class ApiError extends Error {
   }
 }
 
+// ---- User accounts (auth + per-user settings; INTERFACE_CONTRACT user-accounts) ---------------
+// The auth surface is a NEW HTTP-status-bearing class (NOT the null-on-failure bundle rule). The
+// FE learns auth state ONLY from `getSession` (who-am-I); it never reads the HTTP-only session
+// cookie. The browser holds ONLY the cookie — NO session id / signing key / secret EVER appears in
+// any response body (AC-H1/H2). Errors carry `{error, message}`; the FE maps off the `error` code.
+//
+// CRITICAL: the bundle/SSE path (`getTicker`/`streamTicker`) is UNTOUCHED — these auth calls add NO
+// header and NO query param to it (AC-I2). They are a separate concern.
+
+/** One of `"dark"`/`"light"`/`"system"` — the only valid theme values (INTERFACE §2.1). */
+export type ThemePref = 'dark' | 'light' | 'system';
+
+/** The 3 light, presentation-only prefs (D7). NEVER read by signals/engine/scoring/fingerprint
+ *  (AC-F4) — they only change which default a UI lands on. */
+export interface UserSettings {
+  active_persona_id: string | null; // null ⇒ app default (Default persona)
+  default_ticker: string | null;    // null ⇒ app default (TSLA)
+  theme: ThemePref;
+}
+
+/** Authenticated identity (never the raw email as id; `id` is opaque + stable). */
+export interface AuthUser {
+  id: string;
+  email: string;
+  display_name: string | null;
+  auth_methods: string[]; // e.g. ["password"] or ["password","google"]
+}
+
+/** The server-authoritative who-am-I read. ALWAYS 200 (anonymous is a normal result). Drives
+ *  signed-in-vs-anonymous, identity, the config-gated Google flag, and the per-user settings. */
+export interface SessionStatus {
+  authenticated: boolean;
+  user: AuthUser | null;        // null when anonymous
+  google_available: boolean;    // D9 config flag — drives present-disabled↔present-enabled
+  settings: UserSettings | null; // null when anonymous (FE uses client-local stores instead)
+}
+
+/** The auth-class error codes the FE maps to copy (INTERFACE §2). `auth_required` is the gated-action
+ *  + settings-401 code; `auth_unavailable` is the subsystem-degraded code. */
+export type AuthErrorCode =
+  | 'email_taken'
+  | 'validation'
+  | 'bad_credentials'
+  | 'auth_required'
+  | 'auth_unavailable'
+  | 'google_unavailable';
+
+/** A typed auth failure carrying the server `error` code + safe `message`. The FE maps off `code`;
+ *  `message` is a fallback only (never enumerating, never a secret/hash/password). */
+export class AuthError extends Error {
+  constructor(readonly code: AuthErrorCode, message: string, readonly status: number) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+/** Parse a non-2xx auth response into an `AuthError` (INTERFACE §1 error envelope). Falls back to a
+ *  generic code/message when the body is absent or malformed — but never invents a misleading code. */
+async function toAuthError(res: Response): Promise<AuthError> {
+  let code: AuthErrorCode = 'auth_unavailable';
+  let message = 'Something went wrong. Please try again.';
+  try {
+    const body = (await res.json()) as { error?: string; message?: string };
+    if (body && typeof body.error === 'string') code = body.error as AuthErrorCode;
+    if (body && typeof body.message === 'string') message = body.message;
+  } catch {
+    // No/garbled JSON body — fall back by status so the FE still maps a sensible state.
+    if (res.status === 503) code = 'auth_unavailable';
+    else if (res.status === 422) code = 'validation';
+    else if (res.status === 409) code = 'email_taken';
+    else if (res.status === 401) code = 'bad_credentials';
+    else if (res.status === 403) code = 'auth_required';
+  }
+  return new AuthError(code, message, res.status);
+}
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+/** GET /api/auth/session — who-am-I. ALWAYS 200 server-side; on a TRANSPORT fault (network / non-200)
+ *  this REJECTS so the caller can record `subsystem_degraded` and treat the result as anonymous —
+ *  it never throws into the trader path (the caller degrades). Sends the cookie automatically. */
+export async function getSession(): Promise<SessionStatus> {
+  const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
+  if (!res.ok) throw new ApiError(`Session read failed (${res.status})`, res.status);
+  return (await res.json()) as SessionStatus;
+}
+
+export interface SignupRequest { email: string; password: string; display_name?: string | null; }
+export interface LoginRequest { email: string; password: string; }
+
+/** POST /api/auth/signup — success ⇒ the signed-in identity shape (a cookie is set). Throws
+ *  `AuthError` with `email_taken`(409) / `validation`(422) / `auth_unavailable`(503) on failure. */
+export async function signup(body: SignupRequest): Promise<SessionStatus> {
+  const res = await fetch('/api/auth/signup', {
+    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await toAuthError(res);
+  return (await res.json()) as SessionStatus;
+}
+
+/** POST /api/auth/login — success ⇒ identity shape (cookie set). Throws `AuthError` with
+ *  `bad_credentials`(401, NON-ENUMERATING) / `validation`(422) / `auth_unavailable`(503). The 401
+ *  message is identical for unknown-email vs wrong-password (AC-C3/H3) — the FE renders fixed copy. */
+export async function login(body: LoginRequest): Promise<SessionStatus> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await toAuthError(res);
+  return (await res.json()) as SessionStatus;
+}
+
+/** POST /api/auth/logout — idempotent; 200 regardless of prior state. After this, who-am-I reports
+ *  anonymous. Best-effort: a transport fault is swallowed (the FE still re-reads who-am-I). */
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  } catch {
+    /* best-effort — the caller re-reads who-am-I regardless */
+  }
+}
+
+/** PUT /api/auth/settings — signed-in ⇒ echoes the full saved bag (server-wins, D7). Anonymous ⇒
+ *  401 `auth_required` (anonymous prefs stay client-local). 422 `validation` on a bad theme. */
+export async function saveSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
+  const res = await fetch('/api/auth/settings', {
+    method: 'PUT', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw await toAuthError(res);
+  return (await res.json()) as UserSettings;
+}
+
+/** POST /api/positions/sim-trade/gate — the SERVER-ENFORCED auth gate for Positions sim-trade WRITE
+ *  actions (open/edit/close a sim position, place a resting limit, save a named view, accept an AI rec
+ *  into the tracker — D6a/D6e, INTERFACE §2.8). The FE awaits this BEFORE the local localStorage write
+ *  so enforcement is server-side, not FE-only (AC-E7): the FE auth check is UX sugar; THIS is the
+ *  boundary of record. Positions data stays CLIENT-LOCAL — this carries no positions payload and the
+ *  request body is empty; the server resolves the session from the HTTP-only cookie. The Positions
+ *  ROUTE is never gated (viewable anonymously, AC-E3) — only these writes call this.
+ *
+ *  Success ⇒ 200 `{ authorized: true }`. With no valid session ⇒ 403 `auth_required` (⇒ AuthError, the
+ *  FE shows the sign-in prompt and ABORTS the write). On an auth-subsystem fault ⇒ 503 `auth_unavailable`
+ *  (⇒ AuthError, the "couldn't reach sign-in" copy). Mirrors `requestRecommendation`'s auth-class
+ *  handling exactly. NEVER touches the bundle/SSE path (no new header/param there — AC-I2). */
+export async function simTradeGate(): Promise<{ authorized: true }> {
+  const res = await fetch('/api/positions/sim-trade/gate', {
+    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin',
+  });
+  if (!res.ok) throw await toAuthError(res);
+  return (await res.json()) as { authorized: true };
+}
+
 /** Live payload pushed over SSE (mid/flow/live flip). Levels other than the flip come from
  *  the bundle; the UI measures price-vs-wall using `mid` + the bundle's walls. */
 export interface LiveUpdate {
@@ -523,8 +674,14 @@ export async function requestRecommendation(symbol: string, body: RecRequest): P
   const res = await fetch(`/api/recommendation/${symbol.toUpperCase()}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify(body),
   });
+  // user-accounts (D6f): the auth gate is the OUTERMOST precondition on the LLM invoke. A 403
+  // `auth_required` / 503 `auth_unavailable` is an AUTH-class outcome — surface it as an `AuthError`
+  // (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in / "couldn't reach" prompt
+  // and NEVER ai-rec's cooldown/cap/no_key (AC-E4/E7/J1). All other non-2xx stay `ApiError`.
+  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
   if (!res.ok) throw new ApiError(`Recommendation request failed (${res.status})`, res.status);
   return (await res.json()) as RecResponse;
 }

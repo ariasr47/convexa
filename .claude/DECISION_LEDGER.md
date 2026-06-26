@@ -49,8 +49,14 @@
 | `ai-external-no-llm` | 2026-06-23 | `ai-recommendations` · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM." | **NARROWED, not erased.** New rule: GammaFlow MAY call an LLM **only** as a best-effort, isolated, gated, **advisory consumer** of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning rows (trade-tracker-sim, trader-personas — "no LLM call") retained as provenance: they still comply (they made no call). |
 
 ## Watch list (keys logged, not yet at threshold)
-- _(none at threshold)_ — `no-real-order-path` graduated 2026-06-24 (positions-portfolio reaffirmed it →
-  2 binding instances; now in Promoted canon above).
+- **`server-side-gate-enforcement`** (1 instance — user-accounts, 2026-06-25) — an access gate on a
+  state/cost-bearing ACTION must be enforced **server-side**, not FE-only (a bypassed client check must
+  still be rejected at the server boundary). Surfaced by the GATE Q catch on AC-E7 (the Positions
+  sim-trade write gate was FE-only until the FE was bounced to call `POST /api/positions/sim-trade/gate`).
+  Likely to recur on Track B `broker-connect` (real-account gates). Not promoted (1 instance); logged so
+  recurrence is mechanical. *binding:yes.*
+- _(`no-real-order-path` graduated 2026-06-24; reaffirmed again by user-accounts → 3 binding instances,
+  already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
 | key | feature | gate | statement (as locked) | binding |
@@ -92,6 +98,26 @@
 | `best-effort-isolated-or-null` | ticker-load-experience | S | chain pre-warm + 3-fetch concurrency are best-effort: any miss/stale/malformed/fetch-exception falls back to a normal vendor fetch with no new error surface; `last_trade` nullable between prints/overnight | yes |
 | `live-vs-static-isolation` | ticker-load-experience | S | SSE `last_trade` is live-derived (dims with mid/spread/flow on a stream drop); cold-load skeleton is a DISTINCT state from offline-degrade and from "unavailable this cycle" | yes |
 | `live-spot=NBBO-mid` | ticker-load-experience | S | **NARROWING (system-7)** — `last_trade` ADDED as a display-only SSE readout; the NBBO mid stays the anchor for headline/levels/flip (`_levels_for_filter` keeps `self.mid`). Narrows THREADS §9 "do not add last-trade." | yes |
+| `additive-keeps-score-byte-identical` | user-accounts | S | auth/sessions/settings = a one-way leaf the scoring path never imports (0/12 modules); anonymous vs signed-in bundle byte-identical (score 24, fp `79373ef9194e`); no user setting is a scoring input; bundle/SSE gained NO required header/query param | yes |
+| `best-effort-isolated-or-null` | user-accounts | S | **CARVE-OUT (the auth error class):** auth endpoints return real HTTP statuses by design (401 non-enumerating bad-creds / 403 gated / 409 dup email) — the null-not-error rule governs added BUNDLE computations, NOT the auth surface; an auth-subsystem failure still degrades the trader path to anonymous (bundle/SSE intact) | yes |
+| `no-real-order-path` | user-accounts | S | gating the Positions sim-trade WRITE actions + the "ask AI" call behind a session is ACCESS CONTROL; Positions stays `SIMULATED` (client-local localStorage); no broker/order/execution path; the "Live" tab stays zero-import LOCKED | yes |
+
+> Note (GATE S, user-accounts, 2026-06-25): the project's **first stateful backend surface + first
+> credential store** (email/username+password auth, server-side sessions, per-user light prefs, Google
+> OAuth wired-but-config-gated-OFF, in-memory SQLite behind a swap seam; hybrid access — anonymous
+> browsing open, the sim Positions write actions + the "ask AI" call require a session). The three touched
+> promoted keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`,
+> `no-real-order-path`) each gained an instance → **no new graduation** (all already canon);
+> `no-real-order-path` is now at **3 binding instances**. The `best-effort-isolated-or-null` instance
+> carries an explicit **CARVE-OUT** (auth endpoints legitimately return real HTTP statuses — a NEW class,
+> not the bundle null-rule), documented in CONTEXT §5 and the row above; this refines the rule's scope
+> without demoting it (the trading-path guarantee is untouched and reaffirmed). **Descriptive-property
+> narrowing (NOT a promoted-canon demotion):** the informal "stateless server" property is narrowed in
+> CONTEXT §2/§5 to "the **trading/bundle path** stays stateless; auth introduces a contained, swappable
+> state store outside that path." It was never a Promoted-canon key (no Demoted-table move). New watch-list
+> key `server-side-gate-enforcement` logged (the AC-E7 GATE Q catch). QA (GATE Q) on Sonnet, de-correlated:
+> initial FAIL on AC-E7 (FE-only gate) → bounced (GATE Z) → FE wired the server gate → **GATE Q RE-RUN
+> PASS** 30/30, conformance 2/2, `dashboard` 246/246 + `@org/api` 7/7.
 
 > Note (GATE S, ticker-load-experience, 2026-06-25): perf + UX refinement of the ticker page (chain
 > pre-warm 7.8s→1.2s, fetch concurrency, request-coalescing, skeleton-first load, live last-trade). The

@@ -21,6 +21,9 @@ import { LiveTabPanel } from './LiveTabPanel';
 import { PositionEntryDialog, EntryPrefill } from './PositionEntryDialog';
 import { SIMULATED_TIP } from './labels';
 import type { RowContext } from './PositionRow';
+import { useGate } from '../auth/useGate';
+import { SignInPrompt } from '../auth/SignInPrompt';
+import { AUTH_COPY } from '../auth/copy';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
@@ -46,6 +49,10 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
   const [toast, setToast] = useState<string | null>(null);
   const m = data?.market_state;
 
+  // Gated WRITE actions (UX_BLUEPRINT §2.6, AC-E1/E2/E3/E7). The route stays viewable anonymously;
+  // ONLY the write actions gate. Logged-out ⇒ an in-context sign-in prompt, no execute.
+  const gate = useGate();
+
   // Build a markRes for a row by re-running the existing engine off the row's tracked stats.
   const markResFor = (row: DerivedRow): RowContext['markRes'] => {
     if (row.position.status !== 'open' && row.position.status !== 'pending') return null;
@@ -60,10 +67,30 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
     [pf.rows, working.filter, working.sortKey, working.sortDir, working.group],
   );
 
+  // Opening the entry dialog is itself a write intent: gate it logged-out (prompt, no dialog).
+  const requestOpenEntry = () => {
+    if (!gate.allowed) { gate.prompt(AUTH_COPY.positions.gateTrack); return; }
+    gate.clear();
+    onEntryOpen(true);
+  };
+
   const handleConfirm = (input: OpenPositionInput) => {
-    const res = pf.openPosition(input);
-    if (!res.ok && res.reason) setToast(res.reason);
-    onEntryOpen(false);
+    // Confirm is the state-bearing write (open / resting-limit / accept-an-AI-rec all land here).
+    // SERVER-ENFORCED gate (AC-E7/D6e): await `POST /api/positions/sim-trade/gate` BEFORE the local
+    // `openPosition` write. A stale-cookie / bypassed-FE-check path ⇒ the server returns 403 ⇒ the
+    // guard re-shows the prompt and `openPosition` never runs, so NOTHING is persisted. The server is
+    // the boundary of record; the FE auth check above is UX sugar only (D6e).
+    void gate.guard(AUTH_COPY.positions.gateTrack, () => {
+      const res = pf.openPosition(input);
+      if (!res.ok && res.reason) setToast(res.reason);
+      onEntryOpen(false);
+    }, { serverGate: gate.simTradeGate });
+  };
+
+  // Save-view writes (save-as-new / save-changes) are state-bearing too — server-gate them the same
+  // way so the local customization write is rejected server-side without a valid session (AC-E7).
+  const guardSaveView = (run: () => void) => {
+    void gate.guard(AUTH_COPY.positions.gateSaveView, run, { serverGate: gate.simTradeGate });
   };
 
   const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
@@ -77,6 +104,19 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
           <Tooltip arrow title={SIMULATED_TIP}><Chip size="small" variant="outlined" label="SIMULATED" /></Tooltip>
         </Stack>
 
+        {/* Honest browser-local disclosure (D6d, mandatory) — shown whether signed in or out; it is a
+            property of data residency, not of auth state. Must NOT imply sync/privacy/account-scoping. */}
+        <Alert severity="info" icon={false} sx={{ mb: 1 }} data-testid="positions-disclosure">
+          {AUTH_COPY.positions.disclosure}
+        </Alert>
+
+        {/* In-context sign-in prompt for a gated write (never silent; never a misleading error). */}
+        <SignInPrompt
+          text={gate.promptText}
+          onSignIn={() => gate.signIn(gate.promptText ?? AUTH_COPY.positions.gateTrack)}
+          testid="positions-signin-prompt"
+        />
+
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 1 }}>
           <Tab value="simulated" label="Simulated" data-testid="tab-simulated" />
           <Tab value="live" label="Live" data-testid="tab-live" />
@@ -87,12 +127,12 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
         ) : (
           <Box data-testid="simulated-surface">
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-              <Button variant="outlined" size="small" onClick={() => onEntryOpen(true)} disabled={!data} data-testid="open-entry">
+              <Button variant="outlined" size="small" onClick={requestOpenEntry} disabled={!data} data-testid="open-entry">
                 Open simulated position
               </Button>
             </Stack>
 
-            <CustomizationToolbar pf={pf} positions={pf.positions} />
+            <CustomizationToolbar pf={pf} positions={pf.positions} guardSaveView={guardSaveView} />
 
             <PositionsView
               groups={groups}
@@ -104,7 +144,7 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
               isHistory={isHistoryFilter(working.filter.status)}
               markResFor={markResFor}
               trendFor={pf.trendFor}
-              onOpenEntry={() => onEntryOpen(true)}
+              onOpenEntry={requestOpenEntry}
               onClearFilter={() => pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })}
               onClose={pf.closePosition}
               onCancel={pf.cancelLimit}

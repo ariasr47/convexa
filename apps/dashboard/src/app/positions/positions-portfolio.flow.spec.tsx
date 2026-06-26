@@ -28,6 +28,8 @@ import { PortfolioPanel } from './PortfolioPanel';
 import {
   __resetMemory, PORTFOLIO_V1_KEY, PORTFOLIO_V2_KEY, allPositions, decisionsForPosition,
 } from './store';
+import { AuthProvider } from '../auth/AuthContext';
+import { AuthDialogProvider } from '../auth/AuthDialogProvider';
 
 const theme = createTheme();
 
@@ -84,6 +86,10 @@ function installBackend(cfg: Cfg = {}) {
   const json = (b: unknown, status = 200) => new Response(b === null ? 'null' : JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    // user-accounts: who-am-I read on mount (signed-in write path; gating covered in the auth suite).
+    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
+    if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/contract/')) {
       const u = new URL(url, 'http://x');
       const s = Number(u.searchParams.get('strike'));
@@ -123,10 +129,14 @@ function Harness({ forceOffline = false }: { forceOffline?: boolean }) {
   const pf = usePortfolio('TSLA', data, live, isLive, streamOffline);
   return (
     <ThemeProvider theme={theme}>
-      <PortfolioPanel
-        pf={pf} data={data} live={live} isLive={isLive} streamOffline={streamOffline}
-        ticker="TSLA" entryOpen={entryOpen} onEntryOpen={setEntryOpen}
-      />
+      <AuthProvider>
+        <AuthDialogProvider>
+          <PortfolioPanel
+            pf={pf} data={data} live={live} isLive={isLive} streamOffline={streamOffline}
+            ticker="TSLA" entryOpen={entryOpen} onEntryOpen={setEntryOpen}
+          />
+        </AuthDialogProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
