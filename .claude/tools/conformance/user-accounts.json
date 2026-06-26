@@ -1,0 +1,40 @@
+{
+  "_comment": "Runnable (system-1) conformance spec for user-accounts, the standalone canonical form interface_conformance.py executes ({method,path,path_params,query,body,required}). Mirrors the committed precedent conformance/ai_recommendations.json + api_metrics.json. INTERFACE_CONTRACT.md '## Conformance spec' REFERENCES this file (per the user-accounts standalone convention; system-12). Only statically-checkable, environment-INDEPENDENT shapes are asserted: (1) the anonymous session-status/who-am-I read (deterministic when no cookie is sent — authenticated:false, user:null, google_available reflects server config, settings:null), (2) the signup success response shape, (3) the login non-enumerating bad-credentials path is NOT asserted here (it returns a non-200 by design, so it is verified by FE/BE tests, not this 200-only tool). google_available is environment-dependent ONLY in value (true iff Google creds are configured) but its PRESENCE+TYPE (boolean) is invariant and is what is asserted. The signup probe uses a per-run-unique email so a fresh in-memory store yields a 200 success the first time it runs against a freshly-booted backend; re-running without a restart will 409 (documented: boot the backend fresh, or treat signup as a one-shot probe). Boot: npx nx serve api (uvicorn :8000).",
+  "version": "1.0",
+  "feature": "user-accounts",
+  "endpoints": [
+    {
+      "id": "whoami_anonymous",
+      "_note": "Sent with NO session cookie ⇒ deterministically anonymous. Environment-independent shape. google_available value depends on config but its presence+boolean type is invariant.",
+      "method": "GET",
+      "path": "/api/auth/session",
+      "required": {
+        "authenticated": "boolean",
+        "user": "object|null",
+        "google_available": "boolean",
+        "settings": "object|null"
+      }
+    },
+    {
+      "id": "signup_success_shape",
+      "_note": "POST signup with a fresh unique email against a freshly-booted in-memory store ⇒ 200 + signed-in identity shape. Asserts the success response carries identity (never a password/hash/secret). Re-run without restart ⇒ 409 (email_taken) — documented; this probe assumes a fresh boot.",
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "body": {
+        "email": "conformance-probe-9f3a2@example.test",
+        "password": "conformance-probe-pw-123456",
+        "display_name": "Conformance Probe"
+      },
+      "required": {
+        "authenticated": "boolean",
+        "user": "object",
+        "user.id": "string",
+        "user.email": "string",
+        "user.display_name": "string|null",
+        "user.auth_methods": "array",
+        "google_available": "boolean",
+        "settings": "object|null"
+      }
+    }
+  ]
+}

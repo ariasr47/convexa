@@ -30,6 +30,32 @@
 
 ---
 
+## Last GATE I — 2026-06-25 (owner request: user accounts / login / sessions / settings)
+**Chosen → `user-accounts`** — owner-directed (not a queue-drain cull): add **email/username+password
+signup & login + "Continue with Google" (OAuth) + a persisted server-side session**, backed by an
+**in-memory SQLite** credential/settings store (prototype — resets on restart; designed with a
+persistent-DB swap seam). Store **per-user settings — basics + light prefs only** (active persona /
+default ticker / theme). **Hybrid access model (owner clarification):** the app stays usable
+anonymously for browsing (Landing / Ticker-GEX viewer / Scanner stub), but **the sim Positions tracker
++ the in-app AI-rec "ask AI" call require a signed-in session.** Passwords **hashed (bcrypt/argon2),
+never plaintext/never logged**; Google client secret + session key **server-side only** (env, like
+`ANTHROPIC_API_KEY`). Decision-impact cull: **N/A** (enabler/infra class — judged on product value:
+unlocks per-user persistence + gating + the **Track B `broker-connect` prerequisite**). Feasibility:
+**pass**, config-gated for Google (needs a Google Cloud OAuth client; new backend deps → `requirements.txt`
++ `.venv`). Effort **L** · entry = **architect-first** (session mechanism, in-memory-SQLite + swap seam,
+OAuth Authorization-Code flow, auth↔bundle isolation + auth's own real-HTTP-error class, per-user settings
+store, the gated-surface enforcement boundary). **Invariant watch:** `additive-keeps-score-byte-identical`
+(auth never touches scoring/SSE; no setting is a scoring input), `best-effort-isolated-or-null` (CARVE-OUT:
+bundle path stays best-effort/None; **auth endpoints legitimately return 401/403/409** — the null-not-error
+rule governs added *bundle computations*, not an auth surface), `no-real-order-path` (HONORED — accounts add
+no broker/order path; Positions stays `SIMULATED`), `operator-vs-trader-path-separation` (kinship: auth must
+not gate/perturb the anonymous trader path). **NEW note:** first stateful backend surface + first credential
+store → narrows the "stateless server" property to the *trading path*; likely a GATE S ledger note, not a
+GATE Z reversal. **Security:** red-team (**system-6**) DEFERRED by owner (in-memory = pre-live); re-activates
+on real persistence / public exposure — the hygiene floor above is mandatory regardless. Brief at
+`.claude/contracts/user-accounts/BRIEF.md`; routing to the Architect (GATE A·X). *(Note: `scanner` +
+`gamma-unification` stay queued behind this owner redirect — not dropped.)*
+
 ## Last GATE I — 2026-06-25 (owner request: ticker-page load UX + latency; gamma question raised)
 **Chosen → `ticker-load-experience`** — owner-directed redirect (displaces `scanner` as the next Track-A
 item; scanner stays queued, not dropped). Make `/ticker/:symbol` load fast + feel instant + show a trusted
