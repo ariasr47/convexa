@@ -2,6 +2,7 @@ import asyncio
 import sys
 import time
 import logging
+import hmac
 import json
 import os
 import zoneinfo
@@ -18,6 +19,7 @@ from src.core import chain_store
 from src.core.darkpool import analyze_off_exchange
 from src.core import observability as obs
 from src.core import personas as personas_lib
+from src.core import ratelimit
 # AI Recommendations: the ISOLATED best-effort in-app LLM proxy + state-export serializer. This is
 # a one-way LEAF — engine/signals/live/darkpool do NOT import it (the structural guarantee of score
 # byte-identity); main.py imports it ONLY for the three recommendation endpoints, never on the
@@ -113,6 +115,69 @@ OBSERVABILITY_ENABLED = os.getenv("OBSERVABILITY_ENABLED", "true").lower() == "t
 METRICS_WINDOW_SIZE = int(os.getenv("METRICS_WINDOW_SIZE", "500"))
 METRICS_RECENT_TRACES = int(os.getenv("METRICS_RECENT_TRACES", "25"))
 obs.configure(OBSERVABILITY_ENABLED, METRICS_WINDOW_SIZE, METRICS_RECENT_TRACES)
+
+# --- Public-endpoint per-IP rate limit (system-6 HIGH-2) ---
+# Best-effort, in-memory, per-IP, per-minute throttle on the anonymous, vendor-cost-bearing
+# read endpoints (/api/ticker/* + /api/stream/*) so an arbitrary-ticker enumeration loop can't
+# drain Massive vendor spend. Configured by PUBLIC_RATE_LIMIT_PER_MIN (0/unset/disable => OFF,
+# so LOCAL dev is unchanged). Process-local (per-replica, like the per-admin AI metering). It is
+# OUTSIDE the scoring path and fail-OPEN — a limiter fault never 5xx's the endpoint or touches
+# the bundle/score ([additive-keeps-score-byte-identical]).
+public_rate_limiter = ratelimit.PublicRateLimiter()
+if public_rate_limiter.enabled:
+    logger.info(f"Public rate limit: {public_rate_limiter.limit} req/min per IP "
+                f"(/api/ticker/*, /api/stream/*)")
+
+# --- Operator metrics token gate (system-6 HIGH-1) ---
+# When METRICS_SECRET_TOKEN is SET, GET /api/_metrics requires it (Authorization: Bearer <token>
+# OR the X-Metrics-Token header). When UNSET, today's behavior is preserved (LOCAL dev unchanged);
+# PROD MUST set it (Railway Variable) — the Railway *.up.railway.app origin is internet-reachable
+# and the readout leaks operator diagnostics. Read at request time so the operator can rotate it
+# without a code change.
+
+
+def _metrics_token_ok(request: Request) -> bool:
+    """
+    True when the request may read /api/_metrics. If METRICS_SECRET_TOKEN is unset/empty, the gate
+    is OPEN (preserves the pre-fix local behavior). Otherwise require a matching token via either
+    `Authorization: Bearer <token>` or the `X-Metrics-Token` header. Constant-time compare.
+    """
+    expected = os.getenv("METRICS_SECRET_TOKEN", "").strip()
+    if not expected:
+        return True  # unset => local-dev behavior unchanged (prod MUST set it)
+    presented = ""
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        presented = auth_header[7:].strip()
+    if not presented:
+        presented = request.headers.get("x-metrics-token", "").strip()
+    if not presented:
+        return False
+    return hmac.compare_digest(presented, expected)
+
+
+def _rate_limit_or_response(request: Request) -> JSONResponse | None:
+    """
+    Best-effort per-IP throttle for the public, vendor-cost-bearing endpoints. Returns a 429
+    JSONResponse (with a Retry-After header) when the caller is over the limit, else None
+    (proceed). The 429 path makes NO vendor call — it is checked BEFORE _serve / subscribe. Any
+    limiter fault fails OPEN (returns None), so the endpoint can never 5xx from the limiter.
+    """
+    try:
+        if not public_rate_limiter.enabled:
+            return None
+        ip = ratelimit.client_ip_from_request(request)
+        allowed, retry_after = public_rate_limiter.check(ip)
+        if allowed:
+            return None
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Try again shortly."},
+            headers={"Retry-After": str(retry_after)},
+        )
+    except Exception:
+        logger.warning("ratelimit: gate faulted; failing open", exc_info=False)
+        return None
 
 # In-memory state. Mutated only from the event loop (after awaiting the worker thread), so
 # no locking is needed. _cache is keyed by (ticker, min_dte, max_dte); _last_fingerprint
@@ -442,13 +507,51 @@ app = FastAPI(
     version="3.0.0",
 )
 
+# CORS allowlist (env-gated, defense-in-depth) — [R2]. Under the deployed shape the browser is
+# SAME-ORIGIN (the Cloudflare Pages Function proxies /api/* on the *.pages.dev origin), so this
+# middleware is not on the browser's hot path; but a locked, env-driven allowlist is the security
+# floor and the clean fallback for a CORS world. Read ALLOWED_ORIGINS (comma-separated) and default
+# to the existing localhost dev origins when unset so LOCAL dev is byte-for-byte unchanged. NEVER
+# "*" with credentials (incompatible with allow_credentials=True and a real leak). Config-only — no
+# scoring/engine/state_fingerprint touch.
+_DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+_cors_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
+_allowed_origins = (
+    [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else _DEFAULT_DEV_ORIGINS
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# HIGH-3 (system-6 S4e): conspicuous startup WARNING when ACCOUNT_STORE=postgres but a stable key
+# is missing. In persistent mode the ephemeral per-process fallback is a silent data-integrity trap:
+# missing AUTH_SESSION_SIGNING_KEY => all sessions invalid on every restart/deploy (users logged
+# out); missing AI_KEY_ENCRYPTION_KEY => stored encrypted AI keys permanently undecryptable on
+# redeploy. This logs LOUDLY (does NOT crash, does NOT change the ephemeral fallback) so the
+# misconfiguration is visible in the Railway log stream. It fires here at import/boot, before any DB
+# use. Runs ONLY for ACCOUNT_STORE=postgres (memory/local dev is unaffected).
+def _warn_missing_stable_keys() -> None:
+    if os.getenv("ACCOUNT_STORE", "memory").strip().lower() != "postgres":
+        return
+    if not os.getenv("AUTH_SESSION_SIGNING_KEY", "").strip():
+        logger.warning(
+            "STABLE-KEY MISSING: ACCOUNT_STORE=postgres but AUTH_SESSION_SIGNING_KEY is unset. "
+            "Sessions will be UNVERIFIABLE after every restart/deploy (all users logged out). "
+            "Set a stable AUTH_SESSION_SIGNING_KEY in Railway Variables (reuse the same value on "
+            "every deploy).")
+    if not os.getenv("AI_KEY_ENCRYPTION_KEY", "").strip():
+        logger.warning(
+            "STABLE-KEY MISSING: ACCOUNT_STORE=postgres but AI_KEY_ENCRYPTION_KEY is unset. "
+            "Stored encrypted AI keys will be PERMANENTLY UNDECRYPTABLE after a redeploy (users must "
+            "re-enter their key). Set a stable AI_KEY_ENCRYPTION_KEY (Fernet) in Railway Variables "
+            "(reuse the same value on every deploy).")
+
+
+_warn_missing_stable_keys()
 
 # Mount the auth surface (user-accounts) — /api/auth/*. The auth subpackage is a leaf the engine/
 # scoring path never imports (ARCHITECTURE §6); this is the single orchestration boundary that wires
@@ -772,6 +875,7 @@ _DarkPool = Query(INCLUDE_DARK_POOL, description="Include off-exchange (dark-poo
 
 @app.get("/api/ticker/{ticker}")
 async def get_ticker_bundle(
+    request: Request,
     ticker: str = Path(..., description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
@@ -786,6 +890,11 @@ async def get_ticker_bundle(
     """Full bundle (market_state + signals + strike_profile + expirations + ai_eval +
     position_eval [+ off_exchange]). Pass the `pos_*` params (held contract + P/L%) to receive
     `position_eval`; omit them for `position_eval: null`. `?debug=1` adds operator `meta.timings`."""
+    # HIGH-2: per-IP throttle BEFORE any vendor fetch. 429 (no vendor call) when over the limit;
+    # fail-open otherwise. Outside the scoring path — the success path below is unchanged.
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     position_ctx = None
     if pos_expiration and pos_strike is not None and pos_right:
         position_ctx = {"expiration": pos_expiration[:10], "strike": pos_strike,
@@ -1072,7 +1181,7 @@ async def get_recommendation_status(
 
 
 @app.get("/api/_metrics")
-async def get_metrics_readout():
+async def get_metrics_readout(request: Request):
     """
     Operator metrics readout (read-only, side-effect-free): the rolling MetricsAggregate snapshot
     — total + per-stage p50/p95/max/count, cache hit/miss/ratio/age, vendor call count/latency/min
@@ -1080,12 +1189,22 @@ async def get_metrics_readout():
 
     Reading this NEVER triggers a vendor fetch, recompute, or cache mutation. Operator-gated (not
     linked from the trader UI). The window is process-local + ephemeral (resets on restart).
+
+    HIGH-1 token gate: when METRICS_SECRET_TOKEN is SET, the request MUST present it as
+    `Authorization: Bearer <token>` OR an `X-Metrics-Token` header, else 401. When the env is UNSET,
+    the gate is open (LOCAL dev unchanged) — PROD MUST set it (the Railway origin is public).
     """
+    if not _metrics_token_ok(request):
+        raise HTTPException(
+            status_code=401,
+            detail="Metrics require a valid token (Authorization: Bearer <token> or X-Metrics-Token).",
+        )
     return obs.readout()
 
 
 @app.get("/api/stream/{ticker}")
 async def stream_ticker(
+    request: Request,
     ticker: str = Path(..., description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
@@ -1101,6 +1220,11 @@ async def stream_ticker(
     generator on client disconnect, and the `finally` unsubscribes -> the session stops when
     its last subscriber leaves.
     """
+    # HIGH-2: per-IP throttle BEFORE the live session subscribe (which opens the Massive WebSocket
+    # feed). 429 (no vendor call) when over the limit; fail-open otherwise. Outside the score path.
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     t = ticker.upper()
     filt = (min_dte, max_dte, _parse_expirations(expirations))
     queue = await live_hub.subscribe(t, filt)

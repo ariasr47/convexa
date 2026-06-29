@@ -441,6 +441,32 @@ process-local (not behind the stores) → not shared across replicas — a futur
 scope here. **Next:** `deploy` (Railway backend + Cloudflare Pages frontend; cross-origin `/api` wiring) →
 Security/red-team (system-6) at go-live.
 
+## 7k. Deploy — Railway + Cloudflare Pages + system-6 go-live review (SHIPPED artifacts; live-deploy owner-applied)
+Contracts archived at `.claude/contracts/_archive/deploy/` (incl. `SECURITY_REVIEW.md`). Owner-directed
+2026-06-29, step 3 of the infra program. Backend → **Railway** (the `apps/api/Dockerfile` + managed Postgres
+→ `DATABASE_URL`, `ACCOUNT_STORE=postgres`); frontend → **Cloudflare Pages**. Cross-origin `/api` = a
+**streaming Cloudflare Pages Function** (`apps/dashboard/functions/api/[[path]].ts`, reads `API_ORIGIN` env;
+SSE-safe; relative-`/api` client unchanged). Infra fast-path (architect → infra build → **system-6**).
+**Repo changes (R1–R4):** R1 Dockerfile CMD+HEALTHCHECK honor `$PORT`; R2 `main.py` CORS env-gated
+(`ALLOWED_ORIGINS`, localhost default); R3 the Pages Function; R4 edge-404 of `/api/_metrics`. No scoring/
+engine change (conformance PASS, no regression).
+**system-6 Security/red-team — FIRST ACTIVATION** (the deferred role, triggered by going public; run on a
+different model): verdict **GO-WITH-REQUIRED-FIXES**. **3 HIGH closed before ship:** HIGH-1 token-gate
+`GET /api/_metrics` (`METRICS_SECRET_TOKEN`, constant-time compare, reachable-via-direct-Railway-URL closed);
+HIGH-2 per-IP rate-limit on the anon cost-bearing `/api/ticker`+`/api/stream` (new `src/core/ratelimit.py`,
+`PUBLIC_RATE_LIMIT_PER_MIN`, owner-chosen approach; 429 before any vendor call; fail-open leaf; IP via
+`CF-Connecting-IP`/`X-Forwarded-For`); HIGH-3 conspicuous startup WARNING when `ACCOUNT_STORE=postgres` + a
+stable key is missing. All runtime-demonstrated + conductor-spot-checked. **Fast-follows (NOT go-live
+blockers, in `SECURITY_REVIEW.md`):** 3 MED (CORS localhost-default-in-prod, `AUTH_COOKIE_SECURE` misconfig
+risk, no SSE connection ceiling), 3 LOW (public OpenAPI docs, broad CORS methods/headers, Google OAuth state
+cleanup). **GATE S graduated `no-secrets-in-image`** (3 binding — real registry push). **PENDING OWNER
+ACTION (the live deploy itself):** apply the runbook — create the Railway service + Postgres, set the env/
+secrets (incl. the new `METRICS_SECRET_TOKEN` + `PUBLIC_RATE_LIMIT_PER_MIN` + **stable**
+`AUTH_SESSION_SIGNING_KEY`/`AI_KEY_ENCRYPTION_KEY` + `ALLOWED_ORIGINS`), set the Cloudflare Pages build +
+`API_ORIGIN` — then the **live smoke test** (the feature's final verification, deferred to the owner). Not
+yet live; the deferred Docker/Postgres runtime verifications from the prior two features get exercised here
+when Railway actually builds + runs.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
@@ -490,3 +516,7 @@ Security/red-team (system-6) at go-live.
   store), never logged/returned/browser; write-only + rotate/delete; decrypt-fail ⇒ no-usable-secret, no
   leak. (byo-ai-key encrypted AI key; persistent-db held the ciphertext boundary into Postgres.) See
   PROJECT_CONTEXT §5.
+- **`[no-secrets-in-image]`** (promoted 2026-06-29, 3 binding) — a build/deploy artifact carries no secret;
+  all config/secrets injected at runtime via env (host Variables / Pages env), never committed/baked/
+  hardcoded; images run non-root. (containerize-apps Dockerfiles+.dockerignore; persistent-db `DATABASE_URL`;
+  deploy real Railway push + Pages Function `API_ORIGIN`.) See PROJECT_CONTEXT §5.

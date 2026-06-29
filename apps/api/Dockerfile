@@ -70,15 +70,21 @@ USER appuser
 
 EXPOSE 8000
 
-# Liveness probe (HC-1 resolved): a Python socket connect to :8000. This needs no
-# curl/wget layer (Python is already present), is unauthenticated, side-effect-free,
-# and asserts uvicorn is accepting connections without coupling health to any app
-# endpoint or to OBSERVABILITY_ENABLED. No new endpoint is added (out of lane).
+# Liveness probe (HC-1 resolved): a Python socket connect to the runtime port. This
+# needs no curl/wget layer (Python is already present), is unauthenticated,
+# side-effect-free, and asserts uvicorn is accepting connections without coupling
+# health to any app endpoint or to OBSERVABILITY_ENABLED. No new endpoint is added.
+# The probe reads ${PORT:-8000} so it tracks the SAME port the CMD binds (Railway may
+# inject a different $PORT); locally / in compose $PORT is unset ⇒ 8000 (unchanged).
+# Shell form so ${PORT:-8000} expands (exec form does no shell substitution).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD ["python", "-c", "import socket,sys; s=socket.create_connection(('127.0.0.1',8000),3); s.close(); sys.exit(0)"]
+    CMD python -c "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(os.environ.get('PORT','8000'))),3); s.close(); sys.exit(0)"
 
 # Production-shaped start: --host 0.0.0.0 (accept connections from the compose
 # network / host) and NO --reload (dev-only). Invoke the uvicorn console script
 # directly so the main.py __main__ reload block is bypassed; main:app resolves
 # because WORKDIR is the app root (same module layout as cwd=apps/api in dev).
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell-form CMD so ${PORT:-8000} expands at runtime: Railway injects $PORT and routes
+# its public edge to it; locally / in compose $PORT is unset ⇒ binds 8000 (so compose +
+# nginx proxy_pass http://api:8000 + the TCP healthcheck stay valid). [R1, $PORT bind]
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

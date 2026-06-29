@@ -281,6 +281,12 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   the browser** — write-only from the client (masked hint only) + rotate/delete; a decrypt failure is
   treated as no-usable-secret, never a leak. *(byo-ai-key — the encrypted per-user Anthropic key;
   persistent-db — the ciphertext-only boundary held when the key moved to Postgres. 2 binding.)*
+- **`[no-secrets-in-image]`** (promoted 2026-06-29, 3 binding) — a build/deploy artifact (container image,
+  pushed repo) carries **no secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no
+  `COPY .env`, no secret literal, no hardcoded backend URL; **all config + secrets are injected at runtime
+  via env** (host Variables / Pages env), values owner-entered; images run **non-root**. *(containerize-apps
+  — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
+  registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -473,6 +479,18 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `AUTH_SESSION_SIGNING_KEY`/`AI_KEY_ENCRYPTION_KEY` to survive restarts); the persistent store is the
   pending `persistent-db` feature. (Build/run requires Docker Desktop — not installed in the dev box where
   the files were authored.)
+- **Deploy target (`deploy`, 2026-06-29 — artifacts shipped, live-deploy is owner-applied):** backend →
+  **Railway** (builds `apps/api/Dockerfile`, root dir `apps/api`; CMD honors Railway's `$PORT`; managed
+  Postgres plugin → `DATABASE_URL`; `ACCOUNT_STORE=postgres`). Frontend → **Cloudflare Pages** (build
+  `npx nx build @org/dashboard` → `apps/dashboard/dist`). Cross-origin `/api` is a **streaming Cloudflare
+  Pages Function** (`apps/dashboard/functions/api/[[path]].ts`) proxying `/api/*`→Railway (SSE-safe; reads
+  the backend URL from the Pages env `API_ORIGIN`; 404-blocks `/api/_metrics` at the edge). **New prod env
+  (owner-set in Railway, never committed):** `ALLOWED_ORIGINS` (the `*.pages.dev` origin), `METRICS_SECRET_TOKEN`
+  (gates `/api/_metrics` on the direct Railway origin — `Authorization: Bearer` / `X-Metrics-Token`),
+  `PUBLIC_RATE_LIMIT_PER_MIN` (per-IP throttle on `/api/ticker`+`/api/stream`; 429 before any vendor call;
+  fail-open; IP via `CF-Connecting-IP`/`X-Forwarded-For`), and **mandatory stable** `AUTH_SESSION_SIGNING_KEY`
+  + `AI_KEY_ENCRYPTION_KEY` (a startup WARNING fires if absent under postgres). system-6 review =
+  GO-WITH-REQUIRED-FIXES (3 HIGH closed; 3 MED + 3 LOW fast-follows in the archived `deploy/SECURITY_REVIEW.md`).
 - **Frontend tests (standing rule — part of every FE feature):** `npx nx test dashboard`
   (and `nx test api` for `libs/api`) — Vitest + jsdom + Testing Library (+ `@testing-library/user-event`
   + `jest-dom`) + v8 coverage, wired via `@nx/vite`; colocated `*.spec.tsx`/`*.spec.ts`. The FE

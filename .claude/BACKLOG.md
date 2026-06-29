@@ -256,6 +256,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **`deploy`** — `✓ SHIPPED + ARCHIVED (2026-06-29)` → `_archive/deploy/` (artifacts + hardening; the live
+  deploy is owner-applied via the runbook). Step 3 of the infra program. Backend → Railway (Dockerfile +
+  managed Postgres), frontend → Cloudflare Pages, cross-origin `/api` via a streaming Pages Function. Repo
+  R1–R4 (`$PORT` CMD, env-gated CORS, the Pages Function, `/api/_metrics` edge-block). **system-6
+  Security/red-team FIRST ACTIVATION** (different model) = GO-WITH-REQUIRED-FIXES → **3 HIGH closed**
+  (metrics token-gate `METRICS_SECRET_TOKEN`; per-IP rate-limit `PUBLIC_RATE_LIMIT_PER_MIN` on the anon
+  ticker/SSE endpoints; stable-key startup WARNING); 3 MED + 3 LOW fast-follows in `SECURITY_REVIEW.md`.
+  No scoring change. **GATE S graduated `no-secrets-in-image`** (3 binding). **Pending owner:** apply the
+  runbook (Railway service + Postgres + env/secrets + Cloudflare build + `API_ORIGIN`) → live smoke test.
+  Seams → OPEN_THREADS §7k. **Fast-follows queued (§B):** the 6 MED/LOW security items; a CI/CD workflow; a
+  custom domain; centralizing the per-replica metering counters.
 - **`persistent-db`** — `✓ SHIPPED + ARCHIVED (2026-06-29)` → `_archive/persistent-db/`. Step 2 of the
   infra program (backend infra fast-path). Added a **persistent Postgres adapter** (`src/auth/postgres_store.py`,
   psycopg3 sync raw-SQL behind the existing 4 auth ports; pool; idempotent bootstrap; ciphertext-only) selected

@@ -30,6 +30,7 @@
 | `no-real-order-path` | "action" never reaches a real broker/order path: a simulated feature stays `SIMULATED` (paper) + mandatory-confirm; a not-yet-built real surface (e.g. a "Live" tab) ships as a **non-functional placeholder** with no broker, no order/execution path, no real-position data source | CONTEXT §5 · THREADS §9 | 2026-06-24 | ai-recommendations, positions-portfolio (2 binding) |
 | `server-side-gate-enforcement` | an access gate on a state/cost-bearing action is enforced **server-side** (the server is the boundary of record), never FE-only; the FE check is for UX, not enforcement — a bypassed client check must still be rejected by the server | CONTEXT §5 · THREADS §9 | 2026-06-29 | user-accounts (AC-E7 catch), byo-ai-key (2 binding) |
 | `secret-encrypted-at-rest` | a stored recoverable secret (a user/third-party API key, broker token, etc.) is **ENCRYPTED at rest** (symmetric, server-side key — NOT hashed), and **never logged / returned in a response / sent to the browser**; write-only from the client (masked hint only) + rotate/delete; persisted as **ciphertext only** (the crypto boundary sits before the store); a decrypt-fail is treated as no-usable-secret, never a leak | CONTEXT §5 · THREADS §9 | 2026-06-29 | byo-ai-key, persistent-db (2 binding) |
+| `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -56,13 +57,9 @@
   never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
   v1→v2 pattern. Not promoted (1 instance); logged for recurrence (the broker/persistent-DB tracks will
   likely hit it). *binding:yes.*
-- **`no-secrets-in-image`** (2 instances — containerize-apps + persistent-db, 2026-06-29) — a build
-  artifact (container image) carries NO secret: `.dockerignore` excludes `.env*`/`.venv`/credential files,
-  no `COPY .env`, no secret literal; config + secrets (incl. `DATABASE_URL`) injected at RUNTIME via env
-  (12-factor), image runs non-root. **At 2 binding but DELIBERATELY HELD** — it is a rule about *published*
-  artifacts, and nothing has been built/pushed yet (Docker not installed; no registry). **Graduate at the
-  `deploy` feature**, where pushing an image to a registry makes the rule load-bearing + finally
-  runtime-evidenced. *binding:yes.*
+- _(`no-secrets-in-image` GRADUATED 2026-06-29 at `deploy` — 3 binding (containerize-apps, persistent-db,
+  deploy); the held-until-published rule fired when the image is pushed to Railway for real. Now in Promoted
+  canon above.)_
 - _(`server-side-gate-enforcement` GRADUATED 2026-06-29 — 2 binding (user-accounts AC-E7, byo-ai-key).)_
 - _(`secret-encrypted-at-rest` GRADUATED 2026-06-29 — reached 2 binding instances (byo-ai-key, persistent-db);
   now in Promoted canon above.)_
@@ -123,6 +120,24 @@
 | `best-effort-isolated-or-null` | persistent-db | S | a Postgres outage degrades the AUTH subsystem only — the adapter raises (never false-success) → existing machinery yields 503 `auth_unavailable` / treat-as-anonymous; the anonymous bundle/SSE/trader path never touches the DB and stays fully up. Auth fails CLOSED | yes |
 | `secret-encrypted-at-rest` | persistent-db | S | the per-user AI key moves into Postgres as **ciphertext ONLY** (+ masked last4); the adapter never imports `crypto`, never reads `AI_KEY_ENCRYPTION_KEY`, never en/decrypts — the encryption boundary (crypto leaf, before the store) is preserved across the new store | yes |
 | `no-secrets-in-image` | persistent-db | S | `DATABASE_URL` / DB credentials injected at RUNTIME via env, never committed/baked; `.dockerignore` already excludes `.env*` so the new config holds the image-hygiene line | yes |
+| `no-secrets-in-image` | deploy | S | the image is **pushed to a registry for real** (Railway) — every secret (`DATABASE_URL`, `API_ORIGIN`, `MASSIVE/ANTHROPIC` keys, `AI_KEY_ENCRYPTION_KEY`/`AUTH_SESSION_SIGNING_KEY`, `METRICS_SECRET_TOKEN`) lives only in Railway Variables / Pages env, never in the repo/image; the Pages Function reads `API_ORIGIN` from env (no hardcoded URL); secret-scan clean. **3rd instance → GRADUATES** | yes |
+| `additive-keeps-score-byte-identical` | deploy | S | deploy config + the 3 HIGH security guards (metrics token-gate, the fail-open public rate-limit leaf, the startup stable-key warning) change no scoring/engine/`state_fingerprint`; the limiter is a leaf outside the scoring path; in-memory conformance PASS, no regression | yes |
+
+> Note (GATE S, deploy, 2026-06-29): step 3 of the infra program — the deploy ARTIFACTS + security
+> hardening (the live deploy itself is the owner applying the runbook). Railway (backend container +
+> Postgres) + Cloudflare Pages (frontend) wired via a streaming Pages Function proxy (`/api/*`→Railway,
+> SSE-safe; client uses relative `/api`, so zero client change). Repo changes R1–R4: `$PORT`-honoring CMD,
+> env-gated CORS (`ALLOWED_ORIGINS`), the Pages Function, edge-block of `/api/_metrics`. **system-6
+> Security/red-team ACTIVATED for the first time** (the deferred role, triggered by going public; run on a
+> different model) → verdict **GO-WITH-REQUIRED-FIXES**: 3 HIGH closed before ship — HIGH-1 token-gate
+> `/api/_metrics` (`METRICS_SECRET_TOKEN`), HIGH-2 per-IP rate-limit on the anon cost-bearing
+> `/api/ticker`+`/api/stream` (`PUBLIC_RATE_LIMIT_PER_MIN`, owner-chosen; fail-open leaf, 429-before-vendor),
+> HIGH-3 startup WARNING when `ACCOUNT_STORE=postgres` + a stable key is missing; +3 MED/+3 LOW logged as
+> fast-follows (SECURITY_REVIEW.md). **GRADUATION:** `no-secrets-in-image` hit its 3rd binding instance
+> (real registry push) → promoted into CONTEXT §5 + THREADS §9. `additive-keeps-score-byte-identical` gained
+> an instance (already canon). **Pending owner action:** apply the runbook (create the Railway service +
+> Postgres, set the env/secrets incl. the new `METRICS_SECRET_TOKEN`/`PUBLIC_RATE_LIMIT_PER_MIN` + stable
+> keys, set the Cloudflare build + `API_ORIGIN`) → then the live smoke test. Not yet live.
 
 > Note (GATE S, persistent-db, 2026-06-29): the in-memory→Postgres persistence swap (psycopg3 sync raw-SQL
 > adapter behind the existing 4 auth ports; `ACCOUNT_STORE=postgres`+`DATABASE_URL`; in-memory stays default;
