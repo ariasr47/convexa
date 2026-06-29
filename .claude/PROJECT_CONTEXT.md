@@ -479,7 +479,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `AUTH_SESSION_SIGNING_KEY`/`AI_KEY_ENCRYPTION_KEY` to survive restarts); the persistent store is the
   pending `persistent-db` feature. (Build/run requires Docker Desktop — not installed in the dev box where
   the files were authored.)
-- **Deploy target (`deploy`, 2026-06-29 — artifacts shipped, live-deploy is owner-applied):** backend →
+- **✅ DEPLOYED & LIVE (`deploy`, 2026-06-29):** **https://convexa.pages.dev** (Cloudflare Pages) → Pages
+  Function proxy → **https://convexa-production.up.railway.app** (Railway, app on `$PORT`=8080) + managed
+  Postgres. Verified end-to-end (SPA 200; proxied `/api` returns real Postgres-backed backend JSON). Config: backend →
   **Railway** (builds `apps/api/Dockerfile`, root dir `apps/api`; CMD honors Railway's `$PORT`; managed
   Postgres plugin → `DATABASE_URL`; `ACCOUNT_STORE=postgres`). Frontend → **Cloudflare Pages** (build
   `npx nx build @org/dashboard` → `apps/dashboard/dist`). Cross-origin `/api` is a **streaming Cloudflare

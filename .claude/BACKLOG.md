@@ -263,8 +263,11 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   Security/red-team FIRST ACTIVATION** (different model) = GO-WITH-REQUIRED-FIXES → **3 HIGH closed**
   (metrics token-gate `METRICS_SECRET_TOKEN`; per-IP rate-limit `PUBLIC_RATE_LIMIT_PER_MIN` on the anon
   ticker/SSE endpoints; stable-key startup WARNING); 3 MED + 3 LOW fast-follows in `SECURITY_REVIEW.md`.
-  No scoring change. **GATE S graduated `no-secrets-in-image`** (3 binding). **Pending owner:** apply the
-  runbook (Railway service + Postgres + env/secrets + Cloudflare build + `API_ORIGIN`) → live smoke test.
+  No scoring change. **GATE S graduated `no-secrets-in-image`** (3 binding). **✅ LIVE 2026-06-29:**
+  https://convexa.pages.dev (Cloudflare Pages) → Pages Function proxy → https://convexa-production.up.railway.app
+  (Railway, app on `$PORT`=8080) + managed Postgres; smoke test PASS (SPA 200, proxied `/api` returns real
+  backend JSON). Post-launch hardening pending: `ALLOWED_ORIGINS`, the 6 MED/LOW security fast-follows, CI/CD,
+  custom domain, prerender/SEO.
   Seams → OPEN_THREADS §7k. **Fast-follows queued (§B):** the 6 MED/LOW security items; a CI/CD workflow; a
   custom domain; centralizing the per-replica metering counters.
 - **`persistent-db`** — `✓ SHIPPED + ARCHIVED (2026-06-29)` → `_archive/persistent-db/`. Step 2 of the
@@ -361,6 +364,20 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **Prerender public pages (SSG) + SEO hygiene** — `RAISED 2026-06-29 (post-launch optimization; SSR evaluated
+  + rejected)`. Optimize first-paint + SEO for the PUBLIC pages WITHOUT full SSR (which was evaluated and
+  rejected: a Vite-SPA→Next/Remix/Vite-SSR migration + a per-request render server would break the free
+  static Cloudflare Pages model, and the app's value — live GEX charts/SSE/per-user positions/auth — is
+  inherently client-side/private and can't/shouldn't be crawled, so it hydrates client-side regardless).
+  **Scope:** (1) **prerender the landing page** (and the `docs/blog` post if we surface it) to static HTML at
+  build time — e.g. `vite-react-ssg` or a small prerender step — so it's crawlable + paints instantly, while
+  the app pages (ticker/positions/settings) stay the CSR SPA; (2) **SEO hygiene** regardless of rendering:
+  per-page `<title>` + meta description, **Open Graph/Twitter-card tags** (link previews), `sitemap.xml`,
+  `robots.txt`, semantic HTML on the landing page. Stays free-static on Cloudflare Pages (no render server);
+  Pages supports adding true SSR via Functions later if ever needed. *Impact:* the landing page is the only
+  SEO-relevant surface (the app is a private/interactive tool) — this captures ~all the SEO + first-paint
+  upside at a fraction of SSR's cost. Decision-impact cull **N/A** (UX/marketing/infra class). *Value M (SEO/
+  first-impression) · Effort S–M.* **Do after launch** (deploy first). Origin: owner SSR question 2026-06-29.
 - **Containerize each app (Dockerfile per deployable) + deployment readiness** — `RAISED 2026-06-25
   (owner; hosting/deploy planning)`. One `Dockerfile` per deployable — the **FastAPI backend** (`apps/api`,
   uvicorn) and the **React/Vite frontend** (`apps/dashboard` → static build, served via a CDN/static host

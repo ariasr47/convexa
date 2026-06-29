@@ -463,9 +463,17 @@ cleanup). **GATE S graduated `no-secrets-in-image`** (3 binding — real registr
 ACTION (the live deploy itself):** apply the runbook — create the Railway service + Postgres, set the env/
 secrets (incl. the new `METRICS_SECRET_TOKEN` + `PUBLIC_RATE_LIMIT_PER_MIN` + **stable**
 `AUTH_SESSION_SIGNING_KEY`/`AI_KEY_ENCRYPTION_KEY` + `ALLOWED_ORIGINS`), set the Cloudflare Pages build +
-`API_ORIGIN` — then the **live smoke test** (the feature's final verification, deferred to the owner). Not
-yet live; the deferred Docker/Postgres runtime verifications from the prior two features get exercised here
-when Railway actually builds + runs.
+`API_ORIGIN`.
+**✅ LIVE 2026-06-29** — deployed end-to-end and verified: **frontend https://convexa.pages.dev** (Cloudflare
+Pages) → Pages Function proxy → **backend https://convexa-production.up.railway.app** (Railway; app bound to
+`$PORT`=**8080**; domain target port corrected 8000→8080) → **Postgres**. Smoke test PASS: SPA 200;
+`convexa.pages.dev/api/auth/session` returns the real backend JSON through the proxy (Postgres-backed;
+`google_available:false` since Google OAuth is unconfigured — correct). The deferred Docker/Postgres runtime
+verifications from `containerize-apps`/`persistent-db` are now exercised for real on Railway. **Remaining
+hardening (NOT blocking — post-launch):** set `ALLOWED_ORIGINS=https://convexa.pages.dev` in Railway (the
+proxy is same-origin so CORS isn't hit, but lock it per the security review); the 6 MED/LOW security
+fast-follows (`_archive/deploy/SECURITY_REVIEW.md`); CI/CD; custom domain; prerender/SEO (BACKLOG §B);
+provision Google OAuth creds to enable "Continue with Google".
 
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
