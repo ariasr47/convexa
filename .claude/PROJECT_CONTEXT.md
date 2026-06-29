@@ -1,4 +1,4 @@
-# GammaFlow — Project Context (handoff)
+# Convexa — Project Context (handoff)
 
 > Self-contained ground truth for fresh, role-scoped sessions (Architect → PM →
 > UX/Tech-Writer → Backend/Frontend Executioners). Assume no chat history. Grounded
@@ -9,7 +9,10 @@
 > **Repositioning in progress (2026-06-24): rebrand → "Convexa", a positions-centric, multi-page app.**
 > The product is shifting from a single-ticker dashboard to: **connect your positions → get AI
 > recommendations built on the GEX profile + heuristics we compute per ticker.** User-facing brand is
-> **Convexa** (UI wordmark only — code/packages/repo still "gammaflow"). The app is now multi-page —
+> **Convexa** — now the brand across the **product, code, and repo** (full rebrand 2026-06-28, feature
+> `rebrand-convexa`; reverses the earlier "UI-only" scope; durable localStorage keys migrated
+> `gammaflow.*`→`convexa.*` loss-free). The reusable delivery framework it's built with stays the separate,
+> project-neutral kit. The app is multi-page —
 > **Landing** (`/`, the Convexa splash) · **Ticker viewer** (`/ticker/:symbol`, the GEX dashboard below)
 > · **Positions** (`/positions`, the sim portfolio) · **Scanner** (`/scanner`, a coming-soon stub). Real
 > **brokerage connection** (read-only positions, Webull-first) is a gated later track — see BACKLOG "Last
@@ -81,7 +84,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   the relocated portfolio) + `/scanner` (→ `app/scanner/`, a static coming-soon stub) · `/_ops/metrics`
   stays OFF the shell + unlinked. **Live SSE is page-scoped to the Ticker page** (opens on mount, closes
   on nav-away, reopens on return, never double-subscribes); the positions store is a localStorage
-  singleton so it persists across nav. Brand is UI-only (durable keys / packages / identifiers unchanged).
+  singleton so it persists across nav. Brand was UI-only at the time (durable keys / packages / identifiers
+  unchanged) — **superseded 2026-06-28 by `rebrand-convexa`: full GammaFlow→Convexa rename incl. a loss-free
+  migration of the durable keys to `convexa.*`.**
   The relocated `TickerDashboard` body is byte-identical to the old single-page dashboard described next.
 - `apps/dashboard/src/app/ticker/TickerDashboard.tsx` (was `app.tsx`) — dashboard (toolbar, stat tiles, setups, **Off-exchange
   blocks** section), polls bundle (60s) + subscribes SSE. Also four **always-on neutral
@@ -306,8 +311,20 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `AppShell` nav (Ticker/Positions/Scanner; `/_ops/metrics` off-shell + unlinked), the relocated
   `/ticker/:symbol` GEX viewer + `/positions` portfolio (relocate-don't-change — internals byte-identical),
   and a static `/scanner` stub. Live SSE page-scoped to the Ticker page (open/close/reopen, no
-  double-subscribe); positions store persists across nav. Brand is **UI-only** (no code/package/store-key
-  rename). `NO_BACKEND_CHANGE`. Scoring path untouched. *(2026-06-24.)*
+  double-subscribe); positions store persists across nav. Brand was **UI-only** then (no code/package/
+  store-key rename) — **superseded 2026-06-28 by `rebrand-convexa` (full rename + key migration).**
+  `NO_BACKEND_CHANGE`. Scoring path untouched. *(2026-06-24.)*
+- **Full Convexa rebrand (`rebrand-convexa`, FE+BE, cosmetic)** — completed the GammaFlow→Convexa rebrand
+  from UI-only to the **whole codebase** (134 refs / 51 files): identifiers, the `libs/api` client file
+  (`gammaflow.ts`→`convexa.ts`, consumed via `@org/api` so zero export churn), backend logger/FastAPI
+  title/ContextVar, docs/README/CLAUDE.md, `project.json` `project_name`, and the GitHub repo
+  (`gammaflow`→`convexa`). The 4 **durable localStorage keys** were migrated `gammaflow.*`→`convexa.*`
+  **loss-free** via a reusable `resolveDurable(new,old)` migrate-on-read helper (read-new-else-old,
+  promote-forward, never-delete, idempotent, never-throw) composing with the existing positions v1→v2
+  chain. **STAYS unrenamed (non-goals):** the `@org/*` package scope, `DATA_DIR`, the local working folder,
+  and archived-contract/ledger history (provenance). Reverses the app-shell-landing "UI-only" decision.
+  Cosmetic to the engine — score/tier/`state_fingerprint` byte-identical, conformance unchanged. QA PASS
+  (Sonnet, de-correlated — 23/23 ACs, dashboard 283/283 + `@org/api` 7/7). *(2026-06-28.)*
 - **Ticker-page load experience (both lanes, additive)** — the ticker viewer (`/ticker/:symbol`) loads fast
   and feels instant. **Backend:** new `src/core/chain_store.py`, a process-local, ticker-keyed, timestamped
   shared **chain-INPUT** store — `LiveSession._refresh_chain` (already re-fetching the full chain every

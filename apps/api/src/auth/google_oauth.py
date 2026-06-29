@@ -21,7 +21,7 @@ import logging
 import os
 from typing import Optional
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 _AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 _TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"

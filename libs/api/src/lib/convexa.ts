@@ -1,5 +1,5 @@
 /**
- * GammaFlow API client — the frontend's single point of contact with the backend.
+ * Convexa API client — the frontend's single point of contact with the backend.
  * Components import from `@org/api` and never call `fetch` directly. This mirrors the
  * MarketDataProvider "port" on the backend: swap the implementation here and the rest of
  * the app is unaffected.

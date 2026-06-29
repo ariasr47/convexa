@@ -1,8 +1,8 @@
-# GammaFlow → Reassessment AI hand-off contract (open-position health check)
+# Convexa → Reassessment AI hand-off contract (open-position health check)
 
-GammaFlow does **not** call an LLM itself. This is the **position-aware** sibling of
+Convexa does **not** call an LLM itself. This is the **position-aware** sibling of
 `strategy_prompt.md`: when the user holds an open (simulated) ghost trade and asks to
-*Reassess*, GammaFlow assembles a structured request from the durable trade record + the
+*Reassess*, Convexa assembles a structured request from the durable trade record + the
 current bundle, an **external** orchestrator runs the AI, and a structured verdict is ingested.
 **Phase-1 transport is operator-mediated** (a copyable request out, a pasted verdict in) — the
 same family as the strategy hand-off. No endpoint round-trip, no auto-apply, no real order.
@@ -62,13 +62,13 @@ Assembled by the app (durable lane + cached bundle); an extension of the strateg
 "recommendation": {
   "verdict": "Hold",                 // "Hold" | "Trim" | "Add" | "Exit" | "Roll"
   "replacement_contract": null,      // object | null — REQUIRED only for "Roll": {expiration, strike, right}
-  "rationale": "string",             // plain-language; cite the specific GammaFlow levels
+  "rationale": "string",             // plain-language; cite the specific Convexa levels
   "verdict_id": "string",            // stable id (dedupe + decision history)
   "status": "ready"                  // "pending" | "ready" | "failed"
 }
 ```
 
-- **No auto-apply.** GammaFlow surfaces the verdict; the user **Accepts** or **Rejects**, and every
+- **No auto-apply.** Convexa surfaces the verdict; the user **Accepts** or **Rejects**, and every
   choice is written to the versioned, exportable decision history. Accept maps to:
   `Hold`→unchanged · `Trim`→reduce qty · `Add`→increase qty **within the operator cap** ·
   `Exit`→close + book realized P/L · `Roll`→close this + open the replacement ghost.
@@ -79,8 +79,8 @@ Assembled by the app (durable lane + cached bundle); an extension of the strateg
   is final; `failed` on a boundary error (the FE shows "Couldn't reach the AI — try again"; the
   position is untouched).
 
-GammaFlow guarantees the request assembly + accept/reject + decision-history machinery. Round-trip
-synchrony is a property of the operator's AI integration behind this boundary, **not** a GammaFlow
+Convexa guarantees the request assembly + accept/reject + decision-history machinery. Round-trip
+synchrony is a property of the operator's AI integration behind this boundary, **not** a Convexa
 guarantee. No real order is ever placed (simulation only).
 
 <!--PERSONA_DECOMP_START-->
@@ -92,7 +92,7 @@ FIXED vs PERSONA-VARIABLE sections. The machine-readable template + the 7 built-
 `PersonaDefinition`s are in `src/core/personas.py` and served read-only at `GET /api/personas`. **The
 FE assembles** the persona-parametrized prompt client-side; the server adds **no** `meta.handoff` and
 accepts **no** `?persona=` param. Persona never changes the bundle/score/tier/gate/fingerprint
-(byte-identical) and triggers **no recompute**; GammaFlow still never calls an LLM.
+(byte-identical) and triggers **no recompute**; Convexa still never calls an LLM.
 
 - **FIXED (persona-invariant):** *When to reassess* (gate + dedupe); *What to send* (the
   `reassessment_request` + `market_state_glossary.md` + held-contract stats — no field dropped); the

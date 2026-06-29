@@ -9,7 +9,7 @@ import logging
 from .base import MarketDataProvider
 from .massive import MassiveProvider
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # name -> adapter class. Lazy-instantiated by get_provider().
 _PROVIDERS: dict[str, type[MarketDataProvider]] = {

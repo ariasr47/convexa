@@ -13,7 +13,7 @@ accumulation view, which would need a heavy batched pull.
 import logging
 import time
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # Default institutional-size threshold for a "block" print (shares). Env-tunable via
 # BLOCK_MIN_SHARES in main.py; this is the fallback used when a caller doesn't pass one.

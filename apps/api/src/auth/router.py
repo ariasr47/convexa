@@ -32,7 +32,7 @@ from pydantic import BaseModel
 from . import errors, get_service
 from .cookies import COOKIE_NAME
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 

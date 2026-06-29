@@ -34,7 +34,7 @@ from src.auth.router import router as auth_router
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 logger.setLevel(logging.INFO)
 logger.propagate = False
 
@@ -436,7 +436,7 @@ def compute_ticker(ticker: str, market_data: dict | None,
 
 
 app = FastAPI(
-    title="GammaFlow Volatility API",
+    title="Convexa Volatility API",
     description="Serves net dealer gamma profiles, greeks, and trade signals for a single "
                 "ticker on demand, over a selectable expiration (DTE) window.",
     version="3.0.0",

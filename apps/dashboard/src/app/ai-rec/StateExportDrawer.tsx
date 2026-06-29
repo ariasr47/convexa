@@ -81,7 +81,7 @@ export function StateExportDrawer({ open, ticker, personaId, onClose }: {
             onClick={() => copy(allText)}>{COPY.export.copyAll}</Button>
 
           <ExportSection title="Computed snapshot (context)"
-            caption="A serialization of what GammaFlow already computed — no recompute, no new fetch. Null stays null."
+            caption="A serialization of what Convexa already computed — no recompute, no new fetch. Null stays null."
             text={sectionText(data.context)} onCopy={copy} />
           <Divider />
           <ExportSection title="Persona prompt" text={sectionText(data.persona_prompt)} onCopy={copy} />

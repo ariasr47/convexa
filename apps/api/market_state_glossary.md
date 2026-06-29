@@ -1,4 +1,4 @@
-# GammaFlow `market_state` — Field Glossary (for the trading AI)
+# Convexa `market_state` — Field Glossary (for the trading AI)
 
 **Pre-market reading:** every gamma level is computed from the **last completed session's
 close** (`gex_spot`), so they describe dealer positioning *going into today*. `price` is the
@@ -180,7 +180,7 @@ setups, the AI gate, or `state_fingerprint`.
 - **Reassessment** routes the open position + current `market_state` through the **external-AI
   boundary** (`prompts/reassessment_prompt.md`, an extension of the existing hand-off) and returns a
   risk-first verdict ∈ {Hold, Trim, Add, Exit, Roll} (Roll's replacement must be in the current
-  snapshot). GammaFlow does **not** call an LLM; the verdict may be operator-mediated. **Nothing is
+  snapshot). Convexa does **not** call an LLM; the verdict may be operator-mediated. **Nothing is
   auto-applied** — the user accepts or rejects, recorded in a versioned, exportable decision history.
 - **Opportunity tiers:** `signals.opportunity_tier` ∈ `Dormant → Watch → Actionable → Prime`,
   derived from `opportunity_score` (operator env bands) + `ai_eval.ready` (**Prime also requires
@@ -270,7 +270,7 @@ reasoning over these fields rather than re-deriving regime/levels yourself.
   for the trader's objective + risk tolerance. It changes **how the AI is briefed**, never
   `opportunity_score`, `opportunity_tier`, `ai_eval` (`ready`/`changed`/`state_fingerprint`), the
   gate, or any analytics — those are **byte-identical** across personas, and switching persona
-  triggers **no recompute**. GammaFlow still never calls an LLM. The 7 built-in `PersonaDefinition`s +
+  triggers **no recompute**. Convexa still never calls an LLM. The 7 built-in `PersonaDefinition`s +
   the decomposed template are served read-only at `GET /api/personas`; the FE assembles the prompt.
 - **FIXED (persona-invariant) sections:** when-to-invoke / when-to-reassess (gate + dedupe); what to
   send (full bundle + glossary + DTE window — no field dropped); the output / verdict **schema**; the

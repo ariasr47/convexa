@@ -6,7 +6,7 @@ prompts (`strategy_prompt`, `reassessment_prompt`) for a trader's objective + ri
 **non-input to scoring by construction** — `signals.py` / `generate_signals` / `_opportunity_score` /
 `state_fingerprint` / `evaluate_gate` / the engine are NOT modified and gain NO persona parameter.
 For a given request input, `market_state`, `signals`, and `ai_eval` are **byte-identical** under
-persona = A / B / none; only the assembled prompt text differs. GammaFlow never calls an LLM.
+persona = A / B / none; only the assembled prompt text differs. Convexa never calls an LLM.
 
 Locus is **PINNED FE-RENDERED**: this module ships the canonical DECOMPOSED template (FIXED text +
 named PERSONA slot ids) + the 7 built-in PersonaDefinitions as read-only data (served at
@@ -22,7 +22,7 @@ register appears ONLY under Default (verbatim) and the conservative register.
 import logging
 import os
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 _PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "prompts")
 _DECOMP_DELIM = "\n<!--PERSONA_DECOMP_START-->"
@@ -244,5 +244,5 @@ def readout() -> dict:
         "note": "Read-only. Persona reframes the AI hand-off only — never the score/tier/gate/"
                 "fingerprint/analytics (byte-identical across personas), and switching triggers no "
                 "recompute. The FE assembles per-persona prompts client-side; the server adds no "
-                "meta.handoff and accepts no ?persona= param. GammaFlow never calls an LLM.",
+                "meta.handoff and accepts no ?persona= param. Convexa never calls an LLM.",
     }

@@ -30,7 +30,7 @@ from typing import Optional
 from . import cookies, errors, google_oauth, passwords
 from .ports import AuthStores, SessionRecord, UserRecord
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # Minimal password floor (surfaced in the 422 message; the FE copy reads it). Backend constant.
 PASSWORD_MIN_LENGTH = int(os.getenv("AUTH_PASSWORD_MIN_LENGTH", "8"))

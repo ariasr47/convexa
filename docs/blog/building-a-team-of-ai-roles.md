@@ -1,6 +1,6 @@
 # We Didn't Hire a Team. We Built One — Out of AI Sessions.
 
-*How GammaFlow ships software using a relay of role-playing AI sessions, a shared
+*How Convexa ships software using a relay of role-playing AI sessions, a shared
 rulebook, and a habit of squeezing every conversation down to just its decisions.*
 
 ---
@@ -25,7 +25,7 @@ So we stopped doing that.
 
 ## The big idea: a team made of *fresh experts*
 
-Instead of one endless chat, GammaFlow is built by a **relay of specialists** — each
+Instead of one endless chat, Convexa is built by a **relay of specialists** — each
 one a separate AI session that plays exactly *one* role and then hands off:
 
 - **The Architect** decides how the system should be shaped.
@@ -339,7 +339,7 @@ Everything so far describes a studio that builds *one* product. But the studio i
 conductor, the roles, the rulebook structure, the checks — has nothing to do with options trading.
 It's just a way of working. So we pulled it loose.
 
-The whole method had started life tangled up with GammaFlow: its files and its trading vocabulary
+The whole method had started life tangled up with Convexa: its files and its trading vocabulary
 baked into the same folders as the generic machinery. We separated them. Everything reusable became
 a standalone **kit** — identical for any project. Everything specific to *this* product moved into a
 single small **settings file** plus the project's own rulebook. And the dividing line is enforced
@@ -372,6 +372,6 @@ every specialist is brilliant, well-briefed, and never too tired to do their bes
 
 ---
 
-*GammaFlow (presented in the UI as **Convexa**) is a multi-page options-analytics app. This post is about
+*Convexa is a multi-page options-analytics app. This post is about
 how it's **built**, not what it does — the same approach would work for almost any software. In fact it's
 now packaged as a reusable kit, so it can.*

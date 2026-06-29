@@ -1,6 +1,6 @@
-# GammaFlow monorepo — Claude guide
+# Convexa monorepo — Claude guide
 
-This is a single **Nx 23 polyglot monorepo** (the GammaFlow backend + web frontend, merged).
+This is a single **Nx 23 polyglot monorepo** (the Convexa backend + web frontend, merged).
 
 ## Nx guidance
 
@@ -19,7 +19,7 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
   `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
 - `apps/dashboard-e2e` — Playwright e2e for the dashboard.
 - `libs/api` — `@org/api`, the shared TS API client (consumed as source).
-- `.claude/` — the GammaFlow delivery-orchestration system (ORCHESTRATOR, contracts, agents,
+- `.claude/` — the delivery-orchestration system (ORCHESTRATOR, contracts, agents,
   tools, role prompts). The conductor + lane subagents drive feature delivery from here.
 
 ## Lane separation (enforced)

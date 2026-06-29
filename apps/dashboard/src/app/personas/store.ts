@@ -4,8 +4,10 @@
  * failure degrades to in-memory only and never throws into the UI.
  */
 import type { PersonaDefinition } from '@org/api';
+import { resolveDurable } from '../durable/resolveDurable';
 
-const KEY = 'gammaflow.personas.v1';
+const KEY = 'convexa.personas.v1';
+const LEGACY_KEY = 'gammaflow.personas.v1';
 const SCHEMA_VERSION = 1;
 
 interface PersistShape {
@@ -20,7 +22,7 @@ let memory: PersistShape | null = null;
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = resolveDurable(KEY, LEGACY_KEY);
     memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
   } catch { memory = empty(); }
   return memory;
@@ -52,3 +54,9 @@ export function removeCustom(id: string): PersonaDefinition[] {
 export function newPersonaId(): string {
   return (crypto?.randomUUID?.() ?? `persona-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 }
+
+/** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */
+export function __resetPersonas() { memory = null; }
+
+export const PERSONAS_KEY = KEY;
+export const PERSONAS_LEGACY_KEY = LEGACY_KEY;

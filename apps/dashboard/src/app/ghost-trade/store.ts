@@ -5,8 +5,10 @@
  * and never throws into the UI.
  */
 import { SCHEMA_VERSION, GhostTrade, DecisionRecord } from './types';
+import { resolveDurable } from '../durable/resolveDurable';
 
-const STORAGE_KEY = 'gammaflow.ghost-trade.v1';
+const STORAGE_KEY = 'convexa.ghost-trade.v1';
+const LEGACY_STORAGE_KEY = 'gammaflow.ghost-trade.v1';
 
 interface PersistShape {
   schema_version: number;
@@ -21,7 +23,7 @@ let memory: PersistShape | null = null; // fallback when localStorage is unavail
 function read(): PersistShape {
   if (memory) return memory;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = resolveDurable(STORAGE_KEY, LEGACY_STORAGE_KEY);
     memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
   } catch {
     memory = empty();
@@ -67,7 +69,7 @@ export function exportLog() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `gammaflow-decision-history-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `convexa-decision-history-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -77,3 +79,11 @@ export function exportLog() {
 export function newId(): string {
   return (crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 }
+
+/** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */
+export function __resetMemory() {
+  memory = null;
+}
+
+export const GHOST_TRADE_KEY = STORAGE_KEY;
+export const GHOST_TRADE_LEGACY_KEY = LEGACY_STORAGE_KEY;

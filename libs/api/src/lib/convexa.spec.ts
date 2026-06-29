@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   requestRecommendation, fetchRecStatus, fetchRecExport, fetchPersonas, ApiError, RecRequest,
-} from './gammaflow';
+} from './convexa';
 
 function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise<Response>) {
   const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => impl(String(input), init));

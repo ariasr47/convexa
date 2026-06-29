@@ -4,7 +4,7 @@
 
 Convexa turns an equity's option chain into **dealer gamma-exposure (GEX) structure** — call/put walls, the gamma flip, the magnet — then layers volatility context, real-time order flow, and a rule-based read of the current setup. It's built for **longer-dated (~7–45 DTE) swing trading with optional intraday timing**.
 
-> **Convexa** is the product/UI brand; **GammaFlow** is the engine and codebase name (package names, identifiers, and this repo stay `gammaflow`).
+> **Convexa** is the product, the engine, and the codebase. (It's built with a reusable, project-neutral delivery framework — a separate kit.)
 
 > ⚠️ **Disclaimer** — This is a personal project for research and educational use. It is **not financial advice**, and it does **not** place real trades: all position tracking is **simulated (paper)** with **no broker or order-execution path**. Markets are risky; do your own research.
 

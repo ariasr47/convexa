@@ -27,7 +27,7 @@ lock needed. All entry points are defensively wrapped so a store fault never esc
 import logging
 import time
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # ticker -> {"market_data": dict, "captured_at": float-epoch-seconds}
 _store: dict = {}

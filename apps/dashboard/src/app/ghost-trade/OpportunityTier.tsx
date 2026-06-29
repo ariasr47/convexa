@@ -48,7 +48,7 @@ export function PrimeBanner({ onSimulate, onDismiss }: { onSimulate: () => void;
           </Box>
         }
       >
-        ⚡ Prime setup — the strongest edge GammaFlow sees right now.
+        ⚡ Prime setup — the strongest edge Convexa sees right now.
       </Alert>
     </Box>
   );

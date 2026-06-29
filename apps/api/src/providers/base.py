@@ -1,7 +1,7 @@
 """
 Market-data provider PORT (the facade boundary).
 
-GammaFlow's engine and signals layers consume plain dicts and never import a vendor SDK.
+Convexa's engine and signals layers consume plain dicts and never import a vendor SDK.
 This module formalizes that boundary: a data source plugs in by subclassing
 `MarketDataProvider` and translating its vendor payloads into the TypedDict contracts
 below. Swapping Massive for another vendor means writing one new adapter + registering it

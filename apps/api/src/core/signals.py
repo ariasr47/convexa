@@ -16,7 +16,7 @@ plain-English rationale so the downstream AI (and you) can see why it fired.
 import hashlib
 import logging
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # --- Tunable thresholds ---
 NEAR_LEVEL_PCT = 0.0075      # within 0.75% of a level counts as "at" it

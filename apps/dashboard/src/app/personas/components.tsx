@@ -15,7 +15,7 @@ import { usePersona, CustomDraft } from './usePersona';
 const PICKER_TOOLTIP =
   'Pick how the AI is briefed about your style. Persona changes only the hand-off prompt — never the ' +
   'score, tier, gate, or fingerprint, and it never recomputes anything.';
-const INVARIANCE_LABEL = 'Unchanged by persona — changes how the AI is briefed, not what GammaFlow scored.';
+const INVARIANCE_LABEL = 'Unchanged by persona — changes how the AI is briefed, not what Convexa scored.';
 const CAVEAT =
   "Customizations only add framing emphasis. They can't change the AI's risk-first floor, the verdict " +
   'schema (Hold / Trim / Add / Exit / Roll), the Add cap, the no-auto-apply rule, the Roll constraint, ' +

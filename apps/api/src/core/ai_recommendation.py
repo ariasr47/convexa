@@ -1,7 +1,7 @@
 """
 AI Recommendations — the isolated, best-effort in-app LLM proxy + state-export serializer.
 
-This is GammaFlow's FIRST in-app LLM call. The module is a **one-way leaf** (mirrors the
+This is Convexa's FIRST in-app LLM call. The module is a **one-way leaf** (mirrors the
 observability Level-1 boundary): `signals.py` / `engine.py` / `live.py` / `darkpool.py` MUST
 NOT import it. That import boundary is the *structural* enforcement of
 `additive-keeps-score-byte-identical` — nothing in the scoring path can depend on this module,
@@ -40,7 +40,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import personas as personas_lib
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 _GLOSSARY_PATH = os.path.join(_REPO_ROOT, "market_state_glossary.md")
@@ -128,7 +128,7 @@ class AnthropicLLMProvider(LLMProvider):
 
         client = anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout)
         user_block = (
-            "Here is the GammaFlow market_state bundle to analyze (JSON):\n\n"
+            "Here is the Convexa market_state bundle to analyze (JSON):\n\n"
             f"```json\n{context_json}\n```\n\n"
             "Field reference (glossary):\n\n"
             f"{glossary}\n\n"

@@ -2,7 +2,7 @@
 Massive adapter: implements MarketDataProvider against the Massive REST SDK.
 
 All Massive-specific concerns -- auth, the v3 options-chain snapshot shape, market-phase
-spot selection, the `extract` payload helper -- are sealed in here. The rest of GammaFlow
+spot selection, the `extract` payload helper -- are sealed in here. The rest of Convexa
 only sees the normalized contracts from `base.py`.
 """
 import os
@@ -25,7 +25,7 @@ from .base import (
 )
 
 load_dotenv()
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 
 def extract(obj, key, default=None):

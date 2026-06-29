@@ -1,4 +1,4 @@
-# GammaFlow
+# Convexa
 
 A **single-ticker options-positioning dashboard and analysis engine**. It pulls an
 equity's full option chain and turns dealer **gamma exposure (GEX)** into the structural

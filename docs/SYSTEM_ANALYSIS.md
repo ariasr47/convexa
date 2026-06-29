@@ -7,7 +7,7 @@
 > `.claude/BACKLOG.md` §E so GATE I can cull and schedule these like any other feature.
 > Last revised: **2026-06-28**. Treat as a default, not canon — revise it as the system evolves.
 >
-> **2026-06-24 — the framework is now a reusable kit (system-13).** What was GammaFlow's `.claude/` is
+> **2026-06-24 — the framework is now a reusable kit (system-13).** What was Convexa's `.claude/` is
 > extracted into a standalone **delivery-kit** (separate repo); this project is **consumer #1**.
 > Framework files are byte-identical across projects, all per-project coupling pushed into one seam
 > (`.claude/project.json` + `PROJECT_CONTEXT.md`). The analysis below now covers two things — the system

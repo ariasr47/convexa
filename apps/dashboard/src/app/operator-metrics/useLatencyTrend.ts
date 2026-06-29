@@ -216,7 +216,7 @@ export function useLatencyTrend() {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `gammaflow-latency-trend-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    a.href = url; a.download = `convexa-latency-trend-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.json`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     setLastExport(payload.samples.length);
   }, [metric, percentile, scope, horizonMin, lineKeys, deriveValue]);

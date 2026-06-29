@@ -156,7 +156,7 @@ export function OperatorMetrics() {
   const header = (
     <AppBar position="static" elevation={0} color="default">
       <Toolbar>
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>GammaFlow · Operator Metrics</Typography>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>Convexa · Operator Metrics</Typography>
         {data && <Chip size="small" color={data.instrumentation_enabled ? 'success' : 'default'} label={`Instrumentation: ${data.instrumentation_enabled ? 'ON' : 'OFF'}`} sx={{ mr: 1 }} />}
         <Chip size="small" variant="outlined" label="read-only" sx={{ mr: 1 }} />
       </Toolbar>

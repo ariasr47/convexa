@@ -28,7 +28,7 @@ from .errors import AuthError
 from .ports import AuthStores
 from .service import AuthService
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 
 def _make_memory_stores() -> AuthStores:

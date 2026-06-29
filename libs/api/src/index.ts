@@ -1,1 +1,1 @@
-export * from './lib/gammaflow';
+export * from './lib/convexa';

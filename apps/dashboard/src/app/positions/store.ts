@@ -18,9 +18,15 @@ import {
   PersistShapeV2, PersistShapeV1,
 } from './types';
 import { defaultCustomization } from './defaults';
+import { resolveDurable } from '../durable/resolveDurable';
 
-const V1_KEY = 'gammaflow.ghost-trade.v1';
-const V2_KEY = 'gammaflow.positions.v2';
+// Current-brand durable keys. The `.v1`/`.v2` segment + in-blob schema_version are UNCHANGED — only
+// the brand prefix flipped (rebrand-convexa). The legacy `gammaflow.*` keys are retained ONLY as the
+// migration source for `resolveDurable` (read-new-else-old, promote forward, never delete old).
+const V1_KEY = 'convexa.ghost-trade.v1';
+const V2_KEY = 'convexa.positions.v2';
+const LEGACY_V1_KEY = 'gammaflow.ghost-trade.v1';
+const LEGACY_V2_KEY = 'gammaflow.positions.v2';
 
 function empty(): PersistShapeV2 {
   return {
@@ -94,17 +100,26 @@ function hydrateCustomization(c: CustomizationState | undefined): CustomizationS
 function read(): PersistShapeV2 {
   if (memory) return memory;
   try {
-    const rawV2 = localStorage.getItem(V2_KEY);
+    // 4-case brand × version resolution (FRONTEND_EXECUTION_CONTRACT §A.3), first hit wins:
+    //   (1) convexa.positions.v2  → hydrate
+    //   (2) gammaflow.positions.v2 → hydrate + promote to convexa.positions.v2 (resolveDurable)
+    //   (3) convexa.ghost-trade.v1 → migrateV1 → write convexa.positions.v2
+    //   (4) gammaflow.ghost-trade.v1 → migrateV1 → write convexa.positions.v2 (legacy ver + brand hop)
+    // The v2 read across both brands promotes the v2 blob forward; the v1 read across both brands is
+    // the existing chain. Every SOURCE blob is left intact (resolveDurable never deletes the old key;
+    // migrateV1 reads, never removes). The ghost-trade key promotes into convexa.positions.v2 here —
+    // NOT into convexa.ghost-trade.v1 — so it never conflicts with the ghost-trade store's own promote.
+    const rawV2 = resolveDurable(V2_KEY, LEGACY_V2_KEY);
     if (rawV2) {
       memory = hydrateV2(JSON.parse(rawV2) as Partial<PersistShapeV2>);
       return memory;
     }
-    // No v2 blob yet — try a one-time migration from a readable v1 blob.
-    const rawV1 = localStorage.getItem(V1_KEY);
+    // No v2 blob under either brand — migrate from a readable v1 ghost-trade blob (either brand).
+    const rawV1 = resolveDurable(V1_KEY, LEGACY_V1_KEY);
     if (rawV1) {
       const migrated = migrateV1(JSON.parse(rawV1) as PersistShapeV1);
       memory = migrated;
-      write(migrated); // persist under the v2 key; leave the v1 blob intact as a fallback source
+      write(migrated); // persist under convexa.positions.v2; leave every source blob intact
       return memory;
     }
     memory = empty();
@@ -178,3 +193,5 @@ export function __resetMemory() {
 
 export const PORTFOLIO_V1_KEY = V1_KEY;
 export const PORTFOLIO_V2_KEY = V2_KEY;
+export const PORTFOLIO_LEGACY_V1_KEY = LEGACY_V1_KEY;
+export const PORTFOLIO_LEGACY_V2_KEY = LEGACY_V2_KEY;

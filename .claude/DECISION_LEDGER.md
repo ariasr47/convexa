@@ -49,6 +49,11 @@
 | `ai-external-no-llm` | 2026-06-23 | `ai-recommendations` · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM." | **NARROWED, not erased.** New rule: GammaFlow MAY call an LLM **only** as a best-effort, isolated, gated, **advisory consumer** of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning rows (trade-tracker-sim, trader-personas — "no LLM call") retained as provenance: they still comply (they made no call). |
 
 ## Watch list (keys logged, not yet at threshold)
+- **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
+  store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
+  never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
+  v1→v2 pattern. Not promoted (1 instance); logged for recurrence (the broker/persistent-DB tracks will
+  likely hit it). *binding:yes.*
 - **`server-side-gate-enforcement`** (1 instance — user-accounts, 2026-06-25) — an access gate on a
   state/cost-bearing ACTION must be enforced **server-side**, not FE-only (a bypassed client check must
   still be rejected at the server boundary). Surfaced by the GATE Q catch on AC-E7 (the Positions
@@ -101,6 +106,23 @@
 | `additive-keeps-score-byte-identical` | user-accounts | S | auth/sessions/settings = a one-way leaf the scoring path never imports (0/12 modules); anonymous vs signed-in bundle byte-identical (score 24, fp `79373ef9194e`); no user setting is a scoring input; bundle/SSE gained NO required header/query param | yes |
 | `best-effort-isolated-or-null` | user-accounts | S | **CARVE-OUT (the auth error class):** auth endpoints return real HTTP statuses by design (401 non-enumerating bad-creds / 403 gated / 409 dup email) — the null-not-error rule governs added BUNDLE computations, NOT the auth surface; an auth-subsystem failure still degrades the trader path to anonymous (bundle/SSE intact) | yes |
 | `no-real-order-path` | user-accounts | S | gating the Positions sim-trade WRITE actions + the "ask AI" call behind a session is ACCESS CONTROL; Positions stays `SIMULATED` (client-local localStorage); no broker/order/execution path; the "Live" tab stays zero-import LOCKED | yes |
+| `additive-keeps-score-byte-identical` | rebrand-convexa | S | full GammaFlow→Convexa rename is cosmetic to the engine — logger/title/identifier/key renames only; `opportunity_score`/`tier`/`state_fingerprint` byte-identical (score 2, fp `8fa0e1e62a11`), conformance 8/8, no interface/wire change | yes |
+| `best-effort-isolated-or-null` | rebrand-convexa | S | the migrate-on-read helper never throws — a corrupt/absent legacy blob degrades to empty in-memory with the source blob preserved (rollback-safe); a failed promote-write is swallowed and the value still surfaces | yes |
+| `loss-free-durable-migration` | rebrand-convexa | S | renaming a durable localStorage key carries existing data forward LOSS-FREE: read-new-else-old, promote-forward-once (idempotent), never delete the old key, never throw; composes with the existing positions v1→v2 chain so every legacy user lands whole | yes |
+
+> Note (GATE S, rebrand-convexa, 2026-06-28): the GammaFlow→Convexa rebrand was **completed** — extended
+> from UI-only to the whole codebase (134 refs / 51 files): identifiers, the `gammaflow.ts`→`convexa.ts`
+> client, logger/title/ContextVar, docs/README/CLAUDE.md, `project.json` `project_name`, and a **loss-free
+> migration of the 4 durable localStorage keys** `gammaflow.*`→`convexa.*`. **REVERSES the earlier
+> "Convexa = UI-only / don't rename code/keys" decision** (app-shell-landing GATE-S note above; CONTEXT
+> §1/§6, THREADS §7d) by deliberate owner choice (2026-06-28). It was a **feature decision, not a
+> Promoted-canon key**, so it is **updated in place** (CONTEXT §1 brand line + the feature-state UI-only
+> notes annotated "superseded"; THREADS §7d/§7g) — **NOT** moved to the Demoted table. New watch-list key
+> `loss-free-durable-migration`. The three logged keys (`additive-keeps-score-byte-identical`,
+> `best-effort-isolated-or-null`, + the new migration key) — the two canon keys gained an instance, no new
+> graduation. QA (GATE Q) on Sonnet, de-correlated: **23/23 ACs PASS**, conformance unchanged, dashboard
+> 283/283 + @org/api 7/7. STAYS unrenamed (non-goals): `@org/*` scope, `DATA_DIR`, the local working
+> folder, and archived-contract/ledger history (provenance).
 
 > Note (GATE S, user-accounts, 2026-06-25): the project's **first stateful backend surface + first
 > credential store** (email/username+password auth, server-side sessions, per-user light prefs, Google

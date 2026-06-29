@@ -328,6 +328,31 @@ the **heavy client-local stores** (positions portfolio, saved views) to be accou
 on the **go-live trigger** (real persistence / public exposure) — the deferred **Security/red-team role
 (system-6)** + first-class credential handling.
 
+## 7g. Full Convexa rebrand (SHIPPED + ARCHIVED — both lanes + conductor doc sweep)
+Contracts archived at `.claude/contracts/_archive/rebrand-convexa/`. Owner-directed 2026-06-28: complete the
+GammaFlow→Convexa rebrand — extend it from **UI-only to the whole codebase** (134 refs / 51 files).
+**REVERSES the app-shell-landing "Convexa = UI-only / don't rename code/keys" decision** (§7d; CONTEXT
+§1/§6) — a feature decision, updated in place, NOT a Promoted-canon demotion.
+**Frontend** (`apps/dashboard` + `libs/api`): new reusable `apps/dashboard/src/app/durable/resolveDurable.ts`
+migrate-on-read helper (read-new-else-old, promote-forward-once, never-delete, idempotent, never-throw) wired
+into all 4 durable stores, flipping each key `gammaflow.*`→`convexa.*` and keeping the `gammaflow.*` literal
+ONLY as the migration source; the positions store keeps the 4-case brand×version chain (the legacy
+`gammaflow.ghost-trade.v1` still lands whole in `convexa.positions.v2`); `libs/api/src/lib/gammaflow.ts`→
+`convexa.ts` (consumed via `@org/api`, zero export churn); brand strings + `convexa-` download stems; stale
+brand-assertion tests reconciled. `nx test dashboard` 283/283 (+37), `@org/api` 7/7.
+**Backend** (`apps/api`): cosmetic only — logger "Convexa", FastAPI title "Convexa Volatility API",
+ContextVar `convexa_request_trace`, comment/prompt/glossary prose; **no env/field/path/`DATA_DIR` renamed**
+(nothing orphaned); engine byte-identical; conformance 8/8.
+**Conductor doc sweep** (outside both lane fences): root `README.md`, `CLAUDE.md`, `docs/SYSTEM_ANALYSIS.md`,
+`docs/blog/*` (+ rebuilt HTML), `.claude/project.json` `project_name`, and the CONTEXT §1 brand line.
+**QA (GATE Q)** on Sonnet (de-correlated): **23/23 ACs PASS**, conformance unchanged, both suites green;
+`[loss-free durable migration]` proven (carried-whole per store, the cross-brand v1→v2 chain, idempotency,
+never-delete/rollback-safe, corrupt→no-throw-no-wipe, absent→clean-new-user). **STAYS unrenamed (non-goals):**
+`@org/*` scope, `DATA_DIR`, the local working folder `C:\Dev\gammaflow-web`, archived/ledger history.
+**GATE S:** GitHub repo renamed `gammaflow`→`convexa`; dev servers restarted on the renamed code. New
+watch-list key `loss-free-durable-migration`. **Deferred/known:** the stale `gammaflow-web` references in
+`apps/api/README.md` (pre-merge "separate repo" wording) — minor doc cleanup, not blocking.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped

@@ -1,6 +1,6 @@
-# GammaFlow → Strategy AI hand-off contract
+# Convexa → Strategy AI hand-off contract
 
-GammaFlow does **not** call an LLM itself. It produces the analytics, a cheap rule-layer
+Convexa does **not** call an LLM itself. It produces the analytics, a cheap rule-layer
 gate, and a dedupe fingerprint; an **external** orchestrator decides when to invoke the
 strategy AI and with what prompt. This file is that contract: when to call, what to send,
 and what the AI must return.
@@ -66,7 +66,7 @@ faster only on a real-time tier.
   "exit_plan": { "target": 0.0, "stop": 0.0 },
   "time_horizon": "expected holding period",
   "confidence": "low | medium | high",
-  "rationale": "why, citing the specific GammaFlow levels (walls, flip, magnet, IV/HV)"
+  "rationale": "why, citing the specific Convexa levels (walls, flip, magnet, IV/HV)"
 }
 ```
 
@@ -83,7 +83,7 @@ PERSONA-VARIABLE sections. The machine-readable template + the 7 built-in `Perso
 persona-parametrized prompt client-side from that template; the server adds **no** `meta.handoff` and
 accepts **no** `?persona=` param. Persona never changes `opportunity_score`, `opportunity_tier`,
 `ai_eval` (`ready`/`changed`/`state_fingerprint`), the gate, or any analytics — those are
-byte-identical across personas — and switching it triggers **no recompute**. GammaFlow still never calls an LLM.
+byte-identical across personas — and switching it triggers **no recompute**. Convexa still never calls an LLM.
 
 - **FIXED (persona-invariant):** *When to invoke* (gate + dedupe); *What to send* (full bundle +
   `market_state_glossary.md` + DTE window — no field dropped); the **required output schema**; and the

@@ -3,7 +3,7 @@ from datetime import datetime, time, timezone
 import logging
 from scipy.stats import norm
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 
 class QuantEngine:

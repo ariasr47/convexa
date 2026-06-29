@@ -16,7 +16,7 @@ from datetime import datetime
 
 from src.core import chain_store
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # A spot is "live" only if a Q/T tick arrived within this many seconds; otherwise it's a
 # stale last-known value (market closed, or the feed doesn't cover this session).

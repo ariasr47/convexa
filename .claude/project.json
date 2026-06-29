@@ -1,5 +1,5 @@
 {
-  "project_name": "GammaFlow",
+  "project_name": "Convexa",
   "context_file": "PROJECT_CONTEXT.md",
   "backend": {
     "dir": "apps/api",

@@ -74,7 +74,7 @@ AND ai_eval.state_fingerprint not in <fingerprints you've already evaluated>
   "exit_plan": { "target": 0.0, "stop": 0.0 },
   "time_horizon": "expected holding period",
   "confidence": "low | medium | high",
-  "rationale": "why, citing the specific GammaFlow levels (walls, flip, magnet, IV/HV)"
+  "rationale": "why, citing the specific Convexa levels (walls, flip, magnet, IV/HV)"
 }
 \`\`\``;
 

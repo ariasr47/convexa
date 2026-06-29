@@ -30,6 +30,22 @@
 
 ---
 
+## Last GATE I — 2026-06-28 (owner request: complete the Convexa rebrand)
+**Chosen → `rebrand-convexa`** — owner-directed. Extend the rebrand from **UI-only to the whole codebase**:
+rename ~71 `gammaflow` refs (apps/api comments/log-prefixes/title, apps/dashboard, libs/api incl. the
+`gammaflow.ts` client + identifiers, docs, CLAUDE.md/AGENTS.md) → Convexa/convexa, set `project.json`
+`project_name`, rename the GitHub repo `gammaflow → convexa`, and **migrate the 4 durable localStorage keys**
+(`gammaflow.{positions.v2,ghost-trade.v1,personas.v1,uiprefs.v1}`) → `convexa.*` **loss-free**. **REVERSES
+the locked "Convexa = UI-only" decision** (app-shell-landing GATE S; CONTEXT §1/§5, THREADS §7d) — a
+deliberate owner GATE-Z reversal, formalized in canon at this feature's GATE S. Decision-impact cull **N/A**
+(brand/infra class). Feasibility **pass** (no package renames — scope is `@org/*`; repo rename = `gh repo
+rename` w/ redirect; storage migration reuses the proven positions v1→v2 pattern; backend refs look
+cosmetic/no-interface-change). Effort **M** · entry = **architect-first** (rename map, the loss-free
+migration seam, NO_BACKEND_CHANGE confirmation, non-goals — local working-folder NOT renamed; archived
+contracts/ledger keep historical "GammaFlow" as record). **Invariant watch:** `[loss-free durable
+migration]` (HARD — no saved data lost), `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`.
+Brief at `.claude/contracts/rebrand-convexa/BRIEF.md`; routing to the Architect (GATE A·X).
+
 ## Last GATE I — 2026-06-25 (owner request: user accounts / login / sessions / settings)
 **Chosen → `user-accounts`** — owner-directed (not a queue-drain cull): add **email/username+password
 signup & login + "Continue with Google" (OAuth) + a persisted server-side session**, backed by an
@@ -175,6 +191,15 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **`rebrand-convexa`** — `✓ SHIPPED + ARCHIVED (2026-06-28)` → `_archive/rebrand-convexa/`. Completed the
+  GammaFlow→Convexa rebrand from UI-only to the whole codebase (134 refs / 51 files): identifiers, the
+  `gammaflow.ts`→`convexa.ts` client, backend logger/title, docs/README/CLAUDE.md, `project.json`, the
+  GitHub repo (`gammaflow`→`convexa`), and a **loss-free migration of the 4 durable localStorage keys**
+  `gammaflow.*`→`convexa.*` (reusable `resolveDurable` helper composing with the positions v1→v2 chain).
+  **REVERSED the app-shell-landing "UI-only" decision** (updated in place, not a Promoted-canon demotion).
+  Cosmetic to the engine — score/`state_fingerprint` byte-identical. QA PASS (Sonnet, de-correlated —
+  23/23 ACs; dashboard 283/283 + `@org/api` 7/7). New watch-list key `loss-free-durable-migration`. STAYS:
+  `@org/*` scope, `DATA_DIR`, local folder, archived history. Seams → OPEN_THREADS §7g.
 - **`user-accounts`** — `✓ SHIPPED + ARCHIVED (2026-06-25)` → `_archive/user-accounts/`. Both lanes: the
   project's first stateful backend surface — email/username+password auth + server-side sessions + per-user
   light prefs (active persona / default ticker / theme) over in-memory SQLite behind a 3-port swap seam

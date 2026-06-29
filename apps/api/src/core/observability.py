@@ -25,7 +25,7 @@ from collections import deque
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-logger = logging.getLogger("GammaFlowAsync")
+logger = logging.getLogger("Convexa")
 
 # Fixed stage vocabulary + their I/O-vs-CPU kind classifier (load-bearing for the future scanner).
 STAGES = ("vendor_fetch", "engine_build", "off_exchange", "signals", "persist", "serialize_wrap")
@@ -46,7 +46,7 @@ _aggregate: "MetricsAggregate | None" = None
 
 # Request-local current trace. asyncio.to_thread copies the context, so a trace set on the event
 # loop is visible (and mutable) inside the worker thread; appends are visible back on the loop.
-_current_trace: ContextVar = ContextVar("gammaflow_request_trace", default=None)
+_current_trace: ContextVar = ContextVar("convexa_request_trace", default=None)
 
 
 def configure(enabled: bool, window_size: int = 500, recent_size: int = 25) -> None:
