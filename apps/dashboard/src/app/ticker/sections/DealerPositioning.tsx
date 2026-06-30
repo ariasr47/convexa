@@ -5,7 +5,7 @@
  * (`[live-vs-static-isolation]`). Each nullable metric independently shows its own "unavailable"
  * (`[best-effort-isolated-or-null]`). Re-skin/componentize only — values + copy preserved byte-for-byte.
  */
-import { Box, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import type { OffExchange, Signals, MarketState } from '@org/api';
 import { StatTile } from './StatTile';
 import { netDexTip, skewState, skewTip, termTip, volOiTip } from './copy';
@@ -30,9 +30,14 @@ export function DealerPositioning({
 }: Props) {
   return (
     <Box data-testid="dealer-positioning">
-      <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
-        DEALER POSITIONING
-      </Typography>
+      <Stack direction="row" sx={{ alignItems: 'baseline', columnGap: 1.5, flexWrap: 'wrap', mb: 1 }}>
+        <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
+          DEALER POSITIONING
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+          Snapshot, never live — these stay current on a stream drop and refresh with the data load.
+        </Typography>
+      </Stack>
       <Box sx={GRID}>
         <StatTile label="Call wall" value={`$${m.call_wall}`} accent="up"
           info="Strike with the most positive dealer gamma — tends to act as resistance (dealers sell into rallies here)." />
@@ -69,9 +74,6 @@ export function DealerPositioning({
         <StatTile label="Opportunity" value={`${opportunityScore} · ${tierWord}`} accent="neutral" accentColor={tierColor}
           info={"0–100 triage score for how actionable the setup is now (closeness to a key level + volatility extremity + confluence). Not a trade signal." + OPPORTUNITY_TIER_INFO} />
       </Box>
-      <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1 }}>
-        Snapshot, never live — these stay current on a stream drop and refresh with the data load.
-      </Typography>
     </Box>
   );
 }

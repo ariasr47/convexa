@@ -13,7 +13,7 @@ Contracts:
   - INTERFACE_CONTRACT.md      n/a (NO_INTERFACE_CHANGE — consumes existing endpoints/SSE unchanged)
   - FIGMA_COMPONENT_MAP.md     locked  (Pro-plan Code-Connect substitute: node-id ⇄ code/props for 17 components)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  draft — GATE V CLEANUP pass (2026-06-30): remove dead HandoffDialog + helper; de-drift 4 hardcoded token copies (AuthDialog #1c2330→extras.panelRaised; hatch gradient in ComingSoonBox/Scanner/LiveTabPanel; ValueCard brand gradient); QA the global theme.h6 (16/600) for section-title regressions. Ticker surface re-skin SHIPPED (e4a8eff + 32d4027). → dispatched to delivery-frontend 2026-06-30.
+  - FRONTEND_EXECUTION_CONTRACT.md  draft — GATE V Ticker VISUAL FIXES (2026-06-30, owner-reported): (1) relocate the "Snapshot, never live" caption beside the DEALER POSITIONING header (was a trailing block below the grid); (2) de-collide the GEX chart reference-line labels (spot/flip/live overlapped into "lispot $421" when spot & live snap to adjacent strikes). Presentation-only. → dispatched to delivery-frontend 2026-06-30. (Prior GATE V cleanup pass SHIPPED: 82f63ee.)
 Open amendments: none
 QA (GATE Q):  n/a (single fresh QA pass after ALL surfaces, before GATE S merge to main)
 Last gateway:  GATE V (cleanup pass) @ 2026-06-30 — token de-drift + dead-code removal + theme.h6 QA

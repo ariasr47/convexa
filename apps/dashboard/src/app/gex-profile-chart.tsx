@@ -68,8 +68,10 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
     );
   };
 
-  const refLabel = (text: string, color: string) =>
-    ({ value: text, position: 'top' as const, fontSize: 10, fill: color, fontFamily: MONO });
+  // De-collide the three reference-line labels: each gets a fixed vertical slot above the plot so
+  // they stay legible even when two lines snap to the same/adjacent strike (higher slot = higher row).
+  const refLabel = (text: string, color: string, slot: number) =>
+    ({ value: text, position: 'top' as const, dy: -slot * 12, fontSize: 10, fill: color, fontFamily: MONO });
 
   return (
     <Card variant="outlined" sx={{ mt: 3, borderRadius: 3 }}>
@@ -89,7 +91,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
         </Stack>
 
         <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={data} margin={{ top: 18, right: 8, left: 0, bottom: 0 }} barCategoryGap="14%">
+          <BarChart data={data} margin={{ top: 42, right: 8, left: 0, bottom: 0 }} barCategoryGap="14%">
             <XAxis
               dataKey="strike" type="category" tickFormatter={(v) => `$${v}`} interval="preserveStartEnd" minTickGap={28}
               tick={{ fontSize: 10, fill: theme.palette.text.disabled, fontFamily: MONO }} stroke={theme.palette.divider} tickLine={false}
@@ -100,10 +102,10 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
             />
             <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<ProfileTooltip />} />
             <ReferenceLine y={0} stroke={theme.palette.divider} />
-            <ReferenceLine x={nearest(spot)} stroke={theme.palette.primary.main} strokeDasharray="4 3" label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.primary.main)} />
-            <ReferenceLine x={nearest(gammaFlip)} stroke={theme.palette.warning.main} strokeDasharray="4 3" label={refLabel('flip', theme.palette.warning.main)} />
+            <ReferenceLine x={nearest(spot)} stroke={theme.palette.primary.main} strokeDasharray="4 3" label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.primary.main, 0)} />
+            <ReferenceLine x={nearest(gammaFlip)} stroke={theme.palette.warning.main} strokeDasharray="4 3" label={refLabel('flip', theme.palette.warning.main, 1)} />
             {liveSpot != null && liveSpot > 0 && (
-              <ReferenceLine x={nearest(liveSpot)} stroke={theme.palette.info.main} strokeWidth={2} label={refLabel('live', theme.palette.info.main)} />
+              <ReferenceLine x={nearest(liveSpot)} stroke={theme.palette.info.main} strokeWidth={2} label={refLabel('live', theme.palette.info.main, 2)} />
             )}
             <Bar dataKey="net_gex" name="Net GEX" radius={[2, 2, 0, 0]} isAnimationActive={false}>
               {data.map((s) => (
