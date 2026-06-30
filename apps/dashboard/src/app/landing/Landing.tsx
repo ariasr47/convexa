@@ -14,7 +14,7 @@
  */
 import { useState } from 'react';
 import {
-  Box, Button, Chip, Container, Divider, Link, Snackbar, Stack, Typography,
+  Box, Button, Chip, Container, Link, Snackbar, Stack, Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -22,8 +22,8 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import LockIcon from '@mui/icons-material/Lock';
 import RadarIcon from '@mui/icons-material/Radar';
-import { ConvexaMark } from '../shell/ConvexaMark';
 import { ConvexityMotif, ValueCard, ComingSoonCard, Jargon } from '../ui';
+import { Footer } from '../shell/Footer';
 
 // Jargon tooltip copy — verbatim, plain-language (README §2 / UX_BLUEPRINT honesty floor).
 const DEALER_GAMMA_GLOSS =
@@ -220,16 +220,7 @@ export function Landing() {
       </Container>
 
       {/* ===== 4. Footer ===== */}
-      <Divider />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Stack spacing={1}>
-          <ConvexaMark size={16} fontSize="1rem" />
-          <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="footer-disclaimer">
-            Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
-            (paper). Not investment advice. No brokerage connection.
-          </Typography>
-        </Stack>
-      </Container>
+      <Footer />
 
       {/* Non-navigating waitlist acknowledgement (toast). Never enters a broker flow. */}
       <Snackbar
@@ -238,7 +229,7 @@ export function Landing() {
         onClose={() => setToastOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         message={<span data-testid="waitlist-ack">{WAITLIST_TOAST}</span>}
-        ContentProps={{ 'aria-live': 'polite' }}
+        //ContentProps={{ 'aria-live': 'polite' }}
       />
     </Box>
   );
