@@ -102,7 +102,7 @@ describe('Security floor — no secret/password reaches the browser (AC-H1/H2)',
   it('T-H1 / T-H2: no consumed who-am-I field or rendered surface carries a password/hash/session id/secret', async () => {
     backend = installAuthBackend({ session: userSession('u-1', 'a@x.com') });
     const { container } = mountApp('/ticker/TSLA');
-    await screen.findByTestId('account-menu-button');
+    await screen.findByTestId('account-avatar');
     // The who-am-I shape the FE consumes carries only identity + flags. Assert NO secret-bearing
     // KEY exists (the literal "password" as an auth_methods VALUE is fine — it is a method label, not
     // a credential). We inspect the object keys recursively.

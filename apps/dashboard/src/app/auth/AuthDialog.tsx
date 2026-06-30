@@ -12,8 +12,9 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, Stack, TextField, Button, Alert, Link, Divider, Box,
+  Dialog, DialogContent, Stack, TextField, Button, Alert, Link, Divider, Box, IconButton, Typography,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { AuthError } from '@org/api';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
@@ -43,7 +44,6 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
   const auth = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -53,6 +53,13 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
   }, [open, mode]);
 
   const c = mode === 'signup' ? AUTH_COPY.signup : AUTH_COPY.login;
+  // Title matches the Figma AuthModal ("Welcome back" on login; the copy source's `login.title`
+  // is the button/account label "Sign in"). Subtitle per the Figma.
+  const title = mode === 'signup' ? AUTH_COPY.signup.title : 'Welcome back';
+  const subtitle =
+    mode === 'signup'
+      ? 'Save personas, sync settings, and unlock AI reads.'
+      : 'Sign in to sync your settings and AI key.';
 
   const mapError = (err: unknown): FieldErrors => {
     if (err instanceof AuthError) {
@@ -90,7 +97,8 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
     setSubmitting(true);
     try {
       if (mode === 'signup') {
-        await auth.signUp({ email: email.trim(), password, display_name: displayName.trim() || null });
+        // Display name is set later on the full-page /auth surface; the modal is email + password.
+        await auth.signUp({ email: email.trim(), password, display_name: null });
       } else {
         await auth.signIn({ email: email.trim(), password });
       }
@@ -106,14 +114,50 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
   };
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="xs" fullWidth
-      data-testid="auth-dialog">
-      <DialogTitle data-testid="auth-dialog-title">
-        {mode === 'signup' ? AUTH_COPY.signup.title : AUTH_COPY.login.title}
-      </DialogTitle>
-      <DialogContent>
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+      data-testid="auth-dialog"
+      slotProps={{
+        // Elevated slate card (raised above the page) + crisp border + dialog shadow, per the Figma.
+        paper: {
+          sx: {
+            borderRadius: 2.5,
+            border: 1,
+            borderColor: 'divider',
+            backgroundImage: 'none',
+            bgcolor: '#1c2330', // panel-raised (tokens.extras.panelRaised) — lighter than the page
+          },
+        },
+        backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(8, 11, 16, 0.66)' } },
+      }}
+    >
+      <DialogContent sx={{ p: 3 }}>
         <Box component="form" onSubmit={submit} noValidate>
-          <Stack spacing={2} sx={{ pt: 0.5 }}>
+          <Stack spacing={2}>
+            {/* Header — bold title + subtitle + close, per the Figma AuthModal. */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }} data-testid="auth-dialog-title">
+                  {title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {subtitle}
+                </Typography>
+              </Box>
+              <IconButton
+                size="small"
+                onClick={onClose}
+                disabled={submitting}
+                aria-label="Close"
+                data-testid="auth-close"
+                sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
             {reason && <Alert severity="info" data-testid="auth-reason">{reason}</Alert>}
             {errors.form && (
               <Alert severity={mode === 'login' ? 'error' : 'warning'} data-testid="auth-form-error">
@@ -121,42 +165,66 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
               </Alert>
             )}
 
-            <TextField
-              label={c.email}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={!!errors.email}
-              helperText={errors.email}
-              disabled={submitting}
-              required
-              fullWidth
-              slotProps={{ htmlInput: { 'data-testid': 'auth-email' } }}
-            />
-            <TextField
-              label={c.password}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              error={!!errors.password}
-              helperText={errors.password}
-              disabled={submitting}
-              required
-              fullWidth
-              slotProps={{ htmlInput: { 'data-testid': 'auth-password' } }}
-            />
-            {mode === 'signup' && (
+            {/* Uppercase standalone label + bordered input with placeholder (Figma AuthModal). */}
+            <Box>
+              <Typography
+                component="label"
+                htmlFor="auth-email-input"
+                sx={{ display: 'block', mb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.secondary' }}
+              >
+                {c.email}
+              </Typography>
               <TextField
-                label={AUTH_COPY.signup.displayName}
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                id="auth-email-input"
+                hiddenLabel
+                size="small"
+                placeholder="you@email.com"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={!!errors.email}
+                helperText={errors.email}
                 disabled={submitting}
+                required
                 fullWidth
-                slotProps={{ htmlInput: { 'data-testid': 'auth-display-name' } }}
+                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.default' } }}
+                slotProps={{ htmlInput: { 'data-testid': 'auth-email' } }}
               />
-            )}
+            </Box>
+            <Box>
+              <Typography
+                component="label"
+                htmlFor="auth-password-input"
+                sx={{ display: 'block', mb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.secondary' }}
+              >
+                {c.password}
+              </Typography>
+              <TextField
+                id="auth-password-input"
+                hiddenLabel
+                size="small"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={!!errors.password}
+                helperText={errors.password}
+                disabled={submitting}
+                required
+                fullWidth
+                sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'background.default' } }}
+                slotProps={{ htmlInput: { 'data-testid': 'auth-password' } }}
+              />
+            </Box>
 
-            <Button type="submit" variant="contained" disabled={submitting} data-testid="auth-submit">
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disableElevation
+              disabled={submitting}
+              data-testid="auth-submit"
+            >
               {submitting ? c.submitting : c.submit}
             </Button>
 
@@ -168,7 +236,7 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
               type="button"
               onClick={() => onModeChange(mode === 'signup' ? 'login' : 'signup')}
               data-testid="auth-mode-switch"
-              sx={{ alignSelf: 'flex-start' }}
+              sx={{ alignSelf: 'center', fontWeight: 600 }}
             >
               {mode === 'signup' ? AUTH_COPY.signup.switch : AUTH_COPY.login.switch}
             </Link>

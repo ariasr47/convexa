@@ -112,15 +112,20 @@ function renderAt(path: string) {
 // routes
 // =================================================================================================
 describe('routes', () => {
-  it('"/" renders Landing, not a ticker redirect', async () => {
+  it('"/" renders Landing INSIDE the shell, not a ticker redirect', async () => {
     renderAt('/');
     // Landing brand + hook + a value prop + the primary CTA are present.
     expect(screen.getByTestId('landing')).toBeInTheDocument();
     expect(screen.getByText('See the AI read on your real positioning.')).toBeInTheDocument();
     expect(screen.getByTestId('vp-ticker')).toBeInTheDocument();
     expect(screen.getByTestId('cta-primary')).toBeInTheDocument();
-    // It did NOT redirect into a ticker: no nav shell, no ticker headline / no bundle fetch.
-    expect(screen.queryByTestId('app-shell')).toBeNull();
+    // OWNER DECISION (convexa-redesign): the persistent top nav now shows on `/` too — the shell is
+    // present and the Ticker/Positions/Scanner nav links render on Landing.
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-ticker')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-positions')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-scanner')).toBeInTheDocument();
+    // It did NOT redirect into the ticker VIEWER: no ticker input field / no bundle fetch.
     expect(screen.queryByLabelText('Ticker')).toBeNull();
     expect(calledNonAuth()).toBe(false); // no trader/bundle fetch (the who-am-I read is excluded)
   });
@@ -225,10 +230,16 @@ describe('nav', () => {
     expect(screen.getByTestId('app-shell')).toBe(shell);
   });
 
-  it('landing renders no trader nav shell', () => {
+  it('landing renders INSIDE the trader nav shell (owner decision)', () => {
     renderAt('/');
-    expect(screen.queryByTestId('app-shell')).toBeNull();
-    expect(screen.queryByTestId('nav-ticker')).toBeNull();
+    // The persistent top nav shows on Landing too (matches the prototype): shell + nav links present.
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-ticker')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-positions')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-scanner')).toBeInTheDocument();
+    // Still NOT a ticker viewer (Landing content renders, no ticker input field).
+    expect(screen.getByTestId('landing')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Ticker')).toBeNull();
   });
 });
 

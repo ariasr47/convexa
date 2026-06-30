@@ -6,11 +6,20 @@
  *
  * Route shape (the binding table):
  *  - `/_ops/metrics`         → <OperatorMetrics/>   OUTSIDE the shell, declared FIRST so `/*` can't
- *                                                    shadow it, own AppBar, NOT linked (AC-Inv-7).
- *  - `/`                     → <Landing/>           OUTSIDE the shell (full-bleed). NOT a ticker
- *                                                    redirect (AC-Route-1).
+ *                                                    shadow it, own AppBar, NOT linked (AC-Inv-7). This
+ *                                                    is now the ONLY nav-less route — the operator-vs-
+ *                                                    trader separation invariant lives here alone.
  *  - <AppShell/> (parent)    → persistent layout via <Outlet/> — mounts once, does not remount across
  *                              the in-shell pages (AC-Nav-4):
+ *      - index (`/`)         → <Landing/>           OWNER DECISION (convexa-redesign): Landing now
+ *                                                    renders INSIDE the shell so the persistent top nav
+ *                                                    shows on every screen (matches the prototype). This
+ *                                                    OVERRIDES the README "Landing full-bleed outside the
+ *                                                    shell" line + the old AC-Route-1 / AC-Inv-8 wording.
+ *                                                    `/` is still NEVER a redirect to a ticker; Landing
+ *                                                    stays full-bleed below the bar (AppShell's <Outlet/>
+ *                                                    adds no width container). FLAGGED for a GATE Z
+ *                                                    contract/README amendment (see report).
  *      - `/ticker`           → index redirect to `/ticker/TSLA` (bare → default TSLA, AC-Route-3)
  *      - `/ticker/:symbol`   → <TickerDashboard/>   (relocated, unchanged; URL-addressable symbol)
  *      - `/positions`        → <PositionsPage/>     (relocated PortfolioPanel, standalone wrapper)
@@ -36,14 +45,16 @@ import { AppThemeProvider } from './auth/ThemeProvider';
 export function AppRoutes() {
   return (
     <Routes>
-      {/* Operator-only readout — off the trader shell, unlinked. FIRST so `/*` never shadows it. */}
+      {/* Operator-only readout — off the trader shell, unlinked. FIRST so `/*` never shadows it.
+          This is the ONLY nav-less route (operator-vs-trader separation invariant). */}
       <Route path="/_ops/metrics" element={<OperatorMetrics />} />
-
-      {/* Landing — full-bleed, outside the shell. `/` is NEVER a redirect to a ticker. */}
-      <Route path="/" element={<Landing />} />
 
       {/* The persistent shell group: the nav bar mounts once; pages swap in the <Outlet/>. */}
       <Route element={<AppShell />}>
+        {/* Landing — OWNER DECISION (convexa-redesign): now the shell INDEX route so the persistent
+            top nav shows on `/` too. Full-bleed below the bar (no width container). `/` is NEVER a
+            redirect to a ticker. */}
+        <Route index element={<Landing />} />
         {/* Bare `/ticker` → default TSLA (index redirect; `/` itself is never redirected). */}
         <Route path="/ticker" element={<Navigate to="/ticker/TSLA" replace />} />
         <Route path="/ticker/:ticker" element={<TickerDashboard />} />

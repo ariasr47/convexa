@@ -10,8 +10,8 @@
 export const AUTH_COPY = {
   account: {
     signIn: 'Sign in',
-    settings: 'Settings',
-    logOut: 'Log out',
+    // NOTE: `settings`/`logOut` (the old nav dropdown labels) were removed in the convexa-redesign —
+    // the dropdown is gone; log out now lives on the Settings Account panel (`settings.signOut`).
   },
   signup: {
     title: 'Create your account',
@@ -65,6 +65,13 @@ export const AUTH_COPY = {
   },
   settings: {
     title: 'Settings',
+    subtitle: 'Saved to your account.',
+    // Panel headings (convexa-redesign Figma `4:2572`).
+    accountHeading: 'Account',
+    preferencesHeading: 'Preferences',
+    signOut: 'Sign out',
+    signIn: 'Sign in',
+    accountSignedOutPrompt: 'Sign in to sync your settings across devices.',
     activePersona: 'Active persona',
     defaultTicker: 'Default ticker',
     defaultTickerHelper: 'The symbol the Ticker viewer opens to by default.',

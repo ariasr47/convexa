@@ -64,20 +64,38 @@ describe('Signup → reload-persist → logout (AC-B1/C2/D1)', () => {
     await user.click(await screen.findByTestId('account-signin'));
     await signUp(user, 'new@user.com', 'longenoughpw');
 
-    // Signed-in: the account menu now shows (the email/display name).
-    await waitFor(() => expect(screen.getByTestId('account-menu-button')).toBeInTheDocument());
-    expect(screen.getByTestId('account-menu-button')).toHaveTextContent('new@user.com');
+    // Signed-in: the nav now shows the email + the gradient avatar (no dropdown menu anymore).
+    await waitFor(() => expect(screen.getByTestId('account-avatar')).toBeInTheDocument());
+    expect(screen.getByTestId('account-email')).toHaveTextContent('new@user.com');
+    expect(screen.queryByTestId('account-menu-button')).toBeNull(); // the old dropdown is gone
 
     // T-C2: remount (a reload) ⇒ who-am-I reports the SAME user, still signed in.
     unmount();
     mountApp('/ticker/TSLA');
-    await waitFor(() => expect(screen.getByTestId('account-menu-button')).toHaveTextContent('new@user.com'));
+    await waitFor(() => expect(screen.getByTestId('account-email')).toHaveTextContent('new@user.com'));
 
-    // T-D1: log out ⇒ account control flips back to Sign in; who-am-I reports anonymous.
-    await user.click(screen.getByTestId('account-menu-button'));
-    await user.click(await screen.findByTestId('account-logout'));
+    // T-D1: log out now lives on the Settings Account panel. The avatar links to /settings; navigate
+    // there and click "Sign out" ⇒ account control flips back to Sign in; who-am-I reports anonymous.
+    expect(screen.getByTestId('account-avatar')).toHaveAttribute('href', '/settings');
+    await user.click(screen.getByTestId('account-avatar'));
+    await user.click(await screen.findByTestId('settings-signout'));
     await waitFor(() => expect(screen.getByTestId('account-signin')).toBeInTheDocument());
     expect(backend.state.session.authenticated).toBe(false);
+  });
+});
+
+describe('Signed-in nav profile (convexa-redesign README §1)', () => {
+  it('shows the email + a gradient avatar that links to /settings; no dropdown menu', async () => {
+    backend = installAuthBackend({ session: userSession('u-1', 'a@x.com') });
+    mountApp('/ticker/TSLA');
+
+    const avatar = await screen.findByTestId('account-avatar');
+    // The avatar is the profile affordance: a RouterLink straight to Settings.
+    expect(avatar).toHaveAttribute('href', '/settings');
+    // The email shows alongside it; the old dropdown button is gone (log out moved to Settings).
+    expect(screen.getByTestId('account-email')).toHaveTextContent('a@x.com');
+    expect(screen.queryByTestId('account-menu-button')).toBeNull();
+    expect(screen.queryByTestId('account-logout')).toBeNull();
   });
 });
 
@@ -101,7 +119,7 @@ describe('Logged-out gated action → prompt → sign-in → works (AC-E1, D6c)'
     await user.click(screen.getByTestId('auth-submit'));
 
     // Back on /positions, signed in: the write now works (the entry dialog opens) — prompt cleared.
-    await waitFor(() => expect(screen.getByTestId('account-menu-button')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('account-avatar')).toBeInTheDocument());
     await user.click(screen.getByTestId('open-entry'));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
   });

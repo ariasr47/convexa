@@ -14,6 +14,7 @@ import {
   Box, Stack, Typography, TextField, Button, Alert, Divider, Snackbar,
 } from '@mui/material';
 import { AuthError, getAiKeyStatus, setAiKey, removeAiKey, type AiKeyStatus } from '@org/api';
+import { typographyTokens } from '../tokens';
 import { useAuth } from './AuthContext';
 import { useGate } from './useGate';
 import { SignInPrompt } from './SignInPrompt';
@@ -23,7 +24,10 @@ const C = AUTH_COPY.settings.aiKey;
 
 type Mode = 'view' | 'replace';
 
-export function AiKeySection() {
+/** `embedded` (Settings panel re-skin): the parent PanelCard already renders the "AI key" heading +
+ *  the card border, so the inner Section drops its own heading + leading divider. Behavior, testids,
+ *  and the write-only/no-reveal security floor are unchanged either way. */
+export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) {
   const auth = useAuth();
   const gate = useGate();
   const [status, setStatus] = useState<AiKeyStatus | null>(null);
@@ -94,7 +98,7 @@ export function AiKeySection() {
   // ---- Anonymous: a stored key is per-account — show a sign-in prompt, no form (UX §4.5) --------
   if (!auth.authenticated) {
     return (
-      <Section>
+      <Section embedded={embedded}>
         <Box data-testid="settings-ai-key-anonymous">
           <SignInPrompt
             text={C.anonymous}
@@ -125,7 +129,7 @@ export function AiKeySection() {
   );
 
   return (
-    <Section>
+    <Section embedded={embedded}>
       {/* storage-unavailable (AC-18) — info, never error; the input is disabled below. */}
       {storageUnavailable && (
         <Alert severity="info" sx={{ mt: 1 }} data-testid="settings-ai-key-storage-unavailable">
@@ -136,7 +140,10 @@ export function AiKeySection() {
       {/* Set state: masked hint + Replace + Remove. NO reveal/show/copy control exists. */}
       {isSet && !storageUnavailable && mode === 'view' && (
         <Box sx={{ mt: 1 }} data-testid="settings-ai-key-set">
-          <Typography variant="body1" data-testid="settings-ai-key-masked">
+          <Typography
+            data-testid="settings-ai-key-masked"
+            sx={{ fontFamily: typographyTokens.monoFontFamily, fontSize: 15, fontWeight: 600, letterSpacing: '0.02em', color: 'text.primary' }}
+          >
             {maskedKeyLabel(status?.last4 ?? null)}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
@@ -253,12 +260,14 @@ function KeyForm({
   );
 }
 
-/** Section frame — heading + helper + a divider, with the section testid + a deep-link anchor. */
-function Section({ children }: { children: ReactNode }) {
+/** Section frame — helper (+ heading/divider when standalone), with the section testid + deep-link
+ *  anchor. When `embedded` (inside the Settings PanelCard), the heading + leading divider are dropped
+ *  because the card already provides them; the helper + the section testid + all children stay. */
+function Section({ children, embedded = false }: { children: ReactNode; embedded?: boolean }) {
   return (
     <Box id="ai-key" data-testid="settings-ai-key-section">
-      <Divider sx={{ mb: 2 }} />
-      <Typography variant="h6">{C.heading}</Typography>
+      {!embedded && <Divider sx={{ mb: 2 }} />}
+      {!embedded && <Typography variant="h6">{C.heading}</Typography>}
       <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{C.helper}</Typography>
       {children}
     </Box>

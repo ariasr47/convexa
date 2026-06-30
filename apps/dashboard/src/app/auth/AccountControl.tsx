@@ -1,27 +1,24 @@
 /**
- * AccountControl — the AppShell top-right account affordance (UX_BLUEPRINT §2.1). Reflects who-am-I:
+ * AccountControl — the AppShell top-right account affordance (UX_BLUEPRINT §2.1, README §1).
+ * Reflects who-am-I:
  *  - loading: a neutral muted placeholder (the rest of the app renders normally — no blocking spinner).
  *  - unauthenticated (incl. subsystem-degraded): a `Sign in` control opening the AuthDialog.
- *  - authenticated: the display name (else email) with a menu: `Settings`, `Log out`.
+ *  - authenticated: the **email** (secondary) + a **32px gradient avatar** that is a RouterLink to
+ *    `/settings` (clicking the profile opens Settings). NO dropdown menu — log out moved onto the
+ *    Settings Account panel (convexa-redesign Figma `4:2572`).
  *
  * The degraded state is treated as unauthenticated (shows `Sign in`); the "couldn't reach sign-in"
  * copy surfaces only on submit / on a gated action — never here, and never on the trader path.
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Button, Menu, MenuItem, Skeleton, Box, Typography, Divider,
-} from '@mui/material';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { Link as RouterLink } from 'react-router-dom';
+import { Button, Skeleton, Box, Typography, Stack } from '@mui/material';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { AUTH_COPY } from './copy';
+import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
 
 export function AccountControl() {
   const auth = useAuth();
   const { openAuth } = useAuthDialog();
-  const navigate = useNavigate();
-  const [anchor, setAnchor] = useState<null | HTMLElement>(null);
 
   if (!auth.ready) {
     return (
@@ -30,53 +27,70 @@ export function AccountControl() {
   }
 
   if (!auth.authenticated) {
+    // Custom login/sign-up control: a ghost "Log in" + a gradient "Sign up" pill, both opening the
+    // shared AuthDialog (login vs signup mode). The pill carries the same high-tech polish as the
+    // Landing value cards (gradient fill + hover glow/lift), reduced-motion safe.
     return (
-      <Button
-        size="small"
-        variant="outlined"
-        color="inherit"
-        startIcon={<AccountCircleIcon />}
-        onClick={() => openAuth({ mode: 'login' })}
-        data-testid="account-signin"
-      >
-        {AUTH_COPY.account.signIn}
-      </Button>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Button
+          size="small"
+          variant="text"
+          onClick={() => openAuth({ mode: 'login' })}
+          data-testid="account-signin"
+          sx={{ color: 'text.secondary', whiteSpace: 'nowrap', '&:hover': { color: 'text.primary' } }}
+        >
+          Log in
+        </Button>
+        <Button
+          size="small"
+          variant="contained"
+          disableElevation
+          onClick={() => openAuth({ mode: 'signup' })}
+          data-testid="account-signup"
+          sx={{
+            whiteSpace: 'nowrap',
+            borderRadius: 999,
+            px: 2,
+            color: '#fff',
+            background: 'linear-gradient(135deg, #4f9cff, #7b5cff)',
+            transition: 'transform 180ms ease, box-shadow 180ms ease, filter 180ms ease',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              filter: 'brightness(1.06)',
+              boxShadow: '0 8px 22px -8px rgba(79, 156, 255, 0.6)',
+              background: 'linear-gradient(135deg, #4f9cff, #7b5cff)',
+            },
+            '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
+          }}
+        >
+          Sign up
+        </Button>
+      </Stack>
     );
   }
 
-  const name = auth.user?.display_name || auth.user?.email || 'Account';
-
+  // Signed-in: the email (secondary, hidden < sm to save space) + a 32px gradient avatar that links
+  // to /settings. No dropdown menu — log out now lives on the Settings Account panel.
   return (
-    <Box>
-      <Button
-        size="small"
-        color="inherit"
-        startIcon={<AccountCircleIcon />}
-        onClick={(e) => setAnchor(e.currentTarget)}
-        data-testid="account-menu-button"
+    <Stack direction="row" spacing={1.25} alignItems="center">
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        noWrap
+        data-testid="account-email"
+        sx={{ maxWidth: 220, lineHeight: 1, display: { xs: 'none', sm: 'block' } }}
       >
-        {name}
-      </Button>
-      <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
-        <Box sx={{ px: 2, py: 0.5, maxWidth: 240 }}>
-          <Typography variant="caption" color="text.secondary" noWrap data-testid="account-email">
-            {auth.user?.email}
-          </Typography>
-        </Box>
-        <Divider />
-        <MenuItem
-          onClick={() => { setAnchor(null); navigate('/settings'); }}
-          data-testid="account-settings"
-        >
-          {AUTH_COPY.account.settings}
-        </MenuItem>
-        <MenuItem
-          onClick={async () => { setAnchor(null); await auth.signOut(); }}
-          data-testid="account-logout"
-        >
-          {AUTH_COPY.account.logOut}
-        </MenuItem>
-      </Menu>
-    </Box>
+        {auth.user?.email}
+      </Typography>
+      <Box
+        component={RouterLink}
+        to="/settings"
+        aria-label="Account settings"
+        data-testid="account-avatar"
+        sx={{ ...GRADIENT_AVATAR_SX, textDecoration: 'none' }}
+      >
+        {avatarInitial(auth.user)}
+      </Box>
+    </Stack>
   );
 }
