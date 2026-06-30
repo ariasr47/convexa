@@ -67,8 +67,7 @@ export function GoogleButton({ available }: { available: boolean }) {
       {!available && (
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ display: 'block', mt: 0.5 }}
+          sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
           data-testid="google-helper"
         >
           {AUTH_COPY.google.helperDisabled}

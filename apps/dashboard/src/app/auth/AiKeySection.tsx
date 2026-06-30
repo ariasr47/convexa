@@ -146,7 +146,7 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
           >
             {maskedKeyLabel(status?.last4 ?? null)}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
             {C.setSubLine}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
@@ -268,7 +268,7 @@ function Section({ children, embedded = false }: { children: ReactNode; embedded
     <Box id="ai-key" data-testid="settings-ai-key-section">
       {!embedded && <Divider sx={{ mb: 2 }} />}
       {!embedded && <Typography variant="h6">{C.heading}</Typography>}
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{C.helper}</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{C.helper}</Typography>
       {children}
     </Box>
   );

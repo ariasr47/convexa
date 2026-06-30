@@ -167,7 +167,7 @@ export function CustomizationToolbar({ pf, guardSaveView, streamOffline, onOpenE
           </MenuItem>
           <Divider />
           <MenuItem disableRipple sx={{ pointerEvents: 'none' }}>
-            <Tooltip arrow title={SAVED_VIEW_TIP}><Typography variant="caption" color="text.disabled">ⓘ A named snapshot of your view.</Typography></Tooltip>
+            <Tooltip arrow title={SAVED_VIEW_TIP}><Typography variant="caption" sx={{ color: 'text.disabled' }}>ⓘ A named snapshot of your view.</Typography></Tooltip>
           </MenuItem>
         </Menu>
 

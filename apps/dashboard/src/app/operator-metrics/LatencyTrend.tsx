@@ -84,13 +84,13 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
           <Box sx={{ flexGrow: 1 }} />
           <Chip size="small" color={paused || autoPaused ? 'default' : 'success'} variant={paused || autoPaused ? 'outlined' : 'filled'}
             label={paused ? 'paused' : autoPaused ? 'auto-paused' : `live ●`} />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             Last {horizonLabel} · {sampleCount} samples · in memory{capped ? ' · oldest drop at the cap' : ''}
           </Typography>
         </Stack>
 
         {/* Ephemerality — persistent, near the controls. */}
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>{EPHEMERAL}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>{EPHEMERAL}</Typography>
 
         {/* Controls. */}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center', mb: 1 }}>
@@ -152,10 +152,10 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
           {error && <Chip size="small" color="warning" variant="outlined" label="Couldn't refresh — keeping the last trend, retrying on the next poll." />}
           {isStale && <Chip size="small" variant="outlined" label="No new traffic" />}
           {tickerDropped && <Chip size="small" variant="outlined" label={`No recent traffic for ${scope} — it left the window. The earlier line is kept.`} />}
-          {(paused || autoPaused) && <Typography variant="caption" color="text.secondary">{paused ? 'Paused — polling stopped; the trend is frozen. Resume to continue.' : 'Auto-paused while the tab was hidden.'}</Typography>}
-          {lastExport != null && <Typography variant="caption" color="success.main">Exported the current trend ({lastExport} samples). Saved to your machine — no server state created.</Typography>}
+          {(paused || autoPaused) && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{paused ? 'Paused — polling stopped; the trend is frozen. Resume to continue.' : 'Auto-paused while the tab was hidden.'}</Typography>}
+          {lastExport != null && <Typography variant="caption" sx={{ color: 'success.main' }}>Exported the current trend ({lastExport} samples). Saved to your machine — no server state created.</Typography>}
         </Stack>
-        {isStale && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{STALE_CAPTION}</Typography>}
+        {isStale && <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>{STALE_CAPTION}</Typography>}
 
         {/* Chart — keeps axes/grid even when empty (gap, never blank). */}
         <Box sx={{ position: 'relative' }}>
@@ -183,7 +183,7 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
           </ResponsiveContainer>
           {placeholder && (
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-              <Typography variant="body2" color="text.disabled" sx={{ maxWidth: 420, textAlign: 'center', bgcolor: 'background.paper', px: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.disabled', maxWidth: 420, textAlign: 'center', bgcolor: 'background.paper', px: 1 }}>
                 {placeholder}
               </Typography>
             </Box>
@@ -193,7 +193,7 @@ export function LatencyTrend({ trend }: { trend: Trend }) {
         {/* Persistent caveat + non-alerting (under the chart, NOT tooltips). */}
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mt: 1 }}>
           <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', mt: 0.25 }} />
-          <Typography variant="caption" color="text.secondary">{CAVEAT} {NON_ALERTING}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{CAVEAT} {NON_ALERTING}</Typography>
         </Stack>
       </CardContent>
     </Card>

@@ -60,7 +60,7 @@ export function cellContent(col: ColumnKey, ctx: RowContext): React.ReactNode {
   const mtr = row.metrics;
   const liveDim = streamOffline ? 0.5 : 1;
   const offlineTag = streamOffline ? (
-    <Typography component="span" variant="caption" color="text.disabled"> · {OFFLINE}</Typography>
+    <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}> · {OFFLINE}</Typography>
   ) : null;
 
   switch (col) {
@@ -94,7 +94,7 @@ export function cellContent(col: ColumnKey, ctx: RowContext): React.ReactNode {
       if (p.status === 'pending') {
         return (
           <Tooltip arrow title={LIMIT_TIP}>
-            <Typography variant="body2" color="info.main">limit ${(p.limit_price ?? 0).toFixed(2)}</Typography>
+            <Typography variant="body2" sx={{ color: 'info.main' }}>limit ${(p.limit_price ?? 0).toFixed(2)}</Typography>
           </Tooltip>
         );
       }
@@ -210,9 +210,9 @@ export function PendingAffordance({ ctx }: { ctx: RowContext }) {
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5 }} data-testid="pending-affordance">
       {streamOffline ? (
-        <Typography variant="caption" color="text.disabled">Paused — resumes pricing when the live feed returns. ⏸</Typography>
+        <Typography variant="caption" sx={{ color: 'text.disabled' }}>Paused — resumes pricing when the live feed returns. ⏸</Typography>
       ) : (
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           Waiting for mark ≤ ${(p.limit_price ?? 0).toFixed(2)}{liveMark != null ? ` (live $${liveMark.toFixed(2)})` : ''}
         </Typography>
       )}
@@ -226,7 +226,7 @@ export function ClosedSummary({ row }: { row: DerivedRow }) {
   const theme = useTheme();
   const p = row.position;
   if (p.status === 'cancelled') {
-    return <Typography variant="body2" color="text.secondary">Cancelled · resting limit never filled</Typography>;
+    return <Typography variant="body2" sx={{ color: 'text.secondary' }}>Cancelled · resting limit never filled</Typography>;
   }
   const held = p.close_time && p.entry_time
     ? Math.round((Date.parse(p.close_time) - Date.parse(p.entry_time)) / 60000) : 0;

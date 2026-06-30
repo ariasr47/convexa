@@ -111,7 +111,7 @@ export function ValueCard({
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', flexGrow: 1 }}>
             {body}
           </Typography>
           <Box>

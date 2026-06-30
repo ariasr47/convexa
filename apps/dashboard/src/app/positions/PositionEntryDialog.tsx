@@ -197,12 +197,12 @@ export function PositionEntryDialog({ open, ticker, expirations, strikes, spot, 
             <TextField size="small" type="number" label="Target (optional)" value={target}
               onChange={(e) => setTarget(e.target.value === '' ? '' : Number(e.target.value))} fullWidth />
           </Stack>
-          {prefill?.sizingNote && <Typography variant="caption" color="text.secondary">{prefill.sizingNote}</Typography>}
+          {prefill?.sizingNote && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{prefill.sizingNote}</Typography>}
 
           {/* Fill preview per mode. */}
           <Box>
             {fillState === 'loading' ? (
-              <Typography variant="body2" color="text.secondary">Select a contract to see the fill.</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Select a contract to see the fill.</Typography>
             ) : fillState === 'error' ? (
               <Typography variant="body2" color="error">Couldn't load the chain for entry — try again.</Typography>
             ) : mode === 'manual' ? (
@@ -214,7 +214,7 @@ export function PositionEntryDialog({ open, ticker, expirations, strikes, spot, 
                 </Typography>
                 <Chip size="small" variant="outlined" sx={{ mt: 0.5 }} label="user-entered price" />
                 {contractStatsFailed && (
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                     Contract stats unavailable — your entry still works.
                   </Typography>
                 )}
@@ -232,13 +232,13 @@ export function PositionEntryDialog({ open, ticker, expirations, strikes, spot, 
                   <Chip size="small" variant="outlined" sx={{ mt: 0.5 }}
                     label={marketFill.basis === 'theoretical' ? 'theoretical' : 'snapshot mid'} />
                   {marketFill.basis === 'theoretical' && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                       No live quote — fill will use a theoretical (Black-Scholes) mark.
                     </Typography>
                   )}
                 </>
               ) : (
-                <Typography variant="body2" color="text.secondary">Select a contract to see the fill.</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Select a contract to see the fill.</Typography>
               )
             ) : ( // limit
               <>
@@ -248,14 +248,14 @@ export function PositionEntryDialog({ open, ticker, expirations, strikes, spot, 
                     : `Rests until the live mark reaches $${Number(limitPrice).toFixed(2)}, then fills at $${Number(limitPrice).toFixed(2)}. Stays cancellable until it fills.`}
                 </Typography>
                 {alreadyCrossable && (
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                     The live mark is already at or below your limit — this will fill on the next live tick.
                   </Typography>
                 )}
               </>
             )}
           </Box>
-          <Typography variant="caption" color="text.secondary">{DISCLAIMER}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{DISCLAIMER}</Typography>
         </Stack>
       </DialogContent>
       <DialogActions>

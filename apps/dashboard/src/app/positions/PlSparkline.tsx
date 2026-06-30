@@ -15,7 +15,7 @@ export function PlSparkline({ samples, offline }: { samples: PlSample[]; offline
   const theme = useTheme();
   const plotted = samples.filter((s) => s.pl != null);
   if (plotted.length < 2) {
-    return <Typography variant="caption" color="text.disabled" data-testid="trend-empty">—</Typography>;
+    return <Typography variant="caption" sx={{ color: 'text.disabled' }} data-testid="trend-empty">—</Typography>;
   }
   // A null sample becomes a `null` y → recharts breaks the line (connectNulls=false).
   const data = samples.map((s, i) => ({ i, pl: s.pl }));

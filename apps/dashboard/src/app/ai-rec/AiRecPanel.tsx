@@ -124,14 +124,14 @@ export function AiRecPanel({
                 {personas.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
               </Select>
             </FormControl>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 320, mt: 0.5 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', maxWidth: 320, mt: 0.5 }}>
               Defaults to your active persona ({activeName}). Changing it here frames this one read only —
               it doesn't change your active persona and never recomputes any number.
             </Typography>
           </Box>
           <Box>
             <Button size="small" onClick={() => onViewExport(readPersonaIdForRequest)}>{COPY.action.viewExport}</Button>
-            <Typography variant="caption" color="text.disabled" sx={{ display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block' }}>
               Costs nothing — opens the exact export.
             </Typography>
           </Box>
@@ -209,7 +209,7 @@ function LoadingBlock({ ticker, readName }: { ticker: string; readName: string }
         <CircularProgress size={18} />
         <Typography variant="subtitle1">{COPY.loading.title}</Typography>
       </Stack>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         Asking the AI for a risk-first read on {ticker} ({readName}). This can take a few seconds.
       </Typography>
     </Box>
@@ -219,7 +219,7 @@ function LoadingBlock({ ticker, readName }: { ticker: string; readName: string }
 // ---- Snapshot idle hint ----------------------------------------------------------------------
 function SnapshotHint({ bundle }: { bundle: TickerBundle | null }) {
   return (
-    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
       Reads the current snapshot{bundle?.meta.freshness.snapshot_iso ? `, as of ${bundle.meta.freshness.snapshot_iso}` : ''}.
     </Typography>
   );
@@ -249,7 +249,7 @@ function ActionRegion({
           <Button variant="contained" size="small" disabled>{COPY.action.get}</Button>
           <Chip size="small" variant="outlined" label={COPY.noKey.chip} />
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{COPY.noKey.caption}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>{COPY.noKey.caption}</Typography>
       </Box>
     );
   }
@@ -259,7 +259,7 @@ function ActionRegion({
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>{capTitle(friendlyResetTime(cap.resets_at))}</Button>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{CAP_CAPTION}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>{CAP_CAPTION}</Typography>
       </Box>
     );
   }
@@ -269,7 +269,7 @@ function ActionRegion({
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>{cooldownLabel(cooldownRemaining)}</Button>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{cooldownCaption(cooldownRemaining)}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>{cooldownCaption(cooldownRemaining)}</Typography>
       </Box>
     );
   }
@@ -286,7 +286,7 @@ function ActionRegion({
             <Button variant="outlined" size="small" color="inherit" onClick={onAskAnyway}>{COPY.action.askAnyway}</Button>
           </Tooltip>
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>{COPY.noEdge.caption}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>{COPY.noEdge.caption}</Typography>
       </Box>
     );
   }
@@ -316,7 +316,7 @@ function UnavailableBlock({ cap, cooldownRemaining, onRetry }: {
       action={
         <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
           <Button color="inherit" size="small" disabled={retryDisabled} onClick={onRetry}>{COPY.action.retry}</Button>
-          {sub && <Typography variant="caption" color="text.secondary">{sub}</Typography>}
+          {sub && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{sub}</Typography>}
         </Stack>
       }>
       <Typography variant="subtitle2">{COPY.unavailable.title}</Typography>
@@ -345,7 +345,7 @@ function ByoKeyCta({
   return (
     <Box sx={{ mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }} data-testid={cfg.testid}>
       <Typography variant="subtitle1">{cfg.title}</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{cfg.body}</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{cfg.body}</Typography>
       <Button
         variant="contained" size="small" sx={{ mt: 1.5 }}
         data-testid="ai-rec-add-key-cta" onClick={onAddKey}
@@ -393,7 +393,7 @@ function Field({ label, value, tip }: { label: string; value: React.ReactNode; t
   return (
     <Box>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-        <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
         {tip && <Tooltip arrow title={tip}><InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} /></Tooltip>}
       </Stack>
       <Typography variant="body2">{value}</Typography>
@@ -442,8 +442,8 @@ function RecResult({
             <InfoOutlinedIcon color="info" sx={{ fontSize: 18 }} />
             <Typography variant="subtitle1">{COPY.noTrade.title}</Typography>
           </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{s.rationale}</Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>{COPY.noTrade.caption}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{s.rationale}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>{COPY.noTrade.caption}</Typography>
         </Box>
       ) : (
         <Stack spacing={1.5}>
@@ -464,7 +464,7 @@ function RecResult({
             <Field label="Strike(s)" value={s.strikes.length ? s.strikes.map((x) => `$${x}`).join(' / ') : '—'} />
             <Field label="Expiration"
               value={<>{s.expiration ?? '—'}{(dteMin != null || dteMax != null) && (
-                <Typography component="span" variant="caption" color="text.secondary"> · within your {dteMin ?? '?'}–{dteMax ?? '?'} DTE window</Typography>
+                <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}> · within your {dteMin ?? '?'}–{dteMax ?? '?'} DTE window</Typography>
               )}</>} />
             <Field label="Entry trigger" value={s.entry_trigger ?? '—'} />
           </Stack>
@@ -476,7 +476,7 @@ function RecResult({
           {/* 5. Sizing. */}
           <Box>
             <Field label="Suggested size" value={s.position_size ?? '—'} />
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               A suggestion. Your size is your risk decision — you'll be able to change it on Accept.
             </Typography>
           </Box>
@@ -484,7 +484,7 @@ function RecResult({
           <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
             <Field label="Time horizon" value={s.time_horizon ?? '—'} />
             <Box>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>Confidence</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Confidence</Typography>
               <Chip size="small" label={s.confidence ?? '—'} />
             </Box>
           </Stack>

@@ -57,7 +57,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
   const LegendDot = ({ color, label }: { color: string; label: string }) => (
     <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
       <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: color }} />
-      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
     </Stack>
   );
 
@@ -68,7 +68,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
     const r = payload[0].payload;
     return (
       <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
-        <Typography variant="caption" color="text.secondary">Strike ${r.strike}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>Strike ${r.strike}</Typography>
         <Typography variant="body2">Net GEX (gamma): ${fmtM(r.net_gex)}</Typography>
         {r.net_dex != null && <Typography variant="body2">Net DEX (delta): ${fmtM(r.net_dex)}</Typography>}
         {r.vol_oi_ratio != null && <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>}

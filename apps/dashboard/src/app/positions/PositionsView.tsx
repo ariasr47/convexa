@@ -67,19 +67,19 @@ export function PositionsView(props: ViewProps) {
 
   if (visibleRowCount === 0) {
     if (isHistory) {
-      return <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} data-testid="history-empty">No closed or cancelled positions yet.</Typography>;
+      return <Typography variant="body2" sx={{ color: 'text.secondary', mt: 2 }} data-testid="history-empty">No closed or cancelled positions yet.</Typography>;
     }
     if (totalCount === 0) {
       return (
         <Box sx={{ mt: 2 }} data-testid="empty-no-positions">
-          <Typography variant="body2" color="text.secondary">{EMPTY_NO_POSITIONS}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>{EMPTY_NO_POSITIONS}</Typography>
           <Box component="button" type="button" onClick={props.onOpenEntry} sx={openCtaSx}>+ Open simulated position</Box>
         </Box>
       );
     }
     return (
       <Box sx={{ mt: 2 }} data-testid="empty-filtered">
-        <Typography variant="body2" color="text.secondary">{EMPTY_FILTERED}</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{EMPTY_FILTERED}</Typography>
         <Box component="button" type="button" onClick={props.onClearFilter} sx={clearLinkSx}>Clear filter</Box>
       </Box>
     );
@@ -88,7 +88,7 @@ export function PositionsView(props: ViewProps) {
   return (
     <Box>
       {isHistory && (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }} data-testid="history-caption">
+        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }} data-testid="history-caption">
           {HISTORY_CAPTION}
         </Typography>
       )}

@@ -75,7 +75,7 @@ export function AccountControl() {
     <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
       <Typography
         variant="body2"
-        color="text.secondary"
+        sx={{ color: 'text.secondary' }}
         noWrap
         data-testid="account-email"
         sx={{ maxWidth: 220, lineHeight: 1, display: { xs: 'none', sm: 'block' } }}

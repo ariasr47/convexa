@@ -64,7 +64,7 @@ export function ComingSoonCard({ icon, title, body, action, testId }: ComingSoon
         <Typography variant="h6" sx={{ fontWeight: 700 }}>{title}</Typography>
         <ComingSoonBadge />
       </Stack>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
         {body}
       </Typography>
       {action}

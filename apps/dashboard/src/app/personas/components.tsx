@@ -67,7 +67,7 @@ function SectionBadges({ handoff, tab }: { handoff: Handoff; tab: 'entry' | 'rea
           ) : (
             <Chip size="small" color="primary" variant="outlined" label={`PERSONA · ${personaName}`} />
           )}
-          <Typography variant="caption" color="text.secondary">{s.label}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{s.label}</Typography>
         </Stack>
       ))}
     </Stack>
@@ -98,14 +98,14 @@ export function HandoffDialog({ open, onClose, handoff, data, stale, dataAge, on
         {/* Invariance reassurance — identical before/after a switch; persona never recomputes. */}
         <Box sx={{ p: 1, mb: 1, borderRadius: 1, bgcolor: 'action.hover' }}>
           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{invariance ?? '—'}</Typography>
-          <Typography variant="caption" color="text.secondary">{INVARIANCE_LABEL}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{INVARIANCE_LABEL}</Typography>
         </Box>
         {stale && data && (
           <Alert severity="warning" sx={{ mb: 1, py: 0 }}>data is {dataAge} old — levels may be unreliable</Alert>
         )}
 
         {!data ? (
-          <Typography variant="body2" color="text.disabled">Load a ticker to preview the hand-off prompt.</Typography>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>Load a ticker to preview the hand-off prompt.</Typography>
         ) : (
           <>
             <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 1 }}>
@@ -175,7 +175,7 @@ export function PersonaCustomizeForm({ open, onClose, persona }:
             </Select>
           </FormControl>
           <Box>
-            <Typography variant="caption" color="text.secondary">Risk level</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Risk level</Typography>
             <Tooltip arrow title="Calibrates sizing, invalidation, and how open the framing is to adding — always within the fixed Add cap.">
               <ToggleButtonGroup exclusive size="small" fullWidth value={risk} onChange={(_, v) => v && setRisk(v)}>
                 <ToggleButton value="conservative">Conservative</ToggleButton>
@@ -185,7 +185,7 @@ export function PersonaCustomizeForm({ open, onClose, persona }:
             </Tooltip>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">Reassessment lean</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Reassessment lean</Typography>
             <Tooltip arrow title="Tunes how the AI weighs Hold/Trim/Add/Exit/Roll — within the same fixed verdict schema and Add cap. It can't enable auto-apply or change the Roll rule.">
               <ToggleButtonGroup exclusive size="small" fullWidth value={lean} onChange={(_, v) => v && setLean(v)}>
                 {LEANS.map((l) => <ToggleButton key={l} value={l} sx={{ fontSize: 11 }}>{l}</ToggleButton>)}

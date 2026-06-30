@@ -72,7 +72,7 @@ export function Landing() {
             >
               See the AI read on your real positioning.
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 620 }}>
+            <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 620 }}>
               Connect your positions and get an AI read on your real risk — grounded in live{' '}
               <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} />, not vibes.
             </Typography>
@@ -104,8 +104,7 @@ export function Landing() {
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
         <Typography
           variant="overline"
-          color="text.secondary"
-          sx={{ display: 'block', mb: 2, letterSpacing: '0.08em' }}
+          sx={{ color: 'text.secondary', display: 'block', mb: 2, letterSpacing: '0.08em' }}
         >
           What works today
         </Typography>
@@ -225,7 +224,7 @@ export function Landing() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Stack spacing={1}>
           <ConvexaMark size={16} fontSize="1rem" />
-          <Typography variant="caption" color="text.secondary" data-testid="footer-disclaimer">
+          <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="footer-disclaimer">
             Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
             (paper). Not investment advice. No brokerage connection.
           </Typography>

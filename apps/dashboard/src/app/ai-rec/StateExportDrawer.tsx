@@ -68,7 +68,7 @@ export function StateExportDrawer({ open, ticker, personaId, onClose }: {
 
       {state === 'loading' && (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <CircularProgress size={18} /><Typography variant="body2" color="text.secondary">Loading the export…</Typography>
+          <CircularProgress size={18} /><Typography variant="body2" sx={{ color: 'text.secondary' }}>Loading the export…</Typography>
         </Stack>
       )}
       {state === 'error' && (
@@ -104,7 +104,7 @@ function ExportSection({ title, caption, text, onCopy }: {
         <Typography variant="subtitle2">{title}</Typography>
         <Button size="small" onClick={() => onCopy(text)}>Copy</Button>
       </Stack>
-      {caption && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>{caption}</Typography>}
+      {caption && <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>{caption}</Typography>}
       <Box component="pre" sx={{
         m: 0, p: 1, borderRadius: 1, bgcolor: 'action.hover', fontSize: 11, fontFamily: 'monospace',
         whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 220, overflow: 'auto',

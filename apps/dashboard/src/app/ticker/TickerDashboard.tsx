@@ -186,11 +186,11 @@ function Stat({ label, value, accent, info, offline, accentColor }:
       sx={{ ...(offline ? { opacity: 0.5 } : {}), ...(accentColor ? { borderLeftColor: accentColor } : {}) }}>
       <CardContent>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
           {info && <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />}
         </Stack>
         {offline && (
-          <Typography variant="caption" color="text.disabled" sx={{ display: 'block', lineHeight: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', lineHeight: 1 }}>
             ⏸ offline
           </Typography>
         )}
@@ -255,7 +255,7 @@ function LastTradeReadout({ live, streamOffline }:
   if (streamOffline) {
     return (
       <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-        <Typography component="span" variant="body2" color="text.secondary"
+        <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}
           data-testid="last-trade" sx={{ opacity: 0.5 }}>
           {lt != null ? `⏸ Last trade $${lt.toFixed(2)}` : 'Last trade — no recent print'}
         </Typography>
@@ -266,7 +266,7 @@ function LastTradeReadout({ live, streamOffline }:
   if (lt == null) {
     return (
       <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-        <Typography component="span" variant="body2" color="text.secondary" data-testid="last-trade">
+        <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-trade">
           Last trade — no recent print
         </Typography>
       </Tooltip>
@@ -275,7 +275,7 @@ function LastTradeReadout({ live, streamOffline }:
   // DEFAULT: a live print beside the anchor, with the info-colored live dot.
   return (
     <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-      <Typography component="span" variant="body2" color="text.secondary" data-testid="last-trade">
+      <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-trade">
         <Box component="span" sx={{ color: 'info.main' }}>●</Box> Last trade ${lt.toFixed(2)}
       </Typography>
     </Tooltip>
@@ -475,7 +475,7 @@ export function TickerDashboard() {
     const p = payload[0].payload;
     return (
       <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
-        <Typography variant="caption" color="text.secondary">{p.dte}d · {p.expiration}</Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.dte}d · {p.expiration}</Typography>
         <Typography variant="body2">ATM IV {p.atm_iv.toFixed(1)}%</Typography>
       </Box>
     );
@@ -625,7 +625,7 @@ export function TickerDashboard() {
               AC-LastTrade-5). */}
           <Typography variant="h1">
             {m.ticker} · ${(isLive ? live!.mid : m.price)?.toFixed(2)}
-            <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+            <Typography component="span" variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>
               (levels @ ${m.gex_spot?.toFixed(2)} · {selected === null ? 'all expirations' : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`})
             </Typography>
           </Typography>
@@ -737,11 +737,11 @@ export function TickerDashboard() {
               )}
             </Stack>
             {m.term_structure == null || termSampled.length === 0 ? (
-              <Typography variant="body2" color="text.disabled">Term structure unavailable this cycle.</Typography>
+              <Typography variant="body2" sx={{ color: 'text.disabled' }}>Term structure unavailable this cycle.</Typography>
             ) : (
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     ATM IV by tenor · {m.term_structure.points.length < 2 ? '—' : m.term_structure.state}
                   </Typography>
                   <ResponsiveContainer width="100%" height={130}>
@@ -769,13 +769,13 @@ export function TickerDashboard() {
                 <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
               </Tooltip>
             </Stack>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
               {freshCaption(volOiThreshold)}
             </Typography>
             {m.chain_vol_oi_ratio == null ? (
-              <Typography variant="body2" color="text.disabled">Vol/OI unavailable this cycle.</Typography>
+              <Typography variant="body2" sx={{ color: 'text.disabled' }}>Vol/OI unavailable this cycle.</Typography>
             ) : unusualStrikes.length === 0 ? (
-              <Typography variant="body2" color="text.disabled">
+              <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                 No strikes above the {fmtThresh(volOiThreshold)}× Vol/OI cutoff this session.
               </Typography>
             ) : (
@@ -805,17 +805,17 @@ export function TickerDashboard() {
                   <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
                 </Tooltip>
               </Stack>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
                 Largest recent off-exchange prints near spot. Context, not a signal — no side or direction.
               </Typography>
               {!data?.off_exchange ? (
                 // Best-effort miss: off_exchange absent from an otherwise-good bundle. The chart
                 // and every other stat render normally — this never implies a chart problem.
-                <Typography variant="body2" color="text.disabled">
+                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                   Off-exchange data unavailable this cycle.
                 </Typography>
               ) : !(data.off_exchange.blocks?.length) ? (
-                <Typography variant="body2" color="text.disabled">
+                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
                   No blocks ≥ {(data.off_exchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in the recent window.
                 </Typography>
               ) : (
@@ -835,7 +835,7 @@ export function TickerDashboard() {
                             <Tooltip arrow title={PROXIMITY_TOOLTIP}>
                               <Chip size="small" variant="outlined" label={prox} />
                             </Tooltip>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                               {humanAge(b.age_seconds)} ago
                             </Typography>
                           </Stack>
@@ -858,7 +858,7 @@ export function TickerDashboard() {
                       <Typography variant="subtitle1">
                         {s.name} <Chip size="small" label={s.conviction} sx={{ ml: 1 }} />
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">{s.rationale}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>{s.rationale}</Typography>
                     </CardContent>
                   </Card>
                 ))}

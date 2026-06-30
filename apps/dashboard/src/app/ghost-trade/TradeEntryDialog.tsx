@@ -136,7 +136,7 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
             />
           </Stack>
           {prefill?.sizingNote && (
-            <Typography variant="caption" color="text.secondary">{prefill.sizingNote}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{prefill.sizingNote}</Typography>
           )}
           <Box>
             {fillState === 'error' ? (
@@ -147,16 +147,16 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
                   Fill: mid ${fill.mark.toFixed(2)} · Cost ${cost?.toFixed(0)} (mid × 100 × qty)
                 </Typography>
                 {fill.basis === 'theoretical' && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                     No live quote — fill will use a theoretical (Black-Scholes) mark.
                   </Typography>
                 )}
               </>
             ) : (
-              <Typography variant="body2" color="text.secondary">Select a contract to see the fill.</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Select a contract to see the fill.</Typography>
             )}
           </Box>
-          <Typography variant="caption" color="text.secondary">{DISCLAIMER}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{DISCLAIMER}</Typography>
         </Stack>
       </DialogContent>
       <DialogActions>

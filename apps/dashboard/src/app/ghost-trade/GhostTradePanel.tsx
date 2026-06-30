@@ -104,27 +104,27 @@ export function GhostTradePanel({ gt, data, live, isLive, streamOffline, onOpenE
         <Stack direction="row" spacing={3} sx={{ alignItems: 'baseline', flexWrap: 'wrap', opacity: plDim ? 0.5 : 1 }}>
           <Box>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-              <Typography variant="caption" color="text.secondary">P/L</Typography>
-              <Tooltip arrow title={PL_TIP}><Typography variant="caption" color="text.disabled">ⓘ</Typography></Tooltip>
-              {streamOffline && <Typography variant="caption" color="text.disabled">· ⏸ offline</Typography>}
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>P/L</Typography>
+              <Tooltip arrow title={PL_TIP}><Typography variant="caption" sx={{ color: 'text.disabled' }}>ⓘ</Typography></Tooltip>
+              {streamOffline && <Typography variant="caption" sx={{ color: 'text.disabled' }}>· ⏸ offline</Typography>}
             </Stack>
             <Typography variant="h6" sx={{ color: plColor }}>
               {plNow.dollar == null ? '—' : `${money(plNow.dollar)} (${plNow.pct == null ? '' : pct(plNow.pct)})`}
             </Typography>
           </Box>
           <Box>
-            <Typography variant="caption" color="text.secondary">Mark</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Mark</Typography>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Typography variant="h6">
                 {markRes?.mark == null ? '—' : `${markRes.basis === 'modeled' ? '≈ ' : ''}$${markRes.mark.toFixed(2)}`}
               </Typography>
               {basisMeta && <Tooltip arrow title={basisMeta.tip}><Chip size="small" variant="outlined" label={basisMeta.label} /></Tooltip>}
-              {age != null && <Typography variant="caption" color="text.secondary">{ageLabel(age)}</Typography>}
+              {age != null && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{ageLabel(age)}</Typography>}
             </Stack>
           </Box>
         </Stack>
         {frozen && (
-          <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'warning.main', display: 'block', mt: 0.5 }}>
             market closed — no overnight pricing
           </Typography>
         )}
@@ -132,13 +132,13 @@ export function GhostTradePanel({ gt, data, live, isLive, streamOffline, onOpenE
         {/* Contract stats (durable / cached lane). */}
         <Box sx={{ mt: 1.5 }}>
           {!data ? (
-            <Typography variant="body2" color="text.disabled">Contract stats unavailable until data loads.</Typography>
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>Contract stats unavailable until data loads.</Typography>
           ) : trackingUnavailable ? (
-            <Typography variant="body2" color="text.disabled">Trade tracking unavailable this cycle — your position is safe.</Typography>
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>Trade tracking unavailable this cycle — your position is safe.</Typography>
           ) : tracked ? (
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
-              <Tooltip arrow title={STATS_TIP}><Typography variant="caption" color="text.disabled">ⓘ</Typography></Tooltip>
-              <Typography variant="body2" color="text.secondary">
+              <Tooltip arrow title={STATS_TIP}><Typography variant="caption" sx={{ color: 'text.disabled' }}>ⓘ</Typography></Tooltip>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 Δ{fmt(tracked.greeks.delta)} Γ{fmt(tracked.greeks.gamma)} Θ{fmt(tracked.greeks.theta)} V{fmt(tracked.greeks.vega)}
                 {' · '}IV {tracked.iv == null ? '—' : `${(tracked.iv > 1 ? tracked.iv : tracked.iv * 100).toFixed(1)}%`}
                 {' · '}DTE {tracked.dte}
@@ -147,7 +147,7 @@ export function GhostTradePanel({ gt, data, live, isLive, streamOffline, onOpenE
               </Typography>
             </Stack>
           ) : (
-            <Typography variant="body2" color="text.disabled">Contract stats unavailable until data loads.</Typography>
+            <Typography variant="body2" sx={{ color: 'text.disabled' }}>Contract stats unavailable until data loads.</Typography>
           )}
         </Box>
 
@@ -173,14 +173,14 @@ function ReassessCard({ gt, briefing }: { gt: Gt; briefing?: string }) {
   return (
     <Box sx={{ mt: 1 }}>
       {/* Active persona briefing — the reassessment hand-off is framed by this persona. */}
-      {briefing && <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Briefing: {briefing}</Typography>}
+      {briefing && <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>Briefing: {briefing}</Typography>}
       {(idle || reassess.phase === 'accepted' || reassess.phase === 'rejected' || reassess.phase === 'failed') && (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Tooltip arrow title={reassessDisabled ? REASSESS_DISABLED_TIP : REASSESS_TIP}>
             <span><Button size="small" variant="outlined" disabled={reassessDisabled} onClick={gt.requestReassess}>Reassess</Button></span>
           </Tooltip>
-          {reassess.phase === 'accepted' && <Typography variant="caption" color="success.main">{reassess.note ?? 'Applied — recorded in decision history.'}</Typography>}
-          {reassess.phase === 'rejected' && <Typography variant="caption" color="text.secondary">Left as-is — recorded as your override.</Typography>}
+          {reassess.phase === 'accepted' && <Typography variant="caption" sx={{ color: 'success.main' }}>{reassess.note ?? 'Applied — recorded in decision history.'}</Typography>}
+          {reassess.phase === 'rejected' && <Typography variant="caption" sx={{ color: 'text.secondary' }}>Left as-is — recorded as your override.</Typography>}
           {reassess.phase === 'failed' && <Typography variant="caption" color="error">Couldn't reach the AI — try again.</Typography>}
         </Stack>
       )}
@@ -196,7 +196,7 @@ function ReassessCard({ gt, briefing }: { gt: Gt; briefing?: string }) {
             <TextField multiline minRows={4} maxRows={12} fullWidth size="small" sx={{ mt: 1 }}
               value={JSON.stringify(reassessmentRequest, null, 2)} slotProps={{ input: { readOnly: true } }} />
           </Collapse>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>
             Paste the AI's verdict JSON to ingest it:
           </Typography>
           <TextField multiline minRows={2} fullWidth size="small" sx={{ mt: 0.5 }} placeholder='{"recommendation": {"verdict": "Hold", ...}}'
@@ -212,16 +212,16 @@ function ReassessCard({ gt, briefing }: { gt: Gt; briefing?: string }) {
           <CardContent>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
               <Tooltip arrow title={VERDICT_GLOSSARY}><Chip size="small" color="warning" label={rec.verdict} /></Tooltip>
-              {rec.verdict === 'Add' && <Typography variant="caption" color="text.secondary">Add is capped to keep the simulation from nudging over-trading (max {ADD_QTY_MAX}).</Typography>}
+              {rec.verdict === 'Add' && <Typography variant="caption" sx={{ color: 'text.secondary' }}>Add is capped to keep the simulation from nudging over-trading (max {ADD_QTY_MAX}).</Typography>}
             </Stack>
-            <Typography variant="body2" color="text.secondary">{rec.rationale}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>{rec.rationale}</Typography>
             {rec.verdict === 'Roll' && rec.replacement_contract && (
               <Typography variant="body2" sx={{ mt: 0.5 }}>
                 Replacement: {rec.replacement_contract.expiration} ${rec.replacement_contract.strike}{rec.replacement_contract.right === 'call' ? 'C' : 'P'}
               </Typography>
             )}
-            {reassess.note && <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>{reassess.note}</Typography>}
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>{ACCEPT_REMINDER}</Typography>
+            {reassess.note && <Typography variant="caption" sx={{ color: 'warning.main', display: 'block', mt: 0.5 }}>{reassess.note}</Typography>}
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1 }}>{ACCEPT_REMINDER}</Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
               <Button size="small" variant="contained" onClick={gt.acceptVerdict}>Accept</Button>
               <Button size="small" onClick={gt.rejectVerdict}>Reject</Button>
@@ -248,9 +248,9 @@ function DecisionHistory({ gt }: { gt: Gt }) {
       <Collapse in={open}>
         <Stack spacing={0.5} sx={{ mt: 1 }}>
           {decisions.length === 0 ? (
-            <Typography variant="caption" color="text.secondary">No decisions recorded yet.</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>No decisions recorded yet.</Typography>
           ) : decisions.map((d, i) => (
-            <Typography key={i} variant="caption" color="text.secondary">
+            <Typography key={i} variant="caption" sx={{ color: 'text.secondary' }}>
               {new Date(d.clock_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {d.event_type}
               {d.ai_verdict ? ` · ${d.ai_verdict}${d.user_choice ? ` → ${d.user_choice === 'accept' ? 'Accepted' : 'Rejected'}` : ''}` : ''}
               {' · '}mark ${d.mark_price.toFixed(2)} ({d.mark_basis}) · {pct(d.pl_pct)}

@@ -92,13 +92,13 @@ function ScopeView({ scope }: { scope: MetricsScope }) {
       </Table>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mt: 1, flexWrap: 'wrap' }}>
         <Tooltip arrow title={CACHE_TIP}><InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} /></Tooltip>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Cache: hits {num(c.hits)} · misses {num(c.misses)} · hit ratio {ratioPct}% · current data age {Math.round(c.current_data_age_seconds)}s.
         </Typography>
       </Stack>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <Tooltip arrow title={HEADROOM_TIP}><InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} /></Tooltip>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           Vendor: calls {num(v.call_count)} · latency p50 {fmtMs(v.latency_p50_ms)} / p95 {fmtMs(v.latency_p95_ms)} · min headroom{' '}
           {v.min_rate_limit_headroom == null ? (
             <Tooltip arrow title="this vendor doesn't report rate-limit headroom"><span>unknown</span></Tooltip>
@@ -132,10 +132,10 @@ function TraceRow({ t }: { t: RecentTrace }) {
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {t.cache_hit ? 'cache hit · near-zero compute' : 'cache miss · full compute'}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
                 trace {t.trace_id} · {t.ticker} · {dimsLabel(t.dims)} · cache age {Math.round(t.cache_age_seconds)}s · total {fmtMs(t.total_ms)}
               </Typography>
-              <Typography variant="caption" color="text.disabled">
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                 Per-stage timings + vendor calls for a single request travel in that request's verbose <code>meta.timings</code> (default-off), not in this rolling readout.
               </Typography>
             </Box>
@@ -190,7 +190,7 @@ export function OperatorMetrics() {
         <>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           <Tooltip arrow title={WINDOW_TIP}><InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} /></Tooltip>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Rolling window: last {data.window.size_desc} · uptime {fmtUptime(data.window.uptime_seconds)} · resets on restart (ephemeral baseline).
           </Typography>
         </Stack>
@@ -201,7 +201,7 @@ export function OperatorMetrics() {
           <>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="subtitle1">Global roll-up <Typography component="span" variant="caption" color="text.secondary">· requests: {num(data.window.request_count)}</Typography></Typography>
+                <Typography variant="subtitle1">Global roll-up <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>· requests: {num(data.window.request_count)}</Typography></Typography>
                 <ScopeView scope={data.global} />
               </CardContent>
             </Card>
@@ -213,14 +213,14 @@ export function OperatorMetrics() {
                   <Card key={tk} variant="outlined">
                     <CardContent sx={{ '&:last-child': { pb: 1 } }}>
                       <Stack direction="row" sx={{ alignItems: 'center' }}>
-                        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>{tk} <Typography component="span" variant="caption" color="text.secondary">({num(scope.latency_total.count)})</Typography></Typography>
+                        <Typography variant="subtitle2" sx={{ flexGrow: 1 }}>{tk} <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>({num(scope.latency_total.count)})</Typography></Typography>
                         <IconButton size="small" onClick={() => setOpenTickers((p) => ({ ...p, [tk]: !p[tk] }))}><ExpandMoreIcon fontSize="inherit" /></IconButton>
                       </Stack>
                       <Collapse in={!!openTickers[tk]}><ScopeView scope={scope} /></Collapse>
                     </CardContent>
                   </Card>
                 ))}
-                {Object.keys(data.per_ticker).length === 0 && <Typography variant="body2" color="text.disabled">—</Typography>}
+                {Object.keys(data.per_ticker).length === 0 && <Typography variant="body2" sx={{ color: 'text.disabled' }}>—</Typography>}
               </Stack>
             </Box>
 

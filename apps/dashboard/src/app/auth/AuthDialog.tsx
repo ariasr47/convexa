@@ -143,7 +143,7 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
                 <Typography variant="h6" sx={{ fontWeight: 700 }} data-testid="auth-dialog-title">
                   {title}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
                   {subtitle}
                 </Typography>
               </Box>

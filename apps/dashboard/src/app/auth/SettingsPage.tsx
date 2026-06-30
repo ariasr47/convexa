@@ -101,7 +101,7 @@ export function SettingsPage() {
     <Container maxWidth="sm" sx={{ py: 4, maxWidth: 640 }} data-testid="settings-page">
       <Stack spacing={0.5} sx={{ mb: 3 }}>
         <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>{C.title}</Typography>
-        <Typography variant="body2" color="text.secondary">{C.subtitle}</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{C.subtitle}</Typography>
       </Stack>
 
       <Stack spacing={3}>
@@ -113,7 +113,7 @@ export function SettingsPage() {
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                 <Typography sx={{ fontWeight: 700 }} noWrap>{primaryName}</Typography>
                 {hasDisplayName && (
-                  <Typography variant="body2" color="text.secondary" noWrap>{auth.user?.email}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>{auth.user?.email}</Typography>
                 )}
               </Box>
               <Button
@@ -128,7 +128,7 @@ export function SettingsPage() {
           ) : (
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}
               data-testid="settings-account-signed-out">
-              <Typography variant="body2" color="text.secondary">{C.accountSignedOutPrompt}</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>{C.accountSignedOutPrompt}</Typography>
               <Button
                 variant="contained"
                 size="small"
@@ -149,7 +149,7 @@ export function SettingsPage() {
 
         {/* ===== 3. Preferences panel — appearance only (score-neutral) ===== */}
         <PanelCard heading={C.preferencesHeading} testId="settings-preferences-panel">
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{C.themeHelper}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>{C.themeHelper}</Typography>
 
           <Stack spacing={2.5}>
             {/* Active persona */}
@@ -239,7 +239,7 @@ export function SettingsPage() {
         </PanelCard>
 
         {/* Footer disclaimer — reuse the Landing caption (verbatim). */}
-        <Typography variant="caption" color="text.secondary" data-testid="settings-disclaimer" sx={{ mt: 1 }}>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="settings-disclaimer" sx={{ mt: 1 }}>
           Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
           (paper). Not investment advice. No brokerage connection.
         </Typography>
