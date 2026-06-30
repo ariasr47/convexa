@@ -5,13 +5,15 @@
  * makes NO network call and exposes NO entry / order affordance. If it imports nothing live, it can
  * wire to nothing.
  *
- * Zero-import boundary (the `no-real-order-path` enforcement): this module imports ONLY MUI + the
- * static copy constants (`labels.ts`). Do NOT add any import of a data source here — that is the
- * enforcement. (The hatched-card visual is inlined here, NOT imported from `ui/ComingSoonBox`, so the
- * import surface stays MUI-only; the 18px-stripe hatch + the literals are reproduced per this frame.)
+ * Zero-import boundary (the `no-real-order-path` enforcement): this module imports ONLY MUI, the
+ * static copy constants (`labels.ts`), and the pure design-token values (`tokens.ts` — a static value
+ * module, NOT a data source). Do NOT add any import of a data source here — that is the enforcement.
+ * (The hatched-card visual is inlined here, NOT imported from `ui/ComingSoonBox`; the 18px-stripe hatch
+ * is reproduced per this frame, single-sourcing its colors off the tokens.)
  */
 import { Box, Typography } from '@mui/material';
 import { LIVE_HEADING, LIVE_BODY, LIVE_LOCK_CHIP } from './labels';
+import { extras } from '../tokens';
 
 export function LiveTabPanel() {
   return (
@@ -22,9 +24,10 @@ export function LiveTabPanel() {
         border: '1px dashed',
         borderColor: 'divider',
         borderRadius: '10px',
-        // Hatched inert affordance — `#161b22` (paper) alternating with `#14181f` (hatch-alt), 18px
-        // stripes per this frame. sx literals per the token map (prototype-only hatch extras).
-        backgroundImage: 'repeating-linear-gradient(135deg, #161b22 0 18px, #14181f 18px 36px)',
+        // Hatched inert affordance — `background.paper` alternating with `extras.hatchAlt`, 18px
+        // stripes per this frame (prototype-only hatch extras, single-sourced from the tokens).
+        backgroundImage: (theme) =>
+          `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 18px, ${extras.hatchAlt} 18px 36px)`,
         p: '48px',
         textAlign: 'center',
       }}

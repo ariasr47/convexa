@@ -12,6 +12,7 @@
 import { Box, Typography, Link } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ComingSoonBox } from '../ui/ComingSoonBox';
+import { extras } from '../tokens';
 
 export function Scanner() {
   return (
@@ -22,8 +23,8 @@ export function Scanner() {
           maxWidth: 560,
           mx: 'auto',
           my: 8,
-          backgroundImage:
-            'repeating-linear-gradient(135deg, #161b22 0 20px, #14181f 20px 40px)',
+          backgroundImage: (theme) =>
+            `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 20px, ${extras.hatchAlt} 20px 40px)`,
           borderRadius: '14px',
           p: '52px 40px',
           textAlign: 'center',

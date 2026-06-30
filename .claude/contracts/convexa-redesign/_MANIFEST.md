@@ -1,10 +1,10 @@
 # convexa-redesign — pipeline manifest
 Entry:        restart 2026-06-29 — implement-from-Figma (v1 slice attempt reset; archived `convexa-redesign-v1-archive`)
-Stage:        SURFACE: Positions ✅ DONE — baseline 9336856 + REV1 ab52759 (mock columns) + REV2 39190d6 (one-row toolbar, fixed columns, Entry/Expiry cells). Screenshot-verified vs frame. Next: Ticker.
+Stage:        SURFACE: Ticker ✅ DONE — re-skin e4a8eff + layout/UX 32d4027 (committed 2026-06-30); RESUME refreshed 7c8df99. Now: GATE V CLEANUP pass (token de-drift + remove dead HandoffDialog + theme.h6 QA) dispatched to delivery-frontend 2026-06-30. Remaining surface after: full-page /auth.
 Branch:       convexa-redesign (off main @ 2828bfa) — DS bridge (tokens.ts + cssVariables + sync script) kept; merge to main at GATE S
 Repos:        frontend  (NO_BACKEND_CHANGE — apps/api untouched)
 Brief:        n/a (restart) — README §5 + figma_frames/08-scanner-soon.html + FIGMA_COMPONENT_MAP.md are the brief
-Surfaces:     Landing ✅ committed (0353758) · Settings/Auth ✅ committed (0353758) · Scanner ✅ committed (fbb1e2d) · Positions ✅ committed (9336856 + ab52759) · Ticker ◀ NEXT · /auth (full page) ⬜
+Surfaces:     Landing ✅ committed (0353758) · Settings/Auth ✅ committed (0353758) · Scanner ✅ committed (fbb1e2d) · Positions ✅ committed (c722dd7 / 9336856 + ab52759) · Ticker ✅ committed (e4a8eff + 32d4027) · GATE V cleanup ◀ IN FLIGHT · /auth (full page) ⬜
 Contracts:
   - ARCHITECTURE_CONTRACT.md   n/a (presentation-only)
   - PRODUCT_CONTRACT.md        n/a (README is product/UX spec)
@@ -12,10 +12,10 @@ Contracts:
   - INTERFACE_CONTRACT.md      n/a (NO_INTERFACE_CHANGE — consumes existing endpoints/SSE unchanged)
   - FIGMA_COMPONENT_MAP.md     locked  (Pro-plan Code-Connect substitute: node-id ⇄ code/props for 17 components)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  draft — SURFACE Ticker CODE re-skin + componentize (StatTile/Toolbar/Header/LiveTape/DealerPositioning/GEX/TermStructure/AiRecommendation/Fresh/OffExchange/Setups; ai-rec re-skin preserving logic; NO demo toggle — stream-driven) → dispatched to delivery-frontend 2026-06-30. (Positions re-skin shipped: commit c722dd7.)
+  - FRONTEND_EXECUTION_CONTRACT.md  draft — GATE V CLEANUP pass (2026-06-30): remove dead HandoffDialog + helper; de-drift 4 hardcoded token copies (AuthDialog #1c2330→extras.panelRaised; hatch gradient in ComingSoonBox/Scanner/LiveTabPanel; ValueCard brand gradient); QA the global theme.h6 (16/600) for section-title regressions. Ticker surface re-skin SHIPPED (e4a8eff + 32d4027). → dispatched to delivery-frontend 2026-06-30.
 Open amendments: none
 QA (GATE Q):  n/a (single fresh QA pass after ALL surfaces, before GATE S merge to main)
-Last gateway:  GATE V (Positions) @ 2026-06-29 — implement-from-Figma (full re-write)
+Last gateway:  GATE V (cleanup pass) @ 2026-06-30 — token de-drift + dead-code removal + theme.h6 QA
 
 ## ───────── SIDE-TRACK (owner request 2026-06-30): rebuild the Figma "Screens" page using the MUI-for-Figma kit ─────────
 Owner asked to redo all layers on the Figma **"Screens"** page (`0:1`, 14 mockups) using the **Material UI for Figma (and MUI X) (Community)** kit added to assets.

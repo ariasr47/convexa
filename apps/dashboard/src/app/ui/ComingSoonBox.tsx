@@ -4,10 +4,11 @@
  * structurally inert. It carries NO navigation and NO broker affordance — that visual inertness is the
  * `no-real-order-path` invariant (§1.3) made structural: the box itself never links anywhere.
  *
- * The hatch colors are `sx` literals (per the README, prototype-only extras fold into `sx`, NOT new
- * theme keys). `paper` (`#161b22`) alternates with the panel-raised `#14181f`.
+ * The hatch colors are single-sourced from the tokens: `background.paper` (theme) alternates with
+ * `extras.hatchAlt` (per the README, prototype-only extras fold into `sx`, NOT new theme keys).
  */
 import { Box, type BoxProps } from '@mui/material';
+import { extras } from '../tokens';
 
 export interface ComingSoonBoxProps extends Omit<BoxProps, 'children'> {
   children?: React.ReactNode;
@@ -22,8 +23,8 @@ export function ComingSoonBox({ children, sx, ...rest }: ComingSoonBoxProps) {
           border: '1px dashed',
           borderColor: 'divider',
           borderRadius: 2,
-          backgroundImage:
-            'repeating-linear-gradient(135deg, #161b22 0 18px, #14181f 18px 36px)',
+          backgroundImage: (theme) =>
+            `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 18px, ${extras.hatchAlt} 18px 36px)`,
           p: 3,
         },
         ...(Array.isArray(sx) ? sx : [sx]),

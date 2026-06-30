@@ -1,7 +1,7 @@
 /**
  * StateExportDrawer — the always-available export floor (UX_BLUEPRINT §4 + egress honesty).
- * Opened from `View what's sent` in the rec panel AND from the persona `HandoffDialog` (the SAME
- * export feeds both the in-app call and the manual hand-off). It triggers NO in-app LLM call and
+ * Opened from `View what's sent` in the rec panel (the SAME export feeds both the in-app call and
+ * the manual hand-off). It triggers NO in-app LLM call and
  * costs nothing — it works in EVERY rec-panel state (key_not_configured / daily_cap_reached /
  * unavailable). Egress invariant: it shows ONLY {context, persona prompt, glossary} for the current
  * ticker — no key, no other ticker, no identity, no order data.

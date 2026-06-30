@@ -18,6 +18,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { AuthError } from '@org/api';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
+import { extras } from '../tokens';
 import { GoogleButton } from './GoogleButton';
 import { isLikelyEmail, validationFieldCopy } from './validation';
 
@@ -128,7 +129,7 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
             border: 1,
             borderColor: 'divider',
             backgroundImage: 'none',
-            bgcolor: '#1c2330', // panel-raised (tokens.extras.panelRaised) — lighter than the page
+            bgcolor: extras.panelRaised, // panel-raised — lighter than the page
           },
         },
         backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(8, 11, 16, 0.66)' } },
