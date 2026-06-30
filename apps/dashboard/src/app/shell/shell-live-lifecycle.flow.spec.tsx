@@ -21,7 +21,7 @@ import type { TickerBundle, StrikeRow } from '@org/api';
 
 import App from '../app';
 import { theme } from '../theme';
-import { __resetMemory, allPositions } from '../positions/store';
+import { __resetMemory } from '../positions/store';
 
 // ---- A controllable mock EventSource so we can track open/close per stream URL ------------------
 interface MockES {
@@ -233,25 +233,17 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(openFor('AAPL').length).toBe(1);
   }, 20000);
 
-  it('a position opened on Ticker is already present on /positions (same singleton store)', async () => {
+  it('the portfolio book lives on /positions, not the Ticker (Figma re-skin)', async () => {
     const user = userEvent.setup();
     renderApp('/ticker/TSLA');
     await screen.findByText('Call wall');
 
-    // Open a simulated position from the Ticker page's portfolio panel (manual entry). The open
-    // affordance is disabled until the bundle (`data`) lands — wait for it to be enabled.
-    await screen.findByTestId('portfolio-panel');
-    await vi.waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
-    await user.click(screen.getByTestId('open-entry'));
-    const dlg = await screen.findByRole('dialog');
-    await user.type(within(dlg).getByLabelText('Manual price'), '5');
-    await user.click(within(dlg).getByRole('button', { name: 'Open simulated position' }));
-    await vi.waitFor(() => expect(allPositions().length).toBe(1));
+    // The Ticker no longer hosts the portfolio (or ghost-trade) panel — only the open-trade
+    // affordance remains; the book itself lives on /positions.
+    expect(screen.queryByTestId('portfolio-panel')).toBeNull();
+    expect(screen.getByTestId('open-sim-trade')).toBeInTheDocument();
 
-    // Navigate to /positions — the position is already there (durable module-singleton store).
     await user.click(screen.getByTestId('nav-positions'));
-    const positionsPanel = await screen.findByTestId('portfolio-panel');
-    expect(await within(positionsPanel).findByTestId('position-row')).toBeInTheDocument();
-    expect(allPositions().length).toBe(1);
+    expect(await screen.findByTestId('portfolio-panel')).toBeInTheDocument();
   }, 20000);
 });

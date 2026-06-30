@@ -25,15 +25,18 @@ const CUSTOMIZE_VALUE = '__customize__';
 type Persona = ReturnType<typeof usePersona>;
 
 // ---- Toolbar picker ---------------------------------------------------------------------------
-export function PersonaPicker({ persona, onOpenCustomize }:
-  { persona: Persona; onOpenCustomize: () => void }) {
+export function PersonaPicker({ persona, onOpenCustomize, externalLabel }:
+  { persona: Persona; onOpenCustomize: () => void; externalLabel?: boolean }) {
   const { presets, customs, activeId, setActive, active } = persona;
   return (
     <Tooltip arrow title={PICKER_TOOLTIP}>
       <FormControl size="small" sx={{ minWidth: 190 }}>
-        <InputLabel>Persona</InputLabel>
+        {/* `externalLabel` (toolbar): the caption sits ABOVE the field per the Figma; suppress the
+            built-in floating label but keep an accessible name. */}
+        {!externalLabel && <InputLabel>Persona</InputLabel>}
         <Select
-          label="Persona"
+          label={externalLabel ? undefined : 'Persona'}
+          inputProps={externalLabel ? { 'aria-label': 'Persona' } : undefined}
           value={activeId}
           onChange={(e) => { const v = String(e.target.value); if (v === CUSTOMIZE_VALUE) onOpenCustomize(); else setActive(v); }}
           renderValue={() => active.name}

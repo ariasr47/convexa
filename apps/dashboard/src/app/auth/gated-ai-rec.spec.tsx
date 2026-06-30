@@ -65,9 +65,9 @@ describe('Ask AI — gated logged out (AC-E4, D6f)', () => {
 
     // The auth-outermost gate region is shown with the sign-in prompt copy.
     expect(await screen.findByTestId('ai-rec-auth-gate')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-rec-signin-prompt')).toHaveTextContent(AUTH_COPY.askAi.gate);
-    // The Get button is present but disabled (no path into the LLM).
-    expect(screen.getByTestId('ai-rec-get-disabled')).toBeDisabled();
+    expect(screen.getByTestId('ai-rec-signin-prompt')).toHaveTextContent(AUTH_COPY.askAi.signedOut);
+    // The signed-out state shows the sign-in CTA only — no disabled Get button (Figma 149:598).
+    expect(screen.getByTestId('ai-rec-signin-button')).toBeEnabled();
     // ai-rec's OWN messaging is NOT shown (auth outermost): no cooldown / cap / no_key copy.
     expect(screen.queryByText(COPY.noKey.chip)).not.toBeInTheDocument();
     expect(screen.queryByText(/cooldown|daily limit|reached/i)).not.toBeInTheDocument();
@@ -114,7 +114,7 @@ describe('Ask AI — server-enforced gate (AC-E7)', () => {
     // The POST was attempted (FE thought it was allowed) but the server returned 403.
     await waitFor(() => expect(backend.calls.recPost).toBe(1));
     // The FE re-syncs who-am-I and surfaces the sign-in prompt; no rec body was produced.
-    expect(await screen.findByTestId('ai-rec-signin-prompt')).toHaveTextContent(AUTH_COPY.askAi.gate);
+    expect(await screen.findByTestId('ai-rec-signin-prompt')).toHaveTextContent(AUTH_COPY.askAi.signedOut);
     expect(screen.queryByText(/Rationale/)).not.toBeInTheDocument();
   });
 });

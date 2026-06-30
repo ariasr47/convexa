@@ -1,311 +1,61 @@
 /**
- * Ticker viewer — RELOCATED from `app.tsx` (the single-page GEX dashboard), unchanged internals.
+ * Ticker viewer — recomposed from reusable section components (convexa-redesign Ticker re-skin +
+ * componentize). The monolith's stat-tile grid, headline, toolbar, term-structure card, fresh
+ * positioning, off-exchange blocks, setups, and GEX chart are now the `ticker/sections/*` components
+ * (StatTile · TickerToolbar · TickerHeader · LiveTape · DealerPositioning · GexStrikeProfile ·
+ * TermStructureCard · FreshPositioning · OffExchangeBlocks · Setups). This file is the COMPOSITION +
+ * data wiring only.
  *
- * Relocate-don't-change (ARCHITECTURE §4.1 / FRONTEND_EXECUTION_CONTRACT §1): the GEX chart, stat-tile
- * grid, the four neutral metric tiles, term structure, fresh positioning, off-exchange blocks, setups,
- * the SSE/poll lifecycle, the watchdog/offline logic, every dialog, and the personas/ghost-trade/ai-rec
- * children are all byte-for-byte UNCHANGED. The ONLY edits permitted by the contract are:
- *   (a) the file/module location (this file),
- *   (b) the route prefix it navigates to: `navigate('/' + symbol)` → `navigate('/ticker/' + symbol)`,
- *   (c) removal of the now-redundant inner `<AppBar>GammaFlow</AppBar>`/`TraderApp` wrapper that the
- *       new `AppShell` replaces (that lived in `app.tsx`, not here).
- *
- * The live-SSE session stays page-scoped here (FRONTEND_EXECUTION_CONTRACT §3): because this component
- * is a child route of the shell, navigating away unmounts it → the existing effect cleanup runs →
- * `unsub()` → `es.close()` → the backend session tears down. Returning remounts it → a fresh
- * EventSource opens (the cold-start path). At most one EventSource per symbol, by construction.
+ * RE-SKIN + COMPONENTIZE, NOT a logic rewrite (FRONTEND_EXECUTION_CONTRACT hard rules): the bundle
+ * poll (~60s), the page-scoped SSE subscription + payload-gap watchdog, the AI-rec hook, the
+ * ghost-trade/portfolio/persona wiring, the skeleton-first load, the four-metric nullability, and the
+ * scoring readout are all UNCHANGED. The connection state is a STREAM-DRIVEN status indicator (NOT a
+ * "Connection (demo)" toggle). Invariants honored: `[live-vs-static-isolation]`,
+ * `[best-effort-isolated-or-null]`, `[additive-keeps-score-byte-identical]`, `[no-real-order-path]`,
+ * `[operator-vs-trader-path-separation]`.
  */
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { styled, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import {
-  Container, Box, Card, CardContent,
-  Chip, CircularProgress, TextField, Stack, Alert, Button, ButtonGroup, Tooltip,
-  FormControl, InputLabel, Select, OutlinedInput, MenuItem, Checkbox, ListItemText,
-  Switch, FormControlLabel, Typography, Skeleton,
+  Container, Box, Alert, Button, Skeleton,
 } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
-} from 'recharts';
-import { getTicker, streamTicker, TickerBundle, LiveUpdate, IvSkew, TermStructure, RecResponse } from '@org/api';
-import { GexProfileChart } from '../gex-profile-chart';
+import { getTicker, streamTicker, TickerBundle, LiveUpdate, RecResponse } from '@org/api';
 import { useGhostTrade } from '../ghost-trade/useGhostTrade';
-import { GhostTradePanel } from '../ghost-trade/GhostTradePanel';
 import { TradeEntryDialog, EntryPrefill } from '../ghost-trade/TradeEntryDialog';
-import { PrimeBanner, tierMeta, OPPORTUNITY_TIER_INFO } from '../ghost-trade/OpportunityTier';
-import { usePortfolio } from '../positions/usePortfolio';
-import { PortfolioPanel } from '../positions/PortfolioPanel';
+import { PrimeBanner, tierMeta } from '../ghost-trade/OpportunityTier';
 import { usePersona } from '../personas/usePersona';
-import { PersonaPicker, HandoffDialog, PersonaCustomizeForm } from '../personas/components';
+import { PersonaCustomizeForm } from '../personas/components';
 import { AiRecPanel, useReadPersonas } from '../ai-rec/AiRecPanel';
 import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
 import { StateExportDrawer } from '../ai-rec/StateExportDrawer';
 import { recToPrefill } from '../ai-rec/prefill';
 import { COPY } from '../ai-rec/copy';
 
+import { StatSkeleton } from './sections/StatTile';
+import { TickerToolbar } from './sections/TickerToolbar';
+import { TickerHeader, LastTradeReadout } from './sections/TickerHeader';
+import { LiveTape } from './sections/LiveTape';
+import { DealerPositioning } from './sections/DealerPositioning';
+import { GexStrikeProfile } from './sections/GexStrikeProfile';
+import { TermStructureCard } from './sections/TermStructure';
+import { FreshPositioning } from './sections/FreshPositioning';
+import { OffExchangeBlocks } from './sections/OffExchangeBlocks';
+import { Setups } from './sections/Setups';
+import { humanAge } from './sections/copy';
+
 const POLL_MS = 60_000; // matches the backend cache TTL
-// A healthy SSE session pushes a payload every ~1.5s (the live broadcast throttle) even when
-// the market isn't ticking (`live:false`), so an onmessage gap this long means the transport
-// dropped — not a quiet session. Used to flip the single "Live offline" connection state.
+// A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
+// onmessage gap this long means the transport dropped — not a quiet session. Flips "Live offline".
 const STREAM_OFFLINE_MS = 15_000;
-// Fallback for the blocks empty-state copy when a (pre-amendment) bundle omits the threshold.
-// The live threshold now rides the payload as off_exchange.block_min_shares; this only covers an
-// older/partial bundle that predates that field. Mirrors the backend default.
-const BLOCK_MIN_SHARES_DISPLAY = 5000;
 
-const BLOCKS_TOOLTIP =
-  'Individual large off-exchange ("dark pool") prints from the recent window, ranked by ' +
-  'notional (size × price), largest first. Off-exchange volume includes internalized retail ' +
-  'and the prints carry no reliable side, so this is positioning context only — never a ' +
-  'buy/sell signal. Updates only when new chain data loads, not from the live stream.';
-const PROXIMITY_TOOLTIP =
-  'How far this print is from current spot. Above spot is +, below is −. Lets you see at a ' +
-  'glance whether it overlaps a wall or the gamma flip.';
-const OFFLINE_CHIP_TOOLTIP =
-  'The live stream dropped. The positioning levels and the GEX chart below are still current ' +
-  'as of the last data load — only live price, the last trade, spread, net flow and the live ' +
-  'gamma flip are paused. Reconnecting automatically; no refresh needed.';
-
-// Last-trade readout copy (UX_BLUEPRINT §4.1). The readout is a DISPLAY-ONLY, live-derived sibling
-// of the anchor price; the anchor (NBBO mid) stays the headline/levels basis (`live-spot=NBBO-mid`).
-const LAST_TRADE_TOOLTIP =
-  'The last actual trade printed for this ticker, live off the trade tape — use it to reconcile ' +
-  "against your broker's last trade (e.g. Webull). This is a readout only: the headline price and " +
-  'every level (walls, gamma flip, max pain) stay anchored to the NBBO mid, not to this print. ' +
-  'Empty between trades, overnight, and before the session’s first print — it never shows a ' +
-  'stale number as current. Pauses with the live stream if it drops.';
-
-// ---- DEX · Vol/OI · IV skew · Term structure (all neutral, snapshot — never live) ----------
-// These four ride the REST bundle, carry NO side/direction, and are excluded from the live
-// offline treatment. Each is independently nullable → its own "unavailable this cycle".
-const fmtDexM = (v: number | null) => (v == null ? '—' : `$${(v / 1e6).toFixed(1)}M`);
-const fmtThresh = (t: number) => (Number.isInteger(t) ? t.toFixed(1) : String(t)); // 1 -> "1.0"
-const TERM_BUCKETS = [7, 14, 30, 60, 90]; // nominal display tenors, each mapped to nearest point
-
-// IV skew "what vol is paying for" word from slope (put_iv − call_iv); small neutral band.
-const SKEW_BAND = 0.5; // IV points
-function skewState(slope: number): 'fear' | 'greed' | 'balanced' {
-  if (slope > SKEW_BAND) return 'fear';
-  if (slope < -SKEW_BAND) return 'greed';
-  return 'balanced';
-}
-const SKEW_PHRASE: Record<'fear' | 'greed' | 'balanced', string> = {
-  fear: 'downside hedging is bid (fear)',
-  greed: 'upside is bid (greed/complacency)',
-  balanced: 'balanced',
-};
-const TERM_STATE_CLAUSE: Record<'contango' | 'backwardation' | 'flat', string> = {
-  contango: 'Upward = contango: near-term vol calm vs longer tenors — "normal."',
-  backwardation: 'Downward = backwardation: near-term vol elevated — near-term stress / event.',
-  flat: 'Flat.',
-};
-
-const netDexTip = (callDex: number | null, putDex: number | null) =>
-  `Net dealer delta exposure — the delta analogue of GEX. Shows which way dealer hedging ` +
-  `pressure leans across the selected expirations (call ${fmtDexM(callDex)}, put ${fmtDexM(putDex)}). ` +
-  `Positioning context only: the hedging implication is indirect — this is not a buy/sell signal ` +
-  `and does not mean "dealers are bullish, go long." Moves with the expiration window, like GEX. ` +
-  `Snapshot from the last chain load.`;
-const volOiTip = (threshold: number, n: number) =>
-  `Chain-wide option volume ÷ open interest — turnover intensity: how much of today's trading is ` +
-  `fresh vs standing positions. Activity only — no side, no direction; never bullish/bearish or ` +
-  `"smart money." Uses the full chain (ignores the expiration filter). ${n} strike(s) show ` +
-  `unusual activity (Vol/OI ≥ ${fmtThresh(threshold)}×) — see Fresh positioning below.`;
-const freshCaption = (threshold: number) =>
-  `Strikes trading heavily versus standing open interest (Vol/OI ≥ ${fmtThresh(threshold)}×). ` +
-  `Activity, not direction — no side implied.`;
-const skewTip = (s: IvSkew) =>
-  `IV skew at the ${s.dte}-DTE tenor (${s.expiration}): downside IV ${s.put_iv.toFixed(1)}% vs ` +
-  `upside IV ${s.call_iv.toFixed(1)}% (±25-delta${s.reference === 'moneyness' ? ', fixed-moneyness fallback' : ''}). ` +
-  `A read of what volatility is paying for — ${SKEW_PHRASE[skewState(s.slope)]} — not a ` +
-  `price-direction call. Single snapshot, no history.`;
-const termTip = (t: TermStructure) => {
-  const near = t.points[0];
-  const far = t.points[t.points.length - 1];
-  return `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
-    `${t.near_iv.toFixed(1)}% vs far (${far?.dte}d) ${t.far_iv.toFixed(1)}%. Cross-tenor by ` +
-    `definition (ignores the expiration filter). Single snapshot, no history.`;
-};
-
-/** Sample the nominal display tenors to the nearest available point; dedupe, plot points at
- *  their REAL dte/atm_iv (never fabricate an absent bucket). Ascending by dte. */
-function sampleTermPoints(points: TermStructure['points']): TermStructure['points'] {
-  const seen = new Set<number>();
-  const out: TermStructure['points'] = [];
-  for (const b of TERM_BUCKETS) {
-    let best: TermStructure['points'][number] | null = null;
-    for (const p of points) {
-      if (best == null || Math.abs(p.dte - b) < Math.abs(best.dte - b)) best = p;
-    }
-    if (best && !seen.has(best.dte)) { seen.add(best.dte); out.push(best); }
-  }
-  return out.sort((a, b) => a.dte - b.dte);
-}
-
-/** Conventional DTE label: 0 = expires today (0DTE), 1 = tomorrow, else N days. */
-function dteLabel(dte: number | null): string | undefined {
-  if (dte == null) return undefined;
-  if (dte <= 0) return 'expires today · 0DTE';
-  if (dte === 1) return '1 day to expiry';
-  return `${dte} days to expiry`;
-}
-
-/** Compact, human-readable age from seconds, e.g. 242779 -> "2d 19h". */
-function humanAge(seconds: number | null): string {
-  if (seconds == null) return 'unknown age';
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const h = Math.floor(m / 60);
-  const d = Math.floor(h / 24);
-  if (d >= 1) return `${d}d ${h % 24}h`;
-  if (h >= 1) return `${h}h ${m % 60}m`;
-  return `${m}m`;
-}
-
-// Example of MUI's styled() API (the styled-components-style authoring experience, on
-// MUI's Emotion engine). Color reacts to a prop, the way you'd do in styled-components.
-const StatTile = styled(Card)<{ accent?: 'up' | 'down' | 'neutral' }>(
-  ({ theme, accent }) => ({
-    height: '100%',
-    borderLeft: `4px solid ${
-      accent === 'up' ? theme.palette.success.main
-      : accent === 'down' ? theme.palette.error.main
-      : theme.palette.divider
-    }`,
-  })
-);
-
-function Stat({ label, value, accent, info, offline, accentColor }:
-  { label: string; value: string; accent?: 'up' | 'down' | 'neutral'; info?: string; offline?: boolean; accentColor?: string }) {
-  const tile = (
-    // Stream Offline: dim the (live-derived) tile and caption it `⏸ offline` so a kept last
-    // value is never mistaken for a current one. Static tiles never receive `offline`.
-    // `accentColor` overrides the left border (used for non-directional tier emphasis).
-    <StatTile accent={accent} variant="outlined"
-      sx={{ ...(offline ? { opacity: 0.5 } : {}), ...(accentColor ? { borderLeftColor: accentColor } : {}) }}>
-      <CardContent>
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
-          {info && <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />}
-        </Stack>
-        {offline && (
-          <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', lineHeight: 1 }}>
-            ⏸ offline
-          </Typography>
-        )}
-        <Typography variant="h6">{value}</Typography>
-      </CardContent>
-    </StatTile>
-  );
-  // Whole-tile hover tooltip (the ⓘ just signals one exists). Only when `info` is given.
-  return info ? <Tooltip title={info} arrow placement="top">{tile}</Tooltip> : tile;
-}
-
-// ---- Skeleton-first load (AC-Skel-1..5) -----------------------------------------------------
-// COLD-LOAD placeholders. These render only while a source has NOT YET resolved (`data == null`
-// for the bundle regions; `live == null` for the SSE last-trade line). They are the LOADING look:
-// an animated MUI shimmer — visually distinct from EMPTY (resolved-null muted text, no shimmer)
-// and from OFFLINE (real values dimmed to 50% + `⏸`). The cold skeleton class must NEVER appear
-// post-load and the offline dim must NEVER appear pre-load (`live-vs-static-isolation`, AC-Skel-3/4).
-//
-// A tile-shaped skeleton in the stat grid: matches the StatTile footprint so the structure is
-// already laid out before any data arrives (AC-Skel-1). `data-testid="cold-skeleton"` marks the
-// LOADING class for the tests that assert LOADING ≠ EMPTY ≠ OFFLINE.
-function StatSkeleton() {
-  return (
-    <StatTile accent="neutral" variant="outlined" data-testid="cold-skeleton">
-      <CardContent>
-        <Skeleton variant="text" width="60%" sx={{ fontSize: '0.75rem' }} />
-        <Skeleton variant="text" width="45%" sx={{ fontSize: '1.25rem' }} />
-      </CardContent>
-    </StatTile>
-  );
-}
-
-// The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1). Rendered in place of the
-// real grid while the REST bundle has not resolved, so the page paints its structure immediately.
+// The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}>
       {Array.from({ length: 12 }).map((_, i) => <StatSkeleton key={i} />)}
     </Box>
   );
-}
-
-// ---- Live last-trade readout (AC-LastTrade-1..5) --------------------------------------------
-// A SECONDARY, display-only line beside the headline anchor. It is LIVE-DERIVED (rides SSE only):
-//   - LOADING (cold, SSE not yet attached, `live == null`)        → short text skeleton (shimmer)
-//   - DEFAULT (`live.last_trade` is a number)                     → `● Last trade $X` (live dot)
-//   - LIVE-EMPTY (stream up, `last_trade == null`)                → `Last trade — no recent print`
-//   - OFFLINE (`streamOffline`, last-known print)                 → `⏸ Last trade $X` dimmed 50%
-// It NEVER renders as the `variant="h1"` headline; it never freezes a stale value as current
-// (LIVE-EMPTY shows the honest empty, not a prior number); on a feed drop it degrades WITH the
-// other live tiles. It is DISPLAY-ONLY and never feeds the anchor/levels/flip (`live-spot=NBBO-mid`).
-function LastTradeReadout({ live, streamOffline }:
-  { live: LiveUpdate | null; streamOffline: boolean }) {
-  // Cold-load: SSE has not delivered a payload yet → LOADING shimmer (distinct from LIVE-EMPTY).
-  if (live == null) {
-    return <Skeleton variant="text" width={140} data-testid="last-trade-skeleton" sx={{ fontSize: '0.875rem' }} />;
-  }
-  const lt = live.last_trade;
-  // OFFLINE: the transport dropped — show the last-known print explicitly paused + dimmed, paired
-  // with the page's single `⚠ Live offline` chip. When there is no print to show, fall through to
-  // the honest empty rather than fabricate a number.
-  if (streamOffline) {
-    return (
-      <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-        <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}
-          data-testid="last-trade" sx={{ opacity: 0.5 }}>
-          {lt != null ? `⏸ Last trade $${lt.toFixed(2)}` : 'Last trade — no recent print'}
-        </Typography>
-      </Tooltip>
-    );
-  }
-  // LIVE-EMPTY: stream up but no recent print — honest empty, never a stale value styled current.
-  if (lt == null) {
-    return (
-      <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-        <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-trade">
-          Last trade — no recent print
-        </Typography>
-      </Tooltip>
-    );
-  }
-  // DEFAULT: a live print beside the anchor, with the info-colored live dot.
-  return (
-    <Tooltip arrow title={LAST_TRADE_TOOLTIP}>
-      <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }} data-testid="last-trade">
-        <Box component="span" sx={{ color: 'info.main' }}>●</Box> Last trade ${lt.toFixed(2)}
-      </Typography>
-    </Tooltip>
-  );
-}
-
-// Session-aware live status: explains WHY there are (or aren't) live ticks, instead of a
-// frozen price that silently contradicts an overnight-capable platform like Webull.
-function liveStatus(live: LiveUpdate | null):
-  { color: 'info' | 'warning' | 'default'; label: string; tip: string } | null {
-  if (!live) return null;
-  // This segment is the NBBO MID (not the last trade) — labelled `· mid $X` so it can never be
-  // confused with the new print-driven "Last trade" readout (UX §4.1 copy correction).
-  const last = live.mid != null ? ` · mid $${live.mid.toFixed(2)}` : '';
-  if (live.live) {
-    const s: Record<string, string> = { premarket: 'pre-market', regular: 'open',
-      afterhours: 'after-hours', overnight: 'overnight' };
-    return { color: 'info', label: `● live · ${s[live.market_session] ?? live.market_session} · $${live.mid?.toFixed(2)}`,
-      tip: `Streaming live ${live.feed} ticks.` };
-  }
-  if (live.market_session === 'overnight') {
-    return { color: 'warning', label: `○ overnight — no live data${last}`,
-      tip: 'Massive covers 4 AM–8 PM ET only; the 8 PM–4 AM overnight session is not provided, so this is the last close. Overnight-capable platforms (e.g. Webull) will show a different, live price.' };
-  }
-  if (live.market_session === 'closed') {
-    return { color: 'default', label: `○ market closed${last}`,
-      tip: 'Market is closed (weekend/holiday). Showing the last completed session.' };
-  }
-  return { color: 'warning', label: `○ no live ticks${last}`,
-    tip: 'In a covered session but no ticks are arriving — the feed may be lagging, or it is a market holiday.' };
 }
 
 export function TickerDashboard() {
@@ -316,33 +66,21 @@ export function TickerDashboard() {
   const [loading, setLoading] = useState(false);
   const [symbol, setSymbol] = useState(ticker);
   const [live, setLive] = useState<LiveUpdate | null>(null);
-  // Stream Offline: set when the SSE transport drops (no payload for > STREAM_OFFLINE_MS after
-  // having been live). Degrades ONLY the live-derived tiles + the connection chip; the static
-  // bundle (chart, stats, blocks) is untouched. Clears on the next payload (auto-reconnect).
+  // Stream Offline: set when the SSE transport drops (no payload for > STREAM_OFFLINE_MS after having
+  // been live). Degrades ONLY the live-derived tiles + the connection chip; the static bundle is
+  // untouched. Clears on the next payload (auto-reconnect).
   const [streamOffline, setStreamOffline] = useState(false);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
-  // Dark-pool (off-exchange) context: off => excluded from the bundle AND the opportunity score.
-  const [darkPool, setDarkPool] = useState(true);
+  // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
+  const darkPool = true;
 
-  // "Live" only if a real tick arrived recently AND the transport isn't offline. Declared early so
-  // the ghost-trade hook + the bundle's position context can use it.
+  // "Live" only if a real tick arrived recently AND the transport isn't offline.
   const isLive = (live?.live ?? false) && !streamOffline;
-  // Ghost trade (paper sim): owns the durable position, mark/P-L, alerts, and the reassessment
-  // boundary. `positionQuery` (set when a trade is open) makes the bundle compute position_eval.
   const gt = useGhostTrade(ticker, data, live, isLive, streamOffline);
-  // Positions portfolio (paper sim, multi-position): the flat durable collection, per-row marks,
-  // the resting-limit lifecycle, customization + saved views. Migrates the v1 single trade over.
-  const portfolio = usePortfolio(ticker, data, live, isLive, streamOffline);
-  const [portfolioEntryOpen, setPortfolioEntryOpen] = useState(false);
-  // Trader persona (prompt-layer overlay): switching is pure client-state — assembleHandoff is
-  // synchronous + bundle-independent, so it triggers NO getTicker/streamTicker and NO recompute.
   const persona = usePersona();
 
-  // AI recommendation (in-app risk-first ENTRY rec). The rec surface is an INDEPENDENTLY NULLABLE
-  // sibling card: its hook catches any fault and renders `unavailable` here, never touching the
-  // chart/tiles/ghost-trade/live stream. Per-query read persona is canonical-sourced (embed
-  // fallback) and presentation-only — it never recomputes the bundle.
+  // AI recommendation (independently-nullable sibling card).
   const { personas: readPersonas } = useReadPersonas(persona.personas);
   const [readPersonaId, setReadPersonaId] = useState('default');
   useEffect(() => { setReadPersonaId(persona.activeId); }, [persona.activeId]);
@@ -353,14 +91,10 @@ export function TickerDashboard() {
     dteMax: data?.market_state.dte_max ?? null,
     darkPool,
   });
-  // Shared export drawer (the always-available floor): opened from the rec panel AND the persona
-  // HandoffDialog — the SAME export feeds both paths. Triggers no in-app LLM call.
   const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({ open: false, personaId: null });
   const openExport = useCallback((personaId: string | null) => setExportDrawer({ open: true, personaId }), []);
 
-  // Persona DTE pre-fill: a visible, clearable staged window for the NEXT load. One-shot ref so it
-  // applies ONLY on an explicit ticker navigation — never on the 60s poll and never on a persona
-  // switch (so it can't retro-mutate the current view or recompute the bundle by itself).
+  // Persona DTE pre-fill (one-shot, explicit-navigation only).
   const [dtePrefill, setDtePrefill] = useState<{ min: number; max: number; persona: string } | null>(null);
   const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
 
@@ -377,24 +111,18 @@ export function TickerDashboard() {
       .finally(() => setLoading(false));
   }, [ticker, selected, darkPool, gt.positionQuery]);
 
-  // Reset the filter to "all" whenever the ticker changes; clear data so we show a spinner.
-  // Clear any prior error too, so a stale cold-start error never flashes over the new ticker.
+  // Reset the filter to "all" whenever the ticker changes; clear data + any prior error.
   useEffect(() => { setSelected(null); setData(null); setError(null); }, [ticker]);
 
-  // (Re)load on ticker/selection change, then poll on the cache cadence. Data is updated
-  // in place (not cleared) on a re-filter, so the view doesn't flicker between fetches.
+  // (Re)load on ticker/selection change, then poll on the cache cadence.
   useEffect(() => {
     load();
     const id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, [load]);
 
-  // Live SSE stream: mirrors the expiration filter. Skipped when nothing is selected.
-  // Stream-drop detection rides a payload-gap watchdog rather than a new payload field: a
-  // dropped stream sends nothing at all, so it's only visible at the transport layer. The gap
-  // is armed AFTER the first payload (before that we're in "loading (cold)", not "offline"),
-  // then re-armed on every payload; if it fires, we flip Stream Offline. The next payload
-  // (EventSource auto-reconnects) clears it. The watchdog never touches the static bundle.
+  // Live SSE stream + payload-gap watchdog (stream-drop detection). The watchdog never touches the
+  // static bundle. The next payload (EventSource auto-reconnects) clears offline.
   useEffect(() => {
     setLive(null);
     setStreamOffline(false);
@@ -414,22 +142,18 @@ export function TickerDashboard() {
   const fresh = data?.meta.freshness;
   const sig = data?.signals;
 
-  // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N. Full-chain
-  // (these rows are not window-scoped). Term-structure display points sampled to nominal tenors.
+  // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N (full-chain).
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
   const unusualStrikes = (data?.strike_profile.strikes ?? [])
     .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
     .sort((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
     .slice(0, 8);
-  const termSampled = m?.term_structure ? sampleTermPoints(m.term_structure.points) : [];
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
-  const ls = liveStatus(live);          // session-aware live/stale status for the chip
 
-  // Ghost-trade entry dialog + Prime banner (over-trading guard: the banner shows only on the
-  // change INTO Prime + prime_prompt_eligible, is dismissible, and never re-shows every poll).
+  // Ghost-trade entry dialog + Prime banner.
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryPrefill, setEntryPrefill] = useState<EntryPrefill | undefined>();
   const [showPrimeBanner, setShowPrimeBanner] = useState(false);
@@ -445,8 +169,7 @@ export function TickerDashboard() {
     setEntryPrefill(prefill); setEntryOpen(true);
   };
   // Accept an AI rec → pre-fill the SHIPPED ghost-trade entry dialog (every field editable). Nothing
-  // is tracked until the user confirms (mandatory `Open simulated trade`); cancel leaves nothing.
-  // No Accept path exists for a no_trade rec (the panel omits the control).
+  // is tracked until the user confirms; no Accept path exists for a no_trade rec (panel omits it).
   const onAcceptRec = (rec: RecResponse, personaName: string) => {
     if (!rec.strategy) return;
     const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
@@ -455,123 +178,35 @@ export function TickerDashboard() {
   const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
 
-  // Persona hand-off + customize dialogs.
-  const [handoffOpen, setHandoffOpen] = useState(false);
+  // Persona customize dialog (the hand-off viewer was removed to match the Figma toolbar).
   const [customizeOpen, setCustomizeOpen] = useState(false);
 
-  // Offer the active persona's DTE preference as a staged pre-fill — ONLY when the user hasn't set
-  // an explicit expiration window. Setting it touches no fetch (it's a note); it's applied to the
-  // next ticker navigation via the one-shot ref. A user-set window is never overridden.
+  // Offer the active persona's DTE preference as a staged pre-fill — ONLY when the user hasn't set an
+  // explicit expiration window. Setting it touches no fetch; applied to the next nav via the one-shot.
   useEffect(() => {
     if (selected !== null) { setDtePrefill(null); return; } // user picked expirations → their window wins
     const pref = persona.active.dte_pref;
     setDtePrefill(pref ? { min: pref.min_dte, max: pref.max_dte, persona: persona.active.name } : null);
   }, [persona.active, selected]);
 
-  // Hover label for a term-structure point: real tenor + expiration + ATM IV (auditable).
-  const TermPointTooltip = ({ active, payload }:
-    { active?: boolean; payload?: { payload: { dte: number; expiration: string; atm_iv: number } }[] }) => {
-    if (!active || !payload?.length) return null;
-    const p = payload[0].payload;
-    return (
-      <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>{p.dte}d · {p.expiration}</Typography>
-        <Typography variant="body2">ATM IV {p.atm_iv.toFixed(1)}%</Typography>
-      </Box>
-    );
+  const onSubmitSymbol = () => {
+    // Apply the staged DTE pre-fill to THIS explicit navigation only (one-shot).
+    if (dtePrefill) pendingPrefill.current = { min: dtePrefill.min, max: dtePrefill.max };
+    navigate(`/ticker/${symbol}`);
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2, flexWrap: 'wrap', rowGap: 1 }}>
-        <TextField
-          size="small" label="Ticker" value={symbol}
-          onChange={(e) => setSymbol(e.target.value.toUpperCase())}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && symbol) {
-              // Apply the staged DTE pre-fill to THIS explicit navigation only (one-shot).
-              if (dtePrefill) pendingPrefill.current = { min: dtePrefill.min, max: dtePrefill.max };
-              navigate(`/ticker/${symbol}`);
-            }
-          }}
-        />
-        <FormControl size="small" sx={{ minWidth: 240 }} disabled={!allDates.length}>
-          <InputLabel>Expirations</InputLabel>
-          <Select
-            multiple
-            displayEmpty
-            value={checked}
-            input={<OutlinedInput label="Expirations" />}
-            onChange={(e) => {
-              const v = (typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value);
-              // Every date ticked -> null ("all", no filter); otherwise the explicit subset (incl. []).
-              setSelected(v.length === allDates.length ? null : v);
-            }}
-            renderValue={() =>
-              selected === null ? 'All expirations'
-              : selected.length === 0 ? 'None selected'
-              : `${selected.length} of ${allDates.length}`}
-            MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360 } } } }}
-          >
-            {data?.expirations.map((e) => (
-              <MenuItem key={e.date} value={e.date}>
-                <Checkbox checked={checked.includes(e.date)} />
-                <ListItemText primary={e.date} secondary={dteLabel(e.dte)} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <ButtonGroup size="small" variant="outlined" disabled={!allDates.length}>
-          <Button onClick={() => setSelected(null)} disabled={selected === null}>All</Button>
-          <Button onClick={() => setSelected([])} disabled={noneSelected}>Clear</Button>
-        </ButtonGroup>
-        <Tooltip arrow title="Include off-exchange (dark-pool) volume context. Off = excluded from the opportunity score and from what the downstream AI sees.">
-          <FormControlLabel
-            control={<Switch size="small" checked={darkPool} onChange={(e) => setDarkPool(e.target.checked)} />}
-            label="Dark pool" sx={{ ml: 0 }}
-          />
-        </Tooltip>
-        {/* Persona (prompt-layer overlay) + hand-off viewer — pure presentation, never recomputes. */}
-        <PersonaPicker persona={persona} onOpenCustomize={() => setCustomizeOpen(true)} />
-        <Button size="small" variant="outlined" onClick={() => setHandoffOpen(true)}>View AI hand-off</Button>
-        {dtePrefill && (
-          <Tooltip arrow title="Visible, overridable pre-fill — it won't touch the current view or recompute anything.">
-            <Chip size="small" variant="outlined" onDelete={() => setDtePrefill(null)}
-              label={`Pre-filled ${dtePrefill.persona}'s preferred horizon (${dtePrefill.min}–${dtePrefill.max} DTE) for your next load`} />
-          </Tooltip>
-        )}
-        {loading && <CircularProgress size={18} />}
-        {sig?.regime && (
-          <Tooltip arrow title="Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers amplify moves → trending, don't fade.">
-            <Chip
-              label={sig.regime.replace('_', ' ')}
-              color={sig.regime === 'positive_gamma' ? 'success' : 'error'}
-            />
-          </Tooltip>
-        )}
-        {/* Exactly one connection chip: the offline warning supersedes the session chip so a
-            stale "● live" can never contradict the dropped transport. */}
-        {streamOffline ? (
-          <Tooltip arrow title={OFFLINE_CHIP_TOOLTIP}>
-            <Chip size="small" color="warning" label="⚠ Live offline — reconnecting…" />
-          </Tooltip>
-        ) : ls && (
-          <Tooltip arrow title={ls.tip}>
-            <Chip size="small" variant="outlined" color={ls.color} label={ls.label} />
-          </Tooltip>
-        )}
-        {fresh?.stale && (
-          <Tooltip arrow title="Age of the option-chain snapshot the levels were computed from. Large here is expected outside market hours; mid-session staleness means the data is lagging.">
-            <Alert severity="warning" sx={{ py: 0 }}>
-              data is {humanAge(fresh.data_age_seconds)} old — levels may be unreliable
-            </Alert>
-          </Tooltip>
-        )}
-      </Stack>
+      <TickerToolbar
+        symbol={symbol} onSymbolChange={setSymbol} onSubmitSymbol={onSubmitSymbol}
+        expirations={data?.expirations ?? []} allDates={allDates} selected={selected}
+        checked={checked} onSelectExpirations={setSelected}
+        persona={persona} onOpenCustomize={() => setCustomizeOpen(true)}
+        loading={loading}
+      />
 
-      {/* Cold-start failure (no bundle ever loaded) is the ONLY blank/error screen: red error
-          + Retry. A poll failure AFTER a prior success keeps the whole bundle on screen behind
-          a soft warning — never blank what's already rendered. */}
+      {/* Cold-start failure (no bundle ever loaded) is the ONLY blank/error screen: red error + Retry.
+          A poll failure AFTER a prior success keeps the whole bundle on screen behind a soft warning. */}
       {error && !data && (
         <Alert
           severity="error"
@@ -586,12 +221,8 @@ export function TickerDashboard() {
         </Alert>
       )}
 
-      {/* COLD-LOAD skeleton (AC-Skel-1): when nothing has loaded and there is no error, the page
-          paints its full STRUCTURE — the headline frame + last-trade line + the stat-grid tiles —
-          as shimmer placeholders. There is NO full-page `<CircularProgress/>` gating the body (the
-          removed monolithic gate). Each region fills the moment ITS source resolves: the last-trade
-          line on the first SSE payload (`live != null`), the rest on the REST bundle (`data != null`).
-          The skeleton class never appears post-load (`!data` only). */}
+      {/* COLD-LOAD skeleton (AC-Skel-1): structure paints as shimmer; the last-trade line fills on the
+          first SSE payload, the rest on the REST bundle. Skeleton class never appears post-load. */}
       {!data && !error && !noneSelected && (
         <Box data-testid="cold-load">
           <Box sx={{ mb: 1 }}>
@@ -608,114 +239,35 @@ export function TickerDashboard() {
         </Alert>
       )}
 
-      {/* Cold-start with a durable ghost trade: the trade record never blanks — show its entry
-          facts + last-known P/L even before any bundle loads (contract stats read "unavailable
-          until data loads"). When a bundle exists, the panel renders below the headline instead. */}
-      {!data && gt.trade && !noneSelected && (
-        <GhostTradePanel gt={gt} data={null} live={live} isLive={isLive} streamOffline={streamOffline} onOpenEntry={() => openEntry()} briefing={persona.active.name} />
-      )}
-
       {!noneSelected && m && (
         <>
           {showPrimeBanner && !tradeOpen && (
             <PrimeBanner onSimulate={() => openEntry()} onDismiss={() => setShowPrimeBanner(false)} />
           )}
-          {/* Headline ANCHOR (NBBO mid when live, else the bundle's static price). The last-trade
-              readout below is a DISPLAY-ONLY sibling and NEVER feeds this anchor (`live-spot=NBBO-mid`,
-              AC-LastTrade-5). */}
-          <Typography variant="h1">
-            {m.ticker} · ${(isLive ? live!.mid : m.price)?.toFixed(2)}
-            <Typography component="span" variant="body2" sx={{ color: 'text.secondary', ml: 1 }}>
-              (levels @ ${m.gex_spot?.toFixed(2)} · {selected === null ? 'all expirations' : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`})
-            </Typography>
-          </Typography>
-          {/* SECONDARY last-trade line (AC-LastTrade-4) — subordinate to the h1 anchor; live-derived,
-              honestly-nullable, degrades WITH the live tiles on a stream drop (AC-LastTrade-1/2/3). */}
+
+          {/* Headline ANCHOR + secondary last-trade readout. */}
+          <TickerHeader m={m} sig={sig} live={live} isLive={isLive} streamOffline={streamOffline} selected={selected} />
+
+          {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
+          <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+
+          {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable metric its own empty. */}
+          <DealerPositioning
+            m={m} sig={sig} offExchange={data?.off_exchange}
+            volOiThreshold={volOiThreshold} unusualCount={unusualStrikes.length}
+            tierWord={tm.word} tierColor={tm.color} opportunityScore={sig?.opportunity_score ?? 0}
+          />
+
+          {/* Open a simulated (paper) trade → the shipped entry dialog (the Figma ticker shows only this
+              affordance — no portfolio/ghost-trade panel on the ticker; the book lives on /positions). */}
           <Box sx={{ mb: 2 }}>
-            <LastTradeReadout live={live} streamOffline={streamOffline} />
+            <Button variant="outlined" size="small" onClick={() => openEntry()} data-testid="open-sim-trade">
+              + Open simulated trade
+            </Button>
           </Box>
-
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}>
-            <Stat label="Call wall" value={`$${m.call_wall}`} accent="up"
-              info="Strike with the most positive dealer gamma — tends to act as resistance (dealers sell into rallies here)." />
-            <Stat label="Put wall" value={`$${m.put_wall}`} accent="down"
-              info="Strike with the most negative dealer gamma — tends to act as support (dealers buy dips here)." />
-            <Stat
-              label={isLive ? 'Gamma flip (live)' : 'Gamma flip'}
-              // When not live (cold or offline) show the authoritative static flip, never the
-              // last stale live value — the live flip drops its "(live)" suffix too.
-              value={`$${(isLive ? live?.gamma_flip : null) ?? m.gamma_flip}`} accent="neutral"
-              offline={streamOffline}
-              info="The price where dealer hedging switches from calming moves to amplifying them. Above it → steadier/range-bound; below it → more volatile/trending." />
-            <Stat
-              label={`Net flow (${live ? Math.round(live.flow_window_s / 60) : 5}m)`}
-              value={isLive ? `${live!.net_flow >= 0 ? '+' : ''}${live!.net_flow.toLocaleString()}` : '—'}
-              accent={!isLive ? 'neutral' : live!.net_flow >= 0 ? 'up' : 'down'}
-              offline={streamOffline}
-              info="Aggressive buys minus sells over the last few minutes, from the live trade tape. Positive = buyers lifting the ask; negative = sellers hitting the bid." />
-            <Stat label="Spread" value={isLive && live?.spread != null ? `$${live.spread.toFixed(2)}` : '—'} accent="neutral"
-              offline={streamOffline}
-              info="Best ask minus best bid. Wider = a thinner, more volatile market." />
-            <Stat label="Net GEX" value={`$${(m.net_gex / 1e6).toFixed(1)}M`} accent={m.net_gex >= 0 ? 'up' : 'down'}
-              info="Total dealer gamma across the chain. Positive = dealers dampen moves (range-bound); negative = they amplify moves (trending)." />
-            <Stat label="Net DEX"
-              value={m.net_dex == null ? 'unavailable' : `$${(m.net_dex / 1e6).toFixed(1)}M`} accent="neutral"
-              info={netDexTip(m.call_dex, m.put_dex)} />
-            <Stat label="Max pain" value={`$${m.max_pain ?? '—'}`} accent="neutral"
-              info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry." />
-            <Stat label="IV / HV" value={m.iv_hv_ratio.toFixed(2)} accent="neutral"
-              info="Implied volatility ÷ recent realized volatility. >1 = options look expensive (favor selling); <1 = cheap (favor buying)." />
-            <Stat label="Vol/OI"
-              value={m.chain_vol_oi_ratio == null ? 'unavailable' : `${m.chain_vol_oi_ratio.toFixed(2)}×`}
-              accent="neutral" info={volOiTip(volOiThreshold, unusualStrikes.length)} />
-            <Stat label="IV skew"
-              value={m.iv_skew == null ? 'unavailable'
-                : `${m.iv_skew.slope >= 0 ? '+' : '−'}${Math.abs(m.iv_skew.slope).toFixed(1)} pts · ${skewState(m.iv_skew.slope)}`}
-              accent="neutral"
-              info={m.iv_skew == null ? 'IV skew unavailable this cycle.' : skewTip(m.iv_skew)} />
-            <Stat label="Term structure"
-              value={m.term_structure == null ? 'unavailable'
-                : m.term_structure.points.length < 2 ? '—' : m.term_structure.state}
-              accent="neutral"
-              info={m.term_structure == null ? 'Term structure unavailable this cycle.' : termTip(m.term_structure)} />
-            <Stat label="VWAP" value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'} accent="neutral"
-              info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference." />
-            {data?.off_exchange?.ratio_pct != null && (
-              <Stat label="Off-exchange %" value={`${data.off_exchange.ratio_pct}%`} accent="neutral"
-                info={`Share of recent volume printed off-lit (dark pools/ATS + internalized retail). Top levels: ${
-                  data.off_exchange.levels.slice(0, 3).map((l) => `$${l.price} (${l.share_of_offex_pct}%)`).join(', ') || '—'
-                }. Side/intent unknown — context only, not a directional signal.`} />
-            )}
-            <Stat label="Opportunity" value={`${sig?.opportunity_score ?? 0} · ${tm.word}`} accent="neutral" accentColor={tm.color}
-              info={"0–100 triage score for how actionable the setup is now (closeness to a key level + volatility extremity + confluence). Not a trade signal." + OPPORTUNITY_TIER_INFO} />
-          </Box>
-
-          {/* Ghost-trade panel (paper sim) — below the headline/grid. Durable parts never blank;
-              P/L + mark degrade with the live stream only. */}
-          <GhostTradePanel gt={gt} data={data} live={live} isLive={isLive} streamOffline={streamOffline} onOpenEntry={() => openEntry()} briefing={persona.active.name} />
-
-          {/* Positions portfolio (paper sim) — the multi-position book: central + per-ticker views,
-              Simulated/Live tabs, the 3-mode entry + resting-limit lifecycle, grouping/subtotals,
-              customization + durable saved views. Live cells degrade on an SSE drop; records persist. */}
-          <PortfolioPanel
-            pf={portfolio} data={data} live={live} isLive={isLive} streamOffline={streamOffline}
-            ticker={ticker} entryOpen={portfolioEntryOpen} onEntryOpen={setPortfolioEntryOpen}
-          />
-
-          {/* AI recommendation — a dedicated, independently-nullable sibling card. A rec
-              error/timeout/over-cap/no-key degrades ONLY this surface; everything above and below
-              keeps rendering the bundle. The rec is a STATIC artifact: stale on a newer bundle,
-              untouched on an SSE drop. */}
-          <AiRecPanel
-            ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
-            activePersonaId={persona.activeId}
-            dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-            onAccept={onAcceptRec} onViewExport={openExport}
-            readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
-          />
 
           {data?.strike_profile && (
-            <GexProfileChart
+            <GexStrikeProfile
               strikes={data.strike_profile.strikes}
               spot={m.gex_spot ?? m.price}
               callWall={m.call_wall}
@@ -725,153 +277,35 @@ export function TickerDashboard() {
             />
           )}
 
-          {/* Term structure — cross-tenor ATM-IV curve (ignores the DTE filter). Static bundle
-              field; never offline-dimmed. Sampled to nominal tenors; absent buckets omitted. */}
-          <Box sx={{ mt: 3 }}>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-              <Typography variant="h6">Term structure</Typography>
-              {m.term_structure && (
-                <Tooltip arrow title={termTip(m.term_structure)}>
-                  <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-                </Tooltip>
-              )}
-            </Stack>
-            {m.term_structure == null || termSampled.length === 0 ? (
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>Term structure unavailable this cycle.</Typography>
-            ) : (
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    ATM IV by tenor · {m.term_structure.points.length < 2 ? '—' : m.term_structure.state}
-                  </Typography>
-                  <ResponsiveContainer width="100%" height={130}>
-                    <LineChart data={termSampled} margin={{ top: 10, right: 20, bottom: 4, left: 0 }}>
-                      <XAxis dataKey="dte" tickFormatter={(d) => `${d}d`}
-                        tick={{ fontSize: 11, fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} />
-                      <YAxis width={42} tickFormatter={(v) => `${Number(v).toFixed(0)}%`}
-                        tick={{ fontSize: 11, fill: theme.palette.text.secondary }} stroke={theme.palette.text.secondary} domain={['auto', 'auto']} />
-                      <RTooltip cursor={{ stroke: theme.palette.divider }} content={<TermPointTooltip />} />
-                      <Line type="monotone" dataKey="atm_iv" stroke={theme.palette.text.secondary}
-                        strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+          {/* Term structure + AI recommendation side-by-side (Figma ticker screen layout): GEX is
+              full-width above; below it the Term-structure card (left) and the independently-nullable
+              AI-rec card (right). Stacks to one column on narrow viewports. */}
+          <Box sx={{ mt: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, alignItems: 'stretch' }}>
+            <TermStructureCard termStructure={m.term_structure} />
+            <AiRecPanel
+              ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
+              activePersonaId={persona.activeId}
+              dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+              onAccept={onAcceptRec} onViewExport={openExport}
+              readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
+              fillHeight
+            />
           </Box>
 
-          {/* Fresh positioning (Vol/OI) — full-chain unusual strikes (≥ cutoff). Static bundle
-              field; activity only, no side/direction; catches strikes outside the chart window. */}
-          <Box sx={{ mt: 3 }}>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-              <Typography variant="h6">Fresh positioning (Vol/OI)</Typography>
-              <Tooltip arrow title={volOiTip(volOiThreshold, unusualStrikes.length)}>
-                <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-              </Tooltip>
-            </Stack>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-              {freshCaption(volOiThreshold)}
-            </Typography>
-            {m.chain_vol_oi_ratio == null ? (
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>Vol/OI unavailable this cycle.</Typography>
-            ) : unusualStrikes.length === 0 ? (
-              <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                No strikes above the {fmtThresh(volOiThreshold)}× Vol/OI cutoff this session.
-              </Typography>
-            ) : (
-              <Stack spacing={1}>
-                {/* Ranked by Vol/OI desc (server rows); blank-OI strikes never appear (null filtered). */}
-                {unusualStrikes.map((s) => (
-                  <Card key={s.strike} variant="outlined">
-                    <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                      <Typography variant="body2">
-                        ${s.strike} · Vol/OI {(s.vol_oi_ratio as number).toFixed(2)}× · {s.volume?.toLocaleString() ?? '—'} contracts
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </Box>
+          {/* Fresh positioning (Vol/OI) — full-chain unusual strikes (static). */}
+          <FreshPositioning
+            chainVolOiRatio={m.chain_vol_oi_ratio}
+            volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
+          />
 
-          {/* Off-exchange blocks — rides the REST bundle only (never the live stream) and has
-              no offline state of its own; it ages with the bundle freshness indicator. Hidden
-              entirely when the Dark pool toggle is off. */}
-          {darkPool && (
-            <Box sx={{ mt: 3 }}>
-              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-                <Typography variant="h6">Off-exchange blocks</Typography>
-                <Tooltip arrow title={BLOCKS_TOOLTIP}>
-                  <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-                </Tooltip>
-              </Stack>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                Largest recent off-exchange prints near spot. Context, not a signal — no side or direction.
-              </Typography>
-              {!data?.off_exchange ? (
-                // Best-effort miss: off_exchange absent from an otherwise-good bundle. The chart
-                // and every other stat render normally — this never implies a chart problem.
-                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                  Off-exchange data unavailable this cycle.
-                </Typography>
-              ) : !(data.off_exchange.blocks?.length) ? (
-                <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-                  No blocks ≥ {(data.off_exchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in the recent window.
-                </Typography>
-              ) : (
-                <Stack spacing={1}>
-                  {/* Already largest-notional-first, top-5 from the backend — render in order,
-                      do NOT re-sort or re-cap. No side/direction; proximity chip is neutral. */}
-                  {data.off_exchange.blocks.map((b, i) => {
-                    const pct = b.proximity_pct * 100; // payload is a signed ratio vs spot
-                    const prox = `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% vs spot`;
-                    return (
-                      <Card key={i} variant="outlined">
-                        <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
-                            <Typography variant="body2">
-                              {b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}
-                            </Typography>
-                            <Tooltip arrow title={PROXIMITY_TOOLTIP}>
-                              <Chip size="small" variant="outlined" label={prox} />
-                            </Tooltip>
-                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              {humanAge(b.age_seconds)} ago
-                            </Typography>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              )}
-            </Box>
-          )}
+          {/* Off-exchange blocks — REST-bundle only; hidden when Dark pool is off. */}
+          {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} />}
 
-          {sig?.setups?.length ? (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="h6" gutterBottom>Setups</Typography>
-              <Stack spacing={1}>
-                {sig.setups.map((s, i) => (
-                  <Card key={i} variant="outlined">
-                    <CardContent>
-                      <Typography variant="subtitle1">
-                        {s.name} <Chip size="small" label={s.conviction} sx={{ ml: 1 }} />
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>{s.rationale}</Typography>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            </Box>
-          ) : (
-            <Alert severity="info" sx={{ mt: 3 }}>No clean setup right now.</Alert>
-          )}
+          <Setups setups={sig?.setups} />
         </>
       )}
 
-      {/* Ghost-trade entry. One open trade per ticker is enforced by the panel (no open affordance
-          while a trade is open) + the hook's openTrade guard. */}
+      {/* Ghost-trade entry. */}
       <TradeEntryDialog
         open={entryOpen && !tradeOpen}
         ticker={ticker}
@@ -883,18 +317,10 @@ export function TickerDashboard() {
         onConfirm={(form) => { gt.openTrade(form); setEntryOpen(false); }}
       />
 
-      {/* Persona hand-off viewer + customize — presentation-only, off the compute path. The
-          hand-off dialog now also opens the SAME structured export drawer (augmenting the manual
-          hand-off; the export feeds both the in-app call and this copy-paste path). */}
-      <HandoffDialog
-        open={handoffOpen} onClose={() => setHandoffOpen(false)}
-        handoff={persona.handoff} data={data} stale={fresh?.stale ?? false}
-        dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-        onViewExport={() => openExport(persona.handoff.persona.id)}
-      />
+      {/* Persona customize — presentation-only, off the compute path. */}
       <PersonaCustomizeForm open={customizeOpen} onClose={() => setCustomizeOpen(false)} persona={persona} />
 
-      {/* The structured-state export floor — reachable from the rec panel AND the hand-off dialog. */}
+      {/* The structured-state export floor — reachable from the rec panel ("View what's sent"). */}
       <StateExportDrawer
         open={exportDrawer.open} ticker={ticker} personaId={exportDrawer.personaId}
         onClose={() => setExportDrawer((s) => ({ ...s, open: false }))}

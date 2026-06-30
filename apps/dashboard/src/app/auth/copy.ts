@@ -60,6 +60,9 @@ export const AUTH_COPY = {
   askAi: {
     // Auth-gate OUTERMOST (D6f) — never ai-rec's cooldown/cap/no_key for a logged-out user.
     gate: 'Sign in to ask AI.',
+    // Signed-out AI-rec body (Figma 149:598 signed-out variant): description + CTA button.
+    signedOut: 'Sign in to ask the AI for a read.',
+    cta: 'Sign in to ask AI',
     tooltip:
       "The AI recommendation call requires an account. Signing in unlocks it; the AI's own rate limits still apply afterward.",
   },

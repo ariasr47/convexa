@@ -3,10 +3,10 @@ import { useTheme } from '@mui/material/styles';
 import { Card, CardContent, Typography, Stack, Box, Tooltip as MuiTooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell,
-  ReferenceLine, Tooltip,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, ReferenceLine, Tooltip,
 } from 'recharts';
 import type { StrikeRow } from '@org/api';
+import { typographyTokens } from './tokens';
 
 interface Props {
   strikes: StrikeRow[];
@@ -17,70 +17,64 @@ interface Props {
   liveSpot?: number | null;
 }
 
-const fmtM = (v: number) => `${(v / 1e6).toFixed(1)}M`;
+const MONO = typographyTokens.monoFontFamily;
+const fmtM = (v: number) => `$${(v / 1e6).toFixed(1)}M`;
 
 /**
- * Horizontal net-GEX profile: one bar per strike (green = net positive / call-dominated,
- * red = net negative / put-dominated), strikes high→low on the Y axis. Call/put walls are
- * drawn at full opacity; spot and gamma flip are dashed reference lines.
+ * GEX strike profile — a vertical diverging bar chart of net dealer gamma by strike: strikes spread
+ * across the X-axis (low→high), net GEX as bars from a zero baseline — green = call-dominated (net +,
+ * up), red = put-dominated (net −, down). Call/put walls are full-opacity with a white hairline; spot
+ * / gamma flip / live price are dashed reference lines. Wide + compact (uses horizontal space, short
+ * height); each bar hovers a per-strike tooltip (GEX · DEX · Vol/OI · volume).
  */
 export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, liveSpot }: Props) {
   const theme = useTheme();
   const green = theme.palette.success.main;
   const red = theme.palette.error.main;
-  const slate = theme.palette.text.secondary; // neutral — DEX is positioning context, not direction
 
   const data = useMemo(() => {
-    // A readable window around spot, but ALWAYS wide enough to include the walls it labels
-    // (a round-number wall can sit just outside a fixed ±% band, which would crop the very
-    // strike the chart names). Sorted high→low so high strikes sit on top.
-    const lo = Math.min(spot * 0.88, putWall > 0 ? putWall : spot * 0.88);
-    const hi = Math.max(spot * 1.12, callWall > 0 ? callWall : spot * 1.12);
-    return strikes
-      .filter((s) => s.strike >= lo && s.strike <= hi)
-      .sort((a, b) => b.strike - a.strike);
+    // A readable window around spot, always wide enough to include the walls it labels.
+    const lo = Math.min(spot * 0.9, putWall > 0 ? putWall : spot * 0.9);
+    const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
+    return strikes.filter((s) => s.strike >= lo && s.strike <= hi).sort((a, b) => a.strike - b.strike);
   }, [strikes, spot, callWall, putWall]);
-
-  // Snap a price to the nearest plotted strike so a category-axis reference line lands on a band.
-  const nearest = (price: number) =>
-    data.reduce(
-      (best, s) => (Math.abs(s.strike - price) < Math.abs(best - price) ? s.strike : best),
-      data[0]?.strike ?? price
-    );
 
   if (!data.length) return null;
 
-  // Per-strike DEX rides the same rows as GEX; show the series only when delta is present
-  // (null chain-wide => omit the series, no error — GEX/profile unaffected).
-  const hasDex = data.some((s) => s.net_dex != null);
+  // Snap a price to the nearest plotted strike so a category-axis reference line lands on a bar.
+  const nearest = (price: number) =>
+    data.reduce((best, s) => (Math.abs(s.strike - price) < Math.abs(best - price) ? s.strike : best), data[0].strike);
+
+  const isWall = (k: number) => k === callWall || k === putWall;
 
   const LegendDot = ({ color, label }: { color: string; label: string }) => (
     <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-      <Box sx={{ width: 12, height: 12, borderRadius: 0.5, bgcolor: color }} />
+      <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
     </Stack>
   );
 
-  // Custom tooltip: GEX + (when present) DEX, Vol/OI and volume per strike, for auditability.
-  // DEX is labeled distinctly because it is delta-exposure, a different unit from gamma GEX.
   const ProfileTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: StrikeRow }[] }) => {
     if (!active || !payload?.length) return null;
     const r = payload[0].payload;
     return (
       <Box sx={{ background: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, px: 1.25, py: 0.75 }}>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>Strike ${r.strike}</Typography>
-        <Typography variant="body2">Net GEX (gamma): ${fmtM(r.net_gex)}</Typography>
-        {r.net_dex != null && <Typography variant="body2">Net DEX (delta): ${fmtM(r.net_dex)}</Typography>}
+        <Typography variant="body2">Net GEX (gamma): {fmtM(r.net_gex)}</Typography>
+        {r.net_dex != null && <Typography variant="body2">Net DEX (delta): {fmtM(r.net_dex)}</Typography>}
         {r.vol_oi_ratio != null && <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>}
         {r.volume != null && <Typography variant="body2">Volume: {r.volume.toLocaleString()} contracts</Typography>}
       </Box>
     );
   };
 
+  const refLabel = (text: string, color: string) =>
+    ({ value: text, position: 'top' as const, fontSize: 10, fill: color, fontFamily: MONO });
+
   return (
-    <Card variant="outlined" sx={{ mt: 3 }}>
+    <Card variant="outlined" sx={{ mt: 3, borderRadius: 3 }}>
       <CardContent>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap' }}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', rowGap: 0.5 }}>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
             <Typography variant="h6">GEX strike profile</Typography>
             <MuiTooltip arrow placement="top"
@@ -91,52 +85,37 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
           <Stack direction="row" spacing={2}>
             <LegendDot color={green} label="Call-dominated (net +)" />
             <LegendDot color={red} label="Put-dominated (net −)" />
-            {hasDex && <LegendDot color={slate} label="Net DEX (delta)" />}
           </Stack>
         </Stack>
-        <ResponsiveContainer width="100%" height={Math.max(360, data.length * 22)}>
-          <BarChart layout="vertical" data={data} margin={{ left: 8, right: 24, top: 8, bottom: 8 }}>
-            <XAxis xAxisId="gex" type="number" tickFormatter={fmtM} stroke={theme.palette.text.secondary} />
-            {/* Secondary axis for DEX — different unit (delta vs gamma) → its own scale, drawn on top. */}
-            {hasDex && (
-              <XAxis xAxisId="dex" type="number" orientation="top" tickFormatter={fmtM} stroke={slate} />
-            )}
+
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={data} margin={{ top: 18, right: 8, left: 0, bottom: 0 }} barCategoryGap="14%">
+            <XAxis
+              dataKey="strike" type="category" tickFormatter={(v) => `$${v}`} interval="preserveStartEnd" minTickGap={28}
+              tick={{ fontSize: 10, fill: theme.palette.text.disabled, fontFamily: MONO }} stroke={theme.palette.divider} tickLine={false}
+            />
             <YAxis
-              type="category" dataKey="strike" width={56}
-              tick={{ fontSize: 11, fill: theme.palette.text.secondary }}
+              tickFormatter={fmtM} width={50} tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
+              stroke={theme.palette.divider} tickLine={false} axisLine={false}
             />
             <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<ProfileTooltip />} />
-            <ReferenceLine xAxisId="gex" x={0} stroke={theme.palette.divider} />
-            <ReferenceLine
-              y={nearest(spot)} stroke={theme.palette.primary.main} strokeDasharray="4 3"
-              label={{ value: `spot $${spot.toFixed(0)}`, position: 'right', fontSize: 11, fill: theme.palette.primary.main }}
-            />
-            <ReferenceLine
-              y={nearest(gammaFlip)} stroke={theme.palette.warning.main} strokeDasharray="4 3"
-              label={{ value: `flip $${gammaFlip.toFixed(0)}`, position: 'right', fontSize: 11, fill: theme.palette.warning.main }}
-            />
+            <ReferenceLine y={0} stroke={theme.palette.divider} />
+            <ReferenceLine x={nearest(spot)} stroke={theme.palette.primary.main} strokeDasharray="4 3" label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.primary.main)} />
+            <ReferenceLine x={nearest(gammaFlip)} stroke={theme.palette.warning.main} strokeDasharray="4 3" label={refLabel('flip', theme.palette.warning.main)} />
             {liveSpot != null && liveSpot > 0 && (
-              <ReferenceLine
-                y={nearest(liveSpot)} stroke={theme.palette.info.main} strokeWidth={2}
-                label={{ value: `live $${liveSpot.toFixed(0)}`, position: 'right', fontSize: 11, fill: theme.palette.info.main }}
-              />
+              <ReferenceLine x={nearest(liveSpot)} stroke={theme.palette.info.main} strokeWidth={2} label={refLabel('live', theme.palette.info.main)} />
             )}
-            <Bar dataKey="net_gex" name="Net GEX" xAxisId="gex" isAnimationActive={false}>
+            <Bar dataKey="net_gex" name="Net GEX" radius={[2, 2, 0, 0]} isAnimationActive={false}>
               {data.map((s) => (
                 <Cell
                   key={s.strike}
                   fill={s.net_gex >= 0 ? green : red}
-                  fillOpacity={s.strike === callWall || s.strike === putWall ? 1 : 0.82}
-                  stroke={s.strike === callWall || s.strike === putWall ? theme.palette.common.white : 'none'}
-                  strokeWidth={s.strike === callWall || s.strike === putWall ? 1 : 0}
+                  fillOpacity={isWall(s.strike) ? 1 : 0.82}
+                  stroke={isWall(s.strike) ? theme.palette.common.white : 'none'}
+                  strokeWidth={isWall(s.strike) ? 1 : 0}
                 />
               ))}
             </Bar>
-            {/* Net DEX series — single neutral color (no directional green/red). */}
-            {hasDex && (
-              <Bar dataKey="net_dex" name="Net DEX (delta)" xAxisId="dex"
-                fill={slate} fillOpacity={0.5} isAnimationActive={false} />
-            )}
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

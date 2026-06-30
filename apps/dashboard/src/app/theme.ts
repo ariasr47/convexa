@@ -12,6 +12,8 @@ const COMMON = {
   typography: {
     fontFamily: typographyTokens.fontFamily,
     h1: { fontSize: '1.6rem', fontWeight: 700 },
+    // Section/card titles — the Figma DS "Type/Section" idiom (Inter Semi Bold 16), not MUI's 20/500.
+    h6: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.25 },
   },
   components: {
     // Buttons read in sentence case across the redesign (Figma Button labels are sentence-case),

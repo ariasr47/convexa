@@ -483,9 +483,9 @@ describe('byo-ai-key — degraded, isolation, egress', () => {
     await ask(user);
     // Contained unavailable status in the panel.
     expect(await within(panel()).findByText(COPY.unavailable.title)).toBeInTheDocument();
-    // The rest of the page is intact: the GEX chart axis label + the positions panel keep rendering.
+    // The rest of the page is intact: the dealer-positioning section + the open-trade affordance keep rendering.
     expect(screen.getByText('Call wall')).toBeInTheDocument();
-    expect(screen.getByTestId('portfolio-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('open-sim-trade')).toBeInTheDocument();
     expect(screen.getByTestId('ai-rec-panel')).toBeInTheDocument();
   });
 

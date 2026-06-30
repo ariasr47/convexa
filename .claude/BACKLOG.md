@@ -364,6 +364,28 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **Convexa-redesign — finish the FE re-skin program** — `RAISED 2026-06-30 (Ticker surface re-skinned in code this session)`.
+  The `convexa-redesign` branch now re-skins the **Ticker** surface to the Figma DS in code: `TickerDashboard`
+  componentized into `ticker/sections/*` (Toolbar, Header, LiveTape, DealerPositioning, GexStrikeProfile,
+  TermStructure, FreshPositioning, OffExchangeBlocks, Setups, StatTile, TintChip) + the AI-rec panel re-skin
+  (signed-in + signed-out states). GEX is a **vertical** diverging bar chart; Term-structure sits **side-by-side
+  with AI-rec** (equal-height row); section titles use the DS size via `theme.h6` (Inter Semi Bold 16).
+  `nx test dashboard` 412/412, lint clean. **Pending follow-ups:**
+  - **MUI-kit publish/update (OWNER UI — can't be scripted):** Foundations is now the full MUI palette (76 vars,
+    Dark/Light) and the kit's `palette/*` aliases it. Owner must **Publish** the MUI kit (file `eJ9qzhA6rNxwk2KVQA9AvU`)
+    → **Update** the library in the design file → then set the `Screens - *` frames to the kit's **dark** mode.
+    Until then, MUI-kit instances on the screens don't inherit the brand theme.
+  - **Token-binding retrofit + cleanup:** bind the remaining ticker/shell components to Foundations `color/*` +
+    `Type/*` per `THEME_TOKENS.md` (Toolbar is the done template); **remove the now-dead `HandoffDialog`** in
+    `personas/components.tsx` (AI-rec no longer opens it — the hand-off viewer was removed per owner); **update
+    `THEME_TOKENS.md`** to record the expanded Foundations + kit aliasing; **QA the global `theme.h6` 16/600 change**
+    for regressions on Positions/Settings/Landing section titles.
+  - **Remaining surface + ship:** the full-page **`/auth`** route; a fresh **QA pass** vs
+    `design_handoff_convexa_redesign/README.md` ACs + the 8 invariants; **merge `convexa-redesign` → main** (GATE S).
+  - **Intentional Figma deviations (record, don't "fix"):** GEX is a **vertical** diverging bar chart (not the
+    horizontal Figma `149:172`) — owner UX call (wider/shorter); the AI-rec **hand-off viewer** + the ticker's
+    **portfolio/ghost-trade panels** were **removed** per owner. *Value H (ship the redesign) · Effort M.*
+    Decision-impact cull **N/A** (FE redesign program; judged on design-conformance + ship-readiness).
 - **Prerender public pages (SSG) + SEO hygiene** — `RAISED 2026-06-29 (post-launch optimization; SSR evaluated
   + rejected)`. Optimize first-paint + SEO for the PUBLIC pages WITHOUT full SSR (which was evaluated and
   rejected: a Vite-SPA→Next/Remix/Vite-SSR migration + a per-request render server would break the free

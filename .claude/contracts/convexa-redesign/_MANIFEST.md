@@ -12,7 +12,7 @@ Contracts:
   - INTERFACE_CONTRACT.md      n/a (NO_INTERFACE_CHANGE — consumes existing endpoints/SSE unchanged)
   - FIGMA_COMPONENT_MAP.md     locked  (Pro-plan Code-Connect substitute: node-id ⇄ code/props for 17 components)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  DONE — SURFACE Positions CODE re-skin: delivery-frontend extracted PositionRow/PositionCard/PositionsPanel React components (behavior-preserving), dashboard tests 391 pass (+20), lint clean. Conductor preview-verified (/positions: table + cards(5) + Live locked render, 0 console errors). NOT committed yet. Pre-existing tsc dup-attr bugs flagged: auth/SettingsPage.tsx:242, ticker/TickerDashboard.tsx:259.
+  - FRONTEND_EXECUTION_CONTRACT.md  draft — SURFACE Ticker CODE re-skin + componentize (StatTile/Toolbar/Header/LiveTape/DealerPositioning/GEX/TermStructure/AiRecommendation/Fresh/OffExchange/Setups; ai-rec re-skin preserving logic; NO demo toggle — stream-driven) → dispatched to delivery-frontend 2026-06-30. (Positions re-skin shipped: commit c722dd7.)
 Open amendments: none
 QA (GATE Q):  n/a (single fresh QA pass after ALL surfaces, before GATE S merge to main)
 Last gateway:  GATE V (Positions) @ 2026-06-29 — implement-from-Figma (full re-write)

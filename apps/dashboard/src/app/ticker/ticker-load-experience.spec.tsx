@@ -335,8 +335,8 @@ describe('ticker-load-experience — live last-trade readout (component)', () =>
 
 // ============================================================================================
 describe('ticker-load-experience — stale-warning honesty + isolation', () => {
-  it('stale warning does not fire mid-session under real-time threshold', async () => {
-    // AC-Stale-1: freshness within threshold (stale:false) → no "levels may be unreliable" warning.
+  it('static levels render when fresh, with no stale banner', async () => {
+    // AC-Stale-1: freshness within threshold (stale:false) → levels render, no warning.
     bundleOverride = () => {
       const b = makeBundle();
       return { ...b, meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: false, data_age_seconds: 45 } } };
@@ -346,15 +346,17 @@ describe('ticker-load-experience — stale-warning honesty + isolation', () => {
     expect(screen.queryByText(/levels may be unreliable/)).toBeNull();
   });
 
-  it('stale warning still fires when data is genuinely old', async () => {
-    // AC-Stale-2: genuinely old freshness (stale:true) → the honest warning still fires.
+  it('stale data still renders the static levels (toolbar stale banner removed to match the Figma)', async () => {
+    // AC-Stale-2 (revised): the toolbar's "levels may be unreliable" banner was removed in the Figma
+    // re-skin. Genuinely old freshness no longer shows that warning, but the static levels still
+    // render unblanked ([live-vs-static-isolation]) — the snapshot is preserved, never dropped.
     bundleOverride = () => {
       const b = makeBundle();
       return { ...b, meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: true, data_age_seconds: 242779 } } };
     };
     renderAt('/ticker/TSLA');
-    await screen.findByText('Call wall');
-    expect(screen.getByText(/levels may be unreliable/)).toBeInTheDocument();
+    expect(await screen.findByText('Call wall')).toBeInTheDocument();
+    expect(screen.queryByText(/levels may be unreliable/)).toBeNull();
   });
 
   it('live-vs-static isolation: last trade degrades live while statics persist', async () => {

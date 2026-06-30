@@ -48,6 +48,11 @@ Reuse by `(await figma.getNodeByIdAsync(id)).createInstance()` (or the specific 
 
 > **Naming gotcha (learned):** Figma auto-names a TEXT layer by its content, so a static label ("Qty") and its dynamic value collide on the same name → `findOne(name)` hits the wrong one. Give every override target a UNIQUE explicit name (e.g. `QtyVal`).
 
+### Ticker section components (extracted 2026-06-30; each on its own `Ticker · …` page under Components)
+Ticker Live (`135:3`) is now composed of instances of these:
+`Ticker · Toolbar` 149:66 · `Ticker · Header` 149:96 · `Ticker · Live Tape` 149:112 · `Ticker · Dealer Positioning` 149:134 · `Ticker · GEX Strike Profile` 149:172 · `Ticker · Term Structure` 149:579 · `Ticker · AI Recommendation` 149:598 · `Ticker · Fresh Positioning` 149:624 · `Ticker · Off-Exchange Blocks` 149:642 · `Ticker · Setups` 149:670.
+All 3 Ticker screens are now component-driven: **Live `135:3`**, **Offline `154:458`**, **Stale `154:473`** (rebuilt as clones of the componentized Live → all sections are instances). State deltas applied as INSTANCE OVERRIDES: Toolbar active segment (Live/Stale/Offline), Header chip (live / market-closed / offline), Live-Tape dim+caption (Offline), Stale banner. The upgraded Live-Tape/Dealer tile style (left accent bar + ⓘ + r12) propagates to all three via the components. (Future cleanup: convert Toolbar/Header/LiveTape to `State` variants so the deltas are variant-driven instead of per-instance overrides.)
+
 Landing (`78:10`) uses TopNav+Footer instances; **Hero + "What works today" are plain frames** (reverted from components — single-use). Positions Table/Cards use PositionRow/PositionCard instances; Scanner + Positions-Live use ComingSoonCard instances.
 
 ## Source references (per screen, on disk — gitignored)

@@ -6,6 +6,9 @@
  */
 
 export const COPY = {
+  // Advisory intro under the card title (Figma `AI Recommendation`, node 149:621).
+  intro:
+    'Risk-first read on the current snapshot, framed by your persona. Advisory — you confirm every paper trade.',
   action: {
     get: 'Get AI recommendation',
     askAnyway: 'Ask anyway',

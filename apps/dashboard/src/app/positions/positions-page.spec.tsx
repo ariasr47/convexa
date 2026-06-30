@@ -194,21 +194,20 @@ describe('store', () => {
     expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/);
   });
 
-  it('Ticker-page entry already present on /positions', async () => {
+  it('a seeded position persists on /positions across navigation (singleton store)', async () => {
+    // The Ticker no longer hosts the portfolio panel (Figma re-skin) — positions are opened on
+    // /positions. This verifies the durable module-singleton store survives navigation.
     const user = userEvent.setup();
-    renderAt('/ticker/TSLA');
-    await screen.findByText('Call wall');
-    await screen.findByTestId('portfolio-panel');
-    await vi.waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
-    await user.click(screen.getByTestId('open-entry'));
-    const dlg = await screen.findByRole('dialog');
-    await user.type(within(dlg).getByLabelText('Manual price'), '5');
-    await user.click(within(dlg).getByRole('button', { name: 'Open simulated position' }));
-    await vi.waitFor(() => expect(allPositions().length).toBe(1));
-
-    await user.click(screen.getByTestId('nav-positions'));
+    seedPosition();
+    renderAt('/positions');
     const pos = await screen.findByTestId('portfolio-panel');
     expect(await within(pos).findByTestId('position-row')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('nav-ticker'));
+    await screen.findByText('Call wall');
+    await user.click(screen.getByTestId('nav-positions'));
+    const pos2 = await screen.findByTestId('portfolio-panel');
+    expect(await within(pos2).findByTestId('position-row')).toBeInTheDocument();
   }, 20000);
 
   it('ephemeral trends/session-delta re-derive; durable facts persist', async () => {
