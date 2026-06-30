@@ -108,7 +108,7 @@ export function SettingsPage() {
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
         <PanelCard heading={C.accountHeading} testId="settings-account-panel">
           {auth.authenticated ? (
-            <Stack direction="row" spacing={2} alignItems="center" data-testid="settings-account-signed-in">
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }} data-testid="settings-account-signed-in">
               <Box sx={GRADIENT_AVATAR_SX} aria-hidden>{avatarInitial(auth.user)}</Box>
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                 <Typography sx={{ fontWeight: 700 }} noWrap>{primaryName}</Typography>
@@ -126,7 +126,7 @@ export function SettingsPage() {
               </Button>
             </Stack>
           ) : (
-            <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between"
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}
               data-testid="settings-account-signed-out">
               <Typography variant="body2" color="text.secondary">{C.accountSignedOutPrompt}</Typography>
               <Button

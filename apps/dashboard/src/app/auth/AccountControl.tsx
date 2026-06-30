@@ -31,7 +31,7 @@ export function AccountControl() {
     // shared AuthDialog (login vs signup mode). The pill carries the same high-tech polish as the
     // Landing value cards (gradient fill + hover glow/lift), reduced-motion safe.
     return (
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button
           size="small"
           variant="text"
@@ -72,7 +72,7 @@ export function AccountControl() {
   // Signed-in: the email (secondary, hidden < sm to save space) + a 32px gradient avatar that links
   // to /settings. No dropdown menu — log out now lives on the Settings Account panel.
   return (
-    <Stack direction="row" spacing={1.25} alignItems="center">
+    <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
       <Typography
         variant="body2"
         color="text.secondary"
