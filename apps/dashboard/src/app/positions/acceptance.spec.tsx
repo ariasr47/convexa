@@ -116,6 +116,13 @@ const comboOf = (testid: string) => screen.getByTestId(testid).querySelector('[r
 async function pickGroup(user: ReturnType<typeof userEvent.setup>, axis: 'none' | 'ticker' | 'strategy' | 'expiry') {
   await user.click(screen.getByTestId(`group-select-${axis}`));
 }
+// REVISION 1 — some columns (e.g. session_delta) are now hidden by default; enable via the Columns menu.
+async function enableColumn(user: ReturnType<typeof userEvent.setup>, col: string) {
+  await user.click(screen.getByTestId('columns-button'));
+  const opt = document.querySelector(`[data-testid="column-option"][data-col="${col}"]`) as HTMLElement;
+  await user.click(opt);
+  await user.keyboard('{Escape}'); // close the columns menu
+}
 // Filters (ticker/strategy/expiry) now live behind the toolbar `filters-button` menu.
 async function pickFilter(user: ReturnType<typeof userEvent.setup>, testid: string, optionName: string) {
   await user.click(screen.getByTestId('filters-button'));
@@ -177,7 +184,9 @@ describe('B. P/L + change', () => {
     const user = userEvent.setup(); installBackend(); renderH();
     await openManual(user, '4');   // entry 4, qty 1; mark resolves to 5 ⇒ +$100 (+25%)
     pushLive({ mid: 250 });
-    await waitFor(() => expect(screen.getByText(/\+\$100 \(\+25\.0%\)/)).toBeInTheDocument());
+    // REVISION 1 — $ and % now render in their own columns (cell-pl / cell-pl-pct).
+    await waitFor(() => expect(screen.getByTestId('cell-pl')).toHaveTextContent('+$100'));
+    expect(screen.getByTestId('cell-pl-pct')).toHaveTextContent('+25.0%');
   });
 
   it('delta_since_entry_derives_from_entry_anchor_and_mark', async () => {
@@ -191,9 +200,12 @@ describe('B. P/L + change', () => {
   it('session_delta_reanchors_on_reload', async () => {
     const user = userEvent.setup(); installBackend(); renderH();
     await openManual(user, '4');
+    // session_delta is optional now — turn it on (persists to working.columns).
+    await enableColumn(user, 'session_delta');
     pushLive({ mid: 250 });
     await waitFor(() => expect(screen.getByTestId('cell-session-delta')).toBeInTheDocument());
     // Reload (re-mount) → the session anchor clears; session Δ re-anchors fresh (starts at $0 / —).
+    // (__resetMemory re-hydrates from localStorage, where session_delta is now durably enabled.)
     __resetMemory(); cleanup(); installBackend(); renderH();
     pushLive({ mid: 250 });
     await waitFor(() => expect(screen.getByTestId('cell-session-delta')).toBeInTheDocument());
@@ -400,10 +412,10 @@ describe('D. customization', () => {
     const user = userEvent.setup(); installBackend(); renderH();
     await openManual(user, '5');
     await user.click(screen.getByTestId('columns-button'));
-    // Toggle the optional Strategy column on (column-option rows carry data-col).
-    const strategyOpt = screen.getAllByTestId('column-option').find((el) => el.getAttribute('data-col') === 'strategy')!;
-    await user.click(strategyOpt);
-    await waitFor(() => expect(within(screen.getByTestId('positions-table')).getByText('Strategy')).toBeInTheDocument());
+    // REVISION 1 — Strategy is now a DEFAULT column; toggle an OPTIONAL one (Session Δ) on instead.
+    const sessionOpt = screen.getAllByTestId('column-option').find((el) => el.getAttribute('data-col') === 'session_delta')!;
+    await user.click(sessionOpt);
+    await waitFor(() => expect(within(screen.getByTestId('positions-table')).getByText('Session Δ')).toBeInTheDocument());
   });
 
   it('toggle_table_card_layout_and_comfortable_compact_density', async () => {
@@ -496,7 +508,10 @@ describe('E. durability + degraded', () => {
     await waitFor(() => expect(screen.getAllByText(/\+\$100/).length).toBeGreaterThan(0));
     cleanup(); renderH({ forceOffline: true });
     await waitFor(() => expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0));
-    expect(screen.getByText(/TSLA \$250C/)).toBeInTheDocument(); // not blank
+    // REVISION 1 slim Ticker — static symbol + `$250 Call` leg persists offline (not blank).
+    const contract = screen.getAllByTestId('cell-contract')[0];
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
   });
 
   it('feed_drop_trend_shows_broken_line_resumes_on_reconnect', async () => {
@@ -513,7 +528,11 @@ describe('E. durability + degraded', () => {
     const user = userEvent.setup(); installBackend(); renderH();
     await openManual(user, '5');
     cleanup(); renderH({ forceOffline: true });
-    await waitFor(() => expect(screen.getByText(/TSLA \$250C/)).toBeInTheDocument());
+    // REVISION 1 slim Ticker — the static symbol + `$250 Call` leg keep rendering offline.
+    await waitFor(() => expect(screen.getAllByTestId('cell-contract').length).toBeGreaterThan(0));
+    const contract = screen.getAllByTestId('cell-contract')[0];
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
     expect(screen.getByTestId('customization-toolbar')).toBeInTheDocument(); // saved views / customization persist
   });
 
@@ -569,8 +588,15 @@ describe('F. live lock + invariants', () => {
   it('no_real_order_path_anywhere_simulated_unmistakable', async () => {
     const user = userEvent.setup(); installBackend(); renderH();
     await openManual(user, '5');
-    // The SIMULATED marker is present; no "real order" / "broker" affordance anywhere.
-    expect(screen.getAllByText('SIMULATED').length).toBeGreaterThan(0);
+    // REVISION 1 — the per-row SIMULATED column moved to optional; paper/simulated honesty is now
+    // carried (unmistakably) by the tab PAPER badge + the mandatory browser-local disclosure.
+    expect(within(screen.getByTestId('tab-simulated')).getByText('PAPER')).toBeInTheDocument();
+    expect(screen.getByTestId('positions-disclosure')).toBeInTheDocument();
+    // The SIMULATED column is still AVAILABLE (re-addable) via the Columns menu.
+    await user.click(screen.getByTestId('columns-button'));
+    expect(document.querySelector('[data-testid="column-option"][data-col="simulated"]')).toBeTruthy();
+    await user.keyboard('{Escape}');
+    // No "real order" / "broker" affordance anywhere.
     expect(screen.queryByText(/place real order/i)).toBeNull();
   });
 

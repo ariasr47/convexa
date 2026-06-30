@@ -6,21 +6,29 @@ import type {
   ColumnKey, CustomizationState, SavedView, ViewConfig,
 } from './types';
 
-/** Default visible columns, in default order (UX_BLUEPRINT §5.1). */
+/**
+ * Default visible columns, in default order — REVISION 1: EXACTLY the Figma mock
+ * ("Positions - Table" `4:2143`), left→right.
+ */
 export const DEFAULT_COLUMNS: ColumnKey[] = [
-  'simulated', 'contract', 'status', 'mode', 'mark', 'pl',
-  'delta_entry', 'session_delta', 'trend', 'entry', 'qty',
+  'contract', 'strategy', 'qty', 'entry', 'mark', 'pl', 'pl_pct',
+  'delta_entry', 'trend', 'expiry',
 ];
 
-/** Columns available but hidden by default (UX_BLUEPRINT §5.1). */
+/**
+ * Columns available but hidden by default (selectable via the Columns menu). REVISION 1 moved
+ * `simulated`/`status`/`mode`/`session_delta` out of the default set into here. Every `ColumnKey`
+ * appears in exactly one of DEFAULT_COLUMNS / OPTIONAL_COLUMNS.
+ */
 export const OPTIONAL_COLUMNS: ColumnKey[] = [
-  'expiry', 'strike', 'right', 'strategy', 'dte', 'greeks', 'iv',
+  'simulated', 'status', 'mode', 'session_delta',
+  'strike', 'right', 'dte', 'greeks', 'iv',
   'stop', 'target', 'entry_time', 'opened',
 ];
 
 export const COLUMN_LABELS: Record<ColumnKey, string> = {
-  simulated: 'SIMULATED', contract: 'Contract', status: 'Status', mode: 'Entry',
-  mark: 'Mark', pl: 'P/L ($ / %)', delta_entry: 'Δ since entry', session_delta: 'Session Δ',
+  simulated: 'SIMULATED', contract: 'Ticker', status: 'Status', mode: 'Entry',
+  mark: 'Mark', pl: 'P/L', pl_pct: 'P/L %', delta_entry: 'Δ since entry', session_delta: 'Session Δ',
   trend: 'Trend', entry: 'Entry price', qty: 'Qty', expiry: 'Expiry', strike: 'Strike',
   right: 'Right', strategy: 'Strategy', dte: 'DTE', greeks: 'Greeks (Δ/Γ/Θ/V)', iv: 'IV',
   stop: 'Stop', target: 'Target', entry_time: 'Entry time', opened: 'Opened (age)',

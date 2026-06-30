@@ -67,9 +67,11 @@ describe('default + multi-position (AC-1, AC-2, AC-3)', () => {
     expect(screen.getAllByTestId('position-row')).toHaveLength(3);
   });
 
-  it('shows the P/L $ and % per row', () => {
+  it('shows the P/L $ and % in their own columns per row', () => {
     renderView([row(pos({ id: 'a' }), { plDollar: 200, plPct: 40 })]);
-    expect(screen.getByText(/\+\$200 \(\+40\.0%\)/)).toBeInTheDocument();
+    // REVISION 1 — split cells: P/L renders the $ amount, P/L % renders the percent.
+    expect(screen.getByTestId('cell-pl')).toHaveTextContent('+$200');
+    expect(screen.getByTestId('cell-pl-pct')).toHaveTextContent('+40.0%');
   });
 });
 
@@ -94,8 +96,10 @@ describe('feed-drop degraded (AC-32, AC-34)', () => {
     // live cells dimmed + offline tag (mark + P/L cells) + last-known mark value still shown
     expect(within(r).getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
     expect(within(r).getByText(/\$6\.00/)).toBeInTheDocument(); // last-known mark, not blank
-    // static contract cell keeps rendering
-    expect(within(r).getByText(/TSLA \$250C · exp 2026-07-17 · Long ×2/)).toBeInTheDocument();
+    // static contract cell keeps rendering — REVISION 1 slim Ticker (symbol + `$250 Call` leg)
+    const contract = within(r).getByTestId('cell-contract');
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
   });
 });
 

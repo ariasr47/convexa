@@ -9,6 +9,26 @@
 > The conductor inspected all three frames + the authoritative frame source (`figma_frames/05/06/07` →
 > `screenPositions()`); this contract carries every pixel value (the lane has NO live Figma access).
 
+## REVISION 1 (owner decision 2026-06-29) — default table columns MATCH THE MOCK
+> Supersedes the "Table/cards stay column-driven / keep DEFAULT_COLUMNS / `types.ts`+`defaults.ts` DO-NOT-TOUCH"
+> stance below. The baseline re-skin shipped (commit `9336856`); this revision re-models the **default visible
+> column set** to the Figma frame. **`types.ts` + `defaults.ts` ARE now editable for the column model ONLY**
+> (no store/derive/mark/gating change; positions still never feed scoring; saved-view persistence still works).
+- **New `DEFAULT_COLUMNS`** (left→right, exactly the mock): `contract` (header **"Ticker"**) · `strategy` ·
+  `qty` · `entry` · `mark` · `pl` · `pl_pct` · `delta_entry` · `trend` · `expiry`. Plus the existing trailing
+  **actions cell** (per-row **Close** for open/pending) — keep it (the frame's trailing empty `th`).
+- **Split P/L:** add a new `ColumnKey` **`pl_pct`** (label "P/L %", renders the % only, `success/error` by sign,
+  mono, dims offline). Change the existing `pl` column to render the **$ amount only** (label **"P/L"**), mono,
+  colored, dims offline. (`SortKey` already has `pl_dollar`/`pl_pct` — reuse; sorting unchanged.)
+- **Slim the `contract` cell** to the frame's "Ticker" style: **bold mono symbol** + secondary `$400 Call`
+  (strike + Call/Put) ONLY — drop the inline `· exp … · Long ×N` (that info now lives in the `strategy`/`qty`/
+  `expiry` columns + the card footer). Apply to BOTH table + the cards' top row.
+- **Move to OPTIONAL (not default-visible, still available via the Columns menu):** `simulated`, `status`,
+  `mode`, `session_delta`. SIMULATED/paper honesty is carried by the tab **PAPER** badge + the `positions-disclosure`
+  (both already present) — so dropping the per-row `simulated` column from the default view is fine.
+- Keep every other invariant + the gating/lock/offline behavior. Update `defaults.spec.ts` + any test asserting the
+  old default set or `pl`-combined; keep AC↔test coverage; `nx test dashboard` green.
+
 ## Token map (frame CSS var → MUI/theme — NEVER hardcode a hex except the documented literals)
 | frame var | value | use as |
 |---|---|---|

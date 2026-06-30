@@ -3,10 +3,41 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  defaultConfig, defaultView, defaultCustomization, cloneConfig, configEqual, DEFAULT_COLUMNS,
+  defaultConfig, defaultView, defaultCustomization, cloneConfig, configEqual,
+  DEFAULT_COLUMNS, OPTIONAL_COLUMNS, COLUMN_LABELS,
 } from './defaults';
+import type { ColumnKey } from './types';
 
 describe('defaults', () => {
+  it('REVISION 1 — DEFAULT_COLUMNS match the Figma mock left→right', () => {
+    expect(DEFAULT_COLUMNS).toEqual([
+      'contract', 'strategy', 'qty', 'entry', 'mark', 'pl', 'pl_pct',
+      'delta_entry', 'trend', 'expiry',
+    ]);
+  });
+
+  it('REVISION 1 — simulated/status/mode/session_delta moved into OPTIONAL_COLUMNS', () => {
+    for (const c of ['simulated', 'status', 'mode', 'session_delta'] as ColumnKey[]) {
+      expect(OPTIONAL_COLUMNS).toContain(c);
+      expect(DEFAULT_COLUMNS).not.toContain(c);
+    }
+  });
+
+  it('every ColumnKey appears in exactly one of DEFAULT/OPTIONAL (no dup, no gap)', () => {
+    const all = [...DEFAULT_COLUMNS, ...OPTIONAL_COLUMNS];
+    expect(new Set(all).size).toBe(all.length); // no duplicate
+    // pl_pct present exactly once
+    expect(all.filter((c) => c === 'pl_pct')).toHaveLength(1);
+    // every key has a label + every labelled key is partitioned
+    const keys = Object.keys(COLUMN_LABELS) as ColumnKey[];
+    expect(new Set(all)).toEqual(new Set(keys));
+  });
+
+  it('REVISION 1 — labels: pl="P/L", pl_pct="P/L %", contract="Ticker"', () => {
+    expect(COLUMN_LABELS.pl).toBe('P/L');
+    expect(COLUMN_LABELS.pl_pct).toBe('P/L %');
+    expect(COLUMN_LABELS.contract).toBe('Ticker');
+  });
   it('seeds the All positions default view (builtin, comfortable table, status=open, sort=pl$ desc)', () => {
     const v = defaultView();
     expect(v.name).toBe('All positions');

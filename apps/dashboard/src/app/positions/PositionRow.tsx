@@ -12,7 +12,7 @@ import type { DerivedRow } from './derive';
 import { strategyLabel } from './derive';
 import type { ColumnKey } from './types';
 import {
-  money, pct, contractLine, ENTRY_MODE_LABEL, STATUS_LABEL, ENTRY_BASIS_META,
+  money, pct, ENTRY_MODE_LABEL, STATUS_LABEL, ENTRY_BASIS_META,
   SIMULATED_TIP, PL_TIP, DELTA_ENTRY_TIP, SESSION_DELTA_TIP, TREND_TIP, LIMIT_TIP,
   PENDING_PL_TIP, ROW_UNAVAILABLE_TIP,
 } from './labels';
@@ -49,9 +49,16 @@ export function cellContent(col: ColumnKey, ctx: RowContext): React.ReactNode {
     case 'simulated':
       return <Tooltip arrow title={SIMULATED_TIP}><Chip size="small" variant="outlined" label="SIMULATED" /></Tooltip>;
     case 'contract':
-      // Keep the canonical one-line contract string (matchable + persisted-state stable); the mono
-      // ticker prefix gives the framed look without splitting the line.
-      return <Typography variant="body2" sx={{ ...MONO, fontWeight: 600 }}>{contractLine(p)}</Typography>;
+      // REVISION 1 — the frame's "Ticker" style: bold mono symbol + secondary `$400 Call` leg
+      // (strike + Call/Put) ONLY. The contract/exp/qty details now live in their own columns.
+      return (
+        <Stack direction="row" spacing={0.875} sx={{ alignItems: 'baseline' }} data-testid="cell-contract">
+          <Typography component="span" variant="body2" sx={{ ...MONO, fontWeight: 600 }}>{p.ticker}</Typography>
+          <Typography component="span" variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+            ${p.strike} {p.right === 'call' ? 'Call' : 'Put'}
+          </Typography>
+        </Stack>
+      );
     case 'status':
       return <Chip size="small" variant="outlined" color={statusChipColor(p.status)}
         sx={{ opacity: p.status === 'cancelled' ? 0.6 : 1 }} label={STATUS_LABEL[p.status]} />;
@@ -95,11 +102,33 @@ export function cellContent(col: ColumnKey, ctx: RowContext): React.ReactNode {
         return <Tooltip arrow title={ROW_UNAVAILABLE_TIP}><Typography variant="body2" color="text.disabled" data-testid="cell-unavailable">unavailable</Typography></Tooltip>;
       }
       const color = mtr.plDollar == null ? 'text.primary' : mtr.plDollar >= 0 ? 'success.main' : 'error.main';
+      // REVISION 1 — $ amount ONLY (the % moved to the dedicated `pl_pct` column).
       return (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', opacity: liveDim }} data-testid="cell-pl">
           <Tooltip arrow title={PL_TIP}>
             <Typography variant="body2" sx={{ color, fontWeight: 600, ...MONO }}>
-              {mtr.plDollar == null ? '—' : `${money(mtr.plDollar)} (${mtr.plPct == null ? '' : pct(mtr.plPct)})`}
+              {mtr.plDollar == null ? '—' : money(mtr.plDollar)}
+            </Typography>
+          </Tooltip>
+          {offlineTag}
+        </Stack>
+      );
+    }
+    case 'pl_pct': {
+      // REVISION 1 — % ONLY, same sign-color + offline dim. Reuses the row's already-computed
+      // metrics (mtr.plPct) — no new compute path.
+      if (p.status === 'pending') {
+        return <Tooltip arrow title={PENDING_PL_TIP}><Typography variant="body2" color="text.disabled">—</Typography></Tooltip>;
+      }
+      if (mtr.unavailable) {
+        return <Tooltip arrow title={ROW_UNAVAILABLE_TIP}><Typography variant="body2" color="text.disabled" data-testid="cell-unavailable">unavailable</Typography></Tooltip>;
+      }
+      const color = mtr.plDollar == null ? 'text.primary' : mtr.plDollar >= 0 ? 'success.main' : 'error.main';
+      return (
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', opacity: liveDim }} data-testid="cell-pl-pct">
+          <Tooltip arrow title={PL_TIP}>
+            <Typography variant="body2" sx={{ color, ...MONO }}>
+              {mtr.plPct == null ? '—' : pct(mtr.plPct)}
             </Typography>
           </Tooltip>
           {offlineTag}

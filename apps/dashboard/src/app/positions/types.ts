@@ -82,7 +82,7 @@ export type SortKey =
 
 /** All selectable column keys (UX_BLUEPRINT §5.1). Order in `columns` is the display order. */
 export type ColumnKey =
-  | 'simulated' | 'contract' | 'status' | 'mode' | 'mark' | 'pl'
+  | 'simulated' | 'contract' | 'status' | 'mode' | 'mark' | 'pl' | 'pl_pct'
   | 'delta_entry' | 'session_delta' | 'trend' | 'entry' | 'qty'
   | 'expiry' | 'strike' | 'right' | 'strategy' | 'dte' | 'greeks' | 'iv'
   | 'stop' | 'target' | 'entry_time' | 'opened';

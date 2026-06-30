@@ -197,6 +197,50 @@ describe('status pills', () => {
   });
 });
 
+// =============================== REVISION 1 — default table columns match the mock ===============================
+describe('REVISION 1 default table columns (match the Figma mock)', () => {
+  it('renders the mock header set with a SEPARATE P/L and P/L % column, in order', async () => {
+    const user = userEvent.setup(); installBackend(); renderH();
+    await openManual(user, '4');
+    pushLive({ mid: 250 });
+    const table = await screen.findByTestId('positions-table');
+    const headers = within(table).getAllByRole('columnheader').map((h) => h.textContent?.trim());
+    // The default visible set, left→right, exactly the mock (plus the trailing empty actions th).
+    // COLUMN_LABELS.entry stays 'Entry price' (REVISION 1 changed only pl/pl_pct/contract labels).
+    expect(headers).toEqual([
+      'Ticker', 'Strategy', 'Qty', 'Entry price', 'Mark', 'P/L', 'P/L %',
+      'Δ since entry', 'Trend', 'Expiry', '',
+    ]);
+    // P/L $ and P/L % are now distinct cells (the old combined "$ / %" cell is gone).
+    const row = within(table).getByTestId('position-row');
+    expect(within(row).getByTestId('cell-pl')).toBeInTheDocument();
+    expect(within(row).getByTestId('cell-pl-pct')).toBeInTheDocument();
+    expect(within(row).queryByText(/\$ \/ %/)).toBeNull();
+  });
+
+  it('renders the slim Ticker cell: bold mono symbol + `$strike Call` leg only (no exp/Long inline)', async () => {
+    const user = userEvent.setup(); installBackend(); renderH();
+    await openManual(user, '4');
+    pushLive({ mid: 250 });
+    const contract = (await screen.findAllByTestId('cell-contract'))[0];
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
+    // The old inline contract details are no longer in the Ticker cell.
+    expect(contract.textContent).not.toMatch(/exp|Long ×/);
+  });
+
+  it('the moved-out columns (simulated/status/mode/session_delta) are NOT in the default header set', async () => {
+    const user = userEvent.setup(); installBackend(); renderH();
+    await openManual(user, '4');
+    pushLive({ mid: 250 });
+    const table = await screen.findByTestId('positions-table');
+    const headers = within(table).getAllByRole('columnheader').map((h) => h.textContent?.trim());
+    expect(headers).not.toContain('Status');
+    expect(headers).not.toContain('Session Δ');
+    expect(headers).not.toContain('SIMULATED');
+  });
+});
+
 // =============================== Mandatory disclosure ===============================
 describe('positions-disclosure (D6d)', () => {
   it('renders the verbatim browser-local disclosure on the Simulated surface', () => {
@@ -216,7 +260,10 @@ describe('offline degradation', () => {
     cleanup(); renderH({ forceOffline: true });
     await waitFor(() => expect(screen.getByTestId('offline-banner')).toBeInTheDocument());
     expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/TSLA \$250C/)).toBeInTheDocument();
+    // REVISION 1 slim Ticker cell: bold mono symbol + `$250 Call` leg — both static, persist offline.
+    const contract = screen.getAllByTestId('cell-contract')[0];
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
   });
 });
 

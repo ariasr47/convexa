@@ -220,8 +220,10 @@ describe('multi-position book + entry modes (AC-1, AC-2, AC-3, AC-12, AC-14)', (
     renderHarness({ forceOffline: true });
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBeGreaterThan(0));
     expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
-    // static contract line still renders
-    expect(screen.getAllByText(/TSLA \$250C/).length).toBeGreaterThan(0);
+    // static contract still renders (REVISION 1 slim Ticker — symbol + `$250 Call` leg)
+    const contract = screen.getAllByTestId('cell-contract')[0];
+    expect(within(contract).getByText('TSLA')).toBeInTheDocument();
+    expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
     // customization toolbar still works under a drop (AC-29)
     expect(screen.getByTestId('customization-toolbar')).toBeInTheDocument();
   }, 20000);
@@ -299,7 +301,10 @@ describe('migration carry-over (AC-31)', () => {
     installBackend();
     renderHarness();
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(1));
-    expect(screen.getByText(/TSLA \$250C · exp 2026-07-17 · Long ×2/)).toBeInTheDocument();
+    // REVISION 1 slim Ticker — the migrated v1 record renders symbol + `$250 Call` leg.
+    const migrated = screen.getByTestId('cell-contract');
+    expect(within(migrated).getByText('TSLA')).toBeInTheDocument();
+    expect(within(migrated).getByText(/\$250 Call/)).toBeInTheDocument();
     expect(allPositions()[0].id).toBe('legacy-1');
     expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
 

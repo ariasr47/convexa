@@ -217,14 +217,14 @@ describe('store', () => {
     seedPosition();
     renderAt('/positions');
     const row = await screen.findByTestId('position-row');
-    expect(within(row).getByText(/TSLA \$250C/)).toBeInTheDocument(); // durable contract line
+    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument(); // durable contract
 
     cleanup();
     __resetMemory();
     renderAt('/positions');
     const row2 = await screen.findByTestId('position-row');
     // Durable fact persists; the session-delta cell exists (re-derived fresh, not a thrown error).
-    expect(within(row2).getByText(/TSLA \$250C/)).toBeInTheDocument();
+    expect(within(within(row2).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     expect(allPositions()[0].entry_mark).toBe(5);
   });
 });
@@ -249,7 +249,7 @@ describe('positions-marks', () => {
     renderAt('/positions');
     // The row is still present (never dropped) even though the mark could not refresh.
     expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-    expect(within(screen.getByTestId('position-row')).getByText(/TSLA \$250C/)).toBeInTheDocument();
+    expect(within(within(screen.getByTestId('position-row')).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     // The page did not error; the durable record persists.
     expect(allPositions().length).toBe(1);
   });
@@ -260,7 +260,7 @@ describe('positions-marks', () => {
     renderAt('/positions');
     const row = await screen.findByTestId('position-row');
     // The row stays with its durable facts; the mark cell degrades to the unavailable state.
-    expect(within(row).getByText(/TSLA \$250C/)).toBeInTheDocument();
+    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     // The 404 resolves to `unavailable` after the contract fetch lands (row never dropped).
     expect((await screen.findAllByTestId('cell-unavailable')).length).toBeGreaterThan(0);
     // Page did not error / blank.
@@ -274,7 +274,7 @@ describe('positions-marks', () => {
     const row = await screen.findByTestId('position-row');
     // Contract exists but no NBBO quote: the row falls back to an honest (theoretical/last-known)
     // mark and does NOT throw into the page. Row + durable facts stay.
-    expect(within(row).getByText(/TSLA \$250C/)).toBeInTheDocument();
+    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-panel')).toBeInTheDocument();
     expect(allPositions().length).toBe(1);
   });
@@ -326,8 +326,11 @@ describe('invariants (positions)', () => {
     seedPosition();
     renderAt('/positions');
     await screen.findByTestId('portfolio-panel');
-    // The SIMULATED chip is present; no real-order affordance exists.
-    expect(screen.getAllByText('SIMULATED').length).toBeGreaterThan(0);
+    // REVISION 1 — paper/simulated honesty now carried by the tab PAPER badge + the mandatory
+    // browser-local disclosure (the per-row SIMULATED column moved to optional, still re-addable).
+    expect(within(screen.getByTestId('tab-simulated')).getByText('PAPER')).toBeInTheDocument();
+    expect(screen.getByTestId('positions-disclosure')).toBeInTheDocument();
+    // No real-order affordance exists.
     expect(screen.queryByText(/place real order/i)).toBeNull();
   });
 
