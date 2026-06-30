@@ -32,7 +32,7 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** Frame "Expiry" format: `Mon DD · {dte}d` (e.g. `Jul 18 · 19d`). Parses the YYYY-MM-DD parts
  *  directly (no timezone drift) and computes days-to-expiry as pure calendar arithmetic, so it always
  *  shows even when live metrics are unavailable. Display-only — never feeds scoring/math. */
-function formatExpiry(iso: string): string {
+export function formatExpiry(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return iso;
   const md = `${MONTHS[m - 1]} ${d}`;

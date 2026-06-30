@@ -16,7 +16,7 @@ import { Box, Typography } from '@mui/material';
 import type { DerivedGroup, DerivedRow } from './derive';
 import type { ColumnKey, Density, LayoutMode } from './types';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
-import { cellContent, PendingAffordance, ClosedSummary, RowContext } from './PositionRow';
+import { cellContent, PendingAffordance, ClosedSummary, formatExpiry, RowContext } from './PositionRow';
 import type { PlSample } from './useTrends';
 import { money, EMPTY_NO_POSITIONS, EMPTY_FILTERED, HISTORY_CAPTION } from './labels';
 import { extras, typographyTokens } from '../tokens';
@@ -245,6 +245,16 @@ function PositionCard({ props, row }: { props: ViewProps; row: DerivedRow }) {
   const plColor = mtr.plDollar == null ? 'text.primary' : mtr.plDollar >= 0 ? 'success.main' : 'error.main';
   const strikeLeg = `$${p.strike} ${p.right === 'call' ? 'Call' : 'Put'}`;
   const strategyName = row.strategy === 'long_call' ? 'Long call' : 'Long put';
+  // Footer Mark value (Figma: bold mono, matches Qty/Entry). Compact states inline (no chip/tag in the
+  // footer); the live block + this value dim together on offline via `liveDim`.
+  const markRes = ctx.markRes;
+  const markStr = p.status === 'pending'
+    ? `limit $${(p.limit_price ?? 0).toFixed(2)}`
+    : mtr.unavailable || markRes?.mark == null
+      ? '—'
+      : `${markRes.basis === 'modeled' ? '≈ ' : ''}$${markRes.mark.toFixed(2)}`;
+  // Figma footer value: Roboto Mono Bold 700, primary; the label inherits the footer's secondary 0.76rem.
+  const footValSx = { fontFamily: monoSx, fontWeight: 700, color: 'text.primary' } as const;
   return (
     <Box
       data-testid="position-card"
@@ -276,12 +286,12 @@ function PositionCard({ props, row }: { props: ViewProps; row: DerivedRow }) {
         <Box>{cellContent('trend', ctx)}</Box>
       </Box>
 
-      {/* Footer: Qty · Entry · Mark · expiry. */}
+      {/* Footer: Qty · Entry · Mark · expiry (labels secondary, values bold mono primary — Figma). */}
       <Box sx={{ display: 'flex', gap: '16px', mt: '12px', pt: '12px', borderTop: '1px solid', borderColor: 'divider', fontSize: '0.76rem', color: 'text.secondary', alignItems: 'center' }}>
-        <Box component="span">Qty <Box component="span" sx={{ fontFamily: monoSx, color: 'text.primary' }}>{p.qty}</Box></Box>
-        <Box component="span">Entry <Box component="span" sx={{ fontFamily: monoSx }}>${p.entry_mark.toFixed(2)}</Box></Box>
-        <Box component="span" sx={{ display: 'inline-flex', gap: '4px', alignItems: 'center', opacity: liveDim }} data-testid="card-mark">Mark {cellContent('mark', ctx)}</Box>
-        <Box component="span" sx={{ ml: 'auto' }}>{p.expiration}{mtr.dte != null ? ` · ${mtr.dte}d` : ''}</Box>
+        <Box component="span">Qty <Box component="span" sx={footValSx}>{p.qty}</Box></Box>
+        <Box component="span">Entry <Box component="span" sx={footValSx}>${p.entry_mark.toFixed(2)}</Box></Box>
+        <Box component="span" sx={{ opacity: liveDim }} data-testid="card-mark">Mark <Box component="span" sx={footValSx}>{markStr}</Box></Box>
+        <Box component="span" sx={{ ml: 'auto' }}>{formatExpiry(p.expiration)}</Box>
       </Box>
 
       {isTerminal && <Box sx={{ mt: '10px' }}><ClosedSummary row={row} /></Box>}
