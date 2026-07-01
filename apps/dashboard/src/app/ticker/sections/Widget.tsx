@@ -340,16 +340,31 @@ export function Widget({
         transitionDuration={supportsVT && !reduced ? 0 : undefined}
         slots={{ transition: Fade }}
         slotProps={{
+          // Dim + blur the page behind for a premium "focus" feel.
+          backdrop: { sx: { backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' } },
           paper: {
             sx: {
-              borderRadius: '12px', border: '1px solid', borderColor: 'divider',
+              // Crisp dark surface: kill MUI's dark-mode elevation overlay (the washed-grey look) and
+              // pin the widget surface, matching the inline widget exactly.
+              bgcolor: 'background.paper',
+              backgroundImage: 'none',
+              borderRadius: '16px',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: 24,
+              // A definite-height flex column so the body fills — this is what lets a `height="100%"`
+              // chart (Term structure) resolve inside the Dialog, and gives a consistent focus view.
+              display: 'flex',
+              flexDirection: 'column',
+              height: 'min(86vh, 720px)',
+              overflow: 'hidden',
               ...(supportsVT && expanded && { viewTransitionName: vtNameRef.current }),
             },
           },
         }}
       >
-        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`}>{header(true)}</Box>
-        <Box sx={bodyWrapperSx}>{body}</Box>
+        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`} sx={{ flexShrink: 0 }}>{header(true)}</Box>
+        <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
       </Dialog>
 
       {/* Click-outside-to-clear-selection is owned by the provider region in TickerDashboard; here we
