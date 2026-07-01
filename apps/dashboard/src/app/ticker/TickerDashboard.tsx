@@ -18,7 +18,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 import {
-  Container, Box, Alert, Button, Skeleton, Fade,
+  Container, Box, Alert, Button, Skeleton, Fade, Tooltip, Typography,
 } from '@mui/material';
 import { getTicker, streamTicker, TickerBundle, LiveUpdate, RecResponse } from '@org/api';
 import { useGhostTrade } from '../ghost-trade/useGhostTrade';
@@ -33,6 +33,8 @@ import { recToPrefill } from '../ai-rec/prefill';
 import { COPY } from '../ai-rec/copy';
 
 import { StatSkeleton } from './sections/StatTile';
+import { WidgetSelectionProvider } from './sections/WidgetSelectionContext';
+import { ComingSoonBox } from '../ui/ComingSoonBox';
 import { TickerToolbar } from './sections/TickerToolbar';
 import { TickerHeader, LastTradeReadout } from './sections/TickerHeader';
 import { LiveTape } from './sections/LiveTape';
@@ -49,26 +51,6 @@ const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
 // onmessage gap this long means the transport dropped — not a quiet session. Flips "Live offline".
 const STREAM_OFFLINE_MS = 15_000;
-
-// One-time staggered "section reveal": direct children rise+fade in on the first content mount. CSS
-// runs once on mount; the 60s poll re-renders don't remount the container, so it never replays. Fully
-// off under reduced motion (the whole block is gated on `prefers-reduced-motion: no-preference`).
-const revealSx = {
-  '@media (prefers-reduced-motion: no-preference)': {
-    '@keyframes tickerSectionRise': {
-      from: { opacity: 0, transform: 'translateY(10px)' },
-      to: { opacity: 1, transform: 'none' },
-    },
-    '& > *': { animation: 'tickerSectionRise 260ms ease-out both' },
-    '& > *:nth-of-type(2)': { animationDelay: '50ms' },
-    '& > *:nth-of-type(3)': { animationDelay: '100ms' },
-    '& > *:nth-of-type(4)': { animationDelay: '150ms' },
-    '& > *:nth-of-type(5)': { animationDelay: '200ms' },
-    '& > *:nth-of-type(6)': { animationDelay: '250ms' },
-    '& > *:nth-of-type(7)': { animationDelay: '300ms' },
-    '& > *:nth-of-type(8)': { animationDelay: '350ms' },
-  },
-} as const;
 
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
@@ -262,76 +244,104 @@ export function TickerDashboard() {
 
       {!noneSelected && m && (
         <Fade in appear timeout={250}>
-          <Box sx={revealSx}>
+          <Box>
           {showPrimeBanner && !tradeOpen && (
             <PrimeBanner onSimulate={() => openEntry()} onDismiss={() => setShowPrimeBanner(false)} />
           )}
 
           {/* Headline ANCHOR + secondary last-trade readout + the persistent "+ Open simulated trade"
-              CTA (right-aligned in the header, so it stays out of the analysis flow). */}
+              CTA (right-aligned in the header, so it stays out of the analysis flow). Not a widget. */}
           <TickerHeader
             m={m} sig={sig} live={live} isLive={isLive} streamOffline={streamOffline} selected={selected}
             onOpenTrade={() => openEntry()}
           />
 
-          {/* REST-bundle freshness caption (static path, NOT live/SSE) — builds trust in the snapshot
-              age between polls; shows a quiet "· refreshing…" only while a background poll is in flight.
-              It does not own stale / poll-error messaging (those keep their existing treatments). */}
+          {/* REST-bundle freshness caption (static path, NOT live/SSE). Not a widget. */}
           <FreshnessLine
             snapshotIso={fresh?.snapshot_iso ?? null}
             dataAgeSeconds={fresh?.data_age_seconds ?? null}
             refreshing={loading}
           />
 
-          {/* LIVE-DERIVED tiles — dim on an SSE drop. */}
-          <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+          {/* The widget BENTO board. One-selected-at-a-time selection is provided here (click-outside
+              clears — the provider's ClearOnOutside listener lives inside each selected Widget). The
+              grid is a two-column bento: full-width rows (Live tape · Dealer · GEX · Setups, span 2)
+              and paired cells (Term‖AI-rec, Fresh‖Off-exchange). Container queries drive each cell's
+              internals, so a widget looks right at any cell size. */}
+          <WidgetSelectionProvider>
+            <Box
+              data-testid="widget-bento"
+              sx={{
+                mt: 2,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                gridAutoRows: 'minmax(0, auto)',
+                gap: 2,
+                alignItems: 'stretch',
+              }}
+            >
+              {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
+              <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
 
-          {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable metric its own empty. */}
-          <DealerPositioning
-            m={m} sig={sig} offExchange={data?.off_exchange}
-            volOiThreshold={volOiThreshold} unusualCount={unusualStrikes.length}
-            tierWord={tm.word} tierColor={tm.color} opportunityScore={sig?.opportunity_score ?? 0}
-          />
+              {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
+              <DealerPositioning
+                m={m} sig={sig} offExchange={data?.off_exchange}
+                volOiThreshold={volOiThreshold} unusualCount={unusualStrikes.length}
+                tierWord={tm.word} tierColor={tm.color} opportunityScore={sig?.opportunity_score ?? 0}
+              />
 
-          {data?.strike_profile && (
-            <GexStrikeProfile
-              strikes={data.strike_profile.strikes}
-              spot={m.gex_spot ?? m.price}
-              callWall={m.call_wall}
-              putWall={m.put_wall}
-              gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-              liveSpot={isLive ? live!.mid : null}
-            />
-          )}
+              {data?.strike_profile && (
+                <GexStrikeProfile
+                  strikes={data.strike_profile.strikes}
+                  spot={m.gex_spot ?? m.price}
+                  callWall={m.call_wall}
+                  putWall={m.put_wall}
+                  gammaFlip={live?.gamma_flip ?? m.gamma_flip}
+                  liveSpot={isLive ? live!.mid : null}
+                />
+              )}
 
-          {/* Term structure + AI recommendation side-by-side (Figma ticker screen layout): GEX is
-              full-width above; below it the Term-structure card (left) and the independently-nullable
-              AI-rec card (right). Stacks to one column on narrow viewports. */}
-          <Box sx={{ mt: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, alignItems: 'stretch' }}>
-            <TermStructureCard termStructure={m.term_structure} />
-            <AiRecPanel
-              ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
-              activePersonaId={persona.activeId}
-              dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-              onAccept={onAcceptRec} onViewExport={openExport}
-              readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
-              fillHeight
-            />
-          </Box>
+              {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
+              <TermStructureCard termStructure={m.term_structure} />
+              <AiRecPanel
+                ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
+                activePersonaId={persona.activeId}
+                dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+                onAccept={onAcceptRec} onViewExport={openExport}
+                readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
+                fillHeight
+              />
 
-          {/* Fresh positioning + Off-exchange blocks side-by-side (equal-height row, like Term/AI):
-              two compact static list sections. Off-exchange is REST-bundle only; with Dark pool off
-              the row collapses to a single full-width Fresh-positioning column. */}
-          <Box sx={{ mt: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: darkPool ? '1fr 1fr' : '1fr' }, gap: 2, alignItems: 'stretch' }}>
-            <FreshPositioning
-              chainVolOiRatio={m.chain_vol_oi_ratio}
-              volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
-              fillHeight
-            />
-            {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} fillHeight />}
-          </Box>
+              {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
+                  Dark pool off, Fresh positioning takes the full row. */}
+              <FreshPositioning
+                chainVolOiRatio={m.chain_vol_oi_ratio}
+                volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
+              />
+              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} />}
 
-          <Setups setups={sig?.setups} />
+              <Setups setups={sig?.setups} />
+
+              {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
+                  ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}
+              <Tooltip arrow title="Add widget — coming soon">
+                <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                  <ComingSoonBox
+                    data-testid="add-widget-slot"
+                    aria-disabled
+                    sx={{
+                      cursor: 'not-allowed', minHeight: 72, borderRadius: '12px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 500 }}>
+                      + Add widget
+                    </Typography>
+                  </ComingSoonBox>
+                </Box>
+              </Tooltip>
+            </Box>
+          </WidgetSelectionProvider>
           </Box>
         </Fade>
       )}

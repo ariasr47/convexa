@@ -9,10 +9,11 @@
  * `offline` prop. Gamma flip (live) shows the static authoritative flip when not live, never a stale
  * live value.
  */
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import type { LiveUpdate, MarketState } from '@org/api';
 import { StatTile } from './StatTile';
 import { useFlashOnChange } from './useFlashOnChange';
+import { Widget } from './Widget';
 
 const GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 } as const;
 
@@ -31,11 +32,12 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
   const spreadFlash = useFlashOnChange(isLive ? live?.spread ?? null : null, { active, tone: 'neutral' });
   const flipFlash = useFlashOnChange(isLive ? live?.gamma_flip ?? null : null, { active });
   return (
-    <Box sx={{ mb: 2 }} data-testid="live-tape">
-      <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.08em', display: 'block', mb: 1 }}>
-        LIVE TAPE
-      </Typography>
-      <Box sx={GRID}>
+    <Widget
+      id="live-tape" title="Live tape" live={active}
+      info="Live-derived reads off the trade tape + quote stream. These pause on a stream drop; the levels below stay current."
+      span={2}
+    >
+      <Box sx={GRID} data-testid="live-tape">
       <StatTile
         label={`Net flow (${live ? Math.round(live.flow_window_s / 60) : 5}m)`}
         value={isLive ? `${live!.net_flow >= 0 ? '+' : ''}${live!.net_flow.toLocaleString()}` : '—'}
@@ -53,7 +55,7 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
       <StatTile label="VWAP" value={m.vwap != null ? `$${m.vwap.toFixed(2)}` : '—'} accent="neutral"
         info="Volume-weighted average price for the session — a common intraday fair-value / mean-reversion reference." />
       </Box>
-    </Box>
+    </Widget>
   );
 }
 

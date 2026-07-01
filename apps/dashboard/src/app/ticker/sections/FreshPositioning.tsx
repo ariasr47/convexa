@@ -4,11 +4,11 @@
  * (`$strike · Vol/OI N× · N contracts`). Static bundle field; activity only, no side/direction;
  * catches strikes outside the chart window.
  */
-import { Box, Card, CardContent, Stack, Typography, Tooltip } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Stack, Typography } from '@mui/material';
 import type { StrikeRow } from '@org/api';
 import { fmtThresh, freshCaption, volOiTip } from './copy';
 import { typographyTokens } from '../../tokens';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -20,20 +20,14 @@ interface Props {
   fillHeight?: boolean;
 }
 
-export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrikes, fillHeight }: Props) {
+export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrikes }: Props) {
   return (
-    <Card variant="outlined" sx={{ ...(fillHeight ? { height: '100%' } : { mt: 3 }), borderRadius: 3 }}>
-      <CardContent>
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6">Fresh positioning (Vol/OI)</Typography>
-          <Tooltip arrow title={volOiTip(volOiThreshold, unusualStrikes.length)}>
-            <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-          </Tooltip>
-        </Stack>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-          {freshCaption(volOiThreshold)}
-        </Typography>
-
+    <Widget
+      id="fresh-positioning" title="Fresh positioning (Vol/OI)"
+      subtitle={freshCaption(volOiThreshold)}
+      info={volOiTip(volOiThreshold, unusualStrikes.length)}
+    >
+      <Box>
         {chainVolOiRatio == null ? (
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>Vol/OI unavailable this cycle.</Typography>
         ) : unusualStrikes.length === 0 ? (
@@ -51,8 +45,8 @@ export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrik
             ))}
           </Stack>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Widget>
   );
 }
 

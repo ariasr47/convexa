@@ -1,7 +1,6 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
-import { Card, CardContent, Typography, Stack, Box, Tooltip as MuiTooltip } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Typography, Stack, Box } from '@mui/material';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, ReferenceLine, Tooltip,
 } from 'recharts';
@@ -20,6 +19,31 @@ interface Props {
 
 const MONO = typographyTokens.monoFontFamily;
 const fmtM = (v: number) => `$${(v / 1e6).toFixed(1)}M`;
+
+/** The readable strike window around spot, always wide enough to include the walls it labels.
+ *  Shared with the section wrapper so it can decide whether to render the widget at all. */
+export function windowedStrikes(strikes: StrikeRow[], spot: number, callWall: number, putWall: number): StrikeRow[] {
+  const lo = Math.min(spot * 0.9, putWall > 0 ? putWall : spot * 0.9);
+  const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
+  return strikes.filter((s) => s.strike >= lo && s.strike <= hi).sort((a, b) => a.strike - b.strike);
+}
+
+/** The legend dots — lifted into the Widget header `actions` slot by the section wrapper. */
+export function GexLegend() {
+  const theme = useTheme();
+  const Dot = ({ color, label }: { color: string; label: string }) => (
+    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
+      <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
+    </Stack>
+  );
+  return (
+    <Stack direction="row" spacing={2}>
+      <Dot color={theme.palette.success.main} label="Call-dominated (net +)" />
+      <Dot color={theme.palette.error.main} label="Put-dominated (net −)" />
+    </Stack>
+  );
+}
 
 /**
  * GEX strike profile — a vertical diverging bar chart of net dealer gamma by strike: strikes spread
@@ -40,12 +64,10 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
   const animateBars = !reduced && !animatedOnce.current;
   useEffect(() => { animatedOnce.current = true; }, []);
 
-  const data = useMemo(() => {
-    // A readable window around spot, always wide enough to include the walls it labels.
-    const lo = Math.min(spot * 0.9, putWall > 0 ? putWall : spot * 0.9);
-    const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
-    return strikes.filter((s) => s.strike >= lo && s.strike <= hi).sort((a, b) => a.strike - b.strike);
-  }, [strikes, spot, callWall, putWall]);
+  const data = useMemo(
+    () => windowedStrikes(strikes, spot, callWall, putWall),
+    [strikes, spot, callWall, putWall],
+  );
 
   if (!data.length) return null;
 
@@ -54,13 +76,6 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
     data.reduce((best, s) => (Math.abs(s.strike - price) < Math.abs(best - price) ? s.strike : best), data[0].strike);
 
   const isWall = (k: number) => k === callWall || k === putWall;
-
-  const LegendDot = ({ color, label }: { color: string; label: string }) => (
-    <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center' }}>
-      <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: color }} />
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
-    </Stack>
-  );
 
   const ProfileTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: StrikeRow }[] }) => {
     if (!active || !payload?.length) return null;
@@ -82,23 +97,8 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
     ({ value: text, position: 'top' as const, dy: -slot * 12, fontSize: 10, fill: color, fontFamily: MONO });
 
   return (
-    <Card variant="outlined" sx={{ mt: 3, borderRadius: 3 }}>
-      <CardContent>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', rowGap: 0.5 }}>
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-            <Typography variant="h6">GEX strike profile</Typography>
-            <MuiTooltip arrow placement="top"
-              title="Net dealer gamma at each strike. Green = call-dominated (resistance above price); red = put-dominated (support below). Dashed lines mark the spot, the gamma flip, and the live price.">
-              <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-            </MuiTooltip>
-          </Stack>
-          <Stack direction="row" spacing={2}>
-            <LegendDot color={green} label="Call-dominated (net +)" />
-            <LegendDot color={red} label="Put-dominated (net −)" />
-          </Stack>
-        </Stack>
-
-        <ResponsiveContainer width="100%" height={240}>
+    <Box>
+      <ResponsiveContainer width="100%" height={240}>
           <BarChart data={data} margin={{ top: 42, right: 8, left: 0, bottom: 0 }} barCategoryGap="14%">
             <XAxis
               dataKey="strike" type="category" tickFormatter={(v) => `$${v}`} interval="preserveStartEnd" minTickGap={28}
@@ -128,8 +128,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    </Box>
   );
 }
 

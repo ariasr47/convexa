@@ -11,9 +11,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Card, CardContent, Stack, Typography, Button, Chip, Tooltip, Alert, Box, Divider,
+  Stack, Typography, Button, Chip, Tooltip, Alert, Box, Divider,
   FormControl, Select, MenuItem, CircularProgress,
 } from '@mui/material';
+import { Widget } from '../ticker/sections/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import type { PersonaDefinition, RecResponse, RecStrategy, TickerBundle } from '@org/api';
 import { fetchPersonas } from '@org/api';
@@ -117,22 +118,26 @@ export function AiRecPanel({
 
   const hasRec = phase === 'produced' || phase === 'no_trade';
 
+  // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
+  const exportAction = (
+    <Button
+      size="small" onClick={() => onViewExport(readPersonaIdForRequest)}
+      sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500, color: 'primary.main', whiteSpace: 'nowrap', '&:hover': { bgcolor: 'transparent' } }}
+    >
+      {COPY.action.viewExport}
+      {/* arrow is aria-hidden so the accessible name stays exactly "View what's sent" (tests). */}
+      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>→</Box>
+    </Button>
+  );
+
   return (
-    <Card variant="outlined" sx={{ ...(fillHeight ? { height: '100%' } : { mt: 3 }), borderRadius: 3 }} data-testid="ai-rec-panel">
-      <CardContent>
-        {/* Header (Figma 149:621) — title + the always-available export link, the advisory intro,
-            then the per-query persona override with a label ABOVE the (recessed) select. */}
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography variant="h6">AI recommendation · {ticker}</Typography>
-          <Button
-            size="small" onClick={() => onViewExport(readPersonaIdForRequest)}
-            sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500, color: 'primary.main', whiteSpace: 'nowrap', '&:hover': { bgcolor: 'transparent' } }}
-          >
-            {COPY.action.viewExport}
-            {/* arrow is aria-hidden so the accessible name stays exactly "View what's sent" (tests). */}
-            <Box component="span" aria-hidden sx={{ ml: 0.5 }}>→</Box>
-          </Button>
-        </Stack>
+    <Box data-testid="ai-rec-panel" sx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}>
+      <Widget
+        id="ai-rec" title={`AI recommendation · ${ticker}`} actions={exportAction}
+        bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
+      >
+        {/* The advisory intro, then the per-query persona override with a label ABOVE the (recessed)
+            select. The title + export link now live in the Widget header. */}
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>{COPY.intro}</Typography>
         {/* Persona override — signed-in only (you can't ask a read while logged out, so the Figma
             signed-out state omits it). */}
@@ -207,8 +212,8 @@ export function AiRecPanel({
             </>
           )
         )}
-      </CardContent>
-    </Card>
+      </Widget>
+    </Box>
   );
 }
 

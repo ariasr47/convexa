@@ -5,12 +5,12 @@
  * live stream), no offline state of its own, ages with the bundle freshness. Hidden when the Dark
  * pool toggle is off. Best-effort: off_exchange absent → its own "unavailable this cycle" copy.
  */
-import { Box, Card, CardContent, Stack, Typography, Tooltip } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Stack, Typography, Tooltip } from '@mui/material';
 import type { OffExchange } from '@org/api';
 import { BLOCK_MIN_SHARES_DISPLAY, BLOCKS_TOOLTIP, PROXIMITY_TOOLTIP, humanAge } from './copy';
 import { typographyTokens } from '../../tokens';
 import { TintChip } from './TintChip';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -20,20 +20,13 @@ interface Props {
   fillHeight?: boolean;
 }
 
-export function OffExchangeBlocks({ offExchange, fillHeight }: Props) {
+export function OffExchangeBlocks({ offExchange }: Props) {
   return (
-    <Card variant="outlined" sx={{ ...(fillHeight ? { height: '100%' } : { mt: 3 }), borderRadius: 3 }}>
-      <CardContent>
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6">Off-exchange blocks</Typography>
-          <Tooltip arrow title={BLOCKS_TOOLTIP}>
-            <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-          </Tooltip>
-        </Stack>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
-          Largest recent off-exchange prints near spot. Context, not a signal — no side or direction.
-        </Typography>
-
+    <Widget
+      id="off-exchange-blocks" title="Off-exchange blocks" info={BLOCKS_TOOLTIP}
+      subtitle="Largest recent off-exchange prints near spot. Context, not a signal — no side or direction."
+    >
+      <Box>
         {!offExchange ? (
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>
             Off-exchange data unavailable this cycle.
@@ -70,8 +63,8 @@ export function OffExchangeBlocks({ offExchange, fillHeight }: Props) {
             })}
           </Stack>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Widget>
   );
 }
 

@@ -5,11 +5,12 @@
  * (`[live-vs-static-isolation]`). Each nullable metric independently shows its own "unavailable"
  * (`[best-effort-isolated-or-null]`). Re-skin/componentize only — values + copy preserved byte-for-byte.
  */
-import { Box, Stack, Typography } from '@mui/material';
+import { Box } from '@mui/material';
 import type { OffExchange, Signals, MarketState } from '@org/api';
 import { StatTile } from './StatTile';
 import { fmtUsdCompact, netDexTip, skewState, skewTip, termTip, volOiTip } from './copy';
 import { OPPORTUNITY_TIER_INFO } from '../../ghost-trade/OpportunityTier';
+import { Widget } from './Widget';
 
 const GRID = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 } as const;
 
@@ -29,16 +30,12 @@ export function DealerPositioning({
   m, offExchange, volOiThreshold, unusualCount, tierWord, tierColor, opportunityScore,
 }: Props) {
   return (
-    <Box data-testid="dealer-positioning">
-      <Stack direction="row" sx={{ alignItems: 'baseline', columnGap: 1.5, flexWrap: 'wrap', mb: 1 }}>
-        <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
-          DEALER POSITIONING
-        </Typography>
-        <Typography variant="caption" sx={{ color: 'text.disabled' }}>
-          Snapshot, never live — these stay current on a stream drop and refresh with the data load.
-        </Typography>
-      </Stack>
-      <Box sx={GRID}>
+    <Widget
+      id="dealer-positioning" title="Dealer positioning"
+      subtitle="Snapshot, never live — these stay current on a stream drop and refresh with the data load."
+      span={2}
+    >
+      <Box sx={GRID} data-testid="dealer-positioning">
         <StatTile label="Call wall" value={`$${m.call_wall}`} accent="up"
           info="Strike with the most positive dealer gamma — tends to act as resistance (dealers sell into rallies here)." />
         <StatTile label="Put wall" value={`$${m.put_wall}`} accent="down"
@@ -74,7 +71,7 @@ export function DealerPositioning({
         <StatTile label="Opportunity" value={`${opportunityScore} · ${tierWord}`} accent="neutral" accentColor={tierColor}
           info={"0–100 triage score for how actionable the setup is now (closeness to a key level + volatility extremity + confluence). Not a trade signal." + OPPORTUNITY_TIER_INFO} />
       </Box>
-    </Box>
+    </Widget>
   );
 }
 

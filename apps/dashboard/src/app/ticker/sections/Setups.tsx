@@ -3,9 +3,10 @@
  * or the calm "no clean setup" info. Each card: setup name + a tinted conviction chip (HIGH amber /
  * MEDIUM blue / LOW grey) over the plain-language rationale. Static bundle read off `signals.setups`.
  */
-import { Card, CardContent, Stack, Typography, Box, Alert } from '@mui/material';
+import { Card, CardContent, Stack, Typography, Alert } from '@mui/material';
 import type { Setup } from '@org/api';
 import { TintChip } from './TintChip';
+import { Widget } from './Widget';
 
 interface Props {
   setups: Setup[] | undefined;
@@ -17,10 +18,9 @@ const convictionTone = (c: string): 'warning' | 'info' | 'neutral' => {
 };
 
 export function Setups({ setups }: Props) {
-  if (setups?.length) {
-    return (
-      <Box sx={{ mt: 3 }}>
-        <Typography variant="h6" gutterBottom>Setups</Typography>
+  return (
+    <Widget id="setups" title="Setups" span={2}>
+      {setups?.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (
             <Card key={i} variant="outlined" sx={{ borderRadius: 3 }}>
@@ -34,10 +34,11 @@ export function Setups({ setups }: Props) {
             </Card>
           ))}
         </Stack>
-      </Box>
-    );
-  }
-  return <Alert severity="info" sx={{ mt: 3 }}>No clean setup right now.</Alert>;
+      ) : (
+        <Alert severity="info">No clean setup right now.</Alert>
+      )}
+    </Widget>
+  );
 }
 
 export default Setups;

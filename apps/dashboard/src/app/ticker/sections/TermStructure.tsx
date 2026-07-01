@@ -5,12 +5,12 @@
  * Sampled to nominal tenors; absent buckets omitted. Shown side-by-side with the AI-rec card.
  */
 import { useTheme } from '@mui/material/styles';
-import { Box, Card, CardContent, Stack, Typography, Tooltip } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Typography } from '@mui/material';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip } from 'recharts';
 import type { TermStructure } from '@org/api';
 import { sampleTermPoints, termTip } from './copy';
 import { typographyTokens } from '../../tokens';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 // Map an actual DTE to the nearest nominal tenor label (the Figma axis: 1w · 1m · 3m · 6m · 9m …).
@@ -38,21 +38,15 @@ export function TermStructureCard({ termStructure }: Props) {
     );
   };
 
-  return (
-    <Card variant="outlined" sx={{ borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="term-structure">
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="h6">Term structure</Typography>
-          {termStructure && (
-            <Tooltip arrow title={termTip(termStructure)}>
-              <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled' }} />
-            </Tooltip>
-          )}
-        </Stack>
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-          ATM IV by tenor · {unavailable || termStructure.points.length < 2 ? '—' : termStructure.state}
-        </Typography>
+  const subtitle = `ATM IV by tenor · ${unavailable || termStructure.points.length < 2 ? '—' : termStructure.state}`;
 
+  return (
+    <Widget
+      id="term-structure" title="Term structure" subtitle={subtitle}
+      info={termStructure ? termTip(termStructure) : undefined}
+      bodySx={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+    >
+      <Box data-testid="term-structure" sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 160 }}>
         {unavailable ? (
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>Term structure unavailable this cycle.</Typography>
         ) : (
@@ -70,8 +64,8 @@ export function TermStructureCard({ termStructure }: Props) {
             </ResponsiveContainer>
           </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Widget>
   );
 }
 
