@@ -364,7 +364,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
-- **Convexa-redesign — finish the FE re-skin program** — `RAISED 2026-06-30 (Ticker surface re-skinned in code this session)`.
+- **Convexa-redesign — full FE re-skin program** — `✓ SHIPPED + ARCHIVED (2026-06-30)` → `_archive/convexa-redesign/`; merged to `main` (GATE S). All surfaces re-skinned to the Figma DS + theme/token bridge + app-wide contained-button treatment; `NO_BACKEND_CHANGE`; QA PASS (nx test 425/425, `nx build` green, invariants hold). Owner-dropped the `/auth` full-page route. Deferred quick wins → §B "Ticker UX quick wins". Owner Figma follow-up (publish/update the MUI kit + dark-mode frames) is design-file work, not code. Seams → OPEN_THREADS §7l. *(historical scope notes below, retained:)*
   The `convexa-redesign` branch now re-skins the **Ticker** surface to the Figma DS in code: `TickerDashboard`
   componentized into `ticker/sections/*` (Toolbar, Header, LiveTape, DealerPositioning, GexStrikeProfile,
   TermStructure, FreshPositioning, OffExchangeBlocks, Setups, StatTile, TintChip) + the AI-rec panel re-skin

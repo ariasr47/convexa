@@ -123,6 +123,20 @@
 | `no-secrets-in-image` | deploy | S | the image is **pushed to a registry for real** (Railway) — every secret (`DATABASE_URL`, `API_ORIGIN`, `MASSIVE/ANTHROPIC` keys, `AI_KEY_ENCRYPTION_KEY`/`AUTH_SESSION_SIGNING_KEY`, `METRICS_SECRET_TOKEN`) lives only in Railway Variables / Pages env, never in the repo/image; the Pages Function reads `API_ORIGIN` from env (no hardcoded URL); secret-scan clean. **3rd instance → GRADUATES** | yes |
 | `additive-keeps-score-byte-identical` | deploy | S | deploy config + the 3 HIGH security guards (metrics token-gate, the fail-open public rate-limit leaf, the startup stable-key warning) change no scoring/engine/`state_fingerprint`; the limiter is a leaf outside the scoring path; in-memory conformance PASS, no regression | yes |
 
+> Note (GATE S, convexa-redesign, 2026-06-30): the full **presentation-only** FE re-skin to the Figma DS
+> (all surfaces + theme/token bridge + app-wide contained-button treatment), merged to `main`. **No new
+> graduation** — it is FE-only (`apps/api` diff vs main EMPTY), so `additive-keeps-score-byte-identical` is
+> structural (score/tier/`state_fingerprint` byte-identical, verified by the passing byte-identity test +
+> the empty backend diff); `no-real-order-path` reaffirmed (sim dialogs + locked Live tab, no order path);
+> `live-vs-static-isolation` preserved through the re-lay-out. All three are already Promoted canon → each
+> gained an instance, no new promotion. **Token discipline** ("reskinned components bind to the MUI
+> theme/`tokens.ts`, never hardcoded hex") recurred hard across this program (drawer rebind + button
+> treatment + dialog) — logged to the watch list as `theme-token-discipline` (candidate; FE-redesign-class,
+> judge on cohesion not trading edge). QA (GATE Q) fresh de-correlated: PASS (425/425, `nx build` green,
+> tsc clean). A pre-existing TS17001 build blocker (duplicate `sx`, `SettingsPage.tsx`) was caught by the
+> pre-merge typecheck/build gate that Vitest doesn't run — reinforces "run `tsc`/`nx build` at GATE Q, not
+> just the test suite." Owner-dropped the `/auth` full-page route (feature scope, not a canon change).
+
 > Note (GATE S, deploy, 2026-06-29): step 3 of the infra program — the deploy ARTIFACTS + security
 > hardening (the live deploy itself is the owner applying the runbook). Railway (backend container +
 > Postgres) + Cloudflare Pages (frontend) wired via a streaming Pages Function proxy (`/api/*`→Railway,

@@ -475,6 +475,30 @@ proxy is same-origin so CORS isn't hit, but lock it per the security review); th
 fast-follows (`_archive/deploy/SECURITY_REVIEW.md`); CI/CD; custom domain; prerender/SEO (BACKLOG §B);
 provision Google OAuth creds to enable "Continue with Google".
 
+## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
+Contracts archived at `.claude/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
+re-skin to the Figma dark-fintech design system, delivered as ~30 commits on the `convexa-redesign` branch
+(GATE-V-per-surface: implement-from-Figma). Surfaces: theme/token bridge (`theme.ts`/`tokens.ts` +
+`scripts/sync-figma-tokens.mjs`), Landing, global nav/shell + Footer, Settings + Auth modal (`AuthModal`
+component set), Scanner, Positions (PositionRow/PositionCard/PositionsPanel), the Ticker viewer
+(`TickerDashboard`→`ticker/sections/*`: Toolbar/Header/LiveTape/DealerPositioning/GexStrikeProfile[vertical
+diverging chart]/TermStructure/FreshPositioning/OffExchangeBlocks/Setups/StatTile/TintChip), the AI-rec
+panel, `StateExportDrawer` (Figma 137:1639, theme-native), and `TradeEntryDialog` (Figma 118:1446 —
+gained a Manual/Market/Limit fill-mode control). Plus an **app-wide contained-button treatment** (deep
+`#1d6fe0` + white on filled primary via a `MuiButton` `root`+`ownerState` override — MUI 9.1.1 dropped the
+`containedPrimary` slot) and Ticker quick UX wins (compact `$B/M/K` formatting + a `FreshnessLine`).
+**Owner scope cut:** the full-page `/auth` route was DROPPED (the `AuthDialog` modal stays the auth surface).
+**`NO_BACKEND_CHANGE`** — `apps/api` diff vs main is EMPTY, so score/tier/`state_fingerprint` are
+byte-identical structurally. **QA (GATE Q)** on a fresh de-correlated qa-verify: **PASS** — nx test
+dashboard 425/425, `@org/api` 13/13, lint 0 errors, `tsc --noEmit` clean, **`nx build @org/dashboard`
+succeeded**, all invariants hold (no-real-order-path, live-vs-static, token discipline, no demo toggle).
+**Pre-QA fix:** a pre-existing build blocker TS17001 (duplicate `sx` in `SettingsPage.tsx:242`) was found +
+fixed (`5bd4358`) — Vitest doesn't typecheck, so only `tsc`/`nx build` caught it. Merged to `main` at GATE S.
+**Deferred (BACKLOG §B "Ticker UX quick wins"):** distance-to-level tiles, recent-ticker chips, sticky
+header, input ergonomics. **Known non-blocker:** a >500kB JS chunk-size build advisory (code-split later).
+**Owner Figma follow-up (design file, not code):** publish the re-themed MUI kit → update the library → set
+screen frames to dark mode (per `THEME_TOKENS.md`).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped

@@ -420,6 +420,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   pre-filled, editable, mandatory-confirm entry — `SIMULATED`, no real-order path). The manual hand-off
   stays as the always-available floor. Score/tier/`state_fingerprint` byte-identical with/without it.
   Persona single-sourced from `GET /api/personas`. No real order, ever.
+- **Convexa redesign (FE-only, shipped 2026-06-30 → `main`)** — a full presentation re-skin to the Figma
+  dark-fintech DS across every surface (Landing · shell/nav · Settings/Auth modal · Scanner · Positions ·
+  Ticker viewer + its `ticker/sections/*` split + vertical-diverging GEX chart · AI-rec panel ·
+  `StateExportDrawer` · `TradeEntryDialog` with a Manual/Market/Limit fill mode), a `theme.ts`/`tokens.ts`
+  token bridge, and an app-wide contained-button treatment (deep `#1d6fe0`+white on filled primary; the
+  `#4f9cff` accent unchanged). `NO_BACKEND_CHANGE` — score/tier/`state_fingerprint` byte-identical; QA PASS
+  (nx test 425/425, `nx build` green). The full-page `/auth` route was owner-dropped (modal stays). See
+  OPEN_THREADS §7l.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
