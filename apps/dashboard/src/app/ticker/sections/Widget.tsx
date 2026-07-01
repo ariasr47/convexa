@@ -91,6 +91,12 @@ export function Widget({
     borderTop: '1px solid',
     borderColor: 'divider',
     flex: 1,
+    // Flex column so a body that opts into `flex: 1` (via `bodySx`) fills the widget height — this is
+    // what lets recharts `ResponsiveContainer height="100%"` resolve (e.g. the Term-structure line chart,
+    // which fills its equal-height row). Content-sized bodies (tile grids, fixed-height charts) are
+    // unaffected (a non-growing child just sizes to content).
+    display: 'flex',
+    flexDirection: 'column',
     ...(bodyVariant === 'inset'
       ? {
           backgroundColor: theme.palette.background.default,
