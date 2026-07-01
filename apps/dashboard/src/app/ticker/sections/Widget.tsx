@@ -52,6 +52,10 @@ export interface WidgetProps {
   span?: 1 | 2;
   bodySx?: SxProps<Theme>;
   noBodyPad?: boolean;
+  /** 'flush' (default) — content sits directly on the widget surface (charts/cards). 'inset' — the body
+   *  is a recessed darker "well" so a grid of raised paper StatTiles regains contrast (Live tape / Dealer
+   *  positioning, which are groups of same-surface tiles). */
+  bodyVariant?: 'flush' | 'inset';
 }
 
 /**
@@ -79,8 +83,21 @@ function useExpand(reduced: boolean) {
 
 export function Widget({
   id, title, icon, subtitle, info, live = false, actions, children, span = 1, bodySx, noBodyPad,
+  bodyVariant = 'flush',
 }: WidgetProps) {
   const reduced = useReducedMotion();
+  // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
+  const bodyWrapperSx: SxProps<Theme> = (theme) => ({
+    borderTop: '1px solid',
+    borderColor: 'divider',
+    flex: 1,
+    ...(bodyVariant === 'inset'
+      ? {
+          backgroundColor: theme.palette.background.default,
+          boxShadow: 'inset 0 2px 10px -5px rgba(0,0,0,0.55)',
+        }
+      : {}),
+  });
   const { selectedId, select, clear } = useWidgetSelection();
   const selected = selectedId === id;
   const { open: expanded, expand, collapse, supportsVT } = useExpand(reduced);
@@ -302,7 +319,7 @@ export function Widget({
         })}
       >
         <Box id={headerId}>{header(false)}</Box>
-        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', flex: 1 }}>{body}</Box>
+        <Box sx={bodyWrapperSx}>{body}</Box>
       </Box>
 
       {/* Expand/peek — the same widget in a larger focus overlay. View Transitions morph it when
@@ -326,7 +343,7 @@ export function Widget({
         }}
       >
         <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`}>{header(true)}</Box>
-        <Box sx={{ borderTop: '1px solid', borderColor: 'divider' }}>{body}</Box>
+        <Box sx={bodyWrapperSx}>{body}</Box>
       </Dialog>
 
       {/* Click-outside-to-clear-selection is owned by the provider region in TickerDashboard; here we

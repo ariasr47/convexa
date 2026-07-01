@@ -41,14 +41,19 @@ const TileCard = styled(Card, {
     overflow: 'hidden', // clip the accent bar to the card radius
     borderRadius: 12,
     backgroundColor: theme.palette.background.paper,
+    // Premium "raised chip": a top-lit gradient + resting elevation + inner top highlight, so each tile
+    // reads as a physical chip catching light — restoring contrast when tiles sit on a widget's recessed
+    // ('inset') well. Neutral white/black light+shadow overlays (theme-agnostic, not brand tints).
+    backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 46%)',
     borderColor: theme.palette.divider,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
     ...(offline ? { opacity: 0.5 } : {}),
     // Micro-interaction: subtle hover lift + a smooth opacity transition into/out of the offline dim
     // (never a hard snap). GPU-cheap (transform/opacity/box-shadow/border only). Honors reduced motion.
     transition: 'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, opacity 200ms ease',
     '&:hover': {
       transform: 'translateY(-2px)',
-      boxShadow: theme.shadows[4],
+      boxShadow: '0 8px 20px -8px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)',
       borderColor: theme.palette.text.disabled,
     },
     '@media (prefers-reduced-motion: reduce)': {

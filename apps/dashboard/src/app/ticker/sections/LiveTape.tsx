@@ -35,7 +35,7 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
     <Widget
       id="live-tape" title="Live tape" live={active}
       info="Live-derived reads off the trade tape + quote stream. These pause on a stream drop; the levels below stay current."
-      span={2}
+      span={2} bodyVariant="inset"
     >
       <Box sx={GRID} data-testid="live-tape">
       <StatTile

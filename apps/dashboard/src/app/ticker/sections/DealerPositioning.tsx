@@ -33,7 +33,7 @@ export function DealerPositioning({
     <Widget
       id="dealer-positioning" title="Dealer positioning"
       subtitle="Snapshot, never live — these stay current on a stream drop and refresh with the data load."
-      span={2}
+      span={2} bodyVariant="inset"
     >
       <Box sx={GRID} data-testid="dealer-positioning">
         <StatTile label="Call wall" value={`$${m.call_wall}`} accent="up"
