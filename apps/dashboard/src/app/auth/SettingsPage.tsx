@@ -239,7 +239,7 @@ export function SettingsPage() {
         </PanelCard>
 
         {/* Footer disclaimer — reuse the Landing caption (verbatim). */}
-        <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="settings-disclaimer" sx={{ mt: 1 }}>
+        <Typography variant="caption" data-testid="settings-disclaimer" sx={{ color: 'text.secondary', mt: 1 }}>
           Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
           (paper). Not investment advice. No brokerage connection.
         </Typography>
