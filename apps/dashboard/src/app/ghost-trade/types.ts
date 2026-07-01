@@ -6,8 +6,9 @@ import type { OptionRight } from '@org/api';
 
 export const SCHEMA_VERSION = 1;
 
-/** How the current mark was derived — the honesty mechanism (never show a frozen value as live). */
-export type MarkBasis = 'snapshot' | 'modeled' | 'theoretical' | 'last_known';
+/** How the current mark was derived — the honesty mechanism (never show a frozen value as live).
+ *  `manual` = a user-typed entry price (manual/limit fill mode in the entry dialog) — not a market quote. */
+export type MarkBasis = 'snapshot' | 'modeled' | 'theoretical' | 'last_known' | 'manual';
 
 export interface GhostTrade {
   id: string;

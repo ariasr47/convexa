@@ -121,4 +121,8 @@ export const MARK_BASIS_META: Record<MarkBasis, { label: string; tip: string }> 
     label: 'last known',
     tip: 'Live feed offline — last known mark, not current. Resumes automatically when the feed returns.',
   },
+  manual: {
+    label: 'user-entered',
+    tip: 'The entry price you typed (manual/limit fill mode) — not a market quote.',
+  },
 };

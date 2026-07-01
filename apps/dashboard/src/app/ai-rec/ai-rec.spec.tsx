@@ -415,11 +415,13 @@ describe('AI recommendations — required matrix (T1–T18)', () => {
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
     expect(getTrade('TSLA')).toBeNull();
 
-    // Re-open and confirm → exactly one trade is created.
+    // Re-open and confirm → exactly one trade is created. Use Market mode to fill at the auto-resolved
+    // snapshot mid (the reskin defaults to Manual price, which needs a typed price).
     await user.click(await within(panel()).findByRole('button', { name: 'Accept into ghost trade' }));
     const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Market' }));
     await within(dialog).findByText(/Fill: mid/);
-    await user.click(within(dialog).getByRole('button', { name: 'Open simulated trade' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Open simulated position' }));
     await flush();
     expect(getTrade('TSLA')).not.toBeNull();
   });
@@ -432,8 +434,10 @@ describe('AI recommendations — required matrix (T1–T18)', () => {
     await within(panel()).findByText('1.5% of account ($300)');
     await user.click(within(panel()).getByRole('button', { name: 'Accept into ghost trade' }));
     const dialog = await screen.findByRole('dialog');
+    // Market mode fills at the auto-resolved snapshot mid (reskin default is Manual price).
+    await user.click(within(dialog).getByRole('button', { name: 'Market' }));
     await within(dialog).findByText(/Fill: mid/);
-    await user.click(within(dialog).getByRole('button', { name: 'Open simulated trade' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Open simulated position' }));
     await flush();
 
     // The resulting ghost trade is SIMULATED + the same store/kind as a manual one; no order path.
