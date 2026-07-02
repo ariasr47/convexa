@@ -10,6 +10,7 @@ import { Widget } from './Widget';
 
 interface Props {
   setups: Setup[] | undefined;
+  revealIndex?: number;
 }
 
 const convictionTone = (c: string): 'warning' | 'info' | 'neutral' => {
@@ -17,9 +18,9 @@ const convictionTone = (c: string): 'warning' | 'info' | 'neutral' => {
   return v === 'high' ? 'warning' : v === 'medium' ? 'info' : 'neutral';
 };
 
-export function Setups({ setups }: Props) {
+export function Setups({ setups, revealIndex }: Props) {
   return (
-    <Widget id="setups" title="Setups" span={2}>
+    <Widget id="setups" title="Setups" span={2} revealIndex={revealIndex}>
       {setups?.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (

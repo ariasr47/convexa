@@ -24,16 +24,17 @@ interface Props {
   tierWord: string;
   tierColor: string;
   opportunityScore: number;
+  revealIndex?: number;
 }
 
 export function DealerPositioning({
-  m, offExchange, volOiThreshold, unusualCount, tierWord, tierColor, opportunityScore,
+  m, offExchange, volOiThreshold, unusualCount, tierWord, tierColor, opportunityScore, revealIndex,
 }: Props) {
   return (
     <Widget
       id="dealer-positioning" title="Dealer positioning"
       subtitle="Snapshot, never live — these stay current on a stream drop and refresh with the data load."
-      span={2} bodyVariant="inset"
+      span={2} bodyVariant="inset" revealIndex={revealIndex}
     >
       <Box sx={GRID} data-testid="dealer-positioning">
         <StatTile label="Call wall" value={`$${m.call_wall}`} accent="up"

@@ -11,6 +11,11 @@ Contracts:
   - INTERFACE_CONTRACT.md      n/a (NO_INTERFACE_CHANGE — consumes existing bundle/SSE unchanged)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
   - FRONTEND_EXECUTION_CONTRACT.md  draft — Ticker micro/mini-interactions + polish (motion-only)
-Open amendments: none
-QA (GATE Q):  n/a until build lands; single render + suite verification before commit
-Last gateway:  GATE V @ 2026-06-30 — owner-directed motion polish
+Open amendments: none (§3 stagger regression bounced + fixed — see QA_REPORT "GATE Q RE-RUN")
+QA (GATE Q):  QA_REPORT — initial FAIL (§3 section-reveal stagger regressed by ticker-widgets 9c66d2e) →
+              GATE Z bounce → conductor inline fix (revealIndex → --widget-reveal-delay) → RE-RUN PASS 16/16
+              (nx test dashboard 486/486, tsc/lint/build green, render pass cascade confirmed)
+Scope note:   Catch-up GATE Q covered the FULL merged stack (microinteractions + widgets + command-deck)
+              PLUS the post-merge external commit c93dddc (ai-rec structured display + dev seed) — the only
+              apps/api delta; runtime conformance 11/11, score/tier/fingerprint byte-identity re-proven.
+Last gateway:  GATE Q @ 2026-07-01 — de-correlated qa-verify (Sonnet) + conductor §3 fix + re-verify

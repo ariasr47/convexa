@@ -159,3 +159,55 @@ describe('Widget — reduced motion + live accent', () => {
     expect(screen.getByTestId('widget-w1')).toBeInTheDocument();
   });
 });
+
+// FRONTEND_EXECUTION_CONTRACT §3 — the one-time staggered section reveal. The board feeds each widget a
+// `revealIndex` (its position); the shell turns that into an inherited `--widget-reveal-delay` custom
+// property (readable inline in jsdom) that offsets the mount-reveal keyframe, producing the cascade. The
+// keyframe/opacity itself is a CSS engine feature verified in the conductor render pass; here we assert the
+// per-position DELAY wiring exists and doesn't regress (the gap that let the stagger silently disappear).
+describe('Widget — staggered mount reveal (§3)', () => {
+  const delay = (id: string) =>
+    screen.getByTestId(`widget-${id}`).style.getPropertyValue('--widget-reveal-delay').trim();
+
+  it('offsets the reveal delay by board position (~55ms/step), so sections cascade', () => {
+    wrap(
+      <>
+        <Widget id="a" title="A" revealIndex={0}><div>a</div></Widget>
+        <Widget id="b" title="B" revealIndex={1}><div>b</div></Widget>
+        <Widget id="c" title="C" revealIndex={3}><div>c</div></Widget>
+      </>,
+    );
+    expect(delay('a')).toBe('0ms');
+    expect(delay('b')).toBe('55ms');
+    expect(delay('c')).toBe('165ms');
+    // Strictly increasing with position — the actual cascade guarantee.
+    expect(parseInt(delay('b'), 10)).toBeGreaterThan(parseInt(delay('a'), 10));
+    expect(parseInt(delay('c'), 10)).toBeGreaterThan(parseInt(delay('b'), 10));
+  });
+
+  it('defaults to 0ms (no stagger) for a standalone/expanded widget with no revealIndex', () => {
+    wrap(<Widget id="solo" title="Solo"><div>b</div></Widget>);
+    expect(delay('solo')).toBe('0ms');
+  });
+
+  it('clamps the delay so a far-down board position never over-delays the reveal', () => {
+    wrap(<Widget id="deep" title="Deep" revealIndex={40}><div>b</div></Widget>);
+    // Capped at index 8 → 440ms, never index*55 unbounded.
+    expect(delay('deep')).toBe('440ms');
+  });
+
+  it('is one-shot: the delay is stable across a re-render (a 60s poll never replays the reveal)', () => {
+    const view = wrap(<Widget id="a" title="A" revealIndex={2}><div>a</div></Widget>);
+    expect(delay('a')).toBe('110ms');
+    // Simulate a poll-driven re-render with the SAME props: the widget stays mounted, the delay is
+    // unchanged, and nothing re-triggers the animation (no remount, no delay reset/replay).
+    view.rerender(
+      <ThemeProvider theme={theme}>
+        <WidgetSelectionProvider>
+          <Widget id="a" title="A" revealIndex={2}><div>a</div></Widget>
+        </WidgetSelectionProvider>
+      </ThemeProvider>,
+    );
+    expect(delay('a')).toBe('110ms');
+  });
+});

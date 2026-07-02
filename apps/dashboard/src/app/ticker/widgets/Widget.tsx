@@ -15,13 +15,13 @@
  *   - `content-visibility: auto` + `contain-intrinsic-size` — off-screen render skipping.
  *   - `:has()` / `:focus-within` / `:hover` — parent-aware chrome reveals the toolbar + grip, no JS.
  *   - `@property --angle` + conic-gradient — an animated gradient border on the selected/live widget.
- *   - `@supports (animation-timeline: view())` — a scroll-driven entrance, falling back to the
- *     existing one-time mount reveal.
+ *   - A one-time staggered mount reveal (`widgetRise`) — each widget fades + rises in with a small
+ *     per-position delay fed by the board via `--widget-reveal-delay`; reduced-motion → instant.
  *   - View Transitions API (in `useExpand`) — the expand → focus overlay is a shared-element morph,
  *     with a graceful MUI `Fade`/`Dialog` fallback when unsupported.
  */
 import {
-  useCallback, useEffect, useId, useRef, useState, type ReactNode,
+  useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode,
 } from 'react';
 import {
   Box, Stack, Typography, Tooltip, IconButton, Fade, Dialog, Menu, MenuItem,
@@ -56,6 +56,9 @@ export interface WidgetProps {
    *  is a recessed darker "well" so a grid of raised paper StatTiles regains contrast (Live tape / Dealer
    *  positioning, which are groups of same-surface tiles). */
   bodyVariant?: 'flush' | 'inset';
+  /** Board position (0-based) — offsets the one-time mount reveal so the sections cascade in
+   *  (~55ms/step, capped). Omitted ⇒ 0 (no delay), e.g. a standalone/expanded widget. */
+  revealIndex?: number;
 }
 
 /**
@@ -83,7 +86,7 @@ function useExpand(reduced: boolean) {
 
 export function Widget({
   id, title, icon, subtitle, info, live = false, actions, children, span = 1, bodySx, noBodyPad,
-  bodyVariant = 'flush',
+  bodyVariant = 'flush', revealIndex = 0,
 }: WidgetProps) {
   const reduced = useReducedMotion();
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
@@ -236,6 +239,7 @@ export function Widget({
         tabIndex={0}
         onClick={onSelect}
         onFocus={onSelect}
+        style={{ ['--widget-reveal-delay']: `${Math.min(Math.max(revealIndex, 0), 8) * 55}ms` } as CSSProperties}
         sx={(theme) => ({
           gridColumn: span === 2 ? { xs: '1 / -1', md: 'span 2' } : undefined,
           position: 'relative',
@@ -303,22 +307,20 @@ export function Widget({
           '@keyframes widgetLivePulse': {
             '0%, 100%': { opacity: 0.4 }, '50%': { opacity: 1 },
           },
-          // Scroll-driven entrance as progressive enhancement; else the one-time mount reveal.
+          // One-time staggered mount reveal (fade + rise). The per-widget stagger delay comes from the
+          // inherited `--widget-reveal-delay` custom property (set inline from the board order), so the
+          // sections cascade in ~55ms steps — FRONTEND_EXECUTION_CONTRACT §3. One-shot: the widget stays
+          // mounted across the 60s poll, so the CSS animation never replays. Reduced-motion → inert.
           '@media (prefers-reduced-motion: no-preference)': {
             '@keyframes widgetRise': {
               from: { opacity: 0, transform: 'translateY(12px)' },
               to: { opacity: 1, transform: 'none' },
             },
-            animation: 'widgetRise 300ms ease-out both',
-            '@supports (animation-timeline: view())': {
-              '@keyframes widgetReveal': {
-                from: { opacity: 0, transform: 'translateY(16px) scale(0.99)' },
-                to: { opacity: 1, transform: 'none' },
-              },
-              animation: 'widgetReveal linear both',
-              animationTimeline: 'view()',
-              animationRange: 'entry 0% cover 22%',
-            },
+            animationName: 'widgetRise',
+            animationDuration: '300ms',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'both',
+            animationDelay: 'var(--widget-reveal-delay, 0ms)',
           },
           // The View-Transition name so expand can morph this element ↔ the overlay.
           ...(supportsVT && !expanded && { viewTransitionName: vtNameRef.current }),

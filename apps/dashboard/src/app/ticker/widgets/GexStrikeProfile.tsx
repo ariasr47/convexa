@@ -16,19 +16,20 @@ interface Props {
   putWall: number;
   gammaFlip: number;
   liveSpot?: number | null;
+  revealIndex?: number;
 }
 
 const GEX_INFO =
   'Net dealer gamma at each strike. Green = call-dominated (resistance above price); red = put-dominated (support below). Dashed lines mark the spot, the gamma flip, and the live price.';
 
-export function GexStrikeProfile(props: Props) {
+export function GexStrikeProfile({ revealIndex, ...props }: Props) {
   // Mirror the chart's own windowing so the widget frame is omitted (not left empty) when there is
   // nothing in-window — matching the chart's `return null`.
   if (!windowedStrikes(props.strikes, props.spot, props.callWall, props.putWall).length) return null;
   return (
     <Widget
       id="gex-strike-profile" title="GEX strike profile" info={GEX_INFO} span={2}
-      actions={<GexLegend />}
+      actions={<GexLegend />} revealIndex={revealIndex}
     >
       <GexProfileChart {...props} />
     </Widget>

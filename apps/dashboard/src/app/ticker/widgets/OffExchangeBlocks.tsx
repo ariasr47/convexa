@@ -18,13 +18,15 @@ interface Props {
   offExchange: OffExchange | null | undefined;
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
+  revealIndex?: number;
 }
 
-export function OffExchangeBlocks({ offExchange }: Props) {
+export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
   return (
     <Widget
       id="off-exchange-blocks" title="Off-exchange blocks" info={BLOCKS_TOOLTIP}
       subtitle="Largest recent off-exchange prints near spot. Context, not a signal — no side or direction."
+      revealIndex={revealIndex}
     >
       <Box>
         {!offExchange ? (

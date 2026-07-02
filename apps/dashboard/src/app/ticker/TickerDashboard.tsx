@@ -293,14 +293,17 @@ export function TickerDashboard() {
                 alignItems: 'stretch',
               }}
             >
+              {/* `revealIndex` = board position → the one-time staggered mount reveal (§3): each
+                  section rises + fades in ~55ms after the previous one. Reduced-motion → instant. */}
               {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-              <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+              <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} revealIndex={0} />
 
               {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
               <DealerPositioning
                 m={m} sig={sig} offExchange={data?.off_exchange}
                 volOiThreshold={volOiThreshold} unusualCount={unusualStrikes.length}
                 tierWord={tm.word} tierColor={tm.color} opportunityScore={sig?.opportunity_score ?? 0}
+                revealIndex={1}
               />
 
               {data?.strike_profile && (
@@ -311,18 +314,19 @@ export function TickerDashboard() {
                   putWall={m.put_wall}
                   gammaFlip={live?.gamma_flip ?? m.gamma_flip}
                   liveSpot={isLive ? live!.mid : null}
+                  revealIndex={2}
                 />
               )}
 
               {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
-              <TermStructureCard termStructure={m.term_structure} />
+              <TermStructureCard termStructure={m.term_structure} revealIndex={3} />
               <AiRecPanel
                 ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
                 activePersonaId={persona.activeId}
                 dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
                 onAccept={onAcceptRec} onViewExport={openExport}
                 readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
-                fillHeight
+                fillHeight revealIndex={4}
               />
 
               {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
@@ -330,10 +334,11 @@ export function TickerDashboard() {
               <FreshPositioning
                 chainVolOiRatio={m.chain_vol_oi_ratio}
                 volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
+                revealIndex={5}
               />
-              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} />}
+              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={6} />}
 
-              <Setups setups={sig?.setups} />
+              <Setups setups={sig?.setups} revealIndex={7} />
 
               {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}

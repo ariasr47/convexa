@@ -22,9 +22,10 @@ interface Props {
   live: LiveUpdate | null;
   isLive: boolean;
   streamOffline: boolean;
+  revealIndex?: number;
 }
 
-export function LiveTape({ m, live, isLive, streamOffline }: Props) {
+export function LiveTape({ m, live, isLive, streamOffline, revealIndex }: Props) {
   // Live value-flash on SSE updates — ONLY while genuinely live (frozen on an SSE drop, never a stale
   // flash) `[live-vs-static-isolation]`. VWAP is a static bundle field (no offline, no flash).
   const active = isLive && !streamOffline;
@@ -35,7 +36,7 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
     <Widget
       id="live-tape" title="Live tape" live={active}
       info="Live-derived reads off the trade tape + quote stream. These pause on a stream drop; the levels below stay current."
-      span={2} bodyVariant="inset"
+      span={2} bodyVariant="inset" revealIndex={revealIndex}
     >
       <Box sx={GRID} data-testid="live-tape">
       <StatTile
