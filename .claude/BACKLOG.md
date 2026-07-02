@@ -30,6 +30,33 @@
 
 ---
 
+## Last GATE I — 2026-07-01 (OWNER DIRECTIVE: 5-item product program)
+Owner handed the conductor five sequenced items (screenshots of broken light-mode attached to the ask):
+1. **`light-mode-parity`** — ✓ SHIPPED same session (`8abae03`, GATE V fast-path): mode-aware `extras`
+   (`extrasFor(theme)`), ONE shared hatch, mode-aware ticker chrome; dark byte-identical; render-verified
+   both modes; 486/486 + tsc/lint/build green.
+2+3. **`sim-entry-unification`** — IN BUILD (delivery-frontend lane): one shared sim-entry dialog in
+   `app/trading/` (Ticker's redesigned `TradeEntryDialog` skin canonical; absorbs the old
+   `positions/PositionEntryDialog` capabilities; both pages launch it), provable dead-code sweep
+   (suspect: `GhostTradePanel`), directory README. Durable stores untouchable. Contract at
+   `.claude/contracts/sim-entry-unification/`.
+4. **`ai-rec-backtest-orders`** — QUEUED NEXT (architect-first, both lanes). A scripted mock/scenario
+   LLM provider (extends the shipped `StubLLMProvider`/`AI_REC_STUB` seam) to simulate every ai-rec
+   answer shape for backtesting; acting on a rec creates a **SIMULATED order** honoring the rec's plan
+   (conditional entry / limit / stop / target), a new Orders widget, fills land in the positions
+   portfolio. **SUBSUMES** the §B "AI-rec Accept → tracked position — full build-out" item (Accept =
+   the immediate-order degenerate case). Invariant watch: `no-real-order-path` (orders SIM-only),
+   `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`, `live-vs-static-isolation`
+   (triggers evaluate on LIVE data only, never a frozen mark), `server-side-gate-enforcement`. Brief at
+   `.claude/contracts/ai-rec-backtest-orders/BRIEF.md`.
+5. **`scanner`** — QUEUED AFTER 4 (architect-first, both lanes). Promotes the long-queued Track-A item
+   WITH the owner's expanded scope: durable custom watchlist, simplified per-ticker read (score/tier),
+   AI-seeded watchlists, multiple views, ticker-page links, batch AI recs on all/selected. **Invariant
+   watch:** revisits the locked "single-ticker, on-demand" decision — the architect must re-justify
+   with a perf design (batch/throttle/cache; the ticker-load-experience chain-store + coalescing are
+   the building blocks); AI batch respects the existing cooldown/cap + key-resolution.
+   Brief at `.claude/contracts/scanner/BRIEF.md`.
+
 ## Last GATE I — 2026-06-29 (infra program, step 2: persistent datastore)
 **Chosen → `persistent-db`** (step 2 of the infra/deploy program). Swap the in-memory SQLite auth stores
 for **persistent Postgres** behind the existing ports (`UserStore`/`SessionStore`/`UserSettingsStore`/
