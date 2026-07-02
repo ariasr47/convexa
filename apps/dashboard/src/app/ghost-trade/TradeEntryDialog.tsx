@@ -15,7 +15,7 @@ import { fetchTrackedContract, OptionRight } from '@org/api';
 import { bsPrice } from './mark';
 import { NewTradeForm } from './useGhostTrade';
 import type { MarkBasis } from './types';
-import { extras } from '../tokens';
+import { extrasFor } from '../tokens';
 
 const SIMULATED_TIP = 'A paper trade — no broker, no real money, no real order is ever placed.';
 const DISCLAIMER =
@@ -145,7 +145,7 @@ export function TradeEntryDialog({ open, ticker, expirations, strikes, spot, pre
         paper: {
           sx: {
             borderRadius: '14px', border: 1, borderColor: 'divider', backgroundImage: 'none',
-            bgcolor: extras.panelRaised,
+            bgcolor: (theme) => extrasFor(theme).panelRaised,
           },
         },
       }}

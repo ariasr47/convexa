@@ -23,7 +23,7 @@ import type { usePortfolio } from './usePortfolio';
 import type { GroupAxis, PositionStatus } from './types';
 import { SAVED_VIEW_TIP } from './labels';
 import type { Position } from './types';
-import { extras } from '../tokens';
+import { extrasFor } from '../tokens';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
@@ -50,15 +50,15 @@ interface ToolbarProps {
   canOpenEntry?: boolean;
 }
 
-// ---- Segmented-control building blocks (the frame's pill groups) -------------------------------
-const segContainerSx = {
+// ---- Segmented-control building blocks (the frame's pill groups; mode-aware via extrasFor) ------
+const segContainerSx = (theme: { palette: { mode: string } }) => ({
   display: 'inline-flex', alignItems: 'center', gap: '3px',
-  bgcolor: extras.panelRaised, border: '1px solid', borderColor: 'divider',
+  bgcolor: extrasFor(theme).panelRaised, border: '1px solid', borderColor: 'divider',
   borderRadius: '8px', padding: '3px',
-};
-const segItemSx = (active: boolean) => ({
+});
+const segItemSx = (active: boolean) => (theme: { palette: { mode: string } }) => ({
   cursor: 'pointer', border: '1px solid', borderColor: active ? 'divider' : 'transparent',
-  background: active ? extras.panelRaised : 'transparent', font: 'inherit',
+  background: active ? extrasFor(theme).panelRaised : 'transparent', font: 'inherit',
   fontSize: '0.78rem', fontWeight: 600, padding: '6px 12px', borderRadius: '7px',
   color: active ? 'text.primary' : 'text.secondary', whiteSpace: 'nowrap',
 });

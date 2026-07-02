@@ -75,7 +75,7 @@ export function TickerToolbar({
         border: `1px solid ${t.palette.divider}`,
         borderRadius: '12px',
         bgcolor: `color-mix(in srgb, ${t.palette.background.paper} 55%, transparent)`,
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+        boxShadow: t.palette.mode === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.04)' : 'none',
         p: 0.75,
         // Hairline seams BETWEEN segments (not before the first). On wrap (xs) the vertical seam is
         // suppressed so a wrapped row doesn't show a dangling divider.

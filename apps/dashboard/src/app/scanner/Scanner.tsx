@@ -6,13 +6,12 @@
  *
  * Presentation-only re-skin to the Figma frame "Scanner — Coming soon" (FRONTEND_EXECUTION_CONTRACT
  * · SURFACE: Scanner). The hatched inert card reuses `ui/ComingSoonBox` (structural `no-real-order-path`
- * inertness — the box itself never links). Tokens via the theme; the only sx literals are the documented
- * hatch stripe colors (`background.paper`/`extras.hatchAlt`) + the badge amber-alpha tints (`warning.main`).
+ * inertness — the box itself never links) and its shared mode-aware `hatchBackgroundImage`; the only
+ * other sx literals are the badge amber-alpha tints (`warning.main`).
  */
 import { Box, Typography, Link } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ComingSoonBox } from '../ui/ComingSoonBox';
-import { extras } from '../tokens';
 
 export function Scanner() {
   return (
@@ -23,8 +22,6 @@ export function Scanner() {
           maxWidth: 560,
           mx: 'auto',
           my: 8,
-          backgroundImage: (theme) =>
-            `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 20px, ${extras.hatchAlt} 20px 40px)`,
           borderRadius: '14px',
           p: '52px 40px',
           textAlign: 'center',

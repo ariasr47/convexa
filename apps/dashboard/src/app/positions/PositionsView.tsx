@@ -21,7 +21,7 @@ import { PositionRow } from './PositionRow';
 import { PositionCard } from './PositionCard';
 import type { PlSample } from './useTrends';
 import { money, EMPTY_NO_POSITIONS, EMPTY_FILTERED, HISTORY_CAPTION } from './labels';
-import { extras } from '../tokens';
+import { extrasFor } from '../tokens';
 
 /**
  * REVISION 2 — the FIXED Figma column set (left→right). The table/cards render from this directly and
@@ -172,7 +172,7 @@ function GroupRows({ group, props, columns, showHeader, tdPad }: { group: Derive
           <Box
             component="td"
             colSpan={columns.length + 1}
-            sx={{ bgcolor: extras.panelRaised, padding: '8px 12px', fontSize: '0.78rem', fontWeight: 600 }}
+            sx={{ bgcolor: (theme) => extrasFor(theme).panelRaised, padding: '8px 12px', fontSize: '0.78rem', fontWeight: 600 }}
           >
             <Box component="span" sx={{ opacity: props.streamOffline ? 0.85 : 1 }}>
               {group.label} ({group.rows.length}){'  '}

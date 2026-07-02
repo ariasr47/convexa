@@ -9,7 +9,7 @@
  */
 import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { palette, extras } from '../tokens';
+import { extrasFor } from '../tokens';
 
 export interface ValueCardProps {
   /** A `@mui/icons-material` element (or any node) rendered in the tinted 40px square. */
@@ -52,7 +52,8 @@ export function ValueCard({
           left: 0,
           right: 0,
           height: '2px',
-          background: `linear-gradient(90deg, ${palette.dark.primary}, ${extras.accentViolet})`,
+          background: (theme) =>
+            `linear-gradient(90deg, ${theme.palette.primary.main}, ${extrasFor(theme).accentViolet})`,
           transform: 'scaleX(0)',
           transformOrigin: 'left',
           transition: 'transform 260ms ease',

@@ -81,9 +81,16 @@ function StickyCondensed({
         borderRadius: '12px',
         border: `1px solid ${t.palette.divider}`,
         // Same deck material, denser: a faint primary top-light over the paper, token-bound.
+        // Mode-aware chrome: the white sheen + deep shadow are dark-scheme idioms.
         backgroundColor: `color-mix(in srgb, ${t.palette.background.paper} 88%, ${t.palette.primary.main} 4%)`,
-        backgroundImage: 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%)',
-        boxShadow: '0 2px 8px -4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        backgroundImage:
+          t.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%)'
+            : 'none',
+        boxShadow:
+          t.palette.mode === 'dark'
+            ? '0 2px 8px -4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)'
+            : '0 2px 8px -4px rgba(16,24,40,0.18)',
         backdropFilter: 'saturate(1.1) blur(6px)',
       })}
     >
@@ -166,7 +173,10 @@ export function CommandDeck(props: CommandDeckProps) {
           backgroundColor: `color-mix(in srgb, ${t.palette.background.paper} 82%, ${t.palette.primary.main} 5%)`,
           backgroundImage:
             `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 9%, transparent), transparent 42%)`,
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)',
+          boxShadow:
+            t.palette.mode === 'dark'
+              ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)'
+              : '0 1px 2px rgba(16,24,40,0.08)',
           p: { xs: 2, sm: 2.5 },
         })}
       >

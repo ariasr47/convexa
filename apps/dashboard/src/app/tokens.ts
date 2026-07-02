@@ -46,6 +46,12 @@ export const typographyTokens = {
  * Presentation-only extras (Figma: `color/bg/raised`, `color/bg/hatch-alt`, `color/text/secondary|disabled`,
  * `color/accent/violet`). NOT MUI palette entries — applied via `sx` literals, so they have no `--mui-*`
  * var. Kept here so the values are still single-sourced and the Figma↔code sync covers them.
+ *
+ * MODE-AWARE (light-mode-parity): `extras` keeps the historical DARK values (the default scheme and the
+ * only mode most call sites originally shipped against); `extrasLight` mirrors each key for the light
+ * scheme. Components must resolve via `extrasFor(theme)` inside an `sx`/styled callback — binding the
+ * bare `extras` object dark-locks the surface (the light-mode hatch/panel bugs). The Figma light-mode
+ * variable sync for these is a follow-up on `scripts/sync-figma-tokens.mjs`.
  */
 export const extras = {
   panelRaised: '#1c2330',
@@ -57,3 +63,18 @@ export const extras = {
   // primary/accent (links, active nav, COPY links, chips, borders, icons) is unchanged.
   buttonPrimaryBg: '#1d6fe0',
 } as const;
+
+/** Light-scheme counterparts, same keys. Raised panels sit a soft grey above white paper; the hatch
+ *  alternates paper with a just-darker grey (mirroring the dark scheme's subtle paper↔hatch delta). */
+export const extrasLight: Record<keyof typeof extras, string> = {
+  panelRaised: '#eef1f5',
+  hatchAlt: '#f0f2f5',
+  textSecondary: 'rgba(0, 0, 0, 0.6)',
+  textDisabled: 'rgba(0, 0, 0, 0.38)',
+  accentViolet: '#7b5cff',
+  buttonPrimaryBg: '#1d6fe0',
+} as const;
+
+/** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */
+export const extrasFor = (theme: { palette: { mode: string } }): Record<keyof typeof extras, string> =>
+  theme.palette.mode === 'light' ? extrasLight : extras;

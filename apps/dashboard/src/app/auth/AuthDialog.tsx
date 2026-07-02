@@ -19,7 +19,7 @@ import { AuthError } from '@org/api';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
 import { TEST_ACCOUNT_PASSWORD } from '../positions/testSeed';
-import { extras } from '../tokens';
+import { extrasFor } from '../tokens';
 import { GoogleButton } from './GoogleButton';
 import { isLikelyEmail, validationFieldCopy } from './validation';
 
@@ -140,7 +140,7 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
             border: 1,
             borderColor: 'divider',
             backgroundImage: 'none',
-            bgcolor: extras.panelRaised, // panel-raised — lighter than the page
+            bgcolor: (theme) => extrasFor(theme).panelRaised, // panel-raised — above the page surface
           },
         },
         backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(8, 11, 16, 0.66)' } },

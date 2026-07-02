@@ -103,7 +103,10 @@ export function Widget({
     ...(bodyVariant === 'inset'
       ? {
           backgroundColor: theme.palette.background.default,
-          boxShadow: 'inset 0 2px 10px -5px rgba(0,0,0,0.55)',
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? 'inset 0 2px 10px -5px rgba(0,0,0,0.55)'
+              : 'inset 0 2px 8px -6px rgba(16,24,40,0.25)',
         }
       : {}),
   });

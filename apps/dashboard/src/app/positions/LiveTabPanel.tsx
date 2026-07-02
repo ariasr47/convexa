@@ -13,7 +13,7 @@
  */
 import { Box, Typography } from '@mui/material';
 import { LIVE_HEADING, LIVE_BODY, LIVE_LOCK_CHIP } from './labels';
-import { extras } from '../tokens';
+import { hatchBackgroundImage } from '../ui/ComingSoonBox';
 
 export function LiveTabPanel() {
   return (
@@ -24,10 +24,8 @@ export function LiveTabPanel() {
         border: '1px dashed',
         borderColor: 'divider',
         borderRadius: '10px',
-        // Hatched inert affordance — `background.paper` alternating with `extras.hatchAlt`, 18px
-        // stripes per this frame (prototype-only hatch extras, single-sourced from the tokens).
-        backgroundImage: (theme) =>
-          `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 18px, ${extras.hatchAlt} 18px 36px)`,
+        // Hatched inert affordance — the shared mode-aware hatch (single-sourced in ComingSoonBox).
+        backgroundImage: hatchBackgroundImage,
         p: '48px',
         textAlign: 'center',
       }}

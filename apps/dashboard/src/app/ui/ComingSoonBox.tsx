@@ -8,7 +8,15 @@
  * `extras.hatchAlt` (per the README, prototype-only extras fold into `sx`, NOT new theme keys).
  */
 import { Box, type BoxProps } from '@mui/material';
-import { extras } from '../tokens';
+import type { Theme } from '@mui/material/styles';
+import { extrasFor } from '../tokens';
+
+/**
+ * The SINGLE hatch background (mode-aware). Shared by every "coming soon" surface — ComingSoonBox,
+ * the Scanner stub hero, the positions Live tab — so the stripes can never drift or dark-lock again.
+ */
+export const hatchBackgroundImage = (theme: Theme) =>
+  `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 18px, ${extrasFor(theme).hatchAlt} 18px 36px)`;
 
 export interface ComingSoonBoxProps extends Omit<BoxProps, 'children'> {
   children?: React.ReactNode;
@@ -23,8 +31,7 @@ export function ComingSoonBox({ children, sx, ...rest }: ComingSoonBoxProps) {
           border: '1px dashed',
           borderColor: 'divider',
           borderRadius: 2,
-          backgroundImage: (theme) =>
-            `repeating-linear-gradient(135deg, ${theme.palette.background.paper} 0 18px, ${extras.hatchAlt} 18px 36px)`,
+          backgroundImage: hatchBackgroundImage,
           p: 3,
         },
         ...(Array.isArray(sx) ? sx : [sx]),

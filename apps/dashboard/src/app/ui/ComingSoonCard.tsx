@@ -36,7 +36,8 @@ function ComingSoonIcon({ icon }: { icon: React.ReactNode }) {
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: 'rgba(255, 255, 255, 0.06)',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
         color: 'text.secondary',
       }}
     >
