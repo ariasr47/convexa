@@ -74,7 +74,8 @@ store; anything that later rides an endpoint gets named at the interface split):
     default value/editability is a PM call, §12.3). An order whose contract expiration date passes
     is also expired.
 - **Provenance (the rec→order link):** `provenance: { source: 'ai_rec' | 'ai_scenario' | 'manual',
-  rec_fingerprint?, rec_as_of?, persona?: {id, name}, scenario_id?, trigger_source_text? }`.
+  rec_fingerprint?, rec_as_of?, persona?: {id, name}, scenario_id?, scenario_name?,
+  trigger_source_text? }`. *(`scenario_name?` added by the accepted GATE Z amendment below.)*
   `rec_fingerprint` = the rec's `pinned_fingerprint`; `trigger_source_text` = the rec's verbatim
   free-text `entry_trigger`. A scenario-sourced rec MUST mark `source: 'ai_scenario'` +
   `scenario_id` — scripted output is never mistakable for a real AI read (binding honesty rule;
@@ -367,3 +368,14 @@ scripted provider exercises the REAL rec path end-to-end, keyless (the `StubLLMP
    scenario-selected-while-disabled; the final env flag name.
 10. **Sign-in requirement framing** for Act (it inherits the sim-trade gate like Accept — confirm
     the UX for the anonymous case).
+
+---
+
+## Amendment (GATE Z — flagged by the FE executioner, ACCEPTED by the conductor 2026-07-02)
+
+**`SimOrder.provenance.scenario_name` (optional string) is ADDED to the §2 provenance literal
+list** (reflected inline above). Rationale: UX §4.1/§5 render "Scripted · {name}" / "Scripted
+scenario · {name} ({id})" after reload, and the id→name catalog is NOT enumerable while
+`AI_REC_SCENARIOS_ENABLED` is off (the interface's advertisement rule), so the human-readable name
+must be captured at order creation. Client-local only — zero wire impact, no interface change.
+Additive; contradicts no isolation/error rule in this contract.

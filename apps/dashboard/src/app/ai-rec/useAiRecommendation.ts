@@ -14,14 +14,24 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  TickerBundle, RecResponse, RecStatus, RecGate, RecCap, requestRecommendation, fetchRecStatus,
-  AuthError,
+  TickerBundle, RecResponse, RecStatus, RecGate, RecCap, RecScenarioInfo, requestRecommendation,
+  fetchRecStatus, AuthError,
 } from '@org/api';
 
 export interface RecRequestOpts {
   override?: boolean;
   personaId?: string | null;
   personaName?: string;
+  /** ai-rec-backtest-orders (INTERFACE §1.1): the operator's scenario selector. Omitted/null ⇒
+   *  the shipped real path byte-for-byte (the field is then NOT sent at all). */
+  scenarioId?: string | null;
+}
+
+/** The RecStatus.scenarios advertisement (INTERFACE §2). Absent on an older backend ⇒ treated as
+ *  disabled (no picker) — the FE never assumes the flag state. */
+export interface ScenarioAdvert {
+  enabled: boolean;
+  catalog: RecScenarioInfo[];
 }
 
 interface AiRecOpts {
@@ -42,6 +52,8 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   const [cap, setCap] = useState<RecCap>(DEFAULT_CAP);
   const [inAppEnabled, setInAppEnabled] = useState(true);
   const [statusReady, setStatusReady] = useState(false);
+  // Scenario advertisement — driven ENTIRELY off the wire (never assumed). Default = disabled.
+  const [scenarios, setScenarios] = useState<ScenarioAdvert>({ enabled: false, catalog: [] });
 
   const [rec, setRec] = useState<RecResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -65,6 +77,13 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       .then((s: RecStatus) => {
         if (cancelled) return;
         setInAppEnabled(s.availability.in_app_enabled);
+        // INTERFACE §2: the wire always carries `scenarios` post-feature; an absent field (older
+        // backend) degrades to disabled — zero scenario surface (AC-34), never a throw.
+        setScenarios(
+          s.scenarios && typeof s.scenarios.enabled === 'boolean'
+            ? { enabled: s.scenarios.enabled, catalog: Array.isArray(s.scenarios.catalog) ? s.scenarios.catalog : [] }
+            : { enabled: false, catalog: [] },
+        );
         applyGating(s.gate, s.cap);
         setStatusReady(true);
       })
@@ -72,6 +91,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         // Transport fault on status: degrade the action to inert, keep the rest of the page intact.
         if (cancelled) return;
         setInAppEnabled(false);
+        setScenarios({ enabled: false, catalog: [] });
         setStatusReady(true);
       });
     return () => { cancelled = true; };
@@ -108,6 +128,10 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         dte_max: o.dteMax,
         dark_pool: o.darkPool,
         override: reqOpts.override ?? false,
+        // Additive scenario selector (INTERFACE §1.1): the field is included ONLY when the
+        // operator actually selected a scenario — absent otherwise (the shipped path stays
+        // byte-for-byte, AC-45).
+        ...(reqOpts.scenarioId ? { scenario_id: reqOpts.scenarioId } : {}),
       });
       setRec(res);
       applyGating(res.gate, res.cap);
@@ -159,6 +183,8 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   return {
     // gating / availability
     inAppEnabled, gate, cap, statusReady, cooldownRemaining, effectiveGateState,
+    // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
+    scenarios,
     // the pinned artifact
     rec, loading, stale,
     // actions

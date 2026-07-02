@@ -37,7 +37,7 @@ interface Props {
   onEntryOpen: (open: boolean) => void;
 }
 
-export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, entryOpen, onEntryOpen }: Props) {
+export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, entryPrefill, entryOpen, onEntryOpen }: Props) {
   const [tab, setTab] = useState<'simulated' | 'live'>('simulated');
   const [toast, setToast] = useState<string | null>(null);
 
@@ -127,6 +127,8 @@ export function PortfolioPanel({ pf, data, streamOffline, ticker, entryPrefill, 
         <PositionsPanel
           pf={pf}
           data={data}
+          live={live}
+          isLive={isLive}
           streamOffline={streamOffline}
           ticker={ticker}
           gate={{ promptText: gate.promptText, signIn: gate.signIn }}

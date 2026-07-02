@@ -734,6 +734,15 @@ def status_payload(ai_eval: dict | None, resolved: ResolvedKey | None = None) ->
     if resolved is not None and resolved.remaining_free_uses is not None:
         payload["remaining_free_uses"] = resolved.remaining_free_uses
         payload["free_uses_total"] = resolved.free_uses_total
+    # ai-rec-backtest-orders (INTERFACE §2): the ALWAYS-present scenarios advertisement. Flag OFF ⇒
+    # {enabled:false, catalog:[]} (never enumerable while disabled); flag ON ⇒ the full registry
+    # catalog in registry order. Best-effort: a fault degrades to the disabled shape, never a 5xx.
+    try:
+        from . import ai_scenarios  # lazy: keeps the load-time import graph one-way (leaf-of-leaf)
+        payload["scenarios"] = ai_scenarios.advertisement()
+    except Exception:
+        logger.warning("ai_recommendation: scenarios advertisement faulted; advertising disabled")
+        payload["scenarios"] = {"enabled": False, "catalog": []}
     return payload
 
 
@@ -749,7 +758,8 @@ def _persona_for_provenance(persona_id: str | None) -> dict:
 def generate_recommendation(ticker: str, bundle: dict, *, persona_id: str | None,
                             dte_min, dte_max, override: bool,
                             snapshot_fingerprint: str,
-                            resolved: ResolvedKey) -> dict:
+                            resolved: ResolvedKey,
+                            scenario_id: str | None = None) -> dict:
     """
     The best-effort, isolated, gated LLM proxy → emits INTERFACE §1.1/§2.1 `RecResponse` (ALWAYS a
     well-formed dict the endpoint returns as HTTP 200). NEVER raises for an LLM/cap/key/gate fault.
@@ -759,6 +769,14 @@ def generate_recommendation(ticker: str, bundle: dict, *, persona_id: str | None
     metering identity, and (for key_source=none) the distinguished `unavailable_reason`. The leaf
     NEVER decrypts and NEVER reads env for the key; it consumes the VO. The raw `key_material` is
     used transiently to build the provider and is NEVER serialized/logged.
+
+    `scenario_id` (ai-rec-backtest-orders, BACKEND §2) is the OPTIONAL scripted-scenario selector:
+    absent/None ⇒ the shipped path below, byte-for-byte (AC-45). Non-null ⇒ the scenario branch —
+    keyless (main.py SKIPPED key resolution; `key_source:"none"`) and meter-bypassing (neither
+    checks nor consumes cooldown/cap/allowance, AC-37/38) — gated by `AI_REC_SCENARIOS_ENABLED`
+    (default OFF ⇒ the contained `scenario_unavailable` refusal, AC-35). The REAL `ai_eval`
+    readiness gate still wins over scenario selection (AC-43); scenario responses carry additive
+    `scenario:{id,name}` provenance (refusals do not — a refusal is not scenario output).
 
     Order of operations:
       1. Pin provenance + key_source/free-use fields from the cached bundle + the VO.
@@ -787,8 +805,8 @@ def generate_recommendation(ticker: str, bundle: dict, *, persona_id: str | None
     free_uses_total = resolved.free_uses_total
 
     def envelope(status, *, strategy=None, unavailable_reason=None, ks=None,
-                 remaining=None, total=None):
-        return {
+                 remaining=None, total=None, scenario=None):
+        out = {
             "status": status,
             "persona": persona,
             "as_of": as_of,
@@ -803,6 +821,51 @@ def generate_recommendation(ticker: str, bundle: dict, *, persona_id: str | None
             "remaining_free_uses": remaining if remaining is not None else remaining_free_uses,
             "free_uses_total": total if total is not None else free_uses_total,
         }
+        # ai-rec-backtest-orders (INTERFACE §1.3): scenario provenance is ADDITIVE and non-null on
+        # EVERY scenario-driven response (produced / scenario no_trade / fault). Absent == null on
+        # every real read AND on both scenario refusals (a refusal is not scenario OUTPUT);
+        # omitting the key keeps the shipped real path byte-for-byte (AC-45).
+        if scenario is not None:
+            out["scenario"] = scenario
+        return out
+
+    # --- ai-rec-backtest-orders scenario branch (BACKEND §2, order of checks binding) ----------
+    # Runs AFTER the auth gate (main.py, outermost — AC-42) and applies the REAL ai_eval readiness
+    # gate FIRST (a gated refusal wins over scenario selection — AC-43), then the flag/registry.
+    # The branch is keyless (key resolution was SKIPPED at the main.py boundary) and
+    # meter-bypassing: it NEVER calls check_blocked/commit_query/admin_commit, so cooldown, the
+    # daily cap, and the per-admin allowance are neither checked nor consumed (AC-37/38) — the
+    # `gate`/`cap` snapshots above still report the real, untouched values. Every fault here is a
+    # contained HTTP-200 refusal, never a 5xx, and never falls through to a paid provider (AC-35).
+    if scenario_id is not None:
+        if gate["state"] == "no_fresh_edge" and not override:
+            return envelope("gated_off")  # identical to the real gated refusal (AC-43)
+        from . import ai_scenarios  # lazy: keeps the load-time import graph one-way (leaf-of-leaf)
+        if not ai_scenarios.scenarios_enabled():
+            # Flag OFF ⇒ the contained refusal. No key resolution happened, no meter was touched,
+            # and NO provider of any kind is invoked (AC-35).
+            return envelope("unavailable", unavailable_reason="scenario_unavailable")
+        entry = ai_scenarios.get_scenario(scenario_id)
+        if entry is None:
+            return envelope("unavailable", unavailable_reason="scenario_error")
+        provenance = {"id": entry.id, "name": entry.name}
+        try:
+            context_json = json.dumps(serialize_context(bundle), default=str)
+            raw = ai_scenarios.ScenarioLLMProvider(entry).generate_strategy(
+                system_prompt="", context_json=context_json, glossary="",
+                dte_min=dte_min, dte_max=dte_max)
+        except LLMUnavailable as e:
+            # Fault scenarios reproduce the REAL degraded shape (+ provenance) — AC-40.
+            return envelope("unavailable", unavailable_reason=e.reason, scenario=provenance)
+        except Exception as e:
+            # Template render fault ⇒ contained scenario_error. The reason string and this log
+            # line carry no key/secret/template internals (class name + id only).
+            logger.warning("ai_recommendation: scenario %r render fault (%s)",
+                           scenario_id, type(e).__name__)
+            return envelope("unavailable", unavailable_reason="scenario_error")
+        # Produced through the REAL coercion + envelope. NO commit_query / NO admin_commit — the
+        # meter stays untouched (AC-38).
+        return envelope("produced", strategy=_coerce_strategy(raw), scenario=provenance)
 
     # (2) No usable key — emit the distinguished unavailable reason. NO LLM, NO meter (AC-1/3/6/24).
     if key_source == "none":

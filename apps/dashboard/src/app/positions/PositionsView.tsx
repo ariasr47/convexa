@@ -49,6 +49,9 @@ export interface ViewProps {
   onClearFilter: () => void;
   onClose: (id: string) => void;
   onCancel: (id: string) => void;
+  /** ai-rec-backtest-orders (AC-31): open the originating sim order's detail. Optional — absent
+   *  hosts render no backlink. */
+  onViewOrder?: (orderId: string) => void;
 }
 
 const openCtaSx = {
@@ -106,6 +109,7 @@ function ctxFor(props: ViewProps, row: DerivedRow): RowContext {
     streamOffline: props.streamOffline,
     onClose: props.onClose,
     onCancel: props.onCancel,
+    onViewOrder: props.onViewOrder,
   };
 }
 

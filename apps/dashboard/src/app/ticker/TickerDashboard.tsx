@@ -22,7 +22,9 @@ import {
 } from '@mui/material';
 import { getTicker, streamTicker, TickerBundle, LiveUpdate, RecResponse } from '@org/api';
 import { useGhostTrade, NewTradeForm } from '../ghost-trade/useGhostTrade';
-import { TradeEntryDialog, EntryPrefill, TradeEntrySubmit } from '../trading/TradeEntryDialog';
+import {
+  TradeEntryDialog, EntryPrefill, TradeEntrySubmit, OrderPlan, OrderEntrySubmit,
+} from '../trading/TradeEntryDialog';
 import { PrimeBanner, tierMeta } from '../ghost-trade/OpportunityTier';
 import { usePersona } from '../personas/usePersona';
 import { PersonaCustomizeForm } from '../personas/components';
@@ -31,6 +33,14 @@ import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
 import { StateExportDrawer } from '../ai-rec/StateExportDrawer';
 import { recToPrefill } from '../ai-rec/prefill';
 import { COPY } from '../ai-rec/copy';
+import { OrdersWidget } from '../orders/OrdersWidget';
+import { useOrderEngine } from '../orders/useOrderEngine';
+import { createOrder } from '../orders/useOrders';
+import { parseTriggerSeed } from '../orders/seed';
+import { GATE_SIGN_IN } from '../orders/copy';
+import type { OrderProvenance } from '../orders/types';
+import { useGate } from '../auth/useGate';
+import { SignInPrompt } from '../auth/SignInPrompt';
 
 import { StatSkeleton } from './widgets/StatTile';
 import { WidgetSelectionProvider } from './widgets/WidgetSelectionContext';
@@ -178,6 +188,73 @@ export function TickerDashboard() {
     const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
     if (pf) openEntry(pf);
   };
+
+  // ---- ai-rec-backtest-orders: the Act flow (order variant of the SAME shared dialog) ----------
+  // The sim-order engine evaluates THIS ticker's orders off THIS page's existing stream (arch §5 —
+  // it opens no EventSource of its own and adds nothing to any request, AC-44).
+  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
+  const orderGate = useGate();
+  const [actState, setActState] = useState<{
+    open: boolean; plan?: OrderPlan; prefill?: EntryPrefill; provenance?: OrderProvenance;
+  }>({ open: false });
+  const [orderError, setOrderError] = useState<string | null>(null);
+  // Act on a produced TRADE rec (real or scenario): seeds contract/qty/stop/target via the
+  // EXISTING recToPrefill rules (D3) + the D2 trigger seed; the verbatim entry_trigger text and
+  // the rec's pin travel as provenance. Signed-out ⇒ the standard gated-write prompt, no dialog.
+  const onActRec = (rec: RecResponse, personaName: string) => {
+    if (!rec.strategy || rec.strategy.decision !== 'trade') return;
+    if (!orderGate.allowed) { orderGate.prompt(GATE_SIGN_IN); return; }
+    orderGate.clear();
+    const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
+    if (!pf) return;
+    const scenario = rec.scenario ?? null;
+    const provenance: OrderProvenance = {
+      source: scenario ? 'ai_scenario' : 'ai_rec',
+      rec_fingerprint: rec.pinned_fingerprint,
+      rec_as_of: rec.as_of,
+      persona: { id: rec.persona.id, name: rec.persona.name },
+      ...(scenario ? { scenario_id: scenario.id, scenario_name: scenario.name } : {}),
+      trigger_source_text: rec.strategy.entry_trigger ?? null,
+    };
+    const plan: OrderPlan = {
+      seededTrigger: parseTriggerSeed(rec.strategy.entry_trigger),
+      triggerSourceText: rec.strategy.entry_trigger ?? null,
+      provenance: {
+        source: scenario ? 'ai_scenario' : 'ai_rec',
+        personaName: rec.persona.name,
+        asOf: rec.as_of,
+        ...(scenario ? { scenarioName: scenario.name } : {}),
+      },
+      stale: aiRec.stale,
+      liveMid: isLive ? live?.mid ?? null : null,
+    };
+    setOrderError(null);
+    setActState({ open: true, plan, prefill: pf, provenance });
+  };
+  // Confirm = the gated, state-bearing write: the SERVER gate is awaited BEFORE the local orders
+  // store write ([server-side-gate-enforcement], AC-11). 403 ⇒ prompt + abort, ZERO order; 503 ⇒
+  // the shipped "couldn't reach sign-in" copy + abort. A faulted store ⇒ inline error, nothing
+  // partial (§4.6).
+  const onConfirmOrder = async (submit: OrderEntrySubmit) => {
+    const provenance = actState.provenance;
+    if (!provenance) return;
+    let ran = false;
+    await orderGate.guard(GATE_SIGN_IN, () => {
+      ran = true;
+      const res = createOrder({
+        ticker: submit.ticker, expiration: submit.expiration, strike: submit.strike,
+        right: submit.right, qty: submit.qty, trigger: submit.trigger,
+        limit_price: submit.limitPrice, stop: submit.stop, target: submit.target,
+        expires_at: submit.expiresAt, provenance,
+      }, { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '' });
+      if (!res.ok) { setOrderError(res.reason ?? null); return; }
+      setOrderError(null);
+      setActState({ open: false });
+    }, { serverGate: orderGate.simTradeGate });
+    // Gate rejected (403/503) ⇒ the flow ABORTS before anything is stored; re-initiate after
+    // sign-in (no auto-resume, D10).
+    if (!ran) setActState({ open: false });
+  };
   const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
 
@@ -215,6 +292,14 @@ export function TickerDashboard() {
           />
         </Box>
       )}
+
+      {/* In-context sign-in prompt for a gated Act (D8-6/D10 — the standard gated-write pattern):
+          a 403 at confirm aborts the flow with ZERO order stored and surfaces this. */}
+      <SignInPrompt
+        text={orderGate.promptText}
+        onSignIn={() => orderGate.signIn(orderGate.promptText ?? GATE_SIGN_IN)}
+        testid="orders-signin-prompt"
+      />
 
       {/* Cold-start failure (no bundle ever loaded) is the ONLY blank/error screen: red error + Retry.
           A poll failure AFTER a prior success keeps the whole bundle on screen behind a soft warning. */}
@@ -324,9 +409,16 @@ export function TickerDashboard() {
                 ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
                 activePersonaId={persona.activeId}
                 dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-                onAccept={onAcceptRec} onViewExport={openExport}
+                onAccept={onAcceptRec} onAct={onActRec} onViewExport={openExport}
                 readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
                 fillHeight revealIndex={4}
+              />
+
+              {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
+                  motion, UX §4.4); next revealIndex in the cascade (the sections below shift +1). */}
+              <OrdersWidget
+                ticker={ticker} live={live} isLive={isLive} streamOffline={streamOffline}
+                revealIndex={5}
               />
 
               {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
@@ -334,11 +426,11 @@ export function TickerDashboard() {
               <FreshPositioning
                 chainVolOiRatio={m.chain_vol_oi_ratio}
                 volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
-                revealIndex={5}
+                revealIndex={6}
               />
-              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={6} />}
+              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={7} />}
 
-              <Setups setups={sig?.setups} revealIndex={7} />
+              <Setups setups={sig?.setups} revealIndex={8} />
 
               {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}
@@ -387,6 +479,26 @@ export function TickerDashboard() {
           setEntryOpen(false);
         }}
       />
+
+      {/* ai-rec-backtest-orders: the SAME shared dialog in its additive ORDER VARIANT (never a
+          fork). A separate instance from the ghost-trade one so Act works even while a ghost trade
+          is open; the ghost path above is untouched (AC-47). The already-met notice re-evaluates
+          LIVE against the current mid via `orderPlan.liveMid`. */}
+      {actState.plan && (
+        <TradeEntryDialog
+          open={actState.open}
+          ticker={ticker}
+          expirations={allDates}
+          strikes={strikeList}
+          spot={m?.price ?? 0}
+          prefill={actState.prefill}
+          orderPlan={{ ...actState.plan, liveMid: isLive ? live?.mid ?? null : null }}
+          orderError={orderError}
+          onConfirmOrder={(s: OrderEntrySubmit) => { void onConfirmOrder(s); }}
+          onClose={() => { setActState({ open: false }); setOrderError(null); }}
+          onConfirm={() => { /* order variant confirms via onConfirmOrder */ }}
+        />
+      )}
 
       {/* Persona customize — presentation-only, off the compute path. */}
       <PersonaCustomizeForm open={customizeOpen} onClose={() => setCustomizeOpen(false)} persona={persona} />

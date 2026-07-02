@@ -169,6 +169,12 @@ export function decisionsForPosition(id: PositionId): DecisionRecord[] {
   return read().decisions.filter((d) => d.trade_id === id).reverse();
 }
 
+/** The full append-only log, oldest first (ai-rec-backtest-orders: feeds the orders Export JSON —
+ *  a read, never a new write path; the log stays single-sourced here). */
+export function allDecisions(): DecisionRecord[] {
+  return read().decisions;
+}
+
 // ---- Customization -----------------------------------------------------------------------------
 
 export function getCustomization(): CustomizationState {

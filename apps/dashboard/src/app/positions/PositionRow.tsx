@@ -48,6 +48,9 @@ export interface RowContext {
   streamOffline: boolean;
   onClose: (id: string) => void;
   onCancel: (id: string) => void;
+  /** ai-rec-backtest-orders (AC-31): open the originating sim order's detail (positions created by
+   *  an order fill carry `origin_order_id`). Optional — absent hosts render no backlink. */
+  onViewOrder?: (orderId: string) => void;
 }
 
 function statusChipColor(status: string): 'default' | 'info' {
@@ -274,6 +277,21 @@ export function PositionRow({
         )}
         {p.status === 'pending' && <PendingAffordance ctx={ctx} />}
         {isTerminal && <ClosedSummary row={row} />}
+        {/* ai-rec-backtest-orders (AC-31): the position→order backlink — provenance line for a
+            position an order fill created (`origin_order_id`). Static (never dims). */}
+        {p.origin_order_id && ctx.onViewOrder && (
+          <Box
+            component="button" type="button" data-testid="position-view-order"
+            onClick={() => ctx.onViewOrder?.(p.origin_order_id as string)}
+            sx={{
+              display: 'block', mt: 0.5, background: 'none', border: 'none', p: 0, font: 'inherit',
+              fontSize: '0.72rem', color: 'text.secondary', cursor: 'pointer',
+              '& > span': { color: 'primary.main' },
+            }}
+          >
+            From sim order · <Box component="span">view order →</Box>
+          </Box>
+        )}
       </Box>
     </Box>
   );

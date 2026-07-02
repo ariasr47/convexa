@@ -12,9 +12,9 @@
  * on an SSE drop via PositionsView/PositionRow while static records persist (`[live-vs-static-isolation]`);
  * positions never feed scoring (`[additive-keeps-score-byte-identical]`).
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import type { TickerBundle } from '@org/api';
+import type { TickerBundle, LiveUpdate } from '@org/api';
 import { usePortfolio, OpenPositionInput } from './usePortfolio';
 import { deriveGroups } from './derive';
 import type { DerivedRow } from './derive';
@@ -25,6 +25,7 @@ import { TradeEntryDialog, EntryPrefill } from '../trading/TradeEntryDialog';
 import type { RowContext } from './PositionRow';
 import { SignInPrompt } from '../auth/SignInPrompt';
 import { AUTH_COPY } from '../auth/copy';
+import { OrdersPanel } from '../orders/OrdersPanel';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
@@ -41,6 +42,11 @@ function isHistoryFilter(status: PositionStatus[]): boolean {
 interface Props {
   pf: Portfolio;
   data: TickerBundle | null;
+  /** ai-rec-backtest-orders: the page's live payload + liveness — feeds the Orders panel's
+   *  §4.3 evaluation-reality states. Optional so existing hosts/specs stay valid (absent ⇒ every
+   *  order row reads not-evaluated, the honest default). */
+  live?: LiveUpdate | null;
+  isLive?: boolean;
   streamOffline: boolean;
   ticker: string;
   /** The in-context sign-in prompt surface (UX only; the server is the boundary of record). */
@@ -57,10 +63,13 @@ interface Props {
 }
 
 export function PositionsPanel({
-  pf, data, streamOffline, ticker, gate, onRequestOpenEntry, guardSaveView, onConfirm,
-  entryPrefill, entryOpen, onEntryOpen,
+  pf, data, live = null, isLive = false, streamOffline, ticker, gate, onRequestOpenEntry,
+  guardSaveView, onConfirm, entryPrefill, entryOpen, onEntryOpen,
 }: Props) {
   const m = data?.market_state;
+  // Position-side backlink (AC-31): "From sim order · view order →" opens the order detail in the
+  // Orders panel above.
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
   // Build a markRes for a row by re-running the existing engine off the row's tracked stats.
   const markResFor = (row: DerivedRow): RowContext['markRes'] => {
@@ -86,6 +95,16 @@ export function PositionsPanel({
         text={gate.promptText}
         onSignIn={() => gate.signIn(gate.promptText ?? AUTH_COPY.positions.gateTrack)}
         testid="positions-signin-prompt"
+      />
+
+      {/* Simulated orders — the management home (UX §4.5), ABOVE the positions view, inside the
+          Simulated tab only (the Live tab stays the locked placeholder). All tickers; rows for
+          tickers other than this page's focused/streamed one read not-evaluated (D5 — correct). */}
+      <OrdersPanel
+        coverage={{ ticker, mid: live?.mid ?? null, isLive, streamOffline }}
+        openDetailOrderId={viewOrderId}
+        onDetailClose={() => setViewOrderId(null)}
+        onViewPosition={() => setViewOrderId(null)}
       />
 
       <CustomizationToolbar
@@ -121,6 +140,7 @@ export function PositionsPanel({
         onClearFilter={() => pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })}
         onClose={pf.closePosition}
         onCancel={pf.cancelLimit}
+        onViewOrder={setViewOrderId}
       />
 
       {/* The SHARED sim-entry dialog (`trading/TradeEntryDialog`, also the Ticker page's). Positions

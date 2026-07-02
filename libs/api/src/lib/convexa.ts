@@ -622,7 +622,17 @@ export interface RecRequest {
   dte_max: number | null;
   dark_pool: boolean;              // whether off-exchange context is included (mirrors the page)
   override: boolean;               // true ⇒ "Ask anyway" on a no_fresh_edge gate
+  // ai-rec-backtest-orders (INTERFACE §1.1, additive): the OPTIONAL request-scoped scenario
+  // selector. Absent/null ⇒ the shipped real path byte-for-byte (AC-45). Only ever non-null when
+  // the operator picked a scenario from a server-advertised catalog (RecStatus.scenarios).
+  scenario_id?: string | null;
 }
+
+/** ai-rec-backtest-orders (INTERFACE §1.3/§2): one catalog entry / the provenance identity of a
+ *  scripted scenario. `id` = the stable selector token the POST echoes back as `scenario_id`;
+ *  `name` = the human-readable display name, rendered verbatim (single-sourced from the server
+ *  registry, AC-36). */
+export interface RecScenarioInfo { id: string; name: string; }
 
 /** The risk-first strategy artifact. `decision: 'no_trade'` ⇒ trade fields null/empty + rationale. */
 export interface RecStrategy {
@@ -665,6 +675,10 @@ export interface RecResponse {
   key_source?: KeySource;               // own_key → state d chip; shared_admin → state b chip; none → no chip
   remaining_free_uses?: number | null;  // ADMIN shared-key path only (post-decrement); absent for regular/own-key
   free_uses_total?: number | null;      // the per-admin allowance (default 3); present when remaining_free_uses is
+  // ai-rec-backtest-orders (INTERFACE §1.3, additive): scenario provenance. NON-NULL on EVERY
+  // scenario-driven response (produced, scenario no_trade, AND fault scenarios); null/absent on
+  // every real read. The FE keys the "SCRIPTED SCENARIO" marking off this field ONLY (D8-4).
+  scenario?: RecScenarioInfo | null;
 }
 
 /** The structured export that feeds BOTH the in-app call and the manual hand-off (INTERFACE §1.2).
@@ -688,6 +702,11 @@ export interface RecStatus {
   // count before requesting. The read does NOT pre-commit a free use. Absent for regular users.
   remaining_free_uses?: number | null;
   free_uses_total?: number | null;
+  // ai-rec-backtest-orders (INTERFACE §2): the scenario advertisement. The wire ALWAYS carries it
+  // after this feature (flag OFF ⇒ `{enabled:false, catalog:[]}` — the catalog is never enumerable
+  // while disabled, D1/AC-34). Typed OPTIONAL here only as FE resilience against an older backend:
+  // an absent field degrades exactly like `enabled:false` (no picker rendered) — never a throw.
+  scenarios?: { enabled: boolean; catalog: RecScenarioInfo[] };
 }
 
 /** byo-ai-key: the masked-hint read returned by all three credential endpoints (INTERFACE §1). It

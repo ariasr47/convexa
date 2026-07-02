@@ -1068,6 +1068,10 @@ class RecRequest(BaseModel):
     dte_max: int | None = None
     dark_pool: bool = True
     override: bool = False
+    # ai-rec-backtest-orders (INTERFACE §1.1): OPTIONAL scripted-scenario selector; absent == null
+    # ⇒ the shipped real path byte-for-byte (AC-45). Non-null ⇒ the keyless, meter-bypassing
+    # scenario branch gated by AI_REC_SCENARIOS_ENABLED (default OFF ⇒ contained refusal).
+    scenario_id: str | None = None
 
 
 def _latest_cache_entry_for(ticker: str, dte_min: int | None, dte_max: int | None,
@@ -1133,6 +1137,12 @@ async def post_recommendation(
     AC-E4). A failing auth subsystem surfaces 503 `auth_unavailable` (AC-J1 gated side). With a valid
     session it proceeds into the EXISTING ai-rec gating UNCHANGED (AC-E5). The non-LLM export floor
     (`GET /api/recommendation/export/{ticker}`) stays anonymous-usable (AC-E6).
+
+    ai-rec-backtest-orders: the OPTIONAL `scenario_id` selector routes (auth-gated, readiness-gated)
+    requests to the deterministic, keyless scripted-scenario branch — flag-gated by
+    `AI_REC_SCENARIOS_ENABLED` (default OFF ⇒ contained `scenario_unavailable` refusal), never a
+    paid LLM call, never a 5xx, meter untouched. Absent/null ⇒ this endpoint is byte-for-byte the
+    shipped behavior.
     """
     gate = _gate_or_response(request)
     if gate is not None:
@@ -1140,16 +1150,26 @@ async def post_recommendation(
     # Past the outermost auth gate ⇒ a valid session. Resolve it again (cheap, in-memory) to build
     # the per-request resolved-key VO (byo-ai-key §1): own → shared-admin-if-configured → none.
     resolved, _ok = _resolve_auth(request)
-    resolved_key = _resolve_ai_key(resolved)
+    if body.scenario_id is not None:
+        # ai-rec-backtest-orders (BACKEND §2.1): a scenario-selecting request is KEYLESS — key
+        # resolution is SKIPPED entirely (no stored-key read/decrypt, no admin-allowance read),
+        # under flag ON *and* OFF (the flag-off refusal also does no key resolution — AC-35/37).
+        # The VO carries only the metering identity so the leaf's gate/cap response snapshots
+        # report the real, untouched per-identity values.
+        resolved_key = ai_rec.ResolvedKey(
+            key_source="none", metering_identity=resolved.user.id)
+    else:
+        resolved_key = _resolve_ai_key(resolved)
     t = ticker.upper()
     bundle = await _served_bundle_for_rec(t, body.dte_min, body.dte_max, body.dark_pool)
     # The LLM call is blocking + multi-second; run it OFF the event loop so it can never stall the
-    # cached bundle or the SSE stream. The proxy owns its own bounded timeout.
+    # cached bundle or the SSE stream. The proxy owns its own bounded timeout. (A scenario branch
+    # is instant + keyless, but riding the same worker keeps ONE code path.)
     return await asyncio.to_thread(
         ai_rec.generate_recommendation, t, bundle,
         persona_id=body.persona_id, dte_min=body.dte_min, dte_max=body.dte_max,
         override=body.override, snapshot_fingerprint=body.snapshot_fingerprint,
-        resolved=resolved_key)
+        resolved=resolved_key, scenario_id=body.scenario_id)
 
 
 @app.post("/api/positions/sim-trade/gate")
@@ -1207,6 +1227,10 @@ async def get_recommendation_status(
     reports the daily cap, in-app availability, and — for an authenticated admin on a shared-key
     path — the additive `remaining_free_uses`/`free_uses_total` so the panel can pre-render the
     admin's count (byo-ai-key §2.2). Stays anonymous-readable (the auth gate is only on the POST).
+
+    ai-rec-backtest-orders: also carries the ALWAYS-present `scenarios` advertisement
+    (`{enabled, catalog[]}` — empty catalog while `AI_REC_SCENARIOS_ENABLED` is off; the picker's
+    single source when on). Still side-effect-free.
     """
     t = ticker.upper()
     bundle = await _served_bundle_for_rec(t, min_dte, max_dte, dark_pool)  # 404 if no chain

@@ -119,3 +119,14 @@ human-readable truth; the JSON is its runnable projection.
 **HARD negative invariants both lanes enforce:** a scenario-selecting request NEVER
 falls through to a paid LLM call and NEVER 5xxs; no reason string ever carries key/secret/
 internal text; no response anywhere carries order data (orders never ride the wire).
+
+---
+
+## Amendment note (GATE Z — flagged by the FE executioner, ACCEPTED by the conductor 2026-07-02)
+
+The TS client (`libs/api`) types `RecStatus.scenarios` as **optional** even though §2 specifies it
+ALWAYS present on the wire. This is deliberate client-side resilience, not a wire change: the
+BACKEND obligation (always emit `scenarios`) is unchanged and machine-checked by the conformance
+spec; the FE merely degrades an absent field exactly like `{enabled:false}` (no picker, no throw)
+instead of trusting the promise at the type level. Observable behavior matches this contract in
+both directions. No lane action required.

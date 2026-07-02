@@ -35,7 +35,11 @@ export interface GhostTrade {
 export type DecisionEvent =
   | 'open' | 'close' | 'accept' | 'reject' | 'alert' | 'roll'
   // Positions-portfolio additions (UX_BLUEPRINT §2.3) — the resting-limit lifecycle events.
-  | 'limit_placed' | 'limit_filled' | 'limit_cancelled';
+  | 'limit_placed' | 'limit_filled' | 'limit_cancelled'
+  // ai-rec-backtest-orders additions (arch §2 audit spine): the sim-order lifecycle events,
+  // appended to the SAME append-only log with `trade_id` = the ORDER id. The fill ALSO emits the
+  // existing position `open` event (trade_id = position id) so both histories are complete (AC-32).
+  | 'order_placed' | 'order_triggered' | 'order_filled' | 'order_cancelled' | 'order_expired';
 
 /** Append-only, versioned, exportable (for a future back-test of AI-assisted edge). */
 export interface DecisionRecord {
@@ -54,6 +58,9 @@ export interface DecisionRecord {
   tier: string;
   position_fingerprint: string;
   schema_version: number;
+  // ai-rec-backtest-orders (additive, optional): on an `order_filled` record, the id of the
+  // Position the fill created — the order→position join in the exported audit chain (AC-31/33).
+  position_id?: string;
 }
 
 /** Edge-detected reassessment alert (FE-owned; fires once per distinct event). */

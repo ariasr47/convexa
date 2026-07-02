@@ -26,8 +26,10 @@ export type PositionStatus = 'open' | 'pending' | 'closed' | 'cancelled';
 /**
  * The entry-basis label (BESIDE the running `MarkBasis`). A manual entry is `user_entered`; a market
  * entry reuses `snapshot`/`theoretical`; a limit fill is `limit_fill`. UX_BLUEPRINT §3.
+ * ai-rec-backtest-orders adds `trigger_fill`: a sim-order market-on-trigger fill at the first
+ * live-resolvable option mark after the trigger crossed (additive literal, arch §2).
  */
-export type EntryBasis = MarkBasis | 'user_entered' | 'limit_fill';
+export type EntryBasis = MarkBasis | 'user_entered' | 'limit_fill' | 'trigger_fill';
 
 export type PositionId = string;
 
@@ -60,6 +62,10 @@ export interface Position {
   realized_pl_pct?: number;
   close_time?: string;
   schema_version: number;
+  // ai-rec-backtest-orders (additive optional, NO version bump — the `entry_mode` discipline):
+  // the SimOrder whose fill created this position (the position→order backlink, AC-31). Full
+  // provenance stays on the order, single-sourced, reachable via this join.
+  origin_order_id?: string;
 }
 
 /** Derived strategy axis (Q-C). Single-leg long only ⇒ trivially derived from `right`. */

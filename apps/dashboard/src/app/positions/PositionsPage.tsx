@@ -26,6 +26,8 @@ import { getTicker, streamTicker, TickerBundle, LiveUpdate } from '@org/api';
 import { usePortfolio } from './usePortfolio';
 import { PortfolioPanel } from './PortfolioPanel';
 import { allPositions } from './store';
+import { useOrderEngine } from '../orders/useOrderEngine';
+import { subscribeOrders } from '../orders/store';
 import { typographyTokens } from '../tokens';
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
@@ -96,6 +98,15 @@ export function PositionsPage() {
 
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const [entryOpen, setEntryOpen] = useState(false);
+
+  // ai-rec-backtest-orders: the order engine rides THIS page's focused-ticker stream (arch §5 —
+  // orders for other tickers simply render not-evaluated, D5). A fill writes a Position into the
+  // shared durable store, so re-read the portfolio whenever the orders store mutates.
+  useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
+  useEffect(() => {
+    const unsubscribe = subscribeOrders(() => pf.refreshPositions());
+    return () => { unsubscribe(); };
+  }, [pf.refreshPositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Net P/L (open): the sum of the OPEN positions' $ P/L — reusing the SAME derived P/L the rows show
   // (`pf.rows[*].metrics.plDollar`), NOT a new compute path. A row whose live P/L is unavailable this

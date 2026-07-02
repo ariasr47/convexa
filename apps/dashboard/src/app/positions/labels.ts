@@ -25,6 +25,11 @@ export const ENTRY_BASIS_META: Partial<Record<EntryBasis, { label: string; tip: 
     label: 'filled at limit',
     tip: 'Filled at your limit price when the live option mark reached it. The sim never fills better than your limit, and never off a frozen/offline mark.',
   },
+  // ai-rec-backtest-orders (UX_BLUEPRINT §5) — a sim-order market-on-trigger fill.
+  trigger_fill: {
+    label: 'trigger fill',
+    tip: 'Filled at the first live option mark after the trigger crossed — recorded at fill time, never backfilled.',
+  },
 };
 
 // ---- Tooltips / glossary (UX_BLUEPRINT §4) -----------------------------------------------------

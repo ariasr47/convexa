@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { Widget } from '../ticker/widgets/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import type { PersonaDefinition, RecResponse, RecStrategy, TickerBundle } from '@org/api';
+import type { PersonaDefinition, RecResponse, RecScenarioInfo, RecStrategy, TickerBundle } from '@org/api';
 import { fetchPersonas } from '@org/api';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 import {
@@ -24,6 +24,10 @@ import {
   staleBornStrip, friendlyResetTime, retryInCooldown, retryWhenReset,
   BYO_KEY, adminExhaustedTitle, freeUsesChip, OWN_KEY_CHIP, FREE_USES_TOTAL_FALLBACK,
 } from './copy';
+import {
+  ACT_LABEL, ACT_TOOLTIP, SCRIPTED_CHIP, scriptedStrip, SCENARIO_LABEL, SCENARIO_NONE,
+  SCENARIO_CAPTION, RUN_SCENARIO,
+} from '../orders/copy';
 import { useGate } from '../auth/useGate';
 import { AUTH_COPY } from '../auth/copy';
 import { typographyTokens } from '../tokens';
@@ -65,6 +69,9 @@ interface Props {
   activePersonaId: string;           // 'default' | preset/custom id
   dataAge: string | null;            // humanized bundle age, for the stale-born strip
   onAccept: (rec: RecResponse, personaName: string) => void;
+  /** ai-rec-backtest-orders: "Act as sim order" (UX §2). Optional so non-order hosts/tests stay
+   *  unchanged; the affordance is ABSENT (never disabled) when omitted. */
+  onAct?: (rec: RecResponse, personaName: string) => void;
   onViewExport: (personaId: string | null) => void;
   readPersonaId: string;
   onChangeReadPersona: (id: string) => void;
@@ -74,7 +81,7 @@ interface Props {
 }
 
 export function AiRecPanel({
-  ticker, bundle, ai, personas, activePersonaId, dataAge, onAccept, onViewExport,
+  ticker, bundle, ai, personas, activePersonaId, dataAge, onAccept, onAct, onViewExport,
   readPersonaId, onChangeReadPersona, fillHeight, revealIndex,
 }: Props) {
   const { rec, loading, stale, inAppEnabled, cap, effectiveGateState, cooldownRemaining, gate } = ai;
@@ -95,12 +102,23 @@ export function AiRecPanel({
   const readName = personas.find((p) => p.id === readPersonaId)?.name ?? activeName;
   const readPersonaIdForRequest = readPersonaId === 'default' ? null : readPersonaId;
 
+  // ai-rec-backtest-orders (UX §6): the operator's scenario selection. '' = real read. Rendered
+  // ONLY when the wire advertises `scenarios.enabled` (AC-34) and only signed-in (AC-42 — the
+  // signed-out gate replaces the whole action surface).
+  const [scenarioId, setScenarioId] = useState('');
+  const scenariosEnabled = ai.scenarios?.enabled === true;
+  const scenarioSelected = scenariosEnabled && scenarioId !== '';
+
   // Guard the LLM invoke: logged-out ⇒ prompt + no invoke; a server 403 (stale cookie) ⇒ same prompt
   // and nothing produced (AC-E7). Auth FIRST, then ai-rec's existing gating runs inside `ai.request`.
+  // A selected scenario rides the SAME request (auth stays outermost, AC-42).
   const doRequest = (o: RecRequestOpts = {}) =>
     void authGate.guard(
       AUTH_COPY.askAi.gate,
-      () => ai.request({ ...o, personaId: readPersonaIdForRequest, personaName: readName }),
+      () => ai.request({
+        ...o, personaId: readPersonaIdForRequest, personaName: readName,
+        scenarioId: scenarioSelected ? scenarioId : null,
+      }),
     );
 
   // The byo-ai-key key-resolution state (layer 3, UX_BLUEPRINT §2/§3). Read OFF the status fields,
@@ -165,6 +183,35 @@ export function AiRecPanel({
             </Typography>
           </Box>
         )}
+        {/* Scenario picker (operator-only, flag-gated OFF — D1/AC-34). Rendered ONLY when the
+            status read advertises it; ZERO scenario surface otherwise. Signed-out ⇒ the gate
+            replaces this whole region (AC-42). */}
+        {signedIn && scenariosEnabled && (
+          <Box sx={{ mb: 1.5 }} data-testid="scenario-picker">
+            <Typography
+              component="label" htmlFor="scenario-select" variant="caption"
+              sx={{ display: 'block', color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10, fontWeight: 500, mb: 0.5 }}
+            >
+              {SCENARIO_LABEL}
+            </Typography>
+            <FormControl size="small" fullWidth>
+              <Select
+                id="scenario-select" value={scenarioId} displayEmpty
+                inputProps={{ 'aria-label': SCENARIO_LABEL }}
+                onChange={(e) => setScenarioId(String(e.target.value))}
+              >
+                <MenuItem value="">{SCENARIO_NONE}</MenuItem>
+                {(ai.scenarios?.catalog ?? []).map((s: RecScenarioInfo) => (
+                  // Server-provided display name rendered verbatim, registry order (AC-36).
+                  <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+              {SCENARIO_CAPTION}
+            </Typography>
+          </Box>
+        )}
 
         {/* Body */}
         {phase === 'loading' && <LoadingBlock ticker={ticker} readName={readName} />}
@@ -176,7 +223,10 @@ export function AiRecPanel({
         )}
 
         {phase === 'unavailable' && (
-          <UnavailableBlock cap={cap} cooldownRemaining={cooldownRemaining} onRetry={ai.retry} />
+          <UnavailableBlock
+            cap={cap} cooldownRemaining={cooldownRemaining} onRetry={ai.retry}
+            scenario={rec?.scenario ?? null}
+          />
         )}
 
         {hasRec && rec && (
@@ -185,6 +235,9 @@ export function AiRecPanel({
             onAccept={() => authGate.guard(
               AUTH_COPY.positions.gateAcceptRec, () => onAccept(rec, rec.persona.name),
             )} onDismiss={ai.dismiss}
+            // Act as sim order (UX §2.1): produced TRADE rec only — real or scenario; ABSENT
+            // (never merely disabled) on every degraded/gated/signed-out state (AC-1/2/3).
+            onAct={onAct && signedIn ? () => onAct(rec, rec.persona.name) : undefined}
             onViewExport={() => onViewExport(readPersonaIdForRequest)}
             onFresh={() => doRequest({ override: false })}
             freshDisabled={!inAppEnabled || cap.over_limit || cooldownRemaining > 0}
@@ -208,6 +261,7 @@ export function AiRecPanel({
                 inAppEnabled={inAppEnabled} cap={cap} effectiveGateState={effectiveGateState}
                 cooldownRemaining={cooldownRemaining} reasons={gate.reasons}
                 compact={hasRec} ticker={ticker}
+                scenarioSelected={scenarioSelected}
                 onGet={() => doRequest({ override: false })}
                 onAskAnyway={() => doRequest({ override: true })}
               />
@@ -274,7 +328,8 @@ function SignedOutGate({ hasRec, promptText, onSignIn }: {
 
 // ---- The gated action control ----------------------------------------------------------------
 function ActionRegion({
-  inAppEnabled, cap, effectiveGateState, cooldownRemaining, reasons, compact, ticker, onGet, onAskAnyway,
+  inAppEnabled, cap, effectiveGateState, cooldownRemaining, reasons, compact, ticker,
+  scenarioSelected = false, onGet, onAskAnyway,
 }: {
   inAppEnabled: boolean;
   cap: { over_limit: boolean; resets_at: string };
@@ -283,13 +338,20 @@ function ActionRegion({
   reasons: string[];
   compact: boolean;
   ticker: string;
+  /** ai-rec-backtest-orders: a selected scenario is keyless/cost-free — cooldown/cap disabled
+   *  states do NOT block it (AC-38); the readiness gate + override stay exactly real (AC-43). */
+  scenarioSelected?: boolean;
   onGet: () => void;
   onAskAnyway: () => void;
 }) {
   const box = { mt: compact ? 2 : 1 };
+  // With a scenario selected, the primary action reads "Run scenario" (UX §6).
+  const primaryLabel = scenarioSelected ? RUN_SCENARIO : COPY.action.get;
 
   // key_not_configured (AC12) — inert in-app, manual floor preserved (the header export stays).
-  if (!inAppEnabled) {
+  // A selected scenario is NOT blocked by a keyless deployment: scenario runs are keyless by
+  // design (the server skips key resolution entirely) — mirrors the cap/cooldown bypass below.
+  if (!inAppEnabled && !scenarioSelected) {
     return (
       <Box sx={box}>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
@@ -301,8 +363,9 @@ function ActionRegion({
     );
   }
 
-  // daily_cap_reached (AC10) — calm blocked state, NOT an error; export floor stays.
-  if (cap.over_limit) {
+  // daily_cap_reached (AC10) — calm blocked state, NOT an error; export floor stays. A scenario
+  // run is neither blocked by nor consumes the cap (AC-38) — the action stays enabled.
+  if (cap.over_limit && !scenarioSelected) {
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>{capTitle(friendlyResetTime(cap.resets_at))}</Button>
@@ -311,8 +374,9 @@ function ActionRegion({
     );
   }
 
-  // cooling_down (AC9) — disabled with a visible countdown; re-enables at 0.
-  if (cooldownRemaining > 0) {
+  // cooling_down (AC9) — disabled with a visible countdown; re-enables at 0. A scenario run is
+  // not blocked by the cooldown (AC-38).
+  if (cooldownRemaining > 0 && !scenarioSelected) {
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>{cooldownLabel(cooldownRemaining)}</Button>
@@ -322,7 +386,7 @@ function ActionRegion({
   }
 
   // no_fresh_edge (AC8) — the guardrails' stance is no_trade; de-emphasized + explicit one-tap
-  // override. Matches the Figma (149:598): mono verdict label · bold headline · Ask anyway · caption.
+  // override. The real readiness gate behaves IDENTICALLY with a scenario selected (AC-43).
   if (effectiveGateState === 'no_fresh_edge') {
     return (
       <Box sx={box}>
@@ -338,19 +402,23 @@ function ActionRegion({
     );
   }
 
-  // idle — Available (AC1 entry point).
+  // idle — Available (AC1 entry point). "Run scenario" when a scenario is selected.
   return (
     <Box sx={box}>
       <Tooltip arrow describeChild title={COPY.tooltip.get.replace('{TICKER}', ticker)}>
-        <Button variant="contained" size="small" onClick={onGet}>{COPY.action.get}</Button>
+        <Button variant="contained" size="small" onClick={onGet}>{primaryLabel}</Button>
       </Tooltip>
     </Box>
   );
 }
 
 // ---- Unavailable (AC11) ----------------------------------------------------------------------
-function UnavailableBlock({ cap, cooldownRemaining, onRetry }: {
+function UnavailableBlock({ cap, cooldownRemaining, onRetry, scenario = null }: {
   cap: { over_limit: boolean; resets_at: string }; cooldownRemaining: number; onRetry: () => void;
+  /** Non-null when a FAULT SCENARIO produced this degraded state — the scripted marking still
+   *  shows so the operator knows it was scripted (UX §6, AC-40). The block itself is the standard
+   *  unavailable handling — no special copy (AC-35). */
+  scenario?: RecScenarioInfo | null;
 }) {
   // Retry respects cooldown + cap (E6): if a retry would land in cooldown/over-cap, disable it.
   const blockedByCooldown = cooldownRemaining > 0;
@@ -368,6 +436,10 @@ function UnavailableBlock({ cap, cooldownRemaining, onRetry }: {
       }>
       <Typography variant="subtitle2">{COPY.unavailable.title}</Typography>
       <Typography variant="body2">{COPY.unavailable.body}</Typography>
+      {scenario && (
+        <Chip size="small" color="warning" variant="outlined" label={SCRIPTED_CHIP}
+          data-testid="ai-rec-scripted-chip" sx={{ mt: 0.5 }} />
+      )}
     </Alert>
   );
 }
@@ -412,6 +484,12 @@ function Provenance({ rec }: { rec: RecResponse }) {
   const freeUsesTotal = rec.free_uses_total ?? FREE_USES_TOTAL_FALLBACK;
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5, mb: 1 }}>
+      {/* SCRIPTED SCENARIO marking (D8-4) — keyed OFF rec.scenario ONLY (INTERFACE §1.3). */}
+      {rec.scenario && (
+        <Tooltip arrow title={scriptedStrip(rec.scenario.name)}>
+          <Chip size="small" color="warning" variant="outlined" label={SCRIPTED_CHIP} data-testid="ai-rec-scripted-chip" />
+        </Tooltip>
+      )}
       <Tooltip arrow title={COPY.tooltip.persona.replace('{name}', rec.persona.name)}>
         <Chip size="small" variant="outlined" label={personaChip(rec.persona.name)} />
       </Tooltip>
@@ -595,11 +673,11 @@ export function ReasoningSection({ strategy, suppressLead = false, reengageLabel
 
 // ---- The rendered rec (produced + no_trade) --------------------------------------------------
 function RecResult({
-  rec, stale, dataAge, bundle, onAccept, onDismiss, onViewExport, onFresh, freshDisabled,
+  rec, stale, dataAge, bundle, onAccept, onAct, onDismiss, onViewExport, onFresh, freshDisabled,
 }: {
   rec: RecResponse; stale: boolean; dataAge: string | null; bundle: TickerBundle | null;
-  onAccept: () => void; onDismiss: () => void; onViewExport: () => void; onFresh: () => void;
-  freshDisabled: boolean;
+  onAccept: () => void; onAct?: () => void; onDismiss: () => void; onViewExport: () => void;
+  onFresh: () => void; freshDisabled: boolean;
 }) {
   const s = rec.strategy as RecStrategy;
   const isNoTrade = s.decision === 'no_trade';
@@ -609,6 +687,14 @@ function RecResult({
 
   return (
     <Box>
+      {/* Scripted-scenario strip (D8-4) — every scenario-produced rec is marked, never mistakable
+          for a real AI read. Warning-tinted, never red. */}
+      {rec.scenario && (
+        <Alert severity="warning" sx={{ mb: 1, py: 0 }} data-testid="ai-rec-scripted-strip">
+          {scriptedStrip(rec.scenario.name)}
+        </Alert>
+      )}
+
       {/* Stale-born (E5) — generated off an already-stale bundle; warned AT BIRTH. */}
       {rec.stale_born && (
         <Alert severity="warning" sx={{ mb: 1, py: 0 }}>{staleBornStrip(dataAge ?? 'older data')}</Alert>
@@ -716,10 +802,20 @@ function RecResult({
 
       <Divider sx={{ my: 1.5 }} />
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
-        {/* Accept is ABSENT on a no_trade rec (AC5) — never just disabled. */}
+        {/* Accept is ABSENT on a no_trade rec (AC5) — never just disabled. Accept stays FIRST and
+            byte-identical with Act beside it (orders AC-1/47). */}
         {!isNoTrade && (
           <Tooltip arrow describeChild title={COPY.tooltip.advisory}>
             <Button variant="contained" size="small" onClick={onAccept}>{COPY.action.accept}</Button>
+          </Tooltip>
+        )}
+        {/* Act as sim order (UX §2.1): produced TRADE rec ONLY (real or scenario); ABSENT on
+            no_trade and every degraded/gated state — the host omits the handler there. */}
+        {!isNoTrade && onAct && (
+          <Tooltip arrow describeChild title={ACT_TOOLTIP}>
+            <Button variant="outlined" size="small" onClick={onAct} data-testid="ai-rec-act">
+              {ACT_LABEL}
+            </Button>
           </Tooltip>
         )}
         <Button size="small" onClick={onViewExport}>{COPY.action.viewExport}</Button>
