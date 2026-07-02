@@ -31,6 +31,8 @@
 | `server-side-gate-enforcement` | an access gate on a state/cost-bearing action is enforced **server-side** (the server is the boundary of record), never FE-only; the FE check is for UX, not enforcement — a bypassed client check must still be rejected by the server | CONTEXT §5 · THREADS §9 | 2026-06-29 | user-accounts (AC-E7 catch), byo-ai-key (2 binding) |
 | `secret-encrypted-at-rest` | a stored recoverable secret (a user/third-party API key, broker token, etc.) is **ENCRYPTED at rest** (symmetric, server-side key — NOT hashed), and **never logged / returned in a response / sent to the browser**; write-only from the client (masked hint only) + rotate/delete; persisted as **ciphertext only** (the crypto boundary sits before the store); a decrypt-fail is treated as no-usable-secret, never a leak | CONTEXT §5 · THREADS §9 | 2026-06-29 | byo-ai-key, persistent-db (2 binding) |
 | `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
+| `single-shared-sim-entry-dialog` | every sim-entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/trading/TradeEntryDialog`; a new entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof | CONTEXT §5 · THREADS §9 | 2026-07-02 | sim-entry-unification, ai-rec-backtest-orders (2 binding) |
+| `theme-token-discipline` | a new or re-skinned FE component binds to the MUI theme / `tokens.ts` — mode-aware values via `extrasFor(theme)` inside sx callbacks — **never hardcoded hex**; dark/light parity verified | CONTEXT §5 · THREADS §9 | 2026-07-02 | convexa-redesign, ticker-ux-polish, light-mode-parity + sim-entry-unification, ai-rec-backtest-orders (4 programs) |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -52,6 +54,13 @@
 | `ai-external-no-llm` | 2026-06-23 | `ai-recommendations` · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM." | **NARROWED, not erased.** New rule: GammaFlow MAY call an LLM **only** as a best-effort, isolated, gated, **advisory consumer** of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning rows (trade-tracker-sim, trader-personas — "no LLM call") retained as provenance: they still comply (they made no call). |
 
 ## Watch list (keys logged, not yet at threshold)
+- _(`single-shared-sim-entry-dialog` GRADUATED 2026-07-02 — 2 binding (sim-entry-unification created
+  the single dialog + deleted the forks; ai-rec-backtest-orders honored it via the additive order
+  variant, contract-mandated "do not fork"). Now in Promoted canon above.)_
+- _(`theme-token-discipline` GRADUATED 2026-07-02 — held across convexa-redesign (logged), the
+  ticker-ux-polish program ("held again"), light-mode-parity/sim-entry-unification (the `extrasFor`
+  mechanism itself), and ai-rec-backtest-orders (token-only orders module). ≥3 shipped features →
+  Promoted canon above.)_
 - **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
   store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
   never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
@@ -122,8 +131,37 @@
 | `no-secrets-in-image` | persistent-db | S | `DATABASE_URL` / DB credentials injected at RUNTIME via env, never committed/baked; `.dockerignore` already excludes `.env*` so the new config holds the image-hygiene line | yes |
 | `no-secrets-in-image` | deploy | S | the image is **pushed to a registry for real** (Railway) — every secret (`DATABASE_URL`, `API_ORIGIN`, `MASSIVE/ANTHROPIC` keys, `AI_KEY_ENCRYPTION_KEY`/`AUTH_SESSION_SIGNING_KEY`, `METRICS_SECRET_TOKEN`) lives only in Railway Variables / Pages env, never in the repo/image; the Pages Function reads `API_ORIGIN` from env (no hardcoded URL); secret-scan clean. **3rd instance → GRADUATES** | yes |
 | `additive-keeps-score-byte-identical` | deploy | S | deploy config + the 3 HIGH security guards (metrics token-gate, the fail-open public rate-limit leaf, the startup stable-key warning) change no scoring/engine/`state_fingerprint`; the limiter is a leaf outside the scoring path; in-memory conformance PASS, no regression | yes |
+| `single-shared-sim-entry-dialog` | sim-entry-unification | S | ONE shared `app/trading/TradeEntryDialog` on both pages; ghost-trade + positions dialogs AND GhostTradePanel deleted with zero-importer proof; durable stores untouched | yes |
+| `theme-token-discipline` | light-mode-parity | S | mode-aware `extras` via `extrasFor(theme)` (bare `extras.` = dark-only); ONE shared hatch; dark byte-identical; zero hardcoded hex | yes |
+| `additive-keeps-score-byte-identical` | ai-rec-backtest-orders | S | scenario machinery confined to the ai-rec leaf (`ai_scenarios` imported only by `ai_recommendation`; AST: 0 scoring modules); orders are FE-local + add no request param (AC-44 structural test); score 78 / tier prime / fp `86bcafd6bc22` byte-identical flag ON==OFF; served triple identical before/after a scenario POST | yes |
+| `best-effort-isolated-or-null` | ai-rec-backtest-orders | S | every scenario fault a contained 200 `status` (`scenario_unavailable`/`scenario_error`/`timeout`/`llm_error`), never 5xx; an orders-store fault degrades to an honest unavailable block without touching positions/bundle/SSE; per-order lookup failures + per-tick throws isolated | yes |
+| `live-vs-static-isolation` | ai-rec-backtest-orders | S | triggers evaluate ONLY the live NBBO mid (`last_trade` structurally excluded from `tickFromLive`); fills only on live-resolvable marks (never frozen/stale/last_known); no transition while offline; no retro-fill on reconnect; clock expiry the only off-stream transition; live order cells dim + last-known on an SSE drop while durable rows persist | yes |
+| `no-real-order-path` | ai-rec-backtest-orders | S | `SimOrder` = client-local paper bookkeeping behind a mandatory confirm; NO order endpoint / broker / execution path (orders never ride the wire); the Live tab stays zero-import LOCKED; scenario output is always marked SCRIPTED end-to-end (rec → order → export) | yes |
+| `server-side-gate-enforcement` | ai-rec-backtest-orders | S | order creation awaits `POST /api/positions/sim-trade/gate` BEFORE any local write (403 ⇒ abort, zero order — proven even when the FE believed it was signed in); the rec POST keeps auth outermost in scenario mode (anonymous ⇒ 403 before any scenario logic) | yes |
+| `single-shared-sim-entry-dialog` | ai-rec-backtest-orders | S | Act = an additive ORDER VARIANT (`orderPlan`/`onConfirmOrder` props) of the shared dialog — contract-mandated "do not fork"; the dialog renders byte-identically without the seam (guarded test) | yes |
+| `theme-token-discipline` | ai-rec-backtest-orders | S | the entire `orders/` module + panel additions token-only + `extrasFor(theme)`; zero new hex (lint + conductor review) | yes |
 
-> Note (GATE S, ticker-ux-polish program + c93dddc, 2026-07-01): a **catch-up GATE Q** over the three
+> Note (GATE S, owner 5-item program items 1–4: light-mode-parity + sim-entry-unification +
+> ai-rec-backtest-orders, 2026-07-02): items shipped `8abae03` / `d704193` / `5391517` (all pushed to
+> `main`); folders archived. **TWO GRADUATIONS:** `single-shared-sim-entry-dialog` (2 binding — the
+> unification created it, the order variant honored it) and `theme-token-discipline` (≥3 features
+> since watch-listed at convexa-redesign) → both promoted into CONTEXT §5 + THREADS §9.
+> The five already-canon keys each gained an ai-rec-backtest-orders instance — no other graduation.
+> ai-rec-backtest-orders: QA (GATE Q) fresh de-correlated Sonnet — **PASS 48/48** (0 FAIL, 0
+> UNVERIFIABLE; conformance new standalone spec + 5-spec no-regression sweep; AC↔test traceability
+> non-vacuous; all 5 invariants verified live + at source). GATE Z ×2 accepted (FE-flagged):
+> `provenance.scenario_name` added to arch §2; `RecStatus.scenarios` optional-typing resilience
+> noted on the interface. **One post-QA conductor render-pass catch (system-10 recurrence):** the
+> AiRecPanel `!inAppEnabled` branch lacked the `!scenarioSelected` exemption — on a keyless
+> deployment (the harness's PRIMARY environment) "Run scenario" was disabled; the mocked test
+> boundary hardcoded `in_app_enabled:true`, so a green 594-test suite hid it. Conductor inline fix
+> (mirrors the cap/cooldown bypass; precedent: the 7m stagger catch) + a harness override + named
+> test `run_scenario_not_blocked_by_no_key_availability` → 595/595; the fixed path then
+> render-proven live end-to-end (9-entry picker → real gate honored via Ask-anyway → scripted rec →
+> Act → Waiting order watching live → Positions panel → two-step cancel → History; light theme via
+> server-wins flip). **Lesson (system-10, again):** a hardcoded mock default is an untested
+> integration STATE — when a wire field gains semantics, the test harness must expose it as a
+> configurable axis, or the green suite silently vouches for one world only.
 > already-merged ticker FE branches (`ticker-microinteractions` 418315a, `ticker-widgets` 9c66d2e→75b967e,
 > `ticker-command-deck` c481c38) **plus** the post-merge external-pipeline commit `c93dddc` (ai-rec
 > structured recommendation display + gated dev demo-account seed). The consolidation QA the prior session

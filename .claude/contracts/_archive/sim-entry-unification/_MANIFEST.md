@@ -21,5 +21,7 @@ Contracts:
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
   - FRONTEND_EXECUTION_CONTRACT.md  locked — one shared sim-entry dialog + provable dead-code sweep
 Open amendments: none
-QA (GATE Q):  pending — lane build → conductor gates + render pass
+QA (GATE Q):  verified — conductor independent gates (tsc/492/lint/build) + render pass (owner-
+              approved fast-path for this refactor class; shipped d704193). Archived at the
+              program GATE S 2026-07-02 alongside ai-rec-backtest-orders.
 Last gateway:  contract authored @ 2026-07-01

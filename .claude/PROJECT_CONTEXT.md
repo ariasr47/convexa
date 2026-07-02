@@ -287,6 +287,17 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   via env** (host Variables / Pages env), values owner-entered; images run **non-root**. *(containerize-apps
   — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
   registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
+- **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow (ghost
+  trade, positions, act-on-rec/orders) launches **THE one shared `app/trading/TradeEntryDialog`**. A new
+  entry shape is an additive **variant** of it (props/modes — e.g. the fill-mode control, the order
+  variant), **never a forked second dialog**; a superseded fork is deleted with zero-importer proof.
+  *(sim-entry-unification — created it + deleted the forks; ai-rec-backtest-orders — the contract-mandated
+  order variant. 2 binding.)*
+- **`[theme-token-discipline]`** (promoted 2026-07-02, 4 programs) — a new or re-skinned FE component binds
+  to the **MUI theme / `tokens.ts`** — mode-aware values go through **`extrasFor(theme)`** inside sx
+  callbacks (bare `extras.` is dark-only) — and carries **zero hardcoded hex**; dark/light parity is part
+  of done. *(convexa-redesign — watch-listed; ticker-ux-polish — held; light-mode-parity +
+  sim-entry-unification — the `extrasFor` mechanism; ai-rec-backtest-orders — the token-only orders module.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -447,6 +458,37 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `state_fingerprint` byte-identical, conformance 11/11. **Catch-up QA PASS** (fresh de-correlated Sonnet;
   one §3 stagger regression caught + fixed → GATE Q re-run 16/16, nx test 486/486, commit `11e8ec3`). See
   OPEN_THREADS §7m.
+- **AI-rec backtest orders (`ai-rec-backtest-orders`, FE+BE, additive, shipped 2026-07-02 `5391517`)** —
+  two halves. **(a) Scripted scenario harness** behind the ai-rec `LLMProvider` seam: new
+  `src/core/ai_scenarios.py` (`ScenarioLLMProvider` + a 9-entry registry — 7 producing shapes incl.
+  conditional-entry / prose-trigger / already-met / `no_trade`, + 2 fault entries riding the REAL degraded
+  path), env **`AI_REC_SCENARIOS_ENABLED`** (default OFF — OFF ⇒ byte-identical shipped behavior +
+  `scenario_unavailable` refusal; catalog never enumerable while off). Purely-additive wire delta on the 2
+  existing rec endpoints: request `scenario_id?`, response `scenario{id,name}|null` (the ONLY scripted
+  marker), always-present `RecStatus.scenarios{enabled,catalog}`. Scenario runs are **keyless** (key
+  resolution skipped server-side, incl. on keyless deployments) and **meter-bypassing** (cooldown / daily
+  cap / admin allowance neither checked nor consumed), while **auth stays outermost** and the real
+  `ai_eval` readiness gate + override behave identically; deterministic per (scenario_id, context).
+  **(b) Simulated orders (FE-local state — NO order endpoints, orders never ride the wire):**
+  `apps/dashboard/src/app/orders/` — durable **`convexa.orders.v1`** store
+  (waiting→triggered→filled/cancelled/expired + mandatory good-til), a PURE live-cross trigger engine (v1
+  trigger = `underlying_above|below` on the live NBBO mid ONLY — `last_trade` structurally excluded; fills
+  via the shipped mark ladder accepted only live; no retro-fill; clock expiry the only off-stream
+  transition; idempotent forward-only transitions), the Orders widget (Ticker bento, after AI-rec) +
+  OrdersPanel (Positions, Open/History + local JSON export), and **"Act as sim order"** on a produced trade
+  rec via an additive ORDER VARIANT of the shared `trading/TradeEntryDialog` (server sim-trade gate before
+  any local write; SIMULATED end-to-end). Full rec→order→position provenance (fingerprint / persona /
+  scenario id+name / verbatim trigger words) + append-only decision records; a fill creates exactly ONE
+  Position (`origin_order_id` backlink, `trigger_fill` entry basis, two-way navigation). Score / tier /
+  `state_fingerprint` byte-identical (flag ON==OFF, scenario-vs-not). QA PASS (Sonnet, de-correlated —
+  48/48 ACs; conformance new standalone spec + 5-spec sweep; +103 tests → dashboard 595/595). Post-QA
+  render catch fixed inline + guarded by a named test: a scenario run is NOT blocked by
+  keyless-deployment availability. Backtest v1 = FORWARD-test (recorded-replay is a named deferred seam).
+- **Sim-entry unification (`sim-entry-unification`, FE-only refactor, shipped 2026-07-01 `d704193`)** —
+  ONE shared `app/trading/TradeEntryDialog` on both pages (Ticker + Positions); the old
+  `ghost-trade/TradeEntryDialog`, `positions/PositionEntryDialog`, and `GhostTradePanel` deleted with
+  zero-importer proof; `app/README.md` directory map added. Origin of the promoted
+  `[single-shared-sim-entry-dialog]` invariant.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

@@ -544,6 +544,33 @@ where a later refactor silently regresses.
   tracked `Position`, mandatory confirm, decision-record linkage, no_trade/absent-Accept rules) is its own
   feature. Held OUT of the structured-display change by owner.
 
+## 7n. Owner 5-item product program — items 1–4 (SHIPPED + ARCHIVED; item 5 `scanner` queued)
+Owner directive 2026-07-01 (BACKLOG "Last GATE I — 2026-07-01"). Items 1–4 shipped to `main`:
+- **1 `light-mode-parity`** (`8abae03`, GATE V, no folder): mode-aware `extras` via `extrasFor(theme)`,
+  ONE shared hatch, mode-aware ticker chrome; dark byte-identical.
+- **2+3 `sim-entry-unification`** (`d704193`, archived): ONE shared `app/trading/TradeEntryDialog` on both
+  pages; ghost-trade/positions dialogs + `GhostTradePanel` deleted (zero-importer proven); `app/README.md`
+  map. Origin of the promoted `[single-shared-sim-entry-dialog]`.
+- **4 `ai-rec-backtest-orders`** (`5391517`, archived — see CONTEXT §6 for the full shape): the scripted
+  scenario harness (`ai_scenarios.py`, `AI_REC_SCENARIOS_ENABLED` default OFF, keyless + meter-bypassing,
+  auth/readiness real) + FE-local simulated orders (`convexa.orders.v1`, pure live-cross engine, Orders
+  widget/panel, Act via the order variant of the shared dialog, rec→order→position provenance). Full
+  pipeline (architect → PM → UX split → parallel lanes → GATE Q). **QA PASS 48/48** (fresh de-correlated
+  Sonnet; conformance new spec + 5-spec sweep; AC↔test traceability). GATE Z ×2 accepted
+  (`provenance.scenario_name` into arch §2; `RecStatus.scenarios` optional-typing note). **One post-QA
+  conductor render-pass catch** (fixed inline + named test `run_scenario_not_blocked_by_no_key_availability`):
+  the keyless-deployment availability state disabled "Run scenario" — the mocked test boundary hardcoded
+  `in_app_enabled:true`, so the green suite never rendered that world (system-10 lesson, again).
+  **Subsumed** the §B "AI-rec Accept → tracked position — full build-out" item (Act ⊃ Accept-into-order).
+**Deferred seams (named, not built):** server-side/headless order evaluation + account-scoped order sync
+(client-store→server migration seam first); trigger grammar v2 (the arch §3 exclusion list: confluence,
+hold/confirm qualifiers, non-price conditions, option-price triggers, OCO/bracket, short/multi-leg);
+stop/target automation (plan data only today); recorded-state replay backtesting (BundleFeed/clock seam —
+the provider's determinism + the engine's purity were preserved FOR it); named backtest "run" entity;
+scenario-registry extension beyond the 9. **Next:** item 5 `scanner` (BRIEF at
+`.claude/contracts/scanner/BRIEF.md`; architect must re-justify the locked single-ticker decision with a
+perf design).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
@@ -597,3 +624,11 @@ where a later refactor silently regresses.
   all config/secrets injected at runtime via env (host Variables / Pages env), never committed/baked/
   hardcoded; images run non-root. (containerize-apps Dockerfiles+.dockerignore; persistent-db `DATABASE_URL`;
   deploy real Railway push + Pages Function `API_ORIGIN`.) See PROJECT_CONTEXT §5.
+- **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow launches
+  THE one shared `app/trading/TradeEntryDialog`; new entry shapes are additive variants (props/modes),
+  never a forked second dialog; dead forks deleted with zero-importer proof. (sim-entry-unification;
+  ai-rec-backtest-orders order variant.) See PROJECT_CONTEXT §5.
+- **`[theme-token-discipline]`** (promoted 2026-07-02, 4 programs) — new/re-skinned FE components bind to
+  the MUI theme / `tokens.ts` (mode-aware via `extrasFor(theme)`), zero hardcoded hex; dark/light parity
+  part of done. (convexa-redesign → ticker-ux-polish → light-mode-parity/sim-entry-unification →
+  ai-rec-backtest-orders.) See PROJECT_CONTEXT §5.

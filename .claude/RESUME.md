@@ -1,80 +1,56 @@
-# RESUME — handoff snapshot (2026-07-01, late) — Owner 5-item product program
+# RESUME — handoff snapshot (2026-07-02, early AM) — 5-item program DONE; `scanner` opens next
 
 > For a fresh Delivery Conductor (`/conductor`). Overlay on the canon — WINS on current status.
-> `main` @ `073f594`, pushed, tree clean except any lane output landing after this snapshot.
+> Written at the program GATE S (a clean phase boundary). Tree clean after the GATE S bookkeeping
+> commit; everything pushed to `main`.
 
-## The program (owner directive 2026-07-01, recorded in BACKLOG "Last GATE I — 2026-07-01")
-1. **`light-mode-parity`** — ✅ SHIPPED (`8abae03`): mode-aware `extras` via `extrasFor(theme)`
-   (tokens.ts), ONE shared `hatchBackgroundImage` (ComingSoonBox; Scanner + LiveTabPanel reuse),
-   panelRaised call sites themed (both dialogs, positions pills/group headers), mode-aware ticker
-   chrome (StatTile/CommandDeck/TickerToolbar/Widget). Dark verified byte-identical; light verified
-   on :4300 (landing/scanner/positions/ticker). 486/486, tsc/lint/build green.
-2+3. **`sim-entry-unification`** — ✅ SHIPPED (`d704193`, pushed): ONE shared
-   `app/trading/TradeEntryDialog.tsx` on both pages (7 specs migrated + 6 new incl. the two flow
-   tests); deleted ghost-trade/TradeEntryDialog + positions/PositionEntryDialog + GhostTradePanel +
-   app.module.css (zero-importer proven); `app/README.md` map added. Conductor re-ran gates
-   (tsc/492/lint/build) + render pass (same testid both pages; anonymous gate correct; light surface
-   via extrasFor). Manifest updated. Folder ready to archive at the program's GATE S.
-4. **`ai-rec-backtest-orders`** — ARCHITECTURE + PRODUCT ✅ LOCKED (committed `3eb0f8a`; lint clean).
-   Shape: client-local durable `convexa.orders.v1` SimOrder store (waiting→triggered→filled/cancelled/
-   expired, good-til, rec→order→position provenance); v1 trigger = underlying_above|below on live NBBO
-   mid ONLY; backend `ScenarioLLMProvider` (deterministic, keyless, default-OFF env flag). PM answered
-   all ten §12 questions (D1–D10; Orders on BOTH pages; honest "waiting for live data" coverage state);
-   48 ACs. **GATE U·X ✅ DONE** (`68fc23b`, lint clean): UX_BLUEPRINT + INTERFACE (purely additive on
-   the 2 existing ai-rec endpoints — `scenario_id?`/`scenario?`/`RecStatus.scenarios` always-present,
-   flag `AI_REC_SCENARIOS_ENABLED` default OFF, refusals `scenario_unavailable`/`scenario_error`; NO
-   order endpoints) + standalone spec `.claude/tools/conformance/ai_rec_backtest_orders.json` +
-   BACKEND (`ai_scenarios.py` + 9-scenario registry, 9 runtime proofs) + FRONTEND (`orders/` module,
-   `convexa.orders.v1`, pure live-cross engine, Act flow via an additive order variant of
-   `trading/TradeEntryDialog`, AC→named-test floor) all LOCKED.
-   **NEXT (the fresh session's first move):** dispatch BOTH executioner lanes IN PARALLEL off their
-   execution contracts (fresh `delivery-backend` + `delivery-frontend` subagents; "EXECUTE NOW — you
-   are NOT in plan mode" framing; no commits; each reports files + gate outputs) → conductor verifies
-   (nx test dashboard [baseline 492] · tsc · lint · build · backend boot + `interface_conformance.py
-   --contract .claude/contracts/ai-rec-backtest-orders/INTERFACE_CONTRACT.md --url
-   http://127.0.0.1:8000` · score/tier/fingerprint byte-identity) → GATE Q on a fresh de-correlated
-   qa-verify (different model, e.g. sonnet; AC↔test traceability over the 48 ACs) → conductor render
-   pass (both pages, both themes, flag OFF default + ON scenario picker) → commit/push → GATE S
-   (archive light-mode-parity[no folder—note only]/sim-entry-unification/ai-rec-backtest-orders;
-   ledger rows; then `scanner` opens with its BRIEF → architect).
-5. **`scanner`** — BRIEF written (`.claude/contracts/scanner/BRIEF.md`), queued after 4.
-   Architect must re-justify the locked single-ticker decision with a perf design.
+## Where we are
+The owner's 2026-07-01 five-item program is **fully shipped** (items 1–4; canon updated, folders
+archived, ledger tallied — see OPEN_THREADS §7n for the consolidated record):
+1. `light-mode-parity` — `8abae03`.
+2+3. `sim-entry-unification` — `d704193` → `_archive/sim-entry-unification/`.
+4. `ai-rec-backtest-orders` — `5391517` → `_archive/ai-rec-backtest-orders/`. QA PASS 48/48
+   (de-correlated Sonnet); conformance new standalone spec + 5-spec sweep; dashboard 595/595,
+   `@org/api` 13/13; render pass done both pages/themes, flag OFF + ON (full Act flow exercised
+   live: scenario → scripted rec → order → watching-live → cancel → history).
+**GATE S graduated TWO keys** into Promoted canon (CONTEXT §5 + THREADS §9 + ledger):
+`single-shared-sim-entry-dialog` (2 binding) and `theme-token-discipline` (4 programs).
 
-## When the sim-entry-unification lane reports (the immediate next step)
-1. Read its report (files changed/deleted + proofs + gate outputs). Bounce anything out-of-contract.
-2. Conductor gates: `npx nx test dashboard` (baseline 486; new named tests required per contract),
-   `npx tsc -p apps/dashboard/tsconfig.app.json --noEmit`, `npx nx lint dashboard`,
-   `npx nx build @org/dashboard`.
-3. **Render pass (conductor-owned, :4300 via preview_start "dashboard"; backend usually already on
-   :8000):** BOTH pages open the SAME dialog — Ticker `/ticker/TSLA` "+ Open simulated trade" AND
-   Positions `/positions` "+ Open simulated position" (needs sign-in for the gate? anonymous shows
-   SignInPrompt — verify the gate prompt appears anonymous + the dialog appears signed-in via the
-   demo account: backend env `SEED_TEST_ACCOUNT=1` seeds demo@convexa.io / convexa-test-2026);
-   check BOTH themes (localStorage `convexa.uiprefs.v1` → {"schema_version":1,"theme":"light"|"dark",
-   "default_ticker":null}); console error-free.
-4. Commit to main + push (owner-approved pattern this session), update the manifest (QA line), then
-   proceed to item 4's PM stage once the architect contract is in (PM → UX → fan-out per ORCHESTRATOR).
+## NEXT (the fresh session's first move): item 5 — `scanner`
+BRIEF at `.claude/contracts/scanner/BRIEF.md` (the only live contract folder). Entry =
+**architect-first** (spawn `delivery-architect` per ROLE_LAUNCH_PROMPTS §1 + the context pack).
+Owner's expanded scope: durable custom watchlist, simplified per-ticker read (score/tier),
+AI-seeded watchlists, multiple views, ticker-page links, batch AI recs on all/selected.
+**The architect MUST re-justify the locked "single-ticker, on-demand" decision with a perf design**
+(batch/throttle/cache — the ticker-load-experience chain-store + request-coalescing are the
+building blocks); AI batch respects the existing cooldown/cap + key resolution (scenario runs
+bypass meters but that is the HARNESS path, not batch recs). Then PM → UX split → parallel lanes →
+GATE Q (fresh de-correlated qa-verify, different model) → render pass → GATE S.
 
-## When the ai-rec-backtest-orders architect reports
-Gate-check it (`apps/api/.venv/Scripts/python.exe .claude/tools/contract_lint.py ai-rec-backtest-orders`),
-then route to PM (`ROLE_LAUNCH_PROMPTS.md` §2) — product scope on the architect's skeleton. Then UX →
-GATE U·X split → both executioner lanes → GATE Q (fresh de-correlated qa-verify, different model) → GATE S.
+## Gotchas (this session — additions to the standing ones)
+- **`main.py` runs uvicorn with reload ⇒ a multiprocessing spawn CHILD survives a parent-only kill
+  and keeps port 8000** (netstat then attributes the socket to the DEAD parent PID, invisible to
+  tasklist — looks like a ghost). Kill the tree: find the listener PID via `Get-NetTCPConnection`,
+  kill any `Win32_Process` python whose CommandLine matches `parent_pid=<pid>`, then the parent.
+- Scenario harness verification boot: env `AI_REC_SCENARIOS_ENABLED=true` + `SEED_TEST_ACCOUNT=1`
+  (demo@convexa.io / convexa-test-2026, in-memory only). Conformance for ai-rec-backtest-orders
+  runs via `--spec .claude/tools/conformance/ai_rec_backtest_orders.json` (standalone convention;
+  `--contract` exits 2 by design).
+- Test-suite baseline is now **595** (dashboard) + 13 (`@org/api`). Always `npx nx test dashboard`,
+  never direct vitest (ESM quirk). Run `tsc`/`nx build` too — Vitest doesn't typecheck.
+- **system-10 lesson (recurred):** a hardcoded mock default in a test harness (`in_app_enabled:
+  true`) is an untested integration STATE — a green suite vouches for one world only. When a wire
+  field gains semantics, expose it as a configurable harness axis + name a test per state. The
+  conductor render pass (real backend, real states) is what caught it.
+- MUI Selects don't open on preview_click's `click` — dispatch `mousedown` (and full
+  down/up/click sequences on options/buttons) via preview_eval.
+- Owner git pattern: commit to `main` + push after gates pass (no feature branches). CI/CD not
+  wired — pushes do NOT auto-deploy convexa.pages.dev.
 
-## Gotchas (this session — beyond the standing ones in the prior RESUME/threads)
-- `extras` is now mode-aware: bare `extras.` = dark-only (theme.ts only); components MUST use
-  `extrasFor(theme)` inside sx callbacks. tsc catches literal-type drift (widen with
-  `Record<keyof typeof extras, string>`).
-- Direct `npx vitest run <file>` fails on a react-transition-group ESM directory-import quirk — ALWAYS
-  run via `npx nx test dashboard`.
-- Beware masked exit codes in Bash pipelines (`tsc | tail && echo OK` prints OK on failure) — check
-  `$?` or run tsc bare.
-- The QA catch-up earlier today (`11e8ec3`): §3 stagger regression fixed via Widget `revealIndex` →
-  `--widget-reveal-delay`; ticker sections live in `ticker/widgets/` (renamed from `sections/`).
-- Owner git preference this session: commit to `main` + push after gates pass (no feature branches).
-- CI/CD not wired — pushes do NOT auto-deploy convexa.pages.dev; live deploy stays owner-applied.
-
-## Standing invariants for EVERY item in this program
-`no-real-order-path` (everything SIMULATED; orders = bookkeeping + confirm; scanner = display/links),
-`server-side-gate-enforcement` (sim-trade writes + batch recs gated), `additive-keeps-score-byte-identical`
-(nothing here feeds scoring), `best-effort-isolated-or-null`, `live-vs-static-isolation` (triggers/limits
-fire on LIVE crosses only), theme tokens via `extrasFor`/palette — zero hardcoded hex.
+## Standing invariants for `scanner` (from its BRIEF + the promoted canon)
+Revisits the locked "single-ticker, on-demand" decision — reopen ONLY via the architect's written
+perf re-justification (GATE Z discipline). `additive-keeps-score-byte-identical` (a scan read must
+not perturb per-ticker scoring), `best-effort-isolated-or-null` (per-ticker scan cells degrade
+independently), `live-vs-static-isolation`, `server-side-gate-enforcement` (batch AI recs are
+gated + metered like single recs), `no-real-order-path`, `theme-token-discipline`,
+`single-shared-sim-entry-dialog` (any scanner-side entry affordance launches the shared dialog).
