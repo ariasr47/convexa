@@ -30,6 +30,56 @@
 
 ---
 
+## Last GATE I — 2026-07-02 (owner: enrich the downstream-AI's inputs — derived data, TIs)
+**Chosen → `dealer-flow-projection`** (charm/vanna projected dealer hedging flow). Owner-directed
+discovery off the "what other derived data helps the AI?" conversation. Harvest source =
+**downstream-AI quality** (a first-class feature source). All candidates share one binding frame:
+they enrich the AI's **state export + display as CONTEXT**, never a scoring input
+(`additive-keeps-score-byte-identical`) — the AI is an advisory consumer of already-computed state.
+
+**Scored pool (Value × Effort; explicit cull verdicts for later audit — the conductor holds both the
+choose + route pens, so verdicts are written down):**
+- **`dealer-flow-projection` (charm/vanna flow) — CHOSEN.** Turns the net charm + net vanna we
+  ALREADY compute (currently display-only, CONTEXT §3) into a forward-looking, assumption-explicit
+  "expected dealer hedging flow into the next OPEX / on a vol move" read. *Decision improved:*
+  entry/exit TIMING + conviction around dealer-flow catalysts (OPEX charm bleed, vanna-on-vol) —
+  distinct from the static GEX levels (where price is pulled); this is WHEN/WHY dealers push.
+  *Observed:* the AI cites "charm flow supports drift into Friday's OPEX"; a projected-flow read shows
+  on the ticker page. Value **H** · Effort **M** · data risk **low** (reuses computed greeks; no new
+  vendor dependency). Most on-brand + lowest-risk of the pool → picked first.
+- **`iv-rank` (IV Rank / IV Percentile) — QUEUED (runner-up).** THE options metric we lack; drives
+  strategy selection (long vs short premium). Value **H** but the compelling 52-week form is
+  **blocked-on IV-history**: we don't persist IV. Options — accumulate IV daily into the now-shipped
+  Postgres store (rank improves over time), OR a weak 60d-window percentile now (likely re-done). A
+  data-accumulation design, not a rush → sequenced right after / bundled with a small persistence step.
+- **`market-backdrop` (SPY/QQQ + VIX level & term structure) — QUEUED, feasibility-gated.** Conditions
+  EVERY read (calm-contango vs stressed-backwardated tape). Value **H** · Effort **S–M** · **blocked-on
+  verifying Massive index/VIX coverage** (a vendor-capability check; one extra fetch if present).
+- **AI context-scalars pack (GEX shape scalars · flow-vs-positioning divergence · multi-horizon ATR)
+  — PARKED as a cheap bundle.** Each Value **M** · Effort **S**; ATR also unblocks the deferred
+  distance-to-level tiles (an enabler, not a standalone). Fold into a later "AI context pack."
+- **Volume profile (POC / value area) + CVD — PARKED.** Non-gamma horizontal S/R = independent
+  confluence + an order-flow read from the tape we already consume. Value **M–H** · Effort **M–L**.
+- **Technical-indicator regime bundle (EMA stack + ADX + RSI → DIGESTED labels) — PARKED (confluence
+  tier).** Owner-framed correctly as confluence, not the edge. Value **M** · Effort **S** (all from
+  bars we pull). Binding design rule if built: a SMALL orthogonal set, pre-digested into regime labels
+  (not raw values), kept OUT of the score — else signal overload degrades the AI.
+- **News / sentiment — PARKED (owner: future).** Slots in as another isolated one-way-leaf context
+  stream, same "context not score" discipline; sentiment scoring likely a separate provider/classifier.
+
+**Cull rationale (why `dealer-flow-projection` over the owner's co-favourite `iv-rank`):** both are
+Value-H; charm/vanna is **buildable now, lowest data/math risk, reuses computation in hand, and is the
+most differentiated** (no retail tool surfaces dealer charm/vanna flow) — while IV Rank's compelling
+form is blocked on an IV-history strategy that deserves deliberate sequencing, not a rushed weak
+version. So: charm/vanna first, IV Rank next (with the persistence step). **Invariant watch** (see the
+BRIEF): `additive-keeps-score-byte-identical` (HARD — AI-context/display only), `best-effort-isolated-
+or-null`, `live-vs-static-isolation`; **`gamma-sourcing-split` NOT touched** (a new derived read over
+the analytic greeks we already run — does NOT reopen the walls/flip gamma source). Ties BACKLOG §B
+"Engine higher-order-greek determinism" (elevating net_charm/net_vanna is the pull to fix the float
+jitter). Entry = **architect-first**. Brief at `.claude/contracts/dealer-flow-projection/BRIEF.md`;
+routing to the Architect (GATE A·X). **Note:** `scanner` (the prior NEXT) is **displaced, not dropped**
+— queued behind this owner redirect, as it was behind the 2026-06-25 ticker-load redirect.
+
 ## Last GATE I — 2026-07-01 (OWNER DIRECTIVE: 5-item product program)
 Owner handed the conductor five sequenced items (screenshots of broken light-mode attached to the ask):
 1. **`light-mode-parity`** — ✓ SHIPPED same session (`8abae03`, GATE V fast-path): mode-aware `extras`
@@ -390,6 +440,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **AI input-enrichment pool** — `RAISED 2026-07-02 (owner; "what derived data helps the AI?")`. The
+  scored survivors from the 2026-07-02 GATE I (full verdicts in that note above): `iv-rank` (Value H;
+  blocked-on IV-history persistence — accumulate into the shipped Postgres store), `market-backdrop`
+  SPY/QQQ+VIX (Value H; blocked-on a Massive index/VIX coverage verify), the AI context-scalars pack
+  (GEX shape scalars + flow-vs-positioning divergence + multi-horizon ATR — cheap bundle; ATR also
+  unblocks the distance-to-level tiles), volume-profile POC/value-area + CVD (independent non-gamma
+  confluence), and the technical-indicator regime bundle (EMA/ADX/RSI digested-to-labels, confluence
+  tier). **All ride as AI state-export CONTEXT, never scoring inputs** (`additive-keeps-score-byte-
+  identical`). `dealer-flow-projection` was culled out FIRST (→ in build, architect-first). News/
+  sentiment stays owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it
+  gives; judged on downstream-AI-quality, the first-class harvest source.
 - **AI-rec "Accept" → tracked position — full build-out** — `✓ SUBSUMED by ai-rec-backtest-orders
   (SHIPPED 2026-07-02)`: "Act as sim order" delivers the full read→track loop (rec structure/strikes/
   expiry/stop/target → confirmed SimOrder → live-cross fill → tracked Position with decision-record +
