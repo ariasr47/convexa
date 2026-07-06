@@ -489,6 +489,26 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `ghost-trade/TradeEntryDialog`, `positions/PositionEntryDialog`, and `GhostTradePanel` deleted with
   zero-importer proof; `app/README.md` directory map added. Origin of the promoted
   `[single-shared-sim-entry-dialog]` invariant.
+- **Projected dealer flow (`dealer-flow-projection`, FE+BE, additive, shipped 2026-07-02 `ca6abae`)** — a
+  forward-looking **dealer-hedging-flow projection** built over the ALREADY-computed, window-scoped net
+  charm + net vanna (previously display-only). New additive nested nullable field
+  `market_state.dealer_flow_projection`: a **charm limb** (`projected_delta = net_charm · horizon_days`
+  linear/first-order; `per_day_base`; `horizon_days` = calendar days to the next monthly OPEX, clamped
+  ≥1; `opex_date`) and a **vanna limb** (`projected_delta` at a base +1 IV-pt move plus the pre-scaled
+  `illustrative_projected_delta` at +5 IV-pt; `reference_direction="increase"`, a decrease being the
+  negation) plus `spot_basis`. The two limbs are **independently nullable**; the object is null only when
+  both are unavailable or the compute raised. **STATIC** (computed at `synchronized_spot`/`gex_spot`, never
+  live, never on SSE — excluded from the live-offline treatment like the four positioning tiles) and
+  **advisory CONTEXT only** — it rides the AI state export (`serialize_context` forwards `market_state`
+  wholesale, no serializer change) + a new static-family ticker widget after `DealerPositioning`, and is
+  **never a scoring input** (score/tier/`state_fingerprint` byte-identical — `signals` reads none of it).
+  Folded in the higher-order-greek **determinism fix** (`math.fsum` over charm/vanna/volga, scoped away
+  from every scoring sum; byte-identity re-proven before/after). Surfaced with its assumptions visible
+  ("dealer-flow context — not a price forecast, not a scored signal, not a guarantee"). QA PASS (Sonnet,
+  de-correlated — 17/17 ACs, conformance new spec + 5-spec sweep, `nx test dashboard` 617/617). One
+  post-QA render-pass catch fixed inline (a container-query written as a responsive-value key → the
+  `auto-fit`/`minmax` idiom). First feature of the "enrich the downstream-AI's inputs" GATE I. `net_volga`
+  NOT elevated; `gamma-sourcing-split` untouched.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

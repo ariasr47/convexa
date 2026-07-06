@@ -571,6 +571,43 @@ scenario-registry extension beyond the 9. **Next:** item 5 `scanner` (BRIEF at
 `.claude/contracts/scanner/BRIEF.md`; architect must re-justify the locked single-ticker decision with a
 perf design).
 
+## 7o. Projected dealer flow (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/dealer-flow-projection/`. First item of the owner
+"enrich the downstream-AI's inputs" GATE I (2026-07-02; BACKLOG "Last GATE I — 2026-07-02"). A
+forward-looking **dealer-hedging-flow projection** over the already-computed window-scoped net charm/vanna,
+surfaced as the additive nested nullable `market_state.dealer_flow_projection` (charm limb = net_charm·days-
+to-next-monthly-OPEX linear; vanna limb at +1 and pre-scaled +5 IV-pt). Full pipeline (architect → PM → UX
+split → both lanes). **Backend** (`apps/api`, commit `ca6abae`): 3 nested Pydantic sub-models +
+`_build_dealer_flow_projection` in `engine.py` + the `math.fsum` higher-order-greek **determinism fix**
+(retires the latent BACKLOG §B item; scoped away from every scoring sum) + `main.py` wiring +
+`market_state_glossary.md` AC-15 entry; `signals.py` 0 changes. **Frontend** (`apps/dashboard` + `libs/api`):
+new static-family `DealerFlowProjection` widget after `DealerPositioning`, `MarketState` type field, copy
+helpers; +22 tests incl. the static-vs-live-drop contrast centerpiece. **STATIC** (gex_spot basis, never
+SSE), **advisory CONTEXT** (never scored — score/tier/`state_fingerprint` byte-identical with/without AND
+before/after the fix), assumptions surfaced visible. **QA (GATE Q)** de-correlated Sonnet: **PASS 17/17**
+(conformance new standalone spec + 5-spec sweep; byte-identity independently re-derived; null-family + horizon
+exercised live, incl. a naturally-occurring whole-null case). **Render-pass catch** (fixed inline): a
+container-query mis-written as a responsive-value key (Emotion didn't pass it through → warned + never
+applied) → the `auto-fit`/`minmax` idiom; render-verified two-column + console clean, suite 617/617. **GATE
+S:** no new graduation (4 touched keys already canon, each gained an instance); new watch-list candidate
+`model-read-carries-its-assumptions`.
+**Deferred seams (named, not built):** path-accurate charm re-integration (the linear `net_charm·H` is v1);
+a `net_volga` vol-convexity read (volga stays display-only, only shared the determinism fix); a larger/UI-
+selectable vanna vol-move magnitude; a named backtest "run" grouping. **Queued behind it (same GATE I):**
+`iv-rank` (runner-up; blocked-on IV-history persistence), `market-backdrop` SPY/VIX (vendor-coverage verify),
+the AI context-scalars pack + volume-profile/CVD + TI regime bundle (parked), news/sentiment (owner-future).
+
+## 7p. Latent hygiene finding (NOT this feature's regression) — the `:typecheck` Nx target is broken
+Surfaced 2026-07-02 during dealer-flow-projection GATE Q. `npx nx run @org/dashboard:typecheck` fails
+project-wide with **~960 pre-existing errors** — a `tsconfig.spec.json` gap (missing `jest-dom` / DOM lib
+types: `RequestInfo`, `querySelector`, `toBeInTheDocument` unresolved in `*.spec.tsx`). Confirmed
+pre-existing + unrelated to this feature (an UNTOUCHED spec, e.g. `ai-rec/ai-rec.spec.tsx`, fails
+identically; the first failures are outside the feature diff). **The feature's real gate — `tsc -p
+apps/dashboard/tsconfig.app.json --noEmit` (app/production code, excludes specs) — passes clean**, which is
+why the pipeline is green; the `:typecheck` target (specs included, broken spec-tsconfig) is what's red and
+nobody runs it. Logged to BACKLOG §B as a tooling-hygiene fix (wire `jest-dom`/DOM types into
+`tsconfig.spec.json` so `:typecheck` is usable, then it can join the gate battery). Not blocking.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped

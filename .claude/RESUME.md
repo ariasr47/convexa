@@ -1,62 +1,63 @@
-# RESUME — handoff snapshot (2026-07-02) — GATE I done: `dealer-flow-projection` chosen, awaiting architect
+# RESUME — handoff snapshot (2026-07-02) — dealer-flow-projection SHIPPED; AI-enrichment pool open
 
 > For a fresh Delivery Conductor (`/conductor`). Overlay on the canon — WINS on current status.
-> Written just after a GATE I (a clean phase boundary). Tree: BRIEF + BACKLOG + this file are the
-> only uncommitted changes (the GATE I output — commit at the architect gate or now).
+> Written at a program GATE S (a clean phase boundary). `main` @ the GATE-S bookkeeping commit,
+> pushed; working tree clean.
 
 ## Where we are
-- The owner's 2026-07-01 five-item program is **fully shipped + archived** (`66b3c42`; OPEN_THREADS
-  §7n). Two keys graduated: `single-shared-sim-entry-dialog`, `theme-token-discipline`.
-- **GATE I fired 2026-07-02** (owner-directed, off a discovery conversation about enriching the
-  downstream AI's inputs). **Chosen → `dealer-flow-projection`**: turn the net charm + net vanna we
-  already compute (display-only, CONTEXT §3) into a forward-looking, assumption-explicit "expected
-  dealer hedging flow into the next OPEX / on a vol move" read that feeds the AI's state export +
-  the ticker display — additive CONTEXT, never a scoring input. Full scored pool + cull verdicts in
-  BACKLOG "Last GATE I — 2026-07-02"; BRIEF at `.claude/contracts/dealer-flow-projection/BRIEF.md`.
+- **`dealer-flow-projection` SHIPPED + ARCHIVED** (feature commit `ca6abae`; GATE-S bookkeeping commit
+  after it). A forward-looking dealer-hedging-flow read (charm limb = net_charm·days-to-next-monthly-
+  OPEX; vanna limb at +1 and pre-scaled +5 IV-pt) over the already-computed window-scoped greeks →
+  additive nested nullable `market_state.dealer_flow_projection`, STATIC, AI-context + a ticker widget,
+  never scored. Folded in the `math.fsum` higher-order-greek determinism fix. QA PASS 17/17
+  (de-correlated Sonnet); conformance new standalone spec + 5-spec sweep; `nx test dashboard` 617/617.
+  One post-QA render-pass catch fixed inline (container-query-as-responsive-key → auto-fit/minmax).
+  Canon updated: CONTEXT §6, THREADS §7o, LEDGER (4 instances, no new graduation; new watch-list
+  candidate `model-read-carries-its-assumptions`), BACKLOG. See THREADS §7o for the full record.
+- **The queue is drained to the pool.** No feature is mid-pipeline. Only `.claude/contracts/scanner/`
+  remains as a written BRIEF (displaced twice, not dropped).
 
-## NEXT (the fresh session's first move): GATE A·X — Architect for `dealer-flow-projection`
-Spawn a fresh `delivery-architect` (ROLE_LAUNCH_PROMPTS §1) + the context pack
-(`context_for.py dealer-flow-projection --print`; tags math,gamma,greeks,engine,ai,architecture,
-backend,frontend,observability). The architect owns: the projection MODEL (horizon; charm-per-day
-vs vanna-per-vol-point; what assumptions), the chain aggregation, the **isolation-from-scoring**
-boundary (one-way leaf; scoring modules import none of it), the **live-vs-static classification**,
-the state-export/interface field shape, and the **float-determinism decision** (elevating
-net_charm/net_vanna from display-only is the pull to finally apply a deterministic reduction —
-BACKLOG §B). Then PM → UX split → parallel lanes → GATE Q (fresh de-correlated qa-verify) → render
-pass → GATE S. Gate-check after the architect: `contract_lint.py dealer-flow-projection`.
+## NEXT — an owner pick (or a GATE I), not auto-started
+The 2026-07-02 "enrich the downstream-AI's inputs" GATE I left a scored pool (BACKLOG "Last GATE I —
+2026-07-02" + §B "AI input-enrichment pool"); dealer-flow-projection was #1 and is now shipped.
+Front-runners for the next feature — **await an owner steer or run a fresh GATE I to cull**:
+- **`iv-rank`** (IV Rank/Percentile) — the runner-up; Value H. **Blocked-on IV-history:** decide the
+  accumulation strategy first (accrue IV daily into the shipped Postgres store — rank improves over time
+  — vs a weak 60d-window percentile now). Architect-first; likely bundled with a small persistence step.
+- **`market-backdrop`** (SPY/QQQ + VIX level & term structure) — Value H, **feasibility-gated on a
+  Massive index/VIX coverage verify** (a vendor-capability check — do this before committing).
+- **`scanner`** — displaced-not-dropped (BRIEF at `.claude/contracts/scanner/BRIEF.md`); architect must
+  re-justify the locked single-ticker decision with a perf design.
+- Parked cheap enrichers: AI context-scalars pack (GEX shape scalars / flow-vs-OI divergence / ATR),
+  volume-profile POC + CVD, TI regime bundle (EMA/ADX/RSI → digested labels). News/sentiment owner-future.
+- Tooling hygiene (Effort S): fix the broken `@org/dashboard:typecheck` Nx target (THREADS §7p) so a real
+  typecheck gate can join the battery.
 
-## Queue behind it (from the same GATE I)
-- `iv-rank` (IV Rank/Percentile) — runner-up; Value H but blocked-on IV-history persistence
-  (accumulate into the shipped Postgres store, or a weak 60d-window version now).
-- `market-backdrop` (SPY/QQQ + VIX) — Value H, feasibility-gated on a Massive index/VIX coverage
-  verify.
-- AI context-scalars pack · volume-profile+CVD · TI regime bundle — parked cheap enrichers.
-- News/sentiment — owner-future.
-- **`scanner`** — displaced-not-dropped (its BRIEF at `.claude/contracts/scanner/BRIEF.md` still
-  stands; architect must re-justify the locked single-ticker decision with a perf design when it
-  resurfaces).
+If the owner says "what's next" / "go" → run **GATE I** over the pool (or open the named pick's Architect).
 
 ## Gotchas (carried; still live)
-- **`main.py` uvicorn reload leaves a multiprocessing spawn CHILD holding port 8000** after a
-  parent-only kill (netstat then blames the DEAD parent PID — looks like a ghost). Kill the tree:
-  `Get-NetTCPConnection -LocalPort 8000` → kill any python `Win32_Process` whose CommandLine matches
-  `parent_pid=<pid>` → then the parent.
-- Test baseline **595** (dashboard) + 13 (`@org/api`). Always `npx nx test dashboard` (never direct
-  vitest — ESM quirk); run `tsc`/`nx build` too (Vitest doesn't typecheck).
-- `extras` is mode-aware: bare `extras.` = dark-only; components MUST use `extrasFor(theme)` in sx
-  callbacks (now the promoted `theme-token-discipline`).
-- MUI Selects don't open on preview_click — dispatch `mousedown` (and full down/up/click on
-  options/buttons) via preview_eval.
-- **system-10 lesson (recurred at ai-rec-backtest-orders):** a hardcoded mock default is an untested
-  integration STATE; when a wire field gains semantics, expose it as a configurable harness axis +
-  name a test per state, else a green suite vouches for one world only. The conductor render pass
-  (real backend, real states) is the backstop that catches it.
-- Owner git pattern: commit to `main` + push after gates pass (no feature branches). CI/CD not wired
-  — pushes do NOT auto-deploy convexa.pages.dev.
+- **`main.py` uvicorn reload leaves a multiprocessing spawn CHILD holding port 8000** after a parent-only
+  kill (netstat then blames the DEAD parent PID — looks like a ghost). Kill the tree:
+  `Get-NetTCPConnection -LocalPort 8000` → kill the python `Win32_Process` whose CommandLine matches
+  `parent_pid=<listener>` → then the parent. (Needs the sandbox-disabled shell to see host processes.)
+- Test baseline **617** (dashboard) + 13 (`@org/api`). Always `npx nx test dashboard` (never direct
+  vitest — ESM quirk); run `tsc -p tsconfig.app.json` + `nx build` too. The `:typecheck` TARGET is
+  BROKEN pre-existing (THREADS §7p) — use the app-tsconfig form, not `nx run …:typecheck`.
+- **Render pass is load-bearing:** jsdom evaluates neither container queries nor Emotion dev warnings —
+  a CSS/layout defect (like this feature's container-query-as-responsive-key) passes a green suite and
+  only the real-browser render pass catches it. Write container-responsive grids as `auto-fit`/`minmax`
+  (the `DealerPositioning` idiom), not `@container` object keys (this Emotion version doesn't pass them
+  through). Kin to the system-10 mock-default lesson.
+- Theme tokens via `extrasFor(theme)` (dark-only otherwise) — the promoted `theme-token-discipline`.
+- MUI Selects don't open on preview_click — dispatch `mousedown` (+ full down/up/click on options) via
+  preview_eval.
+- Owner git pattern: commit to `main` + push after gates pass (no feature branches). CI/CD not wired —
+  pushes do NOT auto-deploy convexa.pages.dev.
 
-## Standing invariants for `dealer-flow-projection`
-`additive-keeps-score-byte-identical` (HARD — projection is AI-context/display only, scoring modules
-import none of it), `best-effort-isolated-or-null`, `live-vs-static-isolation` (declare the projection
-live-derived vs static), **`gamma-sourcing-split` NOT reopened** (new derived read over the analytic
-greeks; does not touch the walls/flip gamma source), assumptions surfaced VISIBLE (model-dependent +
-forward-looking, treated like the analytic flip), `theme-token-discipline` on any new UI.
+## Standing invariants for the AI-enrichment class (any pool item)
+All ride as **AI state-export CONTEXT + display, NEVER a scoring input** (`additive-keeps-score-byte-
+identical` — the module boundary is the enforcement; re-prove byte-identity), `best-effort-isolated-or-
+null`, `live-vs-static-isolation` (declare live-derived vs static), `theme-token-discipline`; a
+forward-looking/model-dependent read carries its assumptions visible and is never a guarantee
+(`model-read-carries-its-assumptions`, candidate). `gamma-sourcing-split` stays closed unless a feature
+explicitly reopens it via GATE Z with a measurement spike.

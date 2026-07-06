@@ -61,6 +61,12 @@
   ticker-ux-polish program ("held again"), light-mode-parity/sim-entry-unification (the `extrasFor`
   mechanism itself), and ai-rec-backtest-orders (token-only orders module). ≥3 shipped features →
   Promoted canon above.)_
+- **`model-read-carries-its-assumptions`** (candidate, 2026-07-02 — dealer-flow-projection; the analytic
+  gamma flip is a pre-ledger precedent) — a forward-looking / model-dependent read (a projection, a
+  model-derived level) is surfaced **self-describing**: it carries its own horizon / assumption / basis and
+  is framed as advisory context, **never as a guarantee or a scored signal**. Generalizes the flip's
+  "immaterial divergence, measure-before-calibrate" honesty. Not promoted (1 clean ledger instance); logged
+  for recurrence (news/sentiment + iv-rank + market-backdrop will likely hit it). *binding:yes.*
 - **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
   store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
   never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
@@ -140,6 +146,34 @@
 | `server-side-gate-enforcement` | ai-rec-backtest-orders | S | order creation awaits `POST /api/positions/sim-trade/gate` BEFORE any local write (403 ⇒ abort, zero order — proven even when the FE believed it was signed in); the rec POST keeps auth outermost in scenario mode (anonymous ⇒ 403 before any scenario logic) | yes |
 | `single-shared-sim-entry-dialog` | ai-rec-backtest-orders | S | Act = an additive ORDER VARIANT (`orderPlan`/`onConfirmOrder` props) of the shared dialog — contract-mandated "do not fork"; the dialog renders byte-identically without the seam (guarded test) | yes |
 | `theme-token-discipline` | ai-rec-backtest-orders | S | the entire `orders/` module + panel additions token-only + `extrasFor(theme)`; zero new hex (lint + conductor review) | yes |
+| `additive-keeps-score-byte-identical` | dealer-flow-projection | S | the projection rides `market_state` as AI-context/display; `signals.py` 0 changes (grep-verified: reads no charm/vanna/dealer_flow_projection); score/tier/`state_fingerprint` byte-identical with-vs-without AND before-vs-after the `math.fsum` determinism fix (QA independently re-derived — field present/absent/garbage-mutated never moved the triple) | yes |
+| `best-effort-isolated-or-null` | dealer-flow-projection | S | per-limb + whole-object null → null field, never a 5xx / fabricated 0 / fabricated date; a forced internal exception → `dealer_flow_projection: null` with the bundle still 200; a naturally-occurring whole-null case found in the wild (`min_dte=500`); the two limbs independently nullable | yes |
+| `live-vs-static-isolation` | dealer-flow-projection | S | declared STATIC (`spot_basis = gex_spot`, never the live spot; never on SSE); on a stream drop the widget stays visible + un-dimmed + no `⏸` chip (FE contrast test vs a dimming LiveTape tile); excluded from the live-offline treatment like the four positioning tiles | yes |
+| `theme-token-discipline` | dealer-flow-projection | S | the new `DealerFlowProjection` widget + copy are token-only via the MUI theme; dark/light parity render-verified; zero hardcoded hex | yes |
+
+> Note (GATE S, dealer-flow-projection, 2026-07-02): the first item of the owner "enrich the
+> downstream-AI's inputs" GATE I — a projected dealer-hedging-flow read (charm limb = net_charm·days-to-
+> next-monthly-OPEX; vanna limb = net_vanna at +1 and pre-scaled +5 IV-pt) built over the ALREADY-computed
+> window-scoped higher-order greeks, surfaced as an additive nested nullable `market_state.dealer_flow_
+> projection` — AI-context + a static-family ticker widget, NEVER a scoring input. Full pipeline
+> (architect → PM → UX split → both lanes). Folded in the BACKLOG §B higher-order-greek **determinism fix**
+> (`math.fsum` over charm/vanna/volga, scoped away from every scoring sum) — the pull that finally retired
+> that latent item. **No new graduation** — the four touched keys are all already Promoted canon and each
+> gained an instance: `additive-keeps-score-byte-identical` (signals.py 0 changes; byte-identity re-proven
+> with/without AND before/after the fix), `best-effort-isolated-or-null` (per-limb + whole-object null,
+> forced-exception → null, wild whole-null case), `live-vs-static-isolation` (STATIC, gex_spot basis, no
+> `⏸` on SSE drop — FE contrast test), `theme-token-discipline` (token-only widget). QA (GATE Q) fresh
+> de-correlated **Sonnet**: **PASS 17/17** (0 FAIL / 0 UNVERIFIABLE; conformance new standalone spec +
+> 5-spec sweep; AC↔test traceability non-vacuous; AC-11/12/16/15 correctly BE-verified per the contracts,
+> independently re-confirmed). **One post-QA conductor render-pass catch** (jsdom can't evaluate it, so the
+> green suite couldn't): the two-limb grid wrote a container query as a responsive-VALUE key
+> (`gridTemplateColumns: { xs, '@container (min-width:440px)': ... }`) — this Emotion version doesn't pass
+> `@container` through, so it warned 12× AND never applied the 2-col layout. Fixed inline to the
+> `repeat(auto-fit, minmax(210px,1fr))` idiom the sibling `DealerPositioning` already uses (render-verified
+> two-column + console clean; suite held 617/617). **Lesson (methodology): a container-query / layout CSS
+> path is invisible to jsdom — the real-browser render pass is the only gate that catches it** (kin to the
+> system-10 mock-default lesson: the green suite vouches only for what the test environment can execute).
+> New watch-list candidate `model-read-carries-its-assumptions` logged.
 
 > Note (GATE S, owner 5-item program items 1–4: light-mode-parity + sim-entry-unification +
 > ai-rec-backtest-orders, 2026-07-02): items shipped `8abae03` / `d704193` / `5391517` (all pushed to

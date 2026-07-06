@@ -39,7 +39,9 @@ they enrich the AI's **state export + display as CONTEXT**, never a scoring inpu
 
 **Scored pool (Value × Effort; explicit cull verdicts for later audit — the conductor holds both the
 choose + route pens, so verdicts are written down):**
-- **`dealer-flow-projection` (charm/vanna flow) — CHOSEN.** Turns the net charm + net vanna we
+- **`dealer-flow-projection` (charm/vanna flow) — ✓ SHIPPED + ARCHIVED (2026-07-02, `ca6abae`).** Full
+  pipeline both lanes; QA PASS 17/17 (Sonnet); folded in the BACKLOG §B determinism fix; render-pass catch
+  fixed inline. Seams → OPEN_THREADS §7o. *(original cull entry:)* Turns the net charm + net vanna we
   ALREADY compute (currently display-only, CONTEXT §3) into a forward-looking, assumption-explicit
   "expected dealer hedging flow into the next OPEX / on a vol move" read. *Decision improved:*
   entry/exit TIMING + conviction around dealer-flow catalysts (OPEX charm bleed, vanna-on-vol) —
@@ -448,9 +450,18 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   unblocks the distance-to-level tiles), volume-profile POC/value-area + CVD (independent non-gamma
   confluence), and the technical-indicator regime bundle (EMA/ADX/RSI digested-to-labels, confluence
   tier). **All ride as AI state-export CONTEXT, never scoring inputs** (`additive-keeps-score-byte-
-  identical`). `dealer-flow-projection` was culled out FIRST (→ in build, architect-first). News/
-  sentiment stays owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it
-  gives; judged on downstream-AI-quality, the first-class harvest source.
+  identical`). `dealer-flow-projection` ✓ SHIPPED + ARCHIVED (2026-07-02) — **`iv-rank` is now the pool
+  front-runner** (owner may pick it, `market-backdrop`, or resurface `scanner`). News/sentiment stays
+  owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it gives; judged on
+  downstream-AI-quality, the first-class harvest source.
+- **Fix the broken `@org/dashboard:typecheck` Nx target** — `SURFACED 2026-07-02 (dealer-flow-projection
+  GATE Q)`. `npx nx run @org/dashboard:typecheck` fails project-wide with ~960 errors — a `tsconfig.spec.json`
+  gap (missing `jest-dom`/DOM lib types → `RequestInfo`/`querySelector`/`toBeInTheDocument` unresolved in
+  every `*.spec.tsx`). Pre-existing + feature-independent (an untouched spec fails identically); the real
+  gate `tsc -p tsconfig.app.json` (app code, excludes specs) is clean, so the pipeline stays green. **Fix:**
+  wire `@testing-library/jest-dom` + the DOM lib into the spec tsconfig so the target passes, then fold
+  `:typecheck` into the standing gate battery. *Value M (a real typecheck gate over tests) · Effort S.*
+  Decision-impact cull **N/A** (tooling hygiene). Seams → OPEN_THREADS §7p.
 - **AI-rec "Accept" → tracked position — full build-out** — `✓ SUBSUMED by ai-rec-backtest-orders
   (SHIPPED 2026-07-02)`: "Act as sim order" delivers the full read→track loop (rec structure/strikes/
   expiry/stop/target → confirmed SimOrder → live-cross fill → tracked Position with decision-record +
@@ -552,7 +563,10 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   the promotion *judgement* + prose still stay with the Orchestrator (the hook only counts). Follow-on
   to the just-shipped Decision Ledger (`.claude/DECISION_LEDGER.md`; ORCHESTRATOR §3a).
 
-- **Engine higher-order-greek determinism** *(correctness hygiene — not a trading feature)* — `SURFACED
+- **Engine higher-order-greek determinism** — `✓ RESOLVED 2026-07-02 (folded into dealer-flow-projection)`:
+  the charm/vanna/volga aggregation moved from naive `+=` to `math.fsum` (order-independent), scoped away
+  from every scoring sum; byte-identity re-proven. Retired the latent item — elevating net_charm/net_vanna
+  into an AI-consumed projection was the pull. *(original note:)* `SURFACED
   2026-06-25 (ticker-load-experience GATE Q)`. `engine.process_gex_profile` shows ~9th-significant-digit
   float reduction-order jitter in `net_vanna`/`net_charm`/`net_volga` across identical inputs (a pre-existing
   Python accumulation-order artifact, independent of the pre-warm/concurrency work). *Impact:* none observed
