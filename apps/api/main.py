@@ -299,6 +299,12 @@ def _build_market_state(ticker: str, market_data: dict, underlying_history: list
         "iv_skew": iv_skew,
         "term_structure": term_structure,
 
+        # Projected dealer flow (STATIC, additive, advisory context only -- NOT scored). A pure
+        # transform over the window-scoped net_charm/net_vanna + the next monthly-OPEX date,
+        # computed in the engine. Two independently-nullable limbs; null (whole object) only when
+        # both are unavailable OR the compute raised. `signals` reads none of it.
+        "dealer_flow_projection": gex_metrics["dealer_flow_projection"],
+
         "vwap": vwap_bands.get("vwap"),
         "vwap_upper_2": vwap_bands.get("vwap_upper_2"),
         "vwap_upper_3": vwap_bands.get("vwap_upper_3"),

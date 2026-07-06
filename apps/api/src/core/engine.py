@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from datetime import datetime, time, timezone
 import logging
@@ -166,6 +167,7 @@ class QuantEngine:
             # New always-on metrics: all unavailable when there is no usable chain.
             "net_dex": None, "call_dex": None, "put_dex": None,
             "total_volume": None, "chain_vol_oi_ratio": None,
+            "dealer_flow_projection": None,
             "strike_profile": [],
         }
 
@@ -232,8 +234,19 @@ class QuantEngine:
         if not contracts or current_spot <= 0:
             return self._empty_gex_result()
 
-        total_net_gex, total_net_vanna, total_net_charm, total_net_volga = 0.0, 0.0, 0.0, 0.0
+        total_net_gex = 0.0
         total_call_gex, total_put_gex = 0.0, 0.0
+        # DETERMINISM FIX (ARCHITECTURE_CONTRACT §5): the higher-order-greek aggregates are
+        # collected per-contract and reduced with an ORDER-INDEPENDENT math.fsum after the loop
+        # instead of a running left-to-right += (whose result depended on filtered_contracts
+        # iteration order, producing ~9th-sig-digit float-ordering jitter). math.fsum is exactly
+        # rounded (full precision) and order-invariant, so identical inputs => byte-stable
+        # net_charm/net_vanna/net_volga. Confined to charm/vanna/volga ONLY — the GEX/DEX sums,
+        # the flip, and every scoring input keep their existing accumulation (no state_fingerprint
+        # drift). Volga is included only because it shares this loop; it gains no projection.
+        charm_contribs: list[float] = []
+        vanna_contribs: list[float] = []
+        volga_contribs: list[float] = []
         strike_gex_map = {}
         exp_oi_map = {}   # expiration -> {strike: {call_oi, put_oi}}, for per-expiration max pain
         exp_dte = {}      # expiration -> days to expiry
@@ -365,9 +378,11 @@ class QuantEngine:
                     dollar_volga *= -1.0
 
                 total_net_gex += dollar_gex
-                total_net_vanna += dollar_vanna
-                total_net_charm += dollar_charm
-                total_net_volga += dollar_volga
+                # Determinism fix: collect (don't running-sum) the higher-order-greek
+                # contributions; reduced order-independently with math.fsum after the loop.
+                vanna_contribs.append(dollar_vanna)
+                charm_contribs.append(dollar_charm)
+                volga_contribs.append(dollar_volga)
 
                 if strike not in strike_gex_map:
                     strike_gex_map[strike] = {"call_gex": 0.0, "put_gex": 0.0, "net_gex": 0.0,
@@ -387,6 +402,15 @@ class QuantEngine:
 
         if not strike_gex_map:
             return self._empty_gex_result()
+
+        # Determinism fix (ARCHITECTURE_CONTRACT §5): order-independent, exactly-rounded reduction
+        # of the collected higher-order-greek contributions. math.fsum is invariant to
+        # filtered_contracts iteration order and mathematically equal (full precision) to the true
+        # sum, so identical inputs yield byte-stable net_charm/net_vanna/net_volga. Scoped to
+        # charm/vanna/volga only — GEX/DEX sums keep their existing accumulation.
+        total_net_vanna = math.fsum(vanna_contribs)
+        total_net_charm = math.fsum(charm_contribs)
+        total_net_volga = math.fsum(volga_contribs)
 
         # Walls are the extremes of the per-strike NET gamma profile (call gamma plus the
         # negative put gamma at each strike), aggregated across all expirations -- matching
@@ -475,6 +499,26 @@ class QuantEngine:
                 "vol_oi_ratio": vol_oi_ratio,
             })
 
+        net_vanna = round(total_net_vanna, 2)
+        net_charm = round(total_net_charm, 2)
+        net_volga = round(total_net_volga, 2)
+
+        # Dealer-flow projection (additive, STATIC, advisory context only -- NEVER scored).
+        # A pure transform over the already-computed window-scoped net_charm/net_vanna + the
+        # chain's next monthly-OPEX date. Best-effort + independently nullable: any failure
+        # yields a null limb / null object, never an HTTP error and never a fabricated 0/date
+        # (`[best-effort-isolated-or-null]`). Computed AFTER the deterministic reduction so the
+        # surfaced numbers are byte-stable and agree exactly with net_charm/net_vanna.
+        dealer_flow_projection = self._build_dealer_flow_projection(
+            net_charm=net_charm,
+            net_vanna=net_vanna,
+            charm_available=bool(charm_contribs),
+            vanna_available=bool(vanna_contribs),
+            monthly_exps=monthly_exps,
+            today_str=today_str,
+            spot_basis=current_spot,
+        )
+
         return {
             "net_gex": round(total_net_gex, 2),
             "call_gex": round(total_call_gex, 2),
@@ -486,17 +530,92 @@ class QuantEngine:
             "gamma_flip": gamma_flip,
             "max_pain": max_pain,
             "max_pain_expiration": max_pain_expiration,
-            "net_vanna": round(total_net_vanna, 2),
-            "net_charm": round(total_net_charm, 2),
-            "net_volga": round(total_net_volga, 2),
+            "net_vanna": net_vanna,
+            "net_charm": net_charm,
+            "net_volga": net_volga,
             "put_call_ratio": pc_ratio,
             "net_dex": round(total_net_dex, 2) if dex_available else None,
             "call_dex": round(total_call_dex, 2) if dex_available else None,
             "put_dex": round(total_put_dex, 2) if dex_available else None,
             "total_volume": round(total_volume, 2) if volume_available else None,
             "chain_vol_oi_ratio": chain_vol_oi_ratio,
+            "dealer_flow_projection": dealer_flow_projection,
             "strike_profile": strike_profile,
         }
+
+    def _build_dealer_flow_projection(self, *, net_charm: float, net_vanna: float,
+                                      charm_available: bool, vanna_available: bool,
+                                      monthly_exps: dict, today_str: str,
+                                      spot_basis: float) -> dict | None:
+        """Build the additive, static dealer-flow projection object (or None).
+
+        A pure transform over the window-scoped net_charm/net_vanna aggregates already summed
+        in process_gex_profile + the chain's next monthly OPEX date. NO new greek, no repricing,
+        no re-scoping, no live input (`[live-vs-static-isolation]`). Best-effort:
+
+        - Charm limb: projected_delta = net_charm * horizon_days (linear/first-order, NOT
+          path-integrated); per_day_base = net_charm; horizon_days = calendar days from today_str
+          (UTC date) to the next monthly OPEX, clamped >= 1; opex_date = that OPEX date. null iff
+          net_charm is unavailable OR no future monthly OPEX exists in the chain. When the selected
+          window excludes the OPEX, the limb STILL targets that OPEX and STILL emits
+          horizon_days/opex_date (the mismatch is left legible, never retargeted or hidden).
+        - Vanna limb: projected_delta = net_vanna * 1.0 (== net_vanna); illustrative = net_vanna
+          * 5.0 (both PRE-SCALED on the wire); reference_direction = "increase". null iff
+          net_vanna is unavailable.
+        - Whole object null only when BOTH limbs are null OR the compute raised.
+
+        Rounding (2dp) is applied AFTER the deterministic reduction (the inputs are already the
+        rounded surfaced aggregates), so the projected numbers agree exactly with net_charm/net_vanna.
+        """
+        try:
+            # Horizon: nearest FUTURE monthly OPEX (3rd-Friday) in the chain. Reuses the same
+            # monthly-OPEX derivation the engine privileges for max pain. opex_date is the nearest
+            # such date; horizon_days = calendar days from today_str (UTC), clamped >= 1.
+            opex_date, horizon_days = None, None
+            if monthly_exps:
+                opex_date = min(monthly_exps, key=monthly_exps.get)[:10]
+                try:
+                    today_d = datetime.strptime(today_str, "%Y-%m-%d").date()
+                    opex_d = datetime.strptime(opex_date, "%Y-%m-%d").date()
+                    horizon_days = max((opex_d - today_d).days, 1)
+                except Exception:
+                    opex_date, horizon_days = None, None
+
+            # Charm limb: needs the aggregate AND a determinable horizon.
+            charm = None
+            if charm_available and opex_date is not None and horizon_days is not None:
+                charm = {
+                    "projected_delta": round(net_charm * horizon_days, 2),
+                    "per_day_base": net_charm,
+                    "horizon_days": int(horizon_days),
+                    "opex_date": opex_date,
+                }
+
+            # Vanna limb: instantaneous (no horizon). Both figures pre-scaled on the wire.
+            vanna = None
+            if vanna_available:
+                move_iv_points = 1.0
+                illustrative_move_iv_points = 5.0
+                vanna = {
+                    "projected_delta": round(net_vanna * move_iv_points, 2),
+                    "move_iv_points": move_iv_points,
+                    "illustrative_move_iv_points": illustrative_move_iv_points,
+                    "illustrative_projected_delta": round(net_vanna * illustrative_move_iv_points, 2),
+                    "reference_direction": "increase",
+                }
+
+            # Whole object null only when BOTH limbs are unavailable.
+            if charm is None and vanna is None:
+                return None
+
+            return {
+                "spot_basis": round(float(spot_basis), 2),
+                "charm": charm,
+                "vanna": vanna,
+            }
+        except Exception:
+            logger.exception("Dealer-flow projection failed; emitting null (bundle unaffected)")
+            return None
 
     def _gex_curve(self, contracts: list, price_shifts: np.ndarray, q: float = 0.0) -> np.ndarray:
         """

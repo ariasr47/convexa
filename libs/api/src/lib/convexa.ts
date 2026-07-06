@@ -27,6 +27,41 @@ export interface TermStructure {
   slope: number;   // far_iv − near_iv (sign-bearing)
 }
 
+/** Projected-dealer-flow charm limb (dealer-flow-projection INTERFACE_CONTRACT §payload). Window-scoped
+ *  (moves with the DTE filter, like net_gex/net_dex). All values pre-computed on the wire — the FE never
+ *  does its own arithmetic. Independently nullable (null iff net_charm unavailable OR no future monthly
+ *  OPEX). Signed $-delta values inherit the dealer-book convention (calls +, puts −). */
+export interface CharmLimb {
+  projected_delta: number; // signed $-delta drift to the horizon (= net_charm · horizon_days)
+  per_day_base: number;    // signed $-delta per +1 calendar day (= net_charm)
+  horizon_days: number;    // calendar days to the next monthly OPEX, >= 1
+  opex_date: string;       // ISO YYYY-MM-DD the drift is projected to (next monthly OPEX)
+}
+
+/** Projected-dealer-flow vanna limb. Instantaneous (no time horizon — its "horizon" is the vol-move
+ *  magnitude). `illustrative_projected_delta` is PRE-SCALED on the wire (= net_vanna · 5) — the FE
+ *  renders it DIRECTLY and never multiplies. `reference_direction` is `"increase"` (a vol drop is the
+ *  exact negation; the FE states this, no second figure). Independently nullable (null iff net_vanna
+ *  unavailable). */
+export interface VannaLimb {
+  projected_delta: number;              // signed $-delta at the base move (= net_vanna · move_iv_points)
+  move_iv_points: number;               // base assumed vol move, IV points (fixed 1.0)
+  illustrative_move_iv_points: number;  // illustrative shock, IV points (fixed 5.0)
+  illustrative_projected_delta: number; // PRE-SCALED signed $-delta at the illustrative move (= net_vanna · 5)
+  reference_direction: string;          // the direction the quote assumes; value is "increase"
+}
+
+/** A forward-looking projection of the delta dealers are expected to hedge, derived from the same
+ *  window-scoped net_charm / net_vanna aggregates already in the bundle. STATIC (rides the cached REST
+ *  bundle, never the SSE stream). Two independently-nullable limbs; the whole object is null only when
+ *  BOTH limbs are unavailable OR the compute raised. Display/AI-context ONLY — never a scoring input
+ *  (`[additive-keeps-score-byte-identical]`). */
+export interface DealerFlowProjection {
+  spot_basis: number;        // synchronized_spot / gex_spot the flow was computed at (close-anchored, NOT live)
+  charm: CharmLimb | null;   // null if net_charm unavailable OR horizon undeterminable
+  vanna: VannaLimb | null;   // null if net_vanna unavailable
+}
+
 export interface MarketState {
   ticker: string;
   price: number;
@@ -70,6 +105,9 @@ export interface MarketState {
   // IV Skew (single anchor tenor) + Term Structure (cross-tenor). Independently nullable.
   iv_skew: IvSkew | null;
   term_structure: TermStructure | null;
+  // Projected dealer flow (charm + vanna limbs) — additive, independently nullable, STATIC (rides the
+  // cached bundle, never the SSE stream). Never a scoring input.
+  dealer_flow_projection: DealerFlowProjection | null;
 }
 
 export interface StrikeRow {

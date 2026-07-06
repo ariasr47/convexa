@@ -33,7 +33,7 @@ function makeBundle(): TickerBundle {
       put_dex: null, net_vanna: null, net_charm: null, net_volga: null, vwap: null, vwap_upper_2: null,
       vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null, dte_min: null, dte_max: null,
       atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.1, net_flow: null, put_call_ratio: 0.8,
-      chain_vol_oi_ratio: null, total_volume: null, vol_oi_unusual_threshold: 1, iv_skew: null, term_structure: null,
+      chain_vol_oi_ratio: null, total_volume: null, vol_oi_unusual_threshold: 1, iv_skew: null, term_structure: null, dealer_flow_projection: null,
     },
     signals: {
       ticker: 'TSLA', regime: null, regime_note: null, vol_regime: 'neutral', distances: {},

@@ -50,6 +50,7 @@ import { CommandDeck } from './widgets/CommandDeck';
 import { LastTradeReadout } from './widgets/TickerHeader';
 import { LiveTape } from './widgets/LiveTape';
 import { DealerPositioning } from './widgets/DealerPositioning';
+import { DealerFlowProjection } from './widgets/DealerFlowProjection';
 import { GexStrikeProfile } from './widgets/GexStrikeProfile';
 import { TermStructureCard } from './widgets/TermStructure';
 import { FreshPositioning } from './widgets/FreshPositioning';
@@ -391,6 +392,11 @@ export function TickerDashboard() {
                 revealIndex={1}
               />
 
+              {/* STATIC dealer-flow projection — directly after Dealer positioning, in the static region
+                  (NOT the LiveTape row). Takes the next revealIndex (2), pushing the sections below +1.
+                  Bound to `m.dealer_flow_projection` only — no live/offline prop (`[live-vs-static-isolation]`). */}
+              <DealerFlowProjection dfp={m.dealer_flow_projection} revealIndex={2} />
+
               {data?.strike_profile && (
                 <GexStrikeProfile
                   strikes={data.strike_profile.strikes}
@@ -399,26 +405,26 @@ export function TickerDashboard() {
                   putWall={m.put_wall}
                   gammaFlip={live?.gamma_flip ?? m.gamma_flip}
                   liveSpot={isLive ? live!.mid : null}
-                  revealIndex={2}
+                  revealIndex={3}
                 />
               )}
 
               {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
-              <TermStructureCard termStructure={m.term_structure} revealIndex={3} />
+              <TermStructureCard termStructure={m.term_structure} revealIndex={4} />
               <AiRecPanel
                 ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
                 activePersonaId={persona.activeId}
                 dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
                 onAccept={onAcceptRec} onAct={onActRec} onViewExport={openExport}
                 readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
-                fillHeight revealIndex={4}
+                fillHeight revealIndex={5}
               />
 
               {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
                   motion, UX §4.4); next revealIndex in the cascade (the sections below shift +1). */}
               <OrdersWidget
                 ticker={ticker} live={live} isLive={isLive} streamOffline={streamOffline}
-                revealIndex={5}
+                revealIndex={6}
               />
 
               {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
@@ -426,11 +432,11 @@ export function TickerDashboard() {
               <FreshPositioning
                 chainVolOiRatio={m.chain_vol_oi_ratio}
                 volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
-                revealIndex={6}
+                revealIndex={7}
               />
-              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={7} />}
+              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={8} />}
 
-              <Setups setups={sig?.setups} revealIndex={8} />
+              <Setups setups={sig?.setups} revealIndex={9} />
 
               {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}

@@ -25,6 +25,50 @@ heading into. If `timestamp` looks stale, down-weight all greek/GEX fields.
 - `net_charm` — $ charm (dDelta/dTime; daily delta bleed). Directional.
 - `net_volga` — $ volga (dVega/dVol). Directional.
 
+## Projected dealer flow (`dealer_flow_projection`) — forward-looking, advisory CONTEXT only
+
+A forward-looking projection of the delta dealers are expected to hedge, built from the same
+window-scoped net-charm / net-vanna aggregates (`net_charm`/`net_vanna`) already in this bundle. Two
+independently-nullable limbs. **Advisory context to sharpen TIMING + conviction — NEVER a scored input,
+NEVER a price forecast, NEVER a guarantee.** It does not feed `opportunity_score`, `opportunity_tier`,
+the entry gate, `state_fingerprint`, or any setup. `null` (whole object) when both limbs are
+unavailable.
+
+- `dealer_flow_projection.charm` — the **charm limb**: expected cumulative delta drift dealers must
+  hedge from time-decay alone **to the next monthly OPEX**, holding spot & vol constant.
+  - `charm.projected_delta` — **dollar-delta** (signed, dealer-book convention: calls +, puts −, put
+    contributions already negated). = `net_charm · horizon_days`. **Linear, first-order** — NOT
+    path-integrated across a time grid (charm itself drifts as t→expiry; this is the honest
+    first-order read). `null` if `net_charm` is unavailable or the horizon can't be determined.
+  - `charm.per_day_base` — **dollar-delta per +1 calendar day** (= the bundle's `net_charm`). The
+    quantity the projection is built from.
+  - `charm.horizon_days` — **calendar days** to the next monthly OPEX (3rd-Friday expiration), `>= 1`.
+  - `charm.opex_date` — the monthly-OPEX date (`YYYY-MM-DD`) the drift is projected to.
+  - **Window-scoped:** built over the SELECTED DTE/expiration window (moves with the window, like
+    GEX/DEX — NOT full-chain). If the selected window excludes the OPEX date, the read still targets
+    that OPEX and surfaces `horizon_days`/`opex_date`, so a window/horizon mismatch is visible, not
+    hidden ("the flow the currently-selected window will generate by that date").
+- `dealer_flow_projection.vanna` — the **vanna limb**: expected delta change dealers must hedge **if
+  implied vol moves**. Instantaneous (no time horizon — its "horizon" is the vol-move magnitude).
+  - `vanna.projected_delta` — **dollar-delta** (signed) for the base `move_iv_points` move (= +1 IV
+    point ⇒ equals `net_vanna`). `null` if `net_vanna` unavailable.
+  - `vanna.move_iv_points` — the base assumed vol move, in **IV points** (= `1.0`).
+  - `vanna.illustrative_move_iv_points` / `vanna.illustrative_projected_delta` — an illustrative
+    **+5 IV-point** shock and its pre-scaled flow (= `net_vanna · 5`); pure linear scaling, no new
+    computation. Labeled with its move size so the magnitude is never ambiguous.
+  - `vanna.reference_direction` — `"increase"`: the quote assumes a vol **increase** (+Δσ). A vol
+    **decrease is the exact negation** (same magnitude, opposite sign). Read the sign from the
+    reference direction — never guess it.
+- `dealer_flow_projection.spot_basis` — the spot (`synchronized_spot`/`gex_spot`, close-anchored, NOT
+  live) the projection was computed at.
+
+**How to cite it:** use it for dealer-flow TIMING — e.g. "charm flow supports upward delta drift into
+Friday's OPEX" or "a +5-pt vol spike would push dealers to hedge ~$X of delta." State the direction as
+dealer-hedging flow, NOT as a price prediction. **Reliability tier:** directional/advisory context
+only, alongside the higher-order greeks — magnitudes are model-dependent; read sign + horizon + relative
+size, and always carry the assumptions (linear/first-order, vol-increase reference, snapshot-pinned).
+It is **STATIC** (snapshot-pinned; does not update on the live stream).
+
 ## OI / sentiment
 - `max_pain` — OI-based price minimizing total option-holder payout at `max_pain_expiration`. **Secondary, heuristic pin**; strengthens into that expiry. Different basis than gamma — when it agrees with `peak_gex_strike`, the pin is higher-conviction.
 - `max_pain_expiration` — expiration `max_pain` is for (nearest monthly OPEX, YYYY-MM-DD).
@@ -45,7 +89,7 @@ heading into. If `timestamp` looks stale, down-weight all greek/GEX fields.
 ## Not populated yet
 - `net_flow` — order-flow aggression. Currently `null` (not computed) — ignore until non-null.
 
-**Reliability order:** gamma structure (`net_gex`, `gamma_flip`, walls, `peak_gex_strike`) > `iv_hv_ratio`/VWAP > `max_pain` > higher-order greeks (directional only).
+**Reliability order:** gamma structure (`net_gex`, `gamma_flip`, walls, `peak_gex_strike`) > `iv_hv_ratio`/VWAP > `max_pain` > higher-order greeks + `dealer_flow_projection` (directional / advisory context only).
 
 ---
 
