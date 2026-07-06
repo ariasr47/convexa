@@ -61,9 +61,20 @@ class OptionsMarketState(TypedDict):
 
 
 class UnderlyingBar(TypedDict):
-    """A daily underlying bar; only `close` is required by the engine (for 30d HV)."""
+    """A daily underlying bar; only `close` is required by the engine (for 30d HV — a fixed
+    31-close tail slice, so the fetch lookback never changes HV).
+
+    `high` / `low` / `session` are ADDITIVE, OPTIONAL-VALUED fields (ai-context-pack), mapped
+    from the SAME agg records: `session` = the bar's Eastern-Time session date (ISO YYYY-MM-DD).
+    Missing/invalid => None. Their ONLY consumer is the market-context pack
+    (`src/core/context_pack.py`: ADX/ATR need high/low; the as-of needs `session`). For adapters
+    other than Massive, None is a legal PERMANENT value — the dependent reads degrade to null
+    (RSI/EMA still work off closes). `close`/`vwap` semantics unchanged."""
     close: float
     vwap: float
+    high: Optional[float]
+    low: Optional[float]
+    session: Optional[str]
 
 
 class IntradayBar(TypedDict):
@@ -175,7 +186,9 @@ class MarketDataProvider(ABC):
 
     @abstractmethod
     def fetch_daily_bars(self, ticker: str) -> list[UnderlyingBar]:
-        """Daily underlying bars, ascending (latest last). ~60d lookback is enough."""
+        """Daily underlying bars, ascending (latest last). Lookback ~400 calendar days
+        (target >= 250 trading bars) so the market-context pack's indicators can warm up
+        (EMA50/ADX/RSI/ATR); HV is unaffected by the length (fixed 31-close tail)."""
 
     @abstractmethod
     def fetch_intraday_bars(self, ticker: str) -> list[IntradayBar]:

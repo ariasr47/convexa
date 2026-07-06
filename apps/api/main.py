@@ -17,6 +17,11 @@ from src.core.signals import (generate_signals, evaluate_gate,
 from src.core.live import LiveHub
 from src.core import chain_store
 from src.core.darkpool import analyze_off_exchange
+# Market-context pack (ai-context-pack): a ONE-WAY LEAF like darkpool/ai_recommendation —
+# signals/engine/live/darkpool NEVER import it, it imports stdlib/math only, and main.py is the
+# sole caller. Its output is attached to market_state AFTER generate_signals returns, so no pack
+# field can exist at score/gate/fingerprint time ([additive-keeps-score-byte-identical]).
+from src.core import context_pack
 from src.core import observability as obs
 from src.core import personas as personas_lib
 from src.core import ratelimit
@@ -478,6 +483,29 @@ def compute_ticker(ticker: str, market_data: dict | None,
     with obs.span("signals"):
         sig = generate_signals(state, off_exchange)
         ai_eval = evaluate_gate(sig, GATE_SCORE)  # `changed` + staleness filled in at serve time
+
+    # market_context (ai-context-pack): the additive, best-effort "Market context" pack — four
+    # independently-nullable reads (TI regime / GEX shape / flow-vs-positioning / ATR) computed in
+    # the one-way-leaf src/core/context_pack.py from data ALREADY fetched (daily bars, the built
+    # state, the window-scoped profile rows, the raw chain snapshot). Attached AFTER
+    # generate_signals returned, so the fields did not exist at score/gate/fingerprint time (belt)
+    # and signals.py reads none of them (suspenders) — [additive-keeps-score-byte-identical].
+    #
+    # BEST-EFFORT + ISOLATED ([best-effort-isolated-or-null]): each read fails to its OWN null
+    # inside the leaf; this outer guard catches a wrapper fault -> market_context = None. The KEY
+    # is ALWAYS emitted (object|null) — a pack failure can never turn the 200 bundle into an
+    # error or touch market_state core / strike_profile / the cache / the SSE path. STATIC:
+    # cached with the bundle (60s), recomputed only on a cache miss; nothing rides SSE.
+    market_context = None
+    try:
+        with obs.span("context_pack"):
+            market_context = context_pack.compute_market_context(
+                underlying_history, profile, state, market_data)
+    except Exception:
+        logger.exception(f"[{ticker}] Market-context pack failed; emitting market_context=null "
+                         f"(bundle unaffected)")
+        market_context = None
+    state["market_context"] = market_context
 
     top = sig["setups"][0]["name"] if sig["setups"] else "none"
     logger.info(

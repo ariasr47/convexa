@@ -86,8 +86,11 @@ class MassiveProvider(MarketDataProvider):
         ticker_upper = ticker.upper()
         now = datetime.now()
 
-        # Generate standard 60-calendar-day lookback bounds matching current 2026 timeline
-        from_date = (now - timedelta(days=60)).strftime("%Y-%m-%d")
+        # 400-calendar-day lookback (~270 trading bars, target >= 250) so the market-context
+        # pack's indicators (EMA50 / ADX / RSI / ATR) can warm up. A fetch-PARAMETER change only:
+        # same single list_aggs call, internal pagination unchanged. HV is structurally
+        # unaffected (fixed 31-close tail slice in the engine).
+        from_date = (now - timedelta(days=400)).strftime("%Y-%m-%d")
         to_date = now.strftime("%Y-%m-%d")
 
         daily_bars: list[UnderlyingBar] = []
@@ -106,11 +109,26 @@ class MassiveProvider(MarketDataProvider):
                 120
             )
 
-            # Iterate directly through the generator stream to collect closed session prints
+            # Iterate directly through the generator stream to collect closed session prints.
+            # high/low/session are the ADDITIVE ai-context-pack fields mapped from the SAME agg
+            # records (missing/invalid => None; their only consumer is the context pack).
+            et_zone = zoneinfo.ZoneInfo("America/New_York")
             for bar in bars_generator:
                 close_val = extract(bar, "close")
                 vwap_val = extract(bar, "vwap")
-                daily_bars.append(UnderlyingBar(close=close_val, vwap=vwap_val))
+                high_val = extract(bar, "high")
+                low_val = extract(bar, "low")
+                session_val = None
+                ts_ms = extract(bar, "timestamp")
+                if ts_ms is not None:
+                    try:
+                        session_val = (datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+                                       .astimezone(et_zone).date().isoformat())
+                    except Exception:
+                        session_val = None
+                daily_bars.append(UnderlyingBar(
+                    close=close_val, vwap=vwap_val,
+                    high=high_val, low=low_val, session=session_val))
 
             logger.info(f"[{ticker_upper}] Fetched {len(daily_bars)} daily bars")
 

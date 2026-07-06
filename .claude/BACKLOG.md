@@ -30,6 +30,35 @@
 
 ---
 
+## Last GATE I — 2026-07-06 (owner pick: TI regime bundle + AI context-scalars pack, bundled)
+**Chosen → `ai-context-pack` — ✓ SHIPPED + ARCHIVED (2026-07-06)** → `_archive/ai-context-pack/`. Full
+pipeline both lanes; QA PASS 26/26 (de-correlated Sonnet); conformance new spec + 8-spec sweep; `nx test
+dashboard` 658/658. GRADUATED `model-read-carries-its-assumptions` (2 binding); new watch-list
+`digested-labels-not-raw-dump`. Both lanes were cut off by an API session limit before self-reporting →
+conductor re-ran the gates + fixed 3 FE test-only defects (`?raw` idiom / 20→23 count / over-broad auth
+regex) + cleaned a stale `libs/api/dist`. Latent seam → OPEN_THREADS §7q. *(original cull entry:)*
+Owner-directed pick off the standing 2026-07-02 AI-enrichment pool
+(no fresh harvest needed; the pool's cull verdicts stand). **Bundles the two parked S-effort items**
+— the **AI context-scalars pack** (GEX shape scalars · flow-vs-positioning divergence · multi-horizon
+ATR) + the **technical-indicator regime bundle** (EMA stack + ADX + RSI → DIGESTED regime labels) —
+into one feature, exactly the "later AI context pack" fold the 2026-07-02 verdict anticipated. Same
+shape throughout: derive from data already in hand (daily bars / the computed GEX profile / existing
+flow+OI) → additive nullable `market_state` fields → AI state-export CONTEXT + Ticker display, never
+a scoring input. *Decision improved:* entry/exit confluence (trend-vs-chop conditions the
+mean-reversion read) + realistic ATR-based stop/target sizing + conviction on flow-vs-positioning
+disagreement; observed when the AI rec cites regime/ATR/shape/divergence and the labels render on the
+ticker page. Feasibility **pass** — one named architect constraint: daily-bar history is ~60d
+(CONTEXT §4), so the EMA stack must fit the window or the daily-bars fetch extends (a parameter
+decision, not a new vendor dependency). Effort **S–M** (bundled) · Value **M–H** combined.
+**Invariant watch:** `additive-keeps-score-byte-identical` (HARD), `best-effort-isolated-or-null`,
+`live-vs-static-isolation` (the divergence read must declare its flow basis),
+`theme-token-discipline`, `model-read-carries-its-assumptions` (candidate), the binding
+**digested-labels-not-raw-dump** design rule (SMALL orthogonal set, labels not raw values, OUT of the
+score), `gamma-sourcing-split` NOT touched. ATR is also the enabler for the deferred distance-to-level
+tiles (§B Ticker UX quick wins — stays out of scope here, seam only). Entry = **architect-first**.
+Brief at `.claude/contracts/ai-context-pack/BRIEF.md`; routing to the Architect (GATE A·X).
+`iv-rank` / `market-backdrop` / `scanner` stay queued (displaced, not dropped).
+
 ## Last GATE I — 2026-07-02 (owner: enrich the downstream-AI's inputs — derived data, TIs)
 **Chosen → `dealer-flow-projection`** (charm/vanna projected dealer hedging flow). Owner-directed
 discovery off the "what other derived data helps the AI?" conversation. Harvest source =
@@ -453,7 +482,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   identical`). `dealer-flow-projection` ✓ SHIPPED + ARCHIVED (2026-07-02) — **`iv-rank` is now the pool
   front-runner** (owner may pick it, `market-backdrop`, or resurface `scanner`). News/sentiment stays
   owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it gives; judged on
-  downstream-AI-quality, the first-class harvest source.
+  downstream-AI-quality, the first-class harvest source. **2026-07-06: the AI context-scalars pack +
+  the TI regime bundle → ✓ SHIPPED + ARCHIVED (bundled) as `ai-context-pack`** (owner pick; QA PASS
+  26/26; see "Last GATE I — 2026-07-06" above + OPEN_THREADS §7q). Remaining in the pool: `iv-rank`
+  (front-runner), `market-backdrop` (vendor-coverage verify), volume-profile POC/CVD, news/sentiment
+  (owner-future). **ATR (now shipped) unblocks the deferred distance-to-level tiles** (§B Ticker UX quick
+  wins).
 - **Fix the broken `@org/dashboard:typecheck` Nx target** — `SURFACED 2026-07-02 (dealer-flow-projection
   GATE Q)`. `npx nx run @org/dashboard:typecheck` fails project-wide with ~960 errors — a `tsconfig.spec.json`
   gap (missing `jest-dom`/DOM lib types → `RequestInfo`/`querySelector`/`toBeInTheDocument` unresolved in

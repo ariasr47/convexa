@@ -67,6 +67,116 @@ class DealerFlowProjection(BaseModel):
     vanna: Optional[DealerFlowVanna] = None
 
 
+class TrendDirectionRead(BaseModel):
+    """Trend direction: close vs EMA20 vs EMA50 (daily closes). Warm-up >= 100 bars, else null."""
+    label: str                        # "uptrend" | "downtrend" | "mixed" (ties = mixed)
+    close: float                      # last close ($), 2dp
+    ema20: float                      # EMA20 of closes ($), 2dp
+    ema50: float                      # EMA50 of closes ($), 2dp
+    window: str                       # fixed descriptor (self-describing AI export)
+    thresholds: str                   # fixed descriptor
+
+
+class TrendStrengthRead(BaseModel):
+    """Trend strength: Wilder ADX(14). Warm-up >= 43 bars w/ valid high/low, else null."""
+    label: str                        # "weak" | "moderate" | "strong"
+    adx: float                        # Wilder ADX(14), 2dp
+    window: str
+    thresholds: str
+
+
+class MomentumStateRead(BaseModel):
+    """Momentum state: Wilder RSI(14) on daily closes. Warm-up >= 42 bars, else null."""
+    label: str                        # "overbought" | "bullish" | "neutral" | "bearish" | "oversold"
+    rsi: float                        # Wilder RSI(14), 2dp
+    window: str
+    thresholds: str
+
+
+class TrendMomentumRead(BaseModel):
+    """TI regime read off the fetched daily bars (may include the in-progress partial bar).
+
+    Three independently-nullable labels; the child is null when all three are null or the
+    read raised. `as_of_session` = the last daily bar's ET session date.
+    """
+    as_of_session: str                # ISO YYYY-MM-DD
+    direction: Optional[TrendDirectionRead] = None
+    strength: Optional[TrendStrengthRead] = None
+    momentum: Optional[MomentumStateRead] = None
+
+
+class GexProfileShapeRead(BaseModel):
+    """Shape scalars over the ALREADY-computed window-scoped per-strike net_gex (vendor gamma),
+    anchored at gex_spot. ALL-OR-NULL (one compute; needs >= 5 eligible strikes & sum|net_gex|>0).
+    """
+    concentration: float              # normalized HHI in [0,1], 2dp (0 = uniform, 1 = one strike)
+    concentration_label: str          # "concentrated" | "mixed" | "dispersed"
+    balance: float                    # in [-1,+1], signed, 2dp (+ = weight above spot)
+    balance_label: str                # "above_skewed" | "balanced" | "below_skewed"
+    center_of_mass_distance: float    # signed FRACTION of spot_basis (+ above / - below), 4dp
+    eligible_strikes: int             # strikes with |net_gex| > 0 in the selected window
+    spot_basis: float                 # gex_spot the shape was computed at (close-anchored, NOT live)
+    thresholds: str                   # fixed descriptor
+
+
+class DivergenceLocation(BaseModel):
+    """Where today's option volume sits vs where standing OI sits (strike-share distributions)."""
+    label: str                        # "aligned" | "rotating" | "divergent"
+    distribution_shift: float         # in [0,1], 2dp (0 = identical, 1 = entirely elsewhere)
+    thresholds: str
+
+
+class DivergenceComposition(BaseModel):
+    """Which right today's activity favors vs the standing book. When present, ALL THREE scalars
+    are non-null (null iff the tilt is undeterminable: call volume = 0 or oi_pcr <= 0)."""
+    label: str                        # "flow_put_tilted" | "consistent" | "flow_call_tilted"
+    volume_pcr: float                 # today's put/call VOLUME ratio, 2dp
+    oi_pcr: float                     # standing full-chain put/call OI ratio (== put_call_ratio), 2dp
+    tilt_ratio: float                 # volume_pcr / oi_pcr, 2dp
+    thresholds: str
+
+
+class FlowVsPositioningRead(BaseModel):
+    """Flow-vs-positioning divergence. Flow basis PINNED: the chain snapshot's same-day cumulative
+    option volume — UNSIGNED (no buy/sell side), full-chain, NEVER the SSE net flow. Two
+    independently-nullable sub-components; child null when both are null or the read raised."""
+    flow_basis: str                   # fixed descriptor
+    location: Optional[DivergenceLocation] = None
+    composition: Optional[DivergenceComposition] = None
+
+
+class AtrHorizon(BaseModel):
+    """One ATR horizon: simple mean of True Range over the last n bars (NOT Wilder-smoothed).
+    Requires the n+1 tail bars all with valid high/low, else null — never a fabricated 0."""
+    value: float                      # $ (2dp)
+    pct_of_close: float               # PERCENT of close_basis (2dp; 2.31 = 2.31%)
+    window_bars: int
+
+
+class AtrRead(BaseModel):
+    """Multi-horizon ATR (5/14/30 trading bars), each horizon independently nullable; child null
+    when all horizons are null or the read raised."""
+    as_of_session: str                # ISO YYYY-MM-DD (same convention as trend_momentum)
+    close_basis: float                # last bar's close ($) the percentages are against, 2dp
+    method: str                       # fixed descriptor
+    atr_5d: Optional[AtrHorizon] = None
+    atr_14d: Optional[AtrHorizon] = None
+    atr_30d: Optional[AtrHorizon] = None
+
+
+class MarketContextPack(BaseModel):
+    """The "Market context" pack (ai-context-pack) — four additive, best-effort, STATIC advisory
+    reads, computed in the one-way-leaf src/core/context_pack.py from data already fetched and
+    attached AFTER generate_signals returns. Advisory CONTEXT only — NEVER an input to signals /
+    opportunity_score / opportunity_tier / the entry gate / state_fingerprint. Each child is
+    independently nullable; the whole object is null only when ALL FOUR are unavailable OR the
+    wrapper raised (the market_context KEY itself is ALWAYS emitted, object|null)."""
+    trend_momentum: Optional[TrendMomentumRead] = None
+    gex_profile_shape: Optional[GexProfileShapeRead] = None
+    flow_vs_positioning: Optional[FlowVsPositioningRead] = None
+    atr: Optional[AtrRead] = None
+
+
 class MarketState(BaseModel):
     # Core Data
     ticker: str
@@ -127,6 +237,13 @@ class MarketState(BaseModel):
     # two independently-nullable limbs (charm/vanna). null (whole object) only when BOTH limbs are
     # unavailable OR the compute raised. Mirrors the iv_skew/term_structure nested-optional pattern.
     dealer_flow_projection: Optional[DealerFlowProjection] = None
+
+    # Market-context pack (STATIC, additive, advisory context only — NOT scored). Four
+    # independently-nullable reads (TI regime / GEX shape / flow-vs-positioning / ATR) computed
+    # in the one-way-leaf src/core/context_pack.py and attached AFTER generate_signals returns.
+    # The KEY is ALWAYS emitted (object|null); null only when all four reads are unavailable OR
+    # the wrapper raised ([best-effort-isolated-or-null]).
+    market_context: Optional[MarketContextPack] = None
 
     # Volatility & Sentiment
     atm_iv: float

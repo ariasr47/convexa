@@ -33,6 +33,7 @@
 | `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
 | `single-shared-sim-entry-dialog` | every sim-entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/trading/TradeEntryDialog`; a new entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof | CONTEXT §5 · THREADS §9 | 2026-07-02 | sim-entry-unification, ai-rec-backtest-orders (2 binding) |
 | `theme-token-discipline` | a new or re-skinned FE component binds to the MUI theme / `tokens.ts` — mode-aware values via `extrasFor(theme)` inside sx callbacks — **never hardcoded hex**; dark/light parity verified | CONTEXT §5 · THREADS §9 | 2026-07-02 | convexa-redesign, ticker-ux-polish, light-mode-parity + sim-entry-unification, ai-rec-backtest-orders (4 programs) |
+| `model-read-carries-its-assumptions` | a forward-looking / model-dependent read (a projection, a model-derived level, a threshold-bucketed regime label/scalar) is surfaced **self-describing** — it carries its own horizon / window / assumption / basis / threshold — and is framed as **advisory context, never a guarantee / price forecast / scored signal** | CONTEXT §5 · THREADS §9 | 2026-07-06 | dealer-flow-projection, ai-context-pack (2 binding) |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -61,12 +62,17 @@
   ticker-ux-polish program ("held again"), light-mode-parity/sim-entry-unification (the `extrasFor`
   mechanism itself), and ai-rec-backtest-orders (token-only orders module). ≥3 shipped features →
   Promoted canon above.)_
-- **`model-read-carries-its-assumptions`** (candidate, 2026-07-02 — dealer-flow-projection; the analytic
-  gamma flip is a pre-ledger precedent) — a forward-looking / model-dependent read (a projection, a
-  model-derived level) is surfaced **self-describing**: it carries its own horizon / assumption / basis and
-  is framed as advisory context, **never as a guarantee or a scored signal**. Generalizes the flip's
-  "immaterial divergence, measure-before-calibrate" honesty. Not promoted (1 clean ledger instance); logged
-  for recurrence (news/sentiment + iv-rank + market-backdrop will likely hit it). *binding:yes.*
+- _(`model-read-carries-its-assumptions` GRADUATED 2026-07-06 — 2 binding (dealer-flow-projection — the
+  assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read carries its
+  window+threshold+basis + the "not a forecast, not a scored signal" framing). Crossed the "≥2 if binding"
+  threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list.)_
+- **`digested-labels-not-raw-dump`** (candidate, 2026-07-06 — ai-context-pack; the 2026-07-02 GATE I named
+  it as the binding design rule for the TI bundle) — a technical-indicator / derived-signal set fed to the
+  downstream AI (and displayed) is a **SMALL orthogonal set pre-digested into regime LABELS**, not a raw
+  indicator/OHLC dump — signal overload degrades the AI. The wire enum is authoritative (FE never re-derives
+  a label from the scalar); raw series stay out of the UI. Not promoted (1 instance); logged for recurrence
+  (volume-profile/CVD, the news/sentiment classifier, any future indicator bundle will likely hit it).
+  *binding:yes.*
 - **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
   store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
   never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
@@ -150,6 +156,47 @@
 | `best-effort-isolated-or-null` | dealer-flow-projection | S | per-limb + whole-object null → null field, never a 5xx / fabricated 0 / fabricated date; a forced internal exception → `dealer_flow_projection: null` with the bundle still 200; a naturally-occurring whole-null case found in the wild (`min_dte=500`); the two limbs independently nullable | yes |
 | `live-vs-static-isolation` | dealer-flow-projection | S | declared STATIC (`spot_basis = gex_spot`, never the live spot; never on SSE); on a stream drop the widget stays visible + un-dimmed + no `⏸` chip (FE contrast test vs a dimming LiveTape tile); excluded from the live-offline treatment like the four positioning tiles | yes |
 | `theme-token-discipline` | dealer-flow-projection | S | the new `DealerFlowProjection` widget + copy are token-only via the MUI theme; dark/light parity render-verified; zero hardcoded hex | yes |
+| `additive-keeps-score-byte-identical` | ai-context-pack | S | new one-way leaf `context_pack.py` (`signals`/`engine`/`live`/`darkpool` don't import it); attached AFTER `generate_signals` returns; `signals.py` **0 diff**; score/tier/`state_fingerprint` byte-identical (SPY 87/prime/`bb82718bcf1e`) with/without/forced-fault AND before/after the 60→400d daily-bar fetch extension (QA independently re-derived; HV unaffected — fixed 31-close tail) | yes |
+| `best-effort-isolated-or-null` | ai-context-pack | S | four reads each INDEPENDENTLY nullable (per-label / per-horizon / per-sub-component / per-read); whole-pack null only when all four unavailable or the wrapper raised; a forced whole-pack fault → `market_context: null` with the bundle still 200; the `market_context` KEY is always emitted (`object|null`) | yes |
+| `live-vs-static-isolation` | ai-context-pack | S | all four reads declared STATIC (bar/profile-derived; flow basis = the chain snapshot's cumulative volume, NEVER the SSE net flow); nothing rides SSE; the widget stays visible + UN-DIMMED on a stream drop (contrast with the dimming LiveTape) | yes |
+| `theme-token-discipline` | ai-context-pack | S | the `MarketContext` widget + copy are token-only via the MUI theme; dark/light parity verified; zero hardcoded hex (structural source-scan test) | yes |
+| `model-read-carries-its-assumptions` | ai-context-pack | S | every trend/shape/flow/ATR label + scalar carries its window / threshold / basis descriptor in-payload (self-describing export); the UI frames the pack "advisory context — not a forecast, not a scored signal, not a guarantee"; **2nd binding instance → GRADUATES** | yes |
+| `digested-labels-not-raw-dump` | ai-context-pack | S | the TI read is a SMALL orthogonal set pre-digested into regime LABELS (direction/strength/momentum/concentration/balance/location/composition enums), not raw indicator values; the wire enum is authoritative (FE never re-derives a label from the scalar); no raw indicator/OHLC series in the UI (watch-list key) | yes |
+
+> Note (GATE S, ai-context-pack, 2026-07-06): the SECOND item of the owner "enrich the downstream-AI's
+> inputs" GATE I (owner pick 2026-07-06) — **bundled** the two parked scored items (AI context-scalars pack
+> + TI regime bundle) into one feature: the additive nested nullable `market_state.market_context` with four
+> independently-nullable STATIC children (trend/momentum digested LABELS off Wilder ADX-14/RSI-14 + EMA
+> stack; GEX-profile shape scalars off the already-computed profile; flow-vs-positioning divergence off
+> today's UNSIGNED cumulative volume vs OI; multi-horizon ATR). New one-way leaf `context_pack.py`, attached
+> AFTER scoring; daily-bars fetch 60→400d (no new env) + additive `UnderlyingBar` high/low/session; AI-context
+> (rides the unchanged wholesale `serialize_context`) + a Ticker "Market context" widget; NEVER a scoring
+> input. Full pipeline (architect → PM → UX split → both lanes → GATE Q). **GRADUATION:**
+> `model-read-carries-its-assumptions` reached its **2nd binding instance** (dealer-flow-projection +
+> ai-context-pack) → promoted into CONTEXT §5 + THREADS §9; removed from the watch list. New watch-list key
+> `digested-labels-not-raw-dump` (1 instance — the TI-labels-not-raw-values design rule the 2026-07-02 GATE I
+> named). The four already-canon keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`,
+> `live-vs-static-isolation`, `theme-token-discipline`) each gained an instance — no other graduation.
+> **QA (GATE Q)** fresh de-correlated **Sonnet**: **PASS 26/26** (0 FAIL / 0 UNVERIFIABLE; conformance new
+> standalone spec `ai_context_pack.json` + 8-spec no-regression sweep; byte-identity independently re-derived
+> against the live feed; AC↔test traceability non-vacuous; `nx test dashboard` 658/658 + `@org/api` 13/13,
+> `tsc -b` clean, `nx build` green). **Lane-interruption methodology note (system-10 kin):** BOTH executioner
+> lanes were cut off by an API session limit **before self-reporting** — the "completed" notifications
+> carried a session-limit banner, not a build report. The conductor treated them as UNVERIFIED and re-ran
+> every gate, catching **3 FE test-ONLY defects** the cut-off lanes never ran into (component code correct):
+> (1) two structural source-scans used `fileURLToPath(new URL(..., import.meta.url))` which throws in this
+> Vitest env → Vite-native `?raw` import; (2) `toHaveLength(20)` vs the genuine **23** pinned enum values
+> (7 label families, not 6); (3) an over-broad negative auth regex `/session/i` collided with the feature's
+> own copy ("today's **session** cumulative option volume") + `queryByText` throwing on a legitimate multiple
+> → narrowed to auth-CTA phrases + `queryAllByText`. Also a **stale `libs/api/dist`** (pre-rebrand
+> `gammaflow.d.ts`) produced FALSE `@org/api` type errors under `tsc -p tsconfig.app.json` — cleaned +
+> regenerated. **Lessons:** (a) a subagent "completed" whose result is a limit/quota banner is UNVERIFIED —
+> re-run the gates, never trust it; (b) `tsc -b --force` (build-mode, regenerates referenced lib decls) is
+> the reliable typecheck when `libs/api/dist` is stale — a bare `tsc -p tsconfig.app.json` resolves `@org/api`
+> through the stale built `.d.ts`. **Latent finding logged (NOT this feature's regression):**
+> `off_exchange.blocks[].age_seconds` drifts ~1s between identical-input runs (a pre-existing WALL-CLOCK
+> display field, display-only + unscored → never touches score/tier/`state_fingerprint`); it only trips the
+> byte-identity proof's stronger-than-needed "entire-bundle-identical" control, not the binding invariant.
 
 > Note (GATE S, dealer-flow-projection, 2026-07-02): the first item of the owner "enrich the
 > downstream-AI's inputs" GATE I — a projected dealer-hedging-flow read (charm limb = net_charm·days-to-

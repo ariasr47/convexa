@@ -298,6 +298,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   callbacks (bare `extras.` is dark-only) — and carries **zero hardcoded hex**; dark/light parity is part
   of done. *(convexa-redesign — watch-listed; ticker-ux-polish — held; light-mode-parity +
   sim-entry-unification — the `extrasFor` mechanism; ai-rec-backtest-orders — the token-only orders module.)*
+- **`[model-read-carries-its-assumptions]`** (promoted 2026-07-06, 2 binding) — a forward-looking or
+  **model-dependent** read (a projection, a model-derived level, a threshold-bucketed regime label or
+  scalar) is surfaced **self-describing**: it carries its own **horizon / window / assumption / basis /
+  threshold** and is framed as **advisory context — never a guarantee, a price forecast, or a scored
+  signal**. Generalizes the analytic gamma-flip's measure-before-calibrate honesty. *(dealer-flow-projection
+  — the assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read
+  carries its window+threshold+basis descriptor + the "not a forecast, not a scored signal" framing.
+  2 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -509,6 +517,31 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   post-QA render-pass catch fixed inline (a container-query written as a responsive-value key → the
   `auto-fit`/`minmax` idiom). First feature of the "enrich the downstream-AI's inputs" GATE I. `net_volga`
   NOT elevated; `gamma-sourcing-split` untouched.
+- **AI context pack — "Market context" (`ai-context-pack`, FE+BE, additive, shipped 2026-07-06)** — a
+  bundle of four derived reads, all from data already fetched (no new vendor dependency), surfaced as the
+  additive nested nullable `market_state.market_context` — **AI-context** (rides the AI state export via the
+  unchanged wholesale `serialize_context` forward) + a Ticker **"Market context"** widget, **never a scoring
+  input**. New one-way leaf `src/core/context_pack.py` (`signals`/`engine`/`live`/`darkpool` do NOT import
+  it), attached in `main.py` **after** `generate_signals` returns (the fields don't exist at scoring time —
+  the structural byte-identity guarantee). Four **independently-nullable STATIC** children: **`trend_momentum`**
+  (digested regime **labels**, not raw values — direction `uptrend|downtrend|mixed` off close-vs-EMA20-vs-EMA50,
+  strength `weak|moderate|strong` off Wilder ADX-14, momentum 5-state off Wilder RSI-14; each label carries its
+  window+thresholds), **`gex_profile_shape`** (normalized-HHI concentration + above/below `balance` +
+  center-of-mass distance over the window-scoped net-GEX profile — **reads** the already-computed profile;
+  `gamma-sourcing-split` untouched), **`flow_vs_positioning`** (locational `distribution_shift` + compositional
+  `tilt_ratio` — today's **UNSIGNED** cumulative option volume vs standing OI; basis pinned in-payload, **never**
+  the SSE net flow, no aggressor-side claim), **`atr`** (5/14/30-bar simple-mean true range for stop/target
+  sizing CONTEXT). The daily-bars fetch was extended **60→400 calendar days** (same single provider call, no new
+  env) + additive `UnderlyingBar` `high`/`low`/`session`; HV provably unaffected (fixed 31-close tail).
+  `signals.py` **0 diff**; score/tier/`state_fingerprint` byte-identical (SPY 87 / prime / `bb82718bcf1e`) with/
+  without/forced-fault AND before/after the fetch extension. **FE:** ONE bento `MarketContext` widget (four
+  sub-cards, all headline labels visible without expanding) after `DealerFlowProjection`; the wire enum is
+  authoritative (1:1 display map, never FE-re-derived); five distinct null levels each its own muted "unavailable
+  this cycle"; STATIC-family (un-dimmed on an SSE drop); token-only; no auth gate (anonymous includes the pack).
+  Every read is **self-describing** (`model-read-carries-its-assumptions`) and advisory ("not a forecast, not a
+  scored signal, not a guarantee"). QA PASS (Sonnet, de-correlated — 26/26 ACs, conformance new spec +
+  8-spec sweep, `nx test dashboard` 658/658). Second feature of the "enrich the downstream-AI's inputs" GATE I
+  (bundled the AI context-scalars pack + the TI regime bundle). *(2026-07-06.)*
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

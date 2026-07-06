@@ -62,6 +62,118 @@ export interface DealerFlowProjection {
   vanna: VannaLimb | null;   // null if net_vanna unavailable
 }
 
+// ---- AI context pack ("Market context") — ai-context-pack INTERFACE_CONTRACT §payload -----------
+// One additive, independently-nullable nested object on `market_state`, mirroring
+// `dealer_flow_projection`. STATIC (rides the cached REST bundle, never the SSE stream) and advisory
+// CONTEXT only — never a scoring input (`[additive-keeps-score-byte-identical]`). Five levels of
+// best-effort null: per-label (TI) / per-horizon (ATR) / per-sub-component (divergence) / per-read /
+// whole-pack. The `label` fields are CLOSED enums computed backend-side from the UNROUNDED scalars —
+// the FE never re-derives a label from a scalar (an unknown enum renders that label's unavailable
+// state). The `window`/`thresholds`/`flow_basis`/`method` descriptor strings exist so the AI export
+// is self-describing; the FE does NOT parse or render them (it has its own pinned copy).
+
+/** Trend direction off daily closes (close vs EMA20 vs EMA50). Null under its warm-up floor. */
+export interface TrendDirectionRead {
+  label: 'uptrend' | 'downtrend' | 'mixed';
+  close: number;  // last close ($), 2dp
+  ema20: number;  // EMA20 of closes ($), 2dp
+  ema50: number;  // EMA50 of closes ($), 2dp
+  window: string;     // fixed descriptor (wire-only; FE renders its own pinned copy)
+  thresholds: string; // fixed descriptor
+}
+
+/** Trend strength (Wilder ADX(14)). Null under its floor / missing high-low. */
+export interface TrendStrengthRead {
+  label: 'weak' | 'moderate' | 'strong';
+  adx: number; // Wilder ADX(14), 2dp on the wire (FE displays 1dp)
+  window: string;
+  thresholds: string;
+}
+
+/** Momentum state (Wilder RSI(14)). Null under its floor. */
+export interface MomentumStateRead {
+  label: 'overbought' | 'bullish' | 'neutral' | 'bearish' | 'oversold';
+  rsi: number; // Wilder RSI(14), 2dp on the wire (FE displays 1dp)
+  window: string;
+  thresholds: string;
+}
+
+/** Trend & momentum read — three independently-nullable labels off the daily-bar series. Null when
+ *  all 3 labels are null OR the read raised. */
+export interface TrendMomentumRead {
+  as_of_session: string; // ISO YYYY-MM-DD — the last daily bar's ET session date
+  direction: TrendDirectionRead | null;
+  strength: TrendStrengthRead | null;
+  momentum: MomentumStateRead | null;
+}
+
+/** Shape scalars over the window-scoped net-GEX profile. ALL-OR-NULL (one compute; needs >= 5
+ *  eligible strikes & sum|net_gex| > 0). When present every field is non-null. */
+export interface GexProfileShapeRead {
+  concentration: number;       // normalized HHI in [0,1], 2dp
+  concentration_label: 'concentrated' | 'mixed' | 'dispersed';
+  balance: number;             // in [-1,+1], signed, 2dp (+ = weight above spot)
+  balance_label: 'above_skewed' | 'balanced' | 'below_skewed';
+  center_of_mass_distance: number; // signed FRACTION of spot_basis (4dp; FE renders as a percent)
+  eligible_strikes: number;    // int — strikes with |net_gex| > 0 in the selected window
+  spot_basis: number;          // gex_spot the shape was computed at (close-anchored, NOT live)
+  thresholds: string;
+}
+
+/** Where today's volume sits vs standing OI, strike by strike. Independently nullable. */
+export interface DivergenceLocation {
+  label: 'aligned' | 'rotating' | 'divergent';
+  distribution_shift: number; // in [0,1], 2dp
+  thresholds: string;
+}
+
+/** Which right today's volume favors vs the standing book. Independently nullable; when present
+ *  ALL THREE scalars are non-null. */
+export interface DivergenceComposition {
+  label: 'flow_put_tilted' | 'consistent' | 'flow_call_tilted';
+  volume_pcr: number; // today's put/call VOLUME ratio, 2dp
+  oi_pcr: number;     // standing full-chain put/call OI ratio (== put_call_ratio), 2dp
+  tilt_ratio: number; // volume_pcr / oi_pcr, 2dp
+  thresholds: string;
+}
+
+/** Flow vs positioning read — null when BOTH sub-components are null OR the read raised. The flow
+ *  basis is the chain snapshot's same-day cumulative option volume — UNSIGNED; never the SSE net
+ *  flow; never tick data. */
+export interface FlowVsPositioningRead {
+  flow_basis: string; // fixed descriptor
+  location: DivergenceLocation | null;
+  composition: DivergenceComposition | null;
+}
+
+/** One ATR horizon. Independently nullable (a horizon without its full valid-bar tail is null —
+ *  never a fabricated 0). */
+export interface AtrHorizon {
+  value: number;        // $ (2dp)
+  pct_of_close: number; // PERCENT of close_basis (2dp, e.g. 2.31 = 2.31%)
+  window_bars: number;  // int
+}
+
+/** Average-true-range read — null when ALL horizons are null OR the read raised. */
+export interface AtrRead {
+  as_of_session: string; // ISO YYYY-MM-DD (same convention as trend_momentum.as_of_session)
+  close_basis: number;   // the last bar's close ($) the percentages are against, 2dp
+  method: string;        // fixed descriptor
+  atr_5d: AtrHorizon | null;
+  atr_14d: AtrHorizon | null;
+  atr_30d: AtrHorizon | null;
+}
+
+/** The AI context pack. Null only when ALL FOUR children are null OR the wrapper raised. The KEY is
+ *  always present on a post-feature backend; it is OPTIONAL on `MarketState` so pre-feature payloads
+ *  type-check (consumers read `m.market_context ?? null`). */
+export interface MarketContextPack {
+  trend_momentum: TrendMomentumRead | null;
+  gex_profile_shape: GexProfileShapeRead | null;
+  flow_vs_positioning: FlowVsPositioningRead | null;
+  atr: AtrRead | null;
+}
+
 export interface MarketState {
   ticker: string;
   price: number;
@@ -108,6 +220,9 @@ export interface MarketState {
   // Projected dealer flow (charm + vanna limbs) — additive, independently nullable, STATIC (rides the
   // cached bundle, never the SSE stream). Never a scoring input.
   dealer_flow_projection: DealerFlowProjection | null;
+  // AI context pack ("Market context") — additive, independently nullable, STATIC. OPTIONAL key so
+  // pre-feature payloads type-check; consumers read `m.market_context ?? null`. Never a scoring input.
+  market_context?: MarketContextPack | null;
 }
 
 export interface StrikeRow {

@@ -69,6 +69,71 @@ only, alongside the higher-order greeks — magnitudes are model-dependent; read
 size, and always carry the assumptions (linear/first-order, vol-increase reference, snapshot-pinned).
 It is **STATIC** (snapshot-pinned; does not update on the live stream).
 
+## Market context (`market_context`) — pre-digested regime/shape/flow/range reads, advisory CONTEXT only
+
+Four digested reads computed from data already in this bundle (daily bars, the window-scoped net-GEX
+profile, the chain snapshot). **Advisory context only — NEVER a scoring input, NEVER a forecast, NEVER
+a guarantee.** None of it feeds `opportunity_score`, `opportunity_tier`, the entry gate, or
+`state_fingerprint`. Every read carries its own window/thresholds/basis in-payload (self-describing).
+Each of the four children is independently nullable — a null means "could not be computed honestly
+this cycle" (commonly insufficient history or an empty basis), never zero. The whole object is `null`
+only when all four are unavailable. **STATIC:** snapshot-pinned to the bundle; never updated by the
+live stream.
+
+- `market_context.trend_momentum` — trend/momentum regime from the fetched daily-close series (may
+  include the in-progress session's partial bar; `as_of_session` = the last bar's session date). Three
+  independently-nullable labels, each with its generating scalar(s) + window + thresholds:
+  - `direction.label` ∈ `uptrend | downtrend | mixed` — close vs EMA20 vs EMA50 (strict chains;
+    ties = `mixed`). Scalars: `close`, `ema20`, `ema50`. Warm-up ≥ 100 bars, else null.
+  - `strength.label` ∈ `weak | moderate | strong` — Wilder ADX(14): `< 20` weak, `20–25` moderate,
+    `>= 25` strong. Scalar: `adx`. Warm-up ≥ 43 bars with valid high/low, else null. ADX is
+    strength-only (no direction) — read with `direction`.
+  - `momentum.label` ∈ `overbought | bullish | neutral | bearish | oversold` — Wilder RSI(14):
+    `>= 70`, `[55,70)`, `[45,55)`, `(30,45)`, `<= 30`. Scalar: `rsi`. Warm-up ≥ 42 bars, else null.
+  - **How to cite:** regime context for whether mean-reversion around the GEX levels is trustworthy
+    (e.g. "trend read is Mixed with Weak ADX — chop; fading levels is better supported"). Never a
+    standalone entry/exit signal.
+- `market_context.gex_profile_shape` — shape scalars over the SAME window-scoped per-strike `net_gex`
+  the profile/walls use (vendor gamma; anchored at `spot_basis` = `gex_spot`). Requires ≥ 5 strikes
+  with non-zero net GEX (`eligible_strikes` is carried), else null (all-or-null):
+  - `concentration` — normalized HHI ∈ [0,1] (0 = uniform, 1 = one strike);
+    `concentration_label` ∈ `concentrated (>= 0.35) | mixed (0.15–0.35) | dispersed (< 0.15)`.
+  - `balance` — (|net GEX| share strictly above spot − share strictly below) ∈ [−1,+1];
+    `balance_label` ∈ `above_skewed (>= +0.20) | balanced | below_skewed (<= −0.20)`.
+  - `center_of_mass_distance` — the |net GEX|-weighted average strike's signed distance from
+    `spot_basis`, as a FRACTION of spot (+ above / − below). No label.
+  - **How to cite:** structure quality — a `concentrated` + `above_skewed` profile means the levels
+    the walls mark carry most of the weight above spot; a `dispersed` profile weakens wall conviction.
+    The DTE window basis is the bundle's `dte_min`/`dte_max`.
+- `market_context.flow_vs_positioning` — whether TODAY's option activity sits where the STANDING
+  positioning sits. **Flow basis (pinned, also carried as `flow_basis`): today's session cumulative
+  per-contract option volume from the chain snapshot — full-chain, UNSIGNED (no buy/sell side, no
+  aggressor inference, never a "smart money" claim), captured at the snapshot and aging under the
+  bundle's `stale` flag. NOT the SSE stock-tape net flow.** Two independently-nullable sub-components:
+  - `location` — `distribution_shift` ∈ [0,1]: the strike-share distribution of today's volume vs the
+    strike-share distribution of standing OI (0 = identical, 1 = entirely elsewhere);
+    `label` ∈ `aligned (< 0.35) | rotating (0.35–0.60) | divergent (>= 0.60)`. Null when today's
+    volume or OI totals are unusable.
+  - `composition` — `volume_pcr` (today's put/call VOLUME ratio), `oi_pcr` (the standing full-chain
+    put/call OI ratio — same value as `put_call_ratio`), `tilt_ratio = volume_pcr / oi_pcr`;
+    `label` ∈ `flow_put_tilted (>= 1.25) | consistent | flow_call_tilted (<= 0.80)`. Null when a
+    ratio is undeterminable (e.g. zero call volume or OI).
+  - **How to cite:** composition/location ONLY — e.g. "today's flow is rotating away from standing OI
+    and put-tilted vs the book." NEVER as buying/selling pressure or accumulation/distribution.
+- `market_context.atr` — typical daily range over `atr_5d` / `atr_14d` / `atr_30d` (each
+  independently nullable): `value` ($), `pct_of_close` (% of the last close, `close_basis`),
+  `window_bars`. Method (also carried as `method`): **simple mean of True Range over the last n
+  bars**, `TR = max(high − low, |high − prevClose|, |low − prevClose|)`; a horizon needs its full
+  `n+1`-bar tail with valid high/low, else null (never a close-to-close fallback, never 0).
+  `as_of_session` carried.
+  - **How to cite:** range REALISM — sanity-check whether a hoped-for move or a distance to a level is
+    plausible within a horizon ("a move to the call wall is ~1.8× the 14-day ATR — ambitious for one
+    session"). The app deliberately does NOT compute stops/targets/distances from it.
+
+**Reliability tier:** advisory context, same tier as the higher-order greeks and
+`dealer_flow_projection` — labels are threshold-digests of standard indicators, not signals. Read them
+WITH the gamma structure, never instead of it.
+
 ## OI / sentiment
 - `max_pain` — OI-based price minimizing total option-holder payout at `max_pain_expiration`. **Secondary, heuristic pin**; strengthens into that expiry. Different basis than gamma — when it agrees with `peak_gex_strike`, the pin is higher-conviction.
 - `max_pain_expiration` — expiration `max_pain` is for (nearest monthly OPEX, YYYY-MM-DD).
@@ -89,7 +154,7 @@ It is **STATIC** (snapshot-pinned; does not update on the live stream).
 ## Not populated yet
 - `net_flow` — order-flow aggression. Currently `null` (not computed) — ignore until non-null.
 
-**Reliability order:** gamma structure (`net_gex`, `gamma_flip`, walls, `peak_gex_strike`) > `iv_hv_ratio`/VWAP > `max_pain` > higher-order greeks + `dealer_flow_projection` (directional / advisory context only).
+**Reliability order:** gamma structure (`net_gex`, `gamma_flip`, walls, `peak_gex_strike`) > `iv_hv_ratio`/VWAP > `max_pain` > higher-order greeks + `dealer_flow_projection` + `market_context` (directional / advisory context only).
 
 ---
 
@@ -278,7 +343,8 @@ reasoning over these fields rather than re-deriving regime/levels yourself.
 - **Pipeline stages (fixed vocabulary):** `vendor_fetch` (vendor REST: chain + daily/intraday bars,
   + recent trades when dark_pool) · `engine_build` (GEX/greeks/walls/flip/DEX/Vol-OI/skew/term + HV +
   VWAP) · `off_exchange` (off-exchange/blocks pass; `skipped` when dark_pool off — never a fake 0) ·
-  `signals` (setups/score + gate) · `persist` (writes the ticker JSON files to disk) ·
+  `signals` (setups/score + gate) · `context_pack` (the market-context pack — best-effort, after
+  signals) · `persist` (writes the ticker JSON files to disk) ·
   `serialize_wrap` (envelope + tiering + position_eval + serialization).
 - **I/O vs CPU tag (`kind`):** `io_vendor`/`io_disk` → **I/O** (network/disk — parallelizable and/or
   cacheable at fan-out); `cpu_engine`/`cpu_signals`/`serialize` → **CPU** (needs worker/process

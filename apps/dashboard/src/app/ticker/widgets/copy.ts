@@ -186,6 +186,189 @@ export const DFP_HONESTY_FRAME =
   'Dealer-flow context — not a price forecast, not a scored signal, not a guarantee.';
 export const DFP_WHOLE_EMPTY = 'Projected dealer flow unavailable this cycle.';
 
+// ---- Market context (ai-context-pack) — copy + display maps + formatters ----------------------
+// All copy verbatim from the ai-context-pack UX_BLUEPRINT §5 (the FE specs assert it). The display
+// maps are the ONLY label source — the FE never re-derives a label from a scalar; an unknown enum
+// value maps to `null` (that label's unavailable state), never a raw-enum pass-through.
+
+/**
+ * humanSessionDate — the ISO session date rendered weekday+month+day (`2026-07-03` -> `Fri Jul 3`).
+ * A neutral alias of the existing `humanOpex` formatter (UX_BLUEPRINT §3: reuse under a neutral
+ * alias) — same UTC-calendar parse, same raw-string fallback. Display-only.
+ */
+export const humanSessionDate = humanOpex;
+
+/** 2dp fixed — close/EMA/HHI/balance/shift/PCR/tilt (display-only; never touches values). */
+export const fmt2 = (v: number): string => v.toFixed(2);
+/** 1dp fixed — ADX/RSI display (wire carries 2dp; FE displays 1dp) + ATR pct_of_close. */
+export const fmt1 = (v: number): string => v.toFixed(1);
+/** Explicit sign (`+` / U+2212 `−`) + 2dp — the balance scalar. `0` reads `+0.00`. */
+export const fmtSigned2 = (v: number): string => `${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(2)}`;
+/** ATR dollars: 2dp, locale-grouped (`$4.12`, `$1,234.56`). */
+export const fmtAtrUsd = (v: number): string =>
+  `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+/** Center of mass: the wire FRACTION rendered as a signed percent, 1dp (`0.012` -> `+1.2% vs spot`). */
+export const mcComLine = (fraction: number): string =>
+  `${fraction < 0 ? '−' : '+'}${Math.abs(fraction * 100).toFixed(1)}% vs spot`;
+
+// The 1:1 enum → display maps (UX_BLUEPRINT §5.2, BINDING — one display string per enum value;
+// never softened/re-bucketed/replaced by numbers; no other label text exists).
+export const MC_DIRECTION_DISPLAY: Record<string, string> = {
+  uptrend: 'Uptrend', downtrend: 'Downtrend', mixed: 'Mixed',
+};
+export const MC_STRENGTH_DISPLAY: Record<string, string> = {
+  weak: 'Weak', moderate: 'Moderate', strong: 'Strong',
+};
+export const MC_MOMENTUM_DISPLAY: Record<string, string> = {
+  overbought: 'Overbought', bullish: 'Bullish', neutral: 'Neutral', bearish: 'Bearish', oversold: 'Oversold',
+};
+export const MC_CONCENTRATION_DISPLAY: Record<string, string> = {
+  concentrated: 'Concentrated', mixed: 'Mixed', dispersed: 'Dispersed',
+};
+export const MC_BALANCE_DISPLAY: Record<string, string> = {
+  above_skewed: 'Skewed above spot', balanced: 'Balanced', below_skewed: 'Skewed below spot',
+};
+export const MC_LOCATION_DISPLAY: Record<string, string> = {
+  aligned: 'Aligned', rotating: 'Rotating', divergent: 'Divergent',
+};
+export const MC_COMPOSITION_DISPLAY: Record<string, string> = {
+  flow_put_tilted: 'Flow put-tilted', consistent: 'Consistent', flow_call_tilted: 'Flow call-tilted',
+};
+
+/** Closed-lookup a wire enum → its pinned display string; unknown/unmapped ⇒ null (that label's
+ *  unavailable state — NEVER the raw enum, never invented text). */
+export const mcDisplay = (map: Record<string, string>, label: string): string | null =>
+  Object.prototype.hasOwnProperty.call(map, label) ? map[label] : null;
+
+// Widget chrome (§5.1).
+export const MC_TITLE = 'Market context';
+export const MC_SUBTITLE =
+  'Context the AI also reads · snapshot, never live — refreshes with the data load, not the stream.';
+export const MC_INFO =
+  'A pre-digested market-context read, fed to the in-app AI automatically: trend & momentum regime ' +
+  "from daily bars, how the dealer-gamma profile is shaped, whether today's option flow sits where " +
+  'standing positioning sits, and typical daily range (ATR). Built entirely from data already loaded ' +
+  '— labels with their windows and thresholds, never raw series. Advisory context only: it never ' +
+  'feeds the opportunity score, tier, gate, or fingerprint, and it is not a forecast or a guarantee. ' +
+  'Snapshot from the last data load; never live.';
+export const MC_ADVISORY =
+  'Advisory context for you and the AI — not a scored signal, not a forecast, not a guarantee.';
+export const MC_WHOLE_EMPTY = 'Market context unavailable this cycle.';
+
+// Sub-card titles + row labels (§5.3).
+export const MC_TI_TITLE = 'Trend & momentum';
+export const MC_SHAPE_TITLE = 'Gamma profile shape';
+export const MC_FLOW_TITLE = 'Flow vs positioning · today';
+export const MC_ATR_TITLE = 'Average true range';
+export const MC_ROW_TREND = 'Trend';
+export const MC_ROW_STRENGTH = 'Strength';
+export const MC_ROW_MOMENTUM = 'Momentum';
+export const MC_ROW_CONCENTRATION = 'Concentration';
+export const MC_ROW_BALANCE = 'Balance';
+export const MC_ROW_COM = 'Center of mass';
+export const MC_ROW_LOCATION = 'Location';
+export const MC_ROW_COMPOSITION = 'Composition';
+export const MC_ROW_ATR_5D = '5-day';
+export const MC_ROW_ATR_14D = '14-day';
+export const MC_ROW_ATR_30D = '30-day';
+
+// Scalar-line builders (mono, text.secondary — §5.3). Display-only; never threshold math.
+export const mcTrendLine = (d: { close: number; ema20: number; ema50: number }): string =>
+  `close ${fmt2(d.close)} · EMA20 ${fmt2(d.ema20)} · EMA50 ${fmt2(d.ema50)}`;
+export const mcStrengthLine = (s: { adx: number }): string => `ADX(14) ${fmt1(s.adx)}`;
+export const mcMomentumLine = (m: { rsi: number }): string => `RSI(14) ${fmt1(m.rsi)}`;
+export const mcConcentrationLine = (hhi: number): string => `HHI ${fmt2(hhi)}`;
+export const mcBalanceLine = fmtSigned2;
+export const mcLocationLine = (l: { distribution_shift: number }): string =>
+  `shift ${fmt2(l.distribution_shift)}`;
+export const mcCompositionLine = (c: { volume_pcr: number; oi_pcr: number; tilt_ratio: number }): string =>
+  `vol PCR ${fmt2(c.volume_pcr)} · OI PCR ${fmt2(c.oi_pcr)} · tilt ${fmt2(c.tilt_ratio)}`;
+export const mcAtrLine = (h: { value: number; pct_of_close: number }): string =>
+  `${fmtAtrUsd(h.value)} · ${fmt1(h.pct_of_close)}%`;
+
+// Basis lines (visible, no interaction — the AC-4 surface).
+export const mcTiBasis = (isoSession: string): string =>
+  `As of session ${humanSessionDate(isoSession)} · daily bars · EMA 20/50 · ADX(14) · RSI(14)`;
+export const mcShapeBasis = (spotBasis: number, eligibleStrikes: number): string =>
+  `At spot $${fmt2(spotBasis)} · ${eligibleStrikes} strikes in the selected window`;
+export const MC_FLOW_BASIS =
+  "Today's session cumulative option volume, unsigned (no buy/sell side) · vs standing open " +
+  'interest · full chain · captured at the last data load';
+export const mcAtrBasis = (isoSession: string, closeBasis: number): string =>
+  `As of session ${humanSessionDate(isoSession)} · vs close $${fmt2(closeBasis)} · 5/14/30 trading bars`;
+
+// Degraded-state wording (§5.4 — exact strings, the null-copy family; rendered `text.disabled`).
+export const MC_TI_EMPTY = 'Trend & momentum unavailable this cycle.';
+export const MC_SHAPE_EMPTY = 'Gamma profile shape unavailable this cycle.';
+export const MC_FLOW_EMPTY = 'Flow vs positioning unavailable this cycle.';
+export const MC_ATR_EMPTY = 'Average true range unavailable this cycle.';
+export const MC_TREND_ROW_EMPTY = 'Trend unavailable this cycle.';
+export const MC_STRENGTH_ROW_EMPTY = 'Strength unavailable this cycle.';
+export const MC_MOMENTUM_ROW_EMPTY = 'Momentum unavailable this cycle.';
+export const MC_LOCATION_ROW_EMPTY = 'Location unavailable this cycle.';
+export const MC_COMPOSITION_ROW_EMPTY = 'Composition unavailable this cycle.';
+export const MC_CELL_EMPTY = 'unavailable this cycle';
+
+// Row-level tooltips (§5.5 — each reveals its window + the exact pinned v1 thresholds).
+export const MC_TIP_TREND =
+  'Trend direction from daily closes: Uptrend = close above EMA20 above EMA50 (strictly); Downtrend ' +
+  '= close below EMA20 below EMA50 (strictly); anything else — including ties — reads Mixed. Needs ' +
+  'about 100 daily bars of history; shows unavailable rather than guessing. Context only, not a ' +
+  'trade call.';
+export const MC_TIP_STRENGTH =
+  'Trend strength from Wilder ADX(14) on daily bars: ADX below 20 = Weak, 20–25 = Moderate, 25 and ' +
+  'above = Strong. ADX measures how strongly price is trending, not which way — read it with the ' +
+  'Trend row. Needs about 43 bars with valid highs/lows; unavailable otherwise.';
+export const MC_TIP_MOMENTUM =
+  'Momentum state from Wilder RSI(14) on daily closes: 70 and above Overbought, 55–70 Bullish, ' +
+  '45–55 Neutral, 30–45 Bearish, 30 and below Oversold. A stretched reading is context about pace, ' +
+  'not a reversal signal or an instruction. Needs about 42 bars; unavailable otherwise.';
+export const MC_TIP_CONCENTRATION =
+  'How concentrated the net-GEX profile is across the strikes in your selected expiration window — ' +
+  'normalized HHI from 0 (evenly spread) to 1 (one strike): 0.35 and above Concentrated, 0.15–0.35 ' +
+  'Mixed, below 0.15 Dispersed. Needs at least 5 strikes with non-zero net GEX. Same window as the ' +
+  'GEX chart.';
+export const MC_TIP_BALANCE =
+  'Where the gamma weight sits versus spot: the share of |net GEX| strictly above the spot basis ' +
+  'minus the share strictly below, from −1 to +1. At +0.20 and above it reads Skewed above spot; at ' +
+  '−0.20 and below, Skewed below spot; between, Balanced. Anchored at the same spot basis as the ' +
+  'GEX levels.';
+export const MC_TIP_COM =
+  'The |net GEX|-weighted average strike, shown as its signed distance from the spot basis (+ = ' +
+  'above spot, − = below). A single locational scalar — no label, no threshold.';
+export const MC_TIP_LOCATION =
+  "Where today's option volume sits versus where standing open interest sits, strike by strike — a " +
+  'share-vs-share distribution shift from 0 (identical) to 1 (entirely elsewhere): below 0.35 ' +
+  'Aligned, 0.35–0.60 Rotating, 0.60 and above Divergent. Volume is unsigned — no buy/sell side, no ' +
+  '"smart money" read; location only.';
+export const MC_TIP_COMPOSITION =
+  "Which right today's volume favors versus the standing book: today's put/call VOLUME ratio " +
+  'against the standing put/call OI ratio (tilt = volume PCR ÷ OI PCR). At 1.25 and above, Flow ' +
+  'put-tilted; at 0.80 and below, Flow call-tilted; between, Consistent. Put/call composition only ' +
+  '— unsigned volume, never a buy/sell claim.';
+
+// Card-level tooltips (§5.5).
+export const MC_TIP_ATR_CARD =
+  'Average daily true range over the last 5 / 14 / 30 trading bars — a simple mean of true range, ' +
+  "where true range spans the day's high–low plus any gap from the prior close. Shown in dollars " +
+  'and as a percent of the last close. Typical-range context to sanity-check whether a move is ' +
+  'realistic — never a stop, a target, or a distance calculator. A horizon without enough valid ' +
+  'bars shows unavailable.';
+export const MC_TIP_TI_CARD =
+  'A digested read of whether the tape is trending or chopping, from daily bars: direction (close ' +
+  'vs EMA20 vs EMA50), strength (ADX 14), and momentum (RSI 14). May include the in-progress ' +
+  "session's partial bar — the as-of session date is shown. Each row degrades to unavailable on " +
+  'thin history; values change only when new data loads.';
+export const MC_TIP_SHAPE_CARD =
+  'A shape read over the same net-GEX-by-strike profile the chart shows, in your selected ' +
+  'expiration window: how concentrated it is, whether the weight sits above or below spot, and ' +
+  'where its center of mass lies. Digest only — the profile chart remains the detail view.';
+export const MC_TIP_FLOW_CARD =
+  "Whether TODAY's option activity sits where the STANDING positioning sits — by strike (Location) " +
+  "and by put/call mix (Composition). Built from today's session cumulative option volume, which " +
+  'is unsigned: no buy/sell side, no aggressor, no "smart money" story. Rotation is ' +
+  'composition/location information only.';
+
 /** Compact, human-readable age from seconds, e.g. 242779 -> "2d 19h". */
 export function humanAge(seconds: number | null): string {
   if (seconds == null) return 'unknown age';

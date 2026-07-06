@@ -28,12 +28,17 @@ from contextvars import ContextVar
 logger = logging.getLogger("Convexa")
 
 # Fixed stage vocabulary + their I/O-vs-CPU kind classifier (load-bearing for the future scanner).
-STAGES = ("vendor_fetch", "engine_build", "off_exchange", "signals", "persist", "serialize_wrap")
+# `context_pack` (ai-context-pack): the market-context pack compute at the main.py boundary —
+# operator-only visibility (this readout / ?debug=1 meta.timings); trader routes render nothing
+# pack-related from meta.
+STAGES = ("vendor_fetch", "engine_build", "off_exchange", "signals", "context_pack",
+          "persist", "serialize_wrap")
 STAGE_KIND = {
     "vendor_fetch": "io_vendor",
     "engine_build": "cpu_engine",
     "off_exchange": "cpu_engine",
     "signals": "cpu_signals",
+    "context_pack": "cpu_engine",
     "persist": "io_disk",
     "serialize_wrap": "serialize",
 }
