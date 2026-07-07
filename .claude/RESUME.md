@@ -1,7 +1,23 @@
-# RESUME — handoff snapshot (2026-07-06) — ai-context-pack SHIPPED + PUSHED; queue drained to the pool
+# RESUME — handoff snapshot (2026-07-06) — ai-context-pack SHIPPED+PUSHED; NEXT = iv-rank (Architect)
 
 > For a fresh Delivery Conductor (`/conductor`). Overlay on the canon — WINS on current status.
-> Written at GATE S (a clean phase boundary). `main` @ `5516cc1`, PUSHED to origin; working tree clean.
+> Written at a GATE I boundary (ai-context-pack shipped; iv-rank chosen, not yet started). `main` @
+> `d1578af`, pushed; working tree has ONLY the untracked `.claude/contracts/iv-rank/` (BRIEF + manifest).
+
+## ⏭ IMMEDIATE NEXT — open the iv-rank Architect (GATE A·X)
+`iv-rank` was chosen at GATE I (2026-07-06 b) and its BRIEF + manifest are written; **no role has run yet.**
+Resume by spawning the `delivery-architect` subagent on it (ROLE_LAUNCH §1, architect-first), with a
+`context_for.py` pack:
+- `apps/api/.venv/Scripts/python.exe .claude/tools/context_for.py iv-rank --print` (tags:
+  architecture,backend,data,math,decisions,features) → give it to the spawn as PROJECT_CONTEXT.
+- Inbound: `.claude/contracts/iv-rank/BRIEF.md` (the goal + the 4 architect feasibility questions +
+  invariant watch). Architect writes `ARCHITECTURE_CONTRACT.md`, runs compressor #2 → PM.
+The BRIEF's crux for the architect: vendor has **no historical IV** (probe-confirmed) → must **accumulate**
+a daily IV sample into a NEW **persistent market-data time-series store/port** (NOT the `src/auth/` leaf;
+in-memory/SQLite default for local — **dev box has no Postgres** — + Postgres for prod behind the port);
+plus the IV-to-sample choice (`atm_iv` vs constant-maturity ~30d), the write mechanism (write-through on
+serve w/ once-per-session guard vs a job; no backfill), rank-vs-percentile + window + min-sample floor.
+AI-context + display, **never a scoring input**.
 
 ## Where we are
 - **`ai-context-pack` SHIPPED + ARCHIVED** — the "Market context" pack (2nd item of the owner
@@ -25,12 +41,13 @@
   `origin/main`** (`fdd1f46..5516cc1`), user-authorized 2026-07-06. Working tree clean.
 - CI/CD is not wired — the push does NOT auto-deploy convexa.pages.dev (owner deploys via the runbook).
 
-## NEXT feature — an owner pick (or a GATE I), queue drained to the pool
-The 2026-07-02 "enrich the downstream-AI's inputs" pool, after dealer-flow-projection (#1) + ai-context-pack (#2):
-- **`iv-rank`** (IV Rank/Percentile) — front-runner; Value H. Blocked-on IV-history: decide accumulation
-  (accrue IV daily into the shipped Postgres store vs a weak 60d-window percentile now). Architect-first.
-- **`market-backdrop`** (SPY/QQQ + VIX level & term structure) — Value H; feasibility-gated on a Massive
-  index/VIX coverage verify (do the vendor-capability check before committing).
+## Pool state (after dealer-flow-projection #1 + ai-context-pack #2 shipped)
+- **`iv-rank` — CHOSEN 2026-07-06 (b), in pipeline (Architect next — see the IMMEDIATE NEXT section at top).**
+- **`market-backdrop` — PARKED, blocked-on a Massive plan upgrade.** GATE-I probe (2026-07-06) proved the
+  account is `NOT_AUTHORIZED` for ALL index data (`I:VIX/VIX9D/VIX3M/SPX/NDX`); equity ETFs (SPY/QQQ) +
+  options ARE in-tier. A **SPY/QQQ-ETF-proxy reshape** (options-derived ATM-IV level + term-structure regime
+  via `compute_term_structure`/`compute_iv_skew`) is buildable in-tier if resurfaced. **Do NOT re-probe** —
+  the entitlement result is recorded (BACKLOG "Last GATE I — 2026-07-06 (b)").
 - **`scanner`** — displaced-not-dropped (BRIEF at `.claude/contracts/scanner/BRIEF.md`); architect must
   re-justify the locked single-ticker decision with a perf design.
 - Parked: volume-profile POC+CVD, news/sentiment (owner-future). Tooling hygiene: fix the broken

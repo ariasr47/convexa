@@ -30,6 +30,36 @@
 
 ---
 
+## Last GATE I — 2026-07-06 (b) (owner pick: iv-rank; market-backdrop parked blocked-on plan upgrade)
+**Chosen → `iv-rank`** (IV Rank / IV Percentile) — owner pick off the enrichment pool after
+`ai-context-pack` shipped. THE options metric the app lacks; drives **strategy selection** (rich→sell /
+cheap→buy premium). Rides `market_state` as additive AI-context + a Ticker display, **never a scoring
+input**. **The crux (architect-first):** the vendor provides **no historical IV**, so IV Rank's compelling
+form is **blocked-on accumulation** — the feature must **accumulate a daily IV sample into a persistent
+store** and rank over the accumulated window, with an honest "building history" state until enough days.
+Architect must resolve: what IV to sample (existing `atm_iv` vs constant-maturity ~30d), the accumulation
+mechanism (write-through-on-serve w/ a once-per-session guard vs a job; no backfill possible), the
+**storage** (a NEW market-data time-series store/port — NOT the `src/auth/` leaf — with an in-memory/SQLite
+default for local + Postgres for prod behind the same port; **dev box has no local Postgres**, so build+verify
+on the non-Postgres default), and rank-vs-percentile + window + minimum-sample floor. Effort **M–L** ·
+Value **H**. **Invariant watch:** `additive-keeps-score-byte-identical` (HARD), `best-effort-isolated-or-
+null` (store outage / insufficient history → null/"building", never an HTTP error; writes best-effort),
+`live-vs-static-isolation` (STATIC daily read), `theme-token-discipline`, **`model-read-carries-its-
+assumptions`** (now promoted — the rank carries its window / sample-size / IV-basis visibly),
+`digested-labels-not-raw-dump` (rich/cheap band = a digested label). First **persistent market-data** store
+(distinct from the auth state store) — architect states its relation to the "stateless trading path"
+narrowing. Entry = **architect-first**. Brief at `.claude/contracts/iv-rank/BRIEF.md`; routing to the
+Architect (GATE A·X).
+
+**`market-backdrop` → PARKED, blocked-on a Massive plan upgrade (feasibility RESOLVED 2026-07-06).** The
+GATE-I vendor probe found the account is **`NOT_AUTHORIZED` for ALL index data** (`I:VIX`/`I:VIX9D`/`I:VIX3M`/
+`I:SPX`/`I:NDX` → "upgrade your plan"); equity ETF snapshots (SPY/QQQ) + options chains ARE in-tier. So the
+CBOE-VIX-+-SPX form is blocked-on a plan upgrade. **Reshape available (owner-deferred, not chosen now):** a
+SPY/QQQ ETF proxy + SPY options-derived ATM-IV level & IV term-structure regime (via the existing
+`compute_term_structure`/`compute_iv_skew`) delivers the same "calm-contango vs stressed-backwardated tape"
+read fully in-tier. Owner chose iv-rank first; market-backdrop stays queued (build the reshape, or wait for
+the index-data plan upgrade to get the real VIX). Do NOT re-probe — the entitlement result is recorded here.
+
 ## Last GATE I — 2026-07-06 (owner pick: TI regime bundle + AI context-scalars pack, bundled)
 **Chosen → `ai-context-pack` — ✓ SHIPPED + ARCHIVED (2026-07-06)** → `_archive/ai-context-pack/`. Full
 pipeline both lanes; QA PASS 26/26 (de-correlated Sonnet); conformance new spec + 8-spec sweep; `nx test
@@ -484,10 +514,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it gives; judged on
   downstream-AI-quality, the first-class harvest source. **2026-07-06: the AI context-scalars pack +
   the TI regime bundle → ✓ SHIPPED + ARCHIVED (bundled) as `ai-context-pack`** (owner pick; QA PASS
-  26/26; see "Last GATE I — 2026-07-06" above + OPEN_THREADS §7q). Remaining in the pool: `iv-rank`
-  (front-runner), `market-backdrop` (vendor-coverage verify), volume-profile POC/CVD, news/sentiment
-  (owner-future). **ATR (now shipped) unblocks the deferred distance-to-level tiles** (§B Ticker UX quick
-  wins).
+  26/26; see "Last GATE I — 2026-07-06" above + OPEN_THREADS §7q). **2026-07-06 (b): `iv-rank` CHOSEN →
+  in pipeline** (architect-first; BRIEF at `.claude/contracts/iv-rank/BRIEF.md`; see "Last GATE I —
+  2026-07-06 (b)" above). **`market-backdrop` PARKED — blocked-on a Massive plan upgrade** (feasibility
+  probe: index data `NOT_AUTHORIZED`; a SPY/QQQ-ETF-proxy reshape is buildable in-tier if resurfaced).
+  Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR (now shipped)
+  unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).
 - **Fix the broken `@org/dashboard:typecheck` Nx target** — `SURFACED 2026-07-02 (dealer-flow-projection
   GATE Q)`. `npx nx run @org/dashboard:typecheck` fails project-wide with ~960 errors — a `tsconfig.spec.json`
   gap (missing `jest-dom`/DOM lib types → `RequestInfo`/`querySelector`/`toBeInTheDocument` unresolved in
