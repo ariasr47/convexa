@@ -1,18 +1,16 @@
-# RESUME — handoff snapshot (2026-07-07) — iv-rank SHIPPED+ARCHIVED; canon updated; COMMIT/PUSH pending owner OK
+# RESUME — handoff snapshot (2026-07-07) — iv-rank SHIPPED+ARCHIVED+PUSHED; queue DRAINED; next = GATE I
 
 > For a fresh Delivery Conductor (`/conductor`). Overlay on the canon — WINS on current status.
-> Written at GATE S (iv-rank shipped + archived; queue drained). `main` @ `d1578af` (NOT yet advanced —
-> the ship commit is staged-in-working-tree, awaiting owner authorization to commit + push).
+> Written at GATE S (iv-rank shipped + archived + pushed; queue drained). `main` @ `9c47ed9`, pushed to
+> `origin/main` (`d1578af..9c47ed9`), working tree clean.
 
-## ⚠ IMMEDIATE — the ship is COMPLETE on disk but NOT yet committed/pushed
-iv-rank is fully shipped (canon folded, folder archived), but per the owner git pattern (commit to `main` +
-push, only when the owner asks) the **commit + push is awaiting owner authorization**. If the owner says go:
-- `git add -A` then commit to `main` (message drafted below), then `git push origin main`.
-- The working tree holds ONLY the iv-rank ship (see `git status` — 11 tracked mods incl. the 4 canon docs +
-  the code, plus the untracked `marketdata/`, the FE widget/specs, the conformance spec, and the archived
-  contract folder). The QA-seeded `apps/api/data/iv_timeseries.sqlite3` is **gitignored** (won't commit).
-- CI/CD is NOT wired — the push does NOT auto-deploy convexa.pages.dev (owner deploys via the runbook).
-- Drafted commit subject: `iv-rank: ship IV Rank/Percentile (first persistent market-data store); GATE S canon + ledger`
+## ⏭ IMMEDIATE NEXT — queue is DRAINED; open GATE I to pick the next feature
+iv-rank is fully shipped, committed (`9c47ed9`), and pushed. Nothing is in flight. The natural next move is
+**GATE I (Discovery)** — groom the backlog + cull to ONE next feature. Leading candidates (owner's call):
+resurface **`scanner`** (BRIEF exists; must re-justify the locked single-ticker decision with a perf design),
+the **`market-backdrop`** SPY/QQQ-ETF-proxy reshape (the real-VIX form stays blocked-on a plan upgrade), or
+**volume-profile POC/CVD**. CI/CD is NOT wired — the push did NOT auto-deploy convexa.pages.dev (owner deploys
+via the runbook).
 
 ## Where we are — iv-rank SHIPPED + ARCHIVED (2026-07-07)
 - **What:** IV Rank / IV Percentile — where a ticker's current IV sits in its own recent history (option
