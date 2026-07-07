@@ -1,81 +1,77 @@
-# RESUME — handoff snapshot (2026-07-06) — ai-context-pack SHIPPED+PUSHED; NEXT = iv-rank (Architect)
+# RESUME — handoff snapshot (2026-07-07) — iv-rank SHIPPED+ARCHIVED; canon updated; COMMIT/PUSH pending owner OK
 
 > For a fresh Delivery Conductor (`/conductor`). Overlay on the canon — WINS on current status.
-> Written at a GATE I boundary (ai-context-pack shipped; iv-rank chosen, not yet started). `main` @
-> `d1578af`, pushed; working tree has ONLY the untracked `.claude/contracts/iv-rank/` (BRIEF + manifest).
+> Written at GATE S (iv-rank shipped + archived; queue drained). `main` @ `d1578af` (NOT yet advanced —
+> the ship commit is staged-in-working-tree, awaiting owner authorization to commit + push).
 
-## ⏭ IMMEDIATE NEXT — open the iv-rank Architect (GATE A·X)
-`iv-rank` was chosen at GATE I (2026-07-06 b) and its BRIEF + manifest are written; **no role has run yet.**
-Resume by spawning the `delivery-architect` subagent on it (ROLE_LAUNCH §1, architect-first), with a
-`context_for.py` pack:
-- `apps/api/.venv/Scripts/python.exe .claude/tools/context_for.py iv-rank --print` (tags:
-  architecture,backend,data,math,decisions,features) → give it to the spawn as PROJECT_CONTEXT.
-- Inbound: `.claude/contracts/iv-rank/BRIEF.md` (the goal + the 4 architect feasibility questions +
-  invariant watch). Architect writes `ARCHITECTURE_CONTRACT.md`, runs compressor #2 → PM.
-The BRIEF's crux for the architect: vendor has **no historical IV** (probe-confirmed) → must **accumulate**
-a daily IV sample into a NEW **persistent market-data time-series store/port** (NOT the `src/auth/` leaf;
-in-memory/SQLite default for local — **dev box has no Postgres** — + Postgres for prod behind the port);
-plus the IV-to-sample choice (`atm_iv` vs constant-maturity ~30d), the write mechanism (write-through on
-serve w/ once-per-session guard vs a job; no backfill), rank-vs-percentile + window + min-sample floor.
-AI-context + display, **never a scoring input**.
+## ⚠ IMMEDIATE — the ship is COMPLETE on disk but NOT yet committed/pushed
+iv-rank is fully shipped (canon folded, folder archived), but per the owner git pattern (commit to `main` +
+push, only when the owner asks) the **commit + push is awaiting owner authorization**. If the owner says go:
+- `git add -A` then commit to `main` (message drafted below), then `git push origin main`.
+- The working tree holds ONLY the iv-rank ship (see `git status` — 11 tracked mods incl. the 4 canon docs +
+  the code, plus the untracked `marketdata/`, the FE widget/specs, the conformance spec, and the archived
+  contract folder). The QA-seeded `apps/api/data/iv_timeseries.sqlite3` is **gitignored** (won't commit).
+- CI/CD is NOT wired — the push does NOT auto-deploy convexa.pages.dev (owner deploys via the runbook).
+- Drafted commit subject: `iv-rank: ship IV Rank/Percentile (first persistent market-data store); GATE S canon + ledger`
 
-## Where we are
-- **`ai-context-pack` SHIPPED + ARCHIVED** — the "Market context" pack (2nd item of the owner
-  "enrich the downstream-AI's inputs" GATE I; bundled the AI context-scalars pack + the TI regime bundle).
-  Additive nested nullable `market_state.market_context` with four independently-nullable STATIC children
-  (trend_momentum digested EMA/ADX-14/RSI-14 labels; gex_profile_shape HHI/balance/center-of-mass;
-  flow_vs_positioning unsigned volume-vs-OI divergence; atr 5/14/30-bar). New one-way leaf
-  `apps/api/src/core/context_pack.py` attached AFTER scoring; daily-bars fetch 60→400d; AI-context (rides
-  the unchanged wholesale `serialize_context`) + a Ticker "Market context" widget; NEVER a scoring input.
-  `signals.py` 0 diff; score/tier/fp byte-identical (SPY 87/prime/`bb82718bcf1e`). Full pipeline
-  (architect → PM → UX split → both lanes → GATE Q). **QA PASS 26/26** (de-correlated Sonnet); conformance
-  new spec + 8-spec sweep; `nx test dashboard` 658/658, `@org/api` 13/13, `tsc -b` clean, `nx build` green.
-- **Canon updated** (this session): PROJECT_CONTEXT §5 (graduated invariant) + §6 (feature bullet);
-  OPEN_THREADS §7q (thread) + §9 (invariant); DECISION_LEDGER (rows + GATE S note + graduation);
-  BACKLOG (shipped). Contract archived at `.claude/contracts/_archive/ai-context-pack/`.
-- **GATE S graduation:** `model-read-carries-its-assumptions` → Promoted canon (2 binding:
-  dealer-flow-projection + ai-context-pack). New watch-list key `digested-labels-not-raw-dump`.
+## Where we are — iv-rank SHIPPED + ARCHIVED (2026-07-07)
+- **What:** IV Rank / IV Percentile — where a ticker's current IV sits in its own recent history (option
+  premium rich vs cheap → strategy selection). Additive nested nullable `market_state.iv_rank`, AI-context +
+  a Ticker static-family widget after `MarketContext`, **never a scoring input**. Third feature of the owner
+  "enrich the downstream-AI's inputs" GATE I.
+- **The crux (why it mattered):** vendor has NO historical IV → the feature accumulates its own, establishing
+  the project's **FIRST persistent market-data store**: new one-way leaf `apps/api/src/marketdata/` (port +
+  `IvSample` record + on-disk-SQLite default [`IV_STORE=disk`, under `DATA_DIR`, survives restart] + a
+  Postgres prod adapter behind the same port [`IV_DATABASE_URL`→`DATABASE_URL`, runtime-env only,
+  defer-fault-to-first-use; live-verify DEFERRED — no local Postgres, like persistent-db]). CM30 (~30d
+  interpolated ATM IV off the already-computed term structure, no new vendor call) sampled best-effort
+  write-through-on-serve (idempotent once-per-(ticker,UTC-day), no backfill), attached AFTER `generate_signals`.
+  Read: Rank (0–100 headline) + Percentile (secondary) over a ≤252-session window, `N_min=20` floor →
+  "building history" state; degenerate-flat → `rank:null`+`flat_window` (never a fabricated 50); digested
+  `band` (`premium_rich`≥70/`neutral`/`premium_cheap`<30) cut server-side.
+- **Full pipeline** (architect → PM → UX split → both lanes parallel → GATE Q). **QA PASS 19/19** (fresh
+  de-correlated Sonnet; conformance new standalone spec `iv_rank.json` PASS live+offline; byte-identity
+  independently re-derived incl. a forced whole-store outage; `nx test dashboard` 685/685 [+27] + `@org/api`
+  13/13, `tsc -b --force` clean, `nx build` green). **No GATE Z bounce** — clean first-pass builds (both lanes
+  held under independent verification; contrast the ai-context-pack lane-interruption ship).
+- **Canon updated this session:** PROJECT_CONTEXT §5 (new graduated invariant + model-read 3rd instance) + §6
+  (feature bullet); OPEN_THREADS §7r (thread) + §9 (invariant pointer); DECISION_LEDGER (6 rows + GATE S note
+  + graduation, watch-list update); BACKLOG (GATE-I header + §B pool). Contract archived at
+  `.claude/contracts/_archive/iv-rank/` (incl. QA_REPORT).
+- **GATE S graduation:** `digested-labels-not-raw-dump` → Promoted canon (2 binding: ai-context-pack +
+  iv-rank's rich/cheap band). `model-read-carries-its-assumptions` → 3rd instance. No demotion.
 
-## Ship status — DONE
-- GATE-S commit **`5516cc1`** ("ai-context-pack: ship … GATE S canon + ledger", 28 files) is **pushed to
-  `origin/main`** (`fdd1f46..5516cc1`), user-authorized 2026-07-06. Working tree clean.
-- CI/CD is not wired — the push does NOT auto-deploy convexa.pages.dev (owner deploys via the runbook).
-
-## Pool state (after dealer-flow-projection #1 + ai-context-pack #2 shipped)
-- **`iv-rank` — CHOSEN 2026-07-06 (b), in pipeline (Architect next — see the IMMEDIATE NEXT section at top).**
-- **`market-backdrop` — PARKED, blocked-on a Massive plan upgrade.** GATE-I probe (2026-07-06) proved the
-  account is `NOT_AUTHORIZED` for ALL index data (`I:VIX/VIX9D/VIX3M/SPX/NDX`); equity ETFs (SPY/QQQ) +
-  options ARE in-tier. A **SPY/QQQ-ETF-proxy reshape** (options-derived ATM-IV level + term-structure regime
-  via `compute_term_structure`/`compute_iv_skew`) is buildable in-tier if resurfaced. **Do NOT re-probe** —
-  the entitlement result is recorded (BACKLOG "Last GATE I — 2026-07-06 (b)").
-- **`scanner`** — displaced-not-dropped (BRIEF at `.claude/contracts/scanner/BRIEF.md`); architect must
-  re-justify the locked single-ticker decision with a perf design.
-- Parked: volume-profile POC+CVD, news/sentiment (owner-future). Tooling hygiene: fix the broken
-  `@org/dashboard:typecheck` Nx target (THREADS §7p).
-- **ATR (now shipped) unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).
+## Pool state (after dealer-flow-projection #1, ai-context-pack #2, iv-rank #3 shipped — queue DRAINED)
+- **The "enrich the downstream-AI's inputs" pool has shipped THREE.** Next GATE I is open — no feature in flight.
+- **`market-backdrop` — PARKED, blocked-on a Massive plan upgrade.** Index/VIX feed `NOT_AUTHORIZED`
+  (`I:VIX/VIX9D/VIX3M/SPX/NDX`); equity ETFs (SPY/QQQ) + options ARE in-tier. A **SPY/QQQ-ETF-proxy reshape**
+  (options-derived ATM-IV level + term-structure regime) is buildable in-tier if resurfaced. **Do NOT re-probe.**
+- **`scanner`** — displaced-not-dropped (BRIEF still at `.claude/contracts/scanner/BRIEF.md` — the one live
+  contracts folder left; it's a queued BRIEF, NOT in-flight). Architect must re-justify the locked
+  single-ticker decision with a perf design.
+- Parked: volume-profile POC+CVD, news/sentiment (owner-future). Tooling hygiene: the broken
+  `@org/dashboard:typecheck` Nx target (THREADS §7p / BACKLOG §B). ATR (ai-context-pack) unblocks the deferred
+  distance-to-level tiles.
 
 ## Gotchas (carried; still live)
-- **A subagent "completed" notification whose result is a session-limit / quota banner is UNVERIFIED** —
-  it means the agent was cut off mid-report, NOT that its work is green. Re-run the gates yourself before
-  trusting it. (This session: both ai-context-pack build lanes were cut off; re-running caught 3 FE
-  test-only defects + a stale-dist typecheck artifact.)
-- **`tsc -b apps/dashboard/tsconfig.app.json --force` is the reliable app typecheck** — a bare
-  `tsc -p tsconfig.app.json --noEmit` resolves `@org/api` through the STALE built `libs/api/dist/*.d.ts`
-  (project references) and can emit FALSE "no exported member" errors. If seen: `rm -rf libs/api/dist`
-  then `tsc -b --force`. (Vitest strips types, so it never catches these — `nx build` uses esbuild, also
-  doesn't typecheck; `tsc -b` is the only real type gate.)
-- **FE structural source-scan tests must read source via a Vite `?raw` import** (`import s from './X.tsx?raw'`),
-  NOT `readFileSync(fileURLToPath(new URL('./X.tsx', import.meta.url)))` — the latter throws
-  "URL must be of scheme file" in this Vitest env.
-- **conformance on the `/api/ticker` `dark_pool=true` cold path can exceed the tool's 30s timeout** (~75k
-  trades): warm the exact URL first then run `--url` within the 60s cache TTL, OR capture the response and
-  validate offline with `--spec … --sample <bundle.json> --endpoint "/api/ticker/{ticker}"`. This feature
-  uses the **standalone** spec `.claude/tools/conformance/ai_context_pack.json` (`--spec`, not `--contract`
-  — its INTERFACE_CONTRACT.md carries no embedded endpoints block).
-- **Latent (logged, NOT a regression):** `off_exchange.blocks[].age_seconds` drifts ~1s between
-  identical-input runs (pre-existing wall-clock display field; display-only + unscored). Candidate cleanup:
-  derive block age from a per-request captured clock.
-- `main.py` uvicorn reload=True leaves a multiprocessing spawn CHILD squatting :8000 after a parent-only
-  kill. Kill the whole python `main.py` tree; confirm :8000 free before rebooting one.
-- Test baseline **658** (dashboard) + 13 (`@org/api`). Always `npx nx test dashboard` (never direct vitest).
+- **A subagent "completed" whose result is a session-limit/quota banner is UNVERIFIED** — re-run the gates
+  yourself. (iv-rank's lanes were NOT interrupted — clean reports — but the rule stands.)
+- **`tsc -b apps/dashboard/tsconfig.app.json --force` is the reliable app typecheck** — a bare `tsc -p …` resolves
+  `@org/api` through a possibly-STALE `libs/api/dist/*.d.ts`. If false "no exported member": `rm -rf libs/api/dist`
+  then `tsc -b --force`.
+- **FE structural source-scan tests read source via a Vite `?raw` import** (`import s from './X.tsx?raw'`), NOT
+  `readFileSync(fileURLToPath(new URL(...)))` (throws in this Vitest env). Strip comments before scanning if the
+  test's own JSDoc names the forbidden identifiers.
+- **conformance on `/api/ticker` `dark_pool=true` COLD path can exceed the tool's 30s timeout** — warm the exact
+  URL first within the 60s cache TTL, then `--url`; OR validate offline `--spec … --sample <bundle.json>
+  --endpoint "/api/ticker/{ticker}"`. iv-rank uses the **standalone** spec `.claude/tools/conformance/iv_rank.json`.
+- **New (iv-rank):** the market-data store default is on-disk SQLite at `apps/api/data/iv_timeseries.sqlite3`
+  (gitignored). To force-observe a **computed** rank in dev you must seed ≥20 varied session samples (QA did this
+  via the store adapter directly); a fresh box shows `building` until history accumulates. `IV_STORE=postgres`
+  with an unreachable DB is the clean way to force the `iv_rank:null` outage path (boot survives).
+- **Latent (logged, NOT a regression):** `off_exchange.blocks[].age_seconds` drifts ~1s between identical-input
+  runs (pre-existing wall-clock display field; display-only + unscored).
+- `main.py` uvicorn reload leaves a spawn CHILD squatting :8000 after a parent-only kill — kill the whole python
+  `main.py` tree; confirm :8000 free before rebooting.
+- Test baseline is now **685** (dashboard) + 13 (`@org/api`). Always `npx nx test dashboard` (never direct vitest).
 - Owner git pattern: commit to `main` + push after gates pass (no feature branches). CI/CD not wired.

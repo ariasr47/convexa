@@ -33,7 +33,8 @@
 | `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
 | `single-shared-sim-entry-dialog` | every sim-entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/trading/TradeEntryDialog`; a new entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof | CONTEXT §5 · THREADS §9 | 2026-07-02 | sim-entry-unification, ai-rec-backtest-orders (2 binding) |
 | `theme-token-discipline` | a new or re-skinned FE component binds to the MUI theme / `tokens.ts` — mode-aware values via `extrasFor(theme)` inside sx callbacks — **never hardcoded hex**; dark/light parity verified | CONTEXT §5 · THREADS §9 | 2026-07-02 | convexa-redesign, ticker-ux-polish, light-mode-parity + sim-entry-unification, ai-rec-backtest-orders (4 programs) |
-| `model-read-carries-its-assumptions` | a forward-looking / model-dependent read (a projection, a model-derived level, a threshold-bucketed regime label/scalar) is surfaced **self-describing** — it carries its own horizon / window / assumption / basis / threshold — and is framed as **advisory context, never a guarantee / price forecast / scored signal** | CONTEXT §5 · THREADS §9 | 2026-07-06 | dealer-flow-projection, ai-context-pack (2 binding) |
+| `model-read-carries-its-assumptions` | a forward-looking / model-dependent read (a projection, a model-derived level, a threshold-bucketed regime label/scalar) is surfaced **self-describing** — it carries its own horizon / window / assumption / basis / threshold — and is framed as **advisory context, never a guarantee / price forecast / scored signal** | CONTEXT §5 · THREADS §9 | 2026-07-06 | dealer-flow-projection, ai-context-pack, iv-rank (3) |
+| `digested-labels-not-raw-dump` | a derived-signal set fed to the downstream AI (and displayed) is a **SMALL orthogonal set pre-digested into regime/band LABELS**, not a raw indicator/OHLC/series dump; the **wire enum/token is authoritative** (FE renders via a closed lookup, **never re-derives** a label from the scalar); no raw series on the wire or in the UI | CONTEXT §5 · THREADS §9 | 2026-07-07 | ai-context-pack, iv-rank (2 binding) |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -66,13 +67,11 @@
   assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read carries its
   window+threshold+basis + the "not a forecast, not a scored signal" framing). Crossed the "≥2 if binding"
   threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list.)_
-- **`digested-labels-not-raw-dump`** (candidate, 2026-07-06 — ai-context-pack; the 2026-07-02 GATE I named
-  it as the binding design rule for the TI bundle) — a technical-indicator / derived-signal set fed to the
-  downstream AI (and displayed) is a **SMALL orthogonal set pre-digested into regime LABELS**, not a raw
-  indicator/OHLC dump — signal overload degrades the AI. The wire enum is authoritative (FE never re-derives
-  a label from the scalar); raw series stay out of the UI. Not promoted (1 instance); logged for recurrence
-  (volume-profile/CVD, the news/sentiment classifier, any future indicator bundle will likely hit it).
-  *binding:yes.*
+- _(`digested-labels-not-raw-dump` GRADUATED 2026-07-07 — 2 binding (ai-context-pack — the TI regime labels
+  off ADX/RSI/EMA, no raw indicator series; iv-rank — the rich/cheap `band` [premium_rich|neutral|premium_cheap]
+  cut server-side from the rank, no raw IV history on the wire or in the UI). Crossed the "≥2 if binding"
+  threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list. Future indicator
+  bundles — volume-profile/CVD, the news/sentiment classifier — will reaffirm it.)_
 - **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
   store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
   never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
@@ -162,6 +161,40 @@
 | `theme-token-discipline` | ai-context-pack | S | the `MarketContext` widget + copy are token-only via the MUI theme; dark/light parity verified; zero hardcoded hex (structural source-scan test) | yes |
 | `model-read-carries-its-assumptions` | ai-context-pack | S | every trend/shape/flow/ATR label + scalar carries its window / threshold / basis descriptor in-payload (self-describing export); the UI frames the pack "advisory context — not a forecast, not a scored signal, not a guarantee"; **2nd binding instance → GRADUATES** | yes |
 | `digested-labels-not-raw-dump` | ai-context-pack | S | the TI read is a SMALL orthogonal set pre-digested into regime LABELS (direction/strength/momentum/concentration/balance/location/composition enums), not raw indicator values; the wire enum is authoritative (FE never re-derives a label from the scalar); no raw indicator/OHLC series in the UI (watch-list key) | yes |
+| `additive-keeps-score-byte-identical` | iv-rank | S | new one-way leaf `apps/api/src/marketdata/` (`signals`/`engine`/`live`/`darkpool`/`chain_store` 0 diff + import none of it — grep/AST verified); `market_state.iv_rank` attached AFTER `generate_signals`; score/tier/`state_fingerprint` byte-identical (SPY served 83 / prime / `0e8884cc0a03`) with iv_rank present/null/absent — QA independently re-derived incl. a forced whole-store outage | yes |
+| `best-effort-isolated-or-null` | iv-rank | S | store outage / insufficient history / write failure / no-current-IV → `iv_rank: null` or the honest `building` state, never a 5xx; the KEY always emitted (`object|null`); the write-through is best-effort (swallowed, never perturbs the bundle/cache/SSE); forced `IV_STORE=postgres`→unreachable-DB served 200 + null, `strike_profile` intact, boot survived (defer-fault-to-first-use) | yes |
+| `live-vs-static-isolation` | iv-rank | S | STATIC daily read — nothing rides SSE (the SSE payload gains no field); the widget stays visible + UN-DIMMED on a stream drop (deterministic flow-spec contrast vs a dimming LiveTape) | yes |
+| `model-read-carries-its-assumptions` | iv-rank | S | the rank read is self-describing — carries its window (sessions used) + total sample-count + IV-basis (`interpolated_30d`/`nearest_tenor` + `basis_dte`) in-payload + the advisory framing; never a bare number (FE guards it); the honest "building history — N of 20" state before the floor; degenerate-flat → `rank:null`+`flat_window`, never a fabricated "50"; **3rd instance** | yes |
+| `digested-labels-not-raw-dump` | iv-rank | S | the rich/cheap `band` (`premium_rich`≥70 / `neutral` / `premium_cheap`<30) is a single digested closed-enum token cut server-side from the rank; the FE renders it via a closed lookup, never re-derives it from the scalar; NO raw IV history series on the wire or in the UI; **2nd binding instance → GRADUATES** | yes |
+| `theme-token-discipline` | iv-rank | S | the `IvRank` widget + copy are token-only via the MUI theme; dark/light parity render-verified; zero hardcoded hex (structural `?raw` source-scan test) | yes |
+
+> Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
+> (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified
+> NOT_AUTHORIZED). IV Rank / IV Percentile — where a ticker's current IV sits within its own recent history
+> (option premium rich vs cheap) — surfaced as the additive nested nullable `market_state.iv_rank`, AI-context
+> + a Ticker static-family widget, NEVER a scoring input. **The crux:** the vendor has no historical IV → the
+> feature accumulates its own, establishing the project's **FIRST persistent market-data store** — a new
+> one-way leaf `apps/api/src/marketdata/` (port + `IvSample` record + on-disk-SQLite default [`IV_STORE=disk`,
+> under `DATA_DIR`, survives restart] + a Postgres prod adapter behind the same port [runtime-env only,
+> defer-fault-to-first-use; live-verify deferred like persistent-db — no local Postgres]), a best-effort
+> write-through-on-serve accumulation (idempotent once-per-(ticker, UTC-day), no backfill) attached AFTER
+> scoring, and the CM30 (~30d interpolated ATM IV off the already-computed term structure, no new vendor call)
+> rank/percentile compute (≤252-session window, `N_min=20` floor, degenerate-flat handled honestly). Full
+> pipeline (architect → PM → UX split → both lanes → GATE Q). **GRADUATION:** `digested-labels-not-raw-dump`
+> reached its **2nd binding instance** (ai-context-pack + iv-rank's rich/cheap band) → promoted into CONTEXT §5
+> + THREADS §9; removed from the watch list. `model-read-carries-its-assumptions` gained a 3rd instance; the
+> four other touched keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`,
+> `live-vs-static-isolation`, `theme-token-discipline`) each gained an instance — no other graduation.
+> **QA (GATE Q)** fresh de-correlated **Sonnet**: **PASS 19/19** (0 FAIL / 0 UNVERIFIABLE; conformance new
+> standalone spec `iv_rank.json` PASS live [warmed URL] + offline [null-fault `--sample`]; byte-identity
+> independently re-derived three ways incl. a forced whole-store outage; the computed + degenerate-flat states
+> force-observed by seeding the disk store directly; AC↔test traceability non-vacuous; `nx test dashboard`
+> 685/685 [+27] + `@org/api` 13/13, `tsc -b --force` clean, `nx build` green). **No FAIL → no GATE Z bounce**
+> (both lanes' first-pass builds held under independent verification — a clean run, unlike the recent
+> lane-interruption ships). **New descriptive property:** the "trading/bundle path stays stateless" narrowing
+> now explicitly extends to a **market-data side-store** (the `chain_store` best-effort precedent made
+> persistent) — the compute reads nothing from it; an empty/wiped store degrades to "building history," never
+> an error. No demotion.
 
 > Note (GATE S, ai-context-pack, 2026-07-06): the SECOND item of the owner "enrich the downstream-AI's
 > inputs" GATE I (owner pick 2026-07-06) — **bundled** the two parked scored items (AI context-scalars pack

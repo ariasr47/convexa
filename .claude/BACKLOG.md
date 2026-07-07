@@ -31,8 +31,15 @@
 ---
 
 ## Last GATE I — 2026-07-06 (b) (owner pick: iv-rank; market-backdrop parked blocked-on plan upgrade)
-**Chosen → `iv-rank`** (IV Rank / IV Percentile) — owner pick off the enrichment pool after
-`ai-context-pack` shipped. THE options metric the app lacks; drives **strategy selection** (rich→sell /
+**Chosen → `iv-rank` — ✓ SHIPPED + ARCHIVED (2026-07-07)** → `_archive/iv-rank/`. Full pipeline both lanes
+(architect → PM → UX split → parallel lanes → GATE Q); QA PASS 19/19 (de-correlated Sonnet); conformance new
+standalone spec `iv_rank.json` (live + offline); `nx test dashboard` 685/685. **GRADUATED
+`digested-labels-not-raw-dump`** (2 binding: ai-context-pack + iv-rank's rich/cheap band); `model-read-carries-
+its-assumptions` → 3rd instance. Established the project's **first persistent market-data store**
+(`apps/api/src/marketdata/`: on-disk-SQLite default `IV_STORE=disk` + Postgres prod adapter behind the same
+port). Score/tier/fp byte-identical (SPY 83/prime/`0e8884cc0a03`). Seams → OPEN_THREADS §7r. No GATE Z bounce
+(clean first-pass builds). *(original cull entry:)* **Chosen → `iv-rank`** (IV Rank / IV Percentile) — owner
+pick off the enrichment pool after `ai-context-pack` shipped. THE options metric the app lacks; drives **strategy selection** (rich→sell /
 cheap→buy premium). Rides `market_state` as additive AI-context + a Ticker display, **never a scoring
 input**. **The crux (architect-first):** the vendor provides **no historical IV**, so IV Rank's compelling
 form is **blocked-on accumulation** — the feature must **accumulate a daily IV sample into a persistent
@@ -509,14 +516,18 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   unblocks the distance-to-level tiles), volume-profile POC/value-area + CVD (independent non-gamma
   confluence), and the technical-indicator regime bundle (EMA/ADX/RSI digested-to-labels, confluence
   tier). **All ride as AI state-export CONTEXT, never scoring inputs** (`additive-keeps-score-byte-
-  identical`). `dealer-flow-projection` ✓ SHIPPED + ARCHIVED (2026-07-02) — **`iv-rank` is now the pool
-  front-runner** (owner may pick it, `market-backdrop`, or resurface `scanner`). News/sentiment stays
+  identical`). `dealer-flow-projection` ✓ SHIPPED + ARCHIVED (2026-07-02), `ai-context-pack` ✓ SHIPPED
+  (2026-07-06), **`iv-rank` ✓ SHIPPED + ARCHIVED (2026-07-07)** — the pool has now shipped three; remaining
+  live candidates: `market-backdrop` (parked, blocked-on plan upgrade), volume-profile POC/CVD, or resurface
+  `scanner`. News/sentiment stays
   owner-future (§D-class). Decision-impact cull: each names the rec-quality lift it gives; judged on
   downstream-AI-quality, the first-class harvest source. **2026-07-06: the AI context-scalars pack +
   the TI regime bundle → ✓ SHIPPED + ARCHIVED (bundled) as `ai-context-pack`** (owner pick; QA PASS
   26/26; see "Last GATE I — 2026-07-06" above + OPEN_THREADS §7q). **2026-07-06 (b): `iv-rank` CHOSEN →
   in pipeline** (architect-first; BRIEF at `.claude/contracts/iv-rank/BRIEF.md`; see "Last GATE I —
-  2026-07-06 (b)" above). **`market-backdrop` PARKED — blocked-on a Massive plan upgrade** (feasibility
+  2026-07-06 (b)" above). **2026-07-07: `iv-rank` ✓ SHIPPED + ARCHIVED** (QA PASS 19/19; graduated
+  `digested-labels-not-raw-dump`; established the first persistent market-data store; see "Last GATE I —
+  2026-07-06 (b)" above + OPEN_THREADS §7r). **`market-backdrop` PARKED — blocked-on a Massive plan upgrade** (feasibility
   probe: index data `NOT_AUTHORIZED`; a SPY/QQQ-ETF-proxy reshape is buildable in-tier if resurfaced).
   Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR (now shipped)
   unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).

@@ -22,6 +22,12 @@ from src.core.darkpool import analyze_off_exchange
 # sole caller. Its output is attached to market_state AFTER generate_signals returns, so no pack
 # field can exist at score/gate/fingerprint time ([additive-keeps-score-byte-identical]).
 from src.core import context_pack
+# Marketdata (iv-rank): a ONE-WAY LEAF sibling of src/auth/ — the project's first persistent
+# market-data store. signals/engine/live/darkpool NEVER import it; it imports stdlib/math + its own
+# port/adapters only; main.py is the sole caller. Its output (market_state.iv_rank) is attached
+# AFTER generate_signals returns, so it cannot exist at score/gate/fingerprint time
+# ([additive-keeps-score-byte-identical]). Best-effort: any store/read/write fault -> iv_rank null.
+from src import marketdata
 from src.core import observability as obs
 from src.core import personas as personas_lib
 from src.core import ratelimit
@@ -506,6 +512,42 @@ def compute_ticker(ticker: str, market_data: dict | None,
                          f"(bundle unaffected)")
         market_context = None
     state["market_context"] = market_context
+
+    # iv_rank (iv-rank): the additive, best-effort, STATIC IV-Rank/Percentile read. Accumulates one
+    # CM30 IV sample per ticker per UTC day into the persistent marketdata store (write-through), then
+    # reads the ticker's rolling <=252-session window to compute the rank/percentile (or the
+    # 'building'/null state). Attached AFTER generate_signals returned, so it never existed at
+    # score/gate/fingerprint time (belt) and signals.py imports none of the leaf (suspenders) —
+    # [additive-keeps-score-byte-identical].
+    #
+    # BEST-EFFORT + ISOLATED ([best-effort-isolated-or-null]): the WRITE is wrapped so ANY store
+    # fault is swallowed and NEVER perturbs the served bundle / cache / SSE / market_state core. The
+    # READ is wrapped so any fault -> iv_rank = null. The KEY is ALWAYS emitted (object|null). Ordering:
+    # write-through BEFORE the read, so today's just-written sample is in the window and the reported
+    # sample_count matches what the read used. STATIC: cached with the 60s bundle; nothing rides SSE.
+    iv_rank = None
+    try:
+        with obs.span("iv_rank"):
+            iv_store = marketdata.get_store()
+            session_date = marketdata.session_date_from_ns(state.get("timestamp"))
+            current_sample = None
+            if session_date:
+                current_sample = marketdata.derive_cm30_sample(
+                    ticker, state, market_data, session_date)
+                # WRITE-THROUGH: idempotent upsert-if-absent; only a valid sample is written. Any
+                # store fault is swallowed here so it never reaches the bundle.
+                if current_sample is not None:
+                    try:
+                        iv_store.upsert_if_absent(current_sample)
+                    except Exception:
+                        logger.debug(f"[{ticker}] iv_rank write-through failed (bundle unaffected)",
+                                     exc_info=True)
+                # READ: compute the rank over accumulated history (best-effort inside the wrapper).
+                iv_rank = marketdata.compute_iv_rank_read(iv_store, ticker, current_sample)
+    except Exception:
+        logger.exception(f"[{ticker}] IV-rank read failed; emitting iv_rank=null (bundle unaffected)")
+        iv_rank = None
+    state["iv_rank"] = iv_rank
 
     top = sig["setups"][0]["name"] if sig["setups"] else "none"
     logger.info(

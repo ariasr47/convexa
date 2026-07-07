@@ -304,8 +304,17 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   threshold** and is framed as **advisory context — never a guarantee, a price forecast, or a scored
   signal**. Generalizes the analytic gamma-flip's measure-before-calibrate honesty. *(dealer-flow-projection
   — the assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read
-  carries its window+threshold+basis descriptor + the "not a forecast, not a scored signal" framing.
-  2 binding.)*
+  carries its window+threshold+basis descriptor + the "not a forecast, not a scored signal" framing;
+  iv-rank — the rank carries its window / sample-count / IV-basis in-payload + the "building history"
+  honest state. 3 instances.)*
+- **`[digested-labels-not-raw-dump]`** (promoted 2026-07-07, 2 binding) — a derived-signal set fed to the
+  downstream AI (and displayed) is a **SMALL orthogonal set pre-digested into regime/band LABELS**, not a
+  raw indicator/OHLC/series dump — signal overload degrades the AI and the UI. The **wire enum/token is
+  authoritative** (the FE renders it via a closed lookup, **never re-derives** a label from the underlying
+  scalar); the raw series stays out of the wire and the UI. *(ai-context-pack — the TI regime labels
+  [direction/strength/momentum/…] off ADX/RSI/EMA, no raw indicator series; iv-rank — the rich/cheap
+  `band` [premium_rich|neutral|premium_cheap] cut server-side from the rank, no raw IV history on the wire
+  or in the UI. 2 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -542,6 +551,32 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   scored signal, not a guarantee"). QA PASS (Sonnet, de-correlated — 26/26 ACs, conformance new spec +
   8-spec sweep, `nx test dashboard` 658/658). Second feature of the "enrich the downstream-AI's inputs" GATE I
   (bundled the AI context-scalars pack + the TI regime bundle). *(2026-07-06.)*
+- **IV Rank / IV Percentile (`iv-rank`, FE+BE, additive, shipped 2026-07-07)** — where a ticker's *current*
+  IV sits within its *own recent history* → is option premium **rich or cheap** (strategy selection: sell vs
+  buy premium). THE options metric the app lacked. Surfaced as the additive nested nullable
+  `market_state.iv_rank` (AI-context via the unchanged wholesale `serialize_context` forward + a Ticker
+  static-family widget after `MarketContext`), **never a scoring input**. **The crux:** the vendor provides
+  **no historical IV**, so the feature **accumulates its own** — the project's **first persistent market-data
+  store**: a new one-way leaf `apps/api/src/marketdata/` (port + `IvSample` record + adapters), env `IV_STORE`
+  **default `disk`** (on-disk SQLite/WAL under `DATA_DIR`, so history survives restart) + a **Postgres** prod
+  adapter behind the same port (`IV_DATABASE_URL`→`DATABASE_URL`, runtime-env only, defer-fault-to-first-use;
+  the no-local-Postgres constraint met by building/verifying on the disk default). The IV sampled is a
+  **constant-maturity ~30-day interpolated ATM IV (CM30)** off the already-computed term-structure curve (no
+  new vendor call), with a nearest-tenor fallback recorded in the sample's `basis`/`basis_dte`.
+  **Accumulation** = best-effort **write-through on bundle serve**, idempotent once-per-(ticker, UTC-day)
+  upsert, no backfill, attached in `main.py` **after** `generate_signals` (fields don't exist at scoring
+  time). The read computes **IV Rank** (range-position 0–100, headline) + **IV Percentile** (outlier-robust,
+  secondary) over a rolling ≤**252**-session window with a "since-inception" ramp; below the **`N_min=20`**
+  floor it's the honest **"building history — N of 20"** state (no number); a degenerate-flat window →
+  `rank:null`, `rank_unavailable_reason:'flat_window'`, percentile still defined, **never a fabricated "50"**;
+  a store/read fault → `iv_rank:null` (bundle still 200). A digested **`band`** (`premium_rich` ≥70 /
+  `neutral` / `premium_cheap` <30) is cut server-side from the rank (`digested-labels-not-raw-dump` — no raw
+  IV series on the wire or UI). Self-describing envelope (window/sample-count/basis) + advisory framing on
+  every non-null read (`model-read-carries-its-assumptions`); **STATIC** (nothing on SSE, un-dimmed on a
+  stream drop); anonymous-visible (no auth gate). `signals.py` **0 diff**; score/tier/`state_fingerprint`
+  byte-identical (SPY served 83 / prime / `0e8884cc0a03`) with iv_rank present/null/absent. QA PASS (Sonnet,
+  de-correlated — 19/19 ACs, conformance new standalone spec `iv_rank.json`, `nx test dashboard` 685/685).
+  Third feature of the "enrich the downstream-AI's inputs" GATE I; graduated `[digested-labels-not-raw-dump]`.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

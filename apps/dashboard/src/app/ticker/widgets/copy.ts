@@ -369,6 +369,84 @@ export const MC_TIP_FLOW_CARD =
   'is unsigned: no buy/sell side, no aggressor, no "smart money" story. Rotation is ' +
   'composition/location information only.';
 
+// ---- IV rank (iv-rank) — copy + closed display maps + basis builders ----------------------------
+// All copy verbatim from the iv-rank UX_BLUEPRINT §4/§6 (the FE specs assert it). The FE renders these
+// pinned strings, NEVER the wire `window_descriptor`/`basis_descriptor`/`advisory_note` (those exist
+// only so the AI export is self-describing; a sentinel test guards non-render). The band + basis are
+// displayed via CLOSED lookups — the FE never re-derives the band from `rank`.
+
+// Widget chrome (§4).
+export const IVR_TITLE = 'IV rank';
+export const IVR_SUBTITLE =
+  "Where today's IV sits in this ticker's own recent history — is option premium rich or cheap? " +
+  'Context the AI also reads · snapshot, never live.';
+export const IVR_INFO =
+  "IV rank places today's implied volatility inside this ticker's own accumulated recent history — " +
+  '0 = the window\'s lowest IV, 100 = its highest. High = option premium is relatively rich; low = ' +
+  'relatively cheap. Advisory context only; never a scored signal.';
+
+// Computed-state labels (§4).
+export const IVR_RANK_LABEL = 'IV rank';
+export const IVR_PCT_LABEL = 'IV percentile';
+
+/** Headline descriptor (pinned, plain-language, AC-4). `{rank}`/`{window}` substituted at render. */
+export const ivrRankDescriptor = (rank: number, windowCap: number): string =>
+  `Today's IV sits at the ${rank}th position of its ${windowCap}-session low-to-high range.`;
+/** Secondary descriptor (pinned, AC-5). */
+export const ivrPctDescriptor = (pct: number): string =>
+  `${pct}% of sessions in the window had lower IV than today.`;
+
+/** The digested band token (D2) → its pinned display string. Closed lookup; unknown ⇒ null (no band
+ *  renders — never a raw-enum pass-through, never FE-re-derived from the rank). */
+export const IVR_BAND_DISPLAY: Record<string, string> = {
+  premium_rich: 'premium rich', neutral: 'neutral', premium_cheap: 'premium cheap',
+};
+export const ivrBandDisplay = (band: string): string | null =>
+  Object.prototype.hasOwnProperty.call(IVR_BAND_DISPLAY, band) ? IVR_BAND_DISPLAY[band] : null;
+
+/** The self-describing basis/envelope line (AC-7 / AC-19), keyed off `iv_basis` via a CLOSED branch.
+ *  Clean CM30 vs the honest nearest-tenor fallback wording; an UNKNOWN basis degrades to the clean
+ *  wording WITHOUT a fabricated DTE claim (fail-honest). Always visible with the numbers. */
+export const ivrBasisLine = (
+  sessions: number, windowCap: number, count: number, ivBasis: string, basisDte: number,
+): string => {
+  const head = `Over ${sessions} of the last ${windowCap} sessions · ${count} samples · `;
+  if (ivBasis === 'nearest_tenor') {
+    return `${head}nearest-tenor IV (~${basisDte}d) — clean 30-day basis unavailable this day.`;
+  }
+  // 'interpolated_30d' AND any unknown basis → the clean CM30 wording, no fabricated DTE.
+  return `${head}~30-day constant-maturity IV.`;
+};
+
+/** Advisory footer (verbatim, AC-8) — rendered with Computed + Building; the specs assert it. */
+export const IVR_ADVISORY =
+  'Advisory context for you and the AI — not a forecast, not a scored signal, not a guarantee.';
+
+// Degenerate-flat + Building + Unavailable wording (§6 — exact strings; the null-copy family).
+export const IVR_FLAT_NOTE = 'Rank not meaningful yet — IV has been flat across the window.';
+export const ivrBuildingMessage = (n: number, nMin: number): string =>
+  `Building history — ${n} of ${nMin} sessions. IV rank appears once enough daily samples accumulate.`;
+export const IVR_WHOLE_EMPTY = 'IV rank unavailable this cycle.';
+
+// Tooltips / glossary (§4 — the ⓘ affordances).
+export const IVR_TIP_RANK =
+  "IV rank = today's IV positioned between the window's lowest and highest IV (0–100). Sensitive to " +
+  'a single extreme day.';
+export const IVR_TIP_PCT =
+  'IV percentile = the share of sessions in the window with lower IV than today (0–100). More robust ' +
+  'to a single outlier day than the rank.';
+export const IVR_TIP_BAND =
+  'Rich (rank ≥ 70) leans toward selling premium / defined-risk credit; cheap (rank < 30) leans ' +
+  'toward buying premium / long options; 30–70 is neutral. A descriptive read of the number, not a ' +
+  'signal.';
+export const IVR_TIP_BASIS =
+  'The IV sampled is a constant-maturity ~30-day read interpolated from the term structure. On days ' +
+  "the clean 30-day basis isn't available, the nearest tenor is used and shown here honestly.";
+/** Building tooltip carries the N_min floor (§4). */
+export const ivrTipBuilding = (nMin: number): string =>
+  `This ticker builds one IV sample per day it's viewed. Until ${nMin} accumulate, there isn't ` +
+  'enough history for a trustworthy rank.';
+
 /** Compact, human-readable age from seconds, e.g. 242779 -> "2d 19h". */
 export function humanAge(seconds: number | null): string {
   if (seconds == null) return 'unknown age';

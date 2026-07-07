@@ -177,6 +177,33 @@ class MarketContextPack(BaseModel):
     atr: Optional[AtrRead] = None
 
 
+class IvRankRead(BaseModel):
+    """The IV-Rank/Percentile read (iv-rank) — an additive, best-effort, STATIC advisory read
+    attached to market_state.iv_rank AFTER generate_signals returns. NEVER an input to signals /
+    opportunity_score / opportunity_tier / the entry gate / state_fingerprint.
+
+    Three mutually-exclusive states via `state` (+ null when the whole read is unavailable, expressed
+    by market_state.iv_rank == null, NOT a state value). Every computed-number child is nullable
+    (null in 'building'; `rank` also null in the degenerate-flat sub-case with
+    rank_unavailable_reason='flat_window'). The `*_descriptor`/`advisory_note` strings are WIRE-ONLY
+    (for the AI export self-description; the FE renders its own copy). No raw IV series on the wire."""
+    state: str                                       # 'computed' | 'building'
+    rank: Optional[float] = None                     # 0-100; null in building/degenerate-flat
+    rank_unavailable_reason: Optional[str] = None    # 'flat_window' when computed && rank is null
+    percentile: Optional[float] = None               # 0-100; present whenever state == 'computed'
+    band: Optional[str] = None                        # 'premium_rich'|'neutral'|'premium_cheap'; null off a null rank
+    current_iv: Optional[float] = None               # measured IV this cycle (percentage points)
+    window_sessions: int                              # sessions used (== sample_count until 252)
+    sample_count: int                                 # total accumulated for this ticker
+    window_cap: int                                   # 252
+    min_samples: int                                  # N_min floor (20)
+    iv_basis: Optional[str] = None                    # 'interpolated_30d' | 'nearest_tenor'
+    basis_dte: Optional[float] = None                 # 30 for a clean interp; else the fallback DTE
+    window_descriptor: str
+    basis_descriptor: str
+    advisory_note: str
+
+
 class MarketState(BaseModel):
     # Core Data
     ticker: str
@@ -244,6 +271,13 @@ class MarketState(BaseModel):
     # The KEY is ALWAYS emitted (object|null); null only when all four reads are unavailable OR
     # the wrapper raised ([best-effort-isolated-or-null]).
     market_context: Optional[MarketContextPack] = None
+
+    # IV-Rank/Percentile read (iv-rank; STATIC, additive, advisory context only — NOT scored).
+    # Where current IV sits within this ticker's own accumulated CM30 history. Computed in the
+    # one-way-leaf src/marketdata/ and attached AFTER generate_signals returns. The KEY is ALWAYS
+    # emitted (object|null); null on a store outage / no current IV / read fault
+    # ([best-effort-isolated-or-null]).
+    iv_rank: Optional[IvRankRead] = None
 
     # Volatility & Sentiment
     atm_iv: float

@@ -659,6 +659,56 @@ runs (a pre-existing WALL-CLOCK display field, **display-only + unscored** — n
 `state_fingerprint`); surfaced by the byte-identity proof's stronger-than-needed "entire-bundle-identical"
 control. Candidate cleanup: derive block age from a per-request captured clock.
 
+## 7r. IV Rank / IV Percentile (SHIPPED + ARCHIVED — both lanes done)
+Contracts archived at `.claude/contracts/_archive/iv-rank/`. **Third** item of the owner "enrich the
+downstream-AI's inputs" GATE I (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after the
+market-backdrop index feed verified NOT_AUTHORIZED). Where a ticker's *current* IV sits within its *own
+recent history* → is option premium **rich or cheap** — surfaced as the additive nested nullable
+`market_state.iv_rank` (AI-context via the wholesale `serialize_context` forward + a Ticker static-family
+widget after `MarketContext`), **never a scoring input**. Full pipeline (architect → PM → UX split → both
+lanes → GATE Q).
+**The crux (why architect-first):** the vendor provides **no historical IV** (probe-confirmed) → the feature
+**accumulates its own** — the project's **first persistent MARKET-DATA store**.
+**Backend** (`apps/api`): new one-way leaf `src/marketdata/` (`ports.py` port ABC + `IvSample` record;
+`sqlite_store.py` on-disk WAL default; `postgres_store.py` prod adapter behind the same port; `compute.py`
+CM30 derivation + rank/percentile read; `__init__.py` env factory `IV_STORE` default `disk`, `IV_DATABASE_URL`
+→`DATABASE_URL` runtime-only + defer-fault-to-first-use); `main.py` best-effort **write-through-then-read**
+attached **after** `generate_signals` (idempotent once-per-(ticker, UTC-day) upsert, no backfill);
+`src/models/market_data.py` `IvRankRead` + `MarketState.iv_rank`. IV sampled = **CM30** (~30-day interpolated
+ATM IV off the already-computed term-structure curve, no new vendor call; nearest-tenor fallback recorded in
+`iv_basis`/`basis_dte`). Read: **IV Rank** (0–100 range-position, headline) + **IV Percentile** (outlier-robust,
+secondary) over a rolling ≤**252**-session window ("since-inception" ramp); **`N_min=20`** floor → honest
+`building` state (no number); degenerate-flat → `rank:null`+`rank_unavailable_reason:'flat_window'`, percentile
+still defined, **never a fabricated "50"**; digested `band` (`premium_rich`≥70/`neutral`/`premium_cheap`<30)
+cut server-side. `signals.py` **0 diff**.
+**Frontend** (`apps/dashboard` + `libs/api`): `IvRankRead`/`IvRankState`/`IvRankBand`/`IvBasis` types +
+`MarketState.iv_rank?`; a static-family **`IvRank`** widget (four body states — Computed / degenerate-flat /
+Building / Unavailable — selected purely from the wire `state` discriminant; band via a **closed lookup**,
+never FE-re-derived; **never a bare number**; own pinned copy, never the wire `*_descriptor` strings),
+`span={1}` after `MarketContext`; +27 tests (component suite + a flow-integration centerpiece incl. the
+un-dimmed-on-SSE-drop contrast). STATIC-family (un-dimmed on a stream drop); token-only, zero hex; no auth gate.
+**Additive** — score/tier/`state_fingerprint` byte-identical (SPY served 83 / prime / `0e8884cc0a03`) with
+iv_rank present/null/absent; nothing on SSE.
+**QA (GATE Q)** fresh de-correlated **Sonnet**: **PASS 19/19** (0 FAIL / 0 UNVERIFIABLE; conformance new
+standalone spec `iv_rank.json` PASS live+offline; byte-identity independently re-derived — incl. a forced
+whole-store outage via `IV_STORE=postgres`→unreachable-DB → 200 + `iv_rank:null`, `strike_profile` intact,
+boot survives; the degenerate-flat + computed states force-observed by seeding the disk store; AC↔test
+traceability non-vacuous; `nx test dashboard` 685/685 + `@org/api` 13/13, `tsc -b --force` clean, `nx build`
+green). No FAIL → no GATE Z bounce.
+**GATE S:** **GRADUATED `[digested-labels-not-raw-dump]`** (2 binding: ai-context-pack + iv-rank) → Promoted
+canon (CONTEXT §5 + §9). `[model-read-carries-its-assumptions]` gained a 3rd instance; the three other touched
+keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`, `live-vs-static-isolation`,
+`theme-token-discipline`) each gained an instance — no other graduation.
+**New property established:** the project's **first persistent market-data store** — a best-effort side-store
+read/write around the stateless compute (the `chain_store` precedent made persistent + market-data); the
+"trading/bundle path stays stateless" narrowing extends to it (the compute reads nothing from it).
+**Deferred seams (named, not built):** a **curated warm-list** to pre-accumulate popular tickers (organic-only
+today — thinly-viewed tickers build history slowly); **per-tenor / per-strategy** IV rank (one CM30 read per
+ticker today); a **rank-of-the-rank trend/sparkline**; **cross-ticker IV-rank** / a scanner column (waits on
+the scanner surface); Postgres **live runtime-verify** (deferred like persistent-db — no local Postgres; the
+disk default is verified, Postgres is parity-reviewed behind the port). ATR (ai-context-pack) still unblocks
+the deferred distance-to-level tiles.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
@@ -725,4 +775,10 @@ control. Candidate cleanup: derive block age from a per-request captured clock.
   surfaced **self-describing** — it carries its own horizon / window / assumption / basis / threshold —
   and is framed as **advisory context, never a guarantee or a scored signal**. (dealer-flow-projection —
   the assumption-explicit charm/vanna projection; ai-context-pack — every TI/shape/flow/ATR read carries
-  its window+threshold+basis + the "not a forecast, not a scored signal" framing.) See PROJECT_CONTEXT §5.
+  its window+threshold+basis + the "not a forecast, not a scored signal" framing; iv-rank — the rank carries
+  its window/sample-count/IV-basis + the honest "building history" state. 3 instances.) See PROJECT_CONTEXT §5.
+- **`[digested-labels-not-raw-dump]`** (promoted 2026-07-07, 2 binding) — a derived-signal set fed to the
+  downstream AI / displayed is a SMALL orthogonal set pre-digested into regime/band LABELS, not a raw
+  indicator/OHLC/series dump; the wire enum/token is authoritative (FE renders via a closed lookup, never
+  re-derives from the scalar); no raw series on the wire or in the UI. (ai-context-pack — the TI regime
+  labels; iv-rank — the rich/cheap `band` cut server-side, no raw IV history.) See PROJECT_CONTEXT §5.

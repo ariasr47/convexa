@@ -174,6 +174,73 @@ export interface MarketContextPack {
   atr: AtrRead | null;
 }
 
+// ---- IV rank — iv-rank INTERFACE_CONTRACT §3 ----------------------------------------------------
+// One additive, independently-nullable nested object on `market_state`, mirroring
+// `dealer_flow_projection` / `market_context`. STATIC (rides the cached REST bundle, never the SSE
+// stream) and advisory CONTEXT only — never a scoring input (`[additive-keeps-score-byte-identical]`).
+// The read carries an explicit `state` discriminant + nullable children so the FE maps to its four
+// body states purely from the wire (never re-deriving state, band, or a rank from a scalar). The
+// `*_descriptor`/`advisory_note` strings exist so the AI export is self-describing; the FE does NOT
+// parse or render them (it has its own pinned copy — a sentinel-value test guards this).
+
+/** The two mutually-exclusive non-null read states. An unknown value → the FE treats the read as
+ *  unavailable (fail-honest). `computed` = enough history + a current IV; `building` = 1..N_min-1
+ *  samples. (Whole-read unavailable is expressed by `iv_rank == null`, NOT a `state` value.) */
+export type IvRankState = 'computed' | 'building';
+
+/** The digested rich/cheap band token (D2), computed backend-side from the Rank at 70/30 cut points.
+ *  CLOSED enum — the FE displays it via a closed lookup and NEVER re-derives it from `rank` (an
+ *  unknown value renders no band). Present ONLY when `state == 'computed'` AND `rank != null`. */
+export type IvRankBand = 'premium_rich' | 'neutral' | 'premium_cheap';
+
+/** How the sampled IV was derived (self-describing basis, `model-read-carries-its-assumptions`). */
+export type IvBasis = 'interpolated_30d' | 'nearest_tenor';
+
+export interface IvRankRead {
+  /** Which of the two non-null states this read is in. Drives the FE body-state selection. */
+  state: IvRankState;
+
+  // ---- Computed-state numbers (all null unless state == 'computed') ----
+  /** IV Rank 0–100 (headline, D4). null when state != 'computed' OR the window is degenerate-flat
+   *  (IV_max == IV_min) — in the flat sub-case `state` stays 'computed', `rank` is null, and
+   *  `rank_unavailable_reason` explains it. NEVER a fabricated midpoint. */
+  rank: number | null;
+  /** Set ONLY when state == 'computed' && rank == null (degenerate-flat): a short machine reason the
+   *  FE maps to its pinned flat note. Closed value: 'flat_window'. null otherwise. */
+  rank_unavailable_reason: 'flat_window' | null;
+  /** IV Percentile 0–100 (secondary, D4). Present whenever state == 'computed' (incl. degenerate-flat
+   *  — a flat window still has a defined percentile). null when state != 'computed'. */
+  percentile: number | null;
+  /** The digested band token (D2). Present ONLY when state == 'computed' && rank != null; null in the
+   *  flat sub-case and in building. */
+  band: IvRankBand | null;
+
+  // ---- The self-describing envelope (present in BOTH states; carries the read's assumptions) ----
+  /** The IV value the read measured this cycle (percentage points, ×100 convention). null in building
+   *  when no current IV was usable but samples exist below the floor. */
+  current_iv: number | null;
+  /** Sessions actually used in the window (== sample_count until 252, then 252). */
+  window_sessions: number;
+  /** Total accumulated samples for this ticker (== window_sessions until >252). */
+  sample_count: number;
+  /** The rolling window cap (252). Fixed descriptor for the "N of the last {window} sessions" copy. */
+  window_cap: number;
+  /** The minimum-sample floor (N_min = 20, D3). The FE renders "N of {N_min} sessions" in building. */
+  min_samples: number;
+  /** How current_iv was derived (self-describing basis, AC-19). */
+  iv_basis: IvBasis;
+  /** The actual DTE the sample represents: 30 for a clean interpolation; the fallback tenor DTE
+   *  otherwise. The FE renders it in the fallback basis line. */
+  basis_dte: number;
+
+  // ---- Self-describing descriptors (WIRE-ONLY — for the AI export; the FE does NOT render these) ----
+  /** Plain-language window/basis/framing descriptors so the AI export is self-describing. The FE has
+   *  its OWN pinned copy and MUST NOT render these strings (a sentinel-value test guards this). */
+  window_descriptor: string;
+  basis_descriptor: string;
+  advisory_note: string;
+}
+
 export interface MarketState {
   ticker: string;
   price: number;
@@ -223,6 +290,9 @@ export interface MarketState {
   // AI context pack ("Market context") — additive, independently nullable, STATIC. OPTIONAL key so
   // pre-feature payloads type-check; consumers read `m.market_context ?? null`. Never a scoring input.
   market_context?: MarketContextPack | null;
+  // IV rank (iv-rank) — additive, independently nullable, STATIC. OPTIONAL key so pre-feature payloads
+  // type-check; consumers read `m.iv_rank ?? null`. Never a scoring input.
+  iv_rank?: IvRankRead | null;
 }
 
 export interface StrikeRow {
