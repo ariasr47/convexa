@@ -11,17 +11,17 @@
  *   for the symbol) → `/scanner` (Ticker feed closed; placeholder issues no scan) → symbol change
  *   single-subscribes.
  */
-import { render, screen, within, act } from '@testing-library/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import type { StrikeRow, TickerBundle } from '@org/api';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import type { TickerBundle, StrikeRow } from '@org/api';
 
 import App from '../app';
-import { theme } from '../theme';
 import { __resetMemory } from '../positions/store';
+import { theme } from '../theme';
 
 // ---- A controllable mock EventSource so we can track open/close per stream URL ------------------
 interface MockES {
@@ -39,32 +39,103 @@ function openFor(symbol: string): MockES[] {
 }
 
 function strike(s: number): StrikeRow {
-  return { strike: s, net_gex: 0, call_gex: 0, put_gex: 0, call_oi: 10, put_oi: 10, total_oi: 20, net_dex: 0, call_dex: 0, put_dex: 0, volume: 5, vol_oi_ratio: 0.25 };
+  return {
+    strike: s,
+    net_gex: 0,
+    call_gex: 0,
+    put_gex: 0,
+    call_oi: 10,
+    put_oi: 10,
+    total_oi: 20,
+    net_dex: 0,
+    call_dex: 0,
+    put_dex: 0,
+    volume: 5,
+    vol_oi_ratio: 0.25,
+  };
 }
 function makeBundle(ticker: string): TickerBundle {
   return {
     market_state: {
-      ticker, price: 250.5, gex_spot: 250, timestamp: 1, timestamp_iso: '2026-06-23T14:30:00Z',
-      call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-      max_pain_expiration: '2026-06-26', net_gex: 1.2e9, call_gex: 2.0e9, put_gex: -0.8e9, total_gex: 1.2e9,
-      net_dex: 5.0e8, call_dex: 6.0e8, put_dex: -1.0e8, net_vanna: null, net_charm: null, net_volga: null,
-      vwap: 249, vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-      dte_min: null, dte_max: null, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-      put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-      iv_skew: null, term_structure: null, dealer_flow_projection: null,
+      ticker,
+      price: 250.5,
+      gex_spot: 250,
+      timestamp: 1,
+      timestamp_iso: '2026-06-23T14:30:00Z',
+      call_wall: 260,
+      put_wall: 240,
+      peak_gex_strike: 255,
+      gamma_flip: 248,
+      max_pain: 250,
+      max_pain_expiration: '2026-06-26',
+      net_gex: 1.2e9,
+      call_gex: 2.0e9,
+      put_gex: -0.8e9,
+      total_gex: 1.2e9,
+      net_dex: 5.0e8,
+      call_dex: 6.0e8,
+      put_dex: -1.0e8,
+      net_vanna: null,
+      net_charm: null,
+      net_volga: null,
+      vwap: 249,
+      vwap_upper_2: null,
+      vwap_upper_3: null,
+      vwap_lower_2: null,
+      vwap_lower_3: null,
+      dte_min: null,
+      dte_max: null,
+      atm_iv: 45,
+      hv_30d: 40,
+      iv_hv_ratio: 1.12,
+      net_flow: null,
+      put_call_ratio: 0.8,
+      chain_vol_oi_ratio: 0.5,
+      total_volume: 100_000,
+      vol_oi_unusual_threshold: 1,
+      iv_skew: null,
+      term_structure: null,
+      dealer_flow_projection: null,
     },
     signals: {
-      ticker, regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 42, opportunity_tier: 'watch', prime_prompt_eligible: false,
+      ticker,
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 42,
+      opportunity_tier: 'watch',
+      prime_prompt_eligible: false,
     },
     strike_profile: { ticker, spot: 250.5, strikes: [strike(245), strike(250), strike(255)] },
     expirations: [{ date: '2026-06-26', dte: 3 }],
-    ai_eval: { ready: false, reasons: [], changed: false, state_fingerprint: 'x', score_threshold: 60 },
-    meta: {
-      served_at: '2026-06-23T14:30:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
-      freshness: { snapshot_iso: '2026-06-23T14:30:00Z', data_age_seconds: 30, stale: false, stale_after_seconds: 600 },
+    ai_eval: {
+      ready: false,
+      reasons: [],
+      changed: false,
+      state_fingerprint: 'x',
+      score_threshold: 60,
     },
-    off_exchange: { ratio_pct: 38, offex_shares: 38_000, total_shares: 100_000, levels: [], blocks: [], block_min_shares: 5000, note: '' },
+    meta: {
+      served_at: '2026-06-23T14:30:00Z',
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: '2026-06-23T14:30:00Z',
+        data_age_seconds: 30,
+        stale: false,
+        stale_after_seconds: 600,
+      },
+    },
+    off_exchange: {
+      ratio_pct: 38,
+      offex_shares: 38_000,
+      total_shares: 100_000,
+      levels: [],
+      blocks: [],
+      block_min_shares: 5000,
+      note: '',
+    },
     position_eval: null,
   };
 }
@@ -88,16 +159,33 @@ beforeEach(() => {
       this.symbol = (url.match(/\/api\/stream\/([A-Z]+)/) ?? [])[1] ?? '?';
       esLog.push(this as unknown as MockES);
     }
-    close() { this.closed = true; }
+    close() {
+      this.closed = true;
+    }
   }
   vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
 
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const json = (b: unknown) =>
+      new Response(JSON.stringify(b), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
     // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
-    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    if (url.includes('/api/auth/session'))
+      return json({
+        authenticated: true,
+        user: {
+          id: 'u-test',
+          email: 'test@user.com',
+          display_name: null,
+          auth_methods: ['password'],
+        },
+        google_available: false,
+        settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+      });
     // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
     if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/ticker/')) return json(makeBundle(tk));
@@ -108,7 +196,8 @@ beforeEach(() => {
         cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
       });
     }
-    if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+    if (url.includes('/api/personas'))
+      return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
@@ -160,7 +249,7 @@ describe('live-lifecycle (centerpiece flow)', () => {
     await user.click(screen.getByTestId('nav-ticker'));
     await screen.findByText('Call wall');
     expect(esLog.length).toBeGreaterThan(beforeReturn); // a new EventSource was constructed
-    expect(openFor('TSLA').length).toBe(1);             // exactly one open for the symbol (AC-Live-4)
+    expect(openFor('TSLA').length).toBe(1); // exactly one open for the symbol (AC-Live-4)
 
     // --- /scanner → the Ticker feed closes again; the placeholder issues no scan (AC-Scan-1) ---
     const fetchBeforeScanner = fetchMock.mock.calls.length;
@@ -225,7 +314,9 @@ describe('live-lifecycle (centerpiece flow)', () => {
     const input = screen.getByLabelText('Ticker') as HTMLInputElement;
     await user.clear(input);
     await user.type(input, 'AAPL');
-    await act(async () => { await user.keyboard('{Enter}'); });
+    await act(async () => {
+      await user.keyboard('{Enter}');
+    });
 
     await screen.findByText('Call wall');
     // Prior symbol's feed closed; exactly one open for the new symbol.

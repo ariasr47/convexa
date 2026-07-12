@@ -6,7 +6,7 @@
  * renders an empty frame.
  */
 import type { StrikeRow } from '@org/api';
-import { GexProfileChart, GexLegend, windowedStrikes } from '../../gex-profile-chart';
+import { GexLegend, GexProfileChart, windowedStrikes } from '../../gex-profile-chart';
 import { Widget } from './Widget';
 
 interface Props {
@@ -25,11 +25,16 @@ const GEX_INFO =
 export function GexStrikeProfile({ revealIndex, ...props }: Props) {
   // Mirror the chart's own windowing so the widget frame is omitted (not left empty) when there is
   // nothing in-window — matching the chart's `return null`.
-  if (!windowedStrikes(props.strikes, props.spot, props.callWall, props.putWall).length) return null;
+  if (!windowedStrikes(props.strikes, props.spot, props.callWall, props.putWall).length)
+    return null;
   return (
     <Widget
-      id="gex-strike-profile" title="GEX strike profile" info={GEX_INFO} span={2}
-      actions={<GexLegend />} revealIndex={revealIndex}
+      id="gex-strike-profile"
+      title="GEX strike profile"
+      info={GEX_INFO}
+      span={2}
+      actions={<GexLegend />}
+      revealIndex={revealIndex}
     >
       <GexProfileChart {...props} />
     </Widget>

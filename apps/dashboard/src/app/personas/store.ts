@@ -16,7 +16,11 @@ interface PersistShape {
   active_persona_id: string | null; // null ⇒ Default (no persona)
 }
 
-const empty = (): PersistShape => ({ schema_version: SCHEMA_VERSION, customs: [], active_persona_id: null });
+const empty = (): PersistShape => ({
+  schema_version: SCHEMA_VERSION,
+  customs: [],
+  active_persona_id: null,
+});
 let memory: PersistShape | null = null;
 
 function read(): PersistShape {
@@ -24,18 +28,30 @@ function read(): PersistShape {
   try {
     const raw = resolveDurable(KEY, LEGACY_KEY);
     memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
-  } catch { memory = empty(); }
+  } catch {
+    memory = empty();
+  }
   return memory;
 }
 function write(s: PersistShape) {
   memory = s;
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* in-memory only */ }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* in-memory only */
+  }
 }
 
-export function loadCustoms(): PersonaDefinition[] { return read().customs; }
-export function loadActiveId(): string | null { return read().active_persona_id; }
+export function loadCustoms(): PersonaDefinition[] {
+  return read().customs;
+}
+export function loadActiveId(): string | null {
+  return read().active_persona_id;
+}
 
-export function saveActiveId(id: string | null) { write({ ...read(), active_persona_id: id }); }
+export function saveActiveId(id: string | null) {
+  write({ ...read(), active_persona_id: id });
+}
 
 export function upsertCustom(p: PersonaDefinition): PersonaDefinition[] {
   const s = read();
@@ -52,11 +68,13 @@ export function removeCustom(id: string): PersonaDefinition[] {
 }
 
 export function newPersonaId(): string {
-  return (crypto?.randomUUID?.() ?? `persona-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  return crypto?.randomUUID?.() ?? `persona-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 /** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */
-export function __resetPersonas() { memory = null; }
+export function __resetPersonas() {
+  memory = null;
+}
 
 export const PERSONAS_KEY = KEY;
 export const PERSONAS_LEGACY_KEY = LEGACY_KEY;

@@ -11,13 +11,13 @@
  *     rank); no series/list/table/chart import.
  *   - `theme-token-discipline` (dark/light parity, zero hardcoded hex, source-scanned via `?raw`).
  */
-import ivrSource from './IvRank.tsx?raw';
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import type { IvRankRead } from '@org/api';
-import { theme, lightTheme } from '../../theme';
+import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { lightTheme, theme } from '../../theme';
 import { IvRank } from './IvRank';
+import ivrSource from './IvRank.tsx?raw';
 import { IVR_ADVISORY, IVR_FLAT_NOTE, IVR_WHOLE_EMPTY, ivrBuildingMessage } from './copy';
 
 // The source with comments stripped — the doc header legitimately NAMES the forbidden props/hooks to
@@ -31,24 +31,50 @@ const WIRE_DESC = 'WIRE-DESCRIPTOR-NEVER-RENDERED';
 /** Default / Computed: rank 82 / pct 74 / window 252 / sessions 130 / count 130 / interpolated_30d. */
 const computed = (over: Partial<IvRankRead> = {}): IvRankRead => ({
   state: 'computed',
-  rank: 82, rank_unavailable_reason: null, percentile: 74, band: 'premium_rich',
-  current_iv: 41.2, window_sessions: 130, sample_count: 130, window_cap: 252, min_samples: 20,
-  iv_basis: 'interpolated_30d', basis_dte: 30,
-  window_descriptor: WIRE_DESC, basis_descriptor: WIRE_DESC, advisory_note: WIRE_DESC,
+  rank: 82,
+  rank_unavailable_reason: null,
+  percentile: 74,
+  band: 'premium_rich',
+  current_iv: 41.2,
+  window_sessions: 130,
+  sample_count: 130,
+  window_cap: 252,
+  min_samples: 20,
+  iv_basis: 'interpolated_30d',
+  basis_dte: 30,
+  window_descriptor: WIRE_DESC,
+  basis_descriptor: WIRE_DESC,
+  advisory_note: WIRE_DESC,
   ...over,
 });
 /** Building: sample_count 12 / min_samples 20; no rank/percentile/band. */
 const building = (over: Partial<IvRankRead> = {}): IvRankRead => ({
   state: 'building',
-  rank: null, rank_unavailable_reason: null, percentile: null, band: null,
-  current_iv: 40.0, window_sessions: 12, sample_count: 12, window_cap: 252, min_samples: 20,
-  iv_basis: 'interpolated_30d', basis_dte: 30,
-  window_descriptor: WIRE_DESC, basis_descriptor: WIRE_DESC, advisory_note: WIRE_DESC,
+  rank: null,
+  rank_unavailable_reason: null,
+  percentile: null,
+  band: null,
+  current_iv: 40.0,
+  window_sessions: 12,
+  sample_count: 12,
+  window_cap: 252,
+  min_samples: 20,
+  iv_basis: 'interpolated_30d',
+  basis_dte: 30,
+  window_descriptor: WIRE_DESC,
+  basis_descriptor: WIRE_DESC,
+  advisory_note: WIRE_DESC,
   ...over,
 });
 /** Degenerate-flat: state computed, rank null, flat reason, no band; percentile present. */
 const flat = (over: Partial<IvRankRead> = {}): IvRankRead =>
-  computed({ rank: null, rank_unavailable_reason: 'flat_window', band: null, percentile: 74, ...over });
+  computed({
+    rank: null,
+    rank_unavailable_reason: 'flat_window',
+    band: null,
+    percentile: 74,
+    ...over,
+  });
 
 function renderIvr(value: IvRankRead | null, t = theme) {
   return render(
@@ -77,7 +103,9 @@ describe('IvRank (component states — Suite A)', () => {
   it('T-AC-3: the code contains NO auth/gate/session reference; renders with no gate wiring', () => {
     // Comment-stripped code (the `window_sessions`/`sample_count` wire fields legitimately contain the
     // substring "session"; the auth surface uses these specific identifiers).
-    expect(ivrCode).not.toMatch(/useGate|simTradeGate|useSession|useAuth|SignInPrompt|AuthContext|gateAction/i);
+    expect(ivrCode).not.toMatch(
+      /useGate|simTradeGate|useSession|useAuth|SignInPrompt|AuthContext|gateAction/i,
+    );
     // And it renders for an anonymous caller (no provider/gate context needed).
     expect(() => renderIvr(computed())).not.toThrow();
   });
@@ -166,8 +194,12 @@ describe('IvRank (component states — Suite A)', () => {
   // ---- T-AC-10 (Building message with the actual count) ------------------------------------
   it('T-AC-10: Building renders "Building history — 12 of 20 sessions…" with the actual count', () => {
     renderIvr(building({ sample_count: 12, min_samples: 20 }));
-    expect(screen.getByTestId('ivr-building-message')).toHaveTextContent(ivrBuildingMessage(12, 20));
-    expect(screen.getByTestId('ivr-building-message')).toHaveTextContent('Building history — 12 of 20 sessions');
+    expect(screen.getByTestId('ivr-building-message')).toHaveTextContent(
+      ivrBuildingMessage(12, 20),
+    );
+    expect(screen.getByTestId('ivr-building-message')).toHaveTextContent(
+      'Building history — 12 of 20 sessions',
+    );
   });
 
   // ---- T-AC-11 (Building: no rank, no percentile) ------------------------------------------
@@ -271,7 +303,9 @@ describe('IvRank (component states — Suite A)', () => {
   // ---- T-static-source (static-isolation, AC-17 structural half) ---------------------------
   it('T-static-source: the code references NO live-stream / offline plumbing (static-isolation, AC-17 structural half)', () => {
     // Comments stripped — the doc header legitimately NAMES the forbidden props to state the invariant.
-    expect(ivrCode).not.toMatch(/streamTicker|EventSource|streamOffline|isLive\b|payload-gap|watchdog/);
+    expect(ivrCode).not.toMatch(
+      /streamTicker|EventSource|streamOffline|isLive\b|payload-gap|watchdog/,
+    );
   });
 
   it('T-honesty: no rendered string carries buy/sell/smart-money/stop/target/sizing framing (the band lean lives only in its tooltip)', () => {

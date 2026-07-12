@@ -20,15 +20,15 @@
  * stream drop; `[live-vs-static-isolation]`). The 1240px centered content column replaces the MUI
  * `Container maxWidth="lg"`. No data path / handler changes.
  */
-import { useEffect, useMemo, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import { getTicker, streamTicker, TickerBundle, LiveUpdate } from '@org/api';
-import { usePortfolio } from './usePortfolio';
+import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
+import { useEffect, useMemo, useState } from 'react';
+import { subscribeOrders } from '../orders/store';
+import { useOrderEngine } from '../orders/useOrderEngine';
+import { typographyTokens } from '../tokens';
 import { PortfolioPanel } from './PortfolioPanel';
 import { allPositions } from './store';
-import { useOrderEngine } from '../orders/useOrderEngine';
-import { subscribeOrders } from '../orders/store';
-import { typographyTokens } from '../tokens';
+import { usePortfolio } from './usePortfolio';
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
 const STREAM_OFFLINE_MS = 15_000; // payload-gap watchdog → live-mark degrade (mirrors the Ticker page)
@@ -46,7 +46,10 @@ function focusedTicker(): string {
   let best: string | null = null;
   let bestN = 0;
   for (const [tk, n] of counts) {
-    if (n > bestN) { best = tk; bestN = n; }
+    if (n > bestN) {
+      best = tk;
+      bestN = n;
+    }
   }
   return best ?? DEFAULT_TICKER;
 }
@@ -72,12 +75,19 @@ export function PositionsPage() {
     let cancelled = false;
     const load = () => {
       getTicker(ticker)
-        .then((d) => { if (!cancelled) setData(d); })
-        .catch(() => { /* best-effort: leave prior data; per-row marks degrade, records persist */ });
+        .then((d) => {
+          if (!cancelled) setData(d);
+        })
+        .catch(() => {
+          /* best-effort: leave prior data; per-row marks degrade, records persist */
+        });
     };
     load();
     const id = setInterval(load, POLL_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [ticker]);
 
   // ONE page-scoped SSE for the focused ticker (same lifecycle/teardown as the Ticker viewer). At most
@@ -93,7 +103,10 @@ export function PositionsPage() {
       if (gapTimer) clearTimeout(gapTimer);
       gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
     });
-    return () => { if (gapTimer) clearTimeout(gapTimer); unsub(); };
+    return () => {
+      if (gapTimer) clearTimeout(gapTimer);
+      unsub();
+    };
   }, [ticker]);
 
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
@@ -105,16 +118,23 @@ export function PositionsPage() {
   useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
   useEffect(() => {
     const unsubscribe = subscribeOrders(() => pf.refreshPositions());
-    return () => { unsubscribe(); };
+    return () => {
+      unsubscribe();
+    };
   }, [pf.refreshPositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Net P/L (open): the sum of the OPEN positions' $ P/L — reusing the SAME derived P/L the rows show
   // (`pf.rows[*].metrics.plDollar`), NOT a new compute path. A row whose live P/L is unavailable this
   // cycle contributes nothing (null is skipped), exactly as the per-group subtotal does.
   const netPl = useMemo(
-    () => pf.rows.reduce((sum, r) => (
-      r.position.status === 'open' && r.metrics.plDollar != null ? sum + r.metrics.plDollar : sum
-    ), 0),
+    () =>
+      pf.rows.reduce(
+        (sum, r) =>
+          r.position.status === 'open' && r.metrics.plDollar != null
+            ? sum + r.metrics.plDollar
+            : sum,
+        0,
+      ),
     [pf.rows],
   );
 
@@ -122,8 +142,12 @@ export function PositionsPage() {
     <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
       <Box
         sx={{
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: '12px', mb: '6px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          mb: '6px',
         }}
       >
         <Box>
@@ -131,7 +155,8 @@ export function PositionsPage() {
             Positions
           </Typography>
           <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
-            Your simulated book — paper-only, persisted in this browser. Live marks degrade gracefully; records never drop.
+            Your simulated book — paper-only, persisted in this browser. Live marks degrade
+            gracefully; records never drop.
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'right' }}>
@@ -142,8 +167,10 @@ export function PositionsPage() {
             component="div"
             data-testid="positions-net-pl"
             sx={{
-              fontFamily: typographyTokens.monoFontFamily, fontVariantNumeric: 'tabular-nums',
-              fontSize: '1.5rem', fontWeight: 700,
+              fontFamily: typographyTokens.monoFontFamily,
+              fontVariantNumeric: 'tabular-nums',
+              fontSize: '1.5rem',
+              fontWeight: 700,
               color: netPl >= 0 ? 'success.main' : 'error.main',
               opacity: streamOffline ? 0.5 : 1,
             }}
@@ -153,8 +180,14 @@ export function PositionsPage() {
         </Box>
       </Box>
       <PortfolioPanel
-        pf={pf} data={data} live={live} isLive={isLive} streamOffline={streamOffline}
-        ticker={ticker} entryOpen={entryOpen} onEntryOpen={setEntryOpen}
+        pf={pf}
+        data={data}
+        live={live}
+        isLive={isLive}
+        streamOffline={streamOffline}
+        ticker={ticker}
+        entryOpen={entryOpen}
+        onEntryOpen={setEntryOpen}
       />
     </Box>
   );

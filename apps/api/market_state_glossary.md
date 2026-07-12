@@ -1,26 +1,29 @@
 # Convexa `market_state` — Field Glossary (for the trading AI)
 
 **Pre-market reading:** every gamma level is computed from the **last completed session's
-close** (`gex_spot`), so they describe dealer positioning *going into today*. `price` is the
+close** (`gex_spot`), so they describe dealer positioning _going into today_. `price` is the
 current/indicative (pre-market, ~15-min delayed) quote. **Anchor the levels to `gex_spot`,
 not `price`** — then compare `price` vs `gamma_flip`/walls to read the regime the open is
 heading into. If `timestamp` looks stale, down-weight all greek/GEX fields.
 
 ## Identity & spot
+
 - `ticker` — underlying symbol.
 - `price` — current (delayed / pre-market) spot. Display only.
 - `gex_spot` — spot the GEX/greek levels were computed at (last session close when closed; == `price` during RTH). **The levels are anchored here.**
 - `timestamp` / `timestamp_iso` — options-snapshot time (ns epoch / UTC ISO). Staleness here = stale greeks/GEX.
 
 ## Dealer gamma structure (primary — gamma-based, most reliable)
+
 - `net_gex` — net dealer $ gamma (calls +, puts −), per 1% move. **>0 = positive-gamma** (dealers dampen moves → vol-suppressed, mean-reverting); **<0 = negative-gamma** (dealers amplify → trending/volatile).
 - `call_gex` / `put_gex` / `total_gex` — gross split: call gamma (≥0), put gamma (≤0), and |call|+|put|.
 - `gamma_flip` — zero-gamma price nearest spot. **Above = positive-gamma regime; below = negative.** Key regime trigger.
 - `call_wall` — strike with the most net-positive gamma → upside **resistance**.
 - `put_wall` — strike with the most net-negative gamma → downside **support**.
-- `peak_gex_strike` — strike with the most *total* gamma → **magnet/pin** (price gravitates here). Distinct from the walls; may or may not equal `call_wall`.
+- `peak_gex_strike` — strike with the most _total_ gamma → **magnet/pin** (price gravitates here). Distinct from the walls; may or may not equal `call_wall`.
 
 ## Higher-order dealer greeks (use DIRECTIONALLY — sign/relative only)
+
 - `net_vanna` — $ vanna (dDelta/dVol). Absolute magnitude is convention-dependent; read the sign and trend.
 - `net_charm` — $ charm (dDelta/dTime; daily delta bleed). Directional.
 - `net_volga` — $ volga (dVega/dVol). Directional.
@@ -135,23 +138,28 @@ live stream.
 WITH the gamma structure, never instead of it.
 
 ## OI / sentiment
+
 - `max_pain` — OI-based price minimizing total option-holder payout at `max_pain_expiration`. **Secondary, heuristic pin**; strengthens into that expiry. Different basis than gamma — when it agrees with `peak_gex_strike`, the pin is higher-conviction.
 - `max_pain_expiration` — expiration `max_pain` is for (nearest monthly OPEX, YYYY-MM-DD).
 - `put_call_ratio` — put OI / call OI, all expirations. >1 put-heavy, <1 call-heavy (positioning, not volume).
 
 ## Expiration (DTE) window
+
 - `dte_min` / `dte_max` — the days-to-expiry window the **gamma structure** (`net_gex`, walls, `peak_gex_strike`, `gamma_flip`, gross GEX, higher-order greeks) was computed over. `null` = full chain. Set via the `min_dte` / `max_dte` query params. **Does NOT affect `max_pain` or `put_call_ratio`** — those always use the full chain. Restricting to e.g. 7–45 DTE gives stabler swing levels, free of the 0DTE/weekly noise that shifts intraday.
 
 ## Volatility
+
 - `atm_iv` — ATM implied vol, % annualized (nearest tenor ≥ 7 DTE).
 - `hv_30d` — 30-day realized vol, % annualized.
 - `iv_hv_ratio` — `atm_iv`/`hv_30d`. **>1 = IV rich** (favors selling vol); **<1 = IV cheap** (favors buying vol).
 
 ## Mean-reversion (last completed RTH session)
+
 - `vwap` — session volume-weighted average price.
 - `vwap_upper_2/3`, `vwap_lower_2/3` — VWAP ± 2σ/3σ (volume-weighted). Mean-reversion bands; `null` if no session had enough data.
 
 ## Not populated yet
+
 - `net_flow` — order-flow aggression. Currently `null` (not computed) — ignore until non-null.
 
 **Reliability order:** gamma structure (`net_gex`, `gamma_flip`, walls, `peak_gex_strike`) > `iv_hv_ratio`/VWAP > `max_pain` > higher-order greeks + `dealer_flow_projection` + `market_context` (directional / advisory context only).
@@ -214,7 +222,7 @@ get `ai_eval` + `meta` in one call.
 - `off_exchange` — **present only when `dark_pool=true`.** Off-exchange (TRF-reported)
   volume over a recent window: `ratio_pct` (off-lit share of volume), and `levels[]`
   (volume-by-price: `price`, `shares`, `share_of_offex_pct`, `proximity_pct`). **Context
-  only — NOT directional.** Off-exchange volume includes dark pools/ATS *and* internalized
+  only — NOT directional.** Off-exchange volume includes dark pools/ATS _and_ internalized
   retail, and prints carry no reliable side, so do not infer accumulation/distribution.
   When a level coincides with a gamma wall/flip it adds a small capped confluence bonus to
   `opportunity_score` (reflected in `signals.dark_pool_confluence`). If absent, the user
@@ -232,6 +240,7 @@ get `ai_eval` + `meta` in one call.
   accumulation/distribution. Blocks travel in the cached bundle (REST), never in the live stream.
 
 ## Dealer delta structure (secondary — vendor-delta-based)
+
 - `net_dex` — net dealer **delta** exposure (the delta analogue of `net_gex`), signed, in $ per
   the same scaling as dollar GEX, over the **selected DTE/expiration window** (moves with the
   gamma structure). `call_dex`/`put_dex` = gross split. **Positioning context, not an instruction:**
@@ -241,6 +250,7 @@ get `ai_eval` + `meta` in one call.
 - `strike_profile[].net_dex` — per-strike DEX on the same rows as `net_gex`.
 
 ## Turnover (Vol/OI — activity, NOT direction)
+
 - `chain_vol_oi_ratio` — chain-wide option **volume ÷ open interest** (full chain, ignores the DTE
   filter — same basis as PCR/max pain). Turnover intensity / fresh-positioning intensity. **No side,
   no direction** — never bullish/bearish or "smart money." `null` when the vendor reports no
@@ -251,8 +261,9 @@ get `ai_eval` + `meta` in one call.
   not zero, not flagged). Reliability: context heuristic; single session, no history.
 
 ## Volatility surface (single snapshot, no history)
+
 - `iv_skew` — `{ slope (put-side IV − call-side IV, IV pts), put_iv, call_iv, dte, expiration,
-  reference }` at the nearest tenor ≥ 7 DTE (±25-delta, fixed-moneyness fallback; `reference`
+reference }` at the nearest tenor ≥ 7 DTE (±25-delta, fixed-moneyness fallback; `reference`
   records which). A read of **what volatility is paying for**: downside richer = fear/hedging bid;
   upside richer/flat = greed/complacency; near-symmetric = balanced. **Not a price-direction call.**
   `null` when too few/zero-IV contracts at the tenor.
@@ -266,6 +277,7 @@ get `ai_eval` + `meta` in one call.
 setups, the AI gate, or `state_fingerprint`.
 
 ## Ghost-trade tracker (simulation — paper only)
+
 - The ghost trade is a **simulated** long single-leg option (no broker, no real order, **no real
   order path exists anywhere in the API**). Fill basis = option **mid**; the **100× multiplier** is
   included; **fees/slippage/taxes/assignment are not modeled.** One open ghost trade per ticker. The
@@ -276,8 +288,8 @@ setups, the AI gate, or `state_fingerprint`.
   window) and **no new vendor fetch**. Contract not in the snapshot → 404; present but no NBBO →
   `option_quote: null` (use a theoretical mark — not an error).
 - **Modeled mark:** live P/L uses the option's snapshot NBBO mid (exact at each ~2-min chain
-  snapshot — the *anchor*), **estimated between snapshots** from the live underlying move + the
-  contract's greeks (the *modeled* state), or **theoretical** (Black-Scholes from cached IV) when no
+  snapshot — the _anchor_), **estimated between snapshots** from the live underlying move + the
+  contract's greeks (the _modeled_ state), or **theoretical** (Black-Scholes from cached IV) when no
   quote exists. It is **not a real traded price**, is labeled accordingly, **freezes honestly**
   overnight/closed, and goes **offline (last known)** on a live-stream drop — never frozen-as-live.
   The interpolation itself is the FE's; the backend only surfaces the quote + greeks + IV.
@@ -308,9 +320,22 @@ reasoning over these fields rather than re-deriving regime/levels yourself.
   "regime": "positive_gamma | negative_gamma",
   "regime_note": "plain-English description of the regime",
   "vol_regime": "iv_rich | iv_cheap | neutral",
-  "distances": { "call_wall_pct": 0.0057, "put_wall_pct": -0.0446, "gamma_flip_pct": -0.0251,
-                 "peak_gex_pct": 0.0057, "max_pain_pct": 0.0057 },
-  "setups": [ { "name": "...", "bias": "...", "strategy": "...", "rationale": "...", "conviction": "low|medium|high" } ],
+  "distances": {
+    "call_wall_pct": 0.0057,
+    "put_wall_pct": -0.0446,
+    "gamma_flip_pct": -0.0251,
+    "peak_gex_pct": 0.0057,
+    "max_pain_pct": 0.0057
+  },
+  "setups": [
+    {
+      "name": "...",
+      "bias": "...",
+      "strategy": "...",
+      "rationale": "...",
+      "conviction": "low|medium|high"
+    }
+  ],
   "opportunity_score": 53
 }
 ```
@@ -341,11 +366,11 @@ reasoning over these fields rather than re-deriving regime/levels yourself.
 > documents the operator metrics readout (`GET /api/_metrics`).
 
 - **Pipeline stages (fixed vocabulary):** `vendor_fetch` (vendor REST: chain + daily/intraday bars,
-  + recent trades when dark_pool) · `engine_build` (GEX/greeks/walls/flip/DEX/Vol-OI/skew/term + HV +
-  VWAP) · `off_exchange` (off-exchange/blocks pass; `skipped` when dark_pool off — never a fake 0) ·
-  `signals` (setups/score + gate) · `context_pack` (the market-context pack — best-effort, after
-  signals) · `persist` (writes the ticker JSON files to disk) ·
-  `serialize_wrap` (envelope + tiering + position_eval + serialization).
+  - recent trades when dark_pool) · `engine_build` (GEX/greeks/walls/flip/DEX/Vol-OI/skew/term + HV +
+    VWAP) · `off_exchange` (off-exchange/blocks pass; `skipped` when dark_pool off — never a fake 0) ·
+    `signals` (setups/score + gate) · `context_pack` (the market-context pack — best-effort, after
+    signals) · `persist` (writes the ticker JSON files to disk) ·
+    `serialize_wrap` (envelope + tiering + position_eval + serialization).
 - **I/O vs CPU tag (`kind`):** `io_vendor`/`io_disk` → **I/O** (network/disk — parallelizable and/or
   cacheable at fan-out); `cpu_engine`/`cpu_signals`/`serialize` → **CPU** (needs worker/process
   parallelism). Load-bearing for a future multi-ticker scanner's fan-out plan.

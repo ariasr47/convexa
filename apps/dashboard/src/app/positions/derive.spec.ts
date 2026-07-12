@@ -4,23 +4,46 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  applyFilter, applySort, applyGroup, subtotalOf, deriveGroups, strategyLabel,
-  DerivedRow, RowMetrics,
+  applyFilter,
+  applyGroup,
+  applySort,
+  DerivedRow,
+  deriveGroups,
+  RowMetrics,
+  strategyLabel,
+  subtotalOf,
 } from './derive';
 import type { Position } from './types';
 
 function pos(over: Partial<Position> = {}): Position {
   return {
-    id: 'p', ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', side: 'long',
-    qty: 1, entry_mark: 5, entry_basis: 'snapshot', entry_time: '2026-06-20T10:00:00Z',
-    status: 'open', entry_mode: 'market', schema_version: 2, ...over,
+    id: 'p',
+    ticker: 'TSLA',
+    expiration: '2026-07-17',
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 1,
+    entry_mark: 5,
+    entry_basis: 'snapshot',
+    entry_time: '2026-06-20T10:00:00Z',
+    status: 'open',
+    entry_mode: 'market',
+    schema_version: 2,
+    ...over,
   };
 }
 
 function row(p: Position, plDollar: number | null, extra: Partial<RowMetrics> = {}): DerivedRow {
   const metrics: RowMetrics = {
-    id: p.id, plDollar, plPct: plDollar, unavailable: plDollar == null && extra.unavailable === true,
-    deltaEntry: plDollar, sessionDelta: null, dte: 10, ...extra,
+    id: p.id,
+    plDollar,
+    plPct: plDollar,
+    unavailable: plDollar == null && extra.unavailable === true,
+    deltaEntry: plDollar,
+    sessionDelta: null,
+    dte: 10,
+    ...extra,
   };
   return { position: p, metrics, strategy: p.right === 'call' ? 'long_call' : 'long_put' };
 }
@@ -33,29 +56,45 @@ describe('filter (AC-4, AC-24)', () => {
   ];
 
   it('filters by ticker (per-ticker view) without touching the collection', () => {
-    const out = applyFilter(positions, { ticker: 'TSLA', status: [], strategy: null, expiry: null });
+    const out = applyFilter(positions, {
+      ticker: 'TSLA',
+      status: [],
+      strategy: null,
+      expiry: null,
+    });
     expect(out.map((p) => p.id).sort()).toEqual(['a', 'c']);
   });
 
   it('filters by status', () => {
-    const out = applyFilter(positions, { ticker: null, status: ['open'], strategy: null, expiry: null });
+    const out = applyFilter(positions, {
+      ticker: null,
+      status: ['open'],
+      strategy: null,
+      expiry: null,
+    });
     expect(out.map((p) => p.id).sort()).toEqual(['a', 'b']);
   });
 
   it('filters by strategy (derived long call vs long put) and expiry', () => {
-    const calls = applyFilter(positions, { ticker: null, status: [], strategy: 'long_call', expiry: null });
+    const calls = applyFilter(positions, {
+      ticker: null,
+      status: [],
+      strategy: 'long_call',
+      expiry: null,
+    });
     expect(calls.map((p) => p.id)).toEqual(['a']);
-    const exp = applyFilter(positions, { ticker: null, status: [], strategy: null, expiry: '2026-08-21' });
+    const exp = applyFilter(positions, {
+      ticker: null,
+      status: [],
+      strategy: null,
+      expiry: '2026-08-21',
+    });
     expect(exp.map((p) => p.id)).toEqual(['b']);
   });
 });
 
 describe('sort (AC-23)', () => {
-  const rows = [
-    row(pos({ id: 'a' }), 100),
-    row(pos({ id: 'b' }), -50),
-    row(pos({ id: 'c' }), 25),
-  ];
+  const rows = [row(pos({ id: 'a' }), 100), row(pos({ id: 'b' }), -50), row(pos({ id: 'c' }), 25)];
 
   it('sorts by P/L $ ascending and descending', () => {
     const asc = applySort(rows, 'pl_dollar', 'asc').map((r) => r.position.id);
@@ -78,10 +117,7 @@ describe('group + subtotal (AC-10, AC-11, AC-22)', () => {
   });
 
   it('excludes + flags an unavailable member, never counts it as zero', () => {
-    const rows = [
-      row(pos({ id: 'a' }), 100),
-      row(pos({ id: 'b' }), null, { unavailable: true }),
-    ];
+    const rows = [row(pos({ id: 'a' }), 100), row(pos({ id: 'b' }), null, { unavailable: true })];
     const { subtotal, excludedCount } = subtotalOf(rows);
     expect(subtotal).toBe(100); // not 100 + 0; the unavailable member is excluded
     expect(excludedCount).toBe(1);
@@ -128,7 +164,9 @@ describe('full pipeline', () => {
     ];
     const groups = deriveGroups(rows, {
       filter: { ticker: null, status: ['open'], strategy: null, expiry: null },
-      sortKey: 'pl_dollar', sortDir: 'desc', group: 'none',
+      sortKey: 'pl_dollar',
+      sortDir: 'desc',
+      group: 'none',
     });
     expect(groups[0].rows.map((r) => r.position.id)).toEqual(['a', 'b']);
   });

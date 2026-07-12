@@ -4,25 +4,55 @@
  * compares against the rec's words — D3: edits at creation don't sever this) · LIFECYCLE timeline ·
  * "View position →" when filled (AC-31). Panel-raised skin, token-only, SIMULATED chip (AC-46).
  */
-import { Box, Chip, Dialog, DialogContent, IconButton, Stack, Typography, Tooltip, Button, Alert } from '@mui/material';
-import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogContent,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { SIMULATED_TIP } from '../positions/labels';
 import { extrasFor, typographyTokens } from '../tokens';
-import type { SimOrder } from './types';
 import {
-  DETAIL_SOURCE, DETAIL_PLAN, DETAIL_LIFECYCLE, detailScenarioSource, detailPinned, sourceAiRead,
-  REC_WORDS_LABEL, REC_NO_TRIGGER_TEXT, triggerText, entryPriceText, goodTilText,
-  ACTION_VIEW_POSITION, SCRIPTED_CHIP, scriptedStrip,
+  ACTION_VIEW_POSITION,
+  DETAIL_LIFECYCLE,
+  DETAIL_PLAN,
+  DETAIL_SOURCE,
+  detailPinned,
+  detailScenarioSource,
+  entryPriceText,
+  goodTilText,
+  REC_NO_TRIGGER_TEXT,
+  REC_WORDS_LABEL,
+  SCRIPTED_CHIP,
+  scriptedStrip,
+  sourceAiRead,
+  triggerText,
 } from './copy';
+import type { SimOrder } from './types';
 
 const MONO = { fontFamily: typographyTokens.monoFontFamily, letterSpacing: 0 } as const;
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="caption" sx={{
-      display: 'block', color: 'text.disabled', letterSpacing: '0.07em', fontWeight: 700, fontSize: 11, mb: 0.5,
-    }}>
+    <Typography
+      variant="caption"
+      sx={{
+        display: 'block',
+        color: 'text.disabled',
+        letterSpacing: '0.07em',
+        fontWeight: 700,
+        fontSize: 11,
+        mb: 0.5,
+      }}
+    >
       {children}
     </Typography>
   );
@@ -46,7 +76,10 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '14px', border: 1, borderColor: 'divider', backgroundImage: 'none',
+            borderRadius: '14px',
+            border: 1,
+            borderColor: 'divider',
+            backgroundImage: 'none',
             bgcolor: (theme) => extrasFor(theme).panelRaised,
           },
         },
@@ -56,26 +89,51 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
         <DialogContent data-testid="order-detail-dialog" sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Stack direction="row" spacing={1} sx={{ flexGrow: 1, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ flexGrow: 1, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+              >
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Simulated order · {o.ticker} {o.strike}{o.right === 'call' ? 'C' : 'P'}
+                  Simulated order · {o.ticker} {o.strike}
+                  {o.right === 'call' ? 'C' : 'P'}
                 </Typography>
                 <Chip
-                  size="small" label="SIMULATED" title={SIMULATED_TIP}
-                  sx={(t) => ({ bgcolor: alpha(t.palette.success.main, 0.18), color: 'success.main', fontWeight: 700, letterSpacing: '0.04em' })}
+                  size="small"
+                  label="SIMULATED"
+                  title={SIMULATED_TIP}
+                  sx={(t) => ({
+                    bgcolor: alpha(t.palette.success.main, 0.18),
+                    color: 'success.main',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                  })}
                 />
                 {o.provenance.source === 'ai_scenario' && (
-                  <Chip size="small" color="warning" variant="outlined" label={SCRIPTED_CHIP} data-testid="order-detail-scripted-chip" />
+                  <Chip
+                    size="small"
+                    color="warning"
+                    variant="outlined"
+                    label={SCRIPTED_CHIP}
+                    data-testid="order-detail-scripted-chip"
+                  />
                 )}
               </Stack>
-              <IconButton size="small" onClick={onClose} aria-label="Close" sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}>
+              <IconButton
+                size="small"
+                onClick={onClose}
+                aria-label="Close"
+                sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}
+              >
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
 
             {o.provenance.source === 'ai_scenario' && (
               <Alert severity="warning" sx={{ py: 0 }}>
-                {scriptedStrip(o.provenance.scenario_name ?? o.provenance.scenario_id ?? 'scenario')}
+                {scriptedStrip(
+                  o.provenance.scenario_name ?? o.provenance.scenario_id ?? 'scenario',
+                )}
               </Alert>
             )}
 
@@ -97,7 +155,11 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
               )}
               <Box sx={{ mt: 1 }}>
                 <SectionLabel>{REC_WORDS_LABEL}</SectionLabel>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }} data-testid="order-detail-verbatim">
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+                  data-testid="order-detail-verbatim"
+                >
                   {o.provenance.trigger_source_text
                     ? `“${o.provenance.trigger_source_text}”`
                     : REC_NO_TRIGGER_TEXT}
@@ -110,13 +172,16 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
               <SectionLabel>{DETAIL_PLAN}</SectionLabel>
               <Stack spacing={0.25}>
                 <Typography variant="body2" sx={MONO}>
-                  {o.ticker} {o.strike}{o.right === 'call' ? 'C' : 'P'} · {o.expiration} · ×{o.qty}
+                  {o.ticker} {o.strike}
+                  {o.right === 'call' ? 'C' : 'P'} · {o.expiration} · ×{o.qty}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   trigger {triggerText(o.trigger)} · {entryPriceText(o.limit_price)}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  stop {o.stop == null ? '—' : `$${o.stop}`} · target {o.target == null ? '—' : `$${o.target}`} · {goodTilText(o.expires_at.slice(0, 10))}
+                  stop {o.stop == null ? '—' : `$${o.stop}`} · target{' '}
+                  {o.target == null ? '—' : `$${o.target}`} ·{' '}
+                  {goodTilText(o.expires_at.slice(0, 10))}
                 </Typography>
               </Stack>
             </Box>
@@ -125,17 +190,30 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
             <Box data-testid="order-detail-lifecycle">
               <SectionLabel>{DETAIL_LIFECYCLE}</SectionLabel>
               <Stack spacing={0.25}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>placed {fmt(o.created_time)}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  placed {fmt(o.created_time)}
+                </Typography>
                 {o.triggered_time && (
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>triggered {fmt(o.triggered_time)}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    triggered {fmt(o.triggered_time)}
+                  </Typography>
                 )}
                 {o.filled_time && (
                   <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                     filled {fmt(o.filled_time)} · at ${o.fill_mark?.toFixed(2)}{' '}
-                    <Tooltip arrow title={o.fill_basis === 'limit_fill'
-                      ? 'Filled at your limit on a live cross.'
-                      : 'Filled at the first live option mark after the trigger crossed — recorded at fill time, never backfilled.'}>
-                      <Chip size="small" variant="outlined" label={o.fill_basis === 'limit_fill' ? 'filled at limit' : 'trigger fill'} />
+                    <Tooltip
+                      arrow
+                      title={
+                        o.fill_basis === 'limit_fill'
+                          ? 'Filled at your limit on a live cross.'
+                          : 'Filled at the first live option mark after the trigger crossed — recorded at fill time, never backfilled.'
+                      }
+                    >
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={o.fill_basis === 'limit_fill' ? 'filled at limit' : 'trigger fill'}
+                      />
                     </Tooltip>
                   </Typography>
                 )}
@@ -149,7 +227,11 @@ export function OrderDetailDialog({ order: o, onClose, onViewPosition }: Props) 
 
             {o.status === 'filled' && o.position_id && onViewPosition && (
               <Box>
-                <Button size="small" onClick={() => onViewPosition(o.position_id as string)} data-testid="order-view-position">
+                <Button
+                  size="small"
+                  onClick={() => onViewPosition(o.position_id as string)}
+                  data-testid="order-view-position"
+                >
                   {ACTION_VIEW_POSITION}
                 </Button>
               </Box>

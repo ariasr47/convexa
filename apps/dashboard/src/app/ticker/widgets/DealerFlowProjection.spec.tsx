@@ -10,22 +10,33 @@
  *     framing in any rendered string.
  * The FE renders `illustrative_projected_delta` verbatim (never multiplies).
  */
-import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import type { DealerFlowProjection as Dfp } from '@org/api';
+import { render, screen, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { theme } from '../../theme';
 import { DealerFlowProjection } from './DealerFlowProjection';
 
 const charm = (over: Partial<NonNullable<Dfp['charm']>> = {}): NonNullable<Dfp['charm']> => ({
-  projected_delta: 4_200_000, per_day_base: 380_000, horizon_days: 11, opex_date: '2026-07-17', ...over,
+  projected_delta: 4_200_000,
+  per_day_base: 380_000,
+  horizon_days: 11,
+  opex_date: '2026-07-17',
+  ...over,
 });
 const vanna = (over: Partial<NonNullable<Dfp['vanna']>> = {}): NonNullable<Dfp['vanna']> => ({
-  projected_delta: 1_850_000, move_iv_points: 1.0, illustrative_move_iv_points: 5.0,
-  illustrative_projected_delta: 9_250_000, reference_direction: 'increase', ...over,
+  projected_delta: 1_850_000,
+  move_iv_points: 1.0,
+  illustrative_move_iv_points: 5.0,
+  illustrative_projected_delta: 9_250_000,
+  reference_direction: 'increase',
+  ...over,
 });
 const dfp = (over: Partial<Dfp> = {}): Dfp => ({
-  spot_basis: 178.4, charm: charm(), vanna: vanna(), ...over,
+  spot_basis: 178.4,
+  charm: charm(),
+  vanna: vanna(),
+  ...over,
 });
 
 function renderDfp(value: Dfp | null) {
@@ -47,7 +58,9 @@ describe('DealerFlowProjection (component states — Suite A)', () => {
     expect(screen.getByTestId('dfp-charm')).toBeInTheDocument();
     expect(screen.getByTestId('dfp-vanna')).toBeInTheDocument();
     // Static frame subtitle + never the live-tile `⏸ offline` caption.
-    expect(screen.getByText('Snapshot, never live — refreshes with the data load, not the stream.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Snapshot, never live — refreshes with the data load, not the stream.'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/⏸/)).toBeNull();
   });
 
@@ -73,7 +86,11 @@ describe('DealerFlowProjection (component states — Suite A)', () => {
   // ---- T-AC-4 -------------------------------------------------------------------------------
   it('T-AC-4: vanna shows BOTH +1 IV pt AND +5 IV pt (illus.), each labeled with its move; +5 rendered verbatim', () => {
     // Use a +5 figure that is NOT 5× the +1 figure to prove the FE renders the wire value directly.
-    renderDfp(dfp({ vanna: vanna({ projected_delta: 1_850_000, illustrative_projected_delta: 9_250_000 }) }));
+    renderDfp(
+      dfp({
+        vanna: vanna({ projected_delta: 1_850_000, illustrative_projected_delta: 9_250_000 }),
+      }),
+    );
     const vannaBlock = screen.getByTestId('dfp-vanna');
     expect(within(vannaBlock).getByText('+$1.9M on +1 IV pt')).toBeInTheDocument();
     expect(within(vannaBlock).getByText('+$9.3M on +5 IV pt (illus.)')).toBeInTheDocument();
@@ -83,7 +100,11 @@ describe('DealerFlowProjection (component states — Suite A)', () => {
 
   it('T-AC-4b: illustrative figure is the WIRE value, never a client multiplication of the base', () => {
     // Base +$1.0M, illustrative +$3.0M (deliberately NOT 5× base). The FE must print +$3.0M as-is.
-    renderDfp(dfp({ vanna: vanna({ projected_delta: 1_000_000, illustrative_projected_delta: 3_000_000 }) }));
+    renderDfp(
+      dfp({
+        vanna: vanna({ projected_delta: 1_000_000, illustrative_projected_delta: 3_000_000 }),
+      }),
+    );
     expect(screen.getByText('+$3.0M on +5 IV pt (illus.)')).toBeInTheDocument();
     expect(screen.queryByText('+$5.0M on +5 IV pt (illus.)')).toBeNull(); // NOT 5× the base
   });
@@ -108,9 +129,15 @@ describe('DealerFlowProjection (component states — Suite A)', () => {
     expect(screen.getByText('+$9.3M on +5 IV pt (illus.)')).toBeInTheDocument();
     expect(screen.getByText('+ = vol up · a vol drop flips the sign')).toBeInTheDocument();
     // Linear/first-order wording + spot basis (spot_basis).
-    expect(screen.getByText('Linear first-order projection at spot $178.4, holding spot & vol.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Linear first-order projection at spot $178.4, holding spot & vol.'),
+    ).toBeInTheDocument();
     // Honesty frame line — verbatim.
-    expect(screen.getByText('Dealer-flow context — not a price forecast, not a scored signal, not a guarantee.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Dealer-flow context — not a price forecast, not a scored signal, not a guarantee.',
+      ),
+    ).toBeInTheDocument();
   });
 
   // ---- T-AC-9 (Charm-only) ------------------------------------------------------------------
@@ -126,7 +153,11 @@ describe('DealerFlowProjection (component states — Suite A)', () => {
     expect(screen.queryByText(/on \+1 IV pt/)).toBeNull();
     // Footer still present (spot basis + honesty frame).
     expect(screen.getByTestId('dfp-footer')).toBeInTheDocument();
-    expect(screen.getByText('Dealer-flow context — not a price forecast, not a scored signal, not a guarantee.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Dealer-flow context — not a price forecast, not a scored signal, not a guarantee.',
+      ),
+    ).toBeInTheDocument();
   });
 
   // ---- T-AC-10 (Vanna-only) -----------------------------------------------------------------

@@ -9,9 +9,9 @@
  *  call-side IV, in IV points; `reference` records which rule produced the reference IVs.
  *  Display-only; the FE derives the fear/greed/balanced word from `slope`. */
 export interface IvSkew {
-  slope: number;    // put_iv − call_iv, in IV points
-  put_iv: number;   // downside reference IV (%)
-  call_iv: number;  // upside reference IV (%)
+  slope: number; // put_iv − call_iv, in IV points
+  put_iv: number; // downside reference IV (%)
+  call_iv: number; // upside reference IV (%)
   dte: number;
   expiration: string; // YYYY-MM-DD
   reference: '25d' | 'moneyness';
@@ -23,8 +23,8 @@ export interface TermStructure {
   points: { dte: number; expiration: string; atm_iv: number }[];
   state: 'contango' | 'backwardation' | 'flat';
   near_iv: number; // near-tenor ATM IV (%)
-  far_iv: number;  // far-tenor ATM IV (%)
-  slope: number;   // far_iv − near_iv (sign-bearing)
+  far_iv: number; // far-tenor ATM IV (%)
+  slope: number; // far_iv − near_iv (sign-bearing)
 }
 
 /** Projected-dealer-flow charm limb (dealer-flow-projection INTERFACE_CONTRACT §payload). Window-scoped
@@ -33,9 +33,9 @@ export interface TermStructure {
  *  OPEX). Signed $-delta values inherit the dealer-book convention (calls +, puts −). */
 export interface CharmLimb {
   projected_delta: number; // signed $-delta drift to the horizon (= net_charm · horizon_days)
-  per_day_base: number;    // signed $-delta per +1 calendar day (= net_charm)
-  horizon_days: number;    // calendar days to the next monthly OPEX, >= 1
-  opex_date: string;       // ISO YYYY-MM-DD the drift is projected to (next monthly OPEX)
+  per_day_base: number; // signed $-delta per +1 calendar day (= net_charm)
+  horizon_days: number; // calendar days to the next monthly OPEX, >= 1
+  opex_date: string; // ISO YYYY-MM-DD the drift is projected to (next monthly OPEX)
 }
 
 /** Projected-dealer-flow vanna limb. Instantaneous (no time horizon — its "horizon" is the vol-move
@@ -44,11 +44,11 @@ export interface CharmLimb {
  *  exact negation; the FE states this, no second figure). Independently nullable (null iff net_vanna
  *  unavailable). */
 export interface VannaLimb {
-  projected_delta: number;              // signed $-delta at the base move (= net_vanna · move_iv_points)
-  move_iv_points: number;               // base assumed vol move, IV points (fixed 1.0)
-  illustrative_move_iv_points: number;  // illustrative shock, IV points (fixed 5.0)
+  projected_delta: number; // signed $-delta at the base move (= net_vanna · move_iv_points)
+  move_iv_points: number; // base assumed vol move, IV points (fixed 1.0)
+  illustrative_move_iv_points: number; // illustrative shock, IV points (fixed 5.0)
   illustrative_projected_delta: number; // PRE-SCALED signed $-delta at the illustrative move (= net_vanna · 5)
-  reference_direction: string;          // the direction the quote assumes; value is "increase"
+  reference_direction: string; // the direction the quote assumes; value is "increase"
 }
 
 /** A forward-looking projection of the delta dealers are expected to hedge, derived from the same
@@ -57,9 +57,9 @@ export interface VannaLimb {
  *  BOTH limbs are unavailable OR the compute raised. Display/AI-context ONLY — never a scoring input
  *  (`[additive-keeps-score-byte-identical]`). */
 export interface DealerFlowProjection {
-  spot_basis: number;        // synchronized_spot / gex_spot the flow was computed at (close-anchored, NOT live)
-  charm: CharmLimb | null;   // null if net_charm unavailable OR horizon undeterminable
-  vanna: VannaLimb | null;   // null if net_vanna unavailable
+  spot_basis: number; // synchronized_spot / gex_spot the flow was computed at (close-anchored, NOT live)
+  charm: CharmLimb | null; // null if net_charm unavailable OR horizon undeterminable
+  vanna: VannaLimb | null; // null if net_vanna unavailable
 }
 
 // ---- AI context pack ("Market context") — ai-context-pack INTERFACE_CONTRACT §payload -----------
@@ -75,10 +75,10 @@ export interface DealerFlowProjection {
 /** Trend direction off daily closes (close vs EMA20 vs EMA50). Null under its warm-up floor. */
 export interface TrendDirectionRead {
   label: 'uptrend' | 'downtrend' | 'mixed';
-  close: number;  // last close ($), 2dp
-  ema20: number;  // EMA20 of closes ($), 2dp
-  ema50: number;  // EMA50 of closes ($), 2dp
-  window: string;     // fixed descriptor (wire-only; FE renders its own pinned copy)
+  close: number; // last close ($), 2dp
+  ema20: number; // EMA20 of closes ($), 2dp
+  ema50: number; // EMA50 of closes ($), 2dp
+  window: string; // fixed descriptor (wire-only; FE renders its own pinned copy)
   thresholds: string; // fixed descriptor
 }
 
@@ -110,13 +110,13 @@ export interface TrendMomentumRead {
 /** Shape scalars over the window-scoped net-GEX profile. ALL-OR-NULL (one compute; needs >= 5
  *  eligible strikes & sum|net_gex| > 0). When present every field is non-null. */
 export interface GexProfileShapeRead {
-  concentration: number;       // normalized HHI in [0,1], 2dp
+  concentration: number; // normalized HHI in [0,1], 2dp
   concentration_label: 'concentrated' | 'mixed' | 'dispersed';
-  balance: number;             // in [-1,+1], signed, 2dp (+ = weight above spot)
+  balance: number; // in [-1,+1], signed, 2dp (+ = weight above spot)
   balance_label: 'above_skewed' | 'balanced' | 'below_skewed';
   center_of_mass_distance: number; // signed FRACTION of spot_basis (4dp; FE renders as a percent)
-  eligible_strikes: number;    // int — strikes with |net_gex| > 0 in the selected window
-  spot_basis: number;          // gex_spot the shape was computed at (close-anchored, NOT live)
+  eligible_strikes: number; // int — strikes with |net_gex| > 0 in the selected window
+  spot_basis: number; // gex_spot the shape was computed at (close-anchored, NOT live)
   thresholds: string;
 }
 
@@ -132,7 +132,7 @@ export interface DivergenceLocation {
 export interface DivergenceComposition {
   label: 'flow_put_tilted' | 'consistent' | 'flow_call_tilted';
   volume_pcr: number; // today's put/call VOLUME ratio, 2dp
-  oi_pcr: number;     // standing full-chain put/call OI ratio (== put_call_ratio), 2dp
+  oi_pcr: number; // standing full-chain put/call OI ratio (== put_call_ratio), 2dp
   tilt_ratio: number; // volume_pcr / oi_pcr, 2dp
   thresholds: string;
 }
@@ -149,16 +149,16 @@ export interface FlowVsPositioningRead {
 /** One ATR horizon. Independently nullable (a horizon without its full valid-bar tail is null —
  *  never a fabricated 0). */
 export interface AtrHorizon {
-  value: number;        // $ (2dp)
+  value: number; // $ (2dp)
   pct_of_close: number; // PERCENT of close_basis (2dp, e.g. 2.31 = 2.31%)
-  window_bars: number;  // int
+  window_bars: number; // int
 }
 
 /** Average-true-range read — null when ALL horizons are null OR the read raised. */
 export interface AtrRead {
   as_of_session: string; // ISO YYYY-MM-DD (same convention as trend_momentum.as_of_session)
-  close_basis: number;   // the last bar's close ($) the percentages are against, 2dp
-  method: string;        // fixed descriptor
+  close_basis: number; // the last bar's close ($) the percentages are against, 2dp
+  method: string; // fixed descriptor
   atr_5d: AtrHorizon | null;
   atr_14d: AtrHorizon | null;
   atr_30d: AtrHorizon | null;
@@ -279,8 +279,8 @@ export interface MarketState {
   put_call_ratio: number;
   // Vol/OI — FULL CHAIN (ignores the DTE filter; same basis as max_pain / put_call_ratio).
   chain_vol_oi_ratio: number | null; // total option volume / total OI; null if no vendor volume
-  total_volume: number | null;       // full-chain session option volume
-  vol_oi_unusual_threshold: number;  // single cutoff above which a strike is "unusual" (default 1.0)
+  total_volume: number | null; // full-chain session option volume
+  vol_oi_unusual_threshold: number; // single cutoff above which a strike is "unusual" (default 1.0)
   // IV Skew (single anchor tenor) + Term Structure (cross-tenor). Independently nullable.
   iv_skew: IvSkew | null;
   term_structure: TermStructure | null;
@@ -307,7 +307,7 @@ export interface StrikeRow {
   net_dex: number | null;
   call_dex?: number | null;
   put_dex?: number | null;
-  volume: number | null;       // per-strike session volume
+  volume: number | null; // per-strike session volume
   vol_oi_ratio: number | null; // volume / total_oi; null when total_oi <= 0 OR no volume
 }
 
@@ -338,7 +338,7 @@ export interface Signals {
 /** Sibling of ai_eval, present only when the bundle request carries an open-position context
  *  (pos_* query params); null otherwise. Drives once-per-event reassessment-alert de-dupe. */
 export interface PositionEval {
-  changed: boolean;     // raw de-dupe: flips once when the position fingerprint moves
+  changed: boolean; // raw de-dupe: flips once when the position fingerprint moves
   fingerprint: string;
 }
 
@@ -352,7 +352,13 @@ export interface AiEval {
 
 // ---- Backend observability (operator-only; the trader FE IGNORES these) ---------------------
 // Fixed stage vocabulary + kind taxonomy (the operator readout maps io_* → "I/O", else → "CPU").
-export type StageName = 'vendor_fetch' | 'engine_build' | 'off_exchange' | 'signals' | 'persist' | 'serialize_wrap';
+export type StageName =
+  | 'vendor_fetch'
+  | 'engine_build'
+  | 'off_exchange'
+  | 'signals'
+  | 'persist'
+  | 'serialize_wrap';
 export type StageKind = 'io_vendor' | 'cpu_engine' | 'cpu_signals' | 'io_disk' | 'serialize';
 
 export interface MetaTimingStage {
@@ -406,20 +412,20 @@ export interface OffExchangeLevel {
  *  direction exists, now or in v1, and the UI must invent none. Ranked largest-notional-first
  *  by the backend (top-5); render in order, never re-sort or re-cap. */
 export interface BlockPrint {
-  price: number;        // print price
-  shares: number;       // print size
-  notional: number;     // price * shares (the backend's ranking key)
+  price: number; // print price
+  shares: number; // print size
+  notional: number; // price * shares (the backend's ranking key)
   proximity_pct: number; // SIGNED ratio vs spot: + above, − below (e.g. 0.004 = +0.4%)
-  age_seconds: number;  // age of the print within the recent window
+  age_seconds: number; // age of the print within the recent window
 }
 
 export interface OffExchange {
-  ratio_pct: number | null;     // off-exchange share of total volume in the window
+  ratio_pct: number | null; // off-exchange share of total volume in the window
   offex_shares: number;
   total_shares: number;
   levels: OffExchangeLevel[];
-  blocks: BlockPrint[];         // largest-notional first, top-5; may be [] (none ≥ threshold)
-  block_min_shares: number;     // active block threshold (shares) for this cycle; label "no blocks ≥ N"
+  blocks: BlockPrint[]; // largest-notional first, top-5; may be [] (none ≥ threshold)
+  block_min_shares: number; // active block threshold (shares) for this cycle; label "no blocks ≥ N"
   note: string;
 }
 
@@ -436,9 +442,18 @@ export interface TickerBundle {
 
 // ---- Ghost-trade tracker: tracked-contract stats + reassessment boundary types --------------
 export type OptionRight = 'call' | 'put';
-export interface OptionQuote { bid: number; ask: number; mid: number; }
+export interface OptionQuote {
+  bid: number;
+  ask: number;
+  mid: number;
+}
 /** Each greek may be null (unpriced contract). */
-export interface OptionGreeks { delta: number | null; gamma: number | null; theta: number | null; vega: number | null; }
+export interface OptionGreeks {
+  delta: number | null;
+  gamma: number | null;
+  theta: number | null;
+  vega: number | null;
+}
 /** Filter-independent stats for one option contract (GET /api/contract). `option_quote` null ⇒
  *  no live NBBO ⇒ the FE falls back to a theoretical (Black-Scholes) mark — not an error. */
 export interface TrackedContract {
@@ -452,7 +467,11 @@ export interface TrackedContract {
   dte: number;
 }
 
-export interface ReplacementContract { expiration: string; strike: number; right: OptionRight; }
+export interface ReplacementContract {
+  expiration: string;
+  strike: number;
+  right: OptionRight;
+}
 /** Ingested reassessment verdict (operator-mediated; pasted JSON treated as `ready` in phase-1). */
 export interface Recommendation {
   verdict: 'Hold' | 'Trim' | 'Add' | 'Exit' | 'Roll';
@@ -466,13 +485,16 @@ export interface TickerQuery {
   minDte?: number;
   maxDte?: number;
   expirations?: string[]; // explicit YYYY-MM-DD dates; omitted/empty = all
-  darkPool?: boolean;     // include off-exchange context + confluence (default backend setting)
+  darkPool?: boolean; // include off-exchange context + confluence (default backend setting)
   // Open-position context → makes the bundle compute position_eval. Absent ⇒ position_eval null.
   position?: { expiration: string; strike: number; right: OptionRight; plPct?: number };
 }
 
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -494,7 +516,7 @@ export type ThemePref = 'dark' | 'light' | 'system';
  *  (AC-F4) — they only change which default a UI lands on. */
 export interface UserSettings {
   active_persona_id: string | null; // null ⇒ app default (Default persona)
-  default_ticker: string | null;    // null ⇒ app default (TSLA)
+  default_ticker: string | null; // null ⇒ app default (TSLA)
   theme: ThemePref;
 }
 
@@ -510,8 +532,8 @@ export interface AuthUser {
  *  signed-in-vs-anonymous, identity, the config-gated Google flag, and the per-user settings. */
 export interface SessionStatus {
   authenticated: boolean;
-  user: AuthUser | null;        // null when anonymous
-  google_available: boolean;    // D9 config flag — drives present-disabled↔present-enabled
+  user: AuthUser | null; // null when anonymous
+  google_available: boolean; // D9 config flag — drives present-disabled↔present-enabled
   settings: UserSettings | null; // null when anonymous (FE uses client-local stores instead)
   // DEV-ONLY: present (with the seeded email) when the backend seeded a fixed test account
   // (SEED_TEST_ACCOUNT, non-postgres); null in production. Lets the login form pre-fill it.
@@ -531,7 +553,11 @@ export type AuthErrorCode =
 /** A typed auth failure carrying the server `error` code + safe `message`. The FE maps off `code`;
  *  `message` is a fallback only (never enumerating, never a secret/hash/password). */
 export class AuthError extends Error {
-  constructor(readonly code: AuthErrorCode, message: string, readonly status: number) {
+  constructor(
+    readonly code: AuthErrorCode,
+    message: string,
+    readonly status: number,
+  ) {
     super(message);
     this.name = 'AuthError';
   }
@@ -568,14 +594,24 @@ export async function getSession(): Promise<SessionStatus> {
   return (await res.json()) as SessionStatus;
 }
 
-export interface SignupRequest { email: string; password: string; display_name?: string | null; }
-export interface LoginRequest { email: string; password: string; }
+export interface SignupRequest {
+  email: string;
+  password: string;
+  display_name?: string | null;
+}
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
 
 /** POST /api/auth/signup — success ⇒ the signed-in identity shape (a cookie is set). Throws
  *  `AuthError` with `email_taken`(409) / `validation`(422) / `auth_unavailable`(503) on failure. */
 export async function signup(body: SignupRequest): Promise<SessionStatus> {
   const res = await fetch('/api/auth/signup', {
-    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(body),
+    method: 'POST',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw await toAuthError(res);
   return (await res.json()) as SessionStatus;
@@ -586,7 +622,10 @@ export async function signup(body: SignupRequest): Promise<SessionStatus> {
  *  message is identical for unknown-email vs wrong-password (AC-C3/H3) — the FE renders fixed copy. */
 export async function login(body: LoginRequest): Promise<SessionStatus> {
   const res = await fetch('/api/auth/login', {
-    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(body),
+    method: 'POST',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw await toAuthError(res);
   return (await res.json()) as SessionStatus;
@@ -606,7 +645,10 @@ export async function logout(): Promise<void> {
  *  401 `auth_required` (anonymous prefs stay client-local). 422 `validation` on a bad theme. */
 export async function saveSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
   const res = await fetch('/api/auth/settings', {
-    method: 'PUT', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify(patch),
+    method: 'PUT',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
+    body: JSON.stringify(patch),
   });
   if (!res.ok) throw await toAuthError(res);
   return (await res.json()) as UserSettings;
@@ -626,7 +668,9 @@ export async function saveSettings(patch: Partial<UserSettings>): Promise<UserSe
  *  handling exactly. NEVER touches the bundle/SSE path (no new header/param there — AC-I2). */
 export async function simTradeGate(): Promise<{ authorized: true }> {
   const res = await fetch('/api/positions/sim-trade/gate', {
-    method: 'POST', headers: JSON_HEADERS, credentials: 'same-origin',
+    method: 'POST',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
   });
   if (!res.ok) throw await toAuthError(res);
   return (await res.json()) as { authorized: true };
@@ -645,10 +689,10 @@ export interface LiveUpdate {
   sell_vol: number;
   flow_window_s: number;
   spot_ts: number;
-  live: boolean;            // true only if a real tick arrived recently (else mid is stale)
+  live: boolean; // true only if a real tick arrived recently (else mid is stale)
   tick_age_s: number | null;
-  market_session: string;   // premarket | regular | afterhours | overnight | closed
-  feed: string;             // "realtime" | "delayed"
+  market_session: string; // premarket | regular | afterhours | overnight | closed
+  feed: string; // "realtime" | "delayed"
   ts: number;
   gamma_flip: number | null;
   // The last actual TRADE print price off the live trade tape (NOT the NBBO mid). LIVE-DERIVED:
@@ -668,7 +712,7 @@ export interface LiveUpdate {
 export function streamTicker(
   symbol: string,
   { minDte, maxDte, expirations }: TickerQuery,
-  onUpdate: (u: LiveUpdate) => void
+  onUpdate: (u: LiveUpdate) => void,
 ): () => void {
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));
@@ -677,7 +721,11 @@ export function streamTicker(
   const qs = params.toString();
   const es = new EventSource(`/api/stream/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
   es.onmessage = (e) => {
-    try { onUpdate(JSON.parse(e.data) as LiveUpdate); } catch { /* ignore malformed */ }
+    try {
+      onUpdate(JSON.parse(e.data) as LiveUpdate);
+    } catch {
+      /* ignore malformed */
+    }
   };
   // onerror: EventSource auto-reconnects; nothing to do.
   return () => es.close();
@@ -687,7 +735,7 @@ export function streamTicker(
  *  `position` is supplied, the bundle additionally returns `position_eval` (else null). */
 export async function getTicker(
   symbol: string,
-  { minDte, maxDte, expirations, darkPool, position }: TickerQuery = {}
+  { minDte, maxDte, expirations, darkPool, position }: TickerQuery = {},
 ): Promise<TickerBundle> {
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));
@@ -704,7 +752,9 @@ export async function getTicker(
   const res = await fetch(`/api/ticker/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
   if (!res.ok) {
     const detail =
-      res.status === 404 ? `No option-chain data for ${symbol.toUpperCase()}` : `API error ${res.status}`;
+      res.status === 404
+        ? `No option-chain data for ${symbol.toUpperCase()}`
+        : `API error ${res.status}`;
     throw new ApiError(detail, res.status);
   }
   return (await res.json()) as TickerBundle;
@@ -719,7 +769,7 @@ export async function getTicker(
  */
 export async function fetchTrackedContract(
   symbol: string,
-  { expiration, strike, right }: { expiration: string; strike: number; right: OptionRight }
+  { expiration, strike, right }: { expiration: string; strike: number; right: OptionRight },
 ): Promise<TrackedContract | null> {
   const params = new URLSearchParams({ expiration, strike: String(strike), right });
   const res = await fetch(`/api/contract/${symbol.toUpperCase()}?${params.toString()}`);
@@ -734,15 +784,33 @@ export async function fetchTrackedContract(
 // backend finalizes a different path, change only this constant.
 export const METRICS_ENDPOINT = '/api/_metrics';
 
-export interface MetricsLatency { p50_ms: number; p95_ms: number; max_ms: number; count: number; }
-export interface MetricsStage {
-  stage: StageName; kind: StageKind;
-  p50_ms: number; p95_ms: number; max_ms: number; count: number;
-  ok: number; error: number; skipped: number;
+export interface MetricsLatency {
+  p50_ms: number;
+  p95_ms: number;
+  max_ms: number;
+  count: number;
 }
-export interface MetricsCache { hits: number; misses: number; hit_ratio: number; current_data_age_seconds: number; }
+export interface MetricsStage {
+  stage: StageName;
+  kind: StageKind;
+  p50_ms: number;
+  p95_ms: number;
+  max_ms: number;
+  count: number;
+  ok: number;
+  error: number;
+  skipped: number;
+}
+export interface MetricsCache {
+  hits: number;
+  misses: number;
+  hit_ratio: number;
+  current_data_age_seconds: number;
+}
 export interface MetricsVendor {
-  call_count: number; latency_p50_ms: number; latency_p95_ms: number;
+  call_count: number;
+  latency_p50_ms: number;
+  latency_p95_ms: number;
   min_rate_limit_headroom: { remaining: number; limit: number } | null; // null ⇒ "unknown"
 }
 export interface MetricsScope {
@@ -754,7 +822,12 @@ export interface MetricsScope {
 export interface RecentTrace {
   trace_id: string;
   ticker: string;
-  dims: { min_dte: number | null; max_dte: number | null; expirations_present: boolean; dark_pool: boolean };
+  dims: {
+    min_dte: number | null;
+    max_dte: number | null;
+    expirations_present: boolean;
+    dark_pool: boolean;
+  };
   cache_hit: boolean;
   cache_age_seconds: number;
   total_ms: number;
@@ -793,20 +866,27 @@ export interface PersonaDefinition {
   version: number;
   objective: PersonaObjective;
   risk: PersonaRisk;
-  reassessment_lean: string;       // declarative lean within the fixed schema/cap (text)
-  emphasis_note?: string | null;   // bounded free-text; fills the framing slot ONLY
+  reassessment_lean: string; // declarative lean within the fixed schema/cap (text)
+  emphasis_note?: string | null; // bounded free-text; fills the framing slot ONLY
   dte_pref?: { min_dte: number; max_dte: number } | null;
   // FE framing copy (presets carry preset-specific text; customs derive generic text):
   summary?: string;
   objective_framing?: string;
   risk_calibration?: string;
-  based_on?: string;               // for customs: the preset id it was derived from
+  based_on?: string; // for customs: the preset id it was derived from
 }
 
 export type HandoffSectionKind = 'fixed' | 'persona';
 /** One labelled prompt section, badged FIXED ("same under every persona") or PERSONA. */
-export interface HandoffSection { id: string; kind: HandoffSectionKind; label: string }
-export interface HandoffPrompt { text: string; sections: HandoffSection[] }
+export interface HandoffSection {
+  id: string;
+  kind: HandoffSectionKind;
+  label: string;
+}
+export interface HandoffPrompt {
+  text: string;
+  sections: HandoffSection[];
+}
 /** FE-assembled hand-off projection for both prompts. `fallback` ⇒ persona assembly failed and the
  *  default one-size prompt was used. */
 export interface Handoff {
@@ -839,12 +919,12 @@ export type RecGateState = 'available' | 'no_fresh_edge' | 'cooling_down';
 /** POST body for a rec request. Carries NO bundle payload and NO key — only identifiers + the
  *  gating context already on the page (INTERFACE §1.1). */
 export interface RecRequest {
-  persona_id: string | null;       // the persona framing THIS read (per-query override ≠ active)
-  snapshot_fingerprint: string;    // ai_eval.state_fingerprint of the bundle on the page (pin/validate)
-  dte_min: number | null;          // the DTE window already on the page (carried, not new)
+  persona_id: string | null; // the persona framing THIS read (per-query override ≠ active)
+  snapshot_fingerprint: string; // ai_eval.state_fingerprint of the bundle on the page (pin/validate)
+  dte_min: number | null; // the DTE window already on the page (carried, not new)
   dte_max: number | null;
-  dark_pool: boolean;              // whether off-exchange context is included (mirrors the page)
-  override: boolean;               // true ⇒ "Ask anyway" on a no_fresh_edge gate
+  dark_pool: boolean; // whether off-exchange context is included (mirrors the page)
+  override: boolean; // true ⇒ "Ask anyway" on a no_fresh_edge gate
   // ai-rec-backtest-orders (INTERFACE §1.1, additive): the OPTIONAL request-scoped scenario
   // selector. Absent/null ⇒ the shipped real path byte-for-byte (AC-45). Only ever non-null when
   // the operator picked a scenario from a server-advertised catalog (RecStatus.scenarios).
@@ -855,15 +935,18 @@ export interface RecRequest {
  *  scripted scenario. `id` = the stable selector token the POST echoes back as `scenario_id`;
  *  `name` = the human-readable display name, rendered verbatim (single-sourced from the server
  *  registry, AC-36). */
-export interface RecScenarioInfo { id: string; name: string; }
+export interface RecScenarioInfo {
+  id: string;
+  name: string;
+}
 
 /** The risk-first strategy artifact. `decision: 'no_trade'` ⇒ trade fields null/empty + rationale. */
 export interface RecStrategy {
   decision: RecDecision;
   bias: RecBias;
   structure: string | null;
-  strikes: number[];               // concrete strike(s); [] allowed for no_trade
-  expiration: string | null;       // YYYY-MM-DD within [dte_min,dte_max]; null for no_trade
+  strikes: number[]; // concrete strike(s); [] allowed for no_trade
+  expiration: string | null; // YYYY-MM-DD within [dte_min,dte_max]; null for no_trade
   entry_trigger: string | null;
   invalidation_level: number | null;
   max_risk: string | null;
@@ -872,32 +955,43 @@ export interface RecStrategy {
   time_horizon: string | null;
   confidence: RecConfidence | null;
   // Structured reasoning (additive/optional — a rec may omit them; the FE degrades gracefully).
-  summary?: string | null;         // one-line verdict lead the reader scans first
-  key_points?: string[];           // short scannable bullets, each citing a specific level
-  reengage_when?: string[];        // concrete conditions that would change the call
-  rationale: string;               // the full prose (the "show full analysis" body)
+  summary?: string | null; // one-line verdict lead the reader scans first
+  key_points?: string[]; // short scannable bullets, each citing a specific level
+  reengage_when?: string[]; // concrete conditions that would change the call
+  rationale: string; // the full prose (the "show full analysis" body)
 }
 
-export interface RecPersona { id: string | null; name: string; }
-export interface RecGate { state: RecGateState; cooldown_remaining_seconds: number; reasons: string[]; }
-export interface RecCap { over_limit: boolean; remaining_today: number; resets_at: string; }
+export interface RecPersona {
+  id: string | null;
+  name: string;
+}
+export interface RecGate {
+  state: RecGateState;
+  cooldown_remaining_seconds: number;
+  reasons: string[];
+}
+export interface RecCap {
+  over_limit: boolean;
+  remaining_today: number;
+  resets_at: string;
+}
 
 /** Always HTTP 200. `status` drives the panel state machine; `strategy` present iff produced. */
 export interface RecResponse {
   status: RecStatusKind;
   persona: RecPersona;
-  as_of: string | null;            // snapshot_iso the rec is pinned to (echoes the bundle's freshness)
-  pinned_fingerprint: string;      // state_fingerprint the rec was generated from (staleness key)
-  stale_born: boolean;             // bundle was already stale at generation time (honest-at-birth)
-  strategy: RecStrategy | null;    // present iff status === 'produced'
+  as_of: string | null; // snapshot_iso the rec is pinned to (echoes the bundle's freshness)
+  pinned_fingerprint: string; // state_fingerprint the rec was generated from (staleness key)
+  stale_born: boolean; // bundle was already stale at generation time (honest-at-birth)
+  strategy: RecStrategy | null; // present iff status === 'produced'
   unavailable_reason: string | null; // present iff status === 'unavailable'; NEVER leaks key text
-  gate: RecGate;                   // gating snapshot AT THE TIME OF THIS RESPONSE
+  gate: RecGate; // gating snapshot AT THE TIME OF THIS RESPONSE
   cap: RecCap;
   // byo-ai-key (additive; INTERFACE_CONTRACT byo-ai-key §2.1). NEVER a `key` field — these are the
   // ONLY new datums the FE reads, and none is a scoring input (AC-14).
-  key_source?: KeySource;               // own_key → state d chip; shared_admin → state b chip; none → no chip
-  remaining_free_uses?: number | null;  // ADMIN shared-key path only (post-decrement); absent for regular/own-key
-  free_uses_total?: number | null;      // the per-admin allowance (default 3); present when remaining_free_uses is
+  key_source?: KeySource; // own_key → state d chip; shared_admin → state b chip; none → no chip
+  remaining_free_uses?: number | null; // ADMIN shared-key path only (post-decrement); absent for regular/own-key
+  free_uses_total?: number | null; // the per-admin allowance (default 3); present when remaining_free_uses is
   // ai-rec-backtest-orders (INTERFACE §1.3, additive): scenario provenance. NON-NULL on EVERY
   // scenario-driven response (produced, scenario no_trade, AND fault scenarios); null/absent on
   // every real read. The FE keys the "SCRIPTED SCENARIO" marking off this field ONLY (D8-4).
@@ -910,10 +1004,10 @@ export interface RecResponse {
 export interface RecExport {
   ticker: string;
   as_of: string | null;
-  context: unknown;                // serialization of the cached bundle (null stays null, no recompute)
-  persona_prompt: string;          // assembled persona prompt (server-side, canonical-sourced)
-  glossary: string;                // field-level reference
-  egress_note: string;             // "Complete list of what leaves the machine…"
+  context: unknown; // serialization of the cached bundle (null stays null, no recompute)
+  persona_prompt: string; // assembled persona prompt (server-side, canonical-sourced)
+  glossary: string; // field-level reference
+  egress_note: string; // "Complete list of what leaves the machine…"
 }
 
 /** Gating + cap + availability without requesting a rec (INTERFACE §1.3). Side-effect-free, 200. */
@@ -935,9 +1029,9 @@ export interface RecStatus {
 /** byo-ai-key: the masked-hint read returned by all three credential endpoints (INTERFACE §1). It
  *  carries at most a last-4 hint — NEVER the raw key, ciphertext, or any recoverable field (AC-10). */
 export interface AiKeyStatus {
-  set: boolean;                 // a key is stored
-  last4: string | null;         // last-4 masked hint; non-null ONLY when set === true
-  storage_available: boolean;   // false ⇒ Settings storage-unavailable variant (AC-18)
+  set: boolean; // a key is stored
+  last4: string | null; // last-4 masked hint; non-null ONLY when set === true
+  storage_available: boolean; // false ⇒ Settings storage-unavailable variant (AC-18)
 }
 
 /** GET /api/auth/ai-key — masked-hint read driving the Settings Empty/Set state. Returns ONLY
@@ -954,7 +1048,10 @@ export async function getAiKeyStatus(): Promise<AiKeyStatus> {
  *  storage_available:false}`, NOT a 5xx (AC-18). 403 ⇒ AuthError; 422 ⇒ AuthError('validation'). */
 export async function setAiKey(key: string): Promise<AiKeyStatus> {
   const res = await fetch('/api/auth/ai-key', {
-    method: 'PUT', headers: JSON_HEADERS, credentials: 'same-origin', body: JSON.stringify({ key }),
+    method: 'PUT',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
+    body: JSON.stringify({ key }),
   });
   if (!res.ok) throw await toAuthError(res);
   return (await res.json()) as AiKeyStatus;
@@ -971,7 +1068,10 @@ export async function removeAiKey(): Promise<AiKeyStatus> {
 /** Request a rec (in-app LLM call). ALWAYS 200 for produced/no_trade/unavailable/gated_off — the
  *  `status` field distinguishes them. A non-2xx / network fault throws `ApiError`; the rec hook
  *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent. */
-export async function requestRecommendation(symbol: string, body: RecRequest): Promise<RecResponse> {
+export async function requestRecommendation(
+  symbol: string,
+  body: RecRequest,
+): Promise<RecResponse> {
   const res = await fetch(`/api/recommendation/${symbol.toUpperCase()}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -996,7 +1096,9 @@ export async function fetchRecExport(
   const params = new URLSearchParams();
   if (personaId) params.set('persona_id', personaId);
   const qs = params.toString();
-  const res = await fetch(`/api/recommendation/export/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
+  const res = await fetch(
+    `/api/recommendation/export/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`,
+  );
   if (!res.ok) throw new ApiError(`Export unavailable (${res.status})`, res.status);
   return (await res.json()) as RecExport;
 }
@@ -1018,6 +1120,7 @@ export async function fetchPersonas(): Promise<PersonaDefinition[]> {
   if (!res.ok) throw new ApiError(`Personas unavailable (${res.status})`, res.status);
   const payload = (await res.json()) as unknown;
   const list = Array.isArray(payload) ? payload : (payload as { personas?: unknown })?.personas;
-  if (!Array.isArray(list) || list.length === 0) throw new ApiError('Malformed personas payload', 200);
+  if (!Array.isArray(list) || list.length === 0)
+    throw new ApiError('Malformed personas payload', 200);
   return list as PersonaDefinition[];
 }

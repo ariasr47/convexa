@@ -9,16 +9,14 @@
  *  - The status read (`getAiKeyStatus`) returns at most `set`/`last4`/`storage_available` — never a key.
  *  - storage-unavailable is a contained, honest info note (never a 5xx / never an error red — AC-18).
  */
+import { Alert, Box, Button, Divider, Snackbar, Stack, TextField, Typography } from '@mui/material';
+import { AuthError, getAiKeyStatus, removeAiKey, setAiKey, type AiKeyStatus } from '@org/api';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import {
-  Box, Stack, Typography, TextField, Button, Alert, Divider, Snackbar,
-} from '@mui/material';
-import { AuthError, getAiKeyStatus, setAiKey, removeAiKey, type AiKeyStatus } from '@org/api';
 import { typographyTokens } from '../tokens';
 import { useAuth } from './AuthContext';
-import { useGate } from './useGate';
 import { SignInPrompt } from './SignInPrompt';
 import { AUTH_COPY, maskedKeyLabel } from './copy';
+import { useGate } from './useGate';
 
 const C = AUTH_COPY.settings.aiKey;
 
@@ -32,7 +30,7 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
   const gate = useGate();
   const [status, setStatus] = useState<AiKeyStatus | null>(null);
   const [mode, setMode] = useState<Mode>('view');
-  const [draft, setDraft] = useState('');          // the typed key — local-only, cleared on success
+  const [draft, setDraft] = useState(''); // the typed key — local-only, cleared on success
   const [submitting, setSubmitting] = useState(false);
   const [validation, setValidation] = useState<string | null>(null);
   const [saveError, setSaveError] = useState(false);
@@ -44,28 +42,43 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
   const readStatus = useCallback(() => {
     let cancelled = false;
     getAiKeyStatus()
-      .then((s) => { if (!cancelled) setStatus(s); })
-      .catch(() => { if (!cancelled) setStatus(null); });
-    return () => { cancelled = true; };
+      .then((s) => {
+        if (!cancelled) setStatus(s);
+      })
+      .catch(() => {
+        if (!cancelled) setStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (!auth.authenticated) { setStatus(null); return; }
+    if (!auth.authenticated) {
+      setStatus(null);
+      return;
+    }
     return readStatus();
   }, [auth.authenticated, readStatus]);
 
-  const clearDraft = useCallback(() => { setDraft(''); setValidation(null); }, []);
+  const clearDraft = useCallback(() => {
+    setDraft('');
+    setValidation(null);
+  }, []);
 
   const submitKey = useCallback(async () => {
     const key = draft.trim();
-    if (!key) { setValidation(C.validationEmpty); return; }
+    if (!key) {
+      setValidation(C.validationEmpty);
+      return;
+    }
     // Soft format warning is warn-only (the backend is the authority) — it does NOT block the submit.
     setValidation(key.startsWith('sk-ant-') ? null : C.validationFormat);
     setSubmitting(true);
     setSaveError(false);
     try {
       const next = await setAiKey(key);
-      clearDraft();                         // CLEAR the typed key on success — never retained (AC-10)
+      clearDraft(); // CLEAR the typed key on success — never retained (AC-10)
       setStatus(next);
       setMode('view');
       setToast(C.savedAdd);
@@ -124,7 +137,10 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
       disabledInput={storageUnavailable}
       validation={validation}
       onSubmit={() => void submitKey()}
-      onCancel={() => { clearDraft(); setMode('view'); }}
+      onCancel={() => {
+        clearDraft();
+        setMode('view');
+      }}
     />
   );
 
@@ -142,38 +158,71 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
         <Box sx={{ mt: 1 }} data-testid="settings-ai-key-set">
           <Typography
             data-testid="settings-ai-key-masked"
-            sx={{ fontFamily: typographyTokens.monoFontFamily, fontSize: 15, fontWeight: 600, letterSpacing: '0.02em', color: 'text.primary' }}
+            sx={{
+              fontFamily: typographyTokens.monoFontFamily,
+              fontSize: 15,
+              fontWeight: 600,
+              letterSpacing: '0.02em',
+              color: 'text.primary',
+            }}
           >
             {maskedKeyLabel(status?.last4 ?? null)}
           </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}
+          >
             {C.setSubLine}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-            <Button size="small" variant="outlined" data-testid="settings-ai-key-replace"
-              onClick={() => { clearDraft(); setMode('replace'); }}>
+            <Button
+              size="small"
+              variant="outlined"
+              data-testid="settings-ai-key-replace"
+              onClick={() => {
+                clearDraft();
+                setMode('replace');
+              }}
+            >
               {C.replaceBtn}
             </Button>
-            <Button size="small" color="error" data-testid="settings-ai-key-remove"
-              onClick={() => setRemoveConfirm(true)}>
+            <Button
+              size="small"
+              color="error"
+              data-testid="settings-ai-key-remove"
+              onClick={() => setRemoveConfirm(true)}
+            >
               {C.removeBtn}
             </Button>
           </Stack>
 
           {removeConfirm && (
-            <Alert severity="warning" sx={{ mt: 1 }} data-testid="settings-ai-key-remove-confirm"
+            <Alert
+              severity="warning"
+              sx={{ mt: 1 }}
+              data-testid="settings-ai-key-remove-confirm"
               action={
                 <Stack direction="row" spacing={1}>
-                  <Button size="small" color="inherit" disabled={submitting}
-                    onClick={() => setRemoveConfirm(false)}>
+                  <Button
+                    size="small"
+                    color="inherit"
+                    disabled={submitting}
+                    onClick={() => setRemoveConfirm(false)}
+                  >
                     {C.removeCancelBtn}
                   </Button>
-                  <Button size="small" color="error" disabled={submitting}
-                    data-testid="settings-ai-key-remove-confirm-btn" onClick={() => void doRemove()}>
+                  <Button
+                    size="small"
+                    color="error"
+                    disabled={submitting}
+                    data-testid="settings-ai-key-remove-confirm-btn"
+                    onClick={() => void doRemove()}
+                  >
                     {C.removeConfirmBtn}
                   </Button>
                 </Stack>
-              }>
+              }
+            >
               <Typography variant="subtitle2">{C.removeConfirmTitle}</Typography>
               <Typography variant="body2">{C.removeConfirmBody}</Typography>
             </Alert>
@@ -188,8 +237,12 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
       {showAddForm && form('add')}
 
       {saveError && (
-        <Alert severity="error" sx={{ mt: 1 }} data-testid="settings-ai-key-error"
-          onClose={() => setSaveError(false)}>
+        <Alert
+          severity="error"
+          sx={{ mt: 1 }}
+          data-testid="settings-ai-key-error"
+          onClose={() => setSaveError(false)}
+        >
           {C.saveError}
         </Alert>
       )}
@@ -200,7 +253,9 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
         onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-ai-key-saved">{toast ?? ''}</Alert>
+        <Alert severity="success" data-testid="settings-ai-key-saved">
+          {toast ?? ''}
+        </Alert>
       </Snackbar>
     </Section>
   );
@@ -209,7 +264,14 @@ export function AiKeySection({ embedded = false }: { embedded?: boolean } = {}) 
 /** The write-only key entry form (Empty add / Replace). Hoisted to module scope so React preserves
  *  the input element identity across keystrokes (an inline definition would remount it each render). */
 function KeyForm({
-  kind, draft, onDraft, submitting, disabledInput, validation, onSubmit, onCancel,
+  kind,
+  draft,
+  onDraft,
+  submitting,
+  disabledInput,
+  validation,
+  onSubmit,
+  onCancel,
 }: {
   kind: 'add' | 'replace';
   draft: string;
@@ -221,8 +283,11 @@ function KeyForm({
   onCancel: () => void;
 }) {
   return (
-    <Stack spacing={1} sx={{ mt: 1 }}
-      data-testid={kind === 'add' ? 'settings-ai-key-empty' : 'settings-ai-key-replace-form'}>
+    <Stack
+      spacing={1}
+      sx={{ mt: 1 }}
+      data-testid={kind === 'add' ? 'settings-ai-key-empty' : 'settings-ai-key-replace-form'}
+    >
       <TextField
         type="password"
         label={C.inputLabel}
@@ -231,30 +296,47 @@ function KeyForm({
         value={draft}
         disabled={submitting || disabledInput}
         onChange={(e) => onDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
         slotProps={{ htmlInput: { 'data-testid': 'settings-ai-key-input', autoComplete: 'off' } }}
         fullWidth
       />
       <Stack direction="row" spacing={1}>
         <Button
-          variant="contained" size="small"
+          variant="contained"
+          size="small"
           disabled={submitting || disabledInput}
           data-testid={kind === 'add' ? 'settings-ai-key-add' : 'settings-ai-key-replace-submit'}
           onClick={onSubmit}
         >
           {kind === 'add'
-            ? (submitting ? C.addingBtn : C.addBtn)
-            : (submitting ? C.replacingBtn : C.replaceSubmitBtn)}
+            ? submitting
+              ? C.addingBtn
+              : C.addBtn
+            : submitting
+              ? C.replacingBtn
+              : C.replaceSubmitBtn}
         </Button>
         {kind === 'replace' && (
-          <Button size="small" color="inherit" disabled={submitting}
-            data-testid="settings-ai-key-replace-cancel" onClick={onCancel}>
+          <Button
+            size="small"
+            color="inherit"
+            disabled={submitting}
+            data-testid="settings-ai-key-replace-cancel"
+            onClick={onCancel}
+          >
             {C.cancelBtn}
           </Button>
         )}
       </Stack>
       {validation && (
-        <Alert severity="info" data-testid="settings-ai-key-validation">{validation}</Alert>
+        <Alert severity="info" data-testid="settings-ai-key-validation">
+          {validation}
+        </Alert>
       )}
     </Stack>
   );
@@ -268,7 +350,9 @@ function Section({ children, embedded = false }: { children: ReactNode; embedded
     <Box id="ai-key" data-testid="settings-ai-key-section">
       {!embedded && <Divider sx={{ mb: 2 }} />}
       {!embedded && <Typography variant="h6">{C.heading}</Typography>}
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>{C.helper}</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
+        {C.helper}
+      </Typography>
       {children}
     </Box>
   );

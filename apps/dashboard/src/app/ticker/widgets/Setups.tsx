@@ -3,7 +3,7 @@
  * or the calm "no clean setup" info. Each card: setup name + a tinted conviction chip (HIGH amber /
  * MEDIUM blue / LOW grey) over the plain-language rationale. Static bundle read off `signals.setups`.
  */
-import { Card, CardContent, Stack, Typography, Alert } from '@mui/material';
+import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
 import type { Setup } from '@org/api';
 import { TintChip } from './TintChip';
 import { Widget } from './Widget';
@@ -28,9 +28,14 @@ export function Setups({ setups, revealIndex }: Props) {
               <CardContent>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: 14 }}>{s.name}</Typography>
-                  <TintChip tone={convictionTone(s.conviction)} label={s.conviction.toUpperCase()} />
+                  <TintChip
+                    tone={convictionTone(s.conviction)}
+                    label={s.conviction.toUpperCase()}
+                  />
                 </Stack>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>{s.rationale}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {s.rationale}
+                </Typography>
               </CardContent>
             </Card>
           ))}

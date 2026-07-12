@@ -62,7 +62,9 @@ export function ComingSoonCard({ icon, title, body, action, testId }: ComingSoon
     <ComingSoonBox data-testid={testId}>
       <ComingSoonIcon icon={icon} />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>{title}</Typography>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
         <ComingSoonBadge />
       </Stack>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>

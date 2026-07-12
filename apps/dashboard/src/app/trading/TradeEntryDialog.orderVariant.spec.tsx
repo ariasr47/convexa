@@ -5,53 +5,98 @@
  * validating) plus the byte-identity guard: WITHOUT `orderPlan` none of the order-variant DOM
  * exists (the existing TradeEntryDialog specs stay green, untouched).
  */
-import { render, screen, within, cleanup, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../theme';
 import {
-  TradeEntryDialog, OrderPlan, OrderEntrySubmit, defaultGoodTil, goodTilToExpiresAt,
+  OrderEntrySubmit,
+  OrderPlan,
+  TradeEntryDialog,
+  defaultGoodTil,
+  goodTilToExpiresAt,
 } from './TradeEntryDialog';
 
 const QUOTE = {
-  ticker: 'TSLA', expiration: '2099-12-19', strike: 250, right: 'call',
-  option_quote: { bid: 4.9, ask: 5.1, mid: 5 }, greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
-  iv: 0.45, dte: 24,
+  ticker: 'TSLA',
+  expiration: '2099-12-19',
+  strike: 250,
+  right: 'call',
+  option_quote: { bid: 4.9, ask: 5.1, mid: 5 },
+  greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
+  iv: 0.45,
+  dte: 24,
 };
 
 function installFetch() {
-  vi.stubGlobal('fetch', vi.fn(async () =>
-    new Response(JSON.stringify(QUOTE), { status: 200, headers: { 'Content-Type': 'application/json' } })));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify(QUOTE), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    ),
+  );
 }
 
 function plan(over: Partial<OrderPlan> = {}): OrderPlan {
   return {
     seededTrigger: { kind: 'underlying_above', level: 252 },
     triggerSourceText: 'Enter on a break above 252',
-    provenance: { source: 'ai_rec', personaName: 'Default (no persona)', asOf: '2026-07-02T14:00:00Z' },
+    provenance: {
+      source: 'ai_rec',
+      personaName: 'Default (no persona)',
+      asOf: '2026-07-02T14:00:00Z',
+    },
     stale: false,
     liveMid: null,
     ...over,
   };
 }
 
-function mount(orderPlan: OrderPlan | undefined, onConfirmOrder = vi.fn(), orderError: string | null = null) {
+function mount(
+  orderPlan: OrderPlan | undefined,
+  onConfirmOrder = vi.fn(),
+  orderError: string | null = null,
+) {
   render(
     <ThemeProvider theme={theme}>
       <TradeEntryDialog
-        open ticker="TSLA" expirations={['2099-12-19']} strikes={[245, 250, 255]} spot={250}
-        prefill={{ expiration: '2099-12-19', strike: 250, right: 'call', qty: 2, stop: 3, target: 9 }}
-        orderPlan={orderPlan} onConfirmOrder={onConfirmOrder} orderError={orderError}
-        onClose={vi.fn()} onConfirm={vi.fn()}
+        open
+        ticker="TSLA"
+        expirations={['2099-12-19']}
+        strikes={[245, 250, 255]}
+        spot={250}
+        prefill={{
+          expiration: '2099-12-19',
+          strike: 250,
+          right: 'call',
+          qty: 2,
+          stop: 3,
+          target: 9,
+        }}
+        orderPlan={orderPlan}
+        onConfirmOrder={onConfirmOrder}
+        orderError={orderError}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
       />
     </ThemeProvider>,
   );
   return onConfirmOrder;
 }
 
-beforeEach(() => { vi.restoreAllMocks(); installFetch(); });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+beforeEach(() => {
+  vi.restoreAllMocks();
+  installFetch();
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('order variant — seeded / empty-seed states (§3.2)', () => {
   it('default-seeded: trigger pre-seeded + "Derived from the rec" chip + verbatim words shown', () => {
@@ -60,9 +105,13 @@ describe('order variant — seeded / empty-seed states (§3.2)', () => {
     expect(within(dlg).getByText('Simulated order — act on this rec')).toBeInTheDocument();
     expect(within(dlg).getByLabelText('Trigger level')).toHaveValue(252);
     expect(within(dlg).getByTestId('order-seed-chip')).toBeInTheDocument();
-    expect(within(dlg).getByTestId('order-verbatim-words')).toHaveTextContent('Enter on a break above 252');
+    expect(within(dlg).getByTestId('order-verbatim-words')).toHaveTextContent(
+      'Enter on a break above 252',
+    );
     // Entry price defaults to Market on trigger (nothing to seed — honest default).
-    expect(within(dlg).getByRole('button', { name: 'Market on trigger', pressed: true })).toBeInTheDocument();
+    expect(
+      within(dlg).getByRole('button', { name: 'Market on trigger', pressed: true }),
+    ).toBeInTheDocument();
   });
 
   it('empty-seed: fields start empty, the no-seed helper shows, verbatim text still shown', () => {
@@ -71,12 +120,16 @@ describe('order variant — seeded / empty-seed states (§3.2)', () => {
     expect(within(dlg).getByLabelText('Trigger level')).toHaveValue(null);
     expect(within(dlg).getByTestId('order-no-seed-helper')).toBeInTheDocument();
     expect(within(dlg).queryByTestId('order-seed-chip')).toBeNull();
-    expect(within(dlg).getByTestId('order-verbatim-words')).toHaveTextContent('Enter on strength through the wall');
+    expect(within(dlg).getByTestId('order-verbatim-words')).toHaveTextContent(
+      'Enter on strength through the wall',
+    );
   });
 
   it('a rec with NO entry trigger renders the honest placeholder in the words block', () => {
     mount(plan({ seededTrigger: null, triggerSourceText: null }));
-    expect(screen.getByTestId('order-verbatim-words')).toHaveTextContent('— (the rec stated no entry trigger)');
+    expect(screen.getByTestId('order-verbatim-words')).toHaveTextContent(
+      '— (the rec stated no entry trigger)',
+    );
   });
 });
 
@@ -113,13 +166,22 @@ describe('order variant — notice strips (§3.2)', () => {
   });
 
   it('scenario-sourced (D8-4): the dialog strip + the scenario provenance line', () => {
-    mount(plan({
-      provenance: { source: 'ai_scenario', personaName: 'Default (no persona)', asOf: null, scenarioName: 'Break above call wall' },
-    }));
+    mount(
+      plan({
+        provenance: {
+          source: 'ai_scenario',
+          personaName: 'Default (no persona)',
+          asOf: null,
+          scenarioName: 'Break above call wall',
+        },
+      }),
+    );
     expect(screen.getByTestId('order-scenario-strip')).toHaveTextContent(
       'Scripted scenario — this plan came from the "Break above call wall" scenario, not a real AI read.',
     );
-    expect(screen.getByTestId('order-provenance-line')).toHaveTextContent('From scripted scenario · Break above call wall');
+    expect(screen.getByTestId('order-provenance-line')).toHaveTextContent(
+      'From scripted scenario · Break above call wall',
+    );
   });
 
   it('real-read provenance line: "From AI read · {persona} · as of {as_of}"', () => {
@@ -157,7 +219,11 @@ describe('order variant — good-til (D3/AC-8) + validation state (§3.2)', () =
     mount(plan());
     const input = screen.getByLabelText('Good-til');
     fireEvent.change(input, { target: { value: '' } });
-    expect(screen.getByText("Set a good-til date after now and no later than the contract's expiration.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Set a good-til date after now and no later than the contract's expiration.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Place simulated order' })).toBeDisabled();
   });
 
@@ -181,8 +247,13 @@ describe('order variant — confirm payload + D8-1 + inline store fault', () => 
     expect(onConfirmOrder).toHaveBeenCalledTimes(1);
     const submit = onConfirmOrder.mock.calls[0][0] as OrderEntrySubmit;
     expect(submit).toMatchObject({
-      ticker: 'TSLA', expiration: '2099-12-19', strike: 250, right: 'call', qty: 2,
-      stop: 3, target: 9,
+      ticker: 'TSLA',
+      expiration: '2099-12-19',
+      strike: 250,
+      right: 'call',
+      qty: 2,
+      stop: 3,
+      target: 9,
       trigger: { kind: 'underlying_above', level: 252 },
       limitPrice: 4,
     });
@@ -207,8 +278,13 @@ describe('byte-identity without the seam (AC-47/48 guard)', () => {
     render(
       <ThemeProvider theme={theme}>
         <TradeEntryDialog
-          open ticker="TSLA" expirations={['2099-12-19']} strikes={[250]} spot={250}
-          onClose={vi.fn()} onConfirm={vi.fn()}
+          open
+          ticker="TSLA"
+          expirations={['2099-12-19']}
+          strikes={[250]}
+          spot={250}
+          onClose={vi.fn()}
+          onConfirm={vi.fn()}
         />
       </ThemeProvider>,
     );

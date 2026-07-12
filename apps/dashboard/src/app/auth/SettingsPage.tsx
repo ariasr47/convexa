@@ -17,25 +17,44 @@
  * SCORE-NEUTRAL (AC-F4): nothing here is wired into any bundle/score path; the helper copy reinforces
  * it ("Affects appearance only."). Theme/persona/ticker are never scoring inputs.
  */
-import { useEffect, useState } from 'react';
 import {
-  Container, Stack, Typography, FormControl, InputLabel, Select, MenuItem, TextField,
-  Snackbar, Alert, Box, Button, Card, ToggleButton, ToggleButtonGroup,
+  Alert,
+  Box,
+  Button,
+  Card,
+  Container,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Snackbar,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
 import type { ThemePref } from '@org/api';
+import { useEffect, useState } from 'react';
+import { usePersona } from '../personas/usePersona';
+import { AiKeySection } from './AiKeySection';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { useSettings } from './useSettings';
-import { usePersona } from '../personas/usePersona';
-import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
-import { AiKeySection } from './AiKeySection';
 import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
+import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
+import { useSettings } from './useSettings';
 
 const C = AUTH_COPY.settings;
 
 /** A `background.paper` panel card — rounded `card` radius, 1px `divider` border, ~24 padding. */
-function PanelCard({ heading, children, testId }: {
-  heading: string; children: React.ReactNode; testId?: string;
+function PanelCard({
+  heading,
+  children,
+  testId,
+}: {
+  heading: string;
+  children: React.ReactNode;
+  testId?: string;
 }) {
   return (
     <Card
@@ -54,7 +73,14 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       component="div"
-      sx={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', mb: 0.75 }}
+      sx={{
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        color: 'text.secondary',
+        mb: 0.75,
+      }}
     >
       {children}
     </Typography>
@@ -71,10 +97,14 @@ export function SettingsPage() {
 
   // Keep the ticker text field synced to the effective value when it changes from outside
   // (e.g. who-am-I resolves, or an account switch). Server-wins, so the field never overwrites it.
-  useEffect(() => { setTickerDraft(settings.effective.defaultTicker); }, [settings.effective.defaultTicker]);
+  useEffect(() => {
+    setTickerDraft(settings.effective.defaultTicker);
+  }, [settings.effective.defaultTicker]);
 
   // Surface the quiet "Saved" toast on a successful server write (signed-in only).
-  const flashSaved = () => { if (settings.serverBacked) setSavedOpen(true); };
+  const flashSaved = () => {
+    if (settings.serverBacked) setSavedOpen(true);
+  };
 
   // Persona options mirror the existing persona picker.
   const personaOptions = [
@@ -83,8 +113,14 @@ export function SettingsPage() {
     ...persona.customs.map((p) => ({ id: p.id, name: p.name })),
   ];
 
-  const onPersona = async (id: string) => { await settings.setPersona(id); flashSaved(); };
-  const onTheme = async (t: ThemePref) => { await settings.setTheme(t); flashSaved(); };
+  const onPersona = async (id: string) => {
+    await settings.setPersona(id);
+    flashSaved();
+  };
+  const onTheme = async (t: ThemePref) => {
+    await settings.setTheme(t);
+    flashSaved();
+  };
   const commitTicker = async () => {
     const norm = tickerDraft.trim() ? tickerDraft.trim().toUpperCase() : SETTINGS_DEFAULTS.ticker;
     setTickerDraft(norm);
@@ -100,35 +136,58 @@ export function SettingsPage() {
   return (
     <Container maxWidth="sm" sx={{ py: 4, maxWidth: 640 }} data-testid="settings-page">
       <Stack spacing={0.5} sx={{ mb: 3 }}>
-        <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>{C.title}</Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{C.subtitle}</Typography>
+        <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>
+          {C.title}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          {C.subtitle}
+        </Typography>
       </Stack>
 
       <Stack spacing={3}>
         {/* ===== 1. Account panel — display + Sign out (log out now lives here) ===== */}
         <PanelCard heading={C.accountHeading} testId="settings-account-panel">
           {auth.authenticated ? (
-            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }} data-testid="settings-account-signed-in">
-              <Box sx={GRADIENT_AVATAR_SX} aria-hidden>{avatarInitial(auth.user)}</Box>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ alignItems: 'center' }}
+              data-testid="settings-account-signed-in"
+            >
+              <Box sx={GRADIENT_AVATAR_SX} aria-hidden>
+                {avatarInitial(auth.user)}
+              </Box>
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                <Typography sx={{ fontWeight: 700 }} noWrap>{primaryName}</Typography>
+                <Typography sx={{ fontWeight: 700 }} noWrap>
+                  {primaryName}
+                </Typography>
                 {hasDisplayName && (
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>{auth.user?.email}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }} noWrap>
+                    {auth.user?.email}
+                  </Typography>
                 )}
               </Box>
               <Button
                 variant="outlined"
                 size="small"
                 data-testid="settings-signout"
-                onClick={() => { void auth.signOut(); }}
+                onClick={() => {
+                  void auth.signOut();
+                }}
               >
                 {C.signOut}
               </Button>
             </Stack>
           ) : (
-            <Stack direction="row" spacing={2} sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-              data-testid="settings-account-signed-out">
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>{C.accountSignedOutPrompt}</Typography>
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              data-testid="settings-account-signed-out"
+            >
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {C.accountSignedOutPrompt}
+              </Typography>
               <Button
                 variant="contained"
                 size="small"
@@ -149,14 +208,18 @@ export function SettingsPage() {
 
         {/* ===== 3. Preferences panel — appearance only (score-neutral) ===== */}
         <PanelCard heading={C.preferencesHeading} testId="settings-preferences-panel">
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>{C.themeHelper}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+            {C.themeHelper}
+          </Typography>
 
           <Stack spacing={2.5}>
             {/* Active persona */}
             <Box>
               <FieldLabel>{C.activePersona}</FieldLabel>
               <FormControl fullWidth size="small">
-                <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>{C.activePersona}</InputLabel>
+                <InputLabel id="settings-persona-label" sx={{ display: 'none' }}>
+                  {C.activePersona}
+                </InputLabel>
                 <Select
                   labelId="settings-persona-label"
                   aria-label={C.activePersona}
@@ -165,7 +228,11 @@ export function SettingsPage() {
                   disabled={!auth.ready}
                   inputProps={{ 'data-testid': 'settings-persona' }}
                 >
-                  {personaOptions.map((p) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+                  {personaOptions.map((p) => (
+                    <MenuItem key={p.id} value={p.id}>
+                      {p.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Box>
@@ -181,7 +248,12 @@ export function SettingsPage() {
                 value={tickerDraft}
                 onChange={(e) => setTickerDraft(e.target.value)}
                 onBlur={commitTicker}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void commitTicker(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void commitTicker();
+                  }
+                }}
                 disabled={!auth.ready}
                 slotProps={{ htmlInput: { 'data-testid': 'settings-ticker' } }}
               />
@@ -195,7 +267,9 @@ export function SettingsPage() {
                 size="small"
                 value={settings.effective.theme}
                 disabled={!auth.ready}
-                onChange={(_e, v) => { if (v) void onTheme(v as ThemePref); }}
+                onChange={(_e, v) => {
+                  if (v) void onTheme(v as ThemePref);
+                }}
                 aria-label={C.theme}
                 data-testid="settings-theme"
                 sx={{
@@ -213,7 +287,11 @@ export function SettingsPage() {
                     textTransform: 'none',
                     fontWeight: 600,
                     py: 1,
-                    '&:not(:first-of-type)': { ml: 0, borderLeft: '1px solid', borderColor: 'divider' },
+                    '&:not(:first-of-type)': {
+                      ml: 0,
+                      borderLeft: '1px solid',
+                      borderColor: 'divider',
+                    },
                     '&.Mui-selected': {
                       color: 'primary.main',
                       borderColor: 'primary.main',
@@ -224,22 +302,37 @@ export function SettingsPage() {
                   },
                 }}
               >
-                <ToggleButton value="dark" data-testid="settings-theme-dark">{C.themeDark}</ToggleButton>
-                <ToggleButton value="light" data-testid="settings-theme-light">{C.themeLight}</ToggleButton>
-                <ToggleButton value="system" data-testid="settings-theme-system">{C.themeSystem}</ToggleButton>
+                <ToggleButton value="dark" data-testid="settings-theme-dark">
+                  {C.themeDark}
+                </ToggleButton>
+                <ToggleButton value="light" data-testid="settings-theme-light">
+                  {C.themeLight}
+                </ToggleButton>
+                <ToggleButton value="system" data-testid="settings-theme-system">
+                  {C.themeSystem}
+                </ToggleButton>
               </ToggleButtonGroup>
             </Box>
           </Stack>
 
           {settings.saveError && (
-            <Alert severity="error" onClose={settings.clearSaveError} data-testid="settings-save-error" sx={{ mt: 2 }}>
+            <Alert
+              severity="error"
+              onClose={settings.clearSaveError}
+              data-testid="settings-save-error"
+              sx={{ mt: 2 }}
+            >
               {C.saveError}
             </Alert>
           )}
         </PanelCard>
 
         {/* Footer disclaimer — reuse the Landing caption (verbatim). */}
-        <Typography variant="caption" data-testid="settings-disclaimer" sx={{ color: 'text.secondary', mt: 1 }}>
+        <Typography
+          variant="caption"
+          data-testid="settings-disclaimer"
+          sx={{ color: 'text.secondary', mt: 1 }}
+        >
           Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
           (paper). Not investment advice. No brokerage connection.
         </Typography>
@@ -251,7 +344,9 @@ export function SettingsPage() {
         onClose={() => setSavedOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" data-testid="settings-saved">{C.saved}</Alert>
+        <Alert severity="success" data-testid="settings-saved">
+          {C.saved}
+        </Alert>
       </Snackbar>
     </Container>
   );

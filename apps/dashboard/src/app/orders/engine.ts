@@ -20,7 +20,7 @@
  */
 import type { LiveUpdate } from '@org/api';
 import { limitWouldFill } from '../positions/entry';
-import type { SimOrder, Trigger, OrderFillBasis } from './types';
+import type { OrderFillBasis, SimOrder, Trigger } from './types';
 
 /** One evaluation tick's inputs. `optionMark` MUST already be live-resolved by the caller (null
  *  when the mark is unavailable, frozen, last_known, or the stream isn't live). */
@@ -68,7 +68,10 @@ function endOfDayMs(isoDate: string): number {
 
 /** Clock expiry — the ONLY off-stream transition (AC-21): the good-til bound passed, or the
  *  contract's own expiration date passed. Wall-clock fact; safe with no live data. */
-export function isClockExpired(order: Pick<SimOrder, 'expires_at' | 'expiration'>, nowMs: number): boolean {
+export function isClockExpired(
+  order: Pick<SimOrder, 'expires_at' | 'expiration'>,
+  nowMs: number,
+): boolean {
   const goodTil = Date.parse(order.expires_at);
   if (Number.isFinite(goodTil) && goodTil <= nowMs) return true;
   const contractEnd = endOfDayMs(order.expiration);

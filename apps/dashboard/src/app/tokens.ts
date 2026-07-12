@@ -76,5 +76,6 @@ export const extrasLight: Record<keyof typeof extras, string> = {
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */
-export const extrasFor = (theme: { palette: { mode: string } }): Record<keyof typeof extras, string> =>
-  theme.palette.mode === 'light' ? extrasLight : extras;
+export const extrasFor = (theme: {
+  palette: { mode: string };
+}): Record<keyof typeof extras, string> => (theme.palette.mode === 'light' ? extrasLight : extras);

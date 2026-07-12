@@ -24,45 +24,72 @@
  *   - Extras:  bundle-level missing key (pre-feature backend) ⇒ L5 with clean console; whole-pack
  *              null never blanks/errors the rest of the board.
  */
-import type { ComponentProps } from 'react';
-import { render, screen, act, waitFor, within, fireEvent } from '@testing-library/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import type { LiveUpdate, MarketContextPack, MetaTimings, TickerBundle } from '@org/api';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import type { TickerBundle, LiveUpdate, MarketContextPack, MetaTimings } from '@org/api';
 
 import App from '../app';
-import { theme } from '../theme';
-import { __resetMemory } from '../positions/store';
-import { MarketContext } from './widgets/MarketContext';
-import { assembleHandoff } from '../personas/template';
 import { PRESETS } from '../personas/presets';
-import { MC_WHOLE_EMPTY, MC_ATR_EMPTY } from './widgets/copy';
+import { assembleHandoff } from '../personas/template';
+import { __resetMemory } from '../positions/store';
+import { theme } from '../theme';
+import { MC_ATR_EMPTY, MC_WHOLE_EMPTY } from './widgets/copy';
+import { MarketContext } from './widgets/MarketContext';
 
 const PACK_DEFAULT: MarketContextPack = {
   trend_momentum: {
     as_of_session: '2026-07-03',
     direction: {
-      label: 'uptrend', close: 178.4, ema20: 176.21, ema50: 171.83,
-      window: 'close vs EMA20 vs EMA50, daily closes', thresholds: 'fixed',
+      label: 'uptrend',
+      close: 178.4,
+      ema20: 176.21,
+      ema50: 171.83,
+      window: 'close vs EMA20 vs EMA50, daily closes',
+      thresholds: 'fixed',
     },
-    strength: { label: 'strong', adx: 28.4, window: 'ADX(14), Wilder, daily high/low/close', thresholds: 'fixed' },
-    momentum: { label: 'neutral', rsi: 51.2, window: 'RSI(14), Wilder, daily closes', thresholds: 'fixed' },
+    strength: {
+      label: 'strong',
+      adx: 28.4,
+      window: 'ADX(14), Wilder, daily high/low/close',
+      thresholds: 'fixed',
+    },
+    momentum: {
+      label: 'neutral',
+      rsi: 51.2,
+      window: 'RSI(14), Wilder, daily closes',
+      thresholds: 'fixed',
+    },
   },
   gex_profile_shape: {
-    concentration: 0.41, concentration_label: 'concentrated',
-    balance: 0.34, balance_label: 'above_skewed',
-    center_of_mass_distance: 0.012, eligible_strikes: 23, spot_basis: 178.4, thresholds: 'fixed',
+    concentration: 0.41,
+    concentration_label: 'concentrated',
+    balance: 0.34,
+    balance_label: 'above_skewed',
+    center_of_mass_distance: 0.012,
+    eligible_strikes: 23,
+    spot_basis: 178.4,
+    thresholds: 'fixed',
   },
   flow_vs_positioning: {
     flow_basis: 'today volume vs standing OI (wire descriptor)',
     location: { label: 'rotating', distribution_shift: 0.42, thresholds: 'fixed' },
-    composition: { label: 'consistent', volume_pcr: 0.92, oi_pcr: 0.88, tilt_ratio: 1.05, thresholds: 'fixed' },
+    composition: {
+      label: 'consistent',
+      volume_pcr: 0.92,
+      oi_pcr: 0.88,
+      tilt_ratio: 1.05,
+      thresholds: 'fixed',
+    },
   },
   atr: {
-    as_of_session: '2026-07-03', close_basis: 178.4, method: 'simple mean of true range (wire descriptor)',
+    as_of_session: '2026-07-03',
+    close_basis: 178.4,
+    method: 'simple mean of true range (wire descriptor)',
     atr_5d: { value: 4.12, pct_of_close: 2.31, window_bars: 5 },
     atr_14d: { value: 3.87, pct_of_close: 2.17, window_bars: 14 },
     atr_30d: { value: 3.51, pct_of_close: 1.97, window_bars: 30 },
@@ -75,14 +102,45 @@ const ABSENT = Symbol('market_context absent');
 
 function makeBundle(pack: MarketContextPack | null | typeof ABSENT = PACK_DEFAULT): TickerBundle {
   const market_state: TickerBundle['market_state'] = {
-    ticker: 'TSLA', price: 250.5, gex_spot: 250, timestamp: 1, timestamp_iso: '2026-06-23T14:30:00Z',
-    call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-    max_pain_expiration: '2026-06-26', net_gex: 1.2e9, call_gex: 2.0e9, put_gex: -0.8e9, total_gex: 1.2e9,
-    net_dex: 5.0e8, call_dex: 6.0e8, put_dex: -1.0e8, net_vanna: null, net_charm: null, net_volga: null,
-    vwap: 249, vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-    dte_min: null, dte_max: null, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-    put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-    iv_skew: null, term_structure: null, dealer_flow_projection: null,
+    ticker: 'TSLA',
+    price: 250.5,
+    gex_spot: 250,
+    timestamp: 1,
+    timestamp_iso: '2026-06-23T14:30:00Z',
+    call_wall: 260,
+    put_wall: 240,
+    peak_gex_strike: 255,
+    gamma_flip: 248,
+    max_pain: 250,
+    max_pain_expiration: '2026-06-26',
+    net_gex: 1.2e9,
+    call_gex: 2.0e9,
+    put_gex: -0.8e9,
+    total_gex: 1.2e9,
+    net_dex: 5.0e8,
+    call_dex: 6.0e8,
+    put_dex: -1.0e8,
+    net_vanna: null,
+    net_charm: null,
+    net_volga: null,
+    vwap: 249,
+    vwap_upper_2: null,
+    vwap_upper_3: null,
+    vwap_lower_2: null,
+    vwap_lower_3: null,
+    dte_min: null,
+    dte_max: null,
+    atm_iv: 45,
+    hv_30d: 40,
+    iv_hv_ratio: 1.12,
+    net_flow: null,
+    put_call_ratio: 0.8,
+    chain_vol_oi_ratio: 0.5,
+    total_volume: 100_000,
+    vol_oi_unusual_threshold: 1,
+    iv_skew: null,
+    term_structure: null,
+    dealer_flow_projection: null,
     market_context: pack === ABSENT ? null : pack,
   };
   // The ABSENT sentinel ⇒ the KEY is omitted entirely (the pre-feature / older-backend shape).
@@ -90,30 +148,78 @@ function makeBundle(pack: MarketContextPack | null | typeof ABSENT = PACK_DEFAUL
   return {
     market_state,
     signals: {
-      ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 73, opportunity_tier: 'actionable', prime_prompt_eligible: false,
+      ticker: 'TSLA',
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 73,
+      opportunity_tier: 'actionable',
+      prime_prompt_eligible: false,
     },
     strike_profile: { ticker: 'TSLA', spot: 250.5, strikes: [] },
-    expirations: [{ date: '2026-06-26', dte: 3 }, { date: '2026-07-17', dte: 24 }],
-    ai_eval: { ready: false, reasons: [], changed: false, state_fingerprint: 'fp-byte-identical', score_threshold: 60 },
-    meta: {
-      served_at: '2026-06-23T14:30:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
-      freshness: { snapshot_iso: '2026-06-23T14:30:00Z', data_age_seconds: 30, stale: false, stale_after_seconds: 600 },
+    expirations: [
+      { date: '2026-06-26', dte: 3 },
+      { date: '2026-07-17', dte: 24 },
+    ],
+    ai_eval: {
+      ready: false,
+      reasons: [],
+      changed: false,
+      state_fingerprint: 'fp-byte-identical',
+      score_threshold: 60,
     },
-    off_exchange: { ratio_pct: 38, offex_shares: 38_000, total_shares: 100_000, levels: [], blocks: [], block_min_shares: 5000, note: '' },
+    meta: {
+      served_at: '2026-06-23T14:30:00Z',
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: '2026-06-23T14:30:00Z',
+        data_age_seconds: 30,
+        stale: false,
+        stale_after_seconds: 600,
+      },
+    },
+    off_exchange: {
+      ratio_pct: 38,
+      offex_shares: 38_000,
+      total_shares: 100_000,
+      levels: [],
+      blocks: [],
+      block_min_shares: 5000,
+      note: '',
+    },
     position_eval: null,
   };
 }
 
 function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return {
-    ticker: 'TSLA', mid: 251, bid: null, ask: null, spread: 0.05, net_flow: 1200, buy_vol: 0, sell_vol: 0,
-    flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime',
-    ts: Date.now(), gamma_flip: 248, last_trade: 251.13, ...over,
+    ticker: 'TSLA',
+    mid: 251,
+    bid: null,
+    ask: null,
+    spread: 0.05,
+    net_flow: 1200,
+    buy_vol: 0,
+    sell_vol: 0,
+    flow_window_s: 300,
+    spot_ts: 1,
+    live: true,
+    tick_age_s: 1,
+    market_session: 'regular',
+    feed: 'realtime',
+    ts: Date.now(),
+    gamma_flip: 248,
+    last_trade: 251.13,
+    ...over,
   };
 }
 
-interface MockES { onmessage: ((e: MessageEvent) => void) | null; closed: boolean; }
+interface MockES {
+  onmessage: ((e: MessageEvent) => void) | null;
+  closed: boolean;
+}
 let esInstances: MockES[] = [];
 /** The bundle (or an error) the fetch mock serves for the CURRENT ticker request. */
 let bundleForUrl: (url: string) => TickerBundle | { __error: number } = () => makeBundle();
@@ -121,7 +227,11 @@ let exportContext: unknown = null;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 function pushLive(over: Partial<LiveUpdate> = {}) {
-  act(() => { esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(liveUpdate(over)) } as MessageEvent)); });
+  act(() => {
+    esInstances.forEach((es) =>
+      es.onmessage?.({ data: JSON.stringify(liveUpdate(over)) } as MessageEvent),
+    );
+  });
 }
 
 beforeEach(() => {
@@ -135,30 +245,47 @@ beforeEach(() => {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
     closed = false;
-    constructor() { esInstances.push(this as unknown as MockES); }
-    close() { this.closed = true; }
+    constructor() {
+      esInstances.push(this as unknown as MockES);
+    }
+    close() {
+      this.closed = true;
+    }
   }
   vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
 
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    const json = (b: unknown) =>
+      new Response(JSON.stringify(b), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     if (url.includes('/api/ticker/')) {
       const b = bundleForUrl(url);
-      if ('__error' in (b as object)) return new Response('{"detail":"boom"}', { status: (b as { __error: number }).__error });
+      if ('__error' in (b as object))
+        return new Response('{"detail":"boom"}', { status: (b as { __error: number }).__error });
       return json(b);
     }
     if (url.includes('/api/recommendation/export/')) {
       return json({
-        ticker: 'TSLA', as_of: '2026-06-23T14:30:00Z',
-        context: exportContext, persona_prompt: 'PROMPT', glossary: 'GLOSSARY',
+        ticker: 'TSLA',
+        as_of: '2026-06-23T14:30:00Z',
+        context: exportContext,
+        persona_prompt: 'PROMPT',
+        glossary: 'GLOSSARY',
         egress_note: 'Complete list of what leaves the machine…',
       });
     }
     if (url.includes('/api/recommendation/status/')) {
-      return json({ availability: { in_app_enabled: true }, gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] }, cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' } });
+      return json({
+        availability: { in_app_enabled: true },
+        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+        cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
+      });
     }
-    if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+    if (url.includes('/api/personas'))
+      return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
@@ -205,7 +332,9 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
         direction: { ...PACK_DEFAULT.trend_momentum!.direction!, label: 'downtrend', close: 170.1 },
       },
     };
-    await act(async () => { await vi.advanceTimersByTimeAsync(61_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
     await screen.findByText('Downtrend');
     expect(screen.queryByText('Uptrend')).toBeNull();
   });
@@ -213,7 +342,13 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
   it('T-AC-9: a stale bundle shares the page-level staleness presentation ONLY — no per-widget stale badge or freshness claim', async () => {
     bundleForUrl = () => {
       const b = makeBundle(PACK_DEFAULT);
-      return { ...b, meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: true, data_age_seconds: 7200 } } };
+      return {
+        ...b,
+        meta: {
+          ...b.meta,
+          freshness: { ...b.meta.freshness, stale: true, data_age_seconds: 7200 },
+        },
+      };
     };
     renderAt('/ticker/TSLA');
     await screen.findByText('Uptrend');
@@ -237,7 +372,9 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
 
     // The next poll fails → the page's soft warning appears; the widget NEVER blanks.
     bundleForUrl = () => ({ __error: 500 });
-    await act(async () => { await vi.advanceTimersByTimeAsync(61_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
     await screen.findByText(/Couldn't refresh/);
     expect(screen.getByText('Uptrend')).toBeInTheDocument();
     expect(screen.getByText('$4.12 · 2.3%')).toBeInTheDocument();
@@ -257,7 +394,9 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
 
     // Go live, then drop the stream (no payload for > STREAM_OFFLINE_MS).
     pushLive({ live: true, last_trade: 251.13 });
-    await act(async () => { await vi.advanceTimersByTimeAsync(16_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16_000);
+    });
 
     // CONTRAST CONTROL: the LiveTape tiles DID go offline (⏸ offline caption present there).
     const liveTape = screen.getByTestId('live-tape');
@@ -267,7 +406,9 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
     expect(screen.getByTestId('market-context').textContent).toBe(before);
     expect(within(widget).queryByText(/⏸/)).toBeNull();
     expect(within(widget).queryByText(/offline/i)).toBeNull();
-    expect(getComputedStyle(widget).opacity === '' || getComputedStyle(widget).opacity === '1').toBe(true);
+    expect(
+      getComputedStyle(widget).opacity === '' || getComputedStyle(widget).opacity === '1',
+    ).toBe(true);
     // All four reads still visible.
     expect(within(widget).getByText('Uptrend')).toBeInTheDocument();
     expect(within(widget).getByText('Concentrated')).toBeInTheDocument();
@@ -300,19 +441,21 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
 
     await user.click(screen.getAllByRole('button', { name: "View what's sent" })[0]);
     await screen.findByText('Computed snapshot (context)');
-    const pre = Array.from(document.querySelectorAll('pre')).map((p) => p.textContent ?? '').join('\n');
+    const pre = Array.from(document.querySelectorAll('pre'))
+      .map((p) => p.textContent ?? '')
+      .join('\n');
     // The pack rides the export…
     expect(pre).toContain('"market_context"');
     // …with the SAME values the page renders (spot-check labels + scalars against the rendered UI).
-    expect(pre).toContain('"label": "uptrend"');          // page shows: Uptrend
+    expect(pre).toContain('"label": "uptrend"'); // page shows: Uptrend
     expect(screen.getByText('Uptrend')).toBeInTheDocument();
-    expect(pre).toContain('"adx": 28.4');                 // page shows: ADX(14) 28.4
+    expect(pre).toContain('"adx": 28.4'); // page shows: ADX(14) 28.4
     expect(screen.getByText('ADX(14) 28.4')).toBeInTheDocument();
-    expect(pre).toContain('"concentration": 0.41');       // page shows: HHI 0.41
+    expect(pre).toContain('"concentration": 0.41'); // page shows: HHI 0.41
     expect(screen.getByText('HHI 0.41')).toBeInTheDocument();
-    expect(pre).toContain('"distribution_shift": 0.42');  // page shows: shift 0.42
+    expect(pre).toContain('"distribution_shift": 0.42'); // page shows: shift 0.42
     expect(screen.getByText('shift 0.42')).toBeInTheDocument();
-    expect(pre).toContain('"value": 4.12');               // page shows: $4.12 · 2.3%
+    expect(pre).toContain('"value": 4.12'); // page shows: $4.12 · 2.3%
     expect(screen.getByText('$4.12 · 2.3%')).toBeInTheDocument();
   });
 
@@ -328,7 +471,9 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
 
     await user.click(screen.getAllByRole('button', { name: "View what's sent" })[0]);
     await screen.findByText('Computed snapshot (context)');
-    const pre = Array.from(document.querySelectorAll('pre')).map((p) => p.textContent ?? '').join('\n');
+    const pre = Array.from(document.querySelectorAll('pre'))
+      .map((p) => p.textContent ?? '')
+      .join('\n');
     // …and the export carries that read as null — no fabricated horizon values anywhere.
     expect(pre).toContain('"atr": null');
     expect(pre).not.toContain('"atr_5d"');
@@ -355,7 +500,8 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
     expect(handoffWithout.entry.text).toBe(handoffWith.entry.text);
     expect(handoffWithout.reassessment.text).toBe(handoffWith.reassessment.text);
     // No mention of the pack or its fields in either prompt.
-    const NO_PACK = /market_context|trend_momentum|gex_profile_shape|flow_vs_positioning|\batr\b|market context/i;
+    const NO_PACK =
+      /market_context|trend_momentum|gex_profile_shape|flow_vs_positioning|\batr\b|market context/i;
     expect(handoffWith.entry.text).not.toMatch(NO_PACK);
     expect(handoffWith.reassessment.text).not.toMatch(NO_PACK);
   });
@@ -416,7 +562,12 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
     const wide = PACK_DEFAULT;
     const narrow: MarketContextPack = {
       ...PACK_DEFAULT,
-      gex_profile_shape: { ...PACK_DEFAULT.gex_profile_shape!, concentration: 0.12, concentration_label: 'dispersed', eligible_strikes: 7 },
+      gex_profile_shape: {
+        ...PACK_DEFAULT.gex_profile_shape!,
+        concentration: 0.12,
+        concentration_label: 'dispersed',
+        eligible_strikes: 7,
+      },
     };
     bundleForUrl = (url) => makeBundle(url.includes('expirations=') ? narrow : wide);
     renderAt('/ticker/TSLA');
@@ -431,6 +582,8 @@ describe('ai-context-pack — flow (the static-read journey)', () => {
     await screen.findByText('Dispersed');
     expect(screen.getByText('HHI 0.12')).toBeInTheDocument();
     expect(screen.queryByText('Concentrated')).toBeNull();
-    expect(screen.getByText('At spot $178.40 · 7 strikes in the selected window')).toBeInTheDocument();
+    expect(
+      screen.getByText('At spot $178.40 · 7 strikes in the selected window'),
+    ).toBeInTheDocument();
   });
 });

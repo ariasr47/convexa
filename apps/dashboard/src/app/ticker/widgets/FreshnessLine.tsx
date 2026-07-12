@@ -12,8 +12,8 @@
  * "Couldn't refresh …" warning keep that. When a background poll is in flight it appends a quiet
  * "· refreshing…" that clears on resolve.
  */
-import { useEffect, useState } from 'react';
 import { Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { humanAge } from './copy';
 
 interface Props {

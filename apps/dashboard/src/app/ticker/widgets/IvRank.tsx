@@ -32,19 +32,31 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
-import { Box, Stack, Typography, Tooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import type { IvRankRead } from '@org/api';
-import { Widget } from './Widget';
 import { typographyTokens } from '../../tokens';
 import {
-  IVR_TITLE, IVR_SUBTITLE, IVR_INFO,
-  IVR_RANK_LABEL, IVR_PCT_LABEL,
-  ivrRankDescriptor, ivrPctDescriptor,
-  ivrBandDisplay, ivrBasisLine, ivrBuildingMessage,
-  IVR_ADVISORY, IVR_FLAT_NOTE, IVR_WHOLE_EMPTY,
-  IVR_TIP_RANK, IVR_TIP_PCT, IVR_TIP_BAND, IVR_TIP_BASIS, ivrTipBuilding,
+  IVR_ADVISORY,
+  IVR_FLAT_NOTE,
+  IVR_INFO,
+  IVR_PCT_LABEL,
+  IVR_RANK_LABEL,
+  IVR_SUBTITLE,
+  IVR_TIP_BAND,
+  IVR_TIP_BASIS,
+  IVR_TIP_PCT,
+  IVR_TIP_RANK,
+  IVR_TITLE,
+  IVR_WHOLE_EMPTY,
+  ivrBandDisplay,
+  ivrBasisLine,
+  ivrBuildingMessage,
+  ivrPctDescriptor,
+  ivrRankDescriptor,
+  ivrTipBuilding,
 } from './copy';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -68,7 +80,10 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
 function CaptionLabel({ label, info, testid }: { label: string; info: string; testid?: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
+      >
         {label}
       </Typography>
       <Tooltip title={info} arrow placement="top">
@@ -81,9 +96,24 @@ function CaptionLabel({ label, info, testid }: { label: string; info: string; te
 /** The basis/envelope line (always visible with the numbers — `model-read-carries-its-assumptions`). */
 function BasisLine({ read }: { read: IvRankRead }) {
   return (
-    <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start', mt: 0.75 }} data-testid="ivr-basis-row">
-      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }} data-testid="ivr-basis">
-        {ivrBasisLine(read.window_sessions, read.window_cap, read.sample_count, read.iv_basis, read.basis_dte)}
+    <Stack
+      direction="row"
+      spacing={0.5}
+      sx={{ alignItems: 'flex-start', mt: 0.75 }}
+      data-testid="ivr-basis-row"
+    >
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', display: 'block' }}
+        data-testid="ivr-basis"
+      >
+        {ivrBasisLine(
+          read.window_sessions,
+          read.window_cap,
+          read.sample_count,
+          read.iv_basis,
+          read.basis_dte,
+        )}
       </Typography>
       <Tooltip title={IVR_TIP_BASIS} arrow placement="top">
         <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
@@ -120,20 +150,32 @@ function ComputedBody({ read }: { read: IvRankRead }) {
         ) : (
           <>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline' }}>
-              <Typography variant="h4" sx={{ fontFamily: MONO, fontWeight: 700 }} data-testid="ivr-rank-value">
+              <Typography
+                variant="h4"
+                sx={{ fontFamily: MONO, fontWeight: 700 }}
+                data-testid="ivr-rank-value"
+              >
                 {read.rank}
               </Typography>
               {/* The ONE band token — closed lookup, never re-derived from the rank. Its lean-framing
                   tooltip is the ONLY permitted directional language (and it inherits the advisory frame). */}
               {band != null && (
                 <Tooltip title={IVR_TIP_BAND} arrow placement="top">
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }} data-testid="ivr-band">
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', fontWeight: 600 }}
+                    data-testid="ivr-band"
+                  >
                     {band}
                   </Typography>
                 </Tooltip>
               )}
             </Stack>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="ivr-rank-descriptor">
+            <Typography
+              variant="body2"
+              sx={{ color: 'text.secondary' }}
+              data-testid="ivr-rank-descriptor"
+            >
               {ivrRankDescriptor(read.rank, read.window_cap)}
             </Typography>
           </>
@@ -144,10 +186,18 @@ function ComputedBody({ read }: { read: IvRankRead }) {
       {read.percentile != null && (
         <Box sx={{ mb: 0.5 }} data-testid="ivr-pct-slot">
           <CaptionLabel label={IVR_PCT_LABEL} info={IVR_TIP_PCT} testid="ivr-pct-info" />
-          <Typography variant="body1" sx={{ fontFamily: MONO, fontWeight: 600 }} data-testid="ivr-pct-value">
+          <Typography
+            variant="body1"
+            sx={{ fontFamily: MONO, fontWeight: 600 }}
+            data-testid="ivr-pct-value"
+          >
             {read.percentile}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="ivr-pct-descriptor">
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.secondary' }}
+            data-testid="ivr-pct-descriptor"
+          >
             {ivrPctDescriptor(read.percentile)}
           </Typography>
         </Box>
@@ -165,7 +215,11 @@ function BuildingBody({ read }: { read: IvRankRead }) {
   return (
     <Box data-testid="ivr-building">
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'flex-start' }}>
-        <Typography variant="body1" sx={{ color: 'text.secondary' }} data-testid="ivr-building-message">
+        <Typography
+          variant="body1"
+          sx={{ color: 'text.secondary' }}
+          data-testid="ivr-building-message"
+        >
           {ivrBuildingMessage(read.sample_count, read.min_samples)}
         </Typography>
         <Tooltip title={ivrTipBuilding(read.min_samples)} arrow placement="top">

@@ -19,9 +19,9 @@
  *     the bar color (non-directional tier emphasis, e.g. the Opportunity tile).
  *   - `info` present → a whole-tile Tooltip (the ⓘ just signals one exists), unchanged.
  */
-import { styled } from '@mui/material/styles';
-import { Card, CardContent, Stack, Typography, Tooltip, Skeleton } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Card, CardContent, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { typographyTokens } from '../../tokens';
 import { flashColorSx, type FlashState } from './useFlashOnChange';
 
@@ -57,7 +57,8 @@ const TileCard = styled(Card, {
     ...(offline ? { opacity: 0.5 } : {}),
     // Micro-interaction: subtle hover lift + a smooth opacity transition into/out of the offline dim
     // (never a hard snap). GPU-cheap (transform/opacity/box-shadow/border only). Honors reduced motion.
-    transition: 'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, opacity 200ms ease',
+    transition:
+      'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, opacity 200ms ease',
     '&:hover': {
       transform: 'translateY(-2px)',
       boxShadow:
@@ -81,10 +82,10 @@ const TileCard = styled(Card, {
         accentColor != null
           ? accentColor
           : accent === 'up'
-          ? theme.palette.success.main
-          : accent === 'down'
-          ? theme.palette.error.main
-          : theme.palette.divider,
+            ? theme.palette.success.main
+            : accent === 'down'
+              ? theme.palette.error.main
+              : theme.palette.divider,
     },
   }),
 );
@@ -105,22 +106,39 @@ export interface StatTileProps {
   flash?: FlashState | null;
 }
 
-export function StatTile({ label, value, accent, info, offline, accentColor, valueColor, flash }: StatTileProps) {
+export function StatTile({
+  label,
+  value,
+  accent,
+  info,
+  offline,
+  accentColor,
+  valueColor,
+  flash,
+}: StatTileProps) {
   const tile = (
     <TileCard accent={accent} accentColor={accentColor} offline={offline} variant="outlined">
       <CardContent sx={{ pl: 2.25 }}>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {label}
+          </Typography>
           {info && <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />}
         </Stack>
         {offline && (
-          <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', lineHeight: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.disabled', display: 'block', lineHeight: 1 }}
+          >
             ⏸ offline
           </Typography>
         )}
         <Typography
           variant="h6"
-          sx={[{ fontFamily: MONO, ...(valueColor ? { color: valueColor } : {}) }, flashColorSx(flash ?? null)]}
+          sx={[
+            { fontFamily: MONO, ...(valueColor ? { color: valueColor } : {}) },
+            flashColorSx(flash ?? null),
+          ]}
         >
           {value}
         </Typography>
@@ -128,7 +146,13 @@ export function StatTile({ label, value, accent, info, offline, accentColor, val
     </TileCard>
   );
   // Whole-tile hover tooltip (the ⓘ just signals one exists). Only when `info` is given.
-  return info ? <Tooltip title={info} arrow placement="top">{tile}</Tooltip> : tile;
+  return info ? (
+    <Tooltip title={info} arrow placement="top">
+      {tile}
+    </Tooltip>
+  ) : (
+    tile
+  );
 }
 
 /**

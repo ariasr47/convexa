@@ -12,13 +12,18 @@
  * Decisions carry over verbatim (same `trade_id` join). New optional fields are left absent ⇒ a v1
  * record reads as a `manual` open position. The v1 blob is left intact (read old-if-new-absent).
  */
-import type { GhostTrade } from '../ghost-trade/types';
-import {
-  PORTFOLIO_SCHEMA_VERSION, Position, PositionId, DecisionRecord, CustomizationState,
-  PersistShapeV2, PersistShapeV1,
-} from './types';
-import { defaultCustomization } from './defaults';
 import { resolveDurable } from '../durable/resolveDurable';
+import type { GhostTrade } from '../ghost-trade/types';
+import { defaultCustomization } from './defaults';
+import {
+  CustomizationState,
+  DecisionRecord,
+  PersistShapeV1,
+  PersistShapeV2,
+  PORTFOLIO_SCHEMA_VERSION,
+  Position,
+  PositionId,
+} from './types';
 
 // Current-brand durable keys. The `.v1`/`.v2` segment + in-blob schema_version are UNCHANGED — only
 // the brand prefix flipped (rebrand-convexa). The legacy `gammaflow.*` keys are retained ONLY as the
@@ -132,7 +137,11 @@ function read(): PersistShapeV2 {
 
 function write(s: PersistShapeV2) {
   memory = s;
-  try { localStorage.setItem(V2_KEY, JSON.stringify(s)); } catch { /* in-memory only */ }
+  try {
+    localStorage.setItem(V2_KEY, JSON.stringify(s));
+  } catch {
+    /* in-memory only */
+  }
 }
 
 // ---- Positions ---------------------------------------------------------------------------------
@@ -166,7 +175,9 @@ export function appendDecision(rec: DecisionRecord) {
 
 /** Records for one position, newest first. */
 export function decisionsForPosition(id: PositionId): DecisionRecord[] {
-  return read().decisions.filter((d) => d.trade_id === id).reverse();
+  return read()
+    .decisions.filter((d) => d.trade_id === id)
+    .reverse();
 }
 
 /** The full append-only log, oldest first (ai-rec-backtest-orders: feeds the orders Export JSON —
@@ -189,7 +200,7 @@ export function putCustomization(c: CustomizationState) {
 // ---- Misc --------------------------------------------------------------------------------------
 
 export function newId(): string {
-  return (crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  return crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 /** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */

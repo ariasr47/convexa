@@ -13,10 +13,21 @@ export function TintChip({ tone, label }: { tone: Tone; label: string }) {
     <Box
       component="span"
       sx={(t) => ({
-        display: 'inline-flex', alignItems: 'center', px: 0.75, py: '2px', borderRadius: '999px',
-        fontSize: 9, fontWeight: 500, letterSpacing: '0.02em', whiteSpace: 'nowrap', lineHeight: 1.5,
+        display: 'inline-flex',
+        alignItems: 'center',
+        px: 0.75,
+        py: '2px',
+        borderRadius: '999px',
+        fontSize: 9,
+        fontWeight: 500,
+        letterSpacing: '0.02em',
+        whiteSpace: 'nowrap',
+        lineHeight: 1.5,
         color: tone === 'neutral' ? t.palette.text.secondary : t.palette[tone].main,
-        bgcolor: tone === 'neutral' ? alpha(t.palette.text.secondary, 0.16) : alpha(t.palette[tone].main, 0.16),
+        bgcolor:
+          tone === 'neutral'
+            ? alpha(t.palette.text.secondary, 0.16)
+            : alpha(t.palette[tone].main, 0.16),
       })}
     >
       {label}

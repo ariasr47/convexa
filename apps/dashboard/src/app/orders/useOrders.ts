@@ -15,21 +15,34 @@
  *  - Store faults degrade to the honest unavailable state; create REFUSES to write into a faulted
  *    store (`[best-effort-isolated-or-null]`, AC-29).
  */
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import type { OptionRight } from '@org/api';
-import type { DecisionRecord, DecisionEvent } from '../ghost-trade/types';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import type { DecisionEvent, DecisionRecord } from '../ghost-trade/types';
 import { SCHEMA_VERSION as DECISION_SCHEMA } from '../ghost-trade/types';
-import { Position, PORTFOLIO_SCHEMA_VERSION } from '../positions/types';
-import { putPosition, appendDecision, newId, allDecisions } from '../positions/store';
-import {
-  allOrders, getOrder, putOrder, ordersFaulted, newOrderId, subscribeOrders, getOrdersVersion,
-  __notifyOrdersChanged, buildOrdersExport, OrdersExport,
-} from './store';
-import { evaluateOrder, isClockExpired, EngineTick, OrderTransition } from './engine';
-import {
-  SimOrder, Trigger, OrderProvenance, OrderEvalState, ORDERS_SCHEMA_VERSION, isTerminal,
-} from './types';
+import { allDecisions, appendDecision, newId, putPosition } from '../positions/store';
+import { PORTFOLIO_SCHEMA_VERSION, Position } from '../positions/types';
 import { STORE_FAULT_TITLE } from './copy';
+import { EngineTick, evaluateOrder, isClockExpired, OrderTransition } from './engine';
+import {
+  __notifyOrdersChanged,
+  allOrders,
+  buildOrdersExport,
+  getOrder,
+  getOrdersVersion,
+  newOrderId,
+  OrdersExport,
+  ordersFaulted,
+  putOrder,
+  subscribeOrders,
+} from './store';
+import {
+  isTerminal,
+  OrderEvalState,
+  OrderProvenance,
+  ORDERS_SCHEMA_VERSION,
+  SimOrder,
+  Trigger,
+} from './types';
 
 // ---- Decision records ----------------------------------------------------------------------------
 
@@ -50,8 +63,11 @@ function orderDecision(
     clock_time: new Date().toISOString(),
     trade_id: order.id,
     contract: {
-      ticker: order.ticker, expiration: order.expiration, strike: order.strike,
-      right: order.right, qty: order.qty,
+      ticker: order.ticker,
+      expiration: order.expiration,
+      strike: order.strike,
+      right: order.right,
+      qty: order.qty,
     },
     mark_price: order.limit_price ?? 0,
     mark_basis: 'manual', // plan price, not a market quote — overridden by `extra` on fills
@@ -122,7 +138,10 @@ export function cancelOrder(id: string, ctx: DecisionCtx = {}): void {
   const o = getOrder(id);
   if (!o || (o.status !== 'waiting' && o.status !== 'triggered')) return;
   const cancelled: SimOrder = {
-    ...o, status: 'cancelled', close_time: new Date().toISOString(), close_reason: 'cancelled',
+    ...o,
+    status: 'cancelled',
+    close_time: new Date().toISOString(),
+    close_reason: 'cancelled',
   };
   if (!putOrder(cancelled)) return;
   appendDecision(orderDecision('order_cancelled', cancelled, {}, ctx));
@@ -149,7 +168,10 @@ export function applyOrderTransition(
 
   if (transition.to === 'expired') {
     const expired: SimOrder = {
-      ...current, status: 'expired', close_time: transition.close_time, close_reason: 'expired',
+      ...current,
+      status: 'expired',
+      close_time: transition.close_time,
+      close_reason: 'expired',
     };
     if (!putOrder(expired)) return;
     appendDecision(orderDecision('order_expired', expired, {}, ctx));
@@ -159,7 +181,9 @@ export function applyOrderTransition(
 
   if (transition.to === 'triggered') {
     const triggered: SimOrder = {
-      ...current, status: 'triggered', triggered_time: transition.triggered_time,
+      ...current,
+      status: 'triggered',
+      triggered_time: transition.triggered_time,
     };
     if (!putOrder(triggered)) return;
     appendDecision(orderDecision('order_triggered', triggered, {}, ctx));
@@ -202,19 +226,29 @@ export function applyOrderTransition(
     appendDecision(orderDecision('order_triggered', filled, {}, ctx));
   }
   putPosition(position); // exactly ONE position per fill (AC-18)
-  appendDecision(orderDecision('order_filled', filled, {
-    mark_price: transition.fill_mark,
-    mark_basis: transition.fill_basis as DecisionRecord['mark_basis'],
-    position_id: position.id,
-  }, ctx));
+  appendDecision(
+    orderDecision(
+      'order_filled',
+      filled,
+      {
+        mark_price: transition.fill_mark,
+        mark_basis: transition.fill_basis as DecisionRecord['mark_basis'],
+        position_id: position.id,
+      },
+      ctx,
+    ),
+  );
   // The fill ALSO emits the existing position `open` event (trade_id = position id, AC-32).
   appendDecision({
     event_type: 'open',
     clock_time: transition.filled_time,
     trade_id: position.id,
     contract: {
-      ticker: position.ticker, expiration: position.expiration, strike: position.strike,
-      right: position.right, qty: position.qty,
+      ticker: position.ticker,
+      expiration: position.expiration,
+      strike: position.strike,
+      right: position.right,
+      qty: position.qty,
     },
     mark_price: transition.fill_mark,
     mark_basis: transition.fill_basis as DecisionRecord['mark_basis'],
@@ -234,9 +268,15 @@ export function sweepExpiredOrders(nowMs: number = Date.now(), ctx: DecisionCtx 
   for (const o of allOrders()) {
     if (o.status !== 'waiting' && o.status !== 'triggered') continue;
     if (isClockExpired(o, nowMs)) {
-      applyOrderTransition(o.id, o.status, {
-        to: 'expired', close_time: new Date(nowMs).toISOString(),
-      }, ctx);
+      applyOrderTransition(
+        o.id,
+        o.status,
+        {
+          to: 'expired',
+          close_time: new Date(nowMs).toISOString(),
+        },
+        ctx,
+      );
     }
   }
 }
@@ -297,7 +337,10 @@ export function useOrders(): OrdersApi {
     sweepExpiredOrders();
   }, [version]);
 
-  const create = useCallback((input: CreateOrderInput, ctx?: DecisionCtx) => createOrder(input, ctx), []);
+  const create = useCallback(
+    (input: CreateOrderInput, ctx?: DecisionCtx) => createOrder(input, ctx),
+    [],
+  );
   const cancel = useCallback((id: string, ctx?: DecisionCtx) => cancelOrder(id, ctx), []);
   const exportPayload = useCallback(() => buildOrdersExport(allDecisions()), []);
 

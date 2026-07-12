@@ -6,24 +6,41 @@
  * score-neutral), T-H1/H2 (no secret/password reaches the browser), T-I1 (bundle identical anon vs
  * signed-in), T-I2 (no new auth header/query param on the bundle/SSE path).
  */
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../app';
 import { __resetMemory } from '../positions/store';
 import { __resetLocalPrefs } from './localPrefs';
 import {
-  installAuthBackend, uninstallAuthBackend, userSession, type AuthBackend,
+  installAuthBackend,
+  uninstallAuthBackend,
+  userSession,
+  type AuthBackend,
 } from './testBackend';
 
 /** <App/> self-composes the auth/theme/dialog providers. */
 function mountApp(initial: string) {
-  return render(<MemoryRouter initialEntries={[initial]}><App /></MemoryRouter>);
+  return render(
+    <MemoryRouter initialEntries={[initial]}>
+      <App />
+    </MemoryRouter>,
+  );
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); __resetMemory(); __resetLocalPrefs(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); __resetMemory(); __resetLocalPrefs(); });
+beforeEach(() => {
+  localStorage.clear();
+  __resetMemory();
+  __resetLocalPrefs();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+  __resetMemory();
+  __resetLocalPrefs();
+});
 
 describe('Anonymous surfaces reachable (AC-A2)', () => {
   it('T-A2: the Scanner stub renders for an anonymous user, no sign-in wall', async () => {
@@ -87,7 +104,11 @@ describe('Trader-path invariant — bundle render identical anon vs signed-in (A
 describe('Settings score-neutral (AC-F4)', () => {
   it('T-F4: a who-am-I carrying a persona/theme pref does NOT add a bundle refetch param', async () => {
     backend = installAuthBackend({
-      session: userSession('u-1', 'a@x.com', { active_persona_id: 'income_keeper', default_ticker: 'NVDA', theme: 'light' }),
+      session: userSession('u-1', 'a@x.com', {
+        active_persona_id: 'income_keeper',
+        default_ticker: 'NVDA',
+        theme: 'light',
+      }),
     });
     mountApp('/ticker/TSLA');
     await waitFor(() => expect(backend.tickerCalls.length).toBeGreaterThanOrEqual(1));
@@ -109,15 +130,30 @@ describe('Security floor — no secret/password reaches the browser (AC-H1/H2)',
     const keys = new Set<string>();
     const walk = (o: unknown) => {
       if (o && typeof o === 'object') {
-        for (const [k, v] of Object.entries(o as Record<string, unknown>)) { keys.add(k.toLowerCase()); walk(v); }
+        for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+          keys.add(k.toLowerCase());
+          walk(v);
+        }
       }
     };
     walk(backend.state.session);
-    for (const forbidden of ['password', 'password_hash', 'hash', 'session_id', 'sessionid', 'signing_key', 'client_secret', 'session_secret', 'token']) {
+    for (const forbidden of [
+      'password',
+      'password_hash',
+      'hash',
+      'session_id',
+      'sessionid',
+      'signing_key',
+      'client_secret',
+      'session_secret',
+      'token',
+    ]) {
       expect(keys.has(forbidden)).toBe(false);
     }
     // No rendered surface leaks any secret token value.
-    expect(container.textContent ?? '').not.toMatch(/signing_key|client_secret|session_secret|password_hash/i);
+    expect(container.textContent ?? '').not.toMatch(
+      /signing_key|client_secret|session_secret|password_hash/i,
+    );
   });
 });
 

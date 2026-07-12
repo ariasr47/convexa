@@ -3,16 +3,30 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  defaultConfig, defaultView, defaultCustomization, cloneConfig, configEqual,
-  DEFAULT_COLUMNS, OPTIONAL_COLUMNS, COLUMN_LABELS,
+  cloneConfig,
+  COLUMN_LABELS,
+  configEqual,
+  DEFAULT_COLUMNS,
+  defaultConfig,
+  defaultCustomization,
+  defaultView,
+  OPTIONAL_COLUMNS,
 } from './defaults';
 import type { ColumnKey } from './types';
 
 describe('defaults', () => {
   it('REVISION 1 — DEFAULT_COLUMNS match the Figma mock left→right', () => {
     expect(DEFAULT_COLUMNS).toEqual([
-      'contract', 'strategy', 'qty', 'entry', 'mark', 'pl', 'pl_pct',
-      'delta_entry', 'trend', 'expiry',
+      'contract',
+      'strategy',
+      'qty',
+      'entry',
+      'mark',
+      'pl',
+      'pl_pct',
+      'delta_entry',
+      'trend',
+      'expiry',
     ]);
   });
 
@@ -60,13 +74,15 @@ describe('defaults', () => {
   it('configEqual is true for an unmodified clone and false after an edit', () => {
     const a = defaultConfig();
     expect(configEqual(a, cloneConfig(a))).toBe(true);
-    const b = cloneConfig(a); b.layout = 'card';
+    const b = cloneConfig(a);
+    b.layout = 'card';
     expect(configEqual(a, b)).toBe(false);
   });
 
   it('configEqual is order-insensitive for the status multi-select', () => {
     const a = defaultConfig();
-    const b = cloneConfig(a); b.filter.status = ['open'];
+    const b = cloneConfig(a);
+    b.filter.status = ['open'];
     expect(configEqual(a, b)).toBe(true);
   });
 });

@@ -12,18 +12,16 @@
  * ValueCard (the 3 "what works today" cards), ComingSoonBox (the coming-soon band) — plus MUI atoms.
  * Tokens come from the theme (`primary.main`, `text.secondary`, `background.*`, `divider`) — no hex.
  */
-import { useState } from 'react';
-import {
-  Box, Button, Chip, Container, Link, Snackbar, Stack, Typography,
-} from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
-import BarChartIcon from '@mui/icons-material/BarChart';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import LockIcon from '@mui/icons-material/Lock';
 import RadarIcon from '@mui/icons-material/Radar';
-import { ConvexityMotif, ValueCard, ComingSoonCard, Jargon } from '../ui';
+import { Box, Button, Chip, Container, Link, Snackbar, Stack, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { Footer } from '../shell/Footer';
+import { ComingSoonCard, ConvexityMotif, Jargon, ValueCard } from '../ui';
 
 // Jargon tooltip copy — verbatim, plain-language (README §2 / UX_BLUEPRINT honesty floor).
 const DEALER_GAMMA_GLOSS =
@@ -124,9 +122,9 @@ export function Landing() {
             ctaLabel="Analyze a ticker →"
             body={
               <>
-                <Jargon term="Dealer gamma" gloss={DEALER_GAMMA_GLOSS} /> walls, the gamma flip, live
-                order flow, and volatility context for any ticker — the structure that says where price
-                is pulled and whether the regime fades or trends.
+                <Jargon term="Dealer gamma" gloss={DEALER_GAMMA_GLOSS} /> walls, the gamma flip,
+                live order flow, and volatility context for any ticker — the structure that says
+                where price is pulled and whether the regime fades or trends.
               </>
             }
           />
@@ -139,9 +137,9 @@ export function Landing() {
             ctaLabel="Open Positions →"
             body={
               <>
-                Track simulated positions with live P/L, fills, grouping, and saved views. Paper-only —
-                every trade is <Jargon term="SIMULATED" gloss={SIMULATED_GLOSS} />, nothing touches a
-                broker.
+                Track simulated positions with live P/L, fills, grouping, and saved views.
+                Paper-only — every trade is <Jargon term="SIMULATED" gloss={SIMULATED_GLOSS} />,
+                nothing touches a broker.
               </>
             }
           />
@@ -154,8 +152,9 @@ export function Landing() {
             ctaLabel="See it on a ticker →"
             body={
               <>
-                An AI read on the current setup — risk-first, framed by your trader persona, grounded in
-                the positioning the engine already computed. Advisory only; you confirm every paper trade.
+                An AI read on the current setup — risk-first, framed by your trader persona,
+                grounded in the positioning the engine already computed. Advisory only; you confirm
+                every paper trade.
               </>
             }
           />
@@ -178,8 +177,8 @@ export function Landing() {
             title="Connect a real brokerage"
             body={
               <>
-                Connect your real brokerage positions — get the same AI reads on the risk you&apos;re
-                actually carrying. <strong>Coming soon.</strong>
+                Connect your real brokerage positions — get the same AI reads on the risk
+                you&apos;re actually carrying. <strong>Coming soon.</strong>
               </>
             }
             action={
@@ -201,7 +200,8 @@ export function Landing() {
             title="Scanner"
             body={
               <>
-                A multi-ticker scanner to surface the best setups across names. <strong>Coming soon.</strong>
+                A multi-ticker scanner to surface the best setups across names.{' '}
+                <strong>Coming soon.</strong>
               </>
             }
             action={

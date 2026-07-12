@@ -6,8 +6,8 @@
  */
 import { Box, Stack, Typography } from '@mui/material';
 import type { StrikeRow } from '@org/api';
-import { fmtThresh, freshCaption, volOiTip } from './copy';
 import { typographyTokens } from '../../tokens';
+import { fmtThresh, freshCaption, volOiTip } from './copy';
 import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
@@ -21,17 +21,25 @@ interface Props {
   revealIndex?: number;
 }
 
-export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrikes, revealIndex }: Props) {
+export function FreshPositioning({
+  chainVolOiRatio,
+  volOiThreshold,
+  unusualStrikes,
+  revealIndex,
+}: Props) {
   return (
     <Widget
-      id="fresh-positioning" title="Fresh positioning (Vol/OI)"
+      id="fresh-positioning"
+      title="Fresh positioning (Vol/OI)"
       subtitle={freshCaption(volOiThreshold)}
       info={volOiTip(volOiThreshold, unusualStrikes.length)}
       revealIndex={revealIndex}
     >
       <Box>
         {chainVolOiRatio == null ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>Vol/OI unavailable this cycle.</Typography>
+          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+            Vol/OI unavailable this cycle.
+          </Typography>
         ) : unusualStrikes.length === 0 ? (
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>
             No strikes above the {fmtThresh(volOiThreshold)}× Vol/OI cutoff this session.
@@ -39,9 +47,13 @@ export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrik
         ) : (
           <Stack spacing={0.5}>
             {unusualStrikes.map((s) => (
-              <Box key={s.strike} sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: 'action.hover' }}>
+              <Box
+                key={s.strike}
+                sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: 'action.hover' }}
+              >
                 <Typography sx={{ fontFamily: MONO, fontSize: 12 }}>
-                  ${s.strike}  ·  Vol/OI {(s.vol_oi_ratio as number).toFixed(2)}×  ·  {s.volume?.toLocaleString() ?? '—'} contracts
+                  ${s.strike} · Vol/OI {(s.vol_oi_ratio as number).toFixed(2)}× ·{' '}
+                  {s.volume?.toLocaleString() ?? '—'} contracts
                 </Typography>
               </Box>
             ))}

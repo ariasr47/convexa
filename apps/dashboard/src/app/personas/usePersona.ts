@@ -4,17 +4,22 @@
  * synchronous, bundle-independent, and recomputed via useMemo — it triggers NO getTicker/streamTicker
  * and NO recompute of score/tier/gate/fingerprint.
  */
+import type { Handoff, PersonaDefinition, PersonaRisk } from '@org/api';
 import { useCallback, useMemo, useState } from 'react';
-import type { PersonaDefinition, PersonaRisk, Handoff } from '@org/api';
-import { PRESETS, presetById, GENERIC_RISK_CALIBRATION } from './presets';
-import { assembleHandoff } from './template';
+import { GENERIC_RISK_CALIBRATION, PRESETS, presetById } from './presets';
 import {
-  loadCustoms, loadActiveId, saveActiveId, upsertCustom, removeCustom, newPersonaId,
+  loadActiveId,
+  loadCustoms,
+  newPersonaId,
+  removeCustom,
+  saveActiveId,
+  upsertCustom,
 } from './store';
+import { assembleHandoff } from './template';
 
 export interface CustomDraft {
   name: string;
-  basedOn: string;            // preset id
+  basedOn: string; // preset id
   risk: PersonaRisk;
   reassessment_lean: string;
   emphasis_note: string;
@@ -39,36 +44,51 @@ export function usePersona() {
     saveActiveId(v);
   }, []);
 
-  const saveCustom = useCallback((draft: CustomDraft, existingId?: string): string => {
-    const base = presetById(draft.basedOn) ?? PRESETS[0];
-    const id = existingId ?? newPersonaId();
-    const persona: PersonaDefinition = {
-      id, name: draft.name.trim() || `${base.name} (custom)`, builtin: false, version: 1,
-      objective: base.objective, risk: draft.risk,
-      reassessment_lean: draft.reassessment_lean,
-      emphasis_note: draft.emphasis_note.trim() || null,
-      dte_pref: base.dte_pref ?? null,
-      summary: `Custom — based on ${base.name}.`,
-      objective_framing: base.objective_framing,
-      // Risk text follows the (possibly overridden) risk level.
-      risk_calibration: GENERIC_RISK_CALIBRATION[draft.risk],
-      based_on: base.id,
-    };
-    setCustoms(upsertCustom(persona));
-    setActive(id);
-    return id;
-  }, [setActive]);
+  const saveCustom = useCallback(
+    (draft: CustomDraft, existingId?: string): string => {
+      const base = presetById(draft.basedOn) ?? PRESETS[0];
+      const id = existingId ?? newPersonaId();
+      const persona: PersonaDefinition = {
+        id,
+        name: draft.name.trim() || `${base.name} (custom)`,
+        builtin: false,
+        version: 1,
+        objective: base.objective,
+        risk: draft.risk,
+        reassessment_lean: draft.reassessment_lean,
+        emphasis_note: draft.emphasis_note.trim() || null,
+        dte_pref: base.dte_pref ?? null,
+        summary: `Custom — based on ${base.name}.`,
+        objective_framing: base.objective_framing,
+        // Risk text follows the (possibly overridden) risk level.
+        risk_calibration: GENERIC_RISK_CALIBRATION[draft.risk],
+        based_on: base.id,
+      };
+      setCustoms(upsertCustom(persona));
+      setActive(id);
+      return id;
+    },
+    [setActive],
+  );
 
-  const deleteCustom = useCallback((id: string) => {
-    setCustoms(removeCustom(id));
-    if (activeId === id) setActiveId(null);
-  }, [activeId]);
+  const deleteCustom = useCallback(
+    (id: string) => {
+      setCustoms(removeCustom(id));
+      if (activeId === id) setActiveId(null);
+    },
+    [activeId],
+  );
 
   return {
-    personas, presets: PRESETS, customs, active,
+    personas,
+    presets: PRESETS,
+    customs,
+    active,
     activeId: activeId ?? 'default',
     isDefault: (activeId ?? 'default') === 'default',
     handoff,
-    setActive, saveCustom, deleteCustom,
+    setActive,
+    saveCustom,
+    deleteCustom,
   };
 }

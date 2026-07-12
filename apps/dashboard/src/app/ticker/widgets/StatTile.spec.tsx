@@ -4,11 +4,11 @@
  * mono value; the live-derived OFFLINE state (dim + `⏸ offline` caption); and the cold-load
  * StatSkeleton (LOADING look, `data-testid="cold-skeleton"`, no progressbar role).
  */
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../../theme';
-import { StatTile, StatSkeleton } from './StatTile';
+import { StatSkeleton, StatTile } from './StatTile';
 
 function wrap(ui: React.ReactNode) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
@@ -28,7 +28,11 @@ describe('StatTile (shared atom)', () => {
     const { rerender } = wrap(<StatTile label="Spread" value="$0.05" />);
     // No info → no InfoOutlined icon.
     expect(document.querySelector('[data-testid="InfoOutlinedIcon"]')).toBeNull();
-    rerender(<ThemeProvider theme={theme}><StatTile label="Spread" value="$0.05" info="best ask minus best bid" /></ThemeProvider>);
+    rerender(
+      <ThemeProvider theme={theme}>
+        <StatTile label="Spread" value="$0.05" info="best ask minus best bid" />
+      </ThemeProvider>,
+    );
     expect(document.querySelector('[data-testid="InfoOutlinedIcon"]')).not.toBeNull();
   });
 
@@ -36,7 +40,11 @@ describe('StatTile (shared atom)', () => {
     wrap(<StatTile label="Net flow (5m)" value="+1,200" accent="up" offline />);
     expect(screen.getByText('⏸ offline')).toBeInTheDocument();
     // Default (not offline) shows no offline caption.
-    render(<ThemeProvider theme={theme}><StatTile label="Net flow (5m)" value="+1,200" accent="up" /></ThemeProvider>);
+    render(
+      <ThemeProvider theme={theme}>
+        <StatTile label="Net flow (5m)" value="+1,200" accent="up" />
+      </ThemeProvider>,
+    );
     expect(screen.getAllByText('⏸ offline').length).toBe(1); // only the offline instance
   });
 
@@ -49,7 +57,14 @@ describe('StatTile (shared atom)', () => {
   });
 
   it('accentColor overrides the accent bar (non-directional tier emphasis)', () => {
-    wrap(<StatTile label="Opportunity" value="73 · Actionable" accent="neutral" accentColor={theme.palette.warning.main} />);
+    wrap(
+      <StatTile
+        label="Opportunity"
+        value="73 · Actionable"
+        accent="neutral"
+        accentColor={theme.palette.warning.main}
+      />,
+    );
     expect(screen.getByText('73 · Actionable')).toBeInTheDocument();
   });
 

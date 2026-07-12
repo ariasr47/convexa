@@ -43,7 +43,11 @@ export function getOrdersVersion(): number {
 function notify() {
   version += 1;
   listeners.forEach((l) => {
-    try { l(); } catch { /* a bad listener never breaks the store */ }
+    try {
+      l();
+    } catch {
+      /* a bad listener never breaks the store */
+    }
   });
 }
 
@@ -59,9 +63,10 @@ function read(): Record<string, SimOrder> {
       return memory;
     }
     const parsed = JSON.parse(raw) as Partial<PersistShape> | null;
-    const orders = parsed && typeof parsed === 'object' && parsed.orders && typeof parsed.orders === 'object'
-      ? parsed.orders
-      : null;
+    const orders =
+      parsed && typeof parsed === 'object' && parsed.orders && typeof parsed.orders === 'object'
+        ? parsed.orders
+        : null;
     if (!orders) throw new Error('malformed orders blob');
     memory = orders;
     faulted = false;
@@ -133,7 +138,8 @@ export function buildOrdersExport(decisions: DecisionRecord[]): OrdersExport {
   const orderIds = new Set(orders.map((o) => o.id));
   const positionIds = new Set(orders.map((o) => o.position_id).filter(Boolean) as string[]);
   const related = decisions.filter(
-    (d) => d.event_type.startsWith('order_') || orderIds.has(d.trade_id) || positionIds.has(d.trade_id),
+    (d) =>
+      d.event_type.startsWith('order_') || orderIds.has(d.trade_id) || positionIds.has(d.trade_id),
   );
   return { orders, decisions: related };
 }

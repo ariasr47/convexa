@@ -25,7 +25,12 @@ export function SignInPrompt({ text, onSignIn, testid = 'signin-prompt' }: Props
         data-testid={testid}
         action={
           isDegraded ? undefined : (
-            <Button color="inherit" size="small" onClick={onSignIn} data-testid={`${testid}-button`}>
+            <Button
+              color="inherit"
+              size="small"
+              onClick={onSignIn}
+              data-testid={`${testid}-button`}
+            >
               {AUTH_COPY.account.signIn}
             </Button>
           )

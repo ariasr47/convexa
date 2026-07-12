@@ -57,7 +57,9 @@ faster only on a real-time tier.
   "decision": "trade | no_trade",
   "bias": "long | short | neutral | volatility",
   "structure": "e.g. call debit spread, put credit spread, long calls",
-  "strikes": [/* concrete strike(s) */],
+  "strikes": [
+    /* concrete strike(s) */
+  ],
   "expiration": "YYYY-MM-DD within the requested DTE window",
   "entry_trigger": "the condition/level that confirms entry",
   "invalidation_level": 0.0,
@@ -67,7 +69,9 @@ faster only on a real-time tier.
   "time_horizon": "expected holding period",
   "confidence": "low | medium | high",
   "summary": "ONE plain-English sentence: the verdict + the single most important reason (no jargon dump)",
-  "key_points": ["2-5 short bullets, each citing a specific level (walls, flip, magnet, IV/HV, VWAP)"],
+  "key_points": [
+    "2-5 short bullets, each citing a specific level (walls, flip, magnet, IV/HV, VWAP)"
+  ],
   "reengage_when": ["1-3 concrete conditions that would change the call"],
   "rationale": "the full reasoning, citing the specific Convexa levels (walls, flip, magnet, IV/HV)"
 }
@@ -82,6 +86,7 @@ When `decision` is `no_trade`, set the trade fields to `null` but still fill `su
 `rationale`.
 
 <!--PERSONA_DECOMP_START-->
+
 ## Persona decomposition (FIXED vs PERSONA — annotation only; not part of the prompt sent)
 
 The prompt **body above is the byte-identical Default render** (today's prompt, unchanged). For the
@@ -93,7 +98,7 @@ accepts **no** `?persona=` param. Persona never changes `opportunity_score`, `op
 `ai_eval` (`ready`/`changed`/`state_fingerprint`), the gate, or any analytics — those are
 byte-identical across personas — and switching it triggers **no recompute**. Convexa still never calls an LLM.
 
-- **FIXED (persona-invariant):** *When to invoke* (gate + dedupe); *What to send* (full bundle +
+- **FIXED (persona-invariant):** _When to invoke_ (gate + dedupe); _What to send_ (full bundle +
   `market_state_glossary.md` + DTE window — no field dropped); the **required output schema**; and the
   **universal risk-first floor** (lead with risk; `no_trade` is valid; JSON-only; anchor `gex_spot`;
   reliability order; respect regime). **The floor carries NO characterization of who the trader is.**
@@ -102,7 +107,7 @@ byte-identical across personas — and switching it triggers **no recompute**. C
   line, **emphasis note**, and **DTE-preference** line (injected as a "Persona framing" block; empty
   for Default).
 - **A1 disposition map** (fills the inline disposition slot; the harsh `prone to greed and poor risk
-  management` register appears **only** under **Default** (verbatim) and the **conservative** register —
+management` register appears **only** under **Default** (verbatim) and the **conservative** register —
   never moderate/aggressive, never universal):
   - Default: `is prone to greed and poor risk management`
   - conservative: `is prone to greed and poor risk management — risk-averse; values capital preservation; benefits from imposed discipline (guard against over-trading)`

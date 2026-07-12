@@ -17,7 +17,7 @@ Convexa turns an equity's option chain into **dealer gamma-exposure (GEX) struct
 - **Live order flow** — real-time NBBO mid, spread, signed 5-minute net flow, and a live gamma flip over SSE, with honest live-vs-stale and session-aware status.
 - **Off-exchange / dark-pool context** — off-exchange volume ratio, volume-by-price, and the largest block prints (display-only, never a directional signal).
 - **Rule-based setup read + opportunity score/tier** — a gated, change-aware signal designed to resist over-trading.
-- **AI recommendations** *(optional)* — an on-demand, risk-first entry recommendation from an LLM, fed a JSON export of the already-computed state and framed by a selectable trader persona. Advisory only; accepting one maps into the paper-sim tracker.
+- **AI recommendations** _(optional)_ — an on-demand, risk-first entry recommendation from an LLM, fed a JSON export of the already-computed state and framed by a selectable trader persona. Advisory only; accepting one maps into the paper-sim tracker.
 - **Simulated positions** — a paper-trading portfolio (manual / market / limit fills) with P/L, trend, grouping, and saved views.
 - **User accounts** — email/username + password auth, sessions, and a few per-user preferences (Google sign-in is wired but disabled until OAuth credentials are configured).
 
@@ -58,7 +58,7 @@ docs/             Design notes
 
 - **Node.js** (LTS; developed with Node 24 via [nvm](https://github.com/coreybutler/nvm-windows) on Windows) + npm
 - **Python 3.11+** (on Windows, the `py` launcher)
-- A **Massive API key** for live market data (the backend needs one to fetch chains; see *Configuration*)
+- A **Massive API key** for live market data (the backend needs one to fetch chains; see _Configuration_)
 
 ### Install
 

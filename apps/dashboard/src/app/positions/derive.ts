@@ -4,9 +4,7 @@
  * live P/L is unavailable is EXCLUDED from / flagged in a subtotal — never counted as zero
  * (`[best-effort-isolated-or-null]`).
  */
-import type {
-  Position, FilterState, GroupAxis, SortKey, SortDir, Strategy,
-} from './types';
+import type { FilterState, GroupAxis, Position, SortDir, SortKey, Strategy } from './types';
 import { strategyOf } from './types';
 
 /** The live-derived view of a position (its mark/P-L for this cycle), produced by the hook per row. */
@@ -57,17 +55,28 @@ export function applyFilter(positions: Position[], f: FilterState): Position[] {
 function sortValue(row: DerivedRow, key: SortKey): number | string {
   const { position: p, metrics: mtr } = row;
   switch (key) {
-    case 'pl_dollar': return mtr.plDollar ?? -Infinity;
-    case 'pl_pct': return mtr.plPct ?? -Infinity;
-    case 'delta_entry': return mtr.deltaEntry ?? -Infinity;
-    case 'session_delta': return mtr.sessionDelta ?? -Infinity;
-    case 'ticker': return p.ticker;
-    case 'strategy': return row.strategy;
-    case 'expiry': return p.expiration;
-    case 'dte': return mtr.dte ?? Infinity;
-    case 'qty': return p.qty;
-    case 'entry_time': return p.entry_time;
-    default: return 0;
+    case 'pl_dollar':
+      return mtr.plDollar ?? -Infinity;
+    case 'pl_pct':
+      return mtr.plPct ?? -Infinity;
+    case 'delta_entry':
+      return mtr.deltaEntry ?? -Infinity;
+    case 'session_delta':
+      return mtr.sessionDelta ?? -Infinity;
+    case 'ticker':
+      return p.ticker;
+    case 'strategy':
+      return row.strategy;
+    case 'expiry':
+      return p.expiration;
+    case 'dte':
+      return mtr.dte ?? Infinity;
+    case 'qty':
+      return p.qty;
+    case 'entry_time':
+      return p.entry_time;
+    default:
+      return 0;
   }
 }
 
@@ -76,7 +85,8 @@ export function applySort(rows: DerivedRow[], key: SortKey, dir: SortDir): Deriv
     const va = sortValue(a, key);
     const vb = sortValue(b, key);
     let cmp: number;
-    if (typeof va === 'string' || typeof vb === 'string') cmp = String(va).localeCompare(String(vb));
+    if (typeof va === 'string' || typeof vb === 'string')
+      cmp = String(va).localeCompare(String(vb));
     else cmp = va - vb;
     if (cmp === 0) cmp = a.position.id.localeCompare(b.position.id); // stable tiebreak
     return dir === 'asc' ? cmp : -cmp;
@@ -92,10 +102,14 @@ export function strategyLabel(s: Strategy): string {
 
 function groupKeyAndLabel(row: DerivedRow, axis: GroupAxis): { key: string; label: string } {
   switch (axis) {
-    case 'ticker': return { key: row.position.ticker, label: row.position.ticker };
-    case 'strategy': return { key: row.strategy, label: strategyLabel(row.strategy) };
-    case 'expiry': return { key: row.position.expiration, label: `exp ${row.position.expiration}` };
-    default: return { key: '__all__', label: 'All positions' };
+    case 'ticker':
+      return { key: row.position.ticker, label: row.position.ticker };
+    case 'strategy':
+      return { key: row.strategy, label: strategyLabel(row.strategy) };
+    case 'expiry':
+      return { key: row.position.expiration, label: `exp ${row.position.expiration}` };
+    default:
+      return { key: '__all__', label: 'All positions' };
   }
 }
 
@@ -110,7 +124,12 @@ export function applyGroup(rows: DerivedRow[], axis: GroupAxis): DerivedGroup[] 
     g.rows.push(row);
     map.set(key, g);
   }
-  return [...map.entries()].map(([key, g]) => ({ key, label: g.label, rows: g.rows, ...subtotalOf(g.rows) }));
+  return [...map.entries()].map(([key, g]) => ({
+    key,
+    label: g.label,
+    rows: g.rows,
+    ...subtotalOf(g.rows),
+  }));
 }
 
 /** Subtotal = sum of available member $ P/L; unavailable members are excluded + counted, not zeroed. */
@@ -130,7 +149,12 @@ export function deriveGroups(
   rows: DerivedRow[],
   opts: { filter: FilterState; sortKey: SortKey; sortDir: SortDir; group: GroupAxis },
 ): DerivedGroup[] {
-  const filteredIds = new Set(applyFilter(rows.map((r) => r.position), opts.filter).map((p) => p.id));
+  const filteredIds = new Set(
+    applyFilter(
+      rows.map((r) => r.position),
+      opts.filter,
+    ).map((p) => p.id),
+  );
   const filtered = rows.filter((r) => filteredIds.has(r.position.id));
   const sorted = applySort(filtered, opts.sortKey, opts.sortDir);
   return applyGroup(sorted, opts.group);
@@ -141,7 +165,12 @@ export function deriveRows(
   rows: DerivedRow[],
   opts: { filter: FilterState; sortKey: SortKey; sortDir: SortDir },
 ): DerivedRow[] {
-  const filteredIds = new Set(applyFilter(rows.map((r) => r.position), opts.filter).map((p) => p.id));
+  const filteredIds = new Set(
+    applyFilter(
+      rows.map((r) => r.position),
+      opts.filter,
+    ).map((p) => p.id),
+  );
   const filtered = rows.filter((r) => filteredIds.has(r.position.id));
   return applySort(filtered, opts.sortKey, opts.sortDir);
 }

@@ -4,14 +4,14 @@
  * + helper), T-G2 (no crash from absent creds; the credentials path still works), and T-G3 (config-only
  * flip false→true present-disabled → present-enabled with no rebuild).
  */
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
-import { GoogleButton } from './GoogleButton';
 import { AuthDialog } from './AuthDialog';
 import { AUTH_COPY } from './copy';
+import { GoogleButton } from './GoogleButton';
 import { installAuthBackend, uninstallAuthBackend, type AuthBackend } from './testBackend';
 
 /** Mounts the dialog (with the Google control) + a button to re-read who-am-I (config flip). */
@@ -20,16 +20,29 @@ function Harness() {
   const [open] = useState(true);
   return (
     <>
-      <button onClick={() => auth.refresh()} data-testid="refresh-session">refresh</button>
+      <button onClick={() => auth.refresh()} data-testid="refresh-session">
+        refresh
+      </button>
       <span data-testid="google-flag">{String(auth.googleAvailable)}</span>
-      <AuthDialog open={open} mode="login" onClose={() => undefined} onModeChange={() => undefined} />
+      <AuthDialog
+        open={open}
+        mode="login"
+        onClose={() => undefined}
+        onModeChange={() => undefined}
+      />
     </>
   );
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); });
+beforeEach(() => {
+  localStorage.clear();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+});
 
 describe('GoogleButton in isolation', () => {
   it('T-G1: unavailable ⇒ present, disabled, with the helper copy', () => {
@@ -51,16 +64,29 @@ describe('GoogleButton in isolation', () => {
 
 describe('Google control driven by who-am-I', () => {
   it('T-G1: google_available=false ⇒ disabled in the form', async () => {
-    backend = installAuthBackend({ session: { authenticated: false, user: null, google_available: false, settings: null } });
-    render(<AuthProvider><Harness /></AuthProvider>);
+    backend = installAuthBackend({
+      session: { authenticated: false, user: null, google_available: false, settings: null },
+    });
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
     await waitFor(() => expect(screen.getByTestId('google-flag')).toHaveTextContent('false'));
     expect(screen.getByTestId('google-button')).toBeDisabled();
   });
 
   it('T-G2: absent creds cause no crash and the credentials path still works', async () => {
-    backend = installAuthBackend({ session: { authenticated: false, user: null, google_available: false, settings: null }, login: 'ok' });
+    backend = installAuthBackend({
+      session: { authenticated: false, user: null, google_available: false, settings: null },
+      login: 'ok',
+    });
     const user = userEvent.setup();
-    render(<AuthProvider><Harness /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
     await waitFor(() => expect(screen.getByTestId('google-button')).toBeDisabled());
     // The form renders fine and the email/password path is fully usable.
     await user.type(screen.getByTestId('auth-email'), 'a@user.com');
@@ -70,9 +96,15 @@ describe('Google control driven by who-am-I', () => {
   });
 
   it('T-G3: flip false→true at the boundary ⇒ control becomes enabled with no rebuild', async () => {
-    backend = installAuthBackend({ session: { authenticated: false, user: null, google_available: false, settings: null } });
+    backend = installAuthBackend({
+      session: { authenticated: false, user: null, google_available: false, settings: null },
+    });
     const user = userEvent.setup();
-    render(<AuthProvider><Harness /></AuthProvider>);
+    render(
+      <AuthProvider>
+        <Harness />
+      </AuthProvider>,
+    );
     await waitFor(() => expect(screen.getByTestId('google-button')).toBeDisabled());
     // Config supplies the creds; the next who-am-I read flips the flag.
     backend.setGoogle(true);

@@ -5,14 +5,38 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  fmtUsdCompact, fmtDexM, netDexTip, humanOpex, dayCount,
+  dayCount,
+  fmt1,
+  fmt2,
+  fmtAtrUsd,
+  fmtDexM,
+  fmtSigned2,
+  fmtUsdCompact,
+  humanOpex,
   // ai-context-pack (Market context) formatters + maps
-  humanSessionDate, fmt2, fmt1, fmtSigned2, fmtAtrUsd, mcComLine,
-  mcTrendLine, mcStrengthLine, mcMomentumLine, mcConcentrationLine, mcBalanceLine,
-  mcLocationLine, mcCompositionLine, mcAtrLine, mcTiBasis, mcShapeBasis, mcAtrBasis,
-  MC_FLOW_BASIS, mcDisplay,
-  MC_DIRECTION_DISPLAY, MC_STRENGTH_DISPLAY, MC_MOMENTUM_DISPLAY,
-  MC_CONCENTRATION_DISPLAY, MC_BALANCE_DISPLAY, MC_LOCATION_DISPLAY, MC_COMPOSITION_DISPLAY,
+  humanSessionDate,
+  MC_BALANCE_DISPLAY,
+  MC_COMPOSITION_DISPLAY,
+  MC_CONCENTRATION_DISPLAY,
+  MC_DIRECTION_DISPLAY,
+  MC_FLOW_BASIS,
+  MC_LOCATION_DISPLAY,
+  MC_MOMENTUM_DISPLAY,
+  MC_STRENGTH_DISPLAY,
+  mcAtrBasis,
+  mcAtrLine,
+  mcBalanceLine,
+  mcComLine,
+  mcCompositionLine,
+  mcConcentrationLine,
+  mcDisplay,
+  mcLocationLine,
+  mcMomentumLine,
+  mcShapeBasis,
+  mcStrengthLine,
+  mcTiBasis,
+  mcTrendLine,
+  netDexTip,
 } from './copy';
 
 describe('fmtUsdCompact (compact big-dollar, sign-first)', () => {
@@ -131,23 +155,31 @@ describe('Market context formatters (ai-context-pack §5.3)', () => {
   });
 
   it('scalar-line builders render the pinned §5.3 forms', () => {
-    expect(mcTrendLine({ close: 178.4, ema20: 176.21, ema50: 171.83 })).toBe('close 178.40 · EMA20 176.21 · EMA50 171.83');
+    expect(mcTrendLine({ close: 178.4, ema20: 176.21, ema50: 171.83 })).toBe(
+      'close 178.40 · EMA20 176.21 · EMA50 171.83',
+    );
     expect(mcStrengthLine({ adx: 28.4 })).toBe('ADX(14) 28.4');
     expect(mcMomentumLine({ rsi: 51.2 })).toBe('RSI(14) 51.2');
     expect(mcConcentrationLine(0.41)).toBe('HHI 0.41');
     expect(mcBalanceLine(0.34)).toBe('+0.34');
     expect(mcLocationLine({ distribution_shift: 0.42 })).toBe('shift 0.42');
-    expect(mcCompositionLine({ volume_pcr: 0.92, oi_pcr: 0.88, tilt_ratio: 1.05 })).toBe('vol PCR 0.92 · OI PCR 0.88 · tilt 1.05');
+    expect(mcCompositionLine({ volume_pcr: 0.92, oi_pcr: 0.88, tilt_ratio: 1.05 })).toBe(
+      'vol PCR 0.92 · OI PCR 0.88 · tilt 1.05',
+    );
     expect(mcAtrLine({ value: 4.12, pct_of_close: 2.31 })).toBe('$4.12 · 2.3%');
   });
 
   it('basis-line builders render the pinned §5.3 forms (flow carries the unsigned/no-side phrase verbatim)', () => {
-    expect(mcTiBasis('2026-07-03')).toBe('As of session Fri Jul 3 · daily bars · EMA 20/50 · ADX(14) · RSI(14)');
+    expect(mcTiBasis('2026-07-03')).toBe(
+      'As of session Fri Jul 3 · daily bars · EMA 20/50 · ADX(14) · RSI(14)',
+    );
     expect(mcShapeBasis(178.4, 23)).toBe('At spot $178.40 · 23 strikes in the selected window');
     expect(MC_FLOW_BASIS).toBe(
       "Today's session cumulative option volume, unsigned (no buy/sell side) · vs standing open interest · full chain · captured at the last data load",
     );
-    expect(mcAtrBasis('2026-07-03', 178.4)).toBe('As of session Fri Jul 3 · vs close $178.40 · 5/14/30 trading bars');
+    expect(mcAtrBasis('2026-07-03', 178.4)).toBe(
+      'As of session Fri Jul 3 · vs close $178.40 · 5/14/30 trading bars',
+    );
   });
 
   it('mcDisplay — closed 1:1 lookup: every pinned enum maps; an unknown value maps to null (unavailable), never a pass-through', () => {

@@ -22,15 +22,19 @@ export function extractPasswordFloor(message: string | undefined): number | null
 
 /** Map a 422 validation message to the field-level copy. Heuristic: a message mentioning the
  *  password/characters maps to the password field; otherwise the email field. */
-export function validationFieldCopy(
-  message: string | undefined,
-): { field: 'email' | 'password'; copy: string } {
+export function validationFieldCopy(message: string | undefined): {
+  field: 'email' | 'password';
+  copy: string;
+} {
   const lower = (message ?? '').toLowerCase();
   if (lower.includes('password') || lower.includes('character')) {
     const floor = extractPasswordFloor(message);
     return {
       field: 'password',
-      copy: floor != null ? AUTH_COPY.signup.passwordFloor(floor) : AUTH_COPY.signup.passwordFloorGeneric,
+      copy:
+        floor != null
+          ? AUTH_COPY.signup.passwordFloor(floor)
+          : AUTH_COPY.signup.passwordFloorGeneric,
     };
   }
   return { field: 'email', copy: AUTH_COPY.signup.invalidEmail };

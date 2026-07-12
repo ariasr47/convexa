@@ -12,11 +12,18 @@
  *   panel state; it is never thrown to the page. A status fetch fault degrades the action to inert.
  * - server-side key only — the request body carries only identifiers + the gating context.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  TickerBundle, RecResponse, RecStatus, RecGate, RecCap, RecScenarioInfo, requestRecommendation,
-  fetchRecStatus, AuthError,
+  AuthError,
+  fetchRecStatus,
+  RecCap,
+  RecGate,
+  RecResponse,
+  RecScenarioInfo,
+  RecStatus,
+  requestRecommendation,
+  TickerBundle,
 } from '@org/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface RecRequestOpts {
   override?: boolean;
@@ -35,7 +42,7 @@ export interface ScenarioAdvert {
 }
 
 interface AiRecOpts {
-  personaId: string | null;   // the per-query read persona (defaults to the active persona)
+  personaId: string | null; // the per-query read persona (defaults to the active persona)
   personaName: string;
   dteMin: number | null;
   dteMax: number | null;
@@ -81,7 +88,10 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         // backend) degrades to disabled — zero scenario surface (AC-34), never a throw.
         setScenarios(
           s.scenarios && typeof s.scenarios.enabled === 'boolean'
-            ? { enabled: s.scenarios.enabled, catalog: Array.isArray(s.scenarios.catalog) ? s.scenarios.catalog : [] }
+            ? {
+                enabled: s.scenarios.enabled,
+                catalog: Array.isArray(s.scenarios.catalog) ? s.scenarios.catalog : [],
+              }
             : { enabled: false, catalog: [] },
         );
         applyGating(s.gate, s.cap);
@@ -94,7 +104,9 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         setScenarios({ enabled: false, catalog: [] });
         setStatusReady(true);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [ticker, applyGating]);
 
   // Read status on mount + ticker change. Reset the pinned rec when the ticker changes.
@@ -113,53 +125,56 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   }, [cooldownRemaining]);
 
   // ---- Request a rec -------------------------------------------------------------------------
-  const request = useCallback(async (reqOpts: RecRequestOpts = {}) => {
-    if (loading || !bundle) return;
-    const o = optsRef.current;
-    const personaId = reqOpts.personaId !== undefined ? reqOpts.personaId : o.personaId;
-    const personaName = reqOpts.personaName ?? o.personaName;
-    lastReq.current = { ...reqOpts, personaId, personaName };
-    setLoading(true);
-    try {
-      const res = await requestRecommendation(ticker, {
-        persona_id: personaId,
-        snapshot_fingerprint: bundle.ai_eval.state_fingerprint,
-        dte_min: o.dteMin,
-        dte_max: o.dteMax,
-        dark_pool: o.darkPool,
-        override: reqOpts.override ?? false,
-        // Additive scenario selector (INTERFACE §1.1): the field is included ONLY when the
-        // operator actually selected a scenario — absent otherwise (the shipped path stays
-        // byte-for-byte, AC-45).
-        ...(reqOpts.scenarioId ? { scenario_id: reqOpts.scenarioId } : {}),
-      });
-      setRec(res);
-      applyGating(res.gate, res.cap);
-    } catch (err) {
-      // user-accounts (D6f): an AUTH-class outcome (403 auth_required / 503 auth_unavailable) is the
-      // OUTERMOST gate — rethrow so the caller's auth gate shows the sign-in / "couldn't reach" prompt
-      // and NEVER ai-rec's `unavailable`/cooldown/cap. Reset loading first so the panel re-renders the
-      // gate region rather than the spinner.
-      if (err instanceof AuthError) {
+  const request = useCallback(
+    async (reqOpts: RecRequestOpts = {}) => {
+      if (loading || !bundle) return;
+      const o = optsRef.current;
+      const personaId = reqOpts.personaId !== undefined ? reqOpts.personaId : o.personaId;
+      const personaName = reqOpts.personaName ?? o.personaName;
+      lastReq.current = { ...reqOpts, personaId, personaName };
+      setLoading(true);
+      try {
+        const res = await requestRecommendation(ticker, {
+          persona_id: personaId,
+          snapshot_fingerprint: bundle.ai_eval.state_fingerprint,
+          dte_min: o.dteMin,
+          dte_max: o.dteMax,
+          dark_pool: o.darkPool,
+          override: reqOpts.override ?? false,
+          // Additive scenario selector (INTERFACE §1.1): the field is included ONLY when the
+          // operator actually selected a scenario — absent otherwise (the shipped path stays
+          // byte-for-byte, AC-45).
+          ...(reqOpts.scenarioId ? { scenario_id: reqOpts.scenarioId } : {}),
+        });
+        setRec(res);
+        applyGating(res.gate, res.cap);
+      } catch (err) {
+        // user-accounts (D6f): an AUTH-class outcome (403 auth_required / 503 auth_unavailable) is the
+        // OUTERMOST gate — rethrow so the caller's auth gate shows the sign-in / "couldn't reach" prompt
+        // and NEVER ai-rec's `unavailable`/cooldown/cap. Reset loading first so the panel re-renders the
+        // gate region rather than the spinner.
+        if (err instanceof AuthError) {
+          setLoading(false);
+          throw err;
+        }
+        // Transport fault → synthesize the `unavailable` artifact (caught, never thrown to the page).
+        setRec({
+          status: 'unavailable',
+          persona: { id: personaId, name: personaName },
+          as_of: null,
+          pinned_fingerprint: '',
+          stale_born: false,
+          strategy: null,
+          unavailable_reason: 'transport',
+          gate,
+          cap,
+        });
+      } finally {
         setLoading(false);
-        throw err;
       }
-      // Transport fault → synthesize the `unavailable` artifact (caught, never thrown to the page).
-      setRec({
-        status: 'unavailable',
-        persona: { id: personaId, name: personaName },
-        as_of: null,
-        pinned_fingerprint: '',
-        stale_born: false,
-        strategy: null,
-        unavailable_reason: 'transport',
-        gate,
-        cap,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, bundle, ticker, gate, cap, applyGating]);
+    },
+    [loading, bundle, ticker, gate, cap, applyGating],
+  );
 
   const retry = useCallback(() => request(lastReq.current), [request]);
   const dismiss = useCallback(() => setRec(null), []);
@@ -176,19 +191,32 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   // Effective gate state: the local countdown is the cooldown source of truth; otherwise the
   // server's reported gate (no_fresh_edge / available). A server cooling_down with a now-elapsed
   // local countdown reads as available again.
-  const effectiveGateState = cooldownRemaining > 0
-    ? 'cooling_down'
-    : gate.state === 'cooling_down' ? 'available' : gate.state;
+  const effectiveGateState =
+    cooldownRemaining > 0
+      ? 'cooling_down'
+      : gate.state === 'cooling_down'
+        ? 'available'
+        : gate.state;
 
   return {
     // gating / availability
-    inAppEnabled, gate, cap, statusReady, cooldownRemaining, effectiveGateState,
+    inAppEnabled,
+    gate,
+    cap,
+    statusReady,
+    cooldownRemaining,
+    effectiveGateState,
     // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
     scenarios,
     // the pinned artifact
-    rec, loading, stale,
+    rec,
+    loading,
+    stale,
     // actions
-    request, retry, dismiss, refreshStatus,
+    request,
+    retry,
+    dismiss,
+    refreshStatus,
   };
 }
 

@@ -9,17 +9,17 @@
  * Routing is exercised through the real `App` router so CTA destinations are asserted end-to-end
  * (a click lands on the in-shell route), matching the contract's "each CTA navigates to its route".
  */
-import { render, screen, within, cleanup } from '@testing-library/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 
 import App from '../app';
-import { Landing } from './Landing';
-import { theme } from '../theme';
 import { __resetMemory } from '../positions/store';
+import { theme } from '../theme';
+import { Landing } from './Landing';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 let openedEventSources = 0;
@@ -31,15 +31,22 @@ beforeEach(() => {
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
-    constructor() { openedEventSources += 1; }
-    close() { /* no-op */ }
+    constructor() {
+      openedEventSources += 1;
+    }
+    close() {
+      /* no-op */
+    }
   }
   vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
 
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     const json = (b: unknown) =>
-      new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      new Response(JSON.stringify(b), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
     // The who-am-I session read is allowed everywhere (non-blocking auth concern); the trader/bundle
     // paths must NOT be hit from Landing. Anything else is an unexpected call.
     if (url.includes('/api/auth/session')) {
@@ -129,9 +136,15 @@ describe('Landing · hero', () => {
 describe('Landing · value cards', () => {
   it('renders the 3 cards with their titles', () => {
     renderLanding();
-    expect(within(screen.getByTestId('vp-ticker')).getByText('Ticker / GEX analysis')).toBeInTheDocument();
-    expect(within(screen.getByTestId('vp-positions')).getByText('Simulated positions portfolio')).toBeInTheDocument();
-    expect(within(screen.getByTestId('vp-airec')).getByText('AI recommendations')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('vp-ticker')).getByText('Ticker / GEX analysis'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('vp-positions')).getByText('Simulated positions portfolio'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('vp-airec')).getByText('AI recommendations'),
+    ).toBeInTheDocument();
   });
 
   it('each card CTA points at its route (/ticker, /positions, /ticker)', () => {
@@ -236,38 +249,98 @@ describe('Landing · CTA navigation (end-to-end)', () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input);
       const json = (b: unknown) =>
-        new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        new Response(JSON.stringify(b), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       if (url.includes('/api/auth/session')) {
         return json({ authenticated: false, user: null, google_available: false, settings: null });
       }
-      if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+      if (url.includes('/api/personas'))
+        return json([{ id: 'default', name: 'Default (no persona)' }]);
       // A minimal-but-complete bundle so the Ticker viewer renders without throwing.
       if (url.includes('/api/ticker/')) {
         return json({
           market_state: {
-            ticker: 'TSLA', price: 250.5, gex_spot: 250, timestamp: 1_700_000_000,
-            timestamp_iso: '2026-06-23T14:30:00Z', call_wall: 260, put_wall: 240, peak_gex_strike: 255,
-            gamma_flip: 248, max_pain: 250, max_pain_expiration: '2026-06-26', net_gex: 1.2e9,
-            call_gex: 2.0e9, put_gex: -0.8e9, total_gex: 1.2e9, net_dex: 5.0e8, call_dex: 6.0e8,
-            put_dex: -1.0e8, net_vanna: null, net_charm: null, net_volga: null, vwap: 249,
-            vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-            dte_min: null, dte_max: null, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-            put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-            iv_skew: null, term_structure: null, dealer_flow_projection: null,
+            ticker: 'TSLA',
+            price: 250.5,
+            gex_spot: 250,
+            timestamp: 1_700_000_000,
+            timestamp_iso: '2026-06-23T14:30:00Z',
+            call_wall: 260,
+            put_wall: 240,
+            peak_gex_strike: 255,
+            gamma_flip: 248,
+            max_pain: 250,
+            max_pain_expiration: '2026-06-26',
+            net_gex: 1.2e9,
+            call_gex: 2.0e9,
+            put_gex: -0.8e9,
+            total_gex: 1.2e9,
+            net_dex: 5.0e8,
+            call_dex: 6.0e8,
+            put_dex: -1.0e8,
+            net_vanna: null,
+            net_charm: null,
+            net_volga: null,
+            vwap: 249,
+            vwap_upper_2: null,
+            vwap_upper_3: null,
+            vwap_lower_2: null,
+            vwap_lower_3: null,
+            dte_min: null,
+            dte_max: null,
+            atm_iv: 45,
+            hv_30d: 40,
+            iv_hv_ratio: 1.12,
+            net_flow: null,
+            put_call_ratio: 0.8,
+            chain_vol_oi_ratio: 0.5,
+            total_volume: 100_000,
+            vol_oi_unusual_threshold: 1,
+            iv_skew: null,
+            term_structure: null,
+            dealer_flow_projection: null,
           },
           signals: {
-            ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral',
-            distances: {}, setups: [], opportunity_score: 42, opportunity_tier: 'watch',
+            ticker: 'TSLA',
+            regime: 'positive_gamma',
+            regime_note: null,
+            vol_regime: 'neutral',
+            distances: {},
+            setups: [],
+            opportunity_score: 42,
+            opportunity_tier: 'watch',
             prime_prompt_eligible: false,
           },
           strike_profile: { ticker: 'TSLA', spot: 250.5, strikes: [] },
           expirations: [{ date: '2026-06-26', dte: 3 }],
-          ai_eval: { ready: false, reasons: [], changed: false, state_fingerprint: 'x', score_threshold: 60 },
-          meta: {
-            served_at: '2026-06-23T14:30:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
-            freshness: { snapshot_iso: '2026-06-23T14:30:00Z', data_age_seconds: 30, stale: false, stale_after_seconds: 600 },
+          ai_eval: {
+            ready: false,
+            reasons: [],
+            changed: false,
+            state_fingerprint: 'x',
+            score_threshold: 60,
           },
-          off_exchange: { ratio_pct: 38, offex_shares: 38_000, total_shares: 100_000, levels: [], blocks: [], block_min_shares: 5000, note: '' },
+          meta: {
+            served_at: '2026-06-23T14:30:00Z',
+            cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+            freshness: {
+              snapshot_iso: '2026-06-23T14:30:00Z',
+              data_age_seconds: 30,
+              stale: false,
+              stale_after_seconds: 600,
+            },
+          },
+          off_exchange: {
+            ratio_pct: 38,
+            offex_shares: 38_000,
+            total_shares: 100_000,
+            levels: [],
+            blocks: [],
+            block_min_shares: 5000,
+            note: '',
+          },
           position_eval: null,
         });
       }

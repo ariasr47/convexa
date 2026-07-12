@@ -4,7 +4,7 @@
  * guarantees: new-wins, promote-forward-once (idempotent), never-delete-old (rollback-safe),
  * never-throw (degrade to null). These guarantees back every store's AC-A* migration behavior.
  */
-import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveDurable } from './resolveDurable';
 
 const NEW = 'convexa.thing.v1';
@@ -46,19 +46,23 @@ describe('resolveDurable', () => {
     const setSpy = vi.spyOn(Storage.prototype, 'setItem');
     const getSpy = vi.spyOn(Storage.prototype, 'getItem');
     expect(resolveDurable(NEW, OLD)).toBe('LEGACY');
-    expect(setSpy).not.toHaveBeenCalled();        // no re-write
+    expect(setSpy).not.toHaveBeenCalled(); // no re-write
     expect(getSpy.mock.calls.some(([k]) => k === OLD)).toBe(false); // never touched the old key
   });
 
   it('never throws when getItem throws (storage unavailable) — returns null', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
     expect(() => resolveDurable(NEW, OLD)).not.toThrow();
     expect(resolveDurable(NEW, OLD)).toBeNull();
   });
 
   it('promote-write failure is swallowed: still returns the value, old blob untouched', () => {
     localStorage.setItem(OLD, 'LEGACY');
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
     expect(() => resolveDurable(NEW, OLD)).not.toThrow();
     expect(resolveDurable(NEW, OLD)).toBe('LEGACY'); // value still surfaced in-memory
     expect(localStorage.getItem(OLD)).toBe('LEGACY'); // old blob never wiped

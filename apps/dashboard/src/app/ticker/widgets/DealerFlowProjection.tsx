@@ -18,29 +18,29 @@
  *   - `theme-token-discipline` — token-only via MUI theme (`text.disabled`/`text.secondary`/`divider`,
  *     mono via tokens), zero hardcoded hex; dark/light parity comes from the shared `Widget`/tile chrome.
  */
-import { Box, Card, CardContent, Stack, Typography, Tooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type { DealerFlowProjection as Dfp } from '@org/api';
-import { Widget } from './Widget';
 import { typographyTokens } from '../../tokens';
 import {
+  CHARM_EMPTY,
+  CHARM_LABEL,
+  charmInfo,
+  dayCount,
+  DFP_HONESTY_FRAME,
+  DFP_INFO,
+  DFP_SUBTITLE,
+  DFP_TITLE,
+  DFP_WHOLE_EMPTY,
+  dfpFooterAssumptions,
   fmtSignedUsdCompact,
   humanOpex,
-  dayCount,
-  DFP_TITLE,
-  DFP_SUBTITLE,
-  DFP_INFO,
-  CHARM_LABEL,
-  CHARM_EMPTY,
-  charmInfo,
-  VANNA_LABEL,
   VANNA_EMPTY,
-  VANNA_NEGATION,
   VANNA_INFO,
-  dfpFooterAssumptions,
-  DFP_HONESTY_FRAME,
-  DFP_WHOLE_EMPTY,
+  VANNA_LABEL,
+  VANNA_NEGATION,
 } from './copy';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -64,7 +64,10 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
 function LimbLabel({ label, info }: { label: string; info: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 0.75 }}>
-      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
+      >
         {label}
       </Typography>
       <Tooltip title={info} arrow placement="top">
@@ -103,7 +106,11 @@ function CharmSection({ charm }: { charm: NonNullable<Dfp['charm']> }) {
       <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="dfp-charm-horizon">
         to {humanOpex(charm.opex_date)} ({dayCount(charm.horizon_days)})
       </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', fontFamily: MONO }} data-testid="dfp-charm-base">
+      <Typography
+        variant="body2"
+        sx={{ color: 'text.secondary', fontFamily: MONO }}
+        data-testid="dfp-charm-base"
+      >
         base {fmtSignedUsdCompact(charm.per_day_base)} / day
       </Typography>
     </LimbCard>
@@ -119,7 +126,11 @@ function VannaSection({ vanna }: { vanna: NonNullable<Dfp['vanna']> }) {
       <Typography variant="h6" sx={{ fontFamily: MONO }} data-testid="dfp-vanna-base">
         {fmtSignedUsdCompact(vanna.projected_delta)} on +1 IV pt
       </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', fontFamily: MONO }} data-testid="dfp-vanna-illus">
+      <Typography
+        variant="body2"
+        sx={{ color: 'text.secondary', fontFamily: MONO }}
+        data-testid="dfp-vanna-illus"
+      >
         {fmtSignedUsdCompact(vanna.illustrative_projected_delta)} on +5 IV pt (illus.)
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="dfp-vanna-negation">

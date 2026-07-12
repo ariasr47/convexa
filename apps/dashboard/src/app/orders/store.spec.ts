@@ -4,22 +4,39 @@
  * `convexa.orders.v1`, and the export shape (`{ orders, decisions }` joining the order chain).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import {
-  ORDERS_KEY, allOrders, putOrder, ordersFaulted, buildOrdersExport, exportFilename,
-  __resetOrdersMemory,
-} from './store';
-import { createOrder, applyOrderTransition } from './useOrders';
 import { __resetMemory as __resetPositionsMemory, allDecisions } from '../positions/store';
+import {
+  ORDERS_KEY,
+  __resetOrdersMemory,
+  allOrders,
+  buildOrdersExport,
+  exportFilename,
+  ordersFaulted,
+  putOrder,
+} from './store';
 import type { SimOrder } from './types';
+import { applyOrderTransition, createOrder } from './useOrders';
 
 const FUTURE = new Date(Date.now() + 5 * 86400000).toISOString();
 
 function makeOrder(id: string, over: Partial<SimOrder> = {}): SimOrder {
   return {
-    id, created_time: new Date().toISOString(), schema_version: 1,
-    ticker: 'TSLA', expiration: '2099-12-19', strike: 250, right: 'call', side: 'long', qty: 1,
-    trigger: null, limit_price: null, stop: null, target: null, expires_at: FUTURE,
-    provenance: { source: 'ai_rec' }, status: 'triggered',
+    id,
+    created_time: new Date().toISOString(),
+    schema_version: 1,
+    ticker: 'TSLA',
+    expiration: '2099-12-19',
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 1,
+    trigger: null,
+    limit_price: null,
+    stop: null,
+    target: null,
+    expires_at: FUTURE,
+    provenance: { source: 'ai_rec' },
+    status: 'triggered',
     ...over,
   };
 }
@@ -64,9 +81,17 @@ describe('convexa.orders.v1 — versioned key + guarded read', () => {
   it('createOrder refuses a faulted store with the honest reason (AC-29 confirm-side)', () => {
     localStorage.setItem(ORDERS_KEY, '{corrupt');
     const res = createOrder({
-      ticker: 'TSLA', expiration: '2099-12-19', strike: 250, right: 'call', qty: 1,
-      trigger: null, limit_price: null, stop: null, target: null,
-      expires_at: FUTURE, provenance: { source: 'ai_rec' },
+      ticker: 'TSLA',
+      expiration: '2099-12-19',
+      strike: 250,
+      right: 'call',
+      qty: 1,
+      trigger: null,
+      limit_price: null,
+      stop: null,
+      target: null,
+      expires_at: FUTURE,
+      provenance: { source: 'ai_rec' },
     });
     expect(res.ok).toBe(false);
     expect(res.reason).toBe('Orders unavailable');
@@ -74,9 +99,15 @@ describe('convexa.orders.v1 — versioned key + guarded read', () => {
   });
 
   it('a corrupt ORDERS store leaves the POSITIONS store untouched (isolation)', () => {
-    localStorage.setItem('convexa.positions.v2', JSON.stringify({
-      schema_version: 2, positions: {}, decisions: [], customization: undefined,
-    }));
+    localStorage.setItem(
+      'convexa.positions.v2',
+      JSON.stringify({
+        schema_version: 2,
+        positions: {},
+        decisions: [],
+        customization: undefined,
+      }),
+    );
     localStorage.setItem(ORDERS_KEY, '{corrupt');
     allOrders();
     expect(localStorage.getItem('convexa.positions.v2')).toContain('"schema_version":2');
@@ -93,14 +124,28 @@ describe('convexa.orders.v1 — versioned key + guarded read', () => {
 describe('export (UX §4.5 / AC-33)', () => {
   it('buildOrdersExport joins orders + the order-chain decision records (rec → order → position)', () => {
     const created = createOrder({
-      ticker: 'TSLA', expiration: '2099-12-19', strike: 250, right: 'call', qty: 1,
-      trigger: null, limit_price: null, stop: null, target: null,
+      ticker: 'TSLA',
+      expiration: '2099-12-19',
+      strike: 250,
+      right: 'call',
+      qty: 1,
+      trigger: null,
+      limit_price: null,
+      stop: null,
+      target: null,
       expires_at: FUTURE,
-      provenance: { source: 'ai_rec', rec_fingerprint: 'fp-A', trigger_source_text: 'break above 252' },
+      provenance: {
+        source: 'ai_rec',
+        rec_fingerprint: 'fp-A',
+        trigger_source_text: 'break above 252',
+      },
     });
     const id = created.order?.id as string;
     applyOrderTransition(id, 'triggered', {
-      to: 'filled', filled_time: new Date().toISOString(), fill_mark: 6.5, fill_basis: 'trigger_fill',
+      to: 'filled',
+      filled_time: new Date().toISOString(),
+      fill_mark: 6.5,
+      fill_basis: 'trigger_fill',
     });
     // Read the SAME append-only log the positions store owns.
     const payload = buildOrdersExport(allDecisions());

@@ -17,40 +17,94 @@
  *   - the sticky condensed bar reveals when the deck scrolls out and its price + connection FREEZE on an
  *     SSE drop (`[live-vs-static-isolation]`), never a stale "live"; reduced-motion → no transition.
  */
-import { render, screen, within, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import type { LiveUpdate, MarketState, Signals } from '@org/api';
-import { theme } from '../../theme';
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { usePersona } from '../../personas/usePersona';
 import { __resetMemory } from '../../positions/store';
+import { theme } from '../../theme';
 import { CommandDeck } from './CommandDeck';
 import { connectionChip } from './TickerHeader';
-import { usePersona } from '../../personas/usePersona';
 
 // ---- Fixtures --------------------------------------------------------------------------------
 function marketState(over: Partial<MarketState> = {}): MarketState {
   return {
-    ticker: 'TSLA', price: 415.99, gex_spot: 410, timestamp: 1, timestamp_iso: '2026-06-23T14:30:00Z',
-    call_wall: 430, put_wall: 400, peak_gex_strike: 420, gamma_flip: 408, max_pain: 415,
-    max_pain_expiration: '2026-06-26', net_gex: 1.2e9, call_gex: 2.0e9, put_gex: -0.8e9, total_gex: 1.2e9,
-    net_dex: 5.0e8, call_dex: 6.0e8, put_dex: -1.0e8, net_vanna: null, net_charm: null, net_volga: null,
-    vwap: 414, vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-    dte_min: null, dte_max: null, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-    put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-    iv_skew: null, term_structure: null, dealer_flow_projection: null, ...over,
+    ticker: 'TSLA',
+    price: 415.99,
+    gex_spot: 410,
+    timestamp: 1,
+    timestamp_iso: '2026-06-23T14:30:00Z',
+    call_wall: 430,
+    put_wall: 400,
+    peak_gex_strike: 420,
+    gamma_flip: 408,
+    max_pain: 415,
+    max_pain_expiration: '2026-06-26',
+    net_gex: 1.2e9,
+    call_gex: 2.0e9,
+    put_gex: -0.8e9,
+    total_gex: 1.2e9,
+    net_dex: 5.0e8,
+    call_dex: 6.0e8,
+    put_dex: -1.0e8,
+    net_vanna: null,
+    net_charm: null,
+    net_volga: null,
+    vwap: 414,
+    vwap_upper_2: null,
+    vwap_upper_3: null,
+    vwap_lower_2: null,
+    vwap_lower_3: null,
+    dte_min: null,
+    dte_max: null,
+    atm_iv: 45,
+    hv_30d: 40,
+    iv_hv_ratio: 1.12,
+    net_flow: null,
+    put_call_ratio: 0.8,
+    chain_vol_oi_ratio: 0.5,
+    total_volume: 100_000,
+    vol_oi_unusual_threshold: 1,
+    iv_skew: null,
+    term_structure: null,
+    dealer_flow_projection: null,
+    ...over,
   } as MarketState;
 }
 const signals: Signals = {
-  ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-  setups: [], opportunity_score: 73, opportunity_tier: 'actionable', prime_prompt_eligible: false,
+  ticker: 'TSLA',
+  regime: 'positive_gamma',
+  regime_note: null,
+  vol_regime: 'neutral',
+  distances: {},
+  setups: [],
+  opportunity_score: 73,
+  opportunity_tier: 'actionable',
+  prime_prompt_eligible: false,
 } as Signals;
 
 function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return {
-    ticker: 'TSLA', mid: 416.5, bid: null, ask: null, spread: 0.05, net_flow: 1200, buy_vol: 0, sell_vol: 0,
-    flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime',
-    ts: Date.now(), gamma_flip: 408, last_trade: 416.13, ...over,
+    ticker: 'TSLA',
+    mid: 416.5,
+    bid: null,
+    ask: null,
+    spread: 0.05,
+    net_flow: 1200,
+    buy_vol: 0,
+    sell_vol: 0,
+    flow_window_s: 300,
+    spot_ts: 1,
+    live: true,
+    tick_age_s: 1,
+    market_session: 'regular',
+    feed: 'realtime',
+    ts: Date.now(),
+    gamma_flip: 408,
+    last_trade: 416.13,
+    ...over,
   } as LiveUpdate;
 }
 
@@ -99,15 +153,25 @@ function renderDeck(props: Partial<DeckProps> = {}) {
 let ioCallback: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
 function installIntersectionObserver() {
   class MockIO {
-    constructor(cb: (entries: { isIntersecting: boolean }[]) => void) { ioCallback = cb; }
-    observe() { return undefined; }
-    disconnect() { return undefined; }
-    unobserve() { return undefined; }
+    constructor(cb: (entries: { isIntersecting: boolean }[]) => void) {
+      ioCallback = cb;
+    }
+    observe() {
+      return undefined;
+    }
+    disconnect() {
+      return undefined;
+    }
+    unobserve() {
+      return undefined;
+    }
   }
   vi.stubGlobal('IntersectionObserver', MockIO as unknown as typeof IntersectionObserver);
 }
 function scrollDeckOut() {
-  act(() => { ioCallback?.([{ isIntersecting: false }]); }); // sentinel left viewport → condensed
+  act(() => {
+    ioCallback?.([{ isIntersecting: false }]);
+  }); // sentinel left viewport → condensed
 }
 
 beforeEach(() => {
@@ -135,7 +199,8 @@ describe('CommandDeck — one cohesive chrome panel', () => {
 
   it('folds the last-trade readout and the relocated freshness into one meta line', () => {
     renderDeck({
-      live: liveUpdate({ live: true, last_trade: 416.13 }), isLive: true,
+      live: liveUpdate({ live: true, last_trade: 416.13 }),
+      isLive: true,
       freshness: { snapshotIso: null, dataAgeSeconds: 30, refreshing: false }, // fallback → deterministic
     });
     const meta = screen.getByTestId('deck-meta');
@@ -145,7 +210,9 @@ describe('CommandDeck — one cohesive chrome panel', () => {
 
   it('shows the muted levels sub-line beside the anchor, all-expirations by default', () => {
     renderDeck();
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('(levels @ $410.00 · all expirations)');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      '(levels @ $410.00 · all expirations)',
+    );
   });
 });
 
@@ -217,14 +284,20 @@ describe('CommandDeck — control strip (behaviors moved from the old toolbar)',
 
   it('shows the refresh spinner when loading', () => {
     renderDeck({ loading: true });
-    expect(within(screen.getByTestId('ticker-toolbar')).getByRole('progressbar')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('ticker-toolbar')).getByRole('progressbar'),
+    ).toBeInTheDocument();
   });
 });
 
 // ============================================================================================
 describe('connectionChip — the single stream-driven connection chip (unit)', () => {
   it('live session → info tone, ● dot, pulses (motion allowed)', () => {
-    const c = connectionChip(liveUpdate({ live: true, market_session: 'regular', mid: 416.5 }), false, false);
+    const c = connectionChip(
+      liveUpdate({ live: true, market_session: 'regular', mid: 416.5 }),
+      false,
+      false,
+    );
     expect(c?.tone).toBe('info');
     expect(c?.dot).toBe('●');
     expect(c?.pulse).toBe(true);
@@ -237,7 +310,11 @@ describe('connectionChip — the single stream-driven connection chip (unit)', (
   });
 
   it('no live ticks in a covered session → warning tone, ○ dot, no pulse', () => {
-    const c = connectionChip(liveUpdate({ live: false, market_session: 'regular', mid: 416.5 }), false, false);
+    const c = connectionChip(
+      liveUpdate({ live: false, market_session: 'regular', mid: 416.5 }),
+      false,
+      false,
+    );
     expect(c?.tone).toBe('warning');
     expect(c?.dot).toBe('○');
     expect(c?.pulse).toBe(false);
@@ -275,7 +352,9 @@ describe('CommandDeck — sticky condensed bar (scroll-out + live isolation)', (
     // Offline: the transport dropped. isLive is false; the sticky bar must show the STATIC price
     // (m.price) and the offline chip, not a stale live mid or a "live" chip.
     renderDeck({
-      live: liveUpdate({ live: true, mid: 416.5 }), isLive: false, streamOffline: true,
+      live: liveUpdate({ live: true, mid: 416.5 }),
+      isLive: false,
+      streamOffline: true,
     });
     scrollDeckOut();
     const sticky = screen.getByTestId('deck-sticky');
@@ -286,7 +365,11 @@ describe('CommandDeck — sticky condensed bar (scroll-out + live isolation)', (
 
   it('reduced-motion → the condensed reveal uses no transition', () => {
     (window as unknown as { matchMedia?: unknown }).matchMedia = vi.fn().mockReturnValue({
-      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(),
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
     });
     installIntersectionObserver();
     renderDeck({ live: liveUpdate({ live: true }), isLive: true });

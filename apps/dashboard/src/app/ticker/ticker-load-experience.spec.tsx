@@ -12,55 +12,136 @@
  * AC coverage (C): Skel-1, Skel-3, Skel-4, Skel-5, State-1, State-2, State-3, Isolation-2,
  *   LastTrade-1, LastTrade-2, LastTrade-3, LastTrade-4, LastTrade-5, Stale-1, Stale-2, Invariant-3.
  */
-import { render, screen, act, within } from '@testing-library/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import type { LiveUpdate, TickerBundle } from '@org/api';
+import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import type { TickerBundle, LiveUpdate } from '@org/api';
 
 import App from '../app';
-import { theme } from '../theme';
 import { __resetMemory } from '../positions/store';
+import { theme } from '../theme';
 
 // ---- Mock-boundary fixtures ----------------------------------------------------------------
-function makeBundle(over: Partial<TickerBundle['market_state']> = {}, sigOver: Partial<TickerBundle['signals']> = {}): TickerBundle {
+function makeBundle(
+  over: Partial<TickerBundle['market_state']> = {},
+  sigOver: Partial<TickerBundle['signals']> = {},
+): TickerBundle {
   return {
     market_state: {
-      ticker: 'TSLA', price: 250.5, gex_spot: 250, timestamp: 1, timestamp_iso: '2026-06-23T14:30:00Z',
-      call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-      max_pain_expiration: '2026-06-26', net_gex: 1.2e9, call_gex: 2.0e9, put_gex: -0.8e9, total_gex: 1.2e9,
-      net_dex: 5.0e8, call_dex: 6.0e8, put_dex: -1.0e8, net_vanna: null, net_charm: null, net_volga: null,
-      vwap: 249, vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-      dte_min: null, dte_max: null, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-      put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-      iv_skew: null, term_structure: null, dealer_flow_projection: null, ...over,
+      ticker: 'TSLA',
+      price: 250.5,
+      gex_spot: 250,
+      timestamp: 1,
+      timestamp_iso: '2026-06-23T14:30:00Z',
+      call_wall: 260,
+      put_wall: 240,
+      peak_gex_strike: 255,
+      gamma_flip: 248,
+      max_pain: 250,
+      max_pain_expiration: '2026-06-26',
+      net_gex: 1.2e9,
+      call_gex: 2.0e9,
+      put_gex: -0.8e9,
+      total_gex: 1.2e9,
+      net_dex: 5.0e8,
+      call_dex: 6.0e8,
+      put_dex: -1.0e8,
+      net_vanna: null,
+      net_charm: null,
+      net_volga: null,
+      vwap: 249,
+      vwap_upper_2: null,
+      vwap_upper_3: null,
+      vwap_lower_2: null,
+      vwap_lower_3: null,
+      dte_min: null,
+      dte_max: null,
+      atm_iv: 45,
+      hv_30d: 40,
+      iv_hv_ratio: 1.12,
+      net_flow: null,
+      put_call_ratio: 0.8,
+      chain_vol_oi_ratio: 0.5,
+      total_volume: 100_000,
+      vol_oi_unusual_threshold: 1,
+      iv_skew: null,
+      term_structure: null,
+      dealer_flow_projection: null,
+      ...over,
     },
     signals: {
-      ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 73, opportunity_tier: 'actionable', prime_prompt_eligible: false, ...sigOver,
+      ticker: 'TSLA',
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 73,
+      opportunity_tier: 'actionable',
+      prime_prompt_eligible: false,
+      ...sigOver,
     },
     strike_profile: { ticker: 'TSLA', spot: 250.5, strikes: [] },
     expirations: [{ date: '2026-06-26', dte: 3 }],
-    ai_eval: { ready: false, reasons: [], changed: false, state_fingerprint: 'x', score_threshold: 60 },
-    meta: {
-      served_at: '2026-06-23T14:30:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
-      freshness: { snapshot_iso: '2026-06-23T14:30:00Z', data_age_seconds: 30, stale: false, stale_after_seconds: 600 },
+    ai_eval: {
+      ready: false,
+      reasons: [],
+      changed: false,
+      state_fingerprint: 'x',
+      score_threshold: 60,
     },
-    off_exchange: { ratio_pct: 38, offex_shares: 38_000, total_shares: 100_000, levels: [], blocks: [], block_min_shares: 5000, note: '' },
+    meta: {
+      served_at: '2026-06-23T14:30:00Z',
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: '2026-06-23T14:30:00Z',
+        data_age_seconds: 30,
+        stale: false,
+        stale_after_seconds: 600,
+      },
+    },
+    off_exchange: {
+      ratio_pct: 38,
+      offex_shares: 38_000,
+      total_shares: 100_000,
+      levels: [],
+      blocks: [],
+      block_min_shares: 5000,
+      note: '',
+    },
     position_eval: null,
   };
 }
 
 function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return {
-    ticker: 'TSLA', mid: 251, bid: null, ask: null, spread: 0.05, net_flow: 1200, buy_vol: 0, sell_vol: 0,
-    flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime',
-    ts: Date.now(), gamma_flip: 248, last_trade: 251.13, ...over,
+    ticker: 'TSLA',
+    mid: 251,
+    bid: null,
+    ask: null,
+    spread: 0.05,
+    net_flow: 1200,
+    buy_vol: 0,
+    sell_vol: 0,
+    flow_window_s: 300,
+    spot_ts: 1,
+    live: true,
+    tick_age_s: 1,
+    market_session: 'regular',
+    feed: 'realtime',
+    ts: Date.now(),
+    gamma_flip: 248,
+    last_trade: 251.13,
+    ...over,
   };
 }
 
-interface MockES { onmessage: ((e: MessageEvent) => void) | null; closed: boolean; }
+interface MockES {
+  onmessage: ((e: MessageEvent) => void) | null;
+  closed: boolean;
+}
 let esInstances: MockES[] = [];
 let tickerOk = true;
 let hangTicker = false; // when true, the bundle fetch never resolves (cold-LOADING under inspection)
@@ -68,21 +149,36 @@ let bundleOverride: (() => TickerBundle) | null = null;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 function pushLive(over: Partial<LiveUpdate> = {}) {
-  act(() => { esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(liveUpdate(over)) } as MessageEvent)); });
+  act(() => {
+    esInstances.forEach((es) =>
+      es.onmessage?.({ data: JSON.stringify(liveUpdate(over)) } as MessageEvent),
+    );
+  });
 }
 
 // The single mock-boundary handler. `hangTicker`/`tickerOk`/`bundleOverride` are mutable knobs so a
 // test can switch cold→loaded WITHOUT permanently clobbering the impl (the source of cross-render leaks).
 async function handleFetch(input: RequestInfo | URL): Promise<Response> {
   const url = String(input);
-  const json = (b: unknown) => new Response(JSON.stringify(b), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const json = (b: unknown) =>
+    new Response(JSON.stringify(b), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   if (url.includes('/api/ticker/')) {
-    if (hangTicker) return new Promise<Response>(() => { /* never resolves */ });
+    if (hangTicker)
+      return new Promise<Response>(() => {
+        /* never resolves */
+      });
     if (!tickerOk) return new Response('error', { status: 500 });
     return json(bundleOverride ? bundleOverride() : makeBundle());
   }
   if (url.includes('/api/recommendation/status/')) {
-    return json({ availability: { in_app_enabled: true }, gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] }, cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' } });
+    return json({
+      availability: { in_app_enabled: true },
+      gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+      cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
+    });
   }
   if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
   if (url.includes('/api/contract/')) return json(null);
@@ -101,8 +197,12 @@ beforeEach(() => {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
     closed = false;
-    constructor() { esInstances.push(this as unknown as MockES); }
-    close() { this.closed = true; }
+    constructor() {
+      esInstances.push(this as unknown as MockES);
+    }
+    close() {
+      this.closed = true;
+    }
   }
   vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
 
@@ -174,7 +274,9 @@ describe('ticker-load-experience — skeleton-first load (component states)', ()
     // Drop the live feed → OFFLINE: the `⏸ offline` caption + the connection chip appear; the offline
     // dim is a different look from the (now-absent) cold skeleton.
     pushLive({ live: true });
-    await act(async () => { await vi.advanceTimersByTimeAsync(16_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16_000);
+    });
     expect(screen.getAllByText('⏸ offline').length).toBeGreaterThan(0);
     expect(screen.getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
     expect(screen.queryByTestId('cold-skeleton')).toBeNull(); // OFFLINE is not the cold skeleton
@@ -206,10 +308,12 @@ describe('ticker-load-experience — the four post-load states (preserved)', () 
 
     // Next poll fails → the bundle stays; a soft "Couldn't refresh" warning appears; nothing blanks.
     tickerOk = false;
-    await act(async () => { await vi.advanceTimersByTimeAsync(61_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(61_000);
+    });
     expect(screen.getByText(/Couldn't refresh/)).toBeInTheDocument();
     expect(screen.getByText('Call wall')).toBeInTheDocument(); // last good bundle still on screen
-    expect(screen.queryByText('Retry')).toBeNull();            // not the cold-start error screen
+    expect(screen.queryByText('Retry')).toBeNull(); // not the cold-start error screen
   });
 
   it('live-feed drop dims only live tiles, statics keep last good values', async () => {
@@ -218,11 +322,13 @@ describe('ticker-load-experience — the four post-load states (preserved)', () 
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
     pushLive({ live: true });
-    await act(async () => { await vi.advanceTimersByTimeAsync(16_000); });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16_000);
+    });
 
     expect(screen.getAllByText('⏸ offline').length).toBeGreaterThan(0); // live tiles dimmed
-    expect(screen.getByText('Call wall')).toBeInTheDocument();           // static read intact
-    expect(screen.getByText('$260')).toBeInTheDocument();                // its value intact
+    expect(screen.getByText('Call wall')).toBeInTheDocument(); // static read intact
+    expect(screen.getByText('$260')).toBeInTheDocument(); // its value intact
   });
 
   it('first-load failure shows single error + retry as the only blank screen', async () => {
@@ -262,7 +368,7 @@ describe('ticker-load-experience — live last-trade readout (component)', () =>
     const lt = screen.getByTestId('last-trade');
     expect(lt).toHaveTextContent('Last trade $251.13');
 
-    pushLive({ live: true, last_trade: 252.40 });
+    pushLive({ live: true, last_trade: 252.4 });
     expect(screen.getByTestId('last-trade')).toHaveTextContent('Last trade $252.40');
   });
 
@@ -287,7 +393,9 @@ describe('ticker-load-experience — live last-trade readout (component)', () =>
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
     pushLive({ live: true, last_trade: 251.13 });
-    await act(async () => { await vi.advanceTimersByTimeAsync(16_000); }); // drop
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16_000);
+    }); // drop
 
     const lt = screen.getByTestId('last-trade');
     expect(lt).toHaveTextContent('⏸ Last trade $251.13'); // paused, last-known, dimmed
@@ -319,8 +427,8 @@ describe('ticker-load-experience — live last-trade readout (component)', () =>
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.13 });
     const headline = screen.getByRole('heading', { level: 1 });
     expect(headline).toHaveTextContent('TSLA · $251.00');
-    expect(screen.getByText('$248')).toBeInTheDocument();  // gamma flip
-    expect(screen.getByText('$260')).toBeInTheDocument();  // call wall
+    expect(screen.getByText('$248')).toBeInTheDocument(); // gamma flip
+    expect(screen.getByText('$260')).toBeInTheDocument(); // call wall
 
     // Now change last_trade wildly and clear it; the mid/flip/walls must be UNMOVED.
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 999.99 });
@@ -339,7 +447,10 @@ describe('ticker-load-experience — stale-warning honesty + isolation', () => {
     // AC-Stale-1: freshness within threshold (stale:false) → levels render, no warning.
     bundleOverride = () => {
       const b = makeBundle();
-      return { ...b, meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: false, data_age_seconds: 45 } } };
+      return {
+        ...b,
+        meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: false, data_age_seconds: 45 } },
+      };
     };
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
@@ -352,7 +463,13 @@ describe('ticker-load-experience — stale-warning honesty + isolation', () => {
     // render unblanked ([live-vs-static-isolation]) — the snapshot is preserved, never dropped.
     bundleOverride = () => {
       const b = makeBundle();
-      return { ...b, meta: { ...b.meta, freshness: { ...b.meta.freshness, stale: true, data_age_seconds: 242779 } } };
+      return {
+        ...b,
+        meta: {
+          ...b.meta,
+          freshness: { ...b.meta.freshness, stale: true, data_age_seconds: 242779 },
+        },
+      };
     };
     renderAt('/ticker/TSLA');
     expect(await screen.findByText('Call wall')).toBeInTheDocument();
@@ -368,7 +485,9 @@ describe('ticker-load-experience — stale-warning honesty + isolation', () => {
     expect(screen.queryByTestId('cold-skeleton')).toBeNull(); // LOADING look gone post-load
 
     pushLive({ live: true, last_trade: 251.13 });
-    await act(async () => { await vi.advanceTimersByTimeAsync(16_000); }); // OFFLINE
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16_000);
+    }); // OFFLINE
 
     // Last-trade dimmed/paused WITH the live tiles; the static walls keep their last good value.
     expect(screen.getByTestId('last-trade')).toHaveTextContent('⏸ Last trade $251.13');

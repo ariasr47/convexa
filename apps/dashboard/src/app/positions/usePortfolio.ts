@@ -9,26 +9,43 @@
  * failures + store failures degrade locally (`[best-effort-isolated-or-null]`). Live cells degrade on
  * an SSE drop while records/history/customization persist (`[live-vs-static-isolation]`).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  fetchTrackedContract, TickerBundle, LiveUpdate, TrackedContract, OptionRight,
+  fetchTrackedContract,
+  LiveUpdate,
+  OptionRight,
+  TickerBundle,
+  TrackedContract,
 } from '@org/api';
-import { computeMark, pl, MarkResult } from '../ghost-trade/mark';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { computeMark, MarkResult, pl } from '../ghost-trade/mark';
 import { SCHEMA_VERSION as GT_SCHEMA } from '../ghost-trade/types';
-import {
-  Position, PositionId, DecisionRecord, EntryMode, EntryBasis,
-  CustomizationState, ViewConfig, SavedView, FilterState,
-  PORTFOLIO_SCHEMA_VERSION,
-} from './types';
-import {
-  allPositions, getPosition, putPosition, appendDecision, decisionsForPosition,
-  getCustomization, putCustomization, newId,
-} from './store';
-import { resolveManualFill, limitWouldFill, LIMIT_FILL_BASIS } from './entry';
-import { RowMetrics, DerivedRow } from './derive';
-import { strategyOf } from './types';
-import { usePlTrends } from './useTrends';
 import { cloneConfig, configEqual } from './defaults';
+import { DerivedRow, RowMetrics } from './derive';
+import { LIMIT_FILL_BASIS, limitWouldFill, resolveManualFill } from './entry';
+import {
+  allPositions,
+  appendDecision,
+  decisionsForPosition,
+  getCustomization,
+  getPosition,
+  newId,
+  putCustomization,
+  putPosition,
+} from './store';
+import {
+  CustomizationState,
+  DecisionRecord,
+  EntryBasis,
+  EntryMode,
+  FilterState,
+  PORTFOLIO_SCHEMA_VERSION,
+  Position,
+  PositionId,
+  SavedView,
+  strategyOf,
+  ViewConfig,
+} from './types';
+import { usePlTrends } from './useTrends';
 
 export interface OpenPositionInput {
   ticker: string;
@@ -96,41 +113,60 @@ export function usePortfolio(
       fetchTrackedContract(p.ticker, { expiration: p.expiration, strike: p.strike, right: p.right })
         .then((tc) => {
           if (cancelled) return;
-          setRowLive((prev) => ({ ...prev, [p.id]: { tracked: tc, unavailable: tc == null, markRes: prev[p.id]?.markRes ?? null } }));
+          setRowLive((prev) => ({
+            ...prev,
+            [p.id]: { tracked: tc, unavailable: tc == null, markRes: prev[p.id]?.markRes ?? null },
+          }));
         })
         .catch(() => {
           if (cancelled) return;
-          setRowLive((prev) => ({ ...prev, [p.id]: { tracked: null, unavailable: true, markRes: prev[p.id]?.markRes ?? null } }));
+          setRowLive((prev) => ({
+            ...prev,
+            [p.id]: { tracked: null, unavailable: true, markRes: prev[p.id]?.markRes ?? null },
+          }));
         });
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackKey, servedAt]);
 
   // ---- Per-row mark + P/L (computed each render; last-good mark kept for offline) --------------
-  const markFor = useCallback((p: Position): MarkResult | null => {
-    const rl = rowLive[p.id];
-    if (!rl || !rl.tracked || !m) return null;
-    return computeMark({
-      tracked: rl.tracked, strike: p.strike, right: p.right,
-      anchorSpot: m.price,
-      liveUnderlying: live?.mid ?? null,
-      isLive, marketSession: session, streamOffline,
-      lastMark: lastMarkRef.current.get(p.id) ?? null,
-    });
-  }, [rowLive, m, live?.mid, isLive, session, streamOffline]);
+  const markFor = useCallback(
+    (p: Position): MarkResult | null => {
+      const rl = rowLive[p.id];
+      if (!rl || !rl.tracked || !m) return null;
+      return computeMark({
+        tracked: rl.tracked,
+        strike: p.strike,
+        right: p.right,
+        anchorSpot: m.price,
+        liveUnderlying: live?.mid ?? null,
+        isLive,
+        marketSession: session,
+        streamOffline,
+        lastMark: lastMarkRef.current.get(p.id) ?? null,
+      });
+    },
+    [rowLive, m, live?.mid, isLive, session, streamOffline],
+  );
 
   // Build the row metrics for every position (the live-derived view).
   const rows = useMemo<DerivedRow[]>(() => {
     return positions.map((p) => {
       const rl = rowLive[p.id];
-      const markRes = (p.status === 'open' || p.status === 'pending') ? markFor(p) : null;
-      const unavailable = (p.status === 'open' || p.status === 'pending') && (rl?.unavailable ?? false);
+      const markRes = p.status === 'open' || p.status === 'pending' ? markFor(p) : null;
+      const unavailable =
+        (p.status === 'open' || p.status === 'pending') && (rl?.unavailable ?? false);
       const mark = markRes?.mark ?? null;
-      const plNow = p.status === 'open' ? pl(mark, p.entry_mark, p.qty) : { dollar: null, pct: null };
+      const plNow =
+        p.status === 'open' ? pl(mark, p.entry_mark, p.qty) : { dollar: null, pct: null };
       const sessAnchor = trends.sessionAnchor(p.id);
-      const sessionDelta = (plNow.dollar != null && sessAnchor != null && !streamOffline)
-        ? plNow.dollar - sessAnchor : null;
+      const sessionDelta =
+        plNow.dollar != null && sessAnchor != null && !streamOffline
+          ? plNow.dollar - sessAnchor
+          : null;
       const metrics: RowMetrics = {
         id: p.id,
         plDollar: unavailable ? null : plNow.dollar,
@@ -167,7 +203,8 @@ export function usePortfolio(
     positions.forEach((p) => {
       if (p.status !== 'pending' || p.limit_price == null) return;
       const markRes = markFor(p);
-      const liveMark = markRes && !markRes.frozen && markRes.basis !== 'last_known' ? markRes.mark : null;
+      const liveMark =
+        markRes && !markRes.frozen && markRes.basis !== 'last_known' ? markRes.mark : null;
       if (limitWouldFill(liveMark, p.limit_price, true)) {
         fillLimit(p);
       }
@@ -176,30 +213,39 @@ export function usePortfolio(
   }, [rowLive, live?.mid, streamOffline, isLive]);
 
   // ---- Decision records ----------------------------------------------------------------------
-  const recordDecision = useCallback((
-    partial: Pick<DecisionRecord, 'event_type'> & Partial<DecisionRecord>,
-    p: Position,
-    markPrice: number | null,
-    basis: string,
-  ) => {
-    const plv = pl(markPrice, p.entry_mark, p.qty);
-    const rec: DecisionRecord = {
-      clock_time: new Date().toISOString(),
-      trade_id: p.id,
-      contract: { ticker: p.ticker, expiration: p.expiration, strike: p.strike, right: p.right, qty: p.qty },
-      mark_price: markPrice ?? p.entry_mark,
-      mark_basis: basis as DecisionRecord['mark_basis'],
-      underlying_spot: m?.price ?? 0,
-      pl_dollar: plv.dollar ?? 0,
-      pl_pct: plv.pct ?? 0,
-      tier,
-      position_fingerprint: data?.position_eval?.fingerprint ?? '',
-      schema_version: GT_SCHEMA,
-      ...partial,
-    } as DecisionRecord;
-    appendDecision(rec);
-    setHistoryVersion((v) => v + 1);
-  }, [m, tier, data]);
+  const recordDecision = useCallback(
+    (
+      partial: Pick<DecisionRecord, 'event_type'> & Partial<DecisionRecord>,
+      p: Position,
+      markPrice: number | null,
+      basis: string,
+    ) => {
+      const plv = pl(markPrice, p.entry_mark, p.qty);
+      const rec: DecisionRecord = {
+        clock_time: new Date().toISOString(),
+        trade_id: p.id,
+        contract: {
+          ticker: p.ticker,
+          expiration: p.expiration,
+          strike: p.strike,
+          right: p.right,
+          qty: p.qty,
+        },
+        mark_price: markPrice ?? p.entry_mark,
+        mark_basis: basis as DecisionRecord['mark_basis'],
+        underlying_spot: m?.price ?? 0,
+        pl_dollar: plv.dollar ?? 0,
+        pl_pct: plv.pct ?? 0,
+        tier,
+        position_fingerprint: data?.position_eval?.fingerprint ?? '',
+        schema_version: GT_SCHEMA,
+        ...partial,
+      } as DecisionRecord;
+      appendDecision(rec);
+      setHistoryVersion((v) => v + 1);
+    },
+    [m, tier, data],
+  );
 
   const decisionsFor = useCallback(
     (id: PositionId) => decisionsForPosition(id),
@@ -208,83 +254,134 @@ export function usePortfolio(
   );
 
   // ---- Open a position (the 3 entry modes) ---------------------------------------------------
-  const openPosition = useCallback((input: OpenPositionInput): OpenResult => {
-    const ticker = input.ticker.toUpperCase();
-    const base = {
-      id: newId(), ticker, expiration: input.expiration, strike: input.strike, right: input.right,
-      side: 'long' as const, qty: input.qty, stop: input.stop ?? null, target: input.target ?? null,
-      schema_version: PORTFOLIO_SCHEMA_VERSION, entry_mode: input.entryMode,
-    };
-
-    if (input.entryMode === 'manual') {
-      const fill = resolveManualFill(input.price ?? 0);
-      const p: Position = {
-        ...base, entry_mark: fill.mark, entry_basis: fill.basis,
-        entry_time: new Date().toISOString(), status: 'open',
+  const openPosition = useCallback(
+    (input: OpenPositionInput): OpenResult => {
+      const ticker = input.ticker.toUpperCase();
+      const base = {
+        id: newId(),
+        ticker,
+        expiration: input.expiration,
+        strike: input.strike,
+        right: input.right,
+        side: 'long' as const,
+        qty: input.qty,
+        stop: input.stop ?? null,
+        target: input.target ?? null,
+        schema_version: PORTFOLIO_SCHEMA_VERSION,
+        entry_mode: input.entryMode,
       };
-      putPosition(p); refreshPositions();
-      recordDecision({ event_type: 'open' }, p, fill.mark, fill.basis);
-      return { ok: true, position: p };
-    }
 
-    if (input.entryMode === 'market') {
-      // The dialog already resolved the market fill (or signalled it cannot fill).
-      if (input.resolvedMark == null || input.resolvedBasis == null) {
-        return { ok: false, reason: "Couldn't fill at market — no position was opened." };
+      if (input.entryMode === 'manual') {
+        const fill = resolveManualFill(input.price ?? 0);
+        const p: Position = {
+          ...base,
+          entry_mark: fill.mark,
+          entry_basis: fill.basis,
+          entry_time: new Date().toISOString(),
+          status: 'open',
+        };
+        putPosition(p);
+        refreshPositions();
+        recordDecision({ event_type: 'open' }, p, fill.mark, fill.basis);
+        return { ok: true, position: p };
       }
-      const p: Position = {
-        ...base, entry_mark: input.resolvedMark, entry_basis: input.resolvedBasis,
-        entry_time: new Date().toISOString(), status: 'open',
-      };
-      putPosition(p); refreshPositions();
-      recordDecision({ event_type: 'open' }, p, input.resolvedMark, input.resolvedBasis);
-      return { ok: true, position: p };
-    }
 
-    // limit — rests pending; fills later on a live cross.
-    const limitPrice = input.limitPrice ?? input.price ?? 0;
-    const p: Position = {
-      ...base, entry_mark: limitPrice, entry_basis: LIMIT_FILL_BASIS,
-      entry_time: '', placed_time: new Date().toISOString(), status: 'pending',
-      limit_price: limitPrice,
-    };
-    putPosition(p); refreshPositions();
-    recordDecision({ event_type: 'limit_placed' }, p, limitPrice, LIMIT_FILL_BASIS);
-    return { ok: true, position: p };
-  }, [recordDecision, refreshPositions]);
+      if (input.entryMode === 'market') {
+        // The dialog already resolved the market fill (or signalled it cannot fill).
+        if (input.resolvedMark == null || input.resolvedBasis == null) {
+          return { ok: false, reason: "Couldn't fill at market — no position was opened." };
+        }
+        const p: Position = {
+          ...base,
+          entry_mark: input.resolvedMark,
+          entry_basis: input.resolvedBasis,
+          entry_time: new Date().toISOString(),
+          status: 'open',
+        };
+        putPosition(p);
+        refreshPositions();
+        recordDecision({ event_type: 'open' }, p, input.resolvedMark, input.resolvedBasis);
+        return { ok: true, position: p };
+      }
+
+      // limit — rests pending; fills later on a live cross.
+      const limitPrice = input.limitPrice ?? input.price ?? 0;
+      const p: Position = {
+        ...base,
+        entry_mark: limitPrice,
+        entry_basis: LIMIT_FILL_BASIS,
+        entry_time: '',
+        placed_time: new Date().toISOString(),
+        status: 'pending',
+        limit_price: limitPrice,
+      };
+      putPosition(p);
+      refreshPositions();
+      recordDecision({ event_type: 'limit_placed' }, p, limitPrice, LIMIT_FILL_BASIS);
+      return { ok: true, position: p };
+    },
+    [recordDecision, refreshPositions],
+  );
 
   // ---- Resting-limit transitions -------------------------------------------------------------
-  const fillLimit = useCallback((p: Position) => {
-    const filled: Position = {
-      ...p, status: 'open', entry_mark: p.limit_price ?? p.entry_mark, entry_basis: LIMIT_FILL_BASIS,
-      entry_time: new Date().toISOString(),
-    };
-    putPosition(filled); refreshPositions();
-    recordDecision({ event_type: 'limit_filled' }, filled, filled.entry_mark, LIMIT_FILL_BASIS);
-  }, [recordDecision, refreshPositions]);
+  const fillLimit = useCallback(
+    (p: Position) => {
+      const filled: Position = {
+        ...p,
+        status: 'open',
+        entry_mark: p.limit_price ?? p.entry_mark,
+        entry_basis: LIMIT_FILL_BASIS,
+        entry_time: new Date().toISOString(),
+      };
+      putPosition(filled);
+      refreshPositions();
+      recordDecision({ event_type: 'limit_filled' }, filled, filled.entry_mark, LIMIT_FILL_BASIS);
+    },
+    [recordDecision, refreshPositions],
+  );
 
-  const cancelLimit = useCallback((id: PositionId) => {
-    const p = getPosition(id);
-    if (!p || p.status !== 'pending') return;
-    const cancelled: Position = { ...p, status: 'cancelled', close_time: new Date().toISOString() };
-    putPosition(cancelled); refreshPositions();
-    recordDecision({ event_type: 'limit_cancelled' }, cancelled, p.limit_price ?? p.entry_mark, LIMIT_FILL_BASIS);
-  }, [recordDecision, refreshPositions]);
+  const cancelLimit = useCallback(
+    (id: PositionId) => {
+      const p = getPosition(id);
+      if (!p || p.status !== 'pending') return;
+      const cancelled: Position = {
+        ...p,
+        status: 'cancelled',
+        close_time: new Date().toISOString(),
+      };
+      putPosition(cancelled);
+      refreshPositions();
+      recordDecision(
+        { event_type: 'limit_cancelled' },
+        cancelled,
+        p.limit_price ?? p.entry_mark,
+        LIMIT_FILL_BASIS,
+      );
+    },
+    [recordDecision, refreshPositions],
+  );
 
   // ---- Close an open position ----------------------------------------------------------------
-  const closePosition = useCallback((id: PositionId) => {
-    const p = getPosition(id);
-    if (!p || p.status !== 'open') return;
-    const markRes = markFor(p);
-    const markPrice = markRes?.mark ?? p.entry_mark;
-    const plv = pl(markPrice, p.entry_mark, p.qty);
-    const closed: Position = {
-      ...p, status: 'closed', close_time: new Date().toISOString(),
-      realized_pl_dollar: plv.dollar ?? 0, realized_pl_pct: plv.pct ?? 0,
-    };
-    putPosition(closed); refreshPositions();
-    recordDecision({ event_type: 'close' }, p, markPrice, markRes?.basis ?? p.entry_basis);
-  }, [markFor, recordDecision, refreshPositions]);
+  const closePosition = useCallback(
+    (id: PositionId) => {
+      const p = getPosition(id);
+      if (!p || p.status !== 'open') return;
+      const markRes = markFor(p);
+      const markPrice = markRes?.mark ?? p.entry_mark;
+      const plv = pl(markPrice, p.entry_mark, p.qty);
+      const closed: Position = {
+        ...p,
+        status: 'closed',
+        close_time: new Date().toISOString(),
+        realized_pl_dollar: plv.dollar ?? 0,
+        realized_pl_pct: plv.pct ?? 0,
+      };
+      putPosition(closed);
+      refreshPositions();
+      recordDecision({ event_type: 'close' }, p, markPrice, markRes?.basis ?? p.entry_basis);
+    },
+    [markFor, recordDecision, refreshPositions],
+  );
 
   // ---- Customization + saved views (durable, view-only) --------------------------------------
   const setWorking = useCallback((patch: Partial<ViewConfig>) => {
@@ -334,7 +431,9 @@ export function usePortfolio(
 
   const saveChanges = useCallback(() => {
     setCustom((prev) => {
-      const views = prev.views.map((v) => v.id === prev.activeViewId ? { ...v, config: cloneConfig(prev.working) } : v);
+      const views = prev.views.map((v) =>
+        v.id === prev.activeViewId ? { ...v, config: cloneConfig(prev.working) } : v,
+      );
       const next = { ...prev, views };
       putCustomization(next);
       return next;
@@ -343,7 +442,7 @@ export function usePortfolio(
 
   const renameView = useCallback((id: string, name: string) => {
     setCustom((prev) => {
-      const views = prev.views.map((v) => v.id === id ? { ...v, name } : v);
+      const views = prev.views.map((v) => (v.id === id ? { ...v, name } : v));
       const next = { ...prev, views };
       putCustomization(next);
       return next;
@@ -366,11 +465,27 @@ export function usePortfolio(
   const trendFor = useCallback((id: PositionId) => trends.series(id), [trends]);
 
   return {
-    positions, rows, decisionsFor, markFor, trendFor,
-    openPosition, closePosition, cancelLimit, fillLimit,
+    positions,
+    rows,
+    decisionsFor,
+    markFor,
+    trendFor,
+    openPosition,
+    closePosition,
+    cancelLimit,
+    fillLimit,
     // customization
-    custom, working: custom.working, activeView, hasUnsavedChanges,
-    setWorking, setFilter, switchView, saveAsNewView, saveChanges, renameView, deleteView,
+    custom,
+    working: custom.working,
+    activeView,
+    hasUnsavedChanges,
+    setWorking,
+    setFilter,
+    switchView,
+    saveAsNewView,
+    saveChanges,
+    renameView,
+    deleteView,
     refreshPositions,
   };
 }

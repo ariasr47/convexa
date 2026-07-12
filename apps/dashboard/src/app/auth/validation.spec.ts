@@ -4,7 +4,7 @@
  * field-mapping heuristic.
  */
 import { describe, expect, it } from 'vitest';
-import { isLikelyEmail, extractPasswordFloor, validationFieldCopy } from './validation';
+import { extractPasswordFloor, isLikelyEmail, validationFieldCopy } from './validation';
 
 describe('isLikelyEmail', () => {
   it('accepts a well-formed address and trims', () => {

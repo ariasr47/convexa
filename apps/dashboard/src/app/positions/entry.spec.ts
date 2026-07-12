@@ -1,15 +1,21 @@
 /**
  * Unit — entry/fill resolver + the resting-limit cross rule (AC-12..AC-16, AC-18, AC-20).
  */
-import { describe, expect, it } from 'vitest';
-import { resolveMarketFill, resolveManualFill, limitWouldFill } from './entry';
 import type { TrackedContract } from '@org/api';
+import { describe, expect, it } from 'vitest';
+import { limitWouldFill, resolveManualFill, resolveMarketFill } from './entry';
 
 function tracked(over: Partial<TrackedContract> = {}): TrackedContract {
   return {
-    ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call',
-    option_quote: { bid: 4.9, ask: 5.1, mid: 5 }, greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
-    iv: 0.45, dte: 25, ...over,
+    ticker: 'TSLA',
+    expiration: '2026-07-17',
+    strike: 250,
+    right: 'call',
+    option_quote: { bid: 4.9, ask: 5.1, mid: 5 },
+    greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
+    iv: 0.45,
+    dte: 25,
+    ...over,
   };
 }
 
@@ -32,7 +38,9 @@ describe('market fill (AC-14, AC-15, AC-16)', () => {
   });
 
   it('cannot resolve a fill when there is no quote AND no IV', () => {
-    expect(resolveMarketFill(tracked({ option_quote: null, iv: null }), 250, 'call', 250)).toBeNull();
+    expect(
+      resolveMarketFill(tracked({ option_quote: null, iv: null }), 250, 'call', 250),
+    ).toBeNull();
   });
 
   it('cannot resolve a fill when the contract is unavailable (null tracked)', () => {

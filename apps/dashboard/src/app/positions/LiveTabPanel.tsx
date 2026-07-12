@@ -12,8 +12,8 @@
  * is reproduced per this frame, single-sourcing its colors off the tokens.)
  */
 import { Box, Typography } from '@mui/material';
-import { LIVE_HEADING, LIVE_BODY, LIVE_LOCK_CHIP } from './labels';
 import { hatchBackgroundImage } from '../ui/ComingSoonBox';
+import { LIVE_BODY, LIVE_HEADING, LIVE_LOCK_CHIP } from './labels';
 
 export function LiveTabPanel() {
   return (
@@ -30,13 +30,23 @@ export function LiveTabPanel() {
         textAlign: 'center',
       }}
     >
-      <Typography component="div" sx={{ fontSize: '1.6rem', mb: '10px' }}>🔒</Typography>
+      <Typography component="div" sx={{ fontSize: '1.6rem', mb: '10px' }}>
+        🔒
+      </Typography>
       <Typography component="h3" sx={{ fontSize: '1.15rem', fontWeight: 700, m: '0 0 8px' }}>
         {LIVE_HEADING}
       </Typography>
       <Typography
         component="p"
-        sx={{ maxWidth: 440, mx: 'auto', my: 0, fontSize: '0.9rem', color: 'text.secondary', lineHeight: 1.55, textAlign: 'center' }}
+        sx={{
+          maxWidth: 440,
+          mx: 'auto',
+          my: 0,
+          fontSize: '0.9rem',
+          color: 'text.secondary',
+          lineHeight: 1.55,
+          textAlign: 'center',
+        }}
       >
         {LIVE_BODY}
       </Typography>

@@ -14,50 +14,52 @@
  * `[best-effort-isolated-or-null]`, `[additive-keeps-score-byte-identical]`, `[no-real-order-path]`,
  * `[operator-vs-trader-path-separation]`.
  */
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Alert, Box, Button, Container, Fade, Skeleton, Tooltip, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import {
-  Container, Box, Alert, Button, Skeleton, Fade, Tooltip, Typography,
-} from '@mui/material';
-import { getTicker, streamTicker, TickerBundle, LiveUpdate, RecResponse } from '@org/api';
-import { useGhostTrade, NewTradeForm } from '../ghost-trade/useGhostTrade';
-import {
-  TradeEntryDialog, EntryPrefill, TradeEntrySubmit, OrderPlan, OrderEntrySubmit,
-} from '../trading/TradeEntryDialog';
-import { PrimeBanner, tierMeta } from '../ghost-trade/OpportunityTier';
-import { usePersona } from '../personas/usePersona';
-import { PersonaCustomizeForm } from '../personas/components';
+import { getTicker, LiveUpdate, RecResponse, streamTicker, TickerBundle } from '@org/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AiRecPanel, useReadPersonas } from '../ai-rec/AiRecPanel';
-import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
 import { StateExportDrawer } from '../ai-rec/StateExportDrawer';
-import { recToPrefill } from '../ai-rec/prefill';
 import { COPY } from '../ai-rec/copy';
+import { recToPrefill } from '../ai-rec/prefill';
+import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
+import { SignInPrompt } from '../auth/SignInPrompt';
+import { useGate } from '../auth/useGate';
+import { PrimeBanner, tierMeta } from '../ghost-trade/OpportunityTier';
+import { NewTradeForm, useGhostTrade } from '../ghost-trade/useGhostTrade';
 import { OrdersWidget } from '../orders/OrdersWidget';
+import { GATE_SIGN_IN } from '../orders/copy';
+import { parseTriggerSeed } from '../orders/seed';
+import type { OrderProvenance } from '../orders/types';
 import { useOrderEngine } from '../orders/useOrderEngine';
 import { createOrder } from '../orders/useOrders';
-import { parseTriggerSeed } from '../orders/seed';
-import { GATE_SIGN_IN } from '../orders/copy';
-import type { OrderProvenance } from '../orders/types';
-import { useGate } from '../auth/useGate';
-import { SignInPrompt } from '../auth/SignInPrompt';
+import { PersonaCustomizeForm } from '../personas/components';
+import { usePersona } from '../personas/usePersona';
+import {
+  EntryPrefill,
+  OrderEntrySubmit,
+  OrderPlan,
+  TradeEntryDialog,
+  TradeEntrySubmit,
+} from '../trading/TradeEntryDialog';
 
-import { StatSkeleton } from './widgets/StatTile';
-import { WidgetSelectionProvider } from './widgets/WidgetSelectionContext';
 import { ComingSoonBox } from '../ui/ComingSoonBox';
-import { TickerToolbar } from './widgets/TickerToolbar';
 import { CommandDeck } from './widgets/CommandDeck';
-import { LastTradeReadout } from './widgets/TickerHeader';
-import { LiveTape } from './widgets/LiveTape';
-import { DealerPositioning } from './widgets/DealerPositioning';
 import { DealerFlowProjection } from './widgets/DealerFlowProjection';
-import { MarketContext } from './widgets/MarketContext';
-import { IvRank } from './widgets/IvRank';
-import { GexStrikeProfile } from './widgets/GexStrikeProfile';
-import { TermStructureCard } from './widgets/TermStructure';
+import { DealerPositioning } from './widgets/DealerPositioning';
 import { FreshPositioning } from './widgets/FreshPositioning';
+import { GexStrikeProfile } from './widgets/GexStrikeProfile';
+import { IvRank } from './widgets/IvRank';
+import { LiveTape } from './widgets/LiveTape';
+import { MarketContext } from './widgets/MarketContext';
 import { OffExchangeBlocks } from './widgets/OffExchangeBlocks';
 import { Setups } from './widgets/Setups';
+import { StatSkeleton } from './widgets/StatTile';
+import { TermStructureCard } from './widgets/TermStructure';
+import { LastTradeReadout } from './widgets/TickerHeader';
+import { TickerToolbar } from './widgets/TickerToolbar';
+import { WidgetSelectionProvider } from './widgets/WidgetSelectionContext';
 import { humanAge } from './widgets/copy';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
@@ -68,8 +70,12 @@ const STREAM_OFFLINE_MS = 15_000;
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}>
-      {Array.from({ length: 12 }).map((_, i) => <StatSkeleton key={i} />)}
+    <Box
+      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 2 }}
+    >
+      {Array.from({ length: 12 }).map((_, i) => (
+        <StatSkeleton key={i} />
+      ))}
     </Box>
   );
 }
@@ -99,7 +105,9 @@ export function TickerDashboard() {
   // AI recommendation (independently-nullable sibling card).
   const { personas: readPersonas } = useReadPersonas(persona.personas);
   const [readPersonaId, setReadPersonaId] = useState('default');
-  useEffect(() => { setReadPersonaId(persona.activeId); }, [persona.activeId]);
+  useEffect(() => {
+    setReadPersonaId(persona.activeId);
+  }, [persona.activeId]);
   const aiRec = useAiRecommendation(ticker, data, {
     personaId: persona.activeId === 'default' ? null : persona.activeId,
     personaName: persona.active.name,
@@ -107,28 +115,49 @@ export function TickerDashboard() {
     dteMax: data?.market_state.dte_max ?? null,
     darkPool,
   });
-  const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({ open: false, personaId: null });
-  const openExport = useCallback((personaId: string | null) => setExportDrawer({ open: true, personaId }), []);
+  const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({
+    open: false,
+    personaId: null,
+  });
+  const openExport = useCallback(
+    (personaId: string | null) => setExportDrawer({ open: true, personaId }),
+    [],
+  );
 
   // Persona DTE pre-fill (one-shot, explicit-navigation only).
-  const [dtePrefill, setDtePrefill] = useState<{ min: number; max: number; persona: string } | null>(null);
+  const [dtePrefill, setDtePrefill] = useState<{
+    min: number;
+    max: number;
+    persona: string;
+  } | null>(null);
   const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
 
   const load = useCallback(() => {
     if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
-    const pf = pendingPrefill.current; pendingPrefill.current = null; // consume one-shot
+    const pf = pendingPrefill.current;
+    pendingPrefill.current = null; // consume one-shot
     setLoading(true);
     getTicker(ticker, {
-      expirations: selected ?? undefined, darkPool, position: gt.positionQuery,
-      minDte: pf?.min, maxDte: pf?.max,
+      expirations: selected ?? undefined,
+      darkPool,
+      position: gt.positionQuery,
+      minDte: pf?.min,
+      maxDte: pf?.max,
     })
-      .then((d) => { setData(d); setError(null); })
+      .then((d) => {
+        setData(d);
+        setError(null);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [ticker, selected, darkPool, gt.positionQuery]);
 
   // Reset the filter to "all" whenever the ticker changes; clear data + any prior error.
-  useEffect(() => { setSelected(null); setData(null); setError(null); }, [ticker]);
+  useEffect(() => {
+    setSelected(null);
+    setData(null);
+    setError(null);
+  }, [ticker]);
 
   // (Re)load on ticker/selection change, then poll on the cache cadence.
   useEffect(() => {
@@ -150,7 +179,10 @@ export function TickerDashboard() {
       if (gapTimer) clearTimeout(gapTimer);
       gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
     });
-    return () => { if (gapTimer) clearTimeout(gapTimer); unsub(); };
+    return () => {
+      if (gapTimer) clearTimeout(gapTimer);
+      unsub();
+    };
   }, [ticker, selected]);
 
   const theme = useTheme();
@@ -177,12 +209,14 @@ export function TickerDashboard() {
   const tradeOpen = gt.trade?.status === 'open';
   useEffect(() => {
     const t = sig?.opportunity_tier;
-    if (t === 'prime' && sig?.prime_prompt_eligible && prevTierRef.current !== 'prime') setShowPrimeBanner(true);
+    if (t === 'prime' && sig?.prime_prompt_eligible && prevTierRef.current !== 'prime')
+      setShowPrimeBanner(true);
     if (t !== 'prime') setShowPrimeBanner(false);
     prevTierRef.current = t ?? null;
   }, [sig?.opportunity_tier, sig?.prime_prompt_eligible]);
   const openEntry = (prefill?: EntryPrefill) => {
-    setEntryPrefill(prefill); setEntryOpen(true);
+    setEntryPrefill(prefill);
+    setEntryOpen(true);
   };
   // Accept an AI rec → pre-fill the SHIPPED ghost-trade entry dialog (every field editable). Nothing
   // is tracked until the user confirms; no Accept path exists for a no_trade rec (panel omits it).
@@ -198,7 +232,10 @@ export function TickerDashboard() {
   useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
   const orderGate = useGate();
   const [actState, setActState] = useState<{
-    open: boolean; plan?: OrderPlan; prefill?: EntryPrefill; provenance?: OrderProvenance;
+    open: boolean;
+    plan?: OrderPlan;
+    prefill?: EntryPrefill;
+    provenance?: OrderProvenance;
   }>({ open: false });
   const [orderError, setOrderError] = useState<string | null>(null);
   // Act on a produced TRADE rec (real or scenario): seeds contract/qty/stop/target via the
@@ -206,7 +243,10 @@ export function TickerDashboard() {
   // the rec's pin travel as provenance. Signed-out ⇒ the standard gated-write prompt, no dialog.
   const onActRec = (rec: RecResponse, personaName: string) => {
     if (!rec.strategy || rec.strategy.decision !== 'trade') return;
-    if (!orderGate.allowed) { orderGate.prompt(GATE_SIGN_IN); return; }
+    if (!orderGate.allowed) {
+      orderGate.prompt(GATE_SIGN_IN);
+      return;
+    }
     orderGate.clear();
     const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
     if (!pf) return;
@@ -229,7 +269,7 @@ export function TickerDashboard() {
         ...(scenario ? { scenarioName: scenario.name } : {}),
       },
       stale: aiRec.stale,
-      liveMid: isLive ? live?.mid ?? null : null,
+      liveMid: isLive ? (live?.mid ?? null) : null,
     };
     setOrderError(null);
     setActState({ open: true, plan, prefill: pf, provenance });
@@ -242,23 +282,42 @@ export function TickerDashboard() {
     const provenance = actState.provenance;
     if (!provenance) return;
     let ran = false;
-    await orderGate.guard(GATE_SIGN_IN, () => {
-      ran = true;
-      const res = createOrder({
-        ticker: submit.ticker, expiration: submit.expiration, strike: submit.strike,
-        right: submit.right, qty: submit.qty, trigger: submit.trigger,
-        limit_price: submit.limitPrice, stop: submit.stop, target: submit.target,
-        expires_at: submit.expiresAt, provenance,
-      }, { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '' });
-      if (!res.ok) { setOrderError(res.reason ?? null); return; }
-      setOrderError(null);
-      setActState({ open: false });
-    }, { serverGate: orderGate.simTradeGate });
+    await orderGate.guard(
+      GATE_SIGN_IN,
+      () => {
+        ran = true;
+        const res = createOrder(
+          {
+            ticker: submit.ticker,
+            expiration: submit.expiration,
+            strike: submit.strike,
+            right: submit.right,
+            qty: submit.qty,
+            trigger: submit.trigger,
+            limit_price: submit.limitPrice,
+            stop: submit.stop,
+            target: submit.target,
+            expires_at: submit.expiresAt,
+            provenance,
+          },
+          { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '' },
+        );
+        if (!res.ok) {
+          setOrderError(res.reason ?? null);
+          return;
+        }
+        setOrderError(null);
+        setActState({ open: false });
+      },
+      { serverGate: orderGate.simTradeGate },
+    );
     // Gate rejected (403/503) ⇒ the flow ABORTS before anything is stored; re-initiate after
     // sign-in (no auto-resume, D10).
     if (!ran) setActState({ open: false });
   };
-  const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
+  const strikeList = Array.from(
+    new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
+  ).sort((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
 
   // Persona customize dialog (the hand-off viewer was removed to match the Figma toolbar).
@@ -267,9 +326,14 @@ export function TickerDashboard() {
   // Offer the active persona's DTE preference as a staged pre-fill — ONLY when the user hasn't set an
   // explicit expiration window. Setting it touches no fetch; applied to the next nav via the one-shot.
   useEffect(() => {
-    if (selected !== null) { setDtePrefill(null); return; } // user picked expirations → their window wins
+    if (selected !== null) {
+      setDtePrefill(null);
+      return;
+    } // user picked expirations → their window wins
     const pref = persona.active.dte_pref;
-    setDtePrefill(pref ? { min: pref.min_dte, max: pref.max_dte, persona: persona.active.name } : null);
+    setDtePrefill(
+      pref ? { min: pref.min_dte, max: pref.max_dte, persona: persona.active.name } : null,
+    );
   }, [persona.active, selected]);
 
   const onSubmitSymbol = () => {
@@ -287,10 +351,16 @@ export function TickerDashboard() {
       {!(m && !noneSelected) && (
         <Box sx={{ mb: 2 }}>
           <TickerToolbar
-            symbol={symbol} onSymbolChange={setSymbol} onSubmitSymbol={onSubmitSymbol}
-            expirations={data?.expirations ?? []} allDates={allDates} selected={selected}
-            checked={checked} onSelectExpirations={setSelected}
-            persona={persona} onOpenCustomize={() => setCustomizeOpen(true)}
+            symbol={symbol}
+            onSymbolChange={setSymbol}
+            onSubmitSymbol={onSubmitSymbol}
+            expirations={data?.expirations ?? []}
+            allDates={allDates}
+            selected={selected}
+            checked={checked}
+            onSelectExpirations={setSelected}
+            persona={persona}
+            onOpenCustomize={() => setCustomizeOpen(true)}
             loading={loading}
           />
         </Box>
@@ -309,14 +379,19 @@ export function TickerDashboard() {
       {error && !data && (
         <Alert
           severity="error"
-          action={<Button color="inherit" size="small" onClick={load}>Retry</Button>}
+          action={
+            <Button color="inherit" size="small" onClick={load}>
+              Retry
+            </Button>
+          }
         >
           {error}
         </Alert>
       )}
       {error && data && (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          Couldn't refresh — showing data from {humanAge(fresh?.data_age_seconds ?? null)} ago. Retrying automatically.
+          Couldn't refresh — showing data from {humanAge(fresh?.data_age_seconds ?? null)} ago.
+          Retrying automatically.
         </Alert>
       )}
 
@@ -341,140 +416,181 @@ export function TickerDashboard() {
       {!noneSelected && m && (
         <Fade in appear timeout={250}>
           <Box>
-          {showPrimeBanner && !tradeOpen && (
-            <PrimeBanner onSimulate={() => openEntry()} onDismiss={() => setShowPrimeBanner(false)} />
-          )}
+            {showPrimeBanner && !tradeOpen && (
+              <PrimeBanner
+                onSimulate={() => openEntry()}
+                onDismiss={() => setShowPrimeBanner(false)}
+              />
+            )}
 
-          {/* The unified COMMAND DECK — chrome (NOT a widget): the hero identity row (regime +
+            {/* The unified COMMAND DECK — chrome (NOT a widget): the hero identity row (regime +
               connection chips, the anchor, the meta line folding last-trade + the relocated freshness,
               the "+ Open simulated trade" CTA), the segmented control strip, a downward hand-off
               gradient, and a scroll-out sticky condensed bar. Sits above the widget board. */}
-          <CommandDeck
-            m={m} sig={sig} live={live} isLive={isLive} streamOffline={streamOffline} selected={selected}
-            onOpenTrade={() => openEntry()}
-            freshness={{
-              snapshotIso: fresh?.snapshot_iso ?? null,
-              dataAgeSeconds: fresh?.data_age_seconds ?? null,
-              refreshing: loading,
-            }}
-            symbol={symbol} onSymbolChange={setSymbol} onSubmitSymbol={onSubmitSymbol}
-            expirations={data?.expirations ?? []} allDates={allDates}
-            checked={checked} onSelectExpirations={setSelected}
-            persona={persona} onOpenCustomize={() => setCustomizeOpen(true)}
-            loading={loading}
-          />
+            <CommandDeck
+              m={m}
+              sig={sig}
+              live={live}
+              isLive={isLive}
+              streamOffline={streamOffline}
+              selected={selected}
+              onOpenTrade={() => openEntry()}
+              freshness={{
+                snapshotIso: fresh?.snapshot_iso ?? null,
+                dataAgeSeconds: fresh?.data_age_seconds ?? null,
+                refreshing: loading,
+              }}
+              symbol={symbol}
+              onSymbolChange={setSymbol}
+              onSubmitSymbol={onSubmitSymbol}
+              expirations={data?.expirations ?? []}
+              allDates={allDates}
+              checked={checked}
+              onSelectExpirations={setSelected}
+              persona={persona}
+              onOpenCustomize={() => setCustomizeOpen(true)}
+              loading={loading}
+            />
 
-          {/* The widget BENTO board. One-selected-at-a-time selection is provided here (click-outside
+            {/* The widget BENTO board. One-selected-at-a-time selection is provided here (click-outside
               clears — the provider's ClearOnOutside listener lives inside each selected Widget). The
               grid is a two-column bento: full-width rows (Live tape · Dealer · GEX · Setups, span 2)
               and paired cells (Term‖AI-rec, Fresh‖Off-exchange). Container queries drive each cell's
               internals, so a widget looks right at any cell size. */}
-          <WidgetSelectionProvider>
-            <Box
-              data-testid="widget-bento"
-              sx={{
-                mt: 2,
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
-                gridAutoRows: 'minmax(0, auto)',
-                gap: 2,
-                alignItems: 'stretch',
-              }}
-            >
-              {/* `revealIndex` = board position → the one-time staggered mount reveal (§3): each
+            <WidgetSelectionProvider>
+              <Box
+                data-testid="widget-bento"
+                sx={{
+                  mt: 2,
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                  gridAutoRows: 'minmax(0, auto)',
+                  gap: 2,
+                  alignItems: 'stretch',
+                }}
+              >
+                {/* `revealIndex` = board position → the one-time staggered mount reveal (§3): each
                   section rises + fades in ~55ms after the previous one. Reduced-motion → instant. */}
-              {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-              <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} revealIndex={0} />
+                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
+                <LiveTape
+                  m={m}
+                  live={live}
+                  isLive={isLive}
+                  streamOffline={streamOffline}
+                  revealIndex={0}
+                />
 
-              {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
-              <DealerPositioning
-                m={m} sig={sig} offExchange={data?.off_exchange}
-                volOiThreshold={volOiThreshold} unusualCount={unusualStrikes.length}
-                tierWord={tm.word} tierColor={tm.color} opportunityScore={sig?.opportunity_score ?? 0}
-                revealIndex={1}
-              />
+                {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
+                <DealerPositioning
+                  m={m}
+                  sig={sig}
+                  offExchange={data?.off_exchange}
+                  volOiThreshold={volOiThreshold}
+                  unusualCount={unusualStrikes.length}
+                  tierWord={tm.word}
+                  tierColor={tm.color}
+                  opportunityScore={sig?.opportunity_score ?? 0}
+                  revealIndex={1}
+                />
 
-              {/* STATIC dealer-flow projection — directly after Dealer positioning, in the static region
+                {/* STATIC dealer-flow projection — directly after Dealer positioning, in the static region
                   (NOT the LiveTape row). Takes the next revealIndex (2), pushing the sections below +1.
                   Bound to `m.dealer_flow_projection` only — no live/offline prop (`[live-vs-static-isolation]`). */}
-              <DealerFlowProjection dfp={m.dealer_flow_projection} revealIndex={2} />
+                <DealerFlowProjection dfp={m.dealer_flow_projection} revealIndex={2} />
 
-              {/* STATIC "Market context" (ai-context-pack) — directly after DealerFlowProjection (the
+                {/* STATIC "Market context" (ai-context-pack) — directly after DealerFlowProjection (the
                   AI-context family stays grouped), in the static region. Takes the next contiguous
                   revealIndex (3), pushing the sections below +1. Bound to `m.market_context ?? null`
                   ONLY — no live/offline prop (`[live-vs-static-isolation]`); the optional key keeps a
                   pre-feature bundle rendering the whole-pack unavailable state without throwing. */}
-              <MarketContext pack={m.market_context ?? null} revealIndex={3} />
+                <MarketContext pack={m.market_context ?? null} revealIndex={3} />
 
-              {/* STATIC "IV rank" (iv-rank) — directly after Market context (the newest member of the
+                {/* STATIC "IV rank" (iv-rank) — directly after Market context (the newest member of the
                   static context-read family, reads after the market-context block), in the static
                   region. Takes the next contiguous revealIndex (4), pushing the sections below +1.
                   Bound to `m.iv_rank ?? null` ONLY — no live/offline prop (`[live-vs-static-isolation]`);
                   the optional key keeps a pre-feature bundle rendering the Unavailable state without
                   throwing. `span={1}` — a compact single read (UX §8.3). */}
-              <IvRank read={m.iv_rank ?? null} revealIndex={4} />
+                <IvRank read={m.iv_rank ?? null} revealIndex={4} />
 
-              {data?.strike_profile && (
-                <GexStrikeProfile
-                  strikes={data.strike_profile.strikes}
-                  spot={m.gex_spot ?? m.price}
-                  callWall={m.call_wall}
-                  putWall={m.put_wall}
-                  gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-                  liveSpot={isLive ? live!.mid : null}
-                  revealIndex={5}
+                {data?.strike_profile && (
+                  <GexStrikeProfile
+                    strikes={data.strike_profile.strikes}
+                    spot={m.gex_spot ?? m.price}
+                    callWall={m.call_wall}
+                    putWall={m.put_wall}
+                    gammaFlip={live?.gamma_flip ?? m.gamma_flip}
+                    liveSpot={isLive ? live!.mid : null}
+                    revealIndex={5}
+                  />
+                )}
+
+                {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
+                <TermStructureCard termStructure={m.term_structure} revealIndex={6} />
+                <AiRecPanel
+                  ticker={ticker}
+                  bundle={data}
+                  ai={aiRec}
+                  personas={readPersonas}
+                  activePersonaId={persona.activeId}
+                  dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
+                  onAccept={onAcceptRec}
+                  onAct={onActRec}
+                  onViewExport={openExport}
+                  readPersonaId={readPersonaId}
+                  onChangeReadPersona={setReadPersonaId}
+                  fillHeight
+                  revealIndex={7}
                 />
-              )}
 
-              {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
-              <TermStructureCard termStructure={m.term_structure} revealIndex={6} />
-              <AiRecPanel
-                ticker={ticker} bundle={data} ai={aiRec} personas={readPersonas}
-                activePersonaId={persona.activeId}
-                dataAge={fresh ? humanAge(fresh.data_age_seconds) : null}
-                onAccept={onAcceptRec} onAct={onActRec} onViewExport={openExport}
-                readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
-                fillHeight revealIndex={7}
-              />
-
-              {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
+                {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
                   motion, UX §4.4); next revealIndex in the cascade (the sections below shift +1). */}
-              <OrdersWidget
-                ticker={ticker} live={live} isLive={isLive} streamOffline={streamOffline}
-                revealIndex={8}
-              />
+                <OrdersWidget
+                  ticker={ticker}
+                  live={live}
+                  isLive={isLive}
+                  streamOffline={streamOffline}
+                  revealIndex={8}
+                />
 
-              {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
+                {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
                   Dark pool off, Fresh positioning takes the full row. */}
-              <FreshPositioning
-                chainVolOiRatio={m.chain_vol_oi_ratio}
-                volOiThreshold={volOiThreshold} unusualStrikes={unusualStrikes}
-                revealIndex={9}
-              />
-              {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={10} />}
+                <FreshPositioning
+                  chainVolOiRatio={m.chain_vol_oi_ratio}
+                  volOiThreshold={volOiThreshold}
+                  unusualStrikes={unusualStrikes}
+                  revealIndex={9}
+                />
+                {darkPool && (
+                  <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={10} />
+                )}
 
-              <Setups setups={sig?.setups} revealIndex={11} />
+                <Setups setups={sig?.setups} revealIndex={11} />
 
-              {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
+                {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}
-              <Tooltip arrow title="Add widget — coming soon">
-                <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
-                  <ComingSoonBox
-                    data-testid="add-widget-slot"
-                    aria-disabled
-                    sx={{
-                      cursor: 'not-allowed', minHeight: 72, borderRadius: '12px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 500 }}>
-                      + Add widget
-                    </Typography>
-                  </ComingSoonBox>
-                </Box>
-              </Tooltip>
-            </Box>
-          </WidgetSelectionProvider>
+                <Tooltip arrow title="Add widget — coming soon">
+                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                    <ComingSoonBox
+                      data-testid="add-widget-slot"
+                      aria-disabled
+                      sx={{
+                        cursor: 'not-allowed',
+                        minHeight: 72,
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 500 }}>
+                        + Add widget
+                      </Typography>
+                    </ComingSoonBox>
+                  </Box>
+                </Tooltip>
+              </Box>
+            </WidgetSelectionProvider>
           </Box>
         </Fade>
       )}
@@ -493,11 +609,22 @@ export function TickerDashboard() {
         prefill={entryPrefill}
         onClose={() => setEntryOpen(false)}
         onConfirm={(s: TradeEntrySubmit) => {
-          const base = { expiration: s.expiration, strike: s.strike, right: s.right, qty: s.qty, stop: s.stop, target: s.target };
+          const base = {
+            expiration: s.expiration,
+            strike: s.strike,
+            right: s.right,
+            qty: s.qty,
+            stop: s.stop,
+            target: s.target,
+          };
           const form: NewTradeForm =
             s.entryMode === 'market'
               ? { ...base, entryMark: s.resolvedMark, entryBasis: s.resolvedBasis }
-              : { ...base, entryMark: s.entryMode === 'manual' ? s.price : s.limitPrice, entryBasis: 'manual' };
+              : {
+                  ...base,
+                  entryMark: s.entryMode === 'manual' ? s.price : s.limitPrice,
+                  entryBasis: 'manual',
+                };
           gt.openTrade(form);
           setEntryOpen(false);
         }}
@@ -515,20 +642,33 @@ export function TickerDashboard() {
           strikes={strikeList}
           spot={m?.price ?? 0}
           prefill={actState.prefill}
-          orderPlan={{ ...actState.plan, liveMid: isLive ? live?.mid ?? null : null }}
+          orderPlan={{ ...actState.plan, liveMid: isLive ? (live?.mid ?? null) : null }}
           orderError={orderError}
-          onConfirmOrder={(s: OrderEntrySubmit) => { void onConfirmOrder(s); }}
-          onClose={() => { setActState({ open: false }); setOrderError(null); }}
-          onConfirm={() => { /* order variant confirms via onConfirmOrder */ }}
+          onConfirmOrder={(s: OrderEntrySubmit) => {
+            void onConfirmOrder(s);
+          }}
+          onClose={() => {
+            setActState({ open: false });
+            setOrderError(null);
+          }}
+          onConfirm={() => {
+            /* order variant confirms via onConfirmOrder */
+          }}
         />
       )}
 
       {/* Persona customize — presentation-only, off the compute path. */}
-      <PersonaCustomizeForm open={customizeOpen} onClose={() => setCustomizeOpen(false)} persona={persona} />
+      <PersonaCustomizeForm
+        open={customizeOpen}
+        onClose={() => setCustomizeOpen(false)}
+        persona={persona}
+      />
 
       {/* The structured-state export floor — reachable from the rec panel ("View what's sent"). */}
       <StateExportDrawer
-        open={exportDrawer.open} ticker={ticker} personaId={exportDrawer.personaId}
+        open={exportDrawer.open}
+        ticker={ticker}
+        personaId={exportDrawer.personaId}
         onClose={() => setExportDrawer((s) => ({ ...s, open: false }))}
       />
     </Container>

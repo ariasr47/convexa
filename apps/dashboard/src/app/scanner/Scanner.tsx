@@ -9,7 +9,7 @@
  * inertness — the box itself never links) and its shared mode-aware `hatchBackgroundImage`; the only
  * other sx literals are the badge amber-alpha tints (`warning.main`).
  */
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { ComingSoonBox } from '../ui/ComingSoonBox';
 

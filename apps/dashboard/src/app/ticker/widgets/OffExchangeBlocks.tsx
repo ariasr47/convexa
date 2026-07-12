@@ -5,10 +5,10 @@
  * live stream), no offline state of its own, ages with the bundle freshness. Hidden when the Dark
  * pool toggle is off. Best-effort: off_exchange absent → its own "unavailable this cycle" copy.
  */
-import { Box, Stack, Typography, Tooltip } from '@mui/material';
+import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import type { OffExchange } from '@org/api';
-import { BLOCK_MIN_SHARES_DISPLAY, BLOCKS_TOOLTIP, PROXIMITY_TOOLTIP, humanAge } from './copy';
 import { typographyTokens } from '../../tokens';
+import { BLOCK_MIN_SHARES_DISPLAY, BLOCKS_TOOLTIP, humanAge, PROXIMITY_TOOLTIP } from './copy';
 import { TintChip } from './TintChip';
 import { Widget } from './Widget';
 
@@ -24,7 +24,9 @@ interface Props {
 export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
   return (
     <Widget
-      id="off-exchange-blocks" title="Off-exchange blocks" info={BLOCKS_TOOLTIP}
+      id="off-exchange-blocks"
+      title="Off-exchange blocks"
+      info={BLOCKS_TOOLTIP}
       subtitle="Largest recent off-exchange prints near spot. Context, not a signal — no side or direction."
       revealIndex={revealIndex}
     >
@@ -33,9 +35,11 @@ export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>
             Off-exchange data unavailable this cycle.
           </Typography>
-        ) : !(offExchange.blocks?.length) ? (
+        ) : !offExchange.blocks?.length ? (
           <Typography variant="body2" sx={{ color: 'text.disabled' }}>
-            No blocks ≥ {(offExchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in the recent window.
+            No blocks ≥{' '}
+            {(offExchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in
+            the recent window.
           </Typography>
         ) : (
           <Stack spacing={0.5}>
@@ -44,17 +48,30 @@ export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
               const pct = b.proximity_pct * 100; // payload is a signed ratio vs spot
               const prox = `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}% vs spot`;
               return (
-                <Box key={i} sx={{
-                  px: 1.5, py: 1, borderRadius: 1.5, bgcolor: 'action.hover',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', rowGap: 0.5,
-                }}>
+                <Box
+                  key={i}
+                  sx={{
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 1.5,
+                    bgcolor: 'action.hover',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1,
+                    flexWrap: 'wrap',
+                    rowGap: 0.5,
+                  }}
+                >
                   <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
                     <Typography sx={{ fontFamily: MONO, fontSize: 12 }}>
                       {b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}
                     </Typography>
                     {/* Proximity is context, not direction — a fixed (non-directional) tint. */}
                     <Tooltip arrow title={PROXIMITY_TOOLTIP}>
-                      <span><TintChip tone="success" label={prox} /></span>
+                      <span>
+                        <TintChip tone="success" label={prox} />
+                      </span>
                     </Tooltip>
                   </Stack>
                   <Typography variant="caption" sx={{ color: 'text.secondary' }}>

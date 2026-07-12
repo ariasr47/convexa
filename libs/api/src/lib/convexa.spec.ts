@@ -6,23 +6,40 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  requestRecommendation, fetchRecStatus, fetchRecExport, fetchPersonas, ApiError, RecRequest,
-  getAiKeyStatus, setAiKey, removeAiKey, AuthError,
+  ApiError,
+  AuthError,
+  RecRequest,
+  fetchPersonas,
+  fetchRecExport,
+  fetchRecStatus,
+  getAiKeyStatus,
+  removeAiKey,
+  requestRecommendation,
+  setAiKey,
 } from './convexa';
 
 function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise<Response>) {
-  const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => impl(String(input), init));
+  const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+    impl(String(input), init),
+  );
   vi.stubGlobal('fetch', fn);
   return fn;
 }
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
 
 const REQ: RecRequest = {
-  persona_id: 'income_keeper', snapshot_fingerprint: 'ab12', dte_min: 7, dte_max: 45,
-  dark_pool: true, override: false,
+  persona_id: 'income_keeper',
+  snapshot_fingerprint: 'ab12',
+  dte_min: 7,
+  dte_max: 45,
+  dark_pool: true,
+  override: false,
 };
 
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe('requestRecommendation', () => {
   it('POSTs to /api/recommendation/{ticker} with only identifiers + gating context — NO key', async () => {
@@ -35,7 +52,8 @@ describe('requestRecommendation', () => {
     const body = JSON.parse(String(init?.body));
     expect(body).toEqual(REQ);
     // Server-side-key-only: no key field of any spelling rides the request.
-    for (const k of ['api_key', 'anthropic_api_key', 'key', 'secret']) expect(body).not.toHaveProperty(k);
+    for (const k of ['api_key', 'anthropic_api_key', 'key', 'secret'])
+      expect(body).not.toHaveProperty(k);
   });
 
   it('returns the 200 artifact for an unavailable status (best-effort, not an HTTP fault)', async () => {
@@ -59,9 +77,13 @@ describe('fetchRecStatus / fetchRecExport / fetchPersonas', () => {
   });
 
   it('passes persona_id on the export query when provided, omits it otherwise', async () => {
-    const fetchFn = stubFetch(() => ok({ ticker: 'TSLA', context: {}, persona_prompt: '', glossary: '', egress_note: '' }));
+    const fetchFn = stubFetch(() =>
+      ok({ ticker: 'TSLA', context: {}, persona_prompt: '', glossary: '', egress_note: '' }),
+    );
     await fetchRecExport('TSLA', { personaId: 'income_keeper' });
-    expect(String(fetchFn.mock.calls[0][0])).toBe('/api/recommendation/export/TSLA?persona_id=income_keeper');
+    expect(String(fetchFn.mock.calls[0][0])).toBe(
+      '/api/recommendation/export/TSLA?persona_id=income_keeper',
+    );
     await fetchRecExport('TSLA', {});
     expect(String(fetchFn.mock.calls[1][0])).toBe('/api/recommendation/export/TSLA');
   });
@@ -126,19 +148,30 @@ describe('byo-ai-key credential client', () => {
   it('removeAiKey DELETEs /api/auth/ai-key and returns the cleared masked status', async () => {
     const fetchFn = stubFetch(() => ok({ set: false, last4: null, storage_available: true }));
     const res = await removeAiKey();
-    expect(fetchFn.mock.calls[0][1]).toMatchObject({ method: 'DELETE', credentials: 'same-origin' });
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
     expect(res).toEqual({ set: false, last4: null, storage_available: true });
   });
 
   it('maps a 403 on any credential call to AuthError(auth_required) (anonymous)', async () => {
-    stubFetch(() => new Response(JSON.stringify({ error: 'auth_required', message: 'sign in' }), { status: 403 }));
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ error: 'auth_required', message: 'sign in' }), {
+          status: 403,
+        }),
+    );
     await expect(getAiKeyStatus()).rejects.toBeInstanceOf(AuthError);
     await expect(setAiKey('sk-ant-x')).rejects.toMatchObject({ code: 'auth_required' });
     await expect(removeAiKey()).rejects.toMatchObject({ code: 'auth_required' });
   });
 
   it('maps a 422 on setAiKey to AuthError(validation)', async () => {
-    stubFetch(() => new Response(JSON.stringify({ error: 'validation', message: 'bad key' }), { status: 422 }));
+    stubFetch(
+      () =>
+        new Response(JSON.stringify({ error: 'validation', message: 'bad key' }), { status: 422 }),
+    );
     await expect(setAiKey('')).rejects.toMatchObject({ code: 'validation', status: 422 });
   });
 });

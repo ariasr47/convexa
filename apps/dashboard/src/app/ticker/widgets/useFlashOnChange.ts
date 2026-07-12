@@ -11,8 +11,8 @@
  * `tone: 'neutral'` is forced. Each flash carries an incrementing `id` so consumers can key/retrigger
  * the animation. Returns `null` when not flashing.
  */
-import { useEffect, useRef, useState } from 'react';
 import type { Theme } from '@mui/material/styles';
+import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from './useReducedMotion';
 
 export type FlashTone = 'up' | 'down' | 'neutral';
@@ -77,16 +77,16 @@ export function flashColorSx(flash: FlashState | null) {
           flash.tone === 'up'
             ? theme.palette.success.main
             : flash.tone === 'down'
-            ? theme.palette.error.main
-            : theme.palette.info.main,
+              ? theme.palette.error.main
+              : theme.palette.info.main,
       },
       '60%': {
         color:
           flash.tone === 'up'
             ? theme.palette.success.main
             : flash.tone === 'down'
-            ? theme.palette.error.main
-            : theme.palette.info.main,
+              ? theme.palette.error.main
+              : theme.palette.info.main,
       },
       '100%': { color: 'inherit' },
     },

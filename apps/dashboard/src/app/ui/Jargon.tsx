@@ -18,7 +18,11 @@ export interface JargonProps {
 export function Jargon({ term, gloss }: JargonProps) {
   return (
     <Tooltip arrow title={gloss}>
-      <Box component="span" data-testid="jargon" sx={{ borderBottom: '1px dotted', cursor: 'help' }}>
+      <Box
+        component="span"
+        data-testid="jargon"
+        sx={{ borderBottom: '1px dotted', cursor: 'help' }}
+      >
         {term}
       </Box>
     </Tooltip>

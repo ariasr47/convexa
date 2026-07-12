@@ -2,14 +2,14 @@
 
 Convexa does **not** call an LLM itself. This is the **position-aware** sibling of
 `strategy_prompt.md`: when the user holds an open (simulated) ghost trade and asks to
-*Reassess*, Convexa assembles a structured request from the durable trade record + the
+_Reassess_, Convexa assembles a structured request from the durable trade record + the
 current bundle, an **external** orchestrator runs the AI, and a structured verdict is ingested.
 **Phase-1 transport is operator-mediated** (a copyable request out, a pasted verdict in) — the
 same family as the strategy hand-off. No endpoint round-trip, no auto-apply, no real order.
 
 ## When to reassess
 
-Triggered by the user (the *Reassess* control) or surfaced by a once-per-event alert. Do **not**
+Triggered by the user (the _Reassess_ control) or surfaced by a once-per-event alert. Do **not**
 reassess on stale/overnight/closed data:
 
 ```
@@ -17,7 +17,7 @@ meta.freshness.stale == false
 AND live.market_session not in {overnight, closed}   # the FE disables Reassess otherwise
 ```
 
-The over-trading discipline still applies: alerts that *suggest* reassessing are de-duped via
+The over-trading discipline still applies: alerts that _suggest_ reassessing are de-duped via
 `position_eval.changed` (fires once per material event), but the user always decides whether to act.
 
 ## What to send — `reassessment_request`
@@ -39,7 +39,7 @@ Assembled by the app (durable lane + cached bundle); an extension of the strateg
 
 - Also send `market_state_glossary.md` as the field reference (definitions + reliability order),
   and the held contract's current stats from `GET /api/contract/{ticker}` (`option_quote`, greeks,
-  `iv`, `dte`) so the AI judges the *position*, not just the chain.
+  `iv`, `dte`) so the AI judges the _position_, not just the chain.
 
 ## System prompt (risk-first, position health)
 
@@ -84,6 +84,7 @@ synchrony is a property of the operator's AI integration behind this boundary, *
 guarantee. No real order is ever placed (simulation only).
 
 <!--PERSONA_DECOMP_START-->
+
 ## Persona decomposition (FIXED vs PERSONA — annotation only; not part of the prompt sent)
 
 The prompt **body above is the byte-identical Default render** (today's reassessment prompt,
@@ -94,7 +95,7 @@ FE assembles** the persona-parametrized prompt client-side; the server adds **no
 accepts **no** `?persona=` param. Persona never changes the bundle/score/tier/gate/fingerprint
 (byte-identical) and triggers **no recompute**; Convexa still never calls an LLM.
 
-- **FIXED (persona-invariant):** *When to reassess* (gate + dedupe); *What to send* (the
+- **FIXED (persona-invariant):** _When to reassess_ (gate + dedupe); _What to send_ (the
   `reassessment_request` + `market_state_glossary.md` + held-contract stats — no field dropped); the
   **verdict schema** `{Hold, Trim, Add, Exit, Roll}`; the **Add cap / no-auto-apply / Roll constraint /
   `status` semantics**; and the **universal risk-first floor** (lead with risk; `Hold` is valid;

@@ -10,16 +10,26 @@
  * On success the dialog closes and (when opened from a gated action) `onSuccess` fires so the caller
  * can return the user to the surface with the action now available (AC-C1/D6c).
  */
-import { useEffect, useState } from 'react';
-import {
-  Dialog, DialogContent, Stack, TextField, Button, Alert, Link, Divider, Box, IconButton, Typography,
-} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Divider,
+  IconButton,
+  Link,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { AuthError } from '@org/api';
-import { useAuth } from './AuthContext';
-import { AUTH_COPY } from './copy';
+import { useEffect, useState } from 'react';
 import { TEST_ACCOUNT_PASSWORD } from '../positions/testSeed';
 import { extrasFor } from '../tokens';
+import { useAuth } from './AuthContext';
+import { AUTH_COPY } from './copy';
 import { GoogleButton } from './GoogleButton';
 import { isLikelyEmail, validationFieldCopy } from './validation';
 
@@ -104,7 +114,10 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
   const submit = async (ev?: React.FormEvent) => {
     ev?.preventDefault();
     const ce = clientValidate();
-    if (ce) { setErrors(ce); return; }
+    if (ce) {
+      setErrors(ce);
+      return;
+    }
     setErrors({});
     setSubmitting(true);
     try {
@@ -170,9 +183,16 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
-            {reason && <Alert severity="info" data-testid="auth-reason">{reason}</Alert>}
+            {reason && (
+              <Alert severity="info" data-testid="auth-reason">
+                {reason}
+              </Alert>
+            )}
             {errors.form && (
-              <Alert severity={mode === 'login' ? 'error' : 'warning'} data-testid="auth-form-error">
+              <Alert
+                severity={mode === 'login' ? 'error' : 'warning'}
+                data-testid="auth-form-error"
+              >
                 {errors.form}
               </Alert>
             )}
@@ -182,7 +202,15 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
               <Typography
                 component="label"
                 htmlFor="auth-email-input"
-                sx={{ display: 'block', mb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.secondary' }}
+                sx={{
+                  display: 'block',
+                  mb: 0.5,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.07em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
               >
                 {c.email}
               </Typography>
@@ -207,7 +235,15 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
               <Typography
                 component="label"
                 htmlFor="auth-password-input"
-                sx={{ display: 'block', mb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'text.secondary' }}
+                sx={{
+                  display: 'block',
+                  mb: 0.5,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.07em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                }}
               >
                 {c.password}
               </Typography>

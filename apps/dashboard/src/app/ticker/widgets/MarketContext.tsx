@@ -27,36 +27,83 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
-import { Box, Card, CardContent, Stack, Typography, Tooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type {
-  MarketContextPack, TrendMomentumRead, GexProfileShapeRead, FlowVsPositioningRead, AtrRead,
   AtrHorizon,
+  AtrRead,
+  FlowVsPositioningRead,
+  GexProfileShapeRead,
+  MarketContextPack,
+  TrendMomentumRead,
 } from '@org/api';
-import { Widget } from './Widget';
 import { typographyTokens } from '../../tokens';
 import {
-  MC_TITLE, MC_SUBTITLE, MC_INFO, MC_ADVISORY, MC_WHOLE_EMPTY,
-  MC_TI_TITLE, MC_SHAPE_TITLE, MC_FLOW_TITLE, MC_ATR_TITLE,
-  MC_ROW_TREND, MC_ROW_STRENGTH, MC_ROW_MOMENTUM,
-  MC_ROW_CONCENTRATION, MC_ROW_BALANCE, MC_ROW_COM,
-  MC_ROW_LOCATION, MC_ROW_COMPOSITION,
-  MC_ROW_ATR_5D, MC_ROW_ATR_14D, MC_ROW_ATR_30D,
-  MC_TI_EMPTY, MC_SHAPE_EMPTY, MC_FLOW_EMPTY, MC_ATR_EMPTY,
-  MC_TREND_ROW_EMPTY, MC_STRENGTH_ROW_EMPTY, MC_MOMENTUM_ROW_EMPTY,
-  MC_LOCATION_ROW_EMPTY, MC_COMPOSITION_ROW_EMPTY, MC_CELL_EMPTY,
-  MC_TIP_TREND, MC_TIP_STRENGTH, MC_TIP_MOMENTUM,
-  MC_TIP_CONCENTRATION, MC_TIP_BALANCE, MC_TIP_COM,
-  MC_TIP_LOCATION, MC_TIP_COMPOSITION,
-  MC_TIP_TI_CARD, MC_TIP_SHAPE_CARD, MC_TIP_FLOW_CARD, MC_TIP_ATR_CARD,
-  MC_DIRECTION_DISPLAY, MC_STRENGTH_DISPLAY, MC_MOMENTUM_DISPLAY,
-  MC_CONCENTRATION_DISPLAY, MC_BALANCE_DISPLAY, MC_LOCATION_DISPLAY, MC_COMPOSITION_DISPLAY,
+  MC_ADVISORY,
+  MC_ATR_EMPTY,
+  MC_ATR_TITLE,
+  MC_BALANCE_DISPLAY,
+  MC_CELL_EMPTY,
+  MC_COMPOSITION_DISPLAY,
+  MC_COMPOSITION_ROW_EMPTY,
+  MC_CONCENTRATION_DISPLAY,
+  MC_DIRECTION_DISPLAY,
+  MC_FLOW_BASIS,
+  MC_FLOW_EMPTY,
+  MC_FLOW_TITLE,
+  MC_INFO,
+  MC_LOCATION_DISPLAY,
+  MC_LOCATION_ROW_EMPTY,
+  MC_MOMENTUM_DISPLAY,
+  MC_MOMENTUM_ROW_EMPTY,
+  MC_ROW_ATR_14D,
+  MC_ROW_ATR_30D,
+  MC_ROW_ATR_5D,
+  MC_ROW_BALANCE,
+  MC_ROW_COM,
+  MC_ROW_COMPOSITION,
+  MC_ROW_CONCENTRATION,
+  MC_ROW_LOCATION,
+  MC_ROW_MOMENTUM,
+  MC_ROW_STRENGTH,
+  MC_ROW_TREND,
+  MC_SHAPE_EMPTY,
+  MC_SHAPE_TITLE,
+  MC_STRENGTH_DISPLAY,
+  MC_STRENGTH_ROW_EMPTY,
+  MC_SUBTITLE,
+  MC_TI_EMPTY,
+  MC_TI_TITLE,
+  MC_TIP_ATR_CARD,
+  MC_TIP_BALANCE,
+  MC_TIP_COM,
+  MC_TIP_COMPOSITION,
+  MC_TIP_CONCENTRATION,
+  MC_TIP_FLOW_CARD,
+  MC_TIP_LOCATION,
+  MC_TIP_MOMENTUM,
+  MC_TIP_SHAPE_CARD,
+  MC_TIP_STRENGTH,
+  MC_TIP_TI_CARD,
+  MC_TIP_TREND,
+  MC_TITLE,
+  MC_TREND_ROW_EMPTY,
+  MC_WHOLE_EMPTY,
+  mcAtrBasis,
+  mcAtrLine,
+  mcBalanceLine,
+  mcComLine,
+  mcCompositionLine,
+  mcConcentrationLine,
   mcDisplay,
-  mcTrendLine, mcStrengthLine, mcMomentumLine,
-  mcConcentrationLine, mcBalanceLine, mcComLine,
-  mcLocationLine, mcCompositionLine, mcAtrLine,
-  mcTiBasis, mcShapeBasis, MC_FLOW_BASIS, mcAtrBasis,
+  mcLocationLine,
+  mcMomentumLine,
+  mcShapeBasis,
+  mcStrengthLine,
+  mcTiBasis,
+  mcTrendLine,
 } from './copy';
+import { Widget } from './Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -80,7 +127,10 @@ function EmptyLine({ text, testid }: { text: string; testid: string }) {
 function CaptionLabel({ label, info }: { label: string; info?: string }) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
-      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}>
+      <Typography
+        variant="caption"
+        sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: 0.3 }}
+      >
         {label}
       </Typography>
       {info && (
@@ -96,14 +146,27 @@ function CaptionLabel({ label, info }: { label: string; info?: string }) {
 }
 
 /** The recessed sub-card — the LimbCard-style StatTile-family surface on the widget's inset well. */
-function SubCard({ title, info, testid, children }: {
-  title: string; info: string; testid: string; children: React.ReactNode;
+function SubCard({
+  title,
+  info,
+  testid,
+  children,
+}: {
+  title: string;
+  info: string;
+  testid: string;
+  children: React.ReactNode;
 }) {
   return (
     <Card
       variant="outlined"
       data-testid={testid}
-      sx={{ borderRadius: '12px', borderColor: 'divider', bgcolor: 'background.paper', height: '100%' }}
+      sx={{
+        borderRadius: '12px',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        height: '100%',
+      }}
     >
       <CardContent sx={{ '&:last-child': { pb: 1.75 } }}>
         <Box sx={{ mb: 0.75 }}>
@@ -118,9 +181,20 @@ function SubCard({ title, info, testid, children }: {
 /** One label row: caption row-label (+ ⓘ tooltip) → prominent headline display string → small mono
  *  scalar line. `display == null` (a null label OR an unknown wire enum) renders `emptyText` alone —
  *  that label's unavailable state, never a raw enum, never invented text. */
-function LabelRow({ rowLabel, info, display, scalar, emptyText, testid }: {
-  rowLabel: string; info: string; display: string | null; scalar?: string;
-  emptyText: string; testid: string;
+function LabelRow({
+  rowLabel,
+  info,
+  display,
+  scalar,
+  emptyText,
+  testid,
+}: {
+  rowLabel: string;
+  info: string;
+  display: string | null;
+  scalar?: string;
+  emptyText: string;
+  testid: string;
 }) {
   return (
     <Box sx={{ mb: 1 }} data-testid={testid}>
@@ -146,7 +220,11 @@ function LabelRow({ rowLabel, info, display, scalar, emptyText, testid }: {
 /** The always-visible per-card basis line (the AC-4 surface — no interaction). */
 function BasisLine({ text, testid }: { text: string; testid: string }) {
   return (
-    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }} data-testid={testid}>
+    <Typography
+      variant="caption"
+      sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+      data-testid={testid}
+    >
       {text}
     </Typography>
   );
@@ -161,22 +239,34 @@ function TrendMomentumCard({ read }: { read: TrendMomentumRead | null }) {
       ) : (
         <>
           <LabelRow
-            rowLabel={MC_ROW_TREND} info={MC_TIP_TREND}
-            display={read.direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, read.direction.label)}
+            rowLabel={MC_ROW_TREND}
+            info={MC_TIP_TREND}
+            display={
+              read.direction == null ? null : mcDisplay(MC_DIRECTION_DISPLAY, read.direction.label)
+            }
             scalar={read.direction == null ? undefined : mcTrendLine(read.direction)}
-            emptyText={MC_TREND_ROW_EMPTY} testid="mc-trend"
+            emptyText={MC_TREND_ROW_EMPTY}
+            testid="mc-trend"
           />
           <LabelRow
-            rowLabel={MC_ROW_STRENGTH} info={MC_TIP_STRENGTH}
-            display={read.strength == null ? null : mcDisplay(MC_STRENGTH_DISPLAY, read.strength.label)}
+            rowLabel={MC_ROW_STRENGTH}
+            info={MC_TIP_STRENGTH}
+            display={
+              read.strength == null ? null : mcDisplay(MC_STRENGTH_DISPLAY, read.strength.label)
+            }
             scalar={read.strength == null ? undefined : mcStrengthLine(read.strength)}
-            emptyText={MC_STRENGTH_ROW_EMPTY} testid="mc-strength"
+            emptyText={MC_STRENGTH_ROW_EMPTY}
+            testid="mc-strength"
           />
           <LabelRow
-            rowLabel={MC_ROW_MOMENTUM} info={MC_TIP_MOMENTUM}
-            display={read.momentum == null ? null : mcDisplay(MC_MOMENTUM_DISPLAY, read.momentum.label)}
+            rowLabel={MC_ROW_MOMENTUM}
+            info={MC_TIP_MOMENTUM}
+            display={
+              read.momentum == null ? null : mcDisplay(MC_MOMENTUM_DISPLAY, read.momentum.label)
+            }
             scalar={read.momentum == null ? undefined : mcMomentumLine(read.momentum)}
-            emptyText={MC_MOMENTUM_ROW_EMPTY} testid="mc-momentum"
+            emptyText={MC_MOMENTUM_ROW_EMPTY}
+            testid="mc-momentum"
           />
           <BasisLine text={mcTiBasis(read.as_of_session)} testid="mc-ti-basis" />
         </>
@@ -194,25 +284,36 @@ function ShapeCard({ read }: { read: GexProfileShapeRead | null }) {
       ) : (
         <>
           <LabelRow
-            rowLabel={MC_ROW_CONCENTRATION} info={MC_TIP_CONCENTRATION}
+            rowLabel={MC_ROW_CONCENTRATION}
+            info={MC_TIP_CONCENTRATION}
             display={mcDisplay(MC_CONCENTRATION_DISPLAY, read.concentration_label)}
             scalar={mcConcentrationLine(read.concentration)}
-            emptyText={MC_CELL_EMPTY} testid="mc-concentration"
+            emptyText={MC_CELL_EMPTY}
+            testid="mc-concentration"
           />
           <LabelRow
-            rowLabel={MC_ROW_BALANCE} info={MC_TIP_BALANCE}
+            rowLabel={MC_ROW_BALANCE}
+            info={MC_TIP_BALANCE}
             display={mcDisplay(MC_BALANCE_DISPLAY, read.balance_label)}
             scalar={mcBalanceLine(read.balance)}
-            emptyText={MC_CELL_EMPTY} testid="mc-balance"
+            emptyText={MC_CELL_EMPTY}
+            testid="mc-balance"
           />
           {/* Center of mass — a scalar-only row by design (no label, no threshold). */}
           <Box sx={{ mb: 1 }} data-testid="mc-com">
             <CaptionLabel label={MC_ROW_COM} info={MC_TIP_COM} />
-            <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: MONO }} data-testid="mc-com-value">
+            <Typography
+              variant="body1"
+              sx={{ fontWeight: 600, fontFamily: MONO }}
+              data-testid="mc-com-value"
+            >
               {mcComLine(read.center_of_mass_distance)}
             </Typography>
           </Box>
-          <BasisLine text={mcShapeBasis(read.spot_basis, read.eligible_strikes)} testid="mc-shape-basis" />
+          <BasisLine
+            text={mcShapeBasis(read.spot_basis, read.eligible_strikes)}
+            testid="mc-shape-basis"
+          />
         </>
       )}
     </SubCard>
@@ -229,16 +330,26 @@ function FlowCard({ read }: { read: FlowVsPositioningRead | null }) {
       ) : (
         <>
           <LabelRow
-            rowLabel={MC_ROW_LOCATION} info={MC_TIP_LOCATION}
-            display={read.location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, read.location.label)}
+            rowLabel={MC_ROW_LOCATION}
+            info={MC_TIP_LOCATION}
+            display={
+              read.location == null ? null : mcDisplay(MC_LOCATION_DISPLAY, read.location.label)
+            }
             scalar={read.location == null ? undefined : mcLocationLine(read.location)}
-            emptyText={MC_LOCATION_ROW_EMPTY} testid="mc-location"
+            emptyText={MC_LOCATION_ROW_EMPTY}
+            testid="mc-location"
           />
           <LabelRow
-            rowLabel={MC_ROW_COMPOSITION} info={MC_TIP_COMPOSITION}
-            display={read.composition == null ? null : mcDisplay(MC_COMPOSITION_DISPLAY, read.composition.label)}
+            rowLabel={MC_ROW_COMPOSITION}
+            info={MC_TIP_COMPOSITION}
+            display={
+              read.composition == null
+                ? null
+                : mcDisplay(MC_COMPOSITION_DISPLAY, read.composition.label)
+            }
             scalar={read.composition == null ? undefined : mcCompositionLine(read.composition)}
-            emptyText={MC_COMPOSITION_ROW_EMPTY} testid="mc-composition"
+            emptyText={MC_COMPOSITION_ROW_EMPTY}
+            testid="mc-composition"
           />
           <BasisLine text={MC_FLOW_BASIS} testid="mc-flow-basis" />
         </>
@@ -248,8 +359,14 @@ function FlowCard({ read }: { read: FlowVsPositioningRead | null }) {
 }
 
 /** One ATR horizon row: label kept; a null horizon shows the muted cell text — NEVER `$0` / `0%`. */
-function AtrRow({ rowLabel, horizon, testid }: {
-  rowLabel: string; horizon: AtrHorizon | null; testid: string;
+function AtrRow({
+  rowLabel,
+  horizon,
+  testid,
+}: {
+  rowLabel: string;
+  horizon: AtrHorizon | null;
+  testid: string;
 }) {
   return (
     <Box sx={{ mb: 1 }} data-testid={testid}>
@@ -257,7 +374,11 @@ function AtrRow({ rowLabel, horizon, testid }: {
       {horizon == null ? (
         <EmptyLine text={MC_CELL_EMPTY} testid={`${testid}-empty`} />
       ) : (
-        <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: MONO }} data-testid={`${testid}-value`}>
+        <Typography
+          variant="body1"
+          sx={{ fontWeight: 600, fontFamily: MONO }}
+          data-testid={`${testid}-value`}
+        >
           {mcAtrLine(horizon)}
         </Typography>
       )}
@@ -277,7 +398,10 @@ function AtrCard({ read }: { read: AtrRead | null }) {
           <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d} testid="mc-atr-5d" />
           <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d} testid="mc-atr-14d" />
           <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d} testid="mc-atr-30d" />
-          <BasisLine text={mcAtrBasis(read.as_of_session, read.close_basis)} testid="mc-atr-basis" />
+          <BasisLine
+            text={mcAtrBasis(read.as_of_session, read.close_basis)}
+            testid="mc-atr-basis"
+          />
         </>
       )}
     </SubCard>

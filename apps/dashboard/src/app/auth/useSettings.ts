@@ -14,14 +14,17 @@
  * SCORE-NEUTRAL (AC-F4): nothing here is ever wired into getTicker/streamTicker or the score path. A
  * pref change only changes which default a UI lands on.
  */
-import { useCallback, useMemo, useState } from 'react';
 import type { ThemePref, UserSettings } from '@org/api';
+import { useCallback, useMemo, useState } from 'react';
+import { loadActiveId, saveActiveId } from '../personas/store';
 import { useAuth } from './AuthContext';
 import { SETTINGS_DEFAULTS } from './copy';
 import {
-  loadLocalTheme, saveLocalTheme, loadLocalDefaultTicker, saveLocalDefaultTicker,
+  loadLocalDefaultTicker,
+  loadLocalTheme,
+  saveLocalDefaultTicker,
+  saveLocalTheme,
 } from './localPrefs';
-import { loadActiveId, saveActiveId } from '../personas/store';
 
 export interface EffectiveSettings {
   /** 'default' | preset/custom persona id. */
@@ -72,34 +75,63 @@ export function useSettings(): SettingsApi {
     };
   }, [serverBacked, auth.settings, localTick]);
 
-  const writeServer = useCallback(async (patch: Partial<UserSettings>) => {
-    try {
-      await auth.updateSettings(patch);
-      setSaveError(null);
-    } catch {
-      // Save-error (UX_BLUEPRINT §2.9): surface a non-blocking error; the control reverts to the last
-      // confirmed (server) value because we never optimistically mutated it.
-      setSaveError('save_failed');
-    }
-  }, [auth]);
+  const writeServer = useCallback(
+    async (patch: Partial<UserSettings>) => {
+      try {
+        await auth.updateSettings(patch);
+        setSaveError(null);
+      } catch {
+        // Save-error (UX_BLUEPRINT §2.9): surface a non-blocking error; the control reverts to the last
+        // confirmed (server) value because we never optimistically mutated it.
+        setSaveError('save_failed');
+      }
+    },
+    [auth],
+  );
 
-  const setPersona = useCallback(async (id: string) => {
-    if (serverBacked) await writeServer({ active_persona_id: id === 'default' ? null : id });
-    else { saveActiveId(id === 'default' ? null : id); setLocalTick((n) => n + 1); }
-  }, [serverBacked, writeServer]);
+  const setPersona = useCallback(
+    async (id: string) => {
+      if (serverBacked) await writeServer({ active_persona_id: id === 'default' ? null : id });
+      else {
+        saveActiveId(id === 'default' ? null : id);
+        setLocalTick((n) => n + 1);
+      }
+    },
+    [serverBacked, writeServer],
+  );
 
-  const setDefaultTicker = useCallback(async (t: string | null) => {
-    const norm = t && t.trim() ? t.trim().toUpperCase() : null;
-    if (serverBacked) await writeServer({ default_ticker: norm });
-    else { saveLocalDefaultTicker(norm); setLocalTick((n) => n + 1); }
-  }, [serverBacked, writeServer]);
+  const setDefaultTicker = useCallback(
+    async (t: string | null) => {
+      const norm = t && t.trim() ? t.trim().toUpperCase() : null;
+      if (serverBacked) await writeServer({ default_ticker: norm });
+      else {
+        saveLocalDefaultTicker(norm);
+        setLocalTick((n) => n + 1);
+      }
+    },
+    [serverBacked, writeServer],
+  );
 
-  const setTheme = useCallback(async (t: ThemePref) => {
-    if (serverBacked) await writeServer({ theme: t });
-    else { saveLocalTheme(t); setLocalTick((n) => n + 1); }
-  }, [serverBacked, writeServer]);
+  const setTheme = useCallback(
+    async (t: ThemePref) => {
+      if (serverBacked) await writeServer({ theme: t });
+      else {
+        saveLocalTheme(t);
+        setLocalTick((n) => n + 1);
+      }
+    },
+    [serverBacked, writeServer],
+  );
 
   const clearSaveError = useCallback(() => setSaveError(null), []);
 
-  return { effective, serverBacked, saveError, setPersona, setDefaultTicker, setTheme, clearSaveError };
+  return {
+    effective,
+    serverBacked,
+    saveError,
+    setPersona,
+    setDefaultTicker,
+    setTheme,
+    clearSaveError,
+  };
 }

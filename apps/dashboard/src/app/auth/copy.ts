@@ -36,8 +36,7 @@ export const AUTH_COPY = {
     submitting: 'Signing in…',
     switch: 'New here? Create an account',
     // THE EXACT non-enumerating message — identical for unknown-email AND wrong-password.
-    badCredentials:
-      "Those credentials didn't match. Check your email and password and try again.",
+    badCredentials: "Those credentials didn't match. Check your email and password and try again.",
     invalidEmail: 'Enter a valid email address.',
     emptyPassword: 'Enter your password.',
     unavailable: "Couldn't reach sign-in right now. Please try again in a moment.",
@@ -90,8 +89,8 @@ export const AUTH_COPY = {
     aiKey: {
       heading: 'AI key',
       helper:
-        'Your own Anthropic key lets AI recommendations run on your key, at your cost. It\'s stored ' +
-        'encrypted and used only for your own recommendations — it\'s never shown again and never ' +
+        "Your own Anthropic key lets AI recommendations run on your key, at your cost. It's stored " +
+        "encrypted and used only for your own recommendations — it's never shown again and never " +
         'leaves the server.',
       inputLabel: 'Anthropic API key',
       inputPlaceholder: 'sk-ant-…',
@@ -113,8 +112,7 @@ export const AUTH_COPY = {
       savedRemove: 'AI key removed.',
       saveError: "Couldn't save your key. Please try again.",
       validationEmpty: 'Enter your Anthropic key.',
-      validationFormat:
-        "That doesn't look like an Anthropic key (it should start with sk-ant-).",
+      validationFormat: "That doesn't look like an Anthropic key (it should start with sk-ant-).",
       storageUnavailable:
         "Key storage isn't set up on this deployment yet, so a key can't be saved right now. The " +
         'manual export hand-off still works without a key.',

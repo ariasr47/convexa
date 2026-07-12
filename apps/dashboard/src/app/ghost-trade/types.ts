@@ -16,7 +16,7 @@ export interface GhostTrade {
   expiration: string; // YYYY-MM-DD
   strike: number;
   right: OptionRight;
-  side: 'long';       // long single-leg only (v1)
+  side: 'long'; // long single-leg only (v1)
   qty: number;
   entry_mark: number; // option mid (or theoretical) at entry — the fill basis
   entry_basis: MarkBasis;
@@ -33,13 +33,24 @@ export interface GhostTrade {
 }
 
 export type DecisionEvent =
-  | 'open' | 'close' | 'accept' | 'reject' | 'alert' | 'roll'
+  | 'open'
+  | 'close'
+  | 'accept'
+  | 'reject'
+  | 'alert'
+  | 'roll'
   // Positions-portfolio additions (UX_BLUEPRINT §2.3) — the resting-limit lifecycle events.
-  | 'limit_placed' | 'limit_filled' | 'limit_cancelled'
+  | 'limit_placed'
+  | 'limit_filled'
+  | 'limit_cancelled'
   // ai-rec-backtest-orders additions (arch §2 audit spine): the sim-order lifecycle events,
   // appended to the SAME append-only log with `trade_id` = the ORDER id. The fill ALSO emits the
   // existing position `open` event (trade_id = position id) so both histories are complete (AC-32).
-  | 'order_placed' | 'order_triggered' | 'order_filled' | 'order_cancelled' | 'order_expired';
+  | 'order_placed'
+  | 'order_triggered'
+  | 'order_filled'
+  | 'order_cancelled'
+  | 'order_expired';
 
 /** Append-only, versioned, exportable (for a future back-test of AI-assisted edge). */
 export interface DecisionRecord {
@@ -65,7 +76,7 @@ export interface DecisionRecord {
 
 /** Edge-detected reassessment alert (FE-owned; fires once per distinct event). */
 export interface TradeAlert {
-  id: string;      // stable per event instance (for the armed/fired edge + de-dupe)
+  id: string; // stable per event instance (for the armed/fired edge + de-dupe)
   message: string; // "{event} — consider reassessing."
-  time: string;    // ISO
+  time: string; // ISO
 }

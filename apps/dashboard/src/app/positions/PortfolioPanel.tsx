@@ -12,15 +12,15 @@
  * (`data-testid="open-entry"`). The mandatory `positions-disclosure` (D6d) + the in-context sign-in
  * prompt + the server-gate wiring are all preserved verbatim. No data/handler changes.
  */
+import { Alert, Box, Snackbar } from '@mui/material';
+import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useState } from 'react';
-import { Box, Snackbar, Alert } from '@mui/material';
-import type { TickerBundle, LiveUpdate } from '@org/api';
-import { usePortfolio, OpenPositionInput } from './usePortfolio';
-import { PositionsPanel } from './PositionsPanel';
-import { LiveTabPanel } from './LiveTabPanel';
-import { EntryPrefill } from '../trading/TradeEntryDialog';
-import { useGate } from '../auth/useGate';
 import { AUTH_COPY } from '../auth/copy';
+import { useGate } from '../auth/useGate';
+import { EntryPrefill } from '../trading/TradeEntryDialog';
+import { LiveTabPanel } from './LiveTabPanel';
+import { PositionsPanel } from './PositionsPanel';
+import { OpenPositionInput, usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
@@ -37,7 +37,17 @@ interface Props {
   onEntryOpen: (open: boolean) => void;
 }
 
-export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, entryPrefill, entryOpen, onEntryOpen }: Props) {
+export function PortfolioPanel({
+  pf,
+  data,
+  live,
+  isLive,
+  streamOffline,
+  ticker,
+  entryPrefill,
+  entryOpen,
+  onEntryOpen,
+}: Props) {
   const [tab, setTab] = useState<'simulated' | 'live'>('simulated');
   const [toast, setToast] = useState<string | null>(null);
 
@@ -47,7 +57,10 @@ export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, 
 
   // Opening the entry dialog is itself a write intent: gate it logged-out (prompt, no dialog).
   const requestOpenEntry = () => {
-    if (!gate.allowed) { gate.prompt(AUTH_COPY.positions.gateTrack); return; }
+    if (!gate.allowed) {
+      gate.prompt(AUTH_COPY.positions.gateTrack);
+      return;
+    }
     gate.clear();
     onEntryOpen(true);
   };
@@ -58,11 +71,15 @@ export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, 
     // `openPosition` write. A stale-cookie / bypassed-FE-check path ⇒ the server returns 403 ⇒ the
     // guard re-shows the prompt and `openPosition` never runs, so NOTHING is persisted. The server is
     // the boundary of record; the FE auth check above is UX sugar only (D6e).
-    void gate.guard(AUTH_COPY.positions.gateTrack, () => {
-      const res = pf.openPosition(input);
-      if (!res.ok && res.reason) setToast(res.reason);
-      onEntryOpen(false);
-    }, { serverGate: gate.simTradeGate });
+    void gate.guard(
+      AUTH_COPY.positions.gateTrack,
+      () => {
+        const res = pf.openPosition(input);
+        if (!res.ok && res.reason) setToast(res.reason);
+        onEntryOpen(false);
+      },
+      { serverGate: gate.simTradeGate },
+    );
   };
 
   // Save-view writes (save-as-new / save-changes) are state-bearing too — server-gate them the same
@@ -102,9 +119,13 @@ export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, 
           <Box
             component="span"
             sx={{
-              fontSize: '0.62rem', fontWeight: 700, color: 'success.main',
-              border: '1px solid', borderColor: (t) => `${t.palette.success.main}66`,
-              borderRadius: '4px', padding: '1px 5px',
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              color: 'success.main',
+              border: '1px solid',
+              borderColor: (t) => `${t.palette.success.main}66`,
+              borderRadius: '4px',
+              padding: '1px 5px',
             }}
           >
             PAPER
@@ -142,7 +163,9 @@ export function PortfolioPanel({ pf, data, live, isLive, streamOffline, ticker, 
       )}
 
       <Snackbar open={!!toast} autoHideDuration={6000} onClose={() => setToast(null)}>
-        <Alert severity="warning" onClose={() => setToast(null)} data-testid="entry-failure-toast">{toast}</Alert>
+        <Alert severity="warning" onClose={() => setToast(null)} data-testid="entry-failure-toast">
+          {toast}
+        </Alert>
       </Snackbar>
     </Box>
   );

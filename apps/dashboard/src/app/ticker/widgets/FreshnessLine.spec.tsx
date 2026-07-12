@@ -5,9 +5,9 @@
  * flight and clears when it resolves; and the static `dataAgeSeconds` fallback is used when no ISO
  * anchor is present. It reflects the static path only — there is no live/SSE wiring here.
  */
-import { render, screen, act } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@mui/material/styles';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../../theme';
 import { FreshnessLine } from './FreshnessLine';
 
@@ -37,7 +37,9 @@ describe('FreshnessLine (REST-bundle freshness caption)', () => {
     const iso = new Date(Date.now() - 5_000).toISOString();
     renderFL({ snapshotIso: iso, dataAgeSeconds: 5 });
     expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 5s ago/);
-    act(() => { vi.advanceTimersByTime(10_000); });
+    act(() => {
+      vi.advanceTimersByTime(10_000);
+    });
     expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 15s ago/);
   });
 

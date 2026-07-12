@@ -9,8 +9,8 @@
  * would break per-account isolation, AC-F2).
  */
 import type { ThemePref } from '@org/api';
-import { SETTINGS_DEFAULTS } from './copy';
 import { resolveDurable } from '../durable/resolveDurable';
+import { SETTINGS_DEFAULTS } from './copy';
 
 const KEY = 'convexa.uiprefs.v1';
 const LEGACY_KEY = 'gammaflow.uiprefs.v1';
@@ -23,7 +23,9 @@ interface PersistShape {
 }
 
 const empty = (): PersistShape => ({
-  schema_version: SCHEMA_VERSION, theme: SETTINGS_DEFAULTS.theme, default_ticker: null,
+  schema_version: SCHEMA_VERSION,
+  theme: SETTINGS_DEFAULTS.theme,
+  default_ticker: null,
 });
 
 let memory: PersistShape | null = null;
@@ -33,25 +35,39 @@ function read(): PersistShape {
   try {
     const raw = resolveDurable(KEY, LEGACY_KEY);
     memory = raw ? { ...empty(), ...(JSON.parse(raw) as PersistShape) } : empty();
-  } catch { memory = empty(); }
+  } catch {
+    memory = empty();
+  }
   return memory;
 }
 
 function write(s: PersistShape) {
   memory = s;
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* in-memory only */ }
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* in-memory only */
+  }
 }
 
-export function loadLocalTheme(): ThemePref { return read().theme; }
-export function saveLocalTheme(theme: ThemePref) { write({ ...read(), theme }); }
+export function loadLocalTheme(): ThemePref {
+  return read().theme;
+}
+export function saveLocalTheme(theme: ThemePref) {
+  write({ ...read(), theme });
+}
 
-export function loadLocalDefaultTicker(): string | null { return read().default_ticker; }
+export function loadLocalDefaultTicker(): string | null {
+  return read().default_ticker;
+}
 export function saveLocalDefaultTicker(t: string | null) {
   write({ ...read(), default_ticker: t && t.trim() ? t.trim().toUpperCase() : null });
 }
 
 /** Test seam — reset the in-memory cache (the persisted layer is cleared by the test's localStorage). */
-export function __resetLocalPrefs() { memory = null; }
+export function __resetLocalPrefs() {
+  memory = null;
+}
 
 export const UIPREFS_KEY = KEY;
 export const UIPREFS_LEGACY_KEY = LEGACY_KEY;

@@ -2,10 +2,7 @@
   "name": "@org/api",
   "version": "0.0.1",
   "nx": {
-    "tags": [
-      "scope:shared",
-      "type:lib"
-    ]
+    "tags": ["scope:shared", "type:lib"]
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",

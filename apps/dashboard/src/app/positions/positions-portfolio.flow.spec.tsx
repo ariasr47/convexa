@@ -16,54 +16,133 @@
  * Traceability: every AC in the FRONTEND_EXECUTION_CONTRACT §5 matrix maps to a named test below or
  * in the colocated unit/component specs. QA traces each AC → ≥1 passing test at GATE Q.
  */
-import { render, screen, within, act, cleanup, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
 import { streamTicker } from '@org/api';
-import type { TickerBundle, LiveUpdate, TrackedContract, StrikeRow } from '@org/api';
-import { usePortfolio } from './usePortfolio';
-import { PortfolioPanel } from './PortfolioPanel';
-import {
-  __resetMemory, PORTFOLIO_V1_KEY, PORTFOLIO_V2_KEY, allPositions, decisionsForPosition,
-} from './store';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useEffect, useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext';
 import { AuthDialogProvider } from '../auth/AuthDialogProvider';
+import { PortfolioPanel } from './PortfolioPanel';
+import {
+  PORTFOLIO_V1_KEY,
+  PORTFOLIO_V2_KEY,
+  __resetMemory,
+  allPositions,
+  decisionsForPosition,
+} from './store';
+import { usePortfolio } from './usePortfolio';
 
 const theme = createTheme();
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------
 function strike(s: number): StrikeRow {
-  return { strike: s, net_gex: 0, call_gex: 0, put_gex: 0, call_oi: 10, put_oi: 10, total_oi: 20, net_dex: 0, call_dex: 0, put_dex: 0, volume: 5, vol_oi_ratio: 0.25 };
+  return {
+    strike: s,
+    net_gex: 0,
+    call_gex: 0,
+    put_gex: 0,
+    call_oi: 10,
+    put_oi: 10,
+    total_oi: 20,
+    net_dex: 0,
+    call_dex: 0,
+    put_dex: 0,
+    volume: 5,
+    vol_oi_ratio: 0.25,
+  };
 }
 function makeBundle(): TickerBundle {
   return {
     market_state: {
-      ticker: 'TSLA', price: 250, gex_spot: 250, timestamp: 1, timestamp_iso: '2026-06-23T14:00:00Z',
-      call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-      max_pain_expiration: '2026-06-26', net_gex: 1, call_gex: 1, put_gex: -1, total_gex: 1, net_dex: 1,
-      call_dex: 1, put_dex: -1, net_vanna: null, net_charm: null, net_volga: null, vwap: 249,
-      vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null, dte_min: 7,
-      dte_max: 45, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.1, net_flow: null, put_call_ratio: 0.8,
-      chain_vol_oi_ratio: 0.5, total_volume: 100000, vol_oi_unusual_threshold: 1, iv_skew: null, term_structure: null, dealer_flow_projection: null,
+      ticker: 'TSLA',
+      price: 250,
+      gex_spot: 250,
+      timestamp: 1,
+      timestamp_iso: '2026-06-23T14:00:00Z',
+      call_wall: 260,
+      put_wall: 240,
+      peak_gex_strike: 255,
+      gamma_flip: 248,
+      max_pain: 250,
+      max_pain_expiration: '2026-06-26',
+      net_gex: 1,
+      call_gex: 1,
+      put_gex: -1,
+      total_gex: 1,
+      net_dex: 1,
+      call_dex: 1,
+      put_dex: -1,
+      net_vanna: null,
+      net_charm: null,
+      net_volga: null,
+      vwap: 249,
+      vwap_upper_2: null,
+      vwap_upper_3: null,
+      vwap_lower_2: null,
+      vwap_lower_3: null,
+      dte_min: 7,
+      dte_max: 45,
+      atm_iv: 45,
+      hv_30d: 40,
+      iv_hv_ratio: 1.1,
+      net_flow: null,
+      put_call_ratio: 0.8,
+      chain_vol_oi_ratio: 0.5,
+      total_volume: 100000,
+      vol_oi_unusual_threshold: 1,
+      iv_skew: null,
+      term_structure: null,
+      dealer_flow_projection: null,
     },
     signals: {
-      ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 42, opportunity_tier: 'watch', prime_prompt_eligible: false,
+      ticker: 'TSLA',
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 42,
+      opportunity_tier: 'watch',
+      prime_prompt_eligible: false,
     },
     strike_profile: { ticker: 'TSLA', spot: 250, strikes: [strike(245), strike(250), strike(255)] },
-    expirations: [{ date: '2026-07-17', dte: 24 }, { date: '2026-08-21', dte: 59 }],
-    ai_eval: { ready: true, reasons: [], changed: true, state_fingerprint: 'fp-A', score_threshold: 50 },
-    meta: { served_at: '2026-06-23T14:00:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 }, freshness: { snapshot_iso: '2026-06-23T14:00:00Z', data_age_seconds: 10, stale: false, stale_after_seconds: 600 } },
+    expirations: [
+      { date: '2026-07-17', dte: 24 },
+      { date: '2026-08-21', dte: 59 },
+    ],
+    ai_eval: {
+      ready: true,
+      reasons: [],
+      changed: true,
+      state_fingerprint: 'fp-A',
+      score_threshold: 50,
+    },
+    meta: {
+      served_at: '2026-06-23T14:00:00Z',
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: '2026-06-23T14:00:00Z',
+        data_age_seconds: 10,
+        stale: false,
+        stale_after_seconds: 600,
+      },
+    },
     position_eval: null,
   };
 }
 
 const QUOTE: TrackedContract = {
-  ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call',
-  option_quote: { bid: 4.9, ask: 5.1, mid: 5 }, greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
-  iv: 0.45, dte: 24,
+  ticker: 'TSLA',
+  expiration: '2026-07-17',
+  strike: 250,
+  right: 'call',
+  option_quote: { bid: 4.9, ask: 5.1, mid: 5 },
+  greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
+  iv: 0.45,
+  dte: 24,
 };
 
 // ---- Controllable mock backend (the network boundary) ----------------------------------------
@@ -79,38 +158,77 @@ function installBackend(cfg: Cfg = {}) {
   class MockEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
-    constructor() { esInstances.push(this); }
-    close() { /* no-op */ }
+    constructor() {
+      esInstances.push(this);
+    }
+    close() {
+      /* no-op */
+    }
   }
   vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
-  const json = (b: unknown, status = 200) => new Response(b === null ? 'null' : JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    // user-accounts: who-am-I read on mount (signed-in write path; gating covered in the auth suite).
-    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
-    // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
-    if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
-    if (url.includes('/api/contract/')) {
-      const u = new URL(url, 'http://x');
-      const s = Number(u.searchParams.get('strike'));
-      const right = u.searchParams.get('right') ?? 'call';
-      const r = contractFor(s, right);
-      if (r === 'throw') throw new Error('network');
-      if (r === 'notfound' || r === null) return json(null, 404);
-      return json({ ...r, strike: s, right });
-    }
-    throw new Error(`unexpected fetch ${url}`);
-  }));
+  const json = (b: unknown, status = 200) =>
+    new Response(b === null ? 'null' : JSON.stringify(b), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      // user-accounts: who-am-I read on mount (signed-in write path; gating covered in the auth suite).
+      if (url.includes('/api/auth/session'))
+        return json({
+          authenticated: true,
+          user: {
+            id: 'u-test',
+            email: 'test@user.com',
+            display_name: null,
+            auth_methods: ['password'],
+          },
+          google_available: false,
+          settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+        });
+      // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
+      if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
+      if (url.includes('/api/contract/')) {
+        const u = new URL(url, 'http://x');
+        const s = Number(u.searchParams.get('strike'));
+        const right = u.searchParams.get('right') ?? 'call';
+        const r = contractFor(s, right);
+        if (r === 'throw') throw new Error('network');
+        if (r === 'notfound' || r === null) return json(null, 404);
+        return json({ ...r, strike: s, right });
+      }
+      throw new Error(`unexpected fetch ${url}`);
+    }),
+  );
 }
 
 /** Push an SSE payload to all live EventSources. */
 function pushLive(over: Partial<LiveUpdate> = {}) {
   const u: LiveUpdate = {
-    ticker: 'TSLA', mid: 250, bid: null, ask: null, spread: null, net_flow: 0, buy_vol: 0, sell_vol: 0,
-    flow_window_s: 300, spot_ts: 1, live: true, tick_age_s: 1, market_session: 'regular', feed: 'realtime',
-    ts: Date.now(), gamma_flip: 248, last_trade: 250, ...over,
+    ticker: 'TSLA',
+    mid: 250,
+    bid: null,
+    ask: null,
+    spread: null,
+    net_flow: 0,
+    buy_vol: 0,
+    sell_vol: 0,
+    flow_window_s: 300,
+    spot_ts: 1,
+    live: true,
+    tick_age_s: 1,
+    market_session: 'regular',
+    feed: 'realtime',
+    ts: Date.now(),
+    gamma_flip: 248,
+    last_trade: 250,
+    ...over,
   };
-  act(() => { esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(u) } as MessageEvent)); });
+  act(() => {
+    esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(u) } as MessageEvent));
+  });
 }
 
 // ---- Harness: the real feature subtree, with the REAL SSE path driving the live feed -----------
@@ -132,8 +250,14 @@ function Harness({ forceOffline = false }: { forceOffline?: boolean }) {
       <AuthProvider>
         <AuthDialogProvider>
           <PortfolioPanel
-            pf={pf} data={data} live={live} isLive={isLive} streamOffline={streamOffline}
-            ticker="TSLA" entryOpen={entryOpen} onEntryOpen={setEntryOpen}
+            pf={pf}
+            data={data}
+            live={live}
+            isLive={isLive}
+            streamOffline={streamOffline}
+            ticker="TSLA"
+            entryOpen={entryOpen}
+            onEntryOpen={setEntryOpen}
           />
         </AuthDialogProvider>
       </AuthProvider>
@@ -145,11 +269,19 @@ function renderHarness(props: Parameters<typeof Harness>[0] = {}) {
   return render(<Harness {...props} />);
 }
 
-beforeEach(() => { localStorage.clear(); __resetMemory(); vi.restoreAllMocks(); });
+beforeEach(() => {
+  localStorage.clear();
+  __resetMemory();
+  vi.restoreAllMocks();
+});
 afterEach(() => cleanup());
 
 // ---- Entry-mode openers (helpers) --------------------------------------------------------------
-async function openManual(user: ReturnType<typeof userEvent.setup>, price: string, strikeVal = 250) {
+async function openManual(
+  user: ReturnType<typeof userEvent.setup>,
+  price: string,
+  strikeVal = 250,
+) {
   await user.click(screen.getByTestId('open-entry'));
   const dlg = await screen.findByRole('dialog');
   await pickStrike(user, dlg, strikeVal);
@@ -234,7 +366,7 @@ describe('per-ticker filter (no refetch) + grouping subtotals (AC-4, AC-10)', ()
     const user = userEvent.setup();
     installBackend();
     renderHarness();
-    await openManual(user, '5');           // TSLA 250C
+    await openManual(user, '5'); // TSLA 250C
     // Open a position on a different strike to make the book richer.
     await user.click(screen.getByTestId('open-entry'));
     const dlg2 = await screen.findByRole('dialog');
@@ -271,27 +403,70 @@ describe('saved views survive reload + positions/history persist (AC-27, AC-28, 
     await user.type(nameInput, 'Tech swings');
     await waitFor(() => expect(screen.getByTestId('save-view-confirm')).toBeEnabled());
     await user.click(screen.getByTestId('save-view-confirm'));
-    await waitFor(() => expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/));
+    await waitFor(() =>
+      expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/),
+    );
 
     // --- RELOAD: re-mount fresh from the durable store ---
     __resetMemory();
     cleanup();
     renderHarness();
     // The active saved view (Tech swings, card layout) restored + the position persists.
-    await waitFor(() => expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/));
+    await waitFor(() =>
+      expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/),
+    );
     expect(screen.getByTestId('positions-cards')).toBeInTheDocument(); // card layout restored
-    expect(screen.getByTestId('position-card')).toBeInTheDocument();   // position persisted
+    expect(screen.getByTestId('position-card')).toBeInTheDocument(); // position persisted
   }, 20000);
 });
 
 describe('migration carry-over (AC-31)', () => {
   it('existing_single_trade_migrates_to_one_open_position_intact_survives_reload', async () => {
     // Seed a v1 ghost-trade blob, then mount the portfolio fresh → it migrates + renders it.
-    localStorage.setItem(PORTFOLIO_V1_KEY, JSON.stringify({
-      schema_version: 1,
-      trades: { TSLA: { id: 'legacy-1', ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', side: 'long', qty: 2, entry_mark: 5, entry_basis: 'snapshot', entry_time: '2026-06-20T10:00:00Z', status: 'open', schema_version: 1 } },
-      decisions: [{ event_type: 'open', clock_time: '2026-06-20T10:00:00Z', trade_id: 'legacy-1', contract: { ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', qty: 2 }, mark_price: 5, mark_basis: 'snapshot', underlying_spot: 250, pl_dollar: 0, pl_pct: 0, tier: 'watch', position_fingerprint: '', schema_version: 1 }],
-    }));
+    localStorage.setItem(
+      PORTFOLIO_V1_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: {
+          TSLA: {
+            id: 'legacy-1',
+            ticker: 'TSLA',
+            expiration: '2026-07-17',
+            strike: 250,
+            right: 'call',
+            side: 'long',
+            qty: 2,
+            entry_mark: 5,
+            entry_basis: 'snapshot',
+            entry_time: '2026-06-20T10:00:00Z',
+            status: 'open',
+            schema_version: 1,
+          },
+        },
+        decisions: [
+          {
+            event_type: 'open',
+            clock_time: '2026-06-20T10:00:00Z',
+            trade_id: 'legacy-1',
+            contract: {
+              ticker: 'TSLA',
+              expiration: '2026-07-17',
+              strike: 250,
+              right: 'call',
+              qty: 2,
+            },
+            mark_price: 5,
+            mark_basis: 'snapshot',
+            underlying_spot: 250,
+            pl_dollar: 0,
+            pl_pct: 0,
+            tier: 'watch',
+            position_fingerprint: '',
+            schema_version: 1,
+          },
+        ],
+      }),
+    );
     __resetMemory();
     installBackend();
     renderHarness();
@@ -318,7 +493,7 @@ describe('per-row isolation + Live lock (AC-35, AC-39, AC-40)', () => {
     // The 255 strike contract 404s; the 250 strike resolves fine.
     installBackend({ contract: (s) => (s === 255 ? 'notfound' : QUOTE) });
     renderHarness();
-    await openManual(user, '5');                    // 250C ok
+    await openManual(user, '5'); // 250C ok
     await user.click(screen.getByTestId('open-entry'));
     const dlg = await screen.findByRole('dialog');
     await pickStrike(user, dlg, 255);
@@ -328,7 +503,9 @@ describe('per-row isolation + Live lock (AC-35, AC-39, AC-40)', () => {
 
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(2));
     // Exactly the failing row reads "unavailable"; the other keeps pricing.
-    await waitFor(() => expect(screen.getAllByTestId('cell-unavailable').length).toBeGreaterThan(0));
+    await waitFor(() =>
+      expect(screen.getAllByTestId('cell-unavailable').length).toBeGreaterThan(0),
+    );
     expect(screen.getAllByTestId('cell-mark').length).toBeGreaterThan(0); // the healthy row still marks
 
     // --- Live tab: no positions, no entry, no order, no network call ---
@@ -360,7 +537,9 @@ describe('cancel a resting limit → history retention (AC-19, AC-37)', () => {
     await user.click(within(screen.getByTestId('pending-affordance')).getByText('Cancel'));
     await waitFor(() => expect(allPositions().some((p) => p.status === 'cancelled')).toBe(true));
     const cancelled = allPositions().find((p) => p.status === 'cancelled')!;
-    expect(decisionsForPosition(cancelled.id).some((d) => d.event_type === 'limit_cancelled')).toBe(true);
+    expect(decisionsForPosition(cancelled.id).some((d) => d.event_type === 'limit_cancelled')).toBe(
+      true,
+    );
 
     // It stays in the closed/history view, never pruned.
     await user.click(screen.getByTestId('history-button'));

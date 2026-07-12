@@ -16,12 +16,27 @@
  *    session id, signing key, or secret is ever in scope here.
  */
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
-} from 'react';
-import {
-  getSession, login as apiLogin, signup as apiSignup, logout as apiLogout, saveSettings as apiSave,
-  type SessionStatus, type AuthUser, type UserSettings, type LoginRequest, type SignupRequest,
+  login as apiLogin,
+  logout as apiLogout,
+  saveSettings as apiSave,
+  signup as apiSignup,
+  getSession,
+  type AuthUser,
+  type LoginRequest,
+  type SessionStatus,
+  type SignupRequest,
+  type UserSettings,
 } from '@org/api';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { seedTestPositionsIfNeeded } from '../positions/testSeed';
 
 export interface AuthState {
@@ -55,8 +70,13 @@ export interface AuthApi extends AuthState {
 }
 
 const ANON: AuthState = {
-  ready: false, authenticated: false, user: null, googleAvailable: false, settings: null,
-  demoSeed: null, subsystemDegraded: false,
+  ready: false,
+  authenticated: false,
+  user: null,
+  googleAvailable: false,
+  settings: null,
+  demoSeed: null,
+  subsystemDegraded: false,
 };
 
 const AuthContext = createContext<AuthApi | null>(null);
@@ -88,15 +108,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Transport fault ⇒ anonymous + degraded. NEVER throws into the trader path.
       if (seq.current === id) {
         setState({
-          ready: true, authenticated: false, user: null, googleAvailable: false, settings: null,
-          demoSeed: null, subsystemDegraded: true,
+          ready: true,
+          authenticated: false,
+          user: null,
+          googleAvailable: false,
+          settings: null,
+          demoSeed: null,
+          subsystemDegraded: true,
         });
       }
     }
   }, []);
 
   // One who-am-I on mount. Children render immediately (anonymous-capable) while it's in flight.
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   // DEV/TEST convenience: when the always-available test account signs in, seed a simulated
   // portfolio into the client-local positions store (once, non-destructively). A no-op for every
@@ -119,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     await apiLogout(); // idempotent, best-effort
-    await refresh();   // re-read who-am-I ⇒ anonymous
+    await refresh(); // re-read who-am-I ⇒ anonymous
   }, [refresh]);
 
   const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
@@ -142,7 +169,8 @@ export function useAuth(): AuthApi {
   const ctx = useContext(AuthContext);
   if (ctx) return ctx;
   return {
-    ...ANON, ready: true,
+    ...ANON,
+    ready: true,
     refresh: async () => undefined,
     signIn: async () => undefined,
     signUp: async () => undefined,

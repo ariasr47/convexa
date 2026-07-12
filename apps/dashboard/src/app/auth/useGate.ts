@@ -12,8 +12,8 @@
  * The auth gate is OUTERMOST: this helper does NOT know about ai-rec's cooldown/cap/no_key — those
  * only run AFTER `allowed` is true, in the existing surfaces.
  */
-import { useCallback, useState } from 'react';
 import { AuthError, simTradeGate } from '@org/api';
+import { useCallback, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AUTH_COPY } from './copy';
@@ -55,9 +55,19 @@ export function useGate(): GateApi {
 
   const allowed = auth.authenticated;
 
-  const signIn = useCallback((reason: string, onSuccess?: () => void) => {
-    openAuth({ mode: 'login', reason, onSuccess: () => { setPromptText(null); onSuccess?.(); } });
-  }, [openAuth]);
+  const signIn = useCallback(
+    (reason: string, onSuccess?: () => void) => {
+      openAuth({
+        mode: 'login',
+        reason,
+        onSuccess: () => {
+          setPromptText(null);
+          onSuccess?.();
+        },
+      });
+    },
+    [openAuth],
+  );
 
   const prompt = useCallback((reason: string) => {
     setPromptText(reason);
@@ -65,35 +75,34 @@ export function useGate(): GateApi {
 
   const clear = useCallback(() => setPromptText(null), []);
 
-  const guard = useCallback(async (
-    reason: string,
-    fn: () => void | Promise<void>,
-    opts?: GuardOptions,
-  ) => {
-    if (!auth.authenticated) {
-      // FE gate: show the in-context prompt, do NOT execute.
-      setPromptText(reason);
-      return;
-    }
-    try {
-      // Server-enforced gate FIRST (AC-E7): when supplied, it must succeed BEFORE the (possibly
-      // pure-client) `fn` runs. If it throws an AuthError, `fn` never runs — nothing is persisted.
-      if (opts?.serverGate) await opts.serverGate();
-      await fn();
-      setPromptText(null);
-    } catch (err) {
-      if (err instanceof AuthError && err.code === 'auth_required') {
-        // Server-enforced rejection (stale cookie / bypassed FE check) — same prompt, nothing persisted.
+  const guard = useCallback(
+    async (reason: string, fn: () => void | Promise<void>, opts?: GuardOptions) => {
+      if (!auth.authenticated) {
+        // FE gate: show the in-context prompt, do NOT execute.
         setPromptText(reason);
-        // Re-sync who-am-I so the rest of the UI reflects the now-anonymous truth.
-        void auth.refresh();
-      } else if (err instanceof AuthError && err.code === 'auth_unavailable') {
-        setPromptText(AUTH_COPY.gate.unavailable);
-      } else {
-        throw err; // a non-auth fault belongs to the caller's existing handling
+        return;
       }
-    }
-  }, [auth]);
+      try {
+        // Server-enforced gate FIRST (AC-E7): when supplied, it must succeed BEFORE the (possibly
+        // pure-client) `fn` runs. If it throws an AuthError, `fn` never runs — nothing is persisted.
+        if (opts?.serverGate) await opts.serverGate();
+        await fn();
+        setPromptText(null);
+      } catch (err) {
+        if (err instanceof AuthError && err.code === 'auth_required') {
+          // Server-enforced rejection (stale cookie / bypassed FE check) — same prompt, nothing persisted.
+          setPromptText(reason);
+          // Re-sync who-am-I so the rest of the UI reflects the now-anonymous truth.
+          void auth.refresh();
+        } else if (err instanceof AuthError && err.code === 'auth_unavailable') {
+          setPromptText(AUTH_COPY.gate.unavailable);
+        } else {
+          throw err; // a non-auth fault belongs to the caller's existing handling
+        }
+      }
+    },
+    [auth],
+  );
 
   return { allowed, promptText, prompt, signIn, clear, guard, simTradeGate };
 }

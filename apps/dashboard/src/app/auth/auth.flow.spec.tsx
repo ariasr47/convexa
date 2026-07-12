@@ -13,26 +13,44 @@
  *
  * QA traces each AC → ≥1 named passing test at GATE Q.
  */
-import { render, screen, within, waitFor, cleanup, act } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from '../app';
-import { AUTH_COPY } from './copy';
 import { __resetMemory } from '../positions/store';
+import { AUTH_COPY } from './copy';
 import { __resetLocalPrefs } from './localPrefs';
 import {
-  installAuthBackend, uninstallAuthBackend, userSession, anonSession, type AuthBackend,
+  anonSession,
+  installAuthBackend,
+  uninstallAuthBackend,
+  userSession,
+  type AuthBackend,
 } from './testBackend';
 
 /** Mount the WHOLE app at a chosen route. <App/> self-composes the auth/theme/dialog providers. */
 function mountApp(initial = '/ticker/TSLA') {
-  return render(<MemoryRouter initialEntries={[initial]}><App /></MemoryRouter>);
+  return render(
+    <MemoryRouter initialEntries={[initial]}>
+      <App />
+    </MemoryRouter>,
+  );
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); __resetMemory(); __resetLocalPrefs(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); __resetMemory(); __resetLocalPrefs(); });
+beforeEach(() => {
+  localStorage.clear();
+  __resetMemory();
+  __resetLocalPrefs();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+  __resetMemory();
+  __resetLocalPrefs();
+});
 
 async function signUp(user: ReturnType<typeof userEvent.setup>, email: string, pw: string) {
   await user.click(await screen.findByTestId('auth-mode-switch')); // login → signup
@@ -72,7 +90,9 @@ describe('Signup → reload-persist → logout (AC-B1/C2/D1)', () => {
     // T-C2: remount (a reload) ⇒ who-am-I reports the SAME user, still signed in.
     unmount();
     mountApp('/ticker/TSLA');
-    await waitFor(() => expect(screen.getByTestId('account-email')).toHaveTextContent('new@user.com'));
+    await waitFor(() =>
+      expect(screen.getByTestId('account-email')).toHaveTextContent('new@user.com'),
+    );
 
     // T-D1: log out now lives on the Settings Account panel. The avatar links to /settings; navigate
     // there and click "Sign out" ⇒ account control flips back to Sign in; who-am-I reports anonymous.

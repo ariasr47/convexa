@@ -10,8 +10,8 @@
  * The degraded state is treated as unauthenticated (shows `Sign in`); the "couldn't reach sign-in"
  * copy surfaces only on submit / on a gated action — never here, and never on the trader path.
  */
+import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { Button, Skeleton, Box, Typography, Stack } from '@mui/material';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
@@ -21,9 +21,7 @@ export function AccountControl() {
   const { openAuth } = useAuthDialog();
 
   if (!auth.ready) {
-    return (
-      <Skeleton variant="rounded" width={88} height={32} data-testid="account-loading" />
-    );
+    return <Skeleton variant="rounded" width={88} height={32} data-testid="account-loading" />;
   }
 
   if (!auth.authenticated) {
@@ -37,7 +35,11 @@ export function AccountControl() {
           variant="text"
           onClick={() => openAuth({ mode: 'login' })}
           data-testid="account-signin"
-          sx={{ color: 'text.secondary', whiteSpace: 'nowrap', '&:hover': { color: 'text.primary' } }}
+          sx={{
+            color: 'text.secondary',
+            whiteSpace: 'nowrap',
+            '&:hover': { color: 'text.primary' },
+          }}
         >
           Log in
         </Button>

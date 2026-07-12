@@ -12,22 +12,35 @@
  *   - `digested-labels-not-raw-dump` + `model-read-carries-its-assumptions` + honesty posture +
  *     `theme-token-discipline` (dark/light parity, zero hardcoded hex).
  */
-import mcSource from './MarketContext.tsx?raw';
-import type { ComponentProps } from 'react';
-import { render, screen, within, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@mui/material/styles';
 import type {
-  MarketContextPack, TrendMomentumRead, GexProfileShapeRead, FlowVsPositioningRead, AtrRead,
+  AtrRead,
+  FlowVsPositioningRead,
+  GexProfileShapeRead,
+  MarketContextPack,
+  TrendMomentumRead,
 } from '@org/api';
-import { theme, lightTheme } from '../../theme';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { ComponentProps } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+import { lightTheme, theme } from '../../theme';
 import { MarketContext } from './MarketContext';
+import mcSource from './MarketContext.tsx?raw';
 import {
-  MC_ADVISORY, MC_WHOLE_EMPTY, MC_FLOW_BASIS,
-  MC_TI_EMPTY, MC_SHAPE_EMPTY, MC_FLOW_EMPTY, MC_ATR_EMPTY,
-  MC_TREND_ROW_EMPTY, MC_STRENGTH_ROW_EMPTY, MC_MOMENTUM_ROW_EMPTY,
-  MC_LOCATION_ROW_EMPTY, MC_COMPOSITION_ROW_EMPTY, MC_CELL_EMPTY,
+  MC_ADVISORY,
+  MC_ATR_EMPTY,
+  MC_CELL_EMPTY,
+  MC_COMPOSITION_ROW_EMPTY,
+  MC_FLOW_BASIS,
+  MC_FLOW_EMPTY,
+  MC_LOCATION_ROW_EMPTY,
+  MC_MOMENTUM_ROW_EMPTY,
+  MC_SHAPE_EMPTY,
+  MC_STRENGTH_ROW_EMPTY,
+  MC_TI_EMPTY,
+  MC_TREND_ROW_EMPTY,
+  MC_WHOLE_EMPTY,
 } from './copy';
 
 // ---- Fixtures (blueprint §3 numbers, so the expected display strings match the pinned anatomy).
@@ -37,32 +50,55 @@ const WIRE_DESC = 'WIRE-DESCRIPTOR-NEVER-RENDERED';
 
 const tiRead = (over: Partial<TrendMomentumRead> = {}): TrendMomentumRead => ({
   as_of_session: '2026-07-03',
-  direction: { label: 'uptrend', close: 178.4, ema20: 176.21, ema50: 171.83, window: WIRE_DESC, thresholds: WIRE_DESC },
+  direction: {
+    label: 'uptrend',
+    close: 178.4,
+    ema20: 176.21,
+    ema50: 171.83,
+    window: WIRE_DESC,
+    thresholds: WIRE_DESC,
+  },
   strength: { label: 'strong', adx: 28.4, window: WIRE_DESC, thresholds: WIRE_DESC },
   momentum: { label: 'neutral', rsi: 51.2, window: WIRE_DESC, thresholds: WIRE_DESC },
   ...over,
 });
 const shapeRead = (over: Partial<GexProfileShapeRead> = {}): GexProfileShapeRead => ({
-  concentration: 0.41, concentration_label: 'concentrated',
-  balance: 0.34, balance_label: 'above_skewed',
-  center_of_mass_distance: 0.012, eligible_strikes: 23, spot_basis: 178.4, thresholds: WIRE_DESC,
+  concentration: 0.41,
+  concentration_label: 'concentrated',
+  balance: 0.34,
+  balance_label: 'above_skewed',
+  center_of_mass_distance: 0.012,
+  eligible_strikes: 23,
+  spot_basis: 178.4,
+  thresholds: WIRE_DESC,
   ...over,
 });
 const flowRead = (over: Partial<FlowVsPositioningRead> = {}): FlowVsPositioningRead => ({
   flow_basis: WIRE_DESC,
   location: { label: 'rotating', distribution_shift: 0.42, thresholds: WIRE_DESC },
-  composition: { label: 'consistent', volume_pcr: 0.92, oi_pcr: 0.88, tilt_ratio: 1.05, thresholds: WIRE_DESC },
+  composition: {
+    label: 'consistent',
+    volume_pcr: 0.92,
+    oi_pcr: 0.88,
+    tilt_ratio: 1.05,
+    thresholds: WIRE_DESC,
+  },
   ...over,
 });
 const atrRead = (over: Partial<AtrRead> = {}): AtrRead => ({
-  as_of_session: '2026-07-03', close_basis: 178.4, method: WIRE_DESC,
+  as_of_session: '2026-07-03',
+  close_basis: 178.4,
+  method: WIRE_DESC,
   atr_5d: { value: 4.12, pct_of_close: 2.31, window_bars: 5 },
   atr_14d: { value: 3.87, pct_of_close: 2.17, window_bars: 14 },
   atr_30d: { value: 3.51, pct_of_close: 1.97, window_bars: 30 },
   ...over,
 });
 const pack = (over: Partial<MarketContextPack> = {}): MarketContextPack => ({
-  trend_momentum: tiRead(), gex_profile_shape: shapeRead(), flow_vs_positioning: flowRead(), atr: atrRead(),
+  trend_momentum: tiRead(),
+  gex_profile_shape: shapeRead(),
+  flow_vs_positioning: flowRead(),
+  atr: atrRead(),
   ...over,
 });
 
@@ -103,7 +139,9 @@ describe('MarketContext (component states — Suite A)', () => {
     expect(within(shape).getByText('Skewed above spot')).toBeInTheDocument();
     expect(within(shape).getByText('+0.34')).toBeInTheDocument();
     expect(within(shape).getByText('+1.2% vs spot')).toBeInTheDocument();
-    expect(within(shape).getByText('At spot $178.40 · 23 strikes in the selected window')).toBeInTheDocument();
+    expect(
+      within(shape).getByText('At spot $178.40 · 23 strikes in the selected window'),
+    ).toBeInTheDocument();
 
     // Flow: 2 labels + both PCRs + shift.
     const flow = screen.getByTestId('mc-flow');
@@ -122,55 +160,125 @@ describe('MarketContext (component states — Suite A)', () => {
     // NB: the negative auth-CTA scan must NOT match the feature's own domain copy — the flow basis
     // line legitimately says "today's session cumulative option volume" — so it targets auth CTA
     // phrases only, and uses queryAllByText (never throws on a legitimate multiple).
-    expect(screen.getByText('Context the AI also reads · snapshot, never live — refreshes with the data load, not the stream.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Context the AI also reads · snapshot, never live — refreshes with the data load, not the stream.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryAllByText(/sign in|sign up|log in|log out/i)).toHaveLength(0);
   });
 
   // ---- T-AC-2 (mapping fidelity — all 20 enum values) -----------------------------------------
   const MAPPING_CASES: Array<{
-    name: string; row: string; expected: string; others: string[]; value: MarketContextPack;
+    name: string;
+    row: string;
+    expected: string;
+    others: string[];
+    value: MarketContextPack;
   }> = [
     // direction (3)
-    ...([['uptrend', 'Uptrend'], ['downtrend', 'Downtrend'], ['mixed', 'Mixed']] as const).map(([v, d]) => ({
-      name: `direction=${v}`, row: 'mc-trend', expected: d,
+    ...(
+      [
+        ['uptrend', 'Uptrend'],
+        ['downtrend', 'Downtrend'],
+        ['mixed', 'Mixed'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `direction=${v}`,
+      row: 'mc-trend',
+      expected: d,
       others: ['Uptrend', 'Downtrend', 'Mixed'].filter((s) => s !== d),
       value: pack({ trend_momentum: tiRead({ direction: { ...tiRead().direction!, label: v } }) }),
     })),
     // strength (3)
-    ...([['weak', 'Weak'], ['moderate', 'Moderate'], ['strong', 'Strong']] as const).map(([v, d]) => ({
-      name: `strength=${v}`, row: 'mc-strength', expected: d,
+    ...(
+      [
+        ['weak', 'Weak'],
+        ['moderate', 'Moderate'],
+        ['strong', 'Strong'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `strength=${v}`,
+      row: 'mc-strength',
+      expected: d,
       others: ['Weak', 'Moderate', 'Strong'].filter((s) => s !== d),
       value: pack({ trend_momentum: tiRead({ strength: { ...tiRead().strength!, label: v } }) }),
     })),
     // momentum (5)
-    ...([['overbought', 'Overbought'], ['bullish', 'Bullish'], ['neutral', 'Neutral'], ['bearish', 'Bearish'], ['oversold', 'Oversold']] as const).map(([v, d]) => ({
-      name: `momentum=${v}`, row: 'mc-momentum', expected: d,
+    ...(
+      [
+        ['overbought', 'Overbought'],
+        ['bullish', 'Bullish'],
+        ['neutral', 'Neutral'],
+        ['bearish', 'Bearish'],
+        ['oversold', 'Oversold'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `momentum=${v}`,
+      row: 'mc-momentum',
+      expected: d,
       others: ['Overbought', 'Bullish', 'Neutral', 'Bearish', 'Oversold'].filter((s) => s !== d),
       value: pack({ trend_momentum: tiRead({ momentum: { ...tiRead().momentum!, label: v } }) }),
     })),
     // concentration (3)
-    ...([['concentrated', 'Concentrated'], ['mixed', 'Mixed'], ['dispersed', 'Dispersed']] as const).map(([v, d]) => ({
-      name: `concentration=${v}`, row: 'mc-concentration', expected: d,
+    ...(
+      [
+        ['concentrated', 'Concentrated'],
+        ['mixed', 'Mixed'],
+        ['dispersed', 'Dispersed'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `concentration=${v}`,
+      row: 'mc-concentration',
+      expected: d,
       others: ['Concentrated', 'Mixed', 'Dispersed'].filter((s) => s !== d),
       value: pack({ gex_profile_shape: shapeRead({ concentration_label: v }) }),
     })),
     // balance (3)
-    ...([['above_skewed', 'Skewed above spot'], ['balanced', 'Balanced'], ['below_skewed', 'Skewed below spot']] as const).map(([v, d]) => ({
-      name: `balance=${v}`, row: 'mc-balance', expected: d,
+    ...(
+      [
+        ['above_skewed', 'Skewed above spot'],
+        ['balanced', 'Balanced'],
+        ['below_skewed', 'Skewed below spot'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `balance=${v}`,
+      row: 'mc-balance',
+      expected: d,
       others: ['Skewed above spot', 'Balanced', 'Skewed below spot'].filter((s) => s !== d),
       value: pack({ gex_profile_shape: shapeRead({ balance_label: v }) }),
     })),
     // location (3)
-    ...([['aligned', 'Aligned'], ['rotating', 'Rotating'], ['divergent', 'Divergent']] as const).map(([v, d]) => ({
-      name: `location=${v}`, row: 'mc-location', expected: d,
+    ...(
+      [
+        ['aligned', 'Aligned'],
+        ['rotating', 'Rotating'],
+        ['divergent', 'Divergent'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `location=${v}`,
+      row: 'mc-location',
+      expected: d,
       others: ['Aligned', 'Rotating', 'Divergent'].filter((s) => s !== d),
-      value: pack({ flow_vs_positioning: flowRead({ location: { ...flowRead().location!, label: v } }) }),
+      value: pack({
+        flow_vs_positioning: flowRead({ location: { ...flowRead().location!, label: v } }),
+      }),
     })),
     // composition (3)
-    ...([['flow_put_tilted', 'Flow put-tilted'], ['consistent', 'Consistent'], ['flow_call_tilted', 'Flow call-tilted']] as const).map(([v, d]) => ({
-      name: `composition=${v}`, row: 'mc-composition', expected: d,
+    ...(
+      [
+        ['flow_put_tilted', 'Flow put-tilted'],
+        ['consistent', 'Consistent'],
+        ['flow_call_tilted', 'Flow call-tilted'],
+      ] as const
+    ).map(([v, d]) => ({
+      name: `composition=${v}`,
+      row: 'mc-composition',
+      expected: d,
       others: ['Flow put-tilted', 'Consistent', 'Flow call-tilted'].filter((s) => s !== d),
-      value: pack({ flow_vs_positioning: flowRead({ composition: { ...flowRead().composition!, label: v } }) }),
+      value: pack({
+        flow_vs_positioning: flowRead({ composition: { ...flowRead().composition!, label: v } }),
+      }),
     })),
   ];
 
@@ -194,27 +302,41 @@ describe('MarketContext (component states — Suite A)', () => {
 
   it('T-AC-2b / E-4: an UNKNOWN enum value renders that label’s unavailable state — never raw pass-through or invented text', () => {
     // direction: "sideways" (the contract's example)
-    const p1 = pack({ trend_momentum: tiRead({ direction: { ...tiRead().direction!, label: 'sideways' as never } }) });
+    const p1 = pack({
+      trend_momentum: tiRead({ direction: { ...tiRead().direction!, label: 'sideways' as never } }),
+    });
     const r1 = renderMc(p1);
-    expect(within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/sideways/i)).toBeNull();
     // Siblings still render (only that label degrades).
     expect(within(screen.getByTestId('mc-strength')).getByText('Strong')).toBeInTheDocument();
     r1.unmount();
 
     // concentration: unknown → row label kept, muted value cell (no pinned per-row sentence exists).
-    const p2 = pack({ gex_profile_shape: shapeRead({ concentration_label: 'clustered' as never }) });
+    const p2 = pack({
+      gex_profile_shape: shapeRead({ concentration_label: 'clustered' as never }),
+    });
     const r2 = renderMc(p2);
     const conc = screen.getByTestId('mc-concentration');
     expect(within(conc).getByText(MC_CELL_EMPTY)).toBeInTheDocument();
     expect(screen.queryByText(/clustered/i)).toBeNull();
-    expect(within(screen.getByTestId('mc-balance')).getByText('Skewed above spot')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-balance')).getByText('Skewed above spot'),
+    ).toBeInTheDocument();
     r2.unmount();
 
     // location: unknown → the pinned Location unavailable string.
-    const p3 = pack({ flow_vs_positioning: flowRead({ location: { ...flowRead().location!, label: 'wandering' as never } }) });
+    const p3 = pack({
+      flow_vs_positioning: flowRead({
+        location: { ...flowRead().location!, label: 'wandering' as never },
+      }),
+    });
     renderMc(p3);
-    expect(within(screen.getByTestId('mc-location')).getByText(MC_LOCATION_ROW_EMPTY)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-location')).getByText(MC_LOCATION_ROW_EMPTY),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/wandering/i)).toBeNull();
   });
 
@@ -262,14 +384,45 @@ describe('MarketContext (component states — Suite A)', () => {
     const user = userEvent.setup();
     renderMc(pack());
     const rows: Array<{ icon: string; markers: (string | RegExp)[] }> = [
-      { icon: 'mc-info-trend', markers: ['daily closes', 'close above EMA20 above EMA50', 'about 100 daily bars'] },
-      { icon: 'mc-info-strength', markers: ['ADX(14) on daily bars', '20–25 = Moderate', '25 and above = Strong', 'about 43 bars'] },
-      { icon: 'mc-info-momentum', markers: ['RSI(14) on daily closes', '55–70 Bullish', '45–55 Neutral', 'about 42 bars'] },
-      { icon: 'mc-info-concentration', markers: ['selected expiration window', '0.35 and above Concentrated', '0.15–0.35 Mixed', 'below 0.15 Dispersed'] },
+      {
+        icon: 'mc-info-trend',
+        markers: ['daily closes', 'close above EMA20 above EMA50', 'about 100 daily bars'],
+      },
+      {
+        icon: 'mc-info-strength',
+        markers: [
+          'ADX(14) on daily bars',
+          '20–25 = Moderate',
+          '25 and above = Strong',
+          'about 43 bars',
+        ],
+      },
+      {
+        icon: 'mc-info-momentum',
+        markers: ['RSI(14) on daily closes', '55–70 Bullish', '45–55 Neutral', 'about 42 bars'],
+      },
+      {
+        icon: 'mc-info-concentration',
+        markers: [
+          'selected expiration window',
+          '0.35 and above Concentrated',
+          '0.15–0.35 Mixed',
+          'below 0.15 Dispersed',
+        ],
+      },
       { icon: 'mc-info-balance', markers: ['spot basis', '+0.20 and above', '−0.20 and below'] },
-      { icon: 'mc-info-center-of-mass', markers: ['signed distance from the spot basis', 'no label, no threshold'] },
-      { icon: 'mc-info-location', markers: ['below 0.35', '0.35–0.60 Rotating', '0.60 and above Divergent', 'unsigned'] },
-      { icon: 'mc-info-composition', markers: ['1.25 and above', '0.80 and below', 'volume PCR ÷ OI PCR'] },
+      {
+        icon: 'mc-info-center-of-mass',
+        markers: ['signed distance from the spot basis', 'no label, no threshold'],
+      },
+      {
+        icon: 'mc-info-location',
+        markers: ['below 0.35', '0.35–0.60 Rotating', '0.60 and above Divergent', 'unsigned'],
+      },
+      {
+        icon: 'mc-info-composition',
+        markers: ['1.25 and above', '0.80 and below', 'volume PCR ÷ OI PCR'],
+      },
     ];
     for (const r of rows) {
       const icon = screen.getByTestId(r.icon);
@@ -300,11 +453,11 @@ describe('MarketContext (component states — Suite A)', () => {
   // ---- T-AC-6 -------------------------------------------------------------------------------
   it('T-AC-6: the advisory footer renders verbatim in Default AND in every L1–L4 state', () => {
     const states: MarketContextPack[] = [
-      pack(),                                                            // Default
-      pack({ trend_momentum: tiRead({ direction: null }) }),             // L1
-      pack({ atr: atrRead({ atr_14d: null }) }),                         // L2
-      pack({ flow_vs_positioning: flowRead({ location: null }) }),       // L3
-      pack({ trend_momentum: null }),                                    // L4
+      pack(), // Default
+      pack({ trend_momentum: tiRead({ direction: null }) }), // L1
+      pack({ atr: atrRead({ atr_14d: null }) }), // L2
+      pack({ flow_vs_positioning: flowRead({ location: null }) }), // L3
+      pack({ trend_momentum: null }), // L4
     ];
     for (const s of states) {
       const { unmount } = renderMc(s);
@@ -321,8 +474,10 @@ describe('MarketContext (component states — Suite A)', () => {
       pack({ atr: atrRead({ atr_5d: null, atr_14d: null, atr_30d: null }) }),
       pack({ flow_vs_positioning: flowRead({ location: null }) }),
       pack({ flow_vs_positioning: flowRead({ composition: null }) }),
-      pack({ trend_momentum: null }), pack({ gex_profile_shape: null }),
-      pack({ flow_vs_positioning: null }), pack({ atr: null }),
+      pack({ trend_momentum: null }),
+      pack({ gex_profile_shape: null }),
+      pack({ flow_vs_positioning: null }),
+      pack({ atr: null }),
       null, // L5
     ];
     for (const s of states) {
@@ -334,11 +489,36 @@ describe('MarketContext (component states — Suite A)', () => {
 
   // ---- T-AC-12 (×4) --------------------------------------------------------------------------
   it('T-AC-12: exactly one read null (×4 in turn) — only that sub-card shows its unavailable line; the other three render; no error banner', () => {
-    const cases: Array<{ over: Partial<MarketContextPack>; card: string; empty: string; othersRender: string[] }> = [
-      { over: { trend_momentum: null }, card: 'mc-ti', empty: MC_TI_EMPTY, othersRender: ['Concentrated', 'Rotating', '$4.12 · 2.3%'] },
-      { over: { gex_profile_shape: null }, card: 'mc-shape', empty: MC_SHAPE_EMPTY, othersRender: ['Uptrend', 'Rotating', '$4.12 · 2.3%'] },
-      { over: { flow_vs_positioning: null }, card: 'mc-flow', empty: MC_FLOW_EMPTY, othersRender: ['Uptrend', 'Concentrated', '$4.12 · 2.3%'] },
-      { over: { atr: null }, card: 'mc-atr', empty: MC_ATR_EMPTY, othersRender: ['Uptrend', 'Concentrated', 'Rotating'] },
+    const cases: Array<{
+      over: Partial<MarketContextPack>;
+      card: string;
+      empty: string;
+      othersRender: string[];
+    }> = [
+      {
+        over: { trend_momentum: null },
+        card: 'mc-ti',
+        empty: MC_TI_EMPTY,
+        othersRender: ['Concentrated', 'Rotating', '$4.12 · 2.3%'],
+      },
+      {
+        over: { gex_profile_shape: null },
+        card: 'mc-shape',
+        empty: MC_SHAPE_EMPTY,
+        othersRender: ['Uptrend', 'Rotating', '$4.12 · 2.3%'],
+      },
+      {
+        over: { flow_vs_positioning: null },
+        card: 'mc-flow',
+        empty: MC_FLOW_EMPTY,
+        othersRender: ['Uptrend', 'Concentrated', '$4.12 · 2.3%'],
+      },
+      {
+        over: { atr: null },
+        card: 'mc-atr',
+        empty: MC_ATR_EMPTY,
+        othersRender: ['Uptrend', 'Concentrated', 'Rotating'],
+      },
     ];
     for (const c of cases) {
       const { unmount } = renderMc(pack(c.over));
@@ -356,10 +536,30 @@ describe('MarketContext (component states — Suite A)', () => {
 
   // ---- T-AC-13 (×3) --------------------------------------------------------------------------
   it('T-AC-13: one TI label null (×3 in turn) — that row alone shows its unavailable string; siblings + basis line intact', () => {
-    const cases: Array<{ over: Partial<TrendMomentumRead>; row: string; empty: string; siblings: string[] }> = [
-      { over: { direction: null }, row: 'mc-trend', empty: MC_TREND_ROW_EMPTY, siblings: ['Strong', 'Neutral'] },
-      { over: { strength: null }, row: 'mc-strength', empty: MC_STRENGTH_ROW_EMPTY, siblings: ['Uptrend', 'Neutral'] },
-      { over: { momentum: null }, row: 'mc-momentum', empty: MC_MOMENTUM_ROW_EMPTY, siblings: ['Uptrend', 'Strong'] },
+    const cases: Array<{
+      over: Partial<TrendMomentumRead>;
+      row: string;
+      empty: string;
+      siblings: string[];
+    }> = [
+      {
+        over: { direction: null },
+        row: 'mc-trend',
+        empty: MC_TREND_ROW_EMPTY,
+        siblings: ['Strong', 'Neutral'],
+      },
+      {
+        over: { strength: null },
+        row: 'mc-strength',
+        empty: MC_STRENGTH_ROW_EMPTY,
+        siblings: ['Uptrend', 'Neutral'],
+      },
+      {
+        over: { momentum: null },
+        row: 'mc-momentum',
+        empty: MC_MOMENTUM_ROW_EMPTY,
+        siblings: ['Uptrend', 'Strong'],
+      },
     ];
     for (const c of cases) {
       const { unmount } = renderMc(pack({ trend_momentum: tiRead(c.over) }));
@@ -396,15 +596,25 @@ describe('MarketContext (component states — Suite A)', () => {
   // ---- T-AC-16 (×2) --------------------------------------------------------------------------
   it('T-AC-16: location-only null — Location shows its unavailable string; Composition renders; flow-basis line stays', () => {
     renderMc(pack({ flow_vs_positioning: flowRead({ location: null }) }));
-    expect(within(screen.getByTestId('mc-location')).getByText(MC_LOCATION_ROW_EMPTY)).toBeInTheDocument();
-    expect(within(screen.getByTestId('mc-composition')).getByText('Consistent')).toBeInTheDocument();
-    expect(within(screen.getByTestId('mc-composition')).getByText('vol PCR 0.92 · OI PCR 0.88 · tilt 1.05')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-location')).getByText(MC_LOCATION_ROW_EMPTY),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-composition')).getByText('Consistent'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-composition')).getByText(
+        'vol PCR 0.92 · OI PCR 0.88 · tilt 1.05',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('mc-flow-basis')).toBeInTheDocument();
   });
 
   it('T-AC-16b: composition-only null — Composition shows its unavailable string; Location renders; flow-basis line stays', () => {
     renderMc(pack({ flow_vs_positioning: flowRead({ composition: null }) }));
-    expect(within(screen.getByTestId('mc-composition')).getByText(MC_COMPOSITION_ROW_EMPTY)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-composition')).getByText(MC_COMPOSITION_ROW_EMPTY),
+    ).toBeInTheDocument();
     expect(within(screen.getByTestId('mc-location')).getByText('Rotating')).toBeInTheDocument();
     expect(within(screen.getByTestId('mc-location')).getByText('shift 0.42')).toBeInTheDocument();
     expect(screen.getByTestId('mc-flow-basis')).toBeInTheDocument();
@@ -455,7 +665,10 @@ describe('MarketContext (component states — Suite A)', () => {
   // ---- T-E2 (LOADING ≠ EMPTY ≠ OFFLINE) -------------------------------------------------------
   it('T-E2: resolved-null muted text is NOT a cold-load skeleton; no ⏸/offline caption exists in ANY state of this widget', () => {
     const states: (MarketContextPack | null)[] = [
-      pack(), pack({ trend_momentum: null }), pack({ atr: atrRead({ atr_14d: null }) }), null,
+      pack(),
+      pack({ trend_momentum: null }),
+      pack({ atr: atrRead({ atr_14d: null }) }),
+      null,
     ];
     for (const s of states) {
       const { unmount } = renderMc(s);
@@ -474,9 +687,15 @@ describe('MarketContext (component states — Suite A)', () => {
 
   // ---- T-E5 (labels never re-derived) ----------------------------------------------------------
   it('T-E5: a scalar/enum mismatch (adx 10 + label "strong") renders Strong — the wire enum wins; no FE threshold math', () => {
-    renderMc(pack({ trend_momentum: tiRead({ strength: { label: 'strong', adx: 10, window: WIRE_DESC, thresholds: WIRE_DESC } }) }));
+    renderMc(
+      pack({
+        trend_momentum: tiRead({
+          strength: { label: 'strong', adx: 10, window: WIRE_DESC, thresholds: WIRE_DESC },
+        }),
+      }),
+    );
     const row = screen.getByTestId('mc-strength');
-    expect(within(row).getByText('Strong')).toBeInTheDocument();  // NOT re-bucketed to Weak
+    expect(within(row).getByText('Strong')).toBeInTheDocument(); // NOT re-bucketed to Weak
     expect(within(row).getByText('ADX(14) 10.0')).toBeInTheDocument(); // the scalar renders honestly
     expect(within(row).queryByText('Weak')).toBeNull();
   });
@@ -491,6 +710,8 @@ describe('MarketContext (component states — Suite A)', () => {
     // header legitimately NAMES the forbidden props to state the invariant).
     const src = mcSource;
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    expect(code).not.toMatch(/streamTicker|EventSource|streamOffline|isLive\b|payload-gap|watchdog/);
+    expect(code).not.toMatch(
+      /streamTicker|EventSource|streamOffline|isLive\b|payload-gap|watchdog/,
+    );
   });
 });

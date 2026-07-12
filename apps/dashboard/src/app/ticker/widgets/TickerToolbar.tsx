@@ -16,25 +16,48 @@
  * accessible label are kept.
  */
 import {
-  CircularProgress, TextField, Box, Stack,
-  FormControl, Select, OutlinedInput, MenuItem, Checkbox, ListItemText, Typography,
+  Box,
+  Checkbox,
+  CircularProgress,
+  FormControl,
+  ListItemText,
+  MenuItem,
+  OutlinedInput,
+  Select,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { type ReactNode } from 'react';
 import type { Expiration } from '@org/api';
+import { type ReactNode } from 'react';
 import { PersonaPicker } from '../../personas/components';
 import type { usePersona } from '../../personas/usePersona';
 import { dteLabel } from './copy';
 
 /** One segment of the instrument panel — an uppercase micro-label above its control. When `htmlFor`
  *  is given the caption is a real `<label>` so the control keeps an accessible name. */
-function Segment({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
+function Segment({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: ReactNode;
+}) {
   return (
     <Stack spacing={0.5} sx={{ px: { xs: 0, sm: 1.75 }, py: 0.25, minWidth: 0 }}>
       <Typography
-        component={htmlFor ? 'label' : 'span'} htmlFor={htmlFor} variant="caption"
+        component={htmlFor ? 'label' : 'span'}
+        htmlFor={htmlFor}
+        variant="caption"
         sx={{
-          color: 'text.secondary', fontSize: 10.5, fontWeight: 600, lineHeight: 1.2,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: 'text.secondary',
+          fontSize: 10.5,
+          fontWeight: 600,
+          lineHeight: 1.2,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
         }}
       >
         {label}
@@ -59,8 +82,17 @@ interface Props {
 }
 
 export function TickerToolbar({
-  symbol, onSymbolChange, onSubmitSymbol, expirations, allDates, selected, checked,
-  onSelectExpirations, persona, onOpenCustomize, loading,
+  symbol,
+  onSymbolChange,
+  onSubmitSymbol,
+  expirations,
+  allDates,
+  selected,
+  checked,
+  onSelectExpirations,
+  persona,
+  onOpenCustomize,
+  loading,
 }: Props) {
   return (
     <Box
@@ -86,9 +118,14 @@ export function TickerToolbar({
     >
       <Segment label="Ticker" htmlFor="ticker-input">
         <TextField
-          id="ticker-input" size="small" value={symbol} sx={{ width: 120 }}
+          id="ticker-input"
+          size="small"
+          value={symbol}
+          sx={{ width: 120 }}
           onChange={(e) => onSymbolChange(e.target.value.toUpperCase())}
-          onKeyDown={(e) => { if (e.key === 'Enter' && symbol) onSubmitSymbol(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && symbol) onSubmitSymbol();
+          }}
         />
       </Segment>
 
@@ -101,14 +138,18 @@ export function TickerToolbar({
             input={<OutlinedInput />}
             inputProps={{ 'aria-label': 'Expirations' }}
             onChange={(e) => {
-              const v = (typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value);
+              const v =
+                typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value;
               // Every date ticked -> null ("all", no filter); otherwise the explicit subset (incl. []).
               onSelectExpirations(v.length === allDates.length ? null : v);
             }}
             renderValue={() =>
-              selected === null ? 'All expirations'
-              : selected.length === 0 ? 'None selected'
-              : `${selected.length} of ${allDates.length}`}
+              selected === null
+                ? 'All expirations'
+                : selected.length === 0
+                  ? 'None selected'
+                  : `${selected.length} of ${allDates.length}`
+            }
             MenuProps={{ slotProps: { paper: { sx: { maxHeight: 360 } } } }}
           >
             {expirations.map((e) => (
@@ -127,7 +168,9 @@ export function TickerToolbar({
       </Segment>
 
       {loading && (
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 1.25, borderLeft: 'none !important' }}>
+        <Box
+          sx={{ display: 'flex', alignItems: 'center', px: 1.25, borderLeft: 'none !important' }}
+        >
           <CircularProgress size={18} />
         </Box>
       )}

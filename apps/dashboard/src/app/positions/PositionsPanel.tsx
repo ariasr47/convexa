@@ -12,20 +12,20 @@
  * on an SSE drop via PositionsView/PositionRow while static records persist (`[live-vs-static-isolation]`);
  * positions never feed scoring (`[additive-keeps-score-byte-identical]`).
  */
-import { useMemo, useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import type { TickerBundle, LiveUpdate } from '@org/api';
-import { usePortfolio, OpenPositionInput } from './usePortfolio';
-import { deriveGroups } from './derive';
-import type { DerivedRow } from './derive';
-import type { PositionStatus } from './types';
-import { PositionsView } from './PositionsView';
-import { CustomizationToolbar } from './CustomizationToolbar';
-import { TradeEntryDialog, EntryPrefill } from '../trading/TradeEntryDialog';
-import type { RowContext } from './PositionRow';
+import type { LiveUpdate, TickerBundle } from '@org/api';
+import { useMemo, useState } from 'react';
 import { SignInPrompt } from '../auth/SignInPrompt';
 import { AUTH_COPY } from '../auth/copy';
 import { OrdersPanel } from '../orders/OrdersPanel';
+import { EntryPrefill, TradeEntryDialog } from '../trading/TradeEntryDialog';
+import { CustomizationToolbar } from './CustomizationToolbar';
+import type { RowContext } from './PositionRow';
+import { PositionsView } from './PositionsView';
+import type { DerivedRow } from './derive';
+import { deriveGroups } from './derive';
+import type { PositionStatus } from './types';
+import { OpenPositionInput, usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
@@ -63,8 +63,19 @@ interface Props {
 }
 
 export function PositionsPanel({
-  pf, data, live = null, isLive = false, streamOffline, ticker, gate, onRequestOpenEntry,
-  guardSaveView, onConfirm, entryPrefill, entryOpen, onEntryOpen,
+  pf,
+  data,
+  live = null,
+  isLive = false,
+  streamOffline,
+  ticker,
+  gate,
+  onRequestOpenEntry,
+  guardSaveView,
+  onConfirm,
+  entryPrefill,
+  entryOpen,
+  onEntryOpen,
 }: Props) {
   const m = data?.market_state;
   // Position-side backlink (AC-31): "From sim order · view order →" opens the order detail in the
@@ -79,13 +90,19 @@ export function PositionsPanel({
 
   const { working } = pf;
   const groups = useMemo(
-    () => deriveGroups(pf.rows, {
-      filter: working.filter, sortKey: working.sortKey, sortDir: working.sortDir, group: working.group,
-    }),
+    () =>
+      deriveGroups(pf.rows, {
+        filter: working.filter,
+        sortKey: working.sortKey,
+        sortDir: working.sortDir,
+        group: working.group,
+      }),
     [pf.rows, working.filter, working.sortKey, working.sortDir, working.group],
   );
 
-  const strikeList = Array.from(new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike))).sort((a, b) => a - b);
+  const strikeList = Array.from(
+    new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
+  ).sort((a, b) => a - b);
   const expirations = data?.expirations.map((e) => e.date) ?? [];
 
   return (
@@ -137,7 +154,9 @@ export function PositionsPanel({
         markResFor={markResFor}
         trendFor={pf.trendFor}
         onOpenEntry={onRequestOpenEntry}
-        onClearFilter={() => pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })}
+        onClearFilter={() =>
+          pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })
+        }
         onClose={pf.closePosition}
         onCancel={pf.cancelLimit}
         onViewOrder={setViewOrderId}

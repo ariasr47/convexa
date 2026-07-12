@@ -123,7 +123,7 @@ export const BYO_KEY = {
   ownKey: {
     chip: 'Using your key',
     tooltip:
-      'This recommendation ran on your own Anthropic key — your cost, no shared limit. It doesn\'t ' +
+      "This recommendation ran on your own Anthropic key — your cost, no shared limit. It doesn't " +
       'use the free admin allowance. Manage your key in Settings.',
   },
 } as const;
@@ -166,7 +166,8 @@ export const prefillChip = (persona: string) => `Pre-filled from AI read · ${pe
 export const EXPORT_HEADER = (ticker: string) => `What's sent to the AI · ${ticker}`;
 /** Retry-under-gate sub-captions (E6). */
 export const retryInCooldown = (remaining: number) => `Retry available in ${remaining}s`;
-export const retryWhenReset = (when: string) => `Retry available when the daily limit resets ${when}`;
+export const retryWhenReset = (when: string) =>
+  `Retry available when the daily limit resets ${when}`;
 
 /** Friendly local time for a cap `resets_at` ISO instant; falls back to the raw value. */
 export function friendlyResetTime(iso: string | null | undefined): string {

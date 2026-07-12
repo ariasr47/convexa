@@ -4,13 +4,12 @@
  * incl. placement-already-met, `last_trade` never an input, trigger+fill collapse records both
  * facts, per-tick throw caught (hook level), clock expiry off-stream.
  */
-import { describe, expect, it } from 'vitest';
 import type { LiveUpdate } from '@org/api';
-import { evaluateOrder, tickFromLive, triggerMet, isClockExpired, EngineTick } from './engine';
-import { applyOrderTransition, createOrder } from './useOrders';
-import { getOrder, __resetOrdersMemory } from './store';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { EngineTick, evaluateOrder, isClockExpired, tickFromLive, triggerMet } from './engine';
+import { __resetOrdersMemory, getOrder } from './store';
 import type { SimOrder } from './types';
-import { beforeEach } from 'vitest';
+import { applyOrderTransition, createOrder } from './useOrders';
 
 const NOW = Date.parse('2026-07-02T15:00:00Z');
 const FUTURE = new Date(NOW + 5 * 86400000).toISOString();
@@ -18,11 +17,22 @@ const FUTURE_EXP = '2099-12-19';
 
 function order(over: Partial<SimOrder> = {}): SimOrder {
   return {
-    id: 'o-1', created_time: new Date(NOW - 60000).toISOString(), schema_version: 1,
-    ticker: 'TSLA', expiration: FUTURE_EXP, strike: 250, right: 'call', side: 'long', qty: 1,
-    trigger: { kind: 'underlying_above', level: 252 }, limit_price: null,
-    stop: null, target: null, expires_at: FUTURE,
-    provenance: { source: 'ai_rec' }, status: 'waiting',
+    id: 'o-1',
+    created_time: new Date(NOW - 60000).toISOString(),
+    schema_version: 1,
+    ticker: 'TSLA',
+    expiration: FUTURE_EXP,
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 1,
+    trigger: { kind: 'underlying_above', level: 252 },
+    limit_price: null,
+    stop: null,
+    target: null,
+    expires_at: FUTURE,
+    provenance: { source: 'ai_rec' },
+    status: 'waiting',
     ...over,
   };
 }
@@ -64,15 +74,22 @@ describe('evaluateOrder — live-cross-only transitions', () => {
   });
 
   it('an offline stream NEVER triggers or fills (AC-26)', () => {
-    expect(evaluateOrder(order(), tick({ mid: 300, streamOffline: true, isLive: false }))).toBeNull();
     expect(
-      evaluateOrder(order({ status: 'triggered', limit_price: 5 }), tick({ streamOffline: true, isLive: false, optionMark: 1 })),
+      evaluateOrder(order(), tick({ mid: 300, streamOffline: true, isLive: false })),
+    ).toBeNull();
+    expect(
+      evaluateOrder(
+        order({ status: 'triggered', limit_price: 5 }),
+        tick({ streamOffline: true, isLive: false, optionMark: 1 }),
+      ),
     ).toBeNull();
   });
 
   it('last_trade is NEVER an engine input — tickFromLive structurally drops it', () => {
     // A payload whose last_trade crossed but whose mid did not: the engine cannot see last_trade.
-    const live = { mid: 251, live: true, last_trade: 999 } as Pick<LiveUpdate, 'mid' | 'live'> & { last_trade: number };
+    const live = { mid: 251, live: true, last_trade: 999 } as Pick<LiveUpdate, 'mid' | 'live'> & {
+      last_trade: number;
+    };
     const t = tickFromLive(live, false, null, NOW);
     expect('last_trade' in t).toBe(false);
     expect(evaluateOrder(order(), t)).toBeNull(); // mid 251 < 252 — no trigger, whatever last_trade did
@@ -127,30 +144,55 @@ describe('applyOrderTransition — read-modify-write idempotence (AC-18)', () =>
 
   it('an unexpected current durable status is a NO-OP (multiple hooks cannot double-apply)', () => {
     const res = createOrder({
-      ticker: 'TSLA', expiration: FUTURE_EXP, strike: 250, right: 'call', qty: 1,
-      trigger: { kind: 'underlying_above', level: 252 }, limit_price: null,
-      stop: null, target: null, expires_at: FUTURE, provenance: { source: 'ai_rec' },
+      ticker: 'TSLA',
+      expiration: FUTURE_EXP,
+      strike: 250,
+      right: 'call',
+      qty: 1,
+      trigger: { kind: 'underlying_above', level: 252 },
+      limit_price: null,
+      stop: null,
+      target: null,
+      expires_at: FUTURE,
+      provenance: { source: 'ai_rec' },
     });
     const id = res.order?.id as string;
     // First application: waiting → triggered.
-    applyOrderTransition(id, 'waiting', { to: 'triggered', triggered_time: new Date(NOW).toISOString() });
+    applyOrderTransition(id, 'waiting', {
+      to: 'triggered',
+      triggered_time: new Date(NOW).toISOString(),
+    });
     expect(getOrder(id)?.status).toBe('triggered');
     const t1 = getOrder(id)?.triggered_time;
     // A second hook applying the SAME transition against the stale expected status: no-op.
-    applyOrderTransition(id, 'waiting', { to: 'triggered', triggered_time: new Date(NOW + 9999).toISOString() });
+    applyOrderTransition(id, 'waiting', {
+      to: 'triggered',
+      triggered_time: new Date(NOW + 9999).toISOString(),
+    });
     expect(getOrder(id)?.status).toBe('triggered');
     expect(getOrder(id)?.triggered_time).toBe(t1);
   });
 
   it('a terminal order never re-transitions (AC-24)', () => {
     const res = createOrder({
-      ticker: 'TSLA', expiration: FUTURE_EXP, strike: 250, right: 'call', qty: 1,
-      trigger: null, limit_price: 4, stop: null, target: null,
-      expires_at: FUTURE, provenance: { source: 'ai_rec' },
+      ticker: 'TSLA',
+      expiration: FUTURE_EXP,
+      strike: 250,
+      right: 'call',
+      qty: 1,
+      trigger: null,
+      limit_price: 4,
+      stop: null,
+      target: null,
+      expires_at: FUTURE,
+      provenance: { source: 'ai_rec' },
     });
     const id = res.order?.id as string;
     applyOrderTransition(id, 'triggered', {
-      to: 'filled', filled_time: new Date(NOW).toISOString(), fill_mark: 4, fill_basis: 'limit_fill',
+      to: 'filled',
+      filled_time: new Date(NOW).toISOString(),
+      fill_mark: 4,
+      fill_basis: 'limit_fill',
     });
     expect(getOrder(id)?.status).toBe('filled');
     applyOrderTransition(id, 'filled', { to: 'expired', close_time: new Date(NOW).toISOString() });

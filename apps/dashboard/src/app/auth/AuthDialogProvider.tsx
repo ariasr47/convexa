@@ -48,7 +48,9 @@ export function AuthDialogProvider({ children }: { children: ReactNode }) {
         reason={reason}
         onClose={closeAuth}
         onModeChange={setMode}
-        onSuccess={() => { onSuccess?.(); }}
+        onSuccess={() => {
+          onSuccess?.();
+        }}
       />
     </Ctx.Provider>
   );

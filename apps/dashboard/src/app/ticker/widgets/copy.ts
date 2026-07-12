@@ -86,9 +86,11 @@ export const skewTip = (s: IvSkew) =>
 export const termTip = (t: TermStructure) => {
   const near = t.points[0];
   const far = t.points[t.points.length - 1];
-  return `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
+  return (
+    `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
     `${t.near_iv.toFixed(1)}% vs far (${far?.dte}d) ${t.far_iv.toFixed(1)}%. Cross-tenor by ` +
-    `definition (ignores the expiration filter). Single snapshot, no history.`;
+    `definition (ignores the expiration filter). Single snapshot, no history.`
+  );
 };
 
 /** Sample the nominal display tenors to the nearest available point; dedupe, plot real dte/atm_iv. */
@@ -100,7 +102,10 @@ export function sampleTermPoints(points: TermStructure['points']): TermStructure
     for (const p of points) {
       if (best == null || Math.abs(p.dte - b) < Math.abs(best.dte - b)) best = p;
     }
-    if (best && !seen.has(best.dte)) { seen.add(best.dte); out.push(best); }
+    if (best && !seen.has(best.dte)) {
+      seen.add(best.dte);
+      out.push(best);
+    }
   }
   return out.sort((a, b) => a.dte - b.dte);
 }
@@ -128,7 +133,9 @@ export function humanOpex(iso: string): string {
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
   if (Number.isNaN(d.getTime())) return iso;
   const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()];
-  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][
+    d.getUTCMonth()
+  ];
   return `${wd} ${mo} ${d.getUTCDate()}`;
 }
 
@@ -214,25 +221,41 @@ export const mcComLine = (fraction: number): string =>
 // The 1:1 enum → display maps (UX_BLUEPRINT §5.2, BINDING — one display string per enum value;
 // never softened/re-bucketed/replaced by numbers; no other label text exists).
 export const MC_DIRECTION_DISPLAY: Record<string, string> = {
-  uptrend: 'Uptrend', downtrend: 'Downtrend', mixed: 'Mixed',
+  uptrend: 'Uptrend',
+  downtrend: 'Downtrend',
+  mixed: 'Mixed',
 };
 export const MC_STRENGTH_DISPLAY: Record<string, string> = {
-  weak: 'Weak', moderate: 'Moderate', strong: 'Strong',
+  weak: 'Weak',
+  moderate: 'Moderate',
+  strong: 'Strong',
 };
 export const MC_MOMENTUM_DISPLAY: Record<string, string> = {
-  overbought: 'Overbought', bullish: 'Bullish', neutral: 'Neutral', bearish: 'Bearish', oversold: 'Oversold',
+  overbought: 'Overbought',
+  bullish: 'Bullish',
+  neutral: 'Neutral',
+  bearish: 'Bearish',
+  oversold: 'Oversold',
 };
 export const MC_CONCENTRATION_DISPLAY: Record<string, string> = {
-  concentrated: 'Concentrated', mixed: 'Mixed', dispersed: 'Dispersed',
+  concentrated: 'Concentrated',
+  mixed: 'Mixed',
+  dispersed: 'Dispersed',
 };
 export const MC_BALANCE_DISPLAY: Record<string, string> = {
-  above_skewed: 'Skewed above spot', balanced: 'Balanced', below_skewed: 'Skewed below spot',
+  above_skewed: 'Skewed above spot',
+  balanced: 'Balanced',
+  below_skewed: 'Skewed below spot',
 };
 export const MC_LOCATION_DISPLAY: Record<string, string> = {
-  aligned: 'Aligned', rotating: 'Rotating', divergent: 'Divergent',
+  aligned: 'Aligned',
+  rotating: 'Rotating',
+  divergent: 'Divergent',
 };
 export const MC_COMPOSITION_DISPLAY: Record<string, string> = {
-  flow_put_tilted: 'Flow put-tilted', consistent: 'Consistent', flow_call_tilted: 'Flow call-tilted',
+  flow_put_tilted: 'Flow put-tilted',
+  consistent: 'Consistent',
+  flow_call_tilted: 'Flow call-tilted',
 };
 
 /** Closed-lookup a wire enum → its pinned display string; unknown/unmapped ⇒ null (that label's
@@ -281,7 +304,11 @@ export const mcConcentrationLine = (hhi: number): string => `HHI ${fmt2(hhi)}`;
 export const mcBalanceLine = fmtSigned2;
 export const mcLocationLine = (l: { distribution_shift: number }): string =>
   `shift ${fmt2(l.distribution_shift)}`;
-export const mcCompositionLine = (c: { volume_pcr: number; oi_pcr: number; tilt_ratio: number }): string =>
+export const mcCompositionLine = (c: {
+  volume_pcr: number;
+  oi_pcr: number;
+  tilt_ratio: number;
+}): string =>
   `vol PCR ${fmt2(c.volume_pcr)} · OI PCR ${fmt2(c.oi_pcr)} · tilt ${fmt2(c.tilt_ratio)}`;
 export const mcAtrLine = (h: { value: number; pct_of_close: number }): string =>
   `${fmtAtrUsd(h.value)} · ${fmt1(h.pct_of_close)}%`;
@@ -382,7 +409,7 @@ export const IVR_SUBTITLE =
   'Context the AI also reads · snapshot, never live.';
 export const IVR_INFO =
   "IV rank places today's implied volatility inside this ticker's own accumulated recent history — " +
-  '0 = the window\'s lowest IV, 100 = its highest. High = option premium is relatively rich; low = ' +
+  "0 = the window's lowest IV, 100 = its highest. High = option premium is relatively rich; low = " +
   'relatively cheap. Advisory context only; never a scored signal.';
 
 // Computed-state labels (§4).
@@ -399,7 +426,9 @@ export const ivrPctDescriptor = (pct: number): string =>
 /** The digested band token (D2) → its pinned display string. Closed lookup; unknown ⇒ null (no band
  *  renders — never a raw-enum pass-through, never FE-re-derived from the rank). */
 export const IVR_BAND_DISPLAY: Record<string, string> = {
-  premium_rich: 'premium rich', neutral: 'neutral', premium_cheap: 'premium cheap',
+  premium_rich: 'premium rich',
+  neutral: 'neutral',
+  premium_cheap: 'premium cheap',
 };
 export const ivrBandDisplay = (band: string): string | null =>
   Object.prototype.hasOwnProperty.call(IVR_BAND_DISPLAY, band) ? IVR_BAND_DISPLAY[band] : null;
@@ -408,7 +437,11 @@ export const ivrBandDisplay = (band: string): string | null =>
  *  Clean CM30 vs the honest nearest-tenor fallback wording; an UNKNOWN basis degrades to the clean
  *  wording WITHOUT a fabricated DTE claim (fail-honest). Always visible with the numbers. */
 export const ivrBasisLine = (
-  sessions: number, windowCap: number, count: number, ivBasis: string, basisDte: number,
+  sessions: number,
+  windowCap: number,
+  count: number,
+  ivBasis: string,
+  basisDte: number,
 ): string => {
   const head = `Over ${sessions} of the last ${windowCap} sessions · ${count} samples · `;
   if (ivBasis === 'nearest_tenor') {

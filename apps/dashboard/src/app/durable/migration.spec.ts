@@ -10,24 +10,32 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { defaultCustomization } from '../positions/defaults';
 import * as positions from '../positions/store';
 import {
-  PORTFOLIO_V1_KEY, PORTFOLIO_V2_KEY, PORTFOLIO_LEGACY_V1_KEY, PORTFOLIO_LEGACY_V2_KEY,
+  PORTFOLIO_LEGACY_V1_KEY,
+  PORTFOLIO_LEGACY_V2_KEY,
+  PORTFOLIO_V1_KEY,
+  PORTFOLIO_V2_KEY,
 } from '../positions/store';
+import type { CustomizationState, PersistShapeV2, Position } from '../positions/types';
 import { PORTFOLIO_SCHEMA_VERSION } from '../positions/types';
-import type { Position, PersistShapeV2, CustomizationState } from '../positions/types';
-import { defaultCustomization } from '../positions/defaults';
 
 import * as ghost from '../ghost-trade/store';
 import { GHOST_TRADE_KEY, GHOST_TRADE_LEGACY_KEY } from '../ghost-trade/store';
 import type { GhostTrade } from '../ghost-trade/types';
 
 import * as personas from '../personas/store';
-import { PERSONAS_KEY, PERSONAS_LEGACY_KEY, __resetPersonas } from '../personas/store';
+import { __resetPersonas, PERSONAS_KEY, PERSONAS_LEGACY_KEY } from '../personas/store';
 
 import {
-  loadLocalTheme, loadLocalDefaultTicker, saveLocalTheme, saveLocalDefaultTicker,
-  __resetLocalPrefs, UIPREFS_KEY, UIPREFS_LEGACY_KEY,
+  __resetLocalPrefs,
+  loadLocalDefaultTicker,
+  loadLocalTheme,
+  saveLocalDefaultTicker,
+  saveLocalTheme,
+  UIPREFS_KEY,
+  UIPREFS_LEGACY_KEY,
 } from '../auth/localPrefs';
 
 // ---- helpers -----------------------------------------------------------------------------------
@@ -46,17 +54,39 @@ beforeEach(() => {
 
 function aPosition(over: Partial<Position> = {}): Position {
   return {
-    id: 'p1', ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', side: 'long',
-    qty: 2, entry_mark: 5, entry_basis: 'user_entered', entry_time: '2026-06-20T10:00:00Z',
-    stop: null, target: null, status: 'open', schema_version: PORTFOLIO_SCHEMA_VERSION, ...over,
+    id: 'p1',
+    ticker: 'TSLA',
+    expiration: '2026-07-17',
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 2,
+    entry_mark: 5,
+    entry_basis: 'user_entered',
+    entry_time: '2026-06-20T10:00:00Z',
+    stop: null,
+    target: null,
+    status: 'open',
+    schema_version: PORTFOLIO_SCHEMA_VERSION,
+    ...over,
   };
 }
 
 function aTrade(over: Partial<GhostTrade> = {}): GhostTrade {
   return {
-    id: 'legacy', ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', side: 'long',
-    qty: 2, entry_mark: 5, entry_basis: 'snapshot', entry_time: '2026-06-20T10:00:00Z',
-    status: 'open', schema_version: 1, ...over,
+    id: 'legacy',
+    ticker: 'TSLA',
+    expiration: '2026-07-17',
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 2,
+    entry_mark: 5,
+    entry_basis: 'snapshot',
+    entry_time: '2026-06-20T10:00:00Z',
+    status: 'open',
+    schema_version: 1,
+    ...over,
   };
 }
 
@@ -75,9 +105,15 @@ function v2Blob(over: Partial<PersistShapeV2> = {}): string {
 // =================================================================================================
 describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migrate-on-read)', () => {
   it('AC-A1 positions carried whole — same set / entry / status; new key now exists', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({
-      positions: { a: aPosition({ id: 'a', entry_mark: 7, qty: 3 }), b: aPosition({ id: 'b', ticker: 'AAPL' }) },
-    }));
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      v2Blob({
+        positions: {
+          a: aPosition({ id: 'a', entry_mark: 7, qty: 3 }),
+          b: aPosition({ id: 'b', ticker: 'AAPL' }),
+        },
+      }),
+    );
     positions.__resetMemory();
 
     const all = positions.allPositions();
@@ -108,15 +144,26 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
   });
 
   it('AC-A3 closed positions + decision history fully present, unchanged', () => {
-    const decisions = [{
-      event_type: 'close', clock_time: '2026-06-21T10:00:00Z', trade_id: 'c1',
-      contract: { ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', qty: 2 },
-      mark_price: 8, mark_basis: 'snapshot', underlying_spot: 255, pl_dollar: 600, pl_pct: 0.6,
-    }];
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({
-      positions: { c1: aPosition({ id: 'c1', status: 'closed', realized_pl_dollar: 600 }) },
-      decisions: decisions as never,
-    }));
+    const decisions = [
+      {
+        event_type: 'close',
+        clock_time: '2026-06-21T10:00:00Z',
+        trade_id: 'c1',
+        contract: { ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', qty: 2 },
+        mark_price: 8,
+        mark_basis: 'snapshot',
+        underlying_spot: 255,
+        pl_dollar: 600,
+        pl_pct: 0.6,
+      },
+    ];
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      v2Blob({
+        positions: { c1: aPosition({ id: 'c1', status: 'closed', realized_pl_dollar: 600 }) },
+        decisions: decisions as never,
+      }),
+    );
     positions.__resetMemory();
 
     expect(positions.getPosition('c1')!.status).toBe('closed');
@@ -125,15 +172,32 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
   });
 
   it('AC-A4 ghost-trade open trade + decision records present, unchanged', () => {
-    localStorage.setItem(GHOST_TRADE_LEGACY_KEY, JSON.stringify({
-      schema_version: 1,
-      trades: { TSLA: aTrade({ id: 'gt1', qty: 4 }) },
-      decisions: [{
-        event_type: 'open', clock_time: '2026-06-20T10:00:00Z', trade_id: 'gt1',
-        contract: { ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call', qty: 4 },
-        mark_price: 5, mark_basis: 'snapshot', underlying_spot: 250, pl_dollar: 0, pl_pct: 0,
-      }],
-    }));
+    localStorage.setItem(
+      GHOST_TRADE_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'gt1', qty: 4 }) },
+        decisions: [
+          {
+            event_type: 'open',
+            clock_time: '2026-06-20T10:00:00Z',
+            trade_id: 'gt1',
+            contract: {
+              ticker: 'TSLA',
+              expiration: '2026-07-17',
+              strike: 250,
+              right: 'call',
+              qty: 4,
+            },
+            mark_price: 5,
+            mark_basis: 'snapshot',
+            underlying_spot: 250,
+            pl_dollar: 0,
+            pl_pct: 0,
+          },
+        ],
+      }),
+    );
     ghost.__resetMemory();
 
     const t = ghost.getTrade('TSLA')!;
@@ -144,14 +208,17 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
   });
 
   it('AC-A5 custom personas all present', () => {
-    localStorage.setItem(PERSONAS_LEGACY_KEY, JSON.stringify({
-      schema_version: 1,
-      customs: [
-        { id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' },
-        { id: 'cp2', name: 'Theta', disposition: 'income', framing: 'y' },
-      ],
-      active_persona_id: null,
-    }));
+    localStorage.setItem(
+      PERSONAS_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        customs: [
+          { id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' },
+          { id: 'cp2', name: 'Theta', disposition: 'income', framing: 'y' },
+        ],
+        active_persona_id: null,
+      }),
+    );
     __resetPersonas();
 
     const list = personas.loadCustoms();
@@ -160,19 +227,27 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
   });
 
   it('AC-A6 active_persona_id selection still active (selection survives, not just the list)', () => {
-    localStorage.setItem(PERSONAS_LEGACY_KEY, JSON.stringify({
-      schema_version: 1,
-      customs: [{ id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' }],
-      active_persona_id: 'income_keeper',
-    }));
+    localStorage.setItem(
+      PERSONAS_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        customs: [{ id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' }],
+        active_persona_id: 'income_keeper',
+      }),
+    );
     __resetPersonas();
     expect(personas.loadActiveId()).toBe('income_keeper');
   });
 
   it('AC-A7 theme applied + default ticker in effect', () => {
-    localStorage.setItem(UIPREFS_LEGACY_KEY, JSON.stringify({
-      schema_version: 1, theme: 'light', default_ticker: 'NVDA',
-    }));
+    localStorage.setItem(
+      UIPREFS_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        theme: 'light',
+        default_ticker: 'NVDA',
+      }),
+    );
     __resetLocalPrefs();
     expect(loadLocalTheme()).toBe('light');
     expect(loadLocalDefaultTicker()).toBe('NVDA');
@@ -193,29 +268,42 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
   });
 
   it('case 2: gammaflow.positions.v2 only → hydrate + promote to convexa.positions.v2', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({ positions: { y: aPosition({ id: 'y' }) } }));
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      v2Blob({ positions: { y: aPosition({ id: 'y' }) } }),
+    );
     positions.__resetMemory();
     expect(positions.allPositions().map((p) => p.id)).toEqual(['y']);
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();        // promoted
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy(); // promoted
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeTruthy(); // source intact
   });
 
   it('case 3: convexa.ghost-trade.v1 only → migrateV1 → convexa.positions.v2', () => {
-    localStorage.setItem(PORTFOLIO_V1_KEY, JSON.stringify({
-      schema_version: 1, trades: { TSLA: aTrade({ id: 'g3' }) }, decisions: [],
-    }));
+    localStorage.setItem(
+      PORTFOLIO_V1_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'g3' }) },
+        decisions: [],
+      }),
+    );
     positions.__resetMemory();
     const all = positions.allPositions();
     expect(all).toHaveLength(1);
     expect(all[0].id).toBe('g3');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();   // migrated into v2
-    expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBeTruthy();   // source ghost-trade intact
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy(); // migrated into v2
+    expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBeTruthy(); // source ghost-trade intact
   });
 
   it('AC-A8 case 4: gammaflow.ghost-trade.v1 ONLY → legacy trade whole in convexa.positions.v2', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V1_KEY, JSON.stringify({
-      schema_version: 1, trades: { TSLA: aTrade({ id: 'legacy', qty: 2 }) }, decisions: [],
-    }));
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V1_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'legacy', qty: 2 }) },
+        decisions: [],
+      }),
+    );
     positions.__resetMemory();
 
     const all = positions.allPositions();
@@ -223,19 +311,29 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     expect(all[0].id).toBe('legacy'); // whole — legacy version + brand hop in one read
     expect(all[0].qty).toBe(2);
     expect(all[0].status).toBe('open');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();        // migrated trade landed in convexa v2
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy(); // migrated trade landed in convexa v2
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY)).toBeTruthy(); // gammaflow source intact (rollback-safe)
     // Per FRONTEND_EXECUTION_CONTRACT §A.3 the v1 resolve uses resolveDurable('convexa.ghost-trade.v1',
     // 'gammaflow.ghost-trade.v1'), so it ALSO promotes the ghost blob forward to convexa.ghost-trade.v1
     // (same value the ghost-trade store promotes independently — idempotent, non-conflicting).
-    expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBe(localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY));
+    expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBe(
+      localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY),
+    );
   });
 
   it('positions read prefers v2 over v1 when both legacy versions exist', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({ positions: { fromv2: aPosition({ id: 'fromv2' }) } }));
-    localStorage.setItem(PORTFOLIO_LEGACY_V1_KEY, JSON.stringify({
-      schema_version: 1, trades: { TSLA: aTrade({ id: 'fromv1' }) }, decisions: [],
-    }));
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      v2Blob({ positions: { fromv2: aPosition({ id: 'fromv2' }) } }),
+    );
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V1_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'fromv1' }) },
+        decisions: [],
+      }),
+    );
     positions.__resetMemory();
     expect(positions.allPositions().map((p) => p.id)).toEqual(['fromv2']);
   });
@@ -246,9 +344,14 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
 // =================================================================================================
 describe('AC-A9 idempotent — run twice = no-op, no duplicate/re-key/wipe', () => {
   it('positions: second read short-circuits at the new key', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V1_KEY, JSON.stringify({
-      schema_version: 1, trades: { TSLA: aTrade({ id: 'legacy' }) }, decisions: [],
-    }));
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V1_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'legacy' }) },
+        decisions: [],
+      }),
+    );
     positions.__resetMemory();
     const first = positions.allPositions();
     const promoted = localStorage.getItem(PORTFOLIO_V2_KEY);
@@ -261,21 +364,40 @@ describe('AC-A9 idempotent — run twice = no-op, no duplicate/re-key/wipe', () 
   });
 
   it('ghost-trade / personas / uiprefs: re-read identical, no dup', () => {
-    localStorage.setItem(GHOST_TRADE_LEGACY_KEY, JSON.stringify({
-      schema_version: 1, trades: { TSLA: aTrade({ id: 'g' }) }, decisions: [],
-    }));
-    localStorage.setItem(PERSONAS_LEGACY_KEY, JSON.stringify({
-      schema_version: 1, customs: [{ id: 'cp', name: 'X', disposition: 'd', framing: 'f' }], active_persona_id: 'cp',
-    }));
-    localStorage.setItem(UIPREFS_LEGACY_KEY, JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }));
-    ghost.__resetMemory(); __resetPersonas(); __resetLocalPrefs();
+    localStorage.setItem(
+      GHOST_TRADE_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        trades: { TSLA: aTrade({ id: 'g' }) },
+        decisions: [],
+      }),
+    );
+    localStorage.setItem(
+      PERSONAS_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        customs: [{ id: 'cp', name: 'X', disposition: 'd', framing: 'f' }],
+        active_persona_id: 'cp',
+      }),
+    );
+    localStorage.setItem(
+      UIPREFS_LEGACY_KEY,
+      JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }),
+    );
+    ghost.__resetMemory();
+    __resetPersonas();
+    __resetLocalPrefs();
 
-    ghost.getTrade('TSLA'); personas.loadCustoms(); loadLocalTheme();
+    ghost.getTrade('TSLA');
+    personas.loadCustoms();
+    loadLocalTheme();
     const gNew = localStorage.getItem(GHOST_TRADE_KEY);
     const pNew = localStorage.getItem(PERSONAS_KEY);
     const uNew = localStorage.getItem(UIPREFS_KEY);
 
-    ghost.__resetMemory(); __resetPersonas(); __resetLocalPrefs();
+    ghost.__resetMemory();
+    __resetPersonas();
+    __resetLocalPrefs();
     expect(ghost.getTrade('TSLA')!.id).toBe('g');
     expect(personas.loadCustoms()).toHaveLength(1);
     expect(personas.loadActiveId()).toBe('cp');
@@ -290,9 +412,18 @@ describe('AC-A9 idempotent — run twice = no-op, no duplicate/re-key/wipe', () 
 describe('AC-A10 old key never deleted (rollback-safe) — every store', () => {
   it('all four stores leave the gammaflow.* source intact after migrate', () => {
     localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob());
-    localStorage.setItem(GHOST_TRADE_LEGACY_KEY, JSON.stringify({ schema_version: 1, trades: { TSLA: aTrade() }, decisions: [] }));
-    localStorage.setItem(PERSONAS_LEGACY_KEY, JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'x' }));
-    localStorage.setItem(UIPREFS_LEGACY_KEY, JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }));
+    localStorage.setItem(
+      GHOST_TRADE_LEGACY_KEY,
+      JSON.stringify({ schema_version: 1, trades: { TSLA: aTrade() }, decisions: [] }),
+    );
+    localStorage.setItem(
+      PERSONAS_LEGACY_KEY,
+      JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'x' }),
+    );
+    localStorage.setItem(
+      UIPREFS_LEGACY_KEY,
+      JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }),
+    );
     resetAll();
 
     positions.allPositions();
@@ -377,18 +508,34 @@ describe('AC-A12 absent old data → clean new user; subsequent writes persist t
 
 describe('AC-A13 both new + leftover old → new wins, old not merged, old still present', () => {
   it('positions: shows convexa data, never the gammaflow leftover', () => {
-    localStorage.setItem(PORTFOLIO_V2_KEY, v2Blob({ positions: { newp: aPosition({ id: 'newp' }) } }));
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({ positions: { oldp: aPosition({ id: 'oldp' }) } }));
+    localStorage.setItem(
+      PORTFOLIO_V2_KEY,
+      v2Blob({ positions: { newp: aPosition({ id: 'newp' }) } }),
+    );
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      v2Blob({ positions: { oldp: aPosition({ id: 'oldp' }) } }),
+    );
     positions.__resetMemory();
     const ids = positions.allPositions().map((p) => p.id);
-    expect(ids).toEqual(['newp']);      // new wins
-    expect(ids).not.toContain('oldp');  // old not merged
+    expect(ids).toEqual(['newp']); // new wins
+    expect(ids).not.toContain('oldp'); // old not merged
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeTruthy(); // old still present
   });
 
   it('personas: convexa active id wins over gammaflow leftover', () => {
-    localStorage.setItem(PERSONAS_KEY, JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'new_active' }));
-    localStorage.setItem(PERSONAS_LEGACY_KEY, JSON.stringify({ schema_version: 1, customs: [{ id: 'old', name: 'O', disposition: 'd', framing: 'f' }], active_persona_id: 'old_active' }));
+    localStorage.setItem(
+      PERSONAS_KEY,
+      JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'new_active' }),
+    );
+    localStorage.setItem(
+      PERSONAS_LEGACY_KEY,
+      JSON.stringify({
+        schema_version: 1,
+        customs: [{ id: 'old', name: 'O', disposition: 'd', framing: 'f' }],
+        active_persona_id: 'old_active',
+      }),
+    );
     __resetPersonas();
     expect(personas.loadActiveId()).toBe('new_active');
     expect(personas.loadCustoms()).toEqual([]); // old customs not merged
@@ -396,8 +543,14 @@ describe('AC-A13 both new + leftover old → new wins, old not merged, old still
   });
 
   it('uiprefs: convexa theme wins over gammaflow leftover', () => {
-    localStorage.setItem(UIPREFS_KEY, JSON.stringify({ schema_version: 1, theme: 'dark', default_ticker: 'NEW' }));
-    localStorage.setItem(UIPREFS_LEGACY_KEY, JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'OLD' }));
+    localStorage.setItem(
+      UIPREFS_KEY,
+      JSON.stringify({ schema_version: 1, theme: 'dark', default_ticker: 'NEW' }),
+    );
+    localStorage.setItem(
+      UIPREFS_LEGACY_KEY,
+      JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'OLD' }),
+    );
     __resetLocalPrefs();
     expect(loadLocalTheme()).toBe('dark');
     expect(loadLocalDefaultTicker()).toBe('NEW');

@@ -10,7 +10,7 @@
  */
 import { useCallback, useRef, useState } from 'react';
 
-const COUNT_CAP = 240;          // per-position hard memory bound
+const COUNT_CAP = 240; // per-position hard memory bound
 const AGE_MAX_MS = 60 * 60_000; // 60m retained
 
 /** One sample. `pl == null` ⇒ a break (offline gap), never plotted as 0/interpolated. */
@@ -47,17 +47,26 @@ export function usePlTrends(): TrendApi {
     setVersion((v) => v + 1);
   }, []);
 
-  const record = useCallback((id: string, pl: number) => {
-    if (!anchorRef.current.has(id)) anchorRef.current.set(id, pl); // session anchor = first observed
-    push(id, { t: Date.now(), pl });
-  }, [push]);
+  const record = useCallback(
+    (id: string, pl: number) => {
+      if (!anchorRef.current.has(id)) anchorRef.current.set(id, pl); // session anchor = first observed
+      push(id, { t: Date.now(), pl });
+    },
+    [push],
+  );
 
-  const recordBreak = useCallback((id: string) => {
-    push(id, { t: Date.now(), pl: null });
-  }, [push]);
+  const recordBreak = useCallback(
+    (id: string) => {
+      push(id, { t: Date.now(), pl: null });
+    },
+    [push],
+  );
 
   const series = useCallback((id: string): PlSample[] => seriesRef.current.get(id) ?? [], []);
-  const sessionAnchor = useCallback((id: string): number | null => anchorRef.current.get(id) ?? null, []);
+  const sessionAnchor = useCallback(
+    (id: string): number | null => anchorRef.current.get(id) ?? null,
+    [],
+  );
 
   return { record, recordBreak, series, sessionAnchor };
 }

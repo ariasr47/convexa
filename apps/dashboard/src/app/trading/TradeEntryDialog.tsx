@@ -26,26 +26,55 @@
  * (server-gated, on Positions) write. No new/changed API call: the only network touch is the
  * EXISTING `GET /api/contract` lookup (`fetchTrackedContract`) both old dialogs already made.
  */
-import { useEffect, useState, type ReactNode } from 'react';
+import CloseIcon from '@mui/icons-material/Close';
 import {
-  Dialog, DialogContent, Button, Chip, Stack, Typography, Select, MenuItem, ToggleButton,
-  ToggleButtonGroup, TextField, Box, IconButton, Alert,
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogContent,
+  IconButton,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import CloseIcon from '@mui/icons-material/Close';
 import { fetchTrackedContract, OptionRight } from '@org/api';
-import { resolveMarketFill, type ResolvedFill } from '../positions/entry';
-import { SIMULATED_TIP, DISCLAIMER } from '../positions/labels';
-import { extrasFor } from '../tokens';
-import type { Trigger } from '../orders/types';
-import { triggerMet } from '../orders/engine';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
-  DIALOG_TITLE as ORDER_DIALOG_TITLE, provenanceAiRead, provenanceScenario, dialogScenarioStrip,
-  staleRecDisclosure, alreadyMetNotice, simulatedDisclosure, TRIGGER_LABEL, TRIGGER_SEED_CHIP,
-  TRIGGER_NO_SEED_HELPER, TRIGGER_EMPTY_HELPER, REC_WORDS_LABEL, REC_NO_TRIGGER_TEXT,
-  ENTRY_PRICE_LIMIT, ENTRY_PRICE_MARKET, LIMIT_HELPER, MARKET_HELPER, STOP_TARGET_HELPER,
-  GOOD_TIL_LABEL, GOOD_TIL_HELPER, GOOD_TIL_VALIDATION, CONFIRM_LABEL as ORDER_CONFIRM_LABEL,
+  alreadyMetNotice,
+  dialogScenarioStrip,
+  ENTRY_PRICE_LIMIT,
+  ENTRY_PRICE_MARKET,
+  GOOD_TIL_HELPER,
+  GOOD_TIL_LABEL,
+  GOOD_TIL_VALIDATION,
+  LIMIT_HELPER,
+  MARKET_HELPER,
+  CONFIRM_LABEL as ORDER_CONFIRM_LABEL,
+  DIALOG_TITLE as ORDER_DIALOG_TITLE,
+  provenanceAiRead,
+  provenanceScenario,
+  REC_NO_TRIGGER_TEXT,
+  REC_WORDS_LABEL,
+  simulatedDisclosure,
+  staleRecDisclosure,
+  STOP_TARGET_HELPER,
+  TRIGGER_EMPTY_HELPER,
+  TRIGGER_LABEL,
+  TRIGGER_NO_SEED_HELPER,
+  TRIGGER_SEED_CHIP,
 } from '../orders/copy';
+import { triggerMet } from '../orders/engine';
+import type { Trigger } from '../orders/types';
+import { resolveMarketFill, type ResolvedFill } from '../positions/entry';
+import { DISCLAIMER, SIMULATED_TIP } from '../positions/labels';
+import { extrasFor } from '../tokens';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */
 export type FillMode = 'manual' | 'market' | 'limit';
@@ -179,8 +208,13 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNo
       component="label"
       htmlFor={htmlFor}
       sx={{
-        display: 'block', mb: 0.5, fontSize: 11, fontWeight: 700, letterSpacing: '0.07em',
-        textTransform: 'uppercase', color: 'text.disabled',
+        display: 'block',
+        mb: 0.5,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.07em',
+        textTransform: 'uppercase',
+        color: 'text.disabled',
       }}
     >
       {children}
@@ -189,8 +223,18 @@ function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: ReactNo
 }
 
 export function TradeEntryDialog({
-  open, ticker, expirations, strikes, spot, prefill, restingLimit = false,
-  orderPlan, onConfirmOrder, orderError, onClose, onConfirm,
+  open,
+  ticker,
+  expirations,
+  strikes,
+  spot,
+  prefill,
+  restingLimit = false,
+  orderPlan,
+  onConfirmOrder,
+  orderError,
+  onClose,
+  onConfirm,
 }: Props) {
   const [mode, setMode] = useState<FillMode>('manual');
   const [expiration, setExpiration] = useState('');
@@ -203,7 +247,9 @@ export function TradeEntryDialog({
   const [limitPrice, setLimitPrice] = useState<number | ''>('');
   // Resolved market/theoretical fill for the picked contract (the EXISTING entry resolver).
   const [marketFill, setMarketFill] = useState<ResolvedFill | null>(null);
-  const [fillState, setFillState] = useState<'idle' | 'loading' | 'error' | 'no_resolvable'>('idle');
+  const [fillState, setFillState] = useState<'idle' | 'loading' | 'error' | 'no_resolvable'>(
+    'idle',
+  );
   const [contractStatsFailed, setContractStatsFailed] = useState(false);
   // ---- Order-variant state (inert unless `orderPlan` is passed) --------------------------------
   const isOrder = orderPlan != null;
@@ -216,7 +262,9 @@ export function TradeEntryDialog({
   // names that isn't in the chain list still seeds — the user can adjust to the nearest listed one.
   useEffect(() => {
     if (!open) return;
-    const nearest = strikes.length ? strikes.reduce((b, s) => (Math.abs(s - spot) < Math.abs(b - spot) ? s : b), strikes[0]) : '';
+    const nearest = strikes.length
+      ? strikes.reduce((b, s) => (Math.abs(s - spot) < Math.abs(b - spot) ? s : b), strikes[0])
+      : '';
     const exp = prefill?.expiration || expirations[0] || '';
     setMode('manual');
     setExpiration(exp);
@@ -257,7 +305,11 @@ export function TradeEntryDialog({
           return;
         }
         const fill = resolveMarketFill(tc, spot, right, Number(strike));
-        if (!fill) { setMarketFill(null); setFillState('no_resolvable'); return; }
+        if (!fill) {
+          setMarketFill(null);
+          setFillState('no_resolvable');
+          return;
+        }
         setMarketFill(fill);
         setFillState('idle');
       })
@@ -267,7 +319,9 @@ export function TradeEntryDialog({
         setMarketFill(null);
         setFillState('error');
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open, ticker, expiration, strike, right, spot]);
 
   // ---- Derived previews / guards per mode ------------------------------------------------------
@@ -281,14 +335,23 @@ export function TradeEntryDialog({
 
   // ---- Order-variant derivations (all inert when `orderPlan` is absent) -------------------------
   // The structured trigger the confirm would arm: set only when a numeric level is present.
-  const orderTrigger: Trigger | null = isOrder && trigLevel !== '' && Number(trigLevel) > 0
-    ? { kind: trigDirection === 'above' ? 'underlying_above' : 'underlying_below', level: Number(trigLevel) }
-    : null;
+  const orderTrigger: Trigger | null =
+    isOrder && trigLevel !== '' && Number(trigLevel) > 0
+      ? {
+          kind: trigDirection === 'above' ? 'underlying_above' : 'underlying_below',
+          level: Number(trigLevel),
+        }
+      : null;
   // D8-2 — appears/disappears LIVE as the user edits the trigger against the current live mid.
-  const alreadyMet = isOrder && orderPlan.liveMid != null && orderTrigger != null
-    && triggerMet(orderTrigger, orderPlan.liveMid);
+  const alreadyMet =
+    isOrder &&
+    orderPlan.liveMid != null &&
+    orderTrigger != null &&
+    triggerMet(orderTrigger, orderPlan.liveMid);
   // D3 good-til validation: after now, no later than the contract's expiration; never blank (AC-8).
-  const goodTilInvalid = isOrder && (goodTil === '' || goodTil < todayIso() || (expiration !== '' && goodTil > expiration));
+  const goodTilInvalid =
+    isOrder &&
+    (goodTil === '' || goodTil < todayIso() || (expiration !== '' && goodTil > expiration));
 
   const canConfirm = (() => {
     if (strike === '' || !expiration || qty < 1) return false;
@@ -305,14 +368,21 @@ export function TradeEntryDialog({
   // "Place limit order" only when the host actually rests the order (Positions lifecycle).
   const confirmLabel = isOrder
     ? ORDER_CONFIRM_LABEL
-    : restingLimit && mode === 'limit' ? 'Place limit order' : 'Open simulated position';
+    : restingLimit && mode === 'limit'
+      ? 'Place limit order'
+      : 'Open simulated position';
   const priceLabel = mode === 'limit' ? 'Limit price' : 'Manual price';
 
   const handleConfirm = () => {
     if (strike === '' || !expiration) return;
     const base: SubmitBase = {
-      ticker, expiration, strike: Number(strike), right, qty,
-      stop: stop === '' ? null : Number(stop), target: target === '' ? null : Number(target),
+      ticker,
+      expiration,
+      strike: Number(strike),
+      right,
+      qty,
+      stop: stop === '' ? null : Number(stop),
+      target: target === '' ? null : Number(target),
     };
     if (isOrder) {
       if (goodTilInvalid) return;
@@ -329,7 +399,12 @@ export function TradeEntryDialog({
       onConfirm({ ...base, entryMode: 'manual', price: Number(manualPrice) });
     } else if (mode === 'market' && marketFill) {
       // Safe narrow: `resolveMarketFill` only ever returns `snapshot` or `theoretical`.
-      onConfirm({ ...base, entryMode: 'market', resolvedMark: marketFill.mark, resolvedBasis: marketFill.basis as MarketFillBasis });
+      onConfirm({
+        ...base,
+        entryMode: 'market',
+        resolvedMark: marketFill.mark,
+        resolvedBasis: marketFill.basis as MarketFillBasis,
+      });
     } else if (mode === 'limit' && limitPrice !== '') {
       onConfirm({ ...base, entryMode: 'limit', limitPrice: Number(limitPrice) });
     }
@@ -351,7 +426,10 @@ export function TradeEntryDialog({
       slotProps={{
         paper: {
           sx: {
-            borderRadius: '14px', border: 1, borderColor: 'divider', backgroundImage: 'none',
+            borderRadius: '14px',
+            border: 1,
+            borderColor: 'divider',
+            backgroundImage: 'none',
             bgcolor: (theme) => extrasFor(theme).panelRaised,
           },
         },
@@ -361,17 +439,35 @@ export function TradeEntryDialog({
         <Stack spacing={2}>
           {/* Header — title + SIMULATED (+ provenance) + close. */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-            <Stack direction="row" spacing={1} sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{ flexGrow: 1, minWidth: 0, alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
+            >
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
                 {isOrder ? ORDER_DIALOG_TITLE : `Open simulated position · ${ticker}`}
               </Typography>
               <Chip
-                size="small" label="SIMULATED" title={SIMULATED_TIP}
-                sx={(t) => ({ bgcolor: alpha(t.palette.success.main, 0.18), color: 'success.main', fontWeight: 700, letterSpacing: '0.04em' })}
+                size="small"
+                label="SIMULATED"
+                title={SIMULATED_TIP}
+                sx={(t) => ({
+                  bgcolor: alpha(t.palette.success.main, 0.18),
+                  color: 'success.main',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                })}
               />
-              {!isOrder && prefill?.provenance && <Chip size="small" color="primary" variant="outlined" label={prefill.provenance} />}
+              {!isOrder && prefill?.provenance && (
+                <Chip size="small" color="primary" variant="outlined" label={prefill.provenance} />
+              )}
             </Stack>
-            <IconButton size="small" onClick={onClose} aria-label="Close" sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}>
+            <IconButton
+              size="small"
+              onClick={onClose}
+              aria-label="Close"
+              sx={{ color: 'text.secondary', mt: -0.5, mr: -0.5 }}
+            >
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
@@ -394,7 +490,11 @@ export function TradeEntryDialog({
                   {alreadyMetNotice(ticker, trigDirection, orderTrigger.level)}
                 </Alert>
               )}
-              <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="order-provenance-line">
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary' }}
+                data-testid="order-provenance-line"
+              >
                 {orderPlan.provenance.source === 'ai_scenario'
                   ? provenanceScenario(orderPlan.provenance.scenarioName ?? 'scenario')
                   : provenanceAiRead(orderPlan.provenance.personaName, orderPlan.provenance.asOf)}
@@ -405,7 +505,14 @@ export function TradeEntryDialog({
           {/* Fill-mode segmented control (shipped 3-mode — replaced by the 2-option entry-price
               control in the ORDER VARIANT ONLY, §3.1-6). */}
           {!isOrder && (
-            <ToggleButtonGroup exclusive size="small" value={mode} onChange={(_, v) => v && setMode(v)} fullWidth aria-label="fill mode">
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={mode}
+              onChange={(_, v) => v && setMode(v)}
+              fullWidth
+              aria-label="fill mode"
+            >
               <ToggleButton value="manual">Manual price</ToggleButton>
               <ToggleButton value="market">Market</ToggleButton>
               <ToggleButton value="limit">Limit</ToggleButton>
@@ -416,11 +523,19 @@ export function TradeEntryDialog({
           <Box>
             <FieldLabel htmlFor="entry-expiration">Expiration</FieldLabel>
             <Select
-              id="entry-expiration" size="small" fullWidth value={expiration}
-              onChange={(e) => setExpiration(String(e.target.value))} sx={inputSx}
+              id="entry-expiration"
+              size="small"
+              fullWidth
+              value={expiration}
+              onChange={(e) => setExpiration(String(e.target.value))}
+              sx={inputSx}
               inputProps={{ 'aria-label': 'Expiration' }}
             >
-              {expirations.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+              {expirations.map((d) => (
+                <MenuItem key={d} value={d}>
+                  {d}
+                </MenuItem>
+              ))}
             </Select>
           </Box>
 
@@ -428,24 +543,38 @@ export function TradeEntryDialog({
           <Box>
             <FieldLabel htmlFor="entry-strike">Strike</FieldLabel>
             <Select
-              id="entry-strike" size="small" fullWidth value={strike === '' ? '' : String(strike)}
-              onChange={(e) => setStrike(Number(e.target.value))} sx={inputSx}
+              id="entry-strike"
+              size="small"
+              fullWidth
+              value={strike === '' ? '' : String(strike)}
+              onChange={(e) => setStrike(Number(e.target.value))}
+              sx={inputSx}
               inputProps={{ 'aria-label': 'Strike' }}
             >
-              {strikes.map((s) => <MenuItem key={s} value={String(s)}>${s}</MenuItem>)}
+              {strikes.map((s) => (
+                <MenuItem key={s} value={String(s)}>
+                  ${s}
+                </MenuItem>
+              ))}
             </Select>
           </Box>
 
           {/* Call / Put — active CALL = success green, active PUT = error red. */}
           <ToggleButtonGroup
-            exclusive size="small" value={right} onChange={(_, v) => v && setRight(v)} fullWidth
+            exclusive
+            size="small"
+            value={right}
+            onChange={(_, v) => v && setRight(v)}
+            fullWidth
             sx={{
               '& .MuiToggleButton-root.Mui-selected': { color: 'common.white' },
               '& .MuiToggleButton-root[value="call"].Mui-selected': {
-                bgcolor: 'success.main', '&:hover': { bgcolor: 'success.dark' },
+                bgcolor: 'success.main',
+                '&:hover': { bgcolor: 'success.dark' },
               },
               '& .MuiToggleButton-root[value="put"].Mui-selected': {
-                bgcolor: 'error.main', '&:hover': { bgcolor: 'error.dark' },
+                bgcolor: 'error.main',
+                '&:hover': { bgcolor: 'error.dark' },
               },
             }}
           >
@@ -457,9 +586,14 @@ export function TradeEntryDialog({
           <Box>
             <FieldLabel htmlFor="entry-qty">Quantity</FieldLabel>
             <TextField
-              id="entry-qty" size="small" fullWidth type="number" value={qty}
+              id="entry-qty"
+              size="small"
+              fullWidth
+              type="number"
+              value={qty}
               onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-              slotProps={{ htmlInput: { min: 1, 'aria-label': 'Quantity' } }} sx={inputSx}
+              slotProps={{ htmlInput: { min: 1, 'aria-label': 'Quantity' } }}
+              sx={inputSx}
             />
           </Box>
 
@@ -469,39 +603,67 @@ export function TradeEntryDialog({
               <FieldLabel htmlFor="order-trigger-level">{TRIGGER_LABEL}</FieldLabel>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <Select
-                  size="small" value={trigDirection}
+                  size="small"
+                  value={trigDirection}
                   onChange={(e) => setTrigDirection(e.target.value as 'above' | 'below')}
-                  inputProps={{ 'aria-label': 'Trigger direction' }} sx={{ ...inputSx, minWidth: 110 }}
+                  inputProps={{ 'aria-label': 'Trigger direction' }}
+                  sx={{ ...inputSx, minWidth: 110 }}
                 >
                   <MenuItem value="above">Above</MenuItem>
                   <MenuItem value="below">Below</MenuItem>
                 </Select>
                 <TextField
-                  id="order-trigger-level" size="small" fullWidth type="number" value={trigLevel}
-                  onChange={(e) => setTrigLevel(e.target.value === '' ? '' : Number(e.target.value))}
-                  slotProps={{ htmlInput: { 'aria-label': 'Trigger level' } }} sx={inputSx}
+                  id="order-trigger-level"
+                  size="small"
+                  fullWidth
+                  type="number"
+                  value={trigLevel}
+                  onChange={(e) =>
+                    setTrigLevel(e.target.value === '' ? '' : Number(e.target.value))
+                  }
+                  slotProps={{ htmlInput: { 'aria-label': 'Trigger level' } }}
+                  sx={inputSx}
                 />
                 {orderPlan.seededTrigger && (
-                  <Chip size="small" color="primary" variant="outlined" label={TRIGGER_SEED_CHIP} data-testid="order-seed-chip" />
+                  <Chip
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    label={TRIGGER_SEED_CHIP}
+                    data-testid="order-seed-chip"
+                  />
                 )}
               </Stack>
               {/* Seed-policy helpers (D2): no parseable level ⇒ nothing pre-filled; empty ⇒ arms
                   immediately. */}
               {!orderPlan.seededTrigger && trigLevel === '' && (
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }} data-testid="order-no-seed-helper">
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                  data-testid="order-no-seed-helper"
+                >
                   {TRIGGER_NO_SEED_HELPER}
                 </Typography>
               )}
               {orderPlan.seededTrigger && trigLevel === '' && (
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                >
                   {TRIGGER_EMPTY_HELPER}
                 </Typography>
               )}
               {/* The rec's verbatim words — ALWAYS shown beneath the trigger fields (§3.1-5). */}
               <Box sx={{ mt: 1 }}>
                 <FieldLabel>{REC_WORDS_LABEL}</FieldLabel>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }} data-testid="order-verbatim-words">
-                  {orderPlan.triggerSourceText ? `“${orderPlan.triggerSourceText}”` : REC_NO_TRIGGER_TEXT}
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', fontStyle: 'italic' }}
+                  data-testid="order-verbatim-words"
+                >
+                  {orderPlan.triggerSourceText
+                    ? `“${orderPlan.triggerSourceText}”`
+                    : REC_NO_TRIGGER_TEXT}
                 </Typography>
               </Box>
             </Box>
@@ -511,20 +673,33 @@ export function TradeEntryDialog({
           {isOrder && (
             <Box data-testid="order-entry-price-section">
               <ToggleButtonGroup
-                exclusive size="small" fullWidth value={priceMode}
-                onChange={(_, v) => v && setPriceMode(v)} aria-label="entry price"
+                exclusive
+                size="small"
+                fullWidth
+                value={priceMode}
+                onChange={(_, v) => v && setPriceMode(v)}
+                aria-label="entry price"
               >
                 <ToggleButton value="limit">{ENTRY_PRICE_LIMIT}</ToggleButton>
                 <ToggleButton value="market">{ENTRY_PRICE_MARKET}</ToggleButton>
               </ToggleButtonGroup>
               {priceMode === 'limit' && (
                 <TextField
-                  size="small" fullWidth type="number" value={limitPrice} sx={{ ...inputSx, mt: 1 }}
-                  onChange={(e) => setLimitPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                  size="small"
+                  fullWidth
+                  type="number"
+                  value={limitPrice}
+                  sx={{ ...inputSx, mt: 1 }}
+                  onChange={(e) =>
+                    setLimitPrice(e.target.value === '' ? '' : Number(e.target.value))
+                  }
                   slotProps={{ htmlInput: { 'aria-label': 'Limit price' } }}
                 />
               )}
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+              >
                 {priceMode === 'limit' ? LIMIT_HELPER : MARKET_HELPER}
               </Typography>
             </Box>
@@ -535,13 +710,18 @@ export function TradeEntryDialog({
             <Box>
               <FieldLabel htmlFor="entry-price">{priceLabel}</FieldLabel>
               <TextField
-                id="entry-price" size="small" fullWidth type="number"
+                id="entry-price"
+                size="small"
+                fullWidth
+                type="number"
                 value={mode === 'limit' ? limitPrice : manualPrice}
                 onChange={(e) => {
-                  const v = e.target.value === '' ? '' as const : Number(e.target.value);
-                  if (mode === 'limit') setLimitPrice(v); else setManualPrice(v);
+                  const v = e.target.value === '' ? ('' as const) : Number(e.target.value);
+                  if (mode === 'limit') setLimitPrice(v);
+                  else setManualPrice(v);
                 }}
-                slotProps={{ htmlInput: { 'aria-label': priceLabel } }} sx={inputSx}
+                slotProps={{ htmlInput: { 'aria-label': priceLabel } }}
+                sx={inputSx}
               />
             </Box>
           )}
@@ -552,23 +732,35 @@ export function TradeEntryDialog({
             <Box sx={{ flex: 1 }}>
               <FieldLabel htmlFor="entry-stop">Stop (optional)</FieldLabel>
               <TextField
-                id="entry-stop" size="small" fullWidth type="number" value={stop}
+                id="entry-stop"
+                size="small"
+                fullWidth
+                type="number"
+                value={stop}
                 onChange={(e) => setStop(e.target.value === '' ? '' : Number(e.target.value))}
-                slotProps={{ htmlInput: { 'aria-label': 'Stop (optional)' } }} sx={inputSx}
+                slotProps={{ htmlInput: { 'aria-label': 'Stop (optional)' } }}
+                sx={inputSx}
               />
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel htmlFor="entry-target">Target (optional)</FieldLabel>
               <TextField
-                id="entry-target" size="small" fullWidth type="number" value={target}
+                id="entry-target"
+                size="small"
+                fullWidth
+                type="number"
+                value={target}
                 onChange={(e) => setTarget(e.target.value === '' ? '' : Number(e.target.value))}
-                slotProps={{ htmlInput: { 'aria-label': 'Target (optional)' } }} sx={inputSx}
+                slotProps={{ htmlInput: { 'aria-label': 'Target (optional)' } }}
+                sx={inputSx}
               />
             </Box>
           </Stack>
 
           {isOrder && (
-            <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>{STOP_TARGET_HELPER}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', mt: -1 }}>
+              {STOP_TARGET_HELPER}
+            </Typography>
           )}
 
           {/* ORDER VARIANT — the never-blank good-til bound (§3.1-8, AC-8). */}
@@ -576,11 +768,16 @@ export function TradeEntryDialog({
             <Box data-testid="order-good-til-section">
               <FieldLabel htmlFor="order-good-til">{GOOD_TIL_LABEL}</FieldLabel>
               <TextField
-                id="order-good-til" size="small" fullWidth type="date" value={goodTil}
+                id="order-good-til"
+                size="small"
+                fullWidth
+                type="date"
+                value={goodTil}
                 onChange={(e) => setGoodTil(e.target.value)}
                 error={goodTilInvalid}
                 helperText={goodTilInvalid ? GOOD_TIL_VALIDATION : GOOD_TIL_HELPER}
-                slotProps={{ htmlInput: { 'aria-label': 'Good-til' } }} sx={inputSx}
+                slotProps={{ htmlInput: { 'aria-label': 'Good-til' } }}
+                sx={inputSx}
               />
             </Box>
           )}
@@ -593,77 +790,113 @@ export function TradeEntryDialog({
           )}
 
           {prefill?.sizingNote && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{prefill.sizingNote}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {prefill.sizingNote}
+            </Typography>
           )}
 
           {/* Fill preview — per mode, honest about the basis (S6). Not part of the order variant
               (an order fills LATER, on live crosses — the §3.1-6 helpers state the semantics). */}
           {!isOrder && (
-          <Box>
-            {fillState === 'loading' ? (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>Select a contract to see the fill.</Typography>
-            ) : fillState === 'error' ? (
-              <Typography variant="body2" color="error">Couldn't load the chain for entry — try again.</Typography>
-            ) : mode === 'manual' ? (
-              <>
-                <Typography variant="body2" sx={{ color: manualPrice === '' ? 'text.secondary' : 'text.primary' }}>
-                  {manualPrice === ''
-                    ? 'Enter a price — opens at exactly the price you type.'
-                    : `Opens at your price $${Number(manualPrice).toFixed(2)} · Cost $${manualCost?.toFixed(0)} — user-entered, not a market quote.`}
+            <Box>
+              {fillState === 'loading' ? (
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Select a contract to see the fill.
                 </Typography>
-                <Chip size="small" variant="outlined" sx={{ mt: 0.5 }} label="user-entered price" />
-                {contractStatsFailed && (
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                    Contract stats unavailable — your entry still works.
-                  </Typography>
-                )}
-              </>
-            ) : mode === 'market' ? (
-              fillState === 'no_resolvable' ? (
+              ) : fillState === 'error' ? (
                 <Typography variant="body2" color="error">
-                  No quote or theoretical mark available for this contract — a market order can't fill. Try Manual price, or pick another contract.
+                  Couldn't load the chain for entry — try again.
                 </Typography>
-              ) : marketFill ? (
+              ) : mode === 'manual' ? (
                 <>
-                  <Typography variant="body2" sx={{ color: 'text.primary' }}>
-                    Fill: mid ${marketFill.mark.toFixed(2)} · Cost ${marketCost?.toFixed(0)} (mid × 100 × qty)
+                  <Typography
+                    variant="body2"
+                    sx={{ color: manualPrice === '' ? 'text.secondary' : 'text.primary' }}
+                  >
+                    {manualPrice === ''
+                      ? 'Enter a price — opens at exactly the price you type.'
+                      : `Opens at your price $${Number(manualPrice).toFixed(2)} · Cost $${manualCost?.toFixed(0)} — user-entered, not a market quote.`}
                   </Typography>
                   <Chip
-                    size="small" variant="outlined" sx={{ mt: 0.5 }}
-                    label={marketFill.basis === 'theoretical' ? 'theoretical' : 'snapshot mid'}
+                    size="small"
+                    variant="outlined"
+                    sx={{ mt: 0.5 }}
+                    label="user-entered price"
                   />
-                  {marketFill.basis === 'theoretical' && (
-                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                      No live quote — fill will use a theoretical (Black-Scholes) mark.
+                  {contractStatsFailed && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary', display: 'block' }}
+                    >
+                      Contract stats unavailable — your entry still works.
+                    </Typography>
+                  )}
+                </>
+              ) : mode === 'market' ? (
+                fillState === 'no_resolvable' ? (
+                  <Typography variant="body2" color="error">
+                    No quote or theoretical mark available for this contract — a market order can't
+                    fill. Try Manual price, or pick another contract.
+                  </Typography>
+                ) : marketFill ? (
+                  <>
+                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                      Fill: mid ${marketFill.mark.toFixed(2)} · Cost ${marketCost?.toFixed(0)} (mid
+                      × 100 × qty)
+                    </Typography>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      sx={{ mt: 0.5 }}
+                      label={marketFill.basis === 'theoretical' ? 'theoretical' : 'snapshot mid'}
+                    />
+                    {marketFill.basis === 'theoretical' && (
+                      <Typography
+                        variant="caption"
+                        sx={{ color: 'text.secondary', display: 'block' }}
+                      >
+                        No live quote — fill will use a theoretical (Black-Scholes) mark.
+                      </Typography>
+                    )}
+                  </>
+                ) : (
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    Select a contract to see the fill.
+                  </Typography>
+                )
+              ) : restingLimit ? (
+                // Limit — the host rests it `pending` and fills only on a LIVE cross (Positions).
+                <>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: limitPrice === '' ? 'text.secondary' : 'text.primary' }}
+                  >
+                    {limitPrice === ''
+                      ? 'Enter a limit price.'
+                      : `Rests until the live mark reaches $${Number(limitPrice).toFixed(2)}, then fills at $${Number(limitPrice).toFixed(2)}. Stays cancellable until it fills.`}
+                  </Typography>
+                  {alreadyCrossable && (
+                    <Typography
+                      variant="caption"
+                      sx={{ color: 'text.secondary', display: 'block' }}
+                    >
+                      The live mark is already at or below your limit — this will fill on the next
+                      live tick.
                     </Typography>
                   )}
                 </>
               ) : (
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>Select a contract to see the fill.</Typography>
-              )
-            ) : restingLimit ? (
-              // Limit — the host rests it `pending` and fills only on a LIVE cross (Positions).
-              <>
-                <Typography variant="body2" sx={{ color: limitPrice === '' ? 'text.secondary' : 'text.primary' }}>
+                // Limit — immediate open at your price (Ticker: no resting lifecycle in the engine).
+                <Typography
+                  variant="body2"
+                  sx={{ color: limitPrice === '' ? 'text.secondary' : 'text.primary' }}
+                >
                   {limitPrice === ''
-                    ? 'Enter a limit price.'
-                    : `Rests until the live mark reaches $${Number(limitPrice).toFixed(2)}, then fills at $${Number(limitPrice).toFixed(2)}. Stays cancellable until it fills.`}
+                    ? 'Enter a limit price to see the fill.'
+                    : `Fills at your limit $${Number(limitPrice).toFixed(2)} · Cost $${limitCost?.toFixed(0)} (price × 100 × qty)`}
                 </Typography>
-                {alreadyCrossable && (
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                    The live mark is already at or below your limit — this will fill on the next live tick.
-                  </Typography>
-                )}
-              </>
-            ) : (
-              // Limit — immediate open at your price (Ticker: no resting lifecycle in the engine).
-              <Typography variant="body2" sx={{ color: limitPrice === '' ? 'text.secondary' : 'text.primary' }}>
-                {limitPrice === ''
-                  ? 'Enter a limit price to see the fill.'
-                  : `Fills at your limit $${Number(limitPrice).toFixed(2)} · Cost $${limitCost?.toFixed(0)} (price × 100 × qty)`}
-              </Typography>
-            )}
-          </Box>
+              )}
+            </Box>
           )}
 
           {/* ORDER VARIANT — a refused order write (faulted store) surfaces inline; nothing partial. */}
@@ -675,14 +908,25 @@ export function TradeEntryDialog({
 
           {/* Disclaimer — shipped verbatim, or the mandatory D8-1 SIMULATED disclosure in the order
               variant (always visible above the confirm, §3.1-9). */}
-          <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid={isOrder ? 'order-simulated-disclosure' : undefined}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary' }}
+            data-testid={isOrder ? 'order-simulated-disclosure' : undefined}
+          >
             {isOrder ? simulatedDisclosure(ticker) : DISCLAIMER}
           </Typography>
 
           {/* Footer. */}
           <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end', pt: 0.5 }}>
-            <Button onClick={onClose} sx={{ color: 'text.secondary' }}>Cancel</Button>
-            <Button variant="contained" disableElevation disabled={!canConfirm} onClick={handleConfirm}>
+            <Button onClick={onClose} sx={{ color: 'text.secondary' }}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              disableElevation
+              disabled={!canConfirm}
+              onClick={handleConfirm}
+            >
               {confirmLabel}
             </Button>
           </Stack>

@@ -8,19 +8,19 @@
  * Traceability: every AC in the FRONTEND_EXECUTION_CONTRACT §5 "Tests to write" matrix is a NAMED test
  * here (the FE-half of each; the BE-only proofs AC-11/16/19/20-server are co-verified on the backend).
  */
-import { render, screen, within, cleanup, waitFor } from '@testing-library/react';
+import type { StrikeRow, TickerBundle } from '@org/api';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TickerBundle, StrikeRow } from '@org/api';
 import App from '../app';
 import { AuthProvider } from '../auth/AuthContext';
 import { AuthDialogProvider } from '../auth/AuthDialogProvider';
-import { AppThemeProvider } from '../auth/ThemeProvider';
 import { SettingsPage } from '../auth/SettingsPage';
+import { AppThemeProvider } from '../auth/ThemeProvider';
 import { AUTH_COPY, maskedKeyLabel } from '../auth/copy';
-import { BYO_KEY, adminExhaustedTitle, freeUsesChip, COPY } from './copy';
 import { clearTrade } from '../ghost-trade/store';
+import { BYO_KEY, COPY, adminExhaustedTitle, freeUsesChip } from './copy';
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------
 const FP_A = 'fp-A';
@@ -29,58 +29,144 @@ const RAW_KEY = 'sk-ant-supersecretkey1234';
 
 function strike(s: number): StrikeRow {
   return {
-    strike: s, net_gex: 0, call_gex: 0, put_gex: 0, call_oi: 10, put_oi: 10, total_oi: 20,
-    net_dex: 0, call_dex: 0, put_dex: 0, volume: 5, vol_oi_ratio: 0.25,
+    strike: s,
+    net_gex: 0,
+    call_gex: 0,
+    put_gex: 0,
+    call_oi: 10,
+    put_oi: 10,
+    total_oi: 20,
+    net_dex: 0,
+    call_dex: 0,
+    put_dex: 0,
+    volume: 5,
+    vol_oi_ratio: 0.25,
   };
 }
 
 function makeBundle(): TickerBundle {
   return {
     market_state: {
-      ticker: 'TSLA', price: 250.5, gex_spot: 250, timestamp: 1_700_000_000, timestamp_iso: SNAP_A,
-      call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-      max_pain_expiration: '2026-06-26', net_gex: 1.2e9, call_gex: 2e9, put_gex: -0.8e9, total_gex: 1.2e9,
-      net_dex: 5e8, call_dex: 6e8, put_dex: -1e8, net_vanna: null, net_charm: null, net_volga: null,
-      vwap: 249, vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null,
-      dte_min: 7, dte_max: 45, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.12, net_flow: null,
-      put_call_ratio: 0.8, chain_vol_oi_ratio: 0.5, total_volume: 100_000, vol_oi_unusual_threshold: 1,
-      iv_skew: null, term_structure: null, dealer_flow_projection: null,
+      ticker: 'TSLA',
+      price: 250.5,
+      gex_spot: 250,
+      timestamp: 1_700_000_000,
+      timestamp_iso: SNAP_A,
+      call_wall: 260,
+      put_wall: 240,
+      peak_gex_strike: 255,
+      gamma_flip: 248,
+      max_pain: 250,
+      max_pain_expiration: '2026-06-26',
+      net_gex: 1.2e9,
+      call_gex: 2e9,
+      put_gex: -0.8e9,
+      total_gex: 1.2e9,
+      net_dex: 5e8,
+      call_dex: 6e8,
+      put_dex: -1e8,
+      net_vanna: null,
+      net_charm: null,
+      net_volga: null,
+      vwap: 249,
+      vwap_upper_2: null,
+      vwap_upper_3: null,
+      vwap_lower_2: null,
+      vwap_lower_3: null,
+      dte_min: 7,
+      dte_max: 45,
+      atm_iv: 45,
+      hv_30d: 40,
+      iv_hv_ratio: 1.12,
+      net_flow: null,
+      put_call_ratio: 0.8,
+      chain_vol_oi_ratio: 0.5,
+      total_volume: 100_000,
+      vol_oi_unusual_threshold: 1,
+      iv_skew: null,
+      term_structure: null,
+      dealer_flow_projection: null,
     },
     signals: {
-      ticker: 'TSLA', regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 42, opportunity_tier: 'watch', prime_prompt_eligible: false,
+      ticker: 'TSLA',
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 42,
+      opportunity_tier: 'watch',
+      prime_prompt_eligible: false,
     },
-    strike_profile: { ticker: 'TSLA', spot: 250.5, strikes: [strike(255), strike(260), strike(265)] },
-    expirations: [{ date: '2026-06-26', dte: 3 }, { date: '2026-07-18', dte: 25 }],
-    ai_eval: { ready: true, reasons: [], changed: true, state_fingerprint: FP_A, score_threshold: 50 },
+    strike_profile: {
+      ticker: 'TSLA',
+      spot: 250.5,
+      strikes: [strike(255), strike(260), strike(265)],
+    },
+    expirations: [
+      { date: '2026-06-26', dte: 3 },
+      { date: '2026-07-18', dte: 25 },
+    ],
+    ai_eval: {
+      ready: true,
+      reasons: [],
+      changed: true,
+      state_fingerprint: FP_A,
+      score_threshold: 50,
+    },
     meta: {
-      served_at: SNAP_A, cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
-      freshness: { snapshot_iso: SNAP_A, data_age_seconds: 30, stale: false, stale_after_seconds: 600 },
+      served_at: SNAP_A,
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: SNAP_A,
+        data_age_seconds: 30,
+        stale: false,
+        stale_after_seconds: 600,
+      },
     },
     off_exchange: {
-      ratio_pct: 38, offex_shares: 38_000, total_shares: 100_000, levels: [], blocks: [],
-      block_min_shares: 5000, note: '',
+      ratio_pct: 38,
+      offex_shares: 38_000,
+      total_shares: 100_000,
+      levels: [],
+      blocks: [],
+      block_min_shares: 5000,
+      note: '',
     },
     position_eval: null,
   };
 }
 
 const STRATEGY = {
-  decision: 'trade', bias: 'long', structure: 'call debit spread', strikes: [260],
-  expiration: '2026-07-18', entry_trigger: 'break and hold above the 260 call wall',
-  invalidation_level: 242, max_risk: '1.5% of account ($300)', position_size: '2 contracts',
-  exit_plan: { target: 12.5, stop: 6 }, time_horizon: '5–10 trading days', confidence: 'medium',
+  decision: 'trade',
+  bias: 'long',
+  structure: 'call debit spread',
+  strikes: [260],
+  expiration: '2026-07-18',
+  entry_trigger: 'break and hold above the 260 call wall',
+  invalidation_level: 242,
+  max_risk: '1.5% of account ($300)',
+  position_size: '2 contracts',
+  exit_plan: { target: 12.5, stop: 6 },
+  time_horizon: '5–10 trading days',
+  confidence: 'medium',
   rationale: 'magnet at 255, flip at 248; IV/HV cheap.',
 };
 
 // ---- The 5 key-resolution wire shapes (INTERFACE_CONTRACT §3) --------------------------------
-type RecKey = 'produced_own' | 'produced_shared' | 'no_key' | 'over_limit' | 'shared_unconfigured' | 'transport';
+type RecKey =
+  | 'produced_own'
+  | 'produced_shared'
+  | 'no_key'
+  | 'over_limit'
+  | 'shared_unconfigured'
+  | 'transport';
 
 // ---- Controllable mock backend (the network boundary; NEVER a live backend) ------------------
 interface Cfg {
   authenticated?: boolean;
   recKey?: RecKey;
-  remaining?: number;       // the count the NEXT produced_shared rec returns (post-decrement)
+  remaining?: number; // the count the NEXT produced_shared rec returns (post-decrement)
   total?: number;
   aiKeySet?: boolean;
   aiKeyLast4?: string | null;
@@ -91,15 +177,23 @@ interface Cfg {
 function installBackend(cfg: Cfg = {}) {
   const state = {
     authenticated: cfg.authenticated ?? true,
-    recKey: cfg.recKey ?? 'produced_own' as RecKey,
+    recKey: cfg.recKey ?? ('produced_own' as RecKey),
     remaining: cfg.remaining ?? 3,
     total: cfg.total ?? 3,
     aiKeySet: cfg.aiKeySet ?? false,
-    aiKeyLast4: cfg.aiKeyLast4 ?? null as string | null,
+    aiKeyLast4: cfg.aiKeyLast4 ?? (null as string | null),
     storageAvailable: cfg.storageAvailable ?? true,
-    putOutcome: cfg.putOutcome ?? 'ok' as 'ok' | 'transport' | 'validation',
+    putOutcome: cfg.putOutcome ?? ('ok' as 'ok' | 'transport' | 'validation'),
   };
-  const calls = { rec: 0, status: 0, export: 0, aiKeyGet: 0, aiKeyPut: 0, aiKeyDelete: 0, ticker: 0 };
+  const calls = {
+    rec: 0,
+    status: 0,
+    export: 0,
+    aiKeyGet: 0,
+    aiKeyPut: 0,
+    aiKeyDelete: 0,
+    ticker: 0,
+  };
   const tickerCalls: { url: string; init?: RequestInit }[] = [];
   const recPostBodies: string[] = [];
   const aiKeyPutBodies: string[] = [];
@@ -108,101 +202,187 @@ function installBackend(cfg: Cfg = {}) {
   class MockEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
-    close() { /* no-op */ }
+    close() {
+      /* no-op */
+    }
   }
   vi.stubGlobal('EventSource', MockEventSource as unknown as typeof EventSource);
 
   const json = (b: unknown, status = 200) => {
     responsesSeen.push(JSON.stringify(b));
-    return new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify(b), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
   };
-  const raw = (body: string, status: number) => { responsesSeen.push(body); return new Response(body, { status }); };
+  const raw = (body: string, status: number) => {
+    responsesSeen.push(body);
+    return new Response(body, { status });
+  };
 
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
 
-    if (url.includes('/api/auth/session')) {
-      return json(state.authenticated
-        ? { authenticated: true, user: { id: 'u-1', email: 'a@x.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } }
-        : { authenticated: false, user: null, google_available: false, settings: null });
-    }
-
-    // ---- byo-ai-key credential endpoints --------------------------------------------------------
-    if (url.includes('/api/auth/ai-key')) {
-      if (!state.authenticated) return json({ error: 'auth_required', message: 'sign in' }, 403);
-      if (method === 'GET') {
-        calls.aiKeyGet++;
-        return json({ set: state.aiKeySet, last4: state.aiKeySet ? state.aiKeyLast4 : null, storage_available: state.storageAvailable });
+      if (url.includes('/api/auth/session')) {
+        return json(
+          state.authenticated
+            ? {
+                authenticated: true,
+                user: {
+                  id: 'u-1',
+                  email: 'a@x.com',
+                  display_name: null,
+                  auth_methods: ['password'],
+                },
+                google_available: false,
+                settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+              }
+            : { authenticated: false, user: null, google_available: false, settings: null },
+        );
       }
-      if (method === 'PUT') {
-        calls.aiKeyPut++;
-        aiKeyPutBodies.push(String(init?.body ?? ''));
-        if (state.putOutcome === 'transport') return raw('', 502);
-        if (state.putOutcome === 'validation') return json({ error: 'validation', message: 'bad key' }, 422);
-        if (!state.storageAvailable) return json({ set: false, storage_available: false });
-        const parsed = init?.body ? (JSON.parse(String(init.body)) as { key?: string }) : {};
-        state.aiKeySet = true; state.aiKeyLast4 = (parsed.key ?? '').slice(-4);
-        return json({ set: true, last4: state.aiKeyLast4, storage_available: true });
-      }
-      if (method === 'DELETE') {
-        calls.aiKeyDelete++;
-        state.aiKeySet = false; state.aiKeyLast4 = null;
-        return json({ set: false, last4: null, storage_available: state.storageAvailable });
-      }
-    }
 
-    if (url.includes('/api/ticker/')) { calls.ticker++; tickerCalls.push({ url, init }); return json(makeBundle()); }
-
-    if (url.includes('/api/recommendation/status/')) {
-      calls.status++;
-      const adminShared = state.recKey === 'produced_shared' || state.recKey === 'over_limit';
-      return json({
-        availability: { in_app_enabled: true },
-        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
-        cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-27T04:00:00Z' },
-        ...(adminShared ? { remaining_free_uses: state.remaining, free_uses_total: state.total } : {}),
-      });
-    }
-    if (url.includes('/api/recommendation/export/')) {
-      calls.export++;
-      return json({
-        ticker: 'TSLA', as_of: SNAP_A, context: { gamma_flip: 248, opportunity_score: 42 },
-        persona_prompt: 'You are a disciplined options strategist…', glossary: 'glossary…',
-        egress_note: 'Complete list: context + persona prompt + glossary. No other ticker, no identity, no order data, and no API key ever leave.',
-      });
-    }
-    if (url.includes('/api/recommendation/') && method === 'POST') {
-      calls.rec++;
-      recPostBodies.push(String(init?.body ?? ''));
-      if (state.recKey === 'transport') return raw('', 502);
-      const base = {
-        persona: { id: null, name: 'Default (no persona)' }, as_of: SNAP_A, pinned_fingerprint: FP_A,
-        stale_born: false, gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
-        cap: { over_limit: false, remaining_today: 49, resets_at: '2026-06-27T04:00:00Z' },
-      };
-      if (state.recKey === 'produced_own') return json({ ...base, status: 'produced', strategy: STRATEGY, unavailable_reason: null, key_source: 'own_key' });
-      if (state.recKey === 'produced_shared') {
-        state.remaining = Math.max(0, state.remaining - 1);
-        return json({ ...base, status: 'produced', strategy: STRATEGY, unavailable_reason: null, key_source: 'shared_admin', remaining_free_uses: state.remaining, free_uses_total: state.total });
+      // ---- byo-ai-key credential endpoints --------------------------------------------------------
+      if (url.includes('/api/auth/ai-key')) {
+        if (!state.authenticated) return json({ error: 'auth_required', message: 'sign in' }, 403);
+        if (method === 'GET') {
+          calls.aiKeyGet++;
+          return json({
+            set: state.aiKeySet,
+            last4: state.aiKeySet ? state.aiKeyLast4 : null,
+            storage_available: state.storageAvailable,
+          });
+        }
+        if (method === 'PUT') {
+          calls.aiKeyPut++;
+          aiKeyPutBodies.push(String(init?.body ?? ''));
+          if (state.putOutcome === 'transport') return raw('', 502);
+          if (state.putOutcome === 'validation')
+            return json({ error: 'validation', message: 'bad key' }, 422);
+          if (!state.storageAvailable) return json({ set: false, storage_available: false });
+          const parsed = init?.body ? (JSON.parse(String(init.body)) as { key?: string }) : {};
+          state.aiKeySet = true;
+          state.aiKeyLast4 = (parsed.key ?? '').slice(-4);
+          return json({ set: true, last4: state.aiKeyLast4, storage_available: true });
+        }
+        if (method === 'DELETE') {
+          calls.aiKeyDelete++;
+          state.aiKeySet = false;
+          state.aiKeyLast4 = null;
+          return json({ set: false, last4: null, storage_available: state.storageAvailable });
+        }
       }
-      if (state.recKey === 'no_key') return json({ ...base, status: 'unavailable', strategy: null, unavailable_reason: 'no_key', key_source: 'none' });
-      if (state.recKey === 'over_limit') return json({ ...base, status: 'unavailable', strategy: null, unavailable_reason: 'over_limit', key_source: 'none', remaining_free_uses: 0, free_uses_total: state.total });
-      return json({ ...base, status: 'unavailable', strategy: null, unavailable_reason: 'shared_key_unconfigured', key_source: 'none' });
-    }
-    if (url.includes('/api/personas')) return json([]);
-    if (url.includes('/api/contract/')) return json({ detail: 'not found' }, 404);
-    return json({ detail: `unmocked ${url}` }, 404);
-  }));
+
+      if (url.includes('/api/ticker/')) {
+        calls.ticker++;
+        tickerCalls.push({ url, init });
+        return json(makeBundle());
+      }
+
+      if (url.includes('/api/recommendation/status/')) {
+        calls.status++;
+        const adminShared = state.recKey === 'produced_shared' || state.recKey === 'over_limit';
+        return json({
+          availability: { in_app_enabled: true },
+          gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+          cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-27T04:00:00Z' },
+          ...(adminShared
+            ? { remaining_free_uses: state.remaining, free_uses_total: state.total }
+            : {}),
+        });
+      }
+      if (url.includes('/api/recommendation/export/')) {
+        calls.export++;
+        return json({
+          ticker: 'TSLA',
+          as_of: SNAP_A,
+          context: { gamma_flip: 248, opportunity_score: 42 },
+          persona_prompt: 'You are a disciplined options strategist…',
+          glossary: 'glossary…',
+          egress_note:
+            'Complete list: context + persona prompt + glossary. No other ticker, no identity, no order data, and no API key ever leave.',
+        });
+      }
+      if (url.includes('/api/recommendation/') && method === 'POST') {
+        calls.rec++;
+        recPostBodies.push(String(init?.body ?? ''));
+        if (state.recKey === 'transport') return raw('', 502);
+        const base = {
+          persona: { id: null, name: 'Default (no persona)' },
+          as_of: SNAP_A,
+          pinned_fingerprint: FP_A,
+          stale_born: false,
+          gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+          cap: { over_limit: false, remaining_today: 49, resets_at: '2026-06-27T04:00:00Z' },
+        };
+        if (state.recKey === 'produced_own')
+          return json({
+            ...base,
+            status: 'produced',
+            strategy: STRATEGY,
+            unavailable_reason: null,
+            key_source: 'own_key',
+          });
+        if (state.recKey === 'produced_shared') {
+          state.remaining = Math.max(0, state.remaining - 1);
+          return json({
+            ...base,
+            status: 'produced',
+            strategy: STRATEGY,
+            unavailable_reason: null,
+            key_source: 'shared_admin',
+            remaining_free_uses: state.remaining,
+            free_uses_total: state.total,
+          });
+        }
+        if (state.recKey === 'no_key')
+          return json({
+            ...base,
+            status: 'unavailable',
+            strategy: null,
+            unavailable_reason: 'no_key',
+            key_source: 'none',
+          });
+        if (state.recKey === 'over_limit')
+          return json({
+            ...base,
+            status: 'unavailable',
+            strategy: null,
+            unavailable_reason: 'over_limit',
+            key_source: 'none',
+            remaining_free_uses: 0,
+            free_uses_total: state.total,
+          });
+        return json({
+          ...base,
+          status: 'unavailable',
+          strategy: null,
+          unavailable_reason: 'shared_key_unconfigured',
+          key_source: 'none',
+        });
+      }
+      if (url.includes('/api/personas')) return json([]);
+      if (url.includes('/api/contract/')) return json({ detail: 'not found' }, 404);
+      return json({ detail: `unmocked ${url}` }, 404);
+    }),
+  );
 
   return {
-    calls, tickerCalls, recPostBodies, aiKeyPutBodies, responsesSeen,
+    calls,
+    tickerCalls,
+    recPostBodies,
+    aiKeyPutBodies,
+    responsesSeen,
     setRecKey: (k: RecKey, o?: { remaining?: number; total?: number }) => {
       state.recKey = k;
       if (o?.remaining != null) state.remaining = o.remaining;
       if (o?.total != null) state.total = o.total;
     },
-    setAuthenticated: (v: boolean) => { state.authenticated = v; },
+    setAuthenticated: (v: boolean) => {
+      state.authenticated = v;
+    },
     getRemaining: () => state.remaining,
   };
 }
@@ -210,7 +390,11 @@ function installBackend(cfg: Cfg = {}) {
 // ---- Mounts ----------------------------------------------------------------------------------
 function renderApp() {
   const user = userEvent.setup();
-  render(<MemoryRouter initialEntries={['/ticker/TSLA']}><App /></MemoryRouter>);
+  render(
+    <MemoryRouter initialEntries={['/ticker/TSLA']}>
+      <App />
+    </MemoryRouter>,
+  );
   return user;
 }
 function renderSettings(initial = '/settings') {
@@ -220,7 +404,9 @@ function renderSettings(initial = '/settings') {
       <AppThemeProvider>
         <MemoryRouter initialEntries={[initial]}>
           <AuthDialogProvider>
-            <Routes><Route path="/settings" element={<SettingsPage />} /></Routes>
+            <Routes>
+              <Route path="/settings" element={<SettingsPage />} />
+            </Routes>
           </AuthDialogProvider>
         </MemoryRouter>
       </AppThemeProvider>
@@ -236,12 +422,21 @@ async function settle() {
 }
 /** Click Get + wait for the panel to leave the idle state. */
 async function ask(user: ReturnType<typeof renderApp>) {
-  await waitFor(() => expect(within(panel()).getByRole('button', { name: COPY.action.get })).toBeEnabled());
+  await waitFor(() =>
+    expect(within(panel()).getByRole('button', { name: COPY.action.get })).toBeEnabled(),
+  );
   await user.click(within(panel()).getByRole('button', { name: COPY.action.get }));
 }
 
-beforeEach(() => { localStorage.clear(); clearTrade('TSLA'); });
-afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); cleanup(); });
+beforeEach(() => {
+  localStorage.clear();
+  clearTrade('TSLA');
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  cleanup();
+});
 
 // =============================================================================================
 // Core key-resolution states (AiRecPanel)
@@ -273,13 +468,17 @@ describe('byo-ai-key — the five AiRecPanel key-resolution states', () => {
 
     await within(panel()).findByText('1.5% of account ($300)'); // rec body
     // First produced shared rec returned remaining=2 (post-decrement of 3).
-    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(freeUsesChip(2, 3));
+    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(
+      freeUsesChip(2, 3),
+    );
 
     // A second produced shared rec ⇒ "1 of 3 …".
     await user.click(within(panel()).getByRole('button', { name: COPY.action.dismiss }));
     await ask(user);
     await within(panel()).findByText('1.5% of account ($300)');
-    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(freeUsesChip(1, 3));
+    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(
+      freeUsesChip(1, 3),
+    );
     expect(be.calls.rec).toBe(2);
   });
 
@@ -310,7 +509,9 @@ describe('byo-ai-key — the five AiRecPanel key-resolution states', () => {
     await ask(user);
 
     await within(panel()).findByText('1.5% of account ($300)');
-    expect(await within(panel()).findByTestId('ai-rec-own-key')).toHaveTextContent('Using your key');
+    expect(await within(panel()).findByTestId('ai-rec-own-key')).toHaveTextContent(
+      'Using your key',
+    );
     expect(within(panel()).queryByTestId('ai-rec-free-uses')).toBeNull();
   });
 
@@ -415,7 +616,9 @@ describe('byo-ai-key — state transitions', () => {
     await settle();
     await ask(user2);
     await within(panel()).findByText('1.5% of account ($300)');
-    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(freeUsesChip(2, 3));
+    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(
+      freeUsesChip(2, 3),
+    );
     expect(within(panel()).queryByTestId('ai-rec-own-key')).toBeNull(); // no own key involved
   });
 
@@ -426,7 +629,9 @@ describe('byo-ai-key — state transitions', () => {
     await settle();
     await ask(user);
     await within(panel()).findByText('1.5% of account ($300)'); // rec body
-    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(freeUsesChip(2, 3));
+    expect(await within(panel()).findByTestId('ai-rec-free-uses')).toHaveTextContent(
+      freeUsesChip(2, 3),
+    );
 
     // The admin is dropped from the allowlist (the backend re-reads the allowlist per call, so the very
     // next request resolves with NO free allowance). With no own key, the same user is now treated as a
@@ -501,7 +706,9 @@ describe('byo-ai-key — degraded, isolation, egress', () => {
     be.responsesSeen.forEach((b) => {
       expect(b).not.toContain('supersecret');
       const o = JSON.parse(b) as Record<string, unknown>;
-      ['key', 'api_key', 'anthropic_api_key', 'ciphertext'].forEach((k) => expect(o).not.toHaveProperty(k));
+      ['key', 'api_key', 'anthropic_api_key', 'ciphertext'].forEach((k) =>
+        expect(o).not.toHaveProperty(k),
+      );
     });
   });
 
@@ -524,7 +731,13 @@ describe('byo-ai-key — degraded, isolation, egress', () => {
     await settle();
     // The auth-outermost gate shows, not any key-resolution state.
     expect(await within(panel()).findByTestId('ai-rec-signin-prompt')).toBeInTheDocument();
-    for (const id of ['ai-rec-state-no-key', 'ai-rec-free-uses', 'ai-rec-state-admin-exhausted', 'ai-rec-own-key', 'ai-rec-state-shared-unconfigured']) {
+    for (const id of [
+      'ai-rec-state-no-key',
+      'ai-rec-free-uses',
+      'ai-rec-state-admin-exhausted',
+      'ai-rec-own-key',
+      'ai-rec-state-shared-unconfigured',
+    ]) {
       expect(within(panel()).queryByTestId(id)).toBeNull();
     }
     // The export floor ("View what's sent") stays present anonymously.
@@ -540,10 +753,14 @@ describe('byo-ai-key — degraded, isolation, egress', () => {
     // The rec POST body carries identifiers + gating context only — never a key.
     be.recPostBodies.forEach((b) => {
       const o = JSON.parse(b) as Record<string, unknown>;
-      ['key', 'api_key', 'anthropic_api_key', 'secret'].forEach((k) => expect(o).not.toHaveProperty(k));
+      ['key', 'api_key', 'anthropic_api_key', 'secret'].forEach((k) =>
+        expect(o).not.toHaveProperty(k),
+      );
     });
     // No response the FE saw contained a key.
-    be.responsesSeen.forEach((b) => expect(b).not.toMatch(/"(key|api_key|anthropic_api_key|ciphertext)"\s*:/));
+    be.responsesSeen.forEach((b) =>
+      expect(b).not.toMatch(/"(key|api_key|anthropic_api_key|ciphertext)"\s*:/),
+    );
   });
 
   it('AC-14: score / tier render identically across the key paths; getTicker gained no header/param', async () => {
@@ -554,7 +771,13 @@ describe('byo-ai-key — degraded, isolation, egress', () => {
       const tile = await screen.findByText(/^\d+ · \w+$/);
       return tile.textContent;
     };
-    const paths: RecKey[] = ['no_key', 'produced_shared', 'over_limit', 'produced_own', 'shared_unconfigured'];
+    const paths: RecKey[] = [
+      'no_key',
+      'produced_shared',
+      'over_limit',
+      'produced_own',
+      'shared_unconfigured',
+    ];
     const seen: (string | null)[] = [];
     for (const p of paths) {
       const be = installBackend({ recKey: p, total: 3 });
@@ -592,8 +815,17 @@ describe('byo-ai-key — export floor', () => {
     const exportBody = be.responsesSeen.find((b) => b.includes('egress_note'));
     expect(exportBody).toBeTruthy();
     const o = JSON.parse(exportBody as string) as Record<string, unknown>;
-    expect(Object.keys(o).sort()).toEqual(['as_of', 'context', 'egress_note', 'glossary', 'persona_prompt', 'ticker']);
-    ['key', 'api_key', 'identity', 'user', 'email', 'order'].forEach((k) => expect(o).not.toHaveProperty(k));
+    expect(Object.keys(o).sort()).toEqual([
+      'as_of',
+      'context',
+      'egress_note',
+      'glossary',
+      'persona_prompt',
+      'ticker',
+    ]);
+    ['key', 'api_key', 'identity', 'user', 'email', 'order'].forEach((k) =>
+      expect(o).not.toHaveProperty(k),
+    );
   });
 
   it('AC-23: the export floor works keyless for a no-key (a), an exhausted admin (c), and a shared-unconfigured admin (e)', async () => {
@@ -631,7 +863,9 @@ describe('byo-ai-key — Settings AI-key section', () => {
 
     // Set state with the masked hint.
     const set = await screen.findByTestId('settings-ai-key-set');
-    expect(within(set).getByTestId('settings-ai-key-masked')).toHaveTextContent(maskedKeyLabel('1234'));
+    expect(within(set).getByTestId('settings-ai-key-masked')).toHaveTextContent(
+      maskedKeyLabel('1234'),
+    );
     // NO reveal/show/copy control exists anywhere in the section.
     const section = screen.getByTestId('settings-ai-key-section');
     expect(within(section).queryByText(/show key|reveal|copy key|view key/i)).toBeNull();
@@ -643,12 +877,18 @@ describe('byo-ai-key — Settings AI-key section', () => {
   it('AC-8: replace ⇒ the masked hint shows the NEW last-4 (overwrites; no old-key history)', async () => {
     installBackend({ aiKeySet: true, aiKeyLast4: '1234' });
     const user = renderSettings();
-    expect(await screen.findByTestId('settings-ai-key-masked')).toHaveTextContent(maskedKeyLabel('1234'));
+    expect(await screen.findByTestId('settings-ai-key-masked')).toHaveTextContent(
+      maskedKeyLabel('1234'),
+    );
     await user.click(screen.getByTestId('settings-ai-key-replace'));
     await user.type(screen.getByTestId('settings-ai-key-input'), 'sk-ant-rotatedkey5678');
     await user.click(screen.getByTestId('settings-ai-key-replace-submit'));
     // The masked hint now reflects the NEW last-4; the old one is gone.
-    await waitFor(() => expect(screen.getByTestId('settings-ai-key-masked')).toHaveTextContent(maskedKeyLabel('5678')));
+    await waitFor(() =>
+      expect(screen.getByTestId('settings-ai-key-masked')).toHaveTextContent(
+        maskedKeyLabel('5678'),
+      ),
+    );
     expect(screen.getByTestId('settings-ai-key-masked')).not.toHaveTextContent('1234');
   });
 
@@ -678,7 +918,9 @@ describe('byo-ai-key — Settings AI-key section', () => {
       .filter((b) => b.includes('storage_available'))
       .forEach((b) => {
         const o = JSON.parse(b) as Record<string, unknown>;
-        expect(Object.keys(o).every((k) => ['set', 'last4', 'storage_available'].includes(k))).toBe(true);
+        expect(Object.keys(o).every((k) => ['set', 'last4', 'storage_available'].includes(k))).toBe(
+          true,
+        );
         expect(b).not.toContain('supersecret');
       });
     // The raw key never reached the DOM.
@@ -688,7 +930,9 @@ describe('byo-ai-key — Settings AI-key section', () => {
   it('AC-18: storage-unavailable ⇒ honest info note + disabled input, no crash, no 5xx, no key exposed', async () => {
     installBackend({ aiKeySet: false, storageAvailable: false });
     renderSettings();
-    expect(await screen.findByTestId('settings-ai-key-storage-unavailable')).toHaveTextContent(AK.storageUnavailable);
+    expect(await screen.findByTestId('settings-ai-key-storage-unavailable')).toHaveTextContent(
+      AK.storageUnavailable,
+    );
     expect(screen.getByTestId('settings-ai-key-input')).toBeDisabled();
     expect(screen.getByTestId('settings-ai-key-add')).toBeDisabled();
   });
@@ -716,7 +960,9 @@ describe('byo-ai-key — Settings AI-key section', () => {
     await screen.findByTestId('settings-ai-key-empty');
     // Empty submit blocks (no PUT).
     await user.click(screen.getByTestId('settings-ai-key-add'));
-    expect(await screen.findByTestId('settings-ai-key-validation')).toHaveTextContent(AK.validationEmpty);
+    expect(await screen.findByTestId('settings-ai-key-validation')).toHaveTextContent(
+      AK.validationEmpty,
+    );
     expect(be.calls.aiKeyPut).toBe(0);
     // Bad format is warn-only — the save still goes through (backend is the authority).
     await user.type(screen.getByTestId('settings-ai-key-input'), 'not-a-key-9876');

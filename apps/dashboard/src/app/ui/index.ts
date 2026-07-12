@@ -8,7 +8,7 @@
  * Positions) and are intentionally NOT exported yet to keep the barrel honest with what exists.
  */
 export { ComingSoonBox, type ComingSoonBoxProps } from './ComingSoonBox';
-export { ComingSoonCard, ComingSoonBadge, type ComingSoonCardProps } from './ComingSoonCard';
-export { ValueCard, type ValueCardProps } from './ValueCard';
+export { ComingSoonBadge, ComingSoonCard, type ComingSoonCardProps } from './ComingSoonCard';
 export { ConvexityMotif, type ConvexityMotifProps } from './ConvexityMotif';
 export { Jargon, type JargonProps } from './Jargon';
+export { ValueCard, type ValueCardProps } from './ValueCard';

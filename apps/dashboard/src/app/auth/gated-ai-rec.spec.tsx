@@ -7,34 +7,47 @@
  * existing ai-rec gating; auth-first order), T-E6 (manual export floor stays anonymous-usable),
  * T-E7 (server 403 ⇒ prompt, nothing produced).
  */
-import { render, screen, waitFor, cleanup, act } from '@testing-library/react';
+import type { TickerBundle } from '@org/api';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useState } from 'react';
-import type { TickerBundle } from '@org/api';
+import { AiRecPanel } from '../ai-rec/AiRecPanel';
+import { COPY } from '../ai-rec/copy';
+import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
 import { AuthProvider } from './AuthContext';
 import { AuthDialogProvider } from './AuthDialogProvider';
 import { AUTH_COPY } from './copy';
-import { AiRecPanel } from '../ai-rec/AiRecPanel';
-import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
-import { COPY } from '../ai-rec/copy';
 import {
-  installAuthBackend, uninstallAuthBackend, userSession, makeBundle, type AuthBackend,
+  installAuthBackend,
+  makeBundle,
+  uninstallAuthBackend,
+  userSession,
+  type AuthBackend,
 } from './testBackend';
 
 function PanelHarness({ bundle }: { bundle: TickerBundle }) {
   const [readPersonaId, setReadPersonaId] = useState('default');
   const ai = useAiRecommendation('TSLA', bundle, {
-    personaId: null, personaName: 'Default (no persona)', dteMin: 7, dteMax: 45, darkPool: true,
+    personaId: null,
+    personaName: 'Default (no persona)',
+    dteMin: 7,
+    dteMax: 45,
+    darkPool: true,
   });
   return (
     <AiRecPanel
-      ticker="TSLA" bundle={bundle} ai={ai} personas={[]} activePersonaId="default"
+      ticker="TSLA"
+      bundle={bundle}
+      ai={ai}
+      personas={[]}
+      activePersonaId="default"
       dataAge="30s ago"
       onAccept={() => undefined}
       onViewExport={() => undefined}
-      readPersonaId={readPersonaId} onChangeReadPersona={setReadPersonaId}
+      readPersonaId={readPersonaId}
+      onChangeReadPersona={setReadPersonaId}
     />
   );
 }
@@ -54,8 +67,14 @@ function Mount({ bundle }: { bundle: TickerBundle }) {
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); });
+beforeEach(() => {
+  localStorage.clear();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+});
 
 describe('Ask AI — gated logged out (AC-E4, D6f)', () => {
   it('T-E4: the LLM is NOT invoked and NO cooldown/cap/no_key is shown — only the sign-in prompt', async () => {
@@ -102,7 +121,10 @@ describe('Ask AI — enabled signed in (AC-E5, auth-first-then-ai-rec)', () => {
 describe('Ask AI — server-enforced gate (AC-E7)', () => {
   it('T-E7: signed-in FE but the server rejects with 403 ⇒ sign-in prompt, nothing produced', async () => {
     // The FE believes it is signed in, but the server-side auth check rejects (stale cookie).
-    backend = installAuthBackend({ session: userSession('u-1', 'a@x.com'), gatedAction: 'auth_required' });
+    backend = installAuthBackend({
+      session: userSession('u-1', 'a@x.com'),
+      gatedAction: 'auth_required',
+    });
     const user = userEvent.setup();
     render(<Mount bundle={makeBundle()} />);
 
@@ -114,7 +136,9 @@ describe('Ask AI — server-enforced gate (AC-E7)', () => {
     // The POST was attempted (FE thought it was allowed) but the server returned 403.
     await waitFor(() => expect(backend.calls.recPost).toBe(1));
     // The FE re-syncs who-am-I and surfaces the sign-in prompt; no rec body was produced.
-    expect(await screen.findByTestId('ai-rec-signin-prompt')).toHaveTextContent(AUTH_COPY.askAi.signedOut);
+    expect(await screen.findByTestId('ai-rec-signin-prompt')).toHaveTextContent(
+      AUTH_COPY.askAi.signedOut,
+    );
     expect(screen.queryByText(/Rationale/)).not.toBeInTheDocument();
   });
 });

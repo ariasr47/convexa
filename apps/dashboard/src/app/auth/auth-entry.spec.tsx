@@ -5,10 +5,10 @@
  *
  * Traceability: T-B1, T-B2, T-B3, T-C1, T-C3, T-H3.
  */
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider } from './AuthContext';
 import { AuthDialog, type AuthMode } from './AuthDialog';
 import { AUTH_COPY } from './copy';
@@ -26,8 +26,14 @@ function Harness({ mode: initial }: { mode: AuthMode }) {
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); });
+beforeEach(() => {
+  localStorage.clear();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+});
 
 async function fillForm(user: ReturnType<typeof userEvent.setup>, email: string, password: string) {
   await user.clear(screen.getByTestId('auth-email'));
@@ -149,7 +155,9 @@ describe('T-H1: the password is never echoed into any surfaced state', () => {
     await user.click(screen.getByTestId('auth-submit'));
     await screen.findByTestId('auth-form-error');
     // The password input value holds it (that is the field), but no OTHER text node should.
-    const textOnly = container.querySelectorAll('[data-testid="auth-form-error"], .MuiAlert-message');
+    const textOnly = container.querySelectorAll(
+      '[data-testid="auth-form-error"], .MuiAlert-message',
+    );
     textOnly.forEach((n) => expect(n.textContent ?? '').not.toContain(secret));
   });
 });

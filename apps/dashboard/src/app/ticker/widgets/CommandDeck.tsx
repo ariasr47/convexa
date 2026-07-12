@@ -22,12 +22,12 @@
  * `isLive`/`streamOffline`/`live` inputs as the hero (via `connectionChip`), so they freeze/dim on an
  * SSE drop and NEVER show a stale "live".
  */
-import { useEffect, useRef, useState } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@org/api';
+import { useEffect, useRef, useState } from 'react';
 import type { usePersona } from '../../personas/usePersona';
+import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
-import { TickerHeader, TintChip as StatusChip, connectionChip } from './TickerHeader';
 import { useReducedMotion } from './useReducedMotion';
 
 interface CommandDeckProps {
@@ -56,15 +56,26 @@ interface CommandDeckProps {
 /** The slim condensed bar shown once the deck has scrolled out of view — restores mark · ticker ·
  *  $price · connection while the trader is deep in the board. Live-correct (freezes on a drop). */
 function StickyCondensed({
-  m, live, isLive, streamOffline, selected, reduced,
+  m,
+  live,
+  isLive,
+  streamOffline,
+  selected,
+  reduced,
 }: {
-  m: MarketState; live: LiveUpdate | null; isLive: boolean; streamOffline: boolean;
-  selected: string[] | null; reduced: boolean;
+  m: MarketState;
+  live: LiveUpdate | null;
+  isLive: boolean;
+  streamOffline: boolean;
+  selected: string[] | null;
+  reduced: boolean;
 }) {
   const conn = connectionChip(live, streamOffline, reduced);
   const price = (isLive ? live!.mid : m.price)?.toFixed(2);
-  const expLabel = selected === null ? 'All expirations'
-    : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
+  const expLabel =
+    selected === null
+      ? 'All expirations'
+      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
   return (
     <Box
       data-testid="deck-sticky"
@@ -101,11 +112,22 @@ function StickyCondensed({
         {m.ticker} · ${price}
       </Typography>
       {conn && (
-        <StatusChip tone={conn.tone} label={conn.text} tip={conn.tip} dot={conn.dot} pulse={conn.pulse} />
+        <StatusChip
+          tone={conn.tone}
+          label={conn.text}
+          tip={conn.tip}
+          dot={conn.dot}
+          pulse={conn.pulse}
+        />
       )}
       <Typography
         variant="caption"
-        sx={{ color: 'text.secondary', ml: 'auto', whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}
+        sx={{
+          color: 'text.secondary',
+          ml: 'auto',
+          whiteSpace: 'nowrap',
+          display: { xs: 'none', sm: 'block' },
+        }}
       >
         {expLabel}
       </Typography>
@@ -115,9 +137,24 @@ function StickyCondensed({
 
 export function CommandDeck(props: CommandDeckProps) {
   const {
-    m, sig, live, isLive, streamOffline, selected, onOpenTrade, freshness,
-    symbol, onSymbolChange, onSubmitSymbol, expirations, allDates, checked,
-    onSelectExpirations, persona, onOpenCustomize, loading,
+    m,
+    sig,
+    live,
+    isLive,
+    streamOffline,
+    selected,
+    onOpenTrade,
+    freshness,
+    symbol,
+    onSymbolChange,
+    onSubmitSymbol,
+    expirations,
+    allDates,
+    checked,
+    onSelectExpirations,
+    persona,
+    onOpenCustomize,
+    loading,
   } = props;
 
   const reduced = useReducedMotion();
@@ -129,10 +166,9 @@ export function CommandDeck(props: CommandDeckProps) {
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el || typeof IntersectionObserver !== 'function') return;
-    const io = new IntersectionObserver(
-      ([entry]) => setCondensed(!entry.isIntersecting),
-      { threshold: 0 },
-    );
+    const io = new IntersectionObserver(([entry]) => setCondensed(!entry.isIntersecting), {
+      threshold: 0,
+    });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -157,7 +193,12 @@ export function CommandDeck(props: CommandDeckProps) {
             in the DOM while the deck itself is on screen (`[single connection chip]`). */}
         {condensed && (
           <StickyCondensed
-            m={m} live={live} isLive={isLive} streamOffline={streamOffline} selected={selected} reduced={reduced}
+            m={m}
+            live={live}
+            isLive={isLive}
+            streamOffline={streamOffline}
+            selected={selected}
+            reduced={reduced}
           />
         )}
       </Box>
@@ -171,8 +212,7 @@ export function CommandDeck(props: CommandDeckProps) {
           border: `1px solid ${t.palette.divider}`,
           // Faint primary top-light fading to transparent → the "lit deck" look; token-bound color-mix.
           backgroundColor: `color-mix(in srgb, ${t.palette.background.paper} 82%, ${t.palette.primary.main} 5%)`,
-          backgroundImage:
-            `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 9%, transparent), transparent 42%)`,
+          backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 9%, transparent), transparent 42%)`,
           boxShadow:
             t.palette.mode === 'dark'
               ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)'
@@ -183,16 +223,29 @@ export function CommandDeck(props: CommandDeckProps) {
         <Stack spacing={2}>
           {/* Tier 1 — hero identity row (regime + connection chips, anchor, meta line, CTA). */}
           <TickerHeader
-            m={m} sig={sig} live={live} isLive={isLive} streamOffline={streamOffline} selected={selected}
-            onOpenTrade={onOpenTrade} freshness={freshness}
+            m={m}
+            sig={sig}
+            live={live}
+            isLive={isLive}
+            streamOffline={streamOffline}
+            selected={selected}
+            onOpenTrade={onOpenTrade}
+            freshness={freshness}
           />
 
           {/* Tier 2 — the segmented control strip (one instrument panel). */}
           <TickerToolbar
-            symbol={symbol} onSymbolChange={onSymbolChange} onSubmitSymbol={onSubmitSymbol}
-            expirations={expirations} allDates={allDates} selected={selected}
-            checked={checked} onSelectExpirations={onSelectExpirations}
-            persona={persona} onOpenCustomize={onOpenCustomize} loading={loading}
+            symbol={symbol}
+            onSymbolChange={onSymbolChange}
+            onSubmitSymbol={onSubmitSymbol}
+            expirations={expirations}
+            allDates={allDates}
+            selected={selected}
+            checked={checked}
+            onSelectExpirations={onSelectExpirations}
+            persona={persona}
+            onOpenCustomize={onOpenCustomize}
+            loading={loading}
           />
         </Stack>
       </Box>
@@ -206,8 +259,7 @@ export function CommandDeck(props: CommandDeckProps) {
           height: 24,
           mt: -0.5,
           mb: 1,
-          background:
-            `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 6%, transparent), transparent)`,
+          background: `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 6%, transparent), transparent)`,
           pointerEvents: 'none',
         })}
       />

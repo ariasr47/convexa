@@ -8,16 +8,16 @@
  * ValueCard, ComingSoonBox. The MonoValue/Tile/StatusChip cases land with their own surfaces (Ticker/
  * Positions); they are intentionally omitted here, not broken-imported.
  */
-import { render, screen, cleanup } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Link, MemoryRouter } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import { Button } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LockIcon from '@mui/icons-material/Lock';
+import { Button } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Link, MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../theme';
-import { ComingSoonBox, ComingSoonCard, ValueCard, ConvexityMotif, Jargon } from './index';
+import { ComingSoonBox, ComingSoonCard, ConvexityMotif, Jargon, ValueCard } from './index';
 
 afterEach(() => cleanup());
 
@@ -31,12 +31,20 @@ function renderUi(ui: React.ReactNode) {
 
 describe('ComingSoonBox (F2 — inert, no nav)', () => {
   it('renders its children', () => {
-    renderUi(<ComingSoonBox><span>Scanner — coming soon</span></ComingSoonBox>);
+    renderUi(
+      <ComingSoonBox>
+        <span>Scanner — coming soon</span>
+      </ComingSoonBox>,
+    );
     expect(screen.getByTestId('coming-soon-box')).toHaveTextContent('Scanner — coming soon');
   });
 
   it('carries NO navigating element of its own (structural inertness — §1.3)', () => {
-    const { container } = renderUi(<ComingSoonBox><span>inert</span></ComingSoonBox>);
+    const { container } = renderUi(
+      <ComingSoonBox>
+        <span>inert</span>
+      </ComingSoonBox>,
+    );
     const box = screen.getByTestId('coming-soon-box');
     // The box itself is not an anchor/button and adds no link.
     expect(box.tagName.toLowerCase()).not.toBe('a');
@@ -45,7 +53,11 @@ describe('ComingSoonBox (F2 — inert, no nav)', () => {
   });
 
   it('applies the dashed divider border (read as inert)', () => {
-    renderUi(<ComingSoonBox><span>x</span></ComingSoonBox>);
+    renderUi(
+      <ComingSoonBox>
+        <span>x</span>
+      </ComingSoonBox>,
+    );
     expect(screen.getByTestId('coming-soon-box')).toHaveStyle({ borderStyle: 'dashed' });
   });
 });
@@ -109,7 +121,11 @@ describe('ComingSoonCard (composes ComingSoonBox — inert, amber badge, action 
         icon={<LockIcon data-testid="cs-glyph" />}
         title="Connect a real brokerage"
         body="Connect your real brokerage positions."
-        action={<button data-testid="cs-action" type="button">Notify me</button>}
+        action={
+          <button data-testid="cs-action" type="button">
+            Notify me
+          </button>
+        }
       />,
     );
     const card = screen.getByTestId('brokerage-block');
@@ -147,7 +163,11 @@ describe('ComingSoonCard (composes ComingSoonBox — inert, amber badge, action 
         icon={<LockIcon />}
         title="Connect a real brokerage"
         body="x"
-        action={<Button data-testid="waitlist-button" onClick={onClick}>Notify me</Button>}
+        action={
+          <Button data-testid="waitlist-button" onClick={onClick}>
+            Notify me
+          </Button>
+        }
       />,
     );
     const btn = screen.getByTestId('waitlist-button');
@@ -164,7 +184,11 @@ describe('ComingSoonCard (composes ComingSoonBox — inert, amber badge, action 
         icon={<LockIcon />}
         title="Scanner"
         body="x"
-        action={<Link to="/scanner" data-testid="scanner-cta">Preview the scanner →</Link>}
+        action={
+          <Link to="/scanner" data-testid="scanner-cta">
+            Preview the scanner →
+          </Link>
+        }
       />,
     );
     expect(screen.getByTestId('scanner-cta')).toHaveAttribute('href', '/scanner');

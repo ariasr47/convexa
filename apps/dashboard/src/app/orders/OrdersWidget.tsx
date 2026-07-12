@@ -9,27 +9,34 @@
  * synchronous, so first paint is real data. Row-level eval states per §4.3; the widget frame
  * itself never dims. Status changes announce via an `aria-live="polite"` region (UX §8).
  */
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Box, Button, Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material';
 import type { LiveUpdate } from '@org/api';
-import { Widget } from '../ticker/widgets/Widget';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SIMULATED_TIP } from '../positions/labels';
-import { useOrders, deriveEval, LiveCoverage } from './useOrders';
-import { OrderRow } from './OrderRow';
+import { Widget } from '../ticker/widgets/Widget';
 import { OrderDetailDialog } from './OrderDetailDialog';
+import { OrderRow } from './OrderRow';
 import {
-  WIDGET_TITLE, WIDGET_EMPTY, ACTION_ALL_ORDERS, recentCompleted, STORE_FAULT_TITLE,
-  STORE_FAULT_BODY, STATUS_CHIP,
+  ACTION_ALL_ORDERS,
+  recentCompleted,
+  STATUS_CHIP,
+  STORE_FAULT_BODY,
+  STORE_FAULT_TITLE,
+  WIDGET_EMPTY,
+  WIDGET_TITLE,
 } from './copy';
 import { isTerminal, SimOrder } from './types';
+import { deriveEval, LiveCoverage, useOrders } from './useOrders';
 
 /** §4.6 — the honest store-fault block (shared with the panel). */
 export function StoreFaultBlock() {
   return (
     <Box data-testid="orders-store-fault" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
       <Typography variant="subtitle2">{STORE_FAULT_TITLE}</Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary' }}>{STORE_FAULT_BODY}</Typography>
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        {STORE_FAULT_BODY}
+      </Typography>
     </Box>
   );
 }
@@ -48,15 +55,21 @@ export function useStatusAnnouncement(orders: SimOrder[]): string {
     }
     prev.current = next;
     if (changed) {
-      setAnnouncement(`Order ${changed.ticker} ${changed.strike}${changed.right === 'call' ? 'C' : 'P'} ${STATUS_CHIP[changed.status]}`);
+      setAnnouncement(
+        `Order ${changed.ticker} ${changed.strike}${changed.right === 'call' ? 'C' : 'P'} ${STATUS_CHIP[changed.status]}`,
+      );
     }
   }, [orders]);
   return announcement;
 }
 
 const srOnly = {
-  position: 'absolute', width: 1, height: 1, overflow: 'hidden',
-  clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
 } as const;
 
 interface Props {
@@ -87,8 +100,17 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
         <Chip size="small" variant="outlined" label="SIMULATED" />
       </Tooltip>
       <Button
-        size="small" onClick={() => navigate('/positions')}
-        sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500, color: 'primary.main', whiteSpace: 'nowrap', '&:hover': { bgcolor: 'transparent' } }}
+        size="small"
+        onClick={() => navigate('/positions')}
+        sx={{
+          p: 0,
+          minWidth: 0,
+          textTransform: 'none',
+          fontWeight: 500,
+          color: 'primary.main',
+          whiteSpace: 'nowrap',
+          '&:hover': { bgcolor: 'transparent' },
+        }}
       >
         {ACTION_ALL_ORDERS}
       </Button>
@@ -96,19 +118,33 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
   );
 
   return (
-    <Widget id="orders" title={WIDGET_TITLE(symbol)} live={watchingAny} actions={actions} revealIndex={revealIndex}>
-      <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">{announcement}</Box>
+    <Widget
+      id="orders"
+      title={WIDGET_TITLE(symbol)}
+      live={watchingAny}
+      actions={actions}
+      revealIndex={revealIndex}
+    >
+      <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
+        {announcement}
+      </Box>
       {faulted ? (
         <StoreFaultBlock />
       ) : mine.length === 0 ? (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="orders-widget-empty">
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary' }}
+          data-testid="orders-widget-empty"
+        >
           {WIDGET_EMPTY(symbol)}
         </Typography>
       ) : (
         <Box>
           {open.map((o) => (
             <OrderRow
-              key={o.id} order={o} compact
+              key={o.id}
+              order={o}
+              compact
               evalState={deriveEval(o, coverage)}
               onDetails={setDetailId}
               onCancel={cancel}
@@ -117,7 +153,9 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
           {done.length > 0 && (
             <Box sx={{ mt: open.length ? 1 : 0 }}>
               <Button
-                size="small" onClick={() => setShowDone((s) => !s)} aria-expanded={showDone}
+                size="small"
+                onClick={() => setShowDone((s) => !s)}
+                aria-expanded={showDone}
                 sx={{ p: 0, minWidth: 0, textTransform: 'none', color: 'text.secondary' }}
                 data-testid="orders-recent-completed"
               >
@@ -125,7 +163,14 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
               </Button>
               <Collapse in={showDone}>
                 {done.map((o) => (
-                  <OrderRow key={o.id} order={o} compact evalState={null} onDetails={setDetailId} onCancel={cancel} />
+                  <OrderRow
+                    key={o.id}
+                    order={o}
+                    compact
+                    evalState={null}
+                    onDetails={setDetailId}
+                    onCancel={cancel}
+                  />
                 ))}
               </Collapse>
             </Box>
@@ -133,7 +178,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
         </Box>
       )}
       <OrderDetailDialog
-        order={detailId ? mine.find((o) => o.id === detailId) ?? null : null}
+        order={detailId ? (mine.find((o) => o.id === detailId) ?? null) : null}
         onClose={() => setDetailId(null)}
         onViewPosition={() => navigate('/positions')}
       />

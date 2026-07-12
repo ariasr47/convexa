@@ -2,17 +2,23 @@
  * Default customization (UX_BLUEPRINT §5.2): the seeded "All positions" view + the default working
  * config. Pure data — no side effects, no store access.
  */
-import type {
-  ColumnKey, CustomizationState, SavedView, ViewConfig,
-} from './types';
+import type { ColumnKey, CustomizationState, SavedView, ViewConfig } from './types';
 
 /**
  * Default visible columns, in default order — REVISION 1: EXACTLY the Figma mock
  * ("Positions - Table" `4:2143`), left→right.
  */
 export const DEFAULT_COLUMNS: ColumnKey[] = [
-  'contract', 'strategy', 'qty', 'entry', 'mark', 'pl', 'pl_pct',
-  'delta_entry', 'trend', 'expiry',
+  'contract',
+  'strategy',
+  'qty',
+  'entry',
+  'mark',
+  'pl',
+  'pl_pct',
+  'delta_entry',
+  'trend',
+  'expiry',
 ];
 
 /**
@@ -21,17 +27,45 @@ export const DEFAULT_COLUMNS: ColumnKey[] = [
  * appears in exactly one of DEFAULT_COLUMNS / OPTIONAL_COLUMNS.
  */
 export const OPTIONAL_COLUMNS: ColumnKey[] = [
-  'simulated', 'status', 'mode', 'session_delta',
-  'strike', 'right', 'dte', 'greeks', 'iv',
-  'stop', 'target', 'entry_time', 'opened',
+  'simulated',
+  'status',
+  'mode',
+  'session_delta',
+  'strike',
+  'right',
+  'dte',
+  'greeks',
+  'iv',
+  'stop',
+  'target',
+  'entry_time',
+  'opened',
 ];
 
 export const COLUMN_LABELS: Record<ColumnKey, string> = {
-  simulated: 'SIMULATED', contract: 'Ticker', status: 'Status', mode: 'Entry',
-  mark: 'Mark', pl: 'P/L', pl_pct: 'P/L %', delta_entry: 'Δ since entry', session_delta: 'Session Δ',
-  trend: 'Trend', entry: 'Entry price', qty: 'Qty', expiry: 'Expiry', strike: 'Strike',
-  right: 'Right', strategy: 'Strategy', dte: 'DTE', greeks: 'Greeks (Δ/Γ/Θ/V)', iv: 'IV',
-  stop: 'Stop', target: 'Target', entry_time: 'Entry time', opened: 'Opened (age)',
+  simulated: 'SIMULATED',
+  contract: 'Ticker',
+  status: 'Status',
+  mode: 'Entry',
+  mark: 'Mark',
+  pl: 'P/L',
+  pl_pct: 'P/L %',
+  delta_entry: 'Δ since entry',
+  session_delta: 'Session Δ',
+  trend: 'Trend',
+  entry: 'Entry price',
+  qty: 'Qty',
+  expiry: 'Expiry',
+  strike: 'Strike',
+  right: 'Right',
+  strategy: 'Strategy',
+  dte: 'DTE',
+  greeks: 'Greeks (Δ/Γ/Θ/V)',
+  iv: 'IV',
+  stop: 'Stop',
+  target: 'Target',
+  entry_time: 'Entry time',
+  opened: 'Opened (age)',
 };
 
 /**

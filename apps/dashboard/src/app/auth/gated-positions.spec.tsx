@@ -6,18 +6,23 @@
  * Traceability: T-E1 (write gated logged-out), T-E2 (write works signed-in), T-E3 (route viewable
  * anonymous), and the honest disclosure banner (D6d).
  */
-import { render, screen, within, waitFor, cleanup, act } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { ReactNode } from 'react';
+import { PositionsPage } from '../positions/PositionsPage';
+import { __resetMemory, allPositions } from '../positions/store';
 import { AuthProvider } from './AuthContext';
 import { AuthDialogProvider } from './AuthDialogProvider';
 import { AppThemeProvider } from './ThemeProvider';
 import { AUTH_COPY } from './copy';
-import { PositionsPage } from '../positions/PositionsPage';
-import { __resetMemory, allPositions } from '../positions/store';
-import { installAuthBackend, uninstallAuthBackend, userSession, type AuthBackend } from './testBackend';
+import {
+  installAuthBackend,
+  uninstallAuthBackend,
+  userSession,
+  type AuthBackend,
+} from './testBackend';
 
 /** Drive the real entry dialog through a minimal MANUAL open (the simplest state-bearing write).
  *  Expiration + strike default (first / nearest-to-spot); manual mode opens at the typed price
@@ -41,13 +46,25 @@ function Mount({ children }: { children: ReactNode }) {
 }
 
 let backend: AuthBackend;
-beforeEach(() => { localStorage.clear(); __resetMemory(); });
-afterEach(() => { cleanup(); uninstallAuthBackend(); localStorage.clear(); __resetMemory(); });
+beforeEach(() => {
+  localStorage.clear();
+  __resetMemory();
+});
+afterEach(() => {
+  cleanup();
+  uninstallAuthBackend();
+  localStorage.clear();
+  __resetMemory();
+});
 
 describe('Positions — viewable anonymously (AC-E3)', () => {
   it('T-E3: logged-out, the route renders with the disclosure banner; only writes prompt', async () => {
     backend = installAuthBackend(); // anonymous
-    render(<Mount><PositionsPage /></Mount>);
+    render(
+      <Mount>
+        <PositionsPage />
+      </Mount>,
+    );
     // The surface renders (route not blocked).
     expect(await screen.findByTestId('portfolio-panel')).toBeInTheDocument();
     // The honest browser-local disclosure is always shown.
@@ -66,13 +83,18 @@ describe('Positions — write gated when logged out (AC-E1)', () => {
   it('T-E1: Open position ⇒ visible sign-in prompt, the entry dialog does NOT open', async () => {
     backend = installAuthBackend(); // anonymous
     const user = userEvent.setup();
-    render(<Mount><PositionsPage /></Mount>);
+    render(
+      <Mount>
+        <PositionsPage />
+      </Mount>,
+    );
     await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
 
     await user.click(screen.getByTestId('open-entry'));
     // The prompt appears with the binding copy.
-    expect(await screen.findByTestId('positions-signin-prompt'))
-      .toHaveTextContent(AUTH_COPY.positions.gateTrack);
+    expect(await screen.findByTestId('positions-signin-prompt')).toHaveTextContent(
+      AUTH_COPY.positions.gateTrack,
+    );
     // The action did NOT execute — the entry dialog is not open.
     expect(screen.queryByText('Open simulated trade')).not.toBeInTheDocument();
   });
@@ -84,7 +106,11 @@ describe('Positions — write works when signed in (AC-E2)', () => {
       session: userSession('u-1', 'a@x.com'),
     });
     const user = userEvent.setup();
-    render(<Mount><PositionsPage /></Mount>);
+    render(
+      <Mount>
+        <PositionsPage />
+      </Mount>,
+    );
     await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
 
     await user.click(screen.getByTestId('open-entry'));
@@ -101,9 +127,16 @@ describe('Positions — server-enforced gate on the WRITE (AC-E7, D6e)', () => {
   // believed it was signed in. Pairs with T-E7 in gated-ai-rec.spec.tsx (the AI-rec surface).
   it('T-E7 (positions): signed-in FE but the server gate returns 403 ⇒ server gate called, write ABORTED (nothing persisted), sign-in prompt shown', async () => {
     // The FE believes it is signed in, but the server-side gate rejects (stale cookie / bypass).
-    backend = installAuthBackend({ session: userSession('u-1', 'a@x.com'), gatedAction: 'auth_required' });
+    backend = installAuthBackend({
+      session: userSession('u-1', 'a@x.com'),
+      gatedAction: 'auth_required',
+    });
     const user = userEvent.setup();
-    render(<Mount><PositionsPage /></Mount>);
+    render(
+      <Mount>
+        <PositionsPage />
+      </Mount>,
+    );
     await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
 
     // The FE check passes (it thinks it is signed in) ⇒ the dialog opens, no prompt yet.
@@ -117,15 +150,20 @@ describe('Positions — server-enforced gate on the WRITE (AC-E7, D6e)', () => {
     // The server 403 ABORTED the local write — nothing is persisted to the client-local store.
     expect(allPositions()).toHaveLength(0);
     // The in-context sign-in prompt is surfaced (never a silent no-op).
-    expect(await screen.findByTestId('positions-signin-prompt'))
-      .toHaveTextContent(AUTH_COPY.positions.gateTrack);
+    expect(await screen.findByTestId('positions-signin-prompt')).toHaveTextContent(
+      AUTH_COPY.positions.gateTrack,
+    );
   });
 
   it('T-E7 (positions, allowed): a successful server gate (200) lets the local write proceed', async () => {
     // Default gatedAction = 'ok' ⇒ the server gate authorizes; the write must persist.
     backend = installAuthBackend({ session: userSession('u-1', 'a@x.com') });
     const user = userEvent.setup();
-    render(<Mount><PositionsPage /></Mount>);
+    render(
+      <Mount>
+        <PositionsPage />
+      </Mount>,
+    );
     await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
 
     await user.click(screen.getByTestId('open-entry'));

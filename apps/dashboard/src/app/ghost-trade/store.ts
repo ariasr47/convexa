@@ -4,8 +4,8 @@
  * All access is guarded so a storage failure (private mode, quota) degrades to in-memory only
  * and never throws into the UI.
  */
-import { SCHEMA_VERSION, GhostTrade, DecisionRecord } from './types';
 import { resolveDurable } from '../durable/resolveDurable';
+import { DecisionRecord, GhostTrade, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';
 const LEGACY_STORAGE_KEY = 'gammaflow.ghost-trade.v1';
@@ -13,7 +13,7 @@ const LEGACY_STORAGE_KEY = 'gammaflow.ghost-trade.v1';
 interface PersistShape {
   schema_version: number;
   trades: Record<string, GhostTrade>; // by ticker — the current open or just-closed trade
-  decisions: DecisionRecord[];         // global, append-only
+  decisions: DecisionRecord[]; // global, append-only
 }
 
 const empty = (): PersistShape => ({ schema_version: SCHEMA_VERSION, trades: {}, decisions: [] });
@@ -33,7 +33,11 @@ function read(): PersistShape {
 
 function write(s: PersistShape) {
   memory = s;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { /* in-memory only */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch {
+    /* in-memory only */
+  }
 }
 
 export function getTrade(ticker: string): GhostTrade | null {
@@ -59,7 +63,9 @@ export function appendDecision(rec: DecisionRecord) {
 
 /** Records for one trade, newest first. */
 export function decisionsForTrade(tradeId: string): DecisionRecord[] {
-  return read().decisions.filter((d) => d.trade_id === tradeId).reverse();
+  return read()
+    .decisions.filter((d) => d.trade_id === tradeId)
+    .reverse();
 }
 
 /** Download the FULL versioned log (all trades + all decisions) as machine-readable JSON. */
@@ -77,7 +83,7 @@ export function exportLog() {
 }
 
 export function newId(): string {
-  return (crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  return crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 /** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */

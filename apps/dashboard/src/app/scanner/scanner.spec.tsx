@@ -7,13 +7,13 @@
  * allowed Ticker affordance → /ticker) and the AC-Scan-1 invariant (no network on mount — `fetch`
  * spied and asserted never called; no EventSource opened; no spinner).
  */
-import { render, screen, within, cleanup } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
 
-import { Scanner } from './Scanner';
 import { theme } from '../theme';
+import { Scanner } from './Scanner';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 let openedEventSources = 0;
@@ -25,8 +25,12 @@ beforeEach(() => {
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
-    constructor() { openedEventSources += 1; }
-    close() { /* no-op */ }
+    constructor() {
+      openedEventSources += 1;
+    }
+    close() {
+      /* no-op */
+    }
   }
   vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
 });

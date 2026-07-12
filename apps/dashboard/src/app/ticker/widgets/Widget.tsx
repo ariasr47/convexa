@@ -20,17 +20,31 @@
  *   - View Transitions API (in `useExpand`) — the expand → focus overlay is a shared-element morph,
  *     with a graceful MUI `Fade`/`Dialog` fallback when unsupported.
  */
-import {
-  useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode,
-} from 'react';
-import {
-  Box, Stack, Typography, Tooltip, IconButton, Fade, Dialog, Menu, MenuItem,
-} from '@mui/material';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import {
+  Box,
+  Dialog,
+  Fade,
+  IconButton,
+  Menu,
+  MenuItem,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { useReducedMotion } from './useReducedMotion';
 import { useWidgetSelection } from './WidgetSelectionContext';
 
@@ -70,23 +84,38 @@ function useExpand(reduced: boolean) {
   const [open, setOpen] = useState(false);
   const supportsVT =
     typeof document !== 'undefined' &&
-    typeof (document as Document & { startViewTransition?: unknown }).startViewTransition === 'function';
+    typeof (document as Document & { startViewTransition?: unknown }).startViewTransition ===
+      'function';
 
-  const toggle = useCallback((next: boolean) => {
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
-    if (!reduced && supportsVT && typeof doc.startViewTransition === 'function') {
-      doc.startViewTransition(() => setOpen(next));
-    } else {
-      setOpen(next);
-    }
-  }, [reduced, supportsVT]);
+  const toggle = useCallback(
+    (next: boolean) => {
+      const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+      if (!reduced && supportsVT && typeof doc.startViewTransition === 'function') {
+        doc.startViewTransition(() => setOpen(next));
+      } else {
+        setOpen(next);
+      }
+    },
+    [reduced, supportsVT],
+  );
 
   return { open, expand: () => toggle(true), collapse: () => toggle(false), supportsVT };
 }
 
 export function Widget({
-  id, title, icon, subtitle, info, live = false, actions, children, span = 1, bodySx, noBodyPad,
-  bodyVariant = 'flush', revealIndex = 0,
+  id,
+  title,
+  icon,
+  subtitle,
+  info,
+  live = false,
+  actions,
+  children,
+  span = 1,
+  bodySx,
+  noBodyPad,
+  bodyVariant = 'flush',
+  revealIndex = 0,
 }: WidgetProps) {
   const reduced = useReducedMotion();
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
@@ -137,8 +166,12 @@ export function Widget({
     <Box
       className="widget__header"
       sx={{
-        display: 'flex', alignItems: 'flex-start', gap: 1,
-        px: 2, pt: 1.5, pb: 1,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1,
+        px: 2,
+        pt: 1.5,
+        pb: 1,
       }}
     >
       {/* Drag grip — AFFORDANCE ONLY (coming soon). Hover-revealed, cursor:grab, but inert. */}
@@ -149,8 +182,13 @@ export function Widget({
             aria-label="Rearrange (coming soon)"
             className="widget__grip"
             sx={{
-              display: 'inline-flex', alignItems: 'center', mt: 0.25, cursor: 'grab',
-              color: 'text.disabled', opacity: 0, transition: `opacity 160ms ease`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              mt: 0.25,
+              cursor: 'grab',
+              color: 'text.disabled',
+              opacity: 0,
+              transition: `opacity 160ms ease`,
               '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
             }}
           >
@@ -162,7 +200,10 @@ export function Widget({
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {icon && <Box sx={{ display: 'inline-flex', color: 'text.secondary' }}>{icon}</Box>}
-          <Typography variant="h6" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <Typography
+            variant="h6"
+            sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
             {title}
           </Typography>
           {info && (
@@ -172,16 +213,23 @@ export function Widget({
           )}
         </Stack>
         {subtitle && (
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>{subtitle}</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
+            {subtitle}
+          </Typography>
         )}
       </Box>
 
       {/* Right region: the section's own always-visible actions + the hover toolbar. */}
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexShrink: 0 }}>
-        {actions && <Box sx={{ display: 'flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>{actions}</Box>}
+        {actions && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+            {actions}
+          </Box>
+        )}
 
         <Stack
-          direction="row" spacing={0.25}
+          direction="row"
+          spacing={0.25}
           className="widget__toolbar"
           onClick={(e) => e.stopPropagation()}
           sx={{
@@ -211,7 +259,9 @@ export function Widget({
               {/* span so the tooltip works on the disabled button */}
               <span>
                 <IconButton
-                  size="small" aria-label="Configure — coming soon" disabled
+                  size="small"
+                  aria-label="Configure — coming soon"
+                  disabled
                   aria-haspopup="menu"
                   onClick={(e) => setMenuAnchor(e.currentTarget)}
                 >
@@ -229,7 +279,9 @@ export function Widget({
     </Box>
   );
 
-  const onSelect = useCallback(() => { if (!selected) select(id); }, [selected, select, id]);
+  const onSelect = useCallback(() => {
+    if (!selected) select(id);
+  }, [selected, select, id]);
 
   return (
     <>
@@ -242,7 +294,11 @@ export function Widget({
         tabIndex={0}
         onClick={onSelect}
         onFocus={onSelect}
-        style={{ ['--widget-reveal-delay']: `${Math.min(Math.max(revealIndex, 0), 8) * 55}ms` } as CSSProperties}
+        style={
+          {
+            ['--widget-reveal-delay']: `${Math.min(Math.max(revealIndex, 0), 8) * 55}ms`,
+          } as CSSProperties
+        }
         sx={(theme) => ({
           gridColumn: span === 2 ? { xs: '1 / -1', md: 'span 2' } : undefined,
           position: 'relative',
@@ -268,17 +324,24 @@ export function Widget({
           '&:hover .widget__grip, &:has(:focus-visible) .widget__grip': { opacity: 0.5 },
           '& .widget__grip:hover': { opacity: 1, color: 'text.secondary' },
           '&:hover .widget__toolbar, &:has(:focus-visible) .widget__toolbar': {
-            opacity: 1, transform: 'none',
+            opacity: 1,
+            transform: 'none',
           },
           // Selected ring — an animated conic-gradient border (single-widget, tasteful).
           ...(selected && {
             '&::after': {
-              content: '""', position: 'absolute', inset: 0, borderRadius: '12px', padding: '1.5px',
+              content: '""',
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '12px',
+              padding: '1.5px',
               // The gradient sweeps from primary through the live accent.
-              background: 'conic-gradient(from var(--angle, 0deg), var(--mui-palette-primary-main), var(--mui-palette-info-main), var(--mui-palette-primary-main))',
+              background:
+                'conic-gradient(from var(--angle, 0deg), var(--mui-palette-primary-main), var(--mui-palette-info-main), var(--mui-palette-primary-main))',
               // Mask so only the 1.5px border shows (the fill is knocked out). The mask color is
               // arbitrary/opaque (only its alpha matters) — not a theme tint, so no token needed.
-              WebkitMask: 'linear-gradient(rgb(0 0 0) 0 0) content-box, linear-gradient(rgb(0 0 0) 0 0)',
+              WebkitMask:
+                'linear-gradient(rgb(0 0 0) 0 0) content-box, linear-gradient(rgb(0 0 0) 0 0)',
               WebkitMaskComposite: 'xor',
               mask: 'linear-gradient(rgb(0 0 0) 0 0) content-box, linear-gradient(rgb(0 0 0) 0 0)',
               maskComposite: 'exclude',
@@ -291,7 +354,12 @@ export function Widget({
           // Live accent — a subtle info top-left corner glow; pulses only when `live`.
           ...(live && {
             '&::before': {
-              content: '""', position: 'absolute', top: 0, left: 0, width: 3, height: '38%',
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 3,
+              height: '38%',
               borderTopLeftRadius: '12px',
               background: 'linear-gradient(180deg, var(--mui-palette-info-main), transparent)',
               pointerEvents: 'none',
@@ -304,11 +372,14 @@ export function Widget({
           // `--angle` interpolates smoothly). Guarded by prefers-reduced-motion above (animation only
           // attaches under no-preference); the @property declaration itself is inert.
           '@property --angle': {
-            syntax: '"<angle>"', inherits: 'false', initialValue: '0deg',
+            syntax: '"<angle>"',
+            inherits: 'false',
+            initialValue: '0deg',
           },
           '@keyframes widgetAngleSpin': { to: { '--angle': '360deg' } },
           '@keyframes widgetLivePulse': {
-            '0%, 100%': { opacity: 0.4 }, '50%': { opacity: 1 },
+            '0%, 100%': { opacity: 0.4 },
+            '50%': { opacity: 1 },
           },
           // One-time staggered mount reveal (fade + rise). The per-widget stagger delay comes from the
           // inherited `--widget-reveal-delay` custom property (set inline from the board order), so the
@@ -368,7 +439,9 @@ export function Widget({
           },
         }}
       >
-        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`} sx={{ flexShrink: 0 }}>{header(true)}</Box>
+        <Box id={`${headerId}-overlay`} data-testid={`widget-overlay-${id}`} sx={{ flexShrink: 0 }}>
+          {header(true)}
+        </Box>
         <Box sx={[bodyWrapperSx, { flex: 1, minHeight: 0, overflow: 'auto' }]}>{body}</Box>
       </Dialog>
 
@@ -399,7 +472,8 @@ function useOutsideClear(widgetId: string, onOutside: () => void) {
       // Inside the selected widget → keep.
       if (target.closest(`[data-widget-id="${widgetId}"]`)) return;
       // Inside a MUI overlay (menu/dialog/tooltip/popover) → keep (it belongs to this widget).
-      if (target.closest('.MuiPopover-root, .MuiDialog-root, .MuiTooltip-popper, .MuiModal-root')) return;
+      if (target.closest('.MuiPopover-root, .MuiDialog-root, .MuiTooltip-popper, .MuiModal-root'))
+        return;
       onOutside();
     };
     document.addEventListener('pointerdown', handler, true);

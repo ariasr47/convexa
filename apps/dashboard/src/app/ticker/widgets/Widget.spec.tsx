@@ -11,10 +11,10 @@
  * jsdom cannot layout; those are asserted at the behavioral seam (expand still opens; VT hook is
  * called) and verified visually in the conductor render pass. NEVER a live backend here.
  */
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../../theme';
 import { Widget } from './Widget';
 import { WidgetSelectionProvider } from './WidgetSelectionContext';
@@ -32,24 +32,40 @@ afterEach(() => {
 
 describe('Widget — frame + header', () => {
   it('renders the title and children inside the frame', () => {
-    wrap(<Widget id="w1" title="Live tape"><div>tape body</div></Widget>);
+    wrap(
+      <Widget id="w1" title="Live tape">
+        <div>tape body</div>
+      </Widget>,
+    );
     expect(screen.getByRole('heading', { name: 'Live tape' })).toBeInTheDocument();
     expect(screen.getByText('tape body')).toBeInTheDocument();
     expect(screen.getByTestId('widget-w1')).toBeInTheDocument();
   });
 
   it('renders an optional subtitle and the info tooltip trigger', () => {
-    wrap(<Widget id="w1" title="Term structure" subtitle="ATM IV by tenor · flat" info="what it means"><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="Term structure" subtitle="ATM IV by tenor · flat" info="what it means">
+        <div>b</div>
+      </Widget>,
+    );
     expect(screen.getByText('ATM IV by tenor · flat')).toBeInTheDocument();
   });
 
   it('renders the always-visible actions slot', () => {
-    wrap(<Widget id="w1" title="GEX" actions={<button type="button">legend-action</button>}><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="GEX" actions={<button type="button">legend-action</button>}>
+        <div>b</div>
+      </Widget>,
+    );
     expect(screen.getByRole('button', { name: 'legend-action' })).toBeInTheDocument();
   });
 
   it('exposes the drag grip as an honest coming-soon affordance (labeled, not a control)', () => {
-    wrap(<Widget id="w1" title="X"><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="X">
+        <div>b</div>
+      </Widget>,
+    );
     // The grip is labeled "Rearrange (coming soon)" and is NOT an interactive button.
     const grip = screen.getByLabelText('Rearrange (coming soon)');
     expect(grip).toBeInTheDocument();
@@ -57,7 +73,11 @@ describe('Widget — frame + header', () => {
   });
 
   it('the toolbar has a functional expand + a disabled "Configure — coming soon" affordance', () => {
-    wrap(<Widget id="w1" title="X"><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="X">
+        <div>b</div>
+      </Widget>,
+    );
     const frame = screen.getByTestId('widget-w1');
     expect(within(frame).getByRole('button', { name: 'Expand widget' })).toBeEnabled();
     // The ⋮ configure control reads as coming-soon and is disabled (never fake-functional).
@@ -70,8 +90,12 @@ describe('Widget — selection (one at a time)', () => {
     const user = userEvent.setup();
     wrap(
       <>
-        <Widget id="a" title="A"><div>a-body</div></Widget>
-        <Widget id="b" title="B"><div>b-body</div></Widget>
+        <Widget id="a" title="A">
+          <div>a-body</div>
+        </Widget>
+        <Widget id="b" title="B">
+          <div>b-body</div>
+        </Widget>
         <button type="button">outside</button>
       </>,
     );
@@ -94,7 +118,11 @@ describe('Widget — selection (one at a time)', () => {
 
   it('the header is keyboard-focusable and focusing selects', async () => {
     const user = userEvent.setup();
-    wrap(<Widget id="a" title="A"><div>a</div></Widget>);
+    wrap(
+      <Widget id="a" title="A">
+        <div>a</div>
+      </Widget>,
+    );
     const a = screen.getByTestId('widget-a');
     expect(a).toHaveAttribute('tabindex', '0');
     a.focus();
@@ -108,7 +136,11 @@ describe('Widget — expand/peek (functional)', () => {
   it('FALLBACK: with no View Transitions support, expand opens the Dialog overlay', async () => {
     const user = userEvent.setup();
     delete (document as unknown as { startViewTransition?: unknown }).startViewTransition;
-    wrap(<Widget id="w1" title="Expandable"><div>peek body</div></Widget>);
+    wrap(
+      <Widget id="w1" title="Expandable">
+        <div>peek body</div>
+      </Widget>,
+    );
 
     expect(screen.queryByTestId('widget-overlay-w1')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Expand widget' }));
@@ -121,10 +153,17 @@ describe('Widget — expand/peek (functional)', () => {
 
   it('VIEW-TRANSITIONS path: startViewTransition drives the open when supported', async () => {
     const user = userEvent.setup();
-    const startVT = vi.fn((cb: () => void) => { cb(); return { finished: Promise.resolve() }; });
+    const startVT = vi.fn((cb: () => void) => {
+      cb();
+      return { finished: Promise.resolve() };
+    });
     (document as unknown as { startViewTransition: unknown }).startViewTransition = startVT;
 
-    wrap(<Widget id="w1" title="Expandable"><div>peek body</div></Widget>);
+    wrap(
+      <Widget id="w1" title="Expandable">
+        <div>peek body</div>
+      </Widget>,
+    );
     await user.click(screen.getByRole('button', { name: 'Expand widget' }));
 
     expect(startVT).toHaveBeenCalledTimes(1);
@@ -135,13 +174,21 @@ describe('Widget — expand/peek (functional)', () => {
 describe('Widget — reduced motion + live accent', () => {
   it('reduced motion: expand STILL opens (motion is inert, function preserved)', async () => {
     (window as unknown as { matchMedia?: unknown }).matchMedia = vi.fn().mockReturnValue({
-      matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     });
     // Even with startViewTransition present, reduced motion bypasses it (no morph) but still opens.
-    const startVT = vi.fn((cb: () => void) => { cb(); });
+    const startVT = vi.fn((cb: () => void) => {
+      cb();
+    });
     (document as unknown as { startViewTransition: unknown }).startViewTransition = startVT;
     const user = userEvent.setup();
-    wrap(<Widget id="w1" title="X"><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="X">
+        <div>b</div>
+      </Widget>,
+    );
 
     await user.click(screen.getByRole('button', { name: 'Expand widget' }));
     expect(await screen.findByTestId('widget-overlay-w1')).toBeInTheDocument();
@@ -150,12 +197,20 @@ describe('Widget — reduced motion + live accent', () => {
   });
 
   it('live accent: the frame carries the live ::before only when live (renders both ways, no throw)', () => {
-    const live = wrap(<Widget id="w1" title="X" live><div>b</div></Widget>);
+    const live = wrap(
+      <Widget id="w1" title="X" live>
+        <div>b</div>
+      </Widget>,
+    );
     expect(screen.getByTestId('widget-w1')).toBeInTheDocument();
     live.unmount();
     // Not live → still renders (the accent is simply absent). Behavior/DOM identical; the accent is a
     // CSS pseudo verified in the render pass.
-    wrap(<Widget id="w1" title="X" live={false}><div>b</div></Widget>);
+    wrap(
+      <Widget id="w1" title="X" live={false}>
+        <div>b</div>
+      </Widget>,
+    );
     expect(screen.getByTestId('widget-w1')).toBeInTheDocument();
   });
 });
@@ -172,9 +227,15 @@ describe('Widget — staggered mount reveal (§3)', () => {
   it('offsets the reveal delay by board position (~55ms/step), so sections cascade', () => {
     wrap(
       <>
-        <Widget id="a" title="A" revealIndex={0}><div>a</div></Widget>
-        <Widget id="b" title="B" revealIndex={1}><div>b</div></Widget>
-        <Widget id="c" title="C" revealIndex={3}><div>c</div></Widget>
+        <Widget id="a" title="A" revealIndex={0}>
+          <div>a</div>
+        </Widget>
+        <Widget id="b" title="B" revealIndex={1}>
+          <div>b</div>
+        </Widget>
+        <Widget id="c" title="C" revealIndex={3}>
+          <div>c</div>
+        </Widget>
       </>,
     );
     expect(delay('a')).toBe('0ms');
@@ -186,25 +247,39 @@ describe('Widget — staggered mount reveal (§3)', () => {
   });
 
   it('defaults to 0ms (no stagger) for a standalone/expanded widget with no revealIndex', () => {
-    wrap(<Widget id="solo" title="Solo"><div>b</div></Widget>);
+    wrap(
+      <Widget id="solo" title="Solo">
+        <div>b</div>
+      </Widget>,
+    );
     expect(delay('solo')).toBe('0ms');
   });
 
   it('clamps the delay so a far-down board position never over-delays the reveal', () => {
-    wrap(<Widget id="deep" title="Deep" revealIndex={40}><div>b</div></Widget>);
+    wrap(
+      <Widget id="deep" title="Deep" revealIndex={40}>
+        <div>b</div>
+      </Widget>,
+    );
     // Capped at index 8 → 440ms, never index*55 unbounded.
     expect(delay('deep')).toBe('440ms');
   });
 
   it('is one-shot: the delay is stable across a re-render (a 60s poll never replays the reveal)', () => {
-    const view = wrap(<Widget id="a" title="A" revealIndex={2}><div>a</div></Widget>);
+    const view = wrap(
+      <Widget id="a" title="A" revealIndex={2}>
+        <div>a</div>
+      </Widget>,
+    );
     expect(delay('a')).toBe('110ms');
     // Simulate a poll-driven re-render with the SAME props: the widget stays mounted, the delay is
     // unchanged, and nothing re-triggers the animation (no remount, no delay reset/replay).
     view.rerender(
       <ThemeProvider theme={theme}>
         <WidgetSelectionProvider>
-          <Widget id="a" title="A" revealIndex={2}><div>a</div></Widget>
+          <Widget id="a" title="A" revealIndex={2}>
+            <div>a</div>
+          </Widget>
         </WidgetSelectionProvider>
       </ThemeProvider>,
     );

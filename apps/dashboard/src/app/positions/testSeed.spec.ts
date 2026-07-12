@@ -5,15 +5,26 @@
  * fault. Simulation-only; this seam only ever writes to the client-local positions store.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { allPositions, putPosition, __resetMemory } from './store';
+import { __resetMemory, allPositions, putPosition } from './store';
 import { seedTestPositionsIfNeeded, TEST_ACCOUNT_EMAIL, TEST_SEED_MARKER_KEY } from './testSeed';
 import type { Position } from './types';
 
 function mkPosition(over: Partial<Position> = {}): Position {
   return {
-    id: 'real-1', ticker: 'MSFT', expiration: '2026-08-21', strike: 400, right: 'call', side: 'long',
-    qty: 1, entry_mark: 5, entry_basis: 'user_entered', entry_time: '2026-06-22T10:00:00Z',
-    status: 'open', entry_mode: 'manual', schema_version: 2, ...over,
+    id: 'real-1',
+    ticker: 'MSFT',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    side: 'long',
+    qty: 1,
+    entry_mark: 5,
+    entry_basis: 'user_entered',
+    entry_time: '2026-06-22T10:00:00Z',
+    status: 'open',
+    entry_mode: 'manual',
+    schema_version: 2,
+    ...over,
   };
 }
 
@@ -50,9 +61,15 @@ describe('seedTestPositionsIfNeeded', () => {
     seedTestPositionsIfNeeded(TEST_ACCOUNT_EMAIL);
     expect(allPositions().length).toBeGreaterThan(0);
     // Simulate the user deleting every seeded row (store back to empty).
-    localStorage.setItem('convexa.positions.v2', JSON.stringify({
-      schema_version: 2, positions: {}, decisions: [], customization: undefined,
-    }));
+    localStorage.setItem(
+      'convexa.positions.v2',
+      JSON.stringify({
+        schema_version: 2,
+        positions: {},
+        decisions: [],
+        customization: undefined,
+      }),
+    );
     __resetMemory();
     // Marker is still set → the second sign-in must NOT re-seed.
     seedTestPositionsIfNeeded(TEST_ACCOUNT_EMAIL);

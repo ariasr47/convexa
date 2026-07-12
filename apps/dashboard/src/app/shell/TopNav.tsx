@@ -9,11 +9,11 @@
  * Binding (AC-Inv-7 / `[operator-vs-trader-path-separation]`): NO link/button to `/_ops/metrics` —
  * the operator route is reachable only by typing the URL.
  */
-import { AppBar, Toolbar, Box, Stack } from '@mui/material';
+import { AppBar, Box, Stack, Toolbar } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { Link as RouterLink, NavLink, useLocation } from 'react-router-dom';
-import { ConvexaMark } from './ConvexaMark';
+import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
 import { AccountControl } from '../auth/AccountControl';
+import { ConvexaMark } from './ConvexaMark';
 
 interface NavEntry {
   label: string;
@@ -26,8 +26,16 @@ interface NavEntry {
 // `/scanner`. Deliberately NO operator entry.
 const NAV: NavEntry[] = [
   { label: 'Ticker', to: '/ticker', active: (p) => p.startsWith('/ticker') },
-  { label: 'Positions', to: '/positions', active: (p) => p === '/positions' || p.startsWith('/positions/') },
-  { label: 'Scanner', to: '/scanner', active: (p) => p === '/scanner' || p.startsWith('/scanner/') },
+  {
+    label: 'Positions',
+    to: '/positions',
+    active: (p) => p === '/positions' || p.startsWith('/positions/'),
+  },
+  {
+    label: 'Scanner',
+    to: '/scanner',
+    active: (p) => p === '/scanner' || p.startsWith('/scanner/'),
+  },
 ];
 
 export function TopNav() {

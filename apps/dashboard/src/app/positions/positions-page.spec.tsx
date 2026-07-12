@@ -16,62 +16,159 @@
  * behavior (row stays, cell degraded, never blanked/dropped, no throw); the wording delta is flagged
  * for a GATE-Z amendment rather than editing the forbidden internals.
  */
-import { render, screen, within, cleanup } from '@testing-library/react';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import type { StrikeRow, TickerBundle, TrackedContract } from '@org/api';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import type { TickerBundle, TrackedContract, StrikeRow } from '@org/api';
 
 import App from '../app';
 import { theme } from '../theme';
 import {
-  __resetMemory, allPositions, putPosition, getCustomization, putCustomization, newId,
+  __resetMemory,
+  allPositions,
+  getCustomization,
+  newId,
   PORTFOLIO_V2_KEY,
+  putCustomization,
+  putPosition,
 } from './store';
 import type { Position } from './types';
 import { PORTFOLIO_SCHEMA_VERSION } from './types';
 
 function strike(s: number): StrikeRow {
-  return { strike: s, net_gex: 0, call_gex: 0, put_gex: 0, call_oi: 10, put_oi: 10, total_oi: 20, net_dex: 0, call_dex: 0, put_dex: 0, volume: 5, vol_oi_ratio: 0.25 };
+  return {
+    strike: s,
+    net_gex: 0,
+    call_gex: 0,
+    put_gex: 0,
+    call_oi: 10,
+    put_oi: 10,
+    total_oi: 20,
+    net_dex: 0,
+    call_dex: 0,
+    put_dex: 0,
+    volume: 5,
+    vol_oi_ratio: 0.25,
+  };
 }
 function makeBundle(ticker = 'TSLA'): TickerBundle {
   return {
     market_state: {
-      ticker, price: 250, gex_spot: 250, timestamp: 1, timestamp_iso: '2026-06-23T14:00:00Z',
-      call_wall: 260, put_wall: 240, peak_gex_strike: 255, gamma_flip: 248, max_pain: 250,
-      max_pain_expiration: '2026-06-26', net_gex: 1, call_gex: 1, put_gex: -1, total_gex: 1, net_dex: 1,
-      call_dex: 1, put_dex: -1, net_vanna: null, net_charm: null, net_volga: null, vwap: 249,
-      vwap_upper_2: null, vwap_upper_3: null, vwap_lower_2: null, vwap_lower_3: null, dte_min: 7,
-      dte_max: 45, atm_iv: 45, hv_30d: 40, iv_hv_ratio: 1.1, net_flow: null, put_call_ratio: 0.8,
-      chain_vol_oi_ratio: 0.5, total_volume: 100000, vol_oi_unusual_threshold: 1, iv_skew: null, term_structure: null, dealer_flow_projection: null,
+      ticker,
+      price: 250,
+      gex_spot: 250,
+      timestamp: 1,
+      timestamp_iso: '2026-06-23T14:00:00Z',
+      call_wall: 260,
+      put_wall: 240,
+      peak_gex_strike: 255,
+      gamma_flip: 248,
+      max_pain: 250,
+      max_pain_expiration: '2026-06-26',
+      net_gex: 1,
+      call_gex: 1,
+      put_gex: -1,
+      total_gex: 1,
+      net_dex: 1,
+      call_dex: 1,
+      put_dex: -1,
+      net_vanna: null,
+      net_charm: null,
+      net_volga: null,
+      vwap: 249,
+      vwap_upper_2: null,
+      vwap_upper_3: null,
+      vwap_lower_2: null,
+      vwap_lower_3: null,
+      dte_min: 7,
+      dte_max: 45,
+      atm_iv: 45,
+      hv_30d: 40,
+      iv_hv_ratio: 1.1,
+      net_flow: null,
+      put_call_ratio: 0.8,
+      chain_vol_oi_ratio: 0.5,
+      total_volume: 100000,
+      vol_oi_unusual_threshold: 1,
+      iv_skew: null,
+      term_structure: null,
+      dealer_flow_projection: null,
     },
     signals: {
-      ticker, regime: 'positive_gamma', regime_note: null, vol_regime: 'neutral', distances: {},
-      setups: [], opportunity_score: 42, opportunity_tier: 'watch', prime_prompt_eligible: false,
+      ticker,
+      regime: 'positive_gamma',
+      regime_note: null,
+      vol_regime: 'neutral',
+      distances: {},
+      setups: [],
+      opportunity_score: 42,
+      opportunity_tier: 'watch',
+      prime_prompt_eligible: false,
     },
     strike_profile: { ticker, spot: 250, strikes: [strike(245), strike(250), strike(255)] },
     expirations: [{ date: '2026-07-17', dte: 24 }],
-    ai_eval: { ready: true, reasons: [], changed: true, state_fingerprint: 'fp', score_threshold: 50 },
-    meta: { served_at: '2026-06-23T14:00:00Z', cache: { hit: false, age_seconds: 0, ttl_seconds: 60 }, freshness: { snapshot_iso: '2026-06-23T14:00:00Z', data_age_seconds: 10, stale: false, stale_after_seconds: 600 } },
-    off_exchange: { ratio_pct: 38, offex_shares: 1, total_shares: 1, levels: [], blocks: [], block_min_shares: 5000, note: '' },
+    ai_eval: {
+      ready: true,
+      reasons: [],
+      changed: true,
+      state_fingerprint: 'fp',
+      score_threshold: 50,
+    },
+    meta: {
+      served_at: '2026-06-23T14:00:00Z',
+      cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+      freshness: {
+        snapshot_iso: '2026-06-23T14:00:00Z',
+        data_age_seconds: 10,
+        stale: false,
+        stale_after_seconds: 600,
+      },
+    },
+    off_exchange: {
+      ratio_pct: 38,
+      offex_shares: 1,
+      total_shares: 1,
+      levels: [],
+      blocks: [],
+      block_min_shares: 5000,
+      note: '',
+    },
     position_eval: null,
   };
 }
 
 const QUOTE: TrackedContract = {
-  ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call',
-  option_quote: { bid: 4.9, ask: 5.1, mid: 5 }, greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
-  iv: 0.45, dte: 24,
+  ticker: 'TSLA',
+  expiration: '2026-07-17',
+  strike: 250,
+  right: 'call',
+  option_quote: { bid: 4.9, ask: 5.1, mid: 5 },
+  greeks: { delta: 0.5, gamma: 0.01, theta: -0.05, vega: 0.1 },
+  iv: 0.45,
+  dte: 24,
 };
 
 /** Seed one open simulated position directly into the durable store. */
 function seedPosition(over: Partial<Position> = {}): Position {
   const p: Position = {
-    id: over.id ?? newId(), ticker: 'TSLA', expiration: '2026-07-17', strike: 250, right: 'call',
-    side: 'long', qty: 2, entry_mark: 5, entry_basis: 'snapshot', entry_time: '2026-06-20T10:00:00Z',
-    stop: null, target: null, status: 'open', schema_version: PORTFOLIO_SCHEMA_VERSION, entry_mode: 'manual',
+    id: over.id ?? newId(),
+    ticker: 'TSLA',
+    expiration: '2026-07-17',
+    strike: 250,
+    right: 'call',
+    side: 'long',
+    qty: 2,
+    entry_mark: 5,
+    entry_basis: 'snapshot',
+    entry_time: '2026-06-20T10:00:00Z',
+    stop: null,
+    target: null,
+    status: 'open',
+    schema_version: PORTFOLIO_SCHEMA_VERSION,
+    entry_mode: 'manual',
     ...over,
   };
   putPosition(p);
@@ -90,23 +187,45 @@ beforeEach(() => {
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
     onerror: ((e: Event) => void) | null = null;
-    close() { /* no-op */ }
+    close() {
+      /* no-op */
+    }
   }
   vi.stubGlobal('EventSource', SilentEventSource as unknown as typeof EventSource);
 
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    const json = (b: unknown, status = 200) => new Response(b === null ? 'null' : JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
+    const json = (b: unknown, status = 200) =>
+      new Response(b === null ? 'null' : JSON.stringify(b), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      });
     const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
     // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
-    if (url.includes('/api/auth/session')) return json({ authenticated: true, user: { id: 'u-test', email: 'test@user.com', display_name: null, auth_methods: ['password'] }, google_available: false, settings: { active_persona_id: null, default_ticker: null, theme: 'dark' } });
+    if (url.includes('/api/auth/session'))
+      return json({
+        authenticated: true,
+        user: {
+          id: 'u-test',
+          email: 'test@user.com',
+          display_name: null,
+          auth_methods: ['password'],
+        },
+        google_available: false,
+        settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+      });
     // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
     if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
     if (url.includes('/api/ticker/')) return json(makeBundle(tk));
     if (url.includes('/api/recommendation/status/')) {
-      return json({ availability: { in_app_enabled: true }, gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] }, cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' } });
+      return json({
+        availability: { in_app_enabled: true },
+        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+        cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
+      });
     }
-    if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+    if (url.includes('/api/personas'))
+      return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) {
       if (contractMode === 'throw') throw new Error('network');
       if (contractMode === 'notfound') return json(null, 404);
@@ -170,7 +289,10 @@ describe('store', () => {
     seedPosition();
     const custom = getCustomization();
     const viewId = newId();
-    custom.views = [...custom.views, { id: viewId, name: 'Tech swings', config: { ...custom.working } }];
+    custom.views = [
+      ...custom.views,
+      { id: viewId, name: 'Tech swings', config: { ...custom.working } },
+    ];
     custom.activeViewId = viewId;
     putCustomization(custom);
 
@@ -248,7 +370,11 @@ describe('positions-marks', () => {
     renderAt('/positions');
     // The row is still present (never dropped) even though the mark could not refresh.
     expect(await screen.findByTestId('position-row')).toBeInTheDocument();
-    expect(within(within(screen.getByTestId('position-row')).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
+    expect(
+      within(within(screen.getByTestId('position-row')).getByTestId('cell-contract')).getByText(
+        'TSLA',
+      ),
+    ).toBeInTheDocument();
     // The page did not error; the durable record persists.
     expect(allPositions().length).toBe(1);
   });

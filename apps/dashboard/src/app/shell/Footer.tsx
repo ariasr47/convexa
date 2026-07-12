@@ -21,8 +21,8 @@ export function Footer() {
             sx={{ color: 'text.secondary' }}
             data-testid="footer-disclaimer"
           >
-            Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
-            (paper). Not investment advice. No brokerage connection.
+            Convexa is an analysis tool. All positions and trades shown are{' '}
+            <strong>simulated</strong> (paper). Not investment advice. No brokerage connection.
           </Typography>
         </Stack>
       </Container>

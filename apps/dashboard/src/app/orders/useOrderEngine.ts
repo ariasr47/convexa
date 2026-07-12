@@ -14,15 +14,13 @@
  *  - No retro-fill: evaluation runs only on new live payloads; on (re)open it starts from the next
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
+import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import {
-  fetchTrackedContract, TickerBundle, LiveUpdate, TrackedContract,
-} from '@org/api';
 import { computeMark } from '../ghost-trade/mark';
-import { allOrders, subscribeOrders, getOrdersVersion } from './store';
-import { evaluateAndApply, sweepExpiredOrders, DecisionCtx } from './useOrders';
 import { tickFromLive } from './engine';
+import { allOrders, getOrdersVersion, subscribeOrders } from './store';
 import type { SimOrder } from './types';
+import { DecisionCtx, evaluateAndApply, sweepExpiredOrders } from './useOrders';
 
 export interface OrderEngineInputs {
   /** The ticker the HOST page's existing stream covers. */
@@ -62,16 +60,23 @@ function liveOptionMark(
   return res.mark;
 }
 
-export function useOrderEngine({ ticker, bundle, live, isLive, streamOffline }: OrderEngineInputs): void {
+export function useOrderEngine({
+  ticker,
+  bundle,
+  live,
+  isLive,
+  streamOffline,
+}: OrderEngineInputs): void {
   const version = useSyncExternalStore(subscribeOrders, getOrdersVersion, getOrdersVersion);
   const symbol = ticker.toUpperCase();
 
   // Active (non-terminal) orders for THIS page's covered ticker. `version` is the external-store
   // read key (allOrders() re-derives when it bumps) — eslint can't see through the store read.
   const active = useMemo(
-    () => allOrders().filter(
-      (o) => o.ticker === symbol && (o.status === 'waiting' || o.status === 'triggered'),
-    ),
+    () =>
+      allOrders().filter(
+        (o) => o.ticker === symbol && (o.status === 'waiting' || o.status === 'triggered'),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [version, symbol],
   );
@@ -95,7 +100,9 @@ export function useOrderEngine({ ticker, bundle, live, isLive, streamOffline }: 
           if (!cancelled) setTracked((prev) => ({ ...prev, [o.id]: null }));
         });
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey, servedAt]);
 
@@ -108,12 +115,23 @@ export function useOrderEngine({ ticker, bundle, live, isLive, streamOffline }: 
       tier: bundle?.signals.opportunity_tier ?? '',
     };
     // 1) Clock expiry — every order, any ticker (the only off-stream transition, AC-21).
-    try { sweepExpiredOrders(now, ctx); } catch { /* isolated */ }
+    try {
+      sweepExpiredOrders(now, ctx);
+    } catch {
+      /* isolated */
+    }
     // 2) Live evaluation for covered orders — re-read durable state, evaluate pure, apply RMW.
     for (const o of allOrders()) {
       if (o.ticker !== symbol || (o.status !== 'waiting' && o.status !== 'triggered')) continue;
       try {
-        const mark = liveOptionMark(o, trackedRef.current[o.id], bundle, live, isLive, streamOffline);
+        const mark = liveOptionMark(
+          o,
+          trackedRef.current[o.id],
+          bundle,
+          live,
+          isLive,
+          streamOffline,
+        );
         evaluateAndApply(o, tickFromLive(live, streamOffline, mark, now), ctx);
       } catch {
         /* per-tick isolation: one bad order/tick never kills the engine or the stream consumer */

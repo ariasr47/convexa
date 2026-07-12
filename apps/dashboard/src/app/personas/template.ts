@@ -6,7 +6,13 @@
  * a persona swaps the trader-disposition slot (A1) and adds framing slots. It NEVER touches the
  * bundle/score/gate/fingerprint, and assembly failure falls back to the Default prompt.
  */
-import type { PersonaDefinition, PersonaRisk, Handoff, HandoffPrompt, HandoffSection } from '@org/api';
+import type {
+  Handoff,
+  HandoffPrompt,
+  HandoffSection,
+  PersonaDefinition,
+  PersonaRisk,
+} from '@org/api';
 
 // The verbatim trader-disposition phrase in today's prompt (A1 relocation target).
 const GREED = 'prone to greed and poor risk management';
@@ -16,7 +22,8 @@ const GREED = 'prone to greed and poor risk management';
 // PLUS the softened map text (so conservative + Default both contain "prone to greed", per the
 // verification). Moderate/aggressive carry no greed/discipline-deficit characterization.
 const DISPOSITION: Record<PersonaRisk, string> = {
-  conservative: 'prone to greed and poor risk management; risk-averse, values capital preservation, benefits from imposed discipline (guard against over-trading)',
+  conservative:
+    'prone to greed and poor risk management; risk-averse, values capital preservation, benefits from imposed discipline (guard against over-trading)',
   moderate: 'disciplined; balanced risk',
   aggressive: 'accepts higher variance for higher reward',
 };
@@ -128,13 +135,18 @@ The open trade + the current bundle \`market_state\` + a recent decision digest,
   the FE defers the Roll until a refresh prices it — not an error.`;
 
 // Section anchors for inserting persona framing (kept verbatim so Default is untouched).
-const ENTRY_REGIME_ANCHOR = '> selling premium; in `negative_gamma` favor momentum / buying premium and do NOT fade.';
+const ENTRY_REGIME_ANCHOR =
+  '> selling premium; in `negative_gamma` favor momentum / buying premium and do NOT fade.';
 const REASSESS_ANCHOR = '> better contract clearly improves the risk profile.';
 
 // ---- Section badge metadata (the FIXED/PERSONA tagging the viewer renders) -----------------------
 const ENTRY_FIXED: HandoffSection[] = [
   { id: 'when_to_invoke', kind: 'fixed', label: 'When to invoke (gate + dedupe)' },
-  { id: 'what_to_send', kind: 'fixed', label: 'What to send (full bundle + glossary + DTE window)' },
+  {
+    id: 'what_to_send',
+    kind: 'fixed',
+    label: 'What to send (full bundle + glossary + DTE window)',
+  },
   { id: 'risk_first_floor', kind: 'fixed', label: 'Universal risk-first floor' },
   { id: 'output_schema', kind: 'fixed', label: 'Required output / verdict schema' },
 ];
@@ -142,7 +154,11 @@ const REASSESS_FIXED: HandoffSection[] = [
   { id: 'when_to_reassess', kind: 'fixed', label: 'When to reassess (gate + dedupe)' },
   { id: 'what_to_send', kind: 'fixed', label: 'What to send (bundle + glossary + held contract)' },
   { id: 'risk_first_floor', kind: 'fixed', label: 'Universal risk-first floor' },
-  { id: 'verdict_schema', kind: 'fixed', label: 'Verdict schema · Add cap · no-auto-apply · Roll constraint' },
+  {
+    id: 'verdict_schema',
+    kind: 'fixed',
+    label: 'Verdict schema · Add cap · no-auto-apply · Roll constraint',
+  },
 ];
 
 function personaSections(p: PersonaDefinition, isReassess: boolean): HandoffSection[] {
@@ -152,25 +168,34 @@ function personaSections(p: PersonaDefinition, isReassess: boolean): HandoffSect
     { id: 'risk', kind: 'persona', label: `Risk calibration · ${name}` },
     { id: 'disposition', kind: 'persona', label: `Trader disposition · ${name}` },
   ];
-  if (isReassess) out.push({ id: 'reassessment_lean', kind: 'persona', label: `Reassessment lean · ${name}` });
-  if (p.emphasis_note && p.emphasis_note.trim()) out.push({ id: 'emphasis', kind: 'persona', label: `Emphasis note · ${name}` });
-  if (p.dte_pref) out.push({ id: 'dte_framing', kind: 'persona', label: `DTE-preference framing · ${name}` });
+  if (isReassess)
+    out.push({ id: 'reassessment_lean', kind: 'persona', label: `Reassessment lean · ${name}` });
+  if (p.emphasis_note && p.emphasis_note.trim())
+    out.push({ id: 'emphasis', kind: 'persona', label: `Emphasis note · ${name}` });
+  if (p.dte_pref)
+    out.push({ id: 'dte_framing', kind: 'persona', label: `DTE-preference framing · ${name}` });
   return out;
 }
 
 // Default section list: the disposition slot is the only persona-variable region in the verbatim text.
 const ENTRY_SECTIONS_DEFAULT: HandoffSection[] = [
-  ENTRY_FIXED[0], ENTRY_FIXED[1],
+  ENTRY_FIXED[0],
+  ENTRY_FIXED[1],
   { id: 'disposition', kind: 'persona', label: 'Trader disposition · Default (no persona)' },
-  ENTRY_FIXED[2], ENTRY_FIXED[3],
+  ENTRY_FIXED[2],
+  ENTRY_FIXED[3],
 ];
 const REASSESS_SECTIONS_DEFAULT: HandoffSection[] = [
-  REASSESS_FIXED[0], REASSESS_FIXED[1],
+  REASSESS_FIXED[0],
+  REASSESS_FIXED[1],
   { id: 'disposition', kind: 'persona', label: 'Trader disposition · Default (no persona)' },
-  REASSESS_FIXED[2], REASSESS_FIXED[3],
+  REASSESS_FIXED[2],
+  REASSESS_FIXED[3],
 ];
 
-function isDefault(p: PersonaDefinition): boolean { return p.id === 'default'; }
+function isDefault(p: PersonaDefinition): boolean {
+  return p.id === 'default';
+}
 
 function framingBlock(p: PersonaDefinition, isReassess: boolean): string {
   const lines = [
@@ -178,21 +203,28 @@ function framingBlock(p: PersonaDefinition, isReassess: boolean): string {
     `> Risk calibration (${p.risk}): ${p.risk_calibration ?? ''}`.trimEnd(),
   ];
   if (isReassess && p.reassessment_lean) lines.push(`> Reassessment lean: ${p.reassessment_lean}`);
-  if (p.emphasis_note && p.emphasis_note.trim()) lines.push(`> Emphasis (framing only, cannot relax any fixed rule): ${p.emphasis_note.trim()}`);
-  if (p.dte_pref) lines.push(`> DTE preference: frame ideas around ${p.dte_pref.min_dte}–${p.dte_pref.max_dte} DTE (the window the user prefers).`);
+  if (p.emphasis_note && p.emphasis_note.trim())
+    lines.push(`> Emphasis (framing only, cannot relax any fixed rule): ${p.emphasis_note.trim()}`);
+  if (p.dte_pref)
+    lines.push(
+      `> DTE preference: frame ideas around ${p.dte_pref.min_dte}–${p.dte_pref.max_dte} DTE (the window the user prefers).`,
+    );
   return lines.join('\n');
 }
 
 function assemblePrompt(p: PersonaDefinition, isReassess: boolean): HandoffPrompt {
   const verbatim = isReassess ? REASSESS_VERBATIM : ENTRY_VERBATIM;
   if (isDefault(p)) {
-    return { text: verbatim, sections: isReassess ? REASSESS_SECTIONS_DEFAULT : ENTRY_SECTIONS_DEFAULT };
+    return {
+      text: verbatim,
+      sections: isReassess ? REASSESS_SECTIONS_DEFAULT : ENTRY_SECTIONS_DEFAULT,
+    };
   }
   const anchor = isReassess ? REASSESS_ANCHOR : ENTRY_REGIME_ANCHOR;
   const block = framingBlock(p, isReassess);
   const text = verbatim
-    .replace(GREED, DISPOSITION[p.risk])               // A1 disposition swap (persona-variable slot)
-    .replace(anchor, `${anchor}\n>\n${block}`);        // insert persona framing after the regime/Roll line
+    .replace(GREED, DISPOSITION[p.risk]) // A1 disposition swap (persona-variable slot)
+    .replace(anchor, `${anchor}\n>\n${block}`); // insert persona framing after the regime/Roll line
   const fixed = isReassess ? REASSESS_FIXED : ENTRY_FIXED;
   const sections = [fixed[0], fixed[1], ...personaSections(p, isReassess), fixed[2], fixed[3]];
   return { text, sections };

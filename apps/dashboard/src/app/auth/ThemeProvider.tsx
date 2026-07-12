@@ -5,9 +5,9 @@
  *
  * Anonymous + never-touched ⇒ resolves to `dark` (today's behavior, AC-A3): zero regression.
  */
-import type { ReactNode } from 'react';
-import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
+import type { ReactNode } from 'react';
 import { themeForPref } from '../theme';
 import { useSettings } from './useSettings';
 

@@ -9,11 +9,9 @@
  * Schema is versioned; v1 (single trade per ticker) migrates loss-free into v2 (flat positions map).
  */
 import type { OptionRight } from '@org/api';
-import type { GhostTrade, DecisionRecord } from '../ghost-trade/types';
-import type { MarkBasis } from '../ghost-trade/types';
+import type { DecisionRecord, GhostTrade, MarkBasis } from '../ghost-trade/types';
 
-export type { MarkBasis } from '../ghost-trade/types';
-export type { DecisionRecord } from '../ghost-trade/types';
+export type { DecisionRecord, MarkBasis } from '../ghost-trade/types';
 
 export const PORTFOLIO_SCHEMA_VERSION = 2;
 
@@ -83,26 +81,53 @@ export type SortDir = 'asc' | 'desc';
 
 /** Sortable attribute keys (UX_BLUEPRINT §5.3). */
 export type SortKey =
-  | 'pl_dollar' | 'pl_pct' | 'delta_entry' | 'session_delta'
-  | 'ticker' | 'strategy' | 'expiry' | 'dte' | 'qty' | 'entry_time';
+  | 'pl_dollar'
+  | 'pl_pct'
+  | 'delta_entry'
+  | 'session_delta'
+  | 'ticker'
+  | 'strategy'
+  | 'expiry'
+  | 'dte'
+  | 'qty'
+  | 'entry_time';
 
 /** All selectable column keys (UX_BLUEPRINT §5.1). Order in `columns` is the display order. */
 export type ColumnKey =
-  | 'simulated' | 'contract' | 'status' | 'mode' | 'mark' | 'pl' | 'pl_pct'
-  | 'delta_entry' | 'session_delta' | 'trend' | 'entry' | 'qty'
-  | 'expiry' | 'strike' | 'right' | 'strategy' | 'dte' | 'greeks' | 'iv'
-  | 'stop' | 'target' | 'entry_time' | 'opened';
+  | 'simulated'
+  | 'contract'
+  | 'status'
+  | 'mode'
+  | 'mark'
+  | 'pl'
+  | 'pl_pct'
+  | 'delta_entry'
+  | 'session_delta'
+  | 'trend'
+  | 'entry'
+  | 'qty'
+  | 'expiry'
+  | 'strike'
+  | 'right'
+  | 'strategy'
+  | 'dte'
+  | 'greeks'
+  | 'iv'
+  | 'stop'
+  | 'target'
+  | 'entry_time'
+  | 'opened';
 
 export interface FilterState {
-  ticker: string | null;           // null = all tickers
-  status: PositionStatus[];        // multi-select; default = ['open']
-  strategy: Strategy | null;       // null = all
-  expiry: string | null;           // null = all
+  ticker: string | null; // null = all tickers
+  status: PositionStatus[]; // multi-select; default = ['open']
+  strategy: Strategy | null; // null = all
+  expiry: string | null; // null = all
 }
 
 /** The serializable view configuration captured by a saved view. */
 export interface ViewConfig {
-  columns: ColumnKey[];   // selection + order
+  columns: ColumnKey[]; // selection + order
   sortKey: SortKey;
   sortDir: SortDir;
   group: GroupAxis;

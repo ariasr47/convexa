@@ -3,22 +3,26 @@
  * "GammaFlow" on landing / nav wordmark) + AC-B2 (both export filename stems begin `convexa-`, never
  * `gammaflow-`). Mocks ONLY the network boundary; no live backend.
  */
-import { render, screen, within, cleanup } from '@testing-library/react';
-import { renderHook, act } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { act, cleanup, render, renderHook, screen, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import Landing from '../landing/Landing';
-import { AppShell } from '../shell/AppShell';
 import { exportLog } from '../ghost-trade/store';
+import Landing from '../landing/Landing';
 import { useLatencyTrend } from '../operator-metrics/useLatencyTrend';
+import { AppShell } from '../shell/AppShell';
 
 const theme = createTheme();
 
 vi.mock('@org/api', async (orig) => {
   const actual = await orig<typeof import('@org/api')>();
-  return { ...actual, fetchMetrics: vi.fn(async () => { throw new Error('no backend in test'); }) };
+  return {
+    ...actual,
+    fetchMetrics: vi.fn(async () => {
+      throw new Error('no backend in test');
+    }),
+  };
 });
 
 function renderRoute(ui: React.ReactNode, initial = '/') {
@@ -37,15 +41,24 @@ function captureDownload(action: () => void): string {
     const el = realCreate(tag);
     if (tag === 'a') {
       const anchor = el as HTMLAnchorElement;
-      anchor.click = () => { captured = anchor.download; }; // intercept; don't navigate
+      anchor.click = () => {
+        captured = anchor.download;
+      }; // intercept; don't navigate
     }
     return el;
   });
-  try { action(); } finally { spy.mockRestore(); }
+  try {
+    action();
+  } finally {
+    spy.mockRestore();
+  }
   return captured;
 }
 
-beforeEach(() => { localStorage.clear(); vi.restoreAllMocks(); });
+beforeEach(() => {
+  localStorage.clear();
+  vi.restoreAllMocks();
+});
 afterEach(() => cleanup());
 
 describe('AC-B1 — no stray live "GammaFlow" on user-visible brand surfaces', () => {
