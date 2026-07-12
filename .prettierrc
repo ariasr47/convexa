@@ -1,3 +1,45 @@
 {
-  "singleQuote": true
+  "$schema": "https://json.schemastore.org/prettierrc",
+
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+
+  "semi": true,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "quoteProps": "as-needed",
+
+  "trailingComma": "all",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "always",
+
+  "proseWrap": "preserve",
+  "htmlWhitespaceSensitivity": "css",
+  "embeddedLanguageFormatting": "auto",
+  "singleAttributePerLine": false,
+
+  "endOfLine": "auto",
+
+  "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-packagejson"],
+
+  "overrides": [
+    {
+      "files": ["*.json", "*.jsonc", ".prettierrc", ".*rc"],
+      "options": { "parser": "json", "trailingComma": "none" }
+    },
+    {
+      "files": ["*.json5"],
+      "options": { "parser": "json5", "singleQuote": false, "quoteProps": "consistent" }
+    },
+    {
+      "files": ["*.md", "*.mdx"],
+      "options": { "printWidth": 80, "proseWrap": "preserve" }
+    },
+    {
+      "files": ["*.yml", "*.yaml"],
+      "options": { "singleQuote": false }
+    }
+  ]
 }

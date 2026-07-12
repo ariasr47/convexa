@@ -1,6 +1,45 @@
-# Add files here to ignore them from prettier formatting
-/dist
-/coverage
-/.nx/cache
-/.nx/workspace-data
+# Prettier ignore — keep in sync with .gitignore where it makes sense.
+# Prettier already ignores node_modules by default; everything else is explicit.
+
+# --- Governance / hand-maintained docs (not code — leave formatting alone) ---
+.claude/
+
+# --- Build & compile output ---
+**/dist
+**/build
+**/out
+**/tmp
+libs/*/dist
+apps/*/dist
+
+# --- Test & coverage artifacts ---
+**/coverage
+**/.nyc_output
+**/*.snap
+
+# --- Nx cache & workspace data ---
+.nx/cache
+.nx/workspace-data
 .nx/self-healing
+
+# --- Dependencies & language environments ---
+**/node_modules
+apps/api/.venv
+**/__pycache__
+
+# --- Generated / vendored assets ---
+**/*.min.js
+**/*.min.css
+
+# --- Lockfiles (owned by their package managers) ---
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# --- Env & local secrets (never format, never touch) ---
+.env
+.env.*
+apps/api/conf/token.txt
+
+# --- Logs ---
+**/*.log
