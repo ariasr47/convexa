@@ -25,9 +25,17 @@ const COMMON = {
         // (primary is already `#1d6fe0` + auto-white) keeps the theme default. Targeted via `ownerState`
         // on `root` because MUI (v6+) dropped the combined `containedPrimary` styleOverrides slot —
         // variant + color are now separate classes, so that slot never applied.
-        root: ({ ownerState, theme }: { ownerState: { variant?: string; color?: string }; theme: Theme }) => ({
+        root: ({
+          ownerState,
+          theme,
+        }: {
+          ownerState: { variant?: string; color?: string };
+          theme: Theme;
+        }) => ({
           textTransform: 'none' as const,
-          ...(ownerState.variant === 'contained' && ownerState.color === 'primary' && theme.palette.mode === 'dark'
+          ...(ownerState.variant === 'contained' &&
+          ownerState.color === 'primary' &&
+          theme.palette.mode === 'dark'
             ? {
                 backgroundColor: extras.buttonPrimaryBg,
                 color: '#fff',
@@ -47,10 +55,14 @@ export const theme = createTheme({
     mode: 'dark',
     primary: { main: palette.dark.primary },
     success: { main: palette.dark.success }, // positive gamma / calls
-    error: { main: palette.dark.error },     // negative gamma / puts
+    error: { main: palette.dark.error }, // negative gamma / puts
     warning: { main: palette.dark.warning },
     info: { main: palette.dark.info },
-    text: { primary: palette.dark.text.primary, secondary: palette.dark.text.secondary, disabled: palette.dark.text.disabled },
+    text: {
+      primary: palette.dark.text.primary,
+      secondary: palette.dark.text.secondary,
+      disabled: palette.dark.text.disabled,
+    },
     background: { default: palette.dark.background.default, paper: palette.dark.background.paper },
   },
   ...COMMON,
@@ -66,15 +78,21 @@ export const lightTheme = createTheme({
     warning: { main: palette.light.warning },
     info: { main: palette.light.info },
     text: { secondary: palette.light.text.secondary, disabled: palette.light.text.disabled },
-    background: { default: palette.light.background.default, paper: palette.light.background.paper },
+    background: {
+      default: palette.light.background.default,
+      paper: palette.light.background.paper,
+    },
   },
   ...COMMON,
 });
 
 /** Resolve the OS preference for `system` (best-effort; defaults to dark when unavailable). */
 function prefersLight(): boolean {
-  try { return !!window.matchMedia?.('(prefers-color-scheme: light)')?.matches; }
-  catch { return false; }
+  try {
+    return window.matchMedia?.('(prefers-color-scheme: light)')?.matches;
+  } catch {
+    return false;
+  }
 }
 
 /** Map a `ThemePref` to a concrete MUI theme. `system` follows the OS, defaulting to dark. */
