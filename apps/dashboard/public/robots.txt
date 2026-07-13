@@ -1,0 +1,7 @@
+# Convexa — crawler policy
+User-agent: *
+Allow: /
+# Operator/diagnostic surface is not for indexing.
+Disallow: /_ops/
+
+Sitemap: https://convexa.pages.dev/sitemap.xml
