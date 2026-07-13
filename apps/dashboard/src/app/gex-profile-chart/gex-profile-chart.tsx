@@ -12,8 +12,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useReducedMotion } from './ticker/widgets/useReducedMotion';
-import { typographyTokens } from './tokens';
+import { useReducedMotion } from '../ticker/widgets/useReducedMotion';
+import { typographyTokens } from '../tokens';
 
 interface Props {
   strikes: StrikeRow[];

@@ -18,6 +18,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import LockIcon from '@mui/icons-material/Lock';
 import RadarIcon from '@mui/icons-material/Radar';
 import { Box, Button, Chip, Container, Link, Snackbar, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Footer } from '../shell/Footer';
@@ -53,7 +54,7 @@ export function Landing() {
               label="Dealer-gamma analytics"
               size="small"
               sx={{
-                bgcolor: 'rgba(79, 156, 255, 0.12)',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
                 color: 'primary.main',
                 fontWeight: 600,
                 borderRadius: 999,
@@ -229,7 +230,7 @@ export function Landing() {
         onClose={() => setToastOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         message={<span data-testid="waitlist-ack">{WAITLIST_TOAST}</span>}
-        //ContentProps={{ 'aria-live': 'polite' }}
+        slotProps={{ content: { 'aria-live': 'polite' } }}
       />
     </Box>
   );

@@ -34,7 +34,7 @@ import { AuthDialogProvider } from './auth/AuthDialogProvider';
 import { SettingsPage } from './auth/SettingsPage';
 import { AppThemeProvider } from './auth/ThemeProvider';
 import { Landing } from './landing/Landing';
-import { OperatorMetrics } from './operator-metrics';
+import { OperatorMetrics } from './operator-metrics/operator-metrics';
 import { PositionsPage } from './positions/PositionsPage';
 import { Scanner } from './scanner/Scanner';
 import { AppShell } from './shell/AppShell';

@@ -6,7 +6,11 @@
  * renders an empty frame.
  */
 import type { StrikeRow } from '@org/api';
-import { GexLegend, GexProfileChart, windowedStrikes } from '../../gex-profile-chart';
+import {
+  GexLegend,
+  GexProfileChart,
+  windowedStrikes,
+} from '../../gex-profile-chart/gex-profile-chart';
 import { Widget } from './Widget';
 
 interface Props {

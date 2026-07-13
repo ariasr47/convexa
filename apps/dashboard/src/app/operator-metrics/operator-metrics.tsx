@@ -29,8 +29,8 @@ import {
 } from '@mui/material';
 import { MetricsScope, RecentTrace, StageKind, StageName } from '@org/api';
 import { useState } from 'react';
-import { LatencyTrend } from './operator-metrics/LatencyTrend';
-import { useLatencyTrend } from './operator-metrics/useLatencyTrend';
+import { LatencyTrend } from './LatencyTrend';
+import { useLatencyTrend } from './useLatencyTrend';
 
 const fmtMs = (n: number | null | undefined) =>
   n == null ? '—' : n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`;
