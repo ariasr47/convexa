@@ -8,7 +8,7 @@
  * opacity in `primary.main`, plus a soft radial primary glow behind them.
  */
 import { Box } from '@mui/material';
-import type { SxProps, Theme } from '@mui/material/styles';
+import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 
 export interface ConvexityMotifProps {
   /** Override / extend the wrapper styling (e.g. position, inset, sizing). */
@@ -30,8 +30,8 @@ export function ConvexityMotif({ sx }: ConvexityMotifProps) {
         sx={{
           position: 'absolute',
           inset: 0,
-          background:
-            'radial-gradient(60% 50% at 80% 10%, rgba(79, 156, 255, 0.18) 0%, rgba(79, 156, 255, 0) 70%)',
+          background: (theme) =>
+            `radial-gradient(60% 50% at 80% 10%, ${alpha(theme.palette.primary.main, 0.18)} 0%, ${alpha(theme.palette.primary.main, 0)} 70%)`,
         }}
       />
       <Box

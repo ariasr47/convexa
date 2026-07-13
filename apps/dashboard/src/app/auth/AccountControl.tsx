@@ -11,7 +11,9 @@
  * copy surfaces only on submit / on a gated action — never here, and never on the trader path.
  */
 import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
+import { brandGradient } from '../tokens';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
@@ -53,14 +55,15 @@ export function AccountControl() {
             whiteSpace: 'nowrap',
             borderRadius: 999,
             px: 2,
-            color: '#fff',
-            background: 'linear-gradient(135deg, #4f9cff, #7b5cff)',
+            color: 'common.white',
+            background: brandGradient,
             transition: 'transform 180ms ease, box-shadow 180ms ease, filter 180ms ease',
             '&:hover': {
               transform: 'translateY(-1px)',
               filter: 'brightness(1.06)',
-              boxShadow: '0 8px 22px -8px rgba(79, 156, 255, 0.6)',
-              background: 'linear-gradient(135deg, #4f9cff, #7b5cff)',
+              // Hover glow stays a mode-aware primary tint (an accent, not the fixed brand mark).
+              boxShadow: (theme) => `0 8px 22px -8px ${alpha(theme.palette.primary.main, 0.6)}`,
+              background: brandGradient,
             },
             '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
           }}

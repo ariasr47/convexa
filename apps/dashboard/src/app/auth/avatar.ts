@@ -2,11 +2,13 @@
  * Gradient-avatar helpers — single-sourced so the nav profile (AccountControl) and the Settings
  * Account panel render the IDENTICAL 32px circle (convexa-redesign Figma `4:2572`, README §1/§6).
  *
- * The gradient `#4f9cff → #7b5cff` is the one hardcoded literal the Settings/Auth contract permits
- * (the accent/violet token isn't an MUI palette entry); everything else uses theme tokens.
+ * The blue→violet brand gradient is single-sourced as `brandGradient` in `tokens.ts` — a fixed,
+ * mode-invariant brand mark (was the contract-permitted hardcoded literal); everything else is theme
+ * tokens.
  */
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { AuthUser } from '@org/api';
+import { brandGradient } from '../tokens';
 
 /** The user's initial (display name first, else email), uppercased; a neutral dot when unknown. */
 export function avatarInitial(user: AuthUser | null | undefined): string {
@@ -23,9 +25,9 @@ export const GRADIENT_AVATAR_SX: SxProps<Theme> = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: '#fff',
+  color: 'common.white',
   fontWeight: 600,
   fontSize: '0.85rem',
   lineHeight: 1,
-  background: 'linear-gradient(135deg, #4f9cff, #7b5cff)',
+  background: brandGradient,
 };

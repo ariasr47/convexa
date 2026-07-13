@@ -24,6 +24,13 @@ export function Footer() {
             Convexa is an analysis tool. All positions and trades shown are{' '}
             <strong>simulated</strong> (paper). Not investment advice. No brokerage connection.
           </Typography>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary' }}
+            data-testid="footer-copyright"
+          >
+            © {new Date().getFullYear()} Convexa. All rights reserved.
+          </Typography>
         </Stack>
       </Container>
     </Box>

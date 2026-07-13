@@ -1,6 +1,6 @@
 import { createTheme, darken, type Theme } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
-import { extras, palette, shape, typographyTokens } from './tokens';
+import { elevationFor, extras, extrasFor, palette, shape, typographyTokens } from './tokens';
 
 const COMMON = {
   // Emit MUI CSS theme variables (`--mui-palette-*`, …) so the Figma design system's variable
@@ -42,6 +42,21 @@ const COMMON = {
                 '&:hover': { backgroundColor: darken(extras.buttonPrimaryBg, 0.12) },
               }
             : {}),
+        }),
+      },
+    },
+    // Snackbars are OVERLAYS → the top of the elevation ladder: the lightest surface (panelRaised)
+    // + an e4 shadow so the toast clearly floats above the page, instead of MUI's default inverted
+    // (near-white) SnackbarContent. Mode-aware — themes are swapped at the provider. See
+    // docs/THEME_AUDIT.md gaps #4 (elevation) + #10 (snackbar).
+    MuiSnackbarContent: {
+      styleOverrides: {
+        root: ({ theme }: { theme: Theme }) => ({
+          backgroundColor: extrasFor(theme).panelRaised,
+          color: theme.palette.text.primary,
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: theme.shape.borderRadius,
+          boxShadow: elevationFor(theme).e4,
         }),
       },
     },

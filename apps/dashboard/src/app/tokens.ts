@@ -79,3 +79,39 @@ export const extrasLight: Record<keyof typeof extras, string> = {
 export const extrasFor = (theme: {
   palette: { mode: string };
 }): Record<keyof typeof extras, string> => (theme.palette.mode === 'light' ? extrasLight : extras);
+
+/**
+ * Brand gradient — the fixed blue→violet brand MARK (the account avatar + the Sign-up pill).
+ * Deliberately mode-INVARIANT (logo-like: it does NOT shift with the theme), single-sourced from the
+ * dark-primary + accent-violet tokens so it's not a raw literal at call sites. This is the one
+ * intentional non-mode-aware brand element (formerly the contract-permitted hardcoded gradient).
+ */
+export const brandGradient =
+  `linear-gradient(135deg, ${palette.dark.primary}, ${extras.accentViolet})` as const;
+
+/**
+ * Elevation ladder — a small NAMED box-shadow scale (not MUI's 25-slot `shadows[]`). Depth in dark UI
+ * is luminance-first (lighter surface = closer); these ambient shadows are the SUPPORTING cue. `e1`
+ * carries a faint top inset-highlight that fakes an overhead light for a bevelled edge. Mode-aware,
+ * resolved via `elevationFor(theme)` inside an `sx`/styled callback (like `extrasFor`).
+ *   e1 = resting panel/card · e2 = raised (hover / scrolled sticky-nav) · e4 = overlay (toast/menu/dialog)
+ * Light-mode counterparts use softer black alphas and drop the white top-highlight.
+ */
+export const elevation = {
+  dark: {
+    e1: '0 1px 2px rgba(0, 0, 0, 0.24), 0 2px 6px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+    e2: '0 6px 16px rgba(0, 0, 0, 0.32), 0 2px 4px rgba(0, 0, 0, 0.2)',
+    e4: '0 12px 32px rgba(0, 0, 0, 0.44), 0 4px 8px rgba(0, 0, 0, 0.28)',
+  },
+  light: {
+    e1: '0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.05)',
+    e2: '0 6px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+    e4: '0 12px 32px rgba(0, 0, 0, 0.16), 0 4px 8px rgba(0, 0, 0, 0.1)',
+  },
+} as const;
+
+/** Resolve the mode-correct elevation scale inside an `sx`/styled `theme` callback. */
+export const elevationFor = (theme: {
+  palette: { mode: string };
+}): Record<keyof typeof elevation.dark, string> =>
+  theme.palette.mode === 'light' ? elevation.light : elevation.dark;

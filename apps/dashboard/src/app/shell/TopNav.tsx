@@ -9,10 +9,11 @@
  * Binding (AC-Inv-7 / `[operator-vs-trader-path-separation]`): NO link/button to `/_ops/metrics` —
  * the operator route is reachable only by typing the URL.
  */
-import { AppBar, Box, Stack, Toolbar } from '@mui/material';
+import { AppBar, Box, Stack, Toolbar, useScrollTrigger } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
 import { AccountControl } from '../auth/AccountControl';
+import { elevationFor } from '../tokens';
 import { ConvexaMark } from './ConvexaMark';
 
 interface NavEntry {
@@ -41,6 +42,9 @@ const NAV: NavEntry[] = [
 export function TopNav() {
   const location = useLocation();
   const path = location.pathname;
+  // Scroll-aware chrome: flush with the hero at the top (no border/shadow, blends in), then detaches
+  // from the scrolling page with a divider border + e2 elevation once any content passes under it.
+  const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
 
   return (
     <AppBar
@@ -48,12 +52,15 @@ export function TopNav() {
       elevation={0}
       data-testid="top-nav"
       sx={{
-        // Translucent, blurred chrome (README §1) — frosted glass over the dark canvas.
-        bgcolor: (t) => alpha(t.palette.background.paper, 0.82),
+        // Translucent, blurred chrome (README §1) — frosted glass over the dark canvas; the frost
+        // firms up slightly once scrolled.
+        bgcolor: (t) => alpha(t.palette.background.paper, scrolled ? 0.9 : 0.82),
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderBottom: 1,
-        borderColor: 'divider',
+        borderColor: scrolled ? 'divider' : 'transparent',
+        boxShadow: (t) => (scrolled ? elevationFor(t).e2 : 'none'),
+        transition: 'background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease',
       }}
     >
       {/* Full-bleed bar; content constrained to the 1240 content column with 24px gutters. */}
@@ -107,7 +114,8 @@ export function TopNav() {
                     borderColor: isActive ? 'primary.main' : 'transparent',
                     transition: 'color 160ms ease, border-color 160ms ease',
                     // Subtle primary glow under the active item — cohesive with the card polish.
-                    boxShadow: isActive ? '0 2px 12px -6px rgba(79, 156, 255, 0.8)' : 'none',
+                    boxShadow: (t) =>
+                      isActive ? `0 2px 12px -6px ${alpha(t.palette.primary.main, 0.8)}` : 'none',
                     '&:hover': { color: isActive ? 'primary.main' : 'text.primary' },
                   }}
                 >

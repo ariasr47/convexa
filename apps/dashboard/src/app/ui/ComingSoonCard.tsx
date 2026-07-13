@@ -8,6 +8,7 @@
  * toast button, or a link to an honest placeholder page). Pure presentation: no data, no fetch.
  */
 import { Box, Chip, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { ComingSoonBox } from './ComingSoonBox';
 
 /** Small amber "coming soon" badge (pill). Exported for reuse / direct assertion. */
@@ -37,7 +38,9 @@ function ComingSoonIcon({ icon }: { icon: React.ReactNode }) {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: (theme) =>
-          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+          theme.palette.mode === 'dark'
+            ? alpha(theme.palette.common.white, 0.06)
+            : alpha(theme.palette.common.black, 0.05),
         color: 'text.secondary',
       }}
     >

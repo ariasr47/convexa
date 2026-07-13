@@ -34,6 +34,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
 import { useEffect, useState } from 'react';
 import { usePersona } from '../personas/usePersona';
@@ -295,9 +296,11 @@ export function SettingsPage() {
                     '&.Mui-selected': {
                       color: 'primary.main',
                       borderColor: 'primary.main',
-                      bgcolor: 'rgba(79, 156, 255, 0.08)',
+                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                     },
-                    '&.Mui-selected:hover': { bgcolor: 'rgba(79, 156, 255, 0.12)' },
+                    '&.Mui-selected:hover': {
+                      bgcolor: (theme) => alpha(theme.palette.primary.main, 0.12),
+                    },
                     '&:not(:first-of-type).Mui-selected': { borderColor: 'primary.main' },
                   },
                 }}
