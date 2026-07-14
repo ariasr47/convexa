@@ -16,15 +16,14 @@
   "devDependencies": {
     "@babel/core": "^7.14.5",
     "@babel/preset-react": "^7.14.5",
+    "@nx/cypress": "^23.0.0",
     "@nx/devkit": "23.0.0",
     "@nx/eslint": "^23.0.0",
     "@nx/eslint-plugin": "^23.0.0",
     "@nx/js": "23.0.0",
-    "@nx/playwright": "^23.0.0",
     "@nx/react": "^23.0.0",
     "@nx/vite": "23.0.0",
     "@nx/vitest": "23.0.0",
-    "@playwright/test": "^1.37.0",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.18",
@@ -38,8 +37,9 @@
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "~4.1.0",
     "@vitest/ui": "~4.1.0",
+    "cypress": "^15.18.1",
     "eslint": "^9.8.0",
-    "eslint-plugin-playwright": "^2.10.4",
+    "eslint-plugin-cypress": "^6.4.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jiti": "2.4.2",
@@ -55,7 +55,10 @@
     "vite": "^8.0.0",
     "vitest": "~4.1.0"
   },
-  "workspaces": ["apps/*", "libs/*"],
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

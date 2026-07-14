@@ -1,4 +1,4 @@
-import playwright from 'eslint-plugin-playwright';
+import cypress from 'eslint-plugin-cypress';
 import baseConfig from '../../eslint.config.mjs';
 
-export default [playwright.configs['flat/recommended'], ...baseConfig];
+export default [cypress.configs.recommended, ...baseConfig];
