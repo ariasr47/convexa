@@ -100,6 +100,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   while the GEX chart + every static tile/section keep rendering the last bundle; cold-start failure
   is the only blank screen (error + Retry), a post-success poll failure keeps the bundle behind a
   soft "Couldn't refresh" warning.
+- **⚠ FE restructure (2026-07-14, branch `restructure/dashboard-folders` — pending merge):** the dashboard
+  `src/app/` was reorganized by KIND into `pages/` (routes) · `features/` (cross-cutting domains — `trading/`
+  {`TradeEntryDialog`, `model/`, `orders/`, `positions/`}, `auth/`, `personas/`) · `shared/`
+  (`theme/`/`ui/`/`hooks/`/`lib/`) · `shell/`, with a `@/*`→`src/app/*` import alias and folder-per-widget
+  under `pages/ticker/widgets/`. **`apps/dashboard/src/app/README.md` is the authoritative current map.**
+  The paths in the bullets below predate the move — e.g. `app/ghost-trade/`→`app/features/trading/model/`,
+  `app/positions/`→`app/features/trading/positions/` (+ route shell `pages/positions/PositionsPage.tsx`),
+  `app/orders/`→`app/features/trading/orders/`, `app/ai-rec/`→`pages/ticker/widgets/ai-rec/`,
+  `app/gex-profile-chart.tsx`→`pages/ticker/widgets/gex-profile-chart/chart.tsx`, `tokens.ts`/`theme.ts`→
+  `shared/theme/`. Presentation-only refactor — score/tier/`state_fingerprint` untouched, 674/674 tests green.
 - `apps/dashboard/src/app/gex-profile-chart.tsx` — recharts horizontal net-GEX-by-strike, plus a
   per-strike **Net DEX** series (neutral, secondary X-axis) and DEX/Vol-OI/volume in the tooltip.
 - `apps/dashboard/src/app/ghost-trade/` — **paper-sim ghost-trade tracker** (no real order anywhere).
@@ -288,7 +298,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
   registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
 - **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow (ghost
-  trade, positions, act-on-rec/orders) launches **THE one shared `app/trading/TradeEntryDialog`**. A new
+  trade, positions, act-on-rec/orders) launches **THE one shared `app/features/trading/TradeEntryDialog`**. A new
   entry shape is an additive **variant** of it (props/modes — e.g. the fill-mode control, the order
   variant), **never a forked second dialog**; a superseded fork is deleted with zero-importer proof.
   *(sim-entry-unification — created it + deleted the forks; ai-rec-backtest-orders — the contract-mandated

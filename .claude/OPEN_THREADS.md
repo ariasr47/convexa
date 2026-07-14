@@ -763,7 +763,7 @@ the deferred distance-to-level tiles.
   hardcoded; images run non-root. (containerize-apps Dockerfiles+.dockerignore; persistent-db `DATABASE_URL`;
   deploy real Railway push + Pages Function `API_ORIGIN`.) See PROJECT_CONTEXT §5.
 - **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow launches
-  THE one shared `app/trading/TradeEntryDialog`; new entry shapes are additive variants (props/modes),
+  THE one shared `app/features/trading/TradeEntryDialog`; new entry shapes are additive variants (props/modes),
   never a forked second dialog; dead forks deleted with zero-importer proof. (sim-entry-unification;
   ai-rec-backtest-orders order variant.) See PROJECT_CONTEXT §5.
 - **`[theme-token-discipline]`** (promoted 2026-07-02, 4 programs) — new/re-skinned FE components bind to
