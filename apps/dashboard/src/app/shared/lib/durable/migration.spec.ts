@@ -25,8 +25,8 @@ import * as ghost from '@/ghost-trade/store';
 import { GHOST_TRADE_KEY, GHOST_TRADE_LEGACY_KEY } from '@/ghost-trade/store';
 import type { GhostTrade } from '@/ghost-trade/types';
 
-import * as personas from '@/personas/store';
-import { __resetPersonas, PERSONAS_KEY, PERSONAS_LEGACY_KEY } from '@/personas/store';
+import * as personas from '@/features/personas/store';
+import { __resetPersonas, PERSONAS_KEY, PERSONAS_LEGACY_KEY } from '@/features/personas/store';
 
 import {
   __resetLocalPrefs,
@@ -36,7 +36,7 @@ import {
   saveLocalTheme,
   UIPREFS_KEY,
   UIPREFS_LEGACY_KEY,
-} from '@/auth/localPrefs';
+} from '@/features/auth/localPrefs';
 
 // ---- helpers -----------------------------------------------------------------------------------
 

@@ -23,8 +23,8 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider } from '@/auth/AuthContext';
-import { AuthDialogProvider } from '@/auth/AuthDialogProvider';
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { PortfolioPanel } from './PortfolioPanel';
 import {
   PORTFOLIO_V1_KEY,

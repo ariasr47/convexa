@@ -22,7 +22,7 @@ import type { LiveUpdate, MarketState, Signals } from '@org/api';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePersona } from '@/personas/usePersona';
+import { usePersona } from '@/features/personas/usePersona';
 import { __resetMemory } from '@/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { CommandDeck } from './CommandDeck';

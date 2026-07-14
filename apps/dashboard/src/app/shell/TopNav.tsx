@@ -12,7 +12,7 @@
 import { AppBar, Box, Stack, Toolbar, useScrollTrigger } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
-import { AccountControl } from '@/auth/AccountControl';
+import { AccountControl } from '@/features/auth/AccountControl';
 import { elevationFor } from '@/shared/theme/tokens';
 import { ConvexaMark } from './ConvexaMark';
 

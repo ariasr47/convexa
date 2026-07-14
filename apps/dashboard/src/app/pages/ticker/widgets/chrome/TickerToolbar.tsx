@@ -30,8 +30,8 @@ import {
 } from '@mui/material';
 import type { Expiration } from '@org/api';
 import { type ReactNode } from 'react';
-import { PersonaPicker } from '@/personas/components';
-import type { usePersona } from '@/personas/usePersona';
+import { PersonaPicker } from '@/features/personas/components';
+import type { usePersona } from '@/features/personas/usePersona';
 import { dteLabel } from '../_kit/copy';
 
 /** One segment of the instrument panel — an uppercase micro-label above its control. When `htmlFor`

@@ -12,8 +12,8 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider } from '@/auth/AuthContext';
-import { AuthDialogProvider } from '@/auth/AuthDialogProvider';
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { DerivedRow, RowMetrics, applyFilter, deriveGroups } from './derive';
 import { PortfolioPanel } from './PortfolioPanel';
 import { __resetMemory, allPositions, decisionsForPosition } from './store';

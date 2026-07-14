@@ -29,10 +29,10 @@
  * making the Ticker page a child route is what gives mount-on-enter / teardown-on-leave for free.
  */
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from '@/auth/AuthContext';
-import { AuthDialogProvider } from '@/auth/AuthDialogProvider';
-import { SettingsPage } from '@/auth/SettingsPage';
-import { AppThemeProvider } from '@/auth/ThemeProvider';
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { SettingsPage } from '@/features/auth/SettingsPage';
+import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { Landing } from '@/pages/landing/Landing';
 import { OperatorMetrics } from '@/pages/operator-metrics/operator-metrics';
 import { PositionsPage } from '@/positions/PositionsPage';

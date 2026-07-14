@@ -24,8 +24,8 @@ import { StateExportDrawer } from '@/ai-rec/StateExportDrawer';
 import { COPY } from '@/ai-rec/copy';
 import { recToPrefill } from '@/ai-rec/prefill';
 import { useAiRecommendation } from '@/ai-rec/useAiRecommendation';
-import { SignInPrompt } from '@/auth/SignInPrompt';
-import { useGate } from '@/auth/useGate';
+import { SignInPrompt } from '@/features/auth/SignInPrompt';
+import { useGate } from '@/features/auth/useGate';
 import { PrimeBanner, tierMeta } from '@/ghost-trade/OpportunityTier';
 import { NewTradeForm, useGhostTrade } from '@/ghost-trade/useGhostTrade';
 import { OrdersWidget } from '@/orders/OrdersWidget';
@@ -34,8 +34,8 @@ import { parseTriggerSeed } from '@/orders/seed';
 import type { OrderProvenance } from '@/orders/types';
 import { useOrderEngine } from '@/orders/useOrderEngine';
 import { createOrder } from '@/orders/useOrders';
-import { PersonaCustomizeForm } from '@/personas/components';
-import { usePersona } from '@/personas/usePersona';
+import { PersonaCustomizeForm } from '@/features/personas/components';
+import { usePersona } from '@/features/personas/usePersona';
 import {
   EntryPrefill,
   OrderEntrySubmit,

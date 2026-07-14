@@ -15,8 +15,8 @@
 import { Box, Typography } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useMemo, useState } from 'react';
-import { SignInPrompt } from '@/auth/SignInPrompt';
-import { AUTH_COPY } from '@/auth/copy';
+import { SignInPrompt } from '@/features/auth/SignInPrompt';
+import { AUTH_COPY } from '@/features/auth/copy';
 import { OrdersPanel } from '@/orders/OrdersPanel';
 import { EntryPrefill, TradeEntryDialog } from '@/trading/TradeEntryDialog';
 import { CustomizationToolbar } from './CustomizationToolbar';

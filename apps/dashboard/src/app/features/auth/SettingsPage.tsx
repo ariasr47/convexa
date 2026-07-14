@@ -37,7 +37,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
 import { useEffect, useState } from 'react';
-import { usePersona } from '@/personas/usePersona';
+import { usePersona } from '@/features/personas/usePersona';
 import { AiKeySection } from './AiKeySection';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';

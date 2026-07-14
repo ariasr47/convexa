@@ -21,7 +21,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/app';
 import { clearTrade, getTrade } from '@/ghost-trade/store';
-import { PRESETS } from '@/personas/presets';
+import { PRESETS } from '@/features/personas/presets';
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------
 const FP_A = 'fp-A';

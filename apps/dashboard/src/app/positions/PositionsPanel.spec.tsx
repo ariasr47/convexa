@@ -12,7 +12,7 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AUTH_COPY } from '@/auth/copy';
+import { AUTH_COPY } from '@/features/auth/copy';
 import { theme } from '@/shared/theme/theme';
 import { PositionsPanel } from './PositionsPanel';
 import { __resetMemory } from './store';

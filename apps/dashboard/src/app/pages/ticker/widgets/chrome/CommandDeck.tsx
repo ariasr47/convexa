@@ -25,7 +25,7 @@
 import { Box, Stack, Typography } from '@mui/material';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
-import type { usePersona } from '@/personas/usePersona';
+import type { usePersona } from '@/features/personas/usePersona';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';

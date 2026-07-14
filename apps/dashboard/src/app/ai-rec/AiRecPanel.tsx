@@ -34,8 +34,8 @@ import type {
 import { fetchPersonas } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AUTH_COPY } from '@/auth/copy';
-import { useGate } from '@/auth/useGate';
+import { AUTH_COPY } from '@/features/auth/copy';
+import { useGate } from '@/features/auth/useGate';
 import {
   ACT_LABEL,
   ACT_TOOLTIP,
