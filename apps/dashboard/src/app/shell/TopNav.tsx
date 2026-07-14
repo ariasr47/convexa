@@ -6,11 +6,30 @@
  * Chrome ONLY: owns no feature data, makes no fetch, opens no SSE. Frosted/translucent sticky bar,
  * content constrained to the 1240 column. Active-route highlight per `NAV`.
  *
+ * Responsive: at `md+` the primary nav is an inline row. Below `md` it collapses to a hamburger that
+ * opens a temporary Drawer (the drawer's links unmount when closed, so they don't duplicate the inline
+ * `nav-*` testids). The wordmark + AccountControl stay in the bar at every width.
+ *
  * Binding (AC-Inv-7 / `[operator-vs-trader-path-separation]`): NO link/button to `/_ops/metrics` —
  * the operator route is reachable only by typing the URL.
  */
-import { AppBar, Box, Stack, Toolbar, useScrollTrigger } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import MenuIcon from '@mui/icons-material/Menu';
+import {
+  AppBar,
+  Box,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemText,
+  Stack,
+  Toolbar,
+  useScrollTrigger,
+} from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { useState } from 'react';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
 import { AccountControl } from '@/features/auth/AccountControl';
 import { elevationFor } from '@/shared/theme/tokens';
@@ -42,6 +61,7 @@ const NAV: NavEntry[] = [
 export function TopNav() {
   const location = useLocation();
   const path = location.pathname;
+  const [drawerOpen, setDrawerOpen] = useState(false);
   // Scroll-aware chrome: flush with the hero at the top (no border/shadow, blends in), then detaches
   // from the scrolling page with a divider border + e2 elevation once any content passes under it.
   const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 0 });
@@ -63,18 +83,18 @@ export function TopNav() {
         transition: 'background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease',
       }}
     >
-      {/* Full-bleed bar; content constrained to the 1240 content column with 24px gutters. */}
+      {/* Full-bleed bar; content constrained to the 1240 content column with responsive gutters. */}
       <Toolbar disableGutters sx={{ px: 0 }}>
         <Box
           sx={{
             width: '100%',
             maxWidth: 1240,
             mx: 'auto',
-            px: 3,
-            minHeight: 60,
+            px: { xs: 2, md: 3 },
+            minHeight: { xs: 56, md: 60 },
             display: 'flex',
             alignItems: 'center',
-            gap: 3,
+            gap: { xs: 1.5, md: 3 },
           }}
         >
           {/* Wordmark links to `/` (the landing — the honest front door, NOT the operator route). */}
@@ -94,7 +114,14 @@ export function TopNav() {
             <ConvexaMark size={18} fontSize="1.15rem" />
           </Box>
 
-          <Stack direction="row" spacing={2} component="nav" aria-label="primary">
+          {/* Inline primary nav — md and up only. */}
+          <Stack
+            direction="row"
+            spacing={2}
+            component="nav"
+            aria-label="primary"
+            sx={{ display: { xs: 'none', md: 'flex' } }}
+          >
             {NAV.map((e) => {
               const isActive = e.active(path);
               return (
@@ -129,8 +156,81 @@ export function TopNav() {
               Non-blocking: the rest of the app renders regardless of who-am-I. */}
           <Box sx={{ flexGrow: 1 }} />
           <AccountControl />
+
+          {/* Hamburger — below md only. Opens the nav drawer. */}
+          <IconButton
+            edge="end"
+            aria-label="Open navigation menu"
+            data-testid="nav-menu-button"
+            onClick={() => setDrawerOpen(true)}
+            sx={{ display: { xs: 'inline-flex', md: 'none' }, color: 'text.primary' }}
+          >
+            <MenuIcon />
+          </IconButton>
         </Box>
       </Toolbar>
+
+      {/* Mobile nav drawer — temporary (unmounts links when closed, so no duplicate nav testids). */}
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        data-testid="nav-drawer"
+        slotProps={{ paper: { sx: { width: 'min(80vw, 300px)' } } }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.5,
+          }}
+        >
+          <ConvexaMark size={18} fontSize="1.15rem" />
+          <IconButton
+            aria-label="Close navigation menu"
+            data-testid="nav-drawer-close"
+            onClick={() => setDrawerOpen(false)}
+            sx={{ color: 'text.primary' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <List component="nav" aria-label="primary-mobile" sx={{ py: 1 }}>
+          {NAV.map((e) => {
+            const isActive = e.active(path);
+            return (
+              <ListItemButton
+                key={e.to}
+                component={NavLink}
+                to={e.to}
+                data-testid={`nav-drawer-${e.label.toLowerCase()}`}
+                aria-current={isActive ? 'page' : undefined}
+                onClick={() => setDrawerOpen(false)}
+                selected={isActive}
+                sx={{
+                  minHeight: 48, // comfortable touch target
+                  '&.Mui-selected': { bgcolor: (t) => alpha(t.palette.primary.main, 0.12) },
+                }}
+              >
+                <ListItemText
+                  primary={e.label}
+                  slotProps={{
+                    primary: {
+                      sx: {
+                        fontWeight: 600,
+                        color: isActive ? 'primary.main' : 'text.primary',
+                      },
+                    },
+                  }}
+                />
+              </ListItemButton>
+            );
+          })}
+        </List>
+      </Drawer>
     </AppBar>
   );
 }

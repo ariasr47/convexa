@@ -11,7 +11,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { TickerBundle } from '@org/api';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -273,6 +273,23 @@ describe('nav', () => {
 
     await user.click(screen.getByTestId('nav-scanner'));
     expect(await screen.findByTestId('scanner-placeholder')).toBeInTheDocument();
+  });
+
+  it('mobile nav drawer: hamburger opens it, links navigate + close it', async () => {
+    const user = userEvent.setup();
+    renderAt('/scanner');
+    // Temporary drawer — its links are NOT mounted at rest (so they never duplicate the inline nav-*).
+    expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull();
+    // Hamburger opens the drawer (the control is display:none at md+ in the browser, but the stateful
+    // open/navigate behavior — the regression-prone part — is what we guard here).
+    await user.click(screen.getByTestId('nav-menu-button'));
+    expect(await screen.findByTestId('nav-drawer-ticker')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-drawer-positions')).toBeInTheDocument();
+    expect(screen.getByTestId('nav-drawer-scanner')).toBeInTheDocument();
+    // A drawer link navigates AND closes the drawer.
+    await user.click(screen.getByTestId('nav-drawer-positions'));
+    expect(await screen.findByTestId('portfolio-panel')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull());
   });
 
   it('active-route indicator on current entry', () => {
