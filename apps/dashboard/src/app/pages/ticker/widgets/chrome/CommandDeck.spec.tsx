@@ -23,7 +23,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePersona } from '@/features/personas/usePersona';
-import { __resetMemory } from '@/positions/store';
+import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { CommandDeck } from './CommandDeck';
 import { connectionChip } from './TickerHeader';

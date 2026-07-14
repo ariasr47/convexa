@@ -20,7 +20,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/app';
-import { clearTrade, getTrade } from '@/ghost-trade/store';
+import { clearTrade, getTrade } from '@/features/trading/model/store';
 import { PRESETS } from '@/features/personas/presets';
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------

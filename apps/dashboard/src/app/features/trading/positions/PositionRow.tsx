@@ -7,7 +7,7 @@
  */
 import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { MARK_BASIS_META } from '@/ghost-trade/mark';
+import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { DerivedRow } from './derive';
 import { strategyLabel } from './derive';

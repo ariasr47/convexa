@@ -45,7 +45,7 @@ import {
   SCENARIO_NONE,
   SCRIPTED_CHIP,
   scriptedStrip,
-} from '@/orders/copy';
+} from '@/features/trading/orders/copy';
 import { Widget } from '@/shared/ui/Widget';
 import { typographyTokens } from '@/shared/theme/tokens';
 import {

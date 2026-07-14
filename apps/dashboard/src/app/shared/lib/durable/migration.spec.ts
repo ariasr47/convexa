@@ -10,20 +10,20 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { defaultCustomization } from '@/positions/defaults';
-import * as positions from '@/positions/store';
+import { defaultCustomization } from '@/features/trading/positions/defaults';
+import * as positions from '@/features/trading/positions/store';
 import {
   PORTFOLIO_LEGACY_V1_KEY,
   PORTFOLIO_LEGACY_V2_KEY,
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V2_KEY,
-} from '@/positions/store';
-import type { CustomizationState, PersistShapeV2, Position } from '@/positions/types';
-import { PORTFOLIO_SCHEMA_VERSION } from '@/positions/types';
+} from '@/features/trading/positions/store';
+import type { CustomizationState, PersistShapeV2, Position } from '@/features/trading/positions/types';
+import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
 
-import * as ghost from '@/ghost-trade/store';
-import { GHOST_TRADE_KEY, GHOST_TRADE_LEGACY_KEY } from '@/ghost-trade/store';
-import type { GhostTrade } from '@/ghost-trade/types';
+import * as ghost from '@/features/trading/model/store';
+import { GHOST_TRADE_KEY, GHOST_TRADE_LEGACY_KEY } from '@/features/trading/model/store';
+import type { GhostTrade } from '@/features/trading/model/types';
 
 import * as personas from '@/features/personas/store';
 import { __resetPersonas, PERSONAS_KEY, PERSONAS_LEGACY_KEY } from '@/features/personas/store';

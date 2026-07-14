@@ -8,7 +8,7 @@ import { act, cleanup, render, renderHook, screen, within } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { exportLog } from '@/ghost-trade/store';
+import { exportLog } from '@/features/trading/model/store';
 import Landing from '@/pages/landing/Landing';
 import { useLatencyTrend } from '@/pages/operator-metrics/useLatencyTrend';
 import { AppShell } from '@/shell/AppShell';

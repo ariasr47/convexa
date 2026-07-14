@@ -18,7 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { SIMULATED_TIP } from '@/positions/labels';
+import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import {
   ACTION_VIEW_POSITION,

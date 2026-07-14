@@ -26,7 +26,7 @@ import {
 } from '@mui/material';
 import { AuthError } from '@org/api';
 import { useEffect, useState } from 'react';
-import { TEST_ACCOUNT_PASSWORD } from '@/positions/testSeed';
+import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
 import { extrasFor } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';

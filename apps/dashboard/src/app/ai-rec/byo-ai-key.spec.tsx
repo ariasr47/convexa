@@ -19,7 +19,7 @@ import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { AUTH_COPY, maskedKeyLabel } from '@/features/auth/copy';
-import { clearTrade } from '@/ghost-trade/store';
+import { clearTrade } from '@/features/trading/model/store';
 import { BYO_KEY, COPY, adminExhaustedTitle, freeUsesChip } from './copy';
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------

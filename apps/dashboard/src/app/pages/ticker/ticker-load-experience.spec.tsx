@@ -20,7 +20,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '@/app';
-import { __resetMemory } from '@/positions/store';
+import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 
 // ---- Mock-boundary fixtures ----------------------------------------------------------------

@@ -34,9 +34,9 @@ import {
   PORTFOLIO_V2_KEY,
   putCustomization,
   putPosition,
-} from './store';
-import type { Position } from './types';
-import { PORTFOLIO_SCHEMA_VERSION } from './types';
+} from '@/features/trading/positions/store';
+import type { Position } from '@/features/trading/positions/types';
+import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
 
 function strike(s: number): StrikeRow {
   return {

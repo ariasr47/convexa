@@ -36,7 +36,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/app';
 import { PRESETS } from '@/features/personas/presets';
 import { assembleHandoff } from '@/features/personas/template';
-import { __resetMemory } from '@/positions/store';
+import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { MC_ATR_EMPTY, MC_WHOLE_EMPTY } from './widgets/_kit';
 import { MarketContext } from './widgets';

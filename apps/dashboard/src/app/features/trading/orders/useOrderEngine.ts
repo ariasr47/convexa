@@ -16,7 +16,7 @@
  */
 import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { computeMark } from '@/ghost-trade/mark';
+import { computeMark } from '@/features/trading/model/mark';
 import { tickFromLive } from './engine';
 import { allOrders, getOrdersVersion, subscribeOrders } from './store';
 import type { SimOrder } from './types';

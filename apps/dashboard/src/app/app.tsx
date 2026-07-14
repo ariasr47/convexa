@@ -35,7 +35,7 @@ import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { Landing } from '@/pages/landing/Landing';
 import { OperatorMetrics } from '@/pages/operator-metrics/operator-metrics';
-import { PositionsPage } from '@/positions/PositionsPage';
+import { PositionsPage } from '@/pages/positions/PositionsPage';
 import { Scanner } from '@/pages/scanner/Scanner';
 import { AppShell } from '@/shell/AppShell';
 import { TickerDashboard } from '@/pages/ticker/TickerDashboard';

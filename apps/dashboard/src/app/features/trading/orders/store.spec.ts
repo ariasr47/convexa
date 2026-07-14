@@ -4,7 +4,7 @@
  * `convexa.orders.v1`, and the export shape (`{ orders, decisions }` joining the order chain).
  */
 import { beforeEach, describe, expect, it } from 'vitest';
-import { __resetMemory as __resetPositionsMemory, allDecisions } from '@/positions/store';
+import { __resetMemory as __resetPositionsMemory, allDecisions } from '@/features/trading/positions/store';
 import {
   ORDERS_KEY,
   __resetOrdersMemory,

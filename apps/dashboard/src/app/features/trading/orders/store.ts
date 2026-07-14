@@ -13,7 +13,7 @@
  * (Orders widget, Orders panel, the evaluation engine) consistent off ONE truth without prop
  * drilling — mutations bump the version and notify.
  */
-import type { DecisionRecord } from '@/ghost-trade/types';
+import type { DecisionRecord } from '@/features/trading/model/types';
 import { ORDERS_SCHEMA_VERSION, SimOrder } from './types';
 
 export const ORDERS_KEY = 'convexa.orders.v1';

@@ -17,10 +17,10 @@
  */
 import type { OptionRight } from '@org/api';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
-import type { DecisionEvent, DecisionRecord } from '@/ghost-trade/types';
-import { SCHEMA_VERSION as DECISION_SCHEMA } from '@/ghost-trade/types';
-import { allDecisions, appendDecision, newId, putPosition } from '@/positions/store';
-import { PORTFOLIO_SCHEMA_VERSION, Position } from '@/positions/types';
+import type { DecisionEvent, DecisionRecord } from '@/features/trading/model/types';
+import { SCHEMA_VERSION as DECISION_SCHEMA } from '@/features/trading/model/types';
+import { allDecisions, appendDecision, newId, putPosition } from '@/features/trading/positions/store';
+import { PORTFOLIO_SCHEMA_VERSION, Position } from '@/features/trading/positions/types';
 import { STORE_FAULT_TITLE } from './copy';
 import { EngineTick, evaluateOrder, isClockExpired, OrderTransition } from './engine';
 import {

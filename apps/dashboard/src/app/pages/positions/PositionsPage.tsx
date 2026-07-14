@@ -23,12 +23,12 @@
 import { Box, Typography } from '@mui/material';
 import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
 import { useEffect, useMemo, useState } from 'react';
-import { subscribeOrders } from '@/orders/store';
-import { useOrderEngine } from '@/orders/useOrderEngine';
+import { subscribeOrders } from '@/features/trading/orders/store';
+import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { PortfolioPanel } from './PortfolioPanel';
-import { allPositions } from './store';
-import { usePortfolio } from './usePortfolio';
+import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
+import { allPositions } from '@/features/trading/positions/store';
+import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
 const STREAM_OFFLINE_MS = 15_000; // payload-gap watchdog → live-mark degrade (mirrors the Ticker page)

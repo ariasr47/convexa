@@ -26,14 +26,14 @@ import { recToPrefill } from '@/ai-rec/prefill';
 import { useAiRecommendation } from '@/ai-rec/useAiRecommendation';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { useGate } from '@/features/auth/useGate';
-import { PrimeBanner, tierMeta } from '@/ghost-trade/OpportunityTier';
-import { NewTradeForm, useGhostTrade } from '@/ghost-trade/useGhostTrade';
-import { OrdersWidget } from '@/orders/OrdersWidget';
-import { GATE_SIGN_IN } from '@/orders/copy';
-import { parseTriggerSeed } from '@/orders/seed';
-import type { OrderProvenance } from '@/orders/types';
-import { useOrderEngine } from '@/orders/useOrderEngine';
-import { createOrder } from '@/orders/useOrders';
+import { PrimeBanner, tierMeta } from '@/features/trading/model/OpportunityTier';
+import { NewTradeForm, useGhostTrade } from '@/features/trading/model/useGhostTrade';
+import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
+import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
+import { parseTriggerSeed } from '@/features/trading/orders/seed';
+import type { OrderProvenance } from '@/features/trading/orders/types';
+import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
+import { createOrder } from '@/features/trading/orders/useOrders';
 import { PersonaCustomizeForm } from '@/features/personas/components';
 import { usePersona } from '@/features/personas/usePersona';
 import {
@@ -42,7 +42,7 @@ import {
   OrderPlan,
   TradeEntryDialog,
   TradeEntrySubmit,
-} from '@/trading/TradeEntryDialog';
+} from '@/features/trading/TradeEntryDialog';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import {
