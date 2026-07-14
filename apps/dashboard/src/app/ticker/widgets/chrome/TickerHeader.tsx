@@ -19,7 +19,7 @@ import type { LiveUpdate, MarketState, Signals } from '@org/api';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 import { flashColorSx, useFlashOnChange } from '../_kit/useFlashOnChange';
-import { useReducedMotion } from '../_kit/useReducedMotion';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 const REGIME_TIP =
   'Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers ' +

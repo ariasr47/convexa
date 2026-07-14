@@ -13,7 +13,7 @@
  */
 import type { Theme } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from './useReducedMotion';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 export type FlashTone = 'up' | 'down' | 'neutral';
 export interface FlashState {

@@ -11,7 +11,7 @@
  */
 import { Box, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { ComingSoonBox } from '../ui/ComingSoonBox';
+import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 
 export function Scanner() {
   return (

@@ -25,7 +25,7 @@ import {
   decisionsForPosition,
   putPosition,
 } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { defaultGoodTil } from '../trading/TradeEntryDialog';
 import { NOT_EVALUATED_TEXT } from './copy';
 import {

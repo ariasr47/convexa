@@ -6,9 +6,9 @@
  */
 import { Box, Stack, Typography } from '@mui/material';
 import type { StrikeRow } from '@org/api';
-import { typographyTokens } from '../../../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { fmtThresh, freshCaption, volOiTip } from '../_kit/copy';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

@@ -24,7 +24,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { lightTheme, theme } from '../../../theme';
+import { lightTheme, theme } from '@/shared/theme/theme';
 import { MarketContext } from './MarketContext';
 import mcSource from './MarketContext.tsx?raw';
 import {

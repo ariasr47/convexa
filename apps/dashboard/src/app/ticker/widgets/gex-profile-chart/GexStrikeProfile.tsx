@@ -11,7 +11,7 @@ import {
   GexProfileChart,
   windowedStrikes,
 } from './chart';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 interface Props {
   strikes: StrikeRow[];

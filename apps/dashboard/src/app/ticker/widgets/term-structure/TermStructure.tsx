@@ -8,9 +8,9 @@ import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import type { TermStructure } from '@org/api';
 import { Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
-import { typographyTokens } from '../../../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { sampleTermPoints, termTip } from '../_kit/copy';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 // Map an actual DTE to the nearest nominal tenor label (the Figma axis: 1w · 1m · 3m · 6m · 9m …).

@@ -16,7 +16,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { ComingSoonBox, ComingSoonCard, ConvexityMotif, Jargon, ValueCard } from './index';
 
 afterEach(() => cleanup());

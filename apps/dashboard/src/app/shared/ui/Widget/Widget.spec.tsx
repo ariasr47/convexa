@@ -15,9 +15,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '../../theme';
-import { Widget } from './Widget';
-import { WidgetSelectionProvider } from './_kit/WidgetSelectionContext';
+import { theme } from '@/shared/theme/theme';
+import { Widget } from '@/shared/ui/Widget';
+import { WidgetSelectionProvider } from '@/shared/ui/Widget/WidgetSelectionContext';
 
 function wrap(ui: React.ReactNode, withProvider = true) {
   const tree = withProvider ? <WidgetSelectionProvider>{ui}</WidgetSelectionProvider> : ui;

@@ -12,7 +12,7 @@
 import { Alert, Box, Button, Divider, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { AuthError, getAiKeyStatus, removeAiKey, setAiKey, type AiKeyStatus } from '@org/api';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { typographyTokens } from '../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';
 import { AUTH_COPY, maskedKeyLabel } from './copy';

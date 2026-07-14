@@ -12,3 +12,4 @@ export { ComingSoonBadge, ComingSoonCard, type ComingSoonCardProps } from './Com
 export { ConvexityMotif, type ConvexityMotifProps } from './ConvexityMotif';
 export { Jargon, type JargonProps } from './Jargon';
 export { ValueCard, type ValueCardProps } from './ValueCard';
+export * from './Widget';

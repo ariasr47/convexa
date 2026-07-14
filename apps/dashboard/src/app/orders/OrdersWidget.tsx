@@ -14,7 +14,7 @@ import type { LiveUpdate } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SIMULATED_TIP } from '../positions/labels';
-import { Widget } from '../ticker/widgets/Widget';
+import { Widget } from '@/shared/ui/Widget';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';
 import {

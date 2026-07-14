@@ -7,7 +7,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { LiveUpdate, MarketState } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '../../../theme';
+import { theme } from '@/shared/theme/theme';
 import { LiveTape } from './LiveTape';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({

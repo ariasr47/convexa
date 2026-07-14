@@ -7,7 +7,7 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { PositionCard } from './PositionCard';
 import type { RowContext } from './PositionRow';
 import type { DerivedRow, RowMetrics } from './derive';

@@ -4,7 +4,7 @@
  * All access is guarded so a storage failure (private mode, quota) degrades to in-memory only
  * and never throws into the UI.
  */
-import { resolveDurable } from '../durable/resolveDurable';
+import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
 import { DecisionRecord, GhostTrade, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';

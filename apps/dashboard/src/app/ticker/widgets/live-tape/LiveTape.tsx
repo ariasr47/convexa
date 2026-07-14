@@ -13,7 +13,7 @@ import { Box } from '@mui/material';
 import type { LiveUpdate, MarketState } from '@org/api';
 import { StatTile } from '../_kit/StatTile';
 import { useFlashOnChange } from '../_kit/useFlashOnChange';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const GRID = {
   display: 'grid',

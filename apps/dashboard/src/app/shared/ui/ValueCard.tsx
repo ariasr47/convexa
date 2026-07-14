@@ -10,7 +10,7 @@
 import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { elevationFor, extrasFor } from '../tokens';
+import { elevationFor, extrasFor } from '@/shared/theme/tokens';
 
 export interface ValueCardProps {
   /** A `@mui/icons-material` element (or any node) rendered in the tinted 40px square. */

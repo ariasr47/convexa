@@ -7,10 +7,10 @@
  */
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import type { OffExchange } from '@org/api';
-import { typographyTokens } from '../../../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { BLOCK_MIN_SHARES_DISPLAY, BLOCKS_TOOLTIP, humanAge, PROXIMITY_TOOLTIP } from '../_kit/copy';
 import { TintChip } from '../_kit/TintChip';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

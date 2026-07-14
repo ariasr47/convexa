@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../app';
 import { __resetMemory } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 
 function makeBundle(
   over: Partial<TickerBundle['market_state']> = {},

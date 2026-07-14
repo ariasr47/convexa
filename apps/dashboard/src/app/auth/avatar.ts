@@ -8,7 +8,7 @@
  */
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { AuthUser } from '@org/api';
-import { brandGradient } from '../tokens';
+import { brandGradient } from '@/shared/theme/tokens';
 
 /** The user's initial (display name first, else email), uppercased; a neutral dot when unknown. */
 export function avatarInitial(user: AuthUser | null | undefined): string {

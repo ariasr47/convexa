@@ -17,7 +17,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../auth/AuthContext';
 import { AuthDialogProvider } from '../auth/AuthDialogProvider';
 import { AUTH_COPY } from '../auth/copy';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { CustomizationToolbar } from './CustomizationToolbar';
 import { LIVE_BODY, LIVE_HEADING, LIVE_LOCK_CHIP } from './labels';
 import { LiveTabPanel } from './LiveTabPanel';

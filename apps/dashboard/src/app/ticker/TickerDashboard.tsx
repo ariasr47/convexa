@@ -44,7 +44,7 @@ import {
   TradeEntrySubmit,
 } from '../trading/TradeEntryDialog';
 
-import { ComingSoonBox } from '../ui/ComingSoonBox';
+import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import {
   DealerFlowProjection,
   DealerPositioning,
@@ -58,7 +58,8 @@ import {
   TermStructureCard,
 } from './widgets';
 import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
-import { humanAge, StatSkeleton, WidgetSelectionProvider } from './widgets/_kit';
+import { humanAge, StatSkeleton } from './widgets/_kit';
+import { WidgetSelectionProvider } from '@/shared/ui/Widget';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an

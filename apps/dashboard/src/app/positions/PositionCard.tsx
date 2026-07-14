@@ -12,7 +12,7 @@
  * (`[no-real-order-path]`). Token discipline: colors via palette tokens, figures via the mono family.
  */
 import { Box } from '@mui/material';
-import { typographyTokens } from '../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import type { DerivedRow } from './derive';
 import { money } from './labels';
 import {

@@ -12,7 +12,7 @@
  * Decisions carry over verbatim (same `trade_id` join). New optional fields are left absent ⇒ a v1
  * record reads as a `manual` open position. The v1 blob is left intact (read old-if-new-absent).
  */
-import { resolveDurable } from '../durable/resolveDurable';
+import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
 import type { GhostTrade } from '../ghost-trade/types';
 import { defaultCustomization } from './defaults';
 import {

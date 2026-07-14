@@ -46,8 +46,8 @@ import {
   SCRIPTED_CHIP,
   scriptedStrip,
 } from '../orders/copy';
-import { Widget } from '../ticker/widgets/Widget';
-import { typographyTokens } from '../tokens';
+import { Widget } from '@/shared/ui/Widget';
+import { typographyTokens } from '@/shared/theme/tokens';
 import {
   adminExhaustedTitle,
   asOfChip,

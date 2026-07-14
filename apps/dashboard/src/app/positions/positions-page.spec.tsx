@@ -25,7 +25,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../app';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import {
   __resetMemory,
   allPositions,

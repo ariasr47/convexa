@@ -37,7 +37,7 @@ import type {
   MarketContextPack,
   TrendMomentumRead,
 } from '@org/api';
-import { typographyTokens } from '../../../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
@@ -103,7 +103,7 @@ import {
   mcTiBasis,
   mcTrendLine,
 } from '../_kit/copy';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

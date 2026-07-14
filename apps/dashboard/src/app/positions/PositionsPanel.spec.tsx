@@ -13,7 +13,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUTH_COPY } from '../auth/copy';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { PositionsPanel } from './PositionsPanel';
 import { __resetMemory } from './store';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';

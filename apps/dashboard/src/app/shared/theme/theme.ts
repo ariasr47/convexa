@@ -1,6 +1,6 @@
 import { createTheme, darken, type Theme } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
-import { elevationFor, extras, extrasFor, palette, shape, typographyTokens } from './tokens';
+import { elevationFor, extras, extrasFor, palette, shape, typographyTokens } from '@/shared/theme/tokens';
 
 const COMMON = {
   // Emit MUI CSS theme variables (`--mui-palette-*`, …) so the Figma design system's variable

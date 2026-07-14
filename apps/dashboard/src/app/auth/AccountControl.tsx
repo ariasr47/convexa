@@ -13,7 +13,7 @@
 import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { brandGradient } from '../tokens';
+import { brandGradient } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';

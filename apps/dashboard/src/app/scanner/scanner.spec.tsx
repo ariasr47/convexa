@@ -12,7 +12,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { Scanner } from './Scanner';
 
 let fetchMock: ReturnType<typeof vi.fn>;

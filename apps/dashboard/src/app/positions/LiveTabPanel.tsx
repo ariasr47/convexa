@@ -12,7 +12,7 @@
  * is reproduced per this frame, single-sourcing its colors off the tokens.)
  */
 import { Box, Typography } from '@mui/material';
-import { hatchBackgroundImage } from '../ui/ComingSoonBox';
+import { hatchBackgroundImage } from '@/shared/ui/ComingSoonBox';
 import { LIVE_BODY, LIVE_HEADING, LIVE_LOCK_CHIP } from './labels';
 
 export function LiveTabPanel() {

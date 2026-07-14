@@ -24,7 +24,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePersona } from '../../../personas/usePersona';
 import { __resetMemory } from '../../../positions/store';
-import { theme } from '../../../theme';
+import { theme } from '@/shared/theme/theme';
 import { CommandDeck } from './CommandDeck';
 import { connectionChip } from './TickerHeader';
 

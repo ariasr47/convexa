@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../app';
 import { makeBundle } from '../auth/testBackend';
 import { __resetMemory } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { Landing } from './Landing';
 
 let fetchMock: ReturnType<typeof vi.fn>;

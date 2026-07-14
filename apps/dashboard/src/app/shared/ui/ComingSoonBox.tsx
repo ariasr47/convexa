@@ -9,7 +9,7 @@
  */
 import { Box, type BoxProps } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
-import { extrasFor } from '../tokens';
+import { extrasFor } from '@/shared/theme/tokens';
 
 /**
  * The SINGLE hatch background (mode-aware). Shared by every "coming soon" surface — ComingSoonBox,

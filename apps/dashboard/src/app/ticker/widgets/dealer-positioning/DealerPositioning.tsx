@@ -9,7 +9,7 @@ import { Box } from '@mui/material';
 import type { MarketState, OffExchange, Signals } from '@org/api';
 import { OPPORTUNITY_TIER_INFO } from '../../../ghost-trade/OpportunityTier';
 import { StatTile } from '../_kit/StatTile';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 import { fmtUsdCompact, netDexTip, skewState, skewTip, termTip, volOiTip } from '../_kit/copy';
 
 const GRID = {

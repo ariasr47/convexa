@@ -8,7 +8,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { ReactNode } from 'react';
-import { themeForPref } from '../theme';
+import { themeForPref } from '@/shared/theme/theme';
 import { useSettings } from './useSettings';
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {

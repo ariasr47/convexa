@@ -25,7 +25,7 @@ import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
 import { useEffect, useMemo, useState } from 'react';
 import { subscribeOrders } from '../orders/store';
 import { useOrderEngine } from '../orders/useOrderEngine';
-import { typographyTokens } from '../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { PortfolioPanel } from './PortfolioPanel';
 import { allPositions } from './store';
 import { usePortfolio } from './usePortfolio';

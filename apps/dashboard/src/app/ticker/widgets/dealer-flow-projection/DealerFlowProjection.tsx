@@ -21,7 +21,7 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type { DealerFlowProjection as Dfp } from '@org/api';
-import { typographyTokens } from '../../../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,
@@ -40,7 +40,7 @@ import {
   VANNA_LABEL,
   VANNA_NEGATION,
 } from '../_kit/copy';
-import { Widget } from '../Widget';
+import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

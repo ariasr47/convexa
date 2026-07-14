@@ -45,8 +45,8 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
-import { useReducedMotion } from './_kit/useReducedMotion';
-import { useWidgetSelection } from './_kit/WidgetSelectionContext';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 
 // A tactile spring-ish easing for the lift + toolbar (GPU-cheap; transform/opacity only).
 const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';

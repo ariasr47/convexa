@@ -30,7 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { extrasFor } from '../tokens';
+import { extrasFor } from '@/shared/theme/tokens';
 import { SAVED_VIEW_TIP } from './labels';
 import type { GroupAxis, Position, PositionStatus } from './types';
 import type { usePortfolio } from './usePortfolio';

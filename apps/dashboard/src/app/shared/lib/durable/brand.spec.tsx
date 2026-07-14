@@ -8,10 +8,10 @@ import { act, cleanup, render, renderHook, screen, within } from '@testing-libra
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { exportLog } from '../ghost-trade/store';
-import Landing from '../landing/Landing';
-import { useLatencyTrend } from '../operator-metrics/useLatencyTrend';
-import { AppShell } from '../shell/AppShell';
+import { exportLog } from '@/ghost-trade/store';
+import Landing from '@/landing/Landing';
+import { useLatencyTrend } from '@/operator-metrics/useLatencyTrend';
+import { AppShell } from '@/shell/AppShell';
 
 const theme = createTheme();
 

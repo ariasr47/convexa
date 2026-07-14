@@ -11,7 +11,7 @@
 import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
-import { typographyTokens } from '../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import {
   ACTION_CANCEL,
   ACTION_CONFIRM_CANCEL,

@@ -22,7 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../app';
 import { __resetMemory } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { IVR_WHOLE_EMPTY } from './widgets/_kit';
 
 const IVR_DEFAULT: IvRankRead = {

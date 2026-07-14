@@ -22,7 +22,7 @@ import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { Footer } from '../shell/Footer';
-import { ComingSoonCard, ConvexityMotif, Jargon, ValueCard } from '../ui';
+import { ComingSoonCard, ConvexityMotif, Jargon, ValueCard } from '@/shared/ui';
 
 // Jargon tooltip copy — verbatim, plain-language (README §2 / UX_BLUEPRINT honesty floor).
 const DEALER_GAMMA_GLOSS =

@@ -1,10 +1,14 @@
 /// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../node_modules/.vite/apps/dashboard',
+  // `@/*` → the app-code root (src/app). Keeps cross-folder imports depth-independent
+  // so folder moves during the restructure don't churn import paths.
+  resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src/app') } },
   server: {
     port: 4200,
     host: 'localhost',

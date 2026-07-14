@@ -21,7 +21,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import { fetchRecExport, RecExport } from '@org/api';
 import { useEffect, useState } from 'react';
-import { typographyTokens } from '../tokens';
+import { typographyTokens } from '@/shared/theme/tokens';
 import { COPY, EXPORT_HEADER } from './copy';
 
 function sectionText(value: unknown): string {

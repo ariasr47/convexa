@@ -14,7 +14,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { DealerFlowProjection as Dfp } from '@org/api';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '../../../theme';
+import { theme } from '@/shared/theme/theme';
 import { DealerFlowProjection } from './DealerFlowProjection';
 
 const charm = (over: Partial<NonNullable<Dfp['charm']>> = {}): NonNullable<Dfp['charm']> => ({

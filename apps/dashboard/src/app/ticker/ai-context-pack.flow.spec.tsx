@@ -37,7 +37,7 @@ import App from '../app';
 import { PRESETS } from '../personas/presets';
 import { assembleHandoff } from '../personas/template';
 import { __resetMemory } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 import { MC_ATR_EMPTY, MC_WHOLE_EMPTY } from './widgets/_kit';
 import { MarketContext } from './widgets';
 

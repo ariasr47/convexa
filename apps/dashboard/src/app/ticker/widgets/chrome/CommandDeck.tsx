@@ -28,7 +28,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { usePersona } from '../../../personas/usePersona';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
-import { useReducedMotion } from '../_kit/useReducedMotion';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 interface CommandDeckProps {
   // Hero (TickerHeader) inputs.

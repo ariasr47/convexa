@@ -8,7 +8,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState, OffExchange, Signals } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '../../../theme';
+import { theme } from '@/shared/theme/theme';
 import { DealerPositioning } from './DealerPositioning';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({

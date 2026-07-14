@@ -15,7 +15,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { IvRankRead } from '@org/api';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { lightTheme, theme } from '../../../theme';
+import { lightTheme, theme } from '@/shared/theme/theme';
 import { IvRank } from './IvRank';
 import ivrSource from './IvRank.tsx?raw';
 import { IVR_ADVISORY, IVR_FLAT_NOTE, IVR_WHOLE_EMPTY, ivrBuildingMessage } from '../_kit/copy';

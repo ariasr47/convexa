@@ -24,7 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../app';
 import { __resetMemory } from '../positions/store';
-import { theme } from '../theme';
+import { theme } from '@/shared/theme/theme';
 
 const DFP_DEFAULT: DealerFlowProjection = {
   spot_basis: 178.4,
