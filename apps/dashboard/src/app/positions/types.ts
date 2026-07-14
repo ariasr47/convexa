@@ -9,9 +9,9 @@
  * Schema is versioned; v1 (single trade per ticker) migrates loss-free into v2 (flat positions map).
  */
 import type { OptionRight } from '@org/api';
-import type { DecisionRecord, GhostTrade, MarkBasis } from '../ghost-trade/types';
+import type { DecisionRecord, GhostTrade, MarkBasis } from '@/ghost-trade/types';
 
-export type { DecisionRecord, MarkBasis } from '../ghost-trade/types';
+export type { DecisionRecord, MarkBasis } from '@/ghost-trade/types';
 
 export const PORTFOLIO_SCHEMA_VERSION = 2;
 

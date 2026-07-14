@@ -18,8 +18,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '../app';
-import { __resetMemory, allPositions } from '../positions/store';
+import App from '@/app';
+import { __resetMemory, allPositions } from '@/positions/store';
 import { theme } from '@/shared/theme/theme';
 
 // ---- INTERFACE-shaped factories (mirrors positions-portfolio.flow.spec) ------------------------

@@ -69,11 +69,11 @@ import {
   TRIGGER_LABEL,
   TRIGGER_NO_SEED_HELPER,
   TRIGGER_SEED_CHIP,
-} from '../orders/copy';
-import { triggerMet } from '../orders/engine';
-import type { Trigger } from '../orders/types';
-import { resolveMarketFill, type ResolvedFill } from '../positions/entry';
-import { DISCLAIMER, SIMULATED_TIP } from '../positions/labels';
+} from '@/orders/copy';
+import { triggerMet } from '@/orders/engine';
+import type { Trigger } from '@/orders/types';
+import { resolveMarketFill, type ResolvedFill } from '@/positions/entry';
+import { DISCLAIMER, SIMULATED_TIP } from '@/positions/labels';
 import { extrasFor } from '@/shared/theme/tokens';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */

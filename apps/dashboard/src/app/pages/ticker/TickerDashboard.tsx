@@ -19,30 +19,30 @@ import { useTheme } from '@mui/material/styles';
 import { getTicker, LiveUpdate, RecResponse, streamTicker, TickerBundle } from '@org/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AiRecPanel, useReadPersonas } from '../ai-rec/AiRecPanel';
-import { StateExportDrawer } from '../ai-rec/StateExportDrawer';
-import { COPY } from '../ai-rec/copy';
-import { recToPrefill } from '../ai-rec/prefill';
-import { useAiRecommendation } from '../ai-rec/useAiRecommendation';
-import { SignInPrompt } from '../auth/SignInPrompt';
-import { useGate } from '../auth/useGate';
-import { PrimeBanner, tierMeta } from '../ghost-trade/OpportunityTier';
-import { NewTradeForm, useGhostTrade } from '../ghost-trade/useGhostTrade';
-import { OrdersWidget } from '../orders/OrdersWidget';
-import { GATE_SIGN_IN } from '../orders/copy';
-import { parseTriggerSeed } from '../orders/seed';
-import type { OrderProvenance } from '../orders/types';
-import { useOrderEngine } from '../orders/useOrderEngine';
-import { createOrder } from '../orders/useOrders';
-import { PersonaCustomizeForm } from '../personas/components';
-import { usePersona } from '../personas/usePersona';
+import { AiRecPanel, useReadPersonas } from '@/ai-rec/AiRecPanel';
+import { StateExportDrawer } from '@/ai-rec/StateExportDrawer';
+import { COPY } from '@/ai-rec/copy';
+import { recToPrefill } from '@/ai-rec/prefill';
+import { useAiRecommendation } from '@/ai-rec/useAiRecommendation';
+import { SignInPrompt } from '@/auth/SignInPrompt';
+import { useGate } from '@/auth/useGate';
+import { PrimeBanner, tierMeta } from '@/ghost-trade/OpportunityTier';
+import { NewTradeForm, useGhostTrade } from '@/ghost-trade/useGhostTrade';
+import { OrdersWidget } from '@/orders/OrdersWidget';
+import { GATE_SIGN_IN } from '@/orders/copy';
+import { parseTriggerSeed } from '@/orders/seed';
+import type { OrderProvenance } from '@/orders/types';
+import { useOrderEngine } from '@/orders/useOrderEngine';
+import { createOrder } from '@/orders/useOrders';
+import { PersonaCustomizeForm } from '@/personas/components';
+import { usePersona } from '@/personas/usePersona';
 import {
   EntryPrefill,
   OrderEntrySubmit,
   OrderPlan,
   TradeEntryDialog,
   TradeEntrySubmit,
-} from '../trading/TradeEntryDialog';
+} from '@/trading/TradeEntryDialog';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import {

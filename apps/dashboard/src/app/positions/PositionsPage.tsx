@@ -23,8 +23,8 @@
 import { Box, Typography } from '@mui/material';
 import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
 import { useEffect, useMemo, useState } from 'react';
-import { subscribeOrders } from '../orders/store';
-import { useOrderEngine } from '../orders/useOrderEngine';
+import { subscribeOrders } from '@/orders/store';
+import { useOrderEngine } from '@/orders/useOrderEngine';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { PortfolioPanel } from './PortfolioPanel';
 import { allPositions } from './store';

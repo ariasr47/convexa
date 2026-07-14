@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { SIMULATED_TIP } from '../positions/labels';
+import { SIMULATED_TIP } from '@/positions/labels';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';
 import { StoreFaultBlock, useStatusAnnouncement } from './OrdersWidget';

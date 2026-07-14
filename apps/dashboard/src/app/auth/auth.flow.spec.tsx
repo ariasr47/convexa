@@ -17,8 +17,8 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import App from '../app';
-import { __resetMemory } from '../positions/store';
+import App from '@/app';
+import { __resetMemory } from '@/positions/store';
 import { AUTH_COPY } from './copy';
 import { __resetLocalPrefs } from './localPrefs';
 import {

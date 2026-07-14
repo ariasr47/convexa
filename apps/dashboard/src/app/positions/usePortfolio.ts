@@ -17,8 +17,8 @@ import {
   TrackedContract,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { computeMark, MarkResult, pl } from '../ghost-trade/mark';
-import { SCHEMA_VERSION as GT_SCHEMA } from '../ghost-trade/types';
+import { computeMark, MarkResult, pl } from '@/ghost-trade/mark';
+import { SCHEMA_VERSION as GT_SCHEMA } from '@/ghost-trade/types';
 import { cloneConfig, configEqual } from './defaults';
 import { DerivedRow, RowMetrics } from './derive';
 import { LIMIT_FILL_BASIS, limitWouldFill, resolveManualFill } from './entry';

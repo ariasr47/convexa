@@ -37,7 +37,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { seedTestPositionsIfNeeded } from '../positions/testSeed';
+import { seedTestPositionsIfNeeded } from '@/positions/testSeed';
 
 export interface AuthState {
   /** false until the first who-am-I resolves (drives the account-control loading placeholder ONLY). */

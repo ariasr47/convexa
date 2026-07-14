@@ -16,7 +16,7 @@ vi.mock('./useOrders', async (importOriginal) => {
   return { ...mod, evaluateAndApply: vi.fn(mod.evaluateAndApply) };
 });
 
-import { __resetMemory as __resetPositionsMemory, allPositions } from '../positions/store';
+import { __resetMemory as __resetPositionsMemory, allPositions } from '@/positions/store';
 import { __notifyOrdersChanged, __resetOrdersMemory, getOrder, putOrder } from './store';
 import type { SimOrder } from './types';
 import { useOrderEngine } from './useOrderEngine';

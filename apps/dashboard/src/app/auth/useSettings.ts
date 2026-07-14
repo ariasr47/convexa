@@ -16,7 +16,7 @@
  */
 import type { ThemePref, UserSettings } from '@org/api';
 import { useCallback, useMemo, useState } from 'react';
-import { loadActiveId, saveActiveId } from '../personas/store';
+import { loadActiveId, saveActiveId } from '@/personas/store';
 import { useAuth } from './AuthContext';
 import { SETTINGS_DEFAULTS } from './copy';
 import {

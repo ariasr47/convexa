@@ -13,13 +13,13 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '../app';
-import { AuthProvider } from '../auth/AuthContext';
-import { AuthDialogProvider } from '../auth/AuthDialogProvider';
-import { SettingsPage } from '../auth/SettingsPage';
-import { AppThemeProvider } from '../auth/ThemeProvider';
-import { AUTH_COPY, maskedKeyLabel } from '../auth/copy';
-import { clearTrade } from '../ghost-trade/store';
+import App from '@/app';
+import { AuthProvider } from '@/auth/AuthContext';
+import { AuthDialogProvider } from '@/auth/AuthDialogProvider';
+import { SettingsPage } from '@/auth/SettingsPage';
+import { AppThemeProvider } from '@/auth/ThemeProvider';
+import { AUTH_COPY, maskedKeyLabel } from '@/auth/copy';
+import { clearTrade } from '@/ghost-trade/store';
 import { BYO_KEY, COPY, adminExhaustedTitle, freeUsesChip } from './copy';
 
 // ---- INTERFACE-shaped factories --------------------------------------------------------------

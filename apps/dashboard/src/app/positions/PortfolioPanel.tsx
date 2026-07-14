@@ -15,9 +15,9 @@
 import { Alert, Box, Snackbar } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useState } from 'react';
-import { AUTH_COPY } from '../auth/copy';
-import { useGate } from '../auth/useGate';
-import { EntryPrefill } from '../trading/TradeEntryDialog';
+import { AUTH_COPY } from '@/auth/copy';
+import { useGate } from '@/auth/useGate';
+import { EntryPrefill } from '@/trading/TradeEntryDialog';
 import { LiveTabPanel } from './LiveTabPanel';
 import { PositionsPanel } from './PositionsPanel';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';

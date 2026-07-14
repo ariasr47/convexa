@@ -21,9 +21,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '../app';
-import { makeBundle } from '../auth/testBackend';
-import { __resetMemory } from '../positions/store';
+import App from '@/app';
+import { makeBundle } from '@/auth/testBackend';
+import { __resetMemory } from '@/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { Landing } from './Landing';
 

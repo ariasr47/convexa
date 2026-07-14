@@ -16,17 +16,17 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from '../app';
-import { getTrade } from '../ghost-trade/store';
+import App from '@/app';
+import { getTrade } from '@/ghost-trade/store';
 import {
   __resetMemory as __resetPositionsMemory,
   allDecisions,
   allPositions,
   decisionsForPosition,
   putPosition,
-} from '../positions/store';
+} from '@/positions/store';
 import { theme } from '@/shared/theme/theme';
-import { defaultGoodTil } from '../trading/TradeEntryDialog';
+import { defaultGoodTil } from '@/trading/TradeEntryDialog';
 import { NOT_EVALUATED_TEXT } from './copy';
 import {
   ORDERS_KEY,

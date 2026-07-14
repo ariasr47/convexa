@@ -29,16 +29,16 @@
  * making the Ticker page a child route is what gives mount-on-enter / teardown-on-leave for free.
  */
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from './auth/AuthContext';
-import { AuthDialogProvider } from './auth/AuthDialogProvider';
-import { SettingsPage } from './auth/SettingsPage';
-import { AppThemeProvider } from './auth/ThemeProvider';
-import { Landing } from './landing/Landing';
-import { OperatorMetrics } from './operator-metrics/operator-metrics';
-import { PositionsPage } from './positions/PositionsPage';
-import { Scanner } from './scanner/Scanner';
-import { AppShell } from './shell/AppShell';
-import { TickerDashboard } from './ticker/TickerDashboard';
+import { AuthProvider } from '@/auth/AuthContext';
+import { AuthDialogProvider } from '@/auth/AuthDialogProvider';
+import { SettingsPage } from '@/auth/SettingsPage';
+import { AppThemeProvider } from '@/auth/ThemeProvider';
+import { Landing } from '@/pages/landing/Landing';
+import { OperatorMetrics } from '@/pages/operator-metrics/operator-metrics';
+import { PositionsPage } from '@/positions/PositionsPage';
+import { Scanner } from '@/pages/scanner/Scanner';
+import { AppShell } from '@/shell/AppShell';
+import { TickerDashboard } from '@/pages/ticker/TickerDashboard';
 
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
