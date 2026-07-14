@@ -12,7 +12,8 @@
  * sees the same columns until column-customization returns. Header copy uses the terse table-header
  * map. `cellContent` (incl. the offline-dim live cells) is reused as-is.
  */
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { extrasFor } from '@/shared/theme/tokens';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
 import type { DerivedGroup, DerivedRow } from './derive';
@@ -89,6 +90,11 @@ const clearLinkSx = {
 export function PositionsView(props: ViewProps) {
   const { groups, totalCount, isHistory } = props;
   const visibleRowCount = groups.reduce((n, g) => n + g.rows.length, 0);
+  // The multi-column table overflows a phone; below md we always render cards regardless of the
+  // saved layout preference (which stays honored at md+). MUI's useMediaQuery is SSR/test-safe
+  // (no matchMedia ⇒ false ⇒ desktop table), so existing table specs are unaffected.
+  const isNarrow = useMediaQuery(useTheme().breakpoints.down('md'));
+  const effectiveLayout: LayoutMode = isNarrow ? 'card' : props.layout;
 
   if (visibleRowCount === 0) {
     if (isHistory) {
@@ -137,7 +143,7 @@ export function PositionsView(props: ViewProps) {
           {HISTORY_CAPTION}
         </Typography>
       )}
-      {props.layout === 'table' ? <TableLayout {...props} /> : <CardLayout {...props} />}
+      {effectiveLayout === 'table' ? <TableLayout {...props} /> : <CardLayout {...props} />}
     </Box>
   );
 }
