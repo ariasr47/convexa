@@ -79,7 +79,6 @@ afterEach(() => {
 describe('Ask AI — gated logged out (AC-E4, D6f)', () => {
   it('T-E4: the LLM is NOT invoked and NO cooldown/cap/no_key is shown — only the sign-in prompt', async () => {
     backend = installAuthBackend(); // anonymous
-    const user = userEvent.setup();
     render(<Mount bundle={makeBundle()} />);
 
     // The auth-outermost gate region is shown with the sign-in prompt copy.
