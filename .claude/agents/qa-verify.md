@@ -41,14 +41,28 @@ Method:
    → bounce to Backend. Also check the binding invariants from the BRIEF "Invariant watch" + the
    promoted canon (the context file's key-decision section). A green AC list over a broken invariant is
    still a FAIL.
-4. **Frontend test suite + AC↔test traceability (standing rule):** tests are part of the FE deliverable.
-   Run the project's configured frontend test command (`project.json` → `frontend.test_cmd`, plus any
-   shared-lib test command if the feature touched a shared client lib); a failing suite is a GATE Q FAIL
-   → bounce to Frontend. Then check **traceability, not a spot-check**: every PRODUCT_CONTRACT AC (and
-   every required case in the FRONTEND_EXECUTION_CONTRACT's "Tests to write" matrix) must map to **≥1
-   named, passing test**. An AC with no corresponding test is a GATE Q FAIL **even if the green suite
-   passes** — note which AC is uncovered in the bounce. A suite that passes by asserting nothing doesn't
-   count.
+4. **Frontend test suite + AC verification (standing rule — RISK-BASED, amended 2026-07-13):** tests are
+   part of the FE deliverable. Run the project's configured frontend test command (`project.json` →
+   `frontend.test_cmd`, plus any shared-lib test command if the feature touched a shared client lib); a
+   failing suite is a GATE Q FAIL → bounce to Frontend. Then confirm **every PRODUCT_CONTRACT AC (and
+   every required case in the FRONTEND_EXECUTION_CONTRACT "Tests to write" matrix) is VERIFIED, and record
+   HOW** — the *method* is chosen per AC by regression risk, **not** a uniform "one named test per AC"
+   (that rule inflated suites with brittle verbatim-copy / single-CSS-prop assertions and anchored testing
+   to the spec's phrasing instead of the system's fragility):
+   - **Automated test REQUIRED** when a silent regression is **plausible AND invisible to human review** —
+     invariants + negative-space guarantees (`no-real-order-path` inertness, "zero trader network",
+     score/`state_fingerprint` byte-identity), structural/architectural rules, and **motion / visual /
+     stateful behaviors that regress as a side-effect of an unrelated refactor** (the stagger-reveal
+     lesson: exactly where a green suite hides a break). A required-but-missing test here is a GATE Q FAIL
+     even if the suite is green — note the uncovered AC in the bounce.
+   - **Review / manual QA is sufficient** when the AC is **visible and its change would be intentional** —
+     copy wording, static element presence, cosmetic layout. Record these as "verified by review/QA," do
+     **not** force a brittle automated assertion.
+   - **Choose the layer by the risk too:** prefer ONE high-level integration / e2e / a11y / visual-
+     regression check over many literal component pokes; never split one behavior into an
+     assertion-per-AC.
+   A suite (or a "named test") that asserts nothing still doesn't count. Record the verification method per
+   AC in `QA_REPORT.md` (test name · or "review/QA") so "done" stays auditable **without** the brittleness.
 
 Output — write ONLY:
 - `.claude/contracts/{FEATURE}/QA_REPORT.md` — a table (AC verbatim · verdict · evidence), a summary

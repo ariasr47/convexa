@@ -425,6 +425,10 @@ NEXT      : <role(s) to launch> — launch prompt below
   session (GATE Q, `ROLE_LAUNCH_PROMPTS.md` §6) — never the builder's self-verification. QA confirms
   every AC point-by-point and **repairs nothing**; a failing AC bounces via GATE Z and GATE Q re-runs
   on the fix. (Run QA on a different model where possible — de-correlates blind spots, system-6.)
+  **Verification is mandatory for every AC; an automated *test* is required only per the RISK-BASED rule
+  in `agents/qa-verify.md` §4 (amended 2026-07-13)** — test the invariants/negative-space + silently-
+  regressing behaviors; verify visible/intentional things (copy, presence) by review/QA, recorded as such.
+  Not "one named test per AC."
 - **Session continuity (the resume loop):** the conductor reads `.claude/RESUME.md` at boot if present (an
   overlay on the reconstructed canon — reconcile + flag divergence, never a replacement). On an EXPLICIT
   signal that context is running high (a harness notice, a tool result, or what the user reports their own
