@@ -38,8 +38,8 @@ import { PRESETS } from '../personas/presets';
 import { assembleHandoff } from '../personas/template';
 import { __resetMemory } from '../positions/store';
 import { theme } from '../theme';
-import { MC_ATR_EMPTY, MC_WHOLE_EMPTY } from './widgets/copy';
-import { MarketContext } from './widgets/MarketContext';
+import { MC_ATR_EMPTY, MC_WHOLE_EMPTY } from './widgets/_kit';
+import { MarketContext } from './widgets';
 
 const PACK_DEFAULT: MarketContextPack = {
   trend_momentum: {

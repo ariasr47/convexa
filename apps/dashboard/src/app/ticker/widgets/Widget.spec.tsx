@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '../../theme';
 import { Widget } from './Widget';
-import { WidgetSelectionProvider } from './WidgetSelectionContext';
+import { WidgetSelectionProvider } from './_kit/WidgetSelectionContext';
 
 function wrap(ui: React.ReactNode, withProvider = true) {
   const tree = withProvider ? <WidgetSelectionProvider>{ui}</WidgetSelectionProvider> : ui;

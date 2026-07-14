@@ -45,22 +45,20 @@ import {
 } from '../trading/TradeEntryDialog';
 
 import { ComingSoonBox } from '../ui/ComingSoonBox';
-import { CommandDeck } from './widgets/CommandDeck';
-import { DealerFlowProjection } from './widgets/DealerFlowProjection';
-import { DealerPositioning } from './widgets/DealerPositioning';
-import { FreshPositioning } from './widgets/FreshPositioning';
-import { GexStrikeProfile } from './widgets/GexStrikeProfile';
-import { IvRank } from './widgets/IvRank';
-import { LiveTape } from './widgets/LiveTape';
-import { MarketContext } from './widgets/MarketContext';
-import { OffExchangeBlocks } from './widgets/OffExchangeBlocks';
-import { Setups } from './widgets/Setups';
-import { StatSkeleton } from './widgets/StatTile';
-import { TermStructureCard } from './widgets/TermStructure';
-import { LastTradeReadout } from './widgets/TickerHeader';
-import { TickerToolbar } from './widgets/TickerToolbar';
-import { WidgetSelectionProvider } from './widgets/WidgetSelectionContext';
-import { humanAge } from './widgets/copy';
+import {
+  DealerFlowProjection,
+  DealerPositioning,
+  FreshPositioning,
+  GexStrikeProfile,
+  IvRank,
+  LiveTape,
+  MarketContext,
+  OffExchangeBlocks,
+  Setups,
+  TermStructureCard,
+} from './widgets';
+import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
+import { humanAge, StatSkeleton, WidgetSelectionProvider } from './widgets/_kit';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
