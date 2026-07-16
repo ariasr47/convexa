@@ -1,7 +1,7 @@
 # outcome-ledger — pipeline manifest
 Entry:        architect-first
-Stage:        GATE Z RESOLVED — both amendments ACCEPTED + amended into the ARCHITECTURE_CONTRACT (fresh
-              architect, 2026-07-16). Contract re-LOCKED; **UX is UNBLOCKED**. Next: GATE U·X (the fan-out).
+Stage:        GATE U·X — UX locked + compressor #3 split emitted. **FAN-OUT IS FRONTEND-ONLY**
+              (`NO_BACKEND_CHANGE` ⇒ no backend lane spawns). Next: `delivery-frontend` (ROLE_LAUNCH §5).
 Repos:        **frontend ONLY** (architect resolved crux 1: `NO_BACKEND_CHANGE`, empty `apps/api` diff —
               client-local derived read, ZERO new durable keys, no server store. The empty backend diff is
               itself the structural no-auto-tuning guarantee: a statistic that never leaves the browser
@@ -12,7 +12,17 @@ Contracts:
                                ACCEPTED; verdicts + reasoning in the new §11; §11.4 addresses UX directly
   - PRODUCT_CONTRACT.md        locked (450 lines; compressor #2 applied — it IS the UX-targeted handoff).
                                All 13 architect open questions resolved; all 3 bounceable pins ACCEPTED.
-  - UX_BLUEPRINT.md            n/a (next artifact — GATE U·X, **blocked on the A1/A2 resolution**)
+  - UX_BLUEPRINT.md            locked (815 lines)
+  - INTERFACE_CONTRACT.md      locked (132) — **NO_BACKEND_CHANGE, and uniquely: NO FE↔BE SURFACE AT ALL.**
+                               This feature consumes **no endpoint** — it derives from localStorage. The
+                               interface binds the **durable store shapes + the digest** (ARCH §3.4), not
+                               endpoints. **No `## Conformance spec` required** (system-1 checks a live
+                               backend against an interface; there is no backend surface) ⇒ **system-12 does
+                               NOT bite this feature.** It still lands on `scanner`.
+  - BACKEND_EXECUTION_CONTRACT.md   **NO_BACKEND_CHANGE** (76-line stub; no backend lane spawns)
+  - FRONTEND_EXECUTION_CONTRACT.md  locked (346) — carries the real work; **63 enumerated cases, each
+                               marked `test:` (risk-based) or `review:` (visible/intentional)** per the
+                               2026-07-13 amendment. NOT one-named-test-per-AC.
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a
   - BACKEND_EXECUTION_CONTRACT.md   n/a
@@ -85,6 +95,49 @@ Open amendments: **ARCHITECTURE_CONTRACT.md CONTESTED (owner: architect)** — 2
                 the **partial** state (`sources_complete: false`) is the data behind AC-E5's "(or partial)" —
                 UX owns the copy, with one binding rule: **a partial roll-up must never present its smaller M
                 as if it were the whole population.**
+UX resolutions (GATE U·X, 2026-07-16 — the 2 items §11.4 left it, both closed):
+  1. **`malformed` vs `unreadable_records` → ONE user-facing concept ("unreadable record"), TWO rows, NEVER
+     summed.** Summing across the balance boundary would break the visible `M == counted + Σ excluded`
+     identity — the only thing the roll-up exists to guarantee. The **group heading** does the
+     differentiating work ("Not counted (out of the M…)" vs "Counted beside these, not inside"), with a
+     placement-reason parenthetical on the adjacent row. **No third label** — FE told explicitly not to
+     invent one.
+  2. **`sources_complete: false` → M is WITHHELD, not caveated.** A caveated wrong denominator is still a
+     wrong denominator. Copy states we cannot say how many recorded closed positions exist. Cells still
+     render (AC-E5's "or partial"), but each counted cell's basis slot appends `· partial read` — riding
+     the **already-mandatory basis sibling**, so partiality is inseparable from the number **for free**,
+     exactly like the range and the N. (Honors the architect's binding rule: a partial roll-up must never
+     present its smaller M as the whole population.)
+Notable UX design calls:
+  - **The counted read is ONE string in ONE `<Typography>`, no internal typographic hierarchy** — the rate
+    renders at the same size/weight as its mean return and N. *A big rate over a small caption IS a hero*,
+    which §7.1 forbids ⇒ AC-8/AC-9 become **structurally unbreakable in the DOM**, not merely in the type.
+  - **Empty ≠ unreadable** — AC-E1 vs AC-E5 got different copy. Telling a user with 400 trades "Nothing has
+    closed yet" because a store failed to read is **a lie**; the PM's §4.6 table had one storage line and
+    would have collapsed them.
+  - **AI-rec = exactly ONE cell** ("Taken from an AI rec") — the captured rec identity is a *fingerprint*;
+    fanning out by it yields N cells of N=1, permanently building. A "not from a rec" comparison cell is
+    **banned** (a cohort over missing context, §4.8).
+  - **Progress bar in `building` BANNED** — "7 of 20" invites a meter, and a meter beside a hit-rate-shaped
+    cell reads as 35%: AC-E3's trap, generalized.
+  - **Dollar figures banned entirely** (AC-10 + a dollar total would sum overlapping cells, AC-16).
+3 defects found in the PRODUCT_CONTRACT §4.6 + fixed (UX_BLUEPRINT §2.9): `unpriced_basis` copy said
+  **"modeled"**, colliding with the separate `modeled_basis` reason directly below it → "typed, theoretical
+  or stale — not a quote" · **"spread ±31pts"** — "spread" means bid-ask everywhere else in this app →
+  "±31pts trade to trade" · the window example dropped the year (the window is **all-time, non-rolling**,
+  and will span years).
+⚠ Structural catches handed to the FE lane (each would have been hit mid-build):
+  - `features/trading/outcomes` **CANNOT** import `pages/ticker/widgets/_kit/copy` (upward import ⇒
+    lint-fails) → the IV-rank band lookup is defined **locally**; `shared/` promotion named as a seam.
+  - It **CANNOT** import `features/personas` (not on the architect's allow-list) → `personaLabel` is
+    **injected as a prop** by the page shell.
+  - Tier label: import the existing **`WORD` map from `model/OpportunityTier`**, NOT `tierMeta` — the latter
+    returns a palette colour and drags AC-14 (no semantic tint) in.
+  - **⚠ CONDUCTOR-VERIFIED:** `pages/positions/PositionsPage.tsx:174-175` — *adjacent lines* — contains
+    `color: netPl >= 0 ? 'success.main' : 'error.main'` and `opacity: streamOffline ? 0.5 : 1`: **the two
+    exact patterns AC-14 and AC-E17 forbid**, in the file next door on the same page. The FE **will**
+    pattern-match them. Called out loudly in the FE contract. Same for `PortfolioPanel`'s gate-every-write
+    habit vs **AC-25's ungated import**.
 QA (GATE Q):  n/a
 Invariant watch (from BRIEF): `additive-keeps-score-byte-identical` (HARD — reads outcomes, **never** a
               scoring input; **no auto-tuning / no automatic feedback loop into the score in v1**) ·
