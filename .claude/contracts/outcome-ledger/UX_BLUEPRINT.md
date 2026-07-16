@@ -12,9 +12,10 @@
 > **This feature is `NO_BACKEND_CHANGE`.** It consumes **no endpoint**. It derives from the durable
 > client stores. The empty `apps/api` diff **is** the structural no-auto-tuning guarantee.
 >
-> **⚠ AMENDED AT GATE Z (2026-07-16) — TWO COPY RULINGS, nothing else.** The feature is built; this is a
+> **⚠ AMENDED AT GATE Z (2026-07-16) — THREE COPY RULINGS, nothing else.** The feature is built; this is a
 > targeted copy amendment, **not** a re-design and **not** a re-fan-out (compressor #3 was **not** re-run).
-> The amendment is confined to: **§5.5** (one reason label + one framing bullet) · **§5.9** (the decline
+> The amendment is confined to: **§5.1** (one constant — `TR_HIT_DEF` gains its roll clause; **ruling 3**,
+> added 2026-07-16 round 3) · **§5.5** (one reason label + one framing bullet) · **§5.9** (the decline
 > set gains a **second class**; the set stays CLOSED) · **§8** (the AC map: AC-E10 sharpened; AC-E19 /
 > AC-E20 / AC-E21 added) · **§10** (new — the rulings of record, with the exact final strings). **Every
 > other state, string, decision and constraint below is unchanged and still locked.** No pin was reopened;
@@ -195,7 +196,8 @@ its reason:
 
 *(A fifth refinement — `no_decision_record`'s label, which under-described its own predicate the same way
 — was made at **GATE Z, 2026-07-16**. It is recorded in §10.2, not here, because the PM named it
-explicitly at §7.20 / AC-E20 rather than leaving it to me to catch.)*
+explicitly at §7.20 / AC-E20 rather than leaving it to me to catch. A sixth — `TR_HIT_DEF`'s roll clause,
+the same species again: a definition that under-described its own rule — is recorded in **§10.4**.)*
 
 ### 2.10 `malformed` vs `unreadable_records` — **RESOLVED** (§11.4 item 1 was left to me)
 
@@ -334,7 +336,8 @@ readout carries/states* it; a collapsed block does not):
 
 ```
 TR_HIT_DEF     = "A hit is a closed sim position that realized more than zero. A zero result is not a hit
-                  — it stays in the denominator."
+                  — it stays in the denominator. Closing by rolling is closing: a position you closed by
+                  rolling counts like any other close, hit or miss."
 
 TR_RANGE_DEF   = "“Plausibly X–Y%” is the 95% Wilson confidence interval around the rate — the band the
                   true rate is most likely in, given how few trades it's built on. The narrower it gets,
@@ -352,9 +355,18 @@ TR_OVERLAP     = "One closed trade appears in every cell it qualifies for — it
                   its persona. Cell counts overlap, so they are never added up."
 ```
 
+> ⚠ **`TR_HIT_DEF`'s third sentence — the roll clause — was added at GATE Z (2026-07-16, round 3). See
+> §10.4 for the ruling, the reason, and the exact final string.** The first two sentences are
+> **unchanged**: the `hit > 0` pin and the zero-stays-in-the-denominator fact are **not reopened**. The
+> third sentence is the **only** place in this entire surface where a roll is named (AC-E21's
+> negative-space scan permits `TR_HIT_DEF` and nothing else) — **do not push roll wording into any other
+> constant**, and do not turn this sentence into a count, badge, asterisk or category (§5.5, §9).
+
 `TR_RANGE_DEF` is where the statistical vocabulary lives — **secondary, never the headline** (§4.7).
 `TR_RETURN_DEF` is where **"size-unweighted"** and **"not dollar expectancy"** are stated once, visibly,
-for the whole readout (AC-10) — so 40 cells don't each repeat it.
+for the whole readout (AC-10) — so 40 cells don't each repeat it. **`TR_HIT_DEF` is where the roll basis
+is stated once, visibly, for the whole readout** (AC-13, `PRODUCT_CONTRACT` §4.17-A2) — it is the entire
+discharge of `[model-read-carries-its-assumptions]` for rolls, and there is no second place it is said.
 
 **The lead explainer** — rendered **iff no cell anywhere in the readout is `computed`** (one rule; covers
 AC-E1 *and* AC-E4's "still explains what it will answer"):
@@ -516,7 +528,10 @@ TR_BREAKDOWN_G2_NOTE = "These aren't recorded closed positions, so they're not p
   reason, no roll count, no "X of these were rolls", no badge, no asterisk, no cohort, no filter. **A roll
   is a close, not a category.** The basis obligation is discharged by the hit **definition** (`TR_HIT_DEF`,
   AC-13), never by a count. *"Surfacing the roll count for transparency" is the failure mode here, not the
-  safeguard.*
+  safeguard.* **⚠ That discharge is REAL only because `TR_HIT_DEF` now says so — see §10.4.** Before the
+  round-3 ruling this bullet pointed at a string that named no roll, and the disclosure existed **nowhere**.
+  **If `TR_HIT_DEF`'s roll clause is ever cut, this bullet's premise dies with it and AC-13 becomes
+  unsatisfiable.** They stand or fall together.
 - **The two groups are never summed with each other** (§2.10).
 
 ### 5.6 The `building` cell (AC-E2, AC-E3, AC-E4) — a count, and nothing numeric beside it
@@ -574,7 +589,10 @@ Mar 4, 2026 – Jul 15, 2026 · quoted fills only
 - **`n_min` is data, not a literal.** Read it from the read; never hardcode `20` in copy.
 - **⚠ A rolled-OUT leg renders as a plain counted cell — nothing marks it** (AC-E19/AC-E21). No badge, no
   asterisk, no footnote, no separate line, no tint, no "(rolled)". It is an outcome without an asterisk,
-  and that is the ruling (`PRODUCT_CONTRACT` §4.17-A).
+  and that is the ruling (`PRODUCT_CONTRACT` §4.17-A). **The reader learns rolls are in the number from
+  `TR_HIT_DEF` in the frame (§5.1) — once, in the definition, for the whole readout — and never from the
+  cell.** That division of labour is the ruling's whole mechanism: the frame carries the basis, the cell
+  carries no marker.
 
 ### 5.8 The family heading + its coverage line (A2 — AC-19, AC-E13, AC-E14, AC-E18)
 
@@ -778,6 +796,12 @@ why, in the label.** That is why `no_decision_record`'s label is a sentence and 
 *predate capture* → `TR_EPOCH` + its ⓘ · *not available at entry* → the family coverage clause ·
 *no entry decision* → the `no_decision_record` label itself (§5.5) + `TR_HIT_DEF`'s roll clause.
 
+> ⚠ **That last row forward-referenced a clause that did not exist until §10.4** (2026-07-16, round 3).
+> It exists now, and the row is **correct as written — no change**. The two halves are deliberately split
+> and each is said **once**: `TR_HIT_DEF` says the **rolled-OUT** leg is counted (a hit definition);
+> the `no_decision_record` label says the **rolled-INTO** leg is not, and why (a coverage reason, sitting
+> beside its own count). **Neither may absorb the other's half** — see §10.4's rolled-INTO ruling.
+
 ---
 
 ## 7. Whole-readout body-state selection (wire-driven, first match wins)
@@ -833,7 +857,7 @@ every AC, but an automated TEST is required only at the risk-based bar**:
 | AC-10 mean per-trade %, size-unweighted, never dollar expectancy | counted + frame | **`test:`** negative space — no `$`, no "expectancy" in the readout · `review:` `TR_RETURN_DEF` |
 | AC-11 plain range, not a bare ±, not behind an interaction | counted | **`test:`** builder emits `plausibly {lo}–{hi}%` |
 | AC-12 >20pp ⇒ "still wide" | counted | **`test:`** threshold rule, strictly `> 20`; and **not** at exactly 20 |
-| AC-13 hit definition stated (incl. closing by rolling) | frame | `review:` `TR_HIT_DEF` |
+| AC-13 hit definition stated (incl. closing by rolling) | frame | `review:` `TR_HIT_DEF` — **all three sentences**: `> 0` is a hit · zero stays in the denominator · **closing by rolling is closing** (§10.4). *(The row already required the roll clause; §10.4 supplies the words. No correction to this row.)* |
 | AC-14 no semantic tint on a rate | counted | **`test:`** no `success.main`/`error.main`/red/green/arrow/icon in the readout (the file next door does exactly this) |
 | AC-15 five families, fixed order | default/partial | `review:` ordering |
 | AC-16 overlap stated · no summed total | frame + all | `review:` `TR_OVERLAP` · **`test:`** no total that sums cell Ns exists |
@@ -866,7 +890,7 @@ every AC, but an automated TEST is required only at the risk-based bar**:
 | AC-E18 AI-rec partial attribution, both directions | family coverage | **`test:`** note renders iff `not_attributable_by_path > 0`, absent when `0` |
 | AC-E19 rolled-OUT leg ⇒ a plain counted outcome, no marker | **counted** | **`test:`** already covered by the Architect's pinned case-2 fixture (roll close ⇒ counted) — **do not edit that fixture** · `review:` no roll marker/badge/asterisk renders (§5.7) |
 | AC-E20 the no-entry-record label is TRUE of the rolled-into leg | breakdown | `review:` **copy** — the exact string in §10.2. *(Per the 2026-07-13 risk-based rule a string is `review:`, not `test:`. **Do not add a named test for this label.** The existing AC-E10 assertion that hardcodes the old string must be updated to the new one — mechanical, not a new case.)* |
-| AC-E21 no roll category (negative space) | all | **`test:`** — **fold into invariant 8's existing source-scan** (extend its assertion to the roll vocabulary; **no new spec file**): no roll cohort, no roll reason key, no roll count, no roll filter, in the data, the type, or the surface |
+| AC-E21 no roll category (negative space) | all | **`test:`** — **fold into invariant 8's existing source-scan** (extend its assertion to the roll vocabulary; **no new spec file**): no roll cohort, no roll reason key, no roll count, no roll filter, in the data, the type, or the surface. **⚠ The scan's `TR_HIT_DEF` exemption is not an oversight — it is the ruling**: `TR_HIT_DEF` is the ONE permitted home of the word (§10.4). **Do not remove the exemption; do not widen it to a second constant.** |
 
 **Invariant cases with no AC of their own — `test:` each** (these are the negative space; they are the
 reason this feature is safe):
@@ -891,7 +915,7 @@ reason this feature is safe):
 8. **No include/exclude toggle, override, or filter exists** — in the data, the type, or the surface
    (§8 non-goal 15). **Extended at GATE Z (AC-E21): the same scan also asserts no roll cohort, no roll
    exclusion reason key, no roll count and no roll filter exists** — the pre-named slot after
-   `scenario_sourced` stays **empty**.
+   `scenario_sourced` stays **empty**. **Its `TR_HIT_DEF` exemption is load-bearing (§10.4).**
 9. **`[theme-token-discipline]`** — zero hardcoded hex; mode-aware values via **`extrasFor(theme)` inside
    sx callbacks** (bare `extras.` is dark-only). **Dark/light parity is part of done** → `review:` both
    modes + the lint/hex scan.
@@ -916,7 +940,8 @@ reason this feature is safe):
 - **No restore / replace / clear / reset** (§5.9).
 - **No "Retry" / "Import anyway" / "Repair" on a declined import** (§5.9.1).
 - **No roll cell, roll rate, roll exclusion reason, roll count, roll badge or roll filter** (AC-E21,
-  `PRODUCT_CONTRACT` §4.17-A2 — a roll is a close, not a category).
+  `PRODUCT_CONTRACT` §4.17-A2 — a roll is a close, not a category). **The word "roll" appears in exactly
+  one string, `TR_HIT_DEF`, as a definition (§10.4). That is the ceiling, not a precedent.**
 - **No AI interpretation of the ledger** (§8 non-goal 8).
 - **Nothing from the architect's §8 non-goals 1–15.**
 
@@ -924,14 +949,19 @@ reason this feature is safe):
 
 ## 10. GATE Z copy rulings — 2026-07-16
 
-**Scope of this section: WORDS ONLY.** Two items came back to this lane; both are ruled below. **No
-product scope, no behavior, no math, no server internals, no new count, no new shape, no new exclusion
-reason, no badge, no cohort, no asterisk.** The accepted pins, A1/A2/A3 and the PM's §11.6 ruling are
-**not reopened**. The pre-named exclusion slot after `scenario_sourced` **stays EMPTY**; §8 non-goal 15
-stands.
+**Scope of this section: WORDS ONLY.** Three items came back to this lane; all three are ruled below.
+**No product scope, no behavior, no math, no server internals, no new count, no new shape, no new
+exclusion reason, no badge, no cohort, no asterisk.** The accepted pins (`N_min = 20`, **hit `> 0`**,
+all-time window), A1/A2/A3 and the PM's §11.6 ruling are **not reopened**. The pre-named exclusion slot
+after `scenario_sourced` **stays EMPTY**; §8 non-goal 15 stands.
 
 **How to read the verdicts:** each ruling says plainly whether the built FE **stands**, **changes**, or is
 **replaced**, and names the constant.
+
+**⚠ Numbering note.** Rulings 1 and 2 landed in round 2; **ruling 3 landed in round 3 (§10.4) and sits
+AFTER the drift list on purpose** — §10.1 / §10.2 / §10.3 are cited by name from elsewhere in this
+blueprint and from the `FRONTEND_EXECUTION_CONTRACT`, and renumbering a locked, cited section to buy
+tidiness would be a worse defect than an out-of-order heading. §10.3 carries ruling 3's drift item.
 
 ### 10.1 RULING 1 — the store-unreadable import decline: **RESTRUCTURE §5.9. The FE's judgment STANDS; its wording is REPLACED.**
 
@@ -1108,13 +1138,157 @@ drift from this blueprint:
   / unreadable / wrong version)"*, which enumerates **class A only**. It must also name the **class-B**
   decline (store could not be fully read ⇒ refuse, write nothing). **Assertions unchanged** — they already
   cover it.
+- **⚠ `FRONTEND_EXECUTION_CONTRACT` §"Tests to write" case 16 (AC-13)** *(added by ruling 3, §10.4)* —
+  reads *"`TR_HIT_DEF` (zero is not a hit; it stays in the denominator)"*, which enumerates **two of the
+  three facts** and omits the one AC-13 was extended for. It must also name **"closing by rolling is
+  closing"**. **It stays `review:` and it gains no assertion** — per the 2026-07-13 risk-based rule a
+  string is `review:`, and **no named test may be demanded for this string.** The row's *description* is
+  the drift, not its bar.
 - **`FRONTEND_EXECUTION_CONTRACT` §"Tests to write"** has **no rows for AC-E19 / AC-E20 / AC-E21** (the PM
   added them at GATE Z round 2). Their verification is fixed by §8 above: **E19** = the Architect's pinned
   case-2 fixture + `review:` · **E20** = `review:` (copy) · **E21** = folded into the existing
   negative-space scan (**no new spec file**).
 - **`FRONTEND_EXECUTION_CONTRACT` §"Definition of done"** already says *"Every string sourced from
   `outcomes/copy.ts`, matching `UX_BLUEPRINT` §5 verbatim."* — **that line needs no change**; it now
-  resolves to the amended §5.5 / §5.9.1 strings. **This blueprint remains the single source of truth for
-  copy.**
+  resolves to the amended §5.1 / §5.5 / §5.9.1 strings. **This blueprint remains the single source of truth
+  for copy.**
 - **No `INTERFACE_CONTRACT` change.** The feature is `NO_BACKEND_CHANGE`; no field, no payload, no
-  conformance-spec entry is touched by either ruling.
+  conformance-spec entry is touched by any of the three rulings.
+
+### 10.4 RULING 3 — `TR_HIT_DEF`'s roll clause: **CHANGED. One constant, one string.** *(2026-07-16, round 3)*
+
+**What came back.** The FE found that `TR_HIT_DEF` does not say what three locked requirements need it to
+say, and **correctly refused to fix it itself** — writing that sentence would have been inventing UX copy.
+It escalated instead. **That was right, and it is the second time this lane has been handed a defect by an
+executioner who declined to paper over it.**
+
+**The defect.** `TR_HIT_DEF` reads *"A hit is a closed sim position that realized more than zero. A zero
+result is not a hit — it stays in the denominator."* **It does not say that closing by rolling is
+closing.** But:
+
+- **PM AC-13 as extended** (§11.6 roll ruling) requires the stated definition to cover rolling.
+- **§8's map row** already reads *"hit definition stated (incl. closing by rolling)… `review:`
+  `TR_HIT_DEF`"* — it verified against a string that did not carry the fact.
+- **§5.5's binding bullet** already reads *"the basis obligation is discharged by the hit definition
+  (`TR_HIT_DEF`, AC-13)"* — it pointed at a string that discharged nothing.
+
+**Why this is the whole ruling, not pedantry.** The PM ruled that a rolled-out leg counts as a **plain
+outcome** with **no roll count, badge, marker, asterisk or category** — because a count beside a rate hands
+the reader the mental subtraction (*"58%, but 5 were rolls, so really…"*) that §8 non-goal 15 forbids as a
+filter. **Having refused the count, the PM made the hit definition the ONLY place the roll basis is
+disclosed.** So a silent `TR_HIT_DEF` means the disclosure **exists nowhere**,
+`[model-read-carries-its-assumptions]` is **undischarged for rolls**, and **AC-13 is unsatisfiable**. The
+entire A2 ruling — the reason there is no roll badge on any cell — rests on this one string. **This is the
+load-bearing sentence that was missing from the wall.**
+
+**Why it was missed, recorded so it is not repeated.** §10's round-2 rulings scoped themselves to three
+named constants and §5.1 was not among them; §10.3's drift list did not reach it either. The roll ruling
+arrived at round 2 and its *prohibitions* (§5.5, §5.7, §9, AC-E21) were all written down — **only its one
+affirmative obligation was not.** **A ruling that forbids six things and requires one will lose the one.**
+
+**The exact final string** — **first two sentences UNCHANGED, third sentence NEW:**
+
+```
+TR_HIT_DEF = "A hit is a closed sim position that realized more than zero. A zero result is not a hit — it
+              stays in the denominator. Closing by rolling is closing: a position you closed by rolling
+              counts like any other close, hit or miss."
+```
+
+**Why this wording and not another.**
+
+- **"Closing by rolling is closing"** is the PM's own ruling, said flat, as a definition. It is a
+  **declarative identity, not a concession** — no "even if", no "still", no "note that", no "we treat", no
+  "counts anyway". Every one of those hedges implies the reader might reasonably have expected otherwise,
+  which is **precisely the mental subtraction A2 refuses**. A roll is an ordinary close; the sentence
+  sounds ordinary because that is the ruling.
+- **"a position you closed by rolling"** — unambiguously the **rolled-OUT leg** (leg A), the one being
+  counted. Rejected *"a rolled position"* (ambiguous between the two legs) and *"a rolled-out position"*
+  (compact, but "rolled out" reads as *deployed* to half its audience).
+- **"counts like any other close"** does the work of the whole ruling in five words: it puts the roll
+  **inside** the population, states there is **no separate treatment**, and — by saying *close* — repeats
+  that a roll **is** one. It is the anti-marker sentence: nothing that "counts like any other" can be
+  wearing an asterisk.
+- **"hit or miss"** is the PM's AC-13 fact floor verbatim in spirit (*"counts as a hit or a miss like any
+  other"*) and it is **doing real work, not decoration**: naming **both** outcomes is what stops the reader
+  inferring that rolls are the losses being smuggled in. A clause that said only "counts" would leave the
+  direction open, and an open direction is an invitation to the subtraction. It also **ties the clause back
+  to the sentence's subject** — this is a *hit definition*, and rolls take the same `> 0` test as
+  everything else. **No new fact: the `> 0` pin is stated once, in sentence one, and rolls are pointed at
+  it.**
+- **Register.** Three short declaratives, no subordinate apology, in the house voice of `TR_BUILDING` and
+  `TR_RETURN_DEF`. It **editorializes about nothing** — no "to save it", no "when a trade goes against
+  you", no judgement of the trade or the trader. **The string is silent on why anyone rolls, and that
+  silence is deliberate**: the moment the copy has an opinion about rolling, the number has one too.
+- **Length.** Three sentences, shorter than `TR_BASIS_DEF` (already three) and one sentence longer than it
+  was. It sits in a definition list and stays scannable. **It is a definition, not a policy paragraph** —
+  the roll clause is **one sentence and must stay one**.
+
+**Rejected wordings, and why (each is a real trap):**
+- **"Rolling a position closes it, so it counts."** *"so it counts"* argues. A definition asserts.
+- **"Positions closed by rolling are included."** *"Included"* is the vocabulary of a **filter** — it
+  implies a switch that could exclude them. §8 non-goal 15 forbids the switch; the copy must not imply one.
+- **"A roll counts as a close, even if you rolled to save the trade."** Editorializing, forbidden by the
+  brief, and it **plants** the subtraction it pretends to pre-empt.
+- **"…counts like any other close (rolls are not marked)."** A parenthetical about the **absence** of a
+  marker is a marker. **Never describe the negative space to the user.**
+- **Any count, tally, or "(rolls included: 5)".** That is the badge, by the back door. **Non-goal 15
+  stands.** Words only.
+
+**The rolled-INTO leg: RULED — `TR_HIT_DEF` says NOTHING about it. Deliberate.**
+
+A reader told *"rolls are closes"* might wonder where the new leg went. **It is still not this string's
+job, for three reasons in ascending order of force:**
+
+1. **`TR_HIT_DEF` is a hit definition, not a coverage statement.** Its job is to say what the `> 0` test is
+   applied to. *Which records reach the test at all* is the coverage question, and this readout has an
+   entire surface for it — the coverage statement (§5.4) and *"What wasn't counted — and why"* (§5.5).
+   Putting a coverage fact in a definition is the same category error as putting a rate in a tooltip.
+2. **The fact is already said, once, in the right place, beside its own count.** §10.2's amended
+   `no_decision_record` label — *"No entry decision recorded — it can't tell us whether entering was a good
+   call"* — **is** leg B's answer, and it renders **next to the integer counting leg B**. Saying it twice
+   is the fork §10.1 forbids for class B and §5.9.1 forbids for the partial store: **two strings for one
+   fact drift, and the copy that drifts is the one with no number beside it to keep it honest.**
+3. **⚠ The decisive one: naming leg B in the frame creates demand for a count that must not exist.** A
+   sentence in the read frame that says *"the new leg isn't counted"* states an exclusion **with no
+   integer anywhere near it**. The reader's next question is immediate and unanswerable-by-design: *how
+   many?* In the breakdown that question **has** an answer, in the row, in an integer, inside the balance
+   identity. In the frame it has none — and a stated exclusion with a missing count is exactly the pressure
+   that produces *"X of these were rolls"*. **The ruling that forbids the count only survives if the copy
+   never begs for it.**
+
+**So the two halves are split, each said exactly once, and neither may absorb the other:**
+
+| The fact | Where it is said | Why there |
+|---|---|---|
+| the rolled-**OUT** leg **is counted**, like any close | `TR_HIT_DEF` (§5.1) — the frame | it is a **hit-definition** fact: it says what the number counted |
+| the rolled-**INTO** leg is **not counted**, and why | the `no_decision_record` label (§5.5) — the breakdown | it is a **coverage** fact: it belongs beside its own integer |
+
+**§6's glossary row already encodes exactly this split** (*"no entry decision → the `no_decision_record`
+label itself + `TR_HIT_DEF`'s roll clause"*). It was written forward-looking, against a clause that did not
+yet exist. **It exists now and the row is correct as written — no change.**
+
+**Verdict for the FE — unambiguous:**
+- **REPLACE `TR_HIT_DEF` in `apps/dashboard/src/app/features/trading/outcomes/copy.ts` VERBATIM** with the
+  string above. One constant. Nothing else in that file changes for this ruling. Preserve the file's
+  existing concatenation idiom and its em dash (`—`); **the string contains no apostrophes**, so there is
+  no curly-quote decision to make here.
+- **`TrackRecordSection.tsx` renders it unchanged** — `<Line testid="tr-hit-def">{TR_HIT_DEF}</Line>`, in
+  the visible "How to read this" block. **No new element, no new line, no tooltip, no footnote, no second
+  `<Line>`.** The clause rides the constant that is already rendered. **This is a string swap and nothing
+  else.**
+- **The `hit > 0` pin is NOT reopened.** Sentence one is byte-identical. **`N_min = 20` and the all-time
+  window are untouched.** No math, no behavior, no data, no type, no classifier, no count, no shape.
+- **The AC-E21 negative-space scan STANDS EXACTLY AS BUILT** — `boundaries.spec.ts` filters `TR_HIT_DEF`
+  out of the roll-vocabulary scan over `copy.ts`. **That exemption is this ruling.** After the swap the
+  scan does what it always meant to: **`TR_HIT_DEF` is the one string in the surface that names a roll, and
+  the scan proves no other one does.** **Do not remove the exemption. Do not widen it to a second
+  constant. Do not add roll wording to any other string** — if a second constant ever needs the exemption,
+  that is a UX ruling, not a refactor.
+- **AC-13 is `review:` — copy.** **Do NOT add a named test for this string** (2026-07-13 risk-based rule).
+  **No new spec file, no new case, no new assertion.** FE case 16 already covers AC-13 at `review:`; only
+  its *description* drifts (§10.3).
+- **No existing assertion hardcodes this string** (unlike §10.2's, which did). **Nothing mechanical
+  follows.** The 804/804 stays 804/804.
+- **AC-E19 (FE) STANDS — same case, same assertions.** The Architect's pinned case-2 fixture (roll close ⇒
+  counted) is **not edited**. This ruling adds the *disclosure* of what that fixture already proves; it
+  adds no behavior for a test to catch.
