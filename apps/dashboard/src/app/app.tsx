@@ -33,6 +33,7 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
+import { BlogPage } from '@/pages/blog/BlogPage';
 import { Landing } from '@/pages/landing/Landing';
 import { OperatorMetrics } from '@/pages/operator-metrics/operator-metrics';
 import { PositionsPage } from '@/pages/positions/PositionsPage';
@@ -60,6 +61,9 @@ export function AppRoutes() {
         <Route path="/ticker/:ticker" element={<TickerDashboard />} />
         <Route path="/positions" element={<PositionsPage />} />
         <Route path="/scanner" element={<Scanner />} />
+        {/* Blog — static index (zero data work); each card is a full-document anchor to the
+            standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}
+        <Route path="/blog" element={<BlogPage />} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

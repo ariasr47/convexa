@@ -6,7 +6,8 @@
  * wordmark, and the simulated/paper honesty disclaimer (`[no-real-order-path]`). Content constrained
  * to the same `lg` column as the rest of the page.
  */
-import { Box, Container, Divider, Stack, Typography } from '@mui/material';
+import { Box, Container, Divider, Link, Stack, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
 
 export function Footer() {
@@ -16,6 +17,16 @@ export function Footer() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Stack spacing={1}>
           <ConvexaMark size={16} fontSize="1rem" />
+          <Link
+            component={RouterLink}
+            to="/blog"
+            variant="caption"
+            underline="hover"
+            sx={{ color: 'text.secondary', width: 'fit-content' }}
+            data-testid="footer-blog-link"
+          >
+            Blog — how Convexa is built
+          </Link>
           <Typography
             variant="caption"
             sx={{ color: 'text.secondary' }}

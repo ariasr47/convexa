@@ -5,7 +5,24 @@
 > `OPEN_THREADS.md`, `BACKLOG.md`) **as a tool for one person to build large software fast**.
 > Purpose: drive continuous improvement of the _system itself_. The roadmap (§7) is mirrored into
 > `.claude/BACKLOG.md` §E so GATE I can cull and schedule these like any other feature.
-> Last revised: **2026-06-28**. Treat as a default, not canon — revise it as the system evolves.
+> Last revised: **2026-07-16**. Treat as a default, not canon — revise it as the system evolves.
+>
+> **2026-07-16 — the strongest evidence yet for this document's own two theses, plus one genuinely new
+> failure class.** Twenty-four features are now shipped and archived (the count below was eleven). An
+> owner-requested **canon review** found that the compounding memory — the thing §2.5 is proudest of — had
+> silently **frozen the product's core judgment for 210 commits** (§4.10, the one-sided-invariant gap: a
+> correct rule with no counterpart becomes a fossil, and the demotion path can't catch it because the rule
+> is never *contradicted*, only obeyed). The same review added a **severity promotion path** to the ledger
+> (recurrence is a proxy for importance, and it was mis-ranking — a *dialog* had become law while
+> data-loss protection waited) — and that path **validated itself the same day** (§6). The next ship,
+> `outcome-ledger`, closed the loop this document had no name for: the product now **measures its own
+> judgment** (is the opportunity score any good?) — the flywheel's Measure station, built for the product
+> itself. Its pipeline fired the amendment bounce **four times, every one a real defect, every one raised
+> by a downstream lane refusing to decide outside its lane** (§5) — and the de-correlated QA caught the
+> builders' gaps while the **human conductor caught the QA's own** (a fabricated headline count; §5). And
+> the kit produced the new failure class: a standing-rule change (the 2026-07-13 risk-based testing
+> amendment) landed in **2 of the 5 framework files that state the rule**, shipping a release in which the
+> kit **contradicts itself** — nothing checks the framework's *internal* consistency (§4.9).
 >
 > **2026-06-24 — the framework is now a reusable kit (system-13).** What was Convexa's `.claude/` is
 > extracted into a standalone **delivery-kit** (separate repo); this project is **consumer #1**.
@@ -111,11 +128,13 @@ ledger, not in your memory. That is the scaling lever for a solo builder.
    fresh session that confirms every AC point-by-point and **fixes nothing**, bouncing gaps via GATE Z;
    GATE S cannot fire without a passing `QA_REPORT.md`. Residual de-correlation work is system-6 (run QA
    on a _different_ model) — deferred until live.
-5. **The compounding memory compounds mistakes too.** `[ADDRESSED]` The **demotion path** (system-7) is
-   the inverse of graduation: a promoted invariant contradicted by reality (an accepted GATE Z amendment
-   or a GATE Q conformance/QA FAIL) is demoted — prose narrowed in canon, key moved to the ledger's
-   "Demoted" table with evidence. Memory now tracks _truth_, not just recurrence. (Bar mirrors promotion:
-   a one-off carve-out is an exception, not a demotion.)
+5. **The compounding memory compounds mistakes too.** `[ADDRESSED — then found INCOMPLETE, see item 10]`
+   The **demotion path** (system-7) is the inverse of graduation: a promoted invariant contradicted by
+   reality (an accepted GATE Z amendment or a GATE Q conformance/QA FAIL) is demoted — prose narrowed in
+   canon, key moved to the ledger's "Demoted" table with evidence. Memory now tracks _truth_, not just
+   recurrence. (Bar mirrors promotion: a one-off carve-out is an exception, not a demotion.)
+   **2026-07-16:** demotion turned out to cover only _half_ the ways memory goes wrong — it fires when a
+   rule is *contradicted*, and a rule that is **correct but one-sided** is never contradicted. See item 10.
 6. **The economics quietly worsen as you succeed.** `[MITIGATED]` `context_for.py` (system-5) assembles a
    sharded pack — the always-load invariant floor (§3 math, §5 decisions) + the sections the BRIEF's
    `Context tags:` select — so a session loads only the canon it needs (39–72% savings on current
@@ -147,6 +166,37 @@ ledger, not in your memory. That is the scaling lever for a solo builder.
    extract is a no-op diff, which makes drift visible in `git diff`). The meta-point: the system applied
    its own "mechanize the trusted invariant" rule to the decoupling but **not yet to the kit's own
    lifecycle** — version/skew/config are still trusted, the way integration used to be before system-1.
+   **2026-07-16 — residual (a) bit for real, and a THIRD failure class appeared that none of these
+   predicted.** Consumer #1 sat on kit **0.3.1** while the kit was at **0.3.2**, and nothing said so. And
+   new: **a standing-rule change is a multi-file edit, and nothing verifies it landed everywhere.** The
+   2026-07-13 risk-based testing amendment was applied to **2 of the 5** framework files that state the
+   rule — so a release *titled after the new rule* shipped a kit in which `ORCHESTRATOR.md` says *"not
+   'one named test per AC'"* while `ROLE_LAUNCH_PROMPTS.md` tells every PM the opposite. `kit_lint`
+   cannot catch it — it scans for project-coupling tokens, not internal consistency. Found only because a
+   conductor had to override the stale prompt **twice in one session**. Logged in `KIT_BACKLOG` §0 with a
+   proposed fix (a retired-phrasings scan — the same mechanize-the-invariant move, pointed inward).
+10. **The ratchet has no counterpart (the one-sided-invariant gap).** `[NEW 2026-07-16 — the meatiest
+   finding since the original analysis]` The orchestrator sells the compounding memory with the line
+   *"each ship can only **add** to the constraint envelope the next feature inherits."* That is also a
+   **failure mode**. An invariant that is correct but **one-sided** — "feature X must NOT touch artifact
+   Y" — accumulates precedent every ship, and with no companion rule saying *how Y may deliberately
+   change*, it silently **freezes Y**. Nobody decides the freeze; the envelope just never opens. The
+   demotion path (item 5) is structurally blind to it: a one-sided rule is never *contradicted* — it is
+   *obeyed*, feature after feature, until the artifact it protects is fossilized. **The evidence is not
+   hypothetical:** `additive-keeps-score-byte-identical` — promoted 2026-06-22, correct, never once
+   violated — froze the product's core scoring judgment for **210 commits**, during which **eight**
+   enrichment features shipped that were structurally forbidden from improving it (the score cannot
+   distinguish rich from cheap premium while the IV-rank band that names exactly that difference sits in
+   the same payload, unreachable). The fix was a **counterpart rule**
+   (`score-change-is-deliberate-and-measured`: the artifact MAY change — via an explicit feature, a
+   stated rationale, a **measured before/after**, a version bump) plus the `outcome-ledger` feature to
+   make "measured" possible at all. The memory model needs **three operations, not two**: **promote**
+   (recurrence or severity), **demote** (contradicted), **counterpart** (one-sided). The third is landed
+   in this consumer and queued for the kit (`KIT_BACKLOG` §B). Related same-review fix: the promotion
+   rule itself was mis-ranking — recurrence is a *proxy* for importance, and it had made a **dialog**
+   canon at 2 instances while data-loss protection waited at 1. A **severity path**
+   (catastrophic + irreversible ⇒ promote at 1 instance, with a written justification) was added — and
+   validated itself the same day (§6).
 
 ## 5. The deepest risk: correlated error
 
@@ -181,12 +231,51 @@ things will catch more. (Characteristically, the system also turned the catch in
 watch-list invariant, `server-side-gate-enforcement`: "an access gate on an action must be enforced
 server-side, not in the client." The flywheel manufacturing its own next guardrail from a failure.)
 
+**More evidence (2026-07-16) — and an honest twist.** The de-correlated QA is now routine and kept paying:
+on `outcome-ledger` a fresh Sonnet inspector re-ran every gate itself (804/804 tests, the empty backend
+diff, the mutation-tested source-scan) rather than trusting the builders' self-report, and passed the
+feature 46/46. The twist: **the inspector itself then fabricated a number** — its headline claimed *"52
+PASS across the 52 numbered ACs"* when the contract defines 46. Coverage was complete (46 defined, 46
+verdicted, a perfect 1:1 set match); the *count* was **generated rather than counted**, then repeated in
+its summary unchecked. It was caught by the **human conductor cross-checking the report against the
+contract** — and QA's own post-mortem is the sharpest line in the incident: *"a QA artifact that asserts a
+number it didn't verify has no standing to demand that the FE lane's tests actually bite."* Two lessons.
+First, de-correlation is not a hierarchy — **every layer of checking is itself a language model with the
+same failure modes**, and today the last check is still the human. Second, the fix is the usual one:
+mechanize it (an AC↔verification-evidence lint that cross-checks the QA table against the contract's
+defined AC ids — queued in `KIT_BACKLOG` §B; the manual catch was exactly that check, run by hand).
+
+**And the lane discipline earned separate evidence the same week.** The `outcome-ledger` pipeline fired
+the amendment bounce **four times** (architect ×2, PM, UX) plus two copy rulings — and **every single one
+was a real defect, raised by a downstream lane refusing to decide outside its own lane**: the FE lane
+found the join rule excluded real closes and *refused to widen a rule it didn't own*; the fresh architect
+who took that bounce proved the "obvious" widen was *itself* wrong (a replacement-less Roll writes an
+`accept` that doesn't close — the naive fix would have counted a non-close as an exit and shipped green);
+the PM's roll ruling and the UX copy rulings each caught the layer below mis-stating something. One more
+structural point the same feature validated: **GATE Z amendments should go to a FRESH instance of the
+owning role, not the authoring session** — the fresh architect didn't just accept the PM's amendments, it
+found the contested structure could *never populate* and **deleted** it rather than patching around it. A
+session defending its own work plausibly patches. That is the QA de-correlation argument applied to
+self-amendment, and it is now queued for the kit's GATE Z prose.
+
 ## 6. Where it sits on the scaling curve
 
-- Excellent at the current scale: solo, one feature at a time, **eleven features shipped** — including
-  (2026-06-28) the first that is **stateful and security-sensitive** (`user-accounts`: a credential/session
-  store). The pattern absorbed it unchanged — same one-way-leaf isolation, plus an invariant carve-out —
-  evidence it generalizes past the stateless additive reads it cut its teeth on.
+- Excellent at the current scale: solo, one feature at a time, **twenty-four features shipped and
+  archived** — including (2026-06-28) the first stateful + security-sensitive one (`user-accounts`), a
+  full deploy (Railway + Cloudflare Pages, live), and (2026-07-16) `outcome-ledger`, the first feature
+  whose *subject is the product's own judgment*. The pattern has absorbed every shape thrown at it —
+  stateless additive reads, a credential store, infra fast-paths, an FE-only re-skin program, and now a
+  measurement loop — without a structural change.
+- **A new axis as of 2026-07-16: the product measures itself.** `outcome-ledger` harvests the decision
+  records the app already writes and reports hit-rate/expectancy by tier/setup/persona — i.e. the flywheel's
+  **Measure** station, built *for the product* (the build-loop half of system-8 — observability metrics
+  feeding GATE I — is still open). Notable for this analysis: the whole feature is the "mechanize the
+  trusted invariant" move pointed at the *product's* claims instead of the build's — the score asserted it
+  was good; now there is a gate that checks. And the **severity promotion path validated itself the same
+  day it was added**: `loss-free-durable-migration` was promoted at 1 instance on severity (over the
+  objection that recurrence was unmet), and the very next feature became its 2nd binding instance — it had
+  to *refuse an import* rather than let the store APIs rewrite an unreadable blob. Under recurrence-only,
+  the key would still have been waiting while the feature that needed it was built.
 - **A new axis as of 2026-06-24: reuse across _projects_, not just features.** Until now every scaling
   statement was _within_ one project (cost per feature, attention per feature). The kit extraction adds a
   second axis — the _methodology itself_ now compounds across projects: a framework refinement made while
@@ -226,10 +315,19 @@ Ordered by leverage, deliberately sequenced. Status as of 2026-06-23.
   in sight — `user-accounts` shipped real credentials/sessions and Track B (`broker-connect`) will arm
   "going live" — and the partial pre-payment has now **caught a real defect** (§5), turning the case for
   system-6 from theoretical to evidenced.
-- **Tier 4 — close the flywheel: `◑ PARTIAL`** — the **demotion path** has landed (system-7: a promoted
-  invariant contradicted by a runtime signal or an accepted bounce gets demoted — memory tracks truth,
-  not just recurrence). Still open: wiring observability metrics back into GATE I so Discovery harvests
-  from measured reality, not guesses (**system-8**, depends on the shipped observability/latency readout).
+- **Tier 4 — close the flywheel: `◑ PARTIAL, advanced 2026-07-16`** — the **demotion path** has landed
+  (system-7), and the memory model has since grown its **third operation** (2026-07-16): the
+  **counterpart** check for one-sided invariants (§4.10) plus a **severity** promotion path — promote
+  (recurrence/severity) · demote (contradicted) · counterpart (one-sided). The **product half** of
+  closing the loop has now shipped: `outcome-ledger` measures the product's own judgment (hit-rate by
+  tier/setup/persona), so "is the score any good?" stopped being unanswerable. Still open: the
+  **build-loop half** (**system-8** — observability metrics feeding GATE I so Discovery harvests from
+  measured reality), and the testing rule refinement landed **2026-07-13**: QA's AC verification is now
+  **risk-based** (verification mandatory for every AC; an automated *test* only where regression risk
+  earns it — invariants, negative space, silent regressions; visible/intentional things verified by
+  review, recorded as such) — replacing the blunter one-named-test-per-AC rule. **Caveat:** that
+  amendment's incomplete propagation through the kit is the §4.9 self-contradiction — the rule is right,
+  the rollout exposed a new gap.
 - **Tier 5 — remove yourself as conductor: `◑ system-9-lite ADOPTED; full system-9 parked`** — the
   interim is adopted: each role runs as a fresh, disposable lane-fenced subagent (the freshness +
   lane-fencing win, human review intact). Full system-9 — orchestrator-as-pipeline where you _approve_
@@ -263,3 +361,19 @@ moving either ceiling: every new project inherits the same strengths _and_ the s
 limits. The kit added one new discipline of its own (keep the copies aligned), and characteristically
 the system already mechanized the hard half of it (`kit_lint`) while leaving the lifecycle half
 (version/skew/config) trusted — the next thing to mechanize.
+
+**Amendment to the verdict (2026-07-16), after 24 ships and the first canon review.** Three things
+changed the picture without changing the shape of it. First, the compounding memory — the mechanism this
+analysis was proudest of — was shown to have a **third failure mode** neither promotion nor demotion
+covers: a *correct, one-sided* rule silently fossilizes what it protects (the score froze for 210 commits
+under a rule nobody ever violated). The memory model is now promote / demote / **counterpart**, and the
+honest generalization is: *a compounding system needs machinery for rules that are wrong, AND for rules
+that are right in only one direction.* Second, the correlated-error section gained its most instructive
+data point yet — not the QA catching the builders (that's now routine) but the QA **itself fabricating a
+headline count** that the human conductor caught by hand: de-correlation is not a hierarchy, every checker
+is a model with the same failure modes, and the last check is still human — which is both the strongest
+argument *for* the mechanization roadmap and the honest limit of it. Third, the flywheel's Measure station
+now exists **for the product itself** (`outcome-ledger`): the system that had gotten wiser about *how it
+builds* every ship can finally get wiser about *whether what it built works*. The two structural ceilings
+stand exactly where §5 and §4.1 put them — but the system now catches a class of its own mistakes it
+previously couldn't even name.

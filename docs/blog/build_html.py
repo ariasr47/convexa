@@ -1,35 +1,97 @@
 #!/usr/bin/env python3
-"""Build a single self-contained HTML file from the blog markdown, inlining every SVG.
-No dependencies — a small Markdown subset converter tailored to this post."""
-import re, pathlib
+"""Build self-contained blog HTML from markdown, inlining every SVG.
+
+No dependencies — a small Markdown subset converter (h1/h2/h3, p, ul/ol, blockquote,
+tables, hr, images-as-inline-SVG, `code`/**bold**/*em*/links) tailored to these posts.
+
+Emits each article TWICE from one conversion: here in docs/blog/ (the authoring home)
+and into apps/dashboard/public/blog/ (the deploy path the /blog page links to) — the
+script IS the sync step, so the two copies cannot drift.
+"""
+import html
+import pathlib
+import re
 
 HERE = pathlib.Path(__file__).parent
-MD = HERE / "building-a-team-of-ai-roles.md"
-OUT = HERE / "building-a-team-of-ai-roles.html"
+REPO = HERE.parent.parent
+PUBLIC = REPO / "apps" / "dashboard" / "public" / "blog"
 IMG = HERE / "img"
+
+ARTICLES = [
+    {
+        "md": HERE / "building-a-team-of-ai-roles.md",
+        "slug": "building-a-team-of-ai-roles",
+        "title": "We Didn't Hire a Team. We Built One — Out of AI Sessions.",
+        "description": (
+            "How Convexa ships software using a relay of role-playing AI sessions, a shared "
+            "rulebook, and a habit of squeezing every conversation down to just its decisions."
+        ),
+    },
+    {
+        "md": REPO / "docs" / "SYSTEM_ANALYSIS.md",
+        "slug": "system-analysis",
+        "title": "System Analysis — the team-of-AI-roles as a solo-dev build tool",
+        "description": (
+            "The candid, living self-analysis behind the AI-team blog post: what the delivery "
+            "system actually is, what's load-bearing, where it fails, and what's next."
+        ),
+    },
+]
+
 
 def inline(s: str) -> str:
     s = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
     s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
     s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"(?<![\w*])_([^_]+)_(?![\w*])", r"<em>\1</em>", s)
     s = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", s)
     return s
 
+
 def convert(md: str) -> str:
-    out, para, items, quote = [], [], [], []
+    out, para, quote = [], [], []
+    items = []  # list of (kind, [lines]) where kind is 'ul' | 'ol'
+    table = []  # raw table rows
+
     def flush_para():
         if para:
-            out.append("<p>" + inline(" ".join(para).strip()) + "</p>"); para.clear()
+            out.append("<p>" + inline(" ".join(para).strip()) + "</p>")
+            para.clear()
+
     def flush_list():
         if items:
-            out.append("<ul>" + "".join("<li>" + inline(" ".join(it).strip()) + "</li>" for it in items) + "</ul>")
+            kind = items[0][0]
+            out.append(
+                f"<{kind}>"
+                + "".join("<li>" + inline(" ".join(it).strip()) + "</li>" for _, it in items)
+                + f"</{kind}>"
+            )
             items.clear()
+
     def flush_quote():
         if quote:
-            out.append("<blockquote>" + inline(" ".join(quote).strip()) + "</blockquote>"); quote.clear()
+            out.append("<blockquote>" + inline(" ".join(quote).strip()) + "</blockquote>")
+            quote.clear()
+
+    def flush_table():
+        if table:
+            rows = [
+                [c.strip() for c in r.strip().strip("|").split("|")]
+                for r in table
+                if not re.match(r"^\s*\|?[\s:|-]+\|?\s*$", r)  # drop the separator row
+            ]
+            if rows:
+                head, body = rows[0], rows[1:]
+                thead = "<tr>" + "".join(f"<th>{inline(c)}</th>" for c in head) + "</tr>"
+                tbody = "".join(
+                    "<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in body
+                )
+                out.append(f"<table><thead>{thead}</thead><tbody>{tbody}</tbody></table>")
+            table.clear()
+
     def flush_all():
-        flush_para(); flush_list(); flush_quote()
+        flush_para(); flush_list(); flush_quote(); flush_table()
 
     for raw in md.split("\n"):
         line = raw.rstrip()
@@ -38,33 +100,59 @@ def convert(md: str) -> str:
             flush_all(); continue
         if stripped == "---":
             flush_all(); out.append("<hr>"); continue
+        if stripped.startswith("|"):
+            flush_para(); flush_list(); flush_quote(); table.append(stripped); continue
         m = re.match(r"^!\[(.*?)\]\((.*?)\)$", stripped)
         if m:
             flush_all()
             alt, path = m.group(1), m.group(2)
-            svg = (IMG / pathlib.Path(path).name).read_text(encoding="utf-8") if (IMG / pathlib.Path(path).name).exists() else ""
+            svg_path = IMG / pathlib.Path(path).name
+            svg = svg_path.read_text(encoding="utf-8") if svg_path.exists() else ""
             cap = "<figcaption>" + inline(alt) + "</figcaption>" if alt else ""
             out.append("<figure>" + svg + cap + "</figure>"); continue
+        if line.startswith("### "):
+            flush_all(); out.append("<h3>" + inline(line[4:].strip()) + "</h3>"); continue
         if line.startswith("## "):
             flush_all(); out.append("<h2>" + inline(line[3:].strip()) + "</h2>"); continue
         if line.startswith("# "):
             flush_all(); out.append("<h1>" + inline(line[2:].strip()) + "</h1>"); continue
         if line.startswith("> "):
-            flush_para(); flush_list(); quote.append(line[2:].strip()); continue
+            flush_para(); flush_list(); flush_table(); quote.append(line[2:].strip()); continue
+        if stripped == ">":
+            flush_para(); flush_list(); flush_table(); quote.append(""); continue
+        m = re.match(r"^(\d+)\.\s+(.*)$", line)
+        if m:
+            flush_para(); flush_quote(); flush_table()
+            if items and items[0][0] != "ol":
+                flush_list()
+            items.append(("ol", [m.group(2).strip()])); continue
         if re.match(r"^- ", line):
-            flush_para(); flush_quote(); items.append([line[2:].strip()]); continue
+            flush_para(); flush_quote(); flush_table()
+            if items and items[0][0] != "ul":
+                flush_list()
+            items.append(("ul", [line[2:].strip()])); continue
         if items and (raw.startswith("  ") or raw.startswith("\t")):
-            items[-1].append(stripped); continue
-        flush_list(); flush_quote(); para.append(stripped)
+            items[-1][1].append(stripped); continue
+        flush_list(); flush_quote(); flush_table(); para.append(stripped)
     flush_all()
     return "\n".join(out)
+
 
 TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>We Didn't Hire a Team. We Built One — Out of AI Sessions.</title>
+<title>{title}</title>
+<meta name="description" content="{description}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Convexa">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta property="og:url" content="https://convexa.pages.dev/blog/{slug}.html">
+<meta property="og:image" content="https://convexa.pages.dev/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico">
 <style>
   :root {{ color-scheme: light; }}
   body {{ margin:0; background:#F4F1EB; color:#23252B;
@@ -73,35 +161,52 @@ TEMPLATE = """<!DOCTYPE html>
   main {{ max-width:760px; margin:0 auto; padding:48px 22px 80px; }}
   h1 {{ font-size:2.05rem; line-height:1.2; margin:0 0 .2em; letter-spacing:-.01em; }}
   h2 {{ font-size:1.4rem; margin:2.4em 0 .5em; letter-spacing:-.01em; }}
+  h3 {{ font-size:1.15rem; margin:1.8em 0 .4em; }}
   p {{ margin:0 0 1.05em; }}
-  ul {{ margin:0 0 1.2em; padding-left:1.25em; }}
+  ul, ol {{ margin:0 0 1.2em; padding-left:1.25em; }}
   li {{ margin:.4em 0; }}
   strong {{ font-weight:650; }}
   code {{ background:#E9E5DC; border-radius:5px; padding:.08em .35em; font-size:.92em;
     font-family:'Cascadia Code',Consolas,Menlo,monospace; }}
   a {{ color:#2E6F69; }}
   blockquote {{ margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:4px solid #B4562B;
-    font-size:1.12rem; color:#3a3d45; font-style:italic; }}
+    font-size:1.05rem; color:#3a3d45; font-style:italic; }}
   hr {{ border:none; border-top:1px solid #DAD5CC; margin:2.4em 0; }}
   figure {{ margin:1.8em 0; }}
   figure svg {{ width:100%; height:auto; display:block; }}
   figcaption {{ margin-top:.5em; text-align:center; font-size:.82rem; color:#8A8170; }}
-  .byline {{ color:#707684; font-size:1.02rem; font-style:italic; }}
-  @media (max-width:560px) {{ h1 {{ font-size:1.7rem; }} main {{ padding:32px 16px 60px; }} }}
+  table {{ border-collapse:collapse; margin:1.4em 0; width:100%; font-size:.95em; }}
+  th, td {{ border:1px solid #DAD5CC; padding:.5em .7em; text-align:left; vertical-align:top; }}
+  th {{ background:#EDE9E0; font-weight:650; }}
+  .backlink {{ display:inline-block; margin-bottom:1.6em; font-size:.92rem; }}
+  @media (max-width:560px) {{ h1 {{ font-size:1.7rem; }} main {{ padding:32px 16px 60px; }}
+    table {{ display:block; overflow-x:auto; }} }}
 </style>
 </head>
 <body>
 <main>
+<a class="backlink" href="/blog">&#8592; All posts</a>
 {body}
 </main>
 </body>
 </html>
 """
 
+
 def main():
-    body = convert(MD.read_text(encoding="utf-8"))
-    OUT.write_text(TEMPLATE.format(body=body), encoding="utf-8")
-    print("Wrote", OUT, f"({OUT.stat().st_size//1024} KB)")
+    PUBLIC.mkdir(parents=True, exist_ok=True)
+    for art in ARTICLES:
+        body = convert(art["md"].read_text(encoding="utf-8"))
+        page = TEMPLATE.format(
+            title=html.escape(art["title"], quote=True),
+            description=html.escape(art["description"], quote=True),
+            slug=art["slug"],
+            body=body,
+        )
+        for dest in (HERE / f"{art['slug']}.html", PUBLIC / f"{art['slug']}.html"):
+            dest.write_text(page, encoding="utf-8")
+            print("Wrote", dest, f"({dest.stat().st_size // 1024} KB)")
+
 
 if __name__ == "__main__":
     main()

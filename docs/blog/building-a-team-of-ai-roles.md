@@ -309,10 +309,12 @@ already crossed from wish-list to working:
   features it _graduates_ into the shared rulebook automatically — and, just as importantly, gets
   _demoted_ the moment reality contradicts it. The system literally gets wiser with every feature,
   without calcifying a wrong-but-repeated rule into law.
-- **Close the loop with reality.** Still ahead: the product already measures its own performance,
-  but those live metrics don't yet flow back into Discovery. Wire them in and ideas stop being
-  guesses — the loop becomes **build → measure → discover → build**, a flywheel grounded in what
-  actually happened.
+- **Close the loop with reality — ◑ half shipped.** The product now **grades its own judgment**: a
+  track-record feature harvests every simulated trade the app ever recorded and reports, honestly, how
+  good its own signals actually were — sample sizes always showing, no number allowed to flatter. That's
+  the "measure" station of the flywheel, built for the product itself. Still ahead: wiring the *build*
+  metrics back into Discovery, so the studio picks its next feature from measured reality instead of
+  educated guesses.
 - **Parallel feature lanes.** Still ahead, and deliberately last: one Orchestrator running several
   features at once. It's the upgrade that finally removes the human-as-conductor — which is exactly
   why it waits until every guardrail above is proven, so we never trade away our main
@@ -330,6 +332,59 @@ across many — each turn a little smarter than the one before.
 The endgame isn't "AI writes code faster." It's a small, self-improving studio that gets
 **cheaper, safer, and smarter every time it ships** — because every loop leaves behind
 better rules, better checks, and better questions.
+
+---
+
+## The month the rulebook learned humility
+
+Everything above was written while the studio was young. It's now shipped **twenty-four features**, and
+the most interesting lessons stopped being about speed a while ago. They're about what happens when a
+self-improving system runs long enough to meet its own blind spots. Three stories from one recent week.
+
+**The rule that was right — and still did damage.** Remember the self-promoting rulebook? One of its
+oldest, most successful rules said, in effect: *no feature may touch the product's scoring engine.* A
+good rule. It was never once broken — and that turned out to be the problem. Because the rulebook only
+ever said **"don't touch,"** and never said *how the score could deliberately improve*, nobody improved
+it. For over two hundred changes to the product, eight shiny new data feeds shipped that the score was
+structurally forbidden from learning from. Nobody decided to freeze the product's judgment. The rulebook
+froze it — politely, one obeyed rule at a time. Our self-demoting memory couldn't catch this, because
+demotion fires when a rule is proven *wrong*, and this rule was never wrong. It was right in only one
+direction. The fix was a **counterweight rule**: the score *may* change — deliberately, with a written
+reason, a measured before-and-after, and a version stamp. So the memory now has three verbs, not two:
+rules get **promoted** when they keep earning their keep, **demoted** when reality contradicts them, and
+**counterweighted** when they're right in a way that quietly freezes something. If you're building any
+system that accumulates rules — a team handbook counts — this one's worth stealing: *audit the rules
+nobody has ever broken. Some of them are fossils being manufactured.*
+
+**The rule that couldn't wait its turn.** The rulebook promotes a rule after it proves out across enough
+features — patient, democratic, usually right. Then we noticed what patience had actually produced: a rule
+about *which dialog box to reuse* had already graduated into law, while the rule protecting **the user's
+entire trading history from silent, unrecoverable deletion** was still waiting in line, because it had
+only come up once. Repetition is a fine way to notice importance. It's a terrible way to *rank* it. So the
+rulebook gained a second door: a rule whose violation would be **catastrophic and irreversible** gets
+promoted immediately, with the justification written down — no waiting for it to "come up" again. Here's
+the part we couldn't have scripted: the very next feature became that rule's second real test, the same
+day. It had to *refuse* to import a backup rather than risk overwriting data it couldn't fully read. Under
+the old patient rule, the protection would still have been in the waiting line while the feature that
+needed it was being built.
+
+**The inspector got inspected.** We've bragged about our QA inspector — a fresh session, a different AI
+model, allowed to fail anything. On the track-record feature it earned it again: it re-ran every check
+itself instead of trusting the builders' word, and passed the feature point by point. Then its final
+report declared a total — *"52 of 52 checks passed"* — and the checklist only **has 46 items.** Every
+item was genuinely verified; the *headline number* was invented rather than counted, the exact kind of
+confident slip the inspector exists to catch in others. Who caught it? The human running the studio, by
+counting. We kept the inspector's own post-mortem, because it's better than anything we'd write: *"a QA
+report that asserts a number it didn't verify has no standing to demand that anyone else's tests actually
+bite."* The honest moral: in a studio of AI specialists, **every checker is still an AI with the same
+failure modes** — so the checkers get checked too, the last check is still a human, and the fix is the
+same as always: turn the human's manual count into one more automatic gate. (It's already on the list.)
+
+One more number from that week, because it's the quiet vindication of the whole design: that one feature's
+plan got formally challenged **six times** on its way to shipping — by the product role, the build role,
+the design role. Every single challenge was a real defect. And every single one was raised by a specialist
+saying, in effect, *"this is wrong, and it's not my call to fix — sending it back to whoever owns it."*
+The lanes we drew to keep roles from meddling turned out to be the system's immune system.
 
 ---
 
@@ -351,13 +406,20 @@ in the settings file, and the same disciplined relay is running on something com
 different language, a different domain, the same playbook.
 
 Here's the recursive part, and it's our favourite. **The kit improves itself with its own method.**
-It keeps its own backlog of upgrades, its own changelog that records _why_ each change was made, and
-a tool that tells any project "you're running an old version of the studio — here's how to catch
-up." A refinement discovered while building one product flows back into the kit and out to every
-other project that uses it. So the studio doesn't only get smarter _within_ a project, the way the
-self-promoting rulebook does — it gets smarter _across every project at once._ That's the franchise:
-the same well-run studio opening in new towns, with every branch's lessons quietly improving the
-playbook for all of them.
+It keeps its own backlog of upgrades and its own changelog that records _why_ each change was made. A
+refinement discovered while building one product flows back into the kit and out to every other project
+that uses it. So the studio doesn't only get smarter _within_ a project, the way the self-promoting
+rulebook does — it gets smarter _across every project at once._ That's the franchise: the same well-run
+studio opening in new towns, with every branch's lessons quietly improving the playbook for all of them.
+
+And in the spirit of the inspector story above, the honest footnote: the franchise model has already
+produced its own first two bugs, and we caught both the embarrassing way. A project quietly fell one
+version behind the kit and nothing said so (the "you're out of date" alarm is still on the build list —
+this is why it's near the top). And one rule change was applied to *some* of the kit's files but not all
+of them, so for a while the playbook **disagreed with itself** — one page saying the new rule, another
+still teaching the old one — and no checker existed that reads the playbook for consistency. Both are
+logged in the kit's own backlog with the same discipline as everything else: found honestly, written
+down, next to the tool that will make each one impossible.
 
 ---
 
