@@ -40,7 +40,6 @@ import {
   TR_ARCHIVE_HEADING,
   TR_ARCHIVE_LEAD,
   TR_DECLINE_NOT_OURS,
-  TR_DECLINE_STORE_UNREADABLE,
   TR_DECLINE_UNREADABLE,
   TR_DECLINE_VERSION,
   TR_EXPORT_LABEL,
@@ -48,6 +47,8 @@ import {
   TR_IMPORT_CONFIRM,
   TR_IMPORT_CONFIRM_BODY,
   TR_IMPORT_CONFIRM_TITLE,
+  TR_IMPORT_DECLINED_STORE_BODY,
+  TR_IMPORT_DECLINED_STORE_TITLE,
   TR_IMPORT_DECLINED_TITLE,
   TR_IMPORT_DONE,
   TR_IMPORT_DONE_TITLE,
@@ -62,12 +63,19 @@ import {
   trImportSkipped,
 } from './copy';
 
-/** The decline reasons are a CLOSED set — never a raw parser message, never a stack trace. */
-const DECLINE_COPY: Record<DeclineReason, string> = {
+/**
+ * The decline set is CLOSED, in TWO CLASSES (§5.9.1) — never a raw parser message, never a stack
+ * trace. This map is CLASS A ONLY: the `{reason}` fragments the shared template composes.
+ *
+ * ⚠ `store_unreadable` is CLASS B and is deliberately absent — it is NOT a `{reason}` fragment. It
+ * renders its own title + body DIRECTLY (below), because class A's template ends "Your existing data
+ * was not changed," which is inverted here: not touching your data IS the entire event. The
+ * `Exclude<>` makes that structural — adding class B back to this map is a type error.
+ */
+const DECLINE_COPY: Record<Exclude<DeclineReason, 'store_unreadable'>, string> = {
   unreadable: TR_DECLINE_UNREADABLE,
   not_ours: TR_DECLINE_NOT_OURS,
   version: TR_DECLINE_VERSION,
-  store_unreadable: TR_DECLINE_STORE_UNREADABLE,
 };
 
 type DialogState =
@@ -201,7 +209,29 @@ export function ArchiveBlock({ onImported }: { onImported: () => void }) {
             </DialogActions>
           </>
         )}
-        {dialog.step === 'declined' && (
+        {/* Class B — YOUR STORED HISTORY is the problem, and we will not touch it. A third variant
+            beside `complete` and `declined (file)`, rendered DIRECTLY: its own title, its own body,
+            NOT composed through `trImportDeclinedBody`. Same Done button — a decline is a report,
+            not a dead end. */}
+        {dialog.step === 'declined' && dialog.reason === 'store_unreadable' && (
+          <>
+            <DialogTitle data-testid="tr-import-declined-title">
+              {TR_IMPORT_DECLINED_STORE_TITLE}
+            </DialogTitle>
+            <DialogContent>
+              <Typography variant="body2" data-testid="tr-import-declined-body">
+                {TR_IMPORT_DECLINED_STORE_BODY}
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button variant="contained" onClick={() => setDialog({ step: 'closed' })}>
+                {TR_IMPORT_DONE}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+        {/* Class A — the FILE is the problem. The shared template + a closed `{reason}` fragment. */}
+        {dialog.step === 'declined' && dialog.reason !== 'store_unreadable' && (
           <>
             <DialogTitle data-testid="tr-import-declined-title">
               {TR_IMPORT_DECLINED_TITLE}

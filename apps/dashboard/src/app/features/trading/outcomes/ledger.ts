@@ -63,6 +63,16 @@ function basisReason(entryLeg: string, exitLeg: string): ExclusionReason | null 
   return 'unpriced_basis';
 }
 
+/** The §2/Q3.4 ladder as a rank: `unpriced` (2) > `modeled` (1) > `quoted` (0). An unrecognized
+ *  basis ranks WORST, the same fail-honest direction `basisReason` takes. Used only by the exact-
+ *  `clock_time` tie-break, which can therefore only ever move an outcome OUT of the headline. */
+function basisRank(leg: string): number {
+  if (UNPRICED_LEGS.has(leg)) return 2;
+  if (leg === MODELED_LEG) return 1;
+  if (QUOTED_LEGS.has(leg)) return 0;
+  return 2;
+}
+
 // ---- Statistics (the only math this feature adds) -----------------------------------------------
 
 const Z_95 = 1.959963984540054;
@@ -124,12 +134,80 @@ function entryRecordFor(byTrade: Map<string, DecisionRecord[]>, id: string): Dec
   return recs.reduce((a, b) => (a.clock_time <= b.clock_time ? a : b));
 }
 
-/** The exit basis: the LATEST-by-clock_time `close` record for the position. The position record
- *  itself carries no exit-basis field — the decision record is the only place it lives. */
+/**
+ * ⚠⚠ CLOSE-BEARING — the closed, exhaustive predicate of ARCHITECTURE_CONTRACT §2/Q3.5. Exported and
+ * named because it IS the rule the contract pins: it must be assertable on a single record, without
+ * building a whole read.
+ *
+ * `close` is NOT the only close-bearing event. `closeTrade(via)` is parameterized on its call site,
+ * and has exactly three producers: the default (⇒ `close`), the Exit-verdict accept (⇒ `accept`) and
+ * the roll close (⇒ `roll`). The event name is an accident of the call site — which is why the
+ * source-scan guard in `boundaries.spec.ts` pins the set rather than trusting it.
+ *
+ * ⚠ THREE TRAPS, each a verified code fact, each got wrong by a plausible reading:
+ *
+ *  1. **`accept` is AMBIGUOUS — it is not always a close.** `useGhostTrade.acceptVerdict` writes an
+ *     `accept` record on TWO paths: the Exit branch (which CLOSES, via `closeTrade`) and the
+ *     Hold/Trim/Add path (which only adjusts qty and closes NOTHING). A rule of the form
+ *     "`close` | `accept` | `roll`" would take that mid-life record's `mark_basis` as an EXIT basis
+ *     for a position that closed elsewhere — fabricating an exit, in the arbitrary-or-flattering
+ *     direction. That is WORSE than the under-count this predicate fixes. The `ai_verdict === 'Exit'`
+ *     conjunct is not decoration; it is the whole discriminator.
+ *  2. **`accept` + `ai_verdict === 'Roll'` is NOT a close.** The closing roll branch is gated on
+ *     `rec.replacement_contract`; a Roll verdict arriving WITHOUT one falls through to the
+ *     Hold/Trim/Add write and records `accept` + `ai_verdict: 'Roll'` without closing anything. So
+ *     the "symmetric" guess — `ai_verdict ∈ {Exit, Roll}` — fabricates an exit for a LIVE position.
+ *     Only `event_type === 'roll'` is a roll close.
+ *  3. **`ai_verdict` is OVERLOADED.** On an `alert` record it carries the alert message PROSE, not a
+ *     verdict. **`event_type` is the gate; `ai_verdict` only ever refines the `accept` case.**
+ *
+ * The `ai_verdict === 'Exit'` conjunct is SOUND despite `ai_verdict` being free text, and the
+ * argument is a biconditional, not a hope: on an `accept` record `ai_verdict` comes only from
+ * `rec.verdict`; `ingestVerdict` rejects anything outside `['Hold','Trim','Add','Exit','Roll']`
+ * before the record can exist; and `acceptVerdict` RETURNS on the Exit branch, so the non-closing
+ * `accept` write can never carry `ai_verdict: 'Exit'`.
+ *
+ * The set is CLOSED and FAIL-HONEST: an event this contract does not name is NOT a close. A future
+ * unknown event produces an under-count that is REPORTED (`unresolved_join`), never a guessed basis.
+ */
+export function isCloseBearing(d: DecisionRecord): boolean {
+  if (d.event_type === 'close') return true;
+  if (d.event_type === 'roll') return true;
+  if (d.event_type === 'accept') return d.ai_verdict === 'Exit'; // exact, case-sensitive
+  return false;
+}
+
+/**
+ * The exit basis: the `mark_basis` of the LATEST-by-`clock_time` CLOSE-BEARING record for the
+ * position, over the de-duped UNION of both decision logs. No candidate ⇒ the join does not resolve
+ * ⇒ `unresolved_join`. Never guessed, never defaulted.
+ *
+ * ⚠ The position record CANNOT anchor this. It anchors THAT the position closed (that is the P1
+ * definition); it cannot anchor WHICH record carries the basis, because its only link to a record is
+ * time and the time does not link: `close_time` and `clock_time` come from two separate
+ * `new Date()` calls with a durable write between them, so `clock_time >= close_time` and is not
+ * equal by construction. `clock_time === close_time` would match NOTHING; "latest at-or-before
+ * `close_time`" is worse — it skips the real close record and silently selects the one BEFORE it (an
+ * `alert`, or the `open` record), assigning an entry-time mark as the exit basis on every trade; and
+ * "nearest to `close_time`" is heuristic time matching, banned outright (§8 non-goal 16). Do not
+ * reintroduce any of the three.
+ *
+ * TOTALITY — the tie-break. One `trade_id` can carry TWO close-bearing records with different event
+ * names from different stores (§2/Q3.1 consequence 7). Latest-by-`clock_time` resolves it; on an
+ * EXACT `clock_time` tie, the WORST `mark_basis` wins. Deterministic, total, and it can only ever
+ * move an outcome OUT of the headline, never into it.
+ *
+ * ⚠ NOT generalized to "worst basis among ALL close-bearing records": that would fold a rolled-into
+ * leg's roll-ENTRY basis into its EXIT leg, double-charging the entry and excluding outcomes for
+ * something untrue of their exits. Latest first; worst only among exact ties.
+ */
 function exitRecordFor(byTrade: Map<string, DecisionRecord[]>, id: string): DecisionRecord | null {
-  const recs = (byTrade.get(id) ?? []).filter((d) => d.event_type === 'close');
+  const recs = (byTrade.get(id) ?? []).filter(isCloseBearing);
   if (recs.length === 0) return null;
-  return recs.reduce((a, b) => (a.clock_time >= b.clock_time ? a : b));
+  const latest = recs.reduce((a, b) => (a.clock_time >= b.clock_time ? a : b)).clock_time;
+  return recs
+    .filter((d) => d.clock_time === latest)
+    .reduce((a, b) => (basisRank(String(b.mark_basis)) > basisRank(String(a.mark_basis)) ? b : a));
 }
 
 // ---- Cell families -------------------------------------------------------------------------------
@@ -363,7 +441,16 @@ export function computeLedgerRead(
       continue;
     }
     // 3. unresolved_join — the entry exists but a required join does not resolve. Never guessed,
-    //    never defaulted: no nearest-open-record-by-time, no ticker/strike inference.
+    //    never defaulted: no nearest-open-record-by-time, no ticker/strike inference, no tolerance
+    //    window on close_time (§8 non-goal 16).
+    //    ⚠ This branch is LIVE and must not silently become dead. Its two reachable shapes (§2/Q3.5):
+    //      (1) a closed position with a valid entry record and NO close-bearing record — the stores
+    //          degrade to in-memory on a storage fault, so a position write can survive while its
+    //          close `appendDecision` does not; also a close record dropped by per-record validation,
+    //          and an import that carried the position but not its log;
+    //      (2) a set `origin_order_id` with no `SimOrder` in the order index.
+    //    Both are fixtured. If a future change makes both unreachable, the contract must say so and
+    //    retire the reason — a reason that can never fire is a lie with a label.
     const exit = exitRecordFor(byTrade, p.id);
     const order = p.origin_order_id ? (orderById.get(p.origin_order_id) ?? null) : null;
     if (!exit || (p.origin_order_id && !order)) {

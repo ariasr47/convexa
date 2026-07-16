@@ -12,7 +12,7 @@ import { __resetMemory as resetGhost } from '@/features/trading/model/store';
 import { __resetOrdersMemory } from '@/features/trading/orders/store';
 import { __resetMemory as resetPositions } from '@/features/trading/positions/store';
 import { closedOutcome, decision, digest, ghostTrade, order, outcomes, position, seedStores } from './fixtures';
-import { computeLedgerRead, wilsonInterval } from './ledger';
+import { computeLedgerRead, isCloseBearing, wilsonInterval } from './ledger';
 import { EXCLUSION_PRECEDENCE, N_MIN } from './types';
 
 const reset = () => {
@@ -351,6 +351,347 @@ describe('the join (§3.5)', () => {
     const read = computeLedgerRead();
     expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
     expectBalances(read);
+  });
+});
+
+/**
+ * ⚠⚠ THE CLOSE-BEARING PREDICATE (§2/Q3.5). `close` is NOT the only close-bearing event — but the
+ * naive widen (`close | accept | roll`) is WORSE than the under-count it fixes, and the "symmetric"
+ * refinement (`accept` with `ai_verdict ∈ {Exit, Roll}`) is verifiably wrong. Each case below is a
+ * verified code path.
+ *
+ * ⚠ The root cause of the original defect is visible in the shape of this file's history:
+ * `unresolved_join` had NO dedicated behavioural case — only a label-exists check. A reason with a
+ * label and no behavioural case is exactly how a wrong join ships GREEN. These cases close that hole.
+ */
+describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () => {
+  describe('the predicate, on a single record — the rule, assertable without building a read', () => {
+    it('close | roll | (accept AND ai_verdict === "Exit") are close-bearing; EVERYTHING else is not', () => {
+      expect(isCloseBearing(decision({ event_type: 'close' }))).toBe(true);
+      expect(isCloseBearing(decision({ event_type: 'roll' }))).toBe(true);
+      expect(isCloseBearing(decision({ event_type: 'accept', ai_verdict: 'Exit' }))).toBe(true);
+
+      // ⚠ TRAP 1 — `accept` is AMBIGUOUS. The Hold/Trim/Add path writes `accept` and closes NOTHING.
+      for (const verdict of ['Hold', 'Trim', 'Add']) {
+        expect(isCloseBearing(decision({ event_type: 'accept', ai_verdict: verdict }))).toBe(false);
+      }
+      expect(isCloseBearing(decision({ event_type: 'accept' }))).toBe(false); // absent verdict
+
+      // ⚠ TRAP 2 — the trap INSIDE the trap. The closing roll branch is gated on
+      // `replacement_contract`; a Roll verdict without one falls through and writes `accept` +
+      // `ai_verdict: 'Roll'` WITHOUT closing. The "symmetric" guess fabricates an exit for a LIVE
+      // position. Only `event_type === 'roll'` is a roll close.
+      expect(isCloseBearing(decision({ event_type: 'accept', ai_verdict: 'Roll' }))).toBe(false);
+
+      // ⚠ TRAP 3 — `ai_verdict` is OVERLOADED: on an `alert` it carries the message PROSE.
+      // `event_type` is the gate; `ai_verdict` only ever refines the `accept` case.
+      expect(
+        isCloseBearing(decision({ event_type: 'alert', ai_verdict: 'Exit the position now' })),
+      ).toBe(false);
+      expect(isCloseBearing(decision({ event_type: 'alert', ai_verdict: 'Exit' }))).toBe(false);
+
+      // The set is CLOSED and FAIL-HONEST: an event the contract does not name is NOT a close — it
+      // produces an under-count that is REPORTED, never a guessed exit basis.
+      for (const event of ['open', 'reject', 'order_filled', 'limit_cancelled'] as const) {
+        expect(isCloseBearing(decision({ event_type: event }))).toBe(false);
+      }
+      expect(isCloseBearing(decision({ event_type: 'some_future_event' as never }))).toBe(false);
+    });
+
+    it('the `Exit` conjunct is EXACT and case-sensitive — `ai_verdict` is free text, and only the exact literal the code writes is a close', () => {
+      for (const near of ['exit', 'EXIT', 'Exited', ' Exit', 'Exit ']) {
+        expect(isCloseBearing(decision({ event_type: 'accept', ai_verdict: near }))).toBe(false);
+      }
+    });
+  });
+
+  describe('the records the OLD rule threw away — now counted, retroactively, with zero bytes written', () => {
+    it('case 1 — an Exit-verdict close (`accept` + `ai_verdict: "Exit"`) is COUNTED, and its exit basis is read from THAT record', () => {
+      // Under the old `event_type === 'close'` rule this resolved to NO close record and fell to
+      // `unresolved_join` — "couldn't link to its decision", which was factually FALSE: the decision
+      // was linked, recorded, and sitting right there under a different name.
+      const o = closedOutcome('p-1', { exitEvent: 'accept', exitVerdict: 'Exit' });
+      seedStores({ positions: [o.position], positionDecisions: o.decisions });
+      let read = computeLedgerRead();
+      expect(read.coverage.counted).toBe(1);
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(0);
+      expectBalances(read);
+
+      // ...and the basis comes from THAT record: make it unpriced and the outcome leaves the headline.
+      reset();
+      const unpriced = closedOutcome('p-1', {
+        exitEvent: 'accept',
+        exitVerdict: 'Exit',
+        exitBasis: 'theoretical',
+      });
+      seedStores({ positions: [unpriced.position], positionDecisions: unpriced.decisions });
+      read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.unpriced_basis).toBe(1);
+      expect(read.coverage.counted).toBe(0);
+      expectBalances(read);
+    });
+
+    it('⚠ case 2 (PINNED, §11.6-A) — a ROLL close is COUNTED as a plain outcome, exit basis from the `roll` record', () => {
+      // The rolled-OUT leg is a REAL outcome: the trader entered on a read, the position resolved, a
+      // P&L was booked. "It's a continuation, not a loss" is the exact self-flattering sentence this
+      // feature exists to refuse. Rolls skew to losses (they happen under duress), so EXCLUDING them
+      // is the FLATTERING direction — it removes real losses from the denominator.
+      const o = closedOutcome('p-1', { exitEvent: 'roll', exitVerdict: 'Roll', plPct: -30 });
+      seedStores({ positions: [o.position], positionDecisions: o.decisions });
+      const read = computeLedgerRead();
+      expect(read.coverage.counted).toBe(1);
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(0);
+      // ⚠ Counted as a PLAIN outcome — no marker, no badge, no asterisk, no roll category anywhere
+      // in the read (AC-E19/AC-E21). The roll left no trace on the shape of the value.
+      expect(JSON.stringify(read)).not.toMatch(/roll/i);
+      expectBalances(read);
+    });
+  });
+
+  describe('⚠ the records a NAIVE widen would have fabricated an exit for', () => {
+    it('case 3 — THE TRAP: a non-closing `accept` (Hold/Trim/Add) with NO close-bearing record ⇒ `unresolved_join`, NOT counted', () => {
+      // `useGhostTrade` writes `accept` on the Hold/Trim/Add path, which only adjusts qty. A rule of
+      // the form "close | accept | roll" would take this mid-life record's `mark_basis` as an EXIT
+      // basis for a position that closed at some other time via some other record — fabricating an
+      // exit, and therefore a fill-quality class, from a mark no close ever happened at.
+      for (const verdict of ['Hold', 'Trim', 'Add']) {
+        reset();
+        const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+        const midLife = decision({
+          trade_id: 'p-1',
+          event_type: 'accept',
+          ai_verdict: verdict,
+          clock_time: '2026-03-04T15:00:00.000Z',
+        });
+        seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, midLife] });
+        const read = computeLedgerRead();
+        expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+        expect(read.coverage.counted).toBe(0);
+        expectBalances(read);
+      }
+    });
+
+    it('case 4 — THE TRAP INSIDE THE TRAP: a replacement-less deferred roll (`accept` + `ai_verdict: "Roll"`) ⇒ `unresolved_join`', () => {
+      // This is the case an implementer's "symmetric" fix gets wrong. `acceptVerdict` gates the
+      // closing roll on `rec.replacement_contract`; without one, the Roll verdict falls through to
+      // the Hold/Trim/Add write and records `accept` + `ai_verdict: 'Roll'` — WITHOUT closing. The
+      // position here closed by some other means whose record never landed; a rule reading
+      // `ai_verdict ∈ {Exit, Roll}` would hand it this live-position mark as an exit basis.
+      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const deferred = decision({
+        trade_id: 'p-1',
+        event_type: 'accept',
+        ai_verdict: 'Roll',
+        clock_time: '2026-03-04T15:00:00.000Z',
+      });
+      seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, deferred] });
+      const read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+      expect(read.coverage.counted).toBe(0);
+      expectBalances(read);
+    });
+
+    it('case 5 — an `alert` whose `ai_verdict` is PROSE is never close-bearing: `event_type` is the gate', () => {
+      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const alert = decision({
+        trade_id: 'p-1',
+        event_type: 'alert',
+        ai_verdict: 'Price crossed the flip — consider an Exit',
+        clock_time: '2026-03-04T16:00:00.000Z',
+      });
+      seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, alert] });
+      const read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+      expect(read.coverage.counted).toBe(0);
+      expectBalances(read);
+    });
+  });
+
+  describe('TOTALITY — the rule leaves no judgement, including in the rare case', () => {
+    it('case 6 — two close-bearing records at the IDENTICAL latest clock_time ⇒ the WORST `mark_basis` decides', () => {
+      // §2/Q3.1 consequence 7: one trade_id CAN carry two close-bearing records with different event
+      // names from different stores. Latest-by-clock_time resolves it; on an exact tie, the worst
+      // basis wins — deterministic, total, and it can only ever move an outcome OUT of the headline.
+      const tie = '2026-03-05T14:00:00.000Z';
+      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const quoted = decision({ trade_id: 'p-1', event_type: 'close', clock_time: tie, mark_basis: 'snapshot' });
+      const modeled = decision({
+        trade_id: 'p-1',
+        event_type: 'accept',
+        ai_verdict: 'Exit',
+        clock_time: tie,
+        mark_basis: 'modeled',
+      });
+      // Order-independent: the worst basis wins whichever way the union happens to iterate.
+      for (const order2 of [[quoted, modeled], [modeled, quoted]]) {
+        reset();
+        seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, ...order2] });
+        const read = computeLedgerRead();
+        expect(read.coverage.excluded_by_reason.modeled_basis).toBe(1);
+        expect(read.coverage.counted).toBe(0);
+        expectBalances(read);
+      }
+    });
+
+    it('the tie-break is NOT generalized to "worst basis among ALL close-bearing records" — only among EXACT clock_time ties', () => {
+      // Generalizing would fold an earlier record's basis into the exit, excluding outcomes for
+      // something untrue of their exits. An EARLIER modeled close must not poison a LATER quoted one.
+      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const earlierModeled = decision({
+        trade_id: 'p-1',
+        event_type: 'roll',
+        clock_time: '2026-03-05T10:00:00.000Z',
+        mark_basis: 'modeled',
+      });
+      const latestQuoted = decision({
+        trade_id: 'p-1',
+        event_type: 'close',
+        clock_time: '2026-03-05T14:00:00.000Z',
+        mark_basis: 'snapshot',
+      });
+      seedStores({
+        positions: [position({ id: 'p-1' })],
+        positionDecisions: [entry, earlierModeled, latestQuoted],
+      });
+      const read = computeLedgerRead();
+      expect(read.coverage.counted).toBe(1); // the LATEST record's basis decides — it is quoted
+      expect(read.coverage.excluded_by_reason.modeled_basis).toBe(0);
+      expectBalances(read);
+    });
+  });
+
+  describe('⚠ `unresolved_join` REMAINS LIVE — both enumerated shapes, so it can never become a dead branch', () => {
+    it('case 7a — a closed position with a valid entry record and NO close-bearing record', () => {
+      // Reachable: the stores degrade to in-memory on a storage fault, so a position write can
+      // survive while its close `appendDecision` does not; also a close record dropped by per-record
+      // validation, and an import that carried the position but whose decision log was truncated.
+      const entry = decision({ trade_id: 'p-1', event_type: 'open' });
+      seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry] });
+      const read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+      expectBalances(read);
+    });
+
+    it('case 7b — a set `origin_order_id` with no `SimOrder` in the order index', () => {
+      // Reachable: the orders blob failed to read, or an import carried the position but not its order.
+      const o = closedOutcome('p-1', { originOrderId: 'o-missing' });
+      seedStores({ positions: [o.position], positionDecisions: o.decisions, orders: [] });
+      const read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+      expect(read.coverage.counted).toBe(0);
+      expectBalances(read);
+    });
+  });
+
+  describe('the change is a READ, not a migration', () => {
+    it('case 9 — backwards compatibility: PRE-EXISTING records (no per-record id, NO digest) closed by an Exit accept are counted, and read `pre_capture`', () => {
+      // A3 consults no digest, reads no new field, and has no epoch behaviour at all: historical
+      // Exit/Roll closes come back RETROACTIVELY, the first time the amended read runs, and not one
+      // byte is written to do it. A2's pre-capture counts survive it untouched.
+      const entry = decision({
+        trade_id: 'p-old',
+        event_type: 'open',
+        clock_time: '2025-11-02T09:30:00.000Z',
+        tier: 'actionable',
+      });
+      delete (entry as { id?: string }).id; // a record written before per-record ids existed
+      const exit = decision({
+        trade_id: 'p-old',
+        event_type: 'accept',
+        ai_verdict: 'Exit',
+        clock_time: '2025-11-03T09:30:00.000Z',
+      });
+      delete (exit as { id?: string }).id;
+      seedStores({
+        positions: [position({ id: 'p-old', close_time: '2025-11-03T09:30:00.000Z' })],
+        positionDecisions: [entry, exit],
+      });
+      const read = computeLedgerRead();
+      expect(read.coverage.counted).toBe(1);
+      expect(familyOf(read, 'tier').cells[0].key).toBe('actionable'); // tier is top-level: it counts
+      for (const key of ['setup', 'iv_band', 'persona'] as const) {
+        expect(familyOf(read, key).coverage.pre_capture).toBe(1); // digest ABSENT ⇒ predates capture
+      }
+      expect(read.basis.capture_epoch).toBeNull(); // no record carries a digest — nothing invented
+      // ⚠ Zero bytes written: the stores survive the read byte-for-byte.
+      const before = localStorage.getItem('convexa.positions.v2');
+      computeLedgerRead();
+      expect(localStorage.getItem('convexa.positions.v2')).toBe(before);
+      expectBalances(read);
+    });
+
+    it('⚠ M is IDENTICAL before and after the join changes — if M moved, something was touched that should not have been', () => {
+      // The denominator is |P1| — readable, closed, recorded positions. The close-bearing predicate
+      // changes only WHICH records reach step 3 of the precedence loop; it can never move M. This is
+      // the cheapest regression net available on the whole amendment.
+      const exits = [
+        closedOutcome('p-close', {}),
+        closedOutcome('p-exit', { exitEvent: 'accept', exitVerdict: 'Exit' }),
+        closedOutcome('p-roll', { exitEvent: 'roll', exitVerdict: 'Roll' }),
+        closedOutcome('p-none', { exitEvent: 'alert' }), // no close-bearing record ⇒ unresolved_join
+      ];
+      seedStores({
+        positions: exits.map((e) => e.position),
+        positionDecisions: exits.flatMap((e) => e.decisions),
+      });
+      const read = computeLedgerRead();
+      expect(read.coverage.recorded_closed).toBe(4); // M spans them all, regardless of the join
+      expect(read.coverage.counted).toBe(3);
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(1);
+      expectBalances(read);
+    });
+  });
+
+  describe('§11.6-B — the rolled-INTO leg', () => {
+    it('⚠ case 10 (PINNED) — a closed position whose ONLY decision record is the `roll` that opened it ⇒ `no_decision_record`, never counted', () => {
+      // `acceptVerdict`'s roll produces TWO artifacts: leg A (the rolled-OUT leg, which genuinely
+      // closes — case 2) and leg B, a NEW position whose only record is `event_type: 'roll'`. It has
+      // no `open` record, so the SPINE RULE (step 2) excludes it BEFORE the exit join is ever
+      // consulted — leg B's entry is not a scored decision, it is a mechanical consequence of the
+      // roll. This feature measures entries made on a READ.
+      //
+      // ⚠ The price of "fixing" this by admitting `roll` as an ENTRY event: `roll` is not a capture
+      // event, so a roll-entry record carries NO digest — and digest-absent IS the pre-capture epoch
+      // marker. Every historical rolled-into leg would report as "predates capture" when capture in
+      // fact ran, corrupting the very count that exists to make the gap honest, unrepairably (no
+      // backfill). Do not do it.
+      const legB = decision({
+        trade_id: 'p-legb',
+        event_type: 'roll',
+        ai_verdict: 'Roll',
+        clock_time: '2026-03-05T14:00:00.000Z',
+      });
+      const closeB = decision({
+        trade_id: 'p-legb',
+        event_type: 'close',
+        clock_time: '2026-03-09T14:00:00.000Z',
+      });
+      seedStores({ positions: [position({ id: 'p-legb' })], positionDecisions: [legB, closeB] });
+      const read = computeLedgerRead();
+      expect(read.coverage.excluded_by_reason.no_decision_record).toBe(1);
+      expect(read.coverage.excluded_by_reason.unresolved_join).toBe(0);
+      expect(read.coverage.counted).toBe(0);
+      expect(read.families.flatMap((f) => f.cells)).toHaveLength(0);
+      expectBalances(read);
+    });
+
+    it('a rolled position produces ONE counted outcome (leg A) and ONE excluded leg (leg B) — no double-count, no silent drop', () => {
+      // The gap the user WILL notice, and it is REPORTED, not silent: leg A counts once; leg B shows
+      // up in the exclusion breakdown the day it closes. `no_decision_record` is therefore a LIVE,
+      // GROWING bucket driven by ordinary activity — not a demo-seed curiosity.
+      const legA = closedOutcome('p-lega', { exitEvent: 'roll', exitVerdict: 'Roll', plPct: -25 });
+      const legB = decision({ trade_id: 'p-legb', event_type: 'roll', clock_time: '2026-03-05T14:00:00.000Z' });
+      const closeB = decision({ trade_id: 'p-legb', event_type: 'close', clock_time: '2026-03-09T14:00:00.000Z' });
+      seedStores({
+        positions: [legA.position, position({ id: 'p-legb' })],
+        positionDecisions: [...legA.decisions, legB, closeB],
+      });
+      const read = computeLedgerRead();
+      expect(read.coverage.recorded_closed).toBe(2);
+      expect(read.coverage.counted).toBe(1); // leg A, once
+      expect(read.coverage.excluded_by_reason.no_decision_record).toBe(1); // leg B
+      expectBalances(read);
+    });
   });
 
   it('hit is `realized_pl_dollar > 0` STRICTLY: a zero result is not a hit and stays in the denominator', () => {

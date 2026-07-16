@@ -133,12 +133,23 @@ export const trBreakdownG1 = (m: number): string =>
  * type error, never a silently vanished count. Rows render in this (the precedence) order, so the
  * breakdown reads the way it was decided.
  *
- * ⚠ The demo seed gets NO special case: `testSeed.ts`'s fabricated closed position lands in
- * `no_decision_record` like any other record with no decision. The words "seed"/"demo"/"test data"/
- * "sample" appear nowhere in this surface, and no code branch mentions it.
+ * ⚠ `no_decision_record` is a LIVE, GROWING, ORDINARY bucket — not a demo-seed curiosity. Its
+ * ordinary member is a **rolled-into leg**: every replacement position a roll opens has only a `roll`
+ * decision record, never an `open` one, so it lands here the day it closes, from ordinary user
+ * activity. Do not treat it as near-always-zero and do not design it as an edge case.
+ *
+ * ⚠ The demo seed gets NO special case: `testSeed.ts`'s fabricated closed position lands here like
+ * any other record with no ENTRY decision — it is ONE MEMBER of this bucket, not its archetype. The
+ * words "seed"/"demo"/"test data"/"sample" appear nowhere in this surface, and no code branch
+ * mentions it.
  */
 export const TR_REASON_LABEL: Record<ExclusionReason, string> = {
-  no_decision_record: 'No decision recorded — not counted',
+  // ⚠ "No ENTRY decision recorded", not "no decision recorded": for a rolled-into leg a roll decision
+  // WAS recorded — it simply is not an ENTRY. The old label claimed a total absence and was false for
+  // that member. The tail is the WHY, not a consequence: the row is a category, not a defect report —
+  // there is no recorded entry decision for this outcome to be evidence ABOUT.
+  no_decision_record:
+    'No entry decision recorded — it can’t tell us whether entering was a good call',
   unresolved_join: 'Couldn’t link to its decision — not counted',
   scenario_sourced: 'Scripted test scenario — not a real decision',
   // §2.9: the PM's phrasing collided the word "modeled" across two distinct reasons. These two name
@@ -369,25 +380,56 @@ export const trImportConflict = (n: number): string =>
 export const TR_IMPORT_FOOTER = 'Nothing was deleted or overwritten.';
 export const TR_IMPORT_DONE = 'Done';
 
+/**
+ * The decline set is CLOSED, in TWO CLASSES (§5.9.1) — never a raw parser message, never a stack
+ * trace. Two classes is not an open door: a new reason in either class needs a UX ruling.
+ *
+ *  - **Class A — the FILE is the problem.** "We looked at what you handed us and can't use it."
+ *  - **Class B — YOUR STORED HISTORY is the problem, and we will not touch it.** "Your file is fine.
+ *    We stopped because writing into a history we can't fully read could destroy records."
+ */
+
+// ---- Class A — the file is the problem. A `{reason}` fragment through the shared template. -------
+
 export const TR_IMPORT_DECLINED_TITLE = 'Import declined';
 export const trImportDeclinedBody = (reason: string): string =>
   `${reason} Nothing was imported. Your existing data was not changed.`;
 
-/** The decline reasons are a CLOSED set — never a raw parser message, never a stack trace. */
 export const TR_DECLINE_UNREADABLE = 'This file couldn’t be read.';
 export const TR_DECLINE_NOT_OURS = 'This isn’t a Convexa archive file.';
 export const TR_DECLINE_VERSION =
   'This archive was written by a version this app doesn’t understand.';
+
+// ---- Class B — your stored history is the problem, and we will not touch it. ---------------------
+
 /**
- * ⚠ FLAGGED FOR AMENDMENT — not in UX_BLUEPRINT §5.9's closed decline set, which enumerates FILE
- * reasons only. This is a STORE reason: when a durable blob cannot be read, importing into it would
- * make the store APIs rewrite the unreadable blob, destroying it — which
- * `[loss-free-durable-migration]` forbids outright. Refusing is the only non-destructive answer, and
- * a refusal must state a reason. Composed from §5.4's already-approved partial-read wording so no
- * new fact is invented; it needs a UX ruling (or a decline-set extension) at GATE Z.
+ * ⚠ SELF-CONTAINED: class B does NOT pass a `{reason}` through `trImportDeclinedBody`. That template
+ * ends "Your existing data was not changed." — a reassurance beside the point in class A, where the
+ * point was the file, but INVERTED here: **not touching your data IS the entire event**. Passing a
+ * class-B reason through class A's sentence would rank the protection as a footnote to a failure.
+ *
+ * Every clause is load-bearing. The TITLE kills the only inference the user can otherwise draw ("my
+ * file is bad") before they read a word of the body — the other three decline reasons are all about
+ * the file, and the dialog is the same dialog. "we won't write over records we can't read" is the
+ * protection, stated as a choice we made. "we stopped before touching anything" is what
+ * `[loss-free-durable-migration]` guarantees. The triple negative names BOTH artifacts, because the
+ * user has two things to worry about. "this time" + "Reload and try the same file again" is the same
+ * transient framing §5.3/§5.4 give the same underlying fact, so a user who sees both surfaces sees
+ * one story; the closing clause reuses `TR_IMPORT_CONFIRM_BODY`'s idempotency fact, so the retry is
+ * known-safe rather than hoped-safe.
+ *
+ * ⚠ ONE string covers BOTH the partial store and the fully-unreadable store — "we couldn't read ALL
+ * of your stored history" is true in both, and the app's answer is identical. Do NOT fork it.
+ * ⚠ No Retry, no "Import anyway", no Repair, no Force, no "Clear and import": the refusal IS the
+ * feature. No blame, no apology, no `severity="error"` — it is a normal, correct outcome of a safety
+ * rule. The remedy is a reload, and the body says so.
  */
-export const TR_DECLINE_STORE_UNREADABLE =
-  'Some of your stored history couldn’t be read this time.';
+export const TR_IMPORT_DECLINED_STORE_TITLE = 'Import declined — your file is fine';
+export const TR_IMPORT_DECLINED_STORE_BODY =
+  'We couldn’t read all of your stored history this time. Importing adds to that history, and we ' +
+  'won’t write over records we can’t read — so we stopped before touching anything. Nothing was ' +
+  'imported, nothing was changed, nothing was deleted: your history and your file are exactly as ' +
+  'they were. Reload and try the same file again — importing the same file twice changes nothing.';
 
 // ---- Tooltips (§6) — a tooltip EXPLAINS; it never INFORMS ---------------------------------------
 // No tooltip below carries a number, a rate, a count, or any fact an AC requires. Every one of them

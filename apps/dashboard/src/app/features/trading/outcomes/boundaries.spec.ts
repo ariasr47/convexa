@@ -16,6 +16,7 @@
 import { describe, expect, it } from 'vitest';
 import * as copyModule from './copy';
 import * as ledgerModule from './ledger';
+import { EXCLUSION_PRECEDENCE, FAMILY_ORDER } from './types';
 
 // The FORBIDDEN importers, enumerated by §5.1 boundary 2 — every module that must NOT reach the
 // outcomes module. Imported as SOURCE TEXT (`?raw`), so this asserts the import graph itself.
@@ -86,6 +87,83 @@ const RENDERED_COPY: string = Object.values(copyModule)
     return [];
   })
   .join('\n');
+
+/**
+ * ⚠⚠ THE CLOSE-BEARING SET IS PINNED, NOT TRUSTED (ARCHITECTURE_CONTRACT §2/Q3.5).
+ *
+ * The correct answer to "the event name is an accident of the call site" is not to abandon the event
+ * name — it is to make the accident ENUMERABLE, VERIFIED, and unable to drift silently. Prose cannot
+ * hold a rule whose truth depends on a call site. A test can.
+ *
+ * This scan is deliberately BRITTLE: brittleness IS the mechanism. Without it, the join fix handles
+ * today's instance and leaves tomorrow's identical defect free to recur silently — which is the
+ * actual root cause, not the `close` literal. Whoever this fails for: read §2/Q3.5 before "fixing" it.
+ */
+const Q35 = [
+  '⚠ ARCHITECTURE_CONTRACT §2/Q3.5 — the CLOSE-BEARING set has drifted.',
+  'A new close path or a new `closeTrade` `via` literal appeared in production.',
+  '`outcomes/ledger.isCloseBearing` enumerates the close-bearing events, and it does NOT know about',
+  'this one — so every position closed through it will silently fall to `unresolved_join` and vanish',
+  'from every rate, in the quiet direction that trips none of this feature\'s own alarms.',
+  'Do NOT widen the predicate to make this pass: `accept` is ambiguous (a non-closing Hold/Trim/Add',
+  'path writes it) and `accept` + `ai_verdict: "Roll"` does not close either. Read §2/Q3.5, then',
+  'update the predicate, this scan, and the fixtures together.',
+].join('\n');
+
+/** Every string literal passed as `closeTrade`'s FIRST argument (its `via`), from real source. */
+const viaLiteralsIn = (src: string): string[] =>
+  [...code(src).matchAll(/closeTrade\(\s*'([^']*)'/g)].map((m) => m[1]);
+
+const WRITES_CLOSED = /status:\s*'closed'/;
+
+/**
+ * The whole `features/trading` tree as SOURCE TEXT. A glob, not an enumeration: the scan must notice
+ * a close path in a module that does not exist yet — that is the entire point of guarding the root
+ * cause rather than the instance.
+ */
+const TRADING_SOURCES = import.meta.glob('../**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+describe('⚠ §2/Q3.5 — the close-bearing set is PINNED by a source scan (the guard)', () => {
+  it('`closeTrade`s `via` producers are EXACTLY the enumerated set: the default `close`, the Exit accept, and the roll', () => {
+    // Three producers, and the predicate in `ledger.isCloseBearing` names all three. A fourth would
+    // be counted by nobody.
+    expect(new Set(viaLiteralsIn(useGhostTrade)), Q35).toEqual(new Set(['accept', 'roll']));
+    // ...and the third is the DEFAULT, pinned by the signature itself.
+    expect(code(useGhostTrade), Q35).toMatch(/via:\s*DecisionEvent\s*=\s*'close'/);
+  });
+
+  it('`status: "closed"` is written by NO production module outside the two named close paths', () => {
+    // `useGhostTrade.closeTrade` + `usePortfolio.closePosition` are the two. `testSeed.ts` is the
+    // known third writer and is NOT a close path: it writes a fabricated closed position with no
+    // decision record at all, which the spine rule excludes structurally (§2/Q3.3). A FOURTH entry
+    // here means a new close path exists and the join has not been told about it.
+    const writers = Object.entries(TRADING_SOURCES)
+      .filter(([path]) => !/\.spec\.|\/fixtures\.ts$/.test(path))
+      .filter(([, src]) => WRITES_CLOSED.test(code(src)))
+      .map(([path]) => path.replace(/^\.\.\//, ''))
+      .sort();
+    expect(writers, Q35).toEqual([
+      'model/useGhostTrade.ts',
+      'positions/testSeed.ts',
+      'positions/usePortfolio.ts',
+    ]);
+  });
+
+  it('the guard BITES — it fails on a new `via` literal and on a new close path (a scan that cannot fail guards nothing)', () => {
+    // The scan is only worth its brittleness if it actually detects the drift it exists for. Prove
+    // it against a mutated source rather than trusting the regex.
+    const mutated = useGhostTrade.replace("closeTrade('roll'", "closeTrade('expire'");
+    expect(mutated).not.toBe(useGhostTrade); // the mutation actually applied
+    expect(new Set(viaLiteralsIn(mutated))).not.toEqual(new Set(['accept', 'roll']));
+    expect(WRITES_CLOSED.test(code("const x = { ...p, status: 'closed' };"))).toBe(true);
+    // ...and it reads CODE, not prose: this file's own ⚠ warnings quote the patterns verbatim.
+    expect(WRITES_CLOSED.test(code("// a comment about status: 'closed'"))).toBe(false);
+  });
+});
 
 describe('boundary 2 — the outcome ledger is a ONE-WAY LEAF: nothing imports it', () => {
   it.each(FORBIDDEN_IMPORTERS)('%s does not import the outcomes module', (_name, source) => {
@@ -182,6 +260,37 @@ describe('AC-6 / AC-14 / AC-E17 — the negative space in the surface', () => {
     // §8 non-goal 15: no include/exclude affordance in the surface OR the data.
     expect(ui).not.toMatch(/<Switch|<Checkbox|<Slider|<Select|onSort|setFilter|includeExcluded/);
     expect(RENDERED_COPY.toLowerCase()).not.toMatch(/count it anyway|show excluded/);
+  });
+
+  it('AC-E21 — NO ROLL CATEGORY: a roll is a close, not a cohort. No roll cell, rate, reason, count, badge or filter — in the data, the type, or the surface', () => {
+    // Having ruled that a rolled-out leg IS an outcome, it must be an outcome WITHOUT AN ASTERISK.
+    // ⚠ "Surfacing the roll count for transparency" is the FAILURE MODE here, not the safeguard: a
+    // count of rolls beside a rate is a sub-cohort in everything but name, and it hands the reader
+    // the mental subtraction — "58%, but 5 of those were rolls, so really…" — that the ruling
+    // refused. The basis obligation (`[model-read-carries-its-assumptions]`) is discharged by the
+    // hit DEFINITION (`TR_HIT_DEF`, AC-13): a definition, not a count.
+    expect(EXCLUSION_PRECEDENCE.filter((r) => /roll/i.test(r))).toEqual([]);
+    expect(Object.keys(copyModule.TR_REASON_LABEL).filter((k) => /roll/i.test(k))).toEqual([]);
+    expect(FAMILY_ORDER.filter((k) => /roll/i.test(k))).toEqual([]);
+    // ⚠ The pre-named exclusion slot after `scenario_sourced` stays EMPTY. No `rolled_continuation`.
+    expect([...EXCLUSION_PRECEDENCE]).toEqual([
+      'malformed',
+      'no_decision_record',
+      'unresolved_join',
+      'scenario_sourced',
+      'unpriced_basis',
+      'modeled_basis',
+    ]);
+    // No roll cohort / marker / count / filter in the surface. (`\b` keeps "scroll"/"controlled"
+    // out; the "roll-up" in the prose is stripped with the comments.)
+    expect(ui).not.toMatch(/\broll(ed|s|_|C|Co)/i);
+    // The ONLY place a roll may be NAMED is the hit definition (AC-13) — never a label, never a
+    // count, never a badge. AC-E20's truthful wording names no roll either.
+    const namesARoll = Object.entries(copyModule)
+      .filter(([, v]) => typeof v === 'string' && /\broll/i.test(v))
+      .map(([k]) => k)
+      .filter((k) => k !== 'TR_HIT_DEF');
+    expect(namesARoll).toEqual([]);
   });
 
   it('AC-10 / AC-16 — no dollar figure and no summed total anywhere in the rendered copy', () => {

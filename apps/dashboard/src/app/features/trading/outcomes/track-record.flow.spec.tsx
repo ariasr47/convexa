@@ -221,8 +221,11 @@ describe('records that must never reach a rate', () => {
     expect(surfaceText()).not.toContain('196');
     // ...and no copy anywhere mentions seeding. It is just a record with no decision.
     expect(surfaceText().toLowerCase()).not.toMatch(/\bseed|\bdemo\b|test data/);
+    // The seed is ONE MEMBER of this bucket, not its archetype: a rolled-into leg lands here too,
+    // from ordinary activity. The label says the narrower, TRUE thing — "no ENTRY decision" — because
+    // a rolled-into leg DOES have a recorded decision, just not an entry one.
     expect(screen.getByTestId('tr-reason-no_decision_record').textContent).toContain(
-      'No decision recorded — not counted · 1',
+      'No entry decision recorded — it can’t tell us whether entering was a good call · 1',
     );
     // The balance identity is user-checkable, right there in the breakdown.
     expect(screen.getByTestId('tr-balance').textContent).toBe(
@@ -424,6 +427,46 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
       expect(screen.getByTestId('tr-coverage').textContent).toBe(coverageBefore);
       expect(screen.getByTestId('tr-read-prime').textContent).toBe(readBefore);
     });
+  });
+
+  it('AC-E15 class B — an unreadable STORE ⇒ the import is DECLINED with its OWN self-contained title+body: nothing imported, nothing changed, the blob byte-untouched', async () => {
+    // The FILE is fine here; YOUR STORED HISTORY is the problem, and we will not touch it. The store
+    // APIs would rewrite the unreadable blob and destroy it — `[loss-free-durable-migration]` forbids
+    // that outright, so refusing is the only non-destructive answer. Declining IS the design.
+    const corrupt = '{ this is not json';
+    seedStores({ rawPositions: corrupt });
+    mount();
+    pickFile(
+      JSON.stringify({
+        schema: 'convexa.archive',
+        version: 1,
+        exported_at: '',
+        stores: {
+          ghost_trade: { trades: {}, decisions: [] },
+          positions: { positions: { 'p-1': position({ id: 'p-1' }) }, decisions: [] },
+          orders: { orders: {} },
+        },
+      }),
+    );
+    await screen.findByTestId('tr-import-confirm-title');
+    fireEvent.click(screen.getByTestId('tr-import-confirm'));
+    await screen.findByTestId('tr-import-declined-title');
+
+    // ⚠ The STRUCTURAL fact (the wording itself is `review:`): class B is NOT composed through class
+    // A's template. That template ends "Your existing data was not changed." — a reassurance beside
+    // the point in class A, where the point was the file, but INVERTED here, where not touching your
+    // data IS the entire event. Ranking the protection as a footnote to a failure is the defect.
+    expect(screen.getByTestId('tr-import-declined-body').textContent).not.toContain(
+      'Your existing data was not changed.',
+    );
+    // No blame, no apology, no error severity, and no Retry/Import-anyway/Repair escape hatch: the
+    // refusal is the feature. The remedy is a reload, and the body says so.
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: /retry|anyway|repair|force|clear/i })).toBeNull();
+
+    fireEvent.click(screen.getByText('Done'));
+    // The whole point: NOTHING was written. The unreadable blob survives byte-for-byte.
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(corrupt);
   });
 
   it('AC-E15 — a declined file is not imported, the reason is from the closed set, and the readout is unchanged', async () => {

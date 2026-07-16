@@ -102,7 +102,9 @@ export const order = (over: Partial<SimOrder> = {}): SimOrder =>
     ...over,
   }) as SimOrder;
 
-/** One CLOSED, COUNTED outcome: a closed position + its `open` entry record + its `close` record. */
+/** One CLOSED, COUNTED outcome: a closed position + its `open` entry record + its close-bearing
+ *  record (a plain `close` by default — `exitEvent`/`exitVerdict` express the other two producers of
+ *  `closeTrade`'s `via`: the Exit-verdict accept and the roll close). */
 export function closedOutcome(
   id: string,
   opts: {
@@ -115,6 +117,11 @@ export function closedOutcome(
     entryDigest?: EntryContextDigest | null;
     originOrderId?: string;
     entryClock?: string;
+    /** The close-bearing event's `event_type` — `closeTrade(via)`'s three producers are
+     *  `close` (the default), `accept` (the Exit verdict) and `roll`. */
+    exitEvent?: DecisionRecord['event_type'];
+    /** The close-bearing event's `ai_verdict`. Required to be exactly `'Exit'` on an `accept`. */
+    exitVerdict?: string;
   } = {},
 ): { position: Position; decisions: DecisionRecord[] } {
   const plPct = opts.plPct ?? 20;
@@ -129,9 +136,10 @@ export function closedOutcome(
   });
   const exit = decision({
     trade_id: id,
-    event_type: 'close',
+    event_type: opts.exitEvent ?? 'close',
     clock_time: closeTime,
     mark_basis: (opts.exitBasis ?? 'snapshot') as DecisionRecord['mark_basis'],
+    ...(opts.exitVerdict ? { ai_verdict: opts.exitVerdict } : {}),
   });
   return {
     position: position({
