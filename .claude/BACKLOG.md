@@ -568,6 +568,41 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`split-decision-log` — the append-only decision log is SPLIT across two durable stores (LIVE bug)** —
+  `SURFACED 2026-07-16 (outcome-ledger GATE A·X; conductor-verified in code)`. **Pre-existing +
+  feature-independent — NOT an outcome-ledger regression.**
+  **The defect:** `appendDecision` is defined **twice** — `features/trading/model/store.ts:59` writes to
+  **`convexa.ghost-trade.v1`**, `features/trading/positions/store.ts:171` writes to
+  **`convexa.positions.v2`**. `pages/ticker/TickerDashboard.tsx:101` → `useGhostTrade` is **LIVE code**
+  (not dead — `GhostTradePanel` was deleted, but the hook survives and the Ticker still drives it) and
+  still appends to **v1**, while the positions store reads v2 and only falls back to v1 via
+  `resolveDurable` **when no v2 blob exists**. So once a user has ANY v2 blob (from Positions, or the demo
+  seed), **every Ticker-page ghost-trade decision record is written to a key nothing reads** —
+  permanently stranded. The Ticker's ghost trade and the Positions book are effectively **two parallel
+  universes**; `sim-entry-unification` unified the **dialog**, never the **stores**.
+  **Why it matters beyond outcome-ledger:** decision records are the app's only audit spine and the raw
+  material of any edge measurement — half of them are being written to a dead-letter key today, silently.
+  Compounds with `[loss-free-durable-migration]` (promoted 2026-07-16): the stranded v1 blob is exactly the
+  data a careless future migration would "clean up."
+  **Open question for the owner/architect — is the split INTENDED?** Plausibly yes-by-history (v1 = the
+  single-trade ghost engine, v2 = the multi-position book; the migration was meant as a one-time upgrade).
+  If intended, the fix is **documentation + a union read**; if not, it is a **store unification** (a real
+  refactor touching a durable key ⇒ `[loss-free-durable-migration]` is binding — never-delete,
+  promote-forward, idempotent). **Decide before, or as part of, outcome-ledger's fan-out.**
+  **Interim (already handled):** outcome-ledger's architecture **unions both logs + both position maps and
+  de-dupes** (migration-copied records exist in both blobs), so the feature is correct either way — but the
+  underlying split remains.
+  *Value M–H (audit-spine integrity) · Effort S (union+document) to M (unify).* Decision-impact cull **N/A**
+  (data integrity). **Invariant watch:** `loss-free-durable-migration` (HARD),
+  `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`.
+- **`test-seed-writes-a-fabricated-closed-position` (sub-item of the above)** — `positions/testSeed.ts`
+  seeds a CLOSED position (`realized_pl_dollar: 196`, `realized_pl_pct: 48.4`, `status: 'closed'`) via
+  `putPosition` and **never calls `appendDecision`**. Harmless today (it is a dev/demo seam, gated on the
+  `demo@convexa.io` account, non-destructive + one-time), but it means **a durable store contains a
+  fabricated outcome with no decision record** — any naive "closed position = outcome" analysis would count
+  a 48.4% winner that never happened. outcome-ledger excludes it **structurally** (DecisionRecord-as-spine,
+  no record ⇒ not an outcome). *Fix (optional): have the seed emit matching decision records, or mark
+  seeded positions explicitly.* *Value L–M · Effort S.*
 - **`ai-rec-grounding` — every AI-asserted number traceable to a computed field** — `RAISED 2026-07-16
   (canon review; owner agreed)`. **The gap:** `best-effort-isolated-or-null` covers the AI **failing**;
   **nothing covers it fabricating.** The rec emits strikes / stops / targets / levels as fact, and
