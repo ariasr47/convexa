@@ -11,6 +11,14 @@
 >
 > **This feature is `NO_BACKEND_CHANGE`.** It consumes **no endpoint**. It derives from the durable
 > client stores. The empty `apps/api` diff **is** the structural no-auto-tuning guarantee.
+>
+> **⚠ AMENDED AT GATE Z (2026-07-16) — TWO COPY RULINGS, nothing else.** The feature is built; this is a
+> targeted copy amendment, **not** a re-design and **not** a re-fan-out (compressor #3 was **not** re-run).
+> The amendment is confined to: **§5.5** (one reason label + one framing bullet) · **§5.9** (the decline
+> set gains a **second class**; the set stays CLOSED) · **§8** (the AC map: AC-E10 sharpened; AC-E19 /
+> AC-E20 / AC-E21 added) · **§10** (new — the rulings of record, with the exact final strings). **Every
+> other state, string, decision and constraint below is unchanged and still locked.** No pin was reopened;
+> no product scope changed; no new behavior, count, shape, badge, cohort or reason was created.
 
 ---
 
@@ -185,6 +193,10 @@ its reason:
    are separate cases; conflating them would tell a user whose store failed to read that they have no
    history. See §5.2 vs §5.3.
 
+*(A fifth refinement — `no_decision_record`'s label, which under-described its own predicate the same way
+— was made at **GATE Z, 2026-07-16**. It is recorded in §10.2, not here, because the PM named it
+explicitly at §7.20 / AC-E20 rather than leaving it to me to catch.)*
+
 ### 2.10 `malformed` vs `unreadable_records` — **RESOLVED** (§11.4 item 1 was left to me)
 
 **ONE user-facing concept: "unreadable record". No second concept is invented.** The distinction the
@@ -219,6 +231,9 @@ the whole population.** My design honours that by **withholding M entirely** rat
 - **Family coverage lines render unchanged.** They partition *the counted population* and they **state**
   that N ("Of your 34 counted outcomes, …") — they never claim it is everything. That is already honest.
 - **Nothing is written, nothing is repaired, nothing is deleted.** `[loss-free-durable-migration]`.
+
+*(This state's fact — "we could not read all of your stored history this time" — is also what **declines an
+import**. See §5.9's class-B decline and §10.1.)*
 
 ---
 
@@ -268,7 +283,7 @@ below is not rendered.**
 | family `counted_total`, `pre_capture`, `unavailable_at_capture`, `attributed` | the **family coverage line** (§5.8) |
 | family `not_attributable_by_path` (AI-rec only) | the family coverage line **+** the AI-rec path note — **both rendered iff `> 0`** (§5.8, AC-E18) |
 | basis: sources spanned + de-dupe identity | the coverage statement's **ⓘ tooltip** (§6) |
-| basis: `sources_complete` | the **partial banner** + the `· partial read` suffix on every counted cell's basis line (§2.11) |
+| basis: `sources_complete` | the **partial banner** + the `· partial read` suffix on every counted cell's basis line (§2.11) **+ the class-B import decline** (§5.9) |
 | basis: the **derived** capture epoch | the **capture-epoch line** (§5.4) |
 | basis: SIMULATED provenance | the header badge **+** the SIMULATED disclosure (§5.1) |
 | basis: advisory framing | the advisory line (§5.1) |
@@ -393,6 +408,12 @@ TR_UNREADABLE_BODY  = "None of your trade records could be read this time, so th
 
 **Never a thrown error. Never `severity="error"`. Never a repair, a rewrite, a prune or a clear.**
 
+⚠ **The last sentence is scoped by §5.9's class-B decline.** "If you have an archive file you can import
+it" is true — the *offer* stands, unconditionally, because the archive block renders in every state. But if
+the store still cannot be read when the user presses Import, the import is **declined** (§10.1), and the
+decline copy says why in terms that match this state's own words. **Do not fork this string to pre-empt
+that**; a pre-emptive "but it might not work" here would take away an affordance that is usually fine.
+
 ### 5.4 The coverage statement (AC-17) + the capture epoch (AC-19)
 
 **Readable without interaction. Always renders all three counts, including zeros.**
@@ -440,12 +461,17 @@ TR_BREAKDOWN_SUMMARY = "What wasn't counted — and why"
 
 | Reason key | Row label |
 |---|---|
-| `no_decision_record` | `No decision recorded — not counted` |
+| `no_decision_record` | `No entry decision recorded — it can't tell us whether entering was a good call` |
 | `unresolved_join` | `Couldn't link to its decision — not counted` |
 | `scenario_sourced` | `Scripted test scenario — not a real decision` |
 | `unpriced_basis` | `Entry or exit price was typed, theoretical or stale — not a quote` |
 | `modeled_basis` | `Re-priced between quotes — not a quote` |
 | `malformed` | `Unreadable record — not counted` |
+
+> ⚠ **`no_decision_record`'s label was amended at GATE Z (2026-07-16) — see §10.2 for the ruling, the
+> reason, and the exact final string.** The old label (`No decision recorded — not counted`) was **false**
+> for a rolled-into leg, which *does* have a recorded decision — just not an **entry** one. **Nothing else
+> in this table changed. No reason was added; the pre-named slot after `scenario_sourced` stays EMPTY.**
 
 Rows render **in the order above** (which is the architect's stated precedence order — so the breakdown
 reads the way it was decided). **Render only rows whose count is `> 0`**; a zero exclusion is not an
@@ -478,9 +504,19 @@ TR_BREAKDOWN_G2_NOTE = "These aren't recorded closed positions, so they're not p
   filter.** Integers and reasons, full stop (`ARCHITECTURE_CONTRACT` §3.4.5 lock 1 + §8 non-goal 15). **If
   you find yourself writing a function from an excluded record to a cohort member, you have misread the
   contract.**
-- **The demo seed gets NO special case (AC-E10).** The `testSeed.ts` fabricated closed position lands in
-  `no_decision_record` like any other record with no decision. **The strings "seed", "demo", "test data"
-  and "sample" appear nowhere in this surface**, and no code branch mentions it.
+- **⚠ `no_decision_record` is a LIVE, GROWING, ORDINARY bucket — not a demo-seed curiosity** (`PRODUCT_
+  CONTRACT` §4.17-B2, AC-E10, AC-E20). Every **rolled-into leg** lands here the day it closes, from
+  ordinary user activity. **Do not treat it as near-always-zero, do not design it as an edge case, and do
+  not write copy that apologizes for it.** It is a normal category a real user will see routinely; it must
+  read as one. **The demo seed still gets NO special case** — `testSeed.ts`'s fabricated closed position
+  lands here like any other record with no entry decision, and it is **one member of this bucket, not its
+  archetype**. **The strings "seed", "demo", "test data" and "sample" appear nowhere in this surface**, and
+  no code branch mentions it.
+- **⚠ No roll anything** (`PRODUCT_CONTRACT` §4.17-A2, AC-E21, §8 non-goal 15). No roll row, no roll
+  reason, no roll count, no "X of these were rolls", no badge, no asterisk, no cohort, no filter. **A roll
+  is a close, not a category.** The basis obligation is discharged by the hit **definition** (`TR_HIT_DEF`,
+  AC-13), never by a count. *"Surfacing the roll count for transparency" is the failure mode here, not the
+  safeguard.*
 - **The two groups are never summed with each other** (§2.10).
 
 ### 5.6 The `building` cell (AC-E2, AC-E3, AC-E4) — a count, and nothing numeric beside it
@@ -536,6 +572,9 @@ Mar 4, 2026 – Jul 15, 2026 · quoted fills only
 - The qualifier's width test is computed **once, in the copy builder**, from the emitted interval — the UI
   does no arithmetic anywhere else. **`> 20` strictly**; exactly 20.0pp carries no qualifier.
 - **`n_min` is data, not a literal.** Read it from the read; never hardcode `20` in copy.
+- **⚠ A rolled-OUT leg renders as a plain counted cell — nothing marks it** (AC-E19/AC-E21). No badge, no
+  asterisk, no footnote, no separate line, no tint, no "(rolled)". It is an outcome without an asterisk,
+  and that is the ruling (`PRODUCT_CONTRACT` §4.17-A).
 
 ### 5.8 The family heading + its coverage line (A2 — AC-19, AC-E13, AC-E14, AC-E18)
 
@@ -640,23 +679,69 @@ Button: **Done**. *(AC-24 falls out: re-importing the same file reports `0 recor
 **recomputed from the unchanged stores, never patched** — shows an identical counted N, identical rates
 and an identical coverage statement.)*
 
-**Declined import (AC-E15)** — same dialog, step 2, declined variant:
+#### 5.9.1 Declined import (AC-E15) — **TWO CLASSES, one closed set**
+
+*(Restructured at GATE Z, 2026-07-16 — ruling of record in §10.1. Class A is unchanged.)*
+
+The decline set was written as **file reasons only**. It is now **two classes**, because there are two
+different things that can be wrong, and they are **not the same fact and not the same feeling**:
+
+- **Class A — the FILE is the problem.** *"We looked at what you handed us and can't use it."*
+- **Class B — YOUR STORED HISTORY is the problem, and we will not touch it.** *"Your file is fine. We
+  stopped because writing into a history we can't fully read could destroy records."*
+
+**The set is still CLOSED.** Two classes is not an open door: a new decline reason — in either class —
+still requires a UX ruling. **Never a raw parser message, never a stack trace, never a `catch` string.**
+
+**Class A — the file is the problem.** Same dialog, step 2, declined variant. Unchanged:
 ```
 TR_IMPORT_DECLINED_TITLE = "Import declined"
 TR_IMPORT_DECLINED_BODY  = "{reason} Nothing was imported. Your existing data was not changed."
 ```
-`{reason}` from a **closed set** — never a raw parser message, never a stack trace:
+`{reason}` from the class-A closed set:
 ```
 TR_DECLINE_UNREADABLE = "This file couldn't be read."
 TR_DECLINE_NOT_OURS   = "This isn't a Convexa archive file."
 TR_DECLINE_VERSION    = "This archive was written by a version this app doesn't understand."
 ```
 
+**Class B — your stored history is the problem, and we will not touch it.** Same dialog, step 2, a
+**third variant** beside *complete* and *declined (file)*. It is **self-contained: it does NOT pass a
+`{reason}` through `TR_IMPORT_DECLINED_BODY`.** Its own title, its own body:
+```
+TR_IMPORT_DECLINED_STORE_TITLE = "Import declined — your file is fine"
+TR_IMPORT_DECLINED_STORE_BODY  = "We couldn't read all of your stored history this time. Importing adds to
+                                  that history, and we won't write over records we can't read — so we
+                                  stopped before touching anything. Nothing was imported, nothing was
+                                  changed, nothing was deleted: your history and your file are exactly as
+                                  they were. Reload and try the same file again — importing the same file
+                                  twice changes nothing."
+```
+Button: **Done** (the same button; a decline is a report, not a dead end).
+
+**⚠ Why class B does not reuse class A's template.** Class A's tail — *"Nothing was imported. Your
+existing data was not changed."* — is a **reassurance beside the point**: the point was the file. In class
+B, **not touching your data IS the entire event**. Passing a class-B reason through class A's sentence
+would rank the protection as a footnote to a failure, when the protection is the whole answer. **Class B's
+body is one string for the same reason the counted read is one string: the fact and its meaning arrive
+together or not at all.**
+
+**⚠ Binding on class B's wording:**
+- **It must never imply the user's data was lost, damaged, deleted or changed. Nothing was touched — that
+  is the point.** "couldn't be read **this time**" + "Reload and try again" is the same transient framing
+  §5.3 and §5.4 already use for the same underlying fact. Keep it.
+- **One string covers both the partial store and the fully-unreadable store.** *"We couldn't read all of
+  your stored history"* is true in both. **Do not fork it into a partial variant and a total variant** —
+  the user's situation and the app's answer are identical in both, and two strings would drift.
+- **No "Retry" button, no "Import anyway", no "Repair", no "Force", no "Clear and import".** The refusal
+  is the feature (`[loss-free-durable-migration]`). The remedy is a reload, and the body says so.
+- **No blame, no apology, no `severity="error"`.** It is a normal, correct outcome of a safety rule.
+
 **⚠ Binding on the whole archive block (`[loss-free-durable-migration]`):**
 **No "Restore". No "Replace". No "Overwrite". No "Clear". No "Reset". No "Start fresh". No
 "Import as new".** Not a button, not a mode, not a checkbox, not a copy line. A destructive restore is
-the one operation this invariant exists to forbid. **A declined import leaves the stores byte-untouched
-and says so.**
+the one operation this invariant exists to forbid. **A declined import — class A or class B — leaves the
+stores byte-untouched and says so.**
 
 ---
 
@@ -682,10 +767,16 @@ reimplemented locally, **not imported from `pages/ticker`**; §2.2).
 The coverage tooltip's last sentence is `[model-read-carries-its-assumptions]` applied to the **coverage
 counts themselves** (`ARCHITECTURE_CONTRACT` §3.4.6) — they are a model read and carry their basis too.
 
+**⚠ No tooltip on any exclusion row.** The breakdown panel is *integers and reasons, full stop* (§5.5) —
+a per-row ⓘ would put an explanation behind an interaction inside content that is already behind one, and
+it would be the thin end of the drill-through this feature forbids. **Each reason label carries its own
+why, in the label.** That is why `no_decision_record`'s label is a sentence and not two words (§10.2).
+
 **Glossary terms and where each is defined (all visible, none tooltip-only):** *hit rate* →
 `TR_HIT_DEF` · *plausibly X–Y%* → `TR_RANGE_DEF` · *avg per trade / ±Npts trade to trade* →
 `TR_RETURN_DEF` · *quoted fills only* → `TR_BASIS_DEF` · *building history* → `TR_BUILDING` ·
-*predate capture* → `TR_EPOCH` + its ⓘ · *not available at entry* → the family coverage clause.
+*predate capture* → `TR_EPOCH` + its ⓘ · *not available at entry* → the family coverage clause ·
+*no entry decision* → the `no_decision_record` label itself (§5.5) + `TR_HIT_DEF`'s roll clause.
 
 ---
 
@@ -706,6 +797,13 @@ cell is `computed` (so it covers **empty**, **day one** (AC-E4), and a partial t
 State 4 covers "3 open, nothing closed yet": coverage reads `Counted 0 of 0 recorded closed positions. 3
 still open — not yet counted. 0 orders never filled.`, every family is `building`, **no rate exists
 anywhere** — exactly AC-E4.
+
+**The import dialog is not a body state** — it is a modal over any of the four. Its variants are: confirm ·
+complete · declined (class A) · declined (class B) (§5.9.1). **The class-B decline is reachable from body
+states 1 and 3** (the store could not be fully read) — which is exactly the pairing the copy assumes: the
+user is looking at §5.3 or the partial banner, reads "import only ever adds", tries it, and gets a decline
+whose first sentence echoes the state they are already looking at. **That echo is deliberate. Keep the
+wording aligned if either ever changes.**
 
 ---
 
@@ -735,7 +833,7 @@ every AC, but an automated TEST is required only at the risk-based bar**:
 | AC-10 mean per-trade %, size-unweighted, never dollar expectancy | counted + frame | **`test:`** negative space — no `$`, no "expectancy" in the readout · `review:` `TR_RETURN_DEF` |
 | AC-11 plain range, not a bare ±, not behind an interaction | counted | **`test:`** builder emits `plausibly {lo}–{hi}%` |
 | AC-12 >20pp ⇒ "still wide" | counted | **`test:`** threshold rule, strictly `> 20`; and **not** at exactly 20 |
-| AC-13 hit definition stated | frame | `review:` `TR_HIT_DEF` |
+| AC-13 hit definition stated (incl. closing by rolling) | frame | `review:` `TR_HIT_DEF` |
 | AC-14 no semantic tint on a rate | counted | **`test:`** no `success.main`/`error.main`/red/green/arrow/icon in the readout (the file next door does exactly this) |
 | AC-15 five families, fixed order | default/partial | `review:` ordering |
 | AC-16 overlap stated · no summed total | frame + all | `review:` `TR_OVERLAP` · **`test:`** no total that sums cell Ns exists |
@@ -757,15 +855,18 @@ every AC, but an automated TEST is required only at the risk-based bar**:
 | AC-E7 typed/theoretical excluded | breakdown | **`test:`** |
 | AC-E8 modeled excluded, not a cohort | breakdown | **`test:`** + no `modeled` cell exists anywhere |
 | AC-E9 scripted scenario excluded | breakdown | **`test:`** |
-| AC-E10 no decision record (incl. the seed) | breakdown | **`test:`** + negative space: `seed`/`demo` absent from the surface |
+| AC-E10 **no ENTRY decision record** — the seed **and** every rolled-into leg (a live, growing bucket) | breakdown | **`test:`** it is excluded and reaches no rate + negative space: `seed`/`demo` absent from the surface *(the existing case stands — the extension adds members to the bucket, not assertions)* · `review:` the label is true of **both** members (§10.2) |
 | AC-E11 open not counted, mark never moves a rate | default | **`test:`** |
 | AC-E12 never-filled | default + breakdown | **`test:`** |
 | AC-E13 pre-capture: tier counts, others report it | family coverage | **`test:`** tier `pre_capture === 0` **from the data**; no "unknown" cell exists |
 | AC-E14 captured-but-unavailable, distinct | family coverage | **`test:`** the two clauses are distinct |
-| AC-E15 declined import | import declined | **`test:`** counted N + rates identical before/after |
+| AC-E15 declined import — **class A (file) and class B (store)** | **import declined (A)** / **import declined (B)** | **`test:`** counted N + rates identical before/after *(the existing case covers both classes — same assertions, no new spec)* · `review:` the class-B title + body (§10.1) |
 | AC-E16 conflict ⇒ existing wins | import step 2 | **`test:`** |
 | AC-E17 stream drop ⇒ unchanged, un-dimmed | all | **`test:`** the iv-rank precedent — no live prop, no dim |
 | AC-E18 AI-rec partial attribution, both directions | family coverage | **`test:`** note renders iff `not_attributable_by_path > 0`, absent when `0` |
+| AC-E19 rolled-OUT leg ⇒ a plain counted outcome, no marker | **counted** | **`test:`** already covered by the Architect's pinned case-2 fixture (roll close ⇒ counted) — **do not edit that fixture** · `review:` no roll marker/badge/asterisk renders (§5.7) |
+| AC-E20 the no-entry-record label is TRUE of the rolled-into leg | breakdown | `review:` **copy** — the exact string in §10.2. *(Per the 2026-07-13 risk-based rule a string is `review:`, not `test:`. **Do not add a named test for this label.** The existing AC-E10 assertion that hardcodes the old string must be updated to the new one — mechanical, not a new case.)* |
+| AC-E21 no roll category (negative space) | all | **`test:`** — **fold into invariant 8's existing source-scan** (extend its assertion to the roll vocabulary; **no new spec file**): no roll cohort, no roll reason key, no roll count, no roll filter, in the data, the type, or the surface |
 
 **Invariant cases with no AC of their own — `test:` each** (these are the negative space; they are the
 reason this feature is safe):
@@ -788,7 +889,9 @@ reason this feature is safe):
 7. **`attributed` is derived from the outcome population, never by summing cell Ns.** Fixture: one outcome
    firing **three** setups ⇒ the setup family's `attributed` is **1**, not 3.
 8. **No include/exclude toggle, override, or filter exists** — in the data, the type, or the surface
-   (§8 non-goal 15).
+   (§8 non-goal 15). **Extended at GATE Z (AC-E21): the same scan also asserts no roll cohort, no roll
+   exclusion reason key, no roll count and no roll filter exists** — the pre-named slot after
+   `scenario_sourced` stays **empty**.
 9. **`[theme-token-discipline]`** — zero hardcoded hex; mode-aware values via **`extrasFor(theme)` inside
    sx callbacks** (bare `extras.` is dark-only). **Dark/light parity is part of done** → `review:` both
    modes + the lint/hex scan.
@@ -811,5 +914,207 @@ reason this feature is safe):
 - **No Ticker-page widget, no `/_ops/metrics` surface, no new nav item** (§3 Out).
 - **No dollar figure, no total, no summed N** (§2.4, AC-16).
 - **No restore / replace / clear / reset** (§5.9).
+- **No "Retry" / "Import anyway" / "Repair" on a declined import** (§5.9.1).
+- **No roll cell, roll rate, roll exclusion reason, roll count, roll badge or roll filter** (AC-E21,
+  `PRODUCT_CONTRACT` §4.17-A2 — a roll is a close, not a category).
 - **No AI interpretation of the ledger** (§8 non-goal 8).
 - **Nothing from the architect's §8 non-goals 1–15.**
+
+---
+
+## 10. GATE Z copy rulings — 2026-07-16
+
+**Scope of this section: WORDS ONLY.** Two items came back to this lane; both are ruled below. **No
+product scope, no behavior, no math, no server internals, no new count, no new shape, no new exclusion
+reason, no badge, no cohort, no asterisk.** The accepted pins, A1/A2/A3 and the PM's §11.6 ruling are
+**not reopened**. The pre-named exclusion slot after `scenario_sourced` **stays EMPTY**; §8 non-goal 15
+stands.
+
+**How to read the verdicts:** each ruling says plainly whether the built FE **stands**, **changes**, or is
+**replaced**, and names the constant.
+
+### 10.1 RULING 1 — the store-unreadable import decline: **RESTRUCTURE §5.9. The FE's judgment STANDS; its wording is REPLACED.**
+
+**What came back.** §5.9's decline set was **closed around file reasons** ("bad file, wrong shape, wrong
+version"). The FE hit a case the set could not express: importing an archive into a store whose blob
+**failed to read**. The store APIs would **rewrite that blob, destroying it** —
+`[loss-free-durable-migration]` (never-delete · promote-forward · idempotent · never-throw) forbids that
+outright. Refusing is the only non-destructive answer, and a refusal must state a reason. The FE composed
+`TR_DECLINE_STORE_UNREADABLE` from §5.4's already-approved partial-read wording, marked it flagged
+in-code, and asked for a ruling. **That was the correct escalation and the correct instinct: it invented
+no fact and it wrote nothing.**
+
+**The ruling — and why it is not "accept as-is".**
+
+1. **The refusal itself: RATIFIED, unchanged.** Declining is not a gap in the design; it is the design.
+   `[loss-free-durable-migration]` outranks the convenience of the import. **No "Retry", no "Import
+   anyway", no "Repair", no "Force", no "Clear and import"** — §5.9's binding list already forbade the
+   whole family, and this extends it explicitly (§9).
+2. **§5.9 is RESTRUCTURED to admit a NON-FILE decline class** — because this is a new **class**, not a new
+   string. The closed set was closed around *"the file is the problem."* This one is *"**your existing data
+   is the problem, and we will not touch it.**"* That distinction is the **user's whole mental model of
+   what just happened**, and it is why the refusal is a **protection, not a failure**. A set that cannot
+   say which of those two things happened is not a closed set; it is an incomplete one. **The set stays
+   CLOSED — two classes, not an open door.** A new reason in either class still needs a UX ruling.
+3. **The FE's string is REPLACED**, for three reasons, none of them stylistic:
+   - **It is a fact with no consequence attached.** *"Some of your stored history couldn't be read this
+     time."* is true, but it never says **why that stops an import**. The user's file is fine; from where
+     they sit the app has refused for a reason it did not give. A refusal that does not connect its reason
+     to its refusal is a non-sequitur — and the most available inference the user has is *"my file is
+     bad"*, which is exactly wrong.
+   - **It inherits the wrong tail.** Fed through `TR_IMPORT_DECLINED_BODY`, it ends *"Nothing was
+     imported. Your existing data was not changed."* — a **reassurance beside the point**, correct for
+     class A where the point was the file. In class B, **not touching your data IS the entire event**.
+     That template ranks the protection as a footnote to a failure. **Inverted.**
+   - **It borrows §5.4's words but not §5.4's meaning.** In §5.4 an unreadable store means *the readout is
+     understated*. Here it means *a write would destroy*. Same fact, different consequence — and the
+     consequence is the whole message.
+
+**The exact final strings.** Class A is **unchanged**. Class B is **self-contained** — it does **not**
+pass a `{reason}` through `TR_IMPORT_DECLINED_BODY`:
+
+```
+TR_IMPORT_DECLINED_STORE_TITLE = "Import declined — your file is fine"
+
+TR_IMPORT_DECLINED_STORE_BODY  = "We couldn't read all of your stored history this time. Importing adds to
+                                  that history, and we won't write over records we can't read — so we
+                                  stopped before touching anything. Nothing was imported, nothing was
+                                  changed, nothing was deleted: your history and your file are exactly as
+                                  they were. Reload and try the same file again — importing the same file
+                                  twice changes nothing."
+```
+
+**Every clause is load-bearing.** The **title** kills the only inference the user can otherwise draw
+(*"my file is bad"*) before they read a word of the body — the other three decline reasons are all about
+the file, and the dialog is the same dialog. **"we won't write over records we can't read"** is the
+protection, stated as a choice we made, in the user's own terms — not a failure that befell them. **"we
+stopped before touching anything"** is the fact `[loss-free-durable-migration]` guarantees. **"nothing was
+imported, nothing was changed, nothing was deleted: your history and your file are exactly as they were"**
+is the standing rule that this copy must never imply data was lost or changed — **nothing was touched;
+that is the point** — and it names **both** artifacts, because the user has two things to worry about.
+**"this time"** + **"Reload and try the same file again"** is the same transient framing §5.3 / §5.4
+already give the same underlying fact, so a user who sees both surfaces sees one story. The closing clause
+reuses `TR_IMPORT_CONFIRM_BODY`'s already-approved idempotency fact so the retry is **known-safe**, not
+hoped-safe.
+
+**⚠ ONE string for both the partial store and the fully-unreadable store.** *"We couldn't read **all** of
+your stored history"* is true in both cases. **Do not fork it** — the user's situation and the app's answer
+are identical in both, and two strings would drift.
+
+**Verdict for the FE — unambiguous:**
+- **DELETE `TR_DECLINE_STORE_UNREADABLE`.** It was a `{reason}` fragment for a template class B does not
+  use. It has no successor in the class-A set.
+- **ADD `TR_IMPORT_DECLINED_STORE_TITLE` + `TR_IMPORT_DECLINED_STORE_BODY`** (above, verbatim).
+- **The decline dispatch renders class B's own title + body directly** — it does **not** compose through
+  `trImportDeclinedBody(...)`.
+- **The condition under which the FE declines is UNCHANGED and not mine to set.** I ruled on the words and
+  the state, not on the trigger.
+- **Case matrix: AC-E15 (FE case 48) STANDS — same case, same assertions** ("declined ⇒ not imported;
+  reason reported; existing data not changed; counted N + rates identical before/after"), now spanning
+  both classes. **No new test is required for class B**: per the 2026-07-13 risk-based rule the strings
+  are `review:`. The class-B *decline* (that a refusal happens and writes nothing) is already inside case
+  48's assertions.
+
+### 10.2 RULING 2 — `no_decision_record`'s label: **CHANGED. One constant, one string.**
+
+**What came back.** `PRODUCT_CONTRACT` §7.20 / AC-E20: a roll's new leg has **only a `roll` record** — so
+a decision **WAS** recorded; it just was not an **ENTRY**. The label read *"No decision recorded — not
+counted"*. **For that leg it is false.** The reason's own predicate is already *"no **entry** decision
+record"*, so **the label under-described its own rule and told the user something untrue.** The PM named
+it, deliberately did not write the words, and called it **the same species as the AC-E1/AC-E5 lie this
+lane already caught** — telling a user with 400 trades *"Nothing has closed yet"* when the truth was *"we
+couldn't read your data"*. It is the same defect: **a label that describes the app's ignorance as the
+world's absence.** The fix is the same shape too: **say the narrower, true thing.**
+
+**Two things the old label got wrong, not one.**
+
+1. **It lied.** "No decision recorded" claims a total absence. For a rolled-into leg there is a decision on
+   record. Fixed by the **narrowest possible edit** — the PM's own predicate word: **"No **entry**
+   decision recorded."** One word. That is the whole lie, gone.
+2. **It read as a defect report.** *"— not counted"* states the consequence and stops, so the row reads as
+   something that went wrong: a record we failed to keep, a gap, a bug. **AC-E10 was extended: this bucket
+   is LIVE and GROWING from ordinary rolls** — not a rare demo-seed curiosity. A user will see it
+   **routinely**, and must understand it **at a glance**: *we know this position exists and how it closed,
+   but we have no record of how it was **entered** — so it cannot tell us anything about the score.* That
+   last clause is the **why**, and without it the row invites the two wrong readings the PM is worried
+   about: *"the app lost something"* or *"my trade was thrown away"*. **Neither is true.** It is excluded
+   because it is **not evidence** — there is no recorded decision for its result to be evidence *about*.
+
+**The exact final string:**
+
+```
+TR_REASON_LABEL.no_decision_record = "No entry decision recorded — it can’t tell us whether entering was
+                                      a good call"
+```
+
+**Why this wording and not another.**
+- **"No entry decision recorded"** is the reason's predicate, said out loud. It is true of **both**
+  members of the bucket: the seed record (no decision at all) and the rolled-into leg (a roll decision,
+  which is not an entry decision). It **does not claim no decision was recorded** — AC-E20's fact floor,
+  met exactly.
+- **"it can't tell us whether entering was a good call"** is the **why**, and it is *not evidence* said in
+  the house register — the same register as `TR_BUILDING`'s *"fewer than {n_min} outcomes can't tell luck
+  from edge"* and `TR_RETURN_DEF`'s *"it does not tell you what you made"*. **"it can't tell us"** puts the
+  limit on the **record**, not on the user and not on the app: no blame, no apology, no failure. It reads
+  as a **category**, which is what it is.
+- **It answers the row's real question in the row.** The cells are keyed on the entry; this feature's one
+  question is *"did entering on this read pay?"* (`TR_SUBTITLE`: *"How your own recorded simulated
+  decisions actually closed"*). With no entry decision on record, **there is no decision for the outcome to
+  be about** — so the exclusion is not a punishment, it is arithmetic honesty.
+- **Rejected: "we don't know what it was entered on."** It collides with **pre-capture** (AC-E13), which
+  is a *different* bucket that also lacks entry context yet **still counts in tier**. Two buckets must not
+  share a sentence.
+- **Rejected: "couldn't link it to its decision."** That is `unresolved_join`, verbatim. Here there **is**
+  no entry decision to link to — a different fact.
+- **Rejected: "we know what opened it."** For a rolled-into leg a roll opened it; for the seed nothing did.
+  A clause true of only one member is the same defect this ruling is fixing.
+- **Rejected: a per-row note, a G1 note, an ⓘ, or a footnote** to carry the why. **All are new elements in
+  a locked panel** (§5.5: *integers and reasons, full stop*) and this is a **words-only** ruling. The label
+  carries its own why — which is also why it is a sentence and not two words (§6).
+- **Length is fine.** `unpriced_basis`'s label is already a full clause. The row renders `{label} · {n}`;
+  the panel is a list of reasons, not a chip rail.
+
+**Verdict for the FE — unambiguous:**
+- **CHANGE exactly one entry: `TR_REASON_LABEL.no_decision_record`.** Old: `'No decision recorded — not
+  counted'`. New: the string above, verbatim (note the curly apostrophe in `can’t`, per the file's
+  existing convention).
+- **Every other entry in `TR_REASON_LABEL` STANDS unchanged.** `unresolved_join` keeps its *"— not
+  counted"* tail: it is true and it is not the same defect.
+- **`EXCLUSION_PRECEDENCE`, the `ExclusionReason` union, the ledger classifier, the counts, the balance
+  identity and the roll-up shape are ALL UNCHANGED.** The bucket, its members and its arithmetic are
+  exactly as built. **This is words only.**
+- **The `TR_REASON_LABEL` docstring must stop framing the bucket around the seed.** It currently reads as
+  if the seed were the archetype; per AC-E10-as-extended the seed is **one member of a live, growing
+  bucket** whose ordinary member is a rolled-into leg. The **seed still gets no special case** and
+  `seed`/`demo`/`test data`/`sample` still appear **nowhere in the surface** — that rule is untouched.
+  *(A comment, not user copy — but it is the next reader's mental model, and it is now wrong.)*
+- **Case matrix: AC-E10 (FE case 43) STANDS — same case, same assertions.** The extension adds **members**
+  to the bucket, not assertions to the case. **AC-E20 is `review:`** — copy. **Do not add a named test for
+  this string** (2026-07-13 risk-based rule).
+- **⚠ One mechanical follow-through, not a new test:** the existing AC-E10 assertion hardcodes the old
+  label (`'No decision recorded — not counted · 1'` in `track-record.flow.spec.tsx`). **Update it to the
+  new string.** That is a string update inside an existing case — it is not a new case and not a new
+  requirement.
+
+### 10.3 Downstream drift to close (no re-fan-out)
+
+**Compressor #3 was NOT re-run** — the split exists and the lanes are built. Only these references may
+drift from this blueprint:
+
+- **`FRONTEND_EXECUTION_CONTRACT` §"Tests to write" case 43 (AC-E10)** — reads *"a closed position with
+  **no decision record**"*. It must read **"no ENTRY decision record"**, and note the bucket's ordinary
+  member is a **rolled-into leg**, not the seed. **Assertions unchanged.**
+- **`FRONTEND_EXECUTION_CONTRACT` §"Tests to write" case 48 (AC-E15)** — reads *"declined import (corrupt
+  / unreadable / wrong version)"*, which enumerates **class A only**. It must also name the **class-B**
+  decline (store could not be fully read ⇒ refuse, write nothing). **Assertions unchanged** — they already
+  cover it.
+- **`FRONTEND_EXECUTION_CONTRACT` §"Tests to write"** has **no rows for AC-E19 / AC-E20 / AC-E21** (the PM
+  added them at GATE Z round 2). Their verification is fixed by §8 above: **E19** = the Architect's pinned
+  case-2 fixture + `review:` · **E20** = `review:` (copy) · **E21** = folded into the existing
+  negative-space scan (**no new spec file**).
+- **`FRONTEND_EXECUTION_CONTRACT` §"Definition of done"** already says *"Every string sourced from
+  `outcomes/copy.ts`, matching `UX_BLUEPRINT` §5 verbatim."* — **that line needs no change**; it now
+  resolves to the amended §5.5 / §5.9.1 strings. **This blueprint remains the single source of truth for
+  copy.**
+- **No `INTERFACE_CONTRACT` change.** The feature is `NO_BACKEND_CHANGE`; no field, no payload, no
+  conformance-spec entry is touched by either ruling.
