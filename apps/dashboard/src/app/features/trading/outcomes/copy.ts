@@ -38,7 +38,8 @@ export const TR_STORAGE =
 // "How to read this" — a VISIBLE block, never an accordion.
 export const TR_HIT_DEF =
   'A hit is a closed sim position that realized more than zero. A zero result is not a hit — it ' +
-  'stays in the denominator.';
+  'stays in the denominator. Closing by rolling is closing: a position you closed by rolling ' +
+  'counts like any other close, hit or miss.';
 
 export const TR_RANGE_DEF =
   '“Plausibly X–Y%” is the 95% Wilson confidence interval around the rate — the band ' +

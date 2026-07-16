@@ -264,7 +264,7 @@ into an assertion-per-AC. Stack: Vitest + Testing Library (`nx test @org/dashboa
 | 13 | AC-10 | `TR_RETURN_DEF` states "size-unweighted" + "not dollar expectancy" | `review:` |
 | 14 | AC-11 | the range renders as `plausibly {lo}–{hi}%` — not a bare ±, not behind an interaction | `test:` |
 | 15 | AC-12 | width `> 20pp` ⇒ `TR_STILL_WIDE` renders; **exactly 20.0pp ⇒ it does not** | `test:` |
-| 16 | AC-13 | `TR_HIT_DEF` (zero is not a hit; it stays in the denominator) | `review:` |
+| 16 | AC-13 | `TR_HIT_DEF` (zero is not a hit; it stays in the denominator; closing by rolling is closing) | `review:` |
 | 17 | AC-14 | **no semantic tint**: no `success.main`/`error.main`/red/green/arrow/icon on any rate ⚠ *the file next door does exactly this* | `test:` |
 | 18 | AC-15 | five families, order: tier → AI-rec → setup → IV-rank band → persona | `review:` |
 | 19 | AC-16 | `TR_OVERLAP` (a trade appears in every cell it qualifies for) | `review:` |
