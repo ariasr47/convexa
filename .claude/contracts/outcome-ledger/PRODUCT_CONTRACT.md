@@ -6,6 +6,14 @@
 > `.claude/PROJECT_CONTEXT.md` + `.claude/contracts/outcome-ledger/ARCHITECTURE_CONTRACT.md` —
 > assume no chat history. The Architect ran first; its technical shape is **given** and is not
 > re-scoped here. Every §9 open question is resolved in §4, in order.
+>
+> **⚠ AMENDED AT GATE Z ROUND 2 (2026-07-16) — one narrow ruling, targeted at the FRONTEND
+> executioner** (who applies the Architect's A3 join fix + this ruling together). The amendment is
+> confined to: **§4 "§11.6 — the ROLL ruling"** (new, the ruling of record) · **§4.6** (one exclusion
+> reason's required content) · **§3 Out** (one line) · **AC-13** (extended) · **AC-E10** (extended
+> cross-ref) · **AC-E19 / AC-E20 / AC-E21** (new) · **§7.19–§7.20** (new constraints) · **§9**. Every
+> other decision, AC and constraint below is **unchanged and still locked**. **No pin was reopened; no
+> amendment was bounced; the ruling needs ZERO architecture change.**
 
 ---
 
@@ -46,6 +54,9 @@ diagnostician.
   I can actually restore, because this data only gets more valuable and lives in one browser.*
 - **S7 — Know it's pretend.** *As the trader, I want to be told plainly that these are simulated
   fills, so I never read sim P&L as measured edge.*
+- **S8 — Not be able to talk myself out of a loss.** *As the trader, I want a trade I rolled to count
+  as the outcome it was, so "I didn't lose, I rolled" cannot quietly leave my record.* (Added at GATE
+  Z round 2; it is the story the §11.6 ruling serves.)
 
 ---
 
@@ -75,6 +86,9 @@ diagnostician.
 - **A `modeled`-basis secondary cohort** (§4.4).
 - **A "stale open" flag** (§4.3).
 - **A window selector** (§4.11).
+- **⚠ Any roll cohort, roll rate, roll exclusion, or roll count** — no "rolls only", no "rolls
+  excluded", no per-cell "X of these were rolls", no roll reason in the breakdown (§4.17, the §11.6
+  ruling). A roll is a **close**, not a category.
 - **"Would the rec I rejected have worked?"** — a rejected rec produces no position, therefore no
   outcome. There is no counterfactual to measure. Rejections are **not** an outcome cohort and must
   not be presented as one.
@@ -82,7 +96,7 @@ diagnostician.
   there invites tick-by-tick misreading and duplicates the surface.
 - **A new top-level nav destination** (§4.1).
 - **Any operator/diagnostic framing.** Not on `/_ops/metrics`.
-- Anything in the Architect's §8 non-goals 1–14 — inherited verbatim, not restated item by item.
+- Anything in the Architect's §8 non-goals 1–17 — inherited verbatim, not restated item by item.
 
 ### Future-dated (named seams — must not be precluded, must not be built here)
 
@@ -93,6 +107,8 @@ diagnostician.
 - **A rolling / selectable window**, only once cells survive being cut.
 - **Direct-Accept AI-rec attribution**, if the shared-dialog prefill seam can carry the rec identity
   (§4.16).
+- **Counting the rolled-INTO leg** — requires the roll to become a capture event (a write-side change
+  that fixes only future records). Named, priced, and **explicitly not v1** (§4.17-B).
 - **Feeding a digest of the ledger to the AI** — a separate feature, governed by
   `[digested-labels-not-raw-dump]`. Not v1.
 
@@ -100,7 +116,8 @@ diagnostician.
 
 ## 4. Product decisions made here
 
-Answering the ARCHITECTURE_CONTRACT §9, in order. Each is a decision, not a deferral.
+Answering the ARCHITECTURE_CONTRACT §9, in order. Each is a decision, not a deferral. **§4.17
+answers the ARCHITECTURE_CONTRACT §11.6** (bounced to me at GATE Z round 2).
 
 **§9.1 — Where the readout lives.**
 **The Positions route (`/positions`) hosts it, as its own named in-page view ("Track record"),
@@ -148,7 +165,8 @@ Never fully hidden; never a silent drop. Silent exclusion is itself an honesty f
 | SIMULATED | that these are **simulated fills, not real ones**, with the named facts: no slippage, no partial fills, no queue position, no assignment, no commissions or fees, and a limit "fills" instantly at any size on a live cross | "Simulated fills. The sim has no slippage, no partial fills, no queue, no assignment and no fees, and a limit order fills instantly at any size. Sim P&L is not what a broker would have given you." |
 | advisory framing | context, not a guarantee, not a forecast, not a scored signal; it does not and will not change the score | "Advisory context from your own recorded sim decisions. Not a guarantee, not a forecast, and not an input to the opportunity score." |
 | multiplicity caution | many cells over few trades will throw up extreme-looking rates | "Across this many cells and this few trades, some cell will look extreme by chance. Read the range, not the headline." |
-| exclusion reasons | plain, non-accusatory, each distinct | no decision record → "no decision recorded — not counted" · not closed → "still open" · never filled → "order never filled" · unpriced basis → "entry or exit price was typed or modeled, not quoted" · modeled basis → "re-priced between quotes, not quoted" · scenario-sourced → "scripted test scenario — not a real decision" · unresolved join → "couldn't link to its decision — not counted" · malformed → "unreadable record — not counted" |
+| hit definition | that a hit realized more than zero, that zero is not a hit and stays in the denominator, **and that a position closed by ROLLING is a closed position whose booked result counts like any other** (§4.17-A) | "A hit is a closed sim trade that realized more than zero. Zero isn't a hit — it stays in the count. Closing by rolling is closing: the leg you rolled out of counts as whatever it booked." |
+| exclusion reasons | plain, non-accusatory, each distinct | **no entry record → must convey that there is no record of HOW THE POSITION WAS ENTERED — true of both the demo seed and a rolled-into leg. ⚠ It may NOT say "no decision was recorded": for a rolled-into leg a decision WAS recorded, it just was not an entry (§4.17-B). UX owns the words; this is the fact floor.** · not closed → "still open" · never filled → "order never filled" · unpriced basis → "entry or exit price was typed or modeled, not quoted" · modeled basis → "re-priced between quotes, not quoted" · scenario-sourced → "scripted test scenario — not a real decision" · unresolved join → "couldn't link to its decision — not counted" · malformed → "unreadable record — not counted" |
 | pre-capture | the epoch, and that those outcomes still count for tier | "Recorded before {date}, when we started capturing entry context. These still count for tier; they have no setup / persona / IV-band / score context." |
 | unavailable that cycle | that capture ran but the source was genuinely absent | "not available at entry" |
 | storage disclosure | browser-local, no server backup | "Stored in this browser only — not tied to your account. Export an archive to back it up." |
@@ -218,8 +236,8 @@ The readout must **never** show a total that sums cell Ns, and must state that a
 every cell it qualifies for.
 
 **§9.15 (beyond the list) — The demo seed's exclusion is not a special case.**
-The fabricated closed position with no decision record appears in the breakdown under "no decision
-recorded — not counted", like any other record with no decision. No special copy, no mention of
+The fabricated closed position with no decision record appears in the breakdown under the
+no-entry-record reason, like any other record with no entry decision. No special copy, no mention of
 seeding, no accusation. It simply never reaches a rate.
 
 **§9.16 (beyond the list) — AI-rec attribution coverage must be stated if partial.**
@@ -231,6 +249,79 @@ statement is unnecessary and must be dropped.
 
 ---
 
+**§9.17 / ARCH §11.6 — GATE Z ROUND 2 RULING (2026-07-16): what a ROLL means for the track record.**
+
+**BOTH of the Architect's implemented defaults STAND. Nothing in §3.4 or §11.5 changes. No new
+exclusion reason is created — the pre-named slot after `scenario_sourced` stays EMPTY and must not be
+filled. No amendment is bounced back. This ruling costs the architecture zero.**
+
+**A — the rolled-OUT leg (the leg that closed): COUNTED, as a plain outcome. Default STANDS.**
+A rolled-out leg is a **real outcome**, not a continuation. The trader entered on a read, the position
+resolved, a P&L was booked. The cell is keyed on the **entry**, and the cell's question is *"did
+entering on this read pay?"* — a question the booked result answers regardless of what the trader did
+with the proceeds afterwards.
+
+Three reasons this is a ruling and not a shrug:
+1. **"It's a continuation, not a loss" is the exact sentence this feature exists to refuse.** It is
+   the most common self-flattering story in options trading — *I didn't lose, I rolled* — and a track
+   record that accepts it is worthless at its one job. **S8.**
+2. **The direction test.** Rolls happen under duress, so rolled-out legs skew to losses. Excluding
+   them removes real losses from the denominator: the **flattering** direction. When in doubt, this
+   feature does not flatter. (The Architect identified this; I am adopting it as the product rule, not
+   merely deferring to it.)
+3. **⚠ The decisive one, which the technical shape forces and which no one may undo without
+   re-opening this ruling: the "continuation" has nowhere to land.** If leg A were excluded as a
+   continuation, the continuation would have to be counted *somewhere* — but leg B is not counted
+   either (B below), and cannot be. So a rolled entry would be **excluded on the way out and absent on
+   the way in: it would vanish from the record entirely**, and selectively so, since rolls skew to
+   losses. That is not a continuation. **It is a disappearance, and it disappears the worst trades.**
+   Excluding leg A is only defensible in a product where the continuation is picked up; this is not
+   that product.
+
+**A2 — no roll category, in either direction.** Having ruled a roll is an outcome, it must be an
+outcome *without an asterisk*. There is **no roll cohort, no roll exclusion reason, no per-cell "X of
+these were rolls" count, and no roll filter** (ARCH §8 non-goal 15 already forbids the filter; this
+extends the same logic to the count). A count of rolls beside a rate is a sub-cohort in everything but
+name, and it hands the reader the mental subtraction — *"58%, but 5 of those were rolls, so really…"* —
+that the ruling just refused. **Surfacing the roll count "for transparency" is the failure mode here,
+not the safeguard.** The basis obligation (`[model-read-carries-its-assumptions]`) is discharged by
+the **hit DEFINITION** (§4.6, AC-13): the read states that closing by rolling is closing, so the reader
+knows what a hit counted. A definition, not a count.
+
+**B — the rolled-INTO leg (the replacement), once it closes: NOT COUNTED. Default STANDS.**
+It lands under the no-entry-record reason, as today.
+- **I would rule this way even if it were free.** Leg B's entry is **not a scored decision** — it is a
+  mechanical consequence of the roll, not a fresh judgment made against a score/tier read. This feature
+  measures *entries made on a read*. Leg B is not one, so it is not evidence about the score. The
+  technical price merely agrees with the product answer; it does not produce it.
+- **The price, for the record, is why this is not reopened later on a whim:** admitting the roll as an
+  entry event would make every historical rolled-into leg report as "predates capture" when capture in
+  fact ran — **silently corrupting the very count A2 exists to make honest, unrepairably** (no
+  backfill, ARCH §8 non-goal 6). Future-dated in §3, priced, not deferred by omission.
+- **⚠ The one thing that MUST change is the WORDING, and it is a fact, not a preference.** Leg B's
+  reason label currently reads *"no decision recorded"*. **For leg B that is false** — a roll decision
+  *was* recorded; it simply is not an *entry*. The reason's own predicate is already "no **entry**
+  decision record", so the label is under-describing its own rule: **a copy fix, needing no new reason,
+  no new count, and no architecture change.** Required content is now in §4.6; **UX owns the words and
+  must revisit this label.** This is the same species of defect UX already caught between AC-E1 and
+  AC-E5 (telling a user with 400 trades "nothing has closed yet" because a store failed to read).
+
+**B2 — the gap the user WILL notice, named so no one is surprised by it.** A rolled position shows up
+as **one counted outcome (leg A)**, and then leg B — once it closes — shows up in the **exclusion
+breakdown**. That is a visible, reported, by-reason outcome, **not a silent drop**, so §7.17 is
+satisfied and the coverage statement needs **no new sentence about rolls**. But it has a consequence
+the FE and UX must not misread: **the no-entry-record bucket is a LIVE, GROWING bucket driven by
+ordinary user activity — not a rare demo-seed curiosity.** AC-E10 frames it around the seed; that
+framing is now incomplete, and treating the bucket as near-always-zero would be wrong. **No
+double-count exists** (leg A counted once; leg B never counted).
+
+**Case-matrix delta for the FE** (against ARCH §11.5's enumerated list): **case 2 STANDS as written**
+(roll close ⇒ counted) · **case 10 STANDS as written** (rolled-into leg ⇒ no-entry-record). The
+Architect's fixtures are correct as pinned and **must not be edited**. What the ruling ADDS is the
+negative space and the wording: **AC-E19 / AC-E20 / AC-E21** below. `unresolved_join` is unaffected.
+
+---
+
 ## 5. Product behavior (summary)
 
 - **Static, historical, always-on.** The readout does not move with the market, does not dim, does not
@@ -238,6 +329,8 @@ statement is unnecessary and must be dropped.
 - **A cell is either `building` (a count and no number) or counted (a number that arrives inseparable
   from its range, N, window and basis).** There is no third state and no bare number anywhere.
 - **The readout always answers "what wasn't counted?"** before the user has to ask.
+- **Closing by rolling is closing.** A rolled-out leg is an outcome like any other, with no asterisk
+  and no separate count; the replacement leg is not an outcome, and its exclusion says so truthfully.
 - **The readout never proposes an action.** It has no Accept, no Apply, no "suggested threshold", no
   score-tuning affordance of any kind.
 - **The archive only ever adds.**
@@ -284,7 +377,9 @@ presence, ordering).
 - **AC-12** — A counted cell whose range is wider than 20 percentage points carries the "still wide —
   not a conclusion yet" qualifier.
 - **AC-13** — The readout states the hit definition: a hit is a closed sim position that realized more
-  than zero; a zero result is not a hit and stays in the denominator.
+  than zero; a zero result is not a hit and stays in the denominator. **The stated definition also
+  covers rolling: a position closed by rolling is a closed position, and its booked result counts as a
+  hit or a miss like any other** (§4.17-A).
 - **AC-14** — No rate is tinted, colored, or iconified in a way that reads as good/bad.
 - **AC-15** — The five cell families are present in order: tier, AI-rec, setup, IV-rank band, persona.
 - **AC-16** — The readout states that one closed trade appears in every cell it qualifies for, and
@@ -336,9 +431,9 @@ presence, ordering).
   its own distinct reason, and **not** presented as a cohort anywhere.
 - **AC-E9** — **Scripted scenario outcome:** excluded from every rate and named in the breakdown as a
   scripted test scenario.
-- **AC-E10** — **Closed position with no decision record** (including the dev/demo seed's fabricated
-  winner): excluded, counted in the breakdown as "no decision recorded", never contributing to any
-  rate — with no special-case copy about seeding.
+- **AC-E10** — **Closed position with no entry record** (including the dev/demo seed's fabricated
+  winner): excluded, counted in the breakdown under the no-entry-record reason, never contributing to
+  any rate — with no special-case copy about seeding. **This bucket is not seed-only: see AC-E20.**
 - **AC-E11** — **Open position:** not counted in any rate; appears only in the "open — not yet
   counted" count. Its unrealized mark never moves a rate.
 - **AC-E12** — **Cancelled / expired / never-filled order:** produces no outcome; appears only in the
@@ -359,10 +454,23 @@ presence, ordering).
 - **AC-E18** — **AI-rec partial attribution:** if rec identity cannot be threaded through the direct
   Accept path, the AI-rec family carries the coverage statement that only recs taken as sim orders are
   attributed. If it can be threaded, that statement is absent.
+- **AC-E19** — **Rolled-OUT leg (the leg that closed):** a position closed by rolling, with a recorded
+  entry and a quoted basis, **is counted like any other closed outcome** — it contributes to its cells'
+  rates, it appears in no exclusion reason, and it carries no roll marker, badge, footnote or asterisk
+  anywhere in the read. (§4.17-A)
+- **AC-E20** — **Rolled-INTO leg (the replacement), once closed:** a closed position whose only
+  decision record is the roll that opened it **is not counted in any rate**; it appears in the
+  exclusion breakdown under the no-entry-record reason, **and that reason's wording is true of it — it
+  conveys the absence of a record of how the position was entered, and does not claim that no decision
+  was recorded.** (§4.17-B)
+- **AC-E21** — **No roll category (negative space):** the readout contains no roll cell, no roll rate,
+  no roll-specific exclusion reason, no per-cell or readout-level count of how many outcomes were
+  rolls, and no roll filter or toggle. The only place a roll is named is the hit definition (AC-13) and
+  the truthful exclusion wording (AC-E20). (§4.17-A2)
 
 ---
 
-## 7. Constraints the next role (UX/Tech-Writer) must not violate
+## 7. Constraints the next role (the FRONTEND executioner) must not violate
 
 **Inherited promoted canon** (`PROJECT_CONTEXT.md` §5 — reopen only via GATE Z):
 
@@ -407,44 +515,52 @@ presence, ordering).
 17. **No silent exclusion.** Every excluded record is reported by reason (§4.5).
 18. **Copy facts in §4.6 are a floor.** UX may refine phrasing; it may not drop a fact or bury one
     behind an interaction that the table marks as non-interactive.
+19. **⚠ A roll is a CLOSE, not a category** (§4.17, AC-E19/E21). The rolled-out leg counts as a plain
+    outcome. Do **not** create a roll cohort, a roll exclusion reason, a roll badge, or a roll count —
+    including "for transparency". The pre-named exclusion slot after `scenario_sourced` **stays
+    empty**. The basis obligation is discharged by the hit **definition** (AC-13), not by a count.
+20. **⚠ The no-entry-record reason's wording must stay true of the rolled-INTO leg** (§4.17-B,
+    AC-E20): it conveys "no record of how this position was **entered**", never "no decision was
+    recorded" (false for that leg). **FLAGGED FOR UX — UX owns the final words; this is the fact
+    floor, not the copy.** Related: that bucket is **live and growing** from ordinary rolls, not a
+    demo-seed curiosity — do not treat it as near-always-zero.
 
 ---
 
 ## 8. Amendments bounced to Architect
 
-Two, both small, both additive to §3.4 of the ARCHITECTURE_CONTRACT. Neither reopens a pin — the three
-GATE-Z-bounceable pins (`N_min = 20`, hit `> 0`, all-time window) are **accepted** (§4.9 / §4.10 /
-§4.11).
+**Round 1 (GATE P·X) — two, both RESOLVED/ACCEPTED at GATE Z; retained for provenance only.** Neither
+reopened a pin — the three GATE-Z-bounceable pins (`N_min = 20`, hit `> 0`, all-time window) are
+**accepted** (§4.9 / §4.10 / §4.11).
 
 **A1 — The exclusion ledger must also exist at the WHOLE-READOUT level, not only per cohort.**
-*Why:* §3.4 places the exclusion ledger "alongside every cohort". But the exclusions the product most
-needs to report — `no_decision_record`, `not_closed`, `never_filled`, `scenario_sourced` — belong to
+*Why:* §3.4 placed the exclusion ledger "alongside every cohort". But the exclusions the product most
+needs to report — no-entry-record, `not_closed`, `never_filled`, `scenario_sourced` — belong to
 records that **never reach a cell at all**, so no per-cohort ledger can hold them. Without a
 ledger-level roll-up, **AC-17 (the coverage statement) is unbuildable** and the demo-seed exclusion
-(AC-E10) is unreportable — the honest "counted N of M recorded closed positions, plus X open and Y
-never filled" has nowhere to come from.
-*Requested:* the read carries a **ledger-level coverage roll-up** — total recorded closed positions,
-total counted, and counts by reason for the records excluded before any cell — alongside the existing
-per-cohort ledgers.
-*Closest buildable alternative if refused:* the coverage statement degrades to per-cohort exclusions
-only, and the readout would have to stay silent about the seeded/unrecorded/never-filled population —
-which I judge a product-honesty failure, not an acceptable narrowing.
+(AC-E10) is unreportable.
+**→ ACCEPTED at GATE Z** (ARCH §3.4.3), shape adjusted further than requested: the per-cohort ledger
+was deleted, the populations split (P1/P2/P3), and a binding balance identity added.
 
 **A2 — The read must carry the pre-capture COUNT per cell family, not only the capture epoch.**
-*Why:* §3.4 says the read carries "the capture epoch (so 'unknown for score/setup/persona' is legible
-as pre-capture, not missing)". A date alone cannot answer the user's actual question. "We started
-capturing on Mar 4" is not honest coverage; **"of your 34 counted outcomes, 30 predate capture"** is —
-it is the difference between "this cell is new" and "this cell will be empty for a year". **AC-19 and
-AC-E13 need the count**, and §9.8 (which the Architect explicitly assigned to me) cannot be presented
-without it.
-*Requested:* per cell family, the counted outcomes that carry **no digest** (pre-capture) reported as a
-count, kept distinct from those where **capture ran and the field was null** (unavailable-that-cycle).
-*Closest buildable alternative if refused:* state the epoch date only and drop the counts — leaving the
-user unable to tell a new cell from a permanently starved one.
+*Why:* a date alone cannot answer the user's actual question. "We started capturing on Mar 4" is not
+honest coverage; **"of your 34 counted outcomes, 30 predate capture"** is — it is the difference
+between "this cell is new" and "this cell will be empty for a year". **AC-19 and AC-E13 need the
+count**, and §9.8 cannot be presented without it.
+**→ ACCEPTED at GATE Z** (ARCH §3.4.4), with four sharpenings (per-family placement; tier's
+`pre_capture` is structurally 0; AI-rec's fourth count; `attributed` derived from the population).
+
+**Round 2 (GATE Z, this pass) — NONE.** The §11.6 ruling (§4.17) is fully buildable on the current
+technical shape: both defaults stand, no new exclusion reason, no new count, no shape change. The one
+change it requires is **copy**, and it is flagged to UX (§7.20), not bounced.
 
 ---
 
 ## 9. Open questions
 
-**None for the Architect beyond §8.** No product question is deferred; §9.1–§9.13 are all resolved
-above, plus three the Architect did not ask (§9.14–§9.16).
+**None for the Architect.** §9.1–§9.13 are all resolved in §4, plus three the Architect did not ask
+(§9.14–§9.16), plus the GATE Z round 2 §11.6 ruling (§9.17/§4.17) — **ruled, not deferred**.
+
+**One item is FLAGGED FOR UX, not open:** the no-entry-record reason's label must be revised so it
+stays true of the rolled-into leg (§7.20 / AC-E20). The **fact** is decided here; the **words** are
+UX's. It needs no new reason, count, or architecture change.
