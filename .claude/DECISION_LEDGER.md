@@ -11,10 +11,29 @@
 > constraint envelope the next feature inherits.
 
 ## Promotion rule
-- **Threshold:** a key present in **≥3 distinct shipped features**, OR **≥2 if every instance is
-  `binding:yes`**, graduates at the next GATE S.
+- **Threshold (recurrence path):** a key present in **≥3 distinct shipped features**, OR **≥2 if every
+  instance is `binding:yes`**, graduates at the next GATE S.
+- **Threshold (SEVERITY path — added 2026-07-16, owner canon review):** a key whose violation is
+  **catastrophic AND irreversible** (silent, unrecoverable loss of user data; a real-money or
+  security boundary breached) graduates on **1 instance** — or on **0**, by explicit owner decision at a
+  canon review — **without waiting for recurrence**.
+  **Why this exists (the flaw it fixes):** recurrence is a *proxy* for importance, and it was mis-ranking.
+  It had promoted `single-shared-sim-entry-dialog` — a **dialog** — to constitutional law at 2 instances,
+  while `loss-free-durable-migration` sat at 1 on the watch list, guarding ~5 durable localStorage stores
+  that hold the user's **entire trading history with no server backup** — where a single migration bug is a
+  silent, total, unrecoverable loss. **When the importance is already known, do not wait for the proxy.**
+  Recurrence still governs the ordinary case; severity is the override, and the promoting session must
+  **write down the catastrophic+irreversible justification** (the bar — not merely "important").
 - **Binding-only intake:** only a decision a *future feature could violate* enters the ledger (same
   bar as the GATE I decision-impact cull). Incidental implementation choices are not logged.
+- **Owner canon review is a legitimate source of canon** (2026-07-16): a rule may also be promoted or
+  narrowed by explicit owner decision at a review, recorded with its rationale in the `earned by` column —
+  distinct from, and not a substitute for, recurrence-graduation at GATE S.
+- **⚠ Kit divergence (logged, not resolved):** the framework's `ORCHESTRATOR.md` §3a/§6 still states the
+  recurrence-only rule. `ORCHESTRATOR.md` is a **delivery-kit framework file** (byte-identical across
+  consumers — system-13), so this project must NOT edit it in place; the severity path is a framework
+  improvement that flows back via `KIT_BACKLOG.md` + `extract.mjs`. Until then the ledger (project-owned)
+  is ahead of the framework prose. See BACKLOG §E system-13.
 - **Single-source:** a promoted rule's **prose lives once** in `PROJECT_CONTEXT.md` §5 (+ a locked
   pointer in `OPEN_THREADS.md` §9). This ledger only **indexes** it — never a second copy (drift risk).
 - **Contestable:** a promoted rule is a default, not a cage — reopen via **GATE Z**; the Orchestrator
@@ -31,7 +50,9 @@
 | `server-side-gate-enforcement` | an access gate on a state/cost-bearing action is enforced **server-side** (the server is the boundary of record), never FE-only; the FE check is for UX, not enforcement — a bypassed client check must still be rejected by the server | CONTEXT §5 · THREADS §9 | 2026-06-29 | user-accounts (AC-E7 catch), byo-ai-key (2 binding) |
 | `secret-encrypted-at-rest` | a stored recoverable secret (a user/third-party API key, broker token, etc.) is **ENCRYPTED at rest** (symmetric, server-side key — NOT hashed), and **never logged / returned in a response / sent to the browser**; write-only from the client (masked hint only) + rotate/delete; persisted as **ciphertext only** (the crypto boundary sits before the store); a decrypt-fail is treated as no-usable-secret, never a leak | CONTEXT §5 · THREADS §9 | 2026-06-29 | byo-ai-key, persistent-db (2 binding) |
 | `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
-| `single-shared-sim-entry-dialog` | every sim-entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/features/trading/TradeEntryDialog`; a new entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof | CONTEXT §5 · THREADS §9 | 2026-07-02 | sim-entry-unification, ai-rec-backtest-orders (2 binding) |
+| `single-shared-sim-entry-dialog` | **SIM-ONLY (narrowed 2026-07-16).** Every **simulated** entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/features/trading/TradeEntryDialog`; a new **sim** entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof. **A REAL-money entry surface is explicitly OUT of scope and MUST be a separate component** — see the narrowing note under the table | CONTEXT §5 · THREADS §9 | 2026-07-02 · narrowed 2026-07-16 | sim-entry-unification, ai-rec-backtest-orders (2 binding); narrowed by owner canon review |
+| `loss-free-durable-migration` | when a durable client store's key/shape changes, existing user data is carried forward **loss-free** — read-new-else-old, promote-forward, **never-delete**, idempotent, never-throw — composing with any prior version chain; a corrupt/unreadable blob degrades to empty **without destroying the original** | CONTEXT §5 · THREADS §9 | **2026-07-16 (SEVERITY path, 1 instance)** | rebrand-convexa (the `resolveDurable` helper + the positions v1→v2 chain). Promoted by owner canon review on severity, not recurrence: ~5 durable localStorage stores hold the user's entire trading history with **no server backup**; violation = silent, total, irreversible loss. |
+| `score-change-is-deliberate-and-measured` | the `opportunity_score`/`tier`/gate **MAY** evolve — but **only deliberately**: via an explicit score-changing feature that states its rationale, records a **before/after on real tickers**, and **version-bumps** the fingerprint basis. A score change is **never** a side effect of an additive feature (that is `additive-keeps-score-byte-identical`), and never lands unmeasured | CONTEXT §5 · THREADS §9 | **2026-07-16 (owner canon review)** | The counterpart `additive-keeps-score-byte-identical` lacked: 8 enrichment features shipped (dex-voloi-skew-term, dealer-flow-projection, ai-context-pack, iv-rank, …) and **none could reach the score**, which went unchanged for 210 commits. Fills the gap; does not weaken the additive rule. |
 | `theme-token-discipline` | a new or re-skinned FE component binds to the MUI theme / `tokens.ts` — mode-aware values via `extrasFor(theme)` inside sx callbacks — **never hardcoded hex**; dark/light parity verified | CONTEXT §5 · THREADS §9 | 2026-07-02 | convexa-redesign, ticker-ux-polish, light-mode-parity + sim-entry-unification, ai-rec-backtest-orders (4 programs) |
 | `model-read-carries-its-assumptions` | a forward-looking / model-dependent read (a projection, a model-derived level, a threshold-bucketed regime label/scalar) is surfaced **self-describing** — it carries its own horizon / window / assumption / basis / threshold — and is framed as **advisory context, never a guarantee / price forecast / scored signal** | CONTEXT §5 · THREADS §9 | 2026-07-06 | dealer-flow-projection, ai-context-pack, iv-rank (3) |
 | `digested-labels-not-raw-dump` | a derived-signal set fed to the downstream AI (and displayed) is a **SMALL orthogonal set pre-digested into regime/band LABELS**, not a raw indicator/OHLC/series dump; the **wire enum/token is authoritative** (FE renders via a closed lookup, **never re-derives** a label from the scalar); no raw series on the wire or in the UI | CONTEXT §5 · THREADS §9 | 2026-07-07 | ai-context-pack, iv-rank (2 binding) |
@@ -40,6 +61,23 @@
 > `dark-pool-context-only` (THREADS §9) · `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
 > (`ai-external-no-llm` was here until **2026-06-23** — now **DEMOTED / narrowed** by `ai-recommendations`;
 > see the Demoted table.)
+
+### Narrowing note — `single-shared-sim-entry-dialog` (2026-07-16, owner canon review)
+**Narrowed in place, NOT demoted** (precedent: the `live-spot=NBBO-mid` narrowing — the rule still fully
+holds for everything it was earned on; only its *scope* is made explicit before it is misapplied).
+**Why:** the key was promoted on 2 instances of what is really a good local refactor, and — uniquely among
+the promoted set — it names a **file** rather than stating a **principle**. Left un-narrowed it was on a
+collision course with `no-real-order-path`: `apps/dashboard/src/app/README.md` already described
+`TradeEntryDialog` as *"the ONE shared **sim/live** entry surface"*, so at `broker-connect` the rule would
+have pushed **real-money entry into the same component as paper trades, as an "additive variant."** That is
+backwards. The one place a fork is a **feature, not a smell**, is the boundary between "this is pretend" and
+"this moves real money" — a shared component there invites the single most expensive confusion the app can
+produce, and `no-real-order-path` exists precisely to keep that boundary hard.
+**The narrowed rule:** sim-entry flows share the ONE dialog (unchanged). **A real-money/broker entry surface
+MUST be a structurally separate component** — never a mode, prop, or variant of the sim dialog. Deciding
+otherwise is a deliberate GATE-Z reversal, not a default.
+**Follow-through:** the README line was corrected 2026-07-16. No code change — `broker-connect` is unbuilt,
+which is exactly why this was cheap to fix now.
 
 ## Demoted (contradicted by reality — system-7)
 > The inverse of graduation: memory must track **truth**, not just recurrence. A promoted invariant that
@@ -72,11 +110,20 @@
   cut server-side from the rank, no raw IV history on the wire or in the UI). Crossed the "≥2 if binding"
   threshold → Promoted canon above (CONTEXT §5 + THREADS §9); removed from the watch list. Future indicator
   bundles — volume-profile/CVD, the news/sentiment classifier — will reaffirm it.)_
-- **`loss-free-durable-migration`** (1 instance — rebrand-convexa, 2026-06-28) — when a durable client
-  store's key/shape changes, existing data is carried forward loss-free (read-new-else-old, promote-forward,
-  never-delete, idempotent, never-throw), composing with any prior version chain. Generalizes the positions
-  v1→v2 pattern. Not promoted (1 instance); logged for recurrence (the broker/persistent-DB tracks will
-  likely hit it). *binding:yes.*
+- _(**`loss-free-durable-migration`** GRADUATED **2026-07-16** via the new **SEVERITY path** at 1 instance
+  (rebrand-convexa) — owner canon review. Violation = silent, total, irreversible loss of the user's entire
+  trading history (~5 durable localStorage stores, **no server backup**). Recurrence would have kept it
+  waiting behind a dialog; severity does not wait. Now in Promoted canon above.)_
+- **`ai-asserted-numbers-are-traceable`** (**0 instances — PROPOSED 2026-07-16, owner canon review; NOT
+  promoted**) — every number the in-app AI **asserts** (strike, stop, target, level, price) must be
+  **traceable to a computed bundle field**; an untraceable number is not rendered as fact. Rationale:
+  `best-effort-isolated-or-null` covers the AI **failing**, nothing covers it **fabricating** —
+  `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. The
+  ai-rec-backtest-orders "levels in play" being **bundle-sourced** is the partial precedent that shows the
+  instinct was already there. Given the BACKLOG §C securities-counsel item, an ungrounded number is a
+  **liability** question, not only a bug. **Logged at 0 instances deliberately** — an aspirational rule is
+  not canon; it applies to the next AI-touching feature and promotes on its first real instance (or on the
+  severity path if a fabrication is ever observed live). *binding:yes.* Build item → BACKLOG §B.
 - _(`no-secrets-in-image` GRADUATED 2026-06-29 at `deploy` — 3 binding (containerize-apps, persistent-db,
   deploy); the held-until-published rule fired when the image is pushed to Railway for real. Now in Promoted
   canon above.)_

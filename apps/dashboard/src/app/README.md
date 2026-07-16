@@ -20,9 +20,17 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 
 | Domain                  | Holds                                                                              |
 | ----------------------- | --------------------------------------------------------------------------------- |
-| `features/trading/`     | The whole trading domain (sim now, live later): `TradeEntryDialog` (the ONE shared sim/live entry surface) · `model/` (foundational trade/decision types + P&L engine + store) · `orders/` (sim-order engine) · `positions/` (portfolio book/logic). |
+| `features/trading/`     | The whole trading domain (sim now, live later): `TradeEntryDialog` (the ONE shared **SIMULATED** entry surface — see below) · `model/` (foundational trade/decision types + P&L engine + store) · `orders/` (sim-order engine) · `positions/` (portfolio book/logic). |
 | `features/auth/`        | Accounts — session context, sign-in dialog, `useGate`, settings.                  |
 | `features/personas/`    | Persona presets, customize form, durable store, the `PersonaPicker`.              |
+
+> **⚠ `TradeEntryDialog` is SIM-ONLY — do not extend it to real orders.** Every *simulated* entry flow
+> (ghost trade, positions, act-on-rec) shares this ONE dialog, and a new sim entry shape is an additive
+> **variant** of it, never a fork (invariant `[single-shared-sim-entry-dialog]`). But a **real-money /
+> broker** entry surface **MUST be a structurally separate component** — never a mode, prop, or variant
+> here. The pretend↔real boundary is the one place a fork is a *feature*, not a smell; keeping it hard is
+> what `[no-real-order-path]` is for. *(Narrowed 2026-07-16 — this line previously read "the ONE shared
+> sim/live entry surface," which pointed `broker-connect` at exactly the wrong design.)*
 
 ## `shared/` — the app kernel (import-downward-only; populate on 2nd consumer)
 

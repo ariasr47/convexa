@@ -709,7 +709,51 @@ the scanner surface); Postgres **live runtime-verify** (deferred like persistent
 disk default is verified, Postgres is parity-reviewed behind the port). ATR (ai-context-pack) still unblocks
 the deferred distance-to-level tiles.
 
+## 7s. Dashboard restructure + Cypress swap + kit sync (SHIPPED on `main` — owner-directed maintenance)
+**Not a conductor pipeline feature** — no BRIEF, no contracts, no GATE Q. Logged because it moved
+canon-relevant structure. `main` @ `b194bdc`. Presentation/tooling only — score/tier/`state_fingerprint`
+untouched; **674/674 tests green on `main`**.
+**Shipped:** (1) **Cypress replaces Playwright** (`e38328e`) — `@nx/cypress/plugin` in `nx.json` (same `e2e`
+target name), `cypress.config.ts` auto-serves `@org/dashboard`, smoke → `src/e2e/app-loads.cy.ts`; Playwright
+removed. Component/integration stays Vitest. (2) **Folder restructure** (`e5ce5fb`→`b194bdc`, 7 commits) —
+`src/app/` by KIND: `pages/` · `features/` · `shared/` · `shell/`, folder-per-widget, `@/*`→`src/app/*` alias.
+(3) **Delivery-kit sync** — risk-based QA rule mirrored to `C:/Dev/delivery-kit` (kit_lint clean), **v0.3.2**
+(`d661250`) pushed to `origin/master`.
+**Structure model (established — binding on new FE work):** `pages/` = routes · `features/` = cross-cutting
+**domains** (test: *imported by ≥2 pages?* one page consumer ⇒ it lives on that page) · `shared/` =
+app-agnostic kernel (populate on the **2nd consumer**, never preemptively) · widgets = ticker surfaces.
+**Pages must NEVER import sibling pages** — that is the whole reason `features/` exists.
+**`apps/dashboard/src/app/README.md` is the authoritative map**; PROJECT_CONTEXT §2 was reconciled to it
+2026-07-16 (it had gone stale: "pending merge", pre-move paths, a horizontal GEX chart, and three deleted
+components — `GhostTradePanel` / `PositionEntryDialog` / `HandoffDialog` — still listed as live).
+**Decisions recorded (not built):** **Redux recommended AGAINST** (state is already domain-partitioned with
+single owners — 3 narrow Contexts, ~5 durable stores; no prop-drilling pain; the genuinely complex part —
+bundle poll + SSE — is *server state*, which Redux fits badly). **TanStack Query is the real candidate** for
+that layer; scoped Context/Zustand for cross-widget page state. If ever added: store wiring at the composition
+root (`src/store/`), slices colocated with their domain. **Persona picker (decided, not built):** ONE
+component — `PersonaPicker` + logic in `features/personas`; the **ticker-dashboard** picker wires **page-level**
+state at `pages/ticker` (governing widget visibility + per-widget settings, e.g. gex expiration); the
+**ai-rec** picker is **widget-local**. `features/personas` must NOT know about ticker widgets — the
+persona→widget mapping lives at the ticker page.
+**Deferred seams (named, not built) → BACKLOG §B:** `OpportunityTier` → a ticker widget · `/settings` as its
+own page · rename `features/` → `domains/` (endorsed option — "features" is a misnomer; it holds domains, not
+scrum features) · flatten `app/` → `src/` · the dead-code sweep (~13 unused exports in the trading cluster,
+~80 across the dashboard via `ts-prune`; **excludes specs ⇒ test-only helpers are false positives**) · the
+risk-based test-migration (feature-by-feature, owner-gated — **only Landing done, 15→4**).
+**Parked branch:** `feat/responsive-layout` — 2 commits, **local-only, NEVER PUSHED** (see BACKLOG §B).
+
 ## 8. Smaller deferred items (proposed, not implemented)
+- **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
+  `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
+- **Theme audit gaps** (`docs/THEME_AUDIT.md`): `palette.secondary` unset (**MUI purple leaks** through),
+  explicit `contrastText`, light `text.primary`, dark `shadows`. Ties `[theme-token-discipline]`.
+- **CI/CD not wired:** push ≠ deploy — the owner deploys `convexa.pages.dev` via the runbook by hand. A
+  GitHub Actions workflow (run `nx test` + conformance on push, then deploy) is the standing follow-on.
+- **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
+  clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
+- **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
+  `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
+  hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
@@ -749,10 +793,28 @@ the deferred distance-to-level tiles.
   order path: a simulated feature stays `SIMULATED` (paper) + confirm; a not-yet-built real surface
   (e.g. a "Live" tab) ships as a non-functional placeholder (no broker / order path / real-position
   source). Reopen only via a deliberate owner + vendor decision (GATE Z). See PROJECT_CONTEXT §5.
+- **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding; **NARROWED to SIM-ONLY
+  2026-07-16**) — every **simulated** entry flow launches THE one shared
+  `app/features/trading/TradeEntryDialog`; a new **sim** entry shape is an additive variant, never a forked
+  dialog. **⚠ A real-money / broker entry surface MUST be a structurally SEPARATE component** — never a
+  mode/prop/variant of the sim dialog (the pretend↔real boundary is the one place a fork is a *feature*).
+  Un-narrowed it would have collided with `[no-real-order-path]` at `broker-connect`. See PROJECT_CONTEXT §5.
 - **`[server-side-gate-enforcement]`** (promoted 2026-06-29, 2 binding) — an access gate on a state/
   cost-bearing action is enforced **server-side** (boundary of record), never FE-only; a bypassed/absent
   client check must still be rejected by the server. (user-accounts AC-E7 catch; byo-ai-key credential +
   AI-rec gating.) See PROJECT_CONTEXT §5.
+- **`[loss-free-durable-migration]`** (**promoted 2026-07-16 — SEVERITY path, 1 instance**) — a durable
+  **client** store's key/shape change carries existing user data forward **loss-free** (read-new-else-old,
+  promote-forward, **never-delete**, idempotent, never-throw); a corrupt blob degrades to empty **without
+  destroying the original**. Canon at 1 instance because ~5 localStorage stores hold the user's entire
+  trading history with **no server backup** — violation is silent, total, irreversible. (rebrand-convexa's
+  `resolveDurable` + the positions v1→v2 chain.) See PROJECT_CONTEXT §5.
+- **`[score-change-is-deliberate-and-measured]`** (**promoted 2026-07-16, owner canon review**) — the score/
+  tier/gate **may** evolve, but only via an explicit score-changing feature with a stated rationale, a
+  recorded **before/after on real tickers**, and a **fingerprint-basis version bump** — never as a side
+  effect of an additive feature, never unmeasured. Companion to `[additive-keeps-score-byte-identical]`,
+  which had hardened into a de-facto freeze (scoring unchanged for 210 commits while 8 enrichment features
+  shipped that cannot reach it). See PROJECT_CONTEXT §5.
 - **`[secret-encrypted-at-rest]`** (promoted 2026-06-29, 2 binding) — a stored recoverable secret is
   encrypted at rest (symmetric, server-side key, not hashed), persisted ciphertext-only (crypto before the
   store), never logged/returned/browser; write-only + rotate/delete; decrypt-fail ⇒ no-usable-secret, no

@@ -30,6 +30,52 @@
 
 ---
 
+## Last GATE I — 2026-07-16 (CANON REVIEW: the score is frozen + unvalidated → `outcome-ledger`)
+**Chosen → `outcome-ledger`.** Not a harvest-and-cull discovery — a **canon review** the owner requested
+("are any invariants not well conceived? what am I missing?"), which surfaced a structural gap the ordinary
+GATE-I sources could not: **the project compounds BUILD wisdom (`DECISION_LEDGER.md`) and has NO loop for
+TRADING wisdom.** Owner agreed on every point and directed all of it.
+
+**The finding (ground-truthed in code + git, not impression):** `_opportunity_score(dist, ivhv, setups,
+near_flip)` + a capped dark-pool bonus is the app's entire headline judgment — it drives the tier, the Prime
+banner, and `DEFAULT_GATE_SCORE = 50` (the gate deciding when the AI may speak). It was last substantively
+changed at `d3aeb4f` on **2026-06-22 — 210 commits ago**. Since then **eight** enrichment features shipped
+(dex/vol-oi/skew/term · dealer-flow-projection · ai-context-pack · iv-rank · ATR) and **not one can reach
+it** — every one was routed around the score into the LLM prompt. Sharpest instance: the score rewards vol
+*extremity* via `abs(IV/HV − 1.0)`, so **rich and cheap premium score identically**, while `iv_rank.band`
+(`premium_rich|premium_cheap`) — the metric we shipped *because* it "drives strategy selection" — sits in the
+payload structurally unable to inform it. The weights (`40/25/25/10`, `8.0`/setup) and the gate threshold are
+hand-tuned constants **never validated against a single outcome**. `additive-keeps-score-byte-identical` was
+well-conceived for its job (stop *accidental* drift) but, lacking a counterpart, hardened into a **de-facto
+freeze**.
+
+**Canon changes made this review (see DECISION_LEDGER):**
+1. **NEW `score-change-is-deliberate-and-measured`** (owner canon review) — the score MAY evolve, but only
+   deliberately: explicit feature + stated rationale + **before/after on real tickers** + fingerprint-basis
+   version bump. Never a side effect; never unmeasured. Fills the gap; does not weaken the additive rule.
+2. **NEW severity promotion path** — recurrence is a *proxy* for importance and was mis-ranking: it had made
+   a **dialog** constitutional law at 2 instances while `loss-free-durable-migration` waited at 1, guarding
+   the user's entire trading history. A catastrophic+irreversible key now promotes at 1 (or 0 by owner
+   decision). ⚠ Framework divergence logged — `ORCHESTRATOR.md` is a kit file; flows back via KIT_BACKLOG.
+3. **PROMOTED `loss-free-durable-migration`** via that path (severity, 1 instance).
+4. **NARROWED `single-shared-sim-entry-dialog` → SIM-ONLY** — un-narrowed it was on a collision course with
+   `no-real-order-path`: the README literally said "the ONE shared **sim/live** entry surface", which would
+   have pushed `broker-connect`'s real-money entry into the paper-trade dialog as an "additive variant".
+   Real entry MUST be a separate component. README corrected; no code change (broker-connect is unbuilt —
+   which is exactly why this was free to fix now).
+5. **PROPOSED `ai-asserted-numbers-are-traceable`** (watch list, **0 instances — deliberately not promoted**;
+   an aspirational rule is not canon).
+
+**Decision impact (the cull):** passes strongly — it improves the meta-decision conditioning every other
+decision (*which of our own signals deserve trust*), and it is the **only honest input** to (1) above: you
+cannot improve a score you cannot measure. Feasibility **pass with 3 architect cruxes** (storage locus /
+capture extension / small-sample honesty) — see the BRIEF; "by tier" is **retroactively analyzable on
+existing data** (`DecisionRecord.tier` is already recorded), while by-score/setup/persona needs accumulation
+(the iv-rank shape). Effort **L** · entry = **architect-first**.
+**Displaces `scanner` a 6th time — deliberate + reversible:** scanner scales an unmeasured judgment across N
+tickers; this measures whether it is worth scaling. `scanner` keeps its BRIEF + manifest, stays queued, **not
+dropped**. Brief at `.claude/contracts/outcome-ledger/BRIEF.md`; routing to the Architect (GATE A·X).
+
 ## Last GATE I — 2026-07-06 (b) (owner pick: iv-rank; market-backdrop parked blocked-on plan upgrade)
 **Chosen → `iv-rank` — ✓ SHIPPED + ARCHIVED (2026-07-07)** → `_archive/iv-rank/`. Full pipeline both lanes
 (architect → PM → UX split → parallel lanes → GATE Q); QA PASS 19/19 (de-correlated Sonnet); conformance new
@@ -400,6 +446,20 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **Dashboard folder restructure + Cypress swap + kit sync** — `✓ SHIPPED (2026-07-16, on main)`.
+  **Owner-directed maintenance, NOT a conductor pipeline feature** (no BRIEF / no contracts / no GATE Q —
+  logged here for provenance because it moved canon-relevant structure). Three parts:
+  (1) **Cypress replaces Playwright** (`e38328e`) — `@nx/cypress/plugin` in `nx.json` (same `e2e` target
+  name), `apps/dashboard-e2e/cypress.config.ts` auto-serves `@org/dashboard`, smoke ported to
+  `src/e2e/app-loads.cy.ts`; Playwright deps/config removed. Component/integration testing stays Vitest.
+  (2) **Dashboard folder restructure** (7 commits `e5ce5fb`→`b194bdc`) — `src/app/` reorganized by KIND into
+  `pages/` · `features/` · `shared/` · `shell/` + folder-per-widget, `@/*` alias; `apps/dashboard/src/app/
+  README.md` is the authoritative map; PROJECT_CONTEXT §2 updated to match (2026-07-16).
+  Presentation-only — score/tier/`state_fingerprint` untouched, **674/674 green on `main`**.
+  (3) **Delivery-kit sync** — the risk-based QA rule mirrored into `C:/Dev/delivery-kit` via `extract.mjs`
+  (kit_lint clean), released **v0.3.2** (`d661250`), pushed to `origin/master`.
+  Decision-impact cull **N/A** (build-system / maintainability class). Deferrals it left → §B
+  ("Restructure deferrals", "Dead-code sweep", "Test-migration").
 - **`deploy`** — `✓ SHIPPED + ARCHIVED (2026-06-29)` → `_archive/deploy/` (artifacts + hardening; the live
   deploy is owner-applied via the runbook). Step 3 of the infra program. Backend → Railway (Dockerfile +
   managed Postgres), frontend → Cloudflare Pages, cross-origin `/api` via a streaming Pages Function. Repo
@@ -508,6 +568,70 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`ai-rec-grounding` — every AI-asserted number traceable to a computed field** — `RAISED 2026-07-16
+  (canon review; owner agreed)`. **The gap:** `best-effort-isolated-or-null` covers the AI **failing**;
+  **nothing covers it fabricating.** The rec emits strikes / stops / targets / levels as fact, and
+  `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. **Scope:** every
+  number the rec asserts must resolve to a bundle field (or the rec's own echoed input), verified
+  server-side at serialization; an untraceable number is **not rendered as fact** (drop it, or mark it
+  unverified — the PM/UX call). **Precedent in hand:** ai-rec-backtest-orders already renders
+  **bundle-sourced** "levels in play" — the instinct is there, un-generalized; the `ScenarioLLMProvider`
+  registry (`AI_REC_SCENARIOS_ENABLED`) is a **ready-made harness to test fabrication deterministically** —
+  add a scripted "hallucinated level" scenario. *Value H · Effort M.* Decision-impact cull: passes (a
+  fabricated strike is a *wrong trade*, not a cosmetic bug) — **and** it is a **liability** item, not only a
+  quality one: see §C monetization (the securities-counsel consult on AI-rec framing). **Invariant watch:**
+  `ai-asserted-numbers-are-traceable` (its **first instance** — promotes on ship), `additive-keeps-score-
+  byte-identical`, `best-effort-isolated-or-null`, `digested-labels-not-raw-dump`.
+- **`degradation-visibility` — measure the nulls that best-effort creates** — `RAISED 2026-07-16 (canon
+  review; owner agreed)`. **The gap this closes is one WE created:** `[best-effort-isolated-or-null]` is
+  correct and load-bearing, but it makes every failure **silent** — a field degrades to null and the UI says
+  "unavailable this cycle" **forever**, with nothing aggregating null rates. Observability measures
+  **latency / cache / vendor**, never **correctness or nullness**; `latency-visualizer` is explicitly
+  **non-alerting** and alerting is parked in §D. So a permanently broken IV or greeks feed would render
+  politely and indefinitely, and **nobody would know**. The two invariants are a pair and only half exists.
+  **Scope:** per-field null/degradation rates in the existing `/api/_metrics` rollup + an operator readout;
+  optionally a threshold notice. *Value M–H · Effort S–M* (the observability spine + ring buffer already
+  exist). Decision-impact cull **N/A** (operational correctness). **Invariant watch:**
+  `operator-vs-trader-path-separation` (**operator** surface — `/_ops/metrics`, off the trader routes,
+  read-only + side-effect-free), `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null` (the
+  measurement must not itself become a failure path).
+- **`responsive-layout` — PARKED MID-FLIGHT on a local-only branch** — `RAISED + PARKED 2026-07-16 (owner:
+  "pausing to think")`. ⚠ **`feat/responsive-layout` exists ONLY on this machine — never pushed.** 2 commits,
+  both green: `d2bac85` responsive top nav (hamburger + drawer < `md`, 48px targets) · `a7b92eb` positions →
+  cards < `md` + TradeEntryDialog/AuthDialog → fullScreen < `sm`. **Already fine, no change needed:** landing
+  + ticker (container queries; bento 1-col; 0 overflow). **NOT done (needs owner device review):**
+  `viewport-fit=cover` + safe-area insets for notched phones; fluid typography scale; visual polish < 375px.
+  **Env constraint:** the preview pane clamps ~390–497px and screenshots hang → true phone width **cannot be
+  visually verified here**; the work was verified **structurally** (JS overflow probes + tests). Owner has a
+  manual checklist (DevTools device toolbar; or `nx serve dashboard --host` + LAN IP:4300). Resume:
+  `git checkout feat/responsive-layout`. **Recommended: `git push -u origin feat/responsive-layout`** — a
+  local-only branch is one disk failure from gone. *Value M–H (mobile usability) · Effort S–M remaining.*
+  Decision-impact cull **N/A** (UX/platform-reach class). **Invariant watch:** `theme-token-discipline`.
+- **Restructure deferrals (named, not built)** — `RAISED 2026-07-16 (the folder restructure)`. Four
+  structural follow-ons the restructure deliberately left: (a) **`OpportunityTier` → a ticker widget** (it
+  sits in `features/trading/model/` but is consumed by `pages/ticker` — a presentation component in the
+  model layer); (b) **`/settings` as its own page** (today the route shell lives in `features/auth/
+  SettingsPage.tsx` — deliberate, they are tightly coupled, but revisit if it grows); (c) **rename
+  `features/` → `domains/`** — "features" is a misnomer (it holds domains/nouns, not scrum features; delivery
+  features live in `.claude/contracts/`) — **an open, owner-endorsed option**; (d) **flatten `app/` → `src/`**
+  (the `app/` nesting is a legacy Nx artifact). *Each Value L–M · Effort S.* Decision-impact cull **N/A**
+  (build-system class). **Do (c)/(d) only as their own commit** — they touch every import path (the `@/*`
+  alias makes them cheap, which is the point).
+- **Dead-code sweep** — `RAISED 2026-07-16 (post-restructure)`. `npx ts-prune -p apps/dashboard/tsconfig.app.json`
+  finds **~13 unused exports in the trading cluster, ~80 across the dashboard**. ⚠ **`ts-prune` excludes
+  specs, so test-only helpers are FALSE POSITIVES** — each hit needs a spec-usage check before deletion (the
+  restructure moved files, so some are stale-export artifacts). *Value M (less surface to reason about) ·
+  Effort S–M.* Decision-impact cull **N/A** (hygiene). **Invariant watch:** deletion needs zero-importer
+  proof (the `[single-shared-sim-entry-dialog]` precedent).
+- **Test-migration to the risk-based rule (feature-by-feature, owner-gated)** — `IN PROGRESS 2026-07-13 →
+  2026-07-16`. The 2026-07-13 `qa-verify.md` §4 amendment replaced per-AC test mirroring with **risk-based**
+  testing (test invariants / negative space / silently-regressing behavior; verify visible/intentional things
+  by review). Existing specs still reflect the OLD rule, so the suite is migrated **feature by feature, owner-
+  gated** — **only Landing is done (15 specs → 4)**. *Value M (suite cost + signal) · Effort M, incremental.*
+  Decision-impact cull **N/A** (build-system class). **Note:** this amendment is what obsoleted the original
+  **system-10** (§E), now **re-scoped 2026-07-16 to an AC↔verification-EVIDENCE check** (owner decision) —
+  the re-scoped form **supports** this migration instead of fighting it (it accepts `review` as evidence, so
+  trimming a spec no longer trips it).
 - **AI input-enrichment pool** — `RAISED 2026-07-02 (owner; "what derived data helps the AI?")`. The
   scored survivors from the 2026-07-02 GATE I (full verdicts in that note above): `iv-rank` (Value H;
   blocked-on IV-history persistence — accumulate into the shipped Postgres store), `market-backdrop`
@@ -756,7 +880,8 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   ground-truth); server-internals-in-FE / UI-in-BE lane-purity warns; promoted-canon single-source
   (every ledger Promoted key has prose in PROJECT_CONTEXT §5). *Value M · Effort M.* Pairs with the
   §B ledger-crossing hook (same script surface). **Deferred extensions:** AC↔component-state mapping
-  check (now tracked + broadened as **system-10**, AC↔test traceability); optional `settings.json`
+  check (now tracked + broadened as **system-10**, re-scoped 2026-07-16 to AC↔verification-**evidence**);
+  optional `settings.json`
   PreToolUse/Stop hook to auto-run it (offer made); the legacy 4 archived features predate `_MANIFEST.md`
   (flag only on `--all`, not on live gating).
 - **system-4 · Lane enforcement via role subagents** — `✓ LANDED (2026-06-23, tools-allowlist half)`:
@@ -821,20 +946,37 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Binding:** do NOT promote before system-1…system-6 land (see the sequencing note above) — this one
   removes the human review the system currently leans on for correctness; the **lite path above is the
   adopted interim** until then.
-- **system-10 · Contract-linter AC↔test traceability check** — `PROPOSED (2026-06-23), unscheduled`.
-  Mechanize the standing **FE-tests rule's** AC↔test traceability (PROJECT_CONTEXT §7; committed
-  `d69e240`) that QA enforces by judgment today: extend `contract_lint.py` (system-3) so every
-  `PRODUCT_CONTRACT` AC (and every required case in the FRONTEND_EXECUTION_CONTRACT "Tests to write"
-  matrix) must map to **≥1 colocated `*.spec.tsx` test** — an uncovered AC fails the check even if the
-  suite is green. **Resurrects system-3's own deferred AC↔component-state mapping extension.** *Impact:*
-  an uncovered AC can't slip past a green suite; closes the residual that traceability is currently
-  human-judged. *Value M · Effort M.* **Build-system class:** trading-decision cull **N/A** — judge on
-  build-system correctness. **Design notes / depends-on:** (a) runs at **GATE Q (post-build)**, not the
-  inter-role handoffs — the tests don't exist until the FE builds, so it's a QA-invoked mode of the
-  linter, complementing the runtime conformance check (system-1); (b) needs a stable **AC-id/anchor
-  convention** in `PRODUCT_CONTRACT` so an AC can be matched to a named test (likely the first sub-step);
-  (c) the linter and the FE specs now live in **one repo** (post-merge: `apps/dashboard` specs read
-  from the workspace root) — no cross-repo read to worry about. Follow-on to the FE-tests rule + system-2/3.
+- **system-10 · Contract-linter AC↔verification-EVIDENCE check** *(was: AC↔test traceability)* —
+  `PROPOSED (2026-06-23)` → **✓ RE-SCOPED 2026-07-16 (OWNER DECISION: option (b)); unscheduled.**
+  **Why the original went obsolete:** system-10 existed to MECHANIZE the rule "every AC maps to ≥1 named
+  colocated test" — but the **2026-07-13 `qa-verify.md` §4 risk-based amendment REPLACED that rule**.
+  Verification stays mandatory for every AC; an automated *test* is now required only per the risk-based bar
+  (test the invariants / negative space / silently-regressing behaviors; verify visible/intentional things —
+  copy, presence — by review/QA, recorded as such). A linter that FAILED an AC lacking a named test would
+  enforce **exactly the rule the project deliberately dropped**, re-imposing per-AC mirroring by the back
+  door and fighting the in-flight test-migration (§B). *(Rejected alternative, recorded so a later session
+  doesn't re-litigate: **(a) CULL** — defensible, since QA judgment + the risk-based bar are the intended
+  mechanism; owner chose to keep the mechanization, re-aimed.)*
+  **DECIDED SCOPE (b) — evidence, not tests.** Do NOT demand a *test* per AC. Demand that every AC carry a
+  **recorded verdict + evidence** in `QA_REPORT.md`: `PASS|FAIL|UNVERIFIABLE` + an **evidence kind** —
+  `test:<name>` | `review` | `runtime`. An AC with **no recorded verdict** fails the check; an AC verified
+  `review` **passes** (that is the whole point of the amendment). This mechanizes what the amendment
+  actually wants — **no AC silently unverified** — without mandating a test.
+  *Value M · Effort M.* **Build-system class:** trading-decision cull **N/A** — judge on build-system
+  correctness.
+  **Sub-steps (in order):**
+  1. **AC-id/anchor convention** in `PRODUCT_CONTRACT.md` (stable ids, e.g. `AC-E7`) — the prerequisite;
+     the ids already appear informally in QA reports (`AC-E7`, `AC-19`), so this is codifying practice.
+  2. **`QA_REPORT.md` evidence schema** — a machine-readable verdict table (id · verdict · evidence-kind ·
+     evidence-ref). The current reports are already close to this shape.
+  3. **Linter mode** — a QA-invoked mode of `contract_lint.py` that cross-checks every `PRODUCT_CONTRACT`
+     AC id against the `QA_REPORT.md` table; unrecorded ⇒ ERROR.
+  **Design notes:** runs at **GATE Q (post-build)**, not the inter-role handoffs — it reads the QA report,
+  so it can only run once QA has produced one; complements the runtime conformance check (system-1).
+  The linter, the FE specs, and the reports live in **one repo** post-merge — no cross-repo read.
+  **Precedent that it would have caught:** `byo-ai-key`'s AC-19 named-test gap and `user-accounts`' AC-E7
+  server-gate FAIL were both caught by QA judgment alone. Origin: follow-on to the (now-amended) FE-tests
+  rule + system-2/3; resurrects system-3's deferred AC↔component-state mapping extension.
 - **system-11 · Cross-repo role-context on dispatch** — `✓ RESOLVED by the monorepo merge (2026-06-24)
   — dissolved, not implemented`. The whole problem was an artifact of the two-repo split: dispatching a
   FRONTEND executioner required `spawn_task --cwd` (the Agent tool couldn't cross the path_guard
@@ -857,12 +999,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   {feature}.json`; the interface's `## Conformance spec` section REFERENCES it (rich content stays as QA
   reference). **Done:** ai-recommendations interface points at its standalone spec; the backend added
   POST-body support to `interface_conformance.py` (additive, kept; `api_metrics.json` still passes).
-  **Remaining (do before the next GATE U·X):** reconcile the authoring docs — `COMPRESSOR_PROMPTS #3`,
+  **Remaining (do before the next GATE U·X) — ⚠ THIS LANDS ON `scanner`'s FAN-OUT** (scanner is the standing
+  NEXT and is a both-lanes feature, so its GATE U·X is the next fan-out that will hit this; the docs still
+  tell the UX to embed a block the tool cannot run, so an un-reconciled scanner interface would repeat the
+  ai-recommendations GATE-Z bounce). Reconcile the authoring docs — `COMPRESSOR_PROMPTS #3`,
   `delivery-ux.md`, `ORCHESTRATOR §6 / GATE U·X / GATE Q`, `BACKLOG system-1` — to the standalone
   convention; tighten `contract_lint` M7 to verify the interface references an EXISTING standalone spec
   (it currently only string-matches "Conformance spec"); align the system-1 heading regex with system-3's
   looser detection so they agree. *Value M · Effort S–M.* **Build-system class:** trading-decision cull
   N/A. Surfaced by the backend executioner at the ai-recommendations fan-out (GATE Z).
+  **Precedent to copy:** `iv-rank` (the most recent both-lanes feature) shipped a standalone spec
+  `.claude/tools/conformance/iv_rank.json` — that IS the convention; the docs are what lag.
 - **system-13 · Framework portability — the delivery-kit extraction** — `✓ LANDED (2026-06-24)`.
   Extracted the reusable framework (orchestrator + role subagents + tools + commands + compressor /
   role-launch docs) out of GammaFlow into a standalone, updatable **delivery-kit** (its own repo at
@@ -879,7 +1026,20 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   across features within one — a refinement made in any consumer flows back to the kit and out to all
   (a sibling to the Decision Ledger's "get wiser per feature"). *Value H (reuse / maintainability) ·
   Effort L.* **Build-system class:** trading-decision cull **N/A** — judge on framework
-  reusability/maintainability. **Open residuals (logged, not built):** (a) **no version-skew signal** —
+  reusability/maintainability.
+  **⚠ NEW divergence (2026-07-16, canon review) — the SEVERITY promotion path.** The project's
+  `DECISION_LEDGER.md` (project-owned) now promotes a **catastrophic+irreversible** key at 1 instance (or 0
+  by owner decision), while the kit's `ORCHESTRATOR.md` §3a/§6 still states the **recurrence-only** rule
+  (≥3, or ≥2 if binding). `ORCHESTRATOR.md` is a **framework file — byte-identical across consumers — so it
+  was deliberately NOT edited here** (editing it in place is exactly the re-coupling `kit_lint.mjs` aborts
+  on). **Action:** propose the severity path in `C:\Dev\delivery-kit\KIT_BACKLOG.md` (the framework's own
+  GATE I pool), amend `ORCHESTRATOR.md` there, release, and re-install so the consumer's copy is
+  byte-identical again. **Note the write-fence:** `path_guard.js` blocks Write/Edit outside the workspace —
+  **touch the kit via Bash.** The generic lesson worth flowing back: *recurrence is a proxy for importance;
+  when severity is known, don't wait for the proxy.* Until then the ledger is **ahead of** the framework
+  prose — a benign, logged divergence, but it is exactly residual (b) below (divergence reconciliation)
+  showing up for real.
+  **Open residuals (logged, not built):** (a) **no version-skew signal** —
   `.claude/kit.version` records what a consumer is on, but nothing alerts when it's behind the kit;
   (b) **no divergence reconciliation** — if two consumers refine the same framework file, `extract` is
   last-writer-wins; (c) **`project.json` is a new single point of misconfiguration** the conductor +

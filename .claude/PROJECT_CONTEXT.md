@@ -76,19 +76,22 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `POST /api/positions/sim-trade/gate` (the session-resolving gate the FE Positions write actions call).
 
 **Frontend** (`apps/dashboard/` in the Nx monorepo, React 19 + Vite + MUI/Emotion):
-- **Multi-page shell (Convexa, 2026-06-24):** `app/app.tsx` is now the **route table** (single
-  `BrowserRouter` + single dark MUI theme at `main.tsx`): `/` → `app/landing/` (the full-bleed Convexa
-  splash, outside the shell) · a persistent `app/shell/AppShell.tsx` (`<Outlet/>` nav — Convexa wordmark
-  + Ticker/Positions/Scanner, mounts once) wrapping `/ticker/:symbol` (→ `app/ticker/TickerDashboard.tsx`,
-  the relocated GEX dashboard; bare `/ticker`→TSLA) + `/positions` (→ `app/positions/PositionsPage.tsx`,
-  the relocated portfolio) + `/scanner` (→ `app/scanner/`, a static coming-soon stub) · `/_ops/metrics`
+- **Multi-page shell (Convexa, 2026-06-24):** `src/app/app.tsx` is the **route table** (a single
+  `BrowserRouter`; the MUI theme is **mode-aware dark + light** — `features/auth/ThemeProvider` over
+  `shared/theme/`, NOT the dark-only theme this bullet originally described; see `light-mode-parity`,
+  2026-07-01): `/` → `pages/landing/` (the full-bleed Convexa splash, outside the shell) · a persistent
+  `shell/AppShell.tsx` (`<Outlet/>` nav — Convexa wordmark + Ticker/Positions/Scanner, mounts once)
+  wrapping `/ticker/:symbol` (→ `pages/ticker/TickerDashboard.tsx`, the relocated GEX dashboard; bare
+  `/ticker`→TSLA) + `/positions` (→ `pages/positions/PositionsPage.tsx`, the route shell over
+  `features/trading/positions/`) + `/scanner` (→ `pages/scanner/`, a static coming-soon stub) ·
+  `/settings` (→ `features/auth/SettingsPage.tsx`) · `/_ops/metrics` (→ `pages/operator-metrics/`)
   stays OFF the shell + unlinked. **Live SSE is page-scoped to the Ticker page** (opens on mount, closes
   on nav-away, reopens on return, never double-subscribes); the positions store is a localStorage
   singleton so it persists across nav. Brand was UI-only at the time (durable keys / packages / identifiers
   unchanged) — **superseded 2026-06-28 by `rebrand-convexa`: full GammaFlow→Convexa rename incl. a loss-free
   migration of the durable keys to `convexa.*`.**
   The relocated `TickerDashboard` body is byte-identical to the old single-page dashboard described next.
-- `apps/dashboard/src/app/ticker/TickerDashboard.tsx` (was `app.tsx`) — dashboard (toolbar, stat tiles, setups, **Off-exchange
+- `pages/ticker/TickerDashboard.tsx` (was `app.tsx`) — dashboard (toolbar, stat tiles, setups, **Off-exchange
   blocks** section), polls bundle (60s) + subscribes SSE. Also four **always-on neutral
   positioning tiles** — `Net DEX`, `Vol/OI`, `IV skew` (slope → fear/greed/balanced), `Term
   structure` (contango/backwardation/flat) — plus a **Term-structure mini-card** (ATM-IV-by-tenor,
@@ -100,46 +103,63 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   while the GEX chart + every static tile/section keep rendering the last bundle; cold-start failure
   is the only blank screen (error + Retry), a post-success poll failure keeps the bundle behind a
   soft "Couldn't refresh" warning.
-- **⚠ FE restructure (2026-07-14, branch `restructure/dashboard-folders` — pending merge):** the dashboard
-  `src/app/` was reorganized by KIND into `pages/` (routes) · `features/` (cross-cutting domains — `trading/`
-  {`TradeEntryDialog`, `model/`, `orders/`, `positions/`}, `auth/`, `personas/`) · `shared/`
-  (`theme/`/`ui/`/`hooks/`/`lib/`) · `shell/`, with a `@/*`→`src/app/*` import alias and folder-per-widget
-  under `pages/ticker/widgets/`. **`apps/dashboard/src/app/README.md` is the authoritative current map.**
-  The paths in the bullets below predate the move — e.g. `app/ghost-trade/`→`app/features/trading/model/`,
-  `app/positions/`→`app/features/trading/positions/` (+ route shell `pages/positions/PositionsPage.tsx`),
-  `app/orders/`→`app/features/trading/orders/`, `app/ai-rec/`→`pages/ticker/widgets/ai-rec/`,
-  `app/gex-profile-chart.tsx`→`pages/ticker/widgets/gex-profile-chart/chart.tsx`, `tokens.ts`/`theme.ts`→
-  `shared/theme/`. Presentation-only refactor — score/tier/`state_fingerprint` untouched, 674/674 tests green.
-- `apps/dashboard/src/app/gex-profile-chart.tsx` — recharts horizontal net-GEX-by-strike, plus a
-  per-strike **Net DEX** series (neutral, secondary X-axis) and DEX/Vol-OI/volume in the tooltip.
-- `apps/dashboard/src/app/ghost-trade/` — **paper-sim ghost-trade tracker** (no real order anywhere).
-  Client-local durable store (`localStorage`, versioned, exportable) for the open `GhostTrade` +
-  append-only `DecisionRecord[]` (survive reload + SSE drop). `useGhostTrade` owns the honest **mark
-  ladder** (snapshot anchor → modeled between snapshots off the live underlying × cached greeks →
-  theoretical BS → last-known offline → frozen overnight/closed), P/L = (mark−entry)×100×qty,
-  edge-detected **reassessment alerts** (once per event; suppressed while stale/offline/closed), the
-  operator-mediated **reassessment boundary** (build request → paste verdict → Accept maps Exit/Trim/
-  Add-capped/Roll/Hold), and the **opportunity tier** read (`signals.opportunity_tier`). Components:
-  `GhostTradePanel`, `TradeEntryDialog`, `OpportunityTier` (tier emphasis + Prime banner). Tracked
-  contract stats come from `GET /api/contract` (filter-independent; 404 → tracking-unavailable,
-  `option_quote:null` → theoretical mark). Isolation: an SSE drop degrades only P/L + current mark
-  (⏸ last known); the trade record/stats/history + GEX chart + all tiles persist.
-- `apps/dashboard/src/app/positions/` — **paper-sim positions portfolio** (multi-position evolution of
-  the ghost-trade tracker). Flat id-keyed durable collection (loss-free v1→v2 migration) + the entry/fill
-  resolver (manual / market / **limit** that fills only on a live cross at the limit price, `pending →
-  filled/cancelled`); `derive.ts` (filter/sort/group + P/L subtotals); `useTrends` (ephemeral per-position
-  P/L trend ring buffer, reusing the latency-trend pattern); `usePortfolio` (the brain). UI:
-  `PortfolioPanel` (Simulated/Live tabs), `PositionsView` (table↔card + density), `PositionRow`,
-  `PositionEntryDialog`, `CustomizationToolbar`, `PlSparkline`, `LiveTabPanel` (**zero-import LOCKED**
-  placeholder — no broker/order/data). Reuses `ghost-trade/mark.ts` for P/L; durable customization + named
-  saved views. `NO_BACKEND_CHANGE` (consumes `GET /api/contract` + SSE); never a scoring input; `SIMULATED`.
-- `apps/dashboard/src/app/operator-metrics.tsx` — **operator-only** metrics readout on route
+- **FE structure — LANDED on `main` (2026-07-16, `b194bdc`):** the dashboard `src/app/` is organized by
+  **kind**: `pages/` (one folder per route) · `features/` (cross-cutting **domains** — `trading/`
+  {`TradeEntryDialog`, `model/`, `orders/`, `positions/`}, `auth/`, `personas/`) · `shared/` (the app kernel —
+  `theme/`/`ui/`/`hooks/`/`lib/`) · `shell/` (the layout frame), with a `@/*`→`src/app/*` import alias and
+  **folder-per-widget** under `pages/ticker/widgets/` (+ `_kit/` = ticker-local widget infra, `chrome/` = the
+  page frame, not bento widgets).
+  **`apps/dashboard/src/app/README.md` is the AUTHORITATIVE map — read it; do not duplicate it here.**
+  **Structural rules (binding on new FE work):** dependency direction is **downward only** (`pages`/`features`
+  → `shared`); **pages NEVER import sibling pages** — that is the whole reason `features/` exists (a surface
+  used by ≥2 pages moves to `features/`; a single-page consumer stays on that page); `shared/` is populated on
+  the **2nd consumer**, never preemptively. Naming note: `features/` holds **domains** (nouns), not delivery
+  features — delivery features live in `.claude/contracts/`. Presentation-only refactor — score/tier/
+  `state_fingerprint` untouched; **674/674 tests green on `main`**. **Every path in this §2 Frontend section
+  is post-move** (reconciled 2026-07-16); paths are relative to `apps/dashboard/src/app/`.
+- `pages/ticker/widgets/gex-profile-chart/` (`chart.tsx` + `GexStrikeProfile.tsx`) — recharts **vertical
+  diverging** net-GEX-by-strike: strikes on the category X-axis, net GEX on Y, a zero `ReferenceLine`, and
+  de-collided spot / flip / live-flip reference labels. **`net_gex` is the ONLY bar series** — the former
+  per-strike Net DEX series was dropped at the redesign; **Net DEX · Vol/OI · volume now appear in the
+  TOOLTIP only** (each independently nullable). Vertical is a deliberate owner UX call — a documented
+  intentional Figma deviation (do NOT "fix" it back to horizontal).
+- `features/trading/model/` (was `app/ghost-trade/`) — **the foundational trade/decision model + P&L engine
+  the WHOLE trading domain depends on** (`positions/` + `orders/` import from it). NOT "the old dialog" —
+  `types.ts` (trade/decision types) · `mark.ts` (the mark ladder + P/L) · `store.ts` (the durable store) ·
+  `useGhostTrade.ts` · `OpportunityTier.tsx`. No real order anywhere. Client-local durable store
+  (`localStorage`, versioned, exportable) for the open `GhostTrade` + append-only `DecisionRecord[]`
+  (survive reload + SSE drop). `useGhostTrade` owns the honest **mark ladder** (snapshot anchor → modeled
+  between snapshots off the live underlying × cached greeks → theoretical BS → last-known offline → frozen
+  overnight/closed), P/L = (mark−entry)×100×qty, edge-detected **reassessment alerts** (once per event;
+  suppressed while stale/offline/closed), the operator-mediated **reassessment boundary** (build request →
+  paste verdict → Accept maps Exit/Trim/Add-capped/Roll/Hold), and the **opportunity tier** read
+  (`signals.opportunity_tier`). **`GhostTradePanel` was DELETED** (sim-entry-unification, 2026-07-01 — zero
+  importers); the entry surface is the ONE shared `features/trading/TradeEntryDialog.tsx` (see the
+  `[single-shared-sim-entry-dialog]` invariant). `OpportunityTier` (tier emphasis + Prime banner) is
+  consumed by `pages/ticker` — a named deferral is to relocate it into a ticker widget. Tracked contract
+  stats come from `GET /api/contract` (filter-independent; 404 → tracking-unavailable, `option_quote:null`
+  → theoretical mark). Isolation: an SSE drop degrades only P/L + current mark (⏸ last known); the trade
+  record/stats/history + GEX chart + all tiles persist.
+- `features/trading/positions/` (was `app/positions/`; route shell = `pages/positions/PositionsPage.tsx`) —
+  **paper-sim positions portfolio** (multi-position evolution of the ghost-trade tracker). Flat id-keyed
+  durable collection (loss-free v1→v2 migration) + the entry/fill resolver `entry.ts` (manual / market /
+  **limit** that fills only on a live cross at the limit price, `pending → filled/cancelled`); `derive.ts`
+  (filter/sort/group + P/L subtotals); `useTrends` (ephemeral per-position P/L trend ring buffer, reusing
+  the latency-trend pattern); `usePortfolio` (the brain). UI: `PortfolioPanel` (Simulated/Live tabs),
+  `PositionsView` (table↔card + density), `PositionRow` / `PositionCard`, `PositionsPanel`,
+  `CustomizationToolbar`, `PlSparkline`, `LiveTabPanel` (**zero-import LOCKED** placeholder — no
+  broker/order/data). **`PositionEntryDialog` was DELETED** (sim-entry-unification, 2026-07-01) — entry goes
+  through the ONE shared `features/trading/TradeEntryDialog.tsx`. Reuses `features/trading/model/mark.ts`
+  for P/L; durable customization + named saved views. `NO_BACKEND_CHANGE` (consumes `GET /api/contract` +
+  SSE); never a scoring input; `SIMULATED`.
+- `pages/operator-metrics/` (`operator-metrics.tsx` + `LatencyTrend.tsx` + `useLatencyTrend.ts`) —
+  **operator-only** metrics readout on route
   `/_ops/metrics` (its own AppBar, OFF the trader routes, not linked from the trader UI). Read-only +
   side-effect-free (`fetchMetrics` → `GET /api/_metrics` only): global + per-ticker stage tables
   (I/O|CPU from `kind`, p50/p95/max/count/ok-err-skip), total/cache/vendor lines, recent-traces with
   warm/cold inspect. Honest: empty → `—`, `skipped` shown, headroom `null` → `unknown`, non-alerting.
   The **trader dashboard ignores** the new `meta.trace_id`/`meta.timings` (renders neither). Tops the
-  page with a **`LatencyTrend`** card (`operator-metrics/`): a local, in-browser, **ephemeral** trend
+  page with a **`LatencyTrend`** card: a local, in-browser, **ephemeral** trend
   of the windowed snapshots. `useLatencyTrend` is the page's **single fetcher** — one stable poll loop
   (still only `GET /api/_metrics`, once per cadence) feeding both the trend and the snapshot tables;
   a bounded serializable ring buffer stores raw per-scope snapshots so metric/percentile/scope/stage
@@ -148,29 +168,34 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `unknown`, failed poll keeps the last series + self-heals (no retry storm), local JSON Export (no
   server state), auto-pause when hidden; non-semantic palette, no thresholds/alerts. Clears on
   reload (expected). NO_BACKEND_CHANGE — `/api/_metrics` consumed unchanged.
-- `apps/dashboard/src/app/personas/` — **trader personas**: a prompt-layer presentation overlay,
+- `features/personas/` (was `app/personas/`) — **trader personas**: a prompt-layer presentation overlay,
   assembled **FE-side** (locus PINNED FE-rendered). A faithful **embedded** decomposed hand-off
-  template (Default renders today's prompt byte-identical; A1 disposition slot relocated) + 7 built-in
-  presets + client-local custom personas + `active_persona_id` (persisted). `usePersona` +
-  `PersonaPicker`/`HandoffDialog` (Entry/Reassessment tabs, FIXED/PERSONA badges, invariance readout
-  "Unchanged by persona…", Copy)/`PersonaCustomizeForm`. **Switching persona is pure presentation —
-  no getTicker/streamTicker, no recompute; score/tier/gate/fingerprint are invariant.** A visible/
+  template (`template.ts`; Default renders today's prompt byte-identical; A1 disposition slot relocated) +
+  7 built-in `presets.ts` + client-local custom personas + `active_persona_id` (persisted, `store.ts`).
+  `usePersona` + `components.tsx` (`PersonaPicker`, `PersonaCustomizeForm`). **`HandoffDialog` was REMOVED**
+  (convexa-redesign GATE-V cleanup, 2026-06-30 — the owner dropped the hand-off viewer; AI-rec no longer
+  opens it), so the Entry/Reassessment-tab viewer no longer exists in the UI. **Switching persona is pure
+  presentation — no getTicker/streamTicker, no recompute; score/tier/gate/fingerprint are invariant.** A visible/
   overridable DTE pre-fill chip (one-shot on explicit navigation, never recomputes). NOTE: the FE
   embeds the template/presets rather than consuming the backend's `GET /api/personas` — correct
   output, but dual-sourced (see OPEN_THREADS thread 7 reconciliation flag).
-- `apps/dashboard/src/app/auth/` — **user-accounts UI** (hybrid access; anonymous browsing unchanged).
+- `features/auth/` (was `app/auth/`; also owns the `/settings` route shell — `SettingsPage.tsx`, kept with
+  the domain because they are tightly coupled) — **user-accounts UI** (hybrid access; anonymous browsing
+  unchanged).
   `AuthContext` (non-blocking who-am-I read; **degrade-to-anonymous** on failure; server-wins settings),
   `AuthDialog`/`AuthDialogProvider`/`AccountControl` (login by **email** / signup; username optional
   display-only; non-enumerating 401), `GoogleButton` (first-class **present-but-disabled-when-unconfigured**,
   driven by `google_available` — config-flip, no rebuild), `useGate`/`SignInPrompt` (the shared gated-action
   helper — awaits a **server gate** before any local write; 403→prompt+abort), `SettingsPage`/`useSettings`/
   `localPrefs`/`ThemeProvider`/`copy`/`validation` (the 3 light prefs — active persona / default ticker /
-  theme; server-wins signed-in, client-local anonymous, **per-account isolated**, score-neutral). Gating is
-  wired into `positions/PortfolioPanel` + `CustomizationToolbar` (open-position / save-view / accept-rec
-  writes call `POST /api/positions/sim-trade/gate`; D6d "stored in this browser, not tied to your account
-  yet" disclosure) and `ai-rec/AiRecPanel` (ask-AI **auth-outermost** — a logged-out call shows "sign in",
-  never ai-rec cooldown/cap/no_key; manual export floor stays anonymous).
-- `libs/api/src/lib/gammaflow.ts` — typed API client (`@org/api`): `getTicker`, `streamTicker`,
+  theme; server-wins signed-in, client-local anonymous, **per-account isolated**, score-neutral). Also
+  `AiKeySection.tsx` (the BYO-key surface). Gating is wired into
+  `features/trading/positions/PortfolioPanel` + `CustomizationToolbar` (open-position / save-view /
+  accept-rec writes call `POST /api/positions/sim-trade/gate`; D6d "stored in this browser, not tied to your
+  account yet" disclosure) and `pages/ticker/widgets/ai-rec/AiRecPanel` (ask-AI **auth-outermost** — a
+  logged-out call shows "sign in", never ai-rec cooldown/cap/no_key; manual export floor stays anonymous).
+- `libs/api/src/lib/convexa.ts` (renamed from `gammaflow.ts` at the rebrand; consumed via `@org/api`, so
+  zero export churn) — typed API client: `getTicker`, `streamTicker`,
   `fetchTrackedContract`, `fetchMetrics`; `Meta` tolerates optional `trace_id?`/`timings?`;
   `PersonaDefinition`/`Handoff` persona types; **auth surface** (`getSession`, `signup`, `login`, `logout`,
   `saveSettings`, `simTradeGate`; `SessionStatus`/`AuthUser`/`UserSettings`/`AuthError` types — bundle/SSE
@@ -297,12 +322,50 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   via env** (host Variables / Pages env), values owner-entered; images run **non-root**. *(containerize-apps
   — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
   registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
-- **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow (ghost
-  trade, positions, act-on-rec/orders) launches **THE one shared `app/features/trading/TradeEntryDialog`**. A new
-  entry shape is an additive **variant** of it (props/modes — e.g. the fill-mode control, the order
-  variant), **never a forked second dialog**; a superseded fork is deleted with zero-importer proof.
+- **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding; **NARROWED to SIM-ONLY
+  2026-07-16**) — every **simulated** entry flow (ghost trade, positions, act-on-rec/orders) launches **THE
+  one shared `app/features/trading/TradeEntryDialog`**. A new **sim** entry shape is an additive **variant**
+  of it (props/modes — e.g. the fill-mode control, the order variant), **never a forked second dialog**; a
+  superseded fork is deleted with zero-importer proof.
+  **⚠ SCOPE (the narrowing): this rule governs SIMULATED entry ONLY. A real-money / broker entry surface
+  MUST be a structurally SEPARATE component — never a mode, prop, or variant of the sim dialog.** The one
+  place a fork is a *feature, not a smell* is the boundary between "this is pretend" and "this moves real
+  money"; a shared component there invites the most expensive confusion the app can produce, and
+  `[no-real-order-path]` exists to keep that boundary hard. Un-narrowed, this key would have pushed
+  `broker-connect`'s real entry into the sim dialog as an "additive variant" — backwards. Reopening the
+  narrowing is a deliberate GATE-Z reversal.
   *(sim-entry-unification — created it + deleted the forks; ai-rec-backtest-orders — the contract-mandated
-  order variant. 2 binding.)*
+  order variant. 2 binding. Narrowed by owner canon review 2026-07-16 — see DECISION_LEDGER "Narrowing
+  note"; `apps/dashboard/src/app/README.md` corrected the same day.)*
+- **`[loss-free-durable-migration]`** (**promoted 2026-07-16 via the SEVERITY path, 1 instance**) — when a
+  durable **client** store's key or shape changes, existing user data is carried forward **loss-free**:
+  **read-new-else-old, promote-forward, never-delete, idempotent, never-throw**, composing with any prior
+  version chain (the `resolveDurable(new, old)` helper + the positions `v1→v2` chain are the reference
+  implementation). A corrupt or unreadable blob **degrades to empty WITHOUT destroying the original**.
+  **Why this is canon at 1 instance, not 3:** ~5 durable localStorage stores (`convexa.positions.v2`,
+  `.ghost-trade.v1`, `.orders.v1`, `.personas.v1`, `.uiprefs.v1`) hold the user's **entire trading history
+  and decision record, with NO server backup and no automatic export** — so a single migration bug is a
+  **silent, total, irreversible** loss. Severity, not recurrence, earned this. Any feature touching a
+  durable key/shape (the broker + persistent-DB tracks will) restates it.
+  *(rebrand-convexa — the loss-free `gammaflow.*`→`convexa.*` key migration. Promoted by owner canon review
+  2026-07-16 on the severity path added to DECISION_LEDGER the same day.)*
+- **`[score-change-is-deliberate-and-measured]`** (**promoted 2026-07-16, owner canon review**) — the
+  companion `[additive-keeps-score-byte-identical]` lacked. The `opportunity_score` / `opportunity_tier` /
+  entry gate **MAY** evolve — they are not frozen — but **only deliberately**: via an **explicit
+  score-changing feature** that (a) states its rationale, (b) records a **before/after on real tickers**,
+  and (c) **version-bumps the fingerprint basis** so the change is legible downstream. A score change is
+  **never a side effect** of an additive feature (that remains forbidden), and **never lands unmeasured**.
+  **Why this exists:** the additive rule correctly stopped *accidental* score drift, but — with no
+  counterpart — it hardened into a de-facto **freeze**. Evidence at promotion: `_opportunity_score(dist,
+  ivhv, setups, near_flip)` (+ a capped dark-pool bonus) was **unchanged for 210 commits** (last
+  substantive edit `d3aeb4f`, 2026-06-22) while **eight** enrichment features shipped — dex/vol-oi/skew/
+  term, dealer-flow-projection, ai-context-pack, iv-rank, ATR — **none of which can reach it**. The score
+  rewards vol *extremity* via `abs(IV/HV − 1.0)`, so **rich and cheap premium score identically**, while
+  `iv_rank.band` (`premium_rich|premium_cheap`) sits in the payload unable to inform it. The hand-tuned
+  constants (`40/25/25/10`, `8.0`/setup, `DEFAULT_GATE_SCORE = 50`) have **never been validated against an
+  outcome**. This rule does not weaken the additive invariant — it opens the *intentional* door the
+  additive rule was never meant to close. **Prerequisite in practice:** you cannot improve a score you
+  cannot measure — see the `outcome-ledger` feature.
 - **`[theme-token-discipline]`** (promoted 2026-07-02, 4 programs) — a new or re-skinned FE component binds
   to the **MUI theme / `tokens.ts`** — mode-aware values go through **`extrasFor(theme)`** inside sx
   callbacks (bare `extras.` is dark-only) — and carries **zero hardcoded hex**; dark/light parity is part
@@ -349,7 +412,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
   path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
 - **Positions portfolio (sim, FE-only)** — evolves the ghost-trade tracker from a single open position
-  into a multi-position **portfolio** (`apps/dashboard/src/app/positions/`). A central all-positions view
+  into a multi-position **portfolio** (`features/trading/positions/`, route shell `pages/positions/`). A central all-positions view
   + a per-ticker filter; each position shows P/L + Δ-since-entry + an ephemeral session delta + a small
   P/L **trend sparkline**; grouping (ticker / strategy = long-call vs long-put / expiry) with P/L
   subtotals; full customization (columns/sort/filter, table↔card, density) + **durable named saved views**
@@ -460,7 +523,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   Persona single-sourced from `GET /api/personas`. No real order, ever.
 - **Convexa redesign (FE-only, shipped 2026-06-30 → `main`)** — a full presentation re-skin to the Figma
   dark-fintech DS across every surface (Landing · shell/nav · Settings/Auth modal · Scanner · Positions ·
-  Ticker viewer + its `ticker/sections/*` split + vertical-diverging GEX chart · AI-rec panel ·
+  Ticker viewer + its `ticker/sections/*` split (**since restructured → `pages/ticker/widgets/`**, folder-
+  per-widget) + vertical-diverging GEX chart · AI-rec panel ·
   `StateExportDrawer` · `TradeEntryDialog` with a Manual/Market/Limit fill mode), a `theme.ts`/`tokens.ts`
   token bridge, and an app-wide contained-button treatment (deep `#1d6fe0`+white on filled primary; the
   `#4f9cff` accent unchanged). `NO_BACKEND_CHANGE` — score/tier/`state_fingerprint` byte-identical; QA PASS
@@ -497,7 +561,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   cap / admin allowance neither checked nor consumed), while **auth stays outermost** and the real
   `ai_eval` readiness gate + override behave identically; deterministic per (scenario_id, context).
   **(b) Simulated orders (FE-local state — NO order endpoints, orders never ride the wire):**
-  `apps/dashboard/src/app/orders/` — durable **`convexa.orders.v1`** store
+  `features/trading/orders/` (was `app/orders/`) — durable **`convexa.orders.v1`** store
   (waiting→triggered→filled/cancelled/expired + mandatory good-til), a PURE live-cross trigger engine (v1
   trigger = `underlying_above|below` on the live NBBO mid ONLY — `last_trade` structurally excluded; fills
   via the shipped mark ladder accepted only live; no retro-fill; clock expiry the only off-stream
@@ -512,7 +576,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   render catch fixed inline + guarded by a named test: a scenario run is NOT blocked by
   keyless-deployment availability. Backtest v1 = FORWARD-test (recorded-replay is a named deferred seam).
 - **Sim-entry unification (`sim-entry-unification`, FE-only refactor, shipped 2026-07-01 `d704193`)** —
-  ONE shared `app/trading/TradeEntryDialog` on both pages (Ticker + Positions); the old
+  ONE shared `TradeEntryDialog` on both pages (Ticker + Positions) — created at `app/trading/`, now
+  `features/trading/TradeEntryDialog.tsx`; the old
   `ghost-trade/TradeEntryDialog`, `positions/PositionEntryDialog`, and `GhostTradePanel` deleted with
   zero-importer proof; `app/README.md` directory map added. Origin of the promoted
   `[single-shared-sim-entry-dialog]` invariant.
