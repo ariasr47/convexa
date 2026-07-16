@@ -742,6 +742,78 @@ scrum features) · flatten `app/` → `src/` · the dead-code sweep (~13 unused 
 risk-based test-migration (feature-by-feature, owner-gated — **only Landing done, 15→4**).
 **Parked branch:** `feat/responsive-layout` — 2 commits, **local-only, NEVER PUSHED** (see BACKLOG §B).
 
+## 7t. Outcome ledger — the track record (SHIPPED + ARCHIVED — FE-only)
+**Closes the loop the project was missing.** It compounded **BUILD** wisdom (`DECISION_LEDGER.md`) and had
+**none for TRADING** wisdom. This harvests the append-only decision records the app already writes and
+answers, honestly: **is the `opportunity_score` any good?** — hit rate + mean per-trade return + dispersion
+by **tier · AI-rec · setup · IV-rank band · persona**, with explicit sample counts.
+**Origin:** the 2026-07-16 owner-requested **canon review**, not an ordinary GATE-I harvest. The finding that
+produced it: `_opportunity_score(dist, ivhv, setups, near_flip)` + a capped dark-pool bonus is the entire
+headline judgment (drives tier, Prime, `DEFAULT_GATE_SCORE = 50`) and had been **unchanged since `d3aeb4f`,
+2026-06-22 — 210 commits** — while **8 enrichment features shipped that cannot reach it**. The score rewards
+vol *extremity* via `abs(IV/HV − 1.0)`, so **rich and cheap premium score identically**, while
+`iv_rank.band` sits in the payload unable to inform it. The weights and the gate threshold had **never been
+validated against a single outcome**.
+**Isolation: `NO_BACKEND_CHANGE`** — client-local derived read, **zero new durable keys**, empty `apps/api`
+diff. **That empty diff IS the structural no-auto-tuning guarantee** (a statistic that never leaves the
+browser cannot reach `signals.py`). Four boundaries: zero backend surface · one-way leaf (mutation-tested
+`?raw` source-scan) · **zero write functions** · off the AI prompt in v1. The feature **ENABLES**
+`[score-change-is-deliberate-and-measured]`; it is structurally incapable of **exercising** it.
+**Shape:** `features/trading/outcomes/` (`ledger.ts` · `sources.ts` · `archive.ts` · `copy.ts` ·
+`TrackRecordSection` · `ArchiveBlock`), hosted from `pages/positions/PositionsPage.tsx` with `personaLabel`
+**injected as a prop** (the leaf may not import `features/personas`). Capture = an **additive optional**
+`entry_context` digest on `DecisionRecord` written by the **existing recorders** (`captureDigest.ts`,
+best-effort, cannot throw, triggers no fetch). **No `SCHEMA_VERSION` bump, no backfill — digest presence IS
+the epoch marker** (absent = pre-capture; present-with-null = unavailable that cycle).
+**Honesty is the whole product:** `N_min = 20` + a **Wilson 95%** interval on every rate · cells never
+pooled · **all-time non-rolling** window (a selector would let the trader **shop for the flattering
+window** — the exact meta-decision failure the feature exists to fix) · `building` shows a count and
+**nothing numeric** (AC-E3: a 3-for-3 cell must never render "100%"; **no meter** — a meter beside a
+hit-rate-shaped cell reads as a rate) · a hit rate **never** appears without its mean return + dispersion ·
+**no dollar figures**, **no semantic tint**, **Ns never summed**, **no include/exclude toggle** (non-goal
+15) · **DecisionRecord is the spine** (no record ⇒ not an outcome), closed-only, **only `quoted` fills
+count** · nothing excluded silently (`M == counted + Σ excluded_by_reason`, deterministic precedence).
+**A roll is a close, not a category** (PM GATE Z §11.6): the rolled-OUT leg **counts plain, no marker**;
+the rolled-INTO leg is excluded under the no-entry-record reason. *"It's a continuation, not a loss"* is the
+most common self-flattering story in options trading — and since leg B cannot be counted, excluding leg A
+would make the trade **vanish entirely, selectively, in the losing direction**. **No roll count in either
+direction** — a count beside a rate hands the reader the mental subtraction ("58%, but 5 were rolls, so
+really…") that non-goal 15 forbids; the basis rides **`TR_HIT_DEF`**, the **one** string permitted to name a
+roll (pinned by AC-E21's scan).
+**QA PASS — 46/46 ACs, 0 FAIL, 0 UNVERIFIABLE** (fresh de-correlated **Sonnet**, every gate re-run
+independently). `nx test dashboard` **804/804** (674 baseline + 130) · `tsc -b --force` clean · lint 0 ·
+`apps/api` diff empty (conductor- **and** QA-verified). Conformance **n/a and correctly absent** — the
+feature consumes **no endpoint at all**, so there is no FE↔BE surface and system-1 does not apply
+(**system-12 therefore does not bite this feature; it still lands on `scanner`**).
+**⚠ The pipeline's amendment loop fired FOUR times, every one a real defect, every one raised by a
+DOWNSTREAM lane refusing to decide out of its own lane:** **A1** — the per-cohort exclusion ledger was
+**deleted, not supplemented** (every reason is decided *before* an outcome reaches a cell, so the original
+§3.4 placed a structure where it can never populate: a **contract defect**, not PM scope creep). **A2** —
+the pre-capture **count**, not just the epoch date (a date cannot distinguish a *new* cell from a
+*permanently starved* one). **A3** — the exit-basis join: `close` is not the only close-bearing event, **and
+the naive widen is verifiably wrong** — `:342` gates the roll close on `rec.replacement_contract`, so a
+**replacement-less Roll falls through to `:404` and writes `accept` + `ai_verdict:'Roll'` WITHOUT
+closing**; the ruled predicate is `close | roll | (accept AND ai_verdict === 'Exit')`, a verified
+biconditional. **§11.6** — the roll's product meaning. Plus **`TR_HIT_DEF`**, which made AC-13
+unsatisfiable. A **fresh** architect (not the authoring session) resolved A1–A3 — and went *further* than
+asked, which a session defending its own work plausibly would not have.
+**Two vacuous-test classes caught by the builders on themselves:** MUI `sx` compiles to classes, so
+`getAttribute('style')` is **always empty** and jsdom won't resolve emotion classes — three style
+assertions could not have failed. Rewritten to `className` identity (a 90% vs a 10% cell must be
+byte-identical) and `innerHTML` comparison on a real stream drop. **The `?raw` guard was mutation-proven**
+(renaming a `via` literal FAILED naming §2/Q3.5).
+**Deferred seams (named, not built) → BACKLOG:** the **`split-decision-log`** live bug (`appendDecision` is
+defined twice; the Ticker's `useGhostTrade` is LIVE and still writes `convexa.ghost-trade.v1` while
+positions reads `.v2` and only falls back when no v2 blob exists ⇒ stranded records — the ledger **unions
+both + de-dupes**, so it is correct either way, but the split remains; **`convexa.ghost-trade.v1` LOOKS
+legacy but is ACTIVELY WRITTEN — document it as LIVE before some cleanup deletes it**) · **`roll` as a
+capture event** (would let leg B be counted — priced: it must not corrupt `pre_capture`, since
+absent-digest = pre-capture is A2's epoch marker) · **modeled-fill cohort** (deliberately not a secondary
+cohort in v1 — a weaker number that looks identical to the headline is the confusion this feature exists to
+prevent) · **the first deliberate score change will silently mix two scoring bases inside the all-time tier
+cells** (PRODUCT §7.4) — the future score-changing feature **must partition or reset them**; v1 must not
+invent a version to paper over it.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

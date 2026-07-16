@@ -411,6 +411,35 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `position_eval{changed,fingerprint}|null` (sibling of `ai_eval`, via `pos_*` query params);
   `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
   path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
+- **Outcome ledger — the track record (`outcome-ledger`, FE-only, shipped 2026-07-16)** — the project's
+  **first loop for TRADING wisdom** (it already had `DECISION_LEDGER.md` for BUILD wisdom). Harvests the
+  append-only `DecisionRecord[]` the app already writes and answers, honestly: **is the `opportunity_score`
+  any good?** Hit rate + mean per-trade return + dispersion by **tier · AI-rec · setup · IV-rank band ·
+  persona**, on `/positions` as its own in-page view (a **TRADER** surface — explicitly not `/_ops/metrics`),
+  anonymous + ungated. `features/trading/outcomes/` (`ledger.ts` · `sources.ts` · `archive.ts` · `copy.ts` ·
+  `TrackRecordSection` · `ArchiveBlock`); `personaLabel` is **injected as a prop** (the leaf may not import
+  `features/personas`). Capture = an **additive optional** `entry_context` digest on `DecisionRecord`
+  written by the **existing** recorders (`captureDigest.ts` — best-effort, cannot throw, no fetch); **no
+  `SCHEMA_VERSION` bump, no backfill — digest presence IS the epoch marker** (absent = pre-capture;
+  present-with-null = unavailable that cycle), so "by tier" works on **existing** data while
+  score/setup/persona accumulate from ship (the iv-rank "building history" shape).
+  **`NO_BACKEND_CHANGE` — and the empty `apps/api` diff IS the structural no-auto-tuning guarantee** (a
+  statistic that never leaves the browser cannot reach `signals.py`). Four boundaries: zero backend surface ·
+  one-way leaf (mutation-proven `?raw` source-scan) · **zero write functions** · off the AI prompt in v1.
+  It **ENABLES** `[score-change-is-deliberate-and-measured]` and is structurally incapable of exercising it.
+  **Honesty is the product:** `N_min = 20` + a **Wilson 95%** interval on every rate; cells never pooled;
+  **all-time non-rolling** window (a selector would let the trader shop for the flattering window — the
+  exact failure this feature exists to fix); `building` shows a count and **nothing numeric** (a 3-for-3
+  cell must never render "100%"; **no meter**); a rate **never** appears without its mean return +
+  dispersion; **no dollar figures, no semantic tint, Ns never summed, no include/exclude toggle**;
+  **DecisionRecord is the spine** (no record ⇒ not an outcome), **closed-only**, **only `quoted` fills
+  count**; nothing excluded silently (`M == counted + Σ excluded_by_reason`, deterministic precedence,
+  M spanning **both** position stores de-duped). **A roll is a close, not a category:** the rolled-OUT leg
+  counts plain (no marker); the rolled-INTO leg is excluded under the no-entry-record reason; **no roll
+  count in either direction** — the basis rides `TR_HIT_DEF`, the one string permitted to name a roll.
+  Score/tier/`state_fingerprint` untouched. QA PASS (Sonnet, de-correlated — 46/46 ACs, 0 FAIL, 0
+  UNVERIFIABLE; `nx test dashboard` 804/804). Conformance **n/a and correctly absent** (consumes no
+  endpoint ⇒ no FE↔BE surface). See OPEN_THREADS §7t.
 - **Positions portfolio (sim, FE-only)** — evolves the ghost-trade tracker from a single open position
   into a multi-position **portfolio** (`features/trading/positions/`, route shell `pages/positions/`). A central all-positions view
   + a per-ticker filter; each position shows P/L + Δ-since-entry + an ephemeral session delta + a small

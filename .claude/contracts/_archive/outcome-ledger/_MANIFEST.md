@@ -1,7 +1,6 @@
 # outcome-ledger — pipeline manifest
 Entry:        architect-first
-Stage:        GATE U·X — UX locked + compressor #3 split emitted. **FAN-OUT IS FRONTEND-ONLY**
-              (`NO_BACKEND_CHANGE` ⇒ no backend lane spawns). Next: `delivery-frontend` (ROLE_LAUNCH §5).
+Stage:        **GATE S — SHIPPED + ARCHIVED (2026-07-16)**
 Repos:        **frontend ONLY** (architect resolved crux 1: `NO_BACKEND_CHANGE`, empty `apps/api` diff —
               client-local derived read, ZERO new durable keys, no server store. The empty backend diff is
               itself the structural no-auto-tuning guarantee: a statistic that never leaves the browser
@@ -138,7 +137,42 @@ Notable UX design calls:
     exact patterns AC-14 and AC-E17 forbid**, in the file next door on the same page. The FE **will**
     pattern-match them. Called out loudly in the FE contract. Same for `PortfolioPanel`'s gate-every-write
     habit vs **AC-25's ungated import**.
-QA (GATE Q):  n/a
+QA (GATE Q):  **QA_REPORT PASS — 46/46 ACs, 0 FAIL, 0 UNVERIFIABLE** (fresh de-correlated **Sonnet**; every
+              gate re-run independently, not taken from the lane's self-report). Gates: `nx test dashboard`
+              **804/804** (69 files; 674 baseline + 130) · `tsc -b --force` clean · lint 0 (41 pre-existing
+              warnings) · **`apps/api` diff EMPTY** (conductor- AND QA-verified — the structural
+              no-auto-tuning guarantee). **Conformance n/a and CORRECTLY ABSENT** — the feature consumes
+              **no endpoint**, so there is no FE↔BE surface and system-1 does not apply; its absence is not
+              a gap. QA specifically probed the two recurring trap-classes this pipeline has produced:
+              (a) **a source-scan that cannot fail** — confirmed `boundaries.spec.ts` has a self-test that
+              **mutates real source** and proves the scan detects it; (b) **vacuous MUI `sx` assertions**
+              (`getAttribute('style')` is always empty in jsdom) — confirmed AC-14/AC-E17 use `className`
+              identity + `innerHTML` byte-comparison, both of which can actually fail.
+              **⚠ Conductor cross-check caught one error in the QA artifact:** the headline read
+              **"52 PASS … across the 52 numbered ACs"**, but AC-1…AC-25 (25) + AC-E1…AC-E21 (21) = **46**.
+              **Coverage was always COMPLETE** (46 defined, 46 verdicted — a 1:1 set match, verified in both
+              directions); it was an arithmetic slip **in the headline only**. Bounced to QA, which
+              corrected it and added an auditable 1:1 set-comparison note. QA's own post-mortem is worth
+              keeping: *"I generated that 52 rather than counting it, then repeated it in my summary without
+              checking — which is precisely the failure mode this report exists to catch in other people's
+              work. A QA artifact that asserts a number it didn't verify has no standing to demand that the
+              FE lane's tests actually bite."* Verdict PASS unchanged.
+GATE S:       **NO new graduations** — all 12 keys already canon. `loss-free-durable-migration` **1→2** ·
+              `model-read-carries-its-assumptions` **3→4** · `digested-labels-not-raw-dump` **2→3** ·
+              `score-change-is-deliberate-and-measured` **0→1** (first instance, as the rule's *enabler*).
+              New watch-list key `structural-over-prose-enforcement` (1 instance, not promoted — closer to
+              a design heuristic than a rule with a crisp violation test).
+              **The severity path validated itself:** `loss-free-durable-migration` was promoted at **1
+              instance on severity** this same day, over the objection that recurrence was unmet — and the
+              very next feature became its **2nd binding instance**, in the sharpest possible way (it had to
+              **REFUSE an import** rather than let the store APIs rewrite an unreadable blob). Under
+              recurrence-only the key would still have been on the watch list *while the feature that needed
+              it was being built*.
+              Canon folded: PROJECT_CONTEXT §6 · OPEN_THREADS §7t · BACKLOG "Last GATE I — 2026-07-16".
+Tests:        `nx test dashboard` 804/804 (+130) · `tsc -b apps/dashboard/tsconfig.app.json --force` clean ·
+              lint 0 errors · prod build green · `apps/api` diff empty
+Byte-identity: score/tier/`state_fingerprint` untouched — enforced STRUCTURALLY (empty backend diff + a
+              one-way leaf with zero write functions), not asserted in prose.
 Invariant watch (from BRIEF): `additive-keeps-score-byte-identical` (HARD — reads outcomes, **never** a
               scoring input; **no auto-tuning / no automatic feedback loop into the score in v1**) ·
               **`score-change-is-deliberate-and-measured`** (NEW 2026-07-16 — this feature is that rule's

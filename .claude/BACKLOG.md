@@ -31,7 +31,29 @@
 ---
 
 ## Last GATE I — 2026-07-16 (CANON REVIEW: the score is frozen + unvalidated → `outcome-ledger`)
-**Chosen → `outcome-ledger`.** Not a harvest-and-cull discovery — a **canon review** the owner requested
+**Chosen → `outcome-ledger` — ✓ SHIPPED + ARCHIVED (2026-07-16)** → `_archive/outcome-ledger/`. Full
+pipeline, **single-lane fan-out** (`NO_BACKEND_CHANGE` ⇒ no backend lane): GATE I → A·X → P·X → **Z×4** →
+U·X → FE → **Q**. **QA PASS 46/46 ACs, 0 FAIL, 0 UNVERIFIABLE** (fresh de-correlated Sonnet, every gate
+re-run independently; conductor cross-checked the AC coverage 1:1 against the contract and caught a `52`
+arithmetic slip in the QA headline — corrected, coverage was always complete). `nx test dashboard`
+**804/804** (674 baseline + 130) · `tsc -b --force` clean · lint 0 · `apps/api` diff **empty** (conductor-
+and QA-verified). Conformance **n/a and correctly absent** (consumes **no endpoint** ⇒ no FE↔BE surface;
+**system-12 does not bite this feature — it still lands on `scanner`**).
+**GATE S tally: NO new graduations** — all 12 keys are already canon. `loss-free-durable-migration` **1→2**
+· `model-read-carries-its-assumptions` **3→4** · `digested-labels-not-raw-dump` **2→3** ·
+`score-change-is-deliberate-and-measured` **0→1** (its first instance, as the rule's *enabler*). New
+watch-list key **`structural-over-prose-enforcement`** (1 instance, not promoted).
+**The severity path validated itself:** `loss-free-durable-migration` was promoted **at 1 instance on
+severity** this same day, over the objection that recurrence was unmet — and the very next feature became
+its **2nd binding instance**, in the sharpest way possible (it had to **REFUSE an import** rather than let
+the store APIs rewrite an unreadable blob). Under recurrence-only it would still have been on the watch
+list *while the feature that needed it was being built*.
+**The amendment loop fired 4× (A1/A2/A3/§11.6) + 2 UX copy rulings — every one a real defect, every one
+raised by a DOWNSTREAM lane refusing to decide out of its own lane.** Sharpest: **A3** — the naive widen of
+the close-bearing event set is *verifiably wrong* (`:342` gates the roll close on `rec.replacement_contract`,
+so a **replacement-less Roll writes `accept` + `ai_verdict:'Roll'` WITHOUT closing**). Seams →
+OPEN_THREADS §7t; the **`split-decision-log` live bug** stays open in §B. *(original cull entry:)*
+Not a harvest-and-cull discovery — a **canon review** the owner requested
 ("are any invariants not well conceived? what am I missing?"), which surfaced a structural gap the ordinary
 GATE-I sources could not: **the project compounds BUILD wisdom (`DECISION_LEDGER.md`) and has NO loop for
 TRADING wisdom.** Owner agreed on every point and directed all of it.

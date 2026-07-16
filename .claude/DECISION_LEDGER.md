@@ -114,6 +114,22 @@ which is exactly why this was cheap to fix now.
   (rebrand-convexa) — owner canon review. Violation = silent, total, irreversible loss of the user's entire
   trading history (~5 durable localStorage stores, **no server backup**). Recurrence would have kept it
   waiting behind a dialog; severity does not wait. Now in Promoted canon above.)_
+- **`structural-over-prose-enforcement`** (**1 instance — outcome-ledger, 2026-07-16; NOT promoted**) — an
+  invariant a feature must hold is enforced by **construction** (a type, a module boundary, an empty diff, a
+  mutation-tested source-scan) rather than by **prose an implementer must remember**. Where the two are
+  available, prefer the shape that makes the violation **impossible or build-breaking**. *Evidence in this
+  one ship:* no-auto-tuning = a literally **empty `apps/api` diff** (a statistic that never leaves the
+  browser cannot reach `signals.py`) · the coverage roll-up is **integers-only**, so the demo seed's
+  fabricated `realized_pl_dollar: 196` is **unreachable by construction** · the counted read is **ONE string
+  in ONE `<Typography>`**, so "no hero number" is unbreakable **in the DOM** rather than in the type spec ·
+  the decline class-A map is `Record<Exclude<DeclineReason,'store_unreadable'>,…>`, so re-composing class B
+  through class A's inverted template is a **TYPE ERROR** · the `?raw` source-scan **provably bites**
+  (mutation-tested: renaming a `via` literal FAILED with a message naming §2/Q3.5). *Kin already in the
+  project:* `contract_lint.py`, `path_guard.js`, `kit_lint.mjs`, `interface_conformance.py` — all the same
+  move ("mechanize the trusted invariant"). **Deliberately NOT promoted at 1 instance:** it is closer to a
+  *design heuristic* than a rule with a crisp violation test, and the severity path does not apply (relying
+  on prose is not catastrophic-and-irreversible). Log recurrence; promote only if it earns a statable bar.
+  *binding:yes (weakly — a future feature could violate it by shipping a rule enforced only by a comment).*
 - **`ai-asserted-numbers-are-traceable`** (**0 instances — PROPOSED 2026-07-16, owner canon review; NOT
   promoted**) — every number the in-app AI **asserts** (strike, stop, target, level, price) must be
   **traceable to a computed bundle field**; an untraceable number is not rendered as fact. Rationale:
@@ -214,6 +230,18 @@ which is exactly why this was cheap to fix now.
 | `model-read-carries-its-assumptions` | iv-rank | S | the rank read is self-describing — carries its window (sessions used) + total sample-count + IV-basis (`interpolated_30d`/`nearest_tenor` + `basis_dte`) in-payload + the advisory framing; never a bare number (FE guards it); the honest "building history — N of 20" state before the floor; degenerate-flat → `rank:null`+`flat_window`, never a fabricated "50"; **3rd instance** | yes |
 | `digested-labels-not-raw-dump` | iv-rank | S | the rich/cheap `band` (`premium_rich`≥70 / `neutral` / `premium_cheap`<30) is a single digested closed-enum token cut server-side from the rank; the FE renders it via a closed lookup, never re-derives it from the scalar; NO raw IV history series on the wire or in the UI; **2nd binding instance → GRADUATES** | yes |
 | `theme-token-discipline` | iv-rank | S | the `IvRank` widget + copy are token-only via the MUI theme; dark/light parity render-verified; zero hardcoded hex (structural `?raw` source-scan test) | yes |
+| `additive-keeps-score-byte-identical` | outcome-ledger | S | the track record READS outcomes and is **never** a scoring input; enforced STRUCTURALLY, not by prose — 4 boundaries: **zero backend surface** (`apps/api` diff empty, conductor- + QA-verified: a statistic that never leaves the browser cannot reach `signals.py`) · the outcomes module is a **one-way leaf** with an enumerated forbidden-importer list, pinned by a `?raw` source-scan that **provably bites** (mutation-tested) · the ledger has **zero write functions** · its output is kept off the AI export/prompt in v1 | yes |
+| `score-change-is-deliberate-and-measured` | outcome-ledger | S | **1st instance — as the rule's ENABLER, never its exerciser.** The feature measures whether the score is any good (the only honest input to a deliberate score change) and is **structurally incapable of making one**: no auto-tuning, no feedback loop, zero write functions. Promoted 2026-07-16 by owner canon review; this ship is what makes it actionable | yes |
+| `loss-free-durable-migration` | outcome-ledger | S | **2nd instance** (1st = rebrand-convexa) — the archive import is **merge-only, idempotent, never-destructive**; a corrupt/unreadable blob degrades to empty **WITHOUT destroying the original**; and the feature **REFUSES to import into a store it cannot fully read** rather than let the store APIs rewrite (destroy) that blob — the refusal IS the invariant, surfaced as UX §5.9's class-B decline ("your existing data is the problem, and we will not touch it"). Promoted 2026-07-16 via the SEVERITY path at 1 instance; recurrence has now caught up to severity | yes |
+| `best-effort-isolated-or-null` | outcome-ledger | S | a failed store read ⇒ `sources_complete:false` ⇒ a **partial** roll-up that says so — never a throw, never a silently-smaller M. The balance identities (`M == counted + Σ excluded_by_reason`) are **CI assertions, never runtime throws**. A corrupt blob ⇒ empty readout, never an error; bundle/SSE untouched | yes |
+| `model-read-carries-its-assumptions` | outcome-ledger | S | **4th instance.** Every rate carries its sample count + basis + `N_min=20` floor + a **Wilson 95% interval**, cells never pooled, all-time non-rolling window (a selector would let the trader **shop for the flattering window** — the exact meta-decision failure the feature exists to fix); `building` shows a count and **nothing numeric** (AC-E3: a 3-for-3 cell must never render "100%"); a hit rate may **never** appear without its mean per-trade return + dispersion. The coverage counts are themselves a model read and carry their own basis (stores spanned, de-dupe identity, `sources_complete`, **derived** epoch) | yes |
+| `digested-labels-not-raw-dump` | outcome-ledger | S | **3rd instance.** The capture digest is a **small closed set** (score · setups name+conviction capped 5 · persona · IV-rank **band** · regime · vol-regime · fingerprint) — **ATR excluded by decision** (a raw scalar with no digested band; this rule is what stops that slide). Wire labels render via a **closed lookup**, never re-derived from a scalar | yes |
+| `no-real-order-path` | outcome-ledger | S | SIMULATED outcomes only; the read carries the **six named sim facts** (no slippage / partial fills / queue / assignment / fees; instant unlimited limit fills) **as part of the read, not a footnote** — sim P&L is not real fills, and the copy does not let the reader forget it | yes |
+| `single-shared-sim-entry-dialog` | outcome-ledger | S | **HONORED (sim-only, as narrowed 2026-07-16).** The AI-rec attribution seam was threaded via **the host remembering what it prefilled** — the shared `TradeEntryDialog` is **untouched and unforked**; no second dialog, no variant added | yes |
+| `server-side-gate-enforcement` | outcome-ledger | S | **HONORED by NOT building a gate.** With no server surface, an FE-only gate on the archive import would be **decorative** — enforcement theatre, which this rule forbids — so the import is deliberately **ungated** (AC-25) rather than wearing a check that enforces nothing | yes |
+| `operator-vs-trader-path-separation` | outcome-ledger | S | **HONORED.** The track record is a **TRADER** surface (it informs trading decisions) and lives on `/positions` as its own in-page view — explicitly **NOT** `/_ops/metrics`. The rule keeps operator surfaces off trader routes; it does not make an analytics-shaped read operator-facing | yes |
+| `live-vs-static-isolation` | outcome-ledger | S | the track record is a **STATIC historical** read: closed-only, so it does **NOT** dim on `streamOffline` (static reads keep rendering). The closed-only honesty rule and the isolation rule are **the same decision**. Verified non-vacuously — the live Net P/L's class flips on a real stream drop while the track record's `innerHTML` stays byte-identical | yes |
+| `theme-token-discipline` | outcome-ledger | S | token-only via the MUI theme; zero hardcoded hex; **no semantic tint on any rate** (AC-14) — green/red on a hit rate manufactures a verdict the sample cannot support. Verified non-vacuously: a 90% cell and a 10% cell assert **identical `className`** (MUI `sx` compiles to classes, so `getAttribute('style')` is always empty — the vacuous-assertion trap the lane caught in its own tests) | yes |
 
 > Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
 > (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified
@@ -471,6 +499,22 @@ which is exactly why this was cheap to fix now.
 > promoted keys (`additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`,
 > `live-vs-static-isolation`) each gained an instance but are already canon → **no new graduations** this
 > ship; `no-real-order-path` logged to the watch list (1 instance).
+
+> **GATE S tally — outcome-ledger (2026-07-16).** **NO new graduations:** all 12 keys this feature logged
+> are **already promoted canon**. Instance counts moved: **`loss-free-durable-migration` 1 → 2** ·
+> **`model-read-carries-its-assumptions` 3 → 4** · **`digested-labels-not-raw-dump` 2 → 3** ·
+> **`score-change-is-deliberate-and-measured` 0 → 1** (its first instance — as the rule's *enabler*, never
+> its exerciser). New watch-list key: **`structural-over-prose-enforcement`** (1 instance, not promoted).
+> **Worth recording — the severity path validated itself:** `loss-free-durable-migration` was promoted
+> **2026-07-16 at 1 instance on SEVERITY**, over the objection that recurrence had not been met. The very
+> next feature became its **2nd binding instance** — and did so in the sharpest possible way: it had to
+> **REFUSE an import** rather than let the store APIs rewrite an unreadable blob. Under the old
+> recurrence-only rule the key would still have been on the watch list **while the feature that needed it
+> was being built**. Recurrence has now caught up to severity; the call did not depend on that, and would
+> have been right regardless.
+> **Also of note:** this ship exercised the amendment loop **four times** (A1, A2, A3, PM §11.6) plus two UX
+> copy rulings — every one of them raised by a *downstream* lane refusing to decide out of its own lane, and
+> every one of them a real defect. See `OPEN_THREADS.md` §7t.
 
 > Seeded retroactively 2026-06-22 from the five archived features (`OPEN_THREADS.md` §3–§7). Going
 > forward, the Orchestrator appends a row per binding decision at each gateway (ORCHESTRATOR §0 step 7).
