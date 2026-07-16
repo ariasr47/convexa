@@ -9,7 +9,11 @@ import { Alert, Box, Button, IconButton } from '@mui/material';
 import { Theme } from '@mui/material/styles';
 import type { OpportunityTier } from '@org/api';
 
-const WORD: Record<OpportunityTier, string> = {
+/** The tier word map — the SINGLE source of the tier display label. Exported so a second consumer
+ *  (the outcome ledger's tier cells) reads the same closed lookup instead of re-deriving a tier from
+ *  `opportunity_score`. Deliberately NOT `tierMeta`: that returns a palette colour, and a rate must
+ *  never be tinted (outcome-ledger AC-14). */
+export const WORD: Record<OpportunityTier, string> = {
   dormant: 'Dormant',
   watch: 'Watch',
   actionable: 'Actionable',

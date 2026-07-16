@@ -61,6 +61,16 @@ export function appendDecision(rec: DecisionRecord) {
   write({ ...s, decisions: [...s.decisions, rec] });
 }
 
+/** Every trade in this store, by ticker (outcome-ledger: the archive's read of this store). */
+export function allTrades(): Record<string, GhostTrade> {
+  return read().trades;
+}
+
+/** The full append-only log in this store, oldest first (outcome-ledger: the archive's read). */
+export function allDecisions(): DecisionRecord[] {
+  return read().decisions;
+}
+
 /** Records for one trade, newest first. */
 export function decisionsForTrade(tradeId: string): DecisionRecord[] {
   return read()

@@ -15,8 +15,9 @@
  *  - Store faults degrade to the honest unavailable state; create REFUSES to write into a faulted
  *    store (`[best-effort-isolated-or-null]`, AC-29).
  */
-import type { OptionRight } from '@org/api';
+import type { OptionRight, TickerBundle } from '@org/api';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { entryContextFor } from '@/features/trading/model/captureDigest';
 import type { DecisionEvent, DecisionRecord } from '@/features/trading/model/types';
 import { SCHEMA_VERSION as DECISION_SCHEMA } from '@/features/trading/model/types';
 import { allDecisions, appendDecision, newId, putPosition } from '@/features/trading/positions/store';
@@ -50,6 +51,16 @@ import {
 export interface DecisionCtx {
   spot?: number;
   tier?: string;
+  /** outcome-ledger: the bundle ALREADY IN HAND on the host page, for the best-effort entry-context
+   *  capture. Absent ⇒ every bundle-sourced digest field captures null. Never fetched here. */
+  bundle?: TickerBundle | null;
+}
+
+/** The order path carries the rec identity durably on the order itself, so capture reads it from
+ *  there. A scripted-scenario order is excluded from every rate by the ledger anyway; its identity
+ *  is not an AI-rec attribution. */
+function recIdentityOf(order: SimOrder): string | null {
+  return order.provenance?.source === 'ai_rec' ? (order.provenance.rec_fingerprint ?? null) : null;
 }
 
 function orderDecision(
@@ -59,6 +70,7 @@ function orderDecision(
   ctx: DecisionCtx = {},
 ): DecisionRecord {
   return {
+    id: newId(),
     event_type: event,
     clock_time: new Date().toISOString(),
     trade_id: order.id,
@@ -77,6 +89,8 @@ function orderDecision(
     tier: ctx.tier ?? '',
     position_fingerprint: '',
     schema_version: DECISION_SCHEMA,
+    // outcome-ledger capture (decision-point events only) — never gates the order write.
+    ...entryContextFor(event, { bundle: ctx.bundle ?? null, aiRecFingerprint: recIdentityOf(order) }),
     ...extra,
   } as DecisionRecord;
 }
@@ -238,8 +252,11 @@ export function applyOrderTransition(
       ctx,
     ),
   );
-  // The fill ALSO emits the existing position `open` event (trade_id = position id, AC-32).
+  // The fill ALSO emits the existing position `open` event (trade_id = position id, AC-32). This is
+  // the record the outcome ledger joins as the position's ENTRY (its spine), so it carries the same
+  // best-effort digest — with the rec identity the order path already holds durably.
   appendDecision({
+    id: newId(),
     event_type: 'open',
     clock_time: transition.filled_time,
     trade_id: position.id,
@@ -258,6 +275,10 @@ export function applyOrderTransition(
     tier: ctx.tier ?? '',
     position_fingerprint: '',
     schema_version: DECISION_SCHEMA,
+    ...entryContextFor('open', {
+      bundle: ctx.bundle ?? null,
+      aiRecFingerprint: recIdentityOf(filled),
+    }),
   } as DecisionRecord);
   __notifyOrdersChanged();
 }

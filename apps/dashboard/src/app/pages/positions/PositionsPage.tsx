@@ -25,6 +25,9 @@ import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
 import { useEffect, useMemo, useState } from 'react';
 import { subscribeOrders } from '@/features/trading/orders/store';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
+import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSection';
+import { loadCustoms } from '@/features/personas/store';
+import { PRESETS } from '@/features/personas/presets';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
@@ -52,6 +55,16 @@ function focusedTicker(): string {
     }
   }
   return best ?? DEFAULT_TICKER;
+}
+
+/**
+ * outcome-ledger: the persona display name, INJECTED into the Track record section as a prop.
+ * `features/trading/outcomes` may not import `features/personas` (not on the architect's allow-list),
+ * so the page shell — which may import both — resolves the label. An id we no longer hold ⇒ null ⇒
+ * the section renders its honest "Persona no longer saved" label, never a raw internal id.
+ */
+function personaLabelOf(id: string): string | null {
+  return [...PRESETS, ...loadCustoms()].find((p) => p.id === id)?.name ?? null;
 }
 
 /** Net P/L (open): `(+$|−$){abs.toLocaleString()}` with a real minus sign. */
@@ -189,6 +202,11 @@ export function PositionsPage() {
         entryOpen={entryOpen}
         onEntryOpen={setEntryOpen}
       />
+      {/* outcome-ledger: the reflective read UNDER the book. The book is what this page is for.
+          ⚠ It is a STATIC historical read: it takes NO `data`/`live`/`isLive`/`streamOffline` prop
+          and does not dim on a stream drop — unlike the Net P/L header above, which is a LIVE P&L.
+          Do not "make it consistent" with that block (`[live-vs-static-isolation]`, AC-E17). */}
+      <TrackRecordSection personaLabel={personaLabelOf} />
     </Box>
   );
 }

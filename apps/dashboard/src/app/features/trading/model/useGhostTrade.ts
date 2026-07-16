@@ -23,6 +23,7 @@ import {
   PL_STOP_PCT,
   PL_TARGET_PCT,
 } from './mark';
+import { entryContextFor } from './captureDigest';
 import { appendDecision, clearTrade, decisionsForTrade, getTrade, newId, putTrade } from './store';
 import {
   DecisionEvent,
@@ -48,6 +49,10 @@ export interface NewTradeForm {
   // leave them undefined. Not an input to the mark/P-L math.
   stop?: number | null;
   target?: number | null;
+  /** outcome-ledger: the rec identity this entry was taken from, threaded by the HOST through the
+   *  EXISTING prefill seam (the host remembers what it prefilled — the shared `TradeEntryDialog` is
+   *  untouched and unforked, `[single-shared-sim-entry-dialog]`). Absent/null ⇒ not from a rec. */
+  aiRecFingerprint?: string | null;
 }
 
 export function useGhostTrade(
@@ -152,9 +157,11 @@ export function useGhostTrade(
       t: GhostTrade,
       markPrice: number | null,
       basis: MarkBasis,
+      aiRecFingerprint: string | null = null,
     ) => {
       const p = pl(markPrice, t.entry_mark, t.qty);
       const rec: DecisionRecord = {
+        id: newId(),
         clock_time: new Date().toISOString(),
         trade_id: t.id,
         contract: {
@@ -172,6 +179,9 @@ export function useGhostTrade(
         tier,
         position_fingerprint: data?.position_eval?.fingerprint ?? '',
         schema_version: SCHEMA_VERSION,
+        // outcome-ledger capture: best-effort, decision-point events only, from the bundle already
+        // in hand. It never gates or alters this write — an absent source is simply a null field.
+        ...entryContextFor(partial.event_type, { bundle: data, aiRecFingerprint }),
         ...partial,
       };
       appendDecision(rec);
@@ -206,7 +216,7 @@ export function useGhostTrade(
         target: f.target ?? null,
       };
       persist(t);
-      recordDecision({ event_type: 'open' }, t, f.entryMark, f.entryBasis);
+      recordDecision({ event_type: 'open' }, t, f.entryMark, f.entryBasis, f.aiRecFingerprint ?? null);
       setReassess({ phase: 'idle' });
       setAlerts([]);
     },

@@ -203,6 +203,11 @@ export function TickerDashboard() {
   // Ghost-trade entry dialog + Prime banner.
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryPrefill, setEntryPrefill] = useState<EntryPrefill | undefined>();
+  // outcome-ledger (AC-E18): the rec identity the CURRENT prefill came from. Threaded through the
+  // EXISTING prefill seam — the host remembers what it seeded and hands it to the `open` write. The
+  // shared `TradeEntryDialog` is untouched and unforked (`[single-shared-sim-entry-dialog]`), so the
+  // direct-Accept path carries the rec identity and `not_attributable_by_path` stays 0.
+  const [entryRecFingerprint, setEntryRecFingerprint] = useState<string | null>(null);
   const [showPrimeBanner, setShowPrimeBanner] = useState(false);
   const prevTierRef = useRef<string | null>(null);
   const tradeOpen = gt.trade?.status === 'open';
@@ -213,8 +218,9 @@ export function TickerDashboard() {
     if (t !== 'prime') setShowPrimeBanner(false);
     prevTierRef.current = t ?? null;
   }, [sig?.opportunity_tier, sig?.prime_prompt_eligible]);
-  const openEntry = (prefill?: EntryPrefill) => {
+  const openEntry = (prefill?: EntryPrefill, recFingerprint: string | null = null) => {
     setEntryPrefill(prefill);
+    setEntryRecFingerprint(recFingerprint); // a manual/Prime open clears it — never a stale claim
     setEntryOpen(true);
   };
   // Accept an AI rec → pre-fill the SHIPPED ghost-trade entry dialog (every field editable). Nothing
@@ -222,7 +228,7 @@ export function TickerDashboard() {
   const onAcceptRec = (rec: RecResponse, personaName: string) => {
     if (!rec.strategy) return;
     const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
-    if (pf) openEntry(pf);
+    if (pf) openEntry(pf, rec.pinned_fingerprint ?? null);
   };
 
   // ---- ai-rec-backtest-orders: the Act flow (order variant of the SAME shared dialog) ----------
@@ -299,7 +305,7 @@ export function TickerDashboard() {
             expires_at: submit.expiresAt,
             provenance,
           },
-          { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '' },
+          { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '', bundle: data },
         );
         if (!res.ok) {
           setOrderError(res.reason ?? null);
@@ -618,11 +624,17 @@ export function TickerDashboard() {
           };
           const form: NewTradeForm =
             s.entryMode === 'market'
-              ? { ...base, entryMark: s.resolvedMark, entryBasis: s.resolvedBasis }
+              ? {
+                  ...base,
+                  entryMark: s.resolvedMark,
+                  entryBasis: s.resolvedBasis,
+                  aiRecFingerprint: entryRecFingerprint,
+                }
               : {
                   ...base,
                   entryMark: s.entryMode === 'manual' ? s.price : s.limitPrice,
                   entryBasis: 'manual',
+                  aiRecFingerprint: entryRecFingerprint,
                 };
           gt.openTrade(form);
           setEntryOpen(false);

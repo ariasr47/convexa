@@ -17,6 +17,7 @@ import {
   TrackedContract,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { entryContextFor } from '@/features/trading/model/captureDigest';
 import { computeMark, MarkResult, pl } from '@/features/trading/model/mark';
 import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
 import { cloneConfig, configEqual } from './defaults';
@@ -219,9 +220,11 @@ export function usePortfolio(
       p: Position,
       markPrice: number | null,
       basis: string,
+      aiRecFingerprint: string | null = null,
     ) => {
       const plv = pl(markPrice, p.entry_mark, p.qty);
       const rec: DecisionRecord = {
+        id: newId(),
         clock_time: new Date().toISOString(),
         trade_id: p.id,
         contract: {
@@ -239,6 +242,9 @@ export function usePortfolio(
         tier,
         position_fingerprint: data?.position_eval?.fingerprint ?? '',
         schema_version: GT_SCHEMA,
+        // outcome-ledger capture: best-effort, decision-point events only, from the bundle already
+        // in hand. Never gates or alters the position write.
+        ...entryContextFor(partial.event_type, { bundle: data, aiRecFingerprint }),
         ...partial,
       } as DecisionRecord;
       appendDecision(rec);

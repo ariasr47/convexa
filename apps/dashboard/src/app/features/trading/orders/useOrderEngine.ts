@@ -113,6 +113,9 @@ export function useOrderEngine({
     const ctx: DecisionCtx = {
       spot: live?.mid ?? bundle?.market_state.price ?? 0,
       tier: bundle?.signals.opportunity_tier ?? '',
+      // outcome-ledger: the bundle already in hand, for the best-effort entry-context capture on a
+      // fill. It is NOT an evaluation input — the engine still ticks on the live payload alone.
+      bundle,
     };
     // 1) Clock expiry — every order, any ticker (the only off-stream transition, AC-21).
     try {

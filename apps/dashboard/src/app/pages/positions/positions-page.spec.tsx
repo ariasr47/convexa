@@ -19,7 +19,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { StrikeRow, TickerBundle, TrackedContract } from '@org/api';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -433,6 +433,85 @@ describe('net-pl-readout', () => {
 // =================================================================================================
 // invariants on the relocated Positions page
 // =================================================================================================
+// =================================================================================================
+// outcome-ledger: the Track record's PLACEMENT, on the real route, through the real page wiring
+// =================================================================================================
+describe('track-record (outcome-ledger)', () => {
+  it('AC-1 — renders on /positions, BELOW the book, and adds no new nav destination', async () => {
+    seedPosition();
+    renderAt('/positions');
+    await screen.findByTestId('portfolio-panel');
+    const section = await screen.findByTestId('track-record');
+    expect(section).toBeInTheDocument();
+    // Under the book: the book is what this page is for; the track record is the reflective read.
+    expect(
+      screen.getByTestId('portfolio-panel').compareDocumentPosition(section) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Its own named in-page view — NOT a third tab beside Simulated/Live (those are BOOKS).
+    expect(screen.getByText('Track record')).toBeInTheDocument();
+    expect(screen.queryByTestId('tab-track-record')).toBeNull();
+    // No new top-level nav item.
+    expect(screen.queryByTestId('nav-track-record')).toBeNull();
+  });
+
+  it('AC-1 — it does NOT appear on the Ticker route (a live decision surface) or on /_ops/metrics', async () => {
+    renderAt('/ticker/TSLA');
+    await screen.findByTestId('portfolio-panel').catch(() => undefined);
+    await vi.waitFor(() => expect(screen.queryByTestId('track-record')).toBeNull());
+    cleanup();
+    renderAt('/_ops/metrics');
+    await vi.waitFor(() => expect(screen.queryByTestId('track-record')).toBeNull());
+  });
+
+  it('AC-E17 — a REAL stream drop dims the LIVE Net P/L header and leaves the STATIC track record byte-identical', async () => {
+    // The two blocks sit in the SAME FILE, one above the other. The header is a live P&L: it dims on
+    // a stream drop. The track record is a static historical read: it does not. The trap is
+    // proximity, so this drives an actual drop and asserts they diverge.
+    const streams: { onmessage: ((e: MessageEvent) => void) | null }[] = [];
+    class CapturingEventSource {
+      onmessage: ((e: MessageEvent) => void) | null = null;
+      onerror: ((e: Event) => void) | null = null;
+      constructor() {
+        streams.push(this);
+      }
+      close() {
+        /* no-op */
+      }
+    }
+    vi.stubGlobal('EventSource', CapturingEventSource as unknown as typeof EventSource);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      seedPosition({ entry_mark: 4, qty: 2 });
+      renderAt('/positions');
+      const netPl = await screen.findByTestId('positions-net-pl');
+      const section = await screen.findByTestId('track-record');
+      const trackRecordBefore = section.innerHTML;
+      const netPlClassBefore = netPl.className;
+
+      // A live payload arrives, then the stream goes silent past the page's gap watchdog.
+      act(() => {
+        streams[0]?.onmessage?.({
+          data: JSON.stringify({ live: true, mid: 5, ticker: 'TSLA' }),
+        } as MessageEvent);
+      });
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+
+      // The LIVE readout degraded — its emotion class flips as `opacity` goes 1 → 0.5.
+      // (jsdom's getComputedStyle does not resolve emotion's injected classes, so the class name is
+      // the observable here.)
+      await vi.waitFor(() => expect(netPl.className).not.toBe(netPlClassBefore));
+      // ...and the STATIC read is byte-identical: no dimming, no offline chip, no stale treatment.
+      // Its markup carries every class name in the subtree, so a restyle anywhere would show up.
+      expect(section.innerHTML).toBe(trackRecordBefore);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('invariants (positions)', () => {
   it('Positions Live tab stays LOCKED', async () => {
     const user = userEvent.setup();
