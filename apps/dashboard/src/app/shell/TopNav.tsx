@@ -24,7 +24,9 @@ interface NavEntry {
 }
 
 // Active-route rules (UX_BLUEPRINT §2): Ticker matches `/ticker*`; Positions `/positions`; Scanner
-// `/scanner`. Deliberately NO operator entry.
+// `/scanner`; Blog `/blog` (owner-added 2026-07-16 — the static article pages under `/blog/*.html`
+// are full-document loads outside the SPA, so only the index route needs a highlight rule).
+// Deliberately NO operator entry.
 const NAV: NavEntry[] = [
   { label: 'Ticker', to: '/ticker', active: (p) => p.startsWith('/ticker') },
   {
@@ -36,6 +38,11 @@ const NAV: NavEntry[] = [
     label: 'Scanner',
     to: '/scanner',
     active: (p) => p === '/scanner' || p.startsWith('/scanner/'),
+  },
+  {
+    label: 'Blog',
+    to: '/blog',
+    active: (p) => p === '/blog' || p.startsWith('/blog/'),
   },
 ];
 
