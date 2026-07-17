@@ -11,6 +11,8 @@ import {
   decisionsForPosition,
   getCustomization,
   getPosition,
+  PORTFOLIO_LEGACY_V1_KEY,
+  PORTFOLIO_LEGACY_V2_KEY,
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V2_KEY,
   putCustomization,
@@ -150,12 +152,68 @@ describe('v1→v2 migration', () => {
   });
 });
 
+describe('brand migration (gammaflow → convexa, loss-free)', () => {
+  it('reads a legacy-brand v2 blob, promotes it forward, and NEVER deletes the original', () => {
+    const legacyBlob = JSON.stringify({
+      schema_version: 2,
+      positions: { 'p-legacy': mkPosition({ id: 'p-legacy' }) },
+      decisions: [],
+    });
+    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, legacyBlob);
+    __resetMemory();
+    expect(allPositions().map((p) => p.id)).toEqual(['p-legacy']); // loss-free read
+    // Promoted forward under the new brand; the old blob stays byte-identical (rollback-safe).
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(legacyBlob);
+    expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBe(legacyBlob);
+  });
+
+  it('migrates a legacy-brand v1 ghost-trade blob (brand hop + version hop), sources intact', () => {
+    const legacyV1 = JSON.stringify({
+      schema_version: 1,
+      trades: { TSLA: v1Trade() },
+      decisions: [],
+    });
+    localStorage.setItem(PORTFOLIO_LEGACY_V1_KEY, legacyV1);
+    __resetMemory();
+    const positions = allPositions();
+    expect(positions).toHaveLength(1);
+    expect(positions[0].id).toBe('t-1');
+    expect(positions[0].schema_version).toBe(2);
+    // Written forward under convexa.positions.v2; the legacy source is never deleted.
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY)).toBe(legacyV1);
+  });
+
+  it('the new-brand v2 blob WINS when both brands exist (never regresses to the legacy copy)', () => {
+    localStorage.setItem(
+      PORTFOLIO_LEGACY_V2_KEY,
+      JSON.stringify({
+        schema_version: 2,
+        positions: { old: mkPosition({ id: 'old' }) },
+        decisions: [],
+      }),
+    );
+    localStorage.setItem(
+      PORTFOLIO_V2_KEY,
+      JSON.stringify({
+        schema_version: 2,
+        positions: { new: mkPosition({ id: 'new' }) },
+        decisions: [],
+      }),
+    );
+    __resetMemory();
+    expect(allPositions().map((p) => p.id)).toEqual(['new']);
+  });
+});
+
 describe('store failure isolation (AC-36)', () => {
-  it('degrades a corrupt v2 blob to an empty portfolio without throwing', () => {
+  it('degrades a corrupt v2 blob to an empty portfolio without throwing — and never destroys the original blob', () => {
     localStorage.setItem(PORTFOLIO_V2_KEY, '{ not json');
     __resetMemory();
     expect(() => allPositions()).not.toThrow();
     expect(allPositions()).toEqual([]);
+    // A degraded READ never wipes the (possibly recoverable) original.
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe('{ not json');
   });
 
   it('initializes customization to defaults when absent and never errors', () => {

@@ -1,9 +1,10 @@
 /**
- * FreshnessLine — component tests for the REST-bundle freshness caption near the Ticker header.
- * Asserts: "Updated {age} ago" renders from the bundle freshness; the age live-counts up off
- * `snapshotIso` (1s tick); the quiet "· refreshing…" affordance shows while a background poll is in
- * flight and clears when it resolves; and the static `dataAgeSeconds` fallback is used when no ISO
- * anchor is present. It reflects the static path only — there is no live/SSE wiring here.
+ * FreshnessLine — RISK-BASED spec (qa-verify.md §4, 2026-07-13). The caption's rendering is visible;
+ * what a reviewer CANNOT see is the timer semantics:
+ *   1. the age LIVE-COUNTS up off `snapshotIso` between polls (a frozen age silently misrepresents
+ *      snapshot freshness — the exact trust this line exists to build);
+ *   2. the honest fallback chain: no/invalid ISO anchor → the static `dataAgeSeconds`, never NaN/blank.
+ * NOT asserted (visible → review): the "· refreshing…" affordance, exact copy, styling.
  */
 import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen } from '@testing-library/react';
@@ -24,15 +25,7 @@ afterEach(() => {
 });
 
 describe('FreshnessLine (REST-bundle freshness caption)', () => {
-  it('renders "Updated {age} ago" from the live-counted snapshot age', () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const iso = new Date(Date.now() - 5_000).toISOString(); // ~5s ago
-    renderFL({ snapshotIso: iso, dataAgeSeconds: 5 });
-    const line = screen.getByTestId('freshness-line');
-    expect(line.textContent).toMatch(/Updated 5s ago/);
-  });
-
-  it('age live-counts up between polls (1s tick off snapshotIso)', () => {
+  it('the age live-counts up between polls (1s tick off snapshotIso)', () => {
     vi.useFakeTimers();
     const iso = new Date(Date.now() - 5_000).toISOString();
     renderFL({ snapshotIso: iso, dataAgeSeconds: 5 });
@@ -43,22 +36,12 @@ describe('FreshnessLine (REST-bundle freshness caption)', () => {
     expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 15s ago/);
   });
 
-  it('falls back to static dataAgeSeconds when no snapshotIso anchor is present', () => {
-    renderFL({ snapshotIso: null, dataAgeSeconds: 90 });
+  it('falls back to the static dataAgeSeconds when the ISO anchor is missing or unparseable (never NaN/blank)', () => {
+    const missing = renderFL({ snapshotIso: null, dataAgeSeconds: 90 });
     expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 1m ago/);
-  });
-
-  it('shows "· refreshing…" while a background poll is in flight, and clears after it resolves', () => {
-    const iso = new Date(Date.now() - 5_000).toISOString();
-    const { rerender } = renderFL({ snapshotIso: iso, dataAgeSeconds: 5, refreshing: true });
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/refreshing…/);
-
-    rerender(
-      <ThemeProvider theme={theme}>
-        <FreshnessLine snapshotIso={iso} dataAgeSeconds={5} refreshing={false} />
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('freshness-line').textContent).not.toMatch(/refreshing…/);
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated/);
+    missing.unmount();
+    renderFL({ snapshotIso: 'not-a-date', dataAgeSeconds: 90 });
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 1m ago/);
+    expect(screen.getByTestId('freshness-line').textContent).not.toMatch(/NaN/);
   });
 });

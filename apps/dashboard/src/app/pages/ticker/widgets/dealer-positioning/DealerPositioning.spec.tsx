@@ -1,8 +1,11 @@
 /**
- * DealerPositioning — component-state tests for the STATIC tile grid. Asserts: the static reads render
- * their values; each nullable metric independently degrades to its own "unavailable" copy
- * (`[best-effort-isolated-or-null]`); the Opportunity tile shows the score+tier word; and the grid has
- * NO offline state of its own (`[live-vs-static-isolation]` — statics persist regardless of the feed).
+ * DealerPositioning — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13). The page-level contract
+ * (statics persist through an SSE drop, section-level nulls) lives in `pages/ticker/ticker.risk.spec.tsx`;
+ * this spec keeps the grid's own PARTIAL-object tolerance (`best-effort-isolated-or-null`):
+ *   1. per-FIELD nulls inside the market_state degrade only their own tile — the walls keep rendering,
+ *      no fabricated value, and the STATIC grid never grows an offline treatment of its own;
+ *   2. an absent off_exchange section omits its tile entirely (never a fabricated 0%).
+ * NOT asserted (visible + intentional → review): default tile values/labels, captions, tier colors.
  */
 import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState, OffExchange, Signals } from '@org/api';
@@ -93,35 +96,21 @@ function renderDP(overM: Partial<MarketState> = {}, offExchange: OffExchange | n
   );
 }
 
-describe('DealerPositioning (static tile grid)', () => {
-  it('DEFAULT: renders the static reads (walls, GEX, DEX, max pain, IV/HV) + Opportunity score+tier', () => {
-    renderDP();
-    expect(screen.getByText('Call wall')).toBeInTheDocument();
-    expect(screen.getByText('$260')).toBeInTheDocument();
-    expect(screen.getByText('$240')).toBeInTheDocument();
-    expect(screen.getByText('$1.2B')).toBeInTheDocument(); // Net GEX (1.2e9, compact)
-    expect(screen.getByText('$500.0M')).toBeInTheDocument(); // Net DEX (5.0e8, compact)
-    expect(screen.getByText('1.12')).toBeInTheDocument(); // IV/HV
-    expect(screen.getByText('73 · Actionable')).toBeInTheDocument();
-    // "snapshot, never live" caption present.
-    expect(screen.getByText(/Snapshot, never live/)).toBeInTheDocument();
-  });
-
-  it('EMPTY (per-field null): each nullable metric shows its own "unavailable", isolated', () => {
+describe('DealerPositioning · per-field null tolerance (static tile grid)', () => {
+  it('each nullable metric degrades to its own "unavailable" tile — walls intact, no offline treatment, no fabricated 0', () => {
     renderDP({ net_dex: null, chain_vol_oi_ratio: null, iv_skew: null, term_structure: null });
-    // Net DEX, Vol/OI, IV skew, Term structure each read "unavailable" while the walls still render.
+    // Net DEX, Vol/OI, IV skew, Term structure each read "unavailable" independently…
     expect(screen.getAllByText('unavailable').length).toBe(4);
-    expect(screen.getByText('$260')).toBeInTheDocument(); // walls unaffected (isolation)
+    // …while the walls keep rendering (isolation) and nothing fabricates a $0.
+    expect(screen.getByText('$260')).toBeInTheDocument();
+    expect(screen.queryByText(/\$0\b/)).toBeNull();
+    // The STATIC grid never grows an offline state of its own ([live-vs-static-isolation]).
+    expect(screen.queryByText('⏸ offline')).toBeNull();
   });
 
-  it('Off-exchange % tile is omitted when off_exchange is absent (best-effort)', () => {
+  it('the Off-exchange % tile is OMITTED when the section is absent (never a fabricated 0%)', () => {
     renderDP({}, null);
     expect(screen.queryByText('Off-exchange %')).toBeNull();
     expect(screen.getByText('$260')).toBeInTheDocument(); // the rest of the grid still renders
-  });
-
-  it('static grid has no offline state of its own (no ⏸ offline caption anywhere)', () => {
-    renderDP();
-    expect(screen.queryByText('⏸ offline')).toBeNull();
   });
 });

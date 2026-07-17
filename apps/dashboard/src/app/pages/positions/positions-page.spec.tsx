@@ -271,7 +271,7 @@ describe('store', () => {
     expect(allPositions().length).toBe(1);
   });
 
-  it('position survives reload', async () => {
+  it('position survives reload (durable facts intact; ephemeral session state re-derives fresh)', async () => {
     seedPosition();
     renderAt('/positions');
     expect(await screen.findByTestId('position-row')).toBeInTheDocument();
@@ -280,8 +280,12 @@ describe('store', () => {
     cleanup();
     __resetMemory();
     renderAt('/positions');
-    expect(await screen.findByTestId('position-row')).toBeInTheDocument();
+    const row = await screen.findByTestId('position-row');
+    // Durable facts persist byte-for-byte; the ephemeral trend/session state simply re-derives
+    // (its ring buffer is unit-tested in useTrends.spec) — no stale carry, no throw.
+    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     expect(allPositions().length).toBe(1);
+    expect(allPositions()[0].entry_mark).toBe(5);
   });
 
   it('customization + saved views survive nav + reload', async () => {
@@ -316,38 +320,9 @@ describe('store', () => {
     expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/);
   });
 
-  it('a seeded position persists on /positions across navigation (singleton store)', async () => {
-    // The Ticker no longer hosts the portfolio panel (Figma re-skin) — positions are opened on
-    // /positions. This verifies the durable module-singleton store survives navigation.
-    const user = userEvent.setup();
-    seedPosition();
-    renderAt('/positions');
-    const pos = await screen.findByTestId('portfolio-panel');
-    expect(await within(pos).findByTestId('position-row')).toBeInTheDocument();
-
-    await user.click(screen.getByTestId('nav-ticker'));
-    await screen.findByText('Call wall');
-    await user.click(screen.getByTestId('nav-positions'));
-    const pos2 = await screen.findByTestId('portfolio-panel');
-    expect(await within(pos2).findByTestId('position-row')).toBeInTheDocument();
-  }, 20000);
-
-  it('ephemeral trends/session-delta re-derive; durable facts persist', async () => {
-    // The durable facts (the position, entry mark) persist; the ephemeral session-delta re-derives on
-    // remount (shows the freshly-anchored placeholder), never carrying a stale value across reload.
-    seedPosition();
-    renderAt('/positions');
-    const row = await screen.findByTestId('position-row');
-    expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument(); // durable contract
-
-    cleanup();
-    __resetMemory();
-    renderAt('/positions');
-    const row2 = await screen.findByTestId('position-row');
-    // Durable fact persists; the session-delta cell exists (re-derived fresh, not a thrown error).
-    expect(within(within(row2).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
-    expect(allPositions()[0].entry_mark).toBe(5);
-  });
+  // (Consolidated, risk-based 2026-07-16: the former "seeded position persists across navigation
+  // (singleton store)" test duplicated "position survives navigation" above, and the former
+  // "ephemeral trends re-derive" test folded into the reload test — same invariants, fewer mirrors.)
 });
 
 // =================================================================================================

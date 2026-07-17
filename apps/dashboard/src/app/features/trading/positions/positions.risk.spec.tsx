@@ -1,20 +1,25 @@
 /**
- * Flow-integration (CENTERPIECE) — drives the REAL positions-portfolio user flow end-to-end through
- * the actual feature subtree (the real `usePortfolio` hook + the real PortfolioPanel/entry/table/
- * toolbar components), mocking ONLY the network boundary (`fetch` via the @org/api client + the SSE
- * `EventSource`). Never a live backend.
+ * Positions portfolio — RISK-BASED suite (per the amended QA rule, `.claude/agents/qa-verify.md` §4,
+ * 2026-07-13). Consolidates the former acceptance/redesign/Panel/View/Row/Card mirrors + the flow file
+ * into ONE flow+invariants file. We test ONLY the invariants where a silent regression is plausible AND
+ * invisible to a human reviewer:
  *
- * Journeys walked (the manual mock checks, made re-runnable):
- *  - open 3 entry modes (manual / market / theoretical-market) + stack the same contract
- *  - rest a limit → it never fills on the wrong side / offline → fills on a live cross → cancel another
- *  - per-ticker filter (no refetch) + grouping subtotals (incl. an unavailable-member exclusion)
- *  - SSE drop dims live cells while static records persist; reconnect resumes
- *  - save a named view → reload (re-mount) restores it + all positions + history
- *  - v1→v2 migration carry-over survives reload
- *  - Live tab locked (no positions / no entry / no order / no network) + the additive score invariant
+ *  1. The USER FLOW centerpiece — open (manual/market) → stacked lots (never merged) → live tick →
+ *     resting limit that fills ONLY on a live cross at the limit price → SSE drop degrades live cells
+ *     while static records persist (`[live-vs-static-isolation]`).
+ *  2. Durability — saved views + the book restore after reload; v1→v2 migration carry-over.
+ *  3. Isolation — one row's contract-lookup failure never poisons the others; a market entry with no
+ *     resolvable price can never create a position.
+ *  4. `no-real-order-path` — the Live tab is inert BY CONSTRUCTION (a `?raw` import-allowlist scan of
+ *     LiveTabPanel: it can wire to nothing) + rendered inertness + the PAPER/disclosure honesty rail.
+ *  5. `additive-keeps-score-byte-identical` — the portfolio never issues a bundle/scoring request.
+ *  6. Grouping/customization is a pure re-derivation (never a refetch).
  *
- * Traceability: every AC in the FRONTEND_EXECUTION_CONTRACT §5 matrix maps to a named test below or
- * in the colocated unit/component specs. QA traces each AC → ≥1 passing test at GATE Q.
+ * NOT asserted here (visible + intentional → review): exact header copy/order, column labels, Figma
+ * typography/colors, toolbar control presence, testid-presence-for-its-own-sake. Pure math (derive,
+ * entry/fill, trends, store migration) lives in the colocated unit specs.
+ *
+ * Mocks ONLY the network boundary (`fetch` + the SSE `EventSource`); never a live backend.
  */
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
@@ -25,6 +30,11 @@ import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { AUTH_COPY } from '@/features/auth/copy';
+import { LiveTabPanel } from './LiveTabPanel';
+// The Vite `?raw` idiom (fileURLToPath(new URL(...)) THROWS in this Vitest env): the Live tab's
+// zero-import lock is asserted on the SOURCE TEXT, so it is enforced by construction.
+import liveTabSource from './LiveTabPanel?raw';
 import { PortfolioPanel } from './PortfolioPanel';
 import {
   PORTFOLIO_V1_KEY,
@@ -299,9 +309,11 @@ async function pickStrike(user: ReturnType<typeof userEvent.setup>, dlg: HTMLEle
   await user.click(await screen.findByRole('option', { name: `$${s}` }));
 }
 
-describe('multi-position book + entry modes (AC-1, AC-2, AC-3, AC-12, AC-14)', () => {
-  it('positions_portfolio_end_to_end_flow', async () => {
-    // ===== This single test walks the FULL journey across every surface (the centerpiece). =====
+// =================================================================================================
+// 1. The centerpiece — the full journey through every live/degraded edge
+// =================================================================================================
+describe('positions · end-to-end flow (centerpiece)', () => {
+  it('open manual+market → stacked lots → live tick → limit rests/fills on a live cross → SSE drop degrades live, static persists', async () => {
     const user = userEvent.setup();
     installBackend();
     renderHarness();
@@ -314,15 +326,19 @@ describe('multi-position book + entry modes (AC-1, AC-2, AC-3, AC-12, AC-14)', (
     await within(dlg).findByText(/Fill: mid \$5\.00/);
     await user.click(within(dlg).getByRole('button', { name: 'Open simulated position' }));
 
-    // Two concurrent open positions, same ticker, both on the 250C contract → STACKED (not merged).
+    // Two concurrent open positions on the SAME contract → STACKED (distinct lots), never merged
+    // or price-averaged. A silent merge/average here would be invisible in review.
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(2));
-    expect(allPositions()).toHaveLength(2);
+    const lots = allPositions();
+    expect(lots).toHaveLength(2);
+    expect(new Set(lots.map((p) => p.id)).size).toBe(2);
+    expect(lots.map((p) => p.entry_mark).sort()).toEqual([5, 7]);
 
     // --- per-row marks update on the feed ---
     pushLive({ mid: 252 });
     await waitFor(() => expect(screen.getAllByTestId('cell-mark').length).toBe(2));
 
-    // --- place a LIMIT at $4 (below the live mark of 5 → rests, does not fill) (AC-17, AC-20) ---
+    // --- place a LIMIT at $4 (below the live mark of 5 → rests, does not fill) ---
     await user.click(screen.getByTestId('open-entry'));
     dlg = await screen.findByRole('dialog');
     await user.click(within(dlg).getByRole('button', { name: 'Limit' }));
@@ -332,37 +348,40 @@ describe('multi-position book + entry modes (AC-1, AC-2, AC-3, AC-12, AC-14)', (
     // Pending row visible; switch the status filter to include pending so it shows.
     await user.click(screen.getByTestId('status-chip-pending'));
     await waitFor(() => expect(screen.getByTestId('pending-affordance')).toBeInTheDocument());
-    // A live tick where the mark is ABOVE the limit must NOT fill it.
+    // A live tick where the mark is ABOVE the limit must NOT fill it (wrong side).
     pushLive({ mid: 250 });
     expect(allPositions().find((p) => p.status === 'pending')).toBeTruthy();
 
-    // --- the limit FILLS on a live cross (drive the option mark to ≤ 4 via the underlying) (AC-18) ---
+    // --- the limit FILLS on a live cross, AT the limit price, never better ---
     // computeMark models from the underlying move × delta; push the underlying well below the anchor.
     pushLive({ mid: 235 });
     await waitFor(() => {
       const pending = allPositions().find((p) => p.limit_price === 4);
       expect(pending?.status).toBe('open');
     });
-    // A limit_filled event was recorded.
     const filled = allPositions().find((p) => p.limit_price === 4)!;
+    expect(filled.entry_mark).toBe(4); // filled AT the limit, never better
     expect(decisionsForPosition(filled.id).some((d) => d.event_type === 'limit_filled')).toBe(true);
 
-    // --- SSE DROP: live cells dim + ⏸ offline + last-known; static records persist (AC-32, AC-34) ---
+    // --- SSE DROP: live cells dim + ⏸ offline + last-known; static records persist ---
     cleanup();
     renderHarness({ forceOffline: true });
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBeGreaterThan(0));
     expect(screen.getAllByText(/⏸ offline/).length).toBeGreaterThan(0);
-    // static contract still renders (REVISION 1 slim Ticker — symbol + `$250 Call` leg)
+    // static contract still renders (slim Ticker — symbol + `$250 Call` leg), never blanked
     const contract = screen.getAllByTestId('cell-contract')[0];
     expect(within(contract).getByText('TSLA')).toBeInTheDocument();
     expect(within(contract).getByText(/\$250 Call/)).toBeInTheDocument();
-    // customization toolbar still works under a drop (AC-29)
+    // customization toolbar still works under a drop
     expect(screen.getByTestId('customization-toolbar')).toBeInTheDocument();
   }, 20000);
 });
 
-describe('per-ticker filter (no refetch) + grouping subtotals (AC-4, AC-10)', () => {
-  it('per_ticker_filter_shows_only_that_ticker_no_refetch', async () => {
+// =================================================================================================
+// 2. Customization is a pure re-derivation — never a refetch
+// =================================================================================================
+describe('positions · grouping is a pure re-derivation', () => {
+  it('grouping by ticker renders a subtotal without issuing any fetch', async () => {
     const user = userEvent.setup();
     installBackend();
     renderHarness();
@@ -375,9 +394,6 @@ describe('per-ticker filter (no refetch) + grouping subtotals (AC-4, AC-10)', ()
     await user.click(within(dlg2).getByRole('button', { name: 'Open simulated position' }));
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(2));
 
-    // REVISION 2 — the ticker filter UI is removed (one-row toolbar); the per-ticker filter remains a
-    // pure derivation in `derive` and is covered in acceptance.spec. Here the centerpiece flow asserts
-    // the no-refetch invariant on a customization re-derivation that DOES still have UI: grouping.
     const fetchCallsBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
 
     // Group by ticker (segmented pill control) → a subtotal header appears, with no extra fetch.
@@ -388,8 +404,11 @@ describe('per-ticker filter (no refetch) + grouping subtotals (AC-4, AC-10)', ()
   }, 20000);
 });
 
-describe('saved views survive reload + positions/history persist (AC-27, AC-28, AC-30)', () => {
-  it('save_named_view_then_switch_rename_delete_and_restore_after_reload', async () => {
+// =================================================================================================
+// 3. Durability — reload restores views + the book; v1→v2 migration carries over
+// =================================================================================================
+describe('positions · durability across reload', () => {
+  it('a saved named view + the positions restore after reload (re-mount from the durable store)', async () => {
     const user = userEvent.setup();
     installBackend();
     renderHarness();
@@ -418,10 +437,8 @@ describe('saved views survive reload + positions/history persist (AC-27, AC-28, 
     expect(screen.getByTestId('positions-cards')).toBeInTheDocument(); // card layout restored
     expect(screen.getByTestId('position-card')).toBeInTheDocument(); // position persisted
   }, 20000);
-});
 
-describe('migration carry-over (AC-31)', () => {
-  it('existing_single_trade_migrates_to_one_open_position_intact_survives_reload', async () => {
+  it('an existing v1 single trade migrates into one open position, intact, and survives reload', async () => {
     // Seed a v1 ghost-trade blob, then mount the portfolio fresh → it migrates + renders it.
     localStorage.setItem(
       PORTFOLIO_V1_KEY,
@@ -471,10 +488,8 @@ describe('migration carry-over (AC-31)', () => {
     installBackend();
     renderHarness();
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(1));
-    // REVISION 1 slim Ticker — the migrated v1 record renders symbol + `$250 Call` leg.
     const migrated = screen.getByTestId('cell-contract');
     expect(within(migrated).getByText('TSLA')).toBeInTheDocument();
-    expect(within(migrated).getByText(/\$250 Call/)).toBeInTheDocument();
     expect(allPositions()[0].id).toBe('legacy-1');
     expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
 
@@ -487,8 +502,11 @@ describe('migration carry-over (AC-31)', () => {
   }, 20000);
 });
 
-describe('per-row isolation + Live lock (AC-35, AC-39, AC-40)', () => {
-  it('one_row_lookup_failure_isolated_and_live_tab_makes_no_network_call', async () => {
+// =================================================================================================
+// 4. Isolation — one row's failure never poisons the rest; an unfillable market entry cannot open
+// =================================================================================================
+describe('positions · failure isolation', () => {
+  it("one row's lookup failure is isolated; the Live tab makes no network call", async () => {
     const user = userEvent.setup();
     // The 255 strike contract 404s; the 250 strike resolves fine.
     installBackend({ contract: (s) => (s === 255 ? 'notfound' : QUOTE) });
@@ -517,10 +535,20 @@ describe('per-row isolation + Live lock (AC-35, AC-39, AC-40)', () => {
     // switching to Live triggered no extra fetch
     expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchBefore);
   }, 20000);
-});
 
-describe('cancel a resting limit → history retention (AC-19, AC-37)', () => {
-  it('pending_limit_cancel_to_cancelled_records_event_stays_in_history', async () => {
+  it('a market entry with NO resolvable price cannot create a position (isolated failure)', async () => {
+    const user = userEvent.setup();
+    installBackend({ contract: () => ({ ...QUOTE, option_quote: null, iv: null }) });
+    renderHarness();
+    await user.click(screen.getByTestId('open-entry'));
+    const dlg = await screen.findByRole('dialog');
+    await user.click(within(dlg).getByRole('button', { name: 'Market' }));
+    await within(dlg).findByText(/can't fill/); // the honest degraded notice landed
+    expect(within(dlg).getByRole('button', { name: 'Open simulated position' })).toBeDisabled();
+    expect(allPositions()).toHaveLength(0); // no position created, app intact
+  });
+
+  it('cancelling a resting limit records the event and retains it in history (never pruned)', async () => {
     const user = userEvent.setup();
     installBackend();
     renderHarness();
@@ -545,5 +573,96 @@ describe('cancel a resting limit → history retention (AC-19, AC-37)', () => {
     await user.click(screen.getByTestId('history-button'));
     await waitFor(() => expect(screen.getByTestId('history-caption')).toBeInTheDocument());
     expect(screen.getByText(/Cancelled · resting limit never filled/)).toBeInTheDocument();
+  }, 20000);
+
+  it('empty and filtered-empty are DISTINCT honest states (a filter never claims "no positions yet")', async () => {
+    const user = userEvent.setup();
+    installBackend();
+    renderHarness();
+    // A truly empty book → the no-positions empty state.
+    expect(screen.getByTestId('empty-no-positions')).toBeInTheDocument();
+
+    // A book whose only position is CLOSED, under the default open filter → filtered-empty instead.
+    await openManual(user, '5');
+    pushLive({ mid: 250 });
+    await user.click(
+      within(screen.getByTestId('position-row')).getByRole('button', { name: 'Close' }),
+    );
+    await waitFor(() => expect(allPositions().some((p) => p.status === 'closed')).toBe(true));
+    await waitFor(() => expect(screen.getByTestId('empty-filtered')).toBeInTheDocument());
+    expect(screen.queryByTestId('empty-no-positions')).toBeNull();
+  }, 20000);
+});
+
+// =================================================================================================
+// 5. no-real-order-path — structural locks (HARD invariants)
+// =================================================================================================
+describe('positions · no-real-order-path', () => {
+  it('LiveTabPanel is inert BY CONSTRUCTION: its import allowlist admits no data source, and it renders no affordance', () => {
+    // Source-text scan (comments stripped so prose can't false-positive): every import specifier
+    // must be MUI, the static copy module, or the static hatch value — nothing live, ever.
+    const src = liveTabSource
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
+    expect(specifiers.length).toBeGreaterThan(0);
+    const allowed = [/^@mui\//, /^@\/shared\/ui\/ComingSoonBox$/, /^\.\/labels$/];
+    for (const spec of specifiers) {
+      expect(allowed.some((re) => re.test(spec)), `forbidden import in LiveTabPanel: ${spec}`).toBe(
+        true,
+      );
+    }
+    // No transport escape hatches either (an inline fetch/EventSource would bypass imports).
+    expect(src).not.toMatch(/\bfetch\s*\(/);
+    expect(src).not.toMatch(/\bEventSource\b/);
+
+    // Rendered inertness: no buttons, no links, no inputs.
+    render(
+      <ThemeProvider theme={theme}>
+        <LiveTabPanel />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('SIMULATED is unmistakable: PAPER badge + the mandatory browser-local disclosure; no real-order affordance', async () => {
+    const user = userEvent.setup();
+    installBackend();
+    renderHarness();
+    await openManual(user, '5');
+    expect(within(screen.getByTestId('tab-simulated')).getByText('PAPER')).toBeInTheDocument();
+    expect(screen.getByTestId('positions-disclosure')).toHaveTextContent(
+      AUTH_COPY.positions.disclosure,
+    );
+    expect(screen.queryByText(/place real order/i)).toBeNull();
+    expect(screen.queryByText(/broker/i)).toBeNull();
+  });
+});
+
+// =================================================================================================
+// 6. additive-keeps-score-byte-identical — the portfolio never touches a scoring input
+// =================================================================================================
+describe('positions · additive (never a scoring input)', () => {
+  it('opening positions issues ONLY contract lookups — never a bundle/ticker/scoring request', async () => {
+    const user = userEvent.setup();
+    installBackend();
+    renderHarness();
+    await openManual(user, '5');
+    await openManual(user, '6', 255);
+    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) =>
+      String(c[0]),
+    );
+    // No bundle/ticker/scoring request is ever issued by the portfolio; only the contract lookup.
+    // (The who-am-I session read AND the sim-trade write gate are AUTH-class concerns, not scoring
+    // paths — excluded here. The auth gate carries no scoring input and never touches /api/ticker.)
+    expect(calls.some((u) => u.includes('/api/ticker/'))).toBe(false);
+    const nonAuth = calls.filter(
+      (u) => !u.includes('/api/auth/') && !u.includes('/api/positions/sim-trade/gate'),
+    );
+    expect(nonAuth.length).toBeGreaterThan(0);
+    expect(nonAuth.every((u) => u.includes('/api/contract/'))).toBe(true);
   }, 20000);
 });

@@ -1,7 +1,13 @@
 /**
- * LiveTape — component-state tests for the LIVE-DERIVED tile row. Centerpiece behavior:
- * `[live-vs-static-isolation]` — on `streamOffline` the live tiles DIM + caption `⏸ offline`, never
- * blank, never frozen-as-current; when live they render the live figures; pre-live they show `—`.
+ * LiveTape — RISK-BASED widget spec (qa-verify.md §4, 2026-07-13). The dim/⏸-offline treatment on an
+ * SSE drop is PAGE-covered (`pages/ticker/ticker.risk.spec.tsx` walks it end-to-end); this spec keeps
+ * only the tape-local honesty logic:
+ *   1. PRE-LIVE (no tick yet): live-derived fields read the honest em-dash — never a fabricated 0 —
+ *      and the gamma flip shows the STATIC authoritative value WITHOUT the "(live)" claim;
+ *   2. per-field tolerance inside a live payload: a null spread reads em-dash while net flow renders,
+ *      and a negative net flow renders signed (the sign path, not just the happy `+`).
+ * NOT asserted (visible + intentional → review/page): default live figures, offline dim/caption,
+ * labels/tooltips, VWAP formatting.
  */
 import { ThemeProvider } from '@mui/material/styles';
 import type { LiveUpdate, MarketState } from '@org/api';
@@ -78,44 +84,26 @@ function wrap(ui: React.ReactNode) {
   return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
 }
 
-describe('LiveTape (live-derived tiles)', () => {
-  it('DEFAULT (live): renders live net-flow, spread, live gamma flip, VWAP', () => {
-    wrap(<LiveTape m={marketState()} live={liveUpdate()} isLive={true} streamOffline={false} />);
-    expect(screen.getByText('Net flow (5m)')).toBeInTheDocument();
-    expect(screen.getByText('+1,200')).toBeInTheDocument();
-    expect(screen.getByText('$0.05')).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip (live)')).toBeInTheDocument();
-    expect(screen.getByText('$248')).toBeInTheDocument();
-    expect(screen.getByText('$249.00')).toBeInTheDocument(); // VWAP
-    // Not offline → no ⏸ offline caption.
-    expect(screen.queryByText('⏸ offline')).toBeNull();
-  });
-
-  it('PRE-LIVE (no tick yet): live fields show — and the flip is the static authoritative value', () => {
+describe('LiveTape · tape-local honesty', () => {
+  it('PRE-LIVE: live fields read the em-dash (never a fabricated 0) and the flip is the STATIC value without the "(live)" claim', () => {
     wrap(<LiveTape m={marketState()} live={null} isLive={false} streamOffline={false} />);
-    expect(screen.getByText('Gamma flip')).toBeInTheDocument(); // no "(live)" suffix
-    expect(screen.getByText('$248')).toBeInTheDocument(); // static flip
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0); // net flow + spread show em-dash
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0); // net flow + spread honest-empty
+    expect(screen.queryByText(/^[+-]?0$/)).toBeNull(); // no invented 0 net-flow
+    expect(screen.getByText('Gamma flip')).toBeInTheDocument(); // static authority…
+    expect(screen.queryByText('Gamma flip (live)')).toBeNull(); // …never claimed live
+    expect(screen.getByText('$248')).toBeInTheDocument(); // the static flip value
   });
 
-  it('OFFLINE (SSE drop): live tiles dim + caption ⏸ offline; flip falls back to static, never blank', () => {
-    // streamOffline true ⇒ isLive false; the tiles carry the offline caption.
-    wrap(<LiveTape m={marketState()} live={liveUpdate()} isLive={false} streamOffline={true} />);
-    expect(screen.getAllByText('⏸ offline').length).toBeGreaterThan(0);
-    // The gamma flip never blanks — it shows the static authoritative value.
-    expect(screen.getByText('$248')).toBeInTheDocument();
-    expect(screen.getByText('Gamma flip')).toBeInTheDocument();
-  });
-
-  it('negative net flow renders the down accent figure', () => {
+  it('per-field: a null spread reads em-dash while net flow renders; a negative net flow renders signed', () => {
     wrap(
       <LiveTape
         m={marketState()}
-        live={liveUpdate({ net_flow: -800 })}
+        live={liveUpdate({ spread: null, net_flow: -800 })}
         isLive={true}
         streamOffline={false}
       />,
     );
-    expect(screen.getByText('-800')).toBeInTheDocument();
+    expect(screen.getByText('-800')).toBeInTheDocument(); // the negative path, not just the happy '+'
+    expect(screen.getByText('—')).toBeInTheDocument(); // the null spread, isolated
   });
 });

@@ -1,5 +1,8 @@
 /**
- * Unit — customization defaults + config equality (drives the unsaved-changes dot, AC-27/AC-28).
+ * Unit — customization defaults: the column partition invariant + config equality (the pure logic
+ * behind the unsaved-changes dot and the durable-view hydrate). Risk-based: the exact Figma column
+ * order/labels are visible in review and NOT asserted here; a duplicated/orphaned column key or a
+ * wrong `configEqual` would be silent.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -9,69 +12,30 @@ import {
   DEFAULT_COLUMNS,
   defaultConfig,
   defaultCustomization,
-  defaultView,
   OPTIONAL_COLUMNS,
 } from './defaults';
 import type { ColumnKey } from './types';
 
-describe('defaults', () => {
-  it('REVISION 1 — DEFAULT_COLUMNS match the Figma mock left→right', () => {
-    expect(DEFAULT_COLUMNS).toEqual([
-      'contract',
-      'strategy',
-      'qty',
-      'entry',
-      'mark',
-      'pl',
-      'pl_pct',
-      'delta_entry',
-      'trend',
-      'expiry',
-    ]);
-  });
-
-  it('REVISION 1 — simulated/status/mode/session_delta moved into OPTIONAL_COLUMNS', () => {
-    for (const c of ['simulated', 'status', 'mode', 'session_delta'] as ColumnKey[]) {
-      expect(OPTIONAL_COLUMNS).toContain(c);
-      expect(DEFAULT_COLUMNS).not.toContain(c);
-    }
-  });
-
-  it('every ColumnKey appears in exactly one of DEFAULT/OPTIONAL (no dup, no gap)', () => {
+describe('column partition', () => {
+  it('every ColumnKey appears in exactly one of DEFAULT/OPTIONAL (no dup, no gap), and every key has a label', () => {
     const all = [...DEFAULT_COLUMNS, ...OPTIONAL_COLUMNS];
-    expect(new Set(all).size).toBe(all.length); // no duplicate
-    // pl_pct present exactly once
-    expect(all.filter((c) => c === 'pl_pct')).toHaveLength(1);
-    // every key has a label + every labelled key is partitioned
+    expect(new Set(all).size).toBe(all.length); // no duplicate across the partition
     const keys = Object.keys(COLUMN_LABELS) as ColumnKey[];
-    expect(new Set(all)).toEqual(new Set(keys));
+    expect(new Set(all)).toEqual(new Set(keys)); // no gap: the label map IS the key universe
   });
+});
 
-  it('REVISION 1 — labels: pl="P/L", pl_pct="P/L %", contract="Ticker"', () => {
-    expect(COLUMN_LABELS.pl).toBe('P/L');
-    expect(COLUMN_LABELS.pl_pct).toBe('P/L %');
-    expect(COLUMN_LABELS.contract).toBe('Ticker');
-  });
-  it('seeds the All positions default view (builtin, comfortable table, status=open, sort=pl$ desc)', () => {
-    const v = defaultView();
-    expect(v.name).toBe('All positions');
-    expect(v.builtin).toBe(true);
-    expect(v.config.layout).toBe('table');
-    expect(v.config.density).toBe('comfortable');
-    expect(v.config.group).toBe('none');
-    expect(v.config.sortKey).toBe('pl_dollar');
-    expect(v.config.sortDir).toBe('desc');
-    expect(v.config.filter.status).toEqual(['open']);
-    expect(v.config.columns).toEqual(DEFAULT_COLUMNS);
-  });
-
-  it('seeds the customization state with exactly the default view active', () => {
+describe('customization seed', () => {
+  it('seeds exactly one builtin view and makes it active (the hydrate fallback anchor)', () => {
     const c = defaultCustomization();
     expect(c.views).toHaveLength(1);
+    expect(c.views[0].builtin).toBe(true);
     expect(c.activeViewId).toBe(c.views[0].id);
   });
+});
 
-  it('configEqual is true for an unmodified clone and false after an edit', () => {
+describe('configEqual (drives the unsaved-changes dot)', () => {
+  it('is true for an unmodified clone and false after an edit', () => {
     const a = defaultConfig();
     expect(configEqual(a, cloneConfig(a))).toBe(true);
     const b = cloneConfig(a);
@@ -79,7 +43,7 @@ describe('defaults', () => {
     expect(configEqual(a, b)).toBe(false);
   });
 
-  it('configEqual is order-insensitive for the status multi-select', () => {
+  it('is order-insensitive for the status multi-select', () => {
     const a = defaultConfig();
     const b = cloneConfig(a);
     b.filter.status = ['open'];

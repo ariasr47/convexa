@@ -1,12 +1,26 @@
 /**
- * rebrand-convexa — the loss-free migration MATRIX (FRONTEND_EXECUTION_CONTRACT §D.1–D.3, the QA
- * centerpiece). Drives the four durable stores' read APIs across both brand prefixes + versions,
- * mocking ONLY the storage boundary (real jsdom localStorage). Every AC-A* case maps to a named test
- * here. No live backend, no network.
+ * `loss-free-durable-migration` (PROMOTED, severity path) — the migration MATRIX for the ~5
+ * localStorage stores that hold the user's entire trading history with NO server backup. Drives the
+ * four durable stores' read APIs across both brand prefixes + versions, mocking ONLY the storage
+ * boundary (real jsdom localStorage). No live backend, no network.
  *
- * Verifies for EACH store: legacy `gammaflow.*` data carried WHOLE under `convexa.*`, the positions
- * v1→v2-across-brands 4-case chain, idempotency, never-delete/rollback-safe, corrupt-old → no throw /
- * no wipe, absent-old → clean new user, new-wins-when-both.
+ * Risk-migrated 2026-07-16: the rebrand's per-key AC padding is consolidated into a parameterized
+ * run over the 4 migrated keys (positions / ghost-trade / personas / uiprefs); every migration-LOGIC
+ * guarantee is preserved verbatim:
+ *   - read-new-else-old + promote-forward (new key populated, old key NEVER deleted — rollback-safe)
+ *   - idempotent (a re-run/reload changes nothing: same data, byte-identical promoted blob)
+ *   - never-throw on a corrupt old blob (degrade to empty; the original blob SURVIVES the read)
+ *   - content FIDELITY per store (carried WHOLE: positions + customization + decisions; ghost trade
+ *     + decisions; personas + active selection; theme + default ticker)
+ *   - the positions v1→v2-ACROSS-BRANDS 4-case resolution chain (first hit wins, source intact)
+ *   - absent-old → clean new user, writes land ONLY under convexa.*
+ *   - both-present → new wins, old not merged, old still present
+ *
+ * NOTE: `convexa.ghost-trade.v1` (= positions' PORTFOLIO_V1_KEY) LOOKS legacy but is ACTIVELY
+ * WRITTEN (documented store split) — never assert it dead here. The ghost-trade store's own
+ * migration contract lives in `features/trading/model/store.spec.ts`; the pure resolver unit tests
+ * live in `resolveDurable.spec.ts`. Brand-copy assertions (wordmarks, filenames) were dropped in
+ * this migration — they are visible surfaces, not silent-loss risks.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -38,7 +52,7 @@ import {
   UIPREFS_LEGACY_KEY,
 } from '@/features/auth/localPrefs';
 
-// ---- helpers -----------------------------------------------------------------------------------
+// ---- fixtures ------------------------------------------------------------------------------------
 
 function resetAll() {
   positions.__resetMemory();
@@ -100,33 +114,111 @@ function v2Blob(over: Partial<PersistShapeV2> = {}): string {
   });
 }
 
-// =================================================================================================
-// Group A — each store carried WHOLE from the legacy gammaflow.* key (AC-A1..A7)
-// =================================================================================================
-describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migrate-on-read)', () => {
-  it('AC-A1 positions carried whole — same set / entry / status; new key now exists', () => {
-    localStorage.setItem(
-      PORTFOLIO_LEGACY_V2_KEY,
-      v2Blob({
-        positions: {
-          a: aPosition({ id: 'a', entry_mark: 7, qty: 3 }),
-          b: aPosition({ id: 'b', ticker: 'AAPL' }),
-        },
-      }),
-    );
-    positions.__resetMemory();
+const ghostBlob = () =>
+  JSON.stringify({ schema_version: 1, trades: { TSLA: aTrade({ id: 'g' }) }, decisions: [] });
+const personasBlob = () =>
+  JSON.stringify({
+    schema_version: 1,
+    customs: [{ id: 'cp', name: 'X', disposition: 'd', framing: 'f' }],
+    active_persona_id: 'cp',
+  });
+const uiprefsBlob = () =>
+  JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' });
 
-    const all = positions.allPositions();
-    expect(all.map((p) => p.id).sort()).toEqual(['a', 'b']);
-    const a = positions.getPosition('a')!;
-    expect(a.entry_mark).toBe(7);
-    expect(a.qty).toBe(3);
-    expect(a.status).toBe('open');
-    // promoted forward — new key now populated.
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+// ---- the 4-store adapter table (drives the parameterized safety runs) -----------------------------
+
+interface StoreCase {
+  name: string;
+  legacyKey: string;
+  newKey: string;
+  seedLegacy(): void;
+  reset(): void;
+  /** Triggers the migrate-on-read and returns the observable data (deep-comparable). */
+  read(): unknown;
+  /** Corrupt-blob degraded read: MUST not throw; MUST come back empty (never garbage). */
+  expectEmpty(): void;
+}
+
+const STORES: StoreCase[] = [
+  {
+    name: 'positions',
+    legacyKey: PORTFOLIO_LEGACY_V2_KEY,
+    newKey: PORTFOLIO_V2_KEY,
+    seedLegacy: () => localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob()),
+    reset: () => positions.__resetMemory(),
+    read: () => positions.allPositions(),
+    expectEmpty: () => expect(positions.allPositions()).toEqual([]),
+  },
+  {
+    name: 'ghost-trade',
+    legacyKey: GHOST_TRADE_LEGACY_KEY,
+    newKey: GHOST_TRADE_KEY,
+    seedLegacy: () => localStorage.setItem(GHOST_TRADE_LEGACY_KEY, ghostBlob()),
+    reset: () => ghost.__resetMemory(),
+    read: () => ghost.getTrade('TSLA'),
+    expectEmpty: () => expect(ghost.getTrade('TSLA')).toBeNull(),
+  },
+  {
+    name: 'personas',
+    legacyKey: PERSONAS_LEGACY_KEY,
+    newKey: PERSONAS_KEY,
+    seedLegacy: () => localStorage.setItem(PERSONAS_LEGACY_KEY, personasBlob()),
+    reset: () => __resetPersonas(),
+    read: () => ({ customs: personas.loadCustoms(), active: personas.loadActiveId() }),
+    expectEmpty: () => {
+      expect(personas.loadCustoms()).toEqual([]);
+      expect(personas.loadActiveId()).toBeNull();
+    },
+  },
+  {
+    name: 'uiprefs',
+    legacyKey: UIPREFS_LEGACY_KEY,
+    newKey: UIPREFS_KEY,
+    seedLegacy: () => localStorage.setItem(UIPREFS_LEGACY_KEY, uiprefsBlob()),
+    reset: () => __resetLocalPrefs(),
+    read: () => ({ theme: loadLocalTheme(), ticker: loadLocalDefaultTicker() }),
+    expectEmpty: () => expect(loadLocalDefaultTicker()).toBeNull(),
+  },
+];
+
+// =================================================================================================
+// Parameterized safety run — promote-forward / never-delete / idempotent / corrupt, all 4 keys
+// =================================================================================================
+describe.each(STORES)('$name — migrate-on-read safety', (store) => {
+  it('promotes the legacy blob forward AND never deletes the old key (rollback-safe)', () => {
+    store.seedLegacy();
+    store.reset();
+    store.read();
+    expect(localStorage.getItem(store.newKey)).toBeTruthy(); // promoted forward
+    expect(localStorage.getItem(store.legacyKey)).not.toBeNull(); // source intact
   });
 
-  it('AC-A2 customization + saved named views restore exactly', () => {
+  it('is idempotent: a reload/re-read yields identical data and a byte-identical promoted blob', () => {
+    store.seedLegacy();
+    store.reset();
+    const first = store.read();
+    const promoted = localStorage.getItem(store.newKey);
+
+    store.reset(); // simulate a reload
+    const second = store.read();
+    expect(second).toEqual(first); // same data, no duplication/re-key
+    expect(localStorage.getItem(store.newKey)).toBe(promoted); // blob unchanged
+  });
+
+  it('corrupt old blob → empty in-memory, NO throw, and the original blob SURVIVES the read', () => {
+    localStorage.setItem(store.legacyKey, '{ corrupt');
+    store.reset();
+    expect(() => store.read()).not.toThrow();
+    store.expectEmpty();
+    expect(localStorage.getItem(store.legacyKey)).toBe('{ corrupt'); // never destroyed
+  });
+});
+
+// =================================================================================================
+// Content FIDELITY — each store's data carried WHOLE (the loss-free core, store-specific shapes)
+// =================================================================================================
+describe('legacy gammaflow.* data carried WHOLE into convexa.*', () => {
+  it('positions: open + closed positions, realized P/L, decision history, customization + named views', () => {
     const custom: CustomizationState = {
       ...defaultCustomization(),
       views: [
@@ -135,15 +227,6 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
       ],
       activeViewId: 'v-named',
     };
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob({ customization: custom }));
-    positions.__resetMemory();
-
-    const c = positions.getCustomization();
-    expect(c.activeViewId).toBe('v-named');
-    expect(c.views.some((v) => v.id === 'v-named' && v.name === 'My winners')).toBe(true);
-  });
-
-  it('AC-A3 closed positions + decision history fully present, unchanged', () => {
     const decisions = [
       {
         event_type: 'close',
@@ -160,18 +243,35 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
     localStorage.setItem(
       PORTFOLIO_LEGACY_V2_KEY,
       v2Blob({
-        positions: { c1: aPosition({ id: 'c1', status: 'closed', realized_pl_dollar: 600 }) },
+        positions: {
+          a: aPosition({ id: 'a', entry_mark: 7, qty: 3 }),
+          c1: aPosition({ id: 'c1', status: 'closed', realized_pl_dollar: 600 }),
+        },
         decisions: decisions as never,
+        customization: custom,
       }),
     );
     positions.__resetMemory();
 
+    expect(
+      positions
+        .allPositions()
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['a', 'c1']);
+    const a = positions.getPosition('a')!;
+    expect(a.entry_mark).toBe(7);
+    expect(a.qty).toBe(3);
+    expect(a.status).toBe('open');
     expect(positions.getPosition('c1')!.status).toBe('closed');
     expect(positions.getPosition('c1')!.realized_pl_dollar).toBe(600);
     expect(positions.decisionsForPosition('c1')).toHaveLength(1);
+    const c = positions.getCustomization();
+    expect(c.activeViewId).toBe('v-named');
+    expect(c.views.some((v) => v.id === 'v-named' && v.name === 'My winners')).toBe(true);
   });
 
-  it('AC-A4 ghost-trade open trade + decision records present, unchanged', () => {
+  it('ghost-trade: open trade + decision records present, unchanged', () => {
     localStorage.setItem(
       GHOST_TRADE_LEGACY_KEY,
       JSON.stringify({
@@ -204,10 +304,9 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
     expect(t.id).toBe('gt1');
     expect(t.qty).toBe(4);
     expect(ghost.decisionsForTrade('gt1')).toHaveLength(1);
-    expect(localStorage.getItem(GHOST_TRADE_KEY)).toBeTruthy(); // promoted
   });
 
-  it('AC-A5 custom personas all present', () => {
+  it('personas: all customs present AND the active selection survives (not just the list)', () => {
     localStorage.setItem(
       PERSONAS_LEGACY_KEY,
       JSON.stringify({
@@ -216,47 +315,30 @@ describe('Group A — legacy gammaflow.* data carried whole into convexa.* (migr
           { id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' },
           { id: 'cp2', name: 'Theta', disposition: 'income', framing: 'y' },
         ],
-        active_persona_id: null,
-      }),
-    );
-    __resetPersonas();
-
-    const list = personas.loadCustoms();
-    expect(list.map((p) => p.id).sort()).toEqual(['cp1', 'cp2']);
-    expect(localStorage.getItem(PERSONAS_KEY)).toBeTruthy();
-  });
-
-  it('AC-A6 active_persona_id selection still active (selection survives, not just the list)', () => {
-    localStorage.setItem(
-      PERSONAS_LEGACY_KEY,
-      JSON.stringify({
-        schema_version: 1,
-        customs: [{ id: 'cp1', name: 'Scalper', disposition: 'aggressive', framing: 'x' }],
         active_persona_id: 'income_keeper',
       }),
     );
     __resetPersonas();
+
+    expect(
+      personas
+        .loadCustoms()
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['cp1', 'cp2']);
     expect(personas.loadActiveId()).toBe('income_keeper');
   });
 
-  it('AC-A7 theme applied + default ticker in effect', () => {
-    localStorage.setItem(
-      UIPREFS_LEGACY_KEY,
-      JSON.stringify({
-        schema_version: 1,
-        theme: 'light',
-        default_ticker: 'NVDA',
-      }),
-    );
+  it('uiprefs: theme applied + default ticker in effect', () => {
+    localStorage.setItem(UIPREFS_LEGACY_KEY, uiprefsBlob());
     __resetLocalPrefs();
     expect(loadLocalTheme()).toBe('light');
     expect(loadLocalDefaultTicker()).toBe('NVDA');
-    expect(localStorage.getItem(UIPREFS_KEY)).toBeTruthy();
   });
 });
 
 // =================================================================================================
-// Group A — positions resolution-order / chain cases (ARCHITECTURE §2.3) — each its own test
+// positions 4-case resolution chain (brand × version), first hit wins, source intact
 // =================================================================================================
 describe('positions 4-case resolution (brand × version), first hit wins, source intact', () => {
   it('case 1: convexa.positions.v2 only → hydrate v2, no migration', () => {
@@ -278,7 +360,7 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeTruthy(); // source intact
   });
 
-  it('case 3: convexa.ghost-trade.v1 only → migrateV1 → convexa.positions.v2', () => {
+  it('case 3: convexa.ghost-trade.v1 only → migrateV1 → convexa.positions.v2 (ghost source intact — it is ACTIVELY WRITTEN, never dead)', () => {
     localStorage.setItem(
       PORTFOLIO_V1_KEY,
       JSON.stringify({
@@ -295,7 +377,7 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBeTruthy(); // source ghost-trade intact
   });
 
-  it('AC-A8 case 4: gammaflow.ghost-trade.v1 ONLY → legacy trade whole in convexa.positions.v2', () => {
+  it('case 4: gammaflow.ghost-trade.v1 ONLY → legacy trade whole in convexa.positions.v2 (version + brand hop in one read)', () => {
     localStorage.setItem(
       PORTFOLIO_LEGACY_V1_KEY,
       JSON.stringify({
@@ -340,141 +422,11 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
 });
 
 // =================================================================================================
-// Group A-Edge — idempotency / safety / degradation (AC-A9..A13) — for each store
+// Absent-old → clean new user; writes land ONLY under convexa.* (never re-create the old key)
 // =================================================================================================
-describe('AC-A9 idempotent — run twice = no-op, no duplicate/re-key/wipe', () => {
-  it('positions: second read short-circuits at the new key', () => {
-    localStorage.setItem(
-      PORTFOLIO_LEGACY_V1_KEY,
-      JSON.stringify({
-        schema_version: 1,
-        trades: { TSLA: aTrade({ id: 'legacy' }) },
-        decisions: [],
-      }),
-    );
-    positions.__resetMemory();
-    const first = positions.allPositions();
-    const promoted = localStorage.getItem(PORTFOLIO_V2_KEY);
-
-    positions.__resetMemory(); // simulate a reload
-    const second = positions.allPositions();
-    expect(second.map((p) => p.id)).toEqual(first.map((p) => p.id));
-    expect(second).toHaveLength(1); // no duplication
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(promoted); // unchanged blob
-  });
-
-  it('ghost-trade / personas / uiprefs: re-read identical, no dup', () => {
-    localStorage.setItem(
-      GHOST_TRADE_LEGACY_KEY,
-      JSON.stringify({
-        schema_version: 1,
-        trades: { TSLA: aTrade({ id: 'g' }) },
-        decisions: [],
-      }),
-    );
-    localStorage.setItem(
-      PERSONAS_LEGACY_KEY,
-      JSON.stringify({
-        schema_version: 1,
-        customs: [{ id: 'cp', name: 'X', disposition: 'd', framing: 'f' }],
-        active_persona_id: 'cp',
-      }),
-    );
-    localStorage.setItem(
-      UIPREFS_LEGACY_KEY,
-      JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }),
-    );
-    ghost.__resetMemory();
-    __resetPersonas();
-    __resetLocalPrefs();
-
-    ghost.getTrade('TSLA');
-    personas.loadCustoms();
-    loadLocalTheme();
-    const gNew = localStorage.getItem(GHOST_TRADE_KEY);
-    const pNew = localStorage.getItem(PERSONAS_KEY);
-    const uNew = localStorage.getItem(UIPREFS_KEY);
-
-    ghost.__resetMemory();
-    __resetPersonas();
-    __resetLocalPrefs();
-    expect(ghost.getTrade('TSLA')!.id).toBe('g');
-    expect(personas.loadCustoms()).toHaveLength(1);
-    expect(personas.loadActiveId()).toBe('cp');
-    expect(loadLocalTheme()).toBe('light');
-    // blobs unchanged on the second pass.
-    expect(localStorage.getItem(GHOST_TRADE_KEY)).toBe(gNew);
-    expect(localStorage.getItem(PERSONAS_KEY)).toBe(pNew);
-    expect(localStorage.getItem(UIPREFS_KEY)).toBe(uNew);
-  });
-});
-
-describe('AC-A10 old key never deleted (rollback-safe) — every store', () => {
-  it('all four stores leave the gammaflow.* source intact after migrate', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, v2Blob());
-    localStorage.setItem(
-      GHOST_TRADE_LEGACY_KEY,
-      JSON.stringify({ schema_version: 1, trades: { TSLA: aTrade() }, decisions: [] }),
-    );
-    localStorage.setItem(
-      PERSONAS_LEGACY_KEY,
-      JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'x' }),
-    );
-    localStorage.setItem(
-      UIPREFS_LEGACY_KEY,
-      JSON.stringify({ schema_version: 1, theme: 'light', default_ticker: 'NVDA' }),
-    );
-    resetAll();
-
-    positions.allPositions();
-    ghost.getTrade('TSLA');
-    personas.loadActiveId();
-    loadLocalTheme();
-
-    expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).not.toBeNull();
-    expect(localStorage.getItem(GHOST_TRADE_LEGACY_KEY)).not.toBeNull();
-    expect(localStorage.getItem(PERSONAS_LEGACY_KEY)).not.toBeNull();
-    expect(localStorage.getItem(UIPREFS_LEGACY_KEY)).not.toBeNull();
-  });
-});
-
-describe('AC-A11 corrupt old blob → empty in-memory, NO throw, blob NOT destroyed', () => {
-  it('positions corrupt legacy v2', () => {
-    localStorage.setItem(PORTFOLIO_LEGACY_V2_KEY, '{ corrupt');
-    positions.__resetMemory();
-    expect(() => positions.allPositions()).not.toThrow();
-    expect(positions.allPositions()).toEqual([]);
-    expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBe('{ corrupt'); // intact
-  });
-
-  it('ghost-trade corrupt legacy', () => {
-    localStorage.setItem(GHOST_TRADE_LEGACY_KEY, '{ corrupt');
-    ghost.__resetMemory();
-    expect(() => ghost.getTrade('TSLA')).not.toThrow();
-    expect(ghost.getTrade('TSLA')).toBeNull();
-    expect(localStorage.getItem(GHOST_TRADE_LEGACY_KEY)).toBe('{ corrupt');
-  });
-
-  it('personas corrupt legacy', () => {
-    localStorage.setItem(PERSONAS_LEGACY_KEY, '{ corrupt');
-    __resetPersonas();
-    expect(() => personas.loadCustoms()).not.toThrow();
-    expect(personas.loadCustoms()).toEqual([]);
-    expect(personas.loadActiveId()).toBeNull();
-    expect(localStorage.getItem(PERSONAS_LEGACY_KEY)).toBe('{ corrupt');
-  });
-
-  it('uiprefs corrupt legacy', () => {
-    localStorage.setItem(UIPREFS_LEGACY_KEY, '{ corrupt');
-    __resetLocalPrefs();
-    expect(() => loadLocalTheme()).not.toThrow();
-    expect(loadLocalDefaultTicker()).toBeNull();
-    expect(localStorage.getItem(UIPREFS_LEGACY_KEY)).toBe('{ corrupt');
-  });
-});
-
-describe('AC-A12 absent old data → clean new user; subsequent writes persist to the new key', () => {
-  it('positions: clean empty then a created position persists under convexa key', () => {
+describe('absent old data → clean new user; subsequent writes persist ONLY to the new keys', () => {
+  it('positions / personas / uiprefs: clean empty, then a write survives a reload under convexa.*', () => {
+    // positions
     positions.__resetMemory();
     expect(positions.allPositions()).toEqual([]);
     positions.putPosition(aPosition({ id: 'new' }));
@@ -482,9 +434,16 @@ describe('AC-A12 absent old data → clean new user; subsequent writes persist t
     expect(positions.allPositions().map((p) => p.id)).toEqual(['new']);
     expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeNull(); // never wrote the old key
-  });
 
-  it('uiprefs: clean defaults then a saved pref persists under convexa key', () => {
+    // personas
+    __resetPersonas();
+    expect(personas.loadCustoms()).toEqual([]);
+    personas.upsertCustom({ id: 'np', name: 'New', disposition: 'd', framing: 'f' } as never);
+    __resetPersonas();
+    expect(personas.loadCustoms().map((p) => p.id)).toEqual(['np']);
+    expect(localStorage.getItem(PERSONAS_LEGACY_KEY)).toBeNull();
+
+    // uiprefs
     __resetLocalPrefs();
     expect(loadLocalDefaultTicker()).toBeNull();
     saveLocalDefaultTicker('amd');
@@ -495,19 +454,14 @@ describe('AC-A12 absent old data → clean new user; subsequent writes persist t
     expect(localStorage.getItem(UIPREFS_KEY)).toBeTruthy();
     expect(localStorage.getItem(UIPREFS_LEGACY_KEY)).toBeNull();
   });
-
-  it('personas: clean default then an upserted custom persists', () => {
-    __resetPersonas();
-    expect(personas.loadCustoms()).toEqual([]);
-    personas.upsertCustom({ id: 'np', name: 'New', disposition: 'd', framing: 'f' } as never);
-    __resetPersonas();
-    expect(personas.loadCustoms().map((p) => p.id)).toEqual(['np']);
-    expect(localStorage.getItem(PERSONAS_LEGACY_KEY)).toBeNull();
-  });
 });
 
-describe('AC-A13 both new + leftover old → new wins, old not merged, old still present', () => {
-  it('positions: shows convexa data, never the gammaflow leftover', () => {
+// =================================================================================================
+// Both new + leftover old → new wins, old NOT merged, old still present
+// =================================================================================================
+describe('both new + leftover old → new wins, old not merged, old still present', () => {
+  it('positions / personas / uiprefs: the convexa data shows, the gammaflow leftover never bleeds in', () => {
+    // positions
     localStorage.setItem(
       PORTFOLIO_V2_KEY,
       v2Blob({ positions: { newp: aPosition({ id: 'newp' }) } }),
@@ -521,9 +475,8 @@ describe('AC-A13 both new + leftover old → new wins, old not merged, old still
     expect(ids).toEqual(['newp']); // new wins
     expect(ids).not.toContain('oldp'); // old not merged
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeTruthy(); // old still present
-  });
 
-  it('personas: convexa active id wins over gammaflow leftover', () => {
+    // personas
     localStorage.setItem(
       PERSONAS_KEY,
       JSON.stringify({ schema_version: 1, customs: [], active_persona_id: 'new_active' }),
@@ -540,9 +493,8 @@ describe('AC-A13 both new + leftover old → new wins, old not merged, old still
     expect(personas.loadActiveId()).toBe('new_active');
     expect(personas.loadCustoms()).toEqual([]); // old customs not merged
     expect(localStorage.getItem(PERSONAS_LEGACY_KEY)).toBeTruthy();
-  });
 
-  it('uiprefs: convexa theme wins over gammaflow leftover', () => {
+    // uiprefs
     localStorage.setItem(
       UIPREFS_KEY,
       JSON.stringify({ schema_version: 1, theme: 'dark', default_ticker: 'NEW' }),

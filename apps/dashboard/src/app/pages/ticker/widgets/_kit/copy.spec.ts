@@ -1,215 +1,130 @@
 /**
- * copy formatter unit tests — pure, no DOM. Locks the compact big-dollar formatter (`fmtUsdCompact`)
- * the Net GEX / Net DEX tiles + the DEX tooltip route through: B/M/K boundaries, sign-FIRST placement
- * (figure minus U+2212), and null handling. Display-only; no value/scoring path touched.
+ * copy.ts — RISK-BASED unit tests (qa-verify.md §4, 2026-07-13). Pure logic only, no DOM. We keep the
+ * invariants where a silent regression is plausible AND invisible to a reviewer:
+ *   - formatter NUMERIC semantics: bucket boundaries, sign-first figure-minus (U+2212), null → honest
+ *     em-dash (never a fabricated $0), the ×100 fraction→percent scale;
+ *   - date parsing: UTC calendar semantics (no TZ drift) + raw-string fallback (never blank);
+ *   - the closed lookup tables: TOTALITY (every enum member maps) + CLOSURE (unknown / prototype-chain
+ *     tokens fall to the honest null), table-driven — one test for ALL maps, not one per label;
+ *   - ivrBasisLine's closed branch: an unknown basis fails honest (no fabricated DTE claim);
+ *   - humanAge bucketing (s/m/h/d) — previously untested pure logic.
+ * NOT asserted (visible + intentional → review): the wording of labels/tooltips/basis lines,
+ * pluralization niceties, tooltip copy builders.
  */
 import { describe, expect, it } from 'vitest';
 import {
-  dayCount,
-  fmt1,
-  fmt2,
-  fmtAtrUsd,
-  fmtDexM,
   fmtSigned2,
+  fmtSignedUsdCompact,
   fmtUsdCompact,
+  humanAge,
   humanOpex,
-  // ai-context-pack (Market context) formatters + maps
   humanSessionDate,
+  IVR_BAND_DISPLAY,
+  ivrBandDisplay,
+  ivrBasisLine,
   MC_BALANCE_DISPLAY,
   MC_COMPOSITION_DISPLAY,
   MC_CONCENTRATION_DISPLAY,
   MC_DIRECTION_DISPLAY,
-  MC_FLOW_BASIS,
   MC_LOCATION_DISPLAY,
   MC_MOMENTUM_DISPLAY,
   MC_STRENGTH_DISPLAY,
-  mcAtrBasis,
-  mcAtrLine,
-  mcBalanceLine,
   mcComLine,
-  mcCompositionLine,
-  mcConcentrationLine,
   mcDisplay,
-  mcLocationLine,
-  mcMomentumLine,
-  mcShapeBasis,
-  mcStrengthLine,
-  mcTiBasis,
-  mcTrendLine,
-  netDexTip,
 } from './copy';
 
-describe('fmtUsdCompact (compact big-dollar, sign-first)', () => {
-  it('null → em-dash', () => {
+describe('fmtUsdCompact — numeric semantics', () => {
+  it('scales into the right bucket at the ≥ boundaries, and null is the honest em-dash (never $0)', () => {
     expect(fmtUsdCompact(null)).toBe('—');
-  });
-
-  it('billions: 1 decimal, $B suffix (the Net DEX $36.6B case)', () => {
-    expect(fmtUsdCompact(36_607_000_000)).toBe('$36.6B');
-    expect(fmtUsdCompact(1.2e9)).toBe('$1.2B');
-  });
-
-  it('millions: 1 decimal, $M suffix', () => {
-    expect(fmtUsdCompact(793_200_000)).toBe('$793.2M');
-    expect(fmtUsdCompact(5.0e8)).toBe('$500.0M');
-  });
-
-  it('thousands: 1 decimal, $K suffix', () => {
-    expect(fmtUsdCompact(12_300)).toBe('$12.3K');
-  });
-
-  it('below 1e3: bare rounded integer dollars, no suffix', () => {
-    expect(fmtUsdCompact(420)).toBe('$420');
-    expect(fmtUsdCompact(0)).toBe('$0');
-    expect(fmtUsdCompact(999.6)).toBe('$1000'); // rounds to integer dollars, still < 1e3 threshold
-  });
-
-  it('sign FIRST with the figure minus (−$X), never $-X', () => {
-    expect(fmtUsdCompact(-12_300_000)).toBe('−$12.3M');
-    expect(fmtUsdCompact(-36_607_000_000)).toBe('−$36.6B');
-    expect(fmtUsdCompact(-12_300)).toBe('−$12.3K');
-    expect(fmtUsdCompact(-420)).toBe('−$420');
-    // figure minus, not the ASCII hyphen-minus, and the $ follows the sign
-    expect(fmtUsdCompact(-12_300_000).startsWith('−$')).toBe(true);
-    expect(fmtUsdCompact(-12_300_000).includes('$-')).toBe(false);
-  });
-
-  it('boundary values land in the higher bucket (≥ inclusive)', () => {
     expect(fmtUsdCompact(1e9)).toBe('$1.0B');
+    expect(fmtUsdCompact(999_999_999)).toBe('$1000.0M'); // just under 1e9 stays $M
     expect(fmtUsdCompact(1e6)).toBe('$1.0M');
     expect(fmtUsdCompact(1e3)).toBe('$1.0K');
-    expect(fmtUsdCompact(999_999_999)).toBe('$1000.0M'); // just under 1e9 stays in $M
-  });
-});
-
-describe('fmtDexM routes through fmtUsdCompact', () => {
-  it('matches the tile formatter (so the DEX tooltip reads in $B/$M like the tile)', () => {
-    expect(fmtDexM(36_607_000_000)).toBe('$36.6B');
-    expect(fmtDexM(5.0e8)).toBe('$500.0M');
-    expect(fmtDexM(null)).toBe('—');
+    expect(fmtUsdCompact(420)).toBe('$420');
+    expect(fmtUsdCompact(36_607_000_000)).toBe('$36.6B');
   });
 
-  it('netDexTip embeds the compact call/put dex (matches the tile, not the old $X.XM-only form)', () => {
-    const tip = netDexTip(6.0e8, -1.0e8);
-    expect(tip).toContain('call $600.0M');
-    expect(tip).toContain('put −$100.0M');
-  });
-});
-
-describe('humanOpex (ISO OPEX date → weekday+month+day; dealer-flow-projection §5.2)', () => {
-  it('renders a UTC calendar date with weekday + short month + day (no TZ drift)', () => {
-    expect(humanOpex('2026-07-17')).toBe('Fri Jul 17');
-    expect(humanOpex('2026-08-21')).toBe('Fri Aug 21');
-    expect(humanOpex('2026-01-16')).toBe('Fri Jan 16'); // OPEX are 3rd Fridays; sanity across months
-    expect(humanOpex('2026-12-18')).toBe('Fri Dec 18');
-  });
-
-  it('falls back to the raw string on a malformed/empty input (never blank)', () => {
-    expect(humanOpex('')).toBe('');
-    expect(humanOpex('not-a-date')).toBe('not-a-date');
-    expect(humanOpex('2026/07/17')).toBe('2026/07/17'); // wrong separator fails the ISO regex → raw fallback
-    expect(humanOpex('07-17-2026')).toBe('07-17-2026'); // wrong order fails the regex → raw fallback
-  });
-});
-
-describe('dayCount (singular/plural the horizon day count)', () => {
-  it('pluralizes 0 and >1, keeps 1 singular', () => {
-    expect(dayCount(1)).toBe('1 day');
-    expect(dayCount(11)).toBe('11 days');
-    expect(dayCount(0)).toBe('0 days');
-    expect(dayCount(2)).toBe('2 days');
-  });
-});
-
-// ---- ai-context-pack ("Market context") — pure formatter/map units (display-only, no DOM) --------
-describe('Market context formatters (ai-context-pack §5.3)', () => {
-  it('humanSessionDate is the neutral alias of the ISO-date formatter (same UTC parse + raw fallback)', () => {
-    expect(humanSessionDate('2026-07-03')).toBe('Fri Jul 3');
-    expect(humanSessionDate('2026-07-03')).toBe(humanOpex('2026-07-03'));
-    expect(humanSessionDate('not-a-date')).toBe('not-a-date'); // never blank, never invented
-  });
-
-  it('fmt2 / fmt1 — the pinned decimal places (2dp scalars; 1dp ADX/RSI/ATR-pct display)', () => {
-    expect(fmt2(178.4)).toBe('178.40');
-    expect(fmt2(0.41)).toBe('0.41');
-    expect(fmt1(28.4)).toBe('28.4');
-    expect(fmt1(2.31)).toBe('2.3');
-  });
-
-  it('fmtSigned2 — explicit sign, figure minus (U+2212) for negatives', () => {
+  it('sign is FIRST and the figure minus (U+2212) — never "$-"; the signed variants inherit it', () => {
+    for (const v of [-420, -12_300, -12_300_000, -36_607_000_000]) {
+      expect(fmtUsdCompact(v).startsWith('−$')).toBe(true);
+      expect(fmtUsdCompact(v).includes('$-')).toBe(false);
+    }
+    // fmtSignedUsdCompact: explicit + on positives, 0 unsigned, null still the em-dash.
+    expect(fmtSignedUsdCompact(4_200_000)).toBe('+$4.2M');
+    expect(fmtSignedUsdCompact(-1_900_000)).toBe('−$1.9M');
+    expect(fmtSignedUsdCompact(0)).toBe('$0');
+    expect(fmtSignedUsdCompact(null)).toBe('—');
+    // fmtSigned2: the balance scalar's explicit sign, same figure minus.
     expect(fmtSigned2(0.34)).toBe('+0.34');
     expect(fmtSigned2(-0.34)).toBe('−0.34');
-    expect(fmtSigned2(-0.34).includes('-')).toBe(false); // never the ASCII hyphen-minus
+    expect(fmtSigned2(-0.34).includes('-')).toBe(false);
   });
 
-  it('fmtAtrUsd — 2dp, locale-grouped dollars', () => {
-    expect(fmtAtrUsd(4.12)).toBe('$4.12');
-    expect(fmtAtrUsd(3.5)).toBe('$3.50');
-    expect(fmtAtrUsd(1234.5)).toBe('$1,234.50');
-  });
-
-  it('mcComLine — the wire FRACTION rendered as a signed percent, 1dp, "% vs spot" suffix', () => {
+  it('mcComLine renders the wire FRACTION ×100 with an explicit sign (the silent ×100 regression)', () => {
     expect(mcComLine(0.012)).toBe('+1.2% vs spot');
     expect(mcComLine(-0.0301)).toBe('−3.0% vs spot');
     expect(mcComLine(0)).toBe('+0.0% vs spot');
   });
+});
 
-  it('scalar-line builders render the pinned §5.3 forms', () => {
-    expect(mcTrendLine({ close: 178.4, ema20: 176.21, ema50: 171.83 })).toBe(
-      'close 178.40 · EMA20 176.21 · EMA50 171.83',
-    );
-    expect(mcStrengthLine({ adx: 28.4 })).toBe('ADX(14) 28.4');
-    expect(mcMomentumLine({ rsi: 51.2 })).toBe('RSI(14) 51.2');
-    expect(mcConcentrationLine(0.41)).toBe('HHI 0.41');
-    expect(mcBalanceLine(0.34)).toBe('+0.34');
-    expect(mcLocationLine({ distribution_shift: 0.42 })).toBe('shift 0.42');
-    expect(mcCompositionLine({ volume_pcr: 0.92, oi_pcr: 0.88, tilt_ratio: 1.05 })).toBe(
-      'vol PCR 0.92 · OI PCR 0.88 · tilt 1.05',
-    );
-    expect(mcAtrLine({ value: 4.12, pct_of_close: 2.31 })).toBe('$4.12 · 2.3%');
+describe('humanOpex / humanSessionDate — UTC calendar parse', () => {
+  it('parses as a UTC calendar date (no TZ drift on the date) and falls back to the raw string, never blank/invented', () => {
+    expect(humanOpex('2026-07-17')).toBe('Fri Jul 17');
+    expect(humanOpex('2026-01-16')).toBe('Fri Jan 16');
+    expect(humanSessionDate('2026-07-03')).toBe(humanOpex('2026-07-03')); // the neutral alias stays an alias
+    // Malformed input → the raw input, never blank, never a fabricated date.
+    expect(humanOpex('not-a-date')).toBe('not-a-date');
+    expect(humanOpex('2026/07/17')).toBe('2026/07/17');
+    expect(humanOpex('')).toBe('');
   });
+});
 
-  it('basis-line builders render the pinned §5.3 forms (flow carries the unsigned/no-side phrase verbatim)', () => {
-    expect(mcTiBasis('2026-07-03')).toBe(
-      'As of session Fri Jul 3 · daily bars · EMA 20/50 · ADX(14) · RSI(14)',
-    );
-    expect(mcShapeBasis(178.4, 23)).toBe('At spot $178.40 · 23 strikes in the selected window');
-    expect(MC_FLOW_BASIS).toBe(
-      "Today's session cumulative option volume, unsigned (no buy/sell side) · vs standing open interest · full chain · captured at the last data load",
-    );
-    expect(mcAtrBasis('2026-07-03', 178.4)).toBe(
-      'As of session Fri Jul 3 · vs close $178.40 · 5/14/30 trading bars',
-    );
+describe('closed lookup tables — totality + closure (one table-driven test for ALL maps)', () => {
+  const LOOKUPS: Array<[name: string, map: Record<string, string>]> = [
+    ['direction', MC_DIRECTION_DISPLAY],
+    ['strength', MC_STRENGTH_DISPLAY],
+    ['momentum', MC_MOMENTUM_DISPLAY],
+    ['concentration', MC_CONCENTRATION_DISPLAY],
+    ['balance', MC_BALANCE_DISPLAY],
+    ['location', MC_LOCATION_DISPLAY],
+    ['composition', MC_COMPOSITION_DISPLAY],
+    ['iv-rank band', IVR_BAND_DISPLAY],
+  ];
+
+  it('every enum member maps to a non-empty display string; unknown + prototype-chain tokens → null (honest fallback)', () => {
+    for (const [name, map] of LOOKUPS) {
+      const lookup = (t: string) =>
+        map === IVR_BAND_DISPLAY ? ivrBandDisplay(t) : mcDisplay(map, t);
+      // Totality: each member maps, and never to a raw snake_case pass-through.
+      for (const token of Object.keys(map)) {
+        const display = lookup(token);
+        expect(display, `${name}.${token}`).toBeTruthy();
+        expect(display, `${name}.${token}`).not.toMatch(/_/);
+      }
+      // Closure: unknown / empty / prototype-chain tokens fall to null — never invented, never raw.
+      for (const bad of ['__unknown__', '', 'toString', 'hasOwnProperty']) {
+        expect(lookup(bad), `${name} closure on "${bad}"`).toBeNull();
+      }
+    }
   });
+});
 
-  it('mcDisplay — closed 1:1 lookup: every pinned enum maps; an unknown value maps to null (unavailable), never a pass-through', () => {
-    // The full 20-value §5.2 table, asserted row by row.
-    expect(mcDisplay(MC_DIRECTION_DISPLAY, 'uptrend')).toBe('Uptrend');
-    expect(mcDisplay(MC_DIRECTION_DISPLAY, 'downtrend')).toBe('Downtrend');
-    expect(mcDisplay(MC_DIRECTION_DISPLAY, 'mixed')).toBe('Mixed');
-    expect(mcDisplay(MC_STRENGTH_DISPLAY, 'weak')).toBe('Weak');
-    expect(mcDisplay(MC_STRENGTH_DISPLAY, 'moderate')).toBe('Moderate');
-    expect(mcDisplay(MC_STRENGTH_DISPLAY, 'strong')).toBe('Strong');
-    expect(mcDisplay(MC_MOMENTUM_DISPLAY, 'overbought')).toBe('Overbought');
-    expect(mcDisplay(MC_MOMENTUM_DISPLAY, 'bullish')).toBe('Bullish');
-    expect(mcDisplay(MC_MOMENTUM_DISPLAY, 'neutral')).toBe('Neutral');
-    expect(mcDisplay(MC_MOMENTUM_DISPLAY, 'bearish')).toBe('Bearish');
-    expect(mcDisplay(MC_MOMENTUM_DISPLAY, 'oversold')).toBe('Oversold');
-    expect(mcDisplay(MC_CONCENTRATION_DISPLAY, 'concentrated')).toBe('Concentrated');
-    expect(mcDisplay(MC_CONCENTRATION_DISPLAY, 'mixed')).toBe('Mixed');
-    expect(mcDisplay(MC_CONCENTRATION_DISPLAY, 'dispersed')).toBe('Dispersed');
-    expect(mcDisplay(MC_BALANCE_DISPLAY, 'above_skewed')).toBe('Skewed above spot');
-    expect(mcDisplay(MC_BALANCE_DISPLAY, 'balanced')).toBe('Balanced');
-    expect(mcDisplay(MC_BALANCE_DISPLAY, 'below_skewed')).toBe('Skewed below spot');
-    expect(mcDisplay(MC_LOCATION_DISPLAY, 'aligned')).toBe('Aligned');
-    expect(mcDisplay(MC_LOCATION_DISPLAY, 'rotating')).toBe('Rotating');
-    expect(mcDisplay(MC_LOCATION_DISPLAY, 'divergent')).toBe('Divergent');
-    expect(mcDisplay(MC_COMPOSITION_DISPLAY, 'flow_put_tilted')).toBe('Flow put-tilted');
-    expect(mcDisplay(MC_COMPOSITION_DISPLAY, 'consistent')).toBe('Consistent');
-    expect(mcDisplay(MC_COMPOSITION_DISPLAY, 'flow_call_tilted')).toBe('Flow call-tilted');
-    // Unknown / prototype-chain values ⇒ null (the unavailable state), never invented.
-    expect(mcDisplay(MC_DIRECTION_DISPLAY, 'sideways')).toBeNull();
-    expect(mcDisplay(MC_DIRECTION_DISPLAY, 'toString')).toBeNull(); // hasOwnProperty guard
-    expect(mcDisplay(MC_COMPOSITION_DISPLAY, '')).toBeNull();
+describe('ivrBasisLine — closed basis branch', () => {
+  it('nearest_tenor carries its honest DTE; an UNKNOWN basis degrades to the clean wording with NO fabricated DTE claim', () => {
+    expect(ivrBasisLine(130, 252, 130, 'nearest_tenor', 23)).toContain('~23d');
+    const unknown = ivrBasisLine(130, 252, 130, 'weird_basis', 23);
+    expect(unknown).not.toContain('23d'); // no fabricated tenor claim
+    // Identical to the clean branch regardless of the (ignored) DTE — closed, not interpolating.
+    expect(unknown).toBe(ivrBasisLine(130, 252, 130, 'interpolated_30d', 999));
+  });
+});
+
+describe('humanAge — bucketing', () => {
+  it('buckets seconds into s / m / h+m / d+h and never fabricates an age on null', () => {
+    expect(humanAge(null)).toBe('unknown age');
+    expect(humanAge(45)).toBe('45s');
+    expect(humanAge(90)).toBe('1m');
+    expect(humanAge(3_700)).toBe('1h 1m');
+    expect(humanAge(242_779)).toBe('2d 19h');
   });
 });

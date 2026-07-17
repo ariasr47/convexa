@@ -1,14 +1,18 @@
 /**
- * Scanner (`/scanner`) — component tests for the convexa-redesign re-skin.
+ * Scanner (`/scanner`) — RISK-BASED test suite (per the amended QA rule,
+ * `.claude/agents/qa-verify.md` §4, 2026-07-16 migration). The surface is a STATIC coming-soon
+ * placeholder; the only invariants where a silent regression is plausible AND invisible:
  *
- * Authority: FRONTEND_EXECUTION_CONTRACT · SURFACE: Scanner + README §5. The surface is a STATIC
- * "coming soon" placeholder: presentation-only, ZERO data work. These tests pin the load-bearing
- * contract (testids, exact heading, verbatim roadmap copy with bolded Ticker, amber badge, the one
- * allowed Ticker affordance → /ticker) and the AC-Scan-1 invariant (no network on mount — `fetch`
- * spied and asserted never called; no EventSource opened; no spinner).
+ *   1. ZERO network on mount (no fetch, no SSE, no loading affordance) — the page must never imply
+ *      it is scanning.
+ *   2. The ONE allowed affordance: exactly one link on the page, and it points at `/ticker` —
+ *      enforced by construction (any second link, e.g. a broker/scan path, fails the count).
+ *
+ * NOT asserted here (visible + intentional → review/QA): the heading, the verbatim roadmap copy /
+ * bolded "Ticker", the amber badge styling.
  */
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -50,39 +54,22 @@ function renderScanner() {
   );
 }
 
-describe('Scanner (coming-soon re-skin)', () => {
-  it('renders the inert placeholder card with the exact heading', () => {
+describe('Scanner (static coming-soon)', () => {
+  it('issues ZERO network on mount (no fetch, no SSE, no loading affordance)', () => {
     renderScanner();
-    expect(screen.getByTestId('scanner-placeholder')).toBeInTheDocument();
-    expect(screen.getByText('Scanner — coming soon')).toBeInTheDocument();
-  });
-
-  it('renders the verbatim roadmap copy with Ticker bolded in text.primary', () => {
-    renderScanner();
-    const card = screen.getByTestId('scanner-placeholder');
-    // Stable substring of the verbatim copy (avoids the curly apostrophe / em dash split nodes).
-    expect(card).toHaveTextContent(/strongest setups across names is on the roadmap/);
-    // "Ticker" is bolded — rendered as a <strong> distinct from the surrounding secondary body.
-    const strong = within(card).getByText('Ticker');
-    expect(strong.tagName.toLowerCase()).toBe('strong');
-  });
-
-  it('renders the amber "coming soon" badge and the Ticker affordance → /ticker', () => {
-    renderScanner();
-    const card = screen.getByTestId('scanner-placeholder');
-    // The badge is the uppercase pill (text content "coming soon", lowercase in DOM).
-    expect(within(card).getByText('coming soon')).toBeInTheDocument();
-
-    const link = screen.getByTestId('scanner-ticker-link');
-    expect(link).toHaveAttribute('href', '/ticker');
-    expect(link).toHaveTextContent('Go to the Ticker viewer →');
-  });
-
-  it('AC-Scan-1 — issues ZERO network on mount (no fetch, no SSE, no spinner)', () => {
-    renderScanner();
-    expect(screen.getByTestId('scanner-placeholder')).toBeInTheDocument();
+    expect(screen.getByTestId('scanner-placeholder')).toBeInTheDocument(); // it did mount
     expect(fetchMock).not.toHaveBeenCalled();
     expect(openedEventSources).toBe(0);
     expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('carries EXACTLY one affordance, and it points at /ticker', () => {
+    const { container } = renderScanner();
+    const anchors = container.querySelectorAll('a');
+    expect(anchors).toHaveLength(1); // by construction: no second path off this page
+    expect(anchors[0]).toHaveAttribute('href', '/ticker');
+    expect(anchors[0]).toBe(screen.getByTestId('scanner-ticker-link'));
+    // And no button pretending to scan.
+    expect(container.querySelectorAll('button')).toHaveLength(0);
   });
 });
