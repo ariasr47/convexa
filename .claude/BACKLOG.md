@@ -680,15 +680,31 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   restructure moved files, so some are stale-export artifacts). *Value M (less surface to reason about) ·
   Effort S–M.* Decision-impact cull **N/A** (hygiene). **Invariant watch:** deletion needs zero-importer
   proof (the `[single-shared-sim-entry-dialog]` precedent).
-- **Test-migration to the risk-based rule (feature-by-feature, owner-gated)** — `IN PROGRESS 2026-07-13 →
-  2026-07-16`. The 2026-07-13 `qa-verify.md` §4 amendment replaced per-AC test mirroring with **risk-based**
-  testing (test invariants / negative space / silently-regressing behavior; verify visible/intentional things
-  by review). Existing specs still reflect the OLD rule, so the suite is migrated **feature by feature, owner-
-  gated** — **only Landing is done (15 specs → 4)**. *Value M (suite cost + signal) · Effort M, incremental.*
-  Decision-impact cull **N/A** (build-system class). **Note:** this amendment is what obsoleted the original
-  **system-10** (§E), now **re-scoped 2026-07-16 to an AC↔verification-EVIDENCE check** (owner decision) —
-  the re-scoped form **supports** this migration instead of fighting it (it accepts `review` as evidence, so
-  trimming a spec no longer trips it).
+- **Test-migration to the risk-based rule** — `✓ COMPLETED 2026-07-16 (owner-directed, whole suite in one
+  pass; commit 05702e9)`. The owner gated it open ("replace the old tests everywhere"); the owner's own
+  Landing rewrite (15→4) was the calibration exemplar. Six cluster migrations (fresh `delivery-frontend`
+  lane each): **807/807 (70 files) → 467/467 (52 files)**, cold-run verified; **product-source diff EMPTY**
+  (test-only, verified structurally). 28 specs deleted · 20 rewritten · 10 new.
+  **Conductor course-corrected two lane drops** (both restored): the 2026-07-02 **keyless-scenario
+  regression guard** (a regression that actually shipped is exactly what risk-based keeps — incl. the
+  `ai_scenario` marker surviving to the join the outcomes ledger's exclusion consumes) and the
+  **`theme-token-discipline` hex scans** (consolidated into ONE repo-wide vacuity-guarded
+  `shared/theme/hex-discipline.spec.ts` — a glob, not an enumeration, so new files are covered by default;
+  it immediately found **2 real hex violations** in operator-metrics, exempted as visible
+  `TODO(theme-token-discipline)` debt).
+  **Gaps FILLED that the old suite never had:** `model/mark.spec.ts` (the P&L/mark-ladder engine — the most
+  depended-on pure module in the app, previously untested directly) · `model/store.spec.ts` · the ai-rec
+  **grounding** centerpiece (rec claims 999 for every level; the bundle's numbers win) · `windowedStrikes`
+  + `humanAge` units · `/blog` + `/settings` in the route walk (the old spec predated both).
+  **Vacuous tests caught + removed:** style assertions via `getAttribute('style')` (always-empty under MUI
+  `sx`), one asserting against the stale `gammaflow.positions.v2` key, stale-banner tests asserting the
+  absence of UI removed a month earlier, fixture-echo tests asserting the mock against itself.
+  **Flags left open:** `signals.vol_regime` renders NOWHERE on the ticker page (possible product gap —
+  surfaced by the ticker lane refusing to write a fake test for it) · the 2 operator-metrics hex TODOs.
+  *(original entry:)* The 2026-07-13 `qa-verify.md` §4 amendment replaced per-AC test mirroring with
+  **risk-based** testing. **Note:** this amendment is what obsoleted the original **system-10** (§E), now
+  **re-scoped 2026-07-16 to an AC↔verification-EVIDENCE check** — the re-scoped form **supports** this
+  migration (it accepts `review` as evidence, so trimming a spec no longer trips it).
 - **AI input-enrichment pool** — `RAISED 2026-07-02 (owner; "what derived data helps the AI?")`. The
   scored survivors from the 2026-07-02 GATE I (full verdicts in that note above): `iv-rank` (Value H;
   blocked-on IV-history persistence — accumulate into the shipped Postgres store), `market-backdrop`
