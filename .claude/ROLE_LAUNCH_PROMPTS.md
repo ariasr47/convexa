@@ -67,6 +67,9 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
 - **You still run the gates between spawns:** `contract_lint.py` at every gateway; at GATE Q
   `interface_conformance.py` + the `qa-verify` spawn. Lanes are tool-fenced (the subagents) + workspace
   path-fenced (`path_guard.js`).
+- **Translate hand-backs into cards:** when a spawn returns, report it to the operator per
+  `OPERATOR_REPORTS.md` — a Re-orientation card for background completions, a Problem card for
+  failures; the subagent's raw report is footer material, never pasted above the fold.
 - **Discard, don't continue:** never reuse a subagent across gateways or features. The handoff is the
   written contract on disk, not a living session.
 - **vs full system-9:** the *conductor is still you* (manual transitions + approvals). system-9 automates
