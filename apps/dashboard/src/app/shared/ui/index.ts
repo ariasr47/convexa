@@ -3,13 +3,17 @@
  * MUI out, import-only-downward (feature surfaces import these; never the reverse).
  *
  * Scope note (convexa-redesign restart): only the primitives the Landing surface needs are present
- * for now — ConvexityMotif (hero), ValueCard ("what works today"), ComingSoonBox (coming-soon band).
- * The mono/tile/chip primitives (MonoValue/Tile/StatusChip) land with their own surfaces (Ticker/
- * Positions) and are intentionally NOT exported yet to keep the barrel honest with what exists.
+ * for now — ValueCard ("what works today"), ComingSoonBox (coming-soon band). The mono/tile/chip
+ * primitives (MonoValue/Tile/StatusChip) land with their own surfaces (Ticker/Positions) and are
+ * intentionally NOT exported yet to keep the barrel honest with what exists.
+ *
+ * DELIBERATELY NOT exported here (redesign-stage-2 §8-1): `arc.ts` (the convex-arc primitive) and
+ * `ArcDivider.tsx` — their importer sets are pinned by scan (arc.spec.ts), so consumers import the
+ * module paths directly; a barrel re-export would blind the scan. (The old hero motif was DELETED
+ * at stage 2 — absorbed into the landing's HeroCurve moment.)
  */
 export { ComingSoonBox, type ComingSoonBoxProps } from './ComingSoonBox';
 export { ComingSoonBadge, ComingSoonCard, type ComingSoonCardProps } from './ComingSoonCard';
-export { ConvexityMotif, type ConvexityMotifProps } from './ConvexityMotif';
 export { Jargon, type JargonProps } from './Jargon';
 export { ValueCard, type ValueCardProps } from './ValueCard';
 export * from './Widget';
