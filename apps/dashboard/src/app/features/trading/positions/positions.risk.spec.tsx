@@ -21,6 +21,9 @@
  *
  * Mocks ONLY the network boundary (`fetch` + the SSE `EventSource`); never a live backend.
  */
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { AUTH_COPY } from '@/features/auth/copy';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
 import { streamTicker } from '@org/api';
@@ -28,9 +31,6 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider } from '@/features/auth/AuthContext';
-import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { AUTH_COPY } from '@/features/auth/copy';
 import { LiveTabPanel } from './LiveTabPanel';
 // The Vite `?raw` idiom (fileURLToPath(new URL(...)) THROWS in this Vitest env): the Live tab's
 // zero-import lock is asserted on the SOURCE TEXT, so it is enforced by construction.
@@ -377,6 +377,20 @@ describe('positions · end-to-end flow (centerpiece)', () => {
   }, 20000);
 });
 
+// Waits until the mocked network is quiet (no new fetch across two consecutive 50ms polls). A
+// fetch-count invariant snapshotted while earlier requests are still landing races on a slow
+// runner: the straggler shows up in the "after" count and gets blamed on the interaction.
+async function fetchSettled() {
+  const mock = globalThis.fetch as ReturnType<typeof vi.fn>;
+  let last = -1;
+  await waitFor(() => {
+    if (mock.mock.calls.length !== last) {
+      last = mock.mock.calls.length;
+      throw new Error('network still active');
+    }
+  });
+}
+
 // =================================================================================================
 // 2. Customization is a pure re-derivation — never a refetch
 // =================================================================================================
@@ -394,6 +408,7 @@ describe('positions · grouping is a pure re-derivation', () => {
     await user.click(within(dlg2).getByRole('button', { name: 'Open simulated position' }));
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(2));
 
+    await fetchSettled();
     const fetchCallsBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
 
     // Group by ticker (segmented pill control) → a subtotal header appears, with no extra fetch.
@@ -527,6 +542,7 @@ describe('positions · failure isolation', () => {
     expect(screen.getAllByTestId('cell-mark').length).toBeGreaterThan(0); // the healthy row still marks
 
     // --- Live tab: no positions, no entry, no order, no network call ---
+    await fetchSettled();
     const fetchBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
     await user.click(screen.getByTestId('tab-live'));
     expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();
@@ -601,16 +617,15 @@ describe('positions · no-real-order-path', () => {
   it('LiveTabPanel is inert BY CONSTRUCTION: its import allowlist admits no data source, and it renders no affordance', () => {
     // Source-text scan (comments stripped so prose can't false-positive): every import specifier
     // must be MUI, the static copy module, or the static hatch value — nothing live, ever.
-    const src = liveTabSource
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+    const src = liveTabSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(0);
     const allowed = [/^@mui\//, /^@\/shared\/ui\/ComingSoonBox$/, /^\.\/labels$/];
     for (const spec of specifiers) {
-      expect(allowed.some((re) => re.test(spec)), `forbidden import in LiveTabPanel: ${spec}`).toBe(
-        true,
-      );
+      expect(
+        allowed.some((re) => re.test(spec)),
+        `forbidden import in LiveTabPanel: ${spec}`,
+      ).toBe(true);
     }
     // No transport escape hatches either (an inline fetch/EventSource would bypass imports).
     expect(src).not.toMatch(/\bfetch\s*\(/);
