@@ -5,10 +5,18 @@
         "source": "github",
         "repo": "nrwl/nx-ai-agents-config"
       }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
     }
   },
   "enabledPlugins": {
-    "nx@nx-claude-plugins": true
+    "nx@nx-claude-plugins": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true
   },
   "permissions": {
     "allow": [
