@@ -29,10 +29,9 @@ const tenorLabel = (dte: number) =>
 
 interface Props {
   termStructure: TermStructure | null;
-  revealIndex?: number;
 }
 
-export function TermStructureCard({ termStructure, revealIndex }: Props) {
+export function TermStructureCard({ termStructure }: Props) {
   const theme = useTheme();
   const termSampled = termStructure ? sampleTermPoints(termStructure.points) : [];
   const unavailable = termStructure == null || termSampled.length === 0;
@@ -73,7 +72,6 @@ export function TermStructureCard({ termStructure, revealIndex }: Props) {
       subtitle={subtitle}
       info={termStructure ? termTip(termStructure) : undefined}
       bodySx={{ display: 'flex', flexDirection: 'column', flex: 1 }}
-      revealIndex={revealIndex}
     >
       <Box
         data-testid="term-structure"

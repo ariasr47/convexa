@@ -1,7 +1,7 @@
 /**
  * OrdersWidget — the Ticker-board Orders widget (UX §4.4): `<Widget id="orders">` placed directly
- * after the AI-rec widget (act → watch reads as one motion), next `revealIndex` in the board
- * cascade. Shows THIS ticker's orders — the place evaluation is actually live while you watch.
+ * after the AI-rec widget (act → watch reads as one motion) on the board.
+ * Shows THIS ticker's orders — the place evaluation is actually live while you watch.
  * `live` pulses only while ≥1 of this ticker's orders is actually Watching.
  *
  * States: default (non-terminal rows + a collapsed "Recent {n} completed" group) · empty · store
@@ -80,10 +80,9 @@ interface Props {
   live: LiveUpdate | null;
   isLive: boolean;
   streamOffline: boolean;
-  revealIndex?: number;
 }
 
-export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex }: Props) {
+export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
   const navigate = useNavigate();
   const { orders, faulted, cancel } = useOrders();
   const symbol = ticker.toUpperCase();
@@ -126,7 +125,6 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
       title={WIDGET_TITLE(symbol)}
       live={watchingAny}
       actions={actions}
-      revealIndex={revealIndex}
     >
       <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
         {announcement}

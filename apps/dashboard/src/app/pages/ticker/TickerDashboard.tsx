@@ -478,16 +478,10 @@ export function TickerDashboard() {
                   alignItems: 'stretch',
                 }}
               >
-                {/* `revealIndex` = board position → the one-time staggered mount reveal (§3): each
-                  section rises + fades in ~55ms after the previous one. Reduced-motion → instant. */}
+                {/* Widgets mount AT REST (redesign-stage-3 §3.1-1: the staggered reveal was retired —
+                  the hero curve-draw on `/` is THE one orchestrated moment). */}
                 {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <LiveTape
-                  m={m}
-                  live={live}
-                  isLive={isLive}
-                  streamOffline={streamOffline}
-                  revealIndex={0}
-                />
+                <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
 
                 {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
                 <DealerPositioning
@@ -499,28 +493,26 @@ export function TickerDashboard() {
                   tierWord={tm.word}
                   tierColor={tm.color}
                   opportunityScore={sig?.opportunity_score ?? 0}
-                  revealIndex={1}
                 />
 
                 {/* STATIC dealer-flow projection — directly after Dealer positioning, in the static region
-                  (NOT the LiveTape row). Takes the next revealIndex (2), pushing the sections below +1.
-                  Bound to `m.dealer_flow_projection` only — no live/offline prop (`[live-vs-static-isolation]`). */}
-                <DealerFlowProjection dfp={m.dealer_flow_projection} revealIndex={2} />
+                  (NOT the LiveTape row). Bound to `m.dealer_flow_projection` only — no live/offline
+                  prop (`[live-vs-static-isolation]`). */}
+                <DealerFlowProjection dfp={m.dealer_flow_projection} />
 
                 {/* STATIC "Market context" (ai-context-pack) — directly after DealerFlowProjection (the
-                  AI-context family stays grouped), in the static region. Takes the next contiguous
-                  revealIndex (3), pushing the sections below +1. Bound to `m.market_context ?? null`
-                  ONLY — no live/offline prop (`[live-vs-static-isolation]`); the optional key keeps a
-                  pre-feature bundle rendering the whole-pack unavailable state without throwing. */}
-                <MarketContext pack={m.market_context ?? null} revealIndex={3} />
+                  AI-context family stays grouped), in the static region. Bound to
+                  `m.market_context ?? null` ONLY — no live/offline prop (`[live-vs-static-isolation]`);
+                  the optional key keeps a pre-feature bundle rendering the whole-pack unavailable state
+                  without throwing. */}
+                <MarketContext pack={m.market_context ?? null} />
 
                 {/* STATIC "IV rank" (iv-rank) — directly after Market context (the newest member of the
                   static context-read family, reads after the market-context block), in the static
-                  region. Takes the next contiguous revealIndex (4), pushing the sections below +1.
-                  Bound to `m.iv_rank ?? null` ONLY — no live/offline prop (`[live-vs-static-isolation]`);
-                  the optional key keeps a pre-feature bundle rendering the Unavailable state without
-                  throwing. `span={1}` — a compact single read (UX §8.3). */}
-                <IvRank read={m.iv_rank ?? null} revealIndex={4} />
+                  region. Bound to `m.iv_rank ?? null` ONLY — no live/offline prop
+                  (`[live-vs-static-isolation]`); the optional key keeps a pre-feature bundle rendering
+                  the Unavailable state without throwing. `span={1}` — a compact single read (UX §8.3). */}
+                <IvRank read={m.iv_rank ?? null} />
 
                 {data?.strike_profile && (
                   <GexStrikeProfile
@@ -530,12 +522,11 @@ export function TickerDashboard() {
                     putWall={m.put_wall}
                     gammaFlip={live?.gamma_flip ?? m.gamma_flip}
                     liveSpot={isLive ? live!.mid : null}
-                    revealIndex={5}
                   />
                 )}
 
                 {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
-                <TermStructureCard termStructure={m.term_structure} revealIndex={6} />
+                <TermStructureCard termStructure={m.term_structure} />
                 <AiRecPanel
                   ticker={ticker}
                   bundle={data}
@@ -549,17 +540,15 @@ export function TickerDashboard() {
                   readPersonaId={readPersonaId}
                   onChangeReadPersona={setReadPersonaId}
                   fillHeight
-                  revealIndex={7}
                 />
 
                 {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
-                  motion, UX §4.4); next revealIndex in the cascade (the sections below shift +1). */}
+                  motion, UX §4.4). */}
                 <OrdersWidget
                   ticker={ticker}
                   live={live}
                   isLive={isLive}
                   streamOffline={streamOffline}
-                  revealIndex={8}
                 />
 
                 {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
@@ -568,13 +557,10 @@ export function TickerDashboard() {
                   chainVolOiRatio={m.chain_vol_oi_ratio}
                   volOiThreshold={volOiThreshold}
                   unusualStrikes={unusualStrikes}
-                  revealIndex={9}
                 />
-                {darkPool && (
-                  <OffExchangeBlocks offExchange={data?.off_exchange} revealIndex={10} />
-                )}
+                {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} />}
 
-                <Setups setups={sig?.setups} revealIndex={11} />
+                <Setups setups={sig?.setups} />
 
                 {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}

@@ -131,7 +131,6 @@ interface Props {
   onChangeReadPersona: (id: string) => void;
   /** Fill the parent's height (for the side-by-side Term/AI row) instead of the default top margin. */
   fillHeight?: boolean;
-  revealIndex?: number;
 }
 
 export function AiRecPanel({
@@ -147,7 +146,6 @@ export function AiRecPanel({
   readPersonaId,
   onChangeReadPersona,
   fillHeight,
-  revealIndex,
 }: Props) {
   const { rec, loading, stale, inAppEnabled, cap, effectiveGateState, cooldownRemaining, gate } =
     ai;
@@ -241,7 +239,6 @@ export function AiRecPanel({
         title={`AI recommendation · ${ticker}`}
         actions={exportAction}
         bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-        revealIndex={revealIndex}
       >
         {/* The advisory intro, then the per-query persona override with a label ABOVE the (recessed)
             select. The title + export link now live in the Widget header. */}

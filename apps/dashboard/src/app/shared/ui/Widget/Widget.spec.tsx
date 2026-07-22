@@ -9,12 +9,14 @@
  *      `document.startViewTransition` is absent, and the View-Transitions path when present.
  *   3. Reduced motion — expand STILL opens and the VT morph is bypassed (function preserved,
  *      motion inert).
- *   4. Stagger wiring — the inherited `--widget-reveal-delay` increases with board position and is
- *      STABLE across a same-props re-render (a 60s poll must never replay the reveal). The keyframe
- *      itself is a CSS engine feature verified visually.
+ *   4. Motion NEGATIVE SPACE (redesign-stage-3 §3.3 — the REPLACEMENT for the retired stagger
+ *      guard, per the §6a-2 supersession ruling: replaced in the same commit, never deleted-red):
+ *      the stagger/spin machinery is structurally ABSENT from the shell while the kept live-pulse
+ *      data signal stays PRESENT. The hero curve-draw guards (`pages/landing/HeroCurve.spec.tsx`,
+ *      green + untouched) are the replacement's other half — they pin THE one remaining moment.
  *
  * NOT asserted here (visible + intentional → review/QA): title/subtitle/actions presence, the grip/
- * `⋮` coming-soon affordances, the live accent, exact per-step delay values. jsdom cannot layout
+ * `⋮` coming-soon affordances, the live accent, exact colors. jsdom cannot layout
  * View Transitions/scroll timelines — those are asserted at the behavioral seam only.
  */
 import { ThemeProvider } from '@mui/material/styles';
@@ -23,6 +25,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { theme } from '@/shared/theme/theme';
 import { Widget } from '@/shared/ui/Widget';
+// Source text of the shell (Vite `?raw`) — the stage-3 negative-space scan asserts on the CODE,
+// so a re-introduced stagger/spin fails even if a render happens not to exercise it.
+import widgetSource from '@/shared/ui/Widget/Widget?raw';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget/WidgetSelectionContext';
 
 function wrap(ui: React.ReactNode, withProvider = true) {
@@ -146,46 +151,63 @@ describe('Widget — reduced motion', () => {
   });
 });
 
-describe('Widget — staggered mount reveal wiring', () => {
-  const delay = (id: string) =>
-    screen.getByTestId(`widget-${id}`).style.getPropertyValue('--widget-reveal-delay').trim();
+describe('Widget — motion negative space (stage 3: reveal retired)', () => {
+  // Pure checker (mutation-guarded below): the retired motion tokens a source must NOT carry,
+  // and the kept data-signal token it MUST still carry.
+  const RETIRED_TOKENS = [
+    'widgetRise',
+    '--widget-reveal-delay',
+    'revealIndex',
+    'widgetAngleSpin',
+    '@property --angle',
+  ] as const;
+  const retiredTokensIn = (src: string): string[] => RETIRED_TOKENS.filter((t) => src.includes(t));
+  const keepsLivePulse = (src: string): boolean => src.includes('widgetLivePulse');
 
-  it('the reveal delay increases with board position and is one-shot (stable across re-render)', () => {
-    const view = wrap(
-      <>
-        <Widget id="a" title="A" revealIndex={0}>
-          <div>a</div>
-        </Widget>
-        <Widget id="b" title="B" revealIndex={1}>
-          <div>b</div>
-        </Widget>
-        <Widget id="c" title="C" revealIndex={3}>
-          <div>c</div>
-        </Widget>
-      </>,
-    );
-    // Strictly increasing with position — the actual cascade guarantee (exact ms are impl detail).
-    expect(parseInt(delay('b'), 10)).toBeGreaterThan(parseInt(delay('a'), 10));
-    expect(parseInt(delay('c'), 10)).toBeGreaterThan(parseInt(delay('b'), 10));
+  it('MUTATION GUARD: the checkers flag a re-introduced stagger and a swept-away live pulse', () => {
+    expect(retiredTokensIn(`animationName: 'widgetRise'`)).toEqual(['widgetRise']);
+    expect(retiredTokensIn(`style={{ ['--widget-reveal-delay']: '55ms' }}`)).toEqual([
+      '--widget-reveal-delay',
+    ]);
+    expect(retiredTokensIn(`animation: 'widgetAngleSpin 4s linear infinite'`)).toEqual([
+      'widgetAngleSpin',
+    ]);
+    expect(retiredTokensIn(`'@property --angle': {}`)).toEqual(['@property --angle']);
+    expect(keepsLivePulse('const clean = 1;')).toBe(false);
+  });
 
-    // One-shot: a poll-driven re-render with the SAME props keeps the delay unchanged — nothing
-    // re-triggers the animation (no remount, no delay reset/replay).
-    const before = delay('b');
-    view.rerender(
-      <ThemeProvider theme={theme}>
-        <WidgetSelectionProvider>
-          <Widget id="a" title="A" revealIndex={0}>
-            <div>a</div>
-          </Widget>
-          <Widget id="b" title="B" revealIndex={1}>
-            <div>b</div>
-          </Widget>
-          <Widget id="c" title="C" revealIndex={3}>
-            <div>c</div>
-          </Widget>
-        </WidgetSelectionProvider>
-      </ThemeProvider>,
+  it('the stagger/spin machinery is ABSENT from Widget.tsx; the live-pulse data signal is PRESENT', () => {
+    // Absent: the retired spectacle families (§3.1-1 stagger, §3.1-6 conic spin) cannot silently
+    // return — a hit here is a red build, not a review comment.
+    expect(retiredTokensIn(widgetSource)).toEqual([]);
+    // Present: the KEPT data signal (§3.1-5) was not swept away with them.
+    expect(keepsLivePulse(widgetSource)).toBe(true);
+  });
+
+  it('the rendered frame carries NO mount animation (widgets appear at rest)', () => {
+    wrap(
+      <Widget id="rest" title="At rest">
+        <div>body</div>
+      </Widget>,
     );
-    expect(delay('b')).toBe(before);
+    const frame = screen.getByTestId('widget-rest');
+    // No inline stagger-delay var survives on the frame.
+    expect(frame.getAttribute('style') ?? '').not.toContain('--widget-reveal-delay');
+
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((s) => s.textContent ?? '')
+      .join('\n');
+    // The retired mount keyframe is gone from the injected CSS entirely…
+    expect(css).not.toContain('widgetRise');
+    expect(css).not.toContain('widgetAngleSpin');
+    // …and the frame's own emotion rules attach no animation at rest (MUI sx compiles to classes —
+    // assert on injected CSS, never `getAttribute('style')`).
+    const compact = css.replace(/\s+/g, '');
+    for (const cls of Array.from(frame.classList).filter((c) => c.startsWith('css-'))) {
+      const rule = compact.split(`.${cls}{`)[1]?.split('}')[0] ?? '';
+      expect(rule, `frame rule .${cls} must not carry a mount animation`).not.toContain(
+        'animation-name',
+      );
+    }
   });
 });

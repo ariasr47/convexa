@@ -48,7 +48,6 @@ interface Props {
   /** The additive static read (object | null). NO live/offline prop is accepted — this widget is
    *  bound to the last-bundle render path only (`[live-vs-static-isolation]`). */
   dfp: Dfp | null;
-  revealIndex?: number;
 }
 
 /** A muted "unavailable this cycle" line (`text.disabled`) — the ONLY empty render. Never a 0. */
@@ -140,7 +139,7 @@ function VannaSection({ vanna }: { vanna: NonNullable<Dfp['vanna']> }) {
   );
 }
 
-export function DealerFlowProjection({ dfp, revealIndex }: Props) {
+export function DealerFlowProjection({ dfp }: Props) {
   return (
     <Widget
       id="dealer-flow-projection"
@@ -149,7 +148,6 @@ export function DealerFlowProjection({ dfp, revealIndex }: Props) {
       info={DFP_INFO}
       span={2}
       bodyVariant="inset"
-      revealIndex={revealIndex}
     >
       <Box data-testid="dealer-flow-projection">
         {dfp == null ? (

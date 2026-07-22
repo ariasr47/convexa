@@ -14,11 +14,15 @@
  *     looks right at any bento cell size (the seam for future resize).
  *   - `content-visibility: auto` + `contain-intrinsic-size` — off-screen render skipping.
  *   - `:has()` / `:focus-within` / `:hover` — parent-aware chrome reveals the toolbar + grip, no JS.
- *   - `@property --angle` + conic-gradient — an animated gradient border on the selected/live widget.
- *   - A one-time staggered mount reveal (`widgetRise`) — each widget fades + rises in with a small
- *     per-position delay fed by the board via `--widget-reveal-delay`; reduced-motion → instant.
+ *   - A STATIC conic-gradient border marks the selected widget (redesign-stage-3 §3.1-6: the ring
+ *     stays, the ambient 4s spin was retired — spectacle competing with the hero curve-draw).
  *   - View Transitions API (in `useExpand`) — the expand → focus overlay is a shared-element morph,
  *     with a graceful MUI `Fade`/`Dialog` fallback when unsupported.
+ *
+ * Motion note (redesign-stage-3 §3): widgets mount AT REST — the one-time staggered reveal was
+ * retired (the hero curve-draw on `/` is THE one orchestrated moment). The only animation this
+ * shell owns is the `live` accent pulse — a DATA SIGNAL (`[live-vs-static-isolation]` made
+ * visible), reduced-motion-gated, firing only while genuinely live.
  */
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -36,15 +40,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 
@@ -70,9 +66,6 @@ export interface WidgetProps {
    *  is a recessed darker "well" so a grid of raised paper StatTiles regains contrast (Live tape / Dealer
    *  positioning, which are groups of same-surface tiles). */
   bodyVariant?: 'flush' | 'inset';
-  /** Board position (0-based) — offsets the one-time mount reveal so the sections cascade in
-   *  (~55ms/step, capped). Omitted ⇒ 0 (no delay), e.g. a standalone/expanded widget. */
-  revealIndex?: number;
 }
 
 /**
@@ -115,7 +108,6 @@ export function Widget({
   bodySx,
   noBodyPad,
   bodyVariant = 'flush',
-  revealIndex = 0,
 }: WidgetProps) {
   const reduced = useReducedMotion();
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
@@ -310,11 +302,6 @@ export function Widget({
         tabIndex={0}
         onClick={onSelect}
         onFocus={onSelect}
-        style={
-          {
-            ['--widget-reveal-delay']: `${Math.min(Math.max(revealIndex, 0), 8) * 55}ms`,
-          } as CSSProperties
-        }
         sx={(theme) => ({
           gridColumn: span === 2 ? { xs: '1 / -1', md: 'span 2' } : undefined,
           position: 'relative',
@@ -336,12 +323,14 @@ export function Widget({
           // Off-screen perf: skip rendering work for widgets not near the viewport.
           contentVisibility: 'auto',
           containIntrinsicSize: '480px 320px',
-          // Hover lift (GPU-cheap: transform + shadow + border tint from tokens via color-mix).
+          // Hover lift (GPU-cheap: transform + shadow + a NEUTRAL border step). Stage-3 §3.1-3 tame:
+          // the amber border-tint went neutral (`text.disabled`, the StatTile idiom) — hover chrome
+          // must not sprinkle amber across every widget (§4 census).
           transition: `transform 220ms ${SPRING}, box-shadow 220ms ease, border-color 220ms ease`,
           '&:hover': {
             transform: 'translateY(-2px)',
             boxShadow: 6,
-            borderColor: `color-mix(in srgb, var(--mui-palette-primary-main) 40%, ${theme.palette.divider})`,
+            borderColor: theme.palette.text.disabled,
           },
           // :has() parent-aware chrome — reveal the grip + toolbar on hover / keyboard focus, no JS.
           '&:hover .widget__grip, &:has(:focus-visible) .widget__grip': { opacity: 0.5 },
@@ -350,7 +339,9 @@ export function Widget({
             opacity: 1,
             transform: 'none',
           },
-          // Selected ring — an animated conic-gradient border (single-widget, tasteful).
+          // Selected ring — a STATIC conic-gradient border (single-widget, tasteful). Stage-3
+          // §3.1-6 tame: the ring's visual stays; the infinite `--angle` spin (pure ambient
+          // spectacle) was retired with the `@property` registration.
           ...(selected && {
             '&::after': {
               content: '""',
@@ -360,7 +351,7 @@ export function Widget({
               padding: '1.5px',
               // The gradient sweeps from primary through the live accent.
               background:
-                'conic-gradient(from var(--angle, 0deg), var(--mui-palette-primary-main), var(--mui-palette-info-main), var(--mui-palette-primary-main))',
+                'conic-gradient(from 0deg, var(--mui-palette-primary-main), var(--mui-palette-info-main), var(--mui-palette-primary-main))',
               // Mask so only the 1.5px border shows (the fill is knocked out). The mask color is
               // arbitrary/opaque (only its alpha matters) — not a theme tint, so no token needed.
               WebkitMask:
@@ -369,9 +360,6 @@ export function Widget({
               mask: 'linear-gradient(rgb(0 0 0) 0 0) content-box, linear-gradient(rgb(0 0 0) 0 0)',
               maskComposite: 'exclude',
               pointerEvents: 'none',
-              '@media (prefers-reduced-motion: no-preference)': {
-                animation: 'widgetAngleSpin 4s linear infinite',
-              },
             },
           }),
           // Live accent — a subtle info top-left corner glow; pulses only when `live`.
@@ -391,33 +379,12 @@ export function Widget({
               },
             },
           }),
-          // @property + keyframes for the animated selected border + live pulse (registered here so
-          // `--angle` interpolates smoothly). Guarded by prefers-reduced-motion above (animation only
-          // attaches under no-preference); the @property declaration itself is inert.
-          '@property --angle': {
-            syntax: '"<angle>"',
-            inherits: 'false',
-            initialValue: '0deg',
-          },
-          '@keyframes widgetAngleSpin': { to: { '--angle': '360deg' } },
+          // The KEPT data signal: the live-pulse keyframes (attached under no-preference only,
+          // via the `live` block above). Fires only while genuinely live — honesty machinery,
+          // exempt from the stage-3 motion consolidation BY DECISION (§3.1-5).
           '@keyframes widgetLivePulse': {
             '0%, 100%': { opacity: 0.4 },
             '50%': { opacity: 1 },
-          },
-          // One-time staggered mount reveal (fade + rise). The per-widget stagger delay comes from the
-          // inherited `--widget-reveal-delay` custom property (set inline from the board order), so the
-          // sections cascade in ~55ms steps — FRONTEND_EXECUTION_CONTRACT §3. One-shot: the widget stays
-          // mounted across the 60s poll, so the CSS animation never replays. Reduced-motion → inert.
-          '@media (prefers-reduced-motion: no-preference)': {
-            '@keyframes widgetRise': {
-              from: { opacity: 0, transform: 'translateY(12px)' },
-              to: { opacity: 1, transform: 'none' },
-            },
-            animationName: 'widgetRise',
-            animationDuration: '300ms',
-            animationTimingFunction: 'ease-out',
-            animationFillMode: 'both',
-            animationDelay: 'var(--widget-reveal-delay, 0ms)',
           },
           // The View-Transition name so expand can morph this element ↔ the overlay.
           ...(supportsVT && !expanded && { viewTransitionName: vtNameRef.current }),

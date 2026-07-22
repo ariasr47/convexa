@@ -64,7 +64,6 @@ interface Props {
   /** The additive static read (`m.iv_rank ?? null`). NO live/offline prop is accepted — this widget is
    *  bound to the last-bundle render path only (`[live-vs-static-isolation]`). */
   read: IvRankRead | null;
-  revealIndex?: number;
 }
 
 /** A muted "unavailable this cycle" line (`text.disabled`) — the ONLY whole-read empty render. */
@@ -233,7 +232,7 @@ function BuildingBody({ read }: { read: IvRankRead }) {
   );
 }
 
-export function IvRank({ read, revealIndex }: Props) {
+export function IvRank({ read }: Props) {
   // Body-state selection is wire-driven: the `state` discriminant + nullable `rank`. An unknown state
   // (or a null read) degrades to the Unavailable body — fail-honest, never a broken render.
   const body =
@@ -253,7 +252,6 @@ export function IvRank({ read, revealIndex }: Props) {
       info={IVR_INFO}
       span={1}
       bodyVariant="inset"
-      revealIndex={revealIndex}
     >
       <Box data-testid="iv-rank">
         {body === 'unavailable' ? (

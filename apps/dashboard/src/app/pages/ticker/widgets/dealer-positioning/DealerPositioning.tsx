@@ -28,7 +28,6 @@ interface Props {
   tierWord: string;
   tierColor: string;
   opportunityScore: number;
-  revealIndex?: number;
 }
 
 export function DealerPositioning({
@@ -39,7 +38,6 @@ export function DealerPositioning({
   tierWord,
   tierColor,
   opportunityScore,
-  revealIndex,
 }: Props) {
   return (
     <Widget
@@ -48,7 +46,6 @@ export function DealerPositioning({
       subtitle="Snapshot, never live — these stay current on a stream drop and refresh with the data load."
       span={2}
       bodyVariant="inset"
-      revealIndex={revealIndex}
     >
       <Box sx={GRID} data-testid="dealer-positioning">
         <StatTile
