@@ -123,6 +123,32 @@ the elevation/inset system, mono-for-figures, the "unavailable this cycle" copy 
 reduced-motion, `additive-keeps-score-byte-identical` (presentation only, score/tier/fingerprint
 byte-identical throughout).
 
+## 6a. Canon pre-flight — collisions cleared (owner ruling, 2026-07-22)
+
+A DECISION_LEDGER + PROJECT_CONTEXT sweep found five prior-work collisions; the owner ruled
+**the redesign wins** — each cleared as follows (the stages inherit these in writing):
+
+1. **Vertical GEX chart — NOT touched (kept as guard, not obstacle).** The orientation is a
+   locked deliberate owner call (CONTEXT §2); the redesign keeps the chart frame. Reopening
+   orientation would be its own GATE-Z owner decision, explicitly out of this ruling.
+2. **Staggered-reveal supersession PRE-APPROVED for Stage 3.** The shipped stagger contract +
+   its 4 guard tests are superseded by the hero curve-draw as *the* motion moment when Stage 3
+   lands; the guard tests are REPLACED by equivalent guards for the new moment (never deleted-
+   because-red earlier).
+3. **The Figma "Design Reference" DS is RETIRED as design authority.** It encodes the retiring
+   palette (`#4f9cff`, the contained-button treatment); accept drift — code tokens are the
+   single authority; a Figma refresh (and Code Connect) is optional later work, not a gate.
+   The old "README + Convexa.dc.html = structure authority" rule is likewise superseded.
+4. **The open theme-audit gaps FOLD INTO Stage 1 scope** (`palette.secondary` unset — MUI
+   purple leaks, a banned tell; explicit `contrastText`; light `text.primary`; dark `shadows`).
+5. **The checkpointed SEO-prerender plan RE-DERIVES AFTER Stage 2.** Stage 2 rebuilds the
+   landing/router; the prerender router restructure re-plans on the new landing (no parallel
+   branch racing the hero rework).
+
+Process riders (ledger lessons, bind every stage): `tsc -b` + `nx build` at each GATE Q, a
+real-browser render pass for layout/container-query CSS (Playwright), and the blog re-skin
+goes through the blog GENERATOR, never the generated articles.
+
 ## 6. The decision (queue Q4)
 
 - **(a) Approve the direction + all four stages** — sequenced Stage 0 → 3, each shipped through

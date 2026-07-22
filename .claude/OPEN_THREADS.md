@@ -822,6 +822,7 @@ invent a version to paper over it.
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
 - **Theme audit gaps** (`docs/THEME_AUDIT.md`): `palette.secondary` unset (**MUI purple leaks** through),
   explicit `contrastText`, light `text.primary`, dark `shadows`. Ties `[theme-token-discipline]`.
+  **→ FOLDED into redesign Stage 1 scope (owner ruling 2026-07-22 — see the brand proposal §6a).**
 - **CI/CD not wired:** push ≠ deploy — the owner deploys `convexa.pages.dev` via the runbook by hand. A
   GitHub Actions workflow (run `nx test` + conformance on push, then deploy) is the standing follow-on.
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
@@ -829,6 +830,8 @@ invent a version to paper over it.
 - **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
   `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
   hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".
+  **→ SEQUENCED BEHIND redesign Stage 2 (owner ruling 2026-07-22, proposal §6a): Stage 2 rebuilds the
+  landing/router; the prerender plan RE-DERIVES on the new landing — do not start it in parallel.**
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
