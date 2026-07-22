@@ -5,9 +5,9 @@
  * from the stored snapshots — NO control ever triggers a fetch, recompute, cache mutation, or any
  * trader-route call. Series clears on unmount/reload (ephemeral, expected); the only save is Export.
  */
+import { chartCategorical } from '@/shared/theme/tokens';
 import { fetchMetrics, MetricsAggregate, MetricsScope } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { chartCategorical } from '@/shared/theme/tokens';
 
 export type TrendMetric = 'stages' | 'total' | 'cache' | 'vendor_latency' | 'headroom';
 export type Percentile = 'p50' | 'p95' | 'max';
