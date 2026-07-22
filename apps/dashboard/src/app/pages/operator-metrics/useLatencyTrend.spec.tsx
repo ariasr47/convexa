@@ -3,7 +3,7 @@
  * mount-effect tick twice) must not store two samples with one client_ts — recharts keys
  * axis ticks per data point by value+coordinate, so duplicate timestamps collide React keys.
  */
-import { MetricsAggregate, MetricsScope } from '@org/api';
+import { fetchMetrics, MetricsAggregate, MetricsScope } from '@org/api';
 import { act, renderHook } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -33,7 +33,6 @@ describe('useLatencyTrend', () => {
 
   it('keeps one sample per millisecond when concurrent polls land on the same client_ts', async () => {
     vi.useFakeTimers();
-    const { fetchMetrics } = await import('@org/api');
     vi.mocked(fetchMetrics).mockResolvedValue(aggregate());
 
     // StrictMode remounts the effect → two immediate polls resolving at the same (fake) ms.
