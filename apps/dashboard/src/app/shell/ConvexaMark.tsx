@@ -1,45 +1,84 @@
 /**
- * The Convexa wordmark + convexity-curve mark (UX_BLUEPRINT §1). UI-ONLY brand surface — it is the
- * single place the visible "Convexa" wordmark is rendered (nav + landing). It carries NO data, NO
- * fetch: the convexity mark is a decorative upward-curving (convex) SVG arc in `primary.main`, a nod
- * to the gamma/convexity curve the product computes — never a literal chart.
+ * ConvexaMark — the CONVEXA lockup (redesign-stage-2 §3; proposal §3 signature #1). UI-ONLY brand
+ * surface: the single place the visible wordmark renders (TopNav bar + drawer, Footer). It carries
+ * NO data, NO fetch.
  *
- * Brand is UI-only (AC-Inv-9): this swaps only the *visible* wordmark. It renames no package, folder,
- * code identifier, or durable localStorage key.
+ * Composition: `[CONVE] [arc-X glyph] [A]` — one word, caps, Archivo EXPANDED (a REAL `wdth` axis
+ * value, never a faux transform). The X is the ONLY custom geometry: an inline SVG cut from two convex
+ * arcs, geometry single-sourced from `shared/ui/arc.ts` (one of that module's exactly-three
+ * importers). The glyph binds `primary.main` (gammaAmber — the one amber element in the lockup);
+ * the letters bind the mounting context's `color` (text.primary). NO gradient anywhere (§8-5).
+ *
+ * Accessibility: the split text nodes would read "CONVE A", so the wrapper carries `role="img"` +
+ * `aria-label="Convexa"` (the stable accessible name) and every inner node is aria-hidden.
+ * The arc-X is sized in `em` against cap height, so a pre-Archivo fallback render may reflow
+ * slightly on font swap but never collides (§3.1 accepted cost).
  */
+import { typographyTokens } from '@/shared/theme/tokens';
+import { ARC_X_PATHS, ARC_X_STROKE, ARC_X_VIEWBOX } from '@/shared/ui/arc';
 import { Box, Typography } from '@mui/material';
 
 interface Props {
-  /** Mark + wordmark height in px (mark scales with it). Nav ≈ 18, hero larger. */
+  /** Legacy call-site prop (nav ≈ 18, footer 16) — kept so call sites need zero churn; the
+   *  lockup now scales purely with `fontSize` (the X is sized in em against cap height). */
   size?: number;
   /** Wordmark font size (CSS). Defaults to a nav-appropriate size. */
   fontSize?: string | number;
 }
 
-export function ConvexaMark({ size = 18, fontSize = '1.15rem' }: Props) {
+/** Shared letter treatment: Archivo Expanded 700 caps with slight positive tracking. */
+const LETTERS = {
+  fontFamily: typographyTokens.displayFontFamily,
+  // The lockup wants full Expanded — the vendored Archivo variable file carries wdth 62–125%
+  // (styles.css @font-face), so 125% is a REAL width, never a faux transform stretch (§3.2;
+  // §10-4 n/a — the axis ceiling IS 125%).
+  fontStretch: '125%',
+  fontWeight: 700,
+  letterSpacing: '0.03em',
+  lineHeight: 1,
+} as const;
+
+export function ConvexaMark({ fontSize = '1.15rem' }: Props) {
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
-      {/* Decorative convex arc — an upward-bowing curve in `primary.main`. No data, no fetch. */}
+    <Box
+      role="img"
+      aria-label="Convexa"
+      data-testid="convexa-lockup"
+      sx={{ display: 'inline-flex', alignItems: 'baseline', fontSize }}
+    >
+      <Typography aria-hidden component="span" sx={{ ...LETTERS, fontSize: 'inherit' }}>
+        CONVE
+      </Typography>
+      {/* The arc-X — two convex arcs crossing; bottom edge sits on the text baseline
+          (SVG baseline = bottom margin edge in a baseline-aligned flex row). */}
       <Box
         component="svg"
-        viewBox="0 0 24 24"
+        viewBox={ARC_X_VIEWBOX}
         aria-hidden
         data-testid="convexa-mark"
-        sx={{ width: size, height: size, display: 'block', flexShrink: 0, color: 'primary.main' }}
+        sx={{
+          // Cap-height square (Archivo caps ≈ 0.72em); a touch of side-bearing via margin.
+          width: '0.74em',
+          height: '0.72em',
+          mx: '0.045em',
+          flexShrink: 0,
+          color: 'primary.main',
+          overflow: 'visible',
+        }}
       >
-        <path
-          d="M2 20 C 7 19, 12 13, 22 4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.4}
-          strokeLinecap="round"
-        />
+        {ARC_X_PATHS.map((d) => (
+          <path
+            key={d}
+            d={d}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={ARC_X_STROKE}
+            strokeLinecap="round"
+          />
+        ))}
       </Box>
-      <Typography
-        component="span"
-        sx={{ fontWeight: 700, letterSpacing: '-0.01em', fontSize, lineHeight: 1 }}
-      >
-        Convexa
+      <Typography aria-hidden component="span" sx={{ ...LETTERS, fontSize: 'inherit' }}>
+        A
       </Typography>
     </Box>
   );
