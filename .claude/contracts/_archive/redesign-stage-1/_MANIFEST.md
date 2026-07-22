@@ -1,6 +1,6 @@
 # redesign-stage-1 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; token-layer identity swap)
-Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
+Stage:        SHIPPED + ARCHIVED 2026-07-22 (merge 5846864; post-merge battery 63/523 green)
 Repos:        frontend only (NO_BACKEND_CHANGE — empty apps/api diff part of the proof)
 Brief:        BRIEF.md present
 Contracts:
@@ -15,8 +15,9 @@ Contracts:
     the render pass); #9 OVERRIDDEN — `sync-figma-tokens.mjs` is DELETED, not deprecated
     (inverted authority post-§6a-3; recoverable from git))
 Open amendments: none
-QA (GATE Q):  n/a (pending; battery = Stage 0's + contrast measurements + the render pass on
-              EVERY major surface, both schemes — the identity swap is visual by definition)
+QA (GATE Q):  QA_REPORT PASS (de-correlated Sonnet — battery re-run, 19 contrast ratios independently
+              recomputed incl. the bounce, 5 new specs mutation-verified, diff confinement 32/32,
+              §10 rulings 9/9 honored; RENDER_PASS.md = conductor real-browser evidence)
 Invariant watch (from BRIEF): theme-token-discipline (the mechanism itself) ·
               additive-keeps-score-byte-identical · semantic P/L green/red RESERVED+UNCHANGED ·
               live-vs-static-isolation · digested-labels · vertical-GEX-chart lock ·

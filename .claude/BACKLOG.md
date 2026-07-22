@@ -49,7 +49,9 @@ webapp-testing per the owner's skill-stack directive). **Invariant watch:** them
 per stage) · live-vs-static-isolation (3 distinct degraded states survive the re-skin) ·
 model-read-carries-its-assumptions + digested-labels (contract copy, not decor) ·
 single-shared-sim-entry-dialog (restyle, never fork) · no-real-order-path (honest landing copy) ·
-loss-free-durable-migration (if any durable pref key/shape moves). **Stage 0 → ✓ SHIPPED + ARCHIVED same day** (`35fef23`; QA PASS 6/6 + 15/15 de-correlated Sonnet;
+loss-free-durable-migration (if any durable pref key/shape moves). **Stage 1 (token swap) → ✓ SHIPPED + ARCHIVED same day** (`5846864`; QA PASS de-correlated Sonnet,
+all 19 contrast ratios independently recomputed; suite 63/523 — the new baseline; blog-artwork residual
+→ §7u seam). **Stage 0 → ✓ SHIPPED + ARCHIVED same day** (`35fef23`; QA PASS 6/6 + 15/15 de-correlated Sonnet;
 393px 580→378 + drawer nav + focus rings + 0 h6 stat values + floors + honest copy; suite 58/493;
 see OPEN_THREADS §7u). **NEXT in program: Stage 1** (token swap). **`scanner` displaced a 7th time —
 owner-directed, never dropped** (system-12 doc reconciliation still precedes its eventual GATE U·X).

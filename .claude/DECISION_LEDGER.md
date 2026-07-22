@@ -247,6 +247,10 @@ which is exactly why this was cheap to fix now.
 | `live-vs-static-isolation` | redesign-stage-0 | S | the 3 distinct degraded states SURVIVED the mobile relayout — verified on a REAL stream kill at 393px ("⚠ Live offline — reconnecting…", live tiles → "⏸ offline", static chart + 19 stat reads persist un-blanked, scrollWidth 378 held while degraded); zero degraded-spec deletions/weakenings | yes |
 | `single-shared-sim-entry-dialog` | redesign-stage-0 | S | mobile full-screen = 5 lines of breakpoint props on THE shared `TradeEntryDialog` — restyled, NOT forked (QA diff-audited) | yes |
 | `no-real-order-path` | redesign-stage-0 | S | the landing hero reframed HONEST ("See the dealer positioning behind the price.") — no longer sells the unbuilt brokerage connect; coming-soon blocks stay non-navigating | yes |
+| `theme-token-discipline` | redesign-stage-1 | S | **the rule's biggest exercise to date** — the ENTIRE identity swapped at `tokens.ts`/`theme.ts` with component edits confined to a closed 6-site rebind list; the mechanism IS what made it safe (QA: all 32 changed files in the permitted set, zero scope creep); the retired hexes (GitHub neutrals, old blues, violet, blog cream, old ink) added to a mutation-guarded BAN-LIST scan spanning app + index.html + blog OUTPUT — the banned tells are now build-breaking, not prose | yes |
+| `additive-keeps-score-byte-identical` | redesign-stage-1 | S | FE-only; empty `apps/api` + `libs/api` diffs (QA re-verified); P/L success/error hexes BYTE-LOCKED by pin test — the identity swap structurally cannot touch direction semantics or scoring | yes |
+| `live-vs-static-isolation` | redesign-stage-1 | S | degraded-state semantics survived the re-tint — true-drop walk on the NEW palette in LIGHT mode (complements Stage 0's dark walk): "⚠ Live offline" in the new icon-paired warning `#A65526`, ⏸ markers legible, static reads persist, 378px held | yes |
+| `model-read-carries-its-assumptions` | redesign-stage-1 | S | **5th instance, applied to the DESIGN process itself** — every light-mode color pairing shipped with a MEASURED WCAG ratio (19 pairings recorded; QA independently recomputed all 19); the one failing §3 value was bounced minimally (`#C9821A`→`#C57F19`) and recorded in 3 places, never silently shipped or silently obeyed | yes |
 
 > Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
 > (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified
@@ -380,6 +384,28 @@ which is exactly why this was cheap to fix now.
 > traceability):** a motion/visual AC with no named test is exactly where a later refactor silently regresses
 > — the render pass caught it, and the fix adds the missing test. `theme-token-discipline` (watch list) held
 > again (zero hardcoded hex across the changed ticker scope).
+
+> Note (GATE S, redesign-stage-1, 2026-07-22): Stage 1 — the Curvature Terminal lands at the token layer.
+> Ink `#0B0F17`/panel/phosphor/steel, **gammaAmber `#F2A93B` dominant** (ink contrastText), signal-blue
+> links (slot-level `MuiLink` default), warnings → burnt orange + icon-always; Archivo (real wdth-axis
+> `font-stretch`, no faux) + IBM Plex Sans/Mono self-hosted (OFL verified, swap, preloads, zero external
+> URL); light parity DERIVED under a **measured 19-pairing contrast gate** — one pre-authorized bounce
+> (`#C9821A` 2.90:1 FAIL → `#C57F19` 3.02/3.27 PASS, recorded ×3); theme-audit gaps closed (explicit
+> secondary kills the MUI purple leak, contrastText, light text.primary, dark shadows ladder); blog
+> re-skinned VIA THE GENERATOR (both outputs regenerated); `sync-figma-tokens.mjs` **DELETED** (conductor
+> override of §10-9 — inverted authority post-§6a-3); the old one-amber-three-meanings trap resolved by a
+> CLOSED forced-rebind list (flip→amber the one amber line, spot→steel, live→signal — computed strokes
+> verified). **No graduation** — 4 keys, all canon, each gained an instance (rows above; note
+> `model-read-carries-its-assumptions` now applied to the design process itself). QA (GATE Q) fresh
+> de-correlated **Sonnet: PASS** — battery re-run, all 19 ratios INDEPENDENTLY recomputed (matched incl.
+> the bounce), 5 new specs read+run+mutation-verified (30/30), diff confinement 32/32 files in the
+> permitted set, §10 rulings 9/9 honored; caught 1 of 29 lint warnings as NEW-not-pre-existing (under the
+> 0-errors bar; honest). Suite 63/523. Conductor render pass: computed identity values + chart strokes +
+> both-mode theme-color + the light-mode true-drop degrade walk. **Named residual (accepted, not hidden):**
+> the blog articles' inline SVG ILLUSTRATIONS still carry cream/terracotta artwork styling (out of
+> template-only scope) → follow-up "regenerate blog artwork onto the system" (§7u seam). Twice-evidenced
+> methodology gotcha now standing: uvicorn survives a PID kill (respawn/wrapper) — kill by IMAGE and
+> `curl`-confirm dead before trusting any degrade observation.
 
 > Note (GATE S, redesign-stage-0, 2026-07-22): Stage 0 of the Q4(a) "Curvature Terminal" program — the
 > quality-floor repair (correctness, not identity): 393px overflow killed (580→378, root causes the bento

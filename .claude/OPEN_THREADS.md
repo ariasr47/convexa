@@ -824,10 +824,20 @@ keyboard-accessible (theme-layer focus rings), semantically sound (0 `<h6>` stat
 compliant (11px/44px), and honest (hero no longer sells the unbuilt brokerage). QA PASS 6/6 + 15/15
 (de-correlated Sonnet); real-drop offline walk verified at 393. Suite 58/493. **Push ≠ deploy — the live
 `convexa.pages.dev` gets this only when the owner runs the deploy runbook.**
-**Remaining: Stage 1** (token swap — Curvature Terminal palette/type into `tokens.ts`/`theme.ts` + the
-§8 theme-audit gaps + blog re-skin VIA THE GENERATOR) → **Stage 2** (mark, hero curve-draw, arc dividers;
-SEO-prerender re-derives after) → **Stage 3** (surface sweep + motion consolidation; stagger guard tests
-REPLACED not deleted). Canon: proposal §5+§6a; rule-of-record `.claude/skills/convexa-design/`.
+**Stage 1 (token swap) SHIPPED 2026-07-22** (`5846864`; folder → `_archive/redesign-stage-1/`). The
+Curvature Terminal is LIVE at the token layer: ink/phosphor/gammaAmber-dominant + Archivo/Plex
+(self-hosted OFL), light parity under a measured 19-pairing contrast gate (one recorded bounce
+`#C9821A`→`#C57F19`), purple leak dead, blog template re-skinned via generator, retired hexes
+ban-list-scanned (build-breaking). QA PASS (de-correlated Sonnet — all ratios independently recomputed).
+Suite **63/523** (the new baseline).
+**Remaining: Stage 2** (mark w/ arc-cut X, hero curve-draw as THE motion moment, arc dividers;
+SEO-prerender re-derives after) → **Stage 3** (surface sweep + amber-dominance check per surface +
+motion consolidation; stagger guard tests REPLACED not deleted; the light-amber-as-body-text ~3.3:1
+case; TintChip conviction-tone semantics). Canon: proposal §5+§6a; rule-of-record
+`.claude/skills/convexa-design/`.
+**New seam (Stage 1, accepted residual):** the blog articles' inline SVG ILLUSTRATIONS keep their own
+cream/terracotta styling on the now-dark template (artwork, not template — regenerate onto the system;
+no banned hex inside them, so the scan doesn't bite).
 **Deferred seams (named):** Landing `<main>` (Stage 2) · MUI `subtitle1/2` → `<h6>` in transient ai-rec
 states (default render clean — future pass) · the touch-floor live pixel spot-check needs coarse-pointer
 emulation · chart-tick 10px exemption stands until the owner reads the floor otherwise.
