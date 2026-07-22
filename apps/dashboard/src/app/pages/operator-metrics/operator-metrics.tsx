@@ -297,7 +297,9 @@ export function OperatorMetrics() {
                 <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
               </Tooltip>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Rolling window: last {data.window.size_desc} · uptime{' '}
+                {/* `size_desc` already reads "last ~500 req" — no hardcoded prefix (the "last last"
+                    fix, redesign-stage-0 §4.2; also un-garbles the degraded payloads). */}
+                Rolling window: {data.window.size_desc} · uptime{' '}
                 {fmtUptime(data.window.uptime_seconds)} · resets on restart (ephemeral baseline).
               </Typography>
             </Stack>

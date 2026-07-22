@@ -67,7 +67,12 @@ export const AUTH_COPY = {
   },
   settings: {
     title: 'Settings',
-    subtitle: 'Saved to your account.',
+    // Mode-aware subtitle (redesign-stage-0 §4.1): the old single string falsely claimed "Saved to
+    // your account." for ANONYMOUS users (whose prefs are client-local). SettingsPage picks by
+    // `auth.authenticated`. The Account panel below carries the sign-in CTA — the subtitle must not
+    // duplicate it.
+    subtitleSignedIn: 'Saved to your account.',
+    subtitleAnonymous: 'Stored in this browser.',
     // Panel headings (convexa-redesign Figma `4:2572`).
     accountHeading: 'Account',
     preferencesHeading: 'Preferences',
