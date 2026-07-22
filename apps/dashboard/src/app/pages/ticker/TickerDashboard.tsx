@@ -468,7 +468,11 @@ export function TickerDashboard() {
                 sx={{
                   mt: 2,
                   display: 'grid',
-                  gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' },
+                  // `minmax(0, 1fr)` at EVERY breakpoint: a bare `1fr` track is minmax(auto, 1fr),
+                  // so one widget's min-content could force the track (and the page) wider than a
+                  // 393px viewport — the measured Stage 0 offender. With a 0 floor the widgets'
+                  // own responsive internals (auto-fill tile grids, wrapping headers) re-stack.
+                  gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
                   gridAutoRows: 'minmax(0, auto)',
                   gap: 2,
                   alignItems: 'stretch',

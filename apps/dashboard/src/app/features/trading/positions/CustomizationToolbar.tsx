@@ -175,9 +175,17 @@ export function CustomizationToolbar({
 
   return (
     <Box data-testid="customization-toolbar">
-      {/* Controls row — REVISION 2: ONE clean row (no wrap) matching the Figma. */}
+      {/* Controls row — REVISION 2: ONE clean row (no wrap) matching the Figma at sm+. Below sm the
+          row WRAPS (Stage 0 item 1 — the measured 952px offender at 393; nothing is removed). */}
       <Box
-        sx={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', mb: '6px' }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          rowGap: '8px',
+          mb: '6px',
+        }}
       >
         {/* View picker (saved views). */}
         <Box
