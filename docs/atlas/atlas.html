@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Convexa Feature Atlas</title>
+<meta name="description" content="A generated, interactive map of the Convexa product: journey, catalog, invariants, roadmap.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg:#F4F1EB; --card:#FFFFFF; --ink:#23252B; --dim:#6d6a63; --line:#DAD5CC;
+    --accent:#2E6F69; --code:#E9E5DC; --shipped:#2E6F69; --queued:#1d6fe0; --note:#B4562B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#15171c; --card:#1e2128; --ink:#e8e6e1; --dim:#9a978f; --line:#33363e;
+      --accent:#5fb3aa; --code:#2a2d35; --shipped:#3f9e93; --queued:#5f95e8; --note:#d08a5e; }
+  }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.55;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:28px 20px 80px; }
+  h1 { font-size:1.7rem; margin:0 0 .1em; letter-spacing:-.01em; }
+  .gen { font-size:.85rem; color:var(--dim); margin-bottom:1em; }
+  .gen code { background:var(--code); border-radius:4px; padding:.05em .3em; }
+  code { background:var(--code); border-radius:4px; padding:.05em .3em;
+    font-family:'Cascadia Code',Consolas,Menlo,monospace; font-size:.88em; }
+  nav.tabs { display:flex; gap:6px; margin:14px 0 20px; flex-wrap:wrap; }
+  nav.tabs a { padding:.45em 1em; border:1px solid var(--line); border-radius:20px;
+    text-decoration:none; color:var(--ink); font-weight:600; font-size:.95rem; }
+  nav.tabs a.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  section.tab { display:none; }
+  section.tab.active { display:block; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin:0 0 14px; }
+  .card header { display:flex; justify-content:space-between; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .card h3 { margin:0; font-size:1.02rem; } .card h4 { margin:0; font-size:.95rem; }
+  .card p { margin:.5em 0; font-size:.9rem; }
+  .chip { display:inline-block; padding:.1em .6em; border-radius:12px; font-size:.72rem;
+    font-weight:650; background:var(--code); white-space:nowrap; }
+  .chip.shipped { background:var(--shipped); color:#fff; }
+  .chip.queued { background:var(--queued); color:#fff; }
+  .chip.note { background:var(--note); color:#fff; }
+  .chip.key { background:var(--code); color:var(--ink); text-decoration:none; margin:2px; font-weight:500; }
+  .chip.sec { background:var(--code); }
+  .chip.done { margin:3px; font-weight:500; }
+  .meta { font-size:.78rem; color:var(--dim); margin:.2em 0; }
+  .qa { font-size:.8rem; margin:.3em 0; }
+  .mani { border-top:1px dashed var(--line); margin-top:.6em; padding-top:.4em; }
+  .mrow { font-size:.78rem; color:var(--dim); margin:.15em 0; }
+  .seams { font-size:.8rem; margin-top:.5em; } .seam { color:var(--dim); margin:.15em 0; }
+  .keys { margin-top:.5em; font-size:.8rem; }
+  .dim { color:var(--dim); }
+  .f-card.queued { border:2px dashed var(--queued); }
+  .f-card.hl { outline:3px solid var(--accent); }
+  .jwrap { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+  .jcol h3 { font-size:.9rem; border-bottom:2px solid var(--accent); padding-bottom:.3em; }
+  .jcard { display:block; background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:.5em .7em; margin:.4em 0; font-size:.82rem; text-decoration:none; color:var(--ink); }
+  a.jcard:hover { border-color:var(--accent); }
+  .jcard.nolink { color:var(--dim); }
+  .platform { margin-top:20px; border-top:1px solid var(--line); padding-top:10px; }
+  .platform .jcard { display:inline-block; margin-right:8px; }
+  .filters { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .filters input, .filters select { padding:.45em .7em; border:1px solid var(--line); border-radius:8px;
+    background:var(--card); color:var(--ink); font-size:.9rem; }
+  .rwrap { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+  .rcol h3 { border-bottom:2px solid var(--line); padding-bottom:.3em; }
+  .count { font-size:.75rem; color:var(--dim); font-weight:400; }
+  details { margin:1em 0; font-size:.82rem; } table { border-collapse:collapse; font-size:.8rem; }
+  td { border:1px solid var(--line); padding:.25em .6em; }
+  .legend { font-size:.82rem; margin:.8em 0 1.2em; line-height:1.9; }
+  .counts { font-size:.8rem; color:var(--dim); margin-bottom:1em; }
+  .donestrip summary { cursor:pointer; font-weight:650; }
+</style>
+</head>
+<body>
+<main>
+<h1>Convexa Feature Atlas</h1>
+<p class="gen">GENERATED from <code>.claude/</code> canon — do not edit; regenerate with
+<code>py docs/atlas/build_atlas.py</code>. Freshness = newest source mtime: <strong>2026-07-22 09:24 UTC (.claude/BACKLOG.md)</strong>.</p>
+<details><summary>Source files + mtimes</summary><table><tr><td><code>.claude/OPEN_THREADS.md</code></td><td>2026-07-16 11:42 UTC</td></tr><tr><td><code>.claude/DECISION_LEDGER.md</code></td><td>2026-07-16 11:41 UTC</td></tr><tr><td><code>.claude/BACKLOG.md</code></td><td>2026-07-22 09:24 UTC</td></tr><tr><td><code>.claude/contracts/scanner/BRIEF.md</code></td><td>2026-07-02 06:23 UTC</td></tr><tr><td><code>.claude/contracts/scanner/_MANIFEST.md</code></td><td>2026-07-16 07:16 UTC</td></tr><tr><td><code>.claude/contracts/_archive/ai-context-pack/_MANIFEST.md</code></td><td>2026-07-06 19:32 UTC</td></tr><tr><td><code>.claude/contracts/_archive/ai-rec-backtest-orders/_MANIFEST.md</code></td><td>2026-07-02 10:33 UTC</td></tr><tr><td><code>.claude/contracts/_archive/ai-recommendations/_MANIFEST.md</code></td><td>2026-06-24 13:17 UTC</td></tr><tr><td><code>.claude/contracts/_archive/app-shell-landing/_MANIFEST.md</code></td><td>2026-06-25 01:47 UTC</td></tr><tr><td><code>.claude/contracts/_archive/byo-ai-key/_MANIFEST.md</code></td><td>2026-06-29 09:09 UTC</td></tr><tr><td><code>.claude/contracts/_archive/containerize-apps/_MANIFEST.md</code></td><td>2026-06-29 09:52 UTC</td></tr><tr><td><code>.claude/contracts/_archive/convexa-redesign/_MANIFEST.md</code></td><td>2026-07-01 04:57 UTC</td></tr><tr><td><code>.claude/contracts/_archive/dealer-flow-projection/_MANIFEST.md</code></td><td>2026-07-06 09:50 UTC</td></tr><tr><td><code>.claude/contracts/_archive/deploy/_MANIFEST.md</code></td><td>2026-06-29 11:22 UTC</td></tr><tr><td><code>.claude/contracts/_archive/iv-rank/_MANIFEST.md</code></td><td>2026-07-07 12:05 UTC</td></tr><tr><td><code>.claude/contracts/_archive/latency-visualizer/_MANIFEST.md</code></td><td>2026-06-24 13:17 UTC</td></tr><tr><td><code>.claude/contracts/_archive/outcome-ledger/_MANIFEST.md</code></td><td>2026-07-16 11:43 UTC</td></tr><tr><td><code>.claude/contracts/_archive/persistent-db/_MANIFEST.md</code></td><td>2026-06-29 10:23 UTC</td></tr><tr><td><code>.claude/contracts/_archive/positions-portfolio/_MANIFEST.md</code></td><td>2026-06-24 13:17 UTC</td></tr><tr><td><code>.claude/contracts/_archive/rebrand-convexa/_MANIFEST.md</code></td><td>2026-06-29 06:49 UTC</td></tr><tr><td><code>.claude/contracts/_archive/sim-entry-unification/_MANIFEST.md</code></td><td>2026-07-02 10:35 UTC</td></tr><tr><td><code>.claude/contracts/_archive/ticker-load-experience/_MANIFEST.md</code></td><td>2026-06-25 22:00 UTC</td></tr><tr><td><code>.claude/contracts/_archive/ticker-microinteractions/_MANIFEST.md</code></td><td>2026-07-02 05:31 UTC</td></tr><tr><td><code>.claude/contracts/_archive/trader-personas/_MANIFEST.md</code></td><td>2026-06-24 13:17 UTC</td></tr><tr><td><code>.claude/contracts/_archive/user-accounts/_MANIFEST.md</code></td><td>2026-06-26 08:49 UTC</td></tr></table></details>
+
+<nav class="tabs">
+  <a href="#journey" data-tab="journey">Journey</a>
+  <a href="#catalog" data-tab="catalog">Catalog</a>
+  <a href="#invariants" data-tab="invariants">Invariants</a>
+  <a href="#roadmap" data-tab="roadmap">Roadmap</a>
+</nav>
+
+<section class="tab" id="tab-journey">
+  <p class="counts">The trader's path through the product. Every card hash-links to its catalog entry.</p>
+  <div class="jwrap"><div class="jcol"><h3>Discover</h3><a class="jcard" href="#f-7d">Landing page</a><span class="jcard nolink">Blog</span></div><div class="jcol"><h3>Analyze</h3><a class="jcard" href="#f-7e">Ticker viewer</a><a class="jcard" href="#f-7l">GEX profile chart</a><a class="jcard" href="#f-4">Positioning metrics (DEX · Vol/OI · Skew · Term)</a><a class="jcard" href="#f-7r">IV rank</a><a class="jcard" href="#f-7q">Market context</a><a class="jcard" href="#f-7o">Dealer-flow projection</a><a class="jcard" href="#f-3">Off-exchange blocks</a></div><div class="jcol"><h3>AI read</h3><a class="jcard" href="#f-7">Personas</a><a class="jcard" href="#f-7b">AI recommendations</a><a class="jcard" href="#f-7h">BYO AI key</a><a class="jcard" href="#f-7q">AI context pack</a></div><div class="jcol"><h3>Act — simulated</h3><a class="jcard" href="#f-7n">TradeEntryDialog (shared sim entry)</a><a class="jcard" href="#f-7n">Simulated orders</a><a class="jcard" href="#f-7n">Scenario harness</a></div><div class="jcol"><h3>Track</h3><a class="jcard" href="#f-7c">Positions portfolio</a><a class="jcard" href="#f-5">Ghost-trade model</a></div><div class="jcol"><h3>Review</h3><a class="jcard" href="#f-7t">Outcome ledger — the track record</a></div></div>
+  <div class="platform"><h3>Platform (underneath it all)</h3><a class="jcard" href="#f-7f">Auth &amp; accounts</a><a class="jcard" href="#f-7i">Containerized apps</a><a class="jcard" href="#f-7j">Persistent DB</a><a class="jcard" href="#f-7k">Deploy — Railway + CF Pages</a><a class="jcard" href="#f-6">Observability + /_ops/metrics</a><span class="jcard nolink">Delivery-kit (the build system)</span></div>
+</section>
+
+<section class="tab" id="tab-catalog">
+  <p class="counts">24 shipped feature sections + 1 queued (<code>scanner</code>) ·
+  20 archive manifests joined.</p>
+  <div class="filters">
+    <input id="q" type="search" placeholder="Filter features…" aria-label="Filter">
+    <select id="statusFilter" aria-label="Status filter">
+      <option value="">All statuses</option>
+      <option value="shipped">Shipped</option>
+      <option value="queued">Queued</option>
+      <option value="note">Other / notes</option>
+    </select>
+  </div>
+  <div id="catalog-cards"><article class="card f-card queued" id="f-scanner" data-status="queued">
+  <header><h3>scanner · the standing NEXT</h3><span class="chip queued">QUEUED — pre-pipeline</span></header>
+  <div class="meta">GATE I — brief written; entry role NOT yet launched (pre-pipeline) · lanes: both (expected — a scan-slice/batch backend surface + the …</div>
+  <p>Build the real Scanner page (replacing the coming-soon stub): the user curates a durable WATCHLIST of tickers; the scanner shows a simplified per-ticker read (price, opportunity score + tier, regime, distance-to-key-level — final set is the PM/UX call) in one scannable surface; multiple named views (e.g. compact table vs cards, sort by score) if they earn their keep; each row links to …</p>
+  <div class="qa"><strong>Invariant watch:</strong> <strong>revisits the locked "single-ticker, on-demand" decision</strong> (PROJECT_CONTEXT §5 — the watchlist scan was dropped for being too slow; the architect MUST re-justify with a perf design and keep the scan bounded to an explicit watchlist, never a market sweep) · additive-keeps-score-byte-identical (the scanner CONSUMES …</div>
+  <div class="mani"><div class="mrow"><code>contracts/scanner</code> · Standing NEXT since the owner's 2026-07-01 directive (item 5); <strong>displaced 5×</strong> since 2026-06-25 (ticker-load-experience → user-accounts → the infra program → the AI-enrichment …</div></div>
+</article><article class="card f-card" id="f-3" data-status="shipped">
+  <header><h3>§3 · Dark-pool block trades + stream isolation</h3><span class="chip shipped">SHIPPED + ARCHIVED — closed</span></header>
+  <div class="meta"></div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/dark-pool-stream-isolation/</code> (both lanes done). <strong>Backend (Session 4A) shipped:</strong> <code>BlockPrint</code>/<code>OffExchange</code> TypedDicts in <code>src/providers/base.py</code>; <code>blocks[]</code> derived in the same off-exchange pass in <code>src/core/darkpool.py</code> (top-5 by notional, signed proximity, age, no <code>side</code>, no new fetch); <code>BLOCK_MIN_SHARES</code> env (5000 default) + best-effort …</p>
+  
+  <div class="mani"><div class="mrow dim">no manifest — predates the manifest convention; rendered from OPEN_THREADS alone</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">dark-pool-context-only</a><a class="chip key" href="#invariants">live-vs-static-isolation</a></div>
+</article><article class="card f-card" id="f-4" data-status="shipped">
+  <header><h3>§4 · DEX · Vol/OI · IV skew · Term structure</h3><span class="chip shipped">SHIPPED + ARCHIVED — closed</span></header>
+  <div class="meta"></div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/dex-voloi-skew-term/</code> (both lanes done). Four always-on, <strong>neutral, snapshot</strong> positioning reads added to the cached bundle — <strong>no toggle, no side/direction, no score/gate/setup wiring</strong>, and <strong>excluded from the live-offline treatment</strong> (static fields, like Net GEX). <strong>Frontend (repo <code>C:\Dev\gammaflow-web</code>, committed):</strong> <code>MarketState</code>/<code>StrikeRow</code> …</p>
+  
+  <div class="mani"><div class="mrow dim">no manifest — predates the manifest convention; rendered from OPEN_THREADS alone</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a></div>
+</article><article class="card f-card" id="f-5" data-status="shipped">
+  <header><h3>§5 · Ghost-trade tracker / sim</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta"></div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/trade-tracker-sim/</code>. The FE lane had <strong>paused</strong> pending three "Interface's to finalize" transports (bounce-back: <code>INTERFACE_AMENDMENTS_REQUESTED.md</code>). <strong>The backend lane resolved all of them</strong> with concrete, contract-compliant choices, now pinned in <code>INTERFACE_CONTRACT.md</code> → "Backend resolution amendment" (additive — breaks no prior FE …</p>
+  
+  <div class="mani"><div class="mrow dim">no manifest — predates the manifest convention; rendered from OPEN_THREADS alone</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam">Deferred seams (specified, not built): broker <code>FillSource</code>/<code>PositionStore</code>, <code>BundleFeed</code>+clock replay,</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">ai-external-no-llm</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a></div>
+</article><article class="card f-card" id="f-6" data-status="shipped">
+  <header><h3>§6 · Backend observability</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-06-23 · lanes: frontend only (C:\Dev\gammaflow-web) — backend untouched …</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/backend-observability/</code>. Operator-facing bundle-pipeline instrumentation; <strong>trader path + computed values + cache + SSE unchanged.</strong> <strong>Backend shipped</strong> (<code>C:\Dev\GammaFlow</code>): new <code>src/core/observability.py</code> (span/timer ContextVar trace, process-local rolling <code>MetricsAggregate</code>, structured emitter; <code>engine/signals/darkpool</code> untouched — Level-1). …</p>
+  
+  <div class="mani"><div class="mrow"><code>latency-visualizer</code> · GATE U·X exit (THE FAN-OUT, one-sided) — UX locked, split written; FRONTEND lane loaded; backend NO_BACKEND_CHANGE (consumes …</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">operator-vs-trader-path-separation</a></div>
+</article><article class="card f-card" id="f-7" data-status="shipped">
+  <header><h3>§7 · Trader personas</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">lanes: both (prompt/contract files here; any presentation in …</div>
+  <p>Contracts in <code>.claude/contracts/trader-personas/</code> (A1 RESOLVED·ACCEPTED). Persona is a <strong>read-only, post-FREEZE prompt projection</strong> — a non-input to scoring by construction. <strong>Backend shipped</strong> (<code>C:\Dev\GammaFlow</code>): <code>prompts/strategy_prompt.md</code> + <code>reassessment_prompt.md</code> decomposed (FIXED vs PERSONA, annotation appended; bodies byte-identical) with the <strong>A1 move</strong> (trader-disposition lifted out …</p>
+  
+  <div class="mani"><div class="mrow"><code>trader-personas</code> · GATE U·X exit (THE FAN-OUT) — UX locked, split written, locus PINNED FE-rendered; Backend ‖ Frontend lanes loaded (parallel)</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">ai-external-no-llm</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a></div>
+</article><article class="card f-card" id="f-7b" data-status="shipped">
+  <header><h3>§7b · In-app AI recommendations</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/ai-recommendations/</code>. GammaFlow's <strong>first in-app LLM call</strong> — a best-effort, isolated, gated, <strong>advisory consumer</strong> of already-computed state. <strong>Demoted the <code>ai-external-no-llm</code> canon</strong> (system-7, narrowed not erased — CONTEXT §8 + DECISION_LEDGER "Demoted"). <strong>Backend</strong> (<code>C:\Dev\GammaFlow</code>, commit <code>eec3a3a</code>): new one-way-leaf …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS — initial FAIL (E3 missing) RESOLVED by gammaflow-web a2f6ae3 + targeted re-verify (nx test 26/26, E3 passing). 18/18 ACs PASS, conformance 4/4, invariants clean. Original verification by qa-verify on …</div>
+  <div class="mani"><div class="mrow"><code>ai-recommendations</code> · SHIPPED + ARCHIVED (GATE S @ 2026-06-23). Backend eec3a3a; frontend 42212f5 + a2f6ae3. QA PASS (Sonnet, de-correlated). Demoted …</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (specified, not built):</strong> BYO-key / per-user credentials (provider-port-like seam);</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">ai-external-no-llm</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">no-real-order-path</a></div>
+</article><article class="card f-card" id="f-7c" data-status="shipped">
+  <header><h3>§7c · Positions portfolio</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">lanes: frontend (NO_BACKEND_CHANGE — Q-G kept single-position, …</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/positions-portfolio/</code>. FE-only (<code>NO_BACKEND_CHANGE</code>) multi-position evolution of the ghost-trade tracker. <strong>Frontend shipped</strong> (<code>apps/dashboard/src/app/ positions/</code>): flat id-keyed durable collection (loss-free v1→v2 migration); central all-positions + per-ticker views; per-position P/L + Δ-since-entry + ephemeral session delta + a P/L trend …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS</div>
+  <div class="mani"><div class="mrow"><code>positions-portfolio</code> · QA PASS (41/41 ACs · 130 tests green · invariants clean · de-correlated on Sonnet); ready to ship (GATE S)</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam">Backend untouched. <strong>Deferred seams (specified, not built):</strong> the real <strong>Live</strong> broker integration</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">no-real-order-path</a></div>
+</article><article class="card f-card" id="f-7d" data-status="shipped">
+  <header><h3>§7d · Convexa multi-page shell + landing</h3><span class="chip shipped">SHIPPED + ARCHIVED — FE-only</span></header>
+  <div class="meta">lanes: frontend (FE-only restructure + Convexa landing; …</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/app-shell-landing/</code>. Feature 1 of the <strong>owner pivot</strong> (positions-centric, brokerage-connected, multi-page — see BACKLOG "Last GATE I — OWNER PIVOT"). The <strong>rebrand to "Convexa"</strong> (UI wordmark only) + the IA restructure: single <code>BrowserRouter</code>/dark-MUI theme — <code>/</code> Convexa landing (dark-fintech splash, hero hook, convexity-curve motif, value cards, …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS</div>
+  <div class="mani"><div class="mrow"><code>app-shell-landing</code> · QA PASS (42/42 ACs · 171 tests green · invariants clean · no regression · de-correlated on Sonnet); ready to ship (GATE S)</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">no-real-order-path</a><a class="chip key" href="#invariants">operator-vs-trader-path-separation</a></div>
+</article><article class="card f-card" id="f-7e" data-status="shipped">
+  <header><h3>§7e · Ticker-page load experience</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-06-25 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/ticker-load-experience/</code>. Owner request 2026-06-25 (redirect off <code>scanner</code>): make <code>/ticker/:symbol</code> load fast + feel instant + show a trusted price. Measured first (live Massive feed): warm cache hit ~7ms but cold miss p50 3.5s (worst 9.6s), of which <code>vendor_fetch</code> ~87% and the SINGLE options-chain call ~75% (~54 serial paginated round-trips for …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS (Sonnet, de-correlated — 26/26 ACs, conformance 2/2, 196/196 tests)</div>
+  <div class="mani"><div class="mrow"><code>ticker-load-experience</code> · SHIPPED + ARCHIVED (GATE S @ 2026-06-25) — code commit 10971f3; canon folded; narrowed live-spot=NBBO-mid</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam">score/tier/gate/<code>state_fingerprint</code> byte-identical. <strong>Deferred seams (named, not built):</strong> chain-pagination</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-spot=NBBO-mid</a><a class="chip key" href="#invariants">live-vs-static-isolation</a></div>
+</article><article class="card f-card" id="f-7f" data-status="shipped">
+  <header><h3>§7f · User accounts — auth + sessions + per-user settings</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-06-25 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/user-accounts/</code>. Owner-directed 2026-06-25: the project's <strong>first stateful backend surface + first credential store</strong>. Advances the OWNER PIVOT (accounts are the prerequisite for Track B <code>broker-connect</code>). <strong>Backend</strong> (<code>apps/api</code>): new one-way-leaf <code>src/auth/</code> subpackage (<code>ports.py</code> 3 storage ports + <code>sqlite_store.py</code> single-shared <code>:memory:</code> …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS (re-run) — 30 PASS / 0 FAIL / 0 UNVERIFIABLE; conformance 2/2; dashboard 246/246; @org/api 7/7 (AC-E7 FAIL→fixed→re-verified)</div>
+  <div class="mani"><div class="mrow"><code>user-accounts</code> · SHIPPED + ARCHIVED (GATE S) — folded into canon, committed</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (specified, not built):</strong> provision the real <strong>Google Cloud OAuth client</strong> (then Google</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">no-real-order-path</a></div>
+</article><article class="card f-card" id="f-7g" data-status="shipped">
+  <header><h3>§7g · Full Convexa rebrand</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes + conductor doc sweep</span></header>
+  <div class="meta">shipped 2026-06-28 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/rebrand-convexa/</code>. Owner-directed 2026-06-28: complete the GammaFlow→Convexa rebrand — extend it from <strong>UI-only to the whole codebase</strong> (134 refs / 51 files). <strong>REVERSES the app-shell-landing "Convexa = UI-only / don't rename code/keys" decision</strong> (§7d; CONTEXT §1/§6) — a feature decision, updated in place, NOT a Promoted-canon demotion. …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS — 23/23 ACs, 0 FAIL; conformance 8/8; dashboard 283/283; @org/api 7/7</div>
+  <div class="mani"><div class="mrow"><code>rebrand-convexa</code> · SHIPPED + ARCHIVED (GATE S) — folded into canon, committed, repo renamed</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">loss-free-durable-migration</a></div>
+</article><article class="card f-card" id="f-7h" data-status="shipped">
+  <header><h3>§7h · Hybrid bring-your-own AI key</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-06-29 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/byo-ai-key/</code>. Owner-directed 2026-06-29: a <strong>hybrid</strong> per-user AI-key model realizing the deferred ai-rec BYO-key seam (§7b). Each signed-in user stores their own Anthropic key (encrypted); the AI rec calls with THEIR key (own-key-first, even for admins). The shared <code>ANTHROPIC_API_KEY</code> gives a free allowance ONLY to admin users …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS (re-run) — 26/26 ACs, 0 FAIL; dashboard 313/313; @org/api 13/13; conformance + security floor + byte-identical all PASS (AC-19 FAIL→fixed→re-verified)</div>
+  <div class="mani"><div class="mrow"><code>byo-ai-key</code> · SHIPPED + ARCHIVED (GATE S) — folded into canon, committed</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">secret-encrypted-at-rest</a><a class="chip key" href="#invariants">server-side-gate-enforcement</a></div>
+</article><article class="card f-card" id="f-7i" data-status="shipped">
+  <header><h3>§7i · Containerize the apps</h3><span class="chip shipped">SHIPPED + ARCHIVED — infra fast-path, author-only</span></header>
+  <div class="meta">shipped 2026-06-29 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/containerize-apps/</code>. Owner-directed 2026-06-29, step 1 of the infra/deploy program. <strong>GATE-M-style infra fast-path</strong> (architect → one infra build pass → conductor static review; PM/UX skipped — no product surface, <code>NO_INTERFACE_CHANGE</code>). <strong>7 new files, no app-code change:</strong> <code>apps/api/Dockerfile</code> (python:3.12-slim, WORKDIR /app, explicit COPYs of …</p>
+  <div class="qa"><strong>QA:</strong> conductor static review PASS (infra fast-path, no PM ACs) — secret-leak scan clean, both .dockerignores + explicit-COPY backend confirm no-secrets-in-image, non-root + healthcheck + correctness PASS, no app code …</div>
+  <div class="mani"><div class="mrow"><code>containerize-apps</code> · SHIPPED + ARCHIVED (GATE S) — 7 files authored, conductor static review PASS, committed</div></div>
+  
+  
+</article><article class="card f-card" id="f-7j" data-status="shipped">
+  <header><h3>§7j · Persistent datastore — in-memory → Postgres</h3><span class="chip shipped">SHIPPED + ARCHIVED — backend infra fast-path</span></header>
+  <div class="meta">shipped 2026-06-29 · lanes: backend (apps/api only)</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/persistent-db/</code>. Owner-directed 2026-06-29, step 2 of the infra/deploy program. <strong>GATE-M-style infra fast-path</strong> (architect → backend build → conductor static review; PM/UX skipped, <code>NO_INTERFACE_CHANGE</code>/<code>NO_UI_CHANGE</code>). Adds a <strong>persistent Postgres adapter behind the existing 4 auth ports</strong> so accounts/sessions/settings/encrypted-AI-keys survive …</p>
+  <div class="qa"><strong>QA:</strong> conductor static review PASS (infra fast-path) — in-memory-default conformance PASS (no regression), SQL parity review, ciphertext-only + no-crypto-import + leaf-boundary AST checks, secret-scan clean. Live-Postgres …</div>
+  <div class="mani"><div class="mrow"><code>persistent-db</code> · SHIPPED + ARCHIVED (GATE S) — Postgres adapter built, conductor review PASS, committed</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">no-secrets-in-image</a><a class="chip key" href="#invariants">secret-encrypted-at-rest</a></div>
+</article><article class="card f-card" id="f-7k" data-status="shipped">
+  <header><h3>§7k · Deploy — Railway + Cloudflare Pages + system-6 go-live review</h3><span class="chip shipped">SHIPPED artifacts; live-deploy owner-applied</span></header>
+  <div class="meta">shipped 2026-06-29 · lanes: both (mostly config + guided ops)</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/deploy/</code> (incl. <code>SECURITY_REVIEW.md</code>). Owner-directed 2026-06-29, step 3 of the infra program. Backend → <strong>Railway</strong> (the <code>apps/api/Dockerfile</code> + managed Postgres → <code>DATABASE_URL</code>, <code>ACCOUNT_STORE=postgres</code>); frontend → <strong>Cloudflare Pages</strong>. Cross-origin <code>/api</code> = a <strong>streaming Cloudflare Pages Function</strong> (<code>apps/dashboard/functions/api/[[path]].ts</code>, …</p>
+  <div class="qa"><strong>QA:</strong> system-6 SECURITY_REVIEW = GO-WITH-REQUIRED-FIXES. 3 HIGH (bounced Backend/owner): HIGH-1 /api/_metrics reachable via Railway direct URL → token-gate; HIGH-2 anon unthrottled cost-bearing /api/ticker+/api/stream → …</div>
+  <div class="mani"><div class="mrow"><code>deploy</code> · SHIPPED + ARCHIVED (GATE S) — artifacts + R1–R4 + 3 HIGH fixes committed; runbook handed to owner; LIVE DEPLOY + smoke test = …</div></div>
+  
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">no-secrets-in-image</a></div>
+</article><article class="card f-card" id="f-7l" data-status="shipped">
+  <header><h3>§7l · Convexa redesign — full FE re-skin to the Figma DS</h3><span class="chip shipped">SHIPPED + ARCHIVED — merged to main</span></header>
+  <div class="meta">lanes: frontend (NO_BACKEND_CHANGE — apps/api untouched)</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/convexa-redesign/</code>. A <strong>presentation-only</strong> full-app re-skin to the Figma dark-fintech design system, delivered as ~30 commits on the <code>convexa-redesign</code> branch (GATE-V-per-surface: implement-from-Figma). Surfaces: theme/token bridge (<code>theme.ts</code>/<code>tokens.ts</code> + <code>scripts/sync-figma-tokens.mjs</code>), Landing, global nav/shell + Footer, Settings + Auth …</p>
+  <div class="qa"><strong>QA:</strong> ✅ PASS 2026-06-30 (fresh qa-verify, de-correlated) — QA_REPORT.md: nx test dashboard 425/425, @org/api 13/13, lint 0 errors, tsc clean, <strong>nx build @org/dashboard succeeded</strong>, apps/api diff EMPTY; all invariants hold; no …</div>
+  <div class="mani"><div class="mrow"><code>convexa-redesign</code> · GATE V CLEANUP ✅ DONE — committed 82f63ee (token de-drift ×4 onto tokens.ts; removed dead HandoffDialog+SectionBadges; theme.h6 …</div></div>
+  
+  
+</article><article class="card f-card" id="f-7m" data-status="shipped">
+  <header><h3>§7m · Ticker UX-polish program + ai-rec structured display</h3><span class="chip shipped">SHIPPED + ARCHIVED — FE-only, catch-up QA</span></header>
+  <div class="meta">shipped 2026-07-01 · lanes: frontend (NO_BACKEND_CHANGE — apps/api untouched)</div>
+  <p>Contract archived at <code>.claude/contracts/_archive/ticker-microinteractions/</code> (the only folder; <code>ticker-widgets</code> + <code>ticker-command-deck</code> were GATE-V fast-paths with no folder of their own). A post-<code>convexa-redesign</code> <strong>Ticker UX-polish program</strong> — three stacked FE branches, developed as owner-approved GATE-V passes, fast-forwarded to <code>main</code> (the planned pre-merge consolidation QA was skipped), …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT — initial FAIL (§3 section-reveal stagger regressed by ticker-widgets 9c66d2e) → GATE Z bounce → conductor inline fix (revealIndex → --widget-reveal-delay) → RE-RUN PASS 16/16 (nx test dashboard 486/486, …</div>
+  <div class="mani"><div class="mrow"><code>ticker-microinteractions</code> · GATE V — ✅ DONE (conductor-built inline after the lane stalled in plan-mode confusion). 6 of 7 interactions shipped: value …</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Real widget functionality</strong> — drag-reorder + resize + add/remove + per-widget config + persistence, hung on</div><div class="seam"><strong>Deferred Ticker UX quick wins</strong> (BACKLOG §B): distance-to-level tiles (highest value), recent-ticker</div></div>
+  
+</article><article class="card f-card" id="f-7n" data-status="shipped">
+  <header><h3>§7n · Owner 5-item product program — items 1–4</h3><span class="chip shipped">SHIPPED + ARCHIVED; item 5 <code>scanner</code> queued</span></header>
+  <div class="meta">shipped 2026-07-01 · lanes: both (backend scenario provider behind the LLMProvider seam …</div>
+  <p>Owner directive 2026-07-01 (BACKLOG "Last GATE I — 2026-07-01"). Items 1–4 shipped to <code>main</code>: - <strong>1 <code>light-mode-parity</code></strong> (<code>8abae03</code>, GATE V, no folder): mode-aware <code>extras</code> via <code>extrasFor(theme)</code>, ONE shared hatch, mode-aware ticker chrome; dark byte-identical. - <strong>2+3 <code>sim-entry-unification</code></strong> (<code>d704193</code>, archived): ONE shared <code>app/trading/TradeEntryDialog</code> on both pages; ghost-trade/positions …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS — 48/48 ACs, 0 FAIL, 0 UNVERIFIABLE (fresh de-correlated Sonnet, 2026-07-02; all 5 invariants verified live + at source; conformance new spec + 5-spec no-regression sweep PASS; AC↔test traceability …</div>
+  <div class="mani"><div class="mrow"><code>ai-rec-backtest-orders</code> · BOTH LANES ✅ DONE + CONDUCTOR GATES ✅ GREEN (2026-07-02) → at GATE Q BE: 3 files (NEW src/core/ai_scenarios.py + …</div><div class="mrow"><code>sim-entry-unification</code> · ✅ BUILT + VERIFIED — lane delivered app/trading/TradeEntryDialog (one shared dialog, 7 old specs migrated + 6 new incl. the two …</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built):</strong> server-side/headless order evaluation + account-scoped order sync</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">no-real-order-path</a><a class="chip key" href="#invariants">server-side-gate-enforcement</a><a class="chip key" href="#invariants">single-shared-sim-entry-dialog</a><a class="chip key" href="#invariants">theme-token-discipline</a></div>
+</article><article class="card f-card" id="f-7o" data-status="shipped">
+  <header><h3>§7o · Projected dealer flow</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-07-02 · lanes: both (backend: projection over already-computed net …</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/dealer-flow-projection/</code>. First item of the owner "enrich the downstream-AI's inputs" GATE I (2026-07-02; BACKLOG "Last GATE I — 2026-07-02"). A forward-looking <strong>dealer-hedging-flow projection</strong> over the already-computed window-scoped net charm/vanna, surfaced as the additive nested nullable <code>market_state.dealer_flow_projection</code> (charm limb = …</p>
+  <div class="qa"><strong>QA:</strong> pending — fresh de-correlated qa-verify (sonnet) dispatched 2026-07-02</div>
+  <div class="mani"><div class="mrow"><code>dealer-flow-projection</code> · BOTH LANES ✅ DONE + CONDUCTOR GATES ✅ GREEN (2026-07-02) → at GATE Q BE (4 files): market_data.py 3 nested sub-models + …</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built):</strong> path-accurate charm re-integration (the linear <code>net_charm·H</code> is v1);</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">theme-token-discipline</a></div>
+</article><article class="card f-card" id="f-7p" data-status="note">
+  <header><h3>§7p · Latent hygiene finding (NOT this feature's regression) — the <code>:typecheck</code> Nx target is broken</h3><span class="chip note">OPEN NOTE</span></header>
+  <div class="meta">shipped 2026-07-02</div>
+  <p>Surfaced 2026-07-02 during dealer-flow-projection GATE Q. <code>npx nx run @org/dashboard:typecheck</code> fails project-wide with <strong>~960 pre-existing errors</strong> — a <code>tsconfig.spec.json</code> gap (missing <code>jest-dom</code> / DOM lib types: <code>RequestInfo</code>, <code>querySelector</code>, <code>toBeInTheDocument</code> unresolved in <code>*.spec.tsx</code>). Confirmed pre-existing + unrelated to this feature (an UNTOUCHED spec, e.g. <code>ai-rec/ai-rec.spec.tsx</code>, …</p>
+  
+  <div class="mani"><div class="mrow dim">no manifest — predates the manifest convention; rendered from OPEN_THREADS alone</div></div>
+  
+  
+</article><article class="card f-card" id="f-7q" data-status="shipped">
+  <header><h3>§7q · AI context pack — "Market context"</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-07-06 · lanes: both</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/ai-context-pack/</code>. <strong>Second</strong> item of the owner "enrich the downstream-AI's inputs" GATE I (owner pick 2026-07-06; BACKLOG "Last GATE I — 2026-07-06") — <strong>bundles</strong> the two parked scored items (AI context-scalars pack + TI regime bundle) into one feature. A bundle of four derived reads, all from data already in hand (no new vendor dependency), …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS — 26 PASS / 0 FAIL / 0 UNVERIFIABLE (fresh de-correlated Sonnet). Conformance new spec + 8-spec no-regression sweep; byte-identity re-derived live; nx test dashboard 658/658, @org/api 13/13, tsc -b clean, …</div>
+  <div class="mani"><div class="mrow"><code>ai-context-pack</code> · GATE S — SHIPPED + ARCHIVED (2026-07-06)</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built):</strong> the <strong>distance-to-level tiles</strong> (BACKLOG §B Ticker UX quick wins —</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">digested-labels-not-raw-dump</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">model-read-carries-its-assumptions</a><a class="chip key" href="#invariants">theme-token-discipline</a></div>
+</article><article class="card f-card" id="f-7r" data-status="shipped">
+  <header><h3>§7r · IV Rank / IV Percentile</h3><span class="chip shipped">SHIPPED + ARCHIVED — both lanes done</span></header>
+  <div class="meta">shipped 2026-07-06 · lanes: both (new persistent market-data time-series store + …</div>
+  <p>Contracts archived at <code>.claude/contracts/_archive/iv-rank/</code>. <strong>Third</strong> item of the owner "enrich the downstream-AI's inputs" GATE I (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after the market-backdrop index feed verified NOT_AUTHORIZED). Where a ticker's *current* IV sits within its *own recent history* → is option premium <strong>rich or cheap</strong> — surfaced as the additive nested …</p>
+  <div class="qa"><strong>QA:</strong> QA_REPORT PASS — 19/19 ACs, 0 FAIL, 0 UNVERIFIABLE (fresh de-correlated Sonnet)</div><div class="qa"><strong>Tests:</strong> nx test dashboard 685/685 (+27) · @org/api 13/13 · tsc -b --force clean · nx build green</div>
+  <div class="mani"><div class="mrow"><code>iv-rank</code> · GATE S — SHIPPED + ARCHIVED (2026-07-07)</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built):</strong> a <strong>curated warm-list</strong> to pre-accumulate popular tickers (organic-only</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">digested-labels-not-raw-dump</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">model-read-carries-its-assumptions</a><a class="chip key" href="#invariants">theme-token-discipline</a></div>
+</article><article class="card f-card" id="f-7s" data-status="shipped">
+  <header><h3>§7s · Dashboard restructure + Cypress swap + kit sync</h3><span class="chip shipped">SHIPPED on <code>main</code> — owner-directed maintenance</span></header>
+  <div class="meta">shipped 2026-07-16</div>
+  <p><strong>Not a conductor pipeline feature</strong> — no BRIEF, no contracts, no GATE Q. Logged because it moved canon-relevant structure. <code>main</code> @ <code>b194bdc</code>. Presentation/tooling only — score/tier/<code>state_fingerprint</code> untouched; <strong>674/674 tests green on <code>main</code></strong>. <strong>Shipped:</strong> (1) <strong>Cypress replaces Playwright</strong> (<code>e38328e</code>) — <code>@nx/cypress/plugin</code> in <code>nx.json</code> (same <code>e2e</code> target name), <code>cypress.config.ts</code> …</p>
+  
+  <div class="mani"><div class="mrow dim">no manifest — predates the manifest convention; rendered from OPEN_THREADS alone</div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built) → BACKLOG §B:</strong> <code>OpportunityTier</code> → a ticker widget · <code>/settings</code> as its</div></div>
+  
+</article><article class="card f-card" id="f-7t" data-status="shipped">
+  <header><h3>§7t · Outcome ledger — the track record</h3><span class="chip shipped">SHIPPED + ARCHIVED — FE-only</span></header>
+  <div class="meta">shipped 2026-07-16 · lanes: <strong>frontend ONLY</strong> (architect resolved crux 1: …</div>
+  <p><strong>Closes the loop the project was missing.</strong> It compounded <strong>BUILD</strong> wisdom (<code>DECISION_LEDGER.md</code>) and had <strong>none for TRADING</strong> wisdom. This harvests the append-only decision records the app already writes and answers, honestly: <strong>is the <code>opportunity_score</code> any good?</strong> — hit rate + mean per-trade return + dispersion by <strong>tier · AI-rec · setup · IV-rank band · persona</strong>, with explicit sample …</p>
+  <div class="qa"><strong>QA:</strong> <strong>QA_REPORT PASS — 46/46 ACs, 0 FAIL, 0 UNVERIFIABLE</strong> (fresh de-correlated <strong>Sonnet</strong>; every gate re-run independently, not taken from the lane's self-report). Gates: <code>nx test dashboard</code> <strong>804/804</strong> (69 files; 674 …</div><div class="qa"><strong>Tests:</strong> <code>nx test dashboard</code> 804/804 (+130) · <code>tsc -b apps/dashboard/tsconfig.app.json --force</code> clean · lint 0 errors · prod build green · <code>apps/api</code> diff empty</div>
+  <div class="mani"><div class="mrow"><code>outcome-ledger</code> · <strong>GATE S — SHIPPED + ARCHIVED (2026-07-16)</strong></div></div>
+  <div class="seams"><strong>Open seams:</strong><div class="seam"><strong>Deferred seams (named, not built) → BACKLOG:</strong> the <strong><code>split-decision-log</code></strong> live bug (<code>appendDecision</code> is</div></div>
+  <div class="keys"><strong>Invariants earned:</strong> <a class="chip key" href="#invariants">additive-keeps-score-byte-identical</a><a class="chip key" href="#invariants">best-effort-isolated-or-null</a><a class="chip key" href="#invariants">digested-labels-not-raw-dump</a><a class="chip key" href="#invariants">live-vs-static-isolation</a><a class="chip key" href="#invariants">loss-free-durable-migration</a><a class="chip key" href="#invariants">model-read-carries-its-assumptions</a><a class="chip key" href="#invariants">no-real-order-path</a><a class="chip key" href="#invariants">operator-vs-trader-path-separation</a><a class="chip key" href="#invariants">score-change-is-deliberate-and-measured</a><a class="chip key" href="#invariants">server-side-gate-enforcement</a><a class="chip key" href="#invariants">single-shared-sim-entry-dialog</a><a class="chip key" href="#invariants">theme-token-discipline</a></div>
+</article></div>
+</section>
+
+<section class="tab" id="tab-invariants">
+  <p class="counts">Why the app stays cohesive: 14 promoted-canon rules ·
+  11 watch-list entries · 1 demoted. Prose lives once in
+  <code>PROJECT_CONTEXT.md</code> §5; this is the index.</p>
+  <article class="card inv-card" id="inv-best-effort-isolated-or-null">
+  <header><h3><code>best-effort-isolated-or-null</code></h3><span class="chip shipped">promoted 2026-06-22</span></header>
+  <p>an optional/added computation fails to a null/omitted field, <strong>never an HTTP error</strong>; <code>market_state</code>/<code>strike_profile</code> + SSE stay intact</p>
+  <div class="meta">earned by: dark-pool, dex-voloi-skew-term, trade-tracker-sim, backend-observability, trader-personas (5)</div>
+</article><article class="card inv-card" id="inv-additive-keeps-score-byte-identical">
+  <header><h3><code>additive-keeps-score-byte-identical</code></h3><span class="chip shipped">promoted 2026-06-22</span></header>
+  <p>an additive feature leaves gate / <code>opportunity_score</code> / <code>opportunity_tier</code> / <code>state_fingerprint</code> <strong>byte-identical</strong>; never a scoring input</p>
+  <div class="meta">earned by: dex-voloi-skew-term, trade-tracker-sim, backend-observability, trader-personas (4)</div>
+</article><article class="card inv-card" id="inv-live-vs-static-isolation">
+  <header><h3><code>live-vs-static-isolation</code></h3><span class="chip shipped">promoted 2026-06-22</span></header>
+  <p>every datum declares live-derived vs static; live UI degrades on SSE drop (dim+offline, never blank) while static reads keep rendering</p>
+  <div class="meta">earned by: dark-pool, dex-voloi-skew-term, trade-tracker-sim, trader-personas (4)</div>
+</article><article class="card inv-card" id="inv-operator-vs-trader-path-separation">
+  <header><h3><code>operator-vs-trader-path-separation</code></h3><span class="chip shipped">promoted 2026-06-23</span></header>
+  <p>an operator/diagnostic surface stays off every trader/bundle route + unlinked from the trader UI; read-only + side-effect-free (no vendor fetch / recompute / cache mutation / trader-route call); trader path + SSE untouched</p>
+  <div class="meta">earned by: backend-observability, latency-visualizer (2 binding)</div>
+</article><article class="card inv-card" id="inv-no-real-order-path">
+  <header><h3><code>no-real-order-path</code></h3><span class="chip shipped">promoted 2026-06-24</span></header>
+  <p>"action" never reaches a real broker/order path: a simulated feature stays <code>SIMULATED</code> (paper) + mandatory-confirm; a not-yet-built real surface (e.g. a "Live" tab) ships as a <strong>non-functional placeholder</strong> with no broker, no order/execution path, no real-position data source</p>
+  <div class="meta">earned by: ai-recommendations, positions-portfolio (2 binding)</div>
+</article><article class="card inv-card" id="inv-server-side-gate-enforcement">
+  <header><h3><code>server-side-gate-enforcement</code></h3><span class="chip shipped">promoted 2026-06-29</span></header>
+  <p>an access gate on a state/cost-bearing action is enforced <strong>server-side</strong> (the server is the boundary of record), never FE-only; the FE check is for UX, not enforcement — a bypassed client check must still be rejected by the server</p>
+  <div class="meta">earned by: user-accounts (AC-E7 catch), byo-ai-key (2 binding)</div>
+</article><article class="card inv-card" id="inv-secret-encrypted-at-rest">
+  <header><h3><code>secret-encrypted-at-rest</code></h3><span class="chip shipped">promoted 2026-06-29</span></header>
+  <p>a stored recoverable secret (a user/third-party API key, broker token, etc.) is <strong>ENCRYPTED at rest</strong> (symmetric, server-side key — NOT hashed), and <strong>never logged / returned in a response / sent to the browser</strong>; write-only from the client (masked hint only) + rotate/delete; persisted as <strong>ciphertext only</strong> (the crypto boundary sits before the store); a decrypt-fail is treated as no-usable-secret, never a leak</p>
+  <div class="meta">earned by: byo-ai-key, persistent-db (2 binding)</div>
+</article><article class="card inv-card" id="inv-no-secrets-in-image">
+  <header><h3><code>no-secrets-in-image</code></h3><span class="chip shipped">promoted 2026-06-29</span></header>
+  <p>a build/deploy artifact (container image, pushed repo) carries <strong>NO secret</strong>: <code>.dockerignore</code> excludes <code>.env*</code>/<code>.venv</code>/credential files, no <code>COPY .env</code>, no secret literal, no hardcoded backend URL; ALL config + secrets injected at <strong>runtime via env</strong> (host Variables / Pages env), values owner-entered; images run <strong>non-root</strong></p>
+  <div class="meta">earned by: containerize-apps, persistent-db, deploy (3 binding)</div>
+</article><article class="card inv-card" id="inv-single-shared-sim-entry-dialog">
+  <header><h3><code>single-shared-sim-entry-dialog</code></h3><span class="chip shipped">promoted 2026-07-02 · narrowed 2026-07-16</span></header>
+  <p><strong>SIM-ONLY (narrowed 2026-07-16).</strong> Every <strong>simulated</strong> entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared <code>app/features/trading/TradeEntryDialog</code>; a new <strong>sim</strong> entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof. <strong>A REAL-money entry surface is explicitly OUT of scope and MUST be a separate component</strong> — see the narrowing note under the table</p>
+  <div class="meta">earned by: sim-entry-unification, ai-rec-backtest-orders (2 binding); narrowed by owner canon review</div>
+</article><article class="card inv-card" id="inv-loss-free-durable-migration">
+  <header><h3><code>loss-free-durable-migration</code></h3><span class="chip shipped">promoted <strong>2026-07-16 (SEVERITY path, 1 instance)</strong></span></header>
+  <p>when a durable client store's key/shape changes, existing user data is carried forward <strong>loss-free</strong> — read-new-else-old, promote-forward, <strong>never-delete</strong>, idempotent, never-throw — composing with any prior version chain; a corrupt/unreadable blob degrades to empty <strong>without destroying the original</strong></p>
+  <div class="meta">earned by: rebrand-convexa (the <code>resolveDurable</code> helper + the positions v1→v2 chain). Promoted by owner canon review on severity, not recurrence: ~5 durable localStorage stores hold the user's entire trading history with <strong>no server backup</strong>; violation = silent, total, …</div>
+</article><article class="card inv-card" id="inv-score-change-is-deliberate-and-measured">
+  <header><h3><code>score-change-is-deliberate-and-measured</code></h3><span class="chip shipped">promoted <strong>2026-07-16 (owner canon review)</strong></span></header>
+  <p>the <code>opportunity_score</code>/<code>tier</code>/gate <strong>MAY</strong> evolve — but <strong>only deliberately</strong>: via an explicit score-changing feature that states its rationale, records a <strong>before/after on real tickers</strong>, and <strong>version-bumps</strong> the fingerprint basis. A score change is <strong>never</strong> a side effect of an additive feature (that is <code>additive-keeps-score-byte-identical</code>), and never lands unmeasured</p>
+  <div class="meta">earned by: The counterpart <code>additive-keeps-score-byte-identical</code> lacked: 8 enrichment features shipped (dex-voloi-skew-term, dealer-flow-projection, ai-context-pack, iv-rank, …) and <strong>none could reach the score</strong>, which went unchanged for 210 commits. Fills the gap; …</div>
+</article><article class="card inv-card" id="inv-theme-token-discipline">
+  <header><h3><code>theme-token-discipline</code></h3><span class="chip shipped">promoted 2026-07-02</span></header>
+  <p>a new or re-skinned FE component binds to the MUI theme / <code>tokens.ts</code> — mode-aware values via <code>extrasFor(theme)</code> inside sx callbacks — <strong>never hardcoded hex</strong>; dark/light parity verified</p>
+  <div class="meta">earned by: convexa-redesign, ticker-ux-polish, light-mode-parity + sim-entry-unification, ai-rec-backtest-orders (4 programs)</div>
+</article><article class="card inv-card" id="inv-model-read-carries-its-assumptions">
+  <header><h3><code>model-read-carries-its-assumptions</code></h3><span class="chip shipped">promoted 2026-07-06</span></header>
+  <p>a forward-looking / model-dependent read (a projection, a model-derived level, a threshold-bucketed regime label/scalar) is surfaced <strong>self-describing</strong> — it carries its own horizon / window / assumption / basis / threshold — and is framed as <strong>advisory context, never a guarantee / price forecast / scored signal</strong></p>
+  <div class="meta">earned by: dealer-flow-projection, ai-context-pack, iv-rank (3)</div>
+</article><article class="card inv-card" id="inv-digested-labels-not-raw-dump">
+  <header><h3><code>digested-labels-not-raw-dump</code></h3><span class="chip shipped">promoted 2026-07-07</span></header>
+  <p>a derived-signal set fed to the downstream AI (and displayed) is a <strong>SMALL orthogonal set pre-digested into regime/band LABELS</strong>, not a raw indicator/OHLC/series dump; the <strong>wire enum/token is authoritative</strong> (FE renders via a closed lookup, <strong>never re-derives</strong> a label from the scalar); no raw series on the wire or in the UI</p>
+  <div class="meta">earned by: ai-context-pack, iv-rank (2 binding)</div>
+</article>
+  <h3>Watch list</h3><div class="watch dim">(<code>single-shared-sim-entry-dialog</code> GRADUATED 2026-07-02 — 2 binding (sim-entry-unification created the single dialog + deleted the forks; ai-rec-backtest-orders honored it via the additive order variant, contract-mandated "do not fork"). Now in Promoted canon above.)</div><div class="watch dim">(<code>theme-token-discipline</code> GRADUATED 2026-07-02 — held across convexa-redesign (logged), the ticker-ux-polish program ("held again"), light-mode-parity/sim-entry-unification (the <code>extrasFor</code> mechanism itself), and ai-rec-backtest-orders (token-only orders module). ≥3 shipped features → Promoted canon above.)</div><div class="watch dim">(<code>model-read-carries-its-assumptions</code> GRADUATED 2026-07-06 — 2 binding (dealer-flow-projection — the assumption-explicit charm/vanna projection; ai-context-pack — every trend/shape/flow/ATR read carries its window+threshold+basis + the "not a forecast, not a scored signal" framing). Crossed the "≥2 if binding" …</div><div class="watch dim">(<code>digested-labels-not-raw-dump</code> GRADUATED 2026-07-07 — 2 binding (ai-context-pack — the TI regime labels off ADX/RSI/EMA, no raw indicator series; iv-rank — the rich/cheap <code>band</code> [premium_rich|neutral|premium_cheap] cut server-side from the rank, no raw IV history on the wire or in the UI). Crossed the "≥2 if binding" …</div><div class="watch dim">(<strong><code>loss-free-durable-migration</code></strong> GRADUATED <strong>2026-07-16</strong> via the new <strong>SEVERITY path</strong> at 1 instance (rebrand-convexa) — owner canon review. Violation = silent, total, irreversible loss of the user's entire trading history (~5 durable localStorage stores, <strong>no server backup</strong>). Recurrence would have kept it waiting …</div><div class="watch"><strong><code>structural-over-prose-enforcement</code></strong> (<strong>1 instance — outcome-ledger, 2026-07-16; NOT promoted</strong>) — an invariant a feature must hold is enforced by <strong>construction</strong> (a type, a module boundary, an empty diff, a mutation-tested source-scan) rather than by <strong>prose an implementer must remember</strong>. Where the two are …</div><div class="watch"><strong><code>ai-asserted-numbers-are-traceable</code></strong> (<strong>0 instances — PROPOSED 2026-07-16, owner canon review; NOT promoted</strong>) — every number the in-app AI <strong>asserts</strong> (strike, stop, target, level, price) must be <strong>traceable to a computed bundle field</strong>; an untraceable number is not rendered as fact. Rationale: …</div><div class="watch dim">(<code>no-secrets-in-image</code> GRADUATED 2026-06-29 at <code>deploy</code> — 3 binding (containerize-apps, persistent-db, deploy); the held-until-published rule fired when the image is pushed to Railway for real. Now in Promoted canon above.)</div><div class="watch dim">(<code>server-side-gate-enforcement</code> GRADUATED 2026-06-29 — 2 binding (user-accounts AC-E7, byo-ai-key).)</div><div class="watch dim">(<code>secret-encrypted-at-rest</code> GRADUATED 2026-06-29 — reached 2 binding instances (byo-ai-key, persistent-db); now in Promoted canon above.)</div><div class="watch dim">(<code>no-real-order-path</code> graduated 2026-06-24; reaffirmed again by user-accounts → 3 binding instances, already in Promoted canon.)</div>
+  <h3>Demoted (contradicted by reality)</h3><article class="card inv-card demoted"><header><h3><code>ai-external-no-llm</code></h3>
+  <span class="chip note">demoted 2026-06-23</span></header>
+  <p><strong>Evidence:</strong> <code>ai-recommendations</code> · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM."</p><p><strong>NARROWED, not erased.</strong> New rule: GammaFlow MAY call an LLM <strong>only</strong> as a best-effort, isolated, gated, <strong>advisory consumer</strong> of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning …</p></article>
+</section>
+
+<section class="tab" id="tab-roadmap">
+  <p class="counts">31 live items (19 themed) · 30 shipped/closed.
+  Sourced from <code>BACKLOG.md</code> §A–§E + the invisible atlas annotations.</p>
+  <div class="legend"><span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span> <span class="dim">the numbers deserve belief</span><br><span class="chip" style="background:#7C5CE0;color:#fff">breadth</span> <span class="dim">more tickers, more context</span><br><span class="chip" style="background:#1FA588;color:#fff">reach</span> <span class="dim">more users can find + use it</span><br><span class="chip" style="background:#C87422;color:#fff">go-live</span> <span class="dim">real users, real data, real money readiness</span><br><span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span> <span class="dim">the build system itself</span><br><span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span> <span class="dim">not yet themed (defaults)</span><br></div>
+  <div class="rwrap"><div class="rcol"><h3>Now <span class="count">4</span></h3><article class="card r-card" style="border-left:4px solid #7C5CE0">
+  <header><h4>scanner</h4></header>
+  <div class="meta"><span class="chip sec">§A</span> <span class="chip" style="background:#7C5CE0;color:#fff">breadth</span></div>
+  <p>NEXT (architect-first, both lanes). Promotes the long-queued Track-A item</p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>split-decision-log — the append-only decision log is SPLIT across two durable stores (LIVE bug)</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p></p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>Ticker UX quick wins (deferred set)</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p><code>RAISED 2026-06-30 (owner; "any quick ux improvements?")</code>. Small,</p>
+</article><article class="card r-card" style="border-left:4px solid #8A7A9C">
+  <header><h4>system-12 · system-1 standalone-spec standardization</h4></header>
+  <div class="meta"><span class="chip sec">§E</span> <span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span></div>
+  <p>`DECIDED 2026-06-23 (standalone = canonical),</p>
+</article></div><div class="rcol"><h3>Next <span class="count">4</span></h3><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>ai-rec-grounding — every AI-asserted number traceable to a computed field</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p>`RAISED 2026-07-16</p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>degradation-visibility — measure the nulls that best-effort creates</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p>`RAISED 2026-07-16 (canon</p>
+</article><article class="card r-card" style="border-left:4px solid #1FA588">
+  <header><h4>responsive-layout — PARKED MID-FLIGHT on a local-only branch</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#1FA588;color:#fff">reach</span></div>
+  <p>`RAISED + PARKED 2026-07-16 (owner:</p>
+</article><article class="card r-card" style="border-left:4px solid #8A7A9C">
+  <header><h4>system-10 · Contract-linter AC↔verification-EVIDENCE check</h4></header>
+  <div class="meta"><span class="chip sec">§E</span> <span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span></div>
+  <p>(was: AC↔test traceability)* —</p>
+</article></div><div class="rcol"><h3>Later <span class="count">23</span></h3><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>test-seed-writes-a-fabricated-closed-position (sub-item of the above)</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p><code>positions/testSeed.ts</code></p>
+</article><article class="card r-card" style="border-left:4px solid #8A7A9C">
+  <header><h4>Restructure deferrals</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span></div>
+  <p><code>RAISED 2026-07-16</code> → GROOMED 2026-07-16 (hygiene batch): (a) CULLED,</p>
+</article><article class="card r-card" style="border-left:4px solid #7C5CE0">
+  <header><h4>AI input-enrichment pool</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#7C5CE0;color:#fff">breadth</span></div>
+  <p><code>RAISED 2026-07-02 (owner; "what derived data helps the AI?")</code>. The</p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>vol_regime — a display gap, NOT dead wire (do not "clean it up")</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p>`TRACED 2026-07-16 (hygiene</p>
+</article><article class="card r-card" style="border-left:4px solid #1FA588">
+  <header><h4>Prerender public pages (SSG) + SEO hygiene</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#1FA588;color:#fff">reach</span></div>
+  <p>`RAISED 2026-06-29 (post-launch optimization; SSR evaluated</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Containerize each app (Dockerfile per deployable) + deployment readiness</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>`RAISED 2026-06-25</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Live gamma-flip anchoring</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>outside RTH, anchor the flip search to <code>gex_spot</code> (close) not the</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Wall-selection distance/DTE guard</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>keep a deep-OTM round-number LEAP strike from becoming</p>
+</article><article class="card r-card" style="border-left:4px solid #8A7A9C">
+  <header><h4>Decision-Ledger crossing-detection hook</h4></header>
+  <div class="meta"><span class="chip sec">§B</span> <span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span></div>
+  <p>(methodology/tooling — not a trading feature)* —</p>
+</article><article class="card r-card" style="border-left:4px solid #C87422">
+  <header><h4>Business viability / monetization de-risking</h4></header>
+  <div class="meta"><span class="chip sec">§C</span> <span class="chip" style="background:#C87422;color:#fff">go-live</span></div>
+  <p>`RAISED 2026-06-30 (owner; carried from RESUME 7m</p>
+</article><article class="card r-card" style="border-left:4px solid #C87422">
+  <header><h4>Data-vendor decision + overnight coverage</h4></header>
+  <div class="meta"><span class="chip sec">§C</span> <span class="chip" style="background:#C87422;color:#fff">go-live</span></div>
+  <p>Massive vs Databento (Blue Ocean overnight, full</p>
+</article><article class="card r-card" style="border-left:4px solid #7C5CE0">
+  <header><h4>Multi-session dark-pool accumulation map</h4></header>
+  <div class="meta"><span class="chip sec">§C</span> <span class="chip" style="background:#7C5CE0;color:#fff">breadth</span></div>
+  <p>beyond the current bounded recent window; needs a</p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>Flip fixed-IV-under-spot-move modeling</h4></header>
+  <div class="meta"><span class="chip sec">§C</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p>the latent choice of holding IV fixed while repricing</p>
+</article><article class="card r-card" style="border-left:4px solid #2E86AB">
+  <header><h4>gamma-unification — own analytic gamma for the walls (consistent flip)</h4></header>
+  <div class="meta"><span class="chip sec">§C</span> <span class="chip" style="background:#2E86AB;color:#fff">trust-the-signal</span></div>
+  <p>`RAISED 2026-06-25</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Ghost-trade → real path</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>broker <code>FillSource</code>/<code>PositionStore</code>, <code>BundleFeed</code>+clock replay,</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Observability extensions</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>OTel/Prometheus export, latency/headroom alert thresholds,</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Multi-ticker scanner</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>the observability baseline data supports it. *Value M · Effort M-L.*</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Persona data single-sourcing (FE↔BE reconciliation)</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>the backend ships the canonical</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Persona conservative-disposition cleanup</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>UX/FE gave <code>conservative</code> the *softened* disposition</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>Persona deferred extensions</h4></header>
+  <div class="meta"><span class="chip sec">§D</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>multi-device sync, operator-shared persona library, richer</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>system-6 · Adversarial Security/red-team role (different model)</h4></header>
+  <div class="meta"><span class="chip sec">§E</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>`⏸ DEFERRED until live</p>
+</article><article class="card r-card" style="border-left:4px solid #8A7A9C">
+  <header><h4>system-8 · Close the flywheel (observability → GATE I)</h4></header>
+  <div class="meta"><span class="chip sec">§E</span> <span class="chip" style="background:#8A7A9C;color:#fff">the-machine</span></div>
+  <p>add the shipped metrics as a first-class</p>
+</article><article class="card r-card" style="border-left:4px solid #8b8b8b">
+  <header><h4>system-9 · Orchestrator-as-subagent-pipeline + parallel feature lanes</h4></header>
+  <div class="meta"><span class="chip sec">§E</span> <span class="chip" style="background:#8b8b8b;color:#fff">unthemed</span></div>
+  <p>automate the conductor so</p>
+</article></div></div>
+  <details class="donestrip"><summary>Shipped / closed (30)</summary><div><span class="chip done">§A · Dashboard folder restructure + Cypress swap + kit sync</span><span class="chip done">§A · deploy</span><span class="chip done">§A · persistent-db</span><span class="chip done">§A · containerize-apps</span><span class="chip done">§A · byo-ai-key</span><span class="chip done">§A · rebrand-convexa</span><span class="chip done">§A · user-accounts</span><span class="chip done">§A · ticker-load-experience</span><span class="chip done">§A · OWNER PIVOT program (positions-centric, multi-page)</span><span class="chip done">§A · app-shell-landing</span><span class="chip done">§A · positions-portfolio</span><span class="chip done">§A · ai-recommendations</span><span class="chip done">§A · latency-visualizer</span><span class="chip done">§A · trader-personas</span><span class="chip done">§B · Dead-code sweep</span><span class="chip done">§B · Test-migration to the risk-based rule</span><span class="chip done">§B · Fix the broken @org/dashboard:typecheck Nx target</span><span class="chip done">§B · AI-rec "Accept" → tracked position — full build-out</span><span class="chip done">§B · Convexa-redesign — full FE re-skin program</span><span class="chip done">§B · Engine higher-order-greek determinism</span><span class="chip done">§E · system-1 · Interface-conformance check</span><span class="chip done">§E · system-2 · QA / Verify role (a 6th role, with teeth)</span><span class="chip done">§E · system-3 · Contract linter (mechanical gate-check)</span><span class="chip done">§E · system-4 · Lane enforcement via role subagents</span><span class="chip done">§E · system-4b · PreToolUse path-guard hook</span><span class="chip done">§E · system-5 · Ground-truth + ledger sharding (retrieval)</span><span class="chip done">§E · system-7 · Promoted-canon demotion path</span><span class="chip done">§E · system-9-lite · fresh-subagent-per-gateway</span><span class="chip done">§E · system-11 · Cross-repo role-context on dispatch</span><span class="chip done">§E · system-13 · Framework portability — the delivery-kit extraction</span></div></details>
+</section>
+
+<script>
+(function () {
+  var tabs = ["journey", "catalog", "invariants", "roadmap"];
+  function show(name) {
+    tabs.forEach(function (t) {
+      document.getElementById("tab-" + t).classList.toggle("active", t === name);
+    });
+    document.querySelectorAll("nav.tabs a").forEach(function (a) {
+      a.classList.toggle("active", a.dataset.tab === name);
+    });
+  }
+  function route() {
+    var h = location.hash.replace("#", "");
+    if (tabs.indexOf(h) >= 0) { show(h); return; }
+    if (h.indexOf("f-") === 0) {
+      show("catalog");
+      var el = document.getElementById(h);
+      if (el) {
+        document.querySelectorAll(".f-card.hl").forEach(function (c) { c.classList.remove("hl"); });
+        el.classList.add("hl");
+        el.scrollIntoView({ block: "start" });
+      }
+      return;
+    }
+    if (h.indexOf("inv-") === 0) {
+      show("invariants");
+      var iv = document.getElementById(h);
+      if (iv) iv.scrollIntoView({ block: "start" });
+      return;
+    }
+    show("journey");
+  }
+  window.addEventListener("hashchange", route);
+  route();
+  var q = document.getElementById("q"), sf = document.getElementById("statusFilter");
+  function filter() {
+    var needle = q.value.toLowerCase(), st = sf.value;
+    document.querySelectorAll("#catalog-cards .f-card").forEach(function (c) {
+      var okText = !needle || c.textContent.toLowerCase().indexOf(needle) >= 0;
+      var okStatus = !st || c.dataset.status === st;
+      c.style.display = okText && okStatus ? "" : "none";
+    });
+  }
+  q.addEventListener("input", filter);
+  sf.addEventListener("change", filter);
+})();
+</script>
+</main>
+</body>
+</html>

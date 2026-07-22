@@ -685,6 +685,13 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->
+- **The Feature Atlas (`docs/atlas/atlas.html`) is GENERATED — never edit it by hand.** It is the owner's
+  living map of the product (journey · catalog · invariants · roadmap), emitted by
+  `py docs/atlas/build_atlas.py` from the canon (OPEN_THREADS + archived manifests + DECISION_LEDGER +
+  BACKLOG). **Regenerate it at every GATE S** (and after any BACKLOG grooming) — the script is the sync
+  step, so the atlas can never drift from the canon it renders. Roadmap items carry
+  `<!-- atlas: theme=… horizon=… -->` annotations IN BACKLOG (the single source; themes:
+  trust-the-signal · breadth · reach · go-live · the-machine; horizons: now/next/later).
 - **Env (`.env`):** `MASSIVE_API_KEY`, `DATA_FEED` (realtime|delayed), `CACHE_TTL_SECONDS` (60),
   `STALE_AFTER_SECONDS` (**120** default since ticker-load-experience — the real-time tier; was 1200),
   `CHAIN_PREWARM_MAX_AGE_SECONDS` (chain-pre-warm freshness budget, clamped ≤ `min(CHAIN_REFRESH_SECONDS,

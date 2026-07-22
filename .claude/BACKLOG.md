@@ -235,6 +235,7 @@ Owner handed the conductor five sequenced items (screenshots of broken light-mod
    +103 tests → 595. **SUBSUMED** the §B "AI-rec Accept → tracked position" item. One post-QA render
    catch fixed inline + guarded (keyless-deployment scenario run). Seams → OPEN_THREADS §7n.
 5. **`scanner`** — **NEXT** (architect-first, both lanes). Promotes the long-queued Track-A item
+  <!-- atlas: theme=breadth horizon=now -->
    WITH the owner's expanded scope: durable custom watchlist, simplified per-ticker read (score/tier),
    AI-seeded watchlists, multiple views, ticker-page links, batch AI recs on all/selected. **Invariant
    watch:** revisits the locked "single-ticker, on-demand" decision — the architect must re-justify
@@ -591,6 +592,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 
 ### B. Ready candidates (feasible, small, unscheduled)
 - **`split-decision-log` — the append-only decision log is SPLIT across two durable stores (LIVE bug)** —
+  <!-- atlas: theme=trust-the-signal horizon=now -->
   `SURFACED 2026-07-16 (outcome-ledger GATE A·X; conductor-verified in code)`. **Pre-existing +
   feature-independent — NOT an outcome-ledger regression.**
   **The defect:** `appendDecision` is defined **twice** — `features/trading/model/store.ts:59` writes to
@@ -626,6 +628,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   no record ⇒ not an outcome). *Fix (optional): have the seed emit matching decision records, or mark
   seeded positions explicitly.* *Value L–M · Effort S.*
 - **`ai-rec-grounding` — every AI-asserted number traceable to a computed field** — `RAISED 2026-07-16
+  <!-- atlas: theme=trust-the-signal horizon=next -->
   (canon review; owner agreed)`. **The gap:** `best-effort-isolated-or-null` covers the AI **failing**;
   **nothing covers it fabricating.** The rec emits strikes / stops / targets / levels as fact, and
   `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. **Scope:** every
@@ -640,6 +643,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `ai-asserted-numbers-are-traceable` (its **first instance** — promotes on ship), `additive-keeps-score-
   byte-identical`, `best-effort-isolated-or-null`, `digested-labels-not-raw-dump`.
 - **`degradation-visibility` — measure the nulls that best-effort creates** — `RAISED 2026-07-16 (canon
+  <!-- atlas: theme=trust-the-signal horizon=next -->
   review; owner agreed)`. **The gap this closes is one WE created:** `[best-effort-isolated-or-null]` is
   correct and load-bearing, but it makes every failure **silent** — a field degrades to null and the UI says
   "unavailable this cycle" **forever**, with nothing aggregating null rates. Observability measures
@@ -653,6 +657,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   read-only + side-effect-free), `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null` (the
   measurement must not itself become a failure path).
 - **`responsive-layout` — PARKED MID-FLIGHT on a local-only branch** — `RAISED + PARKED 2026-07-16 (owner:
+  <!-- atlas: theme=reach horizon=next -->
   "pausing to think")`. ⚠ **`feat/responsive-layout` exists ONLY on this machine — never pushed.** 2 commits,
   both green: `d2bac85` responsive top nav (hamburger + drawer < `md`, 48px targets) · `a7b92eb` positions →
   cards < `md` + TradeEntryDialog/AuthDialog → fullScreen < `sm`. **Already fine, no change needed:** landing
@@ -665,6 +670,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   local-only branch is one disk failure from gone. *Value M–H (mobile usability) · Effort S–M remaining.*
   Decision-impact cull **N/A** (UX/platform-reach class). **Invariant watch:** `theme-token-discipline`.
 - **Restructure deferrals** — `RAISED 2026-07-16` → **GROOMED 2026-07-16 (hygiene batch): (a) CULLED,
+  <!-- atlas: theme=the-machine horizon=later -->
   (b) stands, (c)+(d) re-scoped to one branch.**
   (a) ~~`OpportunityTier` → a ticker widget~~ — **CULLED as half-impossible** (verified in code): the `WORD`
   map is imported by `features/trading/outcomes/ledger.ts:20`, and `features/` may never import `pages/**`
@@ -714,6 +720,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **re-scoped 2026-07-16 to an AC↔verification-EVIDENCE check** — the re-scoped form **supports** this
   migration (it accepts `review` as evidence, so trimming a spec no longer trips it).
 - **AI input-enrichment pool** — `RAISED 2026-07-02 (owner; "what derived data helps the AI?")`. The
+  <!-- atlas: theme=breadth horizon=later -->
   scored survivors from the 2026-07-02 GATE I (full verdicts in that note above): `iv-rank` (Value H;
   blocked-on IV-history persistence — accumulate into the shipped Postgres store), `market-backdrop`
   SPY/QQQ+VIX (Value H; blocked-on a Massive index/VIX coverage verify), the AI context-scalars pack
@@ -785,6 +792,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
     **portfolio/ghost-trade panels** were **removed** per owner. *Value H (ship the redesign) · Effort M.*
     Decision-impact cull **N/A** (FE redesign program; judged on design-conformance + ship-readiness).
 - **`vol_regime` — a display gap, NOT dead wire (do not "clean it up")** — `TRACED 2026-07-16 (hygiene
+  <!-- atlas: theme=trust-the-signal horizon=later -->
   batch), reclassified from the test-migration's "gap or dead wire?" flag`. End-to-end verdict:
   `vol_regime` (`iv_rich`/`iv_cheap`/`neutral` off IV/HV, `signals.py:129-135`) is **computed and consumed
   three real ways** — (1) **folded into `state_fingerprint`** (`signals.py:271` — so REMOVING it changes
@@ -797,6 +805,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **⚠ Standing guard: any future "dead code" sweep that proposes deleting it is wrong** — the fingerprint
   coupling makes removal a scoring-basis change.
 - **Ticker UX quick wins (deferred set)** — `RAISED 2026-06-30 (owner; "any quick ux improvements?")`. Small,
+  <!-- atlas: theme=trust-the-signal horizon=now -->
   FE-only, display-only usability touches on the Ticker page. **Big-number formatting + a freshness indicator
   were BUILT this session** (GATE V on `convexa-redesign`); the owner deferred the rest here:
   - **Distance-to-spot on the key levels** *(highest value)* — Call wall / Put wall / Gamma flip / Max pain each
@@ -813,6 +822,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   Decision-impact cull **N/A** (UX-polish class; judged on daily-use friction). All honor display-only +
   `[live-vs-static-isolation]` (live values still freeze/dim on an SSE drop).
 - **Prerender public pages (SSG) + SEO hygiene** — `RAISED 2026-06-29 (post-launch optimization; SSR evaluated
+  <!-- atlas: theme=reach horizon=later -->
   + rejected)`. Optimize first-paint + SEO for the PUBLIC pages WITHOUT full SSR (which was evaluated and
   rejected: a Vite-SPA→Next/Remix/Vite-SSR migration + a per-request render server would break the free
   static Cloudflare Pages model, and the app's value — live GEX charts/SSE/per-user positions/auth — is
@@ -858,6 +868,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Invariant watch:** walls stay the gamma-based max/min net-GEX strike — a guard, not a redefinition.
   Bite only if it shows up live. (`OPEN_THREADS` §7)
 - **Decision-Ledger crossing-detection hook** *(methodology/tooling — not a trading feature)* —
+  <!-- atlas: theme=the-machine horizon=later -->
   mechanize the DETECT step of compounding memory: a `settings.json` hook (or small script) that
   tallies `DECISION_LEDGER.md` keys and flags when one crosses the promotion threshold (≥3 shipped
   features / ≥2 if binding), so at GATE S the Orchestrator is *told* "key X just crossed" instead of
@@ -882,6 +893,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 
 ### C. Strategic / blocked (high value, gated on a decision or heavy lift)
 - **Business viability / monetization de-risking** — `RAISED 2026-06-30 (owner; carried from RESUME 7m
+  <!-- atlas: theme=go-live horizon=later -->
   closeout)`. Before monetizing (freemium SaaS, serious-small-business ambition), 3 cheap de-risk actions,
   research done: (1) get **Databento/ORATS commercial derived-data redistribution** terms — the current
   Massive/Polygon license **forbids** the redistribution a paid product needs (the hard blocker); (2) a
@@ -891,17 +903,21 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   legal/comms, not build).* **Decision-impact cull N/A** (business/strategy class). **Blocked-on:** owner
   pursuing the vendor-license + counsel conversations — a decision/diligence gate before any monetization build.
 - **Data-vendor decision + overnight coverage** — Massive vs Databento (Blue Ocean overnight, full
+  <!-- atlas: theme=go-live horizon=later -->
   OPRA) vs Webull (cheap overnight underlying, no options). *Impact:* unlocks the overnight price gap
   — the core coverage hole. *Value H · Effort L.* **Blocked-on:** the cost/eval decision itself
   (verify whether Databento Standard $199 includes Blue Ocean). This is a *decision* before a build.
   (`OPEN_THREADS` §1/§2/§9)
 - **Multi-session dark-pool accumulation map** — beyond the current bounded recent window; needs a
+  <!-- atlas: theme=breadth horizon=later -->
   heavier batched pull. *Impact:* see block accumulation across sessions, not just the last hour.
   *Value M · Effort L.* Future. (`OPEN_THREADS` §7/§9)
 - **Flip fixed-IV-under-spot-move modeling** — the latent choice of holding IV fixed while repricing
+  <!-- atlas: theme=trust-the-signal horizon=later -->
   across the spot grid in the flip search. *Impact:* flip fidelity. *Value TBD · Effort L.*
   **Blocked-on:** measure the divergence first before any calibration (per §9 — judged immaterial so far).
 - **`gamma-unification` — own analytic gamma for the walls (consistent flip)** — `RAISED 2026-06-25
+  <!-- atlas: theme=trust-the-signal horizon=later -->
   (owner); MEASURE-FIRST`. Today walls/net-GEX use **vendor** gamma (`engine.py:316`) while the flip +
   vanna/charm/volga use our **analytic** BS gamma (`engine.py:_calc_gamma`/`_gex_curve`) — the documented,
   locked `gamma-sourcing-split`. Owner wants them unified (one gamma model → walls & flip consistent),
@@ -1035,6 +1051,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   *exception*, not a demotion. *Impact:* stops compounding memory from calcifying a wrong-but-repeated
   decision into law (SYSTEM_ANALYSIS §4.5). *Value M · Effort S–M.*
 - **system-8 · Close the flywheel (observability → GATE I)** — add the shipped metrics as a first-class
+  <!-- atlas: theme=the-machine horizon=later -->
   GATE I harvest source so Discovery grooms from measured reality, not guesses. *Impact:* the
   build→measure→discover loop becomes real. *Value M · Effort S.* **Depends-on:** `latency-visualizer`
   / the observability readout (§A/§D).
@@ -1050,6 +1067,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   removes the human review the system currently leans on for correctness; the **lite path above is the
   adopted interim** until then.
 - **system-10 · Contract-linter AC↔verification-EVIDENCE check** *(was: AC↔test traceability)* —
+  <!-- atlas: theme=the-machine horizon=next -->
   `PROPOSED (2026-06-23)` → **✓ RE-SCOPED 2026-07-16 (OWNER DECISION: option (b)); unscheduled.**
   **Why the original went obsolete:** system-10 existed to MECHANIZE the rule "every AC maps to ≥1 named
   colocated test" — but the **2026-07-13 `qa-verify.md` §4 risk-based amendment REPLACED that rule**.
@@ -1092,6 +1110,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Origin:** raised 2026-06-23 after two *maintenance* tasks were dispatched ad-hoc; the merge
   (plan `ok-let-s-do-option-dapper-treasure`) was the chosen structural fix.
 - **system-12 · system-1 standalone-spec standardization** — `DECIDED 2026-06-23 (standalone = canonical),
+  <!-- atlas: theme=the-machine horizon=now -->
   partial`. The conformance spec drifted: docs say "embed a `## Conformance spec` ```json block in
   INTERFACE_CONTRACT.md," but the shipped precedent (`.claude/tools/conformance/api_metrics.json`) and the
   ONLY runnable form is a **standalone flat-schema file**. The UX (following the docs) embedded a rich
