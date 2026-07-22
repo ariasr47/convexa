@@ -45,6 +45,9 @@ Lane (hard):
   GATE Z (note it for amendment), don't omit it. **E2E:** a real-browser flow tool is adopted nearer
   go-live for the critical happy path + key edge cases, optional before then (the BE↔FE seam is already
   verified by `interface_conformance.py`).
+- Design quality (`.claude/DESIGN_RULES.md`): build to the UX token plan exactly — no improvised
+  colors/type — and run its visual verification loop (§1.6); that loop is part of "done", so your
+  report includes it (or its explicit fallback note).
 - Run the project the standard way (`project.json` → `frontend.serve_cmd`) and verify the live-loss /
   stale / cold-start states behave as specified. Report what you changed + how you verified (include the
   test result). No outbound contract; run no compressor.

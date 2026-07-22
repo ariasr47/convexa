@@ -63,6 +63,8 @@ Method:
      assertion-per-AC.
    A suite (or a "named test") that asserts nothing still doesn't count. Record the verification method per
    AC in `QA_REPORT.md` (test name · or "review/QA") so "done" stays auditable **without** the brittleness.
+5. The `.claude/DESIGN_RULES.md` quality floor (its §5) is part of the GATE Q sweep for any user-facing
+   surface — review-kind under §4's risk-based rule unless a case is marked `test:`.
 
 Output — write ONLY:
 - `.claude/contracts/{FEATURE}/QA_REPORT.md` — a table (AC verbatim · verdict · evidence), a summary

@@ -286,6 +286,10 @@ requirement set — and mark EACH case with its verification kind per the risk-b
 visible/intentional things (copy, presence, ordering). Verification of every AC is mandatory at GATE Q;
 a named test per AC is NOT — do not re-impose it.
 
+Design quality: run the design front-half of .claude/DESIGN_RULES.md (pin the brief · structure
+before style · token plan + self-critique), recorded as a "Design tokens + signature" section of
+UX_BLUEPRINT.md that the split carries into the FRONTEND_EXECUTION_CONTRACT.
+
 Stay in your lane: no server internals, no math, no final endpoint/payload schema decisions beyond
 naming the fields the UI must consume.
 
@@ -348,6 +352,9 @@ best-effort degradation), not a coverage %. E2E: a real-browser flow tool is ado
 the critical path, optional before then. Run the configured test command (plus any shared-lib test
 command if you touched a shared client lib) and make it GREEN before reporting done — QA re-runs it at
 GATE Q.
+
+Design quality: build to the UX token plan ("Design tokens + signature") exactly, and run the
+.claude/DESIGN_RULES.md visual verification loop (§1.6) before reporting done — it is part of "done".
 
 Run the project the standard way (`project.json` → `frontend.serve_cmd`) and verify the live-loss /
 stale / cold-start states behave as specified against the acceptance criteria. A controllable mock at

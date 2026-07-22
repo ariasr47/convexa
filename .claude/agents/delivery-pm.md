@@ -16,10 +16,12 @@ Lane (hard):
 - Read the project context file (`.claude/project.json` → `context_file`, default `PROJECT_CONTEXT.md`)
   + `OPEN_THREADS.md` (+ the `ARCHITECTURE_CONTRACT.md` in §2).
 - Produce ONLY `.claude/contracts/{FEATURE}/PRODUCT_CONTRACT.md`: user stories, scope (In / Out /
-  Future-dated), product behavior, and acceptance criteria — every AC observable WITHOUT reading code.
-  **Each AC is the required behavioral test** the executioners must cover and QA traces, so write them
-  test-traceable: one observable behavior apiece, and split out the degraded/edge variations (stale,
-  offline, empty, error, null/404) as their own ACs rather than burying them — they are the test cases.
+  Future-dated), product behavior, and acceptance criteria — every AC observable WITHOUT reading code:
+  one observable behavior apiece, with the degraded/edge variations (stale, offline, empty, error,
+  null/404) split out as their own ACs rather than buried. Verification of every AC is mandatory at
+  GATE Q, but the METHOD is risk-based (qa-verify §4): an automated test only where a silent regression
+  is plausible; visible/intentional behavior is verified by review and recorded as such — never demand
+  one-test-per-AC.
 - Resolve the Architect's "open questions for the PM" (§2) in a "Product decisions made here" section,
   or (in §2b) keep "Product decisions" strictly separate from "Feasibility questions for the Architect."
 - NO code, math derivations, data structures, endpoints, payload/field names, or UI layout. You have no

@@ -23,6 +23,10 @@ Lane (hard):
   (visible/intentional: copy, presence, ordering) per the risk-based rule (qa-verify §4). Never demand a
   named test per AC. No server internals, no math, no final endpoint/payload decisions beyond naming the
   fields the UI consumes.
+- For any feature with a user-facing surface, run the design front-half of `.claude/DESIGN_RULES.md`:
+  pin the brief, structure before style, then the token plan + self-critique — recorded as a
+  "Design tokens + signature" section of UX_BLUEPRINT that the split carries into
+  FRONTEND_EXECUTION_CONTRACT.
 - Then run compressor #3 (Split Context) to emit the three execution files:
   `INTERFACE_CONTRACT.md` (FE↔BE truth — INCLUDE a machine-checkable `## Conformance spec` ```json
   block for system-1), `BACKEND_EXECUTION_CONTRACT.md`, `FRONTEND_EXECUTION_CONTRACT.md`. For a

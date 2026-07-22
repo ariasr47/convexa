@@ -189,7 +189,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 ### GATE U·X — UX exit (THE FAN-OUT)  → Backend ‖ Frontend   *(= your Routine A tail)*
 - **Trigger:** "UX is locked / split it for execution / load the build tracks."
 - **Audit:** `PROJECT_CONTEXT.md`, `PRODUCT_CONTRACT.md`, `UX_BLUEPRINT.md`,
-  `ARCHITECTURE_CONTRACT.md`.
+  `ARCHITECTURE_CONTRACT.md`, `DESIGN_RULES.md` (the design-quality canon — pointer, not restated).
 - **Compress:** Compressor **#3** (Split Context).
 - **Write THREE files (this is the whole point — never collapse them):**
   1. `INTERFACE_CONTRACT.md` — FE↔BE truth ONLY: endpoints, payload fields (name/type/presence),
@@ -228,7 +228,8 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Use when:** component states, layout, copy, or stream-degradation behavior change with **no
   engine/endpoint change**.
 - **Audit:** `PROJECT_CONTEXT.md` (the live-vs-static / degradation rules), `UX_BLUEPRINT.md`,
-  the named frontend file(s) under `frontend.dir` (e.g. the main view/component you name).
+  `DESIGN_RULES.md` (the design-quality canon — pointer, not restated), the named frontend file(s)
+  under `frontend.dir` (e.g. the main view/component you name).
 - **Compress:** compile exact visual expectations, state changes, and component touchpoints.
 - **Write:** overwrite `FRONTEND_EXECUTION_CONTRACT.md` (new design blueprint + component states).
 - **Token-saving isolation:** backend untouched — flag `NO_BACKEND_CHANGE` in the manifest; do not
