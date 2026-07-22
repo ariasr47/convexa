@@ -7,9 +7,11 @@
  * Presentation-only re-skin to the Figma frame "Scanner — Coming soon" (FRONTEND_EXECUTION_CONTRACT
  * · SURFACE: Scanner). The hatched inert card reuses `ui/ComingSoonBox` (structural `no-real-order-path`
  * inertness — the box itself never links) and its shared mode-aware `hatchBackgroundImage`; the only
- * other sx literals are the badge amber-alpha tints (`warning.main`).
+ * other sx literals are the badge amber-alpha tints (brand `primary.main` — coming-soon is
+ * brand-flavored, not a warning; redesign-stage-1 §3.3-4).
  */
 import { Box, Link, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 
@@ -75,19 +77,20 @@ export function Scanner() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
           <Box
             component="span"
-            sx={{
+            sx={(theme) => ({
               fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
               fontWeight: 600,
               letterSpacing: '.04em',
               textTransform: 'uppercase',
-              color: 'warning.main',
+              // Stage-1 rebind (§3.3-4): coming-soon is brand-flavored — amber `primary`, not warning.
+              color: 'primary.main',
               border: '1px solid',
-              borderColor: 'rgba(255,167,38,0.35)',
-              bgcolor: 'rgba(255,167,38,0.08)',
+              borderColor: alpha(theme.palette.primary.main, 0.35),
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
               borderRadius: 999,
               padding: '3px 10px',
               whiteSpace: 'nowrap',
-            }}
+            })}
           >
             coming soon
           </Box>

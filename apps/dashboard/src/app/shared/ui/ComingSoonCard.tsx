@@ -11,14 +11,15 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { ComingSoonBox } from './ComingSoonBox';
 
-/** Small amber "coming soon" badge (pill). Exported for reuse / direct assertion. */
+/** Small amber "coming soon" badge (pill). Exported for reuse / direct assertion.
+ *  Stage-1 rebind (§3.3-4): coming-soon is BRAND-flavored, not a warning — binds `primary`. */
 export function ComingSoonBadge() {
   return (
     <Chip
       size="small"
       variant="outlined"
       label="coming soon"
-      sx={{ color: 'warning.main', borderColor: 'warning.main', borderRadius: 999 }}
+      sx={{ color: 'primary.main', borderColor: 'primary.main', borderRadius: 999 }}
     />
   );
 }

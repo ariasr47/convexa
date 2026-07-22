@@ -6,7 +6,7 @@
 import BoltIcon from '@mui/icons-material/Bolt';
 import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, Button, IconButton } from '@mui/material';
-import { Theme } from '@mui/material/styles';
+import { alpha, Theme } from '@mui/material/styles';
 import type { OpportunityTier } from '@org/api';
 
 /** The tier word map — the SINGLE source of the tier display label. Exported so a second consumer
@@ -20,15 +20,17 @@ export const WORD: Record<OpportunityTier, string> = {
   prime: 'Prime',
 };
 
-/** Tier word + a non-directional emphasis color for the tile's left accent. */
+/** Tier word + a non-directional emphasis color for the tile's left accent.
+ *  Stage-1 rebind (§3.3-3): tier emphasis is an ACTIVE/brand state, not a warning —
+ *  actionable/prime bind brand amber (`primary`), never the burnt-orange warning slot. */
 export function tierMeta(theme: Theme, tier: OpportunityTier): { word: string; color: string } {
   switch (tier) {
     case 'watch':
       return { word: WORD.watch, color: theme.palette.info.main };
     case 'actionable':
-      return { word: WORD.actionable, color: theme.palette.warning.main };
+      return { word: WORD.actionable, color: theme.palette.primary.main };
     case 'prime':
-      return { word: WORD.prime, color: theme.palette.warning.dark };
+      return { word: WORD.prime, color: theme.palette.primary.dark };
     default:
       return { word: WORD.dormant, color: theme.palette.divider };
   }
@@ -47,9 +49,18 @@ export function PrimeBanner({
 }) {
   return (
     <Box sx={{ mb: 2 }}>
+      {/* Stage-1 rebind (§3.3-3): the Prime banner is a BRAND moment, not a warning — its
+          coloring re-binds to amber (`primary`) via sx while the ⚡ icon stays. The `severity`
+          prop remains for a11y role/structure only; every color it would paint is overridden. */}
       <Alert
         icon={<BoltIcon fontSize="inherit" />}
         severity="warning"
+        sx={(theme) => ({
+          color: theme.palette.primary.main,
+          backgroundColor: alpha(theme.palette.primary.main, 0.12),
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
+          '& .MuiAlert-icon': { color: theme.palette.primary.main },
+        })}
         action={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button color="inherit" size="small" variant="outlined" onClick={onSimulate}>
