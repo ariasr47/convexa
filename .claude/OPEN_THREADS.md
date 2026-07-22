@@ -597,7 +597,10 @@ selectable vanna vol-move magnitude; a named backtest "run" grouping. **Queued b
 `iv-rank` (runner-up; blocked-on IV-history persistence), `market-backdrop` SPY/VIX (vendor-coverage verify),
 the AI context-scalars pack + volume-profile/CVD + TI regime bundle (parked), news/sentiment (owner-future).
 
-## 7p. Latent hygiene finding (NOT this feature's regression) — the `:typecheck` Nx target is broken
+## 7p. Latent hygiene finding — the `:typecheck` Nx target (RESOLVED 2026-07-16 — hygiene batch)
+> **RESOLVED:** the "~960 errors" had gone stale (the spec-tsconfig fix landed in `8637435`); one
+> remaining `as never` cast was fixed 2026-07-16 and `npx nx run @org/dashboard:typecheck` is GREEN —
+> now part of the standing gate battery. Original finding retained below as provenance.
 Surfaced 2026-07-02 during dealer-flow-projection GATE Q. `npx nx run @org/dashboard:typecheck` fails
 project-wide with **~960 pre-existing errors** — a `tsconfig.spec.json` gap (missing `jest-dom` / DOM lib
 types: `RequestInfo`, `querySelector`, `toBeInTheDocument` unresolved in `*.spec.tsx`). Confirmed
