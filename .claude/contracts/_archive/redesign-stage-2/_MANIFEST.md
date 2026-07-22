@@ -1,6 +1,6 @@
 # redesign-stage-2 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; the signature stage)
-Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
+Stage:        SHIPPED + ARCHIVED 2026-07-22 (merge 51b9d7e; post-merge battery 69/563 green)
 Repos:        frontend only (NO_BACKEND_CHANGE)
 Brief:        BRIEF.md present
 Contracts:
@@ -15,9 +15,9 @@ Contracts:
     UPGRADED — regenerate `og-image.png` from the NEW mark IN THIS STAGE (minimal: mark on ink;
     review-kind check) — a new identity with an old share card is self-defeating)
 Open amendments: none
-QA (GATE Q):  n/a (pending; battery = Stage 1's + the arc-importer-count test + reduced-motion
-              verification + favicon-size legibility + the render pass with the DRAW moment
-              observed in a real browser)
+QA (GATE Q):  QA_REPORT PASS (de-correlated Sonnet; flagged the conductor render pass as
+              under-spec — closed post-QA, see RENDER_PASS.md Supplement w/ the Web-Animations-API
+              live-draw proof)
 Invariant watch (from BRIEF): theme-token-discipline · additive-keeps-score-byte-identical ·
               the ONE-motion rule (curve-draw becomes THE moment) · no-real-order-path (hero
               copy LOCKED from Stage 0) · arc-in-exactly-3-places (importer-count test lands

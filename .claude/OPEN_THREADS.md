@@ -830,10 +830,16 @@ Curvature Terminal is LIVE at the token layer: ink/phosphor/gammaAmber-dominant 
 `#C9821A`→`#C57F19`), purple leak dead, blog template re-skinned via generator, retired hexes
 ban-list-scanned (build-breaking). QA PASS (de-correlated Sonnet — all ratios independently recomputed).
 Suite **63/523** (the new baseline).
-**Remaining: Stage 2** (mark w/ arc-cut X, hero curve-draw as THE motion moment, arc dividers;
-SEO-prerender re-derives after) → **Stage 3** (surface sweep + amber-dominance check per surface +
-motion consolidation; stagger guard tests REPLACED not deleted; the light-amber-as-body-text ~3.3:1
-case; TintChip conviction-tone semantics). Canon: proposal §5+§6a; rule-of-record
+**Stage 2 (the signature) SHIPPED 2026-07-22** (`51b9d7e`; folder → `_archive/redesign-stage-2/`).
+The arc-cut CONVEXA mark + favicons + og-image; the hero payoff-curve draw-in (THE motion moment;
+glow blob deleted); ArcDivider at the 2 real seams; landing `<main>` + heading walk. Arc in EXACTLY
+3 places — set-equality enforced. QA PASS (de-correlated Sonnet — and it correctly flagged the
+conductor's own render pass as under-spec; closed post-QA with Web-Animations-API draw proof). Suite
+**69/563** (the new baseline). SEO-prerender is now UNBLOCKED (§6a-5: re-derive on the new landing).
+**Remaining: Stage 3** (surface sweep + amber-dominance per surface + motion consolidation — stagger
+guard tests REPLACED not deleted) with the accumulated flags: brandGradient disposition (2 consumers)
+· light-amber-as-body-text ~3.3:1 · TintChip conviction-tone · ArcDivider depth · blog SVG artwork
+residual · MUI subtitle→h6 transient states. Canon: proposal §5+§6a; rule-of-record
 `.claude/skills/convexa-design/`.
 **New seam (Stage 1, accepted residual):** the blog articles' inline SVG ILLUSTRATIONS keep their own
 cream/terracotta styling on the now-dark template (artwork, not template — regenerate onto the system;
