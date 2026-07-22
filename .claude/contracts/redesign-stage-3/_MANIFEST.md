@@ -1,6 +1,6 @@
 # redesign-stage-3 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; the surface sweep — program finale)
-Stage:        BRIEF written; UX lane NOT yet launched (pre-pipeline)
+Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
 Repos:        frontend only (NO_BACKEND_CHANGE)
 Brief:        BRIEF.md present
 Contracts:
@@ -9,7 +9,10 @@ Contracts:
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  n/a (next artifact — UX lane authors it)
+  - FRONTEND_EXECUTION_CONTRACT.md  locked (2026-07-22; §10's eight open questions ruled by the
+    conductor: ALL ACCEPTED as written — incl. the proximity-chip premise correction
+    (success->neutral on a no-side datum: canon-correct per dark-pool-context-only) and #5
+    clarified: og-image STANDS as shipped from Stage 2, no rework this stage)
 Open amendments: none
 QA (GATE Q):  n/a (pending; battery = Stage 2's + the motion-consolidation guard REPLACEMENT
               audit (old stagger guards must be superseded, not deleted-red) + the closing
