@@ -59,14 +59,24 @@ export interface ComingSoonCardProps {
   action?: React.ReactNode;
   /** Wrapper test id (callers tag each card distinctly, e.g. `brokerage-block`). */
   testId?: string;
+  /** Heading element for the title (redesign-stage-2 §6.2 — the landing outline wants `h3`;
+   *  `variant="h6"` STYLING is unchanged). */
+  titleComponent?: React.ElementType;
 }
 
-export function ComingSoonCard({ icon, title, body, action, testId }: ComingSoonCardProps) {
+export function ComingSoonCard({
+  icon,
+  title,
+  body,
+  action,
+  testId,
+  titleComponent = 'h3',
+}: ComingSoonCardProps) {
   return (
     <ComingSoonBox data-testid={testId}>
       <ComingSoonIcon icon={icon} />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography variant="h6" component={titleComponent} sx={{ fontWeight: 700 }}>
           {title}
         </Typography>
         <ComingSoonBadge />
