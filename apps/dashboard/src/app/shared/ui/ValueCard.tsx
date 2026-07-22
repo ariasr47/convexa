@@ -10,7 +10,7 @@
 import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { elevationFor, extrasFor } from '@/shared/theme/tokens';
+import { elevationFor } from '@/shared/theme/tokens';
 
 export interface ValueCardProps {
   /** A `@mui/icons-material` element (or any node) rendered in the tinted 40px square. */
@@ -55,8 +55,10 @@ export function ValueCard({
           left: 0,
           right: 0,
           height: '2px',
+          // Stage-1 rebind (§3.3-2): violet retired — the accent line is brand amber only
+          // (primary.main → primary.dark, both theme slots; no new hue).
           background: (theme) =>
-            `linear-gradient(90deg, ${theme.palette.primary.main}, ${extrasFor(theme).accentViolet})`,
+            `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
           transform: 'scaleX(0)',
           transformOrigin: 'left',
           transition: 'transform 260ms ease',
@@ -106,8 +108,9 @@ export function ValueCard({
               width: 40,
               height: 40,
               borderRadius: 1.5,
+              // Stage-1 rebind (§3.3-2): icon tint = alpha(primary) only (violet retired).
               background: (theme) =>
-                `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.18)}, ${alpha(extrasFor(theme).accentViolet, 0.12)})`,
+                `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.18)}, ${alpha(theme.palette.primary.main, 0.08)})`,
               color: 'primary.main',
               display: 'inline-flex',
               alignItems: 'center',

@@ -173,17 +173,20 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
           />
           <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<ProfileTooltip />} />
           <ReferenceLine y={0} stroke={theme.palette.divider} />
+          {/* Stage-1 rebind (§3.3-1, color slots ONLY — orientation/frame/geometry LOCKED):
+              spot = quiet structural anchor (steel), flip = THE amber line the brand owns,
+              live = signal. Amber is spent on the flip alone. */}
           <ReferenceLine
             x={nearest(spot)}
-            stroke={theme.palette.primary.main}
+            stroke={theme.palette.text.secondary}
             strokeDasharray="4 3"
-            label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.primary.main, 0)}
+            label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.text.secondary, 0)}
           />
           <ReferenceLine
             x={nearest(gammaFlip)}
-            stroke={theme.palette.warning.main}
+            stroke={theme.palette.primary.main}
             strokeDasharray="4 3"
-            label={refLabel('flip', theme.palette.warning.main, 1)}
+            label={refLabel('flip', theme.palette.primary.main, 1)}
           />
           {liveSpot != null && liveSpot > 0 && (
             <ReferenceLine

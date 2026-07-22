@@ -1,78 +1,139 @@
 /**
- * Design tokens — the SINGLE SOURCE shared by the running app (`theme.ts`) and the Figma design system
- * (file "Convexa — Web App (Design Reference)", collections Primitives/Color/Spacing/Radius/Typography).
+ * Design tokens — the SINGLE SOURCE OF TRUTH for every color and type value the app ships.
+ * (redesign-stage-1: the "Curvature Terminal" identity, proposal
+ * `docs/design/BRAND_TOKENS_PROPOSAL_2026-07-22.md` §3 — values land here verbatim, never
+ * re-derived in components.)
  *
- * GENERATED / KEPT-IN-SYNC: regenerate with `node scripts/sync-figma-tokens.mjs` (see that file).
- * Values here mirror the Figma variables 1:1. `theme.ts` consumes `palette`/`shape`/`typographyTokens`;
+ * AUTHORITY: `tokens.ts` is the single authority (owner ruling 2026-07-22, proposal §6a-3).
+ * The former Figma "Design Reference" design system is RETIRED — it encodes the retired
+ * palette; do not sync against it. `theme.ts` consumes `palette`/`shape`/`typographyTokens`;
  * the MUI-palette subset becomes `--mui-palette-*` CSS vars (theme.ts `cssVariables: true`).
  *
- * Editing rule: change a token HERE (or in Figma + re-sync), never hardcode a hex in a component.
- * Output-neutral by construction — these are exactly the values the theme shipped before extraction.
+ * Editing rule: change a token HERE, never hardcode a hex in a component
+ * (`[theme-token-discipline]`, enforced by `hex-discipline.spec.ts` + `banned-hexes.spec.ts`).
+ *
+ * Amber-vs-warning rule (binding, proposal §3): brand amber (`gammaAmber`) is FILLED/STRUCTURAL
+ * — wordmark, primary actions, active states, the gamma-flip line. A surface that means
+ * "warning" binds `warning.*` (burnt orange) AND renders an icon/glyph — hue alone never
+ * carries "warning". A surface that means "brand/active" binds `primary.*`. Never the old
+ * shared-amber ambiguity. Links/info/live status bind `info` (signal — deliberately quieter
+ * than amber, so one color dominates: spent, not sprinkled).
  */
+
+// ---------------------------------------------------------------------------------------------
+// The named brand constants (proposal §3 — the names are part of the identity).
+// Components NEVER import these directly; they bind MUI palette slots / `extrasFor(theme)`.
+// ---------------------------------------------------------------------------------------------
+
+/** Canvas — deeper and warmer than a code editor's near-black. */
+export const ink = '#0B0F17';
+/** Raised surface (keeps the shipped elevation/inset-well system). */
+export const panel = '#131A24';
+/** Primary text — warm terminal phosphor (measured 15.10:1 on ink). */
+export const phosphor = '#E9E4D6';
+/** Secondary text / quiet structure. */
+export const steel = '#8A9BB4';
+/** THE brand color, dominant — wordmark, primary actions, active states, the flip line. */
+export const gammaAmber = '#F2A93B';
+/**
+ * The light-scheme amber. §3 gave `#C9821A`; it MEASURED 2.90:1 against paper (below the 3:1
+ * UI floor), so the pre-authorized minimal darken applied (contract §5/§10-5, recorded in the
+ * stage report): `#C57F19` → 3.02:1 on paper, 3.27:1 on white, 5.03:1 ink-on-fill.
+ */
+export const amberDeep = '#C57F19';
+/** Links / info / live status — deliberately quieter than amber. */
+export const signal = '#5E8BC4';
+/** TRUE warnings only (stale/offline, error strips, degraded) — ALWAYS paired with an icon. */
+export const warningOrange = '#E07A3F';
+
+/** Light canvas — neutral-warm paper, deliberately clear of the cream tell. */
+export const paper = '#F6F6F3';
+/** Light-scheme ink text (primary text + contrastText on light amber fills). */
+export const inkText = '#17202B';
+/** DERIVED light counterparts (contract §5-measured; light warning/info/secondary). */
+const lightWarning = '#A65526'; // burnt orange darkened → 4.91:1 paper / 5.32:1 white
+const lightInfo = '#3D6DA5'; //   signal darkened → 4.94:1 paper / 5.34:1 white (links are body text)
+const lightSecondary = '#5A6B85'; // steel darkened → 5.00:1 paper; white label on fill 5.42:1
 
 /** MUI palette values per color scheme (dark = the historical default / anonymous baseline). */
 export const palette = {
   dark: {
-    primary: '#4f9cff',
-    success: '#2ecc71', // calls / positive gamma / +P&L
-    error: '#ff5c5c', //   puts / negative gamma / −P&L
-    warning: '#ffa726', // amber — stale/offline, gamma-flip line, "coming soon"
-    info: '#29b6f6', //    cyan — live dot/line, live status
-    // Off-white (Catskill White) per the Figma — softer than pure #fff for body/headings.
-    text: { primary: '#e6edf3', secondary: '#8b949e', disabled: '#5b6675' },
-    background: { default: '#0e1117', paper: '#161b22' },
+    primary: { main: gammaAmber, contrastText: ink }, // explicit ink text on amber fills (9.60:1)
+    secondary: { main: steel, contrastText: ink }, //    quiet structural accent (kills the MUI purple leak)
+    success: '#2ecc71', // RESERVED: calls / positive gamma / +P&L direction ONLY
+    error: '#ff5c5c', //   RESERVED: puts / negative gamma / −P&L direction ONLY
+    warning: warningOrange, // TRUE warnings only + icon ALWAYS (flip/coming-soon moved to primary)
+    info: signal, //          links / live dot / live line / live chip
+    text: { primary: phosphor, secondary: steel, disabled: 'rgba(138, 155, 180, 0.5)' },
+    background: { default: ink, paper: panel },
   },
   light: {
-    primary: '#1d6fe0',
-    success: '#1e9e57',
-    error: '#d23b3b',
-    warning: '#ed6c02',
-    info: '#0288d1',
-    text: { secondary: 'rgba(0, 0, 0, 0.6)', disabled: 'rgba(0, 0, 0, 0.38)' },
-    background: { default: '#f5f6f8', paper: '#ffffff' },
+    primary: { main: amberDeep, contrastText: inkText },
+    secondary: { main: lightSecondary, contrastText: '#FFFFFF' },
+    success: '#1e9e57', // RESERVED (as dark)
+    error: '#d23b3b', //   RESERVED (as dark)
+    warning: lightWarning,
+    info: lightInfo,
+    text: { primary: inkText, secondary: 'rgba(0, 0, 0, 0.6)', disabled: 'rgba(0, 0, 0, 0.38)' },
+    background: { default: paper, paper: '#ffffff' },
   },
 } as const;
 
 /** MUI `shape` token (cards 10px; controls/chips override locally per the redesign). */
 export const shape = { borderRadius: 10 } as const;
 
-/** MUI `typography.fontFamily` + the mono numeric stack (Figma `font-family/sans` · `font-family/mono`). */
+/**
+ * Type trio (proposal §3): IBM Plex Sans (body/UI) · IBM Plex Mono (data/tape, tabular by
+ * construction) · Archivo (display — SemiExpanded via the variable `wdth` axis, never a faux
+ * stretch). All three self-hosted under /public/fonts (OFL 1.1, license files shipped);
+ * fallback stacks are system faces only — Inter is RETIRED, not a fallback.
+ */
 export const typographyTokens = {
-  fontFamily: 'Inter, system-ui, Segoe UI, Roboto, sans-serif',
-  monoFontFamily: '"Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  fontFamily: "'IBM Plex Sans', system-ui, 'Segoe UI', Roboto, sans-serif",
+  monoFontFamily: "'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+  displayFontFamily: "'Archivo', 'IBM Plex Sans', system-ui, sans-serif",
+  /** The display width treatment — a REAL font-stretch percentage (semi-expanded, 112.5%). */
+  displayFontStretch: '112.5%',
 } as const;
 
 /**
- * Presentation-only extras (Figma: `color/bg/raised`, `color/bg/hatch-alt`, `color/text/secondary|disabled`,
- * `color/accent/violet`). NOT MUI palette entries — applied via `sx` literals, so they have no `--mui-*`
- * var. Kept here so the values are still single-sourced and the Figma↔code sync covers them.
- *
- * MODE-AWARE (light-mode-parity): `extras` keeps the historical DARK values (the default scheme and the
- * only mode most call sites originally shipped against); `extrasLight` mirrors each key for the light
- * scheme. Components must resolve via `extrasFor(theme)` inside an `sx`/styled callback — binding the
- * bare `extras` object dark-locks the surface (the light-mode hatch/panel bugs). The Figma light-mode
- * variable sync for these is a follow-up on `scripts/sync-figma-tokens.mjs`.
+ * The LANDING display scale (proposal §3: display 44–56px, Archivo 700, SemiExpanded).
+ * Exported for Stage 2 (the hero rework consumes it); Stage 1 rescales no shipped surface —
+ * in-app heading sizes are structural and stay.
  */
-export const extras = {
-  panelRaised: '#1c2330',
-  hatchAlt: '#14181f',
-  textSecondary: '#8b949e',
-  textDisabled: '#5b6675',
-  accentViolet: '#7b5cff',
-  // contained-primary button fill — deep enough for white text (≈5.5:1); the bright `#4f9cff`
-  // primary/accent (links, active nav, COPY links, chips, borders, icons) is unchanged.
-  buttonPrimaryBg: '#1d6fe0',
+export const displayScale = {
+  minPx: 44,
+  maxPx: 56,
+  fontWeight: 700,
 } as const;
 
-/** Light-scheme counterparts, same keys. Raised panels sit a soft grey above white paper; the hatch
- *  alternates paper with a just-darker grey (mirroring the dark scheme's subtle paper↔hatch delta). */
+/**
+ * Presentation-only extras. NOT MUI palette entries — applied via `sx` literals, so they have
+ * no `--mui-*` var; kept here so the values stay single-sourced.
+ *
+ * MODE-AWARE (light-mode-parity): `extras` keeps the DARK values (the default scheme);
+ * `extrasLight` mirrors each key for the light scheme. Components must resolve via
+ * `extrasFor(theme)` inside an `sx`/styled callback — binding the bare `extras` object
+ * dark-locks the surface (the light-mode hatch/panel bugs).
+ *
+ * Retired at redesign-stage-1: `accentViolet` (violet retired ENTIRELY — consumers rebound to
+ * primary) and `buttonPrimaryBg` (amber primary + explicit ink contrastText makes MUI's default
+ * contained treatment correct; the dark MuiButton override rode out with it).
+ */
+export const extras = {
+  panelRaised: '#1B2432', // one elevation step above panel, hue-consistent with ink (derived)
+  hatchAlt: '#101520', //   just-off-canvas hatch stripe (derived)
+  textSecondary: steel,
+  textDisabled: 'rgba(138, 155, 180, 0.5)',
+} as const;
+
+/** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
+ *  the hatch alternates paper with a just-darker step (mirroring the dark paper↔hatch delta). */
 export const extrasLight: Record<keyof typeof extras, string> = {
-  panelRaised: '#eef1f5',
-  hatchAlt: '#f0f2f5',
+  panelRaised: '#ECECE7',
+  hatchAlt: '#EFEFEA',
   textSecondary: 'rgba(0, 0, 0, 0.6)',
   textDisabled: 'rgba(0, 0, 0, 0.38)',
-  accentViolet: '#7b5cff',
-  buttonPrimaryBg: '#1d6fe0',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */
@@ -81,20 +142,18 @@ export const extrasFor = (theme: {
 }): Record<keyof typeof extras, string> => (theme.palette.mode === 'light' ? extrasLight : extras);
 
 /**
- * Brand gradient — the fixed blue→violet brand MARK (the account avatar + the Sign-up pill).
- * Deliberately mode-INVARIANT (logo-like: it does NOT shift with the theme), single-sourced from the
- * dark-primary + accent-violet tokens so it's not a raw literal at call sites. This is the one
- * intentional non-mode-aware brand element (formerly the contract-permitted hardcoded gradient).
+ * Brand gradient — the fixed amber brand MARK treatment (the account avatar + the Sign-up pill).
+ * Deliberately mode-INVARIANT (logo-like: it does NOT shift with the theme), built from the
+ * brand amber tokens (gammaAmber → amberDeep). The blue→violet gradient is retired; the mark
+ * geometry itself is rebuilt in Stage 2.
  */
-export const brandGradient =
-  `linear-gradient(135deg, ${palette.dark.primary}, ${extras.accentViolet})` as const;
+export const brandGradient = `linear-gradient(135deg, ${gammaAmber}, ${amberDeep})` as const;
 
 /**
  * Categorical chart palette — operator/diagnostic series colors (Tableau-10 subset). Deliberately
- * mode-INVARIANT (like `brandGradient`): these are NON-semantic, colorblind-distinguishable series
- * hues (no red-for-bad/green-for-good), identical in dark and light. The single source for every
- * chart series color — a component never hardcodes a hex (`[theme-token-discipline]`, enforced by
- * `shared/theme/hex-discipline.spec.ts`).
+ * mode-INVARIANT (like `brandGradient`) and deliberately NON-brand: these are non-semantic,
+ * colorblind-distinguishable series hues for `/_ops/metrics` only, off the trader path. The
+ * brand palette does not govern diagnostic series hues (redesign-stage-1 §3.2 — UNCHANGED).
  */
 export const chartCategorical = {
   /** Per-stage series hues for the operator latency trend (keyed by bundle stage name). */
@@ -113,12 +172,14 @@ export const chartCategorical = {
 } as const;
 
 /**
- * Elevation ladder — a small NAMED box-shadow scale (not MUI's 25-slot `shadows[]`). Depth in dark UI
- * is luminance-first (lighter surface = closer); these ambient shadows are the SUPPORTING cue. `e1`
- * carries a faint top inset-highlight that fakes an overhead light for a bevelled edge. Mode-aware,
- * resolved via `elevationFor(theme)` inside an `sx`/styled callback (like `extrasFor`).
+ * Elevation ladder — a small NAMED box-shadow scale (not MUI's 25-slot `shadows[]`). Depth in dark
+ * UI is luminance-first (lighter surface = closer); these ambient shadows are the SUPPORTING cue.
+ * `e1` carries a faint top inset-highlight that fakes an overhead light for a bevelled edge.
+ * Mode-aware, resolved via `elevationFor(theme)` inside an `sx`/styled callback (like `extrasFor`).
  *   e1 = resting panel/card · e2 = raised (hover / scrolled sticky-nav) · e4 = overlay (toast/menu/dialog)
  * Light-mode counterparts use softer black alphas and drop the white top-highlight.
+ * The dark theme ALSO derives an explicit MUI `shadows[]` from this ladder (theme.ts — the
+ * theme-audit "dark shadows" gap closure), so menus/popovers/dialogs visibly separate on `panel`.
  */
 export const elevation = {
   dark: {

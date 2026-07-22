@@ -12,6 +12,7 @@
  * is reproduced per this frame, single-sourcing its colors off the tokens.)
  */
 import { Box, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { hatchBackgroundImage } from '@/shared/ui/ComingSoonBox';
 import { LIVE_BODY, LIVE_HEADING, LIVE_LOCK_CHIP } from './labels';
 
@@ -53,18 +54,20 @@ export function LiveTabPanel() {
       <Box
         data-testid="live-lock-chip"
         component="span"
-        sx={{
+        sx={(theme) => ({
           display: 'inline-block',
           mt: '14px',
           fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
           fontWeight: 600,
           textTransform: 'uppercase',
-          color: 'warning.main',
-          border: '1px solid rgba(255,167,38,0.35)',
-          bgcolor: 'rgba(255,167,38,0.08)',
+          // Stage-1 rebind (§3.3-4): the locked note is brand-flavored, not a warning — amber
+          // `primary` slots only (the zero-import lock is untouched: MUI + labels + hatch only).
+          color: 'primary.main',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
+          bgcolor: alpha(theme.palette.primary.main, 0.08),
           borderRadius: 999,
           padding: '3px 10px',
-        }}
+        })}
       >
         {LIVE_LOCK_CHIP}
       </Box>
