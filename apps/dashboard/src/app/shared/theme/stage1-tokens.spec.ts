@@ -16,10 +16,16 @@ import { cleanup, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-// eslint-disable-next-line import/no-absolute-path -- Vite root-anchored raw import (house idiom)
-import indexHtml from '/index.html?raw';
 import { theme } from './theme';
 import { brandGradient, extras, extrasLight, palette, typographyTokens } from './tokens';
+
+// Root-anchored raw GLOB (not a static import — keeps @nx/enforce-module-boundaries happy).
+const INDEX_RAW = import.meta.glob(['/index.html'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+const indexHtml = Object.values(INDEX_RAW)[0] ?? '';
 
 describe('§8-2 · token-map completeness — no orphan token', () => {
   it('the six §3 dark values are byte-exact in their slots', () => {

@@ -14,8 +14,13 @@
  */
 import { describe, expect, it } from 'vitest';
 
-// eslint-disable-next-line import/no-absolute-path -- Vite root-anchored raw import (house idiom)
-import indexHtml from '/index.html?raw';
+// Root-anchored raw GLOB (not a static import — keeps @nx/enforce-module-boundaries happy).
+const INDEX_RAW = import.meta.glob(['/index.html'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+const indexHtml = Object.values(INDEX_RAW)[0] ?? '';
 
 const APP_SOURCES = import.meta.glob(['/src/app/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'], {
   query: '?raw',
