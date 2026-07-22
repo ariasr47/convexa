@@ -50,10 +50,6 @@ export const TREND_TIP =
   'A small recent-trend line of this position’s P/L this session. In-browser only — it clears on reload and shows a gap (broken line), never a zero, while the feed is offline.';
 export const LIMIT_TIP =
   'A resting buy order that fills only when the live option mark reaches your limit price — at the limit price. It stays Pending and cancellable until then, and never fills off a frozen/offline mark.';
-export const SUBTOTAL_TIP =
-  'Sum of the $ P/L of this group’s positions. A position whose live P/L is unavailable is excluded and flagged — never counted as zero.';
-export const GROUP_TIP =
-  'Group your book by ticker, strategy (long call vs long put), or expiry, each with a P/L subtotal.';
 export const SAVED_VIEW_TIP =
   'A named snapshot of your columns, sort, filter, grouping, layout, and density. Switch, rename, or delete views; the active one survives a reload.';
 export const PENDING_PL_TIP = 'Fills at your limit; no P/L until it fills.';
@@ -68,7 +64,6 @@ export const DISCLAIMER =
 export const EMPTY_NO_POSITIONS = 'No simulated positions yet. Open one to start your book.';
 export const EMPTY_FILTERED = 'No positions match this filter.';
 export const HISTORY_CAPTION = 'Closed and cancelled positions are kept here — never pruned.';
-export const HISTORY_EMPTY = 'No closed or cancelled positions yet.';
 
 // ---- Live tab (locked) copy (UX_BLUEPRINT §6 S10) ---------------------------------------------
 export const LIVE_HEADING = 'Live positions — coming soon';
@@ -76,13 +71,3 @@ export const LIVE_BODY =
   "Connecting a real brokerage to track the risk you're actually carrying is on the roadmap. " +
   'For now, everything in Convexa is simulated (paper).';
 export const LIVE_LOCK_CHIP = 'coming soon';
-
-export function contractLine(p: {
-  ticker: string;
-  strike: number;
-  right: 'call' | 'put';
-  expiration: string;
-  qty: number;
-}): string {
-  return `${p.ticker} $${p.strike}${p.right === 'call' ? 'C' : 'P'} · exp ${p.expiration} · Long ×${p.qty}`;
-}

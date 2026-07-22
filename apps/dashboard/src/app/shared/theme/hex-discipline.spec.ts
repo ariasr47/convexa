@@ -41,17 +41,10 @@ const EXEMPT: Record<string, string> = {
   'features/auth/GoogleButton.tsx':
     'Google brand mark + branded sign-in button spec (theme-invariant by design)',
 
-  // TODO(theme-token-discipline): REAL DEBT. Categorical colorblind-safe chart palette
-  // (STAGE_COLORS/SINGLE_LINE_COLOR, Tableau-10 values) hardcoded outside tokens.ts. The palette
-  // being deliberately non-semantic does not exempt it from living in shared/theme/tokens.ts —
-  // migrate the six stage colors + the single-line color into the token file.
-  'pages/operator-metrics/useLatencyTrend.ts':
-    'TODO(theme-token-discipline): chart palette should move to shared/theme/tokens.ts',
-
-  // TODO(theme-token-discipline): REAL DEBT. `#9e9e9e` stale-dot stroke (a raw MUI grey-500) —
-  // should be a theme token (e.g. text.disabled / a chart token) so it tracks light-mode parity.
-  'pages/operator-metrics/LatencyTrend.tsx':
-    'TODO(theme-token-discipline): stale-dot grey should be a theme token',
+  // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
+  // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the
+  // theme-invariant `chartCategorical` group (the `brandGradient` precedent). The liveness
+  // invariant below is what forced their removal — a stale exemption fails the suite by design.
 };
 
 /** `/src/app/pages/foo.tsx` → `pages/foo.tsx` (app-relative, matching the EXEMPT keys). */

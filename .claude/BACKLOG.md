@@ -664,22 +664,30 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `git checkout feat/responsive-layout`. **Recommended: `git push -u origin feat/responsive-layout`** — a
   local-only branch is one disk failure from gone. *Value M–H (mobile usability) · Effort S–M remaining.*
   Decision-impact cull **N/A** (UX/platform-reach class). **Invariant watch:** `theme-token-discipline`.
-- **Restructure deferrals (named, not built)** — `RAISED 2026-07-16 (the folder restructure)`. Four
-  structural follow-ons the restructure deliberately left: (a) **`OpportunityTier` → a ticker widget** (it
-  sits in `features/trading/model/` but is consumed by `pages/ticker` — a presentation component in the
-  model layer); (b) **`/settings` as its own page** (today the route shell lives in `features/auth/
-  SettingsPage.tsx` — deliberate, they are tightly coupled, but revisit if it grows); (c) **rename
-  `features/` → `domains/`** — "features" is a misnomer (it holds domains/nouns, not scrum features; delivery
-  features live in `.claude/contracts/`) — **an open, owner-endorsed option**; (d) **flatten `app/` → `src/`**
-  (the `app/` nesting is a legacy Nx artifact). *Each Value L–M · Effort S.* Decision-impact cull **N/A**
-  (build-system class). **Do (c)/(d) only as their own commit** — they touch every import path (the `@/*`
-  alias makes them cheap, which is the point).
-- **Dead-code sweep** — `RAISED 2026-07-16 (post-restructure)`. `npx ts-prune -p apps/dashboard/tsconfig.app.json`
-  finds **~13 unused exports in the trading cluster, ~80 across the dashboard**. ⚠ **`ts-prune` excludes
-  specs, so test-only helpers are FALSE POSITIVES** — each hit needs a spec-usage check before deletion (the
-  restructure moved files, so some are stale-export artifacts). *Value M (less surface to reason about) ·
-  Effort S–M.* Decision-impact cull **N/A** (hygiene). **Invariant watch:** deletion needs zero-importer
-  proof (the `[single-shared-sim-entry-dialog]` precedent).
+- **Restructure deferrals** — `RAISED 2026-07-16` → **GROOMED 2026-07-16 (hygiene batch): (a) CULLED,
+  (b) stands, (c)+(d) re-scoped to one branch.**
+  (a) ~~`OpportunityTier` → a ticker widget~~ — **CULLED as half-impossible** (verified in code): the `WORD`
+  map is imported by `features/trading/outcomes/ledger.ts:20`, and `features/` may never import `pages/**`
+  (downward-only), so the data **cannot move**; and the component isn't a bento widget anyway — it renders
+  as page CHROME (props into `CommandDeck`) + an inline `PrimeBanner` alert. Only legal remnant: move the
+  `PrimeBanner` JSX to `widgets/chrome/` **if ever touched**; not worth a standalone change.
+  (b) **`/settings` as its own page** — stands as written (revisit if it grows).
+  (c)+(d) **rename `features/` → `domains/` + flatten `app/` → `src/`** — still owner-endorsed; **do BOTH
+  in ONE dedicated branch** to pay the churn once. Measured blast radius: 148 `@/features/` imports across
+  52 files · 3 alias configs (`tsconfig.app.json`/`tsconfig.spec.json`/`vite.config.mts`) · the README map ·
+  **⚠ `shared/theme/hex-discipline.spec.ts` hard-anchors its globs at `/src/app/{pages,features,shell,
+  shared/ui}/**` and its vacuity guard will fail loudly if the roots go stale — update in lockstep** (the
+  one coupling a naive find-replace misses). Windows gotcha: kill dev servers before the physical moves
+  (dir-rename locks). *Value L–M · Effort S–M (branch).*
+- **Dead-code sweep** — `✓ COMPLETED 2026-07-16 (hygiene batch)`. The "~80 unused exports" claim was
+  **ts-prune noise, not dead code** — measured: 329 flags = 99 `(used in module)` false positives + ~180
+  barrel re-export blind spots (131 in `_kit/index.ts` alone — consumers deep-import past it, but the
+  barrel IS live: `TickerDashboard.tsx:61` imports from it, and widget barrels are the documented house
+  pattern) + ~11 router-rendered page defaults + test-only consumers ts-prune can't see. **Genuinely dead
+  (verified zero references incl. specs): 12 symbols — all deleted** (`ACTION_VIEW_ORDER`,
+  `POSITION_FROM_ORDER`, `deriveRows`, `distinctTickers`, `distinctExpirations`, `SUBTOTAL_TIP`,
+  `GROUP_TIP`, `HISTORY_EMPTY`, `contractLine`, `PRIME_BANNER_TOOLTIP`, `DEFAULT_PERSONA_ID`,
+  `prefillChip`). Gates green after (typecheck · tsc-app · 467/467 cold · lint 0).
 - **Test-migration to the risk-based rule** — `✓ COMPLETED 2026-07-16 (owner-directed, whole suite in one
   pass; commit 05702e9)`. The owner gated it open ("replace the old tests everywhere"); the owner's own
   Landing rewrite (15→4) was the calibration exemplar. Six cluster migrations (fresh `delivery-frontend`
@@ -699,7 +707,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Vacuous tests caught + removed:** style assertions via `getAttribute('style')` (always-empty under MUI
   `sx`), one asserting against the stale `gammaflow.positions.v2` key, stale-banner tests asserting the
   absence of UI removed a month earlier, fixture-echo tests asserting the mock against itself.
-  **Flags left open:** `signals.vol_regime` renders NOWHERE on the ticker page (possible product gap —
+  **Flags left open:** *(vol_regime RESOLVED 2026-07-16 — see the traced verdict below)* `signals.vol_regime` renders NOWHERE on the ticker page (possible product gap —
   surfaced by the ticker lane refusing to write a fake test for it) · the 2 operator-metrics hex TODOs.
   *(original entry:)* The 2026-07-13 `qa-verify.md` §4 amendment replaced per-AC test mirroring with
   **risk-based** testing. **Note:** this amendment is what obsoleted the original **system-10** (§E), now
@@ -728,14 +736,14 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   probe: index data `NOT_AUTHORIZED`; a SPY/QQQ-ETF-proxy reshape is buildable in-tier if resurfaced).
   Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR (now shipped)
   unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).
-- **Fix the broken `@org/dashboard:typecheck` Nx target** — `SURFACED 2026-07-02 (dealer-flow-projection
-  GATE Q)`. `npx nx run @org/dashboard:typecheck` fails project-wide with ~960 errors — a `tsconfig.spec.json`
-  gap (missing `jest-dom`/DOM lib types → `RequestInfo`/`querySelector`/`toBeInTheDocument` unresolved in
-  every `*.spec.tsx`). Pre-existing + feature-independent (an untouched spec fails identically); the real
-  gate `tsc -p tsconfig.app.json` (app code, excludes specs) is clean, so the pipeline stays green. **Fix:**
-  wire `@testing-library/jest-dom` + the DOM lib into the spec tsconfig so the target passes, then fold
-  `:typecheck` into the standing gate battery. *Value M (a real typecheck gate over tests) · Effort S.*
-  Decision-impact cull **N/A** (tooling hygiene). Seams → OPEN_THREADS §7p.
+- **Fix the broken `@org/dashboard:typecheck` Nx target** — `✓ COMPLETED 2026-07-16 (hygiene batch)`.
+  The "~960 errors" claim had gone **stale**: the `tsconfig.spec.json` fix (DOM lib + jest-dom types) was
+  already applied by commit `8637435`, leaving exactly **ONE** error — a bad cast in
+  `captureDigest.spec.ts:73` (`vi.spyOn(globalThis, 'fetch' as never)` collapsed the spy's type so
+  `.mockRestore()` wouldn't typecheck). Fixed (dropped the cast); **`npx nx run @org/dashboard:typecheck`
+  is GREEN for the first time** and now belongs in the standing gate battery alongside
+  `tsc -b tsconfig.app.json`. *(original entry: ~960 errors, jest-dom/DOM-lib gap — Seams →
+  OPEN_THREADS §7p.)*
 - **AI-rec "Accept" → tracked position — full build-out** — `✓ SUBSUMED by ai-rec-backtest-orders
   (SHIPPED 2026-07-02)`: "Act as sim order" delivers the full read→track loop (rec structure/strikes/
   expiry/stop/target → confirmed SimOrder → live-cross fill → tracked Position with decision-record +
@@ -776,6 +784,18 @@ Cull verdicts (so the next discovery doesn't re-litigate):
     horizontal Figma `149:172`) — owner UX call (wider/shorter); the AI-rec **hand-off viewer** + the ticker's
     **portfolio/ghost-trade panels** were **removed** per owner. *Value H (ship the redesign) · Effort M.*
     Decision-impact cull **N/A** (FE redesign program; judged on design-conformance + ship-readiness).
+- **`vol_regime` — a display gap, NOT dead wire (do not "clean it up")** — `TRACED 2026-07-16 (hygiene
+  batch), reclassified from the test-migration's "gap or dead wire?" flag`. End-to-end verdict:
+  `vol_regime` (`iv_rich`/`iv_cheap`/`neutral` off IV/HV, `signals.py:129-135`) is **computed and consumed
+  three real ways** — (1) **folded into `state_fingerprint`** (`signals.py:271` — so REMOVING it changes
+  the fingerprint, which `[score-change-is-deliberate-and-measured]` forbids as a side effect); (2) shipped
+  verbatim in the **AI export** the LLM reads (`ai_recommendation.py:497-499`; the glossary tells the model
+  to read it); (3) **captured in the outcome-ledger `entry_context` digest** (`captureDigest.ts:85`). The
+  ONLY missing consumer is a UI surface — no widget renders it. **If wanted:** a small labeled read beside
+  the IV-skew/vol tiles (a natural GATE V quick win; the closed-lookup + `[digested-labels-not-raw-dump]`
+  pattern applies — render the wire token, never re-derive from IV/HV). *Value M-low · Effort S.*
+  **⚠ Standing guard: any future "dead code" sweep that proposes deleting it is wrong** — the fingerprint
+  coupling makes removal a scoring-basis change.
 - **Ticker UX quick wins (deferred set)** — `RAISED 2026-06-30 (owner; "any quick ux improvements?")`. Small,
   FE-only, display-only usability touches on the Ticker page. **Big-number formatting + a freshness indicator
   were BUILT this session** (GATE V on `convexa-redesign`); the owner deferred the rest here:
@@ -806,6 +826,16 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   SEO-relevant surface (the app is a private/interactive tool) — this captures ~all the SEO + first-paint
   upside at a fraction of SSR's cost. Decision-impact cull **N/A** (UX/marketing/infra class). *Value M (SEO/
   first-impression) · Effort S–M.* **Do after launch** (deploy first). Origin: owner SSR question 2026-06-29.
+  **SCOPE REDUCED 2026-07-16 (the /blog ship changed the math):** Phase 1 (meta/OG/robots/sitemap) is
+  SHIPPED. The checkpointed Phase-2 plan (`~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`) weighed
+  two forks — the invasive `vite-react-ssg` route (`RouteRecord[]` rewrite of `app.tsx`, the entry every
+  test renders through, + a hand-written Emotion SSR collector) vs a lightweight custom prerender script.
+  The `vite-react-ssg` fork was justified by "a growing marketing section" — but **the blog now ships as
+  static HTML in `public/blog/` (already crawlable, no pipeline)**, so Phase 2's real remaining target is
+  **the landing page alone**, which strengthens the lightweight fork: a small prerender step for `/` only,
+  router untouched, tests unthreatened. The Emotion critical-CSS collector is still the hard part either
+  way. Do on a branch; update the checkpointed plan when picked up. (The plan's "og-image.png never
+  created" note is itself stale — the file exists in `public/` since 2026-07-13, 85KB. Verified.)
 - **Containerize each app (Dockerfile per deployable) + deployment readiness** — `RAISED 2026-06-25
   (owner; hosting/deploy planning)`. One `Dockerfile` per deployable — the **FastAPI backend** (`apps/api`,
   uvicorn) and the **React/Vite frontend** (`apps/dashboard` → static build, served via a CDN/static host

@@ -161,8 +161,6 @@ export const staleStrip = (asOf: string | null) =>
 export const staleBornStrip = (dataAge: string) =>
   `This read was generated from a snapshot already marked stale (${dataAge}). ` +
   'Treat the levels with caution.';
-/** `Pre-filled from AI read · {persona}` chip seeded into the entry dialog. */
-export const prefillChip = (persona: string) => `Pre-filled from AI read · ${persona}`;
 export const EXPORT_HEADER = (ticker: string) => `What's sent to the AI · ${ticker}`;
 /** Retry-under-gate sub-captions (E6). */
 export const retryInCooldown = (remaining: number) => `Retry available in ${remaining}s`;

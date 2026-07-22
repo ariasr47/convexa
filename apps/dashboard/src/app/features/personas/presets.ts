@@ -4,8 +4,6 @@
  */
 import type { PersonaDefinition } from '@org/api';
 
-export const DEFAULT_PERSONA_ID = 'default';
-
 export const PRESETS: PersonaDefinition[] = [
   {
     id: 'default',

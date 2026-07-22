@@ -38,10 +38,6 @@ export const OPPORTUNITY_TIER_INFO =
   ' Tier: Dormant → Watch → Actionable → Prime. Emphasis scales with the score; the sim-entry ' +
   'prompt unlocks only at Prime. Not a trade signal.';
 
-export const PRIME_BANNER_TOOLTIP =
-  'Appears only at the top opportunity tier when the setup is actionable, and only when it first ' +
-  'reaches Prime — not while the score sits high. A read, not advice; the trade is simulated.';
-
 export function PrimeBanner({
   onSimulate,
   onDismiss,

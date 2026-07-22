@@ -70,7 +70,7 @@ describe('what is captured (§2/Q2)', () => {
 
 describe('capture is BEST-EFFORT and never blocks the write (§2/Q2, §4/A)', () => {
   it('an absent bundle ⇒ every bundle-sourced field is null — never a throw, and never a fetch', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch' as never);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const d = buildEntryContextDigest({ bundle: null, aiRecFingerprint: null });
     expect(d.opportunity_score).toBeNull();
     expect(d.setups).toBeNull();

@@ -7,6 +7,7 @@
  */
 import { fetchMetrics, MetricsAggregate, MetricsScope } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { chartCategorical } from '@/shared/theme/tokens';
 
 export type TrendMetric = 'stages' | 'total' | 'cache' | 'vendor_latency' | 'headroom';
 export type Percentile = 'p50' | 'p95' | 'max';
@@ -21,15 +22,10 @@ export const STAGES = [
   'serialize_wrap',
 ] as const;
 // Categorical, NON-semantic, colorblind-distinguishable palette (no red-for-bad/green-for-good).
-export const STAGE_COLORS: Record<string, string> = {
-  vendor_fetch: '#4e79a7',
-  engine_build: '#f28e2b',
-  off_exchange: '#59a14f',
-  signals: '#b07aa1',
-  persist: '#76b7b2',
-  serialize_wrap: '#edc949',
-};
-export const SINGLE_LINE_COLOR = '#4e79a7';
+// Single-sourced from the theme tokens (`[theme-token-discipline]`) — re-exported here so the
+// chart components keep their existing import surface.
+export const STAGE_COLORS: Record<string, string> = chartCategorical.stages;
+export const SINGLE_LINE_COLOR = chartCategorical.singleLine;
 
 const COUNT_CAP = 1000; // hard memory guarantee (bounded regardless of cadence)
 const AGE_MAX_MS = 30 * 60_000; // 30m max retained; horizon controls the visible window

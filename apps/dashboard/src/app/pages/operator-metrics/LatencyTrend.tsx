@@ -33,6 +33,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { chartCategorical } from '@/shared/theme/tokens';
 import {
   Percentile,
   SINGLE_LINE_COLOR,
@@ -104,7 +105,7 @@ function makeDot(color: string) {
         cy={cy}
         r={2.6}
         fill={stale ? 'none' : color}
-        stroke={stale ? '#9e9e9e' : color}
+        stroke={stale ? chartCategorical.staleDot : color}
         strokeWidth={stale ? 1.2 : 0}
       />
     );

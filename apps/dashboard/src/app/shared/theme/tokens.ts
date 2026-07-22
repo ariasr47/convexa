@@ -90,6 +90,29 @@ export const brandGradient =
   `linear-gradient(135deg, ${palette.dark.primary}, ${extras.accentViolet})` as const;
 
 /**
+ * Categorical chart palette — operator/diagnostic series colors (Tableau-10 subset). Deliberately
+ * mode-INVARIANT (like `brandGradient`): these are NON-semantic, colorblind-distinguishable series
+ * hues (no red-for-bad/green-for-good), identical in dark and light. The single source for every
+ * chart series color — a component never hardcodes a hex (`[theme-token-discipline]`, enforced by
+ * `shared/theme/hex-discipline.spec.ts`).
+ */
+export const chartCategorical = {
+  /** Per-stage series hues for the operator latency trend (keyed by bundle stage name). */
+  stages: {
+    vendor_fetch: '#4e79a7',
+    engine_build: '#f28e2b',
+    off_exchange: '#59a14f',
+    signals: '#b07aa1',
+    persist: '#76b7b2',
+    serialize_wrap: '#edc949',
+  } as Record<string, string>,
+  /** The single-series line color (matches `stages.vendor_fetch`). */
+  singleLine: '#4e79a7',
+  /** Stale-repeat marker stroke — a neutral grey (raw grey-500), non-semantic by design. */
+  staleDot: '#9e9e9e',
+} as const;
+
+/**
  * Elevation ladder — a small NAMED box-shadow scale (not MUI's 25-slot `shadows[]`). Depth in dark UI
  * is luminance-first (lighter surface = closer); these ambient shadows are the SUPPORTING cue. `e1`
  * carries a faint top inset-highlight that fakes an overhead light for a bevelled edge. Mode-aware,

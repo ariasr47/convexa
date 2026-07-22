@@ -160,25 +160,3 @@ export function deriveGroups(
   return applyGroup(sorted, opts.group);
 }
 
-/** The flat sorted/filtered row list (when grouping is off / for a flat read). */
-export function deriveRows(
-  rows: DerivedRow[],
-  opts: { filter: FilterState; sortKey: SortKey; sortDir: SortDir },
-): DerivedRow[] {
-  const filteredIds = new Set(
-    applyFilter(
-      rows.map((r) => r.position),
-      opts.filter,
-    ).map((p) => p.id),
-  );
-  const filtered = rows.filter((r) => filteredIds.has(r.position.id));
-  return applySort(filtered, opts.sortKey, opts.sortDir);
-}
-
-/** Distinct tickers + expirations across a position set (for the filter selectors). */
-export function distinctTickers(positions: Position[]): string[] {
-  return [...new Set(positions.map((p) => p.ticker))].sort();
-}
-export function distinctExpirations(positions: Position[]): string[] {
-  return [...new Set(positions.map((p) => p.expiration))].sort();
-}

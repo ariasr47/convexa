@@ -157,8 +157,6 @@ export const ACTION_CONFIRM_CANCEL = 'Confirm cancel';
 export const ACTION_EXPORT = 'Export JSON';
 export const ACTION_ALL_ORDERS = 'All orders →';
 export const ACTION_VIEW_POSITION = 'View position →';
-export const ACTION_VIEW_ORDER = 'view order →';
-export const POSITION_FROM_ORDER = 'From sim order';
 
 // §7 — glossary tooltips (jargon rule).
 export const TRIGGER_GLOSSARY =
