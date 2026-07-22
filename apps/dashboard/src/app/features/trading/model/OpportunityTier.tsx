@@ -8,6 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, Button, IconButton } from '@mui/material';
 import { alpha, Theme } from '@mui/material/styles';
 import type { OpportunityTier } from '@org/api';
+import { extrasFor } from '@/shared/theme/tokens';
 
 /** The tier word map — the SINGLE source of the tier display label. Exported so a second consumer
  *  (the outcome ledger's tier cells) reads the same closed lookup instead of re-deriving a tier from
@@ -50,13 +51,15 @@ export function PrimeBanner({
   return (
     <Box sx={{ mb: 2 }}>
       {/* Stage-1 rebind (§3.3-3): the Prime banner is a BRAND moment, not a warning — its
-          coloring re-binds to amber (`primary`) via sx while the ⚡ icon stays. The `severity`
-          prop remains for a11y role/structure only; every color it would paint is overridden. */}
+          coloring re-binds to amber via sx while the ⚡ icon stays. The `severity` prop remains
+          for a11y role/structure only; every color it would paint is overridden. Stage-3 §4.2:
+          the BODY TEXT binds the text-grade `textAmber` (light-mode contrast gate §5.2);
+          tint/border/icon stay `primary` (UI class). */}
       <Alert
         icon={<BoltIcon fontSize="inherit" />}
         severity="warning"
         sx={(theme) => ({
-          color: theme.palette.primary.main,
+          color: extrasFor(theme).textAmber,
           backgroundColor: alpha(theme.palette.primary.main, 0.12),
           border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
           '& .MuiAlert-icon': { color: theme.palette.primary.main },

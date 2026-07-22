@@ -21,7 +21,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import { fetchRecExport, RecExport } from '@org/api';
 import { useEffect, useState } from 'react';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { COPY, EXPORT_HEADER } from './copy';
 
 function sectionText(value: unknown): string {
@@ -193,9 +193,11 @@ function ExportSection({
         <Typography sx={{ fontWeight: 600, fontSize: 13, color: 'text.primary' }}>
           {title}
         </Typography>
+        {/* KEEP amber (stage-3 §4.1: brand-flavored action affordance), but TEXT-GRADE — 11px
+            amber text binds `textAmber` via extrasFor (light-mode contrast gate §5.2). */}
         <Button
           onClick={() => onCopy(text)}
-          sx={{ minWidth: 0, p: 0.25, fontSize: 11, color: 'primary.main' }}
+          sx={(t) => ({ minWidth: 0, p: 0.25, fontSize: 11, color: extrasFor(t).textAmber })}
         >
           COPY
         </Button>

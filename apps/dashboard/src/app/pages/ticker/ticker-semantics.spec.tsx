@@ -67,9 +67,13 @@ afterEach(() => {
 });
 
 /** A DATA VALUE for the guard's purpose (contract §8.3): leading signed/currency figure, or a pure
- *  figure with %/$/unit suffixes. Headings that NAME things ("Live tape", "TSLA · $250.00" anchor —
- *  which starts with the ticker LETTERS) don't match. */
+ *  figure with %/$/unit suffixes. Headings that NAME things ("Live tape") don't match. */
 const DATA_VALUE = /^[+−$-]?[\d,.]+/;
+/** redesign-stage-3 §8-10 extension: the `TICKER · $price` form IS a data value too (the
+ *  CommandDeck condensed bar mounted it as an <h6> until §5.6). The page's SINGLE h1 anchor is
+ *  the one permitted carrier of this form — every other heading level matching it is a
+ *  regression, not just the one fixed site. */
+const TICKER_PRICE = /^[A-Z]{1,6}\s*·\s*\$/;
 
 function allHeadings(): HTMLElement[] {
   return Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
@@ -114,8 +118,15 @@ describe('Ticker · heading semantics (h1 → h2, data values are never headings
     await screen.findByText('Call wall');
 
     const offenders = allHeadings()
-      .map((h) => (h.textContent ?? '').trim())
-      .filter((t) => DATA_VALUE.test(t) || /^[\d,.]+\s*[%$]/.test(t));
+      .map((h) => ({ tag: h.tagName.toLowerCase(), text: (h.textContent ?? '').trim() }))
+      .filter(
+        ({ tag, text }) =>
+          DATA_VALUE.test(text) ||
+          /^[\d,.]+\s*[%$]/.test(text) ||
+          // §8-10: `TICKER · $…` counts as a data value on every heading EXCEPT the one h1 anchor.
+          (tag !== 'h1' && TICKER_PRICE.test(text)),
+      )
+      .map(({ tag, text }) => `<${tag}> ${text}`);
     expect(
       offenders,
       `data values must render as styled spans/paragraphs, never headings:\n${offenders.join('\n')}`,

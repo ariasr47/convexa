@@ -22,13 +22,13 @@ afterEach(() => cleanup());
 // ---- 1. TintChip renders at the floor ------------------------------------------------------------
 
 describe('TintChip — computed font-size is the 11px floor', () => {
-  it('the emotion class the chip wears declares font-size:11px', () => {
+  const chipRule = (label: string) => {
     const { getByText } = render(
       <ThemeProvider theme={theme}>
-        <TintChip tone="neutral" label="+1.2% vs spot" />
+        <TintChip tone={label === 'HIGH' ? 'emphasis' : 'neutral'} label={label} />
       </ThemeProvider>,
     );
-    const chip = getByText('+1.2% vs spot');
+    const chip = getByText(label);
     const emotionClass = Array.from(chip.classList).find((c) => c.startsWith('css-'));
     expect(emotionClass, 'TintChip should carry an emotion (sx) class').toBeTruthy();
 
@@ -36,8 +36,15 @@ describe('TintChip — computed font-size is the 11px floor', () => {
       .map((s) => s.textContent ?? '')
       .join('\n')
       .replace(/\s+/g, '');
-    const rule = css.split(`.${emotionClass}{`)[1]?.split('}')[0] ?? '';
-    expect(rule).toContain('font-size:11px');
+    return css.split(`.${emotionClass}{`)[1]?.split('}')[0] ?? '';
+  };
+
+  it('the emotion class the chip wears declares font-size:11px', () => {
+    expect(chipRule('+1.2% vs spot')).toContain('font-size:11px');
+  });
+
+  it('the stage-3 emphasis tone holds the same 11px floor (§8-4)', () => {
+    expect(chipRule('HIGH')).toContain('font-size:11px');
   });
 });
 

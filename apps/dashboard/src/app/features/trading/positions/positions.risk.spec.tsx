@@ -620,7 +620,17 @@ describe('positions · no-real-order-path', () => {
     const src = liveTabSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(0);
-    const allowed = [/^@mui\//, /^@\/shared\/ui\/ComingSoonBox$/, /^\.\/labels$/];
+    // redesign-stage-3 §4.2 (a DELIBERATE, named allowlist extension): `@/shared/theme/tokens`
+    // is a STATIC VALUE module (pure design-token constants — no store, no transport, no hook,
+    // no position data), the same class as `./labels` and the hatch value. The LOCKED chip's
+    // text-grade amber resolves via its `extrasFor` — the zero-import lock is about DATA
+    // sources and stays intact. Anything live remains forbidden.
+    const allowed = [
+      /^@mui\//,
+      /^@\/shared\/ui\/ComingSoonBox$/,
+      /^@\/shared\/theme\/tokens$/,
+      /^\.\/labels$/,
+    ];
     for (const spec of specifiers) {
       expect(
         allowed.some((re) => re.test(spec)),

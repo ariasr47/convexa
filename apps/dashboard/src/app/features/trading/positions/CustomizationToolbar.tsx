@@ -380,7 +380,8 @@ export function CustomizationToolbar({
             background: 'none',
             font: 'inherit',
             fontSize: '0.78rem',
-            color: 'primary.main',
+            // Link-class text binds `info` (stage-3 §4.2: links are signal-blue, never amber).
+            color: 'info.main',
             ml: '4px',
           }}
         >

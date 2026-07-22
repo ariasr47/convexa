@@ -464,7 +464,17 @@ export function TradeEntryDialog({
                 })}
               />
               {!isOrder && prefill?.provenance && (
-                <Chip size="small" color="primary" variant="outlined" label={prefill.provenance} />
+                // KEEP amber (stage-3 §4.2: provenance is brand-flavored); the 13px LABEL binds
+                // text-grade `textAmber` (§5.2 gate), the border stays a `primary` alpha (UI class).
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={prefill.provenance}
+                  sx={(t) => ({
+                    color: extrasFor(t).textAmber,
+                    borderColor: alpha(t.palette.primary.main, 0.5),
+                  })}
+                />
               )}
             </Stack>
             <IconButton

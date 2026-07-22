@@ -65,10 +65,12 @@ export function OffExchangeBlocks({ offExchange }: Props) {
                     <Typography sx={{ fontFamily: MONO, fontSize: 12 }}>
                       {b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}
                     </Typography>
-                    {/* Proximity is context, not direction — a fixed (non-directional) tint. */}
+                    {/* Proximity is context, not direction — NEUTRAL (stage-3 §5.3: the old
+                        `success` tint tripped the green/red reservation on a datum whose own
+                        subtitle says "no side or direction"). */}
                     <Tooltip arrow title={PROXIMITY_TOOLTIP}>
                       <span>
-                        <TintChip tone="success" label={prox} />
+                        <TintChip tone="neutral" label={prox} />
                       </span>
                     </Tooltip>
                   </Stack>

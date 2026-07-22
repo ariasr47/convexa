@@ -190,3 +190,159 @@ describe('§8-5 · brandGradient disposition (deleted, both consumers flat)', ()
     expect(code).not.toContain('linear-gradient');
   });
 });
+
+// ---- §8-3 · the amber census, mechanizable half -------------------------------------------------
+
+/** Balanced-brace extraction of every `'&:hover': { … }` block in a source. */
+export function hoverBlocks(src: string): string[] {
+  const out: string[] = [];
+  const re = /['"]&:hover['"]\s*:\s*\{/g;
+  for (const m of src.matchAll(re)) {
+    let depth = 1;
+    let i = m.index + m[0].length;
+    const start = i;
+    while (i < src.length && depth > 0) {
+      if (src[i] === '{') depth += 1;
+      else if (src[i] === '}') depth -= 1;
+      i += 1;
+    }
+    out.push(src.slice(start, i - 1));
+  }
+  return out;
+}
+
+const hoverAmber = (src: string): string[] =>
+  hoverBlocks(stripComments(src)).filter(
+    (b) => b.includes('primary') || b.includes('--mui-palette-primary'),
+  );
+
+/** The "no amber on hover chrome" file list (§8-3a — the rule made structural). */
+const HOVER_CENSUS_FILES = [
+  '/src/app/shared/ui/Widget/Widget.tsx',
+  '/src/app/pages/ticker/widgets/_kit/StatTile.tsx',
+  '/src/app/features/trading/positions/PositionRow.tsx',
+  '/src/app/features/trading/positions/PositionCard.tsx',
+  '/src/app/features/trading/orders/OrderRow.tsx',
+  '/src/app/features/trading/positions/PositionsView.tsx',
+];
+
+/** The six MOVE→info sites (§4 lists): marker → the window that must bind `info`, not `primary`. */
+const MOVE_TO_INFO_SITES: Array<{ file: string; marker: string; window: 'after' | 'before' }> = [
+  {
+    file: '/src/app/pages/ticker/widgets/ai-rec/AiRecPanel.tsx',
+    marker: 'onViewExport(readPersonaIdForRequest)',
+    window: 'after',
+  },
+  {
+    file: '/src/app/features/trading/orders/OrdersWidget.tsx',
+    marker: '{ACTION_ALL_ORDERS}',
+    window: 'before',
+  },
+  {
+    file: '/src/app/features/trading/positions/CustomizationToolbar.tsx',
+    marker: 'data-testid="history-button"',
+    window: 'after',
+  },
+  {
+    file: '/src/app/features/trading/positions/PositionsView.tsx',
+    marker: 'const clearLinkSx',
+    window: 'after',
+  },
+  {
+    file: '/src/app/features/trading/positions/PositionRow.tsx',
+    marker: 'data-testid="position-view-order"',
+    window: 'after',
+  },
+  {
+    file: '/src/app/pages/scanner/Scanner.tsx',
+    marker: 'data-testid="scanner-ticker-link"',
+    window: 'after',
+  },
+];
+
+const WINDOW = 700;
+function siteWindow(src: string, marker: string, dir: 'after' | 'before'): string | null {
+  const i = src.indexOf(marker);
+  if (i < 0) return null;
+  return dir === 'after'
+    ? src.slice(i, i + marker.length + WINDOW)
+    : src.slice(Math.max(0, i - WINDOW), i + marker.length);
+}
+
+describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info sites (mutation-guarded)', () => {
+  it('MUTATION GUARD: the hover extractor finds nested blocks and flags amber inside them', () => {
+    const fixture = `sx={{ '&:hover': { borderColor: theme.palette.primary.main, '& .x': { opacity: 1 } } }}`;
+    expect(hoverBlocks(fixture)).toHaveLength(1);
+    expect(hoverAmber(fixture)).toHaveLength(1);
+    expect(hoverAmber(`sx={{ '&:hover': { borderColor: theme.palette.text.disabled } }}`)).toEqual(
+      [],
+    );
+    expect(
+      hoverAmber(`'&:hover': { borderColor: 'color-mix(in srgb, var(--mui-palette-primary-main) 40%, x)' }`),
+    ).toHaveLength(1);
+  });
+
+  it('(a) NO primary token inside any &:hover block of the census files (hover chrome is neutral)', () => {
+    for (const file of HOVER_CENSUS_FILES) {
+      const src = APP_SOURCES[file];
+      expect(src, `${file} must exist (census list is live)`).toBeTruthy();
+      expect(hoverAmber(src), `${file}: amber must not land on hover chrome`).toEqual([]);
+    }
+  });
+
+  it('(b) CommandDeck contains ZERO primary references — the washes are gone, the deck has no legitimate amber', () => {
+    const deck = APP_SOURCES['/src/app/pages/ticker/widgets/chrome/CommandDeck.tsx'];
+    expect(deck, 'CommandDeck.tsx must exist').toBeTruthy();
+    expect(stripComments(deck)).not.toMatch(/primary/);
+  });
+
+  it('(c) the six MOVE→info sites bind `info`, not `primary` (link-class text is signal-blue)', () => {
+    for (const { file, marker, window } of MOVE_TO_INFO_SITES) {
+      const src = APP_SOURCES[file];
+      expect(src, `${file} must exist`).toBeTruthy();
+      const win = siteWindow(src, marker, window);
+      expect(win, `${file}: marker "${marker}" must exist (site list is live)`).toBeTruthy();
+      expect(win, `${file} @ "${marker}": must bind info.main`).toContain('info.main');
+      expect(win, `${file} @ "${marker}": must not bind primary.main`).not.toContain(
+        'primary.main',
+      );
+    }
+  });
+});
+
+// ---- §8-8 · textAmber consumption (structural) ---------------------------------------------------
+
+/** The §5.2 CLOSED consumer list — every site keeping amber text below 18px. */
+const TEXT_AMBER_CONSUMERS = [
+  '/src/app/pages/scanner/Scanner.tsx', //                       coming-soon pill (11px)
+  '/src/app/features/trading/positions/LiveTabPanel.tsx', //     LOCKED chip (11px)
+  '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
+  '/src/app/features/trading/model/OpportunityTier.tsx', //      Prime banner body text
+  '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
+  '/src/app/features/trading/TradeEntryDialog.tsx', //           provenance chip label (13px)
+  '/src/app/pages/ticker/widgets/_kit/TintChip.tsx', //          the `emphasis` tone text
+];
+
+describe('§8-8 · textAmber consumption — the closed list resolves via extrasFor (never bare extras.)', () => {
+  const bareExtras = (src: string): boolean =>
+    /\bextras\./.test(stripComments(src)) || /\bextrasLight\./.test(stripComments(src));
+
+  it('MUTATION GUARD: bare `extras.` (dark-locked) is flagged; `extrasFor(t).textAmber` is not', () => {
+    expect(bareExtras('color: extras.textAmber')).toBe(true);
+    expect(bareExtras('color: extrasLight.textAmber')).toBe(true);
+    expect(bareExtras('color: extrasFor(t).textAmber')).toBe(false);
+  });
+
+  it('every closed-list consumer binds textAmber through extrasFor', () => {
+    for (const file of TEXT_AMBER_CONSUMERS) {
+      const src = APP_SOURCES[file];
+      expect(src, `${file} must exist (consumer list is live)`).toBeTruthy();
+      const code = stripComments(src);
+      expect(code, `${file}: must resolve via extrasFor(`).toContain('extrasFor(');
+      expect(code, `${file}: must bind .textAmber`).toContain('.textAmber');
+      expect(bareExtras(src), `${file}: bare extras./extrasLight. dark-locks the surface`).toBe(
+        false,
+      );
+    }
+  });
+});

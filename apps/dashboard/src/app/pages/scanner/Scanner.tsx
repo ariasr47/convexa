@@ -13,6 +13,7 @@
 import { Box, Link, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
+import { extrasFor } from '@/shared/theme/tokens';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 
 export function Scanner() {
@@ -82,8 +83,10 @@ export function Scanner() {
               fontWeight: 600,
               letterSpacing: '.04em',
               textTransform: 'uppercase',
-              // Stage-1 rebind (§3.3-4): coming-soon is brand-flavored — amber `primary`, not warning.
-              color: 'primary.main',
+              // Stage-1 rebind (§3.3-4): coming-soon is brand-flavored — amber, not warning.
+              // Stage-3 §4.4: the 11px LABEL binds text-grade `textAmber` (§5.2 gate);
+              // border/tint stay `primary` alphas (UI class).
+              color: extrasFor(theme).textAmber,
               border: '1px solid',
               borderColor: alpha(theme.palette.primary.main, 0.35),
               bgcolor: alpha(theme.palette.primary.main, 0.08),
@@ -94,12 +97,13 @@ export function Scanner() {
           >
             coming soon
           </Box>
+          {/* It is literally a Link — links bind `info` (stage-3 §4.4; the token rule). */}
           <Link
             component={RouterLink}
             to="/ticker"
             data-testid="scanner-ticker-link"
             underline="hover"
-            sx={{ fontSize: '0.88rem', fontWeight: 600, color: 'primary.main' }}
+            sx={{ fontSize: '0.88rem', fontWeight: 600, color: 'info.main' }}
           >
             Go to the Ticker viewer →
           </Link>

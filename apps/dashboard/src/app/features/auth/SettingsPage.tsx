@@ -44,6 +44,7 @@ import { useAuthDialog } from './AuthDialogProvider';
 import { avatarInitial, AVATAR_SX } from './avatar';
 import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
 import { useSettings } from './useSettings';
+import { extrasFor } from '@/shared/theme/tokens';
 
 const C = AUTH_COPY.settings;
 
@@ -296,7 +297,10 @@ export function SettingsPage() {
                       borderColor: 'divider',
                     },
                     '&.Mui-selected': {
-                      color: 'primary.main',
+                      // KEEP amber (active state, §4.3); the body-size LABEL binds the
+                      // text-grade `textAmber` (stage-3 §5.2 light-mode gate) while the
+                      // border/tint stay `primary` (UI class).
+                      color: (theme) => extrasFor(theme).textAmber,
                       borderColor: 'primary.main',
                       bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08),
                     },

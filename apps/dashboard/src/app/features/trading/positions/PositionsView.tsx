@@ -81,7 +81,8 @@ const clearLinkSx = {
   background: 'none',
   border: 'none',
   font: 'inherit',
-  color: 'primary.main',
+  // Link-class text binds `info` (stage-3 §4.2: links are signal-blue, never amber).
+  color: 'info.main',
   fontSize: '0.82rem',
   cursor: 'pointer',
   display: 'block',

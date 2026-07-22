@@ -5,14 +5,15 @@
  * no drag/expand/selection; it sits ABOVE the `WidgetSelectionProvider` board.
  *
  * Structure:
- *   1. Deck surface — a subtle top-lit panel: a faint `primary`-tint → transparent gradient, a 1px
- *      `divider` hairline, 16px radius, a soft inset top highlight. Token-only (color-mix off
- *      `--mui-palette-*` + neutral rgba light/shadow — ZERO hardcoded hex).
+ *   1. Deck surface — a subtle top-lit panel: a NEUTRAL white-sheen → transparent gradient, a 1px
+ *      `divider` hairline, 16px radius, a soft inset top highlight. (redesign-stage-3 §4.1: the
+ *      former ambient amber washes went NEUTRAL — an even wash across full-width chrome is the
+ *      definition of sprinkled; amber on this page belongs to the flip line + active states.)
  *   2. Hero identity row (tier 1) — the regime + single connection chip, the big `TICKER · $price`
  *      anchor + muted levels sub-line, the meta line (last-trade + relocated freshness), and the
  *      right-aligned `+ Open simulated trade` CTA. (Delegated to `TickerHeader`, now the deck hero.)
  *   3. Control strip (tier 2) — the segmented `TickerToolbar` (one instrument panel).
- *   4. Hand-off — a short downward `primary`-tint gradient below the deck so it leads into the first
+ *   4. Hand-off — a short downward NEUTRAL gradient below the deck so it leads into the first
  *      widget; the chrome↔board seam is gone.
  *   5. Sticky condensed bar — as the deck scrolls out, a slim pinned bar shows mark · ticker · $price ·
  *      connection chip · a compact Expirations/Persona, restoring context. Progressive +
@@ -91,9 +92,9 @@ function StickyCondensed({
         mb: 1,
         borderRadius: '12px',
         border: `1px solid ${t.palette.divider}`,
-        // Same deck material, denser: a faint primary top-light over the paper, token-bound.
-        // Mode-aware chrome: the white sheen + deep shadow are dark-scheme idioms.
-        backgroundColor: `color-mix(in srgb, ${t.palette.background.paper} 88%, ${t.palette.primary.main} 4%)`,
+        // Same deck material, denser. Stage-3 §4.1: the amber component of the wash dropped —
+        // plain paper; the NEUTRAL white sheen + shadow (mode-aware dark idioms) carry the chrome.
+        backgroundColor: t.palette.background.paper,
         backgroundImage:
           t.palette.mode === 'dark'
             ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%)'
@@ -105,9 +106,12 @@ function StickyCondensed({
         backdropFilter: 'saturate(1.1) blur(6px)',
       })}
     >
+      {/* `component="p"` (stage-3 §5.6): `TICKER · $price` is a DATA VALUE, not document
+          structure — MUI subtitle2 defaults to <h6>; the page's one heading anchor is the hero h1. */}
       <Typography
         variant="subtitle2"
-        sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+        component="p"
+        sx={{ fontWeight: 700, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', m: 0 }}
       >
         {m.ticker} · ${price}
       </Typography>
@@ -210,9 +214,13 @@ export function CommandDeck(props: CommandDeckProps) {
           position: 'relative',
           borderRadius: '16px',
           border: `1px solid ${t.palette.divider}`,
-          // Faint primary top-light fading to transparent → the "lit deck" look; token-bound color-mix.
-          backgroundColor: `color-mix(in srgb, ${t.palette.background.paper} 82%, ${t.palette.primary.main} 5%)`,
-          backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 9%, transparent), transparent 42%)`,
+          // Stage-3 §4.1: the amber wash + amber top-light went NEUTRAL — plain paper with the
+          // mode-aware white sheen (the StatTile "lit" idiom); light mode needs no sheen.
+          backgroundColor: t.palette.background.paper,
+          backgroundImage:
+            t.palette.mode === 'dark'
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%)'
+              : 'none',
           boxShadow:
             t.palette.mode === 'dark'
               ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)'
@@ -250,8 +258,9 @@ export function CommandDeck(props: CommandDeckProps) {
         </Stack>
       </Box>
 
-      {/* Hand-off — a short downward primary-tint gradient below the deck so the chrome leads visually
-          into the first widget; the seam between chrome and board disappears. Purely decorative. */}
+      {/* Hand-off — a short downward NEUTRAL gradient below the deck so the chrome leads visually
+          into the first widget; the seam between chrome and board disappears. Purely decorative.
+          Stage-3 §4.1: the amber tint dropped — the divider slot (already an alpha) fades out. */}
       <Box
         aria-hidden
         data-testid="deck-handoff"
@@ -259,7 +268,7 @@ export function CommandDeck(props: CommandDeckProps) {
           height: 24,
           mt: -0.5,
           mb: 1,
-          background: `linear-gradient(180deg, color-mix(in srgb, ${t.palette.primary.main} 6%, transparent), transparent)`,
+          background: `linear-gradient(180deg, ${t.palette.divider}, transparent)`,
           pointerEvents: 'none',
         })}
       />

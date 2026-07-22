@@ -2,11 +2,16 @@
  * TintChip — the small tinted status pill from the Figma ticker widgets (colored text on a subtle
  * same-color tint): proximity chips (Off-Exchange Blocks), conviction tags (Setups), etc. `neutral`
  * renders a muted grey. Non-directional by design — the tone is chosen by the caller.
+ *
+ * `emphasis` (redesign-stage-3 §5.3): conviction/emphasis rendered in BRAND amber — text-grade
+ * `textAmber` (via `extrasFor`, light-mode contrast gated §5.2) on a `primary`-alpha tint.
+ * Structurally distinct from `warning` (burnt orange, reserved for TRUE warnings + icon).
  */
 import { Box } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { extrasFor } from '@/shared/theme/tokens';
 
-type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral';
+type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral' | 'emphasis';
 
 export function TintChip({ tone, label }: { tone: Tone; label: string }) {
   return (
@@ -23,11 +28,18 @@ export function TintChip({ tone, label }: { tone: Tone; label: string }) {
         letterSpacing: '0.02em',
         whiteSpace: 'nowrap',
         lineHeight: 1.5,
-        color: tone === 'neutral' ? t.palette.text.secondary : t.palette[tone].main,
+        color:
+          tone === 'neutral'
+            ? t.palette.text.secondary
+            : tone === 'emphasis'
+              ? extrasFor(t).textAmber
+              : t.palette[tone].main,
         bgcolor:
           tone === 'neutral'
             ? alpha(t.palette.text.secondary, 0.16)
-            : alpha(t.palette[tone].main, 0.16),
+            : tone === 'emphasis'
+              ? alpha(t.palette.primary.main, 0.16)
+              : alpha(t.palette[tone].main, 0.16),
       })}
     >
       {label}

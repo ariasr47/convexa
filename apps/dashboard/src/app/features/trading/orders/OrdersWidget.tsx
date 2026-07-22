@@ -33,7 +33,10 @@ import { deriveEval, LiveCoverage, useOrders } from './useOrders';
 export function StoreFaultBlock() {
   return (
     <Box data-testid="orders-store-fault" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
-      <Typography variant="subtitle2">{STORE_FAULT_TITLE}</Typography>
+      {/* component="p" (stage-3 §5.6): a transient fault title must not mount/unmount an <h6>. */}
+      <Typography variant="subtitle2" component="p">
+        {STORE_FAULT_TITLE}
+      </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {STORE_FAULT_BODY}
       </Typography>
@@ -101,6 +104,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
       <Tooltip arrow title={SIMULATED_TIP}>
         <Chip size="small" variant="outlined" label="SIMULATED" />
       </Tooltip>
+      {/* Link-class action text binds `info` (stage-3 §4.2 — matches the AiRec export action). */}
       <Button
         size="small"
         onClick={() => navigate('/positions')}
@@ -109,7 +113,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
           minWidth: 0,
           textTransform: 'none',
           fontWeight: 500,
-          color: 'primary.main',
+          color: 'info.main',
           whiteSpace: 'nowrap',
           '&:hover': { bgcolor: 'transparent' },
         }}
