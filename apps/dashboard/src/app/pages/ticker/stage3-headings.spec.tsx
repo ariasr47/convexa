@@ -144,6 +144,13 @@ function renderPanel(ai: AiRec) {
   );
 }
 
+/** Flush the AuthProvider's who-am-I microtask inside act() so the test exits clean. */
+async function flushAuth() {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
 /** The §5.6 contract: the given text renders, is NOT a heading, and the panel's ONLY heading
  *  element is the widget's own h2 title. */
 function expectHeadingFree(container: HTMLElement, transientTitle: string | RegExp) {
@@ -157,7 +164,7 @@ describe('§5.6 · ai-rec transient states mount no heading (component="p")', ()
   it('loading — the Thinking… title is a <p>; the widget h2 is the only heading', async () => {
     const { container } = renderPanel(aiStub({ loading: true }));
     expectHeadingFree(container, COPY.loading.title);
-    await act(async () => {}); // flush the AuthProvider who-am-I read
+    await flushAuth();
   });
 
   it('unavailable — the transient title is a <p>', async () => {
@@ -165,7 +172,7 @@ describe('§5.6 · ai-rec transient states mount no heading (component="p")', ()
       aiStub({ rec: rec({ status: 'unavailable', strategy: null, unavailable_reason: 'transport' }) }),
     );
     expectHeadingFree(container, COPY.unavailable.title);
-    await act(async () => {});
+    await flushAuth();
   });
 
   it('BYO-key CTA (no_key) — the CTA title is a <p>', async () => {
@@ -173,7 +180,7 @@ describe('§5.6 · ai-rec transient states mount no heading (component="p")', ()
       aiStub({ rec: rec({ status: 'unavailable', strategy: null, unavailable_reason: 'no_key' }) }),
     );
     expectHeadingFree(container, BYO_KEY.noKey.title);
-    await act(async () => {});
+    await flushAuth();
   });
 
   it('no-trade verdict — the verdict is data/copy, a <p>', async () => {
@@ -181,13 +188,13 @@ describe('§5.6 · ai-rec transient states mount no heading (component="p")', ()
       aiStub({ rec: rec({ strategy: strategy({ decision: 'no_trade' }) }) }),
     );
     expectHeadingFree(container, COPY.noTrade.title);
-    await act(async () => {});
+    await flushAuth();
   });
 
   it('Trade · bias verdict — the verdict is data/copy, a <p>', async () => {
     const { container } = renderPanel(aiStub({ rec: rec() }));
     expectHeadingFree(container, 'Trade · long');
-    await act(async () => {});
+    await flushAuth();
   });
 });
 
