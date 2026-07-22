@@ -238,6 +238,23 @@ export function OperatorMetrics() {
           />
         )}
         <Chip size="small" variant="outlined" label="read-only" sx={{ mr: 1 }} />
+        {/* Dev-only link to the delivery-kit OS Console (kit docs/OS_CONSOLE.md). DEV builds only —
+            the console is a localhost kit-meta server (default :4747); in prod this renders nothing.
+            Lives HERE (the operator surface, off every trader route) per
+            [operator-vs-trader-path-separation] — the trader UI never links operator tooling. */}
+        {import.meta.env.DEV && (
+          <Chip
+            size="small"
+            variant="outlined"
+            component="a"
+            clickable
+            href="http://127.0.0.1:4747/"
+            target="_blank"
+            rel="noopener"
+            label="⌘ OS Console"
+            data-testid="os-console-link"
+          />
+        )}
       </Toolbar>
     </AppBar>
   );
