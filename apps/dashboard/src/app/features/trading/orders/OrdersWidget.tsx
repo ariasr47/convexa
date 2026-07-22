@@ -1,7 +1,7 @@
 /**
  * OrdersWidget — the Ticker-board Orders widget (UX §4.4): `<Widget id="orders">` placed directly
- * after the AI-rec widget (act → watch reads as one motion), next `revealIndex` in the board
- * cascade. Shows THIS ticker's orders — the place evaluation is actually live while you watch.
+ * after the AI-rec widget (act → watch reads as one motion) on the board.
+ * Shows THIS ticker's orders — the place evaluation is actually live while you watch.
  * `live` pulses only while ≥1 of this ticker's orders is actually Watching.
  *
  * States: default (non-terminal rows + a collapsed "Recent {n} completed" group) · empty · store
@@ -33,7 +33,10 @@ import { deriveEval, LiveCoverage, useOrders } from './useOrders';
 export function StoreFaultBlock() {
   return (
     <Box data-testid="orders-store-fault" sx={{ p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}>
-      <Typography variant="subtitle2">{STORE_FAULT_TITLE}</Typography>
+      {/* component="p" (stage-3 §5.6): a transient fault title must not mount/unmount an <h6>. */}
+      <Typography variant="subtitle2" component="p">
+        {STORE_FAULT_TITLE}
+      </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {STORE_FAULT_BODY}
       </Typography>
@@ -80,10 +83,9 @@ interface Props {
   live: LiveUpdate | null;
   isLive: boolean;
   streamOffline: boolean;
-  revealIndex?: number;
 }
 
-export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex }: Props) {
+export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
   const navigate = useNavigate();
   const { orders, faulted, cancel } = useOrders();
   const symbol = ticker.toUpperCase();
@@ -102,6 +104,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
       <Tooltip arrow title={SIMULATED_TIP}>
         <Chip size="small" variant="outlined" label="SIMULATED" />
       </Tooltip>
+      {/* Link-class action text binds `info` (stage-3 §4.2 — matches the AiRec export action). */}
       <Button
         size="small"
         onClick={() => navigate('/positions')}
@@ -110,7 +113,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
           minWidth: 0,
           textTransform: 'none',
           fontWeight: 500,
-          color: 'primary.main',
+          color: 'info.main',
           whiteSpace: 'nowrap',
           '&:hover': { bgcolor: 'transparent' },
         }}
@@ -126,7 +129,6 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline, revealIndex 
       title={WIDGET_TITLE(symbol)}
       live={watchingAny}
       actions={actions}
-      revealIndex={revealIndex}
     >
       <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
         {announcement}

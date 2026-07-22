@@ -13,10 +13,9 @@
 import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { brandGradient } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
+import { avatarInitial, AVATAR_SX } from './avatar';
 
 export function AccountControl() {
   const auth = useAuth();
@@ -27,9 +26,10 @@ export function AccountControl() {
   }
 
   if (!auth.authenticated) {
-    // Custom login/sign-up control: a ghost "Log in" + a gradient "Sign up" pill, both opening the
-    // shared AuthDialog (login vs signup mode). The pill carries the same high-tech polish as the
-    // Landing value cards (gradient fill + hover glow/lift), reduced-motion safe.
+    // Custom login/sign-up control: a ghost "Log in" + a flat contained-primary "Sign up" pill,
+    // both opening the shared AuthDialog (login vs signup mode). Stage-3 §5.1: the gradient fill
+    // retired with `brandGradient` — flat `primary.main` + `primary.contrastText` fixes the
+    // measured-broken white-on-amber label; radius/hover lift/glow stay, reduced-motion safe.
     return (
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button
@@ -55,15 +55,12 @@ export function AccountControl() {
             whiteSpace: 'nowrap',
             borderRadius: 999,
             px: 2,
-            color: 'common.white',
-            background: brandGradient,
             transition: 'transform 180ms ease, box-shadow 180ms ease, filter 180ms ease',
             '&:hover': {
               transform: 'translateY(-1px)',
               filter: 'brightness(1.06)',
-              // Hover glow stays a mode-aware primary tint (an accent, not the fixed brand mark).
+              // Hover glow stays a mode-aware primary tint (an accent on the brand action).
               boxShadow: (theme) => `0 8px 22px -8px ${alpha(theme.palette.primary.main, 0.6)}`,
-              background: brandGradient,
             },
             '@media (prefers-reduced-motion: reduce)': { '&:hover': { transform: 'none' } },
           }}
@@ -74,8 +71,8 @@ export function AccountControl() {
     );
   }
 
-  // Signed-in: the email (secondary, hidden < sm to save space) + a 32px gradient avatar that links
-  // to /settings. No dropdown menu — log out now lives on the Settings Account panel.
+  // Signed-in: the email (secondary, hidden < sm to save space) + a 32px brand-amber avatar that
+  // links to /settings. No dropdown menu — log out now lives on the Settings Account panel.
   return (
     <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
       <Typography
@@ -96,7 +93,7 @@ export function AccountControl() {
         to="/settings"
         aria-label="Account settings"
         data-testid="account-avatar"
-        sx={{ ...GRADIENT_AVATAR_SX, textDecoration: 'none' }}
+        sx={{ ...AVATAR_SX, textDecoration: 'none' }}
       >
         {avatarInitial(auth.user)}
       </Box>

@@ -13,6 +13,7 @@
  */
 import { Box, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { extrasFor } from '@/shared/theme/tokens';
 import { hatchBackgroundImage } from '@/shared/ui/ComingSoonBox';
 import { LIVE_BODY, LIVE_HEADING, LIVE_LOCK_CHIP } from './labels';
 
@@ -60,9 +61,11 @@ export function LiveTabPanel() {
           fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
           fontWeight: 600,
           textTransform: 'uppercase',
-          // Stage-1 rebind (§3.3-4): the locked note is brand-flavored, not a warning — amber
-          // `primary` slots only (the zero-import lock is untouched: MUI + labels + hatch only).
-          color: 'primary.main',
+          // Stage-1 rebind (§3.3-4): the locked note is brand-flavored, not a warning. Stage-3
+          // §4.2: the 11px LABEL binds the text-grade `textAmber` (light-mode contrast gate
+          // §5.2); border/tint stay `primary` alphas (UI class). The ZERO-IMPORT LOCK holds:
+          // `tokens.ts` is a static value module, `extrasFor` comes with it — no new import class.
+          color: extrasFor(theme).textAmber,
           border: `1px solid ${alpha(theme.palette.primary.main, 0.35)}`,
           bgcolor: alpha(theme.palette.primary.main, 0.08),
           borderRadius: 999,

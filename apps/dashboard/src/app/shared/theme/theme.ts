@@ -59,24 +59,28 @@ const COMMON = {
     // ---- Stage 0 quality floor (redesign-stage-0, FRONTEND_EXECUTION_CONTRACT §3 items 2 + 4) ----
     // THE authored `:focus-visible` ring + the coarse-pointer touch-target floor, both defined ONCE
     // here at the theme layer so every component inherits them (no per-component bespoke rings).
-    // Token-bound by construction: the ring color reads the live theme's `primary.main` (now
-    // gammaAmber in dark / amberDeep in light), so it is mode-aware with zero literals.
+    // Token-bound by construction. Ring color (redesign-stage-3 GATE Z B2 ruling): the mode's
+    // TEXT-GRADE amber via `extrasFor(theme).textAmber` — dark ≡ gammaAmber ≡ primary.main
+    // (byte-identical render), light = #8F5C0F, because light `primary.main` (amberDeep) measured
+    // 2.76:1 on the raised light surface #ECECE7 (< the 3:1 ring floor); textAmber measures
+    // 5.23 / 5.67 / 4.78 on paper / white / panelRaised — ≥3.0 on EVERY surface the ring can
+    // land on (pinned in stage3-amber.spec.ts).
     MuiCssBaseline: {
       styleOverrides: (theme: Theme) => ({
         // Aligned figures on a data terminal are a feature: Plex Mono is tabular by construction,
         // and Plex Sans supports `tnum` — belt-and-braces global tabular numerals (stage-1 §4.3).
         html: { fontVariantNumeric: 'tabular-nums' },
-        // The one authored focus ring — plain 2px primary outline + offset. `:focus-visible` (not
+        // The one authored focus ring — plain 2px amber outline + offset. `:focus-visible` (not
         // `:focus`) so mouse-click focus stays ringless while keyboard focus is always visible.
         '*:focus-visible': {
-          outline: `2px solid ${theme.palette.primary.main}`,
+          outline: `2px solid ${extrasFor(theme).textAmber}`,
           outlineOffset: '2px',
         },
         // Matching treatment for MUI ButtonBase descendants (buttons, icon buttons, menu items,
         // toggle pills): ButtonBase resets `outline: 0` at (0,1,0), so this (0,2,0) selector pair
         // restores the SAME ring for both the native pseudo-class and MUI's focus-visible class.
         '.MuiButtonBase-root:focus-visible, .MuiButtonBase-root.Mui-focusVisible': {
-          outline: `2px solid ${theme.palette.primary.main}`,
+          outline: `2px solid ${extrasFor(theme).textAmber}`,
           outlineOffset: '2px',
         },
         // Touch-target floor (≥44px effective hit area) on touch/coarse pointers only — desktop

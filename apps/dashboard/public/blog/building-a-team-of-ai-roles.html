@@ -76,26 +76,26 @@
   <title>Why the relay works: one giant conversation versus a relay of focused roles</title>
   <desc>Left panel, one giant conversation: a single overloaded session juggling every role at once, with a context meter almost full, where roles blur, context overflows and errors hide. Right panel, a relay of roles: a tidy sequence of focused sessions each with a light context meter, giving one job each, light context, and clean checkable handoffs.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13.5px}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13.5px}
     .pt{font-size:16px;font-weight:700}
-    .bul{fill:#4A5160;font-size:13px}
-    .small{fill:#5C6470;font-size:11px}
-    .meter{fill:#6B7280;font-size:11px;font-weight:600}
-    .chip{fill:#1f2937;font-size:12px;font-weight:600}
+    .bul{fill:#8A9BB4;font-size:13px}
+    .small{fill:#8A9BB4;font-size:11px}
+    .meter{fill:#8A9BB4;font-size:11px;font-weight:600}
+    .chip{fill:#E9E4D6;font-size:12px;font-weight:600}
   </style>
-  <rect x="1" y="1" width="958" height="428" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="428" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="h1" x="36" y="46">Why a relay beats a marathon</text>
   <text class="sub" x="36" y="70">Same work, two ways to organise it.</text>
 
-  <!-- ===== LEFT: one giant conversation ===== -->
-  <rect x="28" y="92" width="430" height="312" rx="13" fill="#FBEDE4" stroke="#E3B79E"/>
-  <text class="pt" x="52" y="124" fill="#9A3B16">One giant conversation</text>
+  <!-- ===== LEFT: one giant conversation (the failure mode — burnt orange) ===== -->
+  <rect x="28" y="92" width="430" height="312" rx="13" fill="#0B0F17" stroke="#E07A3F" stroke-opacity="0.45"/>
+  <text class="pt" x="52" y="124" fill="#E07A3F">One giant conversation</text>
 
   <!-- overloaded blob with crammed hats -->
-  <circle cx="150" cy="216" r="66" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <g font-size="10.5" font-weight="700" fill="#7A3A1E" text-anchor="middle">
+  <circle cx="150" cy="216" r="66" fill="#1B2432" stroke="#E07A3F" stroke-width="2"/>
+  <g font-size="10.5" font-weight="700" fill="#8A9BB4" text-anchor="middle">
     <text x="128" y="196">Architect</text>
     <text x="176" y="200">PM</text>
     <text x="122" y="222">UX</text>
@@ -103,64 +103,64 @@
     <text x="150" y="248">Frontend</text>
   </g>
   <!-- tangle -->
-  <path d="M104,180 C200,150 120,260 210,250 C150,275 200,200 96,232" fill="none" stroke="#C77A52" stroke-width="1.3" opacity="0.7"/>
+  <path d="M104,180 C200,150 120,260 210,250 C150,275 200,200 96,232" fill="none" stroke="#E07A3F" stroke-width="1.3" opacity="0.6"/>
 
   <!-- context meter near full -->
   <text class="meter" x="248" y="170">context window</text>
-  <rect x="248" y="178" width="184" height="16" rx="8" fill="#F0E2D9" stroke="#D8B49E"/>
-  <rect x="250" y="180" width="166" height="12" rx="6" fill="#C0552B"/>
-  <text class="small" x="248" y="212" fill="#9A3B16">almost full — and still climbing</text>
+  <rect x="248" y="178" width="184" height="16" rx="8" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.3"/>
+  <rect x="250" y="180" width="166" height="12" rx="6" fill="#E07A3F"/>
+  <text class="small" x="248" y="212" fill="#E07A3F">almost full — and still climbing</text>
 
-  <g class="bul" fill="#7A4634">
+  <g class="bul">
     <text x="248" y="250">• roles blur together</text>
     <text x="248" y="274">• context overflows</text>
     <text x="248" y="298">• early mistakes hide</text>
     <text x="248" y="322">• hard to review</text>
   </g>
-  <text class="small" x="52" y="382" fill="#9A3B16">One mind, holding everything, getting tired.</text>
+  <text class="small" x="52" y="382">One mind, holding everything, getting tired.</text>
 
-  <!-- ===== RIGHT: relay of roles ===== -->
-  <rect x="500" y="92" width="432" height="312" rx="13" fill="#E4F0EE" stroke="#A9CFC9"/>
-  <text class="pt" x="524" y="124" fill="#1c5650">A relay of roles</text>
+  <!-- ===== RIGHT: relay of roles (the element that matters — the one amber family) ===== -->
+  <rect x="500" y="92" width="432" height="312" rx="13" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.4"/>
+  <text class="pt" x="524" y="124" fill="#F2A93B">A relay of roles</text>
 
   <!-- four tidy sessions with mini meters -->
   <g>
-    <rect x="524" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <rect x="524" y="150" width="86" height="58" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6" stroke-opacity="0.8"/>
     <text class="chip" x="567" y="176" text-anchor="middle">Think</text>
-    <rect x="536" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
-    <rect x="536" y="186" width="20" height="8" rx="4" fill="#2E6F69"/>
+    <rect x="536" y="186" width="62" height="8" rx="4" fill="#131A24"/>
+    <rect x="536" y="186" width="20" height="8" rx="4" fill="#F2A93B"/>
   </g>
   <g>
-    <rect x="624" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <rect x="624" y="150" width="86" height="58" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6" stroke-opacity="0.8"/>
     <text class="chip" x="667" y="176" text-anchor="middle">Plan</text>
-    <rect x="636" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
-    <rect x="636" y="186" width="22" height="8" rx="4" fill="#2E6F69"/>
+    <rect x="636" y="186" width="62" height="8" rx="4" fill="#131A24"/>
+    <rect x="636" y="186" width="22" height="8" rx="4" fill="#F2A93B"/>
   </g>
   <g>
-    <rect x="724" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <rect x="724" y="150" width="86" height="58" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6" stroke-opacity="0.8"/>
     <text class="chip" x="767" y="176" text-anchor="middle">Design</text>
-    <rect x="736" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
-    <rect x="736" y="186" width="24" height="8" rx="4" fill="#2E6F69"/>
+    <rect x="736" y="186" width="62" height="8" rx="4" fill="#131A24"/>
+    <rect x="736" y="186" width="24" height="8" rx="4" fill="#F2A93B"/>
   </g>
   <g>
-    <rect x="824" y="150" width="86" height="58" rx="9" fill="#FFFFFF" stroke="#2E6F69" stroke-width="1.6"/>
+    <rect x="824" y="150" width="86" height="58" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6" stroke-opacity="0.8"/>
     <text class="chip" x="867" y="176" text-anchor="middle">Build</text>
-    <rect x="836" y="186" width="62" height="8" rx="4" fill="#E1ECEA"/>
-    <rect x="836" y="186" width="22" height="8" rx="4" fill="#2E6F69"/>
+    <rect x="836" y="186" width="62" height="8" rx="4" fill="#131A24"/>
+    <rect x="836" y="186" width="22" height="8" rx="4" fill="#F2A93B"/>
   </g>
   <!-- connectors -->
-  <line x1="610" y1="179" x2="623" y2="179" stroke="#2E6F69" stroke-width="2"/>
-  <line x1="710" y1="179" x2="723" y2="179" stroke="#2E6F69" stroke-width="2"/>
-  <line x1="810" y1="179" x2="823" y2="179" stroke="#2E6F69" stroke-width="2"/>
-  <text class="small" x="524" y="228" fill="#1c5650">each meter stays light — every session resets</text>
+  <line x1="610" y1="179" x2="623" y2="179" stroke="#F2A93B" stroke-width="2"/>
+  <line x1="710" y1="179" x2="723" y2="179" stroke="#F2A93B" stroke-width="2"/>
+  <line x1="810" y1="179" x2="823" y2="179" stroke="#F2A93B" stroke-width="2"/>
+  <text class="small" x="524" y="228">each meter stays light — every session resets</text>
 
-  <g class="bul" fill="#2c4f4a">
+  <g class="bul">
     <text x="524" y="262">• one clear job each</text>
     <text x="524" y="286">• context stays light</text>
     <text x="524" y="310">• clean, checkable handoffs</text>
     <text x="524" y="334">• a fresh expert every step</text>
   </g>
-  <text class="small" x="524" y="382" fill="#1c5650">Many focused minds, each sharp for one task.</text>
+  <text class="small" x="524" y="382">Many focused minds, each sharp for one task.</text>
 </svg>
 <figcaption>One giant conversation vs a relay of focused roles</figcaption></figure>
 <hr>
@@ -174,86 +174,86 @@
   <title>The role relay: how a feature moves through specialist sessions</title>
   <desc>An Architect passes an Architecture Contract to a Product Manager, who passes a Product Contract to a UX/Tech-Writer, who passes a UX Blueprint into a Split step. The Split produces execution contracts and forks into a Backend Builder and a Frontend Builder that build in parallel, both bound to one shared Interface Contract.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13.5px}
-    .ct{fill:#1f2937;font-size:15px;font-weight:600}
-    .cs{fill:#5C6470;font-size:11px}
-    .lbl{fill:#4A5160;font-size:10.5px;font-weight:600}
-    .leg{fill:#5C6470;font-size:11.5px}
-    .rt{fill:#7A3A1E;font-size:14px;font-weight:700}
-    .note{fill:#8A8170;font-size:12.5px}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13.5px}
+    .ct{fill:#E9E4D6;font-size:15px;font-weight:600}
+    .cs{fill:#8A9BB4;font-size:11px}
+    .lbl{fill:#8A9BB4;font-size:10.5px;font-weight:600}
+    .leg{fill:#8A9BB4;font-size:11.5px}
+    .rt{fill:#F2A93B;font-size:14px;font-weight:700}
+    .note{fill:#8A9BB4;font-size:12.5px}
   </style>
   <defs>
-    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#2E6F69"/></marker>
-    <marker id="arb" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#B4562B"/></marker>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#5E8BC4"/></marker>
+    <marker id="arb" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#F2A93B"/></marker>
   </defs>
-  <rect x="1" y="1" width="958" height="538" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="538" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
 
   <text class="h1" x="36" y="46">A relay of specialists</text>
   <text class="sub" x="36" y="70">Each session is a fresh expert. It reads the handoff, does one job, and passes a contract on.</text>
 
-  <rect x="700" y="30" width="14" height="14" rx="3" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <rect x="700" y="30" width="14" height="14" rx="3" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
   <text class="leg" x="720" y="41">think &amp; design</text>
-  <rect x="700" y="52" width="14" height="14" rx="3" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <rect x="700" y="52" width="14" height="14" rx="3" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
   <text class="leg" x="720" y="63">build</text>
 
   <!-- Thinker cards -->
   <g>
-    <rect x="36" y="118" width="150" height="60" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="36" y="118" width="150" height="60" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="111" y="144" text-anchor="middle">Architect</text>
     <text class="cs" x="111" y="163" text-anchor="middle">shapes the system</text>
   </g>
   <g>
-    <rect x="282" y="118" width="150" height="60" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="282" y="118" width="150" height="60" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="357" y="144" text-anchor="middle">Product Manager</text>
     <text class="cs" x="357" y="163" text-anchor="middle">scope &amp; stories</text>
   </g>
   <g>
-    <rect x="528" y="118" width="150" height="60" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="528" y="118" width="150" height="60" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="603" y="144" text-anchor="middle">UX / Tech-Writer</text>
     <text class="cs" x="603" y="163" text-anchor="middle">design &amp; words</text>
   </g>
 
   <!-- arrows + baton labels between thinkers -->
-  <line x1="188" y1="148" x2="280" y2="148" stroke="#2E6F69" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="188" y1="148" x2="280" y2="148" stroke="#5E8BC4" stroke-width="2" marker-end="url(#ar)"/>
   <text class="lbl" x="234" y="200" text-anchor="middle">Architecture</text>
   <text class="lbl" x="234" y="212" text-anchor="middle">Contract</text>
-  <line x1="434" y1="148" x2="526" y2="148" stroke="#2E6F69" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="434" y1="148" x2="526" y2="148" stroke="#5E8BC4" stroke-width="2" marker-end="url(#ar)"/>
   <text class="lbl" x="480" y="200" text-anchor="middle">Product</text>
   <text class="lbl" x="480" y="212" text-anchor="middle">Contract</text>
-  <line x1="680" y1="148" x2="716" y2="148" stroke="#2E6F69" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="680" y1="148" x2="716" y2="148" stroke="#5E8BC4" stroke-width="2" marker-end="url(#ar)"/>
 
   <!-- SPLIT node -->
-  <polygon points="762,112 812,150 762,188 712,150" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="762" y="154" text-anchor="middle" fill="#7A3A1E" font-size="13" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">SPLIT</text>
+  <polygon points="762,112 812,150 762,188 712,150" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
+  <text x="762" y="154" text-anchor="middle" fill="#F2A93B" font-size="13" font-weight="700" font-family="'IBM Plex Sans',system-ui,sans-serif">SPLIT</text>
   <text class="cs" x="762" y="208" text-anchor="middle">compressor</text>
   <text class="lbl" x="603" y="200" text-anchor="middle">UX Blueprint</text>
 
   <!-- fork down to builders -->
-  <path d="M762,188 C762,250 470,250 420,318" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#arb)"/>
-  <path d="M762,188 C762,250 690,250 655,318" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#arb)"/>
-  <rect x="392" y="262" width="120" height="17" rx="4" fill="#FAF8F4"/>
+  <path d="M762,188 C762,250 470,250 420,318" stroke="#F2A93B" stroke-width="2" fill="none" marker-end="url(#arb)"/>
+  <path d="M762,188 C762,250 690,250 655,318" stroke="#F2A93B" stroke-width="2" fill="none" marker-end="url(#arb)"/>
+  <rect x="392" y="262" width="120" height="17" rx="4" fill="#131A24"/>
   <text class="lbl" x="452" y="274" text-anchor="middle">Backend Contract</text>
-  <rect x="612" y="262" width="124" height="17" rx="4" fill="#FAF8F4"/>
+  <rect x="612" y="262" width="124" height="17" rx="4" fill="#131A24"/>
   <text class="lbl" x="674" y="274" text-anchor="middle">Frontend Contract</text>
 
   <!-- builder cards -->
   <g>
-    <rect x="300" y="320" width="190" height="60" rx="11" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <rect x="300" y="320" width="190" height="60" rx="11" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
     <text class="ct" x="395" y="346" text-anchor="middle">Backend Builder</text>
     <text class="cs" x="395" y="365" text-anchor="middle">server &amp; data</text>
   </g>
   <g>
-    <rect x="560" y="320" width="190" height="60" rx="11" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <rect x="560" y="320" width="190" height="60" rx="11" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
     <text class="ct" x="655" y="346" text-anchor="middle">Frontend Builder</text>
     <text class="cs" x="655" y="365" text-anchor="middle">screens &amp; clicks</text>
   </g>
 
   <!-- shared interface spine -->
-  <line x1="395" y1="380" x2="395" y2="436" stroke="#B4562B" stroke-width="1.5" stroke-dasharray="3 3"/>
-  <line x1="655" y1="380" x2="655" y2="436" stroke="#B4562B" stroke-width="1.5" stroke-dasharray="3 3"/>
-  <rect x="300" y="436" width="450" height="40" rx="10" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+  <line x1="395" y1="380" x2="395" y2="436" stroke="#F2A93B" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <line x1="655" y1="380" x2="655" y2="436" stroke="#F2A93B" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <rect x="300" y="436" width="450" height="40" rx="10" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
   <text class="rt" x="525" y="461" text-anchor="middle">Interface Contract — one shared spec</text>
 
   <text class="note" x="36" y="466">The two builders work</text>
@@ -262,7 +262,7 @@
   <text class="note" x="36" y="517">they only agree on</text>
   <text class="note" x="36" y="534">the spec.</text>
 
-  <text class="note" x="525" y="513" text-anchor="middle" fill="#8A8170">Every station starts fresh: it reads the contracts, not the chat history.</text>
+  <text class="note" x="525" y="513" text-anchor="middle">Every station starts fresh: it reads the contracts, not the chat history.</text>
 </svg>
 <figcaption>A relay of specialists passing contracts down the line</figcaption></figure>
 <p>Notice two things in that picture:</p>
@@ -276,51 +276,51 @@
   <title>The orchestrated pipeline: a conductor runs discovery itself, then routes thinking and building through mechanical gates, with QA before ship</title>
   <desc>An Orchestrator session (the Project Manager) runs across the top, conducting a pipeline. Discovery is the conductor's own opening move, shown attached to the orchestrator rather than as a separate hire. Then Architect, Product, and UX think stations, a Split into a Backend Builder and Frontend Builder bound to one Interface Contract, then a QA Verify step and Ship. A mechanical gate-check — a linter — sits between every handoff, and a constant ground-truth file underlies every session.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13px}
-    .ct{fill:#1f2937;font-size:13px;font-weight:600}
-    .cs{fill:#5C6470;font-size:10px}
-    .leg{fill:#5C6470;font-size:11px}
-    .bart{fill:#FFFFFF;font-size:13px;font-weight:700}
-    .bars{fill:#E7E9F1;font-size:11px}
-    .gate{fill:#6A7286;font-size:10px;font-weight:700}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .ct{fill:#E9E4D6;font-size:13px;font-weight:600}
+    .cs{fill:#8A9BB4;font-size:10px}
+    .leg{fill:#8A9BB4;font-size:11px}
+    .bart{fill:#E9E4D6;font-size:13px;font-weight:700}
+    .bars{fill:#8A9BB4;font-size:11px}
+    .gate{fill:#8A9BB4;font-size:10px;font-weight:700}
   </style>
   <defs>
-    <marker id="aT" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#2E6F69"/></marker>
-    <marker id="aB" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#B4562B"/></marker>
-    <marker id="aV" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#6D5BAE"/></marker>
+    <marker id="aT" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#5E8BC4"/></marker>
+    <marker id="aB" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#F2A93B"/></marker>
+    <marker id="aV" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#E07A3F"/></marker>
   </defs>
-  <rect x="1" y="1" width="958" height="598" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="598" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="h1" x="34" y="44">One session conducts the rest</text>
   <text class="sub" x="34" y="68">The Orchestrator never builds anything itself — it grooms discovery, routes the work, runs the gates, and packages each handoff.</text>
 
   <!-- legend -->
   <g>
-    <rect x="600" y="26" width="13" height="13" rx="3" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/><text class="leg" x="618" y="36">orchestrate &amp; gates</text>
-    <rect x="600" y="46" width="13" height="13" rx="3" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/><text class="leg" x="618" y="56">think &amp; design</text>
-    <rect x="600" y="66" width="13" height="13" rx="3" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/><text class="leg" x="618" y="76">build</text>
-    <rect x="788" y="46" width="13" height="13" rx="3" fill="#ECEAF6" stroke="#6D5BAE" stroke-width="2"/><text class="leg" x="806" y="56">verify</text>
+    <rect x="600" y="26" width="13" height="13" rx="3" fill="#1B2432" stroke="#8A9BB4" stroke-width="2"/><text class="leg" x="618" y="36">orchestrate &amp; gates</text>
+    <rect x="600" y="46" width="13" height="13" rx="3" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/><text class="leg" x="618" y="56">think &amp; design</text>
+    <rect x="600" y="66" width="13" height="13" rx="3" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/><text class="leg" x="618" y="76">build</text>
+    <rect x="788" y="46" width="13" height="13" rx="3" fill="#1B2432" stroke="#E07A3F" stroke-width="2"/><text class="leg" x="806" y="56">verify</text>
   </g>
 
   <!-- Orchestrator bar -->
-  <rect x="28" y="100" width="904" height="50" rx="12" fill="#4B5575"/>
+  <rect x="28" y="100" width="904" height="50" rx="12" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.5"/>
   <text class="bart" x="480" y="124" text-anchor="middle">ORCHESTRATOR — the conductor (our "Project Manager")</text>
   <text class="bars" x="480" y="141" text-anchor="middle">grooms discovery itself · routes the work · runs the gates · packages every handoff · never writes code or scope</text>
 
-  <!-- Discovery: the conductor's OWN move — solid link up to the bar, slate (not a teal think-station) -->
-  <line x1="80" y1="150" x2="80" y2="224" stroke="#4B5575" stroke-width="2"/>
-  <rect x="28" y="224" width="120" height="56" rx="10" fill="#E5E7EF" stroke="#4B5575" stroke-width="2"/>
-  <text class="ct" x="88" y="248" text-anchor="middle" fill="#3a4262">Discovery</text>
+  <!-- Discovery: the conductor's OWN move — solid link up to the bar, neutral (not a think-station) -->
+  <line x1="80" y1="150" x2="80" y2="224" stroke="#8A9BB4" stroke-width="2"/>
+  <rect x="28" y="224" width="120" height="56" rx="10" fill="#1B2432" stroke="#8A9BB4" stroke-width="2"/>
+  <text class="ct" x="88" y="248" text-anchor="middle">Discovery</text>
   <text class="cs" x="88" y="265" text-anchor="middle">the conductor's own move</text>
 
   <!-- Discovery -> Architect (solid link is the conductor's; this handoff has its own gate) -->
-  <g stroke="#5C6470" stroke-width="2">
+  <g stroke="#8A9BB4" stroke-width="2">
     <line x1="148" y1="252" x2="156" y2="252"/><line x1="168" y1="252" x2="186" y2="252" marker-end="url(#aT)"/>
   </g>
 
   <!-- batons down from orchestrator to think stations (dotted) -->
-  <g stroke="#9AA0B5" stroke-width="1.3" stroke-dasharray="3 3">
+  <g stroke="#8A9BB4" stroke-opacity="0.55" stroke-width="1.3" stroke-dasharray="3 3">
     <line x1="240" y1="150" x2="240" y2="224"/>
     <line x1="388" y1="150" x2="388" y2="224"/>
     <line x1="536" y1="150" x2="536" y2="224"/>
@@ -329,76 +329,76 @@
 
   <!-- think stations -->
   <g>
-    <rect x="188" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="188" y="224" width="104" height="56" rx="10" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="240" y="248" text-anchor="middle">Architect</text>
     <text class="cs" x="240" y="265" text-anchor="middle">system shape</text>
   </g>
   <g>
-    <rect x="336" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="336" y="224" width="104" height="56" rx="10" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="388" y="248" text-anchor="middle">Product</text>
     <text class="cs" x="388" y="265" text-anchor="middle">scope · stories</text>
   </g>
   <g>
-    <rect x="484" y="224" width="104" height="56" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+    <rect x="484" y="224" width="104" height="56" rx="10" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
     <text class="ct" x="536" y="248" text-anchor="middle">UX / Writer</text>
     <text class="cs" x="536" y="265" text-anchor="middle">design · words</text>
   </g>
 
   <!-- gates + arrows between think stations -->
-  <g fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6">
+  <g fill="#131A24" stroke="#8A9BB4" stroke-width="1.6">
     <polygon points="313,242 323,252 313,262 303,252"/>
     <polygon points="461,242 471,252 461,262 451,252"/>
   </g>
-  <g stroke="#2E6F69" stroke-width="2">
+  <g stroke="#5E8BC4" stroke-width="2">
     <line x1="292" y1="252" x2="302" y2="252"/><line x1="324" y1="252" x2="335" y2="252" marker-end="url(#aT)"/>
     <line x1="440" y1="252" x2="450" y2="252"/><line x1="472" y1="252" x2="483" y2="252" marker-end="url(#aT)"/>
-    <line x1="588" y1="252" x2="598" y2="252" marker-end="url(#aT)" stroke="#B4562B"/>
+    <line x1="588" y1="252" x2="598" y2="252" marker-end="url(#aT)" stroke="#F2A93B"/>
   </g>
   <!-- the gate between Discovery and Architect too -->
-  <polygon points="157,242 167,252 157,262 147,252" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+  <polygon points="157,242 167,252 157,262 147,252" fill="#131A24" stroke="#8A9BB4" stroke-width="1.6"/>
   <text class="gate" x="368" y="300" text-anchor="middle">a mechanical gate-check (a linter) between every handoff</text>
 
   <!-- SPLIT -->
-  <polygon points="612,228 644,252 612,276 580,252" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="612" y="256" text-anchor="middle" fill="#7A3A1E" font-size="10.5" font-weight="700" font-family="'Segoe UI',sans-serif">SPLIT</text>
+  <polygon points="612,228 644,252 612,276 580,252" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
+  <text x="612" y="256" text-anchor="middle" fill="#F2A93B" font-size="10.5" font-weight="700" font-family="'IBM Plex Sans',sans-serif">SPLIT</text>
 
   <!-- builders -->
-  <path d="M644,252 C660,252 660,222 674,222" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
-  <path d="M644,252 C660,252 660,304 674,304" stroke="#B4562B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M644,252 C660,252 660,222 674,222" stroke="#F2A93B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
+  <path d="M644,252 C660,252 660,304 674,304" stroke="#F2A93B" stroke-width="2" fill="none" marker-end="url(#aB)"/>
   <g>
-    <rect x="676" y="200" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <rect x="676" y="200" width="150" height="44" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
     <text class="ct" x="751" y="227" text-anchor="middle">Backend Builder</text>
   </g>
   <g>
-    <rect x="676" y="282" width="150" height="44" rx="9" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <rect x="676" y="282" width="150" height="44" rx="9" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
     <text class="ct" x="751" y="309" text-anchor="middle">Frontend Builder</text>
   </g>
   <!-- interface spine -->
-  <line x1="826" y1="222" x2="848" y2="258" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
-  <line x1="826" y1="304" x2="848" y2="268" stroke="#B4562B" stroke-width="1.4" stroke-dasharray="3 3"/>
-  <rect x="850" y="204" width="82" height="118" rx="10" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="891" y="252" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Interface</text>
-  <text x="891" y="268" text-anchor="middle" fill="#7A3A1E" font-size="11" font-weight="700" font-family="'Segoe UI',sans-serif">Contract</text>
-  <text x="891" y="290" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">both build</text>
-  <text x="891" y="302" text-anchor="middle" fill="#9A5638" font-size="9" font-family="'Segoe UI',sans-serif">to this</text>
+  <line x1="826" y1="222" x2="848" y2="258" stroke="#F2A93B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <line x1="826" y1="304" x2="848" y2="268" stroke="#F2A93B" stroke-width="1.4" stroke-dasharray="3 3"/>
+  <rect x="850" y="204" width="82" height="118" rx="10" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
+  <text x="891" y="252" text-anchor="middle" fill="#F2A93B" font-size="11" font-weight="700" font-family="'IBM Plex Sans',sans-serif">Interface</text>
+  <text x="891" y="268" text-anchor="middle" fill="#F2A93B" font-size="11" font-weight="700" font-family="'IBM Plex Sans',sans-serif">Contract</text>
+  <text x="891" y="290" text-anchor="middle" fill="#8A9BB4" font-size="9" font-family="'IBM Plex Sans',sans-serif">both build</text>
+  <text x="891" y="302" text-anchor="middle" fill="#8A9BB4" font-size="9" font-family="'IBM Plex Sans',sans-serif">to this</text>
 
-  <!-- QA + Ship tail -->
-  <path d="M751,326 C751,360 689,360 689,388" stroke="#6D5BAE" stroke-width="2" fill="none" marker-end="url(#aV)"/>
+  <!-- QA + Ship tail (verify = the fault-catch station — burnt orange) -->
+  <path d="M751,326 C751,360 689,360 689,388" stroke="#E07A3F" stroke-width="2" fill="none" marker-end="url(#aV)"/>
   <g>
-    <rect x="624" y="390" width="134" height="48" rx="10" fill="#ECEAF6" stroke="#6D5BAE" stroke-width="2"/>
-    <text class="ct" x="691" y="411" text-anchor="middle" fill="#3a3160">QA / Verify</text>
-    <text class="cs" x="691" y="428" text-anchor="middle" fill="#6a619a">checks every box · fixes nothing</text>
+    <rect x="624" y="390" width="134" height="48" rx="10" fill="#1B2432" stroke="#E07A3F" stroke-width="2"/>
+    <text class="ct" x="691" y="411" text-anchor="middle">QA / Verify</text>
+    <text class="cs" x="691" y="428" text-anchor="middle">checks every box · fixes nothing</text>
   </g>
-  <line x1="758" y1="414" x2="788" y2="414" stroke="#6D5BAE" stroke-width="2" marker-end="url(#aV)"/>
+  <line x1="758" y1="414" x2="788" y2="414" stroke="#E07A3F" stroke-width="2" marker-end="url(#aV)"/>
   <g>
-    <rect x="790" y="390" width="120" height="48" rx="10" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-    <text class="ct" x="850" y="411" text-anchor="middle" fill="#1c4f4a">Ship</text>
-    <text class="cs" x="850" y="428" text-anchor="middle" fill="#3a6b66">+ archive</text>
+    <rect x="790" y="390" width="120" height="48" rx="10" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
+    <text class="ct" x="850" y="411" text-anchor="middle">Ship</text>
+    <text class="cs" x="850" y="428" text-anchor="middle">+ archive</text>
   </g>
-  <text class="gate" x="624" y="462" fill="#6a619a">Nothing ships without a passing QA check.</text>
+  <text class="gate" x="624" y="462">Nothing ships without a passing QA check.</text>
 
   <!-- ground truth bar + batons up -->
-  <g stroke="#7FB2AC" stroke-width="1.3" stroke-dasharray="3 3">
+  <g stroke="#5E8BC4" stroke-opacity="0.5" stroke-width="1.3" stroke-dasharray="3 3">
     <line x1="88" y1="252" x2="88" y2="506"/>
     <line x1="240" y1="280" x2="240" y2="506"/>
     <line x1="388" y1="280" x2="388" y2="506"/>
@@ -406,9 +406,9 @@
     <line x1="751" y1="326" x2="751" y2="390"/>
     <line x1="850" y1="438" x2="850" y2="506"/>
   </g>
-  <rect x="28" y="510" width="904" height="48" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
-  <text x="480" y="533" text-anchor="middle" fill="#1c4f4a" font-size="13" font-weight="700" font-family="'Segoe UI',sans-serif">THE CONSTANT GROUND TRUTH</text>
-  <text x="480" y="549" text-anchor="middle" fill="#3a6b66" font-size="11" font-family="'Segoe UI',sans-serif">one shared rulebook — read first by every session (now just the slice each one needs), discovery to ship</text>
+  <rect x="28" y="510" width="904" height="48" rx="12" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
+  <text x="480" y="533" text-anchor="middle" fill="#5E8BC4" font-size="13" font-weight="700" font-family="'IBM Plex Sans',sans-serif">THE CONSTANT GROUND TRUTH</text>
+  <text x="480" y="549" text-anchor="middle" fill="#8A9BB4" font-size="11" font-family="'IBM Plex Sans',sans-serif">one shared rulebook — read first by every session (now just the slice each one needs), discovery to ship</text>
 </svg>
 <figcaption>The orchestrator runs discovery itself, then conducts thinking and building through gates, over a shared ground truth</figcaption></figure>
 <p>So the fuller picture is: the Orchestrator sits <em>above</em> the relay, Discovery is its own first move, and a <strong>gate-check</strong> sits between every handoff — a quick "is this brief actually complete, and did everyone stay in their lane?" before the next expert is allowed to start. And as we'll see, that gate-check is no longer just a human judgment call.</p>
@@ -422,55 +422,56 @@
   <title>How memory works without baggage: one constant ground-truth file, plus a compress step</title>
   <desc>A tall pillar labelled the constant ground truth feeds every session. A fresh session reads a contract and the constant, does messy work full of options and debate, then a compress step keeps the decisions and drops the debate, producing a small dense contract that becomes the next session's handoff. The next session starts fresh again.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13.5px}
-    .ct{fill:#1f2937;font-size:15px;font-weight:600}
-    .cs{fill:#5C6470;font-size:11px}
-    .pill-t{fill:#1c4f4a;font-size:15px;font-weight:700}
-    .note{fill:#8A8170;font-size:12.5px}
-    .loop{fill:#5C6470;font-size:12.5px;font-style:italic}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13.5px}
+    .ct{fill:#E9E4D6;font-size:15px;font-weight:600}
+    .cs{fill:#8A9BB4;font-size:11px}
+    .pill-t{fill:#5E8BC4;font-size:15px;font-weight:700}
+    .note{fill:#8A9BB4;font-size:12.5px}
+    .loop{fill:#8A9BB4;font-size:12.5px;font-style:italic}
   </style>
   <defs>
-    <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#2E6F69"/></marker>
-    <marker id="arl" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#9A8C73"/></marker>
+    <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#5E8BC4"/></marker>
+    <marker id="arl" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#F2A93B"/></marker>
+    <marker id="arn" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#8A9BB4"/></marker>
   </defs>
-  <rect x="1" y="1" width="958" height="468" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="468" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
 
   <text class="h1" x="36" y="46">Memory without baggage</text>
   <text class="sub" x="36" y="70">One stable rulebook everyone shares — plus a squeeze step that keeps the decisions and forgets the noise.</text>
 
   <!-- Constant pillar -->
-  <rect x="28" y="100" width="156" height="250" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <rect x="28" y="100" width="156" height="250" rx="12" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
   <text class="pill-t" x="106" y="150" text-anchor="middle">The constant</text>
   <text class="pill-t" x="106" y="170" text-anchor="middle">ground truth</text>
   <text class="cs" x="106" y="196" text-anchor="middle">GAMMAFLOW_</text>
   <text class="cs" x="106" y="210" text-anchor="middle">CONTEXT.md</text>
-  <line x1="56" y1="228" x2="156" y2="228" stroke="#2E6F69" stroke-width="1" stroke-dasharray="2 2"/>
+  <line x1="56" y1="228" x2="156" y2="228" stroke="#5E8BC4" stroke-width="1" stroke-dasharray="2 2"/>
   <text class="cs" x="106" y="252" text-anchor="middle">read by</text>
   <text class="cs" x="106" y="266" text-anchor="middle">every session</text>
 
   <!-- dotted feed from pillar -->
-  <path d="M184,200 C210,200 210,210 232,210" stroke="#2E6F69" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
-  <path d="M184,250 C420,330 620,300 700,236" stroke="#2E6F69" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+  <path d="M184,200 C210,200 210,210 232,210" stroke="#5E8BC4" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+  <path d="M184,250 C420,330 620,300 700,236" stroke="#5E8BC4" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
 
   <!-- contract in chip -->
-  <rect x="236" y="120" width="118" height="30" rx="7" fill="#FFFFFF" stroke="#CFC9BE"/>
-  <text class="cs" x="295" y="139" text-anchor="middle" font-weight="600" fill="#4A5160">Contract in</text>
-  <line x1="295" y1="150" x2="295" y2="176" stroke="#707684" stroke-width="2" marker-end="url(#ar2)"/>
+  <rect x="236" y="120" width="118" height="30" rx="7" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.5"/>
+  <text class="cs" x="295" y="139" text-anchor="middle" font-weight="600" fill="#E9E4D6">Contract in</text>
+  <line x1="295" y1="150" x2="295" y2="176" stroke="#8A9BB4" stroke-width="2" marker-end="url(#arn)"/>
 
   <!-- Fresh session -->
-  <rect x="234" y="178" width="142" height="92" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-  <circle cx="305" cy="206" r="9" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.5"/>
-  <text x="305" y="211" text-anchor="middle" font-size="12">✦</text>
+  <rect x="234" y="178" width="142" height="92" rx="12" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
+  <circle cx="305" cy="206" r="9" fill="#131A24" stroke="#5E8BC4" stroke-width="1.5"/>
+  <text x="305" y="211" text-anchor="middle" font-size="12" fill="#E9E4D6">✦</text>
   <text class="ct" x="305" y="238" text-anchor="middle">Fresh session</text>
   <text class="cs" x="305" y="256" text-anchor="middle">no memory of the chat</text>
 
-  <line x1="376" y1="224" x2="408" y2="224" stroke="#2E6F69" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="376" y1="224" x2="408" y2="224" stroke="#5E8BC4" stroke-width="2" marker-end="url(#ar2)"/>
 
   <!-- messy work blob -->
-  <rect x="412" y="178" width="150" height="92" rx="34" fill="#F6F2EA" stroke="#CFC9BE" stroke-width="1.5"/>
-  <g fill="#B9B0A0">
+  <rect x="412" y="178" width="150" height="92" rx="34" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.4" stroke-width="1.5"/>
+  <g fill="#8A9BB4" fill-opacity="0.7">
     <circle cx="438" cy="204" r="3"/><circle cx="460" cy="214" r="3"/><circle cx="486" cy="200" r="3"/>
     <circle cx="510" cy="216" r="3"/><circle cx="534" cy="206" r="3"/><circle cx="450" cy="232" r="3"/>
     <circle cx="478" cy="240" r="3"/><circle cx="506" cy="234" r="3"/><circle cx="528" cy="244" r="3"/>
@@ -479,22 +480,22 @@
   <text class="cs" x="487" y="196" text-anchor="middle">the messy middle</text>
   <text class="cs" x="487" y="264" text-anchor="middle">options · debate · dead-ends</text>
 
-  <line x1="562" y1="224" x2="588" y2="224" stroke="#B4562B" stroke-width="2" marker-end="url(#arl)"/>
+  <line x1="562" y1="224" x2="588" y2="224" stroke="#F2A93B" stroke-width="2" marker-end="url(#arl)"/>
 
-  <!-- compressor funnel -->
-  <polygon points="592,178 690,200 690,248 592,270" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
-  <text x="632" y="220" text-anchor="middle" fill="#7A3A1E" font-size="12.5" font-weight="700" font-family="'Segoe UI',system-ui,sans-serif">COMPRESS</text>
-  <text x="632" y="236" text-anchor="middle" fill="#9A5638" font-size="9.5" font-family="'Segoe UI',system-ui,sans-serif">keep · drop noise</text>
+  <!-- compressor funnel — the element that matters (the one amber family) -->
+  <polygon points="592,178 690,200 690,248 592,270" fill="#1B2432" stroke="#F2A93B" stroke-width="2"/>
+  <text x="632" y="220" text-anchor="middle" fill="#F2A93B" font-size="12.5" font-weight="700" font-family="'IBM Plex Sans',system-ui,sans-serif">COMPRESS</text>
+  <text x="632" y="236" text-anchor="middle" fill="#8A9BB4" font-size="9.5" font-family="'IBM Plex Sans',system-ui,sans-serif">keep · drop noise</text>
 
-  <line x1="690" y1="224" x2="712" y2="224" stroke="#B4562B" stroke-width="2" marker-end="url(#arl)"/>
+  <line x1="690" y1="224" x2="712" y2="224" stroke="#F2A93B" stroke-width="2" marker-end="url(#arl)"/>
 
   <!-- contract out -->
-  <rect x="716" y="194" width="150" height="60" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <rect x="716" y="194" width="150" height="60" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
   <text class="ct" x="791" y="220" text-anchor="middle">Contract out</text>
   <text class="cs" x="791" y="238" text-anchor="middle">small · dense · self-contained</text>
 
   <!-- loop back -->
-  <path d="M791,254 C791,360 305,372 305,300 L305,272" stroke="#9A8C73" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#arl)"/>
+  <path d="M791,254 C791,360 305,372 305,300 L305,272" stroke="#8A9BB4" stroke-opacity="0.7" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#arn)"/>
   <text class="loop" x="548" y="392" text-anchor="middle">The next session inherits only this small contract — and starts fresh again.</text>
 
   <text class="note" x="36" y="392">Nothing is re-explained.</text>
@@ -513,28 +514,28 @@
   <title>Gateways: the route through the pipeline adapts to the goal and current state</title>
   <desc>The orchestrator picks a route from the goal plus current state. A big fuzzy feature runs the full pipeline Discovery, Architect, Product, UX, Split, Build, with an amendment-bounce loop back to the Architect. A clear need starts Product-first with an optional Architect consult. A tiny tweak takes a fast lane straight from Discovery to Build. A gate-check sits between every step.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13px}
-    .rowt{fill:#23252B;font-size:13px;font-weight:700}
-    .rows{fill:#8A8170;font-size:10.5px}
-    .chip{fill:#1f2937;font-size:11.5px;font-weight:600}
-    .leg{fill:#5C6470;font-size:11px}
-    .loop{fill:#7A3A1E;font-size:11px;font-weight:600}
-    .fast{fill:#1c5650;font-size:11.5px;font-weight:600}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .rowt{fill:#E9E4D6;font-size:13px;font-weight:700}
+    .rows{fill:#8A9BB4;font-size:10.5px}
+    .chip{fill:#E9E4D6;font-size:11.5px;font-weight:600}
+    .leg{fill:#8A9BB4;font-size:11px}
+    .loop{fill:#E07A3F;font-size:11px;font-weight:600}
+    .fast{fill:#5E8BC4;font-size:11.5px;font-weight:600}
   </style>
   <defs>
-    <marker id="g1" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#5C6470"/></marker>
-    <marker id="g2" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#B4562B"/></marker>
+    <marker id="g1" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#8A9BB4"/></marker>
+    <marker id="g2" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 z" fill="#E07A3F"/></marker>
   </defs>
-  <rect x="1" y="1" width="978" height="498" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="978" height="498" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="h1" x="34" y="44">It's not a straight line</text>
   <text class="sub" x="34" y="68">The orchestrator picks the route from two things: the goal, and where the work stands today.</text>
 
   <!-- legend -->
-  <polygon points="612,34 621,42 612,50 603,42" fill="#E5E7EF" stroke="#4B5575" stroke-width="1.6"/>
+  <polygon points="612,34 621,42 612,50 603,42" fill="#0B0F17" stroke="#8A9BB4" stroke-width="1.6"/>
   <text class="leg" x="628" y="46">= gate-check</text>
-  <line x1="740" y1="42" x2="772" y2="42" stroke="#8A8170" stroke-width="2" stroke-dasharray="5 3"/>
+  <line x1="740" y1="42" x2="772" y2="42" stroke="#8A9BB4" stroke-width="2" stroke-dasharray="5 3"/>
   <text class="leg" x="778" y="46">= optional step</text>
 
   <!-- chip helper: rounded rects via repetition -->
@@ -542,40 +543,40 @@
   <text class="rowt" x="34" y="132">Big &amp; fuzzy feature</text>
   <text class="rows" x="34" y="148">full pipeline</text>
   <g>
-    <rect x="190" y="110" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="233" y="135" text-anchor="middle">Discovery</text>
-    <rect x="318" y="110" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="361" y="135" text-anchor="middle">Architect</text>
-    <rect x="446" y="110" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="489" y="135" text-anchor="middle">Product</text>
-    <rect x="574" y="110" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="617" y="135" text-anchor="middle">UX</text>
-    <rect x="702" y="110" width="74" height="40" rx="8" fill="#F3E3D9" stroke="#B4562B" stroke-width="1.6"/><text class="chip" x="739" y="135" text-anchor="middle">Split</text>
-    <rect x="800" y="110" width="86" height="40" rx="8" fill="#F3E3D9" stroke="#B4562B" stroke-width="1.6"/><text class="chip" x="843" y="135" text-anchor="middle">Build ∥</text>
+    <rect x="190" y="110" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="233" y="135" text-anchor="middle">Discovery</text>
+    <rect x="318" y="110" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="361" y="135" text-anchor="middle">Architect</text>
+    <rect x="446" y="110" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="489" y="135" text-anchor="middle">Product</text>
+    <rect x="574" y="110" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="617" y="135" text-anchor="middle">UX</text>
+    <rect x="702" y="110" width="74" height="40" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6"/><text class="chip" x="739" y="135" text-anchor="middle">Split</text>
+    <rect x="800" y="110" width="86" height="40" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6"/><text class="chip" x="843" y="135" text-anchor="middle">Build ∥</text>
   </g>
-  <g stroke="#5C6470" stroke-width="1.6">
+  <g stroke="#8A9BB4" stroke-width="1.6">
     <line x1="276" y1="130" x2="316" y2="130" marker-end="url(#g1)"/>
     <line x1="404" y1="130" x2="444" y2="130" marker-end="url(#g1)"/>
     <line x1="532" y1="130" x2="572" y2="130" marker-end="url(#g1)"/>
     <line x1="660" y1="130" x2="700" y2="130" marker-end="url(#g1)"/>
     <line x1="776" y1="130" x2="798" y2="130" marker-end="url(#g1)"/>
   </g>
-  <g fill="#E5E7EF" stroke="#4B5575" stroke-width="1.4">
+  <g fill="#0B0F17" stroke="#8A9BB4" stroke-width="1.4">
     <polygon points="296,124 302,130 296,136 290,130"/><polygon points="424,124 430,130 424,136 418,130"/>
     <polygon points="552,124 558,130 552,136 546,130"/><polygon points="680,124 686,130 680,136 674,130"/>
   </g>
-  <!-- amendment bounce loop UX -> Architect -->
-  <path d="M617,110 C617,72 361,72 361,108" fill="none" stroke="#B4562B" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#g2)"/>
+  <!-- amendment bounce loop UX -> Architect (a depicted bounce path — burnt orange) -->
+  <path d="M617,110 C617,72 361,72 361,108" fill="none" stroke="#E07A3F" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#g2)"/>
   <text class="loop" x="489" y="86" text-anchor="middle">amendment bounce — send it back, don't bulldoze</text>
 
   <!-- ROW 2: clear need -->
   <text class="rowt" x="34" y="248">Clear need, known tech</text>
   <text class="rows" x="34" y="264">product-first</text>
   <g>
-    <rect x="190" y="226" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="233" y="251" text-anchor="middle">Discovery</text>
-    <rect x="318" y="226" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="361" y="251" text-anchor="middle">Product</text>
-    <rect x="446" y="226" width="86" height="40" rx="8" fill="#FFFFFF" stroke="#8A8170" stroke-width="1.6" stroke-dasharray="5 3"/><text class="chip" x="489" y="248" text-anchor="middle" fill="#6A7286">Architect</text><text x="489" y="260" text-anchor="middle" font-size="8.5" fill="#8A8170" font-family="'Segoe UI',sans-serif">consult</text>
-    <rect x="574" y="226" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="617" y="251" text-anchor="middle">UX</text>
-    <rect x="702" y="226" width="74" height="40" rx="8" fill="#F3E3D9" stroke="#B4562B" stroke-width="1.6"/><text class="chip" x="739" y="251" text-anchor="middle">Split</text>
-    <rect x="800" y="226" width="86" height="40" rx="8" fill="#F3E3D9" stroke="#B4562B" stroke-width="1.6"/><text class="chip" x="843" y="251" text-anchor="middle">Build ∥</text>
+    <rect x="190" y="226" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="233" y="251" text-anchor="middle">Discovery</text>
+    <rect x="318" y="226" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="361" y="251" text-anchor="middle">Product</text>
+    <rect x="446" y="226" width="86" height="40" rx="8" fill="#0B0F17" stroke="#8A9BB4" stroke-width="1.6" stroke-dasharray="5 3"/><text class="chip" x="489" y="248" text-anchor="middle" fill="#8A9BB4">Architect</text><text x="489" y="260" text-anchor="middle" font-size="8.5" fill="#8A9BB4" font-family="'IBM Plex Sans',sans-serif">consult</text>
+    <rect x="574" y="226" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="617" y="251" text-anchor="middle">UX</text>
+    <rect x="702" y="226" width="74" height="40" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6"/><text class="chip" x="739" y="251" text-anchor="middle">Split</text>
+    <rect x="800" y="226" width="86" height="40" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6"/><text class="chip" x="843" y="251" text-anchor="middle">Build ∥</text>
   </g>
-  <g stroke="#5C6470" stroke-width="1.6">
+  <g stroke="#8A9BB4" stroke-width="1.6">
     <line x1="276" y1="246" x2="316" y2="246" marker-end="url(#g1)"/>
     <line x1="404" y1="246" x2="444" y2="246" marker-end="url(#g1)"/>
     <line x1="532" y1="246" x2="572" y2="246" marker-end="url(#g1)"/>
@@ -587,16 +588,16 @@
   <text class="rowt" x="34" y="364">Tiny tweak</text>
   <text class="rows" x="34" y="380">fast lane</text>
   <g>
-    <rect x="190" y="342" width="86" height="40" rx="8" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/><text class="chip" x="233" y="367" text-anchor="middle">Discovery</text>
-    <rect x="800" y="342" width="86" height="40" rx="8" fill="#F3E3D9" stroke="#B4562B" stroke-width="1.6"/><text class="chip" x="843" y="367" text-anchor="middle">Build</text>
+    <rect x="190" y="342" width="86" height="40" rx="8" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/><text class="chip" x="233" y="367" text-anchor="middle">Discovery</text>
+    <rect x="800" y="342" width="86" height="40" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-width="1.6"/><text class="chip" x="843" y="367" text-anchor="middle">Build</text>
   </g>
-  <line x1="276" y1="362" x2="798" y2="362" stroke="#2E6F69" stroke-width="1.8" stroke-dasharray="2 3" marker-end="url(#g1)"/>
+  <line x1="276" y1="362" x2="798" y2="362" stroke="#5E8BC4" stroke-width="1.8" stroke-dasharray="2 3" marker-end="url(#g1)"/>
   <text class="fast" x="538" y="354" text-anchor="middle">skip the ceremony — straight to build</text>
 
   <!-- bottom note -->
-  <rect x="34" y="416" width="912" height="56" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-  <text x="58" y="441" fill="#3a4262" font-size="13" font-weight="700" font-family="'Segoe UI',sans-serif">Gateways decide the path.</text>
-  <text x="58" y="460" fill="#4B5575" font-size="12" font-family="'Segoe UI',sans-serif">At each gate the orchestrator checks the handoff is complete, then chooses the next session — advance, branch, fast-track, or bounce back to fix something upstream.</text>
+  <rect x="34" y="416" width="912" height="56" rx="11" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.35"/>
+  <text x="58" y="441" fill="#E9E4D6" font-size="13" font-weight="700" font-family="'IBM Plex Sans',sans-serif">Gateways decide the path.</text>
+  <text x="58" y="460" fill="#8A9BB4" font-size="12" font-family="'IBM Plex Sans',sans-serif">At each gate the orchestrator checks the handoff is complete, then chooses the next session — advance, branch, fast-track, or bounce back to fix something upstream.</text>
 </svg>
 <figcaption>Three example routes through the pipeline, chosen by goal and state, with an amendment bounce</figcaption></figure>
 <p>Same set of specialists, same rulebook — but the <em>path</em> through them flexes to fit the job. That's what stops a small change from paying the price of a big one, and a big change from skipping the rigor it needs.</p>
@@ -620,53 +621,53 @@
   <title>The next hires: design-tool-equipped thinkers and a security reviewer — with QA and automated checks already on staff</title>
   <desc>Two future roles for the AI team. First, the Discovery and UX roles gain design tools: Discovery maps journeys in Miro, UX draws flow and state diagrams in Miro and high-fidelity screens in Figma, and builders read those screens read-only in Dev Mode; anything read back off a board is treated as data, not instructions. Second, a security reviewer that red-teams each feature before ship, enforces least access, and stops outside content from hijacking a session — held until the product goes live. A footer strip shows what has already shipped since the post: the QA inspector, automated gate-checks, and sandboxed lanes.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13.5px}
-    .ct{fill:#23252B;font-size:18px;font-weight:700}
-    .cs{fill:#707684;font-size:12px}
-    .bd{fill:#3a4150;font-size:12.5px}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13.5px}
+    .ct{fill:#E9E4D6;font-size:18px;font-weight:700}
+    .cs{fill:#8A9BB4;font-size:12px}
+    .bd{fill:#8A9BB4;font-size:12.5px}
     .ft{font-size:11.5px;font-weight:600}
-    .cap{fill:#8A8170;font-size:12px}
+    .cap{fill:#8A9BB4;font-size:12px}
     .done{font-size:13px;font-weight:700}
   </style>
-  <rect x="1" y="1" width="958" height="558" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="558" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
 
   <text class="h1" x="40" y="48">The next hires</text>
   <text class="sub" x="40" y="72">Two specialists still ahead of us — each a fresh expert, each in a lane of its own.</text>
 
-  <!-- ============ CARD 1 — DESIGN TOOLS (teal) ============ -->
-  <rect x="40" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
-  <rect x="60" y="120" width="86" height="20" rx="10" fill="#DCEBE8" stroke="#2E6F69"/>
-  <text x="103" y="134" text-anchor="middle" class="ft" fill="#1c4f4a">DESIGN</text>
+  <!-- ============ CARD 1 — DESIGN TOOLS (signal) ============ -->
+  <rect x="40" y="98" width="430" height="320" rx="12" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
+  <rect x="60" y="120" width="86" height="20" rx="10" fill="#0B0F17" stroke="#5E8BC4"/>
+  <text x="103" y="134" text-anchor="middle" class="ft" fill="#5E8BC4">DESIGN</text>
   <text class="ct" x="60" y="172">Thinkers who draw</text>
   <text class="cs" x="60" y="192">Discovery &amp; UX, live in Miro + Figma</text>
-  <line x1="60" y1="206" x2="450" y2="206" stroke="#E7E2D8"/>
+  <line x1="60" y1="206" x2="450" y2="206" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="bd" x="60" y="234">• Discovery maps the user journey in Miro</text>
   <text class="bd" x="60" y="262">• UX draws flow &amp; state diagrams in Miro</text>
   <text class="bd" x="60" y="290">• UX designs high-fidelity screens in Figma</text>
   <text class="bd" x="60" y="318">• Builders read them in Dev Mode — read-only</text>
-  <line x1="60" y1="356" x2="450" y2="356" stroke="#E7E2D8"/>
-  <text x="255" y="386" text-anchor="middle" class="ft" fill="#1c4f4a">Anything fetched back = data, never commands</text>
+  <line x1="60" y1="356" x2="450" y2="356" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text x="255" y="386" text-anchor="middle" class="ft" fill="#5E8BC4">Anything fetched back = data, never commands</text>
 
-  <!-- ============ CARD 2 — SECURITY (amber) ============ -->
-  <rect x="490" y="98" width="430" height="320" rx="12" fill="#FFFFFF" stroke="#B4862B" stroke-width="2"/>
-  <rect x="510" y="120" width="92" height="20" rx="10" fill="#F6EEDD" stroke="#B4862B"/>
-  <text x="556" y="134" text-anchor="middle" class="ft" fill="#7A5A12">SECURITY</text>
+  <!-- ============ CARD 2 — SECURITY (the red-team flag — burnt orange) ============ -->
+  <rect x="490" y="98" width="430" height="320" rx="12" fill="#1B2432" stroke="#E07A3F" stroke-width="2"/>
+  <rect x="510" y="120" width="92" height="20" rx="10" fill="#0B0F17" stroke="#E07A3F"/>
+  <text x="556" y="134" text-anchor="middle" class="ft" fill="#E07A3F">SECURITY</text>
   <text class="ct" x="510" y="172">A skeptic on staff</text>
   <text class="cs" x="510" y="192">red-teams each feature before it ships</text>
-  <line x1="510" y1="206" x2="900" y2="206" stroke="#E7E2D8"/>
+  <line x1="510" y1="206" x2="900" y2="206" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="bd" x="510" y="234">• "What could be made to go wrong?"</text>
   <text class="bd" x="510" y="262">• Least access per role (least-privilege)</text>
   <text class="bd" x="510" y="290">• Outside text can't hijack a session</text>
   <text class="bd" x="510" y="318">• Ideally a different AI model — uncorrelated</text>
-  <line x1="510" y1="356" x2="900" y2="356" stroke="#E7E2D8"/>
-  <text x="705" y="386" text-anchor="middle" class="ft" fill="#7A5A12">Held until we go live — real money / data / web</text>
+  <line x1="510" y1="356" x2="900" y2="356" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text x="705" y="386" text-anchor="middle" class="ft" fill="#E07A3F">Held until we go live — real money / data / web</text>
 
-  <!-- ============ FOOTER — already shipped ============ -->
-  <rect x="40" y="446" width="880" height="74" rx="12" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.5"/>
-  <text class="done" x="64" y="478" fill="#1c4f4a">Already joined — shipped since this post</text>
-  <g class="cs" fill="#2c4f4a" font-size="12.5" font-weight="600">
+  <!-- ============ FOOTER — already shipped (the one amber family) ============ -->
+  <rect x="40" y="446" width="880" height="74" rx="12" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.6" stroke-width="1.5"/>
+  <text class="done" x="64" y="478" fill="#F2A93B">Already joined — shipped since this post</text>
+  <g fill="#8A9BB4" font-size="12.5" font-weight="600">
     <text x="64" y="502">✓ QA inspector</text>
     <text x="250" y="502">✓ Automated gate-checks (linter + live integration check)</text>
     <text x="700" y="502">✓ Sandboxed lanes</text>
@@ -682,92 +683,92 @@
 <ul><li><strong>Automated gate-checks — ✓ now shipped.</strong> A gate used to be a pure human judgment call. Now it's also a <em>linter for handoffs</em> plus a live integration check — automatic proof that a contract is complete, that no role coloured outside its lane, and that the two halves actually fit, before the next session is even allowed to start.</li><li><strong>A memory that compounds — ✓ now shipped.</strong> When the same decision keeps showing up across features it <em>graduates</em> into the shared rulebook automatically — and, just as importantly, gets <em>demoted</em> the moment reality contradicts it. The system literally gets wiser with every feature, without calcifying a wrong-but-repeated rule into law.</li><li><strong>Close the loop with reality — ◑ half shipped.</strong> The product now <strong>grades its own judgment</strong>: a track-record feature harvests every simulated trade the app ever recorded and reports, honestly, how good its own signals actually were — sample sizes always showing, no number allowed to flatter. That's the "measure" station of the flywheel, built for the product itself. Still ahead: wiring the <em>build</em> metrics back into Discovery, so the studio picks its next feature from measured reality instead of educated guesses.</li><li><strong>Parallel feature lanes.</strong> Still ahead, and deliberately last: one Orchestrator running several features at once. It's the upgrade that finally removes the human-as-conductor — which is exactly why it waits until every guardrail above is proven, so we never trade away our main error-correction mechanism for raw speed.</li></ul>
 <figure><svg viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img">
   <title>The evolution: a compounding flywheel of discover, decide, build, measure — two upgrades shipped, two still ahead</title>
-  <desc>A central loop turns through four stages: Discover, Decide, Build, Measure, then back to Discover. Four upgrades surround it. Two are now shipped (shown in teal with a check): automated gate-checks — a linter plus a live integration check — and a memory that compounds by promoting proven decisions into the rulebook and demoting them when reality disagrees. Two are still ahead (shown grey): parallel feature lanes, and production metrics fed back into discovery to close the loop.</desc>
+  <desc>A central loop turns through four stages: Discover, Decide, Build, Measure, then back to Discover. Four upgrades surround it. Two are now shipped (shown with a check): automated gate-checks — a linter plus a live integration check — and a memory that compounds by promoting proven decisions into the rulebook and demoting them when reality disagrees. Two are still ahead (shown muted): parallel feature lanes, and production metrics fed back into discovery to close the loop.</desc>
   <style>
-    text{font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-    .h1{fill:#23252B;font-size:23px;font-weight:700}
-    .sub{fill:#707684;font-size:13px}
-    .stage{fill:#1f2937;font-size:14px;font-weight:700}
-    .ctr{fill:#1c4f4a;font-size:14px;font-weight:700}
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:23px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .stage{fill:#E9E4D6;font-size:14px;font-weight:700}
+    .ctr{fill:#5E8BC4;font-size:14px;font-weight:700}
     .upt{font-size:13px;font-weight:700}
     .ups{font-size:11px}
   </style>
   <defs>
-    <marker id="fc" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#2E6F69"/></marker>
+    <marker id="fc" markerWidth="9" markerHeight="9" refX="6" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 z" fill="#5E8BC4"/></marker>
   </defs>
-  <rect x="1" y="1" width="958" height="538" rx="16" fill="#FAF8F4" stroke="#E7E2D8"/>
+  <rect x="1" y="1" width="958" height="538" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
   <text class="h1" x="34" y="44">Where this goes next</text>
   <text class="sub" x="34" y="68">Turn the relay into a flywheel — each loop cheaper and smarter than the last. Two upgrades shipped; two still ahead.</text>
 
   <!-- center loop -->
-  <circle cx="480" cy="312" r="120" fill="none" stroke="#BFD8D4" stroke-width="2" stroke-dasharray="2 4"/>
-  <circle cx="480" cy="312" r="64" fill="#DCEBE8" stroke="#2E6F69" stroke-width="2"/>
+  <circle cx="480" cy="312" r="120" fill="none" stroke="#5E8BC4" stroke-opacity="0.4" stroke-width="2" stroke-dasharray="2 4"/>
+  <circle cx="480" cy="312" r="64" fill="#1B2432" stroke="#5E8BC4" stroke-width="2"/>
   <text class="ctr" x="480" y="306" text-anchor="middle">Compounding</text>
   <text class="ctr" x="480" y="324" text-anchor="middle">flywheel</text>
 
-  <!-- four stages on the loop -->
+  <!-- four stages on the loop (Build = the one amber accent) -->
   <g>
-    <circle cx="480" cy="192" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <circle cx="480" cy="192" r="30" fill="#0B0F17" stroke="#5E8BC4" stroke-width="2"/>
     <text class="stage" x="480" y="197" text-anchor="middle">Discover</text>
   </g>
   <g>
-    <circle cx="600" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <circle cx="600" cy="312" r="30" fill="#0B0F17" stroke="#5E8BC4" stroke-width="2"/>
     <text class="stage" x="600" y="317" text-anchor="middle">Decide</text>
   </g>
   <g>
-    <circle cx="480" cy="432" r="30" fill="#F3E3D9" stroke="#B4562B" stroke-width="2"/>
+    <circle cx="480" cy="432" r="30" fill="#0B0F17" stroke="#F2A93B" stroke-width="2"/>
     <text class="stage" x="480" y="437" text-anchor="middle">Build</text>
   </g>
   <g>
-    <circle cx="360" cy="312" r="30" fill="#FFFFFF" stroke="#2E6F69" stroke-width="2"/>
+    <circle cx="360" cy="312" r="30" fill="#0B0F17" stroke="#5E8BC4" stroke-width="2"/>
     <text class="stage" x="360" y="317" text-anchor="middle">Measure</text>
   </g>
   <!-- clockwise arrows between stages -->
-  <g fill="none" stroke="#2E6F69" stroke-width="2.5">
+  <g fill="none" stroke="#5E8BC4" stroke-width="2.5">
     <path d="M510,200 A120,120 0 0 1 572,288" marker-end="url(#fc)"/>
     <path d="M572,336 A120,120 0 0 1 510,424" marker-end="url(#fc)"/>
     <path d="M450,424 A120,120 0 0 1 388,336" marker-end="url(#fc)"/>
     <path d="M388,288 A120,120 0 0 1 450,200" marker-end="url(#fc)"/>
   </g>
 
-  <!-- LEFT = shipped (teal) -->
+  <!-- LEFT = shipped (signal) -->
   <g>
-    <rect x="34" y="112" width="240" height="84" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/>
-    <text class="upt" x="50" y="136" fill="#1c4f4a">Automated gate-checks</text>
-    <text class="ups" x="50" y="156" fill="#2E6F69" font-weight="700">✓ shipped</text>
-    <text class="ups" x="50" y="174" fill="#3a6b66">a handoff linter + a live</text>
-    <text class="ups" x="50" y="189" fill="#3a6b66">integration check, before each step</text>
+    <rect x="34" y="112" width="240" height="84" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/>
+    <text class="upt" x="50" y="136" fill="#E9E4D6">Automated gate-checks</text>
+    <text class="ups" x="50" y="156" fill="#5E8BC4" font-weight="700">✓ shipped</text>
+    <text class="ups" x="50" y="174" fill="#8A9BB4">a handoff linter + a live</text>
+    <text class="ups" x="50" y="189" fill="#8A9BB4">integration check, before each step</text>
   </g>
   <g>
-    <rect x="34" y="426" width="240" height="84" rx="11" fill="#DCEBE8" stroke="#2E6F69" stroke-width="1.6"/>
-    <text class="upt" x="50" y="450" fill="#1c4f4a">Memory that compounds</text>
-    <text class="ups" x="50" y="470" fill="#2E6F69" font-weight="700">✓ shipped</text>
-    <text class="ups" x="50" y="488" fill="#3a6b66">proven decisions graduate to canon —</text>
-    <text class="ups" x="50" y="503" fill="#3a6b66">and demote when reality disagrees</text>
+    <rect x="34" y="426" width="240" height="84" rx="11" fill="#1B2432" stroke="#5E8BC4" stroke-width="1.6"/>
+    <text class="upt" x="50" y="450" fill="#E9E4D6">Memory that compounds</text>
+    <text class="ups" x="50" y="470" fill="#5E8BC4" font-weight="700">✓ shipped</text>
+    <text class="ups" x="50" y="488" fill="#8A9BB4">proven decisions graduate to canon —</text>
+    <text class="ups" x="50" y="503" fill="#8A9BB4">and demote when reality disagrees</text>
   </g>
 
-  <!-- RIGHT = still ahead (grey) -->
+  <!-- RIGHT = still ahead (muted) -->
   <g>
-    <rect x="686" y="112" width="240" height="84" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-    <text class="upt" x="702" y="136" fill="#3a4262">Parallel feature lanes</text>
-    <text class="ups" x="702" y="156" fill="#8A8FA3" font-weight="700">↗ on the roadmap (last)</text>
-    <text class="ups" x="702" y="174" fill="#4B5575">many features in flight at once,</text>
-    <text class="ups" x="702" y="189" fill="#4B5575">scheduled by the orchestrator</text>
+    <rect x="686" y="112" width="240" height="84" rx="11" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.4"/>
+    <text class="upt" x="702" y="136" fill="#E9E4D6">Parallel feature lanes</text>
+    <text class="ups" x="702" y="156" fill="#8A9BB4" font-weight="700">↗ on the roadmap (last)</text>
+    <text class="ups" x="702" y="174" fill="#8A9BB4">many features in flight at once,</text>
+    <text class="ups" x="702" y="189" fill="#8A9BB4">scheduled by the orchestrator</text>
   </g>
   <g>
-    <rect x="686" y="426" width="240" height="84" rx="11" fill="#EEF0F6" stroke="#C7CCDC"/>
-    <text class="upt" x="702" y="450" fill="#3a4262">Metrics close the loop</text>
-    <text class="ups" x="702" y="470" fill="#8A8FA3" font-weight="700">↗ on the roadmap</text>
-    <text class="ups" x="702" y="488" fill="#4B5575">live performance data feeds</text>
-    <text class="ups" x="702" y="503" fill="#4B5575">the next round of ideas</text>
+    <rect x="686" y="426" width="240" height="84" rx="11" fill="#1B2432" stroke="#8A9BB4" stroke-opacity="0.4"/>
+    <text class="upt" x="702" y="450" fill="#E9E4D6">Metrics close the loop</text>
+    <text class="ups" x="702" y="470" fill="#8A9BB4" font-weight="700">↗ on the roadmap</text>
+    <text class="ups" x="702" y="488" fill="#8A9BB4">live performance data feeds</text>
+    <text class="ups" x="702" y="503" fill="#8A9BB4">the next round of ideas</text>
   </g>
 
   <!-- connectors from cards to nearest stage -->
-  <g stroke="#2E6F69" stroke-width="1.4" stroke-dasharray="3 3">
+  <g stroke="#5E8BC4" stroke-width="1.4" stroke-dasharray="3 3">
     <line x1="274" y1="154" x2="452" y2="188"/>
     <line x1="274" y1="468" x2="452" y2="432"/>
   </g>
-  <g stroke="#9AA0B5" stroke-width="1.4" stroke-dasharray="3 3">
+  <g stroke="#8A9BB4" stroke-opacity="0.5" stroke-width="1.4" stroke-dasharray="3 3">
     <line x1="686" y1="154" x2="624" y2="296"/>
     <line x1="686" y1="468" x2="386" y2="324"/>
   </g>

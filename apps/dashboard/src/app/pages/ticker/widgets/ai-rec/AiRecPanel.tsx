@@ -131,7 +131,6 @@ interface Props {
   onChangeReadPersona: (id: string) => void;
   /** Fill the parent's height (for the side-by-side Term/AI row) instead of the default top margin. */
   fillHeight?: boolean;
-  revealIndex?: number;
 }
 
 export function AiRecPanel({
@@ -147,7 +146,6 @@ export function AiRecPanel({
   readPersonaId,
   onChangeReadPersona,
   fillHeight,
-  revealIndex,
 }: Props) {
   const { rec, loading, stale, inAppEnabled, cap, effectiveGateState, cooldownRemaining, gate } =
     ai;
@@ -209,6 +207,8 @@ export function AiRecPanel({
   const hasRec = phase === 'produced' || phase === 'no_trade';
 
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
+  // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
+  // never amber — amber on this surface belongs to the Trade verdict alone.
   const exportAction = (
     <Button
       size="small"
@@ -218,7 +218,7 @@ export function AiRecPanel({
         minWidth: 0,
         textTransform: 'none',
         fontWeight: 500,
-        color: 'primary.main',
+        color: 'info.main',
         whiteSpace: 'nowrap',
         '&:hover': { bgcolor: 'transparent' },
       }}
@@ -241,7 +241,6 @@ export function AiRecPanel({
         title={`AI recommendation · ${ticker}`}
         actions={exportAction}
         bodySx={fillHeight ? { display: 'flex', flexDirection: 'column', flex: 1 } : undefined}
-        revealIndex={revealIndex}
       >
         {/* The advisory intro, then the per-query persona override with a label ABOVE the (recessed)
             select. The title + export link now live in the Widget header. */}
@@ -418,7 +417,10 @@ function LoadingBlock({ ticker, readName }: { ticker: string; readName: string }
     <Box sx={{ py: 1 }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <CircularProgress size={18} />
-        <Typography variant="subtitle1">{COPY.loading.title}</Typography>
+        {/* component="p" (stage-3 §5.6): a transient state title must not mount/unmount an <h6>. */}
+        <Typography variant="subtitle1" component="p">
+          {COPY.loading.title}
+        </Typography>
       </Stack>
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         Asking the AI for a risk-first read on {ticker} ({readName}). This can take a few seconds.
@@ -639,7 +641,10 @@ function UnavailableBlock({
         </Stack>
       }
     >
-      <Typography variant="subtitle2">{COPY.unavailable.title}</Typography>
+      {/* component="p" (stage-3 §5.6): transient-state title, not document structure. */}
+      <Typography variant="subtitle2" component="p">
+        {COPY.unavailable.title}
+      </Typography>
       <Typography variant="body2">{COPY.unavailable.body}</Typography>
       {scenario && (
         <Chip
@@ -691,7 +696,10 @@ function ByoKeyCta({
           };
   return (
     <Box sx={{ mt: 1, p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }} data-testid={cfg.testid}>
-      <Typography variant="subtitle1">{cfg.title}</Typography>
+      {/* component="p" (stage-3 §5.6): BYO-key CTA titles are transient, never headings. */}
+      <Typography variant="subtitle1" component="p">
+        {cfg.title}
+      </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
         {cfg.body}
       </Typography>
@@ -1075,7 +1083,10 @@ function RecResult({
               sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
             >
               <InfoOutlinedIcon color="info" sx={{ fontSize: 18 }} />
-              <Typography variant="subtitle1">{COPY.noTrade.title}</Typography>
+              {/* component="p" (stage-3 §5.6): a verdict is data/copy, not document structure. */}
+              <Typography variant="subtitle1" component="p">
+                {COPY.noTrade.title}
+              </Typography>
               {s.confidence && (
                 <Chip size="small" variant="outlined" label={`conviction · ${s.confidence}`} />
               )}
@@ -1100,8 +1111,12 @@ function RecResult({
               rest sit in the plan below; risk stays first among the detail tiles). */}
           <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              {/* The verdict hero icon KEEPS `primary` (§4.1) — the Trade verdict IS this
+                  surface's one line that matters (its no-trade sibling stays `info`: the
+                  asymmetry is the meaning). */}
               <InfoOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
-              <Typography variant="subtitle1">{`Trade · ${s.bias}`}</Typography>
+              {/* component="p" (stage-3 §5.6): a verdict is data/copy, not document structure. */}
+              <Typography variant="subtitle1" component="p">{`Trade · ${s.bias}`}</Typography>
             </Stack>
             {heroLead && (
               <Typography

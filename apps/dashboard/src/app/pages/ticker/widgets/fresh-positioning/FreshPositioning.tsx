@@ -18,14 +18,12 @@ interface Props {
   unusualStrikes: StrikeRow[];
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
-  revealIndex?: number;
 }
 
 export function FreshPositioning({
   chainVolOiRatio,
   volOiThreshold,
   unusualStrikes,
-  revealIndex,
 }: Props) {
   return (
     <Widget
@@ -33,7 +31,6 @@ export function FreshPositioning({
       title="Fresh positioning (Vol/OI)"
       subtitle={freshCaption(volOiThreshold)}
       info={volOiTip(volOiThreshold, unusualStrikes.length)}
-      revealIndex={revealIndex}
     >
       <Box>
         {chainVolOiRatio == null ? (

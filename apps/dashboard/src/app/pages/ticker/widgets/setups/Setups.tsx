@@ -10,17 +10,18 @@ import { Widget } from '@/shared/ui/Widget';
 
 interface Props {
   setups: Setup[] | undefined;
-  revealIndex?: number;
 }
 
-const convictionTone = (c: string): 'warning' | 'info' | 'neutral' => {
+// Stage-3 §5.3: HIGH binds the new brand-amber `emphasis` tone — a high-conviction setup is the
+// "one line that matters" spend, NOT a warning (the old mechanical burnt-orange inheritance).
+const convictionTone = (c: string): 'emphasis' | 'info' | 'neutral' => {
   const v = c.toLowerCase();
-  return v === 'high' ? 'warning' : v === 'medium' ? 'info' : 'neutral';
+  return v === 'high' ? 'emphasis' : v === 'medium' ? 'info' : 'neutral';
 };
 
-export function Setups({ setups, revealIndex }: Props) {
+export function Setups({ setups }: Props) {
   return (
-    <Widget id="setups" title="Setups" span={2} revealIndex={revealIndex}>
+    <Widget id="setups" title="Setups" span={2}>
       {setups?.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (

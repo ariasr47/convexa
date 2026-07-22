@@ -45,6 +45,12 @@ const RETIRED = [
   'e6edf3', // GitHub Dark primary text
   'f4f1eb', // the blog cream — the literal slop-tell
   '0e1117', // the outgoing canvas
+  // redesign-stage-3 §8-9a — the blog ILLUSTRATION cream family (the card-on-dark collision the
+  // stage-3 artwork recomposition removed; app sources AND blog output can never re-grow them):
+  'faf8f4', // illustration canvas cream
+  'e7e2d8', // illustration cream border
+  'f3e3d9', // illustration terracotta-tint card
+  'f6eedd', // illustration amber-tint chip
 ];
 const BANNED = RETIRED.map((h) => `#${h}`);
 
@@ -65,6 +71,8 @@ describe('[banned-hexes] · the retired identity is unreachable', () => {
   it('MUTATION GUARD: the checker fails on a source carrying a banned hex (upper AND lower case)', () => {
     expect(findBanned(`const c = '#4f9cff';`)).toEqual([`#${RETIRED[0]}`]);
     expect(findBanned(`background: #F4F1EB;`)).toEqual([`#${RETIRED[7]}`]);
+    expect(findBanned(`<rect fill="#FAF8F4"/>`)).toEqual([`#${RETIRED[9]}`]); // the cream family
+    expect(findBanned(`stroke="#f3e3d9"`)).toEqual([`#${RETIRED[11]}`]);
     expect(findBanned(`const fine = '#F2A93B';`)).toEqual([]);
   });
 

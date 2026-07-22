@@ -523,7 +523,8 @@ export function PositionRow({
               fontSize: '0.72rem',
               color: 'text.secondary',
               cursor: 'pointer',
-              '& > span': { color: 'primary.main' },
+              // Link-class provenance link binds `info` (stage-3 §4.2), never amber.
+              '& > span': { color: 'info.main' },
             }}
           >
             From sim order · <Box component="span">view order →</Box>

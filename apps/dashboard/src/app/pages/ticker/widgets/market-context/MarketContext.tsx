@@ -111,7 +111,6 @@ interface Props {
   /** The additive static read (`m.market_context ?? null`). NO live/offline prop is accepted — this
    *  widget is bound to the last-bundle render path only (`[live-vs-static-isolation]`). */
   pack: MarketContextPack | null;
-  revealIndex?: number;
 }
 
 /** A muted "unavailable this cycle" line (`text.disabled`) — the ONLY empty render. Never a 0. */
@@ -408,7 +407,7 @@ function AtrCard({ read }: { read: AtrRead | null }) {
   );
 }
 
-export function MarketContext({ pack, revealIndex }: Props) {
+export function MarketContext({ pack }: Props) {
   return (
     <Widget
       id="market-context"
@@ -417,7 +416,6 @@ export function MarketContext({ pack, revealIndex }: Props) {
       info={MC_INFO}
       span={2}
       bodyVariant="inset"
-      revealIndex={revealIndex}
     >
       <Box data-testid="market-context">
         {pack == null ? (

@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import type { StrikeRow } from '@org/api';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -12,7 +12,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { typographyTokens } from '@/shared/theme/tokens';
 
 interface Props {
@@ -72,15 +71,6 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
   const theme = useTheme();
   const green = theme.palette.success.main;
   const red = theme.palette.error.main;
-
-  // Mount-only bar-grow: animate on the first render, then never again (so the 60s poll / SSE
-  // re-renders don't re-trigger a jarring re-grow). Disabled entirely under reduced motion.
-  const reduced = useReducedMotion();
-  const animatedOnce = useRef(false);
-  const animateBars = !reduced && !animatedOnce.current;
-  useEffect(() => {
-    animatedOnce.current = true;
-  }, []);
 
   const data = useMemo(
     () => windowedStrikes(strikes, spot, callWall, putWall),
@@ -196,14 +186,11 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
               label={refLabel('live', theme.palette.info.main, 2)}
             />
           )}
-          <Bar
-            dataKey="net_gex"
-            name="Net GEX"
-            radius={[2, 2, 0, 0]}
-            isAnimationActive={animateBars}
-            animationDuration={650}
-            animationEasing="ease-out"
-          >
+          {/* Bars render instantly at full height — the mount bar-grow was RETIRED
+              (redesign-stage-3 §3.1-4: it delayed data legibility ~650ms and competed with the
+              hero curve-draw as a second mount moment). Animation props ONLY were touched —
+              geometry/orientation/series are LOCKED (§6a-1). */}
+          <Bar dataKey="net_gex" name="Net GEX" radius={[2, 2, 0, 0]} isAnimationActive={false}>
             {data.map((s) => (
               <Cell
                 key={s.strike}

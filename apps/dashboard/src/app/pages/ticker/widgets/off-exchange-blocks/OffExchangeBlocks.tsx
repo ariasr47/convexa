@@ -18,17 +18,15 @@ interface Props {
   offExchange: OffExchange | null | undefined;
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
-  revealIndex?: number;
 }
 
-export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
+export function OffExchangeBlocks({ offExchange }: Props) {
   return (
     <Widget
       id="off-exchange-blocks"
       title="Off-exchange blocks"
       info={BLOCKS_TOOLTIP}
       subtitle="Largest recent off-exchange prints near spot. Context, not a signal — no side or direction."
-      revealIndex={revealIndex}
     >
       <Box>
         {!offExchange ? (
@@ -67,10 +65,12 @@ export function OffExchangeBlocks({ offExchange, revealIndex }: Props) {
                     <Typography sx={{ fontFamily: MONO, fontSize: 12 }}>
                       {b.shares.toLocaleString()} sh @ ${b.price.toFixed(2)}
                     </Typography>
-                    {/* Proximity is context, not direction — a fixed (non-directional) tint. */}
+                    {/* Proximity is context, not direction — NEUTRAL (stage-3 §5.3: the old
+                        `success` tint tripped the green/red reservation on a datum whose own
+                        subtitle says "no side or direction"). */}
                     <Tooltip arrow title={PROXIMITY_TOOLTIP}>
                       <span>
-                        <TintChip tone="success" label={prox} />
+                        <TintChip tone="neutral" label={prox} />
                       </span>
                     </Tooltip>
                   </Stack>

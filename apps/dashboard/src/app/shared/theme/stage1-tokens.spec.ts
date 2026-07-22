@@ -2,7 +2,9 @@
  * redesign-stage-1 §8-2 / §8-4 / §8-5 / §8-6 — the token map landed COMPLETE and the guarded
  * slots cannot drift:
  *   - §8-2 token-map completeness: every §3.1/§3.2 entry present with the NEW values (§3 dark
- *     values byte-exact), removed keys ABSENT, brandGradient composed only of the brand ambers.
+ *     values byte-exact), removed keys ABSENT (incl. `brandGradient`, deleted at
+ *     redesign-stage-3 §5.1 — a deliberate pin edit per its §8-6), the stage-3 `textAmber`
+ *     text-grade slot present with its measured values.
  *   - §8-4 first-paint theme-color: the STATIC index.html meta === palette.dark.background.default
  *     byte-exact (guards §3.3-6 forever; the runtime meta is covered by theme-color.spec).
  *   - §8-5 P/L direction colors: literals pinned IN this spec — changing them requires editing
@@ -17,7 +19,8 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { theme } from './theme';
-import { brandGradient, extras, extrasLight, palette, typographyTokens } from './tokens';
+import * as tokens from './tokens';
+import { extras, extrasLight, palette, typographyTokens } from './tokens';
 
 // Root-anchored raw GLOB (not a static import — keeps @nx/enforce-module-boundaries happy).
 const INDEX_RAW = import.meta.glob(['/index.html'], {
@@ -67,8 +70,17 @@ describe('§8-2 · token-map completeness — no orphan token', () => {
     expect('buttonPrimaryBg' in extrasLight).toBe(false);
   });
 
-  it('brandGradient is composed ONLY of the brand ambers (gammaAmber → amberDeep)', () => {
-    expect(brandGradient).toBe('linear-gradient(135deg, #F2A93B, #C57F19)');
+  it('brandGradient is ABSENT — deleted at redesign-stage-3 §5.1 (the accentViolet precedent)', () => {
+    // Was: a composition pin (`linear-gradient(135deg, #F2A93B, #C57F19)`). The stage-3 §8-6
+    // DELIBERATE pin edit flips it to absence: the gradient-brand vocabulary is dead, both
+    // consumers (avatar + Sign-up pill) went flat `primary.main` + `primary.contrastText`.
+    expect('brandGradient' in tokens).toBe(false);
+  });
+
+  it('textAmber (stage 3 §5.2) — dark === gammaAmber byte-exact, light === the measured #8F5C0F', () => {
+    expect(extras.textAmber).toBe('#F2A93B'); // dark renders byte-identical to primary.main
+    expect(extras.textAmber).toBe(palette.dark.primary.main);
+    expect(extrasLight.textAmber).toBe('#8F5C0F'); // the §5.2 candidate, gate-measured (stage3-amber.spec)
   });
 
   it('the type trio is the identity: Plex Sans body · Plex Mono data · Archivo display', () => {
