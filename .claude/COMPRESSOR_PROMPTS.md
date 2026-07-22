@@ -63,10 +63,12 @@ Compress THIS session into THREE files for decoupled execution:
 3) .claude/contracts/{FEATURE}/FRONTEND_EXECUTION_CONTRACT.md — UI work only; references the
    interface contract for what it CONSUMES + the component states (default/loading/stale/
    offline/empty/error); contains NO server internals. Include a "Tests to write" matrix that
-   ENUMERATES the required cases — derived from the PRODUCT_CONTRACT ACs × component states ×
-   edge/invariant (each AC → at least one case). This is the FE's requirement set (the FE
-   implements + may add unit tests, but never drops a listed case); QA traces every AC to ≥1
-   passing test at GATE Q. (Tests are part of the FE deliverable; use the project's configured stack.)
+   ENUMERATES the required cases, EACH marked with its verification kind per the risk-based rule
+   (qa-verify §4): `test:` for invariants / negative space / silently-regressing behavior, `review:`
+   for visible/intentional things (copy, presence, ordering). This is the FE's requirement set (the FE
+   implements the `test:` cases + may add unit tests, but never drops a listed case); QA verifies EVERY
+   case at GATE Q by its marked kind — verification is mandatory per AC, a named test is not.
+   (Tests are part of the FE deliverable; use the project's configured stack.)
 Each must be self-contained against PROJECT_CONTEXT.md + the interface contract. EXCLUDE
 rationale. Print the three paths. (contract_lint.py runs next at GATE U·X: it ERRORs if an
 execution contract isn't bound to the interface and WARNs if a locked interface lacks the

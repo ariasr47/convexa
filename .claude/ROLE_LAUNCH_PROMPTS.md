@@ -197,10 +197,12 @@ Because the Architect ran first, you MUST:
 You are FIRST to write the PRODUCT_CONTRACT, so write it into the existing
 .claude/contracts/{FEATURE}/ folder; there is no inbound PRODUCT_CONTRACT skeleton — you set its
 structure. Stay in your lane (no UI layout, no endpoints, no code). Make every acceptance criterion
-observable without reading code — and treat each AC as the REQUIRED BEHAVIORAL TEST the frontend must
-cover and QA will trace: one observable behavior apiece, with the degraded/edge variations (stale,
-offline, empty, error, null/404) as their own ACs, not buried. Restate any product-level constraint the
-next role must not violate.
+observable without reading code — one observable behavior apiece, with the degraded/edge variations
+(stale, offline, empty, error, null/404) as their own ACs, not buried. Verification of every AC is
+mandatory at GATE Q, but the METHOD is risk-based (qa-verify §4): an automated test only where a silent
+regression is plausible (invariants, negative space, silently-regressing behavior); visible/intentional
+things (copy, presence, layout) are verified by review and recorded as such — do NOT frame every AC as
+demanding a named test. Restate any product-level constraint the next role must not violate.
 
 When the contract is locked, run compressor #2 (Session-Transition) from
 .claude/COMPRESSOR_PROMPTS.md targeting the UX/Tech-Writer, then stop.
@@ -230,9 +232,11 @@ There is no inbound skeleton — you set the structure.
 
 Your job (stay in lane — NO code, math derivations, data structures, endpoints, payload/field
 names, or UI layout): user stories, feature scope (In / Out / Future-dated), dashboard behavior,
-and acceptance criteria. Every acceptance criterion MUST be observable without reading code — and is
-the REQUIRED BEHAVIORAL TEST the frontend must cover and QA will trace: one observable behavior apiece,
-with the degraded/edge variations (stale, offline, empty, error, null/404) as their own ACs, not buried.
+and acceptance criteria. Every acceptance criterion MUST be observable without reading code — one
+observable behavior apiece, with the degraded/edge variations (stale, offline, empty, error, null/404)
+as their own ACs, not buried. QA verifies every AC at GATE Q, but the method is RISK-BASED (qa-verify
+§4): a named test only where regression risk earns it; visible/intentional behavior is verified by
+review, recorded as such — never demand one-test-per-AC.
 
 Be a STRICT PM — decide, don't survey:
 - Where a sensible default exists, MAKE the product call and record it in a "Product decisions made
@@ -275,10 +279,12 @@ UI/interaction design and user-facing copy. Your job: component states (default 
 offline / empty / error), where each datum surfaces, microcopy and labels (honoring any binding
 framing the context file pins), tooltip/glossary text, and the exact degraded-state wording for
 live-stream loss vs data-fetch loss. Map each acceptance criterion to
-the component state(s) that satisfy it — this mapping IS the required-tests matrix. In the
-FRONTEND_EXECUTION_CONTRACT's "Tests to write" note (emitted by compressor #3) enumerate the required
-cases (each AC × component state × edge/invariant) so the FE implements them and never decides the
-requirement set; QA traces every AC to ≥1 passing test at GATE Q.
+the component state(s) that satisfy it. In the FRONTEND_EXECUTION_CONTRACT's "Tests to write" note
+(emitted by compressor #3) enumerate the required cases so the FE implements them and never decides the
+requirement set — and mark EACH case with its verification kind per the risk-based rule (qa-verify §4):
+`test:` for invariants / negative space / silently-regressing behavior, `review:` for
+visible/intentional things (copy, presence, ordering). Verification of every AC is mandatory at GATE Q;
+a named test per AC is NOT — do not re-impose it.
 
 Stay in your lane: no server internals, no math, no final endpoint/payload schema decisions beyond
 naming the fields the UI must consume.
