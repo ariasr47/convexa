@@ -1,6 +1,6 @@
 # redesign-stage-2 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; the signature stage)
-Stage:        BRIEF written; UX lane NOT yet launched (pre-pipeline)
+Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
 Repos:        frontend only (NO_BACKEND_CHANGE)
 Brief:        BRIEF.md present
 Contracts:
@@ -9,7 +9,11 @@ Contracts:
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  n/a (next artifact — UX lane authors it)
+  - FRONTEND_EXECUTION_CONTRACT.md  locked (2026-07-22; §10 ruled by the conductor: 6 of 7
+    ACCEPTED as written (replacement-only seams · brandGradient survivors → Stage 3 · wdth 125
+    ceiling · blog hr out of reach · casing spec · draw-timing at render observation); #3
+    UPGRADED — regenerate `og-image.png` from the NEW mark IN THIS STAGE (minimal: mark on ink;
+    review-kind check) — a new identity with an old share card is self-defeating)
 Open amendments: none
 QA (GATE Q):  n/a (pending; battery = Stage 1's + the arc-importer-count test + reduced-motion
               verification + favicon-size legibility + the render pass with the DRAW moment
