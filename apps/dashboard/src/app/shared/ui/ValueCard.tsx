@@ -7,10 +7,10 @@
  * `BarChart`/`AccountBalanceWallet`/`AutoAwesome`/`Lock`/`Radar`). `to` is the CTA route; the CTA is
  * the ONLY navigating element (the card body does not link).
  */
+import { elevationFor } from '@/shared/theme/tokens';
 import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
-import { elevationFor } from '@/shared/theme/tokens';
 
 export interface ValueCardProps {
   /** A `@mui/icons-material` element (or any node) rendered in the tinted 40px square. */
@@ -24,6 +24,9 @@ export interface ValueCardProps {
   testId?: string;
   /** Optional override for the CTA link test id. */
   ctaTestId?: string;
+  /** Heading element for the title (redesign-stage-2 §6.2 — the landing outline wants `h3`;
+   *  `variant="h6"` STYLING is unchanged). */
+  titleComponent?: React.ElementType;
 }
 
 export function ValueCard({
@@ -34,6 +37,7 @@ export function ValueCard({
   ctaLabel,
   testId = 'value-card',
   ctaTestId = 'value-card-cta',
+  titleComponent = 'h3',
 }: ValueCardProps) {
   return (
     <Card
@@ -63,17 +67,9 @@ export function ValueCard({
           transformOrigin: 'left',
           transition: 'transform 260ms ease',
         },
-        // Soft primary light-bleed from the top-right corner on hover.
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          inset: 0,
-          background: (theme) =>
-            `radial-gradient(140px 140px at 88% -12%, ${alpha(theme.palette.primary.main, 0.18)}, transparent 70%)`,
-          opacity: 0,
-          transition: 'opacity 260ms ease',
-          pointerEvents: 'none',
-        },
+        // (redesign-stage-2 §6.3 — the named remove-one-accessory cut: the `::after` hover
+        // radial light-bleed is GONE. Same generic radial-glow vocabulary the stage removes from
+        // the hero; the card keeps its lift, top-edge wipe, border accent, icon scale, CTA nudge.)
         // Hover lift (e2): neutral depth carries the elevation; the primary border + a faint brand
         // bleed are the accent rim (was a pure colored glow — reads more premium as neutral+rim).
         '&:hover': {
@@ -83,7 +79,6 @@ export function ValueCard({
             `${elevationFor(theme).e2}, 0 10px 30px -18px ${alpha(theme.palette.primary.main, 0.3)}`,
         },
         '&:hover::before': { transform: 'scaleX(1)' },
-        '&:hover::after': { opacity: 1 },
         '&:hover [data-testid="value-card-icon"]': {
           transform: 'scale(1.08)',
           boxShadow: (theme) =>
@@ -96,7 +91,7 @@ export function ValueCard({
           '&:hover': { transform: 'none' },
           '&:hover [data-testid="value-card-icon"]': { transform: 'none' },
           '&:hover [data-testid="value-card-cta"]': { transform: 'none' },
-          '&::before, &::after': { transition: 'none' },
+          '&::before': { transition: 'none' },
         },
       }}
     >
@@ -120,7 +115,7 @@ export function ValueCard({
           >
             {icon}
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" component={titleComponent} sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', flexGrow: 1 }}>

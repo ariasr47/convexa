@@ -31,16 +31,17 @@
  *    `[score-change-is-deliberate-and-measured]`'s enabler, never its exerciser.
  *  - `[theme-token-discipline]` — MUI theme tokens only; zero hardcoded hex; dark/light parity.
  */
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Chip, Divider, Stack, Tooltip, Typography } from '@mui/material';
-import { useCallback, useMemo, useState } from 'react';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { ArcDivider } from '@/shared/ui/ArcDivider';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
+import { useCallback, useMemo, useState } from 'react';
 import { ArchiveBlock } from './ArchiveBlock';
 import {
   cellLines,
+  TR_ADJACENT_LABEL,
   TR_ADVISORY,
   TR_AIREC_PATH_NOTE,
-  TR_ADJACENT_LABEL,
   TR_BADGE,
   TR_BASIS_DEF,
   TR_BREAKDOWN_G2,
@@ -154,13 +155,7 @@ function CellView({ cell, sourcesComplete }: { cell: Cell; sourcesComplete: bool
   );
 }
 
-function FamilyView({
-  family,
-  sourcesComplete,
-}: {
-  family: CellFamily;
-  sourcesComplete: boolean;
-}) {
+function FamilyView({ family, sourcesComplete }: { family: CellFamily; sourcesComplete: boolean }) {
   const c = family.coverage;
   return (
     <Box sx={{ mb: 2.5 }} data-testid={`tr-family-${family.key}`}>
@@ -277,10 +272,7 @@ function ExclusionBreakdown({ read }: { read: LedgerRead }) {
             {TR_ADJACENT_LABEL[k]} · {coverage.adjacent[k]}
           </Typography>
         ))}
-        <Typography
-          variant="caption"
-          sx={{ display: 'block', color: 'text.secondary', mt: 0.5 }}
-        >
+        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 0.5 }}>
           {trBreakdownG2Note(m)}
         </Typography>
       </Box>
@@ -341,7 +333,9 @@ export function TrackRecordSection({ personaLabel }: TrackRecordSectionProps) {
 
   return (
     <Box component="section" data-testid="track-record" sx={{ mt: 4 }}>
-      <Divider sx={{ mb: 3 }} />
+      {/* The book ↔ "Track record" section seam — the shared ArcDivider (redesign-stage-2 §5.2
+          seam #2, a named seam pin in arc.spec.ts). */}
+      <ArcDivider sx={{ mb: 3 }} />
 
       {/* ---- Header ---- */}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: '4px' }}>

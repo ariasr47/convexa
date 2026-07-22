@@ -537,8 +537,12 @@ describe('invariants (positions)', () => {
     // After the (UI-only) rebrand, the pre-seeded position is present — the store key did not change.
     expect(await screen.findByTestId('position-row')).toBeInTheDocument();
     expect(allPositions().some((p) => p.id === 'pre-rebrand-1')).toBe(true);
-    // And the visible brand is Convexa, not GammaFlow (UI-only swap).
-    expect(within(screen.getByTestId('shell-brand')).getByText('Convexa')).toBeInTheDocument();
+    // And the visible brand is Convexa, not GammaFlow (UI-only swap). Since redesign-stage-2 the
+    // lockup renders caps text + the arc-X glyph; `aria-label="Convexa"` is the STABLE accessible
+    // name (FRONTEND_EXECUTION_CONTRACT §3.2 / §10-6).
+    expect(
+      within(screen.getByTestId('shell-brand')).getByRole('img', { name: 'Convexa' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('GammaFlow')).toBeNull();
   });
 });
