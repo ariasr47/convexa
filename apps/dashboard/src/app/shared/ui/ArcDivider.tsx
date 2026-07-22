@@ -16,8 +16,11 @@ import type { SxProps, Theme } from '@mui/material/styles';
 
 /** Reserved divider height in px (contract §5.1: ~16–24, fixed). */
 const HEIGHT = 20;
-/** Shallow bow: control offset 4 units up → apex rise 2px ≈ 10% of height (a breath, not a hill). */
-const ARC_PATH = bowedArcPath([0, 17], [1200, 17], 4);
+/** Shallow bow, DEEPENED at redesign-stage-3 §5.4: control offset 4 → 8 (apex rise ≈ 4px ≈ 20%
+ *  of the 20px box). The Stage-2 2px apex rendered sub-perceptual at 1440 — a signature nobody
+ *  can see is absence, not restraint. Still a breath, not a hill: stroke stays `divider` @ 1px,
+ *  height/box unchanged, no amber. (±latitude 6–10 finalized at the §8-R4 render pass.) */
+const ARC_PATH = bowedArcPath([0, 17], [1200, 17], 8);
 
 export interface ArcDividerProps {
   /** Margin/spacing carried over from the replaced `<Divider/>` call site. */

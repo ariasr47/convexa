@@ -41,7 +41,7 @@ import { usePersona } from '@/features/personas/usePersona';
 import { AiKeySection } from './AiKeySection';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { avatarInitial, GRADIENT_AVATAR_SX } from './avatar';
+import { avatarInitial, AVATAR_SX } from './avatar';
 import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
 import { useSettings } from './useSettings';
 
@@ -157,7 +157,7 @@ export function SettingsPage() {
               sx={{ alignItems: 'center' }}
               data-testid="settings-account-signed-in"
             >
-              <Box sx={GRADIENT_AVATAR_SX} aria-hidden>
+              <Box sx={AVATAR_SX} aria-hidden>
                 {avatarInitial(auth.user)}
               </Box>
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>

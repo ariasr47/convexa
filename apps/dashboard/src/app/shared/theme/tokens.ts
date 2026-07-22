@@ -125,6 +125,14 @@ export const extras = {
   hatchAlt: '#101520', //   just-off-canvas hatch stripe (derived)
   textSecondary: steel,
   textDisabled: 'rgba(138, 155, 180, 0.5)',
+  /**
+   * The TEXT-GRADE amber (redesign-stage-3 §5.2) — for body/label-size (<18px) amber text
+   * (coming-soon pills, the LOCKED chip, tier words, chip labels, the COPY buttons).
+   * Dark = `gammaAmber` UNCHANGED (dark renders byte-identical; measured 9.60:1 on ink,
+   * 8.76:1 on panel — ≥4.5 text class, pinned in stage3-amber.spec.ts). `primary.main`
+   * remains the FILL/UI amber (buttons, bars, borders, icons — the ≥3:1 class).
+   */
+  textAmber: gammaAmber,
 } as const;
 
 /** Light-scheme counterparts, same keys. Raised panels sit a soft warm-grey above white paper;
@@ -134,6 +142,14 @@ export const extrasLight: Record<keyof typeof extras, string> = {
   hatchAlt: '#EFEFEA',
   textSecondary: 'rgba(0, 0, 0, 0.6)',
   textDisabled: 'rgba(0, 0, 0, 0.38)',
+  /**
+   * Light text-grade amber — the §5.2 candidate `#8F5C0F` SHIPPED after passing the hard
+   * measurement gate (computed in stage3-amber.spec.ts): 5.23:1 on paper `#F6F6F3`,
+   * 5.67:1 on white, 4.81:1 composited over the worst tint fill it sits on
+   * (`alpha(amberDeep, 0.16)` on white). `amberDeep` alone measures ~3.0–3.3 — legal for
+   * UI fills, a WCAG failure as body text; this slot closes that flag.
+   */
+  textAmber: '#8F5C0F',
 } as const;
 
 /** Resolve the mode-correct extras inside an `sx`/styled `theme` callback. */
@@ -141,17 +157,15 @@ export const extrasFor = (theme: {
   palette: { mode: string };
 }): Record<keyof typeof extras, string> => (theme.palette.mode === 'light' ? extrasLight : extras);
 
-/**
- * Brand gradient — the fixed amber brand MARK treatment (the account avatar + the Sign-up pill).
- * Deliberately mode-INVARIANT (logo-like: it does NOT shift with the theme), built from the
- * brand amber tokens (gammaAmber → amberDeep). The blue→violet gradient is retired; the mark
- * geometry itself is rebuilt in Stage 2.
- */
-export const brandGradient = `linear-gradient(135deg, ${gammaAmber}, ${amberDeep})` as const;
+// `brandGradient` was DELETED at redesign-stage-3 (§5.1): the skill bans the gradient-brand
+// vocabulary ("the gradient mark is dead") and both consumers (the account avatar + the Sign-up
+// pill) were rebound to flat `primary.main` + `primary.contrastText` — which also fixed their
+// measured-broken white-on-amber labels (~2:1). A token with zero consumers is a standing
+// invitation to re-sprinkle; stage1-tokens.spec.ts pins its ABSENCE (the `accentViolet` precedent).
 
 /**
  * Categorical chart palette — operator/diagnostic series colors (Tableau-10 subset). Deliberately
- * mode-INVARIANT (like `brandGradient`) and deliberately NON-brand: these are non-semantic,
+ * mode-INVARIANT and deliberately NON-brand: these are non-semantic,
  * colorblind-distinguishable series hues for `/_ops/metrics` only, off the trader path. The
  * brand palette does not govern diagnostic series hues (redesign-stage-1 §3.2 — UNCHANGED).
  */

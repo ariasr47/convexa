@@ -43,8 +43,10 @@ const EXEMPT: Record<string, string> = {
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the
-  // theme-invariant `chartCategorical` group (the `brandGradient` precedent). The liveness
-  // invariant below is what forced their removal — a stale exemption fails the suite by design.
+  // theme-invariant `chartCategorical` group. (Its one-time companion `brandGradient` was itself
+  // deleted at redesign-stage-3 §5.1 — zero consumers; stage1-tokens.spec pins the absence.)
+  // The liveness invariant below is what forced their removal — a stale exemption fails the
+  // suite by design.
 };
 
 /** `/src/app/pages/foo.tsx` → `pages/foo.tsx` (app-relative, matching the EXEMPT keys). */

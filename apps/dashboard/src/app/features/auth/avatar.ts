@@ -1,14 +1,15 @@
 /**
- * Gradient-avatar helpers — single-sourced so the nav profile (AccountControl) and the Settings
- * Account panel render the IDENTICAL 32px circle (convexa-redesign Figma `4:2572`, README §1/§6).
+ * Avatar helpers — single-sourced so the nav profile (AccountControl) and the Settings Account
+ * panel render the IDENTICAL 32px circle (convexa-redesign Figma `4:2572`, README §1/§6).
  *
- * The blue→violet brand gradient is single-sourced as `brandGradient` in `tokens.ts` — a fixed,
- * mode-invariant brand mark (was the contract-permitted hardcoded literal); everything else is theme
- * tokens.
+ * redesign-stage-3 §5.1: the gradient treatment is RETIRED with the `brandGradient` token (the
+ * skill's "the gradient mark is dead" + the measured-broken white-on-amber label ~2:1). The disc
+ * is now a flat brand-amber fill via theme slots — `primary.main` + `primary.contrastText`
+ * (9.60:1 dark) — mode-aware by construction (the "logo-like invariance" rationale died with
+ * the gradient).
  */
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { AuthUser } from '@org/api';
-import { brandGradient } from '@/shared/theme/tokens';
 
 /** The user's initial (display name first, else email), uppercased; a neutral dot when unknown. */
 export function avatarInitial(user: AuthUser | null | undefined): string {
@@ -16,8 +17,8 @@ export function avatarInitial(user: AuthUser | null | undefined): string {
   return source ? source[0].toUpperCase() : '•';
 }
 
-/** The shared 32px gradient-circle styling (white 600 initial centered). */
-export const GRADIENT_AVATAR_SX: SxProps<Theme> = {
+/** The shared 32px brand-amber disc (contrast-safe initial centered, token slots only). */
+export const AVATAR_SX: SxProps<Theme> = {
   width: 32,
   height: 32,
   borderRadius: '50%',
@@ -25,9 +26,9 @@ export const GRADIENT_AVATAR_SX: SxProps<Theme> = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  color: 'common.white',
   fontWeight: 600,
   fontSize: '0.85rem',
   lineHeight: 1,
-  background: brandGradient,
+  bgcolor: 'primary.main',
+  color: 'primary.contrastText',
 };
