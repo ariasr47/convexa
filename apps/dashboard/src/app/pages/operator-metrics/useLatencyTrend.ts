@@ -73,7 +73,11 @@ export function useLatencyTrend() {
 
   const append = useCallback((key: string, s: StoredSample) => {
     const arr = seriesRef.current.get(key) ?? [];
-    arr.push(s);
+    // One sample per ms per scope: concurrent polls (StrictMode remount, cadence-change races)
+    // can land on the same client_ts; duplicates also collide recharts' per-point axis-tick keys.
+    const last = arr[arr.length - 1];
+    if (last && last.client_ts === s.client_ts) arr[arr.length - 1] = s;
+    else arr.push(s);
     const cutoff = Date.now() - AGE_MAX_MS;
     let pruned = arr.filter((x) => x.client_ts >= cutoff);
     if (pruned.length > COUNT_CAP) pruned = pruned.slice(pruned.length - COUNT_CAP);
