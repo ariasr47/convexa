@@ -1,6 +1,6 @@
 # redesign-stage-0 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; quality-floor repair, no identity work)
-Stage:        Q4(a) decided — brief written; UX lane NOT yet launched (pre-pipeline)
+Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
 Repos:        frontend only (NO_BACKEND_CHANGE — the empty apps/api diff is part of the proof)
 Brief:        BRIEF.md present
 Contracts:
@@ -9,7 +9,10 @@ Contracts:
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a (consumes existing endpoints unchanged)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  n/a (next artifact — UX lane authors it)
+  - FRONTEND_EXECUTION_CONTRACT.md  locked (2026-07-22; lint 0/0; §10's five open questions
+    ACCEPTED as ruled by the conductor — chart-tick floor exemption · AppShell-level <main>,
+    Landing at Stage 2 · operator page off the 393 route set · clickable-div resolved in
+    rendered DOM · rebase-conflict escalation rule)
 Open amendments: none
 QA (GATE Q):  n/a (pending build; battery = nx test + tsc -b --force + nx typecheck + lint +
               real-browser render pass 1440/393 both schemes)
