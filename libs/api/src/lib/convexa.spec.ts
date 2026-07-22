@@ -19,7 +19,7 @@ import {
 } from './convexa';
 
 function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise<Response>) {
-  const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+  const fn = vi.fn(async (input: string | URL | Request, init?: RequestInit) =>
     impl(String(input), init),
   );
   vi.stubGlobal('fetch', fn);
