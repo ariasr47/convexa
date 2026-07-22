@@ -100,7 +100,7 @@ function CharmSection({ charm }: { charm: NonNullable<Dfp['charm']> }) {
   return (
     <LimbCard testid="dfp-charm">
       <LimbLabel label={CHARM_LABEL} info={charmInfo(charm.opex_date)} />
-      <Typography variant="h6" sx={{ fontFamily: MONO }} data-testid="dfp-charm-drift">
+      <Typography variant="h6" component="p" sx={{ fontFamily: MONO }} data-testid="dfp-charm-drift">
         {fmtSignedUsdCompact(charm.projected_delta)} delta drift
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="dfp-charm-horizon">
@@ -123,7 +123,7 @@ function VannaSection({ vanna }: { vanna: NonNullable<Dfp['vanna']> }) {
   return (
     <LimbCard testid="dfp-vanna">
       <LimbLabel label={VANNA_LABEL} info={VANNA_INFO} />
-      <Typography variant="h6" sx={{ fontFamily: MONO }} data-testid="dfp-vanna-base">
+      <Typography variant="h6" component="p" sx={{ fontFamily: MONO }} data-testid="dfp-vanna-base">
         {fmtSignedUsdCompact(vanna.projected_delta)} on +1 IV pt
       </Typography>
       <Typography

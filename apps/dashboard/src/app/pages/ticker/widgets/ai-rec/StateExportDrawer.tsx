@@ -195,7 +195,7 @@ function ExportSection({
         </Typography>
         <Button
           onClick={() => onCopy(text)}
-          sx={{ minWidth: 0, p: 0.25, fontSize: 10, color: 'primary.main' }}
+          sx={{ minWidth: 0, p: 0.25, fontSize: 11, color: 'primary.main' }}
         >
           COPY
         </Button>
@@ -220,7 +220,7 @@ function ExportSection({
           borderColor: 'divider',
           color: 'text.secondary',
           fontFamily: typographyTokens.monoFontFamily,
-          fontSize: 10,
+          fontSize: 11,
           lineHeight: 1.6,
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',

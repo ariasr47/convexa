@@ -16,8 +16,12 @@ export function AppShell() {
   return (
     <Box data-testid="app-shell">
       <TopNav />
-      {/* The active in-shell page renders here. The bar above persists across page swaps. */}
-      <Outlet />
+      {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0
+          item 3 — covers every in-shell route with a single change; Landing is outside the shell
+          and is deferred to its Stage 2 rework). The bar above persists across page swaps. */}
+      <Box component="main">
+        <Outlet />
+      </Box>
     </Box>
   );
 }

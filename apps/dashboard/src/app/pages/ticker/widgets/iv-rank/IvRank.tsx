@@ -150,8 +150,10 @@ function ComputedBody({ read }: { read: IvRankRead }) {
         ) : (
           <>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'baseline' }}>
+              {/* Data value, not a heading (Stage 0 item 3): h4 STYLING kept, <p> element. */}
               <Typography
                 variant="h4"
+                component="p"
                 sx={{ fontFamily: MONO, fontWeight: 700 }}
                 data-testid="ivr-rank-value"
               >

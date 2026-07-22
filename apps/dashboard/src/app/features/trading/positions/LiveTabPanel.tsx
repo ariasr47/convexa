@@ -56,7 +56,7 @@ export function LiveTabPanel() {
         sx={{
           display: 'inline-block',
           mt: '14px',
-          fontSize: '0.68rem',
+          fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
           fontWeight: 600,
           textTransform: 'uppercase',
           color: 'warning.main',

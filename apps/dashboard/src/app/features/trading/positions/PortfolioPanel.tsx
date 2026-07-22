@@ -119,7 +119,7 @@ export function PortfolioPanel({
           <Box
             component="span"
             sx={{
-              fontSize: '0.62rem',
+              fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
               fontWeight: 700,
               color: 'success.main',
               border: '1px solid',

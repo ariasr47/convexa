@@ -76,7 +76,7 @@ export function Scanner() {
           <Box
             component="span"
             sx={{
-              fontSize: '0.68rem',
+              fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
               fontWeight: 600,
               letterSpacing: '.04em',
               textTransform: 'uppercase',

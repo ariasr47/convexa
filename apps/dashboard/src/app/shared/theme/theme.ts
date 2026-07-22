@@ -16,6 +16,38 @@ const COMMON = {
     h6: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.25 },
   },
   components: {
+    // ---- Stage 0 quality floor (redesign-stage-0, FRONTEND_EXECUTION_CONTRACT §3 items 2 + 4) ----
+    // THE authored `:focus-visible` ring + the coarse-pointer touch-target floor, both defined ONCE
+    // here at the theme layer so every component inherits them (no per-component bespoke rings).
+    // Token-bound by construction: the ring color reads the live theme's `primary.main`, so it is
+    // mode-aware (dark + light) with zero literals.
+    MuiCssBaseline: {
+      styleOverrides: (theme: Theme) => ({
+        // The one authored focus ring — plain 2px primary outline + offset. `:focus-visible` (not
+        // `:focus`) so mouse-click focus stays ringless while keyboard focus is always visible.
+        '*:focus-visible': {
+          outline: `2px solid ${theme.palette.primary.main}`,
+          outlineOffset: '2px',
+        },
+        // Matching treatment for MUI ButtonBase descendants (buttons, icon buttons, menu items,
+        // toggle pills): ButtonBase resets `outline: 0` at (0,1,0), so this (0,2,0) selector pair
+        // restores the SAME ring for both the native pseudo-class and MUI's focus-visible class.
+        '.MuiButtonBase-root:focus-visible, .MuiButtonBase-root.Mui-focusVisible': {
+          outline: `2px solid ${theme.palette.primary.main}`,
+          outlineOffset: '2px',
+        },
+        // Touch-target floor (≥44px effective hit area) on touch/coarse pointers only — desktop
+        // density is unchanged. Inline (`display: inline`) prose links are structurally unaffected
+        // (min-height/min-width don't apply to non-replaced inline boxes); buttons, icon buttons,
+        // and block/inline-block CTAs grow to the floor.
+        '@media (pointer: coarse)': {
+          'button, [role="button"], a': {
+            minHeight: 44,
+            minWidth: 44,
+          },
+        },
+      }),
+    },
     // Buttons read in sentence case across the redesign (Figma Button labels are sentence-case),
     // not MUI's default UPPERCASE. Presentation-only default; no behavior/score path change.
     MuiButton: {
