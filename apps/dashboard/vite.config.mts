@@ -40,6 +40,9 @@ export default defineConfig(() => ({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
+    // Headroom over the 5s default: with asyncUtilTimeout at 5s (test-setup.ts), a slow-but-passing
+    // test on a loaded CI runner can legitimately exceed 5s of wall clock.
+    testTimeout: 15000,
     // MUI's ESM build imports react-transition-group via a directory import that Node's native ESM
     // loader can't resolve when these packages are externalized. Inline them so Vite transforms the
     // modules and resolves those imports itself.

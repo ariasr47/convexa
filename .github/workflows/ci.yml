@@ -19,11 +19,6 @@ jobs:
           filter: tree:0
           fetch-depth: 0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="e2e-ci"
-
       # Cache node_modules
       - uses: actions/setup-node@v4
         with:
@@ -32,9 +27,11 @@ jobs:
 
       - run: npm ci
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      - run: npx nx record -- npx nx format:check  --base="remotes/origin/main"
-      - run: npx nx run-many -t lint test build typecheck e2e-ci
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
-        if: always()
+      - run: npx nx format:check --base="remotes/origin/main"
+      # This workspace is not connected to Nx Cloud, so the Cloud-only steps
+      # (start-ci-run, record, fix-ci, the atomized e2e-ci target) are omitted;
+      # plain "e2e" runs the Cypress suite in a single task instead. It gets its
+      # own step so the dev server + browser never compete with the vitest
+      # workers for the runner's CPUs (that contention flaked the unit tests).
+      - run: npx nx run-many -t lint test build typecheck
+      - run: npx nx run dashboard-e2e:e2e
