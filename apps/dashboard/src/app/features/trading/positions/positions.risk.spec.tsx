@@ -21,6 +21,9 @@
  *
  * Mocks ONLY the network boundary (`fetch` + the SSE `EventSource`); never a live backend.
  */
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { AUTH_COPY } from '@/features/auth/copy';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
 import { streamTicker } from '@org/api';
@@ -28,9 +31,6 @@ import { act, cleanup, render, screen, waitFor, within } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthProvider } from '@/features/auth/AuthContext';
-import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { AUTH_COPY } from '@/features/auth/copy';
 import { LiveTabPanel } from './LiveTabPanel';
 // The Vite `?raw` idiom (fileURLToPath(new URL(...)) THROWS in this Vitest env): the Live tab's
 // zero-import lock is asserted on the SOURCE TEXT, so it is enforced by construction.
@@ -617,16 +617,15 @@ describe('positions · no-real-order-path', () => {
   it('LiveTabPanel is inert BY CONSTRUCTION: its import allowlist admits no data source, and it renders no affordance', () => {
     // Source-text scan (comments stripped so prose can't false-positive): every import specifier
     // must be MUI, the static copy module, or the static hatch value — nothing live, ever.
-    const src = liveTabSource
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+    const src = liveTabSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(0);
     const allowed = [/^@mui\//, /^@\/shared\/ui\/ComingSoonBox$/, /^\.\/labels$/];
     for (const spec of specifiers) {
-      expect(allowed.some((re) => re.test(spec)), `forbidden import in LiveTabPanel: ${spec}`).toBe(
-        true,
-      );
+      expect(
+        allowed.some((re) => re.test(spec)),
+        `forbidden import in LiveTabPanel: ${spec}`,
+      ).toBe(true);
     }
     // No transport escape hatches either (an inline fetch/EventSource would bypass imports).
     expect(src).not.toMatch(/\bfetch\s*\(/);

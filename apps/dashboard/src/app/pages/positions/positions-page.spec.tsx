@@ -25,7 +25,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '@/app';
-import { theme } from '@/shared/theme/theme';
 import {
   __resetMemory,
   allPositions,
@@ -37,6 +36,7 @@ import {
 } from '@/features/trading/positions/store';
 import type { Position } from '@/features/trading/positions/types';
 import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
+import { theme } from '@/shared/theme/theme';
 
 function strike(s: number): StrikeRow {
   return {
