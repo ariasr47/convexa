@@ -4,10 +4,13 @@
  *
  * Two structural guards:
  *   1. RENDERED-STYLESHEET presence — the theme's `MuiCssBaseline` override injects the ONE global
- *      ring (2px `primary.main` outline + offset) for `*:focus-visible` AND the matching MUI
- *      ButtonBase treatment, in BOTH modes (the ring is token-bound: dark and light each bind to
- *      their own `primary.main`). The coarse-pointer ≥44px touch-target floor rides the same
- *      baseline override and is asserted here too (item 4).
+ *      ring (2px amber outline + offset) for `*:focus-visible` AND the matching MUI
+ *      ButtonBase treatment, in BOTH modes. Ring color = the mode's TEXT-GRADE amber
+ *      (`extrasFor(theme).textAmber` — redesign-stage-3 GATE Z B2 ruling: dark ≡ gammaAmber ≡
+ *      primary.main byte-identical; light = #8F5C0F because amberDeep measured 2.76:1 on the
+ *      raised light surface, below the 3:1 ring floor — ratios pinned in stage3-amber.spec.ts).
+ *      The coarse-pointer ≥44px touch-target floor rides the same baseline override and is
+ *      asserted here too (item 4).
  *   2. SOURCE-SCAN (`?raw`, mutation-tested) — no component may set `outline: 'none'` (or 0) without
  *      an in-file `:focus-visible` replacement. The `Widget.tsx` frame is the accounted case: it
  *      keeps `outline: 'none'` for ringless MOUSE selection and now carries its own
@@ -23,6 +26,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import widgetSource from '@/shared/ui/Widget/Widget?raw';
 import { lightTheme, theme } from './theme';
+import { extrasFor } from './tokens';
 
 // ---- 1. Rendered-stylesheet presence -----------------------------------------------------------
 
@@ -40,7 +44,7 @@ describe('authored :focus-visible ring — injected ONCE at the theme layer, bot
   it.each([
     ['dark', theme],
     ['light', lightTheme],
-  ])('%s mode: global ring + ButtonBase treatment bound to that mode’s primary token', (_mode, t) => {
+  ])('%s mode: global ring + ButtonBase treatment bound to that mode’s textAmber token', (_mode, t) => {
     render(
       <ThemeProvider theme={t}>
         <CssBaseline />
@@ -48,7 +52,9 @@ describe('authored :focus-visible ring — injected ONCE at the theme layer, bot
       </ThemeProvider>,
     );
     const css = injectedCss();
-    const ring = `outline:2pxsolid${t.palette.primary.main}`.replace(/\s+/g, '');
+    // GATE Z B2 ruling (stage 3): the ring binds the mode's text-grade amber. Dark stays
+    // byte-identical to primary.main (gammaAmber); light is the ≥3.0-everywhere #8F5C0F.
+    const ring = `outline:2pxsolid${extrasFor(t).textAmber}`.replace(/\s+/g, '');
 
     // The one global rule (keyboard focus only — :focus-visible, not :focus).
     expect(css).toContain(`*:focus-visible{${ring}`);

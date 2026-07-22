@@ -101,25 +101,31 @@ describe('§8-7 · textAmber contrast pins (computed, not asserted-by-hand)', ()
   });
 });
 
-describe('§8B-2 · focus-ring contrast on the FINAL surfaces (ring ≡ primary by construction)', () => {
-  it('dark ring (gammaAmber) ≥3:1 over ink / panel / panelRaised', () => {
-    expect(contrast(GAMMA_AMBER, INK)).toBeGreaterThanOrEqual(3); //               9.60
-    expect(contrast(GAMMA_AMBER, PANEL)).toBeGreaterThanOrEqual(3); //             8.76
-    expect(contrast(GAMMA_AMBER, PANEL_RAISED_DARK)).toBeGreaterThanOrEqual(3); // 7.82
+describe('§8B-2 · focus-ring contrast on the FINAL surfaces (ring ≡ the mode textAmber — GATE Z B2 ruling)', () => {
+  // The B2 finding (light primary.main/amberDeep measured 2.76 on #ECECE7 — below the 3:1 ring
+  // floor) was ruled IN-SCOPE and FIXED: the theme-layer ring now binds `extrasFor(theme)
+  // .textAmber` in both modes. Dark renders byte-identical (textAmber ≡ gammaAmber ≡
+  // primary.main); light gets the ≥3.0-everywhere ring these pins enforce.
+  it('dark ring (textAmber ≡ gammaAmber ≡ primary.main) ≥3:1 over ink / panel / panelRaised', () => {
+    expect(extras.textAmber).toBe(GAMMA_AMBER); // dark ring is byte-identical to the brand ring
+    expect(contrast(extras.textAmber, INK)).toBeGreaterThanOrEqual(3); //               9.60
+    expect(contrast(extras.textAmber, PANEL)).toBeGreaterThanOrEqual(3); //             8.76
+    expect(contrast(extras.textAmber, PANEL_RAISED_DARK)).toBeGreaterThanOrEqual(3); // 7.82
   });
 
-  it('light ring (amberDeep) ≥3.0 over paper and white (the Stage-1 3.02 re-pinned)', () => {
+  it('light ring (textAmber #8F5C0F) ≥3.0 over EVERY light surface it can land on', () => {
+    const ring = extrasLight.textAmber;
+    expect(contrast(ring, PAPER)).toBeGreaterThanOrEqual(3.0); //              measured 5.23
+    expect(contrast(ring, WHITE)).toBeGreaterThanOrEqual(3.0); //              measured 5.67
+    expect(contrast(ring, PANEL_RAISED_LIGHT)).toBeGreaterThanOrEqual(3.0); // measured 4.78 (was the 2.76 fail on amberDeep)
+    expect(contrast(ring, extrasLight.hatchAlt)).toBeGreaterThanOrEqual(3.0); // measured 4.91
+  });
+
+  it("the Widget frame's in-component ring surface still passes: amberDeep ≥3.0 on paper (its only host)", () => {
+    // Widget.tsx keeps its accounted in-component `primary.main` ring; widget frames sit on
+    // background.default (paper) only — the Stage-1 3.02 re-pinned.
     expect(contrast(AMBER_DEEP, PAPER)).toBeGreaterThanOrEqual(3.0); // measured 3.019
     expect(contrast(AMBER_DEEP, WHITE)).toBeGreaterThanOrEqual(3.0); // measured 3.27
-  });
-
-  it('light ring over panelRaised (#ECECE7): measured 2.76 — RECORDED below the 3.0 floor, regression-pinned', () => {
-    // §8B finding, REPORTED not patched (repairs beyond §5.6 are out of the re-audit's scope):
-    // the 2px amber ring on the light RAISED surface measures 2.76:1. Flagged for the
-    // conductor's eyes-on (B2's review half). This pin only stops it silently getting worse.
-    const r = contrast(AMBER_DEEP, PANEL_RAISED_LIGHT);
-    expect(r).toBeLessThan(3.0); // the honest record — remove when the surface/ring is retuned
-    expect(r).toBeGreaterThanOrEqual(2.7);
   });
 });
 
