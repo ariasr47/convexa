@@ -377,6 +377,20 @@ describe('positions · end-to-end flow (centerpiece)', () => {
   }, 20000);
 });
 
+// Waits until the mocked network is quiet (no new fetch across two consecutive 50ms polls). A
+// fetch-count invariant snapshotted while earlier requests are still landing races on a slow
+// runner: the straggler shows up in the "after" count and gets blamed on the interaction.
+async function fetchSettled() {
+  const mock = globalThis.fetch as ReturnType<typeof vi.fn>;
+  let last = -1;
+  await waitFor(() => {
+    if (mock.mock.calls.length !== last) {
+      last = mock.mock.calls.length;
+      throw new Error('network still active');
+    }
+  });
+}
+
 // =================================================================================================
 // 2. Customization is a pure re-derivation — never a refetch
 // =================================================================================================
@@ -394,6 +408,7 @@ describe('positions · grouping is a pure re-derivation', () => {
     await user.click(within(dlg2).getByRole('button', { name: 'Open simulated position' }));
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(2));
 
+    await fetchSettled();
     const fetchCallsBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
 
     // Group by ticker (segmented pill control) → a subtotal header appears, with no extra fetch.
@@ -527,6 +542,7 @@ describe('positions · failure isolation', () => {
     expect(screen.getAllByTestId('cell-mark').length).toBeGreaterThan(0); // the healthy row still marks
 
     // --- Live tab: no positions, no entry, no order, no network call ---
+    await fetchSettled();
     const fetchBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
     await user.click(screen.getByTestId('tab-live'));
     expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();

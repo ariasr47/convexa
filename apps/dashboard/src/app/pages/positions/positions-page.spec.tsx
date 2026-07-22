@@ -19,7 +19,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { StrikeRow, TickerBundle, TrackedContract } from '@org/api';
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -487,12 +487,26 @@ describe('track-record (outcome-ledger)', () => {
   });
 });
 
+// Waits until the mocked network is quiet (no new fetch across two consecutive 50ms polls). A
+// fetch-count invariant snapshotted while mount-time requests are still landing races on a slow
+// runner: the straggler shows up in the "after" count and gets blamed on the interaction.
+async function fetchSettled() {
+  let last = -1;
+  await waitFor(() => {
+    if (fetchMock.mock.calls.length !== last) {
+      last = fetchMock.mock.calls.length;
+      throw new Error('network still active');
+    }
+  });
+}
+
 describe('invariants (positions)', () => {
   it('Positions Live tab stays LOCKED', async () => {
     const user = userEvent.setup();
     seedPosition();
     renderAt('/positions');
     await screen.findByTestId('portfolio-panel');
+    await fetchSettled();
     const fetchBefore = fetchMock.mock.calls.length;
     await user.click(screen.getByTestId('tab-live'));
     // The zero-import LOCKED placeholder; no position rows, no entry affordance, no extra network call.
