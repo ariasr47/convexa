@@ -18,7 +18,7 @@ export function TintChip({ tone, label }: { tone: Tone; label: string }) {
         px: 0.75,
         py: '2px',
         borderRadius: '999px',
-        fontSize: 9,
+        fontSize: 11, // chip/label type floor ≥11px (Stage 0 item 4; 9px was the documented failure)
         fontWeight: 500,
         letterSpacing: '0.02em',
         whiteSpace: 'nowrap',

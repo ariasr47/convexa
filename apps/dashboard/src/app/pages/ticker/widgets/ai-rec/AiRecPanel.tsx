@@ -261,7 +261,7 @@ export function AiRecPanel({
                 color: 'text.disabled',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 500,
                 mb: 0.5,
               }}
@@ -305,7 +305,7 @@ export function AiRecPanel({
                 color: 'text.disabled',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 500,
                 mb: 0.5,
               }}
@@ -828,7 +828,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         color: 'text.disabled',
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 500,
         mb: 0.5,
       }}

@@ -65,8 +65,11 @@ export function useStatusAnnouncement(orders: SimOrder[]): string {
 
 const srOnly = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  // '1px' STRINGS, deliberately: in MUI sx a bare numeric width/height <= 1 means a PERCENTAGE
+  // (width: 1 -> '100%'), which made this "1px" sr-only span a full-width absolute box that
+  // overhung the 393px viewport (caught by the Stage 0 no-overflow enforcement row).
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',

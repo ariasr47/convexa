@@ -69,10 +69,14 @@ export function Landing() {
                 lineHeight: 1.08,
               }}
             >
-              See the AI read on your real positioning.
+              See the dealer positioning behind the price.
             </Typography>
+            {/* Honest hero (redesign-stage-0 §4.3, `[no-real-order-path]`): sells ONLY today-working
+                value — no connect-your-positions / real-risk claim. The hatched "Connect a real
+                brokerage — Coming soon" card below stays the ONLY place the future capability appears. */}
             <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 620 }}>
-              Connect your positions and get an AI read on your real risk — grounded in live{' '}
+              Gamma walls, the flip, and live order flow for any ticker — plus an AI read on the
+              setup and a simulated portfolio to practice it. Grounded in live{' '}
               <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} />, not vibes.
             </Typography>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1 }}>

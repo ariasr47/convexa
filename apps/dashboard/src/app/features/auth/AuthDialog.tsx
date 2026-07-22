@@ -23,7 +23,9 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { AuthError } from '@org/api';
 import { useEffect, useState } from 'react';
 import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
@@ -54,6 +56,8 @@ interface FieldErrors {
 
 export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reason }: Props) {
   const auth = useAuth();
+  // Full-screen sheet on phones; centered dialog at sm+.
+  const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -142,6 +146,7 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
     <Dialog
       open={open}
       onClose={submitting ? undefined : onClose}
+      fullScreen={fullScreen}
       maxWidth="xs"
       fullWidth
       data-testid="auth-dialog"

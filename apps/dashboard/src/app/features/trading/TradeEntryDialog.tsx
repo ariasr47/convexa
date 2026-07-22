@@ -42,7 +42,9 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import { fetchTrackedContract, OptionRight } from '@org/api';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -236,6 +238,8 @@ export function TradeEntryDialog({
   onClose,
   onConfirm,
 }: Props) {
+  // Phones get a full-screen sheet (this form has many fields); tablets+ keep the centered dialog.
+  const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [mode, setMode] = useState<FillMode>('manual');
   const [expiration, setExpiration] = useState('');
   const [strike, setStrike] = useState<number | ''>('');
@@ -421,6 +425,7 @@ export function TradeEntryDialog({
     <Dialog
       open={open}
       onClose={onClose}
+      fullScreen={fullScreen}
       maxWidth="xs"
       fullWidth
       slotProps={{

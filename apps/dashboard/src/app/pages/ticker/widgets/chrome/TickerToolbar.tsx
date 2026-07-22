@@ -46,14 +46,14 @@ function Segment({
   children: ReactNode;
 }) {
   return (
-    <Stack spacing={0.5} sx={{ px: { xs: 0, sm: 1.75 }, py: 0.25, minWidth: 0 }}>
+    <Stack spacing={0.5} sx={{ px: { xs: 0, sm: 1.75 }, py: 0.25, minWidth: 0, maxWidth: '100%' }}>
       <Typography
         component={htmlFor ? 'label' : 'span'}
         htmlFor={htmlFor}
         variant="caption"
         sx={{
           color: 'text.secondary',
-          fontSize: 10.5,
+          fontSize: 11, // label type floor ≥11px (Stage 0 item 4)
           fontWeight: 600,
           lineHeight: 1.2,
           letterSpacing: '0.06em',
@@ -130,7 +130,7 @@ export function TickerToolbar({
       </Segment>
 
       <Segment label="Expirations">
-        <FormControl size="small" sx={{ minWidth: 190 }} disabled={!allDates.length}>
+        <FormControl size="small" sx={{ minWidth: 190, maxWidth: '100%' }} disabled={!allDates.length}>
           <Select
             multiple
             displayEmpty

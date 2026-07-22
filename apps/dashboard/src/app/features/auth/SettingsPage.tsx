@@ -140,8 +140,10 @@ export function SettingsPage() {
         <Typography variant="h1" sx={{ fontSize: '1.9rem', fontWeight: 700 }}>
           {C.title}
         </Typography>
+        {/* Honest, mode-aware subtitle (redesign-stage-0 §4.1): anonymous prefs are client-local —
+            never claim account persistence for a signed-out user. */}
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {C.subtitle}
+          {auth.authenticated ? C.subtitleSignedIn : C.subtitleAnonymous}
         </Typography>
       </Stack>
 

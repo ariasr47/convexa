@@ -172,6 +172,10 @@ export function Widget({
         px: 2,
         pt: 1.5,
         pb: 1,
+        // Below `sm` the actions region may wrap to its own row instead of forcing the header (and
+        // the widget frame) wider than a narrow bento cell (Stage 0 item 1 — widget-header overflow).
+        // The title keeps its ellipsis at every width.
+        flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
       {/* Drag grip — AFFORDANCE ONLY (coming soon). Hover-revealed, cursor:grab, but inert. */}
@@ -200,8 +204,10 @@ export function Widget({
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
           {icon && <Box sx={{ display: 'inline-flex', color: 'text.secondary' }}>{icon}</Box>}
+          {/* h2 ELEMENT (heading order: page h1 → widget h2), h6 STYLING unchanged (Stage 0 item 3). */}
           <Typography
             variant="h6"
+            component="h2"
             sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
           >
             {title}
@@ -219,8 +225,18 @@ export function Widget({
         )}
       </Box>
 
-      {/* Right region: the section's own always-visible actions + the hover toolbar. */}
-      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexShrink: 0 }}>
+      {/* Right region: the section's own always-visible actions + the hover toolbar. May wrap onto
+          its own header row below `sm` (never wider than the widget frame). */}
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{
+          alignItems: 'center',
+          flexShrink: 0,
+          maxWidth: '100%',
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+        }}
+      >
         {actions && (
           <Box sx={{ display: 'flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
             {actions}
@@ -309,7 +325,14 @@ export function Widget({
           borderColor: 'divider',
           borderRadius: '12px',
           overflow: 'clip',
+          // `outline: 'none'` strips the UA default so MOUSE click-to-select stays ringless; the
+          // `&:focus-visible` replacement below keeps KEYBOARD focus on the frame visible (Stage 0
+          // item 2 — the accounted exemption now carries its own in-component ring).
           outline: 'none',
+          '&:focus-visible': {
+            outline: `2px solid ${theme.palette.primary.main}`,
+            outlineOffset: '2px',
+          },
           // Off-screen perf: skip rendering work for widgets not near the viewport.
           contentVisibility: 'auto',
           containIntrinsicSize: '480px 320px',

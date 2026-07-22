@@ -106,7 +106,7 @@ function Segmented<T extends string>({
       {leadingLabel && (
         <Typography
           component="span"
-          sx={{ fontSize: '0.68rem', color: 'text.disabled', pl: '4px', pr: '2px' }}
+          sx={{ fontSize: '0.6875rem', color: 'text.disabled', pl: '4px', pr: '2px' }}
         >
           {leadingLabel}
         </Typography>
@@ -175,9 +175,17 @@ export function CustomizationToolbar({
 
   return (
     <Box data-testid="customization-toolbar">
-      {/* Controls row — REVISION 2: ONE clean row (no wrap) matching the Figma. */}
+      {/* Controls row — REVISION 2: ONE clean row (no wrap) matching the Figma at sm+. Below sm the
+          row WRAPS (Stage 0 item 1 — the measured 952px offender at 393; nothing is removed). */}
       <Box
-        sx={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', mb: '6px' }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          rowGap: '8px',
+          mb: '6px',
+        }}
       >
         {/* View picker (saved views). */}
         <Box
@@ -195,7 +203,7 @@ export function CustomizationToolbar({
             color: 'text.primary',
           }}
         >
-          <Typography component="span" sx={{ fontSize: '0.68rem', color: 'text.disabled' }}>
+          <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.disabled' }}>
             View
           </Typography>
           <Typography component="span" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
@@ -395,6 +403,9 @@ export function CustomizationToolbar({
       <Dialog open={saveAsOpen} onClose={() => setSaveAsOpen(false)}>
         <DialogTitle>Name this view</DialogTitle>
         <DialogContent>
+          {/* autoFocus KEPT, justified (redesign-stage-0 §3 item 4): moving focus into a
+              just-opened modal's single field is the expected a11y behavior — the WCAG
+              "sparingly" carve-out, not a focus-steal. */}
           <TextField
             autoFocus
             size="small"
@@ -427,6 +438,9 @@ export function CustomizationToolbar({
       <Dialog open={!!renameOpen} onClose={() => setRenameOpen(null)}>
         <DialogTitle>Rename view</DialogTitle>
         <DialogContent>
+          {/* autoFocus KEPT, justified (redesign-stage-0 §3 item 4): moving focus into a
+              just-opened modal's single field is the expected a11y behavior — the WCAG
+              "sparingly" carve-out, not a focus-steal. */}
           <TextField
             autoFocus
             size="small"

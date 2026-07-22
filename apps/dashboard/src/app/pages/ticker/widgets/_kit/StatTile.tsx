@@ -133,8 +133,12 @@ export function StatTile({
             ⏸ offline
           </Typography>
         )}
+        {/* Stat values are DATA, not headings: `component="p"` keeps the h6 STYLING (same variant
+            classes, byte-identical render) while removing the <h6> element from the page outline
+            (Stage 0 item 3 — the 29-<h6> ticker page is the documented failure). */}
         <Typography
           variant="h6"
+          component="p"
           sx={[
             { fontFamily: MONO, ...(valueColor ? { color: valueColor } : {}) },
             flashColorSx(flash ?? null),
