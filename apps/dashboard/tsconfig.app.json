@@ -36,5 +36,9 @@
     "vitest.config.mts"
   ],
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
-  "references": []
+  "references": [
+    {
+      "path": "../../libs/api/tsconfig.lib.json"
+    }
+  ]
 }
