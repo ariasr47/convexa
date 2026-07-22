@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { palette } from './tokens';
+import { extras, palette } from './tokens';
 
 const BLOG_PAGES = import.meta.glob(['/public/blog/*.html'], {
   query: '?raw',
@@ -52,6 +52,51 @@ describe('§8-7 · blog generator output token-compliant', () => {
       );
       expect(html, `${file}: dark color-scheme`).toContain('color-scheme: dark');
     }
+  });
+
+  it('every 6-digit hex inside the inline <svg> illustrations ∈ the stage-3 token allowlist (§8-9b)', () => {
+    // The 7 recomposed figures paint ONLY the shipped tokens (static assets can't consume the
+    // theme, so the literals are byte-bound to tokens.ts — the generator precedent): fields on
+    // ink/panel/panelRaised, text phosphor/steel, accents gammaAmber + signal, warningOrange
+    // solely where a figure depicts a fault/bounce. The cream family is additionally BANNED
+    // outright in banned-hexes.spec.ts (§8-9a).
+    const ALLOWED = new Set(
+      [
+        palette.dark.background.default, // ink
+        palette.dark.background.paper, //   panel
+        extras.panelRaised, //              panelRaised
+        palette.dark.text.primary, //       phosphor
+        palette.dark.text.secondary, //     steel
+        palette.dark.primary.main, //       gammaAmber
+        palette.dark.info, //               signal
+        palette.dark.warning, //            warningOrange
+      ].map((h) => h.toLowerCase()),
+    );
+    const svgHexes = (html: string): string[] => {
+      const out: string[] = [];
+      for (const svg of html.match(/<svg[\s\S]*?<\/svg>/g) ?? []) {
+        for (const hex of svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []) out.push(hex.toLowerCase());
+      }
+      return out;
+    };
+    // MUTATION GUARD: a fixture SVG carrying a stray hex is flagged; an allowlisted one is not.
+    const stray = svgHexes('<svg><rect fill="#ABCDEF"/></svg>').filter((h) => !ALLOWED.has(h));
+    expect(stray).toEqual(['#abcdef']);
+    expect(
+      svgHexes(`<svg><rect fill="${palette.dark.primary.main}"/></svg>`).filter(
+        (h) => !ALLOWED.has(h),
+      ),
+    ).toEqual([]);
+
+    let sawSvg = false;
+    for (const [file, html] of Object.entries(BLOG_PAGES)) {
+      const hexes = svgHexes(html);
+      if (hexes.length) sawSvg = true;
+      const offenders = hexes.filter((h) => !ALLOWED.has(h));
+      expect(offenders, `${file}: inline-SVG hexes outside the token allowlist`).toEqual([]);
+    }
+    // Vacuity guard: at least one emitted page actually embeds SVG artwork.
+    expect(sawSvg).toBe(true);
   });
 
   it('docs/blog and public/blog copies are byte-identical (the script is the sync step)', () => {
