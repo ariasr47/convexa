@@ -272,10 +272,13 @@ export function TickerHeader({
 
   return (
     <Box>
+      {/* Stage 0 item 1 (the measured 580px offender): the hero row STACKS vertically below `sm` —
+          chips/anchor/meta re-stack and the CTA drops under the anchor on its own left-aligned row.
+          Nothing is removed; at `sm+` the row layout is unchanged. */}
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
         spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}
+        sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'flex-start' } }}
       >
         <Stack spacing={1} sx={{ minWidth: 0 }}>
           {/* Status row — regime + the stream-driven connection chip (Figma 149:96). */}
@@ -364,7 +367,10 @@ export function TickerHeader({
             size="small"
             onClick={onOpenTrade}
             data-testid="open-sim-trade"
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
+            // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width) so
+            // its nowrap label can never force the viewport wider. Still THE one entry point to the
+            // shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
+            sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5, alignSelf: { xs: 'flex-start', sm: 'auto' } }}
           >
             + Open simulated trade
           </Button>

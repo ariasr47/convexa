@@ -24,7 +24,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import type { TickerBundle } from '@org/api';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -168,6 +168,56 @@ describe('operator-vs-trader path separation', () => {
     expect(await screen.findByText(/Operator Metrics/)).toBeInTheDocument();
     expect(screen.queryByTestId('app-shell')).toBeNull();
     expect(screen.queryByTestId('nav-ticker')).toBeNull();
+  });
+});
+
+// =================================================================================================
+// 2b. Mobile nav drawer safety (redesign-stage-0 §8.8 — invariant-bearing, not visual). Re-expresses
+//     the responsive-branch test intent under the risk rule: the temporary drawer's stateful
+//     open/navigate/close behavior + the promoted `operator-vs-trader-path-separation` invariant
+//     extended to the drawer. (The hamburger is display:none at md+ in a real browser; the stateful
+//     behavior is the regression-prone part guarded here.)
+// =================================================================================================
+describe('mobile nav drawer', () => {
+  const DRAWER_ENTRIES = ['ticker', 'positions', 'scanner', 'blog'] as const;
+
+  it('carries EXACTLY the 4 NAV entries, no /_ops link, aria-current on the active entry', async () => {
+    const user = userEvent.setup();
+    renderAt('/positions');
+    await screen.findByTestId('portfolio-panel');
+
+    // Temporary drawer — its links are NOT mounted at rest (never duplicating the inline nav-*).
+    expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull();
+
+    await user.click(screen.getByTestId('nav-menu-button'));
+    const drawer = await screen.findByTestId('nav-drawer');
+
+    // Exactly the 4 trader entries — nothing more (an operator entry can never sneak in).
+    for (const e of DRAWER_ENTRIES) {
+      expect(within(drawer).getByTestId(`nav-drawer-${e}`)).toBeInTheDocument();
+    }
+    const links = within(drawer).queryAllByRole('link');
+    expect(links.length).toBe(DRAWER_ENTRIES.length);
+    expect(links.some((a) => (a.getAttribute('href') ?? '').includes('_ops'))).toBe(false);
+
+    // Active-route highlight rules match the inline nav: aria-current rides the active entry only.
+    expect(within(drawer).getByTestId('nav-drawer-positions')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(drawer).getByTestId('nav-drawer-ticker')).not.toHaveAttribute('aria-current');
+  });
+
+  it('a drawer link navigates AND closes the drawer (the branch behavior, re-expressed)', async () => {
+    const user = userEvent.setup();
+    renderAt('/scanner');
+    await screen.findByTestId('scanner-placeholder');
+
+    await user.click(screen.getByTestId('nav-menu-button'));
+    await user.click(await screen.findByTestId('nav-drawer-positions'));
+
+    expect(await screen.findByTestId('portfolio-panel')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('nav-drawer-ticker')).toBeNull());
   });
 });
 

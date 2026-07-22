@@ -325,7 +325,15 @@ function CardLayout(props: ViewProps) {
               {g.label} ({g.rows.length}) · {subtotalNode(g)}
             </Box>
           )}
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          {/* 1 column below `sm` (a 2-up card at 393px crushes the footer facts row and can force
+              horizontal overflow — Stage 0 item 1); the Figma 2-col grid holds at sm+. */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+              gap: '12px',
+            }}
+          >
             {g.rows.map((row) => (
               <PositionCard
                 key={row.position.id}
