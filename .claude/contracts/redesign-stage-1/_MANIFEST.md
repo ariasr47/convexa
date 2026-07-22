@@ -1,6 +1,6 @@
 # redesign-stage-1 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; token-layer identity swap)
-Stage:        BRIEF written; UX lane NOT yet launched (pre-pipeline)
+Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
 Repos:        frontend only (NO_BACKEND_CHANGE — empty apps/api diff part of the proof)
 Brief:        BRIEF.md present
 Contracts:
@@ -9,7 +9,11 @@ Contracts:
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a (consumes existing endpoints unchanged)
   - BACKEND_EXECUTION_CONTRACT.md   NO_BACKEND_CHANGE
-  - FRONTEND_EXECUTION_CONTRACT.md  n/a (next artifact — UX lane authors it)
+  - FRONTEND_EXECUTION_CONTRACT.md  locked (2026-07-22; §10's nine open questions ruled by the
+    conductor: 1–8 ACCEPTED as written (incl. #5's pre-authorized minimal-darken on a failing
+    contrast measurement, reported never silent; #7's spot→steel/live→signal split, eyeballed at
+    the render pass); #9 OVERRIDDEN — `sync-figma-tokens.mjs` is DELETED, not deprecated
+    (inverted authority post-§6a-3; recoverable from git))
 Open amendments: none
 QA (GATE Q):  n/a (pending; battery = Stage 0's + contrast measurements + the render pass on
               EVERY major surface, both schemes — the identity swap is visual by definition)
