@@ -35,15 +35,13 @@
   "revisit at N≥20 in the tier cells" rather than change blind · defer-cost: low while samples are
   small; the defer trigger makes waiting honest instead of indefinite.
 
-- **[Q4]** Approve the Convexa redesign direction — the design review found the app
-  competent-but-generic (GitHub Dark's exact neutrals, Inter everywhere, no signature element, plus
-  hard quality-floor fails: mobile overflow, zero focus rings) and a full proposal exists: "The
-  Curvature Terminal" (warm ink + phosphor text + dominant gamma-amber, Archivo/Plex type, the convex
-  arc as the signature) with a 4-stage plan — read `docs/design/DESIGN_REVIEW_2026-07-22.md` then
-  `docs/design/BRAND_TOKENS_PROPOSAL_2026-07-22.md` · recommend: approve (a) full direction — or at
-  minimum (b) Stage 0 alone (the quality-floor repair is correctness, not taste, and folds in the
-  parked responsive branch) · defer-cost: the floor fails (unusable mobile nav, no keyboard focus)
-  stay live on a deployed product, and every new surface built meanwhile inherits the borrowed-clothes
-  identity and deepens the eventual migration.
-
 ## Decided
+- [Q4] DECIDED 2026-07-22: **(a) — full "Curvature Terminal" direction approved, all four stages**
+  (Stage 0 floor repair → 1 token swap → 2 signature → 3 surface sweep), each a GATE V program under
+  the DESIGN_RULES loop. Decision made on VERIFIED evidence (real-browser verification pass,
+  `docs/design/verification-2026-07-22/` — every hard-floor finding confirmed eyes-on). Canon
+  pre-flight rulings recorded in the proposal §6a (stagger supersession pre-approved for Stage 3;
+  Figma DS retired as authority; theme-audit gaps folded into Stage 1; SEO-prerender sequenced behind
+  Stage 2; the vertical-GEX-chart lock deliberately KEPT). The project-owned `convexa-design` skill is
+  the rule-of-record for every redesign lane; `scanner` is displaced a 7th time (owner-directed, not
+  dropped).

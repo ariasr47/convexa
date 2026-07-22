@@ -30,6 +30,29 @@
 
 ---
 
+## Last GATE I — 2026-07-22 (OWNER DECISION Q4(a): the Curvature Terminal redesign — 4-stage program)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+**Chosen → the redesign program (Q4 decided (a), full direction)** — owner-directed off the decision
+queue, not a harvest cull. Evidence chain: `DESIGN_REVIEW_2026-07-22.md` (structural) →
+`verification-2026-07-22/` (eyes-on, every hard-floor finding CONFIRMED: scrollWidth 580 vs 393, no
+mobile nav, near-zero `:focus-visible`, 29 `<h6>` stat values, 9px deltas) →
+`BRAND_TOKENS_PROPOSAL_2026-07-22.md` (the direction + §6a canon pre-flight rulings). **Four stages,
+each its own GATE V program** (FE-only, `NO_BACKEND_CHANGE` throughout): **Stage 0** floor repair
+(fold in `feat/responsive-layout` — needs rebase; focus rings; semantics; touch/type floors; copy
+fixes) → **Stage 1** token swap (new palette/type into `tokens.ts`/`theme.ts` + theme-audit gaps +
+blog re-skin via the GENERATOR) → **Stage 2** signature (mark, hero curve-draw, arc dividers; SEO
+prerender re-derives AFTER) → **Stage 3** surface sweep (+ motion consolidation superseding the
+stagger, tests REPLACED not deleted). **Rule-of-record for every lane: the `convexa-design` skill**
+(+ frontend-design, web-design-guidelines, vercel-react-best-practices, composition-patterns,
+webapp-testing per the owner's skill-stack directive). **Invariant watch:** theme-token-discipline
+(the migration rail) · additive-keeps-score-byte-identical (presentation-only; empty `apps/api` diff
+per stage) · live-vs-static-isolation (3 distinct degraded states survive the re-skin) ·
+model-read-carries-its-assumptions + digested-labels (contract copy, not decor) ·
+single-shared-sim-entry-dialog (restyle, never fork) · no-real-order-path (honest landing copy) ·
+loss-free-durable-migration (if any durable pref key/shape moves). Stage 0 brief at
+`.claude/contracts/redesign-stage-0/BRIEF.md`. **`scanner` displaced a 7th time — owner-directed,
+never dropped** (system-12 doc reconciliation still precedes its eventual GATE U·X).
+
 ## Last GATE I — 2026-07-16 (CANON REVIEW: the score is frozen + unvalidated → `outcome-ledger`)
 **Chosen → `outcome-ledger` — ✓ SHIPPED + ARCHIVED (2026-07-16)** → `_archive/outcome-ledger/`. Full
 pipeline, **single-lane fan-out** (`NO_BACKEND_CHANGE` ⇒ no backend lane): GATE I → A·X → P·X → **Z×4** →
