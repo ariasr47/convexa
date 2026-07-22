@@ -242,6 +242,11 @@ which is exactly why this was cheap to fix now.
 | `operator-vs-trader-path-separation` | outcome-ledger | S | **HONORED.** The track record is a **TRADER** surface (it informs trading decisions) and lives on `/positions` as its own in-page view — explicitly **NOT** `/_ops/metrics`. The rule keeps operator surfaces off trader routes; it does not make an analytics-shaped read operator-facing | yes |
 | `live-vs-static-isolation` | outcome-ledger | S | the track record is a **STATIC historical** read: closed-only, so it does **NOT** dim on `streamOffline` (static reads keep rendering). The closed-only honesty rule and the isolation rule are **the same decision**. Verified non-vacuously — the live Net P/L's class flips on a real stream drop while the track record's `innerHTML` stays byte-identical | yes |
 | `theme-token-discipline` | outcome-ledger | S | token-only via the MUI theme; zero hardcoded hex; **no semantic tint on any rate** (AC-14) — green/red on a hit rate manufactures a verdict the sample cannot support. Verified non-vacuously: a 90% cell and a 10% cell assert **identical `className`** (MUI `sx` compiles to classes, so `getAttribute('style')` is always empty — the vacuous-assertion trap the lane caught in its own tests) | yes |
+| `theme-token-discipline` | redesign-stage-0 | S | every floor fix binds to CURRENT tokens (Stage 0 = correctness, not identity — zero new hex, QA diff-audited); the focus ring + 44px coarse-pointer floor land at the THEME layer (one authored rule), never per-component | yes |
+| `additive-keeps-score-byte-identical` | redesign-stage-0 | S | FE-only; `git diff main -- apps/api` AND `-- libs/api` both EMPTY (QA re-verified) — the structural proof; score/tier/`state_fingerprint` unreachable by construction | yes |
+| `live-vs-static-isolation` | redesign-stage-0 | S | the 3 distinct degraded states SURVIVED the mobile relayout — verified on a REAL stream kill at 393px ("⚠ Live offline — reconnecting…", live tiles → "⏸ offline", static chart + 19 stat reads persist un-blanked, scrollWidth 378 held while degraded); zero degraded-spec deletions/weakenings | yes |
+| `single-shared-sim-entry-dialog` | redesign-stage-0 | S | mobile full-screen = 5 lines of breakpoint props on THE shared `TradeEntryDialog` — restyled, NOT forked (QA diff-audited) | yes |
+| `no-real-order-path` | redesign-stage-0 | S | the landing hero reframed HONEST ("See the dealer positioning behind the price.") — no longer sells the unbuilt brokerage connect; coming-soon blocks stay non-navigating | yes |
 
 > Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
 > (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified
@@ -375,6 +380,26 @@ which is exactly why this was cheap to fix now.
 > traceability):** a motion/visual AC with no named test is exactly where a later refactor silently regresses
 > — the render pass caught it, and the fix adds the missing test. `theme-token-discipline` (watch list) held
 > again (zero hardcoded hex across the changed ticker scope).
+
+> Note (GATE S, redesign-stage-0, 2026-07-22): Stage 0 of the Q4(a) "Curvature Terminal" program — the
+> quality-floor repair (correctness, not identity): 393px overflow killed (580→378, root causes the bento
+> track `1fr`→`minmax(0,1fr)` + toolbar wrap + an sr-only `width:1`=100% MUI bug), hamburger/drawer nav
+> (folded the parked `feat/responsive-layout`, one mechanical conflict — `app.spec.tsx` deleted on main by
+> the test migration, intent re-expressed in `app.risk.spec.tsx`), theme-layer `:focus-visible` rings,
+> semantic repair (29 `<h6>` stat values → 0 + `<main>`), 11px/44px floors (+5 sub-floor rem sites swept
+> beyond the contract's enumeration), honest copy (hero/settings/"last last" — the typo was the FE
+> double-prefixing a wire field), theme-color-follows-mode. **NO new graduation** — the five touched keys
+> all already canon, each gained an instance (rows above). GATE V fast-path (UX → FE), first program run
+> under the `convexa-design` skill as rule-of-record + the v0.6.1 FE identity opener. QA (GATE Q) fresh
+> de-correlated **Sonnet: PASS 6/6 scope items · 15/15 §8 matrix** (battery independently re-run; Cypress
+> 12/12 mobile enforcement — the §8.1 first run FAILED and caught 3 real offenders before passing; §10's 5
+> pre-ruled questions honored 5/5; conformance n/a-and-correctly-absent). Conductor render pass (Playwright)
+> incl. a TRUE-drop offline walk at 393 — first probe showed no degradation because **3 orphan uvicorn
+> processes were still serving :8000** (the Windows orphan-server gotcha; methodology note in
+> RENDER_PASS.md), a clean kill fired the watchdog exactly to spec. Post-merge battery re-run green
+> (58/493 — main had just received the LatencyTrend spin-off PR #1). Two recorded judgment calls:
+> Cypress-for-Playwright substitution (repo's e2e runner — enforcement intent met) and the
+> `pointer: coarse`-gated touch floor. Stages 1–3 pending, each its own folder.
 
 > Note (GATE S, convexa-redesign, 2026-06-30): the full **presentation-only** FE re-skin to the Figma DS
 > (all surfaces + theme/token bridge + app-wide contained-button treatment), merged to `main`. **No new

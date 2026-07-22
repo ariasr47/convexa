@@ -1,6 +1,6 @@
 # redesign-stage-0 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; quality-floor repair, no identity work)
-Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
+Stage:        SHIPPED + ARCHIVED 2026-07-22 (merge 35fef23; post-merge battery 58/493 green)
 Repos:        frontend only (NO_BACKEND_CHANGE — the empty apps/api diff is part of the proof)
 Brief:        BRIEF.md present
 Contracts:
@@ -14,8 +14,9 @@ Contracts:
     Landing at Stage 2 · operator page off the 393 route set · clickable-div resolved in
     rendered DOM · rebase-conflict escalation rule)
 Open amendments: none
-QA (GATE Q):  n/a (pending build; battery = nx test + tsc -b --force + nx typecheck + lint +
-              real-browser render pass 1440/393 both schemes)
+QA (GATE Q):  QA_REPORT PASS (de-correlated Sonnet — 6/6 scope items, 15/15 §8 matrix, battery
+              independently re-run, conformance n/a-and-correctly-absent; RENDER_PASS.md = the
+              conductor real-browser evidence incl. the true-drop offline walk)
 Invariant watch (from BRIEF): theme-token-discipline · additive-keeps-score-byte-identical ·
               live-vs-static-isolation · no-real-order-path (honest hero copy) ·
               single-shared-sim-entry-dialog · the vertical-GEX-chart lock ·

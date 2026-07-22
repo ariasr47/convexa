@@ -817,6 +817,21 @@ prevent) · **the first deliberate score change will silently mix two scoring ba
 cells** (PRODUCT §7.4) — the future score-changing feature **must partition or reset them**; v1 must not
 invent a version to paper over it.
 
+## 7u. Redesign program — "The Curvature Terminal" (Q4(a) 2026-07-22; Stage 0 SHIPPED + ARCHIVED)
+**Stage 0 (quality-floor repair) SHIPPED 2026-07-22** (`35fef23` on main; folder →
+`_archive/redesign-stage-0/`). The deployed app is now mobile-usable (393px: 580→378, hamburger/drawer),
+keyboard-accessible (theme-layer focus rings), semantically sound (0 `<h6>` stat values, `<main>`), floor-
+compliant (11px/44px), and honest (hero no longer sells the unbuilt brokerage). QA PASS 6/6 + 15/15
+(de-correlated Sonnet); real-drop offline walk verified at 393. Suite 58/493. **Push ≠ deploy — the live
+`convexa.pages.dev` gets this only when the owner runs the deploy runbook.**
+**Remaining: Stage 1** (token swap — Curvature Terminal palette/type into `tokens.ts`/`theme.ts` + the
+§8 theme-audit gaps + blog re-skin VIA THE GENERATOR) → **Stage 2** (mark, hero curve-draw, arc dividers;
+SEO-prerender re-derives after) → **Stage 3** (surface sweep + motion consolidation; stagger guard tests
+REPLACED not deleted). Canon: proposal §5+§6a; rule-of-record `.claude/skills/convexa-design/`.
+**Deferred seams (named):** Landing `<main>` (Stage 2) · MUI `subtitle1/2` → `<h6>` in transient ai-rec
+states (default render clean — future pass) · the touch-floor live pixel spot-check needs coarse-pointer
+emulation · chart-tick 10px exemption stands until the owner reads the floor otherwise.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
