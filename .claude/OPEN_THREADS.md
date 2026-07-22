@@ -817,7 +817,7 @@ prevent) · **the first deliberate score change will silently mix two scoring ba
 cells** (PRODUCT §7.4) — the future score-changing feature **must partition or reset them**; v1 must not
 invent a version to paper over it.
 
-## 7u. Redesign program — "The Curvature Terminal" (Q4(a) 2026-07-22; Stage 0 SHIPPED + ARCHIVED)
+## 7u. Redesign program — "The Curvature Terminal" (Q4(a) 2026-07-22; ALL 4 STAGES SHIPPED — COMPLETE)
 **Stage 0 (quality-floor repair) SHIPPED 2026-07-22** (`35fef23` on main; folder →
 `_archive/redesign-stage-0/`). The deployed app is now mobile-usable (393px: 580→378, hamburger/drawer),
 keyboard-accessible (theme-layer focus rings), semantically sound (0 `<h6>` stat values, `<main>`), floor-
@@ -836,11 +836,15 @@ glow blob deleted); ArcDivider at the 2 real seams; landing `<main>` + heading w
 3 places — set-equality enforced. QA PASS (de-correlated Sonnet — and it correctly flagged the
 conductor's own render pass as under-spec; closed post-QA with Web-Animations-API draw proof). Suite
 **69/563** (the new baseline). SEO-prerender is now UNBLOCKED (§6a-5: re-derive on the new landing).
-**Remaining: Stage 3** (surface sweep + amber-dominance per surface + motion consolidation — stagger
-guard tests REPLACED not deleted) with the accumulated flags: brandGradient disposition (2 consumers)
-· light-amber-as-body-text ~3.3:1 · TintChip conviction-tone · ArcDivider depth · blog SVG artwork
-residual · MUI subtitle→h6 transient states. Canon: proposal §5+§6a; rule-of-record
-`.claude/skills/convexa-design/`.
+**Stage 3 (surface sweep) SHIPPED 2026-07-22** (`0cd0901`; folder → `_archive/redesign-stage-3/`) —
+**THE PROGRAM IS COMPLETE.** Motion consolidated (keyframe inventory set-equality pinned); amber
+spent-not-sprinkled per surface; every accumulated flag dispositioned (brandGradient deleted ·
+textAmber measured · TintChip emphasis + the proximity-chip green-reservation fix · ArcDivider
+deepened · blog SVGs on-system · heading repairs); closing floor re-audit green after the B2 GATE Z
+(light focus ring → textAmber, ≥4.78 everywhere). QA PASS 36/36 (de-correlated Sonnet). Suite
+**73/606 = the baseline**. The app is fully the Curvature Terminal: floor · clothes · signature ·
+sweep. **Post-deploy eyeballs:** real-tab favicon · OS reduced-motion · coarse-pointer 44px.
+**Deploy pending owner runbook** (the live site wears the OLD brand until then).
 **New seam (Stage 1, accepted residual):** the blog articles' inline SVG ILLUSTRATIONS keep their own
 cream/terracotta styling on the now-dark template (artwork, not template — regenerate onto the system;
 no banned hex inside them, so the scan doesn't bite).

@@ -1,6 +1,6 @@
 # redesign-stage-3 — pipeline manifest
 Entry:        GATE V fast-path (UX → Frontend; the surface sweep — program finale)
-Stage:        UX exit (GATE V) — FRONTEND_EXECUTION_CONTRACT locked; FE lane building
+Stage:        SHIPPED + ARCHIVED 2026-07-22 (merge 0cd0901; post-merge battery 73/606 green) — PROGRAM COMPLETE
 Repos:        frontend only (NO_BACKEND_CHANGE)
 Brief:        BRIEF.md present
 Contracts:
@@ -14,9 +14,9 @@ Contracts:
     (success->neutral on a no-side datum: canon-correct per dark-pool-context-only) and #5
     clarified: og-image STANDS as shipped from Stage 2, no rework this stage)
 Open amendments: none
-QA (GATE Q):  n/a (pending; battery = Stage 2's + the motion-consolidation guard REPLACEMENT
-              audit (old stagger guards must be superseded, not deleted-red) + the closing
-              quality-floor re-audit + render pass all surfaces both schemes)
+QA (GATE Q):  QA_REPORT PASS 36/36 (de-correlated Sonnet; guard-replacement commit audited;
+              ring ratios independently recomputed; blog generator re-run to prove provenance;
+              one GATE Z mid-build: B2 light focus ring — fixed + re-verified)
 Invariant watch (from BRIEF): theme-token-discipline · additive · single-motion-moment (2nd
               instance) · arc-in-exactly-3-places (sweep adds NO arcs) · live-vs-static
               (data-signal motion exempt BY DECISION) · P/L reserved · chart lock ·

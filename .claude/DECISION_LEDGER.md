@@ -255,6 +255,11 @@ which is exactly why this was cheap to fix now.
 | `additive-keeps-score-byte-identical` | redesign-stage-2 | S | FE-only; empty apps/api + libs/api diffs (QA re-verified); zero new deps (package.json diff empty) | yes |
 | `single-motion-moment` | redesign-stage-2 | S | the hero curve-draw BECOMES the one orchestrated moment (convexa-design skill rule 5): dash-offset/opacity-only keyframes (property-set pin test), one-shot, shared useReducedMotion -> static frame; the generic radial blob + ValueCard light-bleed DELETED (zero-reference proven); live draw observed FINISHED via the Web Animations API | yes |
 | `arc-in-exactly-3-places` | redesign-stage-2 | S | the signature primitive has EXACTLY {ConvexaMark, HeroCurve, ArcDivider} as importers — SET-EQUALITY test, mutation-guarded (a 4th importer fails); the cut 4th idea (chart-frame arc) stays cut | yes |
+| `single-motion-moment` | redesign-stage-3 | S | **2nd instance — the consolidation itself**: 5 motion families dispositioned (stagger + GEX bar-grow RETIRED, flash-on-tick + live pulses KEPT as DATA SIGNALS by recorded decision, hover/conic TAMED); the app-wide keyframe inventory is now SET-EQUALITY pinned to {liveDotPulse, widgetLivePulse, ordersWatchPulse} + the hero draw + flash — a 6th family is build-breaking; live-browser inventory verified = exactly the KEEP set | yes |
+| `theme-token-discipline` | redesign-stage-3 | S | 20 closed amber-census edits, all slot-level; brandGradient token DELETED (pin flipped ABSENT); textAmber added under a measured gate; blog SVGs bound to a token-allowlist scan | yes |
+| `additive-keeps-score-byte-identical` | redesign-stage-3 | S | FE-only finale; empty apps/api + libs/api diffs (QA re-verified); the LiveTabPanel zero-import DATA lock intact (allowlist gained only the ruled static tokens module) | yes |
+| `dark-pool-context-only` | redesign-stage-3 | S | LATENT VIOLATION FIXED: off-exchange proximity chips rendered `success` GREEN on a no-side datum — corrected to neutral (UX lane caught it during the amber census; green/red stay reserved for direction) | yes |
+| `stagger-guards-replaced-not-deleted` | redesign-stage-3 | S | the §6a-2 pre-approved supersession executed EXACTLY: retirement + replacement guards in the SAME commit (3464a0a — QA audited via git show); zero spec-file deletions branch-wide (--diff-filter=D empty) | yes |
 
 > Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
 > (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified
@@ -388,6 +393,25 @@ which is exactly why this was cheap to fix now.
 > traceability):** a motion/visual AC with no named test is exactly where a later refactor silently regresses
 > — the render pass caught it, and the fix adds the missing test. `theme-token-discipline` (watch list) held
 > again (zero hardcoded hex across the changed ticker scope).
+
+> Note (GATE S, redesign-stage-3, 2026-07-22): THE PROGRAM COMPLETES — the surface sweep. Motion
+> consolidated around the hero moment (disposition table: 2 RETIRE / 2 KEEP-as-data-signal / 2 TAME;
+> the Stage-0 stagger guards REPLACED in the same commit per the §6a-2 pre-approval — QA audited the
+> commit itself); per-surface amber census (Ticker 8 / Positions 7 / Settings 3 / Scanner 2 / shell 0
+> edits — spent, not sprinkled; links to signal, washes to neutral); brandGradient DELETED; textAmber
+> shipped under the measured gate (light #8F5C0F, 5.23/5.67 on paper/white); TintChip gained an
+> emphasis tone AND the census caught a LATENT canon violation (proximity chips green on a no-side
+> datum -> neutral); ArcDivider deepened 4->8 (render-judged); the 7 blog SVGs recomposed on-system
+> (the Stage-1 residual CLOSED — QA re-ran the generator to prove output provenance, zero diff); 7
+> heading repairs; the closing quality-floor re-audit caught B2 (light focus ring 2.76 on panelRaised)
+> -> GATE Z bounce -> fixed same-lane (light ring = textAmber, 4.78+ everywhere, dark byte-identical)
+> -> QA re-verified with independent ratio recomputation. QA (GATE Q) fresh de-correlated Sonnet:
+> **PASS 36/36** (battery re-run twice, e2e 13/13, guard-replacement discipline audited, zero
+> UNVERIFIABLE). Suite **73/606**. Live-browser animation inventory = exactly the KEEP set.
+> **Program tally: 4 stages, 4 QA PASSes (one first-pass bounce each at stages 0-conductor-catch and
+> 3-B2 — both caught by the system's own checks), 0 regressions shipped, score/tier/fingerprint
+> byte-identical throughout, suite 467->606.** Post-deploy eyeballs remaining: real-tab favicon,
+> OS-level reduced-motion, coarse-pointer 44px. SEO-prerender UNBLOCKED. Deploy = owner runbook.
 
 > Note (GATE S, redesign-stage-2, 2026-07-22): THE SIGNATURE ships — the mark (CONVEXA in Archivo
 > Expanded caps w/ real wdth-axis font-stretch, the X cut from two convex arcs, NO gradient —

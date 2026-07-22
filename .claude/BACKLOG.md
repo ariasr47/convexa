@@ -49,7 +49,9 @@ webapp-testing per the owner's skill-stack directive). **Invariant watch:** them
 per stage) · live-vs-static-isolation (3 distinct degraded states survive the re-skin) ·
 model-read-carries-its-assumptions + digested-labels (contract copy, not decor) ·
 single-shared-sim-entry-dialog (restyle, never fork) · no-real-order-path (honest landing copy) ·
-loss-free-durable-migration (if any durable pref key/shape moves). **Stage 2 (the signature) -> SHIPPED + ARCHIVED same day** (`51b9d7e`; QA PASS de-correlated Sonnet;
+loss-free-durable-migration (if any durable pref key/shape moves). **Stage 3 (surface sweep) -> SHIPPED + ARCHIVED same day** (`0cd0901`; QA PASS 36/36; suite 73/606
+the new baseline; motion set-equality pinned; the proximity-chip green-reservation latent fix) —
+**PROGRAM COMPLETE: all 4 stages shipped 2026-07-22.** **Stage 2 (the signature) -> SHIPPED + ARCHIVED same day** (`51b9d7e`; QA PASS de-correlated Sonnet;
 arc-in-exactly-3-places set-equality enforced; suite 69/563 the new baseline; QA also caught the
 conductor's under-spec render pass - closed with Web-Animations-API draw proof). **Stage 1 (token swap) → ✓ SHIPPED + ARCHIVED same day** (`5846864`; QA PASS de-correlated Sonnet,
 all 19 contrast ratios independently recomputed; suite 63/523 — the new baseline; blog-artwork residual
