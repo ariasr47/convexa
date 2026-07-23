@@ -1,11 +1,16 @@
 # scanner — pipeline manifest
 Entry:        architect-first
-Stage:        GATE I — brief written; entry role NOT yet launched (pre-pipeline)
-Repos:        both (expected — a scan-slice/batch backend surface + the Scanner page; the architect confirms)
-Brief:        BRIEF.md present
+Stage:        GATE A·X — architecture RATIFIED (approach C); PM (GATE P·X) is the next role
+Repos:        both (backend worker+store+API [P1–P3] + the Scanner page [P4]) — architect confirmed
+Brief:        BRIEF.md present (v1, supersedes the AI-inclusive scope; design authority = the spec)
+Design:       docs/superpowers/specs/2026-07-23-scanner-v1-design.md (owner-approved) +
+              docs/superpowers/plans/2026-07-23-scanner-01-scanstore.md (P1 no-placeholder plan)
+Phases:       P1 ScanStore · P2 worker+snapshot · P3 API+conformance+warm-click+view · P4 frontend
+              (sequenced P1→P4, each its own execution contract + GATE Q, like the redesign stages)
 Contracts:
-  - ARCHITECTURE_CONTRACT.md   n/a (not yet authored — next artifact, GATE A·X)
-  - PRODUCT_CONTRACT.md        n/a
+  - ARCHITECTURE_CONTRACT.md   locked (2026-07-23; lint 0/0; boundaries + 4 cruxes + phase seams +
+    the single-ticker re-justification + PM open questions §10)
+  - PRODUCT_CONTRACT.md        n/a (next artifact — GATE P·X; resolves the architect's 7 open questions)
   - UX_BLUEPRINT.md            n/a
   - INTERFACE_CONTRACT.md      n/a
   - BACKEND_EXECUTION_CONTRACT.md   n/a
