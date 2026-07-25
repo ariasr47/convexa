@@ -25,6 +25,7 @@
 #   ACCOUNT_STORE, AUTH_SESSION_SIGNING_KEY,
 #   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 #   AI_KEY_ENCRYPTION_KEY, AI_REC_ADMIN_EMAILS, AI_REC_ADMIN_FREE_DAILY
+#   SCAN_STORE, SCAN_DATABASE_URL, SCAN_STORE_PATH
 #
 # STATELESS / restart-resettable: the auth/session/AI-key stores are in-memory
 # SQLite (reset on restart) and DATA_DIR=./data is ephemeral. The persistent
