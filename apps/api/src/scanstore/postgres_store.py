@@ -14,7 +14,7 @@ from typing import Optional, Sequence
 import psycopg
 from psycopg_pool import ConnectionPool
 
-from .ports import ScanRow, ScanStore, SweepHeartbeat
+from .ports import BundleBlob, ScanRow, ScanStore, SweepHeartbeat
 
 logger = logging.getLogger("Convexa")
 
@@ -46,11 +46,16 @@ class _SharedPool:
             " id INTEGER PRIMARY KEY CHECK (id = 1), updated_at DOUBLE PRECISION NOT NULL,"
             " sweep_last_completed DOUBLE PRECISION, universe_size INTEGER NOT NULL)"
         )
+        ddl_bundles = (
+            "CREATE TABLE IF NOT EXISTS scan_bundles ("
+            " symbol TEXT PRIMARY KEY, as_of DOUBLE PRECISION NOT NULL, bundle_json TEXT NOT NULL)"
+        )
         try:
             with self._pool.connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(ddl_rows)
                     cur.execute(ddl_hb)
+                    cur.execute(ddl_bundles)
                 conn.commit()
         except Exception:
             logger.exception("Scan Postgres schema init deferred (will retry at first use)")
@@ -118,6 +123,28 @@ class PgScanStore(ScanStore):
         if r is None:
             return None
         return SweepHeartbeat(updated_at=r[0], sweep_last_completed=r[1], universe_size=r[2])
+
+    def write_bundle_blob(self, blob: BundleBlob) -> None:
+        symbol = (blob.symbol or "").upper()
+        with self._pool._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO scan_bundles (symbol, as_of, bundle_json) VALUES (%s,%s,%s) "
+                    "ON CONFLICT (symbol) DO UPDATE SET as_of=EXCLUDED.as_of,"
+                    " bundle_json=EXCLUDED.bundle_json",
+                    (symbol, blob.as_of, blob.bundle_json))
+            conn.commit()
+
+    def read_bundle_blob(self, symbol: str) -> Optional[BundleBlob]:
+        sym = (symbol or "").upper()
+        with self._pool._pool.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT symbol, as_of, bundle_json FROM scan_bundles WHERE symbol = %s",
+                            (sym,))
+                r = cur.fetchone()
+        if r is None:
+            return None
+        return BundleBlob(symbol=r[0], as_of=r[1], bundle_json=r[2])
 
 
 def make_store(database_url: str) -> ScanStore:

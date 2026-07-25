@@ -13,7 +13,7 @@ import sqlite3
 import threading
 from typing import Optional, Sequence
 
-from .ports import ScanRow, ScanStore, SweepHeartbeat
+from .ports import BundleBlob, ScanRow, ScanStore, SweepHeartbeat
 
 logger = logging.getLogger("Convexa")
 
@@ -70,6 +70,15 @@ class _SharedDB:
                     updated_at           REAL NOT NULL,
                     sweep_last_completed REAL,
                     universe_size        INTEGER NOT NULL
+                )
+                """
+            )
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scan_bundles (
+                    symbol      TEXT PRIMARY KEY,
+                    as_of       REAL NOT NULL,
+                    bundle_json TEXT NOT NULL
                 )
                 """
             )
@@ -146,6 +155,27 @@ class SqliteScanStore(ScanStore):
         return SweepHeartbeat(updated_at=r["updated_at"],
                               sweep_last_completed=r["sweep_last_completed"],
                               universe_size=r["universe_size"])
+
+    def write_bundle_blob(self, blob: BundleBlob) -> None:
+        symbol = (blob.symbol or "").upper()
+        with self._db._lock:
+            with self._db._conn:
+                self._db._conn.execute(
+                    "INSERT INTO scan_bundles (symbol, as_of, bundle_json) VALUES (?,?,?) "
+                    "ON CONFLICT(symbol) DO UPDATE SET as_of=excluded.as_of, "
+                    " bundle_json=excluded.bundle_json",
+                    (symbol, blob.as_of, blob.bundle_json),
+                )
+
+    def read_bundle_blob(self, symbol: str) -> Optional[BundleBlob]:
+        sym = (symbol or "").upper()
+        with self._db._lock:
+            r = self._db._conn.execute(
+                "SELECT symbol, as_of, bundle_json FROM scan_bundles WHERE symbol = ?",
+                (sym,)).fetchone()
+        if r is None:
+            return None
+        return BundleBlob(symbol=r["symbol"], as_of=r["as_of"], bundle_json=r["bundle_json"])
 
 
 def make_store() -> ScanStore:

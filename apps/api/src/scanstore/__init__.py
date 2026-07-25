@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 
-from .ports import ScanRow, ScanStore, SweepHeartbeat, SCAN_STATUSES
+from .ports import ScanRow, ScanStore, SweepHeartbeat, BundleBlob, SCAN_STATUSES
 
 logger = logging.getLogger("Convexa")
 
@@ -53,4 +53,5 @@ def get_store() -> ScanStore:
     return _store
 
 
-__all__ = ["get_store", "available_stores", "ScanRow", "ScanStore", "SweepHeartbeat", "SCAN_STATUSES"]
+__all__ = ["get_store", "available_stores", "ScanRow", "ScanStore", "SweepHeartbeat",
+           "BundleBlob", "SCAN_STATUSES"]

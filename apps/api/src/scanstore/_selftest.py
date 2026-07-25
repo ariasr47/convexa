@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from .ports import ScanRow, SweepHeartbeat
+from .ports import BundleBlob, ScanRow, SweepHeartbeat
 
 
 def _row(symbol: str, score: float, status: str = "ok", as_of: float = 1.0) -> ScanRow:
@@ -52,6 +52,15 @@ def run_store_contract(store) -> None:
     store.write_heartbeat(SweepHeartbeat(updated_at=20.0, sweep_last_completed=19.0, universe_size=3))
     hb = store.read_heartbeat()
     assert hb.updated_at == 20.0 and hb.sweep_last_completed == 19.0 and hb.universe_size == 3, f"hb2 {hb}"
+
+    # 7. bundle-blob: absent -> None, write -> read round-trip, latest-wins overwrite.
+    assert store.read_bundle_blob("SPY") is None, "absent blob must be None"
+    store.write_bundle_blob(BundleBlob(symbol="spy", as_of=5.0, bundle_json='{"v":1}'))
+    b = store.read_bundle_blob("SPY")   # lower-case in -> canonical read
+    assert b is not None and b.symbol == "SPY" and b.as_of == 5.0 and b.bundle_json == '{"v":1}', f"blob rt {b}"
+    store.write_bundle_blob(BundleBlob(symbol="SPY", as_of=6.0, bundle_json='{"v":2}'))
+    b = store.read_bundle_blob("SPY")
+    assert b.as_of == 6.0 and b.bundle_json == '{"v":2}', f"blob latest-wins failed: {b}"
 
     # 6. to_wire shape is stable (the conformance spec pins these keys).
     assert set(spy[0].to_wire().keys()) == {

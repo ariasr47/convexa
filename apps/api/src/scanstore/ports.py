@@ -77,6 +77,20 @@ class SweepHeartbeat:
         }
 
 
+@dataclass
+class BundleBlob:
+    """The full computed bundle for a tracked symbol, serialized (json) + freshness-stamped
+    (§4.3). Latest-wins by symbol. It is a freshness-GATED cache blob for Plan 3's warm-click
+    read-through — NOT re-shaped or re-scored on read: the web app either serves it (fresh) or
+    ignores it (stale/miss → normal vendor fetch). `compute_ticker` stays the sole transform."""
+    symbol: str            # canonical UPPER-case
+    as_of: float           # epoch-seconds of the compute that produced the bundle
+    bundle_json: str       # json.dumps(bundle) — the same object the ticker endpoint serves
+
+    def to_wire(self) -> dict:
+        return {"symbol": self.symbol, "as_of": self.as_of, "bundle_json": self.bundle_json}
+
+
 class ScanStore(ABC):
     """The sweep worker writes; the read API reads. Latest-wins by symbol (rows are current state,
     NOT an accumulating series — this is the one deliberate divergence from the iv-rank store)."""
@@ -97,3 +111,12 @@ class ScanStore(ABC):
     @abstractmethod
     def read_heartbeat(self) -> Optional[SweepHeartbeat]:
         """The heartbeat, or None if the worker has never written one."""
+
+    @abstractmethod
+    def write_bundle_blob(self, blob: BundleBlob) -> None:
+        """Insert or OVERWRITE the bundle blob for `blob.symbol` (latest-wins)."""
+
+    @abstractmethod
+    def read_bundle_blob(self, symbol: str) -> Optional[BundleBlob]:
+        """The current bundle blob for `symbol`, or None if absent. Freshness is the caller's to
+        judge (the blob carries `as_of`); the store returns whatever it last stored."""
