@@ -583,6 +583,17 @@ app = FastAPI(
     version="3.0.0",
 )
 
+# --- Scanner embedded-worker seam (Scanner v1 P2, default OFF). When SCANNER_EMBEDDED=1, run the
+# sweep loop INSIDE this API process (one-terminal dev). Production runs the worker as a SEPARATE
+# process (worker.py / nx serve-worker). This is orchestration-only: it imports worker lazily and
+# spawns a background task; it NEVER touches compute_ticker/scoring, and unset => byte-identical app.
+if os.getenv("SCANNER_EMBEDDED", "").strip() in ("1", "true", "True"):
+    @app.on_event("startup")
+    async def _start_embedded_scanner():   # pragma: no cover - dev convenience seam
+        import worker
+        logger.info("[main] SCANNER_EMBEDDED=1 -> launching in-process sweep worker")
+        app.state._scanner_task = asyncio.create_task(worker.run_worker())
+
 # CORS allowlist (env-gated, defense-in-depth) — [R2]. Under the deployed shape the browser is
 # SAME-ORIGIN (the Cloudflare Pages Function proxies /api/* on the *.pages.dev origin), so this
 # middleware is not on the browser's hot path; but a locked, env-driven allowlist is the security

@@ -13,6 +13,14 @@
       },
       "cache": false
     },
+    "serve-worker": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/api",
+        "command": ".venv\\Scripts\\python.exe worker.py"
+      },
+      "cache": false
+    },
     "conformance": {
       "executor": "nx:run-commands",
       "options": {
