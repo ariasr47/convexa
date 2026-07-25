@@ -21,7 +21,7 @@ from massive.websocket.models import Feed, Market
 
 from .base import (
     MarketDataProvider, OptionsMarketState, UnderlyingBar, IntradayBar,
-    TradePrint, StreamEvent,
+    TradePrint, StreamEvent, StockSnapshot,
 )
 
 load_dotenv()
@@ -403,6 +403,76 @@ class MassiveProvider(MarketDataProvider):
         except Exception as e:
             logger.error(f"[{ticker_upper}] Failed to fetch trades: {e}")
             return out
+
+    # Fast-lane snapshot chunk size. get_snapshot_all takes a comma-joined ticker list; keep chunks
+    # modest so a URL stays sane and one bad chunk can't lose the whole poll.
+    _SNAPSHOT_CHUNK = 50
+    # Prefer the grouped endpoint (one request per chunk). Flipped to False only if the vendor-
+    # endpoint confirmation (Plan Task 1 Step 1) fails on a given deployment.
+    _USE_GROUPED = True
+
+    def _snapshot_price(self, snap) -> "float | None":
+        """Best last price from a snapshot: last trade, then this-minute close, then day close,
+        then prior-session close. None only when the vendor priced none of them."""
+        for path in (("last_trade", "price"), ("min", "close"),
+                     ("day", "close"), ("prev_day", "close")):
+            val = extract(extract(snap, path[0], {}), path[1], None)
+            if val is not None and float(val) > 0.0:
+                return float(val)
+        return None
+
+    def _one_snapshot(self, snap) -> "StockSnapshot | None":
+        sym = (extract(snap, "ticker", "") or "").upper()
+        if not sym:
+            return None
+        price = self._snapshot_price(snap)
+        chg = extract(snap, "todays_change_percent", None)
+        return StockSnapshot(
+            symbol=sym,
+            price=price,
+            chg_pct=float(chg) if chg is not None else None,
+            as_of_ns=int(extract(snap, "updated", 0) or 0),
+        )
+
+    def fetch_stock_snapshots(self, tickers: list[str]) -> "dict[str, StockSnapshot]":
+        """Grouped stock snapshot for the universe. One get_snapshot_all request per <=50-ticker
+        chunk; per-chunk best-effort so one failed chunk can't drop the whole poll. Falls back to a
+        per-ticker get_snapshot_ticker loop when the grouped endpoint is unavailable."""
+        wanted = [(t or "").upper() for t in tickers if t]
+        if not wanted:
+            return {}
+        out: dict[str, StockSnapshot] = {}
+        if self._USE_GROUPED:
+            for i in range(0, len(wanted), self._SNAPSHOT_CHUNK):
+                chunk = wanted[i:i + self._SNAPSHOT_CHUNK]
+                try:
+                    snaps = self.client.get_snapshot_all("stocks", tickers=chunk)
+                    for snap in (snaps or []):
+                        one = self._one_snapshot(snap)
+                        if one is not None and one["symbol"] in set(chunk):
+                            out[one["symbol"]] = one
+                except Exception as e:
+                    logger.warning(f"[snapshot] get_snapshot_all chunk failed ({len(chunk)} tickers): {e}")
+            if out:
+                logger.info(f"[snapshot] grouped snapshot: {len(out)}/{len(wanted)} priced")
+                return out
+            logger.warning("[snapshot] grouped snapshot returned nothing; trying per-ticker fallback")
+        return self._snapshots_per_ticker(wanted)
+
+    def _snapshots_per_ticker(self, wanted: list[str]) -> "dict[str, StockSnapshot]":
+        """Fallback: one get_snapshot_ticker per symbol (already used for the session-close lookup).
+        Slower but keeps the fast lane alive if the grouped endpoint is unavailable."""
+        out: dict[str, StockSnapshot] = {}
+        for sym in wanted:
+            try:
+                snap = self.client.get_snapshot_ticker("stocks", sym)
+                one = self._one_snapshot(snap)
+                if one is not None:
+                    out[one["symbol"]] = one
+            except Exception as e:
+                logger.debug(f"[snapshot] per-ticker snapshot failed for {sym}: {e}")
+        logger.info(f"[snapshot] per-ticker snapshot: {len(out)}/{len(wanted)} priced")
+        return out
 
     async def stream_stock(self, ticker: str) -> AsyncIterator[StreamEvent]:
         """

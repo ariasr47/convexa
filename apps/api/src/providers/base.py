@@ -159,6 +159,18 @@ class StreamEvent(TypedDict, total=False):
     size: float
 
 
+class StockSnapshot(TypedDict):
+    """One underlying's fast-lane snapshot: last price + session % change, normalized across
+    vendors. Feeds the scanner's fast lane (prices + move detection). `price` / `chg_pct` are
+    Optional — a vendor that momentarily has no trade for a symbol yields None (the scanner then
+    FREEZES that symbol's last price with its stamp, never fabricates). `as_of_ns` is the vendor's
+    snapshot-update time in nanoseconds (0 when the vendor omits it)."""
+    symbol: str                 # canonical UPPER-case
+    price: Optional[float]
+    chg_pct: Optional[float]    # session % change (already a percent, e.g. 1.34 == +1.34%)
+    as_of_ns: int
+
+
 class MarketDataProvider(ABC):
     """
     Port every market-data source implements. Adapters do all vendor-specific work
@@ -197,6 +209,14 @@ class MarketDataProvider(ABC):
     @abstractmethod
     def fetch_recent_trades(self, ticker: str, lookback_seconds: int) -> list[TradePrint]:
         """Recent executed trades (ascending) over a trailing window, to seed order flow."""
+
+    @abstractmethod
+    def fetch_stock_snapshots(self, tickers: list[str]) -> dict[str, "StockSnapshot"]:
+        """Multi-ticker fast-lane snapshot: last price + session % change for MANY underlyings in
+        as few requests as the vendor allows. Returns a dict keyed by canonical UPPER symbol.
+        BEST-EFFORT and NON-RAISING: a total failure returns {}; a symbol the vendor did not price
+        is simply ABSENT from the dict (the caller freezes its last price). This is a fast, cheap
+        stock-snapshot call — NOT the option-chain fetch — so the whole universe costs ~1 request."""
 
     @abstractmethod
     async def stream_stock(self, ticker: str) -> AsyncIterator[StreamEvent]:
