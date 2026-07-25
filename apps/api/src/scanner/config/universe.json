@@ -1,0 +1,13 @@
+{
+  "_comment": "Owner-curated tracked universe (Scanner v1, D3). NOT a secret — checked in for git-reviewed provenance. Edit + restart the worker to change it (no hot-reload in v1). Ceiling: 50-100 symbols. 'default_view' is the anonymous/new-user view (D2); when empty, the read API falls back to top-20-by-score.",
+  "universe": [
+    "SPY", "QQQ", "IWM", "DIA", "SMH",
+    "AAPL", "MSFT", "NVDA", "AMZN", "META",
+    "GOOGL", "TSLA", "AMD", "NFLX", "AVGO",
+    "JPM", "BAC", "XLF", "XLE", "XLK",
+    "GLD", "TLT", "COIN", "PLTR", "MSTR"
+  ],
+  "default_view": [
+    "SPY", "QQQ", "IWM", "NVDA", "TSLA", "AAPL", "AMD", "META"
+  ]
+}
