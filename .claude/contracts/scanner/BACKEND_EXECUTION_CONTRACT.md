@@ -1,109 +1,111 @@
-# scanner — BACKEND_EXECUTION_CONTRACT (Phase P1 — the ScanStore persistence leaf)
+# scanner — BACKEND_EXECUTION_CONTRACT (Phase P2 — the sweep worker + multi-ticker snapshot)
 
-> **Scope: PHASE P1 ONLY.** This is the first of the feature's four sequenced execution phases
-> (P1 ScanStore → P2 worker+snapshot → P3 read API+conformance+warm-click+view → P4 frontend), each
-> its own execution contract + GATE Q, like the redesign stages. This contract binds the **backend
-> lane** for P1 and is overwritten for P2/P3 as each phase opens.
+> **Scope: PHASE P2 ONLY** (2nd of the four sequenced phases). Overwrites the P1 contract (P1 shipped
+> + GATE Q PASS 8/8; see git history + `QA_REPORT.md`). Binds the **backend lane** for P2.
 >
-> **INTERFACE_CONTRACT.md — n/a for P1.** P1 is a **backend-internal store leaf**: it exposes **no
-> HTTP surface, no endpoint, no FE↔BE wire**. The sweep worker (P2) writes it; the read API (P3) reads
-> it. The row's `to_wire()` dict shape is defined here for the DOWNSTREAM P3 endpoint but is **not an
-> endpoint in P1** — the standalone `.claude/tools/conformance/scanner.json` is authored at P3's GATE
-> U·X (after the system-12 conformance-doc reconciliation). No `INTERFACE_CONTRACT` binding is required
-> because there is no FE↔BE surface in this phase.
+> **INTERFACE_CONTRACT.md — still n/a in P2.** The worker exposes **no HTTP surface**; the read API +
+> the FE↔BE wire + `scanner.json` conformance are **P3** (after the system-12 conformance-doc
+> reconciliation). P2's new provider-port method + store methods are backend-internal. No
+> `INTERFACE_CONTRACT` binding required.
 
 ---
 
-## 1. The build authority — Plan 1 (already complete, no-placeholder)
+## 1. The build authority — Plan 2 (complete, no-placeholder)
 
-The **authoritative, task-by-task build spec is**
-`docs/superpowers/plans/2026-07-23-scanner-01-scanstore.md` — a complete, no-placeholder plan with
-the full module source, exact run commands, and expected outputs for all four tasks. **Build it
-exactly as written**, task-by-task (Task 1 port+records → Task 2 SQLite adapter+`_selftest` →
-Task 3 Postgres adapter → Task 4 env factory). This contract does **not** restate the code; it
-**ratifies Plan 1 as the binding spec** and pins the invariants + the GATE-Q surface the phase is
-verified against.
+`docs/superpowers/plans/2026-07-24-scanner-02-worker.md` — a complete, no-placeholder, task-by-task
+plan (7 tasks, full module source, exact `cwd=apps/api` commands + expected outputs, three RED→GREEN
+disciplines), authored to Plan 1's standard and grounded in the real repo symbols
+(`get_snapshot_all`, `fetch_options_market_state`, `compute_ticker`/`_acquire_vendor_inputs`,
+`compute_opportunity_tier`, the P1 `scanstore`). **Build it exactly as written**, task-by-task, via
+`superpowers:subagent-driven-development`. This contract ratifies Plan 2 as the binding spec + pins
+the invariants and the GATE-Q surface; it does not restate the code.
 
-Use `superpowers:subagent-driven-development` (or `superpowers:executing-plans`) to work the plan's
-checkboxes. Follow the plan's RED→GREEN discipline on the `_selftest` (Task 2 Step 3 deliberately
-breaks `ON CONFLICT DO UPDATE` → observe FAIL → restore → observe PASS).
+## 2. What P2 delivers (from Plan 2)
 
-## 2. What P1 delivers (the deliverable set — from Plan 1)
+New pure subpackage `apps/api/src/scanner/` (`universe.py` loader · `tiering.py` **pure move-detection
++ promotion + round-robin, injected clock** · `projection.py` bundle→`ScanRow` · `loop.py` two-speed
+async loop) + their runnable `_selftest`s; the thin `apps/api/worker.py` entrypoint; a checked-in
+`src/scanner/config/universe.json` (real tickers, ≤100). **Additive edits to shared files only:**
+- `src/providers/base.py` + `massive.py` — the **NET-NEW multi-ticker `fetch_stock_snapshots`** method
+  (`StockSnapshot` TypedDict; ABC-level so any vendor implements it; best-effort `{}`/absent-symbol
+  freezes price; `get_snapshot_all` with a per-ticker fallback behind the same return).
+- `src/scanstore/` port + both adapters + `_selftest` — the **NET-NEW bundle-blob method** (§4.3;
+  freshness-stamped blob keyed by symbol, latest-wins, parity-reviewed PG).
+- `main.py` — **one env-flag-guarded, default-OFF `SCANNER_EMBEDDED` startup hook** (the one-terminal
+  dev seam; unset ⇒ byte-identical app).
+- `project.json` — a new `serve-worker` nx target; `.env.example`/`Dockerfile` — value-less worker env docs.
 
-`apps/api/src/scanstore/` — a **new one-way-leaf subpackage, 1:1 structural sibling of
-`apps/api/src/marketdata/`** (the iv-rank store family):
-- `ports.py` — `ScanRow` + `SweepHeartbeat` dataclasses (each with `.to_wire()`) + the `ScanStore`
-  ABC (4 methods: `upsert_row` / `read_rows` / `write_heartbeat` / `read_heartbeat`) + the
-  `SCAN_STATUSES` closed vocabulary (`ok`/`stale`/`error`/`building`).
-- `sqlite_store.py` — the **on-disk SQLite adapter (the DEFAULT)**: one shared connection + lock +
-  WAL; **latest-wins `ON CONFLICT(symbol) DO UPDATE`** (the one deliberate divergence from iv-rank's
-  insert-if-absent — rows are CURRENT STATE, not an accumulating series).
-- `_selftest.py` — the runnable assert-based store-contract check (the backend's no-pytest
-  convention; RED→GREEN, exits non-zero on failure).
-- `postgres_store.py` — the prod drop-in behind the **same port** (psycopg3 sync + pool; boot-safe:
-  an unreachable DB defers the fault to first use, never crashes). **Parity-reviewed, not
-  live-verified** (no local Postgres — the iv-rank / persistent-db precedent).
-- `__init__.py` — the env-selected factory `get_store()` (`SCAN_STORE`, default `disk`; Postgres URL
-  from `SCAN_DATABASE_URL` → `DATABASE_URL`).
-- `apps/api/.env.example` + the `apps/api/Dockerfile` env-header comment gain the value-less
-  `SCAN_STORE` / `SCAN_DATABASE_URL` / `SCAN_STORE_PATH` doc block (docs, **never** a baked secret).
+## 3. Binding invariants (restate + honor)
 
-**Deliberately deferred out of P1 (do NOT build here):** the **bundle-blob** store method (the
-warm-click payload) is a **P2** addition to this same store, added when the P3 reader needs it
-(Plan 1 Self-Review notes this). Multi-ticker snapshot, the worker, any endpoint, any UI — later
-phases.
+- **`[additive-keeps-score-byte-identical]` (HARD — the load-bearing boundary).** The worker **CALLS**
+  `compute_ticker` **unchanged** (the sole transform) and **CONSUMES** its output. It does **NOT** edit
+  or fork `engine.py`/`signals.py`/`live.py`/`darkpool.py`/`chain_store.py`/`compute_ticker`. `scanner/`
+  + `worker.py` are orchestration/provider code **never imported by any scoring module**; `scanstore`
+  stays a one-way leaf. Score/tier/`state_fingerprint`/gate stay **byte-identical** with the worker
+  present or absent, and with `SCANNER_EMBEDDED` unset. The only shared-file edits are **additive** (a
+  new port method, new store methods, the guarded main hook, the nx target, env docs).
+  **Two resolved clarifications the plan makes explicit (Plan 2 Open-decision 3) — verify as
+  consume-not-derive, NOT re-derive:**
+  1. **Tier** is a serve-time overlay, not a bundle field: the worker calls the **same
+     `compute_opportunity_tier(score, ai_eval.ready, watch, actionable, prime)`** helper `main._wrap`
+     uses, with the **same env bands** → the scanner tier equals the Ticker-page tier (AC-10). This is
+     consuming the shared transform, not new math.
+  2. **`dist_to_flip_pct` / `dist_to_wall_pct`** are **pure display transport** (signed % of price vs
+     the consumed flip/wall level), exactly as the Ticker FE renders — **no engine/greeks math**, never
+     a scoring input.
+- **`[best-effort-isolated-or-null]`.** A per-ticker vendor/compute failure degrades **that row alone**
+  (`error`/`stale`), the sweep continues; a failed snapshot poll **freezes prices with their stamps**
+  (never fabricates); a store outage → the worker **skips writes** and keeps looping; pool throttling
+  backs off. **Nothing crashes the loop.**
+- **`[live-vs-static-isolation]`.** Poll snapshots only — **no SSE, no per-row streams, no WebSocket**
+  in the worker.
+- **`[no-secrets-in-image]`.** All worker config (cadences, thresholds, PG/vendor connection strings)
+  is **runtime env only**; the universe JSON is not a secret and is checked in.
+- **`[model-read-carries-its-assumptions]` / `[digested-labels-not-raw-dump]`.** Each `ScanRow` carries
+  its own `as_of` + `status` (closed `SCAN_STATUSES`); closed enums + scalars only, no raw series.
+- **D4 defaults (operator-configurable):** move X=0.75% · fast ~30s · slow ~2–3min/N=100 · **capped
+  round-robin promotion — the fairness guarantee is binding**, the exact cap is an ops tunable.
 
-## 3. Binding invariants (restate + honor — from PROJECT_CONTEXT §5 + the BRIEF)
+## 4. GATE Q surface (how P2 is verified — mechanical + structural, no live vendor key)
 
-- **`[additive-keeps-score-byte-identical]` (HARD — the load-bearing structural guarantee).** The
-  `scanstore/` leaf imports **ONLY stdlib** (+ `psycopg` lazily inside the Postgres adapter only). It
-  is **NEVER imported by** `engine.py` / `signals.py` / `live.py` / `darkpool.py` / `chain_store.py`
-  / `main.py` / the bundle-compute path. This import boundary — not discipline — is what makes score
-  byte-identity hold: no scan row can become a scoring input because the scoring modules cannot import
-  the leaf. **P1 touches no scoring/engine/bundle code at all** (`apps/api` diff is confined to the
-  new `scanstore/` subpackage + the `.env.example`/`Dockerfile` doc lines).
-- **`[best-effort-isolated-or-null]`.** A store fault is a caught, logged degradation, never a crash.
-  An **unreachable Postgres at boot must NOT crash the process** — defer the fault to first use
-  (mirror `marketdata/postgres_store.py`: pool opens `wait=False` inside try/except).
-- **`[no-secrets-in-image]`.** The Postgres connection string is **runtime env only**
-  (`SCAN_DATABASE_URL` → `DATABASE_URL`) — never baked, never committed. The `.env.example` entries
-  are value-less docs.
-- **The "trading path stays stateless" narrowing (extended).** This is the first persistent SCAN
-  store; like iv-rank's market-data side-store, it is a **best-effort compute cache** outside the
-  trading path — a wiped store re-sweeps, never an error. On-disk (not `:memory:`) so a locally-run
-  worker's rows survive a dev restart.
-
-## 4. GATE Q surface (how P1 is verified — the phase's own gate)
-
-P1 is a backend-internal store with no product AC and no HTTP surface, so its GATE Q is **mechanical +
-structural** (the containerize-apps / persistent-db infra-fast-path precedent), run by a fresh
-`qa-verify` after the lane reports done:
-1. **`_selftest` GREEN** — `cd apps/api && .venv/Scripts/python.exe -m src.scanstore._selftest` prints
-   `PASS` (exit 0); and the RED→GREEN was demonstrated (the latest-wins break FAILs as Plan 1 Task 2
-   Step 3 specifies).
-2. **Factory selects disk by default** and round-trips through the public surface (Plan 1 Task 4
-   Step 2 command → `SqliteScanStore` + `['disk','postgres']`).
-3. **Postgres parity review** — statement-level parity against the SQLite SQL (same columns, `ON
-   CONFLICT … DO UPDATE` on both `upsert_row` and `write_heartbeat`, `ORDER BY symbol ASC`, `= ANY(%s)`
-   mirrors the SQLite `IN (…)`, `_ROW_COLS` reconstruction order) + import-safety (`import
-   src.scanstore.postgres_store` succeeds without a live DB) + the boot-safe `wait=False` try/except.
-   **No live-PG run** (no local Postgres — deferred like iv-rank/persistent-db).
-4. **Leaf-import boundary (structural, the byte-identity proof)** — confirm no scoring/engine/bundle
-   module imports `scanstore` and `scanstore` imports none of them (grep/AST, the AST-check precedent
-   from iv-rank/ai-context-pack). Score/tier/`state_fingerprint` are **unreachable by construction** in
-   P1 — the `apps/api` diff is confined to the new leaf + doc lines.
-5. **Latest-wins divergence honored** — a re-`upsert_row` for a symbol OVERWRITES (not insert-if-absent);
-   asserted in `_selftest`.
+Run by a fresh de-correlated `qa-verify` after the lane reports done (venv =
+`apps/api/.venv/Scripts/python.exe`, `cwd=apps/api`):
+1. **Tiering pure-logic `_selftest` (the centerpiece) GREEN + a real RED→GREEN** — the anti-herd +
+   round-robin fairness proof with the injected clock (batch never exceeds the pool; a market-wide move
+   degrades to base cadence, never a herd; baseline round-robin slots guaranteed). Independently
+   demonstrate the RED (break a threshold/cap) then restore byte-identical.
+2. **Projection `_selftest` GREEN** — `ScanRow.tier == compute_opportunity_tier(...)` (the consume-not-
+   derive proof) and distances = signed-% transport; partial/failed compute → honest nullable row +
+   `building`/`error`/`stale`.
+3. **Snapshot method** — `get_snapshot_all` offline presence check; `import src.providers.massive`
+   safe; a stub `MarketDataProvider` subclass proves the ABC method; best-effort `{}`/absent-symbol
+   contract.
+4. **Bundle-blob store** — the extended `scanstore/_selftest` round-trips the blob GREEN on the SQLite
+   default; PG statement-parity for the new `scan_bundles` table/methods (no live PG).
+5. **Loop `_selftest`** — the embedded short run vs a **stub provider + canned bundle** (no live key)
+   produces rows + heartbeat + blob writes; a per-ticker failure isolates to its row; a store outage is
+   survived (writes skipped, loop continues).
+6. **Byte-identity (HARD) — the core proof:**
+   - `git diff` confined to the additive set above; **0 edits to `engine.py`/`signals.py`/`live.py`/
+     `darkpool.py`/`chain_store.py` and `compute_ticker` unchanged**.
+   - **`SCANNER_EMBEDDED` unset ⇒ `main.py` app byte-identical** (the hook is env-guarded, default-off,
+     after `app = FastAPI(...)`; grep-confirm the guard).
+   - Leaf/boundary AST: no scoring module imports `scanner/` or `scanstore/`; `scanner/` never imports
+     into and mutates the scoring path.
+   - Spot-check a served bundle's score/tier/`state_fingerprint` is byte-identical worker-absent vs
+     worker-present (embedded), per the P1/iv-rank precedent.
+7. **`[no-secrets-in-image]`** — `.env.example`/`Dockerfile` worker additions are value-less docs; the
+   universe JSON holds tickers only, no secret.
 
 ## 5. Lane rules
 
-- Backend lane only: writes land under `apps/api/` (the workspace fence covers it). Touch **no** UI,
-  **no** `libs/api`, **no** engine/signals/scoring code.
-- **Commit** per Plan 1's per-task commit steps (local, on `main`). **Do NOT push** — the conductor
-  pushes after P1's GATE Q passes (the "push after gates" owner pattern). **Do NOT run `nx` folder
-  renames** (P1 creates files only; the nx-daemon tree-lock gotcha does not apply).
-- If Plan 1 proves wrong or under-specified in any step (it should not — it is complete), do **not**
-  invent around it: stop and report the exact step + the conflict for a GATE-Z bounce.
-- **Surface, don't decide, the pytest question** — Plan 1's "Open decision" flags that the backend has
-  no pytest runner and P1 uses the runnable `_selftest` convention. That is the correct v1 choice;
-  adopting pytest is a separate owner decision. Note it in your return summary; do not adopt pytest.
+- Backend lane only; writes under `apps/api/`. Touch **no** UI, **no** `libs/api`, **no** engine/signals/
+  scoring code (the additive port/store/main-hook edits above are the ONLY shared-file changes).
+- **Commit** per Plan 2's per-task steps (local, on `main`). **Do NOT push** — the conductor pushes after
+  P2's GATE Q. **Do NOT run `nx` folder renames.** If any step needs `nx`, note the daemon tree-lock
+  gotcha (stop the daemon before any contracts-folder rename — n/a here, files-only + one target add).
+- If Plan 2 proves wrong/under-specified, STOP and report the exact step + conflict (GATE-Z candidate) —
+  do not invent around it. The two Open-decision-3 clarifications are **already resolved** (consume-not-
+  derive); do not re-litigate them.
+- Surface the pytest "Open decision" (do not adopt pytest) and the vendor-endpoint confirmation result
+  (`get_snapshot_all` present/fallback) in your return summary.
