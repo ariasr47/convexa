@@ -243,6 +243,17 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 ## 5. Key decisions & rationale
 <!-- shard: tags=decisions,invariants,isolation,darkpool; always -->
 - **Single-ticker, on-demand** (dropped the watchlist scan) — bulk per-cycle calc was too slow.
+  **NARROWED 2026-07-26 at `scanner` GATE S (system-7 — a descriptive narrowing, NOT a demotion):** the
+  rule was written against an *unbounded, per-request market sweep* — that remains forbidden. It is now
+  stated precisely as: **the trading/serve REQUEST PATH computes exactly the one ticker asked for;
+  multi-ticker computation happens ONLY in a separate, bounded, off-request-path sweep worker writing a
+  side-store.** The Ticker page's latency budget is unchanged (the request path is still
+  single-ticker-on-demand); the scanner is a budgeted background producer feeding a cache. What moved is
+  the *bound*: the original constraint was the vendor's per-ticker options budget colliding with a
+  synchronous request; the current plan removes the vendor as the constraint, leaving our own engine CPU,
+  held by the worker's pool off the request path. Re-opening this further (e.g. an in-request market
+  sweep) is a GATE-Z reversal. *(Precedent for the shape: the auth "stateless server → stateless
+  **trading path**" narrowing.)*
 - **Selectable DTE/expiration window** (`min_dte/max_dte/expirations`) — stabler swing levels,
   free of 0DTE noise; shapes gamma structure only.
 - **60s cache + freshness/`stale` flag** — pollable without hammering; honest data age.
@@ -411,6 +422,44 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `position_eval{changed,fingerprint}|null` (sibling of `ai_eval`, via `pos_*` query params);
   `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
   path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
+- **Scanner — the multi-ticker surface (`scanner`, FE+BE, shipped 2026-07-26)** — replaces the `/scanner`
+  stub with the product's **breadth** surface: one dense honest table answering *"which ticker deserves the
+  deep-dive now?"* over an **owner-curated tracked universe** (50–100), swept **with all tabs closed**.
+  **Approach C, delivered in 4 sequenced phases, each with its own execution contract + GATE Q.**
+  **P1 `apps/api/src/scanstore/`** — a persistent one-way-leaf store (structural sibling of `marketdata/`):
+  `ScanRow` (latest-wins, one CURRENT row per symbol — the deliberate divergence from iv-rank's
+  insert-if-absent) + `SweepHeartbeat` + a bundle-blob, behind one port with an on-disk **SQLite default**
+  and a **parity-reviewed Postgres** drop-in (`SCAN_STORE`, default `disk`).
+  **P2 the sweep worker** — a **2nd process** off the same image (`worker.py`, nx `serve-worker`, plus a
+  default-OFF `SCANNER_EMBEDDED` one-terminal dev seam). A **two-speed loop**: a fast multi-ticker snapshot
+  poll (~30s → prices + move detection, via the **net-new `fetch_stock_snapshots`** method added to the
+  `MarketDataProvider` port + Massive adapter) and a concurrency-bounded slow sweep through the
+  **UNCHANGED `compute_ticker`**, projecting one `ScanRow` per ticker. **Move-triggered promotion is capped
+  with round-robin fairness** (pure logic + injected clock — a market-wide move degrades to base cadence,
+  never a herd). Defaults (operator-tunable): move X **0.75%** · fast **~30s** · full pass **~2–3 min at
+  N=100**.
+  **P3 the read API** — `GET /api/scan` · `/api/scan/universe` · `GET+PUT /api/scan/view`, all reads
+  **anonymous-open + best-effort 200 (never a 5xx for scan trouble)**; the **PUT is server-gated** (real
+  401/403, 422 off-universe) with the per-account view stored as a field on the existing settings record.
+  Plus the **ticker warm-click read-through**: a tracked symbol's Ticker page is served from the worker's
+  freshness-gated bundle-blob before the vendor (the `chain_store` pre-warm precedent extended across the
+  process boundary) — measured **0.0016s warm vs ~9.5s cold**, byte-identical either way.
+  **P4 the `/scanner` page** — the dense terminal table (11 columns, score-desc, compact, sticky
+  symbol+header), a universe-constrained **view editor** whose save awaits the server gate, the **four
+  honest states** (skeleton / empty / worker-down banner over intact last-known rows / per-row
+  `ok`·`stale`·`error`·`building`) rendered via **closed lookup**, and a `<sm` card collapse joining the
+  **393px no-overflow e2e set**.
+  **Honesty is structural:** rows are **poll-based, never "live"** (the word is absolutely forbidden on the
+  table — the design authority was amended at P4 when it contradicted its own rule); each row carries its
+  own `as_of` + status; a synthesized `building` row's non-null `as_of` is **not** a freshness claim (the FE
+  branches on status first); a stale row keeps its **frozen** price with its stamp; **green/red is reserved
+  for price direction only**. **The scanner CONSUMES score/tier and can never feed them** — enforced by the
+  leaf-import boundary, an empty `apps/api` diff in P4, and a live proof that a served bundle is
+  byte-identical worker-absent vs worker-present (SPY `59`/`actionable`/`4df5c37bd833`). **v1 has NO AI**
+  (AI-seeded views + batch recs are v2), no alerts, no universe admin UI, no SSE, no order path.
+  **Formally narrowed the locked "single-ticker, on-demand" decision** (§5). QA PASS all four phases
+  (de-correlated Sonnet) — **13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @org/dashboard` 645; e2e 15/15;
+  conformance 2/2 live via the standalone `.claude/tools/conformance/scanner.json`. See OPEN_THREADS §7v.
 - **Outcome ledger — the track record (`outcome-ledger`, FE-only, shipped 2026-07-16)** — the project's
   **first loop for TRADING wisdom** (it already had `DECISION_LEDGER.md` for BUILD wisdom). Harvests the
   append-only `DecisionRecord[]` the app already writes and answers, honestly: **is the `opportunity_score`

@@ -852,6 +852,43 @@ no banned hex inside them, so the scan doesn't bite).
 states (default render clean — future pass) · the touch-floor live pixel spot-check needs coarse-pointer
 emulation · chart-tick 10px exemption stands until the owner reads the floor otherwise.
 
+## 7v. Scanner — the multi-ticker surface (SHIPPED + ARCHIVED — 4 phases, both lanes)
+Contracts archived at `.claude/contracts/_archive/scanner/`. Owner-directed 2026-07-01 (item 5), brainstormed
++ owner-approved as a v1 design 2026-07-23, delivered 2026-07-24→26. **Displaced 7× since 2026-06-25 — never
+dropped.** The product's **breadth** surface; capability + phase detail in CONTEXT §6, not restated here.
+**Shape:** approach C — a 2nd-process sweep worker + a shared persistent `ScanStore` + a best-effort
+warm-click read-through — run as **4 sequenced phases, each its own execution contract + GATE Q**
+(P1 store `7269fa2` · P2 worker `9d92fed` · P3 read API `eb478df` · P4 page `e094bd1`), the redesign-stages
+pattern applied to a both-lanes feature.
+**QA:** PASS on all four phases, every one a fresh **de-correlated Sonnet** — **13/13 PRODUCT ACs closed
+feature-wide, 0 FAIL, 0 UNVERIFIABLE.** Conformance 2/2 live against the standalone
+`.claude/tools/conformance/scanner.json`; `nx test @org/dashboard` **645**; e2e **15/15**; lint at the exact
+29-warning baseline.
+**GATE S — canon:** formally **NARROWED "single-ticker, on-demand"** (CONTEXT §5 + §9 below) — the request
+path stays single-ticker; multi-ticker compute is the bounded off-request-path worker. A **descriptive
+narrowing, not a demotion** (precedent: the auth "stateless → stateless *trading path*" narrowing).
+**GATE S — ledger:** no NEW graduations (all 8 touched keys were already canon; each gained an instance).
+`structural-over-prose-enforcement` reached its **2nd instance** but **stays on the watch list** — the
+original objection (a design heuristic without a crisp violation test) is unchanged by volume of evidence.
+**system-12 handling (owner decision A, 2026-07-24):** scanner authored the canonical **standalone**
+conformance spec directly (the `iv_rank.json` precedent) rather than blocking on the kit-doc fix; the
+kit-doc/tool reconciliation remains a deliberate framework task in delivery-kit `KIT_BACKLOG.md §B`.
+**Two contract defects were caught by DOWNSTREAM lanes refusing to invent around them** — the system working
+as designed: (1) the P2 projection selftest asserted a nearer-wall sign for a price sitting **exactly**
+equidistant between both walls (an undefined tie) — ruled to an asymmetric fixture, production untouched;
+(2) the `UX_BLUEPRINT` **forbade the word "live" on the table and then used it twice in its own copy**,
+making the AC-9 negative-space scan unenforceable — the rule stands, both strings reworded ("not a
+**real-time** feed"), and the scan is now absolute.
+**Deferred seams (named, not built):** **AI-seeded views + batch/small-batch recs (v2** — the whole AI half
+of the original scope) · in-app "request tracking" + a universe admin UI (the universe is owner-curated
+config; edit + restart worker, no hot-reload) · alerts/thresholds/notifications · WS-based prices (only if
+the poll cadence disappoints) · **multi-replica worker coordination** (v1 is a single worker; the store
+interface is the seam — no leader election) · multiple **named** per-account views (v1 is one view per
+account; a dedicated gated store leaf becomes right then) · live-Postgres verification of the new
+`scan_bundles`/`scan_view` SQL (parity-reviewed only — no local Postgres) · **`auth-schema-migrations`**
+(BACKLOG §B — the auth Postgres schema-evolution seam fired here and was deliberately deferred).
+**Not deployed:** on `main`, but the live site won't show `/scanner` until the owner runs the deploy runbook.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -885,6 +922,12 @@ emulation · chart-tick 10px exemption stands until the owner reads the floor ot
   (broker reconciliation; Webull shows last-trade, hence small benign differences). Last-trade is a READOUT
   — it drives nothing on the anchor/levels/flip path. Was: "Keep mid; do not add last-trade." Letting
   last-trade drive the anchor is a GATE-Z reversal. (Prose single-sourced in PROJECT_CONTEXT §5.)
+- **Single-ticker, on-demand** (the watchlist scan was dropped — bulk per-cycle calc was too slow).
+  **NARROWED 2026-07-26 (`scanner` GATE S, system-7 — descriptive narrowing, NOT a demotion):** the
+  **trading/serve REQUEST PATH computes exactly the one ticker asked for**; multi-ticker computation
+  happens **only** in a separate, bounded, off-request-path **sweep worker writing a side-store**. An
+  unbounded in-request market sweep — what the original decision actually forbade — stays forbidden and
+  reopening it is a GATE-Z reversal. (Prose single-sourced in PROJECT_CONTEXT §5.)
 - **Gamma sourcing** — vendor gamma for walls/profile, analytic BS for the flip; the divergence
   is immaterial. Don't "fix" it via interpolation or borrow-rate calibration.
 - **Dark pool** — context only, capped confluence, toggleable; never a directional "smart money"

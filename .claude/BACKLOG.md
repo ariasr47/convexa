@@ -264,7 +264,15 @@ Owner handed the conductor five sequenced items (screenshots of broken light-mod
    provenance + decision records). Score/tier/fp byte-identical. QA PASS 48/48 (de-correlated Sonnet);
    +103 tests → 595. **SUBSUMED** the §B "AI-rec Accept → tracked position" item. One post-QA render
    catch fixed inline + guarded (keyless-deployment scenario run). Seams → OPEN_THREADS §7n.
-5. **`scanner`** — **NEXT** (architect-first, both lanes). Promotes the long-queued Track-A item
+5. **`scanner`** — **✓ SHIPPED + ARCHIVED (2026-07-26)** → `_archive/scanner/`. Full pipeline, both lanes,
+   delivered as **4 sequenced phases each with its own execution contract + GATE Q** (P1 store `7269fa2` ·
+   P2 worker `9d92fed` · P3 read API `eb478df` · P4 page `e094bd1`). **QA PASS all four (de-correlated
+   Sonnet) — 13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @org/dashboard` 645; e2e 15/15; conformance 2/2
+   live. **GATE S formally NARROWED "single-ticker, on-demand"** (request path stays single-ticker; the
+   sweep is the bounded off-request-path worker) — descriptive narrowing, not a demotion. **No new ledger
+   graduations** (all 8 touched keys already canon); `structural-over-prose-enforcement` → 2 instances,
+   held on the watch list. v1 ships **NO AI** (v2 seam). Seams → OPEN_THREADS §7v. *(original entry:)*
+   Promotes the long-queued Track-A item
   <!-- atlas: theme=breadth horizon=now -->
    WITH the owner's expanded scope: durable custom watchlist, simplified per-ticker read (score/tier),
    AI-seeded watchlists, multiple views, ticker-page links, batch AI recs on all/selected. **Invariant
