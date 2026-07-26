@@ -125,6 +125,13 @@ TIER_WATCH_SCORE = int(os.getenv("TIER_WATCH_SCORE", "25"))
 TIER_ACTIONABLE_SCORE = int(os.getenv("TIER_ACTIONABLE_SCORE", str(GATE_SCORE)))
 TIER_PRIME_SCORE = int(os.getenv("TIER_PRIME_SCORE", "75"))
 
+# --- Scanner default-view (D2) fallback size (Scanner v1 P3) ---
+# When no explicit owner default_view list is configured, the anonymous/new-user view falls back to
+# the top-N tracked symbols by current score (empty store -> the first N universe symbols as
+# `building`). N=20 (INTERFACE §3.1). The shipped config carries an explicit default_view, so this
+# path is the unset-config fallback. Operator-tunable; runtime env only.
+SCAN_DEFAULT_VIEW_N = int(os.getenv("SCAN_DEFAULT_VIEW_N", "20"))
+
 # --- Backend observability config ---
 # Instrumentation default ON (off => no trace_id/timings, no metrics recorded, bundle identical).
 # `?debug=1` per request adds the verbose `meta.timings` block. The aggregate is a rolling window
@@ -1434,6 +1441,108 @@ async def get_scan_universe():
         logger.warning("scan: universe config unavailable; returning empty list", exc_info=False)
         symbols = []
     return {"symbols": symbols, "universe_size": len(symbols)}
+
+
+def _parse_saved_view(raw: str) -> "dict | None":
+    """Deserialize a stored scan_view JSON string into a view dict; None on any parse fault (a
+    corrupt/legacy value degrades to the default view, never a 5xx)."""
+    try:
+        v = json.loads(raw)
+    except Exception:
+        return None
+    if not isinstance(v, dict) or not isinstance(v.get("symbols"), list):
+        return None
+    return v
+
+
+def _default_view_symbols() -> list:
+    """D2 default-view symbol list. Explicit owner default_view when non-empty; else top-N-by-current-
+    score from the store (empty store -> the first N universe symbols, which become `building` rows).
+    Best-effort: a universe/store fault degrades gracefully (never a 5xx)."""
+    try:
+        cfg = get_universe()
+    except Exception:
+        return []
+    if cfg.default_view:
+        return list(cfg.default_view)
+    try:
+        rows = {r.symbol: r for r in scanstore.get_store().read_rows(cfg.universe)}
+    except Exception:
+        rows = {}
+    # Rank universe symbols by current score desc (None/absent last); stable in universe order. Empty
+    # store -> every score is -inf -> the first N universe symbols (all become `building`).
+    ranked = sorted(
+        cfg.universe,
+        key=lambda s: (rows[s].score if s in rows and rows[s].score is not None else float("-inf")),
+        reverse=True)
+    return ranked[:SCAN_DEFAULT_VIEW_N]
+
+
+def _default_view_dict() -> dict:
+    """The owner-curated default view bag (source: 'default')."""
+    return {"symbols": _default_view_symbols(), "name": None,
+            "sort": {"key": "score", "dir": "desc"}, "density": "compact"}
+
+
+def _effective_view(request: Request) -> "tuple[dict, str, bool]":
+    """Resolve the caller's effective view (D2). Signed-in with a saved view -> ('account', that view);
+    otherwise -> ('default', the owner-curated default). `authenticated` reflects whether a session
+    exists. A read is NEVER gated (AC-4): anonymous always gets a readable default."""
+    resolved, ok = _resolve_auth(request)
+    authed = bool(ok and resolved is not None and resolved.authenticated)
+    if authed:
+        try:
+            raw = auth.get_service().get_scan_view(resolved.user)
+        except Exception:
+            raw = None
+        if raw:
+            parsed = _parse_saved_view(raw)
+            if parsed is not None:
+                return parsed, "account", True
+    return _default_view_dict(), "default", authed
+
+
+def _building_row_wire(symbol: str) -> dict:
+    """A synthesized `building` placeholder row (INTERFACE §3.1 building-fill): present, honestly
+    not-yet-computed (numeric fields null, status 'building', as_of 0.0 — NOT a freshness claim).
+    Mirrors src.scanner.projection.project_building's shape via the P1 ScanRow wire."""
+    return scanstore.ScanRow(
+        symbol=symbol.upper(), price=None, chg_pct=None, score=None, tier=None, regime=None,
+        vol_regime=None, flip=None, dist_to_flip_pct=None, call_wall=None, put_wall=None,
+        dist_to_wall_pct=None, as_of=0.0, status="building").to_wire()
+
+
+@app.get("/api/scan/view")
+async def get_scan_view(request: Request):
+    """The caller's effective view (INTERFACE §3.3). Anonymous-open, always 200 — a read is never
+    gated; anonymous always gets a readable default (AC-4)."""
+    view, source, authed = _effective_view(request)
+    return _scan_view_response(view, source, authed)
+
+
+@app.get("/api/scan")
+async def get_scan(request: Request):
+    """The requested-or-default view as slim rows + sweep metadata (INTERFACE §3.1). Anonymous-open,
+    best-effort ALWAYS 200 + status — a store outage degrades content (stale/building rows, sweep
+    null), never a 5xx. Every view symbol is present in `rows` (building-fill)."""
+    view, source, authed = _effective_view(request)
+    view_wire = _scan_view_response(view, source, authed)
+    symbols = view_wire["symbols"]
+
+    try:
+        stored = {r.symbol: r for r in scanstore.get_store().read_rows(symbols)}
+    except Exception:
+        logger.warning("scan: read_rows faulted; serving building-filled degraded 200", exc_info=False)
+        stored = {}
+    # Building-fill: the stored row as-is (worker owns its status) or a synthesized building placeholder.
+    rows = [stored[s].to_wire() if s in stored else _building_row_wire(s) for s in symbols]
+
+    try:
+        hb = scanstore.get_store().read_heartbeat()
+    except Exception:
+        logger.warning("scan: read_heartbeat faulted; sweep=null", exc_info=False)
+        hb = None
+    return {"view": view_wire, "rows": rows, "sweep": hb.to_wire() if hb is not None else None}
 
 
 # Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
