@@ -22,13 +22,17 @@
  */
 import { ThemeProvider } from '@mui/material/styles';
 import type { ScanRow } from '@org/api';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { GateApi } from '@/features/auth/useGate';
 import { theme } from '@/shared/theme/theme';
 import { ScanCardList } from './ScanCard';
 import { ScanTable } from './ScanTable';
-import { SCAN_COLUMNS } from './labels';
+import { ScanToolbar } from './ScanToolbar';
+import { ViewEditorDialog } from './ViewEditorDialog';
+import { SCAN_COLUMNS, SORTABLE_COLUMNS } from './labels';
 
 const NOW = 1_800_000;
 
@@ -48,6 +52,20 @@ export function makeRow(over: Partial<ScanRow> = {}): ScanRow {
     dist_to_wall_pct: 2.0,
     as_of: NOW - 42,
     status: 'ok',
+    ...over,
+  };
+}
+
+/** A minimal GateApi double — the toolbar only reads `allowed`/`promptText` and calls `signIn`. */
+export function fakeGate(over: Partial<GateApi> = {}): GateApi {
+  return {
+    allowed: false,
+    promptText: null,
+    prompt: () => undefined,
+    signIn: () => undefined,
+    clear: () => undefined,
+    guard: async () => undefined,
+    simTradeGate: async () => ({ authorized: true as const }),
     ...over,
   };
 }
@@ -229,5 +247,195 @@ describe('navigation only', () => {
     const cards = screen.getAllByTestId('scan-card');
     expect(cards.map((c) => c.getAttribute('href'))).toEqual(['/ticker/SPY', '/ticker/QQQ']);
     expect(screen.getByTestId('scan-cards').querySelectorAll('button')).toHaveLength(0);
+  });
+});
+
+// =================================================================================================
+// 5. The controls emit only CLOSED wire vocabulary (a bad key silently breaks view persistence)
+// =================================================================================================
+describe('sort + density controls speak only the closed wire vocabulary', () => {
+  it('a header click emits a closed sort key and toggles direction; aria-sort tracks the active column', async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const closedKeys = new Set(Object.values(SORTABLE_COLUMNS));
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanTable
+            rows={[makeRow()]}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="compact"
+            nowS={NOW}
+            flashActive
+            onSort={onSort}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    // The active column advertises its direction; a non-sortable column advertises nothing.
+    expect(screen.getByTestId('scan-th-score')).toHaveAttribute('aria-sort', 'descending');
+    expect(screen.getByTestId('scan-th-tier')).toHaveAttribute('aria-sort', 'none');
+    expect(screen.queryByTestId('scan-sort-tier')).toBeNull(); // tier is not sortable
+
+    await user.click(screen.getByTestId('scan-sort-score')); // active + desc ⇒ flip to asc
+    await user.click(screen.getByTestId('scan-sort-symbol')); // a new column starts at desc
+    for (const [{ key, dir }] of onSort.mock.calls) {
+      expect(closedKeys.has(key)).toBe(true);
+      expect(['asc', 'desc']).toContain(dir);
+    }
+    expect(onSort.mock.calls[0][0]).toEqual({ key: 'score', dir: 'asc' });
+    expect(onSort.mock.calls[1][0]).toEqual({ key: 'symbol', dir: 'desc' });
+  });
+
+  it('the density control emits only the closed values and the table carries the rendered density', async () => {
+    const user = userEvent.setup();
+    const onDensity = vi.fn();
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanToolbar
+            view={null}
+            density="compact"
+            onDensity={onDensity}
+            onEditView={() => undefined}
+            gate={fakeGate({ allowed: true })}
+          />
+          <ScanTable
+            rows={[makeRow()]}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="comfortable"
+            nowS={NOW}
+            flashActive
+            onSort={() => undefined}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    await user.click(screen.getByTestId('scan-density-comfortable'));
+    expect(onDensity).toHaveBeenCalledWith('comfortable');
+    for (const [value] of onDensity.mock.calls) expect(['compact', 'comfortable']).toContain(value);
+    expect(screen.getByTestId('scan-table')).toHaveAttribute('data-density', 'comfortable');
+  });
+});
+
+// =================================================================================================
+// 6. Anonymous copy never overclaims
+// =================================================================================================
+describe('the toolbar never overclaims persistence', () => {
+  it('an anonymous visitor gets the standing sign-in prompt and a "Default view" label — no saved/your claim', () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanToolbar
+            view={{
+              source: 'default',
+              authenticated: false,
+              name: null,
+              symbols: ['SPY'],
+              sort: { key: 'score', dir: 'desc' },
+              density: 'compact',
+            }}
+            density="compact"
+            onDensity={() => undefined}
+            onEditView={() => undefined}
+            gate={fakeGate({ allowed: false })}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('scan-signin-prompt')).toHaveTextContent(
+      'Sign in to customize your view.',
+    );
+    expect(screen.getByTestId('scan-view-label')).toHaveTextContent('Default view');
+    expect(screen.getByTestId('scan-toolbar').textContent).not.toMatch(
+      /saved|Saved to your account/i,
+    );
+  });
+});
+
+// =================================================================================================
+// 7. The editor is universe-constrained (AC-13) and saves the exact draft
+// =================================================================================================
+describe('the view editor', () => {
+  const universe = { symbols: ['SPY', 'QQQ', 'NVDA'], universe_size: 3 };
+
+  function renderEditor(onSave: (d: unknown) => Promise<boolean>) {
+    return render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ViewEditorDialog
+            open
+            onClose={() => undefined}
+            view={{
+              source: 'account',
+              authenticated: true,
+              name: null,
+              symbols: ['SPY', 'QQQ'],
+              sort: { key: 'score', dir: 'desc' },
+              density: 'compact',
+            }}
+            sort={{ key: 'score', dir: 'desc' }}
+            density="compact"
+            saveError={null}
+            onSave={onSave as never}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+  }
+
+  it('offers ONLY universe symbols — no free-text entry, no path to an off-universe symbol', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify(universe), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
+    );
+    renderEditor(async () => true);
+    await screen.findByTestId('scan-universe-SPY');
+    // Every choice control corresponds to a symbol the SERVER listed.
+    const offered = within(screen.getByTestId('scan-universe-list'))
+      .getAllByRole('button')
+      .map((b) => b.textContent);
+    expect(offered).toEqual(universe.symbols);
+    expect(screen.queryByTestId('scan-universe-ZZZZ')).toBeNull();
+    // The ONLY text input is the optional view NAME — there is no symbol text field to type into.
+    const inputs = Array.from(document.querySelectorAll('input'));
+    expect(inputs).toHaveLength(1);
+    expect(inputs[0]).toHaveAttribute('data-testid', 'scan-view-name');
+  });
+
+  it('saves the exact draft: reordered symbols in display order + name + the live sort/density', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify(universe), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
+    );
+    const onSave = vi.fn(async () => true);
+    renderEditor(onSave);
+    await screen.findByTestId('scan-universe-NVDA');
+
+    await user.click(screen.getByTestId('scan-universe-NVDA')); // append
+    await user.click(screen.getByTestId('scan-move-up-NVDA')); // reorder: order IS the ordering
+    await user.type(screen.getByTestId('scan-view-name'), 'Morning');
+    await user.click(screen.getByTestId('scan-view-save'));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0]).toEqual({
+      symbols: ['SPY', 'NVDA', 'QQQ'],
+      name: 'Morning',
+      sort: { key: 'score', dir: 'desc' },
+      density: 'compact',
+    });
   });
 });
