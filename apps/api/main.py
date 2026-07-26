@@ -101,6 +101,17 @@ CHAIN_PREWARM_MAX_AGE_SECONDS = min(
     int(os.getenv("CHAIN_PREWARM_MAX_AGE_SECONDS", str(_PREWARM_DEFAULT))),
     CHAIN_REFRESH_SECONDS, STALE_AFTER_SECONDS)
 
+# --- Scanner warm-click read-through (Scanner v1 P3) ---
+# A cold ticker request for a TRACKED symbol may serve the sweep worker's freshly-computed bundle-blob
+# instead of paying the cold vendor fetch — the chain_store pre-warm precedent extended across the
+# process boundary (worker writes, web reads). FRESHNESS-GATED: a blob older than this budget is a
+# MISS (never served as fresh) -> normal vendor fetch. Clamped <= STALE_AFTER_SECONDS so a served blob
+# can never be one the freshness contract would immediately flag stale. Only the CANONICAL bundle
+# (no DTE/expiration filter, dark_pool == INCLUDE_DARK_POOL — exactly what the worker computes) is
+# eligible; any filtered request differs in structure and always falls through to a fresh compute.
+SCAN_WARM_MAX_AGE_SECONDS = min(
+    int(os.getenv("SCAN_WARM_MAX_AGE_SECONDS", str(STALE_AFTER_SECONDS))), STALE_AFTER_SECONDS)
+
 # --- Dark-pool / off-exchange config ---
 # Default inclusion; per-request `dark_pool` query param overrides. When excluded, the
 # off_exchange block is omitted from the bundle (so the downstream AI never sees it) AND the
@@ -789,24 +800,40 @@ async def _compute_entry(t: str, key: tuple, min_dte: int | None, max_dte: int |
     Acquisition (chain pre-warm + 3-fetch concurrency) happens here on the event loop; the
     `compute_ticker` transform then runs in a worker thread. Same inputs → byte-identical bundle.
     """
-    market_data, underlying_history, intraday_bars, chain_source = \
-        await _acquire_vendor_inputs(t, dark_pool)
-    # Observability honesty (ARCH §4.4 / §6): mark how the chain was acquired (shared-hit vs
-    # vendor fetch) on the trace dims — additive, operator-only, never a trader-facing field.
-    if trace is not None:
-        try:
-            trace.dims["chain_source"] = chain_source
-        except Exception:
-            pass
-
-    bundle = await asyncio.to_thread(
-        compute_ticker, t, market_data, underlying_history, intraday_bars,
-        min_dte, max_dte, expirations, dark_pool)
+    # Scanner warm-click read-through (Scanner v1 P3): a cold request for a TRACKED symbol may serve
+    # the sweep worker's freshly-computed bundle-blob instead of the cold vendor fetch — the
+    # chain_store pre-warm precedent extended across the process boundary (worker writes, web reads).
+    # BYTE-PRESERVING: the blob was produced by compute_ticker in the worker, so compute_ticker stays
+    # the SOLE transform; the read-through only changes where the bundle came from (never its bytes).
+    # Best-effort + freshness-gated: any miss/stale/fault falls straight through to the normal fetch
+    # (no new failure surface — ARCHITECTURE §5.3).
+    warm = _scan_warm_bundle(t, min_dte, max_dte, expirations, dark_pool, now)
+    if warm is not None:
+        bundle = warm
+        chain_source = "scan_warm_hit"
+        if trace is not None:
+            try:
+                trace.dims["chain_source"] = chain_source
+            except Exception:
+                pass
+    else:
+        market_data, underlying_history, intraday_bars, chain_source = \
+            await _acquire_vendor_inputs(t, dark_pool)
+        # Observability honesty (ARCH §4.4 / §6): mark how the chain was acquired (shared-hit vs
+        # vendor fetch) on the trace dims — additive, operator-only, never a trader-facing field.
+        if trace is not None:
+            try:
+                trace.dims["chain_source"] = chain_source
+            except Exception:
+                pass
+        bundle = await asyncio.to_thread(
+            compute_ticker, t, market_data, underlying_history, intraday_bars,
+            min_dte, max_dte, expirations, dark_pool)
     if bundle is None:
         raise HTTPException(status_code=404, detail=f"No option-chain data available for {t}.")
     # Move the filter-independent snapshot into its ticker-keyed cache, then drop it from
     # the cached bundle (so it isn't duplicated per filter key or ever serialized).
-    _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot"), "computed_at": now}
+    _snapshot_cache[t] = {"market_data": bundle.pop("_snapshot", None), "computed_at": now}
     # Resolve the dedupe flag against the last DISTINCT picture for this ticker.
     fingerprint = bundle["ai_eval"]["state_fingerprint"]
     changed = fingerprint != _last_fingerprint.get(t)
@@ -1625,6 +1652,51 @@ async def put_scan_view(body: ScanViewBody, request: Request):
     except auth.AuthError as e:
         return JSONResponse(status_code=e.status, content=e.envelope())
     return _scan_view_response(normalized, "account", True)
+
+
+def _tracked_symbols() -> frozenset:
+    """Cached frozenset of the universe (tracked) symbols for the warm-click tracked-only gate.
+    Best-effort: a universe-load fault yields an empty set (no warm-click), never an error."""
+    try:
+        return frozenset(get_universe().universe)
+    except Exception:
+        return frozenset()
+
+
+def _scan_warm_bundle(t: str, min_dte, max_dte, expirations, dark_pool: bool,
+                      now: float) -> "dict | None":
+    """Best-effort warm-click source: the sweep worker's freshly-computed bundle-blob for a TRACKED
+    symbol's CANONICAL (unfiltered) request, or None (miss/stale/fault -> normal vendor fetch). It
+    changes only WHERE the bundle came from — never its bytes: the blob was produced by compute_ticker
+    in the worker, so compute_ticker stays the sole transform ([additive-keeps-score-byte-identical])."""
+    # Only the canonical full-chain bundle the worker computes is eligible (a DTE/expiration/dark_pool-
+    # varied request has a different structure and must NOT be served the worker's blob).
+    if min_dte is not None or max_dte is not None or expirations is not None \
+            or dark_pool != INCLUDE_DARK_POOL:
+        return None
+    try:
+        if t.upper() not in _tracked_symbols():
+            return None
+        blob = scanstore.get_store().read_bundle_blob(t)
+    except Exception:
+        logger.debug("warm-click: bundle-blob read skipped (store outage)", exc_info=True)
+        return None
+    if blob is None:
+        return None
+    # FRESHNESS GATE: a stale blob is a MISS (never served as fresh).
+    if (now - blob.as_of) > SCAN_WARM_MAX_AGE_SECONDS:
+        return None
+    try:
+        bundle = json.loads(blob.bundle_json)
+    except Exception:
+        logger.debug("warm-click: bundle-blob deserialize failed; falling through to vendor",
+                     exc_info=True)
+        return None
+    # Defensive shape gate: only a well-formed compute_ticker bundle is served.
+    if not isinstance(bundle, dict) or "market_state" not in bundle \
+            or "state_fingerprint" not in (bundle.get("ai_eval") or {}):
+        return None
+    return bundle
 
 
 # Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
