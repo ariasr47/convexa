@@ -5,6 +5,6 @@ its output; it is NEVER imported by engine/signals/live/darkpool/chain_store/the
 (the score-byte-identity boundary). The worker entrypoint is apps/api/worker.py."""
 from __future__ import annotations
 
-from .universe import UniverseConfig, load_universe  # noqa: E402
+from .universe import UniverseConfig, get_universe, load_universe  # noqa: E402
 
-__all__ = ["UniverseConfig", "load_universe"]
+__all__ = ["UniverseConfig", "get_universe", "load_universe"]

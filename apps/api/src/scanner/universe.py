@@ -64,3 +64,17 @@ def load_universe(path: str | None = None) -> UniverseConfig:
     logger.info(f"[universe] loaded {len(universe)} symbols, default_view={len(default_view)} "
                 f"from {cfg_path}")
     return UniverseConfig(universe=universe, default_view=default_view)
+
+
+_CACHED: UniverseConfig | None = None
+
+
+def get_universe() -> UniverseConfig:
+    """Process-cached universe config for the WEB read path (Scanner v1 P3). Loaded ONCE (D3: edit the
+    checked-in config + restart to change it — no hot-reload). The sweep worker calls load_universe()
+    fresh at its own start; the web app memoizes it here so /api/scan* reads don't re-read the file per
+    request. Raises the same ValueError as load_universe on a missing/empty config."""
+    global _CACHED
+    if _CACHED is None:
+        _CACHED = load_universe()
+    return _CACHED

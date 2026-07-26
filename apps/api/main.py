@@ -44,6 +44,13 @@ from src.core import ai_recommendation as ai_rec
 # only inside src/auth/, never serialized into any payload, never reach the browser.
 from src import auth
 from src.auth.router import router as auth_router
+# Scanner (Scanner v1): two one-way LEAVES read ONLY here (main.py is the sole web orchestration
+# boundary; no scoring module imports them). `scanstore` is the sweep's persistent store (read for
+# /api/scan* + the warm-click bundle-blob); `src.scanner.universe` is the owner-curated universe the
+# read API + the view validator resolve against. NEVER imported by engine/signals/live/darkpool/
+# chain_store/compute_ticker ([additive-keeps-score-byte-identical]).
+from src import scanstore
+from src.scanner.universe import get_universe
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -1396,6 +1403,37 @@ async def stream_ticker(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
+
+
+# ============================================================================ Scanner read API (P3)
+# The scanner's WEB surface: three anonymous-open, best-effort-200 READS + one server-gated WRITE, all
+# reading the P1/P2 ScanStore. Registered HERE — BEFORE the /{ticker} catch-all alias below — so
+# scan/universe/view are never swallowed as a ticker symbol (INTERFACE §1 / ARCHITECTURE §9). These
+# reads are NOT an auth failure domain: a store outage degrades to a 200 + status, never a 5xx.
+
+def _scan_view_response(view: dict, source: str, authenticated: bool) -> dict:
+    """The ScanView wire (INTERFACE §2.3). `source`/`authenticated` are response-time facts (not
+    stored); the rest comes from the resolved view dict, with the closed defaults applied."""
+    return {
+        "source": source,
+        "authenticated": authenticated,
+        "name": view.get("name"),
+        "symbols": list(view.get("symbols") or []),
+        "sort": view.get("sort") or {"key": "score", "dir": "desc"},
+        "density": view.get("density") or "compact",
+    }
+
+
+@app.get("/api/scan/universe")
+async def get_scan_universe():
+    """The read-only owner-curated tracked universe for the view editor (INTERFACE §3.2). Anonymous-
+    open, always 200. No add/request/remove path in v1 ([no-universe-admin])."""
+    try:
+        symbols = list(get_universe().universe)
+    except Exception:
+        logger.warning("scan: universe config unavailable; returning empty list", exc_info=False)
+        symbols = []
+    return {"symbols": symbols, "universe_size": len(symbols)}
 
 
 # Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
