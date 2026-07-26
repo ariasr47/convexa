@@ -71,7 +71,8 @@ class _SharedDB:
                     user_id           TEXT PRIMARY KEY,
                     active_persona_id TEXT,
                     default_ticker    TEXT,
-                    theme             TEXT NOT NULL DEFAULT 'dark'
+                    theme             TEXT NOT NULL DEFAULT 'dark',
+                    scan_view         TEXT
                 );
                 CREATE TABLE IF NOT EXISTS ai_credentials (
                     user_id    TEXT PRIMARY KEY,
@@ -208,6 +209,7 @@ class SqliteUserSettingsStore(UserSettingsStore):
         return SettingsRecord(
             user_id=row["user_id"], active_persona_id=row["active_persona_id"],
             default_ticker=row["default_ticker"], theme=row["theme"],
+            scan_view=row["scan_view"],
         )
 
     def upsert_defaults(self, user_id: str) -> SettingsRecord:
@@ -221,6 +223,7 @@ class SqliteUserSettingsStore(UserSettingsStore):
         return SettingsRecord(
             user_id=row["user_id"], active_persona_id=row["active_persona_id"],
             default_ticker=row["default_ticker"], theme=row["theme"],
+            scan_view=row["scan_view"],
         )
 
     def update(self, user_id: str, patch: dict) -> SettingsRecord:
@@ -234,7 +237,7 @@ class SqliteUserSettingsStore(UserSettingsStore):
                     "INSERT OR IGNORE INTO settings (user_id, active_persona_id, default_ticker, "
                     "theme) VALUES (?, NULL, NULL, 'dark')", (user_id,))
                 # Apply only the keys present in the patch (subset write; server-wins, D7).
-                for col in ("active_persona_id", "default_ticker", "theme"):
+                for col in ("active_persona_id", "default_ticker", "theme", "scan_view"):
                     if col in patch:
                         _db._conn.execute(
                             f"UPDATE settings SET {col} = ? WHERE user_id = ?",
@@ -244,6 +247,7 @@ class SqliteUserSettingsStore(UserSettingsStore):
         return SettingsRecord(
             user_id=row["user_id"], active_persona_id=row["active_persona_id"],
             default_ticker=row["default_ticker"], theme=row["theme"],
+            scan_view=row["scan_view"],
         )
 
 

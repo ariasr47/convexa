@@ -139,10 +139,17 @@ class _SharedPool:
                         user_id           TEXT PRIMARY KEY,
                         active_persona_id TEXT,
                         default_ticker    TEXT,
-                        theme             TEXT NOT NULL DEFAULT 'dark'
+                        theme             TEXT NOT NULL DEFAULT 'dark',
+                        scan_view         TEXT
                     )
                     """
                 )
+                # Scanner v1 P3 schema-evolution (ARCHITECTURE §3.7 first change): additively add the
+                # scan_view column to an ALREADY-DEPLOYED settings table. Idempotent + multi-replica-
+                # safe (ADD COLUMN IF NOT EXISTS); existing rows keep their data, the new column
+                # defaults NULL ([loss-free-durable-migration]).
+                cur.execute(
+                    "ALTER TABLE settings ADD COLUMN IF NOT EXISTS scan_view TEXT")
                 cur.execute(
                     """
                     CREATE TABLE IF NOT EXISTS ai_credentials (
@@ -308,11 +315,11 @@ class PgSessionStore(SessionStore):
 def _row_to_settings(row) -> SettingsRecord:
     return SettingsRecord(
         user_id=row[0], active_persona_id=row[1],
-        default_ticker=row[2], theme=row[3],
+        default_ticker=row[2], theme=row[3], scan_view=row[4],
     )
 
 
-_SETTINGS_COLS = "user_id, active_persona_id, default_ticker, theme"
+_SETTINGS_COLS = "user_id, active_persona_id, default_ticker, theme, scan_view"
 
 
 class PgUserSettingsStore(UserSettingsStore):
@@ -353,7 +360,7 @@ class PgUserSettingsStore(UserSettingsStore):
                     "INSERT INTO settings (user_id, active_persona_id, default_ticker, theme) "
                     "VALUES (%s, NULL, NULL, 'dark') ON CONFLICT (user_id) DO NOTHING", (user_id,))
                 # Apply only the keys present in the patch (subset write; server-wins, D7).
-                for col in ("active_persona_id", "default_ticker", "theme"):
+                for col in ("active_persona_id", "default_ticker", "theme", "scan_view"):
                     if col in patch:
                         cur.execute(
                             f"UPDATE settings SET {col} = %s WHERE user_id = %s",

@@ -82,6 +82,11 @@ class SettingsRecord:
     active_persona_id: Optional[str] = None
     default_ticker: Optional[str] = None
     theme: str = "dark"
+    # Scanner v1 P3 (D1): the per-account scan VIEW, stored as a JSON string ({symbols, name, sort,
+    # density}) or None. Presentation/preference only — never a scoring input. Deliberately NOT in
+    # to_wire(): the /api/scan/view endpoints are the FE↔BE truth for the view, so the auth session /
+    # settings envelope stays byte-identical (INTERFACE §3.4). Read/written via the existing ports.
+    scan_view: Optional[str] = None
 
     def to_wire(self) -> dict:
         """The settings bag as INTERFACE §2.1/§2.6/§2.7 emits it."""

@@ -296,6 +296,30 @@ class AuthService:
             raise errors.auth_unavailable()
         return settings.to_wire()
 
+    def get_scan_view(self, user: UserRecord) -> Optional[str]:
+        """Scanner v1 P3: read the raw scan-view JSON string for `user` (or None). Best-effort — a
+        store fault degrades to None (the caller falls back to the default view; a scan READ is never
+        an auth failure domain). Never raises."""
+        try:
+            settings = self.stores.settings.get(user.id)
+        except Exception:
+            logger.warning("auth: scan-view read faulted; treating as unset", exc_info=False)
+            return None
+        return settings.scan_view if settings else None
+
+    def save_scan_view(self, user: UserRecord, view_json: str) -> None:
+        """Scanner v1 P3: persist the per-account scan view (a pre-serialized JSON string) behind the
+        existing settings port (subset write; server-wins, D7). A non-`AuthError` STORE fault maps to
+        `auth_unavailable` (503), mirroring write_settings — keeps the view in the auth-class
+        envelope, no bare 500."""
+        try:
+            self.stores.settings.update(user.id, {"scan_view": view_json})
+        except errors.AuthError:
+            raise
+        except Exception:
+            logger.warning("auth: scan-view write faulted; reporting auth unavailable", exc_info=False)
+            raise errors.auth_unavailable()
+
     # ------------------------------------------------------------------ AI credential (BYO key)
 
     def ai_key_hint(self, user: UserRecord) -> dict:
