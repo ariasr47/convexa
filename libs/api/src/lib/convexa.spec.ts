@@ -13,9 +13,14 @@ import {
   fetchRecExport,
   fetchRecStatus,
   getAiKeyStatus,
+  getScan,
+  getScanUniverse,
   removeAiKey,
   requestRecommendation,
+  saveScanView,
   setAiKey,
+  type ScanResponse,
+  type ScanView,
 } from './convexa';
 
 function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise<Response>) {
@@ -173,5 +178,101 @@ describe('byo-ai-key credential client', () => {
         new Response(JSON.stringify({ error: 'validation', message: 'bad key' }), { status: 422 }),
     );
     await expect(setAiKey('')).rejects.toMatchObject({ code: 'validation', status: 422 });
+  });
+});
+
+// ---- Scanner v1 client (scanner INTERFACE_CONTRACT §2–§3) --------------------------------------
+describe('scanner client', () => {
+  const json = (b: unknown, status = 200) =>
+    new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
+
+  const VIEW: ScanView = {
+    source: 'default',
+    authenticated: false,
+    name: null,
+    symbols: ['SPY', 'QQQ'],
+    sort: { key: 'score', dir: 'desc' },
+    density: 'compact',
+  };
+
+  it('getScan hits the poll endpoint same-origin and returns the envelope untouched', async () => {
+    const body: ScanResponse = {
+      view: VIEW,
+      rows: [
+        {
+          symbol: 'SPY',
+          price: 500,
+          chg_pct: 1.2,
+          score: 82,
+          tier: 'prime',
+          regime: 'positive_gamma',
+          vol_regime: 'iv_rich',
+          flip: 495,
+          dist_to_flip_pct: 1,
+          call_wall: 510,
+          put_wall: 490,
+          dist_to_wall_pct: -2,
+          as_of: 1000,
+          status: 'ok',
+        },
+      ],
+      sweep: { updated_at: 1000, sweep_last_completed: 990, universe_size: 25 },
+    };
+    const f = vi.fn(async () => json(body));
+    vi.stubGlobal('fetch', f);
+    await expect(getScan()).resolves.toEqual(body);
+    expect(f).toHaveBeenCalledWith('/api/scan', { credentials: 'same-origin' });
+  });
+
+  it('getScan rejects with ApiError on a TRANSPORT fault (server-side it is always 200)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ detail: 'bad gateway' }, 502)));
+    await expect(getScan()).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('getScanUniverse returns the read-only universe envelope', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ symbols: ['SPY', 'QQQ'], universe_size: 2 })));
+    await expect(getScanUniverse()).resolves.toEqual({ symbols: ['SPY', 'QQQ'], universe_size: 2 });
+  });
+
+  it('saveScanView PUTs the body and returns the server-wins echo', async () => {
+    const saved: ScanView = { ...VIEW, source: 'account', authenticated: true, name: 'Morning' };
+    const f = vi.fn(async () => json(saved));
+    vi.stubGlobal('fetch', f);
+    await expect(saveScanView({ symbols: ['SPY', 'QQQ'], name: 'Morning' })).resolves.toEqual(saved);
+    const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/scan/view');
+    expect(init.method).toBe('PUT');
+    expect(init.credentials).toBe('same-origin');
+    expect(JSON.parse(String(init.body))).toEqual({ symbols: ['SPY', 'QQQ'], name: 'Morning' });
+  });
+
+  it('saveScanView maps the gated refusals: 403 -> auth_required, 503 -> auth_unavailable, 422 -> validation(detail)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'auth_required', message: 'sign in' }, 403)),
+    );
+    await expect(saveScanView({ symbols: ['SPY'] })).rejects.toMatchObject({
+      name: 'AuthError',
+      code: 'auth_required',
+      status: 403,
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ error: 'auth_unavailable', message: 'down' }, 503)),
+    );
+    await expect(saveScanView({ symbols: ['SPY'] })).rejects.toMatchObject({
+      code: 'auth_unavailable',
+    });
+
+    // The 422 uses FastAPI's `{detail}` envelope, NOT the auth `{error,message}` one.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ detail: "'ZZZZ' is not in the tracked universe." }, 422)),
+    );
+    await expect(saveScanView({ symbols: ['ZZZZ'] })).rejects.toMatchObject({
+      code: 'validation',
+      message: "'ZZZZ' is not in the tracked universe.",
+    });
   });
 });

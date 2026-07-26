@@ -676,6 +676,156 @@ export async function simTradeGate(): Promise<{ authorized: true }> {
   return (await res.json()) as { authorized: true };
 }
 
+// ---- Scanner v1 (scanner INTERFACE_CONTRACT §2–§3) ---------------------------------------------
+// The scan surface is POLL-BASED: four plain REST calls, NO SSE, NO per-row stream
+// (`[live-vs-static-isolation]`). Three anonymous-open READS (always 200 server-side; a transport
+// fault REJECTS here so the caller degrades to its last-known rows) + one server-gated WRITE (a real
+// 403 `auth_required` signed-out — `[server-side-gate-enforcement]`; the FE check is UX only).
+// Every field name/type below is the FIXED P1 wire (`ScanRow.to_wire()` / `SweepHeartbeat.to_wire()`)
+// as pinned in INTERFACE §2 — do NOT rename or add keys.
+
+/** The closed per-row status vocabulary (INTERFACE §2.2). The FE renders it via a CLOSED LOOKUP and
+ *  never re-derives it; an unknown value is treated as unavailable (fail-honest), never guessed. */
+export type ScanStatus = 'ok' | 'stale' | 'error' | 'building';
+
+/** One scan row. EVERY numeric field is nullable (a partial/failed compute still yields an honest
+ *  row) and renders as honestly-missing — never `0`, never a fabricated value. No raw series ever
+ *  rides a row (`[digested-labels-not-raw-dump]`). */
+export interface ScanRow {
+  symbol: string; //                    canonical UPPER-case
+  price: number | null; //              last poll price
+  chg_pct: number | null; //            % change since prior session close
+  score: number | null; //              opportunity_score — CONSUMED, never re-derived
+  tier: string | null; //               opportunity_tier enum (closed FE lookup)
+  regime: string | null; //             regime label enum (closed FE lookup)
+  vol_regime: string | null; //         vol-regime label enum (closed FE lookup)
+  flip: number | null; //               gamma flip level
+  dist_to_flip_pct: number | null; //   signed % of price to the flip (display transport)
+  call_wall: number | null;
+  put_wall: number | null;
+  dist_to_wall_pct: number | null; //   signed % of price to the NEARER wall
+  /** Epoch-SECONDS of the compute that produced the row. NOT nullable — and for a synthesized
+   *  `building` row it is NOT a freshness claim, so the FE MUST branch on `status === 'building'`
+   *  BEFORE rendering any "Updated …" text (INTERFACE §3.1, PINNED). */
+  as_of: number;
+  status: ScanStatus;
+}
+
+/** The closed sortable-key set the FE may offer (INTERFACE §2.3). Sorting is a CLIENT-SIDE re-order
+ *  of the returned rows; it never re-derives a value and never refetches. */
+export type ScanSortKey =
+  | 'score'
+  | 'symbol'
+  | 'price'
+  | 'chg_pct'
+  | 'dist_to_flip_pct'
+  | 'dist_to_wall_pct';
+export interface ScanViewSort {
+  key: ScanSortKey;
+  dir: 'asc' | 'desc';
+}
+export type ScanDensity = 'compact' | 'comfortable';
+
+/** The caller's effective view. `symbols` IS the display ordering. */
+export interface ScanView {
+  source: 'account' | 'default'; //  where THIS response's view came from
+  authenticated: boolean; //         whether the caller is signed in
+  name: string | null; //            optional user label; null for the default view
+  symbols: string[]; //              subset ⊆ universe, IN DISPLAY ORDER
+  sort: ScanViewSort; //             default { key: 'score', dir: 'desc' }
+  density: ScanDensity; //           default 'compact'
+}
+
+/** Sweep metadata (INTERFACE §2.4). The FE derives "sweep last ran X ago" from these epochs vs its
+ *  own clock; the wire carries NO pre-rendered freshness copy. */
+export interface SweepHeartbeat {
+  updated_at: number; //                   last worker tick (epoch seconds)
+  sweep_last_completed: number | null; //  epoch seconds of the last COMPLETED full pass, or null
+  universe_size: number; //                symbols the worker is tracking
+}
+
+/** `GET /api/scan` (INTERFACE §3.1). Every symbol in `view.symbols` is present in `rows`
+ *  (building-fill) — the screen is never dead. `sweep` is null iff the worker never wrote one. */
+export interface ScanResponse {
+  view: ScanView;
+  rows: ScanRow[];
+  sweep: SweepHeartbeat | null;
+}
+
+/** `GET /api/scan/universe` (INTERFACE §3.2). Read-only — v1 has no add/request/remove path. */
+export interface ScanUniverse {
+  symbols: string[];
+  universe_size: number;
+}
+
+/** `PUT /api/scan/view` body (INTERFACE §3.4). `symbols` is required and must be a subset of the
+ *  CURRENT universe, in display order; the server 422s anything else. */
+export interface ScanViewWrite {
+  symbols: string[];
+  name?: string | null;
+  sort?: ScanViewSort;
+  density?: ScanDensity;
+}
+
+/** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Anonymous-open;
+ *  server-side it is best-effort ALWAYS 200 (a store outage degrades CONTENT, never the status), so a
+ *  non-2xx here means a TRANSPORT/proxy fault: we reject and the caller keeps its last-known rows. */
+export async function getScan(): Promise<ScanResponse> {
+  const res = await fetch('/api/scan', { credentials: 'same-origin' });
+  if (!res.ok) throw new ApiError(`Scan read failed (${res.status})`, res.status);
+  return (await res.json()) as ScanResponse;
+}
+
+/** GET /api/scan/universe — the read-only owner-curated universe for the view editor. */
+export async function getScanUniverse(): Promise<ScanUniverse> {
+  const res = await fetch('/api/scan/universe', { credentials: 'same-origin' });
+  if (!res.ok) throw new ApiError(`Universe read failed (${res.status})`, res.status);
+  return (await res.json()) as ScanUniverse;
+}
+
+/** GET /api/scan/view — the caller's effective view. Anonymous ALWAYS gets a readable default; a
+ *  READ is never gated. (The page reads the view off `getScan()`; this exists for the editor's
+ *  reconciliation + parity with the wire.) */
+export async function getScanView(): Promise<ScanView> {
+  const res = await fetch('/api/scan/view', { credentials: 'same-origin' });
+  if (!res.ok) throw new ApiError(`View read failed (${res.status})`, res.status);
+  return (await res.json()) as ScanView;
+}
+
+/** The scan-view WRITE's error envelope differs by status: 403/503 use the auth `{error, message}`
+ *  envelope, while the 422 validation refusal uses FastAPI's `{detail}`. Map both into the typed
+ *  `AuthError` so `useGate` can translate `auth_required` → the sign-in prompt, `auth_unavailable` →
+ *  the degraded copy, and re-throw `validation` to the caller's own inline handling. */
+async function toScanViewError(res: Response): Promise<AuthError> {
+  if (res.status === 422) {
+    let detail = 'That view is not valid.';
+    try {
+      const body = (await res.clone().json()) as { detail?: string };
+      if (body && typeof body.detail === 'string') detail = body.detail;
+    } catch {
+      /* no/garbled body — keep the safe fallback */
+    }
+    return new AuthError('validation', detail, 422);
+  }
+  return toAuthError(res);
+}
+
+/** PUT /api/scan/view — the ONE server-gated, state-bearing scanner action
+ *  (`[server-side-gate-enforcement]`). Signed-in ⇒ 200 echoing the SAVED view (server-wins).
+ *  Signed-out ⇒ a REAL 403 `auth_required` even if the FE guard is bypassed/absent, and NOTHING is
+ *  persisted (AC-3). Off-universe symbol / bad sort / bad density ⇒ 422 `validation` (AC-13).
+ *  Auth-subsystem fault ⇒ 503 `auth_unavailable`. Never touches the bundle/SSE path. */
+export async function saveScanView(view: ScanViewWrite): Promise<ScanView> {
+  const res = await fetch('/api/scan/view', {
+    method: 'PUT',
+    headers: JSON_HEADERS,
+    credentials: 'same-origin',
+    body: JSON.stringify(view),
+  });
+  if (!res.ok) throw await toScanViewError(res);
+  return (await res.json()) as ScanView;
+}
+
 /** Live payload pushed over SSE (mid/flow/live flip). Levels other than the flip come from
  *  the bundle; the UI measures price-vs-wall using `mid` + the bundle's walls. */
 export interface LiveUpdate {
