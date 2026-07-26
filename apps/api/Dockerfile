@@ -29,6 +29,7 @@
 #   SCANNER_EMBEDDED, SCAN_UNIVERSE_PATH, SCAN_FAST_INTERVAL_SECONDS,
 #   SCAN_STALE_AFTER_SECONDS, SCAN_MOVE_THRESHOLD_PCT, SCAN_SLOW_BATCH_SIZE,
 #   SCAN_PROMOTION_CAP
+#   SCAN_DEFAULT_VIEW_N, SCAN_WARM_MAX_AGE_SECONDS
 #
 # STATELESS / restart-resettable: the auth/session/AI-key stores are in-memory
 # SQLite (reset on restart) and DATA_DIR=./data is ephemeral. The persistent
