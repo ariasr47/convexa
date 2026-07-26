@@ -427,7 +427,9 @@ describe('the view editor', () => {
           }),
       ),
     );
-    const onSave = vi.fn(async () => true);
+    // Declare the signature on `vi.fn` (not a bare `async () => true`): otherwise `mock.calls`
+    // infers the EMPTY tuple and the draft assertion below cannot be type-checked at all.
+    const onSave = vi.fn<(draft: unknown) => Promise<boolean>>(async () => true);
     renderEditor(onSave);
     await screen.findByTestId('scan-universe-NVDA');
 

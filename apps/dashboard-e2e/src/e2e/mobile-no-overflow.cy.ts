@@ -115,12 +115,46 @@ const bundle = {
   position_eval: null,
 };
 
+/** Interface-shaped scan payload — enough for a content-full table/card render at 393px. An error
+ *  or blank page would make the overflow assertion vacuous. */
+const scan = {
+  view: {
+    source: 'default',
+    authenticated: false,
+    name: null,
+    symbols: ['SPY', 'QQQ', 'NVDA'],
+    sort: { key: 'score', dir: 'desc' },
+    density: 'compact',
+  },
+  rows: ['SPY', 'QQQ', 'NVDA'].map((symbol, i) => ({
+    symbol,
+    price: 500.25 + i,
+    chg_pct: i === 1 ? -1.42 : 1.24,
+    score: 82 - i,
+    tier: 'prime',
+    regime: 'positive_gamma',
+    vol_regime: 'iv_rich',
+    flip: 495.5,
+    dist_to_flip_pct: 1.01,
+    call_wall: 510,
+    put_wall: 490,
+    dist_to_wall_pct: 1.94,
+    as_of: Math.floor(Date.now() / 1000) - 42,
+    status: 'ok',
+  })),
+  sweep: {
+    updated_at: Math.floor(Date.now() / 1000),
+    sweep_last_completed: Math.floor(Date.now() / 1000) - 30,
+    universe_size: 3,
+  },
+};
+
 /** Route → a marker proving the destination page actually rendered before we measure. */
 const ROUTES: Array<{ path: string; ready: () => Cypress.Chainable }> = [
   { path: '/', ready: () => cy.get('[data-testid="landing"]') },
   { path: '/ticker/TSLA', ready: () => cy.contains('Call wall') },
   { path: '/positions', ready: () => cy.get('[data-testid="portfolio-panel"]') },
-  { path: '/scanner', ready: () => cy.get('[data-testid="scanner-placeholder"]') },
+  { path: '/scanner', ready: () => cy.get('[data-testid="scanner-page"]') },
   { path: '/settings', ready: () => cy.get('[data-testid="settings-page"]') },
 ];
 
@@ -138,6 +172,11 @@ function stubNetwork() {
   });
   cy.intercept('GET', '/api/personas*', { body: [{ id: 'default', name: 'Default (no persona)' }] });
   cy.intercept('GET', '/api/contract/**', { statusCode: 404, body: null });
+  // scanner: the more specific universe path FIRST, then the poll read.
+  cy.intercept('GET', '/api/scan/universe*', {
+    body: { symbols: ['SPY', 'QQQ', 'NVDA'], universe_size: 3 },
+  });
+  cy.intercept('GET', '/api/scan*', { body: scan });
 }
 
 function assertNoHorizontalOverflow() {
@@ -173,6 +212,25 @@ for (const scheme of ['dark', 'light'] as const) {
       });
     }
 
+    it('/scanner collapses the dense table to cards below sm (no clipped columns at 393px)', () => {
+      cy.visit('/scanner', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem(
+            'convexa.uiprefs.v1',
+            JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
+          );
+        },
+      });
+      cy.get('[data-testid="scanner-page"]');
+      // The 11-column terminal table does not exist at phone width — cards do.
+      cy.get('[data-testid="scan-cards"]').should('exist');
+      cy.get('[data-testid="scan-table"]').should('not.exist');
+      cy.get('[data-testid="scan-card"]').should('have.length', 3);
+      // The whole card is the navigation target, and it goes to the Ticker page — nothing else.
+      cy.get('[data-testid="scan-card"]').first().should('have.attr', 'href', '/ticker/SPY');
+      assertNoHorizontalOverflow();
+    });
+
     it('below md the nav collapses: hamburger present, no inline nav row', () => {
       cy.visit('/scanner', {
         onBeforeLoad(win) {
@@ -182,7 +240,7 @@ for (const scheme of ['dark', 'light'] as const) {
           );
         },
       });
-      cy.get('[data-testid="scanner-placeholder"]');
+      cy.get('[data-testid="scanner-page"]');
       cy.get('[data-testid="nav-menu-button"]').should('be.visible');
       cy.get('[data-testid="nav-ticker"]').should('not.be.visible'); // inline nav hidden below md
       // The drawer carries ALL four entries (incl. Blog, which previously clipped off-screen).
