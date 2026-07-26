@@ -1,8 +1,10 @@
 # scanner — pipeline manifest
 Entry:        architect-first
-Stage:        P3 SHIPPED (read API + gated view + warm-click) — GATE Q PASS (6/6 mechanical + 11 ACs PASS,
-              0 FAIL, rest DEFERRED-TO-P4). NEXT = **P4 (the /scanner frontend page)** — the LAST phase.
-              (P1 ScanStore + P2 worker SHIPPED — GATE Q 8/8 + 7/7, pushed `9d92fed`.)
+Stage:        **ALL 4 PHASES SHIPPED + GATE Q PASS — AWAITING GATE S (ship/archive).**
+              P4 (/scanner page) GATE Q PASS: 75 files/645 tests · lint 29/0 errors (baseline) · tsc/
+              typecheck/build clean · e2e 15/15 (incl. /scanner 393px) · `apps/api` diff EMPTY vs `eb478df` ·
+              conformance 2/2 live. **13/13 PRODUCT ACs closed across P1–P4; 0 FAIL, 0 UNVERIFIABLE.**
+              (P1 8/8 `7269fa2` · P2 7/7 `9d92fed` · P3 PASS `eb478df`.)
 Repos:        both (backend worker+store+API [P1–P3] + the Scanner page [P4]) — architect confirmed
 Brief:        BRIEF.md present (v1, supersedes the AI-inclusive scope; design authority = the spec)
 Design:       docs/superpowers/specs/2026-07-23-scanner-v1-design.md (owner-approved) +

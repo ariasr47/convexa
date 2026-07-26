@@ -111,11 +111,21 @@ Honors `[model-read-carries-its-assumptions]` (self-describing freshness, the tw
 
 Glossary/tooltip on the header (the `Jargon` inline term or a help affordance):
 > "Prices refresh about every 30 seconds; the full options structure re-computes about every 3 minutes;
-> names that just moved re-compute sooner. This is a polled snapshot, not a live feed."
+> names that just moved re-compute sooner. This is a polled snapshot, not a real-time feed."
 
 The specific numerals track D4 defaults (fast ~30s · slow ~2–3 min); if an operator retunes cadence the
 copy is driven from the same basis, never hardcoded past the header. **The word "live" is forbidden here
 and everywhere on the table** (AC-9).
+
+> **⚠ CONDUCTOR AMENDMENT (2026-07-26, GATE Z resolved in-lane — copy only, no scope change).** As
+> originally written this section contradicted itself: the forbidden-word rule above sat directly under
+> copy that used "live" ("not a live feed"), and §3.1's `error` tooltip said "live-scored on the stated
+> cadence". A negative-space rule that its own reference copy violates is **unenforceable** — the AC-9
+> check is a `\blive\b` scan, so any sanctioned use of the word makes the scan un-writable as an absolute.
+> **Ruling:** the forbidden-word rule STANDS (it is the enforceable form); the two offending strings are
+> reworded with their meaning preserved — "not a **real-time** feed" and "the rest of the table **is
+> scored on the stated cadence**". Denying liveness in words that themselves contain "live" bought nothing
+> and cost the invariant its teeth. Surfaced by the P4 planning pass.
 
 ### 2.2 Per-row freshness ("Updated" + status)
 - **`ok`:** show **"Updated {relative}"** in steel (e.g. "Updated 42s ago", "Updated 2m ago"),
@@ -145,7 +155,7 @@ treat as unavailable (fail-honest), never guess.
 |---|---|---|---|
 | `ok` | *(no chip)* | fresh | — |
 | `stale` | **Stale** — `warning` + icon | **frozen price kept WITH its as-of stamp**, never re-presented as fresh | "Last computed {as-of}; the sweep is behind. Price is frozen at its last read." |
-| `error` | **Error** — `warning` + icon | last-known value dashed if none | "This symbol failed its last compute. Only this row is affected — the rest of the table is live-scored on the stated cadence." |
+| `error` | **Error** — `warning` + icon | last-known value dashed if none | "This symbol failed its last compute. Only this row is affected — the rest of the table is scored on the stated cadence." |
 | `building` | **Building** — `neutral` (TintChip) | no price / `—`; **no fabricated score** | "Tracked, not yet computed. First score is pending." |
 
 ### 3.2 Page-level states
