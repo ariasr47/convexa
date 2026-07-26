@@ -1545,6 +1545,88 @@ async def get_scan(request: Request):
     return {"view": view_wire, "rows": rows, "sweep": hb.to_wire() if hb is not None else None}
 
 
+# Closed view-write vocabularies (INTERFACE §2.3). A value outside these is a 422 (AC-13): the editor
+# cannot invent, add, or request universe symbols / sort keys / densities.
+SCAN_SORT_KEYS = ("score", "symbol", "price", "chg_pct", "dist_to_flip_pct", "dist_to_wall_pct")
+SCAN_SORT_DIRS = ("asc", "desc")
+SCAN_DENSITIES = ("compact", "comfortable")
+
+
+class ScanViewBody(BaseModel):
+    """PUT /api/scan/view body (INTERFACE §3.4). LOOSE types on purpose: semantic validation runs
+    INSIDE the handler, AFTER the auth gate, so a cookieless malformed PUT is refused by the gate
+    (403) — never pre-empted by a pydantic 422 ([server-side-gate-enforcement]: nothing validates or
+    persists signed-out)."""
+    symbols: list[str] | None = None
+    name: str | None = None
+    sort: dict | None = None
+    density: str | None = None
+
+
+def _v422(detail: str) -> JSONResponse:
+    return JSONResponse(status_code=422, content={"detail": detail})
+
+
+def _normalize_view_or_422(body: ScanViewBody, cfg) -> "tuple[dict | None, JSONResponse | None]":
+    """Validate the write body against the CURRENT universe; return (normalized_view, None) or
+    (None, 422). Symbols must be a non-empty subset of the universe (canonical UPPER, order + de-dupe
+    preserved); sort/density are closed enums."""
+    if not isinstance(body.symbols, list) or not body.symbols:
+        return None, _v422("symbols must be a non-empty subset of the tracked universe.")
+    universe = set(cfg.universe)
+    seen: set = set()
+    symbols: list = []
+    for s in body.symbols:
+        u = (s or "").strip().upper()
+        if not u:
+            continue
+        if u not in universe:
+            return None, _v422(f"'{u}' is not in the tracked universe.")
+        if u not in seen:
+            seen.add(u)
+            symbols.append(u)
+    if not symbols:
+        return None, _v422("symbols must include at least one universe symbol.")
+    sort = body.sort or {"key": "score", "dir": "desc"}
+    key = sort.get("key", "score")
+    direction = sort.get("dir", "desc")
+    if key not in SCAN_SORT_KEYS:
+        return None, _v422(f"sort.key must be one of {list(SCAN_SORT_KEYS)}.")
+    if direction not in SCAN_SORT_DIRS:
+        return None, _v422("sort.dir must be 'asc' or 'desc'.")
+    density = body.density or "compact"
+    if density not in SCAN_DENSITIES:
+        return None, _v422("density must be 'compact' or 'comfortable'.")
+    return ({"symbols": symbols, "name": (body.name or None),
+             "sort": {"key": key, "dir": direction}, "density": density}, None)
+
+
+@app.put("/api/scan/view")
+async def put_scan_view(body: ScanViewBody, request: Request):
+    """Save the signed-in user's per-account view (INTERFACE §3.4). The server-side gate is the
+    OUTERMOST precondition: a signed-out caller is refused (403 auth_required / 503 auth_unavailable)
+    and NOTHING is validated or persisted, even if the FE guard is bypassed (AC-3,
+    [server-side-gate-enforcement]). 422 on an off-universe symbol / bad sort / bad density (AC-13).
+    200 echoes the saved ScanView (source:'account'; server-wins persistence-echo, the
+    PUT /api/auth/settings precedent). Persisted behind the existing auth-settings ports (D1)."""
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
+    resolved, _ok = _resolve_auth(request)   # a valid session is guaranteed past the gate
+    try:
+        cfg = get_universe()
+    except Exception:
+        return JSONResponse(status_code=503, content={"detail": "scan universe unavailable."})
+    normalized, err = _normalize_view_or_422(body, cfg)
+    if err is not None:
+        return err
+    try:
+        auth.get_service().save_scan_view(resolved.user, json.dumps(normalized))
+    except auth.AuthError as e:
+        return JSONResponse(status_code=e.status, content=e.envelope())
+    return _scan_view_response(normalized, "account", True)
+
+
 # Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
 # can't shadow /docs, /openapi.json, or the /api/* routes above.
 @app.get("/{ticker}")
