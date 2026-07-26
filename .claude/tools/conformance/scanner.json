@@ -1,0 +1,32 @@
+{
+  "_comment": "Runnable (system-1) conformance spec for the scanner P3 read API, the standalone canonical flat form interface_conformance.py executes ({method,path,path_params,query,body,required}). INTERFACE_CONTRACT.md '## Conformance spec' REFERENCES this file (per the iv_rank.json / user-accounts.json standalone convention; system-12) — it is NOT embedded as a nested json block in the contract (that was the ai-recommendations GATE-Z trap). Covers ONLY the two anonymous-open, cookieless-deterministic READS: GET /api/scan (the requested-or-default view — cookieless ⇒ the owner-curated default view, D2) and GET /api/scan/universe (the read-only universe list). The gated WRITE PUT /api/scan/view is EXCLUDED from this anonymous sweep exactly as ai-recommendations' auth-gated POST is: a cookieless probe returns a real 401/403 by design (server-side-gate-enforcement), so it can't be conformance-checked by the cookieless tool — its signed-in echo shape + the gated-401 path are verified by the BE runtime proofs + FE tests. GET /api/scan/view (an anonymous-open read returning the default view) is also anonymous-open but is not added here; these two reads are the representative anonymous surface. What is asserted is ONLY the environment-independent ENVELOPE shape, never a deep row/heartbeat leaf: the scanstore starts EMPTY and the worker may not have written a heartbeat yet, so `rows` can be [] and `sweep` can be null on a fresh boot (best-effort-isolated-or-null). Asserting rows[0].* or a sweep child would FAIL a legitimately-empty/pre-worker cycle. Row-field types/presence (the ScanRow.to_wire keys) + heartbeat fields (SweepHeartbeat.to_wire) + the closed status vocabulary are pinned in INTERFACE_CONTRACT and verified off-harness by the BE runtime proofs + the FE test matrix (UX_BLUEPRINT s6). Boot: npx nx serve api (uvicorn :8000); no ticker warm-up needed (the scan reads are store reads, not a cold vendor fetch).",
+  "version": "1.0",
+  "feature": "scanner",
+  "endpoints": [
+    {
+      "id": "scan_default_view_envelope",
+      "_note": "Cookieless ⇒ deterministically the anonymous default view (D2). Envelope-only: rows may be [] and sweep may be null on a fresh/pre-worker boot; both are honest, not errors. Always 200 + status (never a 5xx for scan trouble).",
+      "method": "GET",
+      "path": "/api/scan",
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "rows": "array",
+        "sweep": "object|null"
+      }
+    },
+    {
+      "id": "scan_universe_list",
+      "_note": "The read-only owner-curated universe the view editor selects from. Anonymous-open. universe_size is the count the worker was configured with.",
+      "method": "GET",
+      "path": "/api/scan/universe",
+      "required": {
+        "symbols": "array",
+        "universe_size": "number"
+      }
+    }
+  ]
+}

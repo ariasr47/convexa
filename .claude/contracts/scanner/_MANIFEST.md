@@ -1,8 +1,8 @@
 # scanner — pipeline manifest
 Entry:        architect-first
-Stage:        P2 SHIPPED (sweep worker) — GATE Q PASS 7/7 (de-correlated Sonnet, incl. a LIVE byte-identity
-              spot-check). NEXT = system-12 (conformance-doc reconcile) → P3 (read API) GATE U·X.
-              (P1 ScanStore SHIPPED — GATE Q PASS 8/8, pushed `7269fa2`.)
+Stage:        P3 SHIPPED (read API + gated view + warm-click) — GATE Q PASS (6/6 mechanical + 11 ACs PASS,
+              0 FAIL, rest DEFERRED-TO-P4). NEXT = **P4 (the /scanner frontend page)** — the LAST phase.
+              (P1 ScanStore + P2 worker SHIPPED — GATE Q 8/8 + 7/7, pushed `9d92fed`.)
 Repos:        both (backend worker+store+API [P1–P3] + the Scanner page [P4]) — architect confirmed
 Brief:        BRIEF.md present (v1, supersedes the AI-inclusive scope; design authority = the spec)
 Design:       docs/superpowers/specs/2026-07-23-scanner-v1-design.md (owner-approved) +
@@ -14,17 +14,37 @@ Contracts:
     the single-ticker re-justification + PM open questions §10)
   - PRODUCT_CONTRACT.md        locked (2026-07-24; GATE P·X; resolves §10 Q1/Q2/Q4/Q5 as D1–D4;
     defers Q3 copy→UX, Q6 columns→UX, Q7 wire→Interface; 13 risk-tagged ACs; lint 0/0)
-  - UX_BLUEPRINT.md            n/a (GATE U·X — deferred to P3/P4; P1–P2 are backend-only)
-  - INTERFACE_CONTRACT.md      n/a through P2 (worker has no HTTP surface; wire + scanner.json land at P3)
-  - BACKEND_EXECUTION_CONTRACT.md   locked — PHASE P2 (binds Plan 2; worker/snapshot/tiering/blob;
-    byte-identity GATE-Q surface). P1 version superseded (P1 shipped + archived in git history).
-  - FRONTEND_EXECUTION_CONTRACT.md  NO_UI_CHANGE (P2 backend-only; the /scanner page is P4)
-Conformance:  n/a until GATE U·X. **system-12 lands HERE** — the runnable convention is a standalone
-              `.claude/tools/conformance/{feature}.json` (precedent: `iv_rank.json`), but the authoring docs
-              still say "embed the block." Reconcile BEFORE this feature's GATE U·X or repeat the
-              ai-recommendations GATE-Z bounce. See BACKLOG §E system-12.
+  - UX_BLUEPRINT.md            locked (P3 GATE U·X — Q6 columns/sort/density/mobile + Q3 freshness copy +
+    the 4 states; design authority for P4)
+  - INTERFACE_CONTRACT.md      locked (P3 — 4 endpoints: GET /api/scan · /api/scan/universe · GET+PUT
+    /api/scan/view [PUT server-gated]; warm-click = boundary in the existing ticker endpoint; binds the
+    shipped ScanRow/SweepHeartbeat wire keys; references standalone scanner.json)
+  - scanner.json (conformance) locked (standalone flat, iv_rank.json shape; anon sweep = GET /api/scan +
+    /api/scan/universe; gated PUT excluded like ai-rec's POST)
+  - BACKEND_EXECUTION_CONTRACT.md   locked — PHASE P3 (reads + server-gated view on the settings record +
+    ticker warm-click read-through; byte-preserving; GATE-Q surface incl. gated-write RED→GREEN + live
+    conformance). P1/P2 versions superseded (shipped, in git history).
+  - FRONTEND_EXECUTION_CONTRACT.md  NO_UI_CHANGE (P3 backend+wire only; the /scanner page + libs/api
+    fetchers are P4, built against UX_BLUEPRINT + INTERFACE)
+Conformance:  P3 authors a standalone `.claude/tools/conformance/scanner.json` (flat schema:
+              path_params/query/body/required — the `iv_rank.json` precedent), REFERENCED from
+              INTERFACE_CONTRACT. **system-12 handling (owner decision A, 2026-07-24):** scanner is
+              unblocked by authoring the canonical standalone convention DIRECTLY (as iv-rank did) rather
+              than blocking on the kit-doc fix. The kit-doc/tool reconciliation (COMPRESSOR #3 · delivery-ux ·
+              ORCHESTRATOR GATE U·X/Q · contract_lint M7 · interface_conformance regex) stays a deliberate
+              framework task in delivery-kit `KIT_BACKLOG.md §B` — NOT rushed mid-feature. GATE Q runs
+              `interface_conformance.py` live against scanner.json (the P3 endpoints DO have a FE↔BE surface).
 Open amendments: none
-QA (GATE Q):  P2 — QA_REPORT PASS (7/7, de-correlated Sonnet, 2026-07-24): six `_selftest`s GREEN +
+QA (GATE Q):  P3 — QA_REPORT PASS (de-correlated Sonnet, 2026-07-26): live conformance `scanner.json` 2/2 +
+              `iv_rank.json` regression floor 1/1 · route-order RED·restore · **gated WRITE** (cookieless 403,
+              persists nothing; signed-in 200+persists; 422 off-universe/bad-enum/empty; independent RED
+              reproduced the outermost-gate finding) · store-outage → 200 degraded never 5xx · D2's 3 branches
+              + building-fill RED · **warm-click byte-identity proven LIVE** (injected marker bundle served
+              exactly on a real miss; 600s-stale blob correctly MISSED to vendor; `src/core/` 0-diff) · leaf
+              AST · no-SSE. **ACs: 11 PASS / 0 FAIL / AC-11 + visual halves DEFERRED-TO-P4.** `NO_UI_CHANGE`
+              confirmed (empty `apps/dashboard`+`libs/api` diff). Root-level selftests judged acceptable.
+              (P1 — PASS 8/8 at git `7269fa2`.)
+              (P2 — QA_REPORT PASS 7/7 at git `9d92fed`, 2026-07-24): six `_selftest`s GREEN +
               independent tiering anti-herd RED·restore · projection tier==helper + erratum-applied ·
               snapshot ABC · bundle-blob round-trip + PG parity · loop store-outage survival · **LIVE
               byte-identity** (SPY 59/actionable/`4df5c37bd833` worker-absent==present, fresh compute) ·
@@ -41,8 +61,7 @@ Invariant watch (from BRIEF): **revisits the locked "single-ticker, on-demand" d
 Notes:        Standing NEXT since the owner's 2026-07-01 directive (item 5); **displaced 5×** since
               2026-06-25 (ticker-load-experience → user-accounts → the infra program → the AI-enrichment
               pool → iv-rank), never dropped. Effort L.
-Last gateway:  P2 EXECUTION opened @ 2026-07-24 — Plan 2 (`docs/superpowers/plans/2026-07-24-scanner-02-worker.md`)
-              written no-placeholder; BACKEND_EXECUTION_CONTRACT re-scoped to P2 (backend fast-path, still
-              no FE↔BE surface). Two Plan-2 clarifications reviewed + judged consume-not-derive (NOT GATE-Z):
-              tier via the shared `compute_opportunity_tier`; flip/wall distances as display transport.
-              (Prior: GATE P·X @ 2026-07-24 PRODUCT locked D1–D4; P1 GATE Q PASS.)
+Last gateway:  P3 GATE U·X @ 2026-07-24 — delivery-ux wrote UX_BLUEPRINT + INTERFACE + standalone
+              scanner.json + P3 BACKEND contract + FRONTEND NO_UI; lint 0/0; scanner.json valid + iv_rank
+              shape. system-12 handled by authoring standalone directly (owner decision A). No GATE-Z.
+              (Prior: P1 GATE Q 8/8 `7269fa2`; P2 GATE Q 7/7 `9d92fed`.)

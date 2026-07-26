@@ -621,6 +621,26 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`auth-schema-migrations` — adopt a real schema-evolution mechanism for the auth Postgres store** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `SURFACED 2026-07-24 (scanner P3 Plan-3 authoring; conductor-verified in code)`. **The seam fired.**
+  `apps/api/src/auth/postgres_store.py:105-107` carries an explicit note: *"SCHEMA-EVOLUTION SEAM
+  (ARCHITECTURE §3.7): the FIRST future schema change adds a tiny `schema_version` table + ordered
+  idempotent steps here, OR adopts a migration tool then. This feature ships the fresh schema only."*
+  **Scanner P3 IS that first schema change** (the D1 per-account view = an additive nullable `scan_view`
+  column on the `settings` table).
+  **Conductor ruling (2026-07-24, default-with-veto — applying the owner's system-12 preference: unblock
+  the feature, do the infra fix deliberately):** P3 ships the **minimal loss-free path** — an idempotent
+  `ALTER TABLE settings ADD COLUMN IF NOT EXISTS scan_view TEXT` in the same bootstrap, which is
+  multi-replica-safe, matches the existing `CREATE TABLE/INDEX IF NOT EXISTS` philosophy exactly, is
+  self-describing (needs no version counter for a single additive nullable column), and **does not
+  foreclose** adopting `schema_version` later. **What is deferred to THIS item:** the real mechanism —
+  a `schema_version` table + ordered idempotent steps (or Alembic/yoyo) — which becomes genuinely
+  necessary at the first **ordered/stateful** change (a backfill, a column drop, a type change), where
+  `IF NOT EXISTS` stops being sufficient. Note the live-Postgres path is **parity-reviewed, not
+  live-verified** here (no local Postgres — the iv-rank/persistent-db precedent), so this item should be
+  scheduled alongside the next real Postgres exercise. *Value M · Effort S–M.* **Build-system/infra
+  class:** trading-decision cull **N/A**.
 - **`split-decision-log` — the append-only decision log is SPLIT across two durable stores (LIVE bug)** —
   <!-- atlas: theme=trust-the-signal horizon=now -->
   `SURFACED 2026-07-16 (outcome-ledger GATE A·X; conductor-verified in code)`. **Pre-existing +

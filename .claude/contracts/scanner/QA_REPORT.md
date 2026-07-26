@@ -1,99 +1,74 @@
-# scanner — QA_REPORT (Phase P2 — the sweep worker + multi-ticker snapshot)
+# scanner — QA_REPORT (Phase P3 — read API + server-gated view + warm-click)
 
-> Fresh, de-correlated `qa-verify` (Sonnet). Verifies GATE Q for **P2 only** (backend-only, no HTTP
-> surface — no product AC, no `interface_conformance.py` run this phase, per
-> `BACKEND_EXECUTION_CONTRACT.md` header). P1's QA report is preserved in git history at `7269fa2`;
-> this file now carries P2. All commands run venv = `apps/api/.venv/Scripts/python.exe`, `cwd =
-> apps/api`, no live vendor key required **except** where noted (§6 was independently upgraded to a
-> live check — see below).
+> Fresh, de-correlated `qa-verify` run (Sonnet), independent of the Opus builder. Covers the BACKEND_EXECUTION_CONTRACT §4 GATE-Q surface + the 13 PRODUCT_CONTRACT ACs (P3-observable component only; P4/UI halves marked DEFERRED-TO-P4). Server booted via `npx nx serve api` (uvicorn :8000); all `python.exe` kills done by IMAGE + curl-confirmed dead before every restart, per the documented gotcha. Backend commits verified: `3cdd6c4`..`8f81b91` (6 commits on top of P2's `9d92fed`). P1's QA report is preserved in git history at `7269fa2`, P2's at `9d92fed`; this file now carries P3.
 
-## Verdict table (BACKEND_EXECUTION_CONTRACT.md §4, verbatim order)
+---
 
-| # | GATE Q check (verbatim) | Verdict | Evidence |
+## 1. GATE-Q mechanical/structural checks (BACKEND_EXECUTION_CONTRACT §4)
+
+| # | Check | Verdict | Evidence |
 |---|---|---|---|
-| 1 | Tiering pure-logic `_selftest` GREEN + real RED→GREEN (anti-herd + round-robin fairness, injected clock; batch never exceeds pool; market-wide move degrades to base cadence; baseline round-robin slots guaranteed) | **PASS** | `python -m src.scanner.tiering_selftest` → `PASS: tiering pure logic — move detection, promotion cap, round-robin fairness, anti-herd` exit 0. Independently broke the cap (`promoted = ranked[:promo_slots]` → `promoted = ranked`) → re-ran → `FAIL: cold batch size [...6 symbols...]` exit 1 (the cold-universe round-robin-fairness assertion trips first, before reaching the later explicit anti-herd assertion — still a genuine RED caused by the same removed cap). Restored via `git checkout -- apps/api/src/scanner/tiering.py`; confirmed `git diff apps/api/src/scanner/tiering.py` is **empty** and re-ran GREEN. Injected-clock determinism (fixed `NOW=1000.0`, no wall-clock) and the round-robin baseline-slot guarantee (case 2: 3 cycles × 4 reach all 6 symbols; case 5: `baseline_slots >= slow_batch_size - promotion_cap >= 1` under an all-moved market) are asserted in-test and passed. |
-| 2 | Projection `_selftest` GREEN — `ScanRow.tier == compute_opportunity_tier(...)` consume-not-derive proof; distances = signed-% transport; partial/failed compute → honest nullable row + `building`/`error`/`stale` | **PASS** | `python -m src.scanner.projection_selftest` → `PASS: projection consumes the bundle (tier via serve-path helper; distances = transport)` exit 0. Read `projection.py`: `row.tier == compute_opportunity_tier(80, True, watch=25, actionable=50, prime=75) == "prime"` asserted directly (line 29 of the selftest). Erratum applied exactly as ruled (Option 1, asymmetric fixture): `call_wall=115.0`, put strictly nearer (`put_wall=90.0` at distance 10 vs call at 15) → `dist_to_wall_pct == 10.0` asserted. `git log --all -- apps/api/src/scanner/projection.py` shows exactly one commit (net-new file, `2daee03`) — `_nearer_wall_dist` lives only in this new module, never in `engine.py`/`signals.py` (grep-confirmed empty in those files). `building`/`error`/`stale` states (cases 4, 5, 6, 7, 8 of the selftest) all pass. |
-| 3 | Snapshot method — `get_snapshot_all` offline presence check; `import src.providers.massive` safe; ABC-stub + normalizer selftest; best-effort `{}`/absent-symbol contract by inspection | **PASS** | `python -m src.providers._snapshot_selftest` → `PASS: multi-ticker snapshot port + Massive normalizer satisfy the contract` exit 0 (stub-ABC contract: absent symbol dropped, empty input → `{}`; Massive normalizer: `last_trade.price` preferred, falls back to `min.close` when absent). `python -c "import src.providers.massive"` → `massive import OK`, no exception. |
-| 4 | Bundle-blob store — extended `scanstore/_selftest` round-trips the blob GREEN (SQLite default); PG statement-parity for `scan_bundles` (no live PG) | **PASS** | `python -m src.scanstore._selftest` → `PASS: SqliteScanStore satisfies the store contract` exit 0 (blob absent→None, write→read round-trip, latest-wins overwrite all asserted inline). PG import-safety: `import src.scanstore.postgres_store as p; hasattr(p.PgScanStore,'write_bundle_blob') and hasattr(p.PgScanStore,'read_bundle_blob')` → `pg import ok True`. Statement-parity grep-confirmed: identical `scan_bundles` DDL shape (TEXT/DOUBLE PRECISION/TEXT, `symbol` PK), both adapters use `ON CONFLICT(symbol) DO UPDATE` / `ON CONFLICT (symbol) DO UPDATE`, both `read_bundle_blob` select `symbol, as_of, bundle_json` in the same order and canonicalize `symbol` upper. |
-| 5 | Loop `_selftest` — embedded short run vs stub provider + canned bundle (no live key) produces rows + heartbeat + blob writes; per-ticker failure isolates to its row; a store outage is survived (writes skipped, loop continues) | **PASS** | `python -m src.scanner.loop_selftest` → `PASS: two-speed loop persists rows+blobs+heartbeat and survives a store outage` exit 0. Test asserts: all 3 symbols persisted with `status == ok`, `AAA.score == 80 / tier == prime`, a bundle-blob exists per symbol with `opportunity_score == 80` inside, heartbeat `universe_size == 3` and `sweep_last_completed is not None` (full-pass marker fired), and a second run against a `_BrokenStore` (every write raises) completes `asyncio.run(...)` **without** raising — store-outage survival directly exercised. |
-| 6 | Byte-identity (HARD) — `git diff` confined to the additive set, 0 edits to `engine.py`/`signals.py`/`live.py`/`darkpool.py`/`chain_store.py`, `compute_ticker` unchanged; `SCANNER_EMBEDDED` unset ⇒ `main.py` app byte-identical (both directions); leaf/boundary AST (no scoring module imports `scanner`/`scanstore`; `scanner/`'s only scoring-path touch is the pure `compute_opportunity_tier` consume); served-bundle score/tier/`state_fingerprint` worker-absent-vs-present spot-check | **PASS** | See full evidence below — this check was **independently upgraded from the contract's anticipated "deferred/structural-only" judgment to a live-verified spot-check** because a live vendor key was present in the environment. |
-| 7 | `[no-secrets-in-image]` — `.env.example`/`Dockerfile` worker additions are value-less docs; universe JSON holds tickers only, no secret | **PASS** | `apps/api/.env.example` worker block is all commented `KEY=` name/comment pairs, no values. `apps/api/Dockerfile` adds only the env-var **names** (`SCANNER_EMBEDDED, SCAN_UNIVERSE_PATH, SCAN_FAST_INTERVAL_SECONDS, SCAN_STALE_AFTER_SECONDS, SCAN_MOVE_THRESHOLD_PCT, SCAN_SLOW_BATCH_SIZE, SCAN_PROMOTION_CAP`) to a runtime-env doc comment; `CMD` unchanged. `apps/api/src/scanner/config/universe.json` contains only ticker symbols (`SPY, QQQ, IWM, ...`) + a `_comment`/`default_view` list — no keys, tokens, or connection strings. |
+| 1 | Conformance (system-1) GREEN | **PASS** | `interface_conformance.py --spec .claude/tools/conformance/scanner.json --url http://127.0.0.1:8000` → `PASS GET /api/scan` (7 fields) + `PASS GET /api/scan/universe` (2 fields), 0 failures. Also re-ran the ticker regression floor: `--spec .claude/tools/conformance/iv_rank.json` → `PASS GET /api/ticker/{ticker}` (9 fields), 0 failures — P3 did not regress the existing ticker surface. |
+| 2 | Route order (structural) | **PASS** | `scan_universe_selftest.py`'s `check_route_order()` (index assertion over `app.routes`) → PASS live. **Independently broke it**: cut the `GET /api/scan/universe` block out of its normal position and re-inserted it *after* the `/{ticker}` catch-all in `main.py`; re-ran the selftest → `FAIL: /api/scan/universe (idx 21) must register BEFORE /{ticker} (idx 20)`. Restored via `git checkout -- apps/api/main.py`; `git diff --stat apps/api/main.py` empty afterward; re-ran selftest → PASS again. |
+| 3 | Anonymous-open reads, best-effort 200 | **PASS** | Live cookieless `GET /api/scan`, `/api/scan/universe`, `/api/scan/view` all 200 with the interface envelope (curl-captured). **Simulated store outage**: monkeypatched `main.scanstore.get_store` to a store whose every method raises `RuntimeError`, via `TestClient` — all three reads still 200; `/api/scan` degraded to a fully `building`-filled view (`rows` all null-numeric/`status:'building'`), `sweep: null`; `/api/scan/universe` unaffected (reads the universe-config cache, not the store). Never a 5xx. |
+| 4 | The gated WRITE (`[server-side-gate-enforcement]`) | **PASS** | Live: cookieless `PUT /api/scan/view` → real `403 {"error":"auth_required",...}`; re-read of `/api/scan/view` (default) unaffected — confirms nothing persisted to any default state. Signed-in PUT (fresh signup+login) → `200` echo `{"source":"account","authenticated":true,...}`; re-read (**same** cookie **and** a **fresh cookie jar re-logging into the same account**, simulating a new session/device) both returned the identical saved view — persists across reload/session (AC-2). Off-universe symbol signed-in → `422 "'NOTREAL' is not in the tracked universe."`; bad `sort.key` → `422`; bad `density` → `422`; empty `symbols` → `422`. **Independent RED**: disabled the gate call (`if False and gate is not None:`) in `main.py`, restarted the server, and reproduced the exact contract-cited finding — a cookieless **off-universe** PUT now reaches validation and returns `422` (not the normal `403`), proving the gate is the OUTERMOST precondition in the GREEN path. A cookieless **valid-universe** PUT under the same RED condition returned `503 auth_unavailable` (an incidental second safety net — `resolved.user` is `None` for an anonymous caller, so `save_scan_view(None, ...)` raises `AttributeError` before any write, caught and mapped to 503) — still **persisted nothing**, just via a different, non-gate code path; noted as defense-in-depth, not a gap. Restored `main.py` via `git checkout`; `git diff --stat` empty; re-verified live 403 on the restored server. |
+| 5 | Warm-click byte-identity (HARD) | **PASS** | `compute_ticker`/`engine.py`/`signals.py`/`live.py`/`darkpool.py`/`chain_store.py`: **0 diff** (`git diff --stat 9d92fed..8f81b91` touches only `main.py`, the 4 new root selftests, `src/auth/*`, `src/scanner/{__init__,universe}.py`, `src/auth/_scanview_selftest.py`, `.env.example`, `Dockerfile` — no `apps/api/src/core/*` file appears). Ran the builder's `warmclick_selftest.py` independently → PASS (fresh tracked blob served verbatim; stale/untracked/DTE-filtered → MISS). **Then independently re-proved it live against the running server**, not just TestClient: constructed a raw bundle from a real just-fetched SPY compute, stamped a **distinctive marker** (`score=77.5`, `state_fingerprint="QA-WARM-TEST-MARKER-1"`), wrote it directly into the live server's on-disk scanstore as a fresh `BundleBlob`, restarted the server (clears the in-process `_cache`, not the disk store) and hit `GET /api/ticker/SPY?debug=1` → served `score:77.5`, `fp:"QA-WARM-TEST-MARKER-1"`, `meta.cache.hit:false` — a genuine cold **warm-hit** serving my exact injected bytes. **Freshness gate RED-equivalent**: wrote the same shape with a **different marker** (`score=33.3`, fp `"QA-WARM-STALE-MARKER-2"`) but `as_of = now-600s` (> `SCAN_WARM_MAX_AGE_SECONDS`=120s default) → restarted → `GET /api/ticker/SPY?debug=1` returned the **original live-vendor fingerprint** (`90ca2cec8558`, score 62), *not* either marker — the stale blob correctly MISSED and fell through to the normal vendor fetch, never served as fresh. |
+| 6 | Leaf/boundary AST | **PASS** | `grep -rln "scanstore\|from src.scanner\|import scanner" src/` inside `apps/api/src/core/` → no matches (confirmed separately for `src/core/` and workspace-wide, excluding `src/scanstore/`, `src/scanner/`, `src/auth/_scanview_selftest.py`) — no scoring module imports the scanner leaves; only `main.py` (web) + the leaves themselves + the P2 worker (unchanged in P3) read them. `git diff --stat` confined exactly to the contract's named surface (main.py route wiring, the settings-field extension, the ticker read-through hook, the 5 new selftest files, universe accessor, env docs) — 0 edits to `engine.py`/`signals.py`/`live.py`/`darkpool.py`/`compute_ticker`. |
 
-## Check 6 detail — the byte-identity core proof
+---
 
-1. **`git diff` confined to the additive set.** `git diff 7269fa2 HEAD --stat` (7269fa2 = the pre-P2
-   commit, P1's GATE Q PASS) touches exactly: `.env.example`, `Dockerfile`, `main.py`, `project.json`,
-   `src/providers/{_snapshot_selftest.py,base.py,massive.py}`, `src/scanner/**` (all net-new),
-   `src/scanstore/{__init__.py,_selftest.py,ports.py,postgres_store.py,sqlite_store.py}`, `worker.py`.
-   23 files, 1263 insertions / 6 deletions. **Zero** touches to `engine.py`, `signals.py`, `live.py`,
-   `darkpool.py`, `chain_store.py` — independently confirmed via `git diff 7269fa2 HEAD --stat -- $(find
-   apps/api/src -iname engine.py -o -iname signals.py -o -iname live.py -o -iname darkpool.py -o -iname
-   chain_store.py)` → empty output for every one of the five files. `compute_ticker` is called
-   verbatim from `worker.py::_compute_bundle` (`main.compute_ticker(...)`), never redefined or
-   monkey-patched (grep-confirmed: no `def compute_ticker` outside `main.py`).
-2. **`SCANNER_EMBEDDED` unset ⇒ `main.py` app byte-identical, both directions verified live.**
-   `git diff 7269fa2 HEAD -- apps/api/main.py` shows the *entire* diff is one additive block (11 lines)
-   after `app = FastAPI(...)`, an `if os.getenv("SCANNER_EMBEDDED", ...) in (...)`-guarded
-   `@app.on_event("startup")` hook. Live-imported both ways:
-   - unset: `main.app.router.on_startup` → `[]` (no handler registered).
-   - `SCANNER_EMBEDDED=1`: `main.app.router.on_startup` → `['_start_embedded_scanner']`.
-   Confirms the guard is genuinely default-off and additive-only.
-3. **Leaf/boundary AST (grep-level, both directions).**
-   `grep -rn "import scanner\|from.*scanner\|import scanstore\|from.*scanstore" src/core/{engine,signals,live,darkpool,chain_store}.py` → **zero matches** — no scoring module imports
-   `scanner/` or `scanstore/`. `grep -rn "compute_opportunity_tier|compute_ticker|_acquire_vendor_inputs" src/scanner/*.py worker.py` → the only production touch is
-   `src/scanner/projection.py: from src.core.signals import compute_opportunity_tier` (a plain function
-   **call**, `tier = compute_opportunity_tier(int(score or 0), bool(ai_eval.get("ready")), watch=…,
-   actionable=…, prime=…)` — reads the shared helper, never assigns into or mutates `signals.py`) and
-   `worker.py::_compute_bundle` calling `main._acquire_vendor_inputs(...)` / `main.compute_ticker(...)`
-   as ordinary function calls. No scoring-path mutation anywhere in `scanner/`.
-4. **Served-bundle score/tier/`state_fingerprint` worker-absent-vs-present spot-check — LIVE-VERIFIED**
-   (upgraded beyond the contract's anticipated deferral, since a usable vendor key was present):
-   - Started `main.py` **without** `SCANNER_EMBEDDED` (worker-absent), hit `GET /api/ticker/SPY` →
-     `score=59, tier=actionable, ai_eval.state_fingerprint=4df5c37bd833` (HTTP 200).
-   - Killed the process, started `main.py` **with** `SCANNER_EMBEDDED=1` (worker-present; log-confirmed
-     `[main] SCANNER_EMBEDDED=1 -> launching in-process sweep worker` and `[worker] sweep loop start:
-     universe=25, fast=30.0s, pool=4` — the sweep actually ran, live-priced 25/25 symbols via
-     `get_snapshot_all`, and computed several tickers through `compute_ticker` concurrently in the
-     background). Hit `GET /api/ticker/SPY` again → `meta.cache.hit=False` (a genuinely **fresh** live
-     compute, not a cached replay) → **`score=59, tier=actionable, ai_eval.state_fingerprint=4df5c37bd833`**
-     — **byte-identical** to the worker-absent baseline.
-   - A full-bundle diff (minus the `meta` block, which is expected to differ — `served_at`/`trace_id`/
-     cache state) showed small (~4th–5th significant digit) float drift in `market_state` fields such as
-     `atm_iv`, `call_gex`, `iv_hv_ratio`, `iv_rank.percentile` — this is natural live-vendor bid/ask/chain
-     re-pricing between two separately-timed live fetches, matching the **pre-existing, already-logged**
-     jitter noted in `OPEN_THREADS.md` §7q ("pre-existing ~9th-sig-digit float-ordering jitter in
-     `net_vanna`/`net_charm`/`net_volga` — does NOT affect `opportunity_score`/score inputs/
-     `state_fingerprint`") — not a P2 regression. The three gate-relevant outputs (`score`, `tier`,
-     `state_fingerprint`) held byte-identical across worker-absent and worker-present despite that
-     natural live-data drift, which is the load-bearing proof.
-   - **Judgment:** live-verified — dispositive. No deferral was needed; a usable `MASSIVE_API_KEY` was
-     present in `apps/api/.env`, so the strongest form of the check (a real served response, not just a
-     structural argument) was exercised. Combined with the AST-level leaf-boundary proof (#3) and the
-     empty diff on all five scoring files (#1), byte-identity is proven both structurally and live.
+## 2. `[live-vs-static-isolation]` — no SSE on the scan surface
 
-## Additional items surfaced (FYI, not GATE-Q findings)
+**PASS.** `grep -n "StreamingResponse\|text/event-stream" main.py` finds exactly one hit (the pre-existing `/api/stream` ticker SSE endpoint at line 1435, well above the Scanner read API section which starts at line 1442). The four `/api/scan*` routes are plain `async def` handlers returning dicts/`JSONResponse` — no generator, no `StreamingResponse`, no WebSocket.
 
-- **pytest "Open decision"** — not adopted; the runnable `_selftest` convention is used throughout P2,
-  consistent with Plan 2 / CLAUDE.md's stated v1 convention. Not a FAIL; the owner has not decided to
-  adopt pytest. FYI only, per the launch instructions.
-- **Vendor-endpoint confirmation (Plan Task 1 Step 1)** — `get_snapshot_all` and `get_snapshot_ticker`
-  both confirmed present on the installed Massive SDK (`RESTClient`), and the grouped endpoint was
-  exercised **live** during the §6 spot-check (`[snapshot] grouped snapshot: 25/25 priced` in the
-  worker-present server log) — the primary path (not the per-ticker fallback) is what actually ran.
+## 3. D2 default-view resolution — all three branches independently verified
 
-## Summary
+**PASS**, all three:
+1. **Explicit owner list** — the shipped `config/universe.json` `default_view` (8 symbols: SPY/QQQ/IWM/NVDA/TSLA/AAPL/AMD/META) is what the **live** anonymous `GET /api/scan`/`/api/scan/view` actually returned.
+2. **Unset list + scored store → top-N-by-score** — via `TestClient` with a monkeypatched `get_universe()` returning `default_view: []` over a 4-symbol universe with 3 scored rows (10/90/50) → `view.symbols` returned `['BBB','CCC','AAA','DDD']` (score-descending, unscored last).
+3. **Unset list + empty store → universe symbols as `building`** — same monkeypatch with a freshly-empty store → `view.symbols == universe` and every row `status:'building'` — never a dead empty screen.
 
-**7 PASS / 0 FAIL / 0 UNVERIFIABLE.**
+## 4. Building-fill rule — independently RED'd (per BACKEND_EXECUTION_CONTRACT §4.3 "the `stored[s] if s in stored else building`" logic)
 
-**Overall GATE Q verdict: PASS.**
+**PASS.** Ran `scan_read_selftest.py`'s own RED: temporarily changed the row comprehension to `[stored[s].to_wire() for s in symbols if s in stored]` (skip-missing) → observed `FAIL: building-fill gap: {'SPY'} vs [...]`; restored (this edit was applied to `main.py` and reverted the same way — `git diff --stat apps/api/main.py` empty after, re-ran → PASS).
 
-All six `_selftest` modules are independently GREEN (exit 0) under a fresh session. The tiering
-centerpiece's anti-herd cap was independently broken and observed to FAIL, then restored to a
-byte-identical state (`git diff` empty) and re-verified GREEN. The HARD
-`[additive-keeps-score-byte-identical]` invariant holds by every angle checked: file-diff confinement,
-AST-level import-boundary absence, the `SCANNER_EMBEDDED` guard verified both directions live, and — going
-beyond what the contract anticipated as achievable without a live key — an actual live served-bundle
-spot-check with the sweep worker running in-process, which returned byte-identical `score`/`tier`/
-`state_fingerprint` to the worker-absent baseline. `[best-effort-isolated-or-null]`,
-`[live-vs-static-isolation]`, and `[no-secrets-in-image]` all hold by inspection + the loop selftest's
-store-outage path. No invariant is broken. No amendment/bounce required.
+---
+
+## 5. PRODUCT_CONTRACT §4 Acceptance Criteria
+
+| AC | Verdict | Evidence |
+|---|---|---|
+| AC-1 [review] Anonymous default view populated, not blank/error | **PASS** | Live cookieless `GET /api/scan` → 200, `view.source:'default'`, 8 populated rows (real scored data from the disk-persisted store). Visual half (skeleton/sign-in affordance) is **DEFERRED-TO-P4** (no UI in P3). |
+| AC-2 [test] Signed-in saved view persists across reload/session/device | **PASS** | Live: signed-in `PUT` → 200 echo; re-read on the **same** cookie AND on a **fresh cookie jar** re-logging into the same account both returned the identical saved view (subset/order/name/sort/density) — server-side, not browser-local. |
+| AC-3 [test] Signed-out WRITE refused server-side; nothing persisted | **PASS** | Cookieless `PUT` → real `403 auth_required`; RED (gate disabled) demonstrated the intended finding (off-universe → 422 instead of 403, proving the gate's outermost position) and confirmed nothing persists even with the gate down (a secondary `AttributeError`→503 path also blocks the write). |
+| AC-4 [review] Every scan/universe/view READ anonymous-open | **PASS** | All three reads returned 200 cookieless, live, including under a simulated store outage (never gated, never 5xx). |
+| AC-5 [test] One symbol's failure degrades only that row | **PASS** | Injected a 4-row mixed set (`ok`/`error`/`stale`/missing) via `TestClient` → `ERRX` alone showed `status:'error'`; `OKX` (`ok`, score 70.0) fully unaffected; table did not blank or 5xx. |
+| AC-6 [test] Worker down/stale heartbeat → last-known rows + non-5xx | **PASS** | Same injection: `write_heartbeat` with `updated_at = now-5000s` → `GET /api/scan` still 200, `sweep.updated_at` honestly reflects the stale epoch (not hidden/nulled), rows still served. |
+| AC-7 [review] Stale row: frozen price + as_of + `stale` status | **PASS** | Injected `STALEX` row (`price:55.5`, `as_of:now-10000`, `status:'stale'`) → served byte-identically (frozen price/as_of unchanged, `status:'stale'`) — the read path never re-derives or re-freshens a stored row. Visual "frozen" presentation is **DEFERRED-TO-P4**. |
+| AC-8 [review] Uncomputed universe symbol shows `building`, not error/hidden | **PASS** | `MISSX` (no row at all) → synthesized `{status:'building', score:null, price:null, as_of:0.0}` — confirmed live (fresh-store branch) and via injection. Visual half DEFERRED-TO-P4. |
+| AC-9 [review] No "live" word / no per-row stream; two-speed cadence stated | **PASS (backend-observable half)** | Wire carries only epochs (`as_of`, `sweep.updated_at`/`sweep_last_completed`) and closed enums — no freshness prose, no "live" string anywhere in the scan response bodies observed. No SSE on the scan routes (§2 above). Copy/cadence-statement rendering is **DEFERRED-TO-P4** (no UI). |
+| AC-10 [test] Scanner score/tier == Ticker page's, same compute | **PASS (mechanism verified)** | The mechanism that GUARANTEES sameness is the warm-click (§1 item 5): when the blob is fresh, the ticker page serves the **exact bytes** the scan row's compute produced (proved live with the injected marker). A **live incidental discrepancy** was observed (scan row score 59 vs a vendor-fetched ticker score 62 for SPY) and **root-caused, not a defect**: the disk-persisted scan-store row was ~27.5h stale (no P2 worker was running during this QA session, so `SCAN_WARM_MAX_AGE_SECONDS`=120s correctly MISSED it) — two different point-in-time computes, honestly not claimed as the same one. This is the freshness gate working as designed, independently reproduced in §1 item 5. |
+| AC-11 [review] Row-click navigates to the correct Ticker page, no order/trade action | **DEFERRED-TO-P4** | No UI in P3; no row-click exists yet. |
+| AC-12 [review] Warm-click = speed-only, identical content | **PASS (backend half)** | Live marker test (§1 item 5) proves a warm-hit serves bundle bytes identical to what a prior compute produced; a miss/stale falls straight through to the unmodified normal vendor path with no new failure surface (`_scan_warm_bundle` never raises — verified via a store-outage monkeypatch returning `None`). Visual "can't tell the difference except speed" is DEFERRED-TO-P4. |
+| AC-13 [review] View editor can only select from the current universe | **PASS (backend enforcement)** | Signed-in `PUT` with an off-universe symbol → `422` live; `GET /api/scan/universe` is read-only, no add/remove/request path exists on the wire. UI editor itself is DEFERRED-TO-P4. |
+
+---
+
+## 6. Structural note (judged, not a FAIL)
+
+Item 10 of the QA brief: the four P3 selftests (`scan_universe_selftest.py`, `scan_read_selftest.py`, `scan_view_write_selftest.py`, `warmclick_selftest.py`) landed at `apps/api/` **root**, while P1/P2 selftests live inside their subpackages (`src/scanstore/_selftest.py`, `src/scanner/*_selftest.py`), and the one Task-1 selftest (`_scanview_selftest.py`) **does** follow the subpackage convention (`src/auth/`).
+
+**Judgment: acceptable, not a tidiness violation.** The four root-level selftests all exercise `main.py`'s routes via `TestClient(main.app)`, and `main.py` itself is a root-level module (not inside a subpackage) — importing it from a nested `src/scanner/` or `src/scanstore/` path would need an awkward `sys.path`/relative-import workaround for no benefit. `_scanview_selftest.py` correctly sits inside `src/auth/` because it exercises the auth leaf's internals directly (`from .ports import ...`), not `main.py`. The placement tracks what's under test, consistent with the existing convention rather than breaking it.
+
+---
+
+## 7. Summary
+
+- **GATE-Q mechanical/structural (§1):** 6/6 PASS.
+- **Invariant checks (§2–4):** 3/3 PASS (`live-vs-static-isolation`, all 3 D2 branches, building-fill RED).
+- **Acceptance criteria (§5):** 11 PASS, 0 FAIL, 2 DEFERRED-TO-P4 (AC-11 fully; AC-1/AC-7/AC-8/AC-9/AC-12 partially deferred for their visual halves only, backend halves PASS).
+- **Structural note (§6):** judged acceptable, not a finding.
+- **Tree hygiene:** every RED-check mutation to `apps/api/main.py` (route-order break, gate disable, building-fill break) was restored via `git checkout` and confirmed `git diff --stat` empty before moving on. All servers started for this QA pass were killed by image and curl-confirmed dead. The only uncommitted files in the tree at both start and end of this session are pre-existing contract/doc state (`.claude/BACKLOG.md`, `.claude/RESUME.md`, `.claude/contracts/scanner/{BACKEND_EXECUTION_CONTRACT,FRONTEND_EXECUTION_CONTRACT,_MANIFEST,INTERFACE_CONTRACT,UX_BLUEPRINT}.md`, `.claude/tools/conformance/scanner.json`, `docs/superpowers/plans/2026-07-24-scanner-03-readapi.md`) — none touched by this QA pass.
+- **Frontend:** `git diff --stat` shows **zero** `apps/dashboard`/`libs/api` changes in this phase, confirming P3's declared `NO_UI_CHANGE` scope; the frontend test suite was not re-run (nothing in its dependency surface changed).
+
+## Overall GATE Q verdict: **PASS**
