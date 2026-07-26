@@ -9,7 +9,7 @@
  *   §8-5  brandGradient DISPOSITION — token absent, zero references, the gradient-brand pair
  *         unreproducible in features/auth; the avatar renders flat primary slots.
  *   §8-3  amber CENSUS (structural half) — no `primary` inside hover blocks of the named files,
- *         CommandDeck carries zero primary, the six MOVE→info sites bind `info`.
+ *         CommandDeck carries zero primary, the remaining MOVE→info sites bind `info`.
  *   §8-8  textAmber CONSUMPTION — every §5.2 closed-list consumer resolves via `extrasFor(`,
  *         never bare `extras.`.
  *
@@ -232,7 +232,7 @@ const HOVER_CENSUS_FILES = [
   '/src/app/features/trading/positions/PositionsView.tsx',
 ];
 
-/** The six MOVE→info sites (§4 lists): marker → the window that must bind `info`, not `primary`. */
+/** The MOVE→info sites (§4 lists; the /scanner stub's link retired with the real page at P4): marker → the window that must bind `info`, not `primary`. */
 const MOVE_TO_INFO_SITES: Array<{ file: string; marker: string; window: 'after' | 'before' }> = [
   {
     file: '/src/app/pages/ticker/widgets/ai-rec/AiRecPanel.tsx',
@@ -257,11 +257,6 @@ const MOVE_TO_INFO_SITES: Array<{ file: string; marker: string; window: 'after' 
   {
     file: '/src/app/features/trading/positions/PositionRow.tsx',
     marker: 'data-testid="position-view-order"',
-    window: 'after',
-  },
-  {
-    file: '/src/app/pages/scanner/Scanner.tsx',
-    marker: 'data-testid="scanner-ticker-link"',
     window: 'after',
   },
 ];
@@ -302,7 +297,7 @@ describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info site
     expect(stripComments(deck)).not.toMatch(/primary/);
   });
 
-  it('(c) the six MOVE→info sites bind `info`, not `primary` (link-class text is signal-blue)', () => {
+  it('(c) the MOVE→info sites bind `info`, not `primary` (link-class text is signal-blue)', () => {
     for (const { file, marker, window } of MOVE_TO_INFO_SITES) {
       const src = APP_SOURCES[file];
       expect(src, `${file} must exist`).toBeTruthy();
@@ -319,8 +314,10 @@ describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info site
 // ---- §8-8 · textAmber consumption (structural) ---------------------------------------------------
 
 /** The §5.2 CLOSED consumer list — every site keeping amber text below 18px. */
+// (scanner) The `/scanner` coming-soon stub's 11px amber pill and its Ticker link were RETIRED with
+// the real Scanner page (Scanner v1 P4). The scan surface's one amber spend is the per-row tier
+// chip, which lives in `shared/ui/TintChip.tsx` — already on this list.
 const TEXT_AMBER_CONSUMERS = [
-  '/src/app/pages/scanner/Scanner.tsx', //                       coming-soon pill (11px)
   '/src/app/features/trading/positions/LiveTabPanel.tsx', //     LOCKED chip (11px)
   '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
   '/src/app/features/trading/model/OpportunityTier.tsx', //      Prime banner body text

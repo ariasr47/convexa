@@ -26,8 +26,11 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { AuthProvider } from '@/features/auth/AuthContext';
 import type { GateApi } from '@/features/auth/useGate';
 import { theme } from '@/shared/theme/theme';
+import { Scanner } from './Scanner';
 import { ScanCardList } from './ScanCard';
 import { ScanTable } from './ScanTable';
 import { ScanToolbar } from './ScanToolbar';
@@ -93,7 +96,10 @@ function rowFor(symbol: string) {
     .find((r) => r.getAttribute('data-symbol') === symbol) as HTMLElement;
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 // =================================================================================================
 // 1. The locked column set + honestly-missing rendering
@@ -437,5 +443,219 @@ describe('the view editor', () => {
       sort: { key: 'score', dir: 'desc' },
       density: 'compact',
     });
+  });
+});
+
+// =================================================================================================
+// 8. The page-level states + the structural negative space
+// =================================================================================================
+type PageOpts = {
+  symbols?: string[];
+  rows?: ScanRow[];
+  sweep?: { updated_at: number; sweep_last_completed: number | null; universe_size: number } | null;
+  authenticated?: boolean;
+  hold?: boolean; // keep the first read in flight so the skeleton stays visible
+};
+
+function installScanBackend(opts: PageOpts = {}) {
+  const nowS = Date.now() / 1000;
+  const symbols = opts.symbols ?? ['SPY', 'QQQ'];
+  const body = {
+    view: {
+      source: opts.authenticated ? 'account' : 'default',
+      authenticated: !!opts.authenticated,
+      name: null,
+      symbols,
+      sort: { key: 'score', dir: 'desc' },
+      density: 'compact',
+    },
+    rows: opts.rows ?? symbols.map((symbol, i) => makeRow({ symbol, score: 90 - i })),
+    sweep:
+      opts.sweep === undefined
+        ? { updated_at: nowS, sweep_last_completed: nowS, universe_size: symbols.length }
+        : opts.sweep,
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const json = (b: unknown) =>
+        new Response(JSON.stringify(b), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      if (url.includes('/api/auth/session'))
+        return json({
+          authenticated: !!opts.authenticated,
+          user: opts.authenticated
+            ? { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] }
+            : null,
+          google_available: false,
+          settings: opts.authenticated
+            ? { active_persona_id: null, default_ticker: null, theme: 'dark' }
+            : null,
+        });
+      if (url.includes('/api/scan/universe'))
+        return json({ symbols, universe_size: symbols.length });
+      if (url.includes('/api/scan')) {
+        if (opts.hold) return new Promise<Response>(() => undefined); // never resolves
+        return json(body);
+      }
+      throw new Error(`Unexpected fetch in test: ${url}`);
+    }),
+  );
+}
+
+function renderPage() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <AuthProvider>
+          <AuthDialogProvider>
+            <Scanner />
+          </AuthDialogProvider>
+        </AuthProvider>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+}
+
+describe('the four honest page states', () => {
+  it('the first-load SKELETON is its own state — no figures, and it is gone after the read', async () => {
+    installScanBackend({ hold: true });
+    const { unmount } = renderPage();
+    const skeleton = await screen.findByTestId('scan-skeleton');
+    expect(skeleton.textContent).toBe('Loading scan…'); // shimmer only — never a number
+    expect(screen.queryByTestId('scan-table')).toBeNull();
+    expect(screen.queryByTestId('scan-worker-down')).toBeNull(); // loading ≠ degraded
+    expect(screen.queryByText('Building')).toBeNull(); //           loading ≠ building
+    unmount();
+
+    installScanBackend();
+    renderPage();
+    await screen.findByTestId('scan-table');
+    expect(screen.queryByTestId('scan-skeleton')).toBeNull(); // never reappears post-load
+  });
+
+  it('the anonymous default view is POPULATED — no empty block, no error, no persistence claim', async () => {
+    installScanBackend({ authenticated: false, symbols: ['SPY', 'QQQ', 'NVDA'] });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(3);
+    expect(screen.queryByTestId('scan-empty-view')).toBeNull(); // anonymous NEVER reaches it (D2)
+    expect(await screen.findByTestId('scan-signin-prompt')).toHaveTextContent(
+      'Sign in to customize your view.',
+    );
+    expect(screen.getByTestId('scanner-page').textContent).not.toMatch(/Saved to your account/i);
+  });
+
+  it('a signed-in EMPTY saved view gets the pick-tickers affordance instead of a dead screen', async () => {
+    installScanBackend({ authenticated: true, symbols: [], rows: [] });
+    renderPage();
+    const empty = await screen.findByTestId('scan-empty-view');
+    expect(empty).toHaveTextContent('No tickers in your view.');
+    expect(empty).toHaveTextContent('Pick tickers to build your scan.');
+    expect(screen.getByTestId('scan-empty-cta')).toBeInTheDocument();
+    expect(screen.queryByTestId('scan-table')).toBeNull();
+  });
+
+  it('a behind or absent sweep raises the banner OVER intact rows — never a blank or an error page', async () => {
+    const nowS = Date.now() / 1000;
+    installScanBackend({
+      sweep: { updated_at: nowS - 900, sweep_last_completed: nowS - 180, universe_size: 2 },
+    });
+    const { unmount } = renderPage();
+    const banner = await screen.findByTestId('scan-worker-down');
+    expect(banner).toHaveTextContent('Sweep last ran 3 min ago — showing the last known rows.');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(2); // the rows SURVIVE the banner
+    expect(within(rowFor('SPY')).getByTestId('cell-score')).toHaveTextContent('90');
+    unmount();
+
+    installScanBackend({ sweep: null });
+    renderPage();
+    expect(await screen.findByTestId('scan-worker-down')).toHaveTextContent(
+      "Sweep hasn't reported yet — showing the last known rows.",
+    );
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
+  });
+});
+
+// =================================================================================================
+// 9. Structural negative space (mutation-guarded `?raw` scans + a DOM sweep)
+// =================================================================================================
+const SCANNER_SOURCES = import.meta.glob(
+  ['/src/app/pages/scanner/**/*.{ts,tsx}', '!**/*.spec.{ts,tsx}'],
+  { query: '?raw', import: 'default', eager: true },
+) as Record<string, string>;
+
+/** Strip comments while PRESERVING newlines (the house idiom) so line numbers stay true. */
+function stripComments(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
+    .replace(/^\s*\/\/.*$/gm, '');
+}
+const hasLiveWord = (src: string) => /\blive\b/i.test(stripComments(src));
+const hasStreamPrimitive = (src: string) =>
+  /\bEventSource\b|\bstreamTicker\b/.test(stripComments(src));
+const usesBareExtras = (src: string) =>
+  /\bextras\./.test(stripComments(src)) || /\bextrasLight\./.test(stripComments(src));
+
+describe('[live-vs-static-isolation] + [theme-token-discipline] on the scan surface', () => {
+  it('the glob is not vacuous (the scanner sources actually loaded)', () => {
+    const keys = Object.keys(SCANNER_SOURCES);
+    expect(keys.length).toBeGreaterThanOrEqual(8);
+    expect(keys).toContain('/src/app/pages/scanner/Scanner.tsx');
+    expect(keys).toContain('/src/app/pages/scanner/useScan.ts');
+  });
+
+  it('MUTATION GUARD: every checker flags its violation fixture and passes a clean one', () => {
+    expect(hasLiveWord('const label = "live feed";')).toBe(true);
+    expect(hasLiveWord('/* the word live in a comment */ const x = 1;')).toBe(false);
+    expect(hasLiveWord('const x = "polled snapshot";')).toBe(false);
+    expect(hasStreamPrimitive('const es = new EventSource(url);')).toBe(true);
+    expect(hasStreamPrimitive('streamTicker(sym, {}, cb)')).toBe(true);
+    expect(hasStreamPrimitive('const id = setInterval(poll, 30000);')).toBe(false);
+    expect(usesBareExtras('color: extras.textAmber')).toBe(true);
+    expect(usesBareExtras('color: extrasFor(theme).panelRaised')).toBe(false);
+  });
+
+  it('no scanner source says "live", mounts a stream, or dark-locks a mode-aware value', () => {
+    const live: string[] = [];
+    const streams: string[] = [];
+    const bare: string[] = [];
+    for (const [file, src] of Object.entries(SCANNER_SOURCES)) {
+      if (hasLiveWord(src)) live.push(file);
+      if (hasStreamPrimitive(src)) streams.push(file);
+      if (usesBareExtras(src)) bare.push(file);
+    }
+    expect(live, 'AC-9: the scan surface never uses the word "live"').toEqual([]);
+    expect(streams, '[live-vs-static-isolation]: the scan surface is poll-only').toEqual([]);
+    expect(bare, 'mode-aware values must resolve via extrasFor(theme)').toEqual([]);
+  });
+
+  it('the RENDERED page never says "live" — with all four row states on screen', async () => {
+    const nowS = Date.now() / 1000;
+    installScanBackend({
+      symbols: ['OKY', 'STL', 'ERR', 'BLD'],
+      rows: [
+        makeRow({ symbol: 'OKY', status: 'ok', as_of: nowS - 10 }),
+        makeRow({ symbol: 'STL', status: 'stale', as_of: nowS - 900 }),
+        makeRow({ symbol: 'ERR', status: 'error', price: null, score: null, as_of: nowS - 60 }),
+        makeRow({
+          symbol: 'BLD',
+          status: 'building',
+          price: null,
+          score: null,
+          tier: null,
+          as_of: nowS,
+        }),
+      ],
+    });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    const page = screen.getByTestId('scanner-page');
+    expect(page.textContent ?? '').not.toMatch(/\blive\b/i);
+    expect(page.textContent ?? '').toMatch(/Prices ~30s · structure ~3 min · hot names sooner/);
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(4);
   });
 });

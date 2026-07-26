@@ -113,6 +113,42 @@ beforeEach(() => {
     if (url.includes('/api/personas'))
       return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
+    // scanner: the /scanner route polls the scan read on mount (poll-based, no SSE).
+    if (url.includes('/api/scan/universe')) return json({ symbols: ['SPY'], universe_size: 1 });
+    if (url.includes('/api/scan'))
+      return json({
+        view: {
+          source: 'default',
+          authenticated: false,
+          name: null,
+          symbols: ['SPY'],
+          sort: { key: 'score', dir: 'desc' },
+          density: 'compact',
+        },
+        rows: [
+          {
+            symbol: 'SPY',
+            price: 500,
+            chg_pct: 1,
+            score: 82,
+            tier: 'prime',
+            regime: 'positive_gamma',
+            vol_regime: 'iv_rich',
+            flip: 495,
+            dist_to_flip_pct: 1,
+            call_wall: 510,
+            put_wall: 490,
+            dist_to_wall_pct: 2,
+            as_of: Date.now() / 1000,
+            status: 'ok',
+          },
+        ],
+        sweep: {
+          updated_at: Date.now() / 1000,
+          sweep_last_completed: Date.now() / 1000,
+          universe_size: 1,
+        },
+      });
     throw new Error(`Unexpected fetch in test: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -165,13 +201,14 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(esLog.length).toBeGreaterThan(beforeReturn); // a new EventSource was constructed
     expect(openFor('TSLA').length).toBe(1); // exactly one open for the symbol
 
-    // --- /scanner → the Ticker feed closes again; the placeholder issues no scan ---
+    // --- /scanner → the Ticker feed closes again; the scan surface opens NO ticker feed ---
     const fetchBeforeScanner = fetchMock.mock.calls.length;
     await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-placeholder');
+    await screen.findByTestId('scanner-page');
     expect(openFor('TSLA').length).toBeLessThanOrEqual(1);
-    // The Scanner page itself adds no fetch beyond whatever the (now-unmounted) ticker had in flight.
-    // Assert no NEW ticker-bundle fetch was triggered by showing the Scanner.
+    // The Scanner polls its OWN read (`/api/scan`) and nothing else: it is poll-based and never
+    // subscribes per row (`[live-vs-static-isolation]`). Assert no NEW ticker-bundle fetch — the
+    // real page must not resurrect the ticker feed it just left.
     const newCalls = fetchMock.mock.calls.slice(fetchBeforeScanner).map((c) => String(c[0]));
     expect(newCalls.some((u) => u.includes('/api/ticker/'))).toBe(false);
   }, 20000);

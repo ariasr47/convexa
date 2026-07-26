@@ -78,6 +78,42 @@ beforeEach(() => {
     if (url.includes('/api/personas'))
       return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
+    // scanner: the /scanner route polls the scan read on mount (poll-based, no SSE).
+    if (url.includes('/api/scan/universe')) return json({ symbols: ['SPY'], universe_size: 1 });
+    if (url.includes('/api/scan'))
+      return json({
+        view: {
+          source: 'default',
+          authenticated: false,
+          name: null,
+          symbols: ['SPY'],
+          sort: { key: 'score', dir: 'desc' },
+          density: 'compact',
+        },
+        rows: [
+          {
+            symbol: 'SPY',
+            price: 500,
+            chg_pct: 1,
+            score: 82,
+            tier: 'prime',
+            regime: 'positive_gamma',
+            vol_regime: 'iv_rich',
+            flip: 495,
+            dist_to_flip_pct: 1,
+            call_wall: 510,
+            put_wall: 490,
+            dist_to_wall_pct: 2,
+            as_of: Date.now() / 1000,
+            status: 'ok',
+          },
+        ],
+        sweep: {
+          updated_at: Date.now() / 1000,
+          sweep_last_completed: Date.now() / 1000,
+          universe_size: 1,
+        },
+      });
     // user-accounts: the app reads who-am-I once on mount (non-blocking; anonymous here).
     if (url.includes('/api/auth/session'))
       return json({ authenticated: false, user: null, google_available: false, settings: null });
@@ -133,7 +169,7 @@ describe('route table', () => {
       expectFetch: '/api/ticker/NVDA',
     },
     { path: '/positions', ready: () => screen.findByTestId('portfolio-panel') },
-    { path: '/scanner', ready: () => screen.findByTestId('scanner-placeholder') },
+    { path: '/scanner', ready: () => screen.findByTestId('scanner-page') },
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];
@@ -211,7 +247,7 @@ describe('mobile nav drawer', () => {
   it('a drawer link navigates AND closes the drawer (the branch behavior, re-expressed)', async () => {
     const user = userEvent.setup();
     renderAt('/scanner');
-    await screen.findByTestId('scanner-placeholder');
+    await screen.findByTestId('scanner-page');
 
     await user.click(screen.getByTestId('nav-menu-button'));
     await user.click(await screen.findByTestId('nav-drawer-positions'));
@@ -235,7 +271,7 @@ describe('shell persistence', () => {
     await user.click(screen.getByTestId('nav-ticker'));
     await screen.findByText('Call wall');
     await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-placeholder');
+    await screen.findByTestId('scanner-page');
 
     expect(screen.getByTestId('app-shell')).toBe(shell);
   });

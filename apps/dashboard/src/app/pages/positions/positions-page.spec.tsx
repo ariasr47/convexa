@@ -201,6 +201,42 @@ beforeEach(() => {
         headers: { 'Content-Type': 'application/json' },
       });
     const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
+    // scanner: the /scanner route polls the scan read on mount (poll-based, no SSE).
+    if (url.includes('/api/scan/universe')) return json({ symbols: ['SPY'], universe_size: 1 });
+    if (url.includes('/api/scan'))
+      return json({
+        view: {
+          source: 'default',
+          authenticated: false,
+          name: null,
+          symbols: ['SPY'],
+          sort: { key: 'score', dir: 'desc' },
+          density: 'compact',
+        },
+        rows: [
+          {
+            symbol: 'SPY',
+            price: 500,
+            chg_pct: 1,
+            score: 82,
+            tier: 'prime',
+            regime: 'positive_gamma',
+            vol_regime: 'iv_rich',
+            flip: 495,
+            dist_to_flip_pct: 1,
+            call_wall: 510,
+            put_wall: 490,
+            dist_to_wall_pct: 2,
+            as_of: Date.now() / 1000,
+            status: 'ok',
+          },
+        ],
+        sweep: {
+          updated_at: Date.now() / 1000,
+          sweep_last_completed: Date.now() / 1000,
+          universe_size: 1,
+        },
+      });
     // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
     if (url.includes('/api/auth/session'))
       return json({
@@ -265,7 +301,7 @@ describe('store', () => {
 
     // Nav away to Scanner and back; the durable record is still there.
     await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-placeholder');
+    await screen.findByTestId('scanner-page');
     await user.click(screen.getByTestId('nav-positions'));
     expect(await screen.findByTestId('position-row')).toBeInTheDocument();
     expect(allPositions().length).toBe(1);
@@ -307,7 +343,7 @@ describe('store', () => {
 
     // Nav away + back: still active.
     await user.click(screen.getByTestId('nav-scanner'));
-    await screen.findByTestId('scanner-placeholder');
+    await screen.findByTestId('scanner-page');
     await user.click(screen.getByTestId('nav-positions'));
     await screen.findByTestId('position-row');
     expect(screen.getByTestId('view-picker').textContent).toMatch(/Tech swings/);

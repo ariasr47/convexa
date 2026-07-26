@@ -1,114 +1,164 @@
 /**
- * Scanner — static "coming soon" placeholder (UX_BLUEPRINT §4, AC-Scan-1; convexa-redesign re-skin).
- * In the shell, but does ZERO data work: no fetch, no SSE, no compute, no backend call, no
- * spinner/skeleton. The ABSENCE of any network request is itself the AC-Scan-1 requirement — it must
- * not imply it is working or fetching. The later `scanner` feature builds the real thing.
+ * `/scanner` — the multi-ticker triage surface (UX_BLUEPRINT §0–§3, PRODUCT_CONTRACT §3).
  *
- * Presentation-only re-skin to the Figma frame "Scanner — Coming soon" (FRONTEND_EXECUTION_CONTRACT
- * · SURFACE: Scanner). The hatched inert card reuses `ui/ComingSoonBox` (structural `no-real-order-path`
- * inertness — the box itself never links) and its shared mode-aware `hatchBackgroundImage`; the only
- * other sx literals are the badge amber-alpha tints (brand `primary.main` — coming-soon is
- * brand-flavored, not a warning; redesign-stage-1 §3.3-4).
+ * One dense table over the tracked universe, POLLED on a stated cadence — no stream, no per-row
+ * subscription, and the word this page must never say is never said (`[live-vs-static-isolation]`,
+ * AC-9). The page is SELF-DESCRIBING about its own freshness: a two-speed basis in the header with a
+ * plain-language glossary, a per-row as-of + status, and a worker-down banner OVER the intact
+ * last-known rows when the sweep falls behind (AC-6) — it never 5xx's, never blanks.
+ *
+ * The four honest states are three distinct things plus a per-row one, and they are deliberately not
+ * interchangeable: the first-load SKELETON (shimmer, no numbers) ≠ a `building` ROW (present,
+ * tracked, not yet computed) ≠ a DEGRADE (last-known rows under a warning banner). The per-row
+ * `ok`/`stale`/`error`/`building` chips come from the closed lookup in `labels.ts`.
+ *
+ * A row is a link to the Ticker page and nothing else (`[no-real-order-path]`, AC-11); customization
+ * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
-import { Box, Link, Typography } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import { Link as RouterLink } from 'react-router-dom';
-import { extrasFor } from '@/shared/theme/tokens';
-import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
+import { Alert, Box, Skeleton, Typography, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { useState } from 'react';
+import { Jargon } from '@/shared/ui/Jargon';
+import { ScanCardList } from './ScanCard';
+import { ScanTable } from './ScanTable';
+import { ScanToolbar } from './ScanToolbar';
+import { SCAN_COPY } from './labels';
+import { useScan } from './useScan';
+import { ViewEditorDialog } from './ViewEditorDialog';
+
+/** Hoisted: the skeleton's row count is static, so the array never re-allocates per render. */
+const SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
+
+/**
+ * The COLD-LOAD placeholder. It is the LOADING look (shimmer, zero figures) and is visually and
+ * structurally distinct from a `building` row (a real row that says why it has no score) and from a
+ * degrade (real last-known rows under the banner). It must never appear after the first read.
+ */
+function ScanSkeleton() {
+  return (
+    <Box
+      data-testid="scan-skeleton"
+      sx={{
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '10px',
+        padding: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
+    >
+      <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+        {SCAN_COPY.loading}
+      </Typography>
+      {SKELETON_ROWS.map((i) => (
+        <Skeleton key={i} variant="rectangular" height={26} />
+      ))}
+    </Box>
+  );
+}
+
+const ctaSx = {
+  mt: '12px',
+  cursor: 'pointer',
+  bgcolor: 'primary.main',
+  color: 'primary.contrastText',
+  border: 'none',
+  font: 'inherit',
+  fontSize: '0.82rem',
+  fontWeight: 700,
+  borderRadius: '8px',
+  padding: '8px 15px',
+};
 
 export function Scanner() {
+  const scan = useScan();
+  const [editorOpen, setEditorOpen] = useState(false);
+  // `useMediaQuery` takes the STRING form; jsdom has no matchMedia ⇒ false ⇒ the desktop table.
+  const isNarrow = useMediaQuery(useTheme().breakpoints.down('sm'));
+  // The sanctioned price flash only fires when the data really is turning over.
+  const flashActive = !scan.workerDown && !scan.degraded;
+
   return (
-    <Box sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
-      <ComingSoonBox
-        data-testid="scanner-placeholder"
-        sx={{
-          maxWidth: 560,
-          mx: 'auto',
-          my: 8,
-          borderRadius: '14px',
-          p: '52px 40px',
-          textAlign: 'center',
-        }}
-      >
-        {/* Scanner mark — blue magnifier with a check (Figma frame glyph). Token-driven stroke via
-            `currentColor` on a wrapper coloured `primary.main`, so it is not a hardcoded hex. */}
-        <Box
-          component="svg"
-          aria-hidden
-          width={48}
-          height={48}
-          viewBox="0 0 24 24"
-          fill="none"
-          sx={{ display: 'block', margin: '0 auto 16px', color: 'primary.main' }}
-        >
-          <circle cx={11} cy={11} r={7} stroke="currentColor" strokeWidth={1.8} />
-          <path d="M16 16 L21 21" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" />
-          <path
-            d="M8 11 L10.5 13.5 L14 8.5"
-            stroke="currentColor"
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Box>
-
-        <Typography component="h1" sx={{ fontSize: '1.5rem', fontWeight: 700, mb: '12px' }}>
-          Scanner — coming soon
+    <Box data-testid="scanner-page" sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
+      <Box sx={{ mb: '14px' }}>
+        <Typography component="h1" sx={{ fontSize: '1.7rem', fontWeight: 700, m: '0 0 4px' }}>
+          {SCAN_COPY.heading}
         </Typography>
-
+        <Typography component="p" sx={{ fontSize: '0.88rem', color: 'text.secondary', m: 0 }}>
+          {SCAN_COPY.subhead}
+        </Typography>
+        {/* The two-speed basis, always present, with its plain-language glossary on hover/focus. */}
         <Typography
           component="p"
-          sx={{
-            maxWidth: 420,
-            mx: 'auto',
-            mb: '22px',
-            fontSize: '0.92rem',
-            lineHeight: 1.6,
-            color: 'text.secondary',
-          }}
+          data-testid="scan-cadence-header"
+          sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: '8px', mb: 0 }}
         >
-          A multi-ticker scanner that surfaces the strongest setups across names is on the roadmap.
-          It&rsquo;s not live yet — for now, analyze one ticker at a time on the{' '}
-          <Box component="strong" sx={{ color: 'text.primary' }}>
-            Ticker
-          </Box>{' '}
-          page.
+          <Jargon term={SCAN_COPY.cadenceHeader} gloss={SCAN_COPY.cadenceGloss} />
         </Typography>
+      </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
-          <Box
-            component="span"
-            sx={(theme) => ({
-              fontSize: '0.6875rem', // type floor >=11px (redesign-stage-0 item 4)
-              fontWeight: 600,
-              letterSpacing: '.04em',
-              textTransform: 'uppercase',
-              // Stage-1 rebind (§3.3-4): coming-soon is brand-flavored — amber, not warning.
-              // Stage-3 §4.4: the 11px LABEL binds text-grade `textAmber` (§5.2 gate);
-              // border/tint stay `primary` alphas (UI class).
-              color: extrasFor(theme).textAmber,
-              border: '1px solid',
-              borderColor: alpha(theme.palette.primary.main, 0.35),
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
-              borderRadius: 999,
-              padding: '3px 10px',
-              whiteSpace: 'nowrap',
-            })}
-          >
-            coming soon
-          </Box>
-          {/* It is literally a Link — links bind `info` (stage-3 §4.4; the token rule). */}
-          <Link
-            component={RouterLink}
-            to="/ticker"
-            data-testid="scanner-ticker-link"
-            underline="hover"
-            sx={{ fontSize: '0.88rem', fontWeight: 600, color: 'info.main' }}
-          >
-            Go to the Ticker viewer →
-          </Link>
+      <ScanToolbar
+        view={scan.view}
+        density={scan.density}
+        onDensity={scan.setDensity}
+        onEditView={() => setEditorOpen(true)}
+        gate={scan.gate}
+      />
+
+      {/* Worker-down: a TRUE warning ⇒ burnt orange + MUI's built-in warning icon, sitting OVER the
+          intact rows. The rows below keep rendering — a worker death never takes the page down. */}
+      {scan.phase === 'ready' && scan.workerDown && (
+        <Alert severity="warning" data-testid="scan-worker-down" sx={{ mb: '12px' }}>
+          {scan.workerDownText}
+        </Alert>
+      )}
+
+      {scan.phase === 'loading' ? (
+        <ScanSkeleton />
+      ) : scan.isEmptyView ? (
+        <Box data-testid="scan-empty-view">
+          <Typography sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
+            {SCAN_COPY.emptyViewTitle}
+          </Typography>
+          <Typography sx={{ fontSize: '0.86rem', color: 'text.secondary' }}>
+            {SCAN_COPY.emptyViewBody}
+          </Typography>
+          {scan.view?.authenticated && (
+            <Box
+              component="button"
+              type="button"
+              data-testid="scan-empty-cta"
+              onClick={() => setEditorOpen(true)}
+              sx={ctaSx}
+            >
+              {SCAN_COPY.editView}
+            </Box>
+          )}
         </Box>
-      </ComingSoonBox>
+      ) : isNarrow ? (
+        <ScanCardList rows={scan.rows} nowS={scan.nowS} flashActive={flashActive} />
+      ) : (
+        <ScanTable
+          rows={scan.rows}
+          sort={scan.sort}
+          density={scan.density}
+          nowS={scan.nowS}
+          flashActive={flashActive}
+          onSort={scan.setSort}
+        />
+      )}
+
+      <ViewEditorDialog
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        view={scan.view}
+        sort={scan.sort}
+        density={scan.density}
+        saveError={scan.saveError}
+        onSave={scan.saveView}
+      />
     </Box>
   );
 }
