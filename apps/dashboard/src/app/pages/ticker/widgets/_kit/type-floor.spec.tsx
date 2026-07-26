@@ -15,7 +15,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { theme } from '@/shared/theme/theme';
-import { TintChip } from './TintChip';
+import { TintChip } from '@/shared/ui/TintChip';
 
 afterEach(() => cleanup());
 

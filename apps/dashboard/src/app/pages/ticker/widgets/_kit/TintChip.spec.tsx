@@ -23,7 +23,7 @@ import { extras, palette } from '@/shared/theme/tokens';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget/WidgetSelectionContext';
 import { OffExchangeBlocks } from '../off-exchange-blocks/OffExchangeBlocks';
 import { Setups } from '../setups/Setups';
-import { TintChip } from './TintChip';
+import { TintChip } from '@/shared/ui/TintChip';
 
 afterEach(() => cleanup());
 

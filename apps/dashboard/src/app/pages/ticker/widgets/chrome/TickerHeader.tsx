@@ -18,7 +18,7 @@ import { alpha } from '@mui/material/styles';
 import type { LiveUpdate, MarketState, Signals } from '@org/api';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
-import { flashColorSx, useFlashOnChange } from '../_kit/useFlashOnChange';
+import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 const REGIME_TIP =

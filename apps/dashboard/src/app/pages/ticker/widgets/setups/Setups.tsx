@@ -5,7 +5,7 @@
  */
 import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
 import type { Setup } from '@org/api';
-import { TintChip } from '../_kit/TintChip';
+import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 
 interface Props {

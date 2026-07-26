@@ -30,8 +30,10 @@ const KEPT_KEYFRAMES: Record<string, string> = {
   widgetLivePulse: '/src/app/shared/ui/Widget/Widget.tsx',
   ordersWatchPulse: '/src/app/features/trading/orders/OrderRow.tsx',
 };
-/** The one file allowed to declare a DYNAMIC keyframe name (the flash-* family). */
-const FLASH_HOME = '/src/app/pages/ticker/widgets/_kit/useFlashOnChange.ts';
+/** The one file allowed to declare a DYNAMIC keyframe name (the flash-* family). Promoted to
+ *  `shared/hooks/` on its 2nd consumer (the /scanner price cell); the family is UNCHANGED — no new
+ *  keyframe was added, so the inventory below stays SET-EQUAL. */
+const FLASH_HOME = '/src/app/shared/hooks/useFlashOnChange.ts';
 /** The one file allowed to use emotion's `keyframes` helper (THE moment: draw + baseline fade). */
 const MOMENT_HOME = '/src/app/pages/landing/HeroCurve.tsx';
 

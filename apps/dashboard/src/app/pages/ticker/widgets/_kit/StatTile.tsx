@@ -23,7 +23,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Card, CardContent, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { flashColorSx, type FlashState } from './useFlashOnChange';
+import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 
 /** The mono numeric stack (Figma `font-family/mono`), single-sourced from tokens — figures are mono. */
 const MONO = typographyTokens.monoFontFamily;

@@ -326,7 +326,7 @@ const TEXT_AMBER_CONSUMERS = [
   '/src/app/features/trading/model/OpportunityTier.tsx', //      Prime banner body text
   '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
   '/src/app/features/trading/TradeEntryDialog.tsx', //           provenance chip label (13px)
-  '/src/app/pages/ticker/widgets/_kit/TintChip.tsx', //          the `emphasis` tone text
+  '/src/app/shared/ui/TintChip.tsx', //                          the `emphasis` tone text
 ];
 
 describe('§8-8 · textAmber consumption — the closed list resolves via extrasFor (never bare extras.)', () => {
