@@ -511,6 +511,25 @@ which is exactly why this was cheap to fix now.
 > *Generic lesson worth flowing back to the kit: a remedy written as a blunt wildcard (`*`, "all processes",
 > "delete the folder") should name its blast radius — the shortcut that is convenient on a clean CI box is
 > destructive on a developer's machine.*
+>
+> **⚠ AMENDED 2026-07-27 (second occurrence — the procedure above is necessary but NOT sufficient).**
+> Killing every visible `main.py`/`worker.py` left `:8000` still returning **200 and serving real data**.
+> Two wrinkles the correction missed, both now evidenced:
+> 1. **The OS can report a STALE owner for a listening socket.** `Get-NetTCPConnection -LocalPort 8000`
+>    named a PID that `tasklist //FI "PID eq <pid>"` said did not exist. Never conclude "already dead"
+>    from the owning-PID lookup alone.
+> 2. **An orphaned `multiprocessing.spawn` child outlives its parent and keeps the socket.** The real
+>    holder was a child whose `ParentProcessId` pointed at the already-dead server. It hides from a naive
+>    filter because **multiprocessing spawns through the BASE interpreter, not the project venv** — so it
+>    reads as an unrelated system-Python process (here: indistinguishable at a glance from the operator's
+>    own `server.py`). Kill-by-venv-path would have missed it; kill-by-image would have hit the operator's.
+>
+> **The reliable test is WHAT THE PORT SERVES, not what owns it.** `curl` the endpoint and read the
+> **body** — if it returns the app's own data (the tracked universe, a bundle), something of ours is still
+> up no matter what the process table claims. Then find it by
+> `Get-CimInstance Win32_Process | Where-Object ParentProcessId -eq <the dead server's PID>`.
+> **Close the loop the same way:** after killing, re-`curl` and require a *connection failure*. A `200` means
+> you are not finished — and a status-code-only check that never reads the body can still mislead you.
 
 > Note (GATE S, redesign-stage-0, 2026-07-22): Stage 0 of the Q4(a) "Curvature Terminal" program — the
 > quality-floor repair (correctness, not identity): 393px overflow killed (580→378, root causes the bento
