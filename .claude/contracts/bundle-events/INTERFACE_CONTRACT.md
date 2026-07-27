@@ -62,10 +62,24 @@ prevent.
 - **Never a scoring input.** `opportunity_score` / `opportunity_tier` / `state_fingerprint` / the entry
   gate are **byte-identical** with the block present, null, or absent.
 
-## 4. Conformance spec
+## Conformance spec
 
-The runnable spec is the standalone `.claude/tools/conformance/bundle_events.json` (the canonical
-convention — precedent `iv_rank.json` / `scanner.json`; do **not** embed a nested block here).
-It asserts the **key is always present** on the ticker endpoint and that, when non-null, `state` is one
-of the three enum values. Because the value is legitimately `null` for an uncurated/faulted ticker, the
-spec pins **presence + type**, not a populated payload.
+The runnable spec is the **standalone** `.claude/tools/conformance/bundle_events.json` — the canonical
+convention recorded by the owner's 2026-06-23 system-12 decision, and the shipped precedent
+(`iv_rank.json`, `scanner.json`). It asserts the **key is always present** on the ticker endpoint and
+that, when non-null, `state` is one of the three enum values. Because the value is legitimately `null`
+for an uncurated or faulted ticker, the spec pins **presence + type**, not a populated payload. Run it
+with `interface_conformance.py --spec …` (the runner supports both `--spec` and `--contract`).
+
+The block below is a **single-source POINTER, deliberately not a copy** — it exists to satisfy kit
+v1.0.0 `contract_lint` M7, which errors unless this section carries a parseable fenced JSON block.
+Duplicating the spec here would recreate exactly the dual-source drift the system-12 decision removed,
+so the content stays in one file and this points at it. See the conductor note in `BACKLOG.md §E
+system-12` for the tooling conflict this works around.
+
+```json
+{
+  "$ref": ".claude/tools/conformance/bundle_events.json",
+  "_note": "Pointer, not a copy. The canonical runnable spec is the standalone file; run it with --spec. This block satisfies contract_lint M7 without duplicating the spec (system-12: standalone is canonical)."
+}
+```

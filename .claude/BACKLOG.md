@@ -1323,6 +1323,30 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   N/A. Surfaced by the backend executioner at the ai-recommendations fan-out (GATE Z).
   **Precedent to copy:** `iv-rank` (the most recent both-lanes feature) shipped a standalone spec
   `.claude/tools/conformance/iv_rank.json` — that IS the convention; the docs are what lag.
+  **⚠ REGRESSION 2026-07-27 — kit v1.0.0 INVERTED this, and it now breaks shipped features.** The kit
+  sync (`5fcc65a`, made by another session) shipped a rewritten `contract_lint.py` whose **M7 is now an
+  ERROR** unless `INTERFACE_CONTRACT.md` carries an **embedded** parseable fenced-JSON block under a
+  heading matching `##\s*Conformance spec` — i.e. the linter now *mandates* the very convention the
+  owner's 2026-06-23 decision retired. Consequences observed:
+  · **Already-shipped, already-QA-passed features now FAIL lint** — `scanner` (2 errors) and `iv-rank`
+  (2 errors, its referencing prose parsing as invalid JSON). Nothing about them changed; the gate did.
+  · The linter and the runner **still disagree, now in the opposite direction**: `interface_conformance.py`
+  supports **both** `--spec` (standalone) and `--contract` (embedded), so standalone specs remain fully
+  runnable — only the *linter* rejects them. That is the same system-3-vs-system-1 detection split this
+  item was opened for, re-created at higher severity (ERROR, not WARN).
+  · v1.0.0 also newly requires a **`SPEC.md`** per feature folder (M8: must carry an "Acceptance criteria"
+  section; M3: must name `INTERFACE_CONTRACT.md`) — a reasonable addition, but it retroactively fails
+  every archived feature too.
+  **Conductor workaround used on `bundle-events` (2026-07-27), NOT a resolution:** the interface keeps the
+  standalone spec as canonical and embeds a **`$ref` POINTER object** under a bare `## Conformance spec`
+  heading — valid JSON, satisfies M7, and **does not duplicate the spec**, so no dual-source drift.
+  Two sharp edges found the hard way and worth knowing: the M7 regex matches a *literal* fenced-json
+  marker appearing anywhere in the file's prose (so discussing the rule in prose can hijack detection),
+  and it will not match a **numbered** heading like `## 4. Conformance spec`.
+  **Real fix (kit-owned, flows via `KIT_BACKLOG`, do NOT edit `contract_lint.py` in place):** teach M7 to
+  accept a standalone `.claude/tools/conformance/{feature}.json` as satisfying the rule — ideally by
+  checking the referenced file EXISTS, which is the stronger gate this item originally asked for and
+  which the current rule still does not provide.
 - **system-13 · Framework portability — the delivery-kit extraction** — `✓ LANDED (2026-06-24)`.
   Extracted the reusable framework (orchestrator + role subagents + tools + commands + compressor /
   role-launch docs) out of GammaFlow into a standalone, updatable **delivery-kit** (its own repo at
