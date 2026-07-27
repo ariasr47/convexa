@@ -6,11 +6,12 @@ Run the mechanical gate-checks for feature `$ARGUMENTS` and report the results p
 — this is a gate, not a repair. (Substitute the interpreter + backend URL from `.claude/project.json`:
 `backend.python` and `http://127.0.0.1:<backend.port>`.)
 
-1. Structure / lane purity / canon single-source:
+1. Structural checks (missing artifact, missing acceptance criteria, `SPEC.md` not referencing the
+   interface, a missing/unparseable conformance block, manifest/BRIEF fields) + canon single-source:
    `<project.json backend.python> .claude/tools/contract_lint.py $ARGUMENTS`
-2. Runtime interface conformance — only if the backend is running AND the feature's
-   `INTERFACE_CONTRACT.md` has a `## Conformance spec`:
-   `<project.json backend.python> .claude/tools/interface_conformance.py --contract .claude/contracts/$ARGUMENTS/INTERFACE_CONTRACT.md --url <backend-base-url>`
+2. Then, if the backend is running and `INTERFACE_CONTRACT.md` carries a `## Conformance spec` block, run
+   `<project.json backend.python> .claude/tools/interface_conformance.py --contract
+   .claude/contracts/$ARGUMENTS/INTERFACE_CONTRACT.md --url <backend-base-url>`.
 
 Summarize: ERRORs (block the handoff — must fix before routing) vs WARNINGs (advisory, judge them). If
 conformance can't run (no server / no spec / NO_BACKEND_CHANGE), say so explicitly rather than skipping

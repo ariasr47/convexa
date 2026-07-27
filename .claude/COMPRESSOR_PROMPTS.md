@@ -23,57 +23,27 @@ Write it to .claude/contracts/{FEATURE}/{CONTRACT_NAME}.md, then print the path 
 ```
 
 ## 2. Session-Transition Compressor (role → role)
-Run at the Exit of Architect and PM. Targets the next role's needs.
-> **This does NOT create a new file.** Your role's PRIMARY contract IS the compressed handoff:
-> `{CONTRACT_NAME}` here = your own `ARCHITECTURE_CONTRACT.md` (Architect) or `PRODUCT_CONTRACT.md` (PM).
-> "Run compressor #2" means *write that one contract in compressed, next-role-targeted form, then print
-> a 5-bullet summary in your report* — do not emit a second handoff file (e.g. `*_INPUT.md`). Only
-> compressor #3 (the UX Split) legitimately emits multiple files (the three execution contracts).
+> **Scope narrowed in v1.0.0:** there are no role-to-role contract handoffs any more — the council
+> replaced them. Use this for general session transitions (e.g. compressing a long build session for a
+> fresh reviewer), not for a gateway handoff.
 
 ```text
-Compress THIS session into a contract for the next role: {TARGET_ROLE}.
-Reader has ONLY .claude/PROJECT_CONTEXT.md + this contract.
-Include exactly the sections {TARGET_ROLE} needs to act (use that contract's template in
-.claude/contracts/{FEATURE}/). Restate any binding constraint they must not violate — explicitly
-including the promoted-canon keys this feature touches (the BRIEF's `Invariant watch` keys) so the
-next role inherits them without re-reading the ledger.
-Stay in your lane: the Architect emits no UI/endpoints; the PM emits no code/math. EXCLUDE your
-rationale — ship decisions, not deliberation.
-{CONTRACT_NAME} = your role's existing primary contract (ARCHITECTURE_CONTRACT.md for the Architect,
-PRODUCT_CONTRACT.md for the PM) — write/finalize THAT one file in compressed form; do NOT create a
+Compress THIS session into a handoff for the next reader: {TARGET_ROLE}.
+Reader has ONLY .claude/PROJECT_CONTEXT.md + this handoff.
+Include exactly the sections {TARGET_ROLE} needs to act. Restate any binding constraint they must not
+violate — explicitly including the promoted-canon keys this feature touches (the BRIEF's `Invariant
+watch` keys) so the next reader inherits them without re-reading the ledger. EXCLUDE your rationale —
+ship decisions, not deliberation.
+{CONTRACT_NAME} = a session-transition handoff file (e.g. `HANDOFF.md`) under
+.claude/contracts/{FEATURE}/ — write/finalize THAT one file in compressed form; do NOT create a
 second handoff file. Print its path + a 5-bullet summary.
 ```
 
-## 3. Split Context Compressor (decoupled execution)
-Run at the Exit of the UX/Tech-Writer session. Emits the FE↔BE glue + two lane contracts.
+## 3. Split Context Compressor — RETIRED (v1.0.0)
 
-```text
-Compress THIS session into THREE files for decoupled execution:
-1) .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md — the FE↔BE data contract ONLY:
-   endpoints, payload fields (names, types, presence rules), and error/SSE semantics. Both
-   sides bind to this; it is the single source of integration truth. It MUST embed a
-   machine-checkable `## Conformance spec` fenced ```json block mapping each endpoint → its
-   required field paths/types/presence (dot-paths; `name[]` for array fan-out; `type|null`
-   unions; trailing `?` for optional), so interface_conformance.py (system-1) can verify the
-   live backend against it at GATE Q and the executioners can self-check before reporting done.
-   (A NO_BACKEND_CHANGE interface that only consumes an existing endpoint may point at that
-   endpoint's existing spec instead of restating it.)
-2) .claude/contracts/{FEATURE}/BACKEND_EXECUTION_CONTRACT.md — server work only; references
-   the interface contract for what it must EMIT; contains NO UI detail.
-3) .claude/contracts/{FEATURE}/FRONTEND_EXECUTION_CONTRACT.md — UI work only; references the
-   interface contract for what it CONSUMES + the component states (default/loading/stale/
-   offline/empty/error); contains NO server internals. Include a "Tests to write" matrix that
-   ENUMERATES the required cases, EACH marked with its verification kind per the risk-based rule
-   (qa-verify §4): `test:` for invariants / negative space / silently-regressing behavior, `review:`
-   for visible/intentional things (copy, presence, ordering). This is the FE's requirement set (the FE
-   implements the `test:` cases + may add unit tests, but never drops a listed case); QA verifies EVERY
-   case at GATE Q by its marked kind — verification is mandatory per AC, a named test is not.
-   (Tests are part of the FE deliverable; use the project's configured stack.)
-Each must be self-contained against PROJECT_CONTEXT.md + the interface contract. EXCLUDE
-rationale. Print the three paths. (contract_lint.py runs next at GATE U·X: it ERRORs if an
-execution contract isn't bound to the interface and WARNs if a locked interface lacks the
-Conformance spec block — so emit the block now.)
-```
+Its whole job was emitting the three-file execution split at the UX exit. Under the design council the
+R4 synthesizer writes `SPEC.md` + `INTERFACE_CONTRACT.md` directly, and there are no execution contracts
+to split into. Use `.claude/council/R4-synthesis.md` instead.
 
 ## 4. Session-Resume Compressor (continue long work in a fresh tab)
 When a single working session gets long/expensive, snapshot it to resume cleanly elsewhere.

@@ -7,9 +7,8 @@ is system-1 (interface-conformance) and semantic ACs are system-2 (QA/Verify). P
 Decision-Ledger crossing-detection hook (BACKLOG §B), which shares this script surface.
 
 Per-project coupling lives in `.claude/project.json` (the single seam): `context_file` (default
-`PROJECT_CONTEXT.md`) names the ground-truth file, and `lane_purity` optionally overrides the
-lane-forbidden regex patterns below. Absent config ⇒ the built-in defaults, so the tool runs in a
-bare project unchanged.
+`PROJECT_CONTEXT.md`) names the ground-truth file. Absent config ⇒ the built-in defaults, so the tool
+runs in a bare project unchanged.
 
 Usage:
     python .claude/tools/contract_lint.py                # lint every LIVE feature (contracts/, not _archive)
@@ -47,61 +46,15 @@ CONTEXT_NAME = _CFG.get("context_file", "PROJECT_CONTEXT.md")
 CONTEXT = CLAUDE / CONTEXT_NAME
 LEDGER = CLAUDE / "DECISION_LEDGER.md"
 
-MANIFEST_KEYS = ["Entry", "Stage", "Repos", "Brief", "Contracts", "Last gateway"]
-BRIEF_FIELDS = ["Goal", "Decision impact", "Feasibility", "Effort",
-                "Invariant watch", "Entry point", "Source"]
+MANIFEST_KEYS = ["Stage", "Repos", "Brief", "Contracts", "Last gateway"]
+BRIEF_FIELDS = ["Goal", "Decision impact", "Feasibility", "Effort", "Invariant watch", "Source"]
 STATUS_RE = re.compile(r"-\s+(\S+\.md)\s+(NO_BACKEND_CHANGE|NO_UI_CHANGE|locked|draft|n/a)")
 
-# Conservative, high-confidence lane-purity heuristics (WARN, not ERROR — they flag, you judge).
-ENDPOINT_RE = re.compile(r"\b(?:GET|POST|PUT|PATCH|DELETE)\s+(/\S+)", re.I)
-PATH_RE = re.compile(r"/[\w/_{}.-]+")
-# Files where DESIGNING a NEW endpoint is a lane violation (referencing an EXISTING one is fine).
-NEW_ENDPOINT_FILES = ("ARCHITECTURE_CONTRACT.md", "PRODUCT_CONTRACT.md")
-
-# Lane-forbidden patterns (file substring : list of (regex, why)). Defaults are generic-enough
-# heuristics; a project may override/extend them via project.json `lane_purity` as
-# {"FILENAME.md": [["regex", "why"], ...]}.
-_DEFAULT_LANE_FORBIDDEN = {
-    "ARCHITECTURE_CONTRACT.md": [
-        (r"\.tsx\b", "UI component reference (.tsx) in an architecture contract"),
-    ],
-    "PRODUCT_CONTRACT.md": [
-        (r"\bdef \w+\(", "code (def ...) in a product contract"),
-    ],
-    "BACKEND_EXECUTION_CONTRACT.md": [
-        (r"\.tsx\b", "UI file (.tsx) in the backend execution contract"),
-        (r"\buseState\b|\buseEffect\b", "React hook in the backend execution contract"),
-    ],
-    "FRONTEND_EXECUTION_CONTRACT.md": [
-        (r"\.py\b", "a server-side (.py) file reference in the frontend execution contract"),
-    ],
-}
-
-
-def _load_lane_forbidden() -> dict:
-    """Compile lane-purity patterns, preferring project.json `lane_purity` over the defaults.
-    Robust to non-rule entries (e.g. a documentation `_comment` key) and malformed rules."""
-    raw = _CFG.get("lane_purity") or _DEFAULT_LANE_FORBIDDEN
-    compiled: dict[str, list[tuple]] = {}
-    for fname, rules in raw.items():
-        if not isinstance(rules, list):
-            continue  # skip non-rule entries like a "_comment" string
-        compiled_rules = []
-        for rule in rules:
-            if isinstance(rule, (list, tuple)) and len(rule) == 2:
-                rx, why = rule
-                compiled_rules.append((re.compile(rx), why))
-        if compiled_rules:
-            compiled[fname] = compiled_rules
-    return compiled
-
-
-LANE_FORBIDDEN = _load_lane_forbidden()
-
-
-def known_endpoint_paths(context: str) -> set[str]:
-    """Endpoint paths already documented in the ground truth (existing infra is fair to reference)."""
-    return set(PATH_RE.findall(context))
+# The council writes exactly two per-feature artifacts; both are checked structurally below.
+SPEC_FILE = "SPEC.md"
+INTERFACE_FILE = "INTERFACE_CONTRACT.md"
+AC_HEADING_RE = re.compile(r"^##\s*\d*\.?\s*Acceptance criteria", re.M | re.I)
+CONFORMANCE_RE = re.compile(r"##\s*Conformance spec.*?```json\s*(.*?)```", re.S | re.I)
 
 
 class Findings:
@@ -125,7 +78,7 @@ def parse_manifest_statuses(text: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in STATUS_RE.finditer(text)}
 
 
-def lint_feature(folder: Path, f: Findings, known_endpoints: set[str]) -> None:
+def lint_feature(folder: Path, f: Findings) -> None:
     name = folder.name
     man_path = folder / "_MANIFEST.md"
     if not man_path.exists():
@@ -152,17 +105,47 @@ def lint_feature(folder: Path, f: Findings, known_endpoints: set[str]) -> None:
             if fpath.exists() and status not in read(fpath):
                 f.warn(f"{name}/{fname}", f"manifest says {status} but the file omits that marker")
 
-    # M3 — interface-binding: execution contracts must reference INTERFACE_CONTRACT.md.
-    for ex in ("BACKEND_EXECUTION_CONTRACT.md", "FRONTEND_EXECUTION_CONTRACT.md"):
-        status = statuses.get(ex)
-        epath = folder / ex
-        if status in ("locked", "draft") and epath.exists():
-            body = read(epath)
-            if "NO_BACKEND_CHANGE" in body or "NO_UI_CHANGE" in body:
-                continue
-            if "INTERFACE_CONTRACT" not in body:
-                f.err(f"{name}/{ex}", "execution contract does not bind to INTERFACE_CONTRACT.md "
-                                      "(the single FE↔BE truth must be referenced)")
+    spec_path = folder / SPEC_FILE
+    iface_path = folder / INTERFACE_FILE
+
+    # Existence is checked unconditionally — a manifest that omits or mislabels a file must not
+    # hide it going missing. Both artifacts are mandatory for every live feature.
+    if not spec_path.exists():
+        f.err(f"{name}/{SPEC_FILE}", f"{SPEC_FILE} is missing from the feature folder")
+    if not iface_path.exists():
+        f.err(f"{name}/{INTERFACE_FILE}", f"{INTERFACE_FILE} is missing from the feature folder")
+
+    # M8 — the spec must carry acceptance criteria (the checklist GATE Q verifies).
+    if spec_path.exists():
+        spec_body = read(spec_path)
+        if not AC_HEADING_RE.search(spec_body):
+            f.err(f"{name}/{SPEC_FILE}",
+                  "no 'Acceptance criteria' section — GATE Q has no checklist to verify")
+
+        # M3 — the spec must bind to the interface, the single FE-to-BE truth.
+        if INTERFACE_FILE.removesuffix(".md") not in spec_body:
+            f.err(f"{name}/{SPEC_FILE}",
+                  f"spec does not reference {INTERFACE_FILE} "
+                  "(the single FE-to-BE truth must be named, never restated)")
+
+    # M7 — the interface must carry a parseable machine-checkable conformance spec (system-1),
+    # unless it is explicitly a no-backend-change feature. ERROR: without it GATE Q cannot verify.
+    # The NO_BACKEND_CHANGE bypass keys off the file's own body, never the manifest label — a
+    # manifest can mislabel a file, but it cannot put words in the file itself.
+    if iface_path.exists():
+        ibody = read(iface_path)
+        if "NO_BACKEND_CHANGE" not in ibody:
+            m = CONFORMANCE_RE.search(ibody)
+            if not m:
+                f.err(f"{name}/{INTERFACE_FILE}",
+                      "no '## Conformance spec' ```json block — interface_conformance.py cannot verify "
+                      "the live backend against this interface")
+            else:
+                try:
+                    json.loads(m.group(1))
+                except json.JSONDecodeError as exc:
+                    f.err(f"{name}/{INTERFACE_FILE}",
+                          f"'## Conformance spec' block is not valid JSON ({exc.msg} at line {exc.lineno})")
 
     # M4 — BRIEF fields (if a BRIEF exists).
     brief = folder / "BRIEF.md"
@@ -171,51 +154,6 @@ def lint_feature(folder: Path, f: Findings, known_endpoints: set[str]) -> None:
         for field in BRIEF_FIELDS:
             if not re.search(rf"^{re.escape(field)}\s*:", btext, re.M):
                 f.err(f"{name}/BRIEF.md", f"missing BRIEF field '{field}:'")
-
-    # M5 — lane-purity heuristics (WARN).
-    for fname_sub, rules in LANE_FORBIDDEN.items():
-        fpath = folder / fname_sub
-        if not fpath.exists():
-            continue
-        body = read(fpath)
-        if "NO_BACKEND_CHANGE" in body or "NO_UI_CHANGE" in body:
-            continue  # stub files are exempt
-        for rx, why in rules:
-            for ln_no, line in enumerate(body.splitlines(), 1):
-                if rx.search(line):
-                    f.warn(f"{name}/{fname_sub}:{ln_no}", f"lane-purity: {why}")
-                    break  # one flag per rule per file is enough signal
-
-    # M7 — a locked INTERFACE_CONTRACT should carry a machine-checkable conformance spec (system-1),
-    # so interface_conformance.py can verify the live backend against it at GATE Q.
-    iface = folder / "INTERFACE_CONTRACT.md"
-    if statuses.get("INTERFACE_CONTRACT.md") == "locked" and iface.exists():
-        ibody = read(iface)
-        if "Conformance spec" not in ibody and "NO_BACKEND_CHANGE" not in ibody:
-            f.warn(f"{name}/INTERFACE_CONTRACT.md",
-                   "no '## Conformance spec' block — system-1 runtime conformance cannot check this "
-                   "interface (interface_conformance.py needs the embedded machine-checkable spec)")
-
-    # M6 — NEW endpoint design in the Architect/PM lane (referencing an EXISTING endpoint is fine).
-    for fname_sub in NEW_ENDPOINT_FILES:
-        fpath = folder / fname_sub
-        if not fpath.exists():
-            continue
-        for ln_no, line in enumerate(read(fpath).splitlines(), 1):
-            m = ENDPOINT_RE.search(line)
-            if not m:
-                continue
-            path_m = PATH_RE.search(m.group(1))
-            if not path_m:
-                continue
-            clean = path_m.group(0).rstrip("`.,;:)")
-            known = any(clean == k or clean.startswith(k) or k.startswith(clean)
-                        for k in known_endpoints)
-            if not known:
-                f.warn(f"{name}/{fname_sub}:{ln_no}",
-                       f"lane-purity: NEW endpoint '{clean}' designed in this lane "
-                       f"(architect/PM leave endpoints to the interface; existing endpoints are fine)")
-                break
 
 
 def lint_canon(f: Findings) -> None:
@@ -273,9 +211,8 @@ def main(argv: list[str]) -> int:
         folders = live_features()
         lint_canon(f)
 
-    known_endpoints = known_endpoint_paths(read(CONTEXT))
     for folder in folders:
-        lint_feature(folder, f, known_endpoints)
+        lint_feature(folder, f)
 
     scope = arg if arg else f"{len(folders)} live feature(s)"
     print(f"contract_lint — scope: {scope}")

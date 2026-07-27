@@ -1,11 +1,11 @@
 # ORCHESTRATOR — Universal Session Orchestrator (standing reference)
 
 > Paste/reference this to make a session act as the **Delivery Conductor**. Its one job:
-> eliminate manual copy-paste between the sidebar role sessions (Architect · PM · UX/Tech-Writer ·
-> Backend · Frontend) by **auditing the files you name, compressing the prior session's output, and
-> writing the next session's inbound contract(s) to disk** — then reporting to you as an operator
-> card (`OPERATOR_REPORTS.md`; §5/§7) whose technical footer carries the exact launch prompt for the
-> next role.
+> eliminate manual copy-paste between the pipeline's sessions — the three-voice **Design Council**
+> (`/council`, GATE C) and the **Backend**/**Frontend** executioners — by **auditing the files you
+> name, driving or compressing the prior stage's output, and writing the next session's inbound
+> artifact(s) to disk** — then reporting to you as an operator card (`OPERATOR_REPORTS.md`; §5/§7)
+> whose technical footer carries the exact launch prompt for the next role.
 >
 > It is a **prompt-driven automation** (executed with file-system tools), not a CLI script — that
 > matches how this repo already works (`COMPRESSOR_PROMPTS.md`, `ROLE_LAUNCH_PROMPTS.md`).
@@ -20,14 +20,16 @@
 3. **Audit** the files I name + the gateway's default audit set (§3). Read the repo, not chat
    history — every contract must stand alone against `PROJECT_CONTEXT.md` + its inbound contract.
 4. **Compress** per the gateway's rule (reuse a compressor from `COMPRESSOR_PROMPTS.md`; strip
-   deliberation, keep decisions).
+   deliberation, keep decisions) — **except GATE C**, which has no compress step: the council's own
+   R3 reconcile + R4 synthesis produce `SPEC.md`/`INTERFACE_CONTRACT.md` directly (see §3 GATE C).
 5. **Write** the output contract(s) to the exact paths in §3 (correct repo — see §2).
 6. **Update** `.claude/contracts/{FEATURE}/_MANIFEST.md` (§4).
 7. **Gate-check (mechanical, system-3):** run
    `<project.json backend.python> .claude/tools/contract_lint.py {FEATURE}`. A non-zero exit (**ERROR** —
-   missing file/manifest key, an execution contract not bound to the interface, a promoted key missing
-   from canon) **blocks the handoff**; fix the structural violation before routing. WARNINGs
-   (lane-purity heuristics) are advisory — judge them.
+   a missing artifact, missing acceptance criteria, `SPEC.md` not referencing the interface, a
+   missing/unparseable conformance block, a missing manifest/BRIEF field, or a promoted key missing from
+   canon) **blocks the handoff**; fix the structural violation before routing. WARNINGs are advisory —
+   judge them.
 8. **Capture** any *binding* decision the gateway locked into `.claude/DECISION_LEDGER.md` — one row
    per decision (`key · feature · gate · statement · binding`). This is the compounding-memory intake
    (§3a); only log decisions a future feature could violate (same bar as the GATE I cull).
@@ -50,38 +52,33 @@ gateway you name.
   conductor I start after a context-threshold handoff continues from it. Optional + transient — refresh or
   remove it once consumed so it never goes stale against the canon.
 - **Standing references (I route to, don't duplicate):**
-  `.claude/COMPRESSOR_PROMPTS.md` (#1 Universal · #2 Session-Transition · #3 Split · #4 Resume) ·
-  `.claude/ROLE_LAUNCH_PROMPTS.md` (§1 Architect · §1b Architect-after-PM · §2 PM · §2b PM-first ·
-  §3 UX · §4 Backend · §5 Frontend) ·
+  `.claude/COMPRESSOR_PROMPTS.md` (#1 Universal · #2 Session-Transition · #4 Resume) ·
+  `.claude/ROLE_LAUNCH_PROMPTS.md` (§1 The Design Council · §2 Backend · §3 Frontend · §4 QA/Verify) ·
   `.claude/BACKLOG.md` (the standing idea pool + roadmap-discovery method — feeds GATE I) ·
   `.claude/DECISION_LEDGER.md` (the compounding-memory ledger + promotion rule — captured every
   gateway, graduated at GATE S, fed forward into GATE I) ·
   `.claude/agents/*` (per-role lane-fenced subagents — system-4) ·
   `.claude/tools/*` (`contract_lint.py` — system-3 gate-check; `interface_conformance.py` — system-1
   runtime conformance; `context_for.py` — system-5 context pack; `path_guard.js` — system-4b write fence) ·
-  `.claude/commands/*` (slash commands: `/conductor` boot · `/status` pipeline state · `/gatecheck`
-  {feature} mechanical gates · `/pack` {feature} context pack).
+  `.claude/commands/*` (slash commands: `/conductor` boot · `/council` {feature} the design council ·
+  `/status` pipeline state · `/gatecheck` {feature} mechanical gates · `/pack` {feature} context pack).
 - **Operating mode (system-9-lite, adopted):** run each role as a **fresh spawn** of its
   `.claude/agents/delivery-*` subagent (+ a `context_for.py` pack), discarded after each handoff —
   never a long-lived role session. The conductor stays manual (you); the role work is disposable +
   fresh. See `ROLE_LAUNCH_PROMPTS.md` "Running a role — the LITE path." **Exception:** GATE I
   (Discovery) has no subagent — the conductor runs it **inline** (rationale in §3 GATE I); every other
   gateway spawns its lane-fenced subagent.
-- **Variable (per feature — what I produce):** `.claude/contracts/{FEATURE}/` containing some of
-  `ARCHITECTURE_CONTRACT.md`, `PRODUCT_CONTRACT.md`, `UX_BLUEPRINT.md`, **`INTERFACE_CONTRACT.md`
-  (the FE↔BE single source of truth — both lanes bind to it)**, `BACKEND_EXECUTION_CONTRACT.md`,
-  `FRONTEND_EXECUTION_CONTRACT.md`, plus `_MANIFEST.md` (§4) and `BRIEF.md` (the chosen idea that
-  seeds the pipeline — output of GATE I), and as needed `*_AMENDMENTS_REQUESTED.md` / `RESUME.md`.
-  Ship → move the folder to `_archive/`.
+- **Variable (per feature — what I produce):** `.claude/contracts/{FEATURE}/` containing `BRIEF.md` (the
+  chosen idea that seeds the pipeline — output of GATE I), **`SPEC.md`** (the council's synthesized
+  design) and **`INTERFACE_CONTRACT.md`** (the FE-to-BE single source of truth; both build lanes bind to
+  it), plus `_MANIFEST.md` (§4), the round artifacts under `council/`, and as needed `PLAN.md`,
+  `QA_REPORT.md`, `*_AMENDMENTS_REQUESTED.md` / `RESUME.md`. Ship → move the folder to `_archive/`.
 
-Pipeline (canonical): **Discovery (GATE I, optional) → Architect → PM → UX/Tech-Writer →
+Pipeline (canonical): **Discovery (GATE I, optional) → Council (GATE C) → Plan (GATE PLAN) →
 {Backend ‖ Frontend} → QA/Verify → Ship** (the two executioners run in parallel, both bound to
-`INTERFACE_CONTRACT.md`; **QA/Verify (GATE Q) gates the ship**). Discovery precedes the pipeline: it
-grooms the backlog and emits the `BRIEF.md` whose `{GOAL}` opens the entry role. Two entry orderings
-exist (Architect-first default; PM-first for product-dominated features) — see `ROLE_LAUNCH_PROMPTS.md`
-"Choosing the entry point." Executioners have **no outbound contract** (they ship code), so the next
-gateway after them is **QA/Verify (GATE Q)**, then **SHIP (GATE S)** — QA is a fresh session, never the
-builder verifying itself.
+`INTERFACE_CONTRACT.md`; **QA/Verify (GATE Q) gates the ship**). Executioners have **no outbound
+contract** (they ship code), so the next gateway after them is **QA/Verify (GATE Q)**, then
+**SHIP (GATE S)** — QA is a fresh session, never the builder verifying itself.
 
 ## 2. Project layout (route writes correctly — read `.claude/project.json`)
 The per-project seam is `.claude/project.json`. It names the **backend** lane (`backend.dir` +
@@ -113,7 +110,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 > the next feature inherits. The generative judgement (is this decision binding? does the prose read
 > right?) stays in the gateway; the ledger makes recurrence mechanical instead of remembered.
 
-### GATE I — Discovery / roadmap (PRE-pipeline)  → entry role (Architect-first or PM-first)
+### GATE I — Discovery / roadmap (PRE-pipeline)  → Design Council (GATE C)
 > The only divergent gate — and the **one role the conductor runs INLINE itself**, not as a fresh
 > `delivery-*` subagent. This is a deliberate, reasoned exception to fresh-subagent-per-gateway
 > (system-9-lite), on three concrete grounds:
@@ -154,57 +151,39 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
      **parked, not promoted** (mirrors the AC-observable rule + the AI over-trading gate).
   3. **Feasibility gate** — data coverage / math invariants. An uncertain or heavy item may take a
      **grooming-time feasibility consult** from an Architect session: a one-paragraph
-     *buildable / blocked-on* read that only informs the score. This is **NOT** the full Architect
-     session and produces **NO** `ARCHITECTURE_CONTRACT.md` — the real contract waits until the
-     feature is chosen and a `BRIEF.md` exists (writing contracts for un-chosen ideas is the sprawl
-     the cull exists to prevent). A blocked item names its blocker (e.g. "needs the vendor
-     decision") and is **not** scheduled.
+     *buildable / blocked-on* read that only informs the score. This is **NOT** the full Design
+     Council and produces **NO** `SPEC.md` — the real design waits until the feature is chosen and
+     a `BRIEF.md` exists (running the council for un-chosen ideas is the sprawl the cull exists to
+     prevent). A blocked item names its blocker (e.g. "needs the vendor decision") and is **not**
+     scheduled.
   4. **Score** the survivors: Value (H/M/L to the trading edge) × Effort (S/M/L); flag any locked
      invariant it would touch.
   5. **Cull to ONE** next feature.
 - **Write:** update `BACKLOG.md` (the full prioritized pool — diverge) **and** create
   `.claude/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a).
-- **Route:** the chosen `BRIEF.md`'s `{GOAL}` opens the entry role per the Architect-first vs
-  PM-first rule (`ROLE_LAUNCH_PROMPTS.md` "Choosing the entry point"). GATE I then hands off into
-  GATE A·X's opening move.
+- **Route:** the chosen `BRIEF.md`'s `{GOAL}` opens **GATE C** — the Design Council.
 
-### GATE A·X — Architect exit  → PM (default) or UX (if PM already ran)
-- **Trigger:** "Architect's done / lock the architecture / shape is set."
-- **Audit:** `PROJECT_CONTEXT.md`, `OPEN_THREADS.md`, the Architect's notes/changes, any
-  `PRODUCT_CONTRACT.md` already present (PM-first flow).
-- **Compress:** Compressor **#2** (Session-Transition) targeting the next role.
-- **Write:** `ARCHITECTURE_CONTRACT.md` (data structures/contracts, data-flow & component
-  boundaries, isolation/error rules, restated binding constraints, explicit non-goals, open
-  questions for the next role). NO UI, no endpoint signatures, no payload field names.
-- **Route:** Architect-first → PM (`ROLE_LAUNCH_PROMPTS.md` §2). PM-first validation pass → UX
-  (§3); bounce any un-buildable AC back as a PRODUCT_CONTRACT amendment (GATE Z) before UX starts.
+### GATE C — Design council  → Plan (GATE PLAN)
+- **Trigger:** "design it / run the council / the brief is ready."
+- **Run with:** `/council {FEATURE}` — that command is the authority for rounds, prompts and dispatch.
+- **Audit:** `PROJECT_CONTEXT.md`, `OPEN_THREADS.md`, the feature's `BRIEF.md`, `DESIGN_RULES.md`
+  (pointer, not restated), and the promoted canon.
+- **Rounds:** R1 blind positions (architect / pm / ux in parallel) → R2 cross-critique (quoted
+  conflicts, tagged `technical` or `product`) → **R3 reconcile — mine**: technical conflicts go back to
+  the two voices involved for one exchange, product conflicts go to the user ONE at a time as Decision
+  cards → R4 synthesis by a fresh agent that is none of the three voices. Then **S2**, an adversarial
+  spec review on a different base model; Critical findings loop back to R4 (cap 2 passes).
+- **Write:** `SPEC.md` + `INTERFACE_CONTRACT.md`, plus the round artifacts under `council/`.
+  `INTERFACE_CONTRACT.md` MUST carry a machine-checkable `## Conformance spec` json block (or be
+  explicitly `NO_BACKEND_CHANGE`) — `contract_lint` ERRORs without it and GATE Q cannot verify.
+- **Route:** → GATE PLAN, once the user approves the spec.
 
-### GATE P·X — PM exit  → UX (default) or Architect (PM-first validation)
-- **Trigger:** "PM's done / product contract is locked."
-- **Audit:** `PROJECT_CONTEXT.md`, `OPEN_THREADS.md`, `ARCHITECTURE_CONTRACT.md` (if it exists).
-- **Compress:** Compressor **#2** targeting UX (or Architect for PM-first).
-- **Write:** `PRODUCT_CONTRACT.md` (user stories, scope In/Out/Future, dashboard behavior,
-  acceptance criteria observable *without reading code*, "Product decisions made here," and — for
-  PM-first — "Feasibility questions for the Architect"). No code, math, endpoints, or UI layout.
-- **Route:** → UX (`ROLE_LAUNCH_PROMPTS.md` §3). PM-first → Architect §1b.
-
-### GATE U·X — UX exit (THE FAN-OUT)  → Backend ‖ Frontend   *(= your Routine A tail)*
-- **Trigger:** "UX is locked / split it for execution / load the build tracks."
-- **Audit:** `PROJECT_CONTEXT.md`, `PRODUCT_CONTRACT.md`, `UX_BLUEPRINT.md`,
-  `ARCHITECTURE_CONTRACT.md`, `DESIGN_RULES.md` (the design-quality canon — pointer, not restated).
-- **Compress:** Compressor **#3** (Split Context).
-- **Write THREE files (this is the whole point — never collapse them):**
-  1. `INTERFACE_CONTRACT.md` — FE↔BE truth ONLY: endpoints, payload fields (name/type/presence),
-     error + SSE semantics. Both lanes bind here. **Include a machine-checkable `## Conformance spec`
-     ```json block** (endpoints → required field paths/types/presence) so `interface_conformance.py`
-     (system-1) can verify the live backend against it at GATE Q. (A `NO_BACKEND_CHANGE` interface that
-     consumes an existing endpoint may point at that endpoint's existing spec instead.)
-  2. `BACKEND_EXECUTION_CONTRACT.md` — server work only; references the interface for what it
-     EMITS; NO UI detail. (→ `backend.dir`.)
-  3. `FRONTEND_EXECUTION_CONTRACT.md` — UI work + component states (default/loading/stale/offline/
-     empty/error) only; references the interface for what it CONSUMES; NO server internals.
-     (→ `frontend.dir`.)
-- **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §4) and Frontend (§5) **in parallel**.
+### GATE PLAN — Plan the approved spec  → Backend ‖ Frontend
+- **Trigger:** "the spec is approved / plan it."
+- **Do:** run `superpowers:writing-plans` over `SPEC.md` to produce `PLAN.md` with backend, frontend and
+  verification task tracks. The plan's **Global Constraints must copy the conformance block verbatim**
+  so both lanes inherit the same binding shape.
+- **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §2) and Frontend (§3) **in parallel**.
 
 ### GATE M — Math / Infra drift fast-path: Architect → Backend (skip PM + UX)   *(= your Routine B)*
 - **Trigger:** "math drift / fix the calc / schema change / model divergence in {function}."
@@ -213,30 +192,29 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   reopen), `OPEN_THREADS.md`, and the exact source file(s) you name (e.g. a core calc/engine module, a
   signals module, a provider/port adapter — under `backend.dir`).
 - **Compress:** Compressor **#2** targeting Backend; isolate affected functions + data types.
-- **Write:** overwrite `INTERFACE_CONTRACT.md` (only the changed types/fields/presence) +
-  `BACKEND_EXECUTION_CONTRACT.md` with **strict types and explicit computational constraints**
-  (units, sign conventions, null rules, and the domain-specific computational constraints the context
-  file names).
-- **Token-saving isolation:** do **not** spin up a frontend lane. Write a one-line
-  `FRONTEND_EXECUTION_CONTRACT.md` containing only:
-  `> NO_UI_CHANGE — backend-only drift {FEATURE}; FE consumes the unchanged interface. No build.`
-  (Or, if the interface field shapes are byte-identical, skip the FE file and flag NO_UI_CHANGE in
-  the manifest.)
-- **Route:** Backend only (§4).
+- **Write:** overwrite `INTERFACE_CONTRACT.md` (only the changed types/fields/presence) plus the
+  affected part of `SPEC.md` §2 (architecture) / §5 (error handling) with **strict types and explicit
+  computational constraints** (units, sign conventions, null rules, and the domain-specific
+  computational constraints the context file names).
+- **Token-saving isolation:** do **not** spin up a frontend lane. Flag `NO_UI_CHANGE` in the manifest
+  — backend-only drift {FEATURE}; FE consumes the unchanged interface. No frontend file to write, no
+  frontend build.
+- **Route:** Backend only (§2).
 
 ### GATE V — Visual / Observability cleanup fast-path: UX → Frontend (skip math)   *(= your Routine C)*
 - **Trigger:** "visual fix / layout tweak / component fault / graceful-degradation wording — no
   math."
 - **Use when:** component states, layout, copy, or stream-degradation behavior change with **no
   engine/endpoint change**.
-- **Audit:** `PROJECT_CONTEXT.md` (the live-vs-static / degradation rules), `UX_BLUEPRINT.md`,
+- **Audit:** `PROJECT_CONTEXT.md` (the live-vs-static / degradation rules), `SPEC.md` §4,
   `DESIGN_RULES.md` (the design-quality canon — pointer, not restated), the named frontend file(s)
   under `frontend.dir` (e.g. the main view/component you name).
 - **Compress:** compile exact visual expectations, state changes, and component touchpoints.
-- **Write:** overwrite `FRONTEND_EXECUTION_CONTRACT.md` (new design blueprint + component states).
+- **Write:** overwrite `SPEC.md` §4 (component states, copy, design direction — new design blueprint).
 - **Token-saving isolation:** backend untouched — flag `NO_BACKEND_CHANGE` in the manifest; do not
-  rewrite the interface or backend contracts (the interface is the existing, unchanged truth).
-- **Route:** Frontend only (§5).
+  rewrite the interface or the backend-facing part of the spec (the interface is the existing,
+  unchanged truth).
+- **Route:** Frontend only (§3).
 
 ### GATE Z — Amendment / bounce-back  → owning role
 - **Trigger:** "bounce this back / the interface is wrong / un-buildable AC."
@@ -280,10 +258,10 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 ### GATE Q — QA / Verify (post-executioners → Ship or Bounce)   *(system-2)*
 - **Trigger:** "both lanes built / QA it / verify the feature before ship."
 - **Use when:** the executioners report done — **always before GATE S** (ship now requires a QA pass).
-- **Audit:** `PRODUCT_CONTRACT.md` (the ACs — the checklist), `INTERFACE_CONTRACT.md`, both execution
-  contracts, the shipped code in both lanes (`backend.dir` + `frontend.dir`), the BRIEF "Invariant
-  watch" + the promoted canon (§5).
-- **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §6; subagent `.claude/agents/qa-verify.md`)
+- **Audit:** `SPEC.md` (§3 the acceptance criteria — the checklist), `INTERFACE_CONTRACT.md`, the
+  shipped code in both lanes (`backend.dir` + `frontend.dir`), the BRIEF "Invariant watch" + the
+  promoted canon (§5).
+- **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §4; subagent `.claude/agents/qa-verify.md`)
   — a different session from the builders (no marking own homework; ideally a different model →
   foreshadows system-6). Confirms every AC point-by-point, **fixes nothing**.
 - **Runtime conformance (system-1):** against the running backend (`backend.serve_cmd`), run
@@ -313,7 +291,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Guard:** confirm both lanes verified before archiving; never archive a half-shipped feature. Never
   promote a key that isn't **binding** (a future feature could violate it) — same bar as the GATE I cull.
 
-> **Your Routines, mapped:** A (PM→UX→Executioners) = GATE P·X then **GATE U·X**. B (Architect→
+> **Your Routines, mapped:** A (the full pipeline) = **GATE C** then **GATE PLAN**. B (Architect→
 > Backend, math) = **GATE M**. C (UX→Frontend, visual) = **GATE V**. The orchestrator just makes
 > them gateways with audited inputs, correct per-feature paths, and the INTERFACE_CONTRACT the
 > original example omitted.
@@ -326,25 +304,21 @@ I create/update it on **every** gateway. Format:
 
 ```markdown
 # {FEATURE} — pipeline manifest
-Entry:        architect-first | pm-first
-Stage:        <last gateway fired, e.g. "UX exit — split, lanes loaded">
+Stage:        <last gateway fired, e.g. "GATE C — spec approved">
 Repos:        backend | frontend | both
 Brief:        BRIEF.md present | n/a (came in pre-formed)
 Contracts:
-  - ARCHITECTURE_CONTRACT.md   locked | draft | n/a
-  - PRODUCT_CONTRACT.md        locked | draft | n/a
-  - UX_BLUEPRINT.md            locked | draft | n/a
-  - INTERFACE_CONTRACT.md      locked | draft | n/a   <- FE↔BE binding
-  - BACKEND_EXECUTION_CONTRACT.md   locked | draft | NO_BACKEND_CHANGE | n/a
-  - FRONTEND_EXECUTION_CONTRACT.md  locked | draft | NO_UI_CHANGE | n/a
+  - SPEC.md                    locked | draft | n/a
+  - INTERFACE_CONTRACT.md      locked | draft | NO_BACKEND_CHANGE | n/a   <- FE-to-BE binding
 Open amendments: none | <file> CONTESTED (owner: <role>)
 QA (GATE Q):  n/a | pending | QA_REPORT PASS | QA_REPORT FAIL (bounced: <owner>)
 Last gateway:  <GATE id> @ <YYYY-MM-DD>
 ```
+The `Entry` key is deleted (no colon, no value) — there is no entry order under the council.
 
 ## 4a. BRIEF.md (output of GATE I — the one chosen idea)
-The bridge from the divergent `BACKLOG.md` to the convergent pipeline. It IS the `{GOAL}` the entry
-role opens on, so it must stand alone against `PROJECT_CONTEXT.md`. Format:
+The bridge from the divergent `BACKLOG.md` to the convergent pipeline. It IS the `{GOAL}` the Design
+Council opens on, so it must stand alone against `PROJECT_CONTEXT.md`. Format:
 
 ```markdown
 # {FEATURE} — brief
@@ -358,10 +332,9 @@ Invariant watch: <canonical keys from DECISION_LEDGER.md "Promoted canon" this f
 Context tags:    <optional (system-5): PROJECT_CONTEXT section tags this feature needs, e.g.
                  architecture,backend,personas,observability — context_for.py loads these + the
                  always-load invariant floor (§3,§5). Omit ⇒ invariant floor only.>
-Entry point:     architect-first | pm-first — <one-line why>
 Source:          <backlog item / deferred seam / friction note it came from>
 ```
-The Orchestrator drafts `BRIEF.md` at GATE I, then immediately feeds `Goal` into GATE A·X's opening
+The Orchestrator drafts `BRIEF.md` at GATE I, then immediately feeds `Goal` into GATE C's opening
 move (§3) so discovery flows straight into the pipeline.
 
 ## 5. Status report (after every gateway)
@@ -374,6 +347,7 @@ rendition. Which card fires:
 |---|---|
 | `/conductor` boot · RESUME.md pickup · any background hand-back | Re-orientation (§3.2) |
 | a gateway closes, work continues | Status (§3.1) |
+| a council R3 `product` conflict — ONE at a time | Decision (§3.3) |
 | a blocking choice for the operator | Decision (§3.3) |
 | QA fail · bounce · blocked | Problem (§3.4) |
 | GATE S | Ship (§3.5) |
@@ -385,10 +359,11 @@ referencing files rather than pasting them.
 ## 6. Invariants I never break
 - One feature = one folder; contracts are self-contained against `PROJECT_CONTEXT.md` + the named
   inbound contract — **never** chat history.
-- `INTERFACE_CONTRACT.md` is the only FE↔BE truth; execution contracts reference it, never restate
-  or contradict it. A real interface change is an amendment (GATE Z), not a silent lane edit.
-- Stay in lane on every write: Architect emits no UI/endpoints; PM emits no code/math; UX no server
-  internals; the split keeps server internals out of the FE file and UI out of the BE file.
+- `INTERFACE_CONTRACT.md` is the only FE-to-BE truth; `SPEC.md` references it, never restates or
+  contradicts it. A real interface change is an amendment (GATE Z), not a silent lane edit.
+- Stay in lane on every write: the council's three voices each own their lane at R1/R2 (architect emits
+  no UI/endpoints; pm no code/math; ux no server internals). Only the R4 synthesizer writes `SPEC.md`
+  and `INTERFACE_CONTRACT.md`, and it is never one of the three voices.
 - Strip deliberation, ship decisions. Reference files, don't paste.
 - Respect `OPEN_THREADS.md` §9 "Resolved (do NOT revisit)" (incl. the **promoted build invariants**)
   and the math invariants in `PROJECT_CONTEXT.md` §3/§5 — never reopen them through a gateway.
@@ -423,7 +398,7 @@ referencing files rather than pasting them.
   cuts tokens by relevance but NEVER drops a binding rule a feature could violate. Decouples per-session
   cost from total canon size; the whole file stays the single source (logical slice, not a split).
 - **QA gates the ship (system-2):** GATE S requires a passing `QA_REPORT.md` from a FRESH QA/Verify
-  session (GATE Q, `ROLE_LAUNCH_PROMPTS.md` §6) — never the builder's self-verification. QA confirms
+  session (GATE Q, `ROLE_LAUNCH_PROMPTS.md` §4) — never the builder's self-verification. QA confirms
   every AC point-by-point and **repairs nothing**; a failing AC bounces via GATE Z and GATE Q re-runs
   on the fix. (Run QA on a different model where possible — de-correlates blind spots, system-6.)
   **Verification is mandatory for every AC; an automated *test* is required only per the RISK-BASED rule
@@ -447,6 +422,9 @@ referencing files rather than pasting them.
   question is a chip-led card — plain words above the fold, machinery in the terse technical
   footer, one question per message max. Governs what you SAY; the contracts and manifest you WRITE
   to disk stay precise and technical.
+- **R1 blindness (the council's independence guarantee):** the three voices write their R1 positions
+  without seeing each other. This is what structurally replaces the three separate tool-fenced author
+  sessions. Never show one voice another's position before R2.
 
 ---
 

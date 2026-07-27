@@ -98,8 +98,8 @@ vision least. Over-decoration and excess animation are themselves tells that a d
 ## 7. How this binds the roles (the pointer contract)
 
 - **UX** owns the front half of §1: the brief-pin, the structure pass, and the token plan +
-  self-critique — recorded as a **"Design tokens + signature"** section of `UX_BLUEPRINT.md`, which
-  the split (compressor #3) carries into `FRONTEND_EXECUTION_CONTRACT.md`.
+  self-critique — recorded as the design-direction subsection of `SPEC.md` §4, which the build lanes
+  read directly.
 - **FRONTEND** builds to the token plan exactly (§1.5) and runs the visual verification loop (§1.6)
   before reporting done — the report names what was captured and critiqued, or carries the explicit
   fallback note.
