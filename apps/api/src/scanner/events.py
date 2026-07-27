@@ -194,3 +194,103 @@ def get_events() -> EventsConfig:
     if _CACHED is None:
         _CACHED = load_events()
     return _CACHED
+
+
+# ===================================================================== wire projection (bundle-events)
+# The step that carries the semantics above onto the served bundle as `market_state.event_calendar`
+# (INTERFACE_CONTRACT.md §1/§2). Pure + read-only: it takes an already-loaded config and a date and
+# returns a plain JSON-serializable dict (or None). It performs NO I/O, imports nothing from the
+# scoring path, and is called ONLY after `generate_signals` has returned
+# ([additive-keeps-score-byte-identical]).
+
+# The closed `state` vocabulary. `unknown` and `none` are DIFFERENT CLAIMS and are never collapsed:
+# both ship `events: []`, so on the wire `state` is the ONLY thing that distinguishes "nobody checked"
+# from "checked, nothing scheduled". This is `absent-is-not-none` (above) made observable.
+WIRE_STATE_UNKNOWN = "unknown"      # not curated — we do not know this ticker's schedule
+WIRE_STATE_NONE = "none"            # curated; nothing upcoming WITHIN `covers`
+WIRE_STATE_SCHEDULED = "scheduled"  # curated; >= 1 upcoming event
+
+# `[digested-labels-not-raw-dump]`: the wire carries a small bounded list, never the config file.
+# With covers=["earnings"] over a ~3-month horizon the real count is 1-2; this is a ceiling against a
+# pathological entry, not a working limit.
+MAX_WIRE_EVENTS = 8
+
+
+def _calendar_unusable(cfg: EventsConfig | None) -> bool:
+    """True when nothing was actually loaded — a missing/corrupt/wrong-shape file makes `load_events`
+    degrade to the DEFAULT config (no symbols, no as_of, no horizon, no covers). Such a config asserts
+    nothing about the world, so the honest wire value is `null` (the enrichment is absent) rather than
+    a confident "unknown for everything" carrying null freshness — `[best-effort-isolated-or-null]`."""
+    if cfg is None:
+        return True
+    return not cfg.symbols and not cfg.as_of and not cfg.horizon_end and not cfg.covers
+
+
+def _project_event(ev: CalendarEvent, today: date) -> dict | None:
+    """One event -> the exact 7 fields INTERFACE §1 pins, or None if it is not upcoming/parseable.
+    `avg_abs_move_pct` is deliberately NOT on the wire: it is a loader-internal field the interface
+    does not carry, and passing it through would be a raw dump rather than the pinned shape."""
+    try:
+        d = date.fromisoformat(ev.date)
+    except (TypeError, ValueError):
+        return None
+    days_until = (d - today).days
+    if days_until < 0:
+        return None                      # UPCOMING ONLY; the serving day itself still counts
+    return {
+        "date": ev.date,
+        "type": ev.type,
+        "confirmed": bool(ev.confirmed),
+        "session": ev.session,           # null means genuinely unknown, NOT "assume amc"
+        "days_until": days_until,
+        "source": ev.source,
+        "note": ev.note,                 # carries source DISAGREEMENT where it exists
+    }
+
+
+def project_event_calendar(symbol: str | None,
+                           cfg: EventsConfig | None = None,
+                           today: date | None = None) -> dict | None:
+    """Project the curated calendar for `symbol` into the `market_state.event_calendar` wire block.
+
+    Returns None (=> `event_calendar: null`) when the calendar could not be loaded at all — never
+    raises, whatever the input, because this is enrichment attached to an already-computed bundle.
+
+    State rules (INTERFACE §2):
+      * calendar EXPIRED (its own `horizon_end` passed or unset) -> `unknown` for EVERY symbol. An
+        out-of-horizon file cannot support a `none`/`scheduled` claim, and silently serving dead dates
+        is exactly the failure the horizon exists to prevent.
+      * symbol not curated -> `unknown`  (NEVER `none` — see WIRE_STATE_* above)
+      * curated, no upcoming event -> `none`  (scoped by `calendar_covers`)
+      * curated, >= 1 upcoming event -> `scheduled`
+    """
+    try:
+        cfg = cfg if cfg is not None else get_events()
+        if _calendar_unusable(cfg):
+            return None
+        day = today or date.today()
+        expired = cfg.is_expired(day)
+
+        events: list[dict] = []
+        if expired or not cfg.is_known(symbol or ""):
+            state = WIRE_STATE_UNKNOWN
+        else:
+            for ev in (cfg.events_for(symbol or "") or []):
+                row = _project_event(ev, day)
+                if row is not None:
+                    events.append(row)
+            events.sort(key=lambda r: (r["date"], r["type"]))
+            events = events[:MAX_WIRE_EVENTS]
+            state = WIRE_STATE_SCHEDULED if events else WIRE_STATE_NONE
+
+        return {
+            "state": state,
+            "events": events,
+            "calendar_as_of": cfg.as_of,
+            "calendar_horizon_end": cfg.horizon_end,
+            "calendar_covers": list(cfg.covers),
+            "calendar_expired": bool(expired),
+        }
+    except Exception:
+        logger.exception(f"[events] wire projection failed for {symbol!r}; emitting null")
+        return None

@@ -204,6 +204,42 @@ class IvRankRead(BaseModel):
     advisory_note: str
 
 
+class CalendarEventRead(BaseModel):
+    """One UPCOMING calendar event on the wire. `confirmed` distinguishes a company-announced date
+    from a projection, and `note` carries any recorded source DISAGREEMENT — both are signal, not
+    decoration. `session` null means genuinely unknown, NOT "assume amc". The loader-internal
+    `avg_abs_move_pct` is deliberately absent (the wire carries the pinned shape, not a raw dump)."""
+    date: str                          # ISO YYYY-MM-DD
+    type: str                          # earnings|ex_div|fomc|cpi|pce|nfp|product|lockup
+    confirmed: bool                    # true ONLY when company-announced
+    session: Optional[str] = None      # 'bmo' | 'amc' | null
+    days_until: int                    # >= 0, relative to the serving day
+    source: Optional[str] = None       # provenance URL
+    note: Optional[str] = None         # caveats / source disagreement
+
+
+class EventCalendarRead(BaseModel):
+    """The owner-curated event-calendar read (bundle-events) — additive, best-effort, STATIC advisory
+    context attached to market_state.event_calendar AFTER generate_signals returns. NEVER an input to
+    signals / opportunity_score / opportunity_tier / the entry gate / state_fingerprint.
+
+    `state` is the AUTHORITATIVE closed token and the ONLY disambiguator on the wire: `unknown` (the
+    ticker is not curated — we do not know) and `none` (curated; nothing scheduled within
+    `calendar_covers`) BOTH carry `events: []`, and collapsing them would let the app claim "no
+    earnings scheduled" for a ticker nobody ever checked. A consumer must render `state` through a
+    closed lookup and never re-derive it from `len(events)`.
+
+    Self-describing by design: it carries the calendar file's OWN `as_of` / `horizon_end` / `covers` /
+    `expired`, because a date is only as trustworthy as the file's freshness — and
+    `calendar_expired: true` FORCES `state: 'unknown'`."""
+    state: str                                   # 'unknown' | 'none' | 'scheduled'
+    events: list[CalendarEventRead] = []         # [] unless state == 'scheduled'; upcoming only
+    calendar_as_of: Optional[str] = None         # when the file was last verified
+    calendar_horizon_end: Optional[str] = None   # entries claimed valid only to here
+    calendar_covers: list[str] = []              # WHICH event types the curation pass covered
+    calendar_expired: bool = True                # horizon passed (or unset) => do not trust
+
+
 class MarketState(BaseModel):
     # Core Data
     ticker: str
@@ -278,6 +314,13 @@ class MarketState(BaseModel):
     # emitted (object|null); null on a store outage / no current IV / read fault
     # ([best-effort-isolated-or-null]).
     iv_rank: Optional[IvRankRead] = None
+
+    # Owner-curated EVENT CALENDAR (bundle-events; STATIC, additive, advisory context only — NOT
+    # scored). Read from the checked-in src/scanner/config/events.json via the one-way-leaf
+    # src/scanner/events.py and attached AFTER generate_signals returns. The KEY is ALWAYS emitted
+    # (object|null); null when the calendar could not be loaded at all — a fault is never an error
+    # ([best-effort-isolated-or-null]). See EventCalendarRead for why `state` is load-bearing.
+    event_calendar: Optional[EventCalendarRead] = None
 
     # Volatility & Sentiment
     atm_iv: float

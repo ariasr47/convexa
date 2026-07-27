@@ -51,6 +51,9 @@ from src.auth.router import router as auth_router
 # chain_store/compute_ticker ([additive-keeps-score-byte-identical]).
 from src import scanstore
 from src.scanner.universe import get_universe
+# bundle-events: the event-calendar WIRE PROJECTION. One-way leaf — main.py is the sole caller and
+# it is invoked only AFTER generate_signals returns; no scoring module imports it.
+from src.scanner.events import project_event_calendar
 from src.providers import get_provider
 from src.models.market_data import MarketState
 
@@ -573,6 +576,34 @@ def compute_ticker(ticker: str, market_data: dict | None,
         logger.exception(f"[{ticker}] IV-rank read failed; emitting iv_rank=null (bundle unaffected)")
         iv_rank = None
     state["iv_rank"] = iv_rank
+
+    # event_calendar (bundle-events): the additive, best-effort, STATIC read of the OWNER-CURATED
+    # calendar (src/scanner/config/events.json, process-cached by the one-way-leaf
+    # src/scanner/events.py — edit + restart, no hot-reload). Attached AFTER generate_signals
+    # returned, so the field did not exist at score/gate/fingerprint time (belt) and signals.py
+    # imports none of the leaf (suspenders) — [additive-keeps-score-byte-identical]. It is context
+    # for the downstream AI and the Ticker page, NEVER a scoring input.
+    #
+    # THE LOAD-BEARING SEMANTICS ([digested-labels-not-raw-dump] + absent-is-not-none): the closed
+    # `state` token is authoritative on the wire. `unknown` (nobody curated this ticker) and `none`
+    # (curated; nothing scheduled within `calendar_covers`) BOTH carry `events: []` — `state` is the
+    # only thing that separates them, and collapsing them would fabricate "no earnings scheduled"
+    # for a ticker nobody ever checked. An EXPIRED calendar is forced to `unknown`.
+    #
+    # BEST-EFFORT + ISOLATED ([best-effort-isolated-or-null]): the projection already degrades
+    # internally, but this outer guard exists so that NO fault in the calendar path can escape into
+    # the response — a missing/corrupt config yields event_calendar = null with the bundle still 200
+    # and market_state core / strike_profile / the cache / SSE untouched. The KEY is ALWAYS emitted
+    # (object|null). STATIC: cached with the 60s bundle; nothing rides SSE.
+    event_calendar = None
+    try:
+        with obs.span("event_calendar"):
+            event_calendar = project_event_calendar(ticker)
+    except Exception:
+        logger.exception(f"[{ticker}] Event-calendar read failed; emitting event_calendar=null "
+                         f"(bundle unaffected)")
+        event_calendar = None
+    state["event_calendar"] = event_calendar
 
     top = sig["setups"][0]["name"] if sig["setups"] else "none"
     logger.info(
