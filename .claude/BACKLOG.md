@@ -977,6 +977,97 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   visibly; not blocking.
 
 ### C. Strategic / blocked (high value, gated on a decision or heavy lift)
+- **`tradeable-rec-inputs` — the AI cannot fill its own output schema (24-item program)** —
+  <!-- atlas: theme=trust-the-signal horizon=next -->
+  `LOGGED 2026-07-27 (owner-supplied downstream-AI analysis + conductor viability triage)`. **Source:** a
+  downstream AI session that consumed real bundles (TSLA/NVDA) and reported back what it could not answer.
+  **NOT yet GATE-I'd** — this is the pool entry; individual items graduate to features via the normal cull.
+  **The core finding (accepted as correct):** the rec output schema demands `max_risk`, `position_size`,
+  `exit_plan.target`, `exit_plan.stop`, and **the bundle contains nothing that can fill them with a real
+  number** — no candidate option prices, no account size, no expected move. *"That's not a tuning problem,
+  it's a missing-input problem."* Everything in Tier 1 exists to close that gap.
+  **⚠ Two caveats the source flagged and this entry preserves as binding framing:** (1) **more data should
+  NOT convert most `no_trade`s into trades** — at least two of three observed `no_trade`s were correct on
+  the merits; better inputs should mostly make `no_trade` *better-argued*. **If adding fields suddenly makes
+  everything a trade, something is wrong.** (2) Once outcome data exists, **overfitting becomes the main
+  risk** — with 24 new inputs and a few hundred verdicts you can find a rule that fits all of them and
+  generalizes to nothing. Hold out data, prefer few parameters, distrust any setup whose hit rate improves
+  every time a condition is added. *(This is the same discipline `score-change-is-deliberate-and-measured`
+  encodes.)*
+
+  **CONDUCTOR VIABILITY TRIAGE vs Massive usage (the owner's question).** Headline: **most of this needs NO
+  new vendor spend.** The chain snapshot we ALREADY pull per ticker carries **OI + greeks (Δ/Γ/Θ/V) + IV**
+  (CONTEXT §4) and **per-contract NBBO** (`OptionContract.quote` off Massive `last_quote`, added at
+  trade-tracker-sim **with no new fetch**), and daily bars were extended **60→400 sessions** at
+  ai-context-pack. So the dominant Tier-1 blocker is an **EXPOSURE + PAYLOAD problem, not an API-quota
+  problem** — we are already paying for the data and discarding it at serialization.
+  - **✅ Viable now, no new vendor call — derive/expose from the chain + bars already fetched:**
+    **1** candidate quotes/greeks (the "single largest blocker" — it is re-exposing what
+    `/api/contract/{ticker}` already resolves, widened from one held contract to a ±15% strike band; the
+    real cost is **bundle size + AI context window**, and it likely needs its own endpoint rather than
+    riding the bundle) · **3** expected move (ATM straddle, computed from the chain) · **5** liquidity gate
+    (spread% from the NBBO already on the port — a **hard filter**, not context) · **6** historical move
+    distribution (400d of bars) · **7** `local_net_gex` · **8** gamma-pocket structure · **9**
+    outlier-robust HV (pure math on bars) · **11** enforced DTE window · **13** net sign carried with
+    `peak_gex_strike`.
+  - **✅ Viable, no vendor dependency at all (our own state):** **2** account/risk block (owner-entered;
+    `open_positions[]` largely exists client-side in the sim portfolio — **note it must NOT drag in a real
+    order path**, `no-real-order-path` still binds) · **12** level persistence/age · **14** day-over-day ΔOI
+    · **16** skew rank · **17** variance-risk-premium history · **18** multi-session GEX history · **21**
+    level-test history. **All of these are ACCUMULATION features** — they need a persistent side-store, and
+    the pattern is already shipped twice (`src/marketdata/` for iv-rank, `src/scanstore/` for scanner). Cost
+    is storage + a write-through, not API calls.
+  - **⛔ NOT viable as specified — hard vendor blocker (recorded, do not re-probe):** **10** IV-rank
+    *backfill* of 252 sessions. **Massive provides NO historical IV** (the exact finding that forced iv-rank
+    into live accumulation). The compelling form is unreachable; the only path is to keep accumulating in
+    the existing `IV_STORE` and wait. The item's *underlying* complaint stands though — until `iv_rank`
+    populates, `vol_regime` rests on one fragile HV comparison, which is precisely why **9** should come
+    first.
+  - **⚠ Reshape required — index data is `NOT_AUTHORIZED` on this plan:** **19** index/sector context.
+    `I:VIX`/`I:VIX9D`/`I:VIX3M`/`I:SPX`/`I:NDX` all return "upgrade your plan" (probed 2026-07-06 — **do NOT
+    re-probe**). **ETF proxies ARE in-tier**: SPY/QQQ for index regime, **SMH for NVDA's sector** (already
+    in the scanner universe). This is the same reshape already recorded for the parked `market-backdrop`
+    item — the two should be built together.
+  - **⛔ PARTIALLY BLOCKED — probed live 2026-07-27, result recorded (do NOT re-probe):** **4** event
+    calendar. The SDK exposes `list_benzinga_earnings`, but our plan is **`NOT ENTITLED`** —
+    `BadResponse: {"status":"ERROR", "error":"You are not ent[itled]..."}`, the same class of block as the
+    index data. **`list_dividends` returned OK**, so **ex-div dates ARE in-tier**; `list_splits` /
+    `get_market_holidays` / `list_tmx_corporate_events` are adjacent and presumably in-tier (untested).
+    **Scheduled macro (FOMC/CPI/PCE/NFP) is not a Massive product** in any case. So item 4 splits:
+    **ex-div ✅ now · earnings ⛔ (plan upgrade OR a second source) · macro ⛔ (second source)**. Earnings is
+    the *highest-value* piece — it is the dominant scheduled vol event for a single name and the whole point
+    of flagging "this expiration contains an event." **Knock-on: 15 (event-adjusted forward IV) inherits the
+    block**, since stripping event premium requires knowing the event. Treat 4+15 as one **blocked-on-vendor**
+    cluster alongside `market-backdrop` — three separate items now wait on the same plan question, which
+    makes a **consolidated "what does a Massive tier upgrade actually buy us?" decision** worth taking
+    deliberately rather than three times.
+  - **🔁 Substantially ALREADY SHIPPED — do not rebuild:** **22/23/24** (outcome logging, setup hit rates,
+    gate backtest). `outcome-ledger` shipped 2026-07-16 and already computes hit rate + mean per-trade
+    return + dispersion by **tier · AI-rec · setup · IV-rank band · persona**, with `N_min=20` + Wilson
+    intervals and a deliberate anti-window-shopping design. The genuine gaps vs this ask are: keying
+    verdicts to `state_fingerprint` with **+1/+5/+10-day and expiry marks**, and **feeding the resulting
+    base rates back into the prompt** (23) — currently the ledger is deliberately **off the AI prompt in
+    v1**, so that is a scope reversal to make consciously, not incidentally.
+  - **🐞 Bug, not a feature:** **20** — `net_flow` reported **null**. `src/core/live.py` computes a rolling
+    signed net flow and it is a shipped SSE field; if it is null in the bundle export that is a **defect to
+    diagnose before designing signed-flow enrichment**. (The *aggressor-estimate upgrade* — trade vs
+    bid/ask — is separately viable: we already consume both the trade tape and NBBO.)
+
+  **Recommended build order (source's, adjusted for the triage):** **1 + 2** first (the difference between
+  "no trade with reasoning" and "trade with a number") → **3** (makes targets defensible; **4** slips behind
+  it pending the probe) → then the three concrete bugs the snapshots exposed: **7** (the NVDA
+  chain-wide-positive / locally-negative inversion), **9** (TSLA — one session was ~39% of HV30 and flipped
+  `vol_regime` on an artifact), **11** → then **20**'s defect → then **22/23** on top of `outcome-ledger`.
+  **Invariant watch for any feature cut from this:** `additive-keeps-score-byte-identical` (every item is
+  AI-context/display unless an explicit score-changing feature is declared — see
+  `score-change-is-deliberate-and-measured`) · `best-effort-isolated-or-null` · `digested-labels-not-raw-dump`
+  (**Tier 1 item 1 is in direct tension with this** — a ±15% strike band across expirations is close to the
+  raw dump the rule forbids; it likely belongs behind its own endpoint the AI pulls deliberately, NOT on the
+  bundle) · `model-read-carries-its-assumptions` (expected move, distributions and hit rates must each carry
+  window/basis/sample count) · `no-real-order-path` (item 2 adds sizing context, never execution).
+  *Value **H** (this is the gap between advisory prose and an actionable, risk-sized rec) · Effort **XL** as
+  a program; several items are individually **S**.* Trading-decision cull: **passes emphatically** — it is
+  the difference between a rec you can act on and one you cannot.
 - **Business viability / monetization de-risking** — `RAISED 2026-06-30 (owner; carried from RESUME 7m
   <!-- atlas: theme=go-live horizon=later -->
   closeout)`. Before monetizing (freemium SaaS, serious-small-business ambition), 3 cheap de-risk actions,
