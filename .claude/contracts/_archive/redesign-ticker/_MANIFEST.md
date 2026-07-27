@@ -32,3 +32,27 @@ UX deviation:  trade dialog — UX chose PRESERVATION-WINS: keep the shipped `Tr
 Note:         depends on redesign-foundation's landed (uncommitted) theme — coordinate the Frontend lane
               so it edits ONLY ticker / gex-chart / ai-rec / trade-dialog files (theme.ts, auth, shell,
               positions stay with their owners)
+
+## ⚠ SUPERSEDED — ARCHIVED 2026-07-27 WITHOUT BEING BUILT
+**Never built.** The frontend build was HELD by the owner on 2026-06-29 pending `redesign-auth`; while it
+sat held, its entire scope was delivered by other features. **Archived as superseded, not as shipped.**
+
+**Evidence (conclusive, verified 2026-07-27):**
+1. **All four scope files are GONE from the paths this contract names** — `app/ticker/TickerDashboard.tsx`,
+   `app/ticker/gex-profile-chart.tsx`, `app/ai-rec/AiRecPanel.tsx`, `app/ghost-trade/TradeEntryDialog.tsx`.
+   Those surfaces were re-skinned and then relocated by the 2026-07-16 restructure; they now live at
+   `pages/ticker/widgets/gex-profile-chart/`, `pages/ticker/widgets/ai-rec/`,
+   `features/trading/TradeEntryDialog.tsx`.
+2. **OPEN_THREADS §7l (`convexa-redesign`, SHIPPED + ARCHIVED)** enumerates the surfaces it re-skinned and
+   they match this contract's scope list **one-to-one**, including `StateExportDrawer` and
+   `TradeEntryDialog`.
+3. **The sharpest proof — the thing this contract deliberately DEFERRED already shipped.** The `[DEVIATION]`
+   note above chose PRESERVATION-WINS and pushed the 3-mode Manual/Market/Limit entry to
+   `redesign-positions`; §7l records that `TradeEntryDialog` **"gained a Manual/Market/Limit fill-mode
+   control"**, and the shipped file carries it.
+4. The 4-stage **Curvature Terminal** program (2026-07-22) then re-skinned the Ticker again on top.
+
+**If someone wants to revive this:** do NOT resurrect this contract — its file paths, its component
+inventory and its deviation ruling are all stale. Open a fresh feature against the CURRENT structure
+(`apps/dashboard/src/app/README.md` is the authoritative map) and the CURRENT design rule-of-record
+(the `convexa-design` skill), which superseded the Figma DS this contract was written against.
