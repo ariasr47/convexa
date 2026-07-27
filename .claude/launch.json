@@ -7,6 +7,13 @@
       "runtimeArgs": ["nx", "serve", "dashboard", "--port", "4300"],
       "port": 4300,
       "autoPort": false
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "C:\\nvm4w\\nodejs\\npx.cmd",
+      "runtimeArgs": ["nx", "serve", "api"],
+      "port": 8000,
+      "autoPort": false
     }
   ]
 }

@@ -470,6 +470,21 @@ which is exactly why this was cheap to fix now.
 > template-only scope) → follow-up "regenerate blog artwork onto the system" (§7u seam). Twice-evidenced
 > methodology gotcha now standing: uvicorn survives a PID kill (respawn/wrapper) — kill by IMAGE and
 > `curl`-confirm dead before trusting any degrade observation.
+> **⚠ CORRECTED 2026-07-26 (scanner worker restart) — DO NOT "kill by IMAGE".** The observation above is
+> real (a naive single-PID kill can be undone by the reloader/wrapper), but the prescribed *remedy* is
+> unsafe and was nearly executed as written: `taskkill` over `IMAGENAME eq python.exe` kills **every**
+> python process on the box, and on this machine two of the five were **Claude's own Windows-MCP extension**
+> (`ant.dir.cursortouch.windows-mcp`) — i.e. the documented shortcut would have killed the operator's
+> tooling to restart a dev server. **The correct procedure:** (1) find the real owner of the port —
+> `Get-NetTCPConnection -LocalPort 8000 -State Listen | Select OwningProcess`; (2) inspect command lines
+> before killing anything — `Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Select ProcessId,
+> CommandLine` — and identify the app's processes (`main.py` / `worker.py`) plus any `multiprocessing.spawn`
+> **children whose `parent_pid` is the server** (killing the child first stops the respawn that motivated
+> the original gotcha); (3) `taskkill //PID <pid> //F` each of those, **and nothing else**; (4)
+> `curl`-confirm the port is dead before trusting any offline/degrade observation. Same rigor, no collateral.
+> *Generic lesson worth flowing back to the kit: a remedy written as a blunt wildcard (`*`, "all processes",
+> "delete the folder") should name its blast radius — the shortcut that is convenient on a clean CI box is
+> destructive on a developer's machine.*
 
 > Note (GATE S, redesign-stage-0, 2026-07-22): Stage 0 of the Q4(a) "Curvature Terminal" program — the
 > quality-floor repair (correctness, not identity): 393px overflow killed (580→378, root causes the bento
