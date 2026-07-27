@@ -889,6 +889,36 @@ account; a dedicated gated store leaf becomes right then) · live-Postgres verif
 (BACKLOG §B — the auth Postgres schema-evolution seam fired here and was deliberately deferred).
 **Not deployed:** on `main`, but the live site won't show `/scanner` until the owner runs the deploy runbook.
 
+## 7w. Event calendar on the bundle (SHIPPED + ARCHIVED — GATE M backend fast-path)
+Contracts archived at `.claude/contracts/_archive/bundle-events/`. Owner-directed 2026-07-27, straight off
+the `tradeable-rec-inputs` analysis. Capability detail in CONTEXT §6, not restated here.
+**Shape:** GATE M (no UI implication ⇒ PM/UX skipped). Config + loader shipped first
+(`events.json` + `events.py`, `725cf09`/`eac9118`), then the wire (`98ee24a`) + contracts/QA (`12a0d21`).
+**QA PASS 11/11** (de-correlated Sonnet), byte-identity proved **three** ways — structural (`state_fingerprint`
+computed strictly before the attach and a pure function of `sig`), grep/diff (0 diff + 0 imports across
+signals/engine/live/darkpool), and a **live A/B** against an isolated instance with the calendar disabled
+(NVDA 79/prime/`984e75f48e50` both sides during live tape). AC-3 (the unknown-vs-none distinction) was
+independently RED-mutated and reverted.
+**Why the data is config, not a fetch:** Massive's earnings feed is a **separate add-on we are not entitled
+to** (probed 2026-07-27 — `list_benzinga_earnings` rejected, `list_dividends` OK) and macro events are not a
+Massive product. **This is NOT a "tier upgrade" question** — the owner already holds the top personal Stocks
++ Options plans; indices and Benzinga are *different product lines*. Curation is both the cheaper and the
+more robust answer (see BACKLOG §C).
+**Named for the next curator:** the calendar has a **short shelf life by construction** — `as_of 2026-07-27`,
+`horizon_end 2026-10-31`, with several mega-caps reporting within days of curation, and **12 projected dates
+that firm up ~2–3 weeks before they land**. The 4 uncurated tickers (TSLA/MU/CSCO/UNH) should be re-checked
+then too. An expired horizon degrades safely (forces `unknown`), so a forgotten refresh is honest, not wrong.
+**Deferred seams (named, not built):** the FE surface (nothing renders it yet — when it does, the closed
+`state` lookup is binding and `unknown` must never render as "no earnings") · **flagging which EXPIRATION
+contains an event** (the second half of `tradeable-rec-inputs` item 4, and the more decision-relevant half) ·
+`ex_div` auto-population from Massive `list_dividends` (in-tier, free, no entitlement question) ·
+`avg_abs_move_pct` (deliberately loader-internal — the interface pins 7 wire fields) · **item 15**
+event-adjusted forward IV, now unblocked.
+**Tooling finding, logged not fixed:** the conformance runner has **no enum matcher**, so `state`'s
+three-value vocabulary is pinned only as `string?` on the wire spec and verified off-harness (mutation-tested
+selftest + live three-state reads). QA judged that the accurate ceiling of the harness, not a defect. See
+also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

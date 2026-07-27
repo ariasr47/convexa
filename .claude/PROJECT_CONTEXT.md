@@ -422,6 +422,32 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `position_eval{changed,fingerprint}|null` (sibling of `ai_eval`, via `pos_*` query params);
   `prompts/reassessment_prompt.md` hand-off. All best-effort/isolated; **stateless server, no order
   path, no LLM call**; the entry gate + `opportunity_score` + `state_fingerprint` are unchanged.
+- **Event calendar on the bundle (`bundle-events`, BE-only, shipped 2026-07-27)** — an owner-curated
+  **event calendar** rides the bundle as an additive, always-present, nullable
+  **`market_state.event_calendar`**, so the downstream AI can see whether a scheduled event sits inside
+  the horizon it is reasoning about (previously it had to web-search for it). Data is a **checked-in JSON**
+  (`apps/api/src/scanner/config/events.json`, loader `src/scanner/events.py`) in the same shape and
+  operational story as `universe.json` — edit + restart, no hot-reload. **It is config rather than a vendor
+  call by necessity:** Massive's earnings feed (`list_benzinga_earnings`) is a **separate add-on this plan
+  is not entitled to** (probed 2026-07-27; `list_dividends` IS in-tier), and scheduled macro events are not
+  a Massive product at all — so curation both fills the gap and decouples the calendar from the vendor.
+  Populated for the 69-ticker scanner universe: **18 ETFs verified no-earnings · 35 company-IR-confirmed ·
+  12 cadence-projected · 4 deliberately uncurated** (TSLA/MU/CSCO/UNH — sources disagreed by up to 18 days,
+  and a wrong earnings date is worse than a missing one).
+  **The load-bearing rule is `absent-is-not-none`, carried from the loader onto the wire:** a closed
+  `state` enum — **`unknown`** (never curated) · **`none`** (checked, nothing scheduled *within
+  `covers`*) · **`scheduled`**. `unknown` and `none` BOTH carry `events: []`, so **`state` is the only
+  disambiguator** and is authoritative (the FE/AI renders it via closed lookup, never re-deriving from
+  `events.length`). An uncurated ticker must never read as "no earnings scheduled". The block is
+  self-describing (`calendar_as_of`/`horizon_end`/`covers`/`expired`), **an expired horizon forces
+  `unknown`** (a stale calendar cannot support a claim), events are **upcoming-only** with `days_until`,
+  and each carries `confirmed` + `source` + `note` so a projection is visibly not a company announcement
+  and a recorded source disagreement survives to the wire. A missing/corrupt config ⇒ `event_calendar:
+  null` with the bundle still 200. **STATIC — the SSE payload gains no field.** Attached AFTER
+  `generate_signals`; score/tier/`state_fingerprint` **byte-identical** (QA proved it three ways incl. a
+  live A/B: NVDA 79/prime/`984e75f48e50` with and without). QA PASS 11/11 (de-correlated Sonnet).
+  Realizes the wire half of BACKLOG §C `tradeable-rec-inputs` item 4 and unblocks item 15. See
+  OPEN_THREADS §7w.
 - **Scanner — the multi-ticker surface (`scanner`, FE+BE, shipped 2026-07-26)** — replaces the `/scanner`
   stub with the product's **breadth** surface: one dense honest table answering *"which ticker deserves the
   deep-dive now?"* over an **owner-curated tracked universe** (50–100), swept **with all tabs closed**.
