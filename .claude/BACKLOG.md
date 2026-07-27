@@ -629,6 +629,33 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`scanner-market-hours-gate` — the sweep worker runs 24/7 with no session awareness (deployed-cost gap)** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `SURFACED 2026-07-26 (post-ship, conductor-verified in code)`. **Not a bug — a deployment-cost gap the
+  v1 scope never covered.** `apps/api/src/scanner/loop.py` + `worker.py` contain **no** session /
+  market-hours / weekend / holiday gating (grep-verified: zero matches for `market_session|is_open|rth|
+  closed|weekend|holiday`). The two-speed loop simply runs forever at its configured cadence.
+  **Why it matters only when deployed:** locally the worker is started and stopped by hand, so nobody
+  notices. On Railway it is an always-on second service, and **PROJECT_CONTEXT §4 records that the vendor
+  has NO overnight coverage (8pm–4am ET)** — so roughly a third of every day the worker re-fetches ~69 full
+  option chains to recompute values that cannot have changed. Order of magnitude at N=69 with the observed
+  ~2-min pass: ~30 passes/hour ≈ 2k chain fetches/hour ≈ 50k/day, ~16k of them overnight dead weight
+  (**estimate, not a measurement** — worth instrumenting before sizing the fix).
+  **Shape of the fix (small, fits the existing seams):** the codebase already has a session classifier in
+  `src/core/live.py`; the worker consults it to **idle the slow (structure) lane outside 4am–8pm ET** — and
+  probably the fast lane too, since quotes are equally absent. Keep writing the **heartbeat** on a slow tick
+  while idle so the page stays honest rather than looking dead: the shipped worker-down banner + per-row
+  `stale` states already degrade gracefully, so **no UI change is required**. Gate behind an env knob
+  (`SCAN_MARKET_HOURS_ONLY`, default ON in prod) alongside the existing `SCAN_*` cadence vars. Weekends +
+  market holidays are the same predicate. **Invariant watch:** `additive-keeps-score-byte-identical`
+  (scheduling only — `compute_ticker` untouched), `best-effort-isolated-or-null` (a session-lookup failure
+  must fall back to sweeping, never to silently stopping — failing OPEN is the safe direction here),
+  `model-read-carries-its-assumptions` (an intentionally idle overnight worker must remain distinguishable
+  from a dead one — that is exactly what the heartbeat is for).
+  *Value M (pure cost/quota, no user-visible gain) · Effort S.* **Infra/cost class:** trading-decision cull
+  **N/A**. **Sequencing:** cheap and worth doing **before** the scanner is first deployed — it is far easier
+  than reading a surprising vendor bill and back-deriving the cause. Ties `deploy` (owner runbook) and
+  OPEN_THREADS §7v.
 - **`auth-schema-migrations` — adopt a real schema-evolution mechanism for the auth Postgres store** —
   <!-- atlas: theme=the-machine horizon=next -->
   `SURFACED 2026-07-24 (scanner P3 Plan-3 authoring; conductor-verified in code)`. **The seam fired.**
