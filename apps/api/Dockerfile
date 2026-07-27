@@ -62,6 +62,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 #    Explicit COPYs (no `COPY . .`) so no .env/.venv/conf/data ever enters a layer
 #    even independently of .dockerignore.
 COPY main.py ./
+#    - worker.py                    : the Scanner sweep worker's entrypoint. The SAME image runs
+#                                     BOTH processes — the web service uses the CMD below, and a
+#                                     second service overrides the start command to `python worker.py`
+#                                     (ARCHITECTURE §3.1: same image, different start command).
+#                                     Without this COPY that second service dies instantly on
+#                                     "can't open file '/app/worker.py'". It imports main +
+#                                     src.scanner + src.scanstore, all of which are already copied.
+COPY worker.py ./
 COPY src ./src
 COPY prompts ./prompts
 COPY market_state_glossary.md ./
