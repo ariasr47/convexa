@@ -48,6 +48,11 @@ class CalendarEvent:
     session: str | None = None         # 'bmo' | 'amc' | None (earnings only, advisory)
     source: str | None = None          # provenance, for audit
     avg_abs_move_pct: float | None = None   # historical |move| for this event type on this ticker
+    note: str | None = None            # caveats that survive into the data: which source, whether
+                                       # sources DISAGREED and by how much, weak session provenance.
+                                       # `confirmed:false` says "not company-announced"; this says WHY,
+                                       # and "two sources 7 days apart" is materially different from a
+                                       # clean cadence estimate.
 
 
 @dataclass(frozen=True)
@@ -56,10 +61,13 @@ class EventsConfig:
     symbols: dict[str, list[CalendarEvent]] = field(default_factory=dict)
     as_of: str | None = None           # date the owner last verified the file
     horizon_end: str | None = None     # entries are only claimed valid up to here
+    covers: tuple[str, ...] = ()       # WHICH event types this curation pass actually covered
     path: str | None = None
 
     def events_for(self, symbol: str) -> list[CalendarEvent] | None:
-        """**None = unknown** (never curated). **[] = verified nothing scheduled.** See module docstring."""
+        """**None = unknown** (never curated). **[] = verified none, WITHIN `covers`.** An empty list is
+        only ever a claim about the event types in `covers` — never "nothing at all happens to this
+        ticker". An ETF curated for earnings correctly holds `[]` while still paying distributions."""
         return self.symbols.get((symbol or "").strip().upper())
 
     def is_known(self, symbol: str) -> bool:
@@ -75,6 +83,11 @@ class EventsConfig:
     @property
     def curated_count(self) -> int:
         return len(self.symbols)
+
+
+def _canon_covers(raw) -> list[str]:
+    """Normalize the declared event-type scope; non-str / unknown entries are ignored by the caller."""
+    return [str(t).strip().lower() for t in (raw or []) if isinstance(t, str) and t.strip()]
 
 
 def _parse_events(symbol: str, raw) -> list[CalendarEvent]:
@@ -98,6 +111,7 @@ def _parse_events(symbol: str, raw) -> list[CalendarEvent]:
             session=(str(row["session"]).strip().lower() if row.get("session") else None),
             source=(str(row["source"]).strip() if row.get("source") else None),
             avg_abs_move_pct=(float(move) if isinstance(move, (int, float)) else None),
+            note=(str(row["note"]).strip() if row.get("note") else None),
         ))
     out.sort(key=lambda e: (e.date, e.type))
     return out
@@ -144,12 +158,18 @@ def load_events(path: str | None = None, universe: list[str] | None = None) -> E
             logger.warning(f"[events] {sym} is not in the tracked universe (kept; check for a typo)")
         symbols[sym] = events
 
+    covers = tuple(t for t in _canon_covers(data.get("covers")) if t in EVENT_TYPES)
     cfg = EventsConfig(
         symbols=symbols,
         as_of=(data.get("as_of") if isinstance(data.get("as_of"), str) else None),
         horizon_end=(data.get("horizon_end") if isinstance(data.get("horizon_end"), str) else None),
+        covers=covers,
         path=cfg_path,
     )
+    if symbols and not covers:
+        logger.warning("[events] config curates symbols but declares no 'covers' — an empty event list "
+                       "is then an UNSCOPED claim ('nothing ever happens'), which is almost certainly "
+                       "not what was meant. Declare the event types this pass covered.")
     known = cfg.curated_count
     total = len(universe_set) if universe_set else known
     if known == 0:
