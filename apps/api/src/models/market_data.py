@@ -218,6 +218,27 @@ class CalendarEventRead(BaseModel):
     note: Optional[str] = None         # caveats / source disagreement
 
 
+class ExpirationEventRead(BaseModel):
+    """One tenor of the bundle's own full-chain expiration curve, flagged for event containment
+    (expiration-events). `expiration`/`dte` are ECHOED from `market_state.term_structure` — the curve
+    is read after scoring, never recomputed or decorated at source.
+
+    Containment: `serving_day <= event.date <= expiration`, EXCEPT an `amc` event dated exactly ON
+    the expiration (the contract dies at the close, hours before an after-close report). An event
+    with `session: null` on the expiration date IS contained — an unknown session is never silently
+    assumed to fall after the close.
+
+    The payload is a SUMMARY, not a re-dump: the event objects live once, in `events`.
+    `contains_event` and `event_count` are redundant by construction (the boolean is what a consumer
+    branches on, the count is what it reports)."""
+    expiration: str                    # ISO YYYY-MM-DD, echoed from the tenor curve
+    dte: int                           # echoed from the tenor curve
+    contains_event: bool               # == event_count > 0
+    event_count: int                   # >= 0 — events contained by THIS expiration
+    event_types: list[str] = []        # closed tokens, de-duped + sorted; [] when not contained
+    first_event_date: Optional[str] = None   # earliest contained event, else null
+
+
 class EventCalendarRead(BaseModel):
     """The owner-curated event-calendar read (bundle-events) — additive, best-effort, STATIC advisory
     context attached to market_state.event_calendar AFTER generate_signals returns. NEVER an input to
@@ -234,6 +255,10 @@ class EventCalendarRead(BaseModel):
     `calendar_expired: true` FORCES `state: 'unknown'`."""
     state: str                                   # 'unknown' | 'none' | 'scheduled'
     events: list[CalendarEventRead] = []         # [] unless state == 'scheduled'; upcoming only
+    # Per-expiration containment (expiration-events). ALWAYS present; `[]` for `unknown` AND `none`
+    # AND a bundle with no usable tenor curve — so it is NOT self-disambiguating and `state` must be
+    # read first. An empty list under `unknown` means "we cannot say", never "no expiry is affected".
+    expirations: list[ExpirationEventRead] = []
     calendar_as_of: Optional[str] = None         # when the file was last verified
     calendar_horizon_end: Optional[str] = None   # entries claimed valid only to here
     calendar_covers: list[str] = []              # WHICH event types the curation pass covered

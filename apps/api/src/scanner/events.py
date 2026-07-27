@@ -248,9 +248,92 @@ def _project_event(ev: CalendarEvent, today: date) -> dict | None:
     }
 
 
+# ------------------------------------------------------------------ per-expiration containment
+# (expiration-events) THE RULE, and why it is not a plain `<=`:
+#
+#   an event is CONTAINED by an expiration when   serving_day <= event.date <= expiration
+#   EXCEPT an `amc` event dated exactly ON the expiration, which is NOT contained.
+#
+# A contract expiring at Friday's close is DEAD BEFORE an after-close report the same day. Flagging
+# that expiry as "contains earnings" would be an off-by-one that sends the reader to a tenor which
+# structurally cannot see the event — the exact wrong tenor choice this feature exists to prevent.
+# The mirror case is deliberately asymmetric: an event with `session: null` on the expiration date IS
+# contained, because an unknown session must never be silently assumed to land after the close; the
+# conservative direction is to flag it ([model-read-carries-its-assumptions]). `bmo` (and any other
+# recorded session token) on the expiry is trivially contained.
+#
+# Neither edge occurs in the shipped calendar; both are pinned by fixtures in
+# `events_projection_selftest.py` (cases 14/15).
+SESSION_AFTER_CLOSE = "amc"
+
+
+def _contains(ev_date: str, session: str | None, exp: str, day_iso: str) -> bool:
+    """ISO date strings compare lexicographically == chronologically, so no parsing is needed here;
+    every date reaching this point has already been validated as ISO by the loader/curve reader."""
+    if not (day_iso <= ev_date <= exp):
+        return False
+    if ev_date == exp and (session or "").strip().lower() == SESSION_AFTER_CLOSE:
+        return False                     # dead at the close, hours before the report
+    return True
+
+
+def _tenor_rows(term_structure) -> list[tuple[int, str]]:
+    """Read (dte, expiration) off the bundle's ALREADY-COMPUTED full-chain tenor curve.
+
+    READ-ONLY BY DESIGN ([additive-keeps-score-byte-identical]): the curve is produced by
+    `QuantEngine.compute_term_structure` in the scoring-path module `engine.py`, which this feature
+    does NOT touch. Anything unusable — no curve, wrong shape, a malformed point — is skipped rather
+    than repaired or invented, and an empty result becomes `expirations: []`
+    ([best-effort-isolated-or-null])."""
+    if not isinstance(term_structure, dict):
+        return []
+    points = term_structure.get("points")
+    if not isinstance(points, list):
+        return []
+    rows: list[tuple[int, str]] = []
+    for p in points:
+        if not isinstance(p, dict):
+            continue
+        exp = p.get("expiration")
+        dte = p.get("dte")
+        if not isinstance(exp, str) or not _ISO_DATE.match(exp.strip()):
+            continue
+        if isinstance(dte, bool) or not isinstance(dte, (int, float)):
+            continue
+        rows.append((int(dte), exp.strip()))
+    rows.sort(key=lambda r: (r[0], r[1]))     # ascending by DTE (the curve's own order)
+    return rows
+
+
+def _project_expirations(events: list[dict], term_structure, day: date) -> list[dict]:
+    """One summary row per tenor: does a scheduled event fall inside this option's life?
+
+    `[digested-labels-not-raw-dump]`: the row carries a COUNT + de-duped sorted type tokens + the
+    earliest contained date — never the event objects, which live once, in `events`.
+
+    `events` is the list ALREADY projected onto the wire (upcoming-only, capped at MAX_WIRE_EVENTS),
+    so the counts here can never disagree with what the consumer can actually see."""
+    day_iso = day.isoformat()
+    out: list[dict] = []
+    for dte, exp in _tenor_rows(term_structure):
+        hits = [e for e in events
+                if _contains(str(e.get("date") or ""), e.get("session"), exp, day_iso)]
+        types = sorted({str(e.get("type")) for e in hits})
+        out.append({
+            "expiration": exp,                       # echoed from the curve, never recomputed
+            "dte": dte,                              # echoed from the curve, never recomputed
+            "contains_event": bool(hits),
+            "event_count": len(hits),
+            "event_types": types,
+            "first_event_date": min(e["date"] for e in hits) if hits else None,
+        })
+    return out
+
+
 def project_event_calendar(symbol: str | None,
                            cfg: EventsConfig | None = None,
-                           today: date | None = None) -> dict | None:
+                           today: date | None = None,
+                           term_structure=None) -> dict | None:
     """Project the curated calendar for `symbol` into the `market_state.event_calendar` wire block.
 
     Returns None (=> `event_calendar: null`) when the calendar could not be loaded at all — never
@@ -263,6 +346,15 @@ def project_event_calendar(symbol: str | None,
       * symbol not curated -> `unknown`  (NEVER `none` — see WIRE_STATE_* above)
       * curated, no upcoming event -> `none`  (scoped by `calendar_covers`)
       * curated, >= 1 upcoming event -> `scheduled`
+
+    `term_structure` is the bundle's own full-chain tenor curve, passed in by the caller AFTER
+    scoring and only ever READ (see `_tenor_rows`). It drives the additive `expirations[]` block
+    (expiration-events). `expirations` is `[]` for BOTH `unknown` and `none` — and for a missing or
+    unusable curve — so it is NOT self-disambiguating: `state` remains the sole disambiguator, and
+    an empty list under `unknown` means "we cannot say", never "no expiry is affected"
+    (`absent-is-not-none`, carried down one level). That is why no per-expiration row is emitted at
+    all unless `state == scheduled`: a `contains_event: false` row would be a claim about an expiry
+    on a ticker nobody ever checked.
     """
     try:
         cfg = cfg if cfg is not None else get_events()
@@ -283,9 +375,21 @@ def project_event_calendar(symbol: str | None,
             events = events[:MAX_WIRE_EVENTS]
             state = WIRE_STATE_SCHEDULED if events else WIRE_STATE_NONE
 
+        # Derived from the events ALREADY projected above (upcoming-only) x the tenor curve. Its own
+        # guard: a fault here degrades to [] and can never cost the block its calendar read.
+        expirations: list[dict] = []
+        if state == WIRE_STATE_SCHEDULED:
+            try:
+                expirations = _project_expirations(events, term_structure, day)
+            except Exception:
+                logger.exception(f"[events] per-expiration projection failed for {symbol!r}; "
+                                 f"emitting expirations=[] (the calendar read is unaffected)")
+                expirations = []
+
         return {
             "state": state,
             "events": events,
+            "expirations": expirations,
             "calendar_as_of": cfg.as_of,
             "calendar_horizon_end": cfg.horizon_end,
             "calendar_covers": list(cfg.covers),

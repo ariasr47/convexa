@@ -595,10 +595,19 @@ def compute_ticker(ticker: str, market_data: dict | None,
     # the response — a missing/corrupt config yields event_calendar = null with the bundle still 200
     # and market_state core / strike_profile / the cache / SSE untouched. The KEY is ALWAYS emitted
     # (object|null). STATIC: cached with the 60s bundle; nothing rides SSE.
+    #
+    # expiration-events (additive to the SAME block): `event_calendar.expirations[]` — one summary
+    # row per tenor saying whether a scheduled event falls inside that option's life. The tenor curve
+    # is READ off the state dict computed above (`market_state.term_structure`, produced by
+    # QuantEngine.compute_term_structure) and is NEVER decorated at source: engine.py stays 0-diff,
+    # which is what keeps [additive-keeps-score-byte-identical] true. `state` still governs — the
+    # list is [] for `unknown` AND `none` AND a missing/unusable curve, so it is not
+    # self-disambiguating (INTERFACE §3).
     event_calendar = None
     try:
         with obs.span("event_calendar"):
-            event_calendar = project_event_calendar(ticker)
+            event_calendar = project_event_calendar(
+                ticker, term_structure=state.get("term_structure"))
     except Exception:
         logger.exception(f"[{ticker}] Event-calendar read failed; emitting event_calendar=null "
                          f"(bundle unaffected)")
