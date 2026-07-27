@@ -1,0 +1,28 @@
+{
+  "_comment": "Owner-curated EVENT CALENDAR for the tracked universe (Scanner / tradeable-rec-inputs item 4). NOT a secret — checked in for git-reviewed provenance, same shape and operational story as universe.json (edit + restart; no hot-reload). EXISTS BECAUSE: Massive/Polygon's earnings feed (list_benzinga_earnings) is a separate add-on our plan is NOT entitled to (probed 2026-07-27), and scheduled macro events are not a Massive product at all. Owner-curated config decouples the calendar from the vendor entirely, which is the more robust outcome regardless of entitlement.",
+
+  "_honesty_contract": "ABSENT IS NOT NONE. A symbol with NO entry under 'symbols' means WE DO NOT KNOW its schedule — it must NEVER be rendered or reasoned about as 'no earnings scheduled'. A symbol present with an EMPTY events list means the opposite: someone checked and there is nothing scheduled in the horizon. These are different claims and the loader keeps them distinct (None vs []). Any consumer that collapses them is wrong.",
+
+  "_staleness_contract": "An earnings calendar rots fast. 'as_of' is the date the owner last verified this file; consumers MUST surface its age and treat entries past 'horizon_end' as expired rather than silently stale. A quarterly-refreshed file six months old is actively misleading — worse than an empty one.",
+
+  "_schema_example": {
+    "_note": "SHAPE ONLY — ignored by the loader (every _-prefixed key is). Not data.",
+    "TICKER": {
+      "events": [
+        {
+          "date": "2026-08-27",
+          "type": "earnings",
+          "confirmed": true,
+          "session": "amc",
+          "source": "company IR page",
+          "avg_abs_move_pct": 8.4
+        }
+      ]
+    }
+  },
+
+  "as_of": null,
+  "horizon_end": null,
+
+  "symbols": {}
+}
