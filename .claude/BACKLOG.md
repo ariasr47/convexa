@@ -1038,9 +1038,24 @@ Cull verdicts (so the next discovery doesn't re-litigate):
     the *highest-value* piece — it is the dominant scheduled vol event for a single name and the whole point
     of flagging "this expiration contains an event." **Knock-on: 15 (event-adjusted forward IV) inherits the
     block**, since stripping event premium requires knowing the event. Treat 4+15 as one **blocked-on-vendor**
-    cluster alongside `market-backdrop` — three separate items now wait on the same plan question, which
-    makes a **consolidated "what does a Massive tier upgrade actually buy us?" decision** worth taking
-    deliberately rather than three times.
+    cluster alongside `market-backdrop`.
+    **⚠ CORRECTED 2026-07-27 (owner) — this is NOT a "tier upgrade" and must not be recorded as one.** The
+    owner already holds the **top personal plan on both lines he needs — Stocks $199/mo AND Options
+    $199/mo**. Paying more on those lines buys nothing here. Massive/Polygon sells **per-asset-class
+    subscriptions plus add-on data products**, and the two rejections are *different product lines*, not
+    higher tiers of the ones we own: **indices** (`I:VIX`/`I:SPX`/`I:NDX`) is a **separate asset-class
+    subscription**, and **Benzinga earnings is a separate add-on entitlement**. Our probe evidence matches
+    exactly that shape — the same key succeeds on every stocks + options endpoint and is rejected on
+    precisely those two. So the real decision is **"buy an additional product line?"**, and for both the
+    answer is probably **no**, because the workarounds are strong:
+    · **Index/sector context (19) → use ETF proxies** (SPY/QQQ + SMH), already the recorded `market-backdrop`
+    reshape and already in the scanner universe. Full coverage, zero new spend.
+    · **Earnings dates (4) → owner-curated config.** Earnings dates are not exotic data. For a **bounded
+    69-name universe** this is the *same shape as `universe.json`* — a checked-in, git-reviewed file
+    refreshed roughly quarterly — or a cheap second source. Note this also **decouples the event calendar
+    from Massive entirely**, which is the more robust outcome regardless of entitlement.
+    Only **historical average move per event type** (the enrichment half of item 4) genuinely wants a data
+    provider; the *dates* do not.
   - **🔁 Substantially ALREADY SHIPPED — do not rebuild:** **22/23/24** (outcome logging, setup hit rates,
     gate backtest). `outcome-ledger` shipped 2026-07-16 and already computes hit rate + mean per-trade
     return + dispersion by **tier · AI-rec · setup · IV-rank band · persona**, with `N_min=20` + Wilson
