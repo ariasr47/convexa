@@ -908,9 +908,19 @@ more robust answer (see BACKLOG §C).
 `horizon_end 2026-10-31`, with several mega-caps reporting within days of curation, and **12 projected dates
 that firm up ~2–3 weeks before they land**. The 4 uncurated tickers (TSLA/MU/CSCO/UNH) should be re-checked
 then too. An expired horizon degrades safely (forces `unknown`), so a forgotten refresh is honest, not wrong.
+**✓ SECOND HALF SHIPPED SAME DAY — `expiration-events`** (contracts archived at
+`_archive/expiration-events/`, commit `fa87e67`, QA PASS 11/11). `event_calendar.expirations[]` flags which
+tenors contain an event; capability + the containment rule in CONTEXT §6. Two things worth carrying:
+(a) **the `amc`-on-expiry exclusion and the `session:null`-on-expiry inclusion do not occur naturally in the
+shipped config** — they exist only as constructed fixtures, and both were mutation-tested in each direction
+by the lane AND independently by QA; if the projection is ever refactored, those fixtures are the guard.
+(b) **The obvious implementation was a trap:** decorating `compute_term_structure` at source would have been
+an `engine.py` edit and a byte-identity breach; the curve is read off the computed bundle after scoring
+instead. QA re-proved byte-identity independently via a **git worktree at the pre-change commit** — the
+right method, since live bundles drift mid-session and cannot prove it.
 **Deferred seams (named, not built):** the FE surface (nothing renders it yet — when it does, the closed
-`state` lookup is binding and `unknown` must never render as "no earnings") · **flagging which EXPIRATION
-contains an event** (the second half of `tradeable-rec-inputs` item 4, and the more decision-relevant half) ·
+`state` lookup is binding, `unknown` must never render as "no earnings", and `expirations: []` must never
+render as "no expiry affected") ·
 `ex_div` auto-population from Massive `list_dividends` (in-tier, free, no entitlement question) ·
 `avg_abs_move_pct` (deliberately loader-internal — the interface pins 7 wire fields) · **item 15**
 event-adjusted forward IV, now unblocked.

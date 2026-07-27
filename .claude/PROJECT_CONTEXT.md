@@ -448,6 +448,22 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   live A/B: NVDA 79/prime/`984e75f48e50` with and without). QA PASS 11/11 (de-correlated Sonnet).
   Realizes the wire half of BACKLOG §C `tradeable-rec-inputs` item 4 and unblocks item 15. See
   OPEN_THREADS §7w.
+  **Extended same-day by `expiration-events` (BE-only, shipped 2026-07-27)** with
+  **`event_calendar.expirations[]`** — one entry per tenor on the bundle's existing full-chain curve
+  (`{expiration, dte, contains_event, event_count, event_types[], first_event_date}`, ascending by DTE),
+  answering the question that actually changes a trade: **does the option I am considering live through
+  the event?** An Aug 21 and a Sep 18 contract on the same ticker are different instruments when earnings
+  land Aug 26. **Containment rule (stated exactly, because the edge case is a real trap):**
+  `serving_day <= event.date <= expiration`, **EXCEPT an `amc` event ON the expiration date, which is NOT
+  contained** — the contract dies at the close, hours before an after-close report; while an event with
+  **`session: null` on the expiration date IS contained** (an unknown session must not be silently assumed
+  to land after the close — flag conservatively). Per-entry payload is a **summary**, never a repeat of the
+  event objects. **`state` still governs:** `expirations` is `[]` for BOTH `none` and `unknown`, so it
+  cannot self-disambiguate — an empty list under `unknown` means *we don't know*, never *no expiry is
+  affected* (`absent-is-not-none`, one level down). No usable tenor curve ⇒ `[]` + 200. Derived from the
+  computed bundle **after scoring** — `engine.py` untouched, `compute_term_structure` provably unmodified
+  (the obvious implementation, decorating the curve at source, would have been an engine edit). QA PASS
+  11/11; byte-identity independently re-proved by QA via a git worktree at the pre-change commit.
 - **Scanner — the multi-ticker surface (`scanner`, FE+BE, shipped 2026-07-26)** — replaces the `/scanner`
   stub with the product's **breadth** surface: one dense honest table answering *"which ticker deserves the
   deep-dive now?"* over an **owner-curated tracked universe** (50–100), swept **with all tabs closed**.
