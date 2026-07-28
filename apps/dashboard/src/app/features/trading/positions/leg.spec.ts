@@ -3,8 +3,8 @@
  * single-leg position, the 100-share $1 move, the credit-structure sign, and the near-zero
  * denominator. These regress silently and are invisible to review.
  */
-import { describe, expect, it } from 'vitest';
 import { pl as shippedPl } from '@/features/trading/model/mark';
+import { describe, expect, it } from 'vitest';
 import type { Leg, SimPosition } from './leg';
 import {
   NET_BASIS_EPS,

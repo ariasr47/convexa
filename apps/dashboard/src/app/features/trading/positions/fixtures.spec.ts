@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_FIXTURES,
   COLLIDING_ID_PAIR,
   FX_CALENDAR,
   FX_COVERED_CALL,
@@ -15,9 +16,8 @@ import {
   FX_ZERO_COST_COLLAR,
   MALFORMED_LEGACY_RECORD,
   UNPARSEABLE_BLOB,
-  ALL_FIXTURES,
 } from './fixtures';
-import { netEntryCost, NET_BASIS_EPS } from './leg';
+import { NET_BASIS_EPS, netEntryCost } from './leg';
 
 describe('fixture library', () => {
   it('the short vertical is a two-leg credit', () => {

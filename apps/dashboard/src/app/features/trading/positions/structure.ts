@@ -197,7 +197,14 @@ function twoOptionLegs(os: readonly OptionLeg[]): StructureKind {
 
   // 4. Verticals — same expiration, same right, one long one short, distinct strikes. Debit vs
   //    credit is STRIKE GEOMETRY, never a price comparison.
-  if (sameExpiration && sameRight && opposedSides && long && short && long.strike !== short.strike) {
+  if (
+    sameExpiration &&
+    sameRight &&
+    opposedSides &&
+    long &&
+    short &&
+    long.strike !== short.strike
+  ) {
     if (a.right === 'call') {
       return long.strike < short.strike ? 'call_debit_spread' : 'call_credit_spread';
     }
