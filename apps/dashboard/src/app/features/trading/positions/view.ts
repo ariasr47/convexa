@@ -69,9 +69,13 @@ export interface PositionView {
   structure_label: string;
   /** Pre-formatted, single line, never wrapping. */
   structure_line: string;
-  /** The first-and-last collapsed variant — AUTHORED IN THE STRING, never a CSS ellipsis. */
+  /**
+   * WHAT THE CELL RENDERS. The structure WORD is dropped for a multi-leg position (the `Structure`
+   * chip is the authoritative name), and an over-long strike list collapses first-and-last —
+   * both AUTHORED IN THE STRING, never a CSS ellipsis. See `collapseLine`.
+   */
   structure_line_collapsed: string;
-  /** The full strike list, for the tooltip. */
+  /** The full line — the structure noun AND every strike. The tooltip. */
   structure_line_full: string;
   net_entry_cost: number;
   net_entry_basis: 'net_debit' | 'net_credit';
@@ -189,7 +193,7 @@ const STRUCTURE_NOUN: Partial<Record<StructureKind, string>> = {
  * form is BYTE-IDENTICAL to the shipped descriptor (`PositionRow.tsx:97-118` renders
  * `${p.strike} {Call|Put}` under a `$`), so an existing user's row does not move.
  */
-function structureLine(p: SimPosition, kind: StructureKind): string {
+function structureLine(p: SimPosition, kind: StructureKind, includeNoun: boolean): string {
   const legs = p.legs;
   const options = legs.filter(isOption);
   const equities = legs.filter(isEquity);
@@ -211,7 +215,7 @@ function structureLine(p: SimPosition, kind: StructureKind): string {
     return `${shares} sh + ${parts.join(' + ')}`;
   }
 
-  const noun = STRUCTURE_NOUN[kind] ?? '';
+  const noun = includeNoun ? (STRUCTURE_NOUN[kind] ?? '') : '';
   const strikes = distinctStrikes(options);
   const expiries = distinctExpirations(options);
 
@@ -233,17 +237,35 @@ function structureLine(p: SimPosition, kind: StructureKind): string {
 }
 
 /**
- * The first-and-last collapse — AUTHORED IN THE STRING. A CSS ellipsis mid-number would render
- * `$38…` and read as data; this form never can. The full list stays on `structure_line_full`.
+ * The COLLAPSED cell form — what the `contract` cell actually renders.
+ *
+ * TWO collapses, both authored IN THE STRING:
+ *
+ *  1. THE STRUCTURE WORD IS DROPPED for a multi-leg position (RULED 2026-07-28, GATE Z bounce #2,
+ *     SPEC §4 *The `contract` cell*). The `Structure` chip already carries `Iron condor` through the
+ *     closed label lookup and is AUTHORITATIVE; the line restating it is the same two-names-for-one-
+ *     thing pattern that forced AC-46's distinct-id count and the union's one-logical-source rule.
+ *     It is dropped from the LINE, not from the table — the name is still on every row, in the
+ *     column whose job it is. Measured cause: with a real 4-leg condor row the `contract` cell grew
+ *     +123px and min-content at 1280 went 17px over the 1190 host. Rejected alternatives, so they
+ *     do not return: blanking the `Structure` column for multi-leg rows (a column must mean the same
+ *     thing in every row), and accepting the compression (it shrank `Max loss` 131→118, the column
+ *     the owner ruled in precisely so it would be visible).
+ *     A SINGLE-LEG position, a covered call and a shares-only position never carried a noun, so
+ *     their cells are BYTE-IDENTICAL to what shipped.
+ *
+ *  2. The first-and-last strike collapse, above `STRUCTURE_LINE_MAX_STRIKES`. A CSS ellipsis
+ *     mid-number would render `$38…` and read as data; this form never can.
+ *
+ * `structure_line_full` is unchanged and still carries the noun AND every strike — it is the
+ * tooltip, and the disclosure carries the legs themselves (AC-37).
  */
-function collapseLine(p: SimPosition, kind: StructureKind, full: string): string {
+function collapseLine(p: SimPosition, withoutNoun: string): string {
   const options = p.legs.filter(isOption);
   const strikes = distinctStrikes(options);
-  if (strikes.length <= STRUCTURE_LINE_MAX_STRIKES) return full;
-  const noun = STRUCTURE_NOUN[kind] ?? '';
+  if (strikes.length <= STRUCTURE_LINE_MAX_STRIKES) return withoutNoun;
   const range = `${strikeText(strikes[0])}${ELLIPSIS}${strikeText(strikes[strikes.length - 1])}`;
-  const head = noun ? `${range} ${noun}` : range;
-  return `${head} (${p.legs.length} legs)`;
+  return `${range} (${p.legs.length} legs)`;
 }
 
 // ---- The leg rows -------------------------------------------------------------------------------
@@ -335,7 +357,10 @@ export function buildPositionView(args: {
   const pl_dollar = positionPl(position, numericMarks);
   const net_entry_cost = netEntryCost(position);
 
-  const structure_line = structureLine(position, structure);
+  // The FULL line keeps the structure noun (it is the tooltip); the CELL form drops it — see
+  // `collapseLine`. Built from one function so the two forms can never disagree about the facts.
+  const structure_line = structureLine(position, structure, true);
+  const structure_line_cell = structureLine(position, structure, false);
   const options = position.legs.filter(isOption);
   const expiries = distinctExpirations(options);
 
@@ -347,7 +372,7 @@ export function buildPositionView(args: {
     structure,
     structure_label: STRUCTURE_LABELS[structure],
     structure_line,
-    structure_line_collapsed: collapseLine(position, structure, structure_line),
+    structure_line_collapsed: collapseLine(position, structure_line_cell),
     // The full list IS the uncollapsed line: it always carries every strike.
     structure_line_full: structure_line,
     net_entry_cost,

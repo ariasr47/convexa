@@ -19,7 +19,11 @@ import {
   mkLeg,
   mkPosition,
 } from './fixtures';
+import { STRUCTURE_LABELS } from './structure';
 import { buildPositionView, STRUCTURE_LINE_MAX_STRIKES } from './view';
+
+/** U+2026 — the authored ellipsis. Never three periods. */
+const ELLIPSIS = '…';
 
 const mr = (
   mark: number | null,
@@ -89,15 +93,85 @@ describe('buildPositionView', () => {
     expect(v.structure_line_full).toContain('$440');
   });
 
-  it('AC-37 — a short strike list does NOT collapse: the two forms are the same string', () => {
+  it('AC-37 — a short strike list does NOT collapse: every strike stays in the cell form', () => {
     const v = buildPositionView({
       position: FX_CALL_DEBIT_SPREAD,
       legMarks: allMarks(FX_CALL_DEBIT_SPREAD, 9),
       dte: 30,
     });
-    expect(v.structure_line_collapsed).toBe(v.structure_line);
+    expect(v.structure_line_collapsed).toContain('$400');
+    expect(v.structure_line_collapsed).toContain('$420');
+    expect(v.structure_line_collapsed).not.toContain(ELLIPSIS);
     expect(v.structure_line_full).toBe(v.structure_line);
     expect(STRUCTURE_LINE_MAX_STRIKES).toBe(3);
+  });
+
+  /**
+   * RULED 2026-07-28 (GATE Z bounce #2, SPEC §4 *The `contract` cell*) — the CELL form drops the
+   * structure WORD for a multi-leg position because the `Structure` chip already carries it. These
+   * assert the DEDUPLICATION itself (a silent regression would quietly re-spend the 1280 headroom
+   * the bounce was raised over) and, just as importantly, that the untouched cases are untouched.
+   */
+  describe('the collapsed line drops the structure word for a MULTI-LEG position', () => {
+    it('a vertical reads the leg facts alone — the noun lives on the chip and in the tooltip', () => {
+      const v = buildPositionView({
+        position: FX_CALL_DEBIT_SPREAD,
+        legMarks: allMarks(FX_CALL_DEBIT_SPREAD, 9),
+        dte: 30,
+      });
+      expect(v.structure_line_collapsed).toBe('$400/$420 Call');
+      expect(v.structure_line_collapsed).not.toMatch(/vertical/i);
+      // the word is not LOST — it is on the chip (`structure_label`) and in the tooltip.
+      expect(v.structure_line_full).toContain('vertical');
+      expect(v.structure_label).toBe(STRUCTURE_LABELS[v.structure]);
+    });
+
+    it('a condor carries strikes and a leg count, never the word `condor`', () => {
+      const v = buildPositionView({
+        position: FX_IRON_CONDOR,
+        legMarks: allMarks(FX_IRON_CONDOR, 3),
+        dte: 30,
+      });
+      expect(v.structure_line_collapsed).toBe('$380…$460 (4 legs)');
+      expect(v.structure_line_full).toContain('condor');
+    });
+
+    it('a calendar keeps its two expiries — the EXPIRIES are facts, only the noun goes', () => {
+      const v = buildPositionView({
+        position: FX_CALENDAR,
+        legMarks: allMarks(FX_CALENDAR, 13),
+        dte: 30,
+      });
+      expect(v.structure_line_collapsed).toContain('→');
+      expect(v.structure_line_collapsed).not.toMatch(/calendar/i);
+      expect(v.structure_line_full).toContain('calendar');
+    });
+
+    it('single-leg, covered call and shares-only cells are BYTE-IDENTICAL to shipped', () => {
+      const single = buildPositionView({
+        position: FX_LONG_CALL,
+        legMarks: allMarks(FX_LONG_CALL, 14),
+        dte: 30,
+      });
+      expect(single.structure_line_collapsed).toBe('$400 Call');
+      expect(single.structure_line_collapsed).toBe(single.structure_line_full);
+
+      const covered = buildPositionView({
+        position: FX_COVERED_CALL,
+        legMarks: allMarks(FX_COVERED_CALL, 4),
+        dte: 30,
+      });
+      expect(covered.structure_line_collapsed).toBe('100 sh + $420 Call');
+      expect(covered.structure_line_collapsed).toBe(covered.structure_line_full);
+
+      const shares = buildPositionView({
+        position: FX_SHARES_LONG,
+        legMarks: new Map(),
+        dte: null,
+      });
+      expect(shares.structure_line_collapsed).toBe('100 shares');
+      expect(shares.structure_line_collapsed).toBe(shares.structure_line_full);
+    });
   });
 
   it('a multi-expiry structure carries its expiries in the line and reports the NEAREST separately', () => {
