@@ -309,9 +309,13 @@ describe('legacy gammaflow.* data carried WHOLE into convexa.*', () => {
     );
     ghost.__resetMemory();
 
-    const t = ghost.getTrade('TSLA')!;
-    expect(t.id).toBe('gt1');
-    expect(t.qty).toBe(4);
+    // `getTrade` returns OPAQUE material now: `GhostTrade` went out with the v1 writer, and nothing
+    // interprets a legacy record but the ONE lift (`positions/migrate.liftLegacyRecord`), which is
+    // total over arbitrary material. The claim under test is unchanged and still the right one —
+    // the legacy blob's bytes SURVIVE the read — so it is asserted against the material itself
+    // rather than through a type the store deliberately no longer promises. (`model/store.spec.ts`
+    // narrows at its own call sites for the same reason.)
+    expect(ghost.getTrade('TSLA')).toMatchObject({ id: 'gt1', qty: 4 });
     expect(ghost.decisionsForTrade('gt1')).toHaveLength(1);
   });
 
