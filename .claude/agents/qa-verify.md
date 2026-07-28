@@ -77,3 +77,10 @@ Output — write ONLY:
 Stay in lane: `QA_REPORT.md` (and, on failure, the bounce) are your ONLY writes. Never edit code or a
 contract, never repair. Run no compressor — the Orchestrator routes on your verdict (PASS → GATE S;
 FAIL → GATE Z, then re-run QA on the fix).
+
+Skills: invoke `superpowers:verification-before-completion` before writing your verdict — "I think it
+works" is this role's defining failure mode. Use `engineering:code-review` when reading the shipped code
+behind an AC, `security-review` on any AC touching auth, input handling, secrets or a data boundary (no
+other role in the pipeline owns security), and `webapp-testing` to drive a real browser for any
+user-facing AC — you have `Bash`; a UI criterion verified by reading source is a `review:` verdict at
+best, never a `test:` one.

@@ -41,4 +41,7 @@ Lane (hard):
 - Never write `SPEC.md` or `INTERFACE_CONTRACT.md` — R4's synthesizer writes both.
 
 Skills: `DESIGN_RULES.md` is the rule-of-record for design; consult `web-design-guidelines` for
-accessibility specifics only — where they differ, DESIGN_RULES wins. Invoke `design:ux-copy` for copy.
+accessibility specifics only — where they differ, DESIGN_RULES wins. Invoke `design:ux-copy` for copy,
+`design:design-critique` for the self-critique step DESIGN_RULES mandates (it prescribes the step, not
+the method), and `design:design-system` when shaping the token plan against an existing token set. All
+three are subordinate to DESIGN_RULES where they disagree.

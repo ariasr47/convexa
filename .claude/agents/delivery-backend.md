@@ -29,4 +29,7 @@ Lane (hard):
   you verified. No outbound contract; run no compressor.
 
 Skills: invoke `superpowers:test-driven-development` for the build loop and
-`engineering:testing-strategy` when deciding test depth (risk-based, per `qa-verify` §4).
+`engineering:testing-strategy` when deciding test depth (risk-based, per `qa-verify` §4). On any failing
+test or surprising behavior, invoke `superpowers:systematic-debugging` BEFORE proposing a fix —
+reproduce, isolate, diagnose; never guess. Invoke `superpowers:verification-before-completion` before
+you report done.

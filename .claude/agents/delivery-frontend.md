@@ -56,4 +56,10 @@ Lane (hard):
 
 Skills: `.claude/DESIGN_RULES.md` is the rule-of-record for design and its visual-verification loop is
 part of "done"; consult `web-design-guidelines` for accessibility specifics only — where they differ,
-DESIGN_RULES wins. Use `webapp-testing` for browser-driven verification.
+DESIGN_RULES wins. Use `webapp-testing` for browser-driven verification. Invoke
+`superpowers:test-driven-development` for the build loop — tests are a required deliverable in this lane,
+so the same discipline the backend gets applies here. On any failing test or surprising behavior, invoke
+`superpowers:systematic-debugging` BEFORE proposing a fix. Where the project is React, consult
+`react-best-practices` for rendering/performance and `composition-patterns` for component API shape
+(boolean-prop sprawl, compound components) — both are stack guidance, subordinate to DESIGN_RULES on any
+design question.
