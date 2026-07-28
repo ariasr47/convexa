@@ -27,7 +27,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DerivedGroup, DerivedRow } from './derive';
+import type { DerivedGroup } from './derive';
 import {
   FX_CALL_DEBIT_SPREAD,
   FX_IRON_CONDOR,
@@ -38,24 +38,25 @@ import {
   FX_SHARES_LONG,
   FX_SHORT_CALL,
   FX_SHORT_VERTICAL,
-  rowOfSim,
+  viewOf,
 } from './fixtures';
 import { PositionsView, type ViewProps } from './PositionsView';
+import type { PositionView } from './view';
 
-function groupsOf(rows: DerivedRow[]): DerivedGroup[] {
-  return [{ key: '__all__', label: 'All', rows, subtotal: 0, excludedCount: 0 }];
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }];
 }
 
-function renderRows(rows: DerivedRow[], over: Partial<ViewProps> = {}) {
+function renderRows(views: PositionView[], over: Partial<ViewProps> = {}) {
   return render(
     <ThemeProvider theme={themeForPref('dark')}>
       <PositionsView
-        groups={groupsOf(rows)}
+        groups={groupsOf(views)}
         columns={[]}
         layout="table"
         density="comfortable"
         streamOffline={false}
-        totalCount={rows.length}
+        totalCount={views.length}
         isHistory={false}
         trendFor={() => []}
         onOpenEntry={vi.fn()}
@@ -129,7 +130,7 @@ describe('tint discipline — className identity (AC-78)', () => {
   it('a Short leg label and a Long leg label are className-identical', async () => {
     const user = userEvent.setup();
     // The condor has both, on the same expiry, in one disclosure.
-    renderRows([rowOfSim(FX_IRON_CONDOR)]);
+    renderRows([viewOf(FX_IRON_CONDOR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
 
     const sides = screen.getAllByTestId('leg-side');
@@ -141,7 +142,7 @@ describe('tint discipline — className identity (AC-78)', () => {
 
   it('`Call` and `Put` in the leg list are className-identical', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_IRON_CONDOR)]);
+    renderRows([viewOf(FX_IRON_CONDOR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
 
     const instruments = screen.getAllByTestId('leg-instrument');
@@ -153,7 +154,7 @@ describe('tint discipline — className identity (AC-78)', () => {
   });
 
   it('a credit entry cell and a debit entry cell are className-identical', () => {
-    renderRows([rowOfSim(FX_CALL_DEBIT_SPREAD), rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_CALL_DEBIT_SPREAD), viewOf(FX_SHORT_VERTICAL)]);
     const cells = screen.getAllByTestId('cell-entry');
     const texts = cells.map((c) => c.textContent);
     // A credit is money RECEIVED, not a gain: tinting it green manufactures a verdict.
@@ -163,7 +164,7 @@ describe('tint discipline — className identity (AC-78)', () => {
   });
 
   it('the structure chip is className-identical for Iron condor, Shares and Custom', () => {
-    renderRows([rowOfSim(FX_IRON_CONDOR), rowOfSim(FX_SHARES_LONG), rowOfSim(FX_RATIO_1X2)]);
+    renderRows([viewOf(FX_IRON_CONDOR), viewOf(FX_SHARES_LONG), viewOf(FX_RATIO_1X2)]);
     const chips = screen.getAllByTestId('cell-structure');
     expect(chips.map((c) => c.textContent)).toEqual(['Iron condor', 'Shares', 'Custom']);
     // `Custom` renders in the SAME neutral register as every other name — no error styling, no
@@ -176,7 +177,7 @@ describe('tint discipline — className identity (AC-78)', () => {
     // treatment and the reason the shared not-a-number-literal treatment (`text.disabled`), so the
     // two legitimately wear different classes. What must hold is that NEITHER is directional — so
     // this reads the emotion rule each one actually wears and looks for the tint itself.
-    renderRows([rowOfSim(FX_PROTECTIVE_PUT), rowOfSim(FX_SHORT_CALL)]);
+    renderRows([viewOf(FX_PROTECTIVE_PUT), viewOf(FX_SHORT_CALL)]);
     const slots = screen.getAllByTestId('cell-max-loss');
     expect(slots[0].textContent).toMatch(/^\$\d/); // a figure
     expect(slots[1].textContent).toBe('unlimited risk'); // a reason
@@ -190,7 +191,7 @@ describe('tint discipline — className identity (AC-78)', () => {
   });
 
   it('the not-a-number literals and the offline tag are className-identical', () => {
-    renderRows([rowOfSim(FX_PROTECTIVE_PUT, { mark: null }), rowOfSim(FX_LONG_STRADDLE)], {
+    renderRows([viewOf(FX_PROTECTIVE_PUT, { mark: null }), viewOf(FX_LONG_STRADDLE)], {
       streamOffline: true,
     });
     const unavailable = screen.getAllByTestId('cell-unavailable');
@@ -201,7 +202,7 @@ describe('tint discipline — className identity (AC-78)', () => {
   });
 
   it('the card mirrors the row: no tint on the chip, the entry qualifier or the risk slot', () => {
-    renderRows([rowOfSim(FX_PROTECTIVE_PUT), rowOfSim(FX_SHORT_VERTICAL)], { layout: 'card' });
+    renderRows([viewOf(FX_PROTECTIVE_PUT), viewOf(FX_SHORT_VERTICAL)], { layout: 'card' });
     const chips = screen.getAllByTestId('card-structure-chip');
     const entries = screen.getAllByTestId('card-net-entry');
     const risks = screen.getAllByTestId('card-max-loss');
@@ -213,12 +214,12 @@ describe('tint discipline — className identity (AC-78)', () => {
   it('NEGATIVE SPACE — nothing outside the five carriers is tinted anywhere on the surface', async () => {
     const user = userEvent.setup();
     renderRows([
-      rowOfSim(FX_IRON_CONDOR),
-      rowOfSim(FX_SHORT_VERTICAL),
-      rowOfSim(FX_SHARES_LONG),
-      rowOfSim(FX_RATIO_1X2),
-      rowOfSim(FX_SHORT_CALL),
-      rowOfSim(FX_PROTECTIVE_PUT, { mark: null }),
+      viewOf(FX_IRON_CONDOR),
+      viewOf(FX_SHORT_VERTICAL),
+      viewOf(FX_SHARES_LONG),
+      viewOf(FX_RATIO_1X2),
+      viewOf(FX_SHORT_CALL),
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
     ]);
     await user.click(screen.getAllByTestId('leg-disclosure-toggle')[0]);
 
@@ -241,8 +242,8 @@ describe('tint discipline — className identity (AC-78)', () => {
     // The long call entered at 12.40 and marked at 6.20 is a LOSS; the short call sold at 6.10 and
     // marked at 5.00 is a GAIN. Both off the SAME render, so one row is red and the other green.
     renderRows([
-      rowOfSim(FX_LONG_CALL, { mark: { mark: 6.2, basis: 'snapshot', frozen: false } }),
-      rowOfSim(FX_SHORT_CALL, { mark: { mark: 5, basis: 'snapshot', frozen: false } }),
+      viewOf(FX_LONG_CALL, { mark: { mark: 6.2, basis: 'snapshot', frozen: false } }),
+      viewOf(FX_SHORT_CALL, { mark: { mark: 5, basis: 'snapshot', frozen: false } }),
     ]);
     const [loss, gain] = screen.getAllByTestId('cell-pl').map((c) => within(c).getByText(/\$/));
     expect(loss.textContent).toMatch(/^−\$/);
@@ -253,11 +254,11 @@ describe('tint discipline — className identity (AC-78)', () => {
   });
 
   it('THE VACUITY GUARD — the group subtotal is tinted by sign too', () => {
-    const rows = [rowOfSim(FX_LONG_CALL)];
+    const views = [viewOf(FX_LONG_CALL)];
     render(
       <ThemeProvider theme={themeForPref('dark')}>
         <PositionsView
-          groups={[{ key: 'TSLA', label: 'TSLA', rows, subtotal: -420, excludedCount: 0 }]}
+          groups={[{ key: 'TSLA', label: 'TSLA', views, subtotal: -420, excludedCount: 0 }]}
           columns={[]}
           layout="table"
           density="comfortable"
@@ -277,7 +278,7 @@ describe('tint discipline — className identity (AC-78)', () => {
     render(
       <ThemeProvider theme={themeForPref('dark')}>
         <PositionsView
-          groups={[{ key: 'TSLA', label: 'TSLA', rows, subtotal: 420, excludedCount: 0 }]}
+          groups={[{ key: 'TSLA', label: 'TSLA', views, subtotal: 420, excludedCount: 0 }]}
           columns={[]}
           layout="table"
           density="comfortable"
@@ -300,7 +301,7 @@ describe('tint discipline — className identity (AC-78)', () => {
       render(
         <ThemeProvider theme={themeForPref(scheme)}>
           <PositionsView
-            groups={groupsOf([rowOfSim(FX_IRON_CONDOR), rowOfSim(FX_SHORT_VERTICAL)])}
+            groups={groupsOf([viewOf(FX_IRON_CONDOR), viewOf(FX_SHORT_VERTICAL)])}
             columns={[]}
             layout="table"
             density="comfortable"

@@ -59,6 +59,12 @@ export interface LegDisplayRow {
 
 export interface PositionView {
   position: SimPosition;
+  /**
+   * The position's ONE underlying. Single-underlying is enforced at construction (SPEC §2.7), so
+   * every leg carries the same symbol and this is that symbol. Projected because the derivation
+   * pipeline filters and sorts on it and must not reach into `position.legs` to find it.
+   */
+  ticker: string;
   structure: StructureKind;
   structure_label: string;
   /** Pre-formatted, single line, never wrapping. */
@@ -75,6 +81,12 @@ export interface PositionView {
   max_loss: MaxLossResult;
   legs: LegDisplayRow[];
   eval_subject: EvalSubject;
+  /**
+   * The structure-level SIZE as a number — what `qty_text` formats. NEVER a sum across legs: a
+   * 1-long/2-short ratio is not "3 contracts". Projected so the sort axis has a number without any
+   * component or derivation performing leg arithmetic.
+   */
+  qty: number;
   /** Structure-level qty text — `2 ×` for options, `100 sh` for equity, `1 ×` for a covered call. */
   qty_text: string;
   /** The unit-aware tip beside it (SPEC §4 *Qty, unit-aware*) — leg formatting stays in here. */
@@ -259,15 +271,20 @@ function legRow(l: Leg, res: MarkResult | null): LegDisplayRow {
   };
 }
 
+/**
+ * The structure-level SIZE. Options ⇒ the largest option leg's size; equity-only ⇒ the share count.
+ * A ratio's legs disagree; the structure-level size is the largest, and the disclosure carries each
+ * leg's own size. NEVER a sum — 1 long + 2 short is not "3 contracts".
+ */
+function qtyOf(p: SimPosition): number {
+  const options = p.legs.filter(isOption);
+  if (options.length === 0) return p.legs.filter(isEquity).reduce((n, l) => n + l.qty, 0);
+  return Math.max(...options.map((l) => l.qty));
+}
+
 /** Options ⇒ `${qty} ×`; equity-only ⇒ `${qty} sh`; mixed ⇒ the STRUCTURE-level unit `${qty} ×`. */
 function qtyText(p: SimPosition): string {
-  const options = p.legs.filter(isOption);
-  if (options.length === 0) {
-    return `${p.legs.filter(isEquity).reduce((n, l) => n + l.qty, 0)} sh`;
-  }
-  // A ratio's legs disagree; the structure-level size is the largest, and the disclosure carries
-  // each leg's own size. Never a sum — 1 long + 2 short is not "3 contracts".
-  return `${Math.max(...options.map((l) => l.qty))} ×`;
+  return p.legs.some(isOption) ? `${qtyOf(p)} ×` : `${qtyOf(p)} sh`;
 }
 
 /**
@@ -324,6 +341,9 @@ export function buildPositionView(args: {
 
   return {
     position,
+    // Single-underlying is enforced at CONSTRUCTION, so every leg agrees; leg 0 IS the position's
+    // ticker. `''` is unreachable for a real record (`legs.length >= 1`) and is not a rendered value.
+    ticker: position.legs[0]?.ticker ?? '',
     structure,
     structure_label: STRUCTURE_LABELS[structure],
     structure_line,
@@ -343,6 +363,7 @@ export function buildPositionView(args: {
     max_loss: maxLossOf(position, structure),
     legs: position.legs.map((l) => legRow(l, legMarks.get(l.id) ?? null)),
     eval_subject: evalSubjectOf(position),
+    qty: qtyOf(position),
     qty_text: qtyText(position),
     qty_tip: qtyTip(position, STRUCTURE_LABELS[structure]),
     unavailable: mark.unavailable,

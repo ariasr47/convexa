@@ -16,12 +16,13 @@ import { extrasFor } from '@/shared/theme/tokens';
 import { Box, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
-import type { DerivedGroup, DerivedRow } from './derive';
+import type { DerivedGroup } from './derive';
 import { EMPTY_FILTERED, EMPTY_NO_POSITIONS, HISTORY_CAPTION, money } from './labels';
 import { PositionCard } from './PositionCard';
 import { PositionRow, RowContext } from './PositionRow';
 import type { ColumnKey, Density, LayoutMode } from './types';
 import type { PlSample } from './useTrends';
+import type { PositionView } from './view';
 
 /**
  * REVISION 2 — the FIXED Figma column set (left→right). The table/cards render from this directly and
@@ -85,6 +86,8 @@ export interface ViewProps {
   /** Is the active filter the closed/history view (status = closed/cancelled)? */
   isHistory: boolean;
   trendFor: (id: string) => PlSample[];
+  /** The ephemeral session Δ per position (the `trendFor` precedent). Absent ⇒ the honest `null`. */
+  sessionDeltaFor?: (id: string) => number | null;
   onOpenEntry: () => void;
   onClearFilter: () => void;
   onClose: (id: string) => void;
@@ -120,7 +123,7 @@ const clearLinkSx = {
 
 export function PositionsView(props: ViewProps) {
   const { groups, totalCount, isHistory } = props;
-  const visibleRowCount = groups.reduce((n, g) => n + g.rows.length, 0);
+  const visibleRowCount = groups.reduce((n, g) => n + g.views.length, 0);
   // The multi-column table overflows a phone; below md we always render cards regardless of the
   // saved layout preference (which stays honored at md+). MUI's useMediaQuery is SSR/test-safe
   // (no matchMedia ⇒ false ⇒ desktop table), so existing table specs are unaffected.
@@ -188,11 +191,11 @@ export function PositionsView(props: ViewProps) {
   );
 }
 
-function ctxFor(props: ViewProps, row: DerivedRow): RowContext {
+function ctxFor(props: ViewProps, view: PositionView): RowContext {
   return {
-    view: row.view,
-    trend: props.trendFor(row.position.id),
-    sessionDelta: row.metrics.sessionDelta,
+    view,
+    trend: props.trendFor(view.position.id),
+    sessionDelta: props.sessionDeltaFor?.(view.position.id) ?? null,
     streamOffline: props.streamOffline,
     onClose: props.onClose,
     onCancel: props.onCancel,
@@ -320,7 +323,7 @@ function GroupRows({
             }}
           >
             <Box component="span" sx={{ opacity: props.streamOffline ? 0.85 : 1 }}>
-              {group.label} ({group.rows.length}){'  '}
+              {group.label} ({group.views.length}){'  '}
             </Box>
             {subtotalNode(group)}
             {props.streamOffline && (
@@ -331,10 +334,10 @@ function GroupRows({
           </Box>
         </Box>
       )}
-      {group.rows.map((row) => (
+      {group.views.map((view) => (
         <PositionRow
-          key={row.position.id}
-          ctx={ctxFor(props, row)}
+          key={view.position.id}
+          ctx={ctxFor(props, view)}
           columns={columns}
           tdPad={tdPad}
           onClose={props.onClose}
@@ -363,7 +366,7 @@ function CardLayout(props: ViewProps) {
               data-testid="group-header"
               data-group={g.key}
             >
-              {g.label} ({g.rows.length}) · {subtotalNode(g)}
+              {g.label} ({g.views.length}) · {subtotalNode(g)}
             </Box>
           )}
           {/* 1 column below `sm` (a 2-up card at 393px crushes the footer facts row and can force
@@ -375,11 +378,11 @@ function CardLayout(props: ViewProps) {
               gap: '12px',
             }}
           >
-            {g.rows.map((row) => (
+            {g.views.map((view) => (
               <PositionCard
-                key={row.position.id}
-                view={row.view}
-                ctx={ctxFor(props, row)}
+                key={view.position.id}
+                view={view}
+                ctx={ctxFor(props, view)}
                 streamOffline={props.streamOffline}
                 onClose={props.onClose}
               />

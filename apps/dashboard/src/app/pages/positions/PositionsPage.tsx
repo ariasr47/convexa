@@ -20,18 +20,18 @@
  * stream drop; `[live-vs-static-isolation]`). The 1240px centered content column replaces the MUI
  * `Container maxWidth="lg"`. No data path / handler changes.
  */
-import { Box, Typography } from '@mui/material';
-import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
-import { useEffect, useMemo, useState } from 'react';
+import { PRESETS } from '@/features/personas/presets';
+import { loadCustoms } from '@/features/personas/store';
 import { subscribeOrders } from '@/features/trading/orders/store';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
 import { TrackRecordSection } from '@/features/trading/outcomes/TrackRecordSection';
-import { loadCustoms } from '@/features/personas/store';
-import { PRESETS } from '@/features/personas/presets';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Box, Typography } from '@mui/material';
+import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@org/api';
+import { useEffect, useMemo, useState } from 'react';
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)
 const STREAM_OFFLINE_MS = 15_000; // payload-gap watchdog → live-mark degrade (mirrors the Ticker page)
@@ -137,18 +137,15 @@ export function PositionsPage() {
   }, [pf.refreshPositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Net P/L (open): the sum of the OPEN positions' $ P/L — reusing the SAME derived P/L the rows show
-  // (`pf.rows[*].metrics.plDollar`), NOT a new compute path. A row whose live P/L is unavailable this
+  // (`pf.views[*].pl_dollar`), NOT a new compute path. A row whose live P/L is unavailable this
   // cycle contributes nothing (null is skipped), exactly as the per-group subtotal does.
   const netPl = useMemo(
     () =>
-      pf.rows.reduce(
-        (sum, r) =>
-          r.position.status === 'open' && r.metrics.plDollar != null
-            ? sum + r.metrics.plDollar
-            : sum,
+      pf.views.reduce(
+        (sum, v) => (v.position.status === 'open' && v.pl_dollar != null ? sum + v.pl_dollar : sum),
         0,
       ),
-    [pf.rows],
+    [pf.views],
   );
 
   return (

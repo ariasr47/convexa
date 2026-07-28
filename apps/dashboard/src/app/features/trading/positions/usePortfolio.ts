@@ -28,7 +28,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { compositeLimitWouldFill, legContractKey } from './composeMark';
 import { cloneConfig, configEqual } from './defaults';
-import { DerivedRow, RowMetrics } from './derive';
 import { LIMIT_FILL_BASIS, resolveManualFill } from './entry';
 import { legValue, type Leg, type LegId, type SimPosition } from './leg';
 import { liftLegacyRecord } from './migrate';
@@ -265,6 +264,8 @@ export function usePortfolio(
     [simPositions, legMarksById, dteFor],
   );
 
+  const viewById = useMemo(() => new Map(views.map((v) => [v.position.id, v] as const)), [views]);
+
   // The shipped per-position mark, re-sourced from the leg ladder so the row and the projection can
   // never disagree. A lifted legacy record has exactly ONE leg, so this IS that leg's mark.
   const markFor = useCallback(
@@ -277,35 +278,22 @@ export function usePortfolio(
     [legMarksById],
   );
 
-  // Build the row metrics for every position (the live-derived view).
-  const rows = useMemo<DerivedRow[]>(() => {
-    const out: DerivedRow[] = [];
-    for (const view of views) {
-      const p = positionById.get(view.position.id);
-      if (!p) continue;
-      const unavailable = (p.status === 'open' || p.status === 'pending') && view.mark.unavailable;
-      const plDollar = p.status === 'open' && !unavailable ? view.pl_dollar : null;
-      const plPct =
-        p.status === 'open' && !unavailable && view.pl_pct.kind === 'value'
-          ? view.pl_pct.value
-          : null;
-      const sessAnchor = trends.sessionAnchor(p.id);
-      const sessionDelta =
-        plDollar != null && sessAnchor != null && !streamOffline ? plDollar - sessAnchor : null;
-      const metrics: RowMetrics = {
-        id: p.id,
-        plDollar,
-        plPct,
-        unavailable,
-        deltaEntry: plDollar,
-        sessionDelta,
-        dte: view.dte,
-      };
-      out.push({ position: p, metrics, structure: view.structure, view });
-    }
-    return out;
+  /**
+   * The EPHEMERAL session Δ per position — the one live-derived datum that is not on the projection,
+   * because it is measured against an in-memory session anchor rather than the record. Exposed as a
+   * lookup (the `trendFor` precedent) so `derive.ts` can sort on it without importing the hook and
+   * without anything durable being involved. `null` while offline: a frozen number is not a delta.
+   */
+  const sessionDeltaFor = useCallback(
+    (id: PositionId): number | null => {
+      const view = viewById.get(id);
+      if (!view || view.position.status !== 'open' || view.pl_dollar == null) return null;
+      const anchor = trends.sessionAnchor(id);
+      return anchor != null && !streamOffline ? view.pl_dollar - anchor : null;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [views, positionById, streamOffline, historyVersion]);
+    [viewById, streamOffline, historyVersion],
+  );
 
   // ---- Keep last-good mark + feed the trend/session ring buffers (live-derived, ephemeral) ----
   useEffect(() => {
@@ -614,12 +602,12 @@ export function usePortfolio(
 
   return {
     positions,
-    rows,
     views,
     health,
     decisionsFor,
     markFor,
     trendFor,
+    sessionDeltaFor,
     openPosition,
     closePosition,
     cancelLimit,

@@ -9,7 +9,6 @@
  */
 import type { MarkResult } from '@/features/trading/model/mark';
 import { defaultConfig, defaultView } from './defaults';
-import type { DerivedRow, RowMetrics } from './derive';
 import type { Leg, LegId, SimPosition } from './leg';
 import { SIM_POSITION_SCHEMA_VERSION } from './leg';
 import { liftLegacyRecord } from './migrate';
@@ -193,9 +192,9 @@ export const ALL_FIXTURES: Readonly<Record<string, SimPosition>> = {
 
 // ---- Render-path helpers ------------------------------------------------------------------------
 //
-// The render path consumes a `PositionView` inside a `DerivedRow`. These builders route through the
-// SAME `liftLegacyRecord` + `buildPositionView` the hook uses, so a spec can never construct a row
-// the application itself could not produce.
+// The render path AND the derivation pipeline both consume a `PositionView`. These builders route
+// through the SAME `liftLegacyRecord` + `buildPositionView` the hook uses, so a spec can never
+// construct a projection the application itself could not produce.
 
 /** A resolved snapshot mark. Every leg gets this unless a spec says otherwise. */
 export const FX_MARK: MarkResult = { mark: 6.2, basis: 'snapshot', frozen: false };
@@ -222,9 +221,9 @@ export function viewOf(
 }
 
 /**
- * The legacy v2 stand-in a `DerivedRow` still carries until the F18 cutover. TRANSITIONAL TEST SHIM:
- * nothing in the render path reads it after F11 (the projection is the only source), but the
- * filter/sort pipeline still types against it.
+ * A v2 `Position` built back out of a `SimPosition`. TRANSITIONAL TEST SHIM for the specs that still
+ * need to hand a legacy record to the store / the lift; nothing in the render path or the derivation
+ * pipeline reads it any more.
  */
 export function legacyShimOf(p: SimPosition): Position {
   const [l] = p.legs;
@@ -249,46 +248,18 @@ export function legacyShimOf(p: SimPosition): Position {
   };
 }
 
-/** A `DerivedRow` over a `SimPosition` fixture. */
-export function rowOfSim(
-  p: SimPosition,
+/** The projection over a legacy v2 `Position`, lifted exactly as the hook lifts it. */
+export function viewOfLegacy(
+  p: Position,
   opts: {
     marks?: ReadonlyMap<LegId, MarkResult | null>;
     mark?: MarkResult | null;
     dte?: number | null;
-    metrics?: Partial<RowMetrics>;
   } = {},
-): DerivedRow {
-  const view = viewOf(p, opts);
-  return {
-    position: legacyShimOf(p),
-    structure: view.structure,
-    view,
-    metrics: {
-      id: p.id,
-      plDollar: view.pl_dollar,
-      plPct: view.pl_pct.kind === 'value' ? view.pl_pct.value : null,
-      unavailable: view.mark.unavailable,
-      deltaEntry: view.pl_dollar,
-      sessionDelta: null,
-      dte: view.dte,
-      ...opts.metrics,
-    },
-  };
-}
-
-/** A `DerivedRow` over a legacy v2 `Position`, lifted exactly as the hook lifts it. */
-export function rowOfLegacy(
-  p: Position,
-  opts: {
-    mark?: MarkResult | null;
-    dte?: number | null;
-    metrics?: Partial<RowMetrics>;
-  } = {},
-): DerivedRow {
+): PositionView {
   const sim = liftLegacyRecord(p);
   if (sim == null) throw new Error(`fixture position ${p.id} could not be lifted`);
-  return { ...rowOfSim(sim, opts), position: p };
+  return viewOf(sim, opts);
 }
 
 // ---- Durable-source fixtures -------------------------------------------------------------------

@@ -22,10 +22,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { theme } from '@/shared/theme/theme';
-import type { DerivedGroup, DerivedRow } from './derive';
-import { rowOfLegacy } from './fixtures';
+import type { DerivedGroup } from './derive';
+import { viewOfLegacy } from './fixtures';
 import { PositionsView, type ViewProps } from './PositionsView';
 import type { Position } from './types';
+import type { PositionView } from './view';
 
 afterEach(() => {
   cleanup();
@@ -54,21 +55,12 @@ function pos(over: Partial<Position> = {}): Position {
   };
 }
 
-function rowOf(p: Position): DerivedRow {
-  return rowOfLegacy(p, {
-    metrics: {
-      plDollar: p.status === 'open' ? 120 : null,
-      plPct: p.status === 'open' ? 24 : null,
-      unavailable: false,
-      deltaEntry: p.status === 'open' ? 120 : null,
-      sessionDelta: null,
-      dte: 24,
-    },
-  });
+function rowOf(p: Position): PositionView {
+  return viewOfLegacy(p, { dte: 24 });
 }
 
-function groupsOf(rows: DerivedRow[]): DerivedGroup[] {
-  return [{ key: '__all__', label: 'All', rows, subtotal: 120, excludedCount: 0 }];
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 120, excludedCount: 0 }];
 }
 
 function props(over: Partial<ViewProps> = {}): ViewProps {

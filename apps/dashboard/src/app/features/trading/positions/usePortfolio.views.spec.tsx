@@ -207,7 +207,7 @@ describe('usePortfolio · degraded states (live-vs-static-isolation)', () => {
     putPosition(pos({ id: 'gone', strike: 440 }));
     await mount({ live: liveUpdate() });
 
-    const [group] = deriveGroups(pf.rows, {
+    const [group] = deriveGroups(pf.views, {
       filter: { ticker: null, status: ['open'], structure: null, expiry: null },
       sortKey: 'pl_dollar',
       sortDir: 'desc',

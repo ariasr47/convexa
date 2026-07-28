@@ -38,15 +38,15 @@ import { LiveTabPanel } from './LiveTabPanel';
 import liveTabSource from './LiveTabPanel?raw';
 import { PortfolioPanel } from './PortfolioPanel';
 import { PositionsView, type ViewProps } from './PositionsView';
-import type { DerivedGroup, DerivedRow } from './derive';
+import type { DerivedGroup } from './derive';
 import {
   FX_PROTECTIVE_PUT,
   FX_SHARES_LONG,
   FX_SHORT_CALL,
   FX_ZERO_COST_COLLAR,
   MALFORMED_LEGACY_RECORD,
-  rowOfLegacy,
-  rowOfSim,
+  viewOf,
+  viewOfLegacy,
 } from './fixtures';
 import { MAX_LOSS_WITHHELD_META } from './labels';
 import {
@@ -60,6 +60,7 @@ import {
 } from './store';
 import type { Position } from './types';
 import { usePortfolio } from './usePortfolio';
+import type { PositionView } from './view';
 
 const theme = createTheme();
 
@@ -738,18 +739,18 @@ function stubViewport(width: number) {
   );
 }
 
-function groupsOf(rows: DerivedRow[]): DerivedGroup[] {
-  return [{ key: '__all__', label: 'All', rows, subtotal: 0, excludedCount: 0 }];
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }];
 }
 
-function viewProps(rows: DerivedRow[], over: Partial<ViewProps> = {}): ViewProps {
+function viewProps(views: PositionView[], over: Partial<ViewProps> = {}): ViewProps {
   return {
-    groups: groupsOf(rows),
+    groups: groupsOf(views),
     columns: [],
     layout: 'table',
     density: 'comfortable',
     streamOffline: false,
-    totalCount: rows.length,
+    totalCount: views.length,
     isHistory: false,
     trendFor: () => [],
     onOpenEntry: vi.fn(),
@@ -760,10 +761,10 @@ function viewProps(rows: DerivedRow[], over: Partial<ViewProps> = {}): ViewProps
   };
 }
 
-function renderTable(rows: DerivedRow[], over: Partial<ViewProps> = {}) {
+function renderTable(views: PositionView[], over: Partial<ViewProps> = {}) {
   return render(
     <ThemeProvider theme={themeForPref('dark')}>
-      <PositionsView {...viewProps(rows, over)} />
+      <PositionsView {...viewProps(views, over)} />
     </ThemeProvider>,
   );
 }
@@ -781,10 +782,10 @@ describe('positions · the four not-a-number literals (AC-31)', () => {
 
   it('renders four DISTINCT literals, each independently assertable, none for the meaning of another', () => {
     renderTable([
-      rowOfSim(FX_SHARES_LONG), //                    —            not applicable to the instrument
-      rowOfSim(FX_PROTECTIVE_PUT, { mark: null }), // unavailable  the lookup failed this cycle
-      rowOfLegacy(UNRECORDED_FACTS), //               not recorded the record never held the fact
-      rowOfSim(FX_ZERO_COST_COLLAR), //               no basis     the denominator is about zero
+      viewOf(FX_SHARES_LONG), //                    —            not applicable to the instrument
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }), // unavailable  the lookup failed this cycle
+      viewOfLegacy(UNRECORDED_FACTS), //               not recorded the record never held the fact
+      viewOf(FX_ZERO_COST_COLLAR), //               no basis     the denominator is about zero
     ]);
     expect(screen.getAllByTestId('cell-unavailable').length).toBeGreaterThan(0);
     expect(screen.getByTestId('cell-not-recorded')).toBeInTheDocument();
@@ -801,24 +802,24 @@ describe('positions · the four not-a-number literals (AC-31)', () => {
 
   it('AC-26 — the literal text undefined, null and NaN never appear in any cell', () => {
     renderTable([
-      rowOfSim(FX_SHARES_LONG),
-      rowOfSim(FX_PROTECTIVE_PUT, { mark: null }),
-      rowOfLegacy(UNRECORDED_FACTS),
-      rowOfSim(FX_ZERO_COST_COLLAR),
-      rowOfSim(FX_SHORT_CALL),
+      viewOf(FX_SHARES_LONG),
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
+      viewOfLegacy(UNRECORDED_FACTS),
+      viewOf(FX_ZERO_COST_COLLAR),
+      viewOf(FX_SHORT_CALL),
     ]);
     expect(screen.getByTestId('positions-table').textContent).not.toMatch(/undefined|null|NaN/);
   });
 
   it('AC-31 — `no basis` is a CELL-level state: the dollar P/L beside it still renders a figure', () => {
-    renderTable([rowOfSim(FX_ZERO_COST_COLLAR)]);
+    renderTable([viewOf(FX_ZERO_COST_COLLAR)]);
     const row = screen.getByTestId('position-row');
     expect(within(row).getByTestId('cell-no-basis')).toBeInTheDocument();
     expect(within(row).getByTestId('cell-pl').textContent).toMatch(/[+−]\$\d/);
   });
 
   it('a shares row states NOT-APPLICABLE, never `unavailable` and never `not recorded`', () => {
-    renderTable([rowOfSim(FX_SHARES_LONG)]);
+    renderTable([viewOf(FX_SHARES_LONG)]);
     const row = screen.getByTestId('position-row');
     expect(within(row).queryByTestId('cell-not-recorded')).toBeNull();
     expect(within(row).queryByTestId('cell-unavailable')).toBeNull();
@@ -831,14 +832,14 @@ describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('AC-28 — the risk slot renders an UNSIGNED figure, never +$ or −$', () => {
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     const cell = screen.getByTestId('cell-max-loss');
     expect(cell.textContent).toMatch(/^\$\d/);
     expect(cell.textContent).not.toMatch(/^[+−]/);
   });
 
   it('AC-29 — an ineligible structure renders a reason, never a bare —, never 0, never a number', () => {
-    renderTable([rowOfSim(FX_SHORT_CALL)]);
+    renderTable([viewOf(FX_SHORT_CALL)]);
     const cell = screen.getByTestId('cell-max-loss');
     expect(cell.textContent).toBe(MAX_LOSS_WITHHELD_META.unbounded.label);
     expect(cell.textContent).not.toMatch(/\d/);
@@ -846,7 +847,7 @@ describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
   });
 
   it('AC-29 — `unlimited risk` and `unnamed shape` stay distinguishable, never clipped to a prefix', () => {
-    renderTable([rowOfSim(FX_SHORT_CALL), rowOfLegacy(UNRECORDED_FACTS)]);
+    renderTable([viewOf(FX_SHORT_CALL), viewOfLegacy(UNRECORDED_FACTS)]);
     const texts = screen.getAllByTestId('cell-max-loss').map((n) => n.textContent);
     expect(texts).toHaveLength(2);
     expect(new Set(texts).size).toBe(texts.length);
@@ -854,12 +855,12 @@ describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
   });
 
   it('AC-42/AC-29 — the risk slot NEVER dims: it is STATIC, not live-derived (className identity)', () => {
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     const online = screen.getByTestId('cell-max-loss').className;
     const onlinePl = screen.getByTestId('cell-pl').className;
     cleanup();
 
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)], { streamOffline: true });
+    renderTable([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
     // The live cell DID change (so the guard is not vacuous) and the static risk slot did NOT.
     expect(screen.getByTestId('cell-pl').className).not.toBe(onlinePl);
     expect(screen.getByTestId('cell-max-loss').className).toBe(online);
@@ -869,10 +870,10 @@ describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
     const STATIC = ['structure-line', 'cell-entry', 'cell-qty', 'cell-max-loss', 'cell-structure'];
     const probe = () =>
       STATIC.map((t) => [screen.getByTestId(t).textContent, screen.getByTestId(t).className]);
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     const before = probe();
     cleanup();
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)], { streamOffline: true });
+    renderTable([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
     expect(probe()).toEqual(before);
   });
 });
@@ -882,21 +883,21 @@ describe('positions · the max_loss breakpoint gate (AC-82, GATE Z ruling)', () 
 
   it('renders the column at `lg` and above', () => {
     stubViewport(1280);
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     expect(screen.getByTestId('cell-max-loss')).toBeInTheDocument();
     expect(within(screen.getByTestId('positions-table')).getByText('Max loss')).toBeInTheDocument();
   });
 
   it('OMITS the column at `md` — the ruled band, asserted rather than re-measured', () => {
     stubViewport(900);
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     expect(screen.queryByTestId('cell-max-loss')).toBeNull();
     expect(within(screen.getByTestId('positions-table')).queryByText('Max loss')).toBeNull();
   });
 
   it('below `md` the figure is NOT lost — the card footer carries it (no band loses it silently)', () => {
     stubViewport(393);
-    renderTable([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
     expect(screen.getByTestId('positions-cards')).toBeInTheDocument();
     expect(screen.getByTestId('card-max-loss').textContent).toMatch(/^\$\d/);
   });

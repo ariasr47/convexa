@@ -19,7 +19,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DerivedGroup, DerivedRow } from './derive';
+import type { DerivedGroup } from './derive';
 import {
   FX_CALENDAR,
   FX_IRON_CONDOR,
@@ -28,25 +28,26 @@ import {
   FX_SHARES_LONG,
   FX_SHORT_CALL,
   FX_SHORT_VERTICAL,
-  rowOfSim,
+  viewOf,
 } from './fixtures';
 import { MAX_LOSS_WITHHELD_META } from './labels';
 import { PositionsView, type ViewProps } from './PositionsView';
+import type { PositionView } from './view';
 
-function groupsOf(rows: DerivedRow[]): DerivedGroup[] {
-  return [{ key: '__all__', label: 'All', rows, subtotal: 0, excludedCount: 0 }];
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }];
 }
 
-function renderCards(rows: DerivedRow[], over: Partial<ViewProps> = {}) {
+function renderCards(views: PositionView[], over: Partial<ViewProps> = {}) {
   return render(
     <ThemeProvider theme={themeForPref('dark')}>
       <PositionsView
-        groups={groupsOf(rows)}
+        groups={groupsOf(views)}
         columns={[]}
         layout="card"
         density="comfortable"
         streamOffline={false}
-        totalCount={rows.length}
+        totalCount={views.length}
         isHistory={false}
         trendFor={() => []}
         onOpenEntry={vi.fn()}
@@ -67,7 +68,7 @@ afterEach(() => cleanup());
 
 describe('the position card at 393px', () => {
   it('the footer has EXACTLY five items for both a 1-leg and a 4-leg position', () => {
-    renderCards([rowOfSim(FX_LONG_CALL), rowOfSim(FX_IRON_CONDOR)]);
+    renderCards([viewOf(FX_LONG_CALL), viewOf(FX_IRON_CONDOR)]);
     const [oneLeg, fourLeg] = screen.getAllByTestId('position-card');
     expect(footerItems(oneLeg)).toHaveLength(5);
     expect(footerItems(fourLeg)).toHaveLength(5);
@@ -77,7 +78,7 @@ describe('the position card at 393px', () => {
   });
 
   it('AC-30 — the collapsed card carries AT MOST ONE risk figure or reason, never three', () => {
-    renderCards([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderCards([viewOf(FX_PROTECTIVE_PUT)]);
     const card = screen.getByTestId('position-card');
     expect(within(card).getAllByTestId('card-max-loss')).toHaveLength(1);
     expect(within(card).getByTestId('card-max-loss').textContent).toMatch(/^\$\d+$/);
@@ -86,7 +87,7 @@ describe('the position card at 393px', () => {
   });
 
   it('AC-30 — leg count changes ONE label and nothing else in the COLLAPSED card', () => {
-    renderCards([rowOfSim(FX_LONG_CALL), rowOfSim(FX_IRON_CONDOR)]);
+    renderCards([viewOf(FX_LONG_CALL), viewOf(FX_IRON_CONDOR)]);
     const [oneLeg, fourLeg] = screen.getAllByTestId('position-card');
     // No leg content is visible in either collapsed card.
     for (const card of [oneLeg, fourLeg]) {
@@ -105,7 +106,7 @@ describe('the position card at 393px', () => {
   });
 
   it('AC-33 — a shares card reads `100 sh`, carries the Shares chip, and shows — for the expiry', () => {
-    renderCards([rowOfSim(FX_SHARES_LONG)]);
+    renderCards([viewOf(FX_SHARES_LONG)]);
     const card = screen.getByTestId('position-card');
     expect(card.textContent).toMatch(/100 sh/);
     expect(within(card).getByTestId('card-structure-chip').textContent).toBe('Shares');
@@ -114,7 +115,7 @@ describe('the position card at 393px', () => {
   });
 
   it('AC-34 — the entry slot reads Net debit / Net credit from the SIGN; `Cost` appears nowhere', () => {
-    renderCards([rowOfSim(FX_PROTECTIVE_PUT), rowOfSim(FX_SHORT_VERTICAL)]);
+    renderCards([viewOf(FX_PROTECTIVE_PUT), viewOf(FX_SHORT_VERTICAL)]);
     const [debit, credit] = screen.getAllByTestId('position-card');
     expect(footerItems(debit)[1].textContent).toMatch(/^Net debit \$\d+$/);
     expect(footerItems(credit)[1].textContent).toMatch(/^Net credit \$\d+$/);
@@ -124,7 +125,7 @@ describe('the position card at 393px', () => {
   });
 
   it('the structure line gets minWidth 0 + ellipsis while the chip never shrinks', () => {
-    renderCards([rowOfSim(FX_IRON_CONDOR)]);
+    renderCards([viewOf(FX_IRON_CONDOR)]);
     const line = getComputedStyle(screen.getByTestId('card-structure-line'));
     const chip = getComputedStyle(screen.getByTestId('card-structure-chip'));
     expect(parseFloat(line.minWidth)).toBe(0);
@@ -134,7 +135,7 @@ describe('the position card at 393px', () => {
   });
 
   it('multi-expiry shows the NEAREST expiry with a `+1 more` suffix — never two dates in one slot', () => {
-    renderCards([rowOfSim(FX_CALENDAR)]);
+    renderCards([viewOf(FX_CALENDAR)]);
     const slot = footerItems(screen.getByTestId('position-card'))[3].textContent as string;
     expect(slot).toMatch(/\+1 more$/);
     // Exactly ONE date in the slot.
@@ -142,7 +143,7 @@ describe('the position card at 393px', () => {
   });
 
   it('the risk slot answers with ONE stated reason when the structure is ineligible', () => {
-    renderCards([rowOfSim(FX_SHORT_CALL)]);
+    renderCards([viewOf(FX_SHORT_CALL)]);
     const slot = screen.getByTestId('card-max-loss');
     expect(slot.textContent).toBe(MAX_LOSS_WITHHELD_META.unbounded.label);
     expect(slot.textContent).not.toMatch(/\d/);
@@ -150,7 +151,7 @@ describe('the position card at 393px', () => {
 
   it('AC-79 — the disclosure button is ≥44px tall and its expansion stacks one line per leg', async () => {
     const user = userEvent.setup();
-    renderCards([rowOfSim(FX_IRON_CONDOR)]);
+    renderCards([viewOf(FX_IRON_CONDOR)]);
     const btn = screen.getByTestId('leg-disclosure-toggle');
     expect(btn.tagName).toBe('BUTTON');
     expect(parseFloat(getComputedStyle(btn).minHeight)).toBeGreaterThanOrEqual(44);
@@ -176,10 +177,10 @@ describe('the position card at 393px', () => {
       netEntry: screen.getByTestId('card-net-entry').className,
       chip: screen.getByTestId('card-structure-chip').className,
     });
-    renderCards([rowOfSim(FX_PROTECTIVE_PUT)]);
+    renderCards([viewOf(FX_PROTECTIVE_PUT)]);
     const online = probe();
     cleanup();
-    renderCards([rowOfSim(FX_PROTECTIVE_PUT)], { streamOffline: true });
+    renderCards([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
     const offline = probe();
 
     expect(offline.pl).not.toBe(online.pl); // the guard is not vacuous
@@ -192,7 +193,7 @@ describe('the position card at 393px', () => {
   });
 
   it('stat values are never headings (the 29-<h6> regression cannot return)', () => {
-    renderCards([rowOfSim(FX_PROTECTIVE_PUT), rowOfSim(FX_IRON_CONDOR)]);
+    renderCards([viewOf(FX_PROTECTIVE_PUT), viewOf(FX_IRON_CONDOR)]);
     expect(
       screen.getByTestId('positions-cards').querySelectorAll('h1,h2,h3,h4,h5,h6'),
     ).toHaveLength(0);

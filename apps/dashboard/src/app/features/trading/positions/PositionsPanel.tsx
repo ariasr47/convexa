@@ -85,13 +85,14 @@ export function PositionsPanel({
   const { working } = pf;
   const groups = useMemo(
     () =>
-      deriveGroups(pf.rows, {
+      deriveGroups(pf.views, {
         filter: working.filter,
         sortKey: working.sortKey,
         sortDir: working.sortDir,
         group: working.group,
+        sessionDeltaOf: pf.sessionDeltaFor,
       }),
-    [pf.rows, working.filter, working.sortKey, working.sortDir, working.group],
+    [pf.views, pf.sessionDeltaFor, working.filter, working.sortKey, working.sortDir, working.group],
   );
 
   const strikeList = Array.from(
@@ -146,6 +147,7 @@ export function PositionsPanel({
         totalCount={pf.positions.length}
         isHistory={isHistoryFilter(working.filter.status)}
         trendFor={pf.trendFor}
+        sessionDeltaFor={pf.sessionDeltaFor}
         onOpenEntry={onRequestOpenEntry}
         onClearFilter={() =>
           pf.setFilter({ ticker: null, structure: null, expiry: null, status: ['open'] })

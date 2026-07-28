@@ -20,7 +20,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DerivedGroup, DerivedRow } from './derive';
+import type { DerivedGroup } from './derive';
 import {
   FX_CALENDAR,
   FX_IRON_CONDOR,
@@ -28,24 +28,25 @@ import {
   FX_MARK,
   FX_SHORT_CALL,
   FX_SHORT_VERTICAL,
-  rowOfSim,
+  viewOf,
 } from './fixtures';
 import { MAX_LOSS_ASSUMPTION, MAX_LOSS_WITHHELD_META } from './labels';
 import type { LegId } from './leg';
 import { PositionsView, type ViewProps } from './PositionsView';
+import type { PositionView } from './view';
 
-function groupsOf(rows: DerivedRow[]): DerivedGroup[] {
-  return [{ key: '__all__', label: 'All', rows, subtotal: 0, excludedCount: 0 }];
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }];
 }
 
-function props(rows: DerivedRow[], over: Partial<ViewProps> = {}): ViewProps {
+function props(views: PositionView[], over: Partial<ViewProps> = {}): ViewProps {
   return {
-    groups: groupsOf(rows),
+    groups: groupsOf(views),
     columns: [],
     layout: 'table',
     density: 'comfortable',
     streamOffline: false,
-    totalCount: rows.length,
+    totalCount: views.length,
     isHistory: false,
     trendFor: () => [],
     onOpenEntry: vi.fn(),
@@ -56,10 +57,10 @@ function props(rows: DerivedRow[], over: Partial<ViewProps> = {}): ViewProps {
   };
 }
 
-function renderRows(rows: DerivedRow[], over: Partial<ViewProps> = {}) {
+function renderRows(views: PositionView[], over: Partial<ViewProps> = {}) {
   return render(
     <ThemeProvider theme={themeForPref('dark')}>
-      <PositionsView {...props(rows, over)} />
+      <PositionsView {...props(views, over)} />
     </ThemeProvider>,
   );
 }
@@ -69,18 +70,18 @@ afterEach(() => cleanup());
 
 describe('the leg disclosure', () => {
   it('AC-35 — appears ONLY when a position has more than one leg', () => {
-    renderRows([rowOfSim(FX_LONG_CALL), rowOfSim(FX_SHORT_CALL)]);
+    renderRows([viewOf(FX_LONG_CALL), viewOf(FX_SHORT_CALL)]);
     expect(screen.queryByTestId('leg-disclosure-toggle')).toBeNull();
     expect(screen.queryByTestId('leg-disclosure-panel')).toBeNull();
     cleanup();
 
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     expect(screen.getByTestId('leg-disclosure-toggle')).toBeInTheDocument();
   });
 
   it('AC-35 — one line per leg, with side as a WORD, size, instrument, expiry and that leg`s own mark', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_IRON_CONDOR)]);
+    renderRows([viewOf(FX_IRON_CONDOR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
 
     const lines = screen.getAllByTestId('leg-line');
@@ -97,7 +98,7 @@ describe('the leg disclosure', () => {
 
   it('AC-12 — legs carry NO actions: no button, no link, no per-leg Close or Cancel', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_IRON_CONDOR)]);
+    renderRows([viewOf(FX_IRON_CONDOR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     for (const line of screen.getAllByTestId('leg-line')) {
       expect(within(line).queryByRole('button')).toBeNull();
@@ -109,7 +110,7 @@ describe('the leg disclosure', () => {
 
   it('carries NO per-leg P/L — it would invite the partial-sum reading the all-or-nothing rule bans', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_IRON_CONDOR)]);
+    renderRows([viewOf(FX_IRON_CONDOR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     const list = screen.getByTestId('leg-list');
     // A per-leg P/L would necessarily render a SIGNED dollar figure. None exists.
@@ -126,7 +127,7 @@ describe('the leg disclosure', () => {
       [first.id, null],
       ...rest.map((l) => [l.id, FX_MARK] as const),
     ]);
-    renderRows([rowOfSim(FX_IRON_CONDOR, { marks })]);
+    renderRows([viewOf(FX_IRON_CONDOR, { marks })]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
 
     const legMarks = screen.getAllByTestId('leg-mark').map((n) => n.textContent);
@@ -138,7 +139,7 @@ describe('the leg disclosure', () => {
 
   it('AC-79 — the control is a real <button> with aria-expanded and a RESOLVING aria-controls', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     const btn = screen.getByTestId('leg-disclosure-toggle');
     expect(btn.tagName).toBe('BUTTON');
     expect(btn.getAttribute('aria-expanded')).toBe('false');
@@ -156,7 +157,7 @@ describe('the leg disclosure', () => {
 
   it('AC-79 — keyboard-operable: Enter AND Space both toggle it, and it takes focus', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     const btn = screen.getByTestId('leg-disclosure-toggle');
     btn.focus();
     expect(document.activeElement).toBe(btn);
@@ -174,7 +175,7 @@ describe('the leg disclosure', () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     localStorage.setItem('probe', 'sentinel');
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     const before = JSON.stringify({ ...localStorage });
 
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
@@ -187,25 +188,25 @@ describe('the leg disclosure', () => {
 
   it('AC-36 — the state is EPHEMERAL: a re-mount comes back collapsed', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     expect(screen.getByTestId('leg-disclosure-toggle').getAttribute('aria-expanded')).toBe('true');
     cleanup();
 
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]); // "reload"
+    renderRows([viewOf(FX_SHORT_VERTICAL)]); // "reload"
     expect(screen.getByTestId('leg-disclosure-toggle').getAttribute('aria-expanded')).toBe('false');
   });
 
   it('renders the max-loss ASSUMPTION when a figure exists, and the reason`s own words when it does not', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]); // a defined-risk credit spread ⇒ a figure
+    renderRows([viewOf(FX_SHORT_VERTICAL)]); // a defined-risk credit spread ⇒ a figure
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     expect(screen.getByTestId('leg-max-loss-note').textContent).toBe(MAX_LOSS_ASSUMPTION);
     cleanup();
 
     // A calendar's legs do not expire together ⇒ withheld, with its OWN stated reason, never the
     // assumption sentence and never a bare blank.
-    renderRows([rowOfSim(FX_CALENDAR)]);
+    renderRows([viewOf(FX_CALENDAR)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     expect(screen.getByTestId('leg-max-loss-note').textContent).toBe(
       MAX_LOSS_WITHHELD_META.multi_expiration.tip,
@@ -215,7 +216,7 @@ describe('the leg disclosure', () => {
 
   it('is INSTANT — no animation, no transition, no accordion on the panel', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     const panel = screen.getByTestId('leg-disclosure-panel');
     const cs = getComputedStyle(panel);
@@ -228,7 +229,7 @@ describe('the leg disclosure', () => {
 
   it('the table expansion is a REAL sibling <tr> spanning every column (a real table structure)', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     const panelRow = screen.getByTestId('leg-disclosure-row');
     expect(panelRow.tagName).toBe('TR');
@@ -240,7 +241,7 @@ describe('the leg disclosure', () => {
 
   it('leg text sits above the 11px floor (AC-79)', async () => {
     const user = userEvent.setup();
-    renderRows([rowOfSim(FX_SHORT_VERTICAL)]);
+    renderRows([viewOf(FX_SHORT_VERTICAL)]);
     await user.click(screen.getByTestId('leg-disclosure-toggle'));
     // jsdom does NOT resolve rem, so the declared unit is converted here against the 16px root the
     // theme uses. A bare `parseFloat` would read `0.8rem` as 0.8 and pass this test vacuously.
