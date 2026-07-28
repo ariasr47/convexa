@@ -947,6 +947,17 @@ also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
   asserts no-overflow **only at 393px**, so the `md` boundary has never been covered. Fix is two parts —
   the page-level overflow itself, and **extending the no-overflow e2e route set to the `md` breakpoint**
   so it cannot regress unobserved again. Small, unscheduled; do NOT fold it into `positions-legs`.
+  **Corrected 2026-07-28 (phase 3 A/B against a worktree at `6f0a2ae`, identical seed):** the **table**
+  at `md` was ALREADY 998 vs an 835 host before `positions-legs` phase 3 — the earlier "without the
+  column it fits" reading was wrong. Phase 3 takes it to 1027 (~29px, the wider `Net entry` copy). The
+  **page** figure is the byte-identical one. So the `md` band was broken before this feature arrived,
+  which is why the `lg`-and-above ruling stands on stronger ground than when it was made.
+- **Fixed in passing (`positions-legs` phase 3), worth knowing it was ever broken:** the shipped
+  `formatExpiry` **crashed the `/positions` page to a white screen** on any record with no
+  `expiration` (`p.expiration.split` on `undefined`) — found because a pre-phase-3 build white-screened
+  on a seeded book. Superseded by the three-way expiry cell. No durable data was at risk, but it is a
+  reminder that the positions surface had **no negative-space coverage for a malformed record** before
+  this feature; that coverage now exists (the four not-a-number literals).
 - **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
   `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
   hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".

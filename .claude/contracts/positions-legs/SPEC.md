@@ -690,7 +690,7 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 27 | As a trader I want to know what a percentage is measured against | The P/L% column header carries a basis-aware tip and each row's P/L% cell tip names **that row's** basis (net debit vs net credit). No new column is added | review |
 | 28 | As a defined-risk trader I want to know what I can lose | Each of the **15** structures in the eligible set (§2.4) shows **one** max-loss figure in the risk slot, rendered **unsigned** (`$560`, never `+$560`/`−$560`), with its at-expiration assumption disclosed (held to expiration, excludes fees, slippage, assignment and taxes). This includes a plain long call, a long put, a short put and 100 long shares — not only the multi-leg structures | test |
 | 29 | As a trader with an unbounded or multi-expiry shape I want honesty, not a number | Every other structure — `Custom`, any structurally unbounded shape (`short_call`, `short_straddle`, `short_strangle`, `shares_short`), `calendar`, `diagonal` — shows **no figure and one short stated reason** in the risk slot (`unlimited risk` · `mixed expiries` · `unnamed shape`): never blank, never `0`, never a bare `—`, never the word `Unlimited` standing alone as a figure, never a computed number | test |
-| 30 | As a mobile trader I want the card to stay a scan surface | The collapsed card carries **at most one** risk figure (or its one reason), never three; `/positions` keeps `scrollWidth ≤ innerWidth` at 393px in both colour schemes, including with a 4-leg disclosure expanded | test |
+| 30 | As a mobile trader I want the card to stay a scan surface | The collapsed card carries **at most one** risk figure (or its one reason), never three; `/positions` keeps `scrollWidth ≤ innerWidth` at 393px in both colour schemes, including with a 4-leg disclosure expanded | test — **browser check verified at V7**, not in phase 3 (multi-leg is unrepresentable until the store can hold it at F15/F18, and jsdom measures every box at 0, so neither the unit nor the browser check is possible earlier). **GATE Q should look for it in V7's full-page integration over a seeded durable store.** The AC itself is unweakened |
 | 31 | As a trader I want four different truths to look different | `—` (not applicable), `unavailable` (failed this cycle), `not recorded` (the saved record never held this fact) and `no basis` (the denominator is about zero, while the dollar P/L beside it still renders) are **four** distinct literals, each independently assertable — three by their own testid (`cell-unavailable`, `cell-not-recorded`, `cell-no-basis`) and `—` by its shipped treatment — and none is ever rendered for another's meaning | test |
 | 32 | As an old user I don't want a permanent lie about transience | A record that can never be priced renders `unavailable` with the permanent tip (`UNPRICEABLE_RECORD_TIP`), not the this-cycle tip; it is excluded from the group subtotal and counted in `· N positions excluded (unavailable)`; it is still listed, still closable, never hidden, never pruned | review |
 | 33 | As a share holder I want empty cells to be legible | A shares position renders `—` (not blank, not `N/A`, not `0`) in strike / right / expiry / DTE, carries a `Shares` chip, and its qty reads `100 sh` | review |
@@ -929,22 +929,45 @@ silent squeeze** and not a unilateral re-layout of the table.
 **GATE Z bounce — RULED 2026-07-28 (conductor default-with-veto): the column renders at `lg` and above,
 and is not rendered at `md` and below.** The build lane measured the real render in a browser (Cypress,
 seeded 4-row portfolio, dark + light, `comfortable` + `compact`): `max_loss` **fits at 1440px and
-1280px**, but **at 900px the table overflows its host — 895 vs 835**, where without the column it fits.
-The lane bounced instead of squeezing, and shipped the key, label, partition entry and cell renderer
-while deliberately leaving `max_loss` out of `FIGMA_COLUMNS`, pinned by a `defaults.spec.ts` assertion
-so the next task must consciously invert it. Two reasons this is the constraint being **met, not
-compromised**:
+1280px**, but **at 900px the table overflows its host**. The lane bounced instead of squeezing, and
+shipped the key, label, partition entry and cell renderer while deliberately leaving `max_loss` out of
+`FIGMA_COLUMNS`, pinned by a `defaults.spec.ts` assertion so the next task must consciously invert it.
+Two reasons this is the constraint being **met, not compromised**:
 
 1. **The constraint above requires fitting "every shipped breakpoint above `md`".** MUI's `md` is
    900px, so `lg` (1280) and 1440 both qualify and both pass. The failure is **at** `md`, which the
    constraint never covered — the lane over-tested, which is how we learned this. And below `sm` the
    table has already collapsed to cards, where the figure has its own home (slot 5), so the only band
    without the figure in the table is `md`–`lg`.
-2. **The `md` boundary is already broken, independently of this feature.** The lane measured
-   `/positions` overflowing at 900px (`scrollWidth` 965 vs 900) **byte-identically with and without the
-   column**. Hiding the column there is the honest response to a pre-existing defect, not a workaround
-   for a regression of ours. **That page-level overflow is logged separately and is explicitly NOT in
-   this feature's scope** — do not widen this release to fix it.
+2. **The `md` boundary is already broken, independently of this feature.** `/positions` overflows at
+   900px (`scrollWidth` 965 vs 900) **byte-identically with and without the column**. Hiding the column
+   there is the honest response to a pre-existing defect, not a workaround for a regression of ours.
+   **That page-level overflow is logged separately and is explicitly NOT in this feature's scope** — do
+   not widen this release to fix it.
+
+**Correction to this block's own measurement claim (phase 3, A/B'd against a worktree at `6f0a2ae`
+with an identical four-record seed).** It previously recorded the `md` table overflow as *895 vs 835,
+where without the column it fits*. **That was wrong.** The measured truth: at `md` the **table** was
+**already overflowing before this feature — 998 against an 835 host** — and after phase 3 it is
+**1027**, i.e. this work adds ~29px, through the wider `Net entry` copy rather than the column. The
+**page**-level figure is unchanged and exactly as logged above (965 vs 900, byte-identical with and
+without the column). **The ruling is unaffected and in fact stands on stronger ground than when it was
+made:** `md` was already broken before we arrived, so hiding the column there withholds a figure from a
+band that was already failing rather than conceding one that was passing. Recorded as a correction
+rather than an edit because the compounding memory has to track *truth*, not just recurrence.
+
+**Measured fit headroom at `lg`+ — 10px. Treat this as a standing constraint, not a footnote.** The
+column passes, but not comfortably. Measured: the page caps the table host at **1190px at both 1440 and
+1280**; table `scrollWidth` is **1190** — no scroll, nothing shrunk, nothing below the 11px floor, both
+densities, both colour schemes. Probing min-content gave **1180 against that 1190 host — 10px of
+slack**. Substituting each withheld-reason label in turn: `unlimited risk` **1166** · `mixed expiries`
+**1171** · `unnamed shape` **1180**, the widest. So **the longest string this feature's copy can ever
+produce fits, with 10px to spare** — which is a documented tightness, not a squeeze.
+
+**Therefore: any future column, and any copy change that lengthens a withheld-reason label or a
+figure, MUST re-measure at 1280 before it lands.** A longer ticker or a five-figure P/L eats that
+margin. A change that consumes it is a GATE Z bounce under the rule above, not a judgement call at
+build time.
 
 ### Banner region — the collision rule
 
@@ -987,8 +1010,9 @@ not read this banner will lose a trade.
 | Surface | Today | New |
 |---|---|---|
 | `entry` column header | `Entry` | **`Net entry`** |
-| `entry` cell, debit | `$8.40` | **`$8.40 debit`** |
-| `entry` cell, credit | *(unrepresentable)* | **`$1.15 credit`** |
+| `entry` cell, debit | `$8.40` (per-unit) | **`$1830 debit`** — the **dollar net**, unsigned |
+| `entry` cell, credit | *(unrepresentable)* | **`$115 credit`** — the **dollar net**, unsigned |
+| `mark` cell | `$8.60` (per-unit) | **`$1860`** — the **dollar net**, unsigned |
 | Card footer | `Entry $8.40` | **`Net debit $840`** / **`Net credit $115`** |
 | Dialog, manual | `… · Cost $840 — user-entered, not a market quote.` | `Opens at your price $8.40 · **Net debit $840** — user-entered, not a market quote.` |
 | Dialog, credit structure | — | `Opens at your price $1.15 · **Net credit $115** — you receive this at open.` |
@@ -999,6 +1023,31 @@ not read this banner will lose a trade.
 
 The qualifier word is **derived from the sign, never from the structure name** — a vertical can be
 either. **No abbreviation** (`Dr`/`Cr`/`db`): abbreviating into an 11px floor is a slop tell.
+
+**RULED 2026-07-28 — the `Net entry` and `Mark` table cells render DOLLAR NETS, not per-unit prices.**
+The lane surfaced a real contradiction inside this section (the copy table showed a per-unit `$8.40
+debit` while the build plan specified `money(|net|)`) rather than picking silently; dollar nets ship.
+Three reasons, in order of weight:
+
+1. **A per-unit price is undefined for a mixed structure.** A covered call has an equity leg and an
+   option leg; there is no single per-unit number that means anything. Per-unit would give a column
+   that means different things in different rows — **the exact defect class this feature exists to
+   remove.**
+2. **The row becomes arithmetically legible:** `mark − net entry = P/L`, checkable by eye. On a money
+   screen that is worth real money.
+3. The projection carries only dollar nets, so this is also the honest reading of what the data is.
+
+**Reversible, at a stated cost:** restoring a per-unit reading would require a `net_entry_per_unit`
+field on the `PositionView` projection. Recorded here so a later reversal is a known change rather
+than a rediscovery.
+
+**The formatter is unsigned, and this is not a detail.** The shipped `money()` prefixes a sign
+(`+$840` / `−$840`), so using it here would render **`+$840 debit`** — a sign and a qualifier word
+making the same claim twice, and disagreeing whenever the sign convention and the debit/credit word
+point opposite ways. **Direction is carried by the qualifier word alone** (`debit` / `credit`); the
+figure is unsigned. This is the same unsigned rule the risk slot already binds (§2.4) and for the same
+reason. The dialog's per-unit strings (`Opens at your price $8.40 · …`) are unaffected — a per-unit
+price is well defined for a single leg the trader just typed.
 
 **Qty, unit-aware** — option: `2 ×`, tip *"2 contracts — 100 shares each."* · equity: **`100 sh`**,
 tip *"100 shares."* · mixed (covered call): the structure-level unit `1 ×`, tip *"1 covered call — 100

@@ -30,7 +30,8 @@ Every task's requirements implicitly include this section.
 |---|---|---|---|
 | R1 (original baseline) | 645 | 75 | 15/15 |
 | build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED) | 747 | 79 | 15/15 |
-| **build phase 2 — F5 · F6 · F7 · F8 · F9 (LANDED on `feat/positions-legs`)** | **858** | **84** | **15/15** |
+| build phase 2 — F5 · F6 · F7 · F8 · F9 (LANDED) | 858 | 84 | 15/15 |
+| **build phase 3 — F10 · F11 · F12 · F13 · V2 · V3 (LANDED on `feat/positions-legs`)** | **921** | **88** | **19/19** |
 
 Both phases confirmed: `tsc` clean, lint **0 errors at exactly the pre-existing 29 warnings** (that warning count is itself a baseline — do not add to it), `apps/api` diff empty, nothing pre-existing changed or deleted, and **`convexa.positions.v3` written nowhere** (the cutover is still F18). Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
 
@@ -45,6 +46,16 @@ Both phases confirmed: `tsc` clean, lint **0 errors at exactly the pre-existing 
 **The `max_loss` column must FIT — a squeeze is a bounce.** If `max_loss` cannot sit inside the existing framed-table treatment at **both** shipped densities (`comfortable`, `compact`) and **every** shipped breakpoint above `md` without shrinking another column below its design width, without horizontal scroll on desktop, without truncating `unlimited risk` / `unnamed shape` into a shared prefix or an ellipsis that reads as data, and without dropping any text below the 11px floor — **STOP and raise a GATE Z bounce to the conductor.** Do not silently squeeze, do not unilaterally re-lay-out the table, do not shorten the withheld-reason labels. This is an escalation instruction, not a footnote (spec §4 *The risk slot*, `_MANIFEST.md` Lane instruction).
 
 > **✅ THE BOUNCE HAPPENED AND IS RULED (build phase 2): the column renders at `lg` and above, not at `md` and below.** The escalation above worked exactly as intended — the lane measured, bounced rather than squeezed, and shipped everything except the `FIGMA_COLUMNS` entry. **The rule stands unchanged for every remaining task**; the ruling narrows *where* the column renders, not *whether* a failure escalates. Details and the remaining obligations live in **F11**.
+
+**THE TABLE HAS ~10px OF HEADROOM AT `lg`+. ANY future column, or ANY copy change that lengthens a withheld-reason label or a figure, MUST RE-MEASURE.** Phase 3 measured it precisely: the page caps the table host at **1190px at both 1440 and 1280**, and the table measures **1190** — it passes with nothing shrunk, nothing below 11px, in both densities and both colour schemes. Min-content probes put the true margin at **1180 vs 1190 — 10px**, with the three withheld labels substituted one at a time:
+
+| Substituted label | Min-content width |
+|---|---|
+| `unlimited risk` | 1166 |
+| `mixed expiries` | 1171 |
+| **`unnamed shape`** | **1180** — the widest the copy can produce |
+
+So the longest string this feature's copy can render fits, **barely**. A longer ticker, a five-figure P/L, one more column, or a withheld label a few characters longer eats that margin entirely. **Treat 10px as the budget, re-measure before spending it, and a failure is still a GATE Z bounce — never a squeeze.**
 
 ### Conformance spec
 
@@ -2784,7 +2795,25 @@ The effect fetches each distinct key **once**, storing results in `contractLive:
 
 4. `views = useMemo(() => simPositions.map((p) => buildPositionView({ position: p, legMarks: legMarksFor(p), dte: dteFor(p) })), […])`.
 
-5. Replace the resting-limit effect's `limitWouldFill(liveMark, p.limit_price, true)` with `compositeLimitWouldFill(legMarksFor(p), p, p.limit_price)`.
+5. Replace the resting-limit effect's `limitWouldFill(liveMark, p.limit_price, true)` with the composite check — **but NOT as `compositeLimitWouldFill(legMarksFor(p), p, p.limit_price)`, which is a units bug.**
+
+   ⚠ **CORRECTNESS ITEM (build phase 3). `compositeLimitWouldFill` compares a DOLLAR net against a PER-UNIT limit.** `composePositionMark.net_mark` is a dollar net (`SUM s × mark × multiplier × qty`), while a durable record's `limit_price` is **per-unit** — §4's copy is explicit: `Fills at your limit $8.40 · Net debit $840`. Passing `p.limit_price` straight in compares **$840 of mark against a $4 limit**, so **every shipped resting limit silently stops filling** — a live behaviour break with no error, no throw, and no existing test to catch it.
+
+   Convert at the call site, through the **same leg arithmetic the mark uses**, so the two sides are in the same units by construction:
+
+```ts
+/** A per-unit limit price -> the DOLLAR net the composed mark is measured in. Same arithmetic as
+ *  `legValue`, so a single-leg long option reduces to `mark <= limit` byte-identically. */
+function netLimitOf(p: SimPosition, limitPrice: number): number {
+  return p.legs.reduce((sum, l) => sum + sideSign(l) * limitPrice * l.multiplier * l.qty, 0);
+}
+```
+
+```ts
+if (compositeLimitWouldFill(marks, sp, netLimitOf(sp, sp.limit_price))) { … }
+```
+
+   **The defect is still inside `compositeLimitWouldFill` itself** (`composeMark.ts:107`, `composed.net_mark <= limit`) — this step only stops *this* call site tripping over it. **F15 owns the real fix**, because F15 owns the entry dialog's limit mode and therefore owns the question this units bug is really asking.
 
 6. Add `health: { faulted: positionsFaulted(), unread_sources: [] }` to the return object, computed **synchronously** on every render (localStorage is synchronous, so this is free, and it guarantees no frame ever paints enabled affordances on a faulted store).
 
@@ -2822,9 +2851,11 @@ Build phase 2 measured the column in a real browser (Cypress, seeded 4-row portf
 
 | Viewport | Result |
 |---|---|
-| 1440 | fits |
-| 1280 (`lg`) | fits |
-| **900 (`md`)** | **overflows its host — 895 vs 835**; without the column it fits |
+| 1440 | fits — table 1190 in a 1190 host |
+| 1280 (`lg`) | fits — table 1190 in a 1190 host |
+| **900 (`md`)** | **table overflows its 835 host** |
+
+⚠ **CORRECTED (build phase 3): the `md` overflow is PRE-EXISTING, not caused by this column.** Phase 2 recorded it as *"without the column it fits"* — that was wrong. Phase 3 A/B'd it against a worktree at `6f0a2ae` with an identical seed: the table at `md` measured **998 vs an 835 host BEFORE any of this feature landed**, and 1027 after — so this feature adds ~29px (the wider `Net entry` copy), on top of an overflow that was already 163px. **The ruling is unaffected and better supported:** the column is not the cause, and putting it above `md` neither creates nor worsens the pre-existing condition. The page-level figure is separately logged and unchanged — 965 vs 900, byte-identical with and without the column (V3 Step 3).
 
 The lane correctly bounced rather than squeezing: it shipped every other part of F9 and **deliberately withheld the `FIGMA_COLUMNS` entry**, pinning the deferral with `expect(FIGMA_COLUMNS).not.toContain('max_loss')` in `defaults.spec.ts:78-87` so the next task has to invert it **consciously** rather than drift into it.
 
@@ -2975,7 +3006,7 @@ npx nx serve dashboard
 
 At **`lg` (1280) and 1440**, in **both** `comfortable` and `compact` density, in **both** colour schemes, confirm: no horizontal scroll; no other column shrunk below its design width; `unlimited risk` and `unnamed shape` both fully legible and **distinguishable at a glance**, never clipped to a shared prefix; no text below 11px. Capture a screenshot of each density for the review record.
 
-**Do not re-measure at `md` expecting a pass** — the ruling puts the column above that breakpoint, and phase 2 already measured 895 vs 835 there. Assert instead that the `md` render **omits** the column.
+**Do not re-measure at `md` expecting a pass** — the ruling puts the column above that breakpoint, and the `md` table overflow is **pre-existing** (998 vs an 835 host before this feature; see the corrected table above). Assert instead that the `md` render **omits** the column.
 
 **If any check at `lg` or above fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor** with the screenshots and the specific constraint that could not be met.
 
@@ -3079,7 +3110,8 @@ Spec §4 *The mobile card at 393px*, *Component states*. AC-30, AC-33, AC-34, AC
 ```ts
 it('AC-30 — the collapsed card carries AT MOST ONE risk figure or reason, never three', …)
 it('the footer has EXACTLY five items for both a 1-leg and a 4-leg position', …)
-it('AC-30 — a 1-leg card and a 4-leg card have the same collapsed height', …)
+// AC-30 collapsed-height equality is NOT assertable here — jsdom measures every box at 0, so the
+// comparison passes vacuously. It needs a real browser and a multi-leg record: it lives in V7.
 it('AC-33 — a shares card reads `100 sh`, carries the Shares chip, and shows — for strike/expiry', …)
 it('the structure line gets minWidth 0 + ellipsis while the chip never shrinks', …)
 it('multi-expiry shows the NEAREST expiry with a `+1 more` suffix — never two dates in one slot', …)
@@ -3193,24 +3225,32 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `apps/dashboard-e2e/src/e2e/mobile-no-overflow.cy.ts`
 
-- [ ] **Step 1: Extend the spec**
+- [ ] **Step 1: Extend the spec — the 393px no-overflow guard**
 
-Seed a durable `convexa.positions.v2` blob (via `cy.window().then(w => w.localStorage.setItem(...))` before `cy.visit`) containing a 4-leg iron condor, in **both** colour schemes, at 393×852. Then:
+⚠ **CORRECTED (build phase 3): the 4-leg-EXPANDED assertion is not buildable here, and it has MOVED to V7.** While the durable store is still v2, **a multi-leg position is unrepresentable**: a v2 record *is* one contract, and the ONE lift maps each record to exactly one leg — so `legs.length > 1` cannot occur, and the disclosure control (which exists only when `legs.length > 1`, AC-35) cannot render. Empirically confirmed at 393px against a seeded book: `disclosures: 0`. Multi-leg first exists after **F15** (the entry path) and **F18** (the cutover), so **V7** — the full-page integration over a seeded durable store — is the first honest home for the expanded case.
+
+**V3 stays where it is and still gates.** It validated 393px no-overflow for real, in both colour schemes, and that result stands.
+
+So this step ships the cold-render guard (both schemes, 393×852, seeded book) **plus a live TRIPWIRE** — not a `.skip`, which rots silently:
 
 ```ts
-cy.get('[data-testid="position-card"]').first().find('button[aria-expanded]').click();
-cy.get('[aria-expanded="true"]').should('exist'); // the expansion actually happened
-cy.document().then((doc) => {
-  expect(doc.documentElement.scrollWidth).to.be.at.most(doc.defaultView!.innerWidth);
+it('TRIPWIRE — a multi-leg position is not yet representable in the v2 store, so no disclosure exists', () => {
+  // ASSERTS THE BLOCKING PRECONDITION. It goes RED the moment the store can hold a multi-leg
+  // position (F15/F18), which is the signal to delete this case — the real assertion already
+  // lives in V7. Replacement, for when that happens:
+  //   cy.get('[data-testid="leg-disclosure-toggle"]').first().click();
+  //   cy.get('[aria-expanded="true"]').should('exist');
+  //   cy.document().then((d) => expect(d.documentElement.scrollWidth).to.be.at.most(d.defaultView!.innerWidth));
+  cy.get('[data-testid="leg-disclosure-toggle"]').should('not.exist');
 });
 ```
 
-The `aria-expanded="true"` assertion is not decoration — without it a selector that silently stops matching turns the overflow check vacuous, which is the exact failure mode the extension exists to close.
+**Keep the tripwire.** It is the forcing function that makes the move to V7 impossible to forget; a `.skip` or a TODO comment would not go red and would simply be lost.
 
 - [ ] **Step 2: Run it**
 
 Run: `npx nx e2e dashboard-e2e`
-Expected: 15/15 + the new case. If the expansion overflows, fix the card (slot 5 stacks vertically; never a horizontal mini-table inside a 393px card) — never widen the assertion.
+Expected: green, including the tripwire. If the tripwire goes red, multi-leg has become representable — **delete it and move its replacement assertion into V7**, do not weaken it.
 
 - [ ] **Step 3: Record the pre-existing 900px page overflow — an OBSERVATION, not a gate**
 
@@ -3395,6 +3435,32 @@ Single-underlying is enforced **at construction**, not by the type: an assert at
 `openPosition` mints a `LegId` per leg via `newId()`, builds the `SimPosition`, and keeps exactly one code path for one leg and for six.
 
 An **order trigger still creates a single-option position, exactly as today** — multi-leg simulated orders are out of scope; do not touch `useOrderEngine`.
+
+- [ ] **Step 3b: Fix `compositeLimitWouldFill`, and DECIDE what a limit price means for a structure**
+
+⚠ **CORRECTNESS OBLIGATION, not a cleanup (build phase 3).** `compositeLimitWouldFill` (`composeMark.ts:96-108`) compares `composed.net_mark` — a **dollar** net — against its `limit` parameter, which every caller supplies as a **per-unit** price. F10 papered over this at the one live call site with `netLimitOf`; **the defect is still in the function** and the next caller inherits it. Left alone it silently stops resting limits from filling — no error, no throw, nothing red.
+
+**This task owns the fix because this task owns the limit mode of the entry dialog**, and the units bug is a symptom of a product question that has never been answered:
+
+**Decide, and write the decision into the code as a comment:** *what does a limit price mean for a four-leg structure?* The plausible readings are not interchangeable —
+
+- a **per-unit** price on some designated leg (meaningless for a condor);
+- a **net debit/credit for the whole structure** (what a broker's combo order actually takes, and what §4's `Net debit $840` copy implies);
+- **per-leg limits** (a different feature entirely).
+
+Spec §1 puts **multi-leg simulated ORDERS out of scope**, and §2.5 notes a composite limit can only fill when *every* leg has a live, non-frozen, non-`last_known` mark. So the minimum honest answer is likely: **keep the durable field per-unit, make `compositeLimitWouldFill` take an explicitly-named dollar net, and convert at the boundary** — the F10 shape, promoted from a call-site patch into the function's contract. Rename the parameter so the units are unmissable (`netLimitDollars`, not `limit`), and make a single-leg long option provably reduce to `mark <= limit`.
+
+**If the honest answer turns out to require multi-leg resting limits, that is out of scope (§1) — bounce to the conductor rather than building it here.**
+
+Required tests:
+
+```ts
+it('a per-unit limit is converted to a dollar net before comparison — units cannot be mixed', …)
+it('a single-leg long option still fills exactly when mark <= limit — byte-identical to shipped', …)
+it('a credit structure`s limit compares against a NEGATIVE net, and the sign is not lost', …)
+it('no caller passes a per-unit price into the dollar-net parameter', …)
+  // grep-style guard, or a branded type — the units bug must be unrepresentable, not merely fixed
+```
 
 - [ ] **Step 4: Run the tests and commit**
 
@@ -3870,6 +3936,20 @@ it('AC-51 — the merge notice appears once for a both-surfaces trader and never
 it('AC-76 — every position surface stays labelled SIMULATED; the paper badge and disclosure survive verbatim', …)
 it('AC-70/AC-71 — a position opened on the Ticker page appears in the portfolio, and a close propagates back, without a reload', …)
 ```
+
+**Two cases INHERITED from V3 and V2 — this is the first point they are buildable.** Both need a genuine multi-leg record, which does not exist until F15/F18; V3's tripwire goes red when they become possible, and that red is the signal to land them here.
+
+- **AC-30, the 393px no-overflow with a 4-leg disclosure EXPANDED** (moved from V3 Step 1). It must **expand a leg block before asserting** — the shipped guard only ever measured the cold render, so a 4-leg expansion could overflow while the guard stayed green. Assert `aria-expanded="true"` first, so a selector that silently stops matching cannot make the overflow check vacuous:
+
+```ts
+cy.get('[data-testid="leg-disclosure-toggle"]').first().click();
+cy.get('[aria-expanded="true"]').should('exist');
+cy.document().then((d) => expect(d.documentElement.scrollWidth).to.be.at.most(d.defaultView!.innerWidth));
+```
+
+- **AC-30's collapsed-height equality** — *a card's collapsed height is identical for a 1-leg and a 4-leg position*. **This cannot live in a jsdom component test: jsdom measures every box at 0**, so `getBoundingClientRect().height === height` passes vacuously for any two elements. It needs a **real browser and a multi-leg record**, which only this task has. Measure both cards in the same viewport and compare.
+
+The spec author is annotating **AC-30** to point at V7 as its home — **reference the annotated AC rather than restating the condition from this plan.**
 
 The stale-saved-view case **requires** `STALE_SAVED_VIEW_CUSTOMIZATION` from V1 — that state only exists for a user with pre-existing durable state, which a fresh browser cannot reproduce, so without the fixture the AC is unverifiable at GATE Q.
 
