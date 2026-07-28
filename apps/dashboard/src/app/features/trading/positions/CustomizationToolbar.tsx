@@ -5,7 +5,7 @@
  * Static/durable: untouched by an SSE drop.
  *
  * Re-skin (convexa-redesign · Positions): re-laid-out to the frame — a single controls row (View ·
- * Table/Cards · Comfortable/Compact · Group None/Ticker/Strategy · spacer · the blue "+ Open
+ * Table/Cards · Comfortable/Compact · Group None/Ticker/Structure · spacer · the blue "+ Open
  * simulated position" pill), then a status-pill row (open/pending/closed/cancelled + History + the
  * offline banner). Layout/density/group are segmented pill controls; the saved-view wiring is unchanged.
  * REVISION 2 (owner 2026-06-29): the Sort select + Desc/Asc toggle, the Filters ▾ menu, and the
@@ -13,6 +13,7 @@
  * `derive` sort/filter logic + `working.*` stay in the model (default sort `pl_dollar`/`desc`), only
  * the controls are gone. The Open-CTA handler (`onOpenEntry`, gated upstream) lands here.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import {
   Box,
   Button,
@@ -30,7 +31,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { extrasFor } from '@/shared/theme/tokens';
 import { SAVED_VIEW_TIP } from './labels';
 import type { GroupAxis, Position, PositionStatus } from './types';
 import type { usePortfolio } from './usePortfolio';
@@ -38,12 +38,13 @@ import type { usePortfolio } from './usePortfolio';
 type Portfolio = ReturnType<typeof usePortfolio>;
 
 const STATUSES: PositionStatus[] = ['open', 'pending', 'closed', 'cancelled'];
-// REVISION 2 — Group shows None · Ticker · Strategy only (the inline Expiry option is dropped to match
-// the frame). The `expiry` group axis remains in the model + derive for later; only the UI option goes.
+// REVISION 2 — Group shows None · Ticker · Structure only (the inline Expiry option is dropped to
+// match the frame). The `expiry` axis remains reachable in `derive.ts` for later; only the UI option
+// and the GroupAxis member go (ruling #10).
 const GROUP_AXES: { key: GroupAxis; label: string }[] = [
   { key: 'none', label: 'None' },
   { key: 'ticker', label: 'Ticker' },
-  { key: 'strategy', label: 'Strategy' },
+  { key: 'structure', label: 'Structure' },
 ];
 
 interface ToolbarProps {
@@ -315,7 +316,7 @@ export function CustomizationToolbar({
           onChange={(v) => pf.setWorking({ density: v })}
         />
 
-        {/* Group segmented (None · Ticker · Strategy) — REVISION 2: Expiry option dropped. */}
+        {/* Group segmented (None · Ticker · Structure) — REVISION 2: Expiry option dropped. */}
         <Segmented
           ariaLabel="group"
           testid="group-select"

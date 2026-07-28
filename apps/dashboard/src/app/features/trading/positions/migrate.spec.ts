@@ -21,6 +21,13 @@ import {
   type ParsedSource,
 } from './migrate';
 
+/** Lift, asserting non-null at the call site so the suite carries no `!` assertions. */
+const lift = (raw: unknown) => {
+  const p = liftLegacyRecord(raw);
+  if (p == null) throw new Error('expected liftLegacyRecord to produce a record');
+  return p;
+};
+
 const src = (
   key: string,
   records: unknown[],
@@ -30,42 +37,42 @@ const src = (
 
 describe('liftLegacyRecord — the ONE lift', () => {
   it('AC-48 — keeps ticker, quantity, entry price, entry time and open/closed state', () => {
-    const p = liftLegacyRecord(LEGACY_V2_RECORD);
-    expect(p).not.toBeNull();
-    expect(p!.legs).toHaveLength(1);
-    expect(p!.legs[0].ticker).toBe('TSLA');
-    expect(p!.legs[0].qty).toBe(2);
-    expect(p!.legs[0].entry_price).toBe(12.4);
-    expect(p!.opened_time).toBe('2026-06-12T15:32:00Z');
-    expect(p!.status).toBe('open');
-    expect(p!.stop).toBe(8);
-    expect(p!.target).toBe(22);
+    expect(liftLegacyRecord(LEGACY_V2_RECORD)).not.toBeNull();
+    const p = lift(LEGACY_V2_RECORD);
+    expect(p.legs).toHaveLength(1);
+    expect(p.legs[0].ticker).toBe('TSLA');
+    expect(p.legs[0].qty).toBe(2);
+    expect(p.legs[0].entry_price).toBe(12.4);
+    expect(p.opened_time).toBe('2026-06-12T15:32:00Z');
+    expect(p.status).toBe('open');
+    expect(p.stop).toBe(8);
+    expect(p.target).toBe(22);
   });
 
   it('sets instrument_kind option and multiplier 100 on every migrated leg', () => {
-    const p = liftLegacyRecord(LEGACY_V1_RECORD)!;
+    const p = lift(LEGACY_V1_RECORD);
     expect(p.legs[0].kind).toBe('option');
     expect(p.legs[0].multiplier).toBe(100);
   });
 
   it('AC-48 — a pending limit`s EMPTY entry time is carried through, never backfilled', () => {
-    const p = liftLegacyRecord({
+    const p = lift({
       ...LEGACY_V2_RECORD,
       status: 'pending',
       entry_time: '',
       limit_price: 9,
-    })!;
+    });
     expect(p.opened_time).toBe('');
     expect(p.status).toBe('pending');
     expect(p.limit_price).toBe(9);
   });
 
   it('is FORBIDDEN from fabricating a right, a strike or an entry time', () => {
-    const p = liftLegacyRecord(MALFORMED_LEGACY_RECORD)!;
+    const p = lift(MALFORMED_LEGACY_RECORD);
     expect(p.legs[0].right).toBeNull();
     expect(p.legs).toHaveLength(1);
 
-    const noFacts = liftLegacyRecord({ id: 'bare-1', ticker: 'TSLA' })!;
+    const noFacts = lift({ id: 'bare-1', ticker: 'TSLA' });
     expect(noFacts.legs[0].right).toBeNull();
     expect(noFacts.legs[0].strike).toBeNull();
     expect(noFacts.legs[0].expiration).toBeNull();
@@ -97,9 +104,7 @@ describe('liftLegacyRecord — the ONE lift', () => {
     // The store migration and the archive import must produce IDENTICAL records from the same
     // source row, or re-importing your own backup diverges from what the migration wrote.
     expect(liftLegacyRecord(LEGACY_V2_RECORD)).toEqual(liftLegacyRecord(LEGACY_V2_RECORD));
-    expect(liftLegacyRecord(LEGACY_V2_RECORD)!.legs[0].id).toBe(
-      liftLegacyRecord(LEGACY_V2_RECORD)!.legs[0].id,
-    );
+    expect(lift(LEGACY_V2_RECORD).legs[0].id).toBe(lift(LEGACY_V2_RECORD).legs[0].id);
   });
 
   it('never mutates the raw record it is handed', () => {
@@ -335,33 +340,33 @@ describe('unionSources', () => {
 
 describe('mergeCollidingRecords', () => {
   it('re-opening a closed trade is impossible — the asymmetry is deliberate', () => {
-    const open = liftLegacyRecord(COLLIDING_ID_PAIR.v2Record)!;
-    const closed = liftLegacyRecord(COLLIDING_ID_PAIR.v1Record)!;
+    const open = lift(COLLIDING_ID_PAIR.v2Record);
+    const closed = lift(COLLIDING_ID_PAIR.v1Record);
     expect(mergeCollidingRecords(open, closed).status).toBe('closed');
     expect(mergeCollidingRecords(closed, open).status).toBe('closed');
   });
 
   it('a cancelled second copy is terminal too, and its close data comes with it', () => {
-    const open = liftLegacyRecord(COLLIDING_ID_PAIR.v2Record)!;
-    const cancelled = liftLegacyRecord({
+    const open = lift(COLLIDING_ID_PAIR.v2Record);
+    const cancelled = lift({
       ...COLLIDING_ID_PAIR.v1Record,
       status: 'cancelled',
       close_time: '2026-06-29T18:00:00Z',
-    })!;
+    });
     const m = mergeCollidingRecords(open, cancelled);
     expect(m.status).toBe('cancelled');
     expect(m.close_time).toBe('2026-06-29T18:00:00Z');
   });
 
   it('two open copies keep the FIRST (v2) copy wholesale', () => {
-    const a = liftLegacyRecord({ ...LEGACY_V2_RECORD, stop: 8 })!;
-    const b = liftLegacyRecord({ ...LEGACY_V2_RECORD, stop: 99, target: 1 })!;
+    const a = lift({ ...LEGACY_V2_RECORD, stop: 8 });
+    const b = lift({ ...LEGACY_V2_RECORD, stop: 99, target: 1 });
     expect(mergeCollidingRecords(a, b)).toEqual(a);
   });
 
   it('never mutates either input', () => {
-    const open = liftLegacyRecord(COLLIDING_ID_PAIR.v2Record)!;
-    const closed = liftLegacyRecord(COLLIDING_ID_PAIR.v1Record)!;
+    const open = lift(COLLIDING_ID_PAIR.v2Record);
+    const closed = lift(COLLIDING_ID_PAIR.v1Record);
     const before = [JSON.stringify(open), JSON.stringify(closed)];
     mergeCollidingRecords(open, closed);
     expect([JSON.stringify(open), JSON.stringify(closed)]).toEqual(before);

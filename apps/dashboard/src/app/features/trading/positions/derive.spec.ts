@@ -10,9 +10,9 @@ import {
   DerivedRow,
   deriveGroups,
   RowMetrics,
-  strategyLabel,
   subtotalOf,
 } from './derive';
+import { STRUCTURE_LABELS } from './structure';
 import type { Position } from './types';
 
 function pos(over: Partial<Position> = {}): Position {
@@ -45,7 +45,7 @@ function row(p: Position, plDollar: number | null, extra: Partial<RowMetrics> = 
     dte: 10,
     ...extra,
   };
-  return { position: p, metrics, strategy: p.right === 'call' ? 'long_call' : 'long_put' };
+  return { position: p, metrics, structure: p.right === 'call' ? 'long_call' : 'long_put' };
 }
 
 describe('filter (AC-4, AC-24)', () => {
@@ -59,7 +59,7 @@ describe('filter (AC-4, AC-24)', () => {
     const out = applyFilter(positions, {
       ticker: 'TSLA',
       status: [],
-      strategy: null,
+      structure: null,
       expiry: null,
     });
     expect(out.map((p) => p.id).sort()).toEqual(['a', 'c']);
@@ -69,7 +69,7 @@ describe('filter (AC-4, AC-24)', () => {
     const out = applyFilter(positions, {
       ticker: null,
       status: ['open'],
-      strategy: null,
+      structure: null,
       expiry: null,
     });
     expect(out.map((p) => p.id).sort()).toEqual(['a', 'b']);
@@ -79,14 +79,14 @@ describe('filter (AC-4, AC-24)', () => {
     const calls = applyFilter(positions, {
       ticker: null,
       status: [],
-      strategy: 'long_call',
+      structure: 'long_call',
       expiry: null,
     });
     expect(calls.map((p) => p.id)).toEqual(['a']);
     const exp = applyFilter(positions, {
       ticker: null,
       status: [],
-      strategy: null,
+      structure: null,
       expiry: '2026-08-21',
     });
     expect(exp.map((p) => p.id)).toEqual(['b']);
@@ -123,18 +123,18 @@ describe('group + subtotal (AC-10, AC-11, AC-22)', () => {
     expect(excludedCount).toBe(1);
   });
 
-  it('groups by strategy into derived long call vs long put', () => {
+  it('groups by STRUCTURE into derived long call vs long put', () => {
     const rows = [
       row(pos({ id: 'a', right: 'call' }), 10),
       row(pos({ id: 'b', right: 'put' }), 20),
       row(pos({ id: 'c', right: 'call' }), 5),
     ];
-    const groups = applyGroup(rows, 'strategy');
+    const groups = applyGroup(rows, 'structure');
     const byKey = Object.fromEntries(groups.map((g) => [g.key, g]));
     expect(byKey['long_call'].rows).toHaveLength(2);
     expect(byKey['long_call'].subtotal).toBe(15);
     expect(byKey['long_put'].subtotal).toBe(20);
-    expect(strategyLabel('long_call')).toBe('Long call');
+    expect(STRUCTURE_LABELS['long_call']).toBe('Long call');
   });
 
   it('groups by ticker with per-group subtotals', () => {
@@ -163,7 +163,7 @@ describe('full pipeline', () => {
       row(pos({ id: 'c', ticker: 'TSLA', status: 'closed' }), 10),
     ];
     const groups = deriveGroups(rows, {
-      filter: { ticker: null, status: ['open'], strategy: null, expiry: null },
+      filter: { ticker: null, status: ['open'], structure: null, expiry: null },
       sortKey: 'pl_dollar',
       sortDir: 'desc',
       group: 'none',

@@ -12,13 +12,13 @@
  * on an SSE drop via PositionsView/PositionRow while static records persist (`[live-vs-static-isolation]`);
  * positions never feed scoring (`[additive-keeps-score-byte-identical]`).
  */
+import { SignInPrompt } from '@/features/auth/SignInPrompt';
+import { AUTH_COPY } from '@/features/auth/copy';
+import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
+import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
 import { Box, Typography } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useMemo, useState } from 'react';
-import { SignInPrompt } from '@/features/auth/SignInPrompt';
-import { AUTH_COPY } from '@/features/auth/copy';
-import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
-import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
 import { CustomizationToolbar } from './CustomizationToolbar';
 import type { RowContext } from './PositionRow';
 import { PositionsView } from './PositionsView';
@@ -155,7 +155,7 @@ export function PositionsPanel({
         trendFor={pf.trendFor}
         onOpenEntry={onRequestOpenEntry}
         onClearFilter={() =>
-          pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })
+          pf.setFilter({ ticker: null, structure: null, expiry: null, status: ['open'] })
         }
         onClose={pf.closePosition}
         onCancel={pf.cancelLimit}

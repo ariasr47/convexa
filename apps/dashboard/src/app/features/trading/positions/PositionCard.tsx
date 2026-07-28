@@ -11,8 +11,8 @@
  * realized summary; a pending limit renders the waiting affordance. Nothing here places a real order
  * (`[no-real-order-path]`). Token discipline: colors via palette tokens, figures via the mono family.
  */
-import { Box } from '@mui/material';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { Box } from '@mui/material';
 import type { DerivedRow } from './derive';
 import { money } from './labels';
 import {
@@ -22,6 +22,7 @@ import {
   PendingAffordance,
   RowContext,
 } from './PositionRow';
+import { STRUCTURE_LABELS } from './structure';
 
 const monoSx = typographyTokens.monoFontFamily;
 const pctStr = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(1)}%`;
@@ -53,7 +54,7 @@ export function PositionCard({ row, ctx, streamOffline, onClose }: PositionCardP
   const plColor =
     mtr.plDollar == null ? 'text.primary' : mtr.plDollar >= 0 ? 'success.main' : 'error.main';
   const strikeLeg = `$${p.strike} ${p.right === 'call' ? 'Call' : 'Put'}`;
-  const strategyName = row.strategy === 'long_call' ? 'Long call' : 'Long put';
+  const strategyName = STRUCTURE_LABELS[row.structure];
   // Footer Mark value (Figma: bold mono, matches Qty/Entry). Compact states inline (no chip/tag in the
   // footer); the live block + this value dim together on offline via `liveDim`.
   const markRes = ctx.markRes;

@@ -4,8 +4,33 @@
  * live P/L is unavailable is EXCLUDED from / flagged in a subtotal — never counted as zero
  * (`[best-effort-isolated-or-null]`).
  */
-import type { FilterState, GroupAxis, Position, SortDir, SortKey, Strategy } from './types';
-import { strategyOf } from './types';
+import { maxLossOf, type MaxLossResult } from './maxLoss';
+import { liftLegacyRecord } from './migrate';
+import { STRUCTURE_LABELS, structureKindOf, type StructureKind } from './structure';
+import type { FilterState, GroupAxis, Position, SortDir, SortKey } from './types';
+
+/**
+ * The structure axis over a still-v2 `Position`. TRANSITIONAL: the durable record has no `legs`
+ * until the F18 cutover, so the row is lifted through the ONE migration lift and handed to the ONE
+ * recogniser rather than re-deriving the name a second way. For a shipped single-leg long option
+ * that yields exactly `long_call` / `long_put` — byte-identical to the deleted `strategyOf`.
+ */
+export function structureOfLegacy(p: Position): StructureKind {
+  const lifted = liftLegacyRecord(p);
+  return lifted ? structureKindOf(lifted) : 'custom';
+}
+
+/**
+ * The max-loss result for a still-v2 `Position`. TRANSITIONAL, for the same reason as
+ * `structureOfLegacy`: one lift, one closed eligible set, no second arithmetic. A row that cannot
+ * even be lifted has no payoff to read, so it withholds with the unnamed-shape reason rather than
+ * printing anything.
+ */
+export function maxLossOfLegacy(p: Position, kind: StructureKind): MaxLossResult {
+  const lifted = liftLegacyRecord(p);
+  if (lifted == null) return { kind: 'withheld', reason: 'unnamed_shape' };
+  return maxLossOf(lifted, kind);
+}
 
 /** The live-derived view of a position (its mark/P-L for this cycle), produced by the hook per row. */
 export interface RowMetrics {
@@ -25,7 +50,7 @@ export interface RowMetrics {
 export interface DerivedRow {
   position: Position;
   metrics: RowMetrics;
-  strategy: Strategy;
+  structure: StructureKind;
 }
 
 export interface DerivedGroup {
@@ -44,7 +69,7 @@ export function applyFilter(positions: Position[], f: FilterState): Position[] {
   return positions.filter((p) => {
     if (f.ticker && p.ticker.toUpperCase() !== f.ticker.toUpperCase()) return false;
     if (f.status.length && !f.status.includes(p.status)) return false;
-    if (f.strategy && strategyOf(p) !== f.strategy) return false;
+    if (f.structure && structureOfLegacy(p) !== f.structure) return false;
     if (f.expiry && p.expiration !== f.expiry) return false;
     return true;
   });
@@ -65,8 +90,8 @@ function sortValue(row: DerivedRow, key: SortKey): number | string {
       return mtr.sessionDelta ?? -Infinity;
     case 'ticker':
       return p.ticker;
-    case 'strategy':
-      return row.strategy;
+    case 'structure':
+      return row.structure;
     case 'expiry':
       return p.expiration;
     case 'dte':
@@ -96,16 +121,20 @@ export function applySort(rows: DerivedRow[], key: SortKey, dir: SortDir): Deriv
 
 // ---- Group + subtotal --------------------------------------------------------------------------
 
-export function strategyLabel(s: Strategy): string {
-  return s === 'long_call' ? 'Long call' : 'Long put';
-}
-
-function groupKeyAndLabel(row: DerivedRow, axis: GroupAxis): { key: string; label: string } {
+/**
+ * The `expiry` axis is kept REACHABLE here even though it is no longer a `GroupAxis` member (ruling
+ * #10 retired the UI option, not the capability), so restoring it later costs zero schema. That is
+ * why this helper takes the wider type.
+ */
+function groupKeyAndLabel(
+  row: DerivedRow,
+  axis: GroupAxis | 'expiry',
+): { key: string; label: string } {
   switch (axis) {
     case 'ticker':
       return { key: row.position.ticker, label: row.position.ticker };
-    case 'strategy':
-      return { key: row.strategy, label: strategyLabel(row.strategy) };
+    case 'structure':
+      return { key: row.structure, label: STRUCTURE_LABELS[row.structure] };
     case 'expiry':
       return { key: row.position.expiration, label: `exp ${row.position.expiration}` };
     default:
@@ -159,4 +188,3 @@ export function deriveGroups(
   const sorted = applySort(filtered, opts.sortKey, opts.sortDir);
   return applyGroup(sorted, opts.group);
 }
-

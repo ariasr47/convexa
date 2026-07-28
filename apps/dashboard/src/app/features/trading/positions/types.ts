@@ -8,8 +8,9 @@
  *
  * Schema is versioned; v1 (single trade per ticker) migrates loss-free into v2 (flat positions map).
  */
-import type { OptionRight } from '@org/api';
 import type { DecisionRecord, GhostTrade, MarkBasis } from '@/features/trading/model/types';
+import type { OptionRight } from '@org/api';
+import type { StructureKind } from './structure';
 
 export type { DecisionRecord, MarkBasis } from '@/features/trading/model/types';
 
@@ -66,17 +67,17 @@ export interface Position {
   origin_order_id?: string;
 }
 
-/** Derived strategy axis (Q-C). Single-leg long only ⇒ trivially derived from `right`. */
-export type Strategy = 'long_call' | 'long_put';
-export function strategyOf(p: Pick<Position, 'right'>): Strategy {
-  return p.right === 'call' ? 'long_call' : 'long_put';
-}
+// The old two-member `Strategy` axis (`long_call` | `long_put`) and its `strategyOf` derivation are
+// DELETED. The axis is now `StructureKind` (`./structure`) — derived, total, never stored — which is
+// what makes future recogniser changes migration-free. Nothing carries a stored strategy forward.
 
 // ---- Customization / saved-view state (durable, view-only — never feeds scoring) ---------------
 
 export type LayoutMode = 'table' | 'card';
 export type Density = 'comfortable' | 'compact';
-export type GroupAxis = 'none' | 'ticker' | 'strategy' | 'expiry';
+/** `expiry` does NOT return (ruling #10). The axis stays reachable in `derive.ts`, so restoring it
+ *  later costs zero schema — only this union and the toolbar option would change. */
+export type GroupAxis = 'none' | 'ticker' | 'structure';
 export type SortDir = 'asc' | 'desc';
 
 /** Sortable attribute keys (UX_BLUEPRINT §5.3). */
@@ -86,7 +87,7 @@ export type SortKey =
   | 'delta_entry'
   | 'session_delta'
   | 'ticker'
-  | 'strategy'
+  | 'structure'
   | 'expiry'
   | 'dte'
   | 'qty'
@@ -105,11 +106,12 @@ export type ColumnKey =
   | 'session_delta'
   | 'trend'
   | 'entry'
+  | 'max_loss'
   | 'qty'
   | 'expiry'
   | 'strike'
   | 'right'
-  | 'strategy'
+  | 'structure'
   | 'dte'
   | 'greeks'
   | 'iv'
@@ -121,7 +123,7 @@ export type ColumnKey =
 export interface FilterState {
   ticker: string | null; // null = all tickers
   status: PositionStatus[]; // multi-select; default = ['open']
-  strategy: Strategy | null; // null = all
+  structure: StructureKind | null; // null = all (was the two-member `strategy` axis)
   expiry: string | null; // null = all
 }
 

@@ -12,9 +12,9 @@
  * sees the same columns until column-customization returns. Header copy uses the terse table-header
  * map. `cellContent` (incl. the offline-dim live cells) is reused as-is.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { Box, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { extrasFor } from '@/shared/theme/tokens';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
 import type { DerivedGroup, DerivedRow } from './derive';
 import { EMPTY_FILTERED, EMPTY_NO_POSITIONS, HISTORY_CAPTION, money } from './labels';
@@ -27,10 +27,29 @@ import type { PlSample } from './useTrends';
  * REVISION 2 — the FIXED Figma column set (left→right). The table/cards render from this directly and
  * do NOT read the persisted `working.columns` for the visible set (an existing user's saved columns
  * must not override the Figma layout). `working.columns` stays in the model for when customization returns.
+ *
+ * ⚠ `max_loss` IS DELIBERATELY ABSENT FROM THIS LIST AND MUST BE ADDED BY F11 — see the GATE Z
+ * measurement below. The key, its label, its partition membership and its cell renderer all exist
+ * (`types.ts`, `defaults.ts`, `PositionRow.tsx`); this list is the ONE line that makes it visible,
+ * and flipping it is F11's job because F11 owns both the row widths and the mandated fit checkpoint.
+ *
+ * MEASURED in a real browser (Cypress, seeded 4-row portfolio, both schemes, both densities):
+ *   1440px · 1280px — the table fits its host and the page does not scroll. PASSES.
+ *   900px (the md boundary, the NARROWEST width the table renders at) — WITH the column the table
+ *     overflows its host: scrollWidth 895 vs clientWidth 835. WITHOUT it, the table fits.
+ *     (The PAGE also overflows at 900px — 965 vs 900 — but that is PRE-EXISTING and byte-identical
+ *     with and without the column; the shipped 393px e2e never covered the md boundary.)
+ * SPEC §4 *The risk slot* forbids a silent squeeze or a unilateral re-layout, so the column stays
+ * inert here until F11 sets the widths and re-runs the check.
+ *
+ * That the table ignores the persisted `working.columns` is WHY AC-82 holds structurally today: no
+ * saved view's stored column list gains `max_loss`, because no saved view drives this list. That is
+ * a consequence of the fixed set, NOT a designed safeguard — a later refactor restoring column
+ * customization removes the guarantee and must re-establish it deliberately.
  */
-const FIGMA_COLUMNS: ColumnKey[] = [
+export const FIGMA_COLUMNS: ColumnKey[] = [
   'contract',
-  'strategy',
+  'structure',
   'qty',
   'entry',
   'mark',

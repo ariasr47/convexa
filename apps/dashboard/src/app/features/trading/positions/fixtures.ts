@@ -10,7 +10,7 @@
 import { defaultConfig, defaultView } from './defaults';
 import type { Leg, SimPosition } from './leg';
 import { SIM_POSITION_SCHEMA_VERSION } from './leg';
-import type { CustomizationState } from './types';
+import type { CustomizationState, ViewConfig } from './types';
 
 let seq = 0;
 const legId = () => `fx-leg-${++seq}`;
@@ -292,23 +292,25 @@ export const LEGACY_V1_BLOB = JSON.stringify({
  * for a user with pre-existing durable state, which a fresh browser cannot reproduce — without this
  * fixture the stale-view AC is unverifiable at GATE Q.
  */
+const STALE_STORED_CONFIG = {
+  ...defaultConfig(),
+  // PRE-RENAME BYTES, on purpose: this models what is ALREADY sitting in a shipped user's
+  // localStorage, so it is typed through `unknown`. Reading it must not rewrite it (AC-82).
+  group: 'strategy',
+  filter: {
+    ticker: null,
+    status: ['open'],
+    structure: undefined,
+    strategy: 'long_call',
+    expiry: null,
+  },
+} as unknown as ViewConfig;
+
 export const STALE_SAVED_VIEW_CUSTOMIZATION: CustomizationState = {
   views: [
     defaultView(),
-    {
-      id: 'view-tech-swings',
-      name: 'Tech swings',
-      config: {
-        ...defaultConfig(),
-        group: 'strategy',
-        filter: { ticker: null, status: ['open'], strategy: 'long_call', expiry: null },
-      },
-    },
+    { id: 'view-tech-swings', name: 'Tech swings', config: STALE_STORED_CONFIG },
   ],
   activeViewId: 'view-tech-swings',
-  working: {
-    ...defaultConfig(),
-    group: 'strategy',
-    filter: { ticker: null, status: ['open'], strategy: 'long_call', expiry: null },
-  },
+  working: STALE_STORED_CONFIG,
 };

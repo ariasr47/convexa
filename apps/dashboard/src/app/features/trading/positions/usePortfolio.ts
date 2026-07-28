@@ -9,6 +9,9 @@
  * failures + store failures degrade locally (`[best-effort-isolated-or-null]`). Live cells degrade on
  * an SSE drop while records/history/customization persist (`[live-vs-static-isolation]`).
  */
+import { entryContextFor } from '@/features/trading/model/captureDigest';
+import { computeMark, MarkResult, pl } from '@/features/trading/model/mark';
+import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
 import {
   fetchTrackedContract,
   LiveUpdate,
@@ -17,11 +20,8 @@ import {
   TrackedContract,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { entryContextFor } from '@/features/trading/model/captureDigest';
-import { computeMark, MarkResult, pl } from '@/features/trading/model/mark';
-import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
 import { cloneConfig, configEqual } from './defaults';
-import { DerivedRow, RowMetrics } from './derive';
+import { DerivedRow, RowMetrics, structureOfLegacy } from './derive';
 import { LIMIT_FILL_BASIS, limitWouldFill, resolveManualFill } from './entry';
 import {
   allPositions,
@@ -43,7 +43,6 @@ import {
   Position,
   PositionId,
   SavedView,
-  strategyOf,
   ViewConfig,
 } from './types';
 import { usePlTrends } from './useTrends';
@@ -177,7 +176,7 @@ export function usePortfolio(
         sessionDelta,
         dte: rl?.tracked?.dte ?? null,
       };
-      return { position: p, metrics, strategy: strategyOf(p) };
+      return { position: p, metrics, structure: structureOfLegacy(p) };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positions, rowLive, markFor, streamOffline, historyVersion]);

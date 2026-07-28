@@ -65,7 +65,7 @@ function rowOf(p: Position): DerivedRow {
       sessionDelta: null,
       dte: 24,
     },
-    strategy: p.right === 'call' ? 'long_call' : 'long_put',
+    structure: p.right === 'call' ? 'long_call' : 'long_put',
   };
 }
 

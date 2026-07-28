@@ -5,17 +5,19 @@
  * rendering; a per-row lookup failure shows "unavailable" only on that row. Pending limits show the
  * waiting affordance + Cancel; nothing here can place a real order.
  */
-import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { typographyTokens } from '@/shared/theme/tokens';
+import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import type { DerivedRow } from './derive';
-import { strategyLabel } from './derive';
+import { maxLossOfLegacy } from './derive';
 import {
   DELTA_ENTRY_TIP,
   ENTRY_BASIS_META,
   ENTRY_MODE_LABEL,
   LIMIT_TIP,
+  MAX_LOSS_TIP,
+  MAX_LOSS_WITHHELD_META,
   money,
   pct,
   PENDING_PL_TIP,
@@ -27,6 +29,7 @@ import {
   TREND_TIP,
 } from './labels';
 import { PlSparkline } from './PlSparkline';
+import { STRUCTURE_LABELS } from './structure';
 import type { ColumnKey } from './types';
 import type { PlSample } from './useTrends';
 
@@ -365,16 +368,35 @@ export function cellContent(col: ColumnKey, ctx: RowContext): React.ReactNode {
       return <Typography variant="body2">${p.strike}</Typography>;
     case 'right':
       return <Typography variant="body2">{p.right === 'call' ? 'Call' : 'Put'}</Typography>;
-    case 'strategy':
+    case 'structure':
       return (
         <Typography
           component="span"
           variant="body2"
           sx={{ fontSize: '0.78rem', color: 'text.secondary', letterSpacing: 0 }}
         >
-          {strategyLabel(row.strategy)}
+          {STRUCTURE_LABELS[row.structure]}
         </Typography>
       );
+    // The risk slot's TABLE home. STATIC — not live-derived, so it never dims and never carries a
+    // tint (AC-78): one unsigned figure, or ONE stated reason, never both. F11 re-homes this onto
+    // `PositionView`; the arithmetic and the closed eligible set already live in `maxLoss.ts`.
+    case 'max_loss': {
+      const ml = maxLossOfLegacy(p, row.structure);
+      return ml.kind === 'figure' ? (
+        <Tooltip arrow title={MAX_LOSS_TIP}>
+          <Typography component="span" variant="body2" sx={{ ...MONO }}>
+            ${Math.round(ml.dollars)}
+          </Typography>
+        </Tooltip>
+      ) : (
+        <Tooltip arrow title={MAX_LOSS_WITHHELD_META[ml.reason].tip}>
+          <Typography component="span" variant="body2" sx={{ color: 'text.disabled' }}>
+            {MAX_LOSS_WITHHELD_META[ml.reason].label}
+          </Typography>
+        </Tooltip>
+      );
+    }
     case 'dte':
       return <Typography variant="body2">{mtr.dte == null ? '—' : mtr.dte}</Typography>;
     case 'entry_time':
