@@ -39,8 +39,8 @@ components bind MUI palette slots or `extrasFor(theme)` — **never a hardcoded 
 | **`gammaAmber`** | **`#F2A93B`** | **`#C57F19`** (`amberDeep`) | **THE brand color — dominant** |
 | `signal` | `#5E8BC4` | `#3D6DA5` | links / info / **live** status (quieter than amber) |
 | `warningOrange` | `#E07A3F` | `#A65526` | **true warnings only, + icon always** |
-| `success` | `#2ecc71` | `#1e9e57` | **RESERVED** — calls / +gamma / +P&L direction |
-| `error` | `#ff5c5c` | `#d23b3b` | **RESERVED** — puts / −gamma / −P&L direction |
+| `success` | `#2ecc71` | `#1e9e57` | **RESERVED** — *gamma/GEX surfaces:* calls / +gamma. *Position + P&L surfaces:* **signed-P&L direction ONLY** (+P&L) — never call-vs-put, never position side |
+| `error` | `#ff5c5c` | `#d23b3b` | **RESERVED** — *gamma/GEX surfaces:* puts / −gamma. *Position + P&L surfaces:* **signed-P&L direction ONLY** (−P&L) — never call-vs-put, never position side |
 
 **Three binding rules that live in the palette:**
 
