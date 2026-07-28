@@ -952,6 +952,17 @@ also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
   column it fits" reading was wrong. Phase 3 takes it to 1027 (~29px, the wider `Net entry` copy). The
   **page** figure is the byte-identical one. So the `md` band was broken before this feature arrived,
   which is why the `lg`-and-above ruling stands on stronger ground than when it was made.
+- **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
+  2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
+  HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
+  **Always use `--files=`; never bare `format:write`.** Worth a line in `CLAUDE.md`/`AGENTS.md` if it
+  bites twice.
+- **⚠ `apps/dashboard/src/app/features/trading/outcomes/sources.ts` contains literal NUL bytes**
+  (pre-existing — confirmed via `git show HEAD`), in `decisionIdentity`'s composite key template
+  (`k:${trade_id}\x00${event_type}\x00${clock_time}`). It makes the file register as **binary** to
+  `grep`/`ripgrep`, so it is **silently invisible to source sweeps** — including the boundary/negative-space
+  greps this delivery system relies on. A guard that cannot see a file is not a guard. Replace the raw
+  NULs with an escaped separator (or ` ` in source) so the file is text again. Small, unscheduled.
 - **Fixed in passing (`positions-legs` phase 3), worth knowing it was ever broken:** the shipped
   `formatExpiry` **crashed the `/positions` page to a white screen** on any record with no
   `expiration` (`p.expiration.split` on `undefined`) — found because a pre-phase-3 build white-screened

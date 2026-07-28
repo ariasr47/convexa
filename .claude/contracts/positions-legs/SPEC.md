@@ -555,6 +555,22 @@ lexicographic; **if there is no long option leg, the short option leg** with the
 `|qty × multiplier|` and the same tiebreaks, still `kind: 'primary_leg'`. Within a position, `none` is
 reachable only when there is no option leg at all.
 
+**Which position supplies the params when the evaluation is suppressed — RATIFIED 2026-07-28.** The
+unconditional-request rule means *something* must still supply `pos_*` when a ticker holds N>1 open
+positions. `tickerEvalSubject` picks the **lowest-id open position, deterministically, for the request
+only**, and returns `subject: { kind: 'none', reason: 'multiple_positions' }` with `suppressed: true`
+for the render. The alternative — dropping `pos_*` when N>1 — **is branching the fetch on position
+count, which AC-74 and AC-83 both forbid**; it would be a GATE Z amendment, not a build choice. Lowest
+id is chosen because it is stable across reloads and re-sorts, the same property the `leg.id` tiebreak
+exists for one level down.
+
+> **STANDING CAVEAT — the picked position must NEVER reach a surface.** It exists to keep a request
+> shape constant, and nothing else. If a future feature surfaces it — names it, highlights its row,
+> labels an alert with it — that is exactly the *"quietly assert **this** is your NVDA position"*
+> failure ruling #9 was made to prevent, arriving through the back door. **The test asserting the pick
+> stays unsurfaced is the guard** (`pos-params.spec.tsx`, which asserts both halves: the params are
+> emitted, and the subject is `none`/`suppressed`).
+
 **No wire change, at either level.** The `pos_*` params are unchanged; the fetch is **unconditional and
 its shape never branches** — it does not branch on leg count and it does not branch on position count —
 so the request stays byte-identical and the *render* decides in both cases. That is the easiest form of
@@ -597,6 +613,27 @@ violates the second, so `loss-free-durable-migration` is **half-violated in ship
 `orders/store.ts` already guards correctly (`if (ordersFaulted()) return false; // NEVER overwrite a
 readable-but-unparseable prior blob`) and is the pattern to copy. Fixing this is in scope and carries
 its own AC (AC-56). The shape change makes parse failures *more* likely, not less.
+
+### 2.11 View normalization on read — in memory only, never persisted
+
+**Correction 2026-07-28 — a false premise this spec implied and the build plan carried.**
+`normalizeViewConfig` was **not applied on read** before the cutover phase: it was referenced only by
+two spec files and by **no application code**. Two consequences nobody had noticed — `staleViewName`
+had **no producer**, so the stale-saved-view notice could never fire; and the `strategy` → `structure`
+group/sort renames were **dead in the running app**. It is now wired into `usePortfolio`'s
+customization read, which is what makes AC-54 and the §4 notice reachable at all.
+
+**The wiring rule, stated exactly, because getting it wrong silently breaks two guarantees:**
+
+> **Saved views are normalized for RENDER, never in storage. Only `working` is normalized, and only
+> in memory, until the user chooses to save. The stored `views[]` stay byte-for-byte verbatim.**
+
+That last clause is not a preference — it is what keeps **AC-82's storage guarantee** (no view's stored
+column list mutates, no view is rewritten, re-saving is never required) and **AC-54's non-writing
+requirement** (*"reading a view never mutates it"*, which is `loss-free-durable-migration` expressed at
+the UI layer) true at the same time. **Do not later "helpfully" persist the normalized view.** Writing
+the normalized result back would heal the stale value silently, which is precisely what the notice's
+own copy — *"Save the view to keep it this way"* rather than "We fixed your view" — exists to avoid.
 
 ### Failure modes + isolation
 
@@ -1551,6 +1588,16 @@ a long single leg and the suite is therefore structurally blind to exactly what 
 record** (missing `right`), and a **seeded saved view** whose filter references a stale value (without
 it, the stale-view AC is unverifiable at GATE Q — the state only exists for a user with pre-existing
 durable state, which a fresh browser cannot reproduce).
+
+**Correction 2026-07-28 — the stale-saved-view fixture had to change to reach the state it exists to
+seed.** `STALE_SAVED_VIEW_CUSTOMIZATION` originally filtered on `strategy: 'long_call'`, which is
+**still a valid `StructureKind`** (§2.3), so `normalizeViewConfig` returns `adjusted: false`, the
+notice never renders, and **AC-54 was unverifiable through it** — the fixture demonstrated the
+survives-by-mapping case while claiming to seed the degraded one. It now filters on a genuinely
+**retired** value (`long_butterfly` — a shape this feature deliberately routes to `Custom`). Nothing
+was lost: AC-53's survives-by-identity case is covered directly in `defaults.spec.ts`. **GATE Q should
+verify AC-54 through the corrected fixture**, and should treat a fixture whose filter value is still a
+live enum member as a false pass, not a pass.
 
 **Coordination note (from `_MANIFEST.md`):** a parallel session has been active in
 `apps/dashboard/src/app/` — this refactor touches the whole trading domain and pins copy constants in
