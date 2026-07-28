@@ -15,6 +15,7 @@ import {
   PORTFOLIO_LEGACY_V2_KEY,
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V2_KEY,
+  positionsFaulted,
   putCustomization,
   putPosition,
   removePosition,
@@ -56,6 +57,16 @@ function mkPosition(over: Partial<Position> = {}): Position {
     schema_version: 2,
     ...over,
   };
+}
+
+/** Every durable byte, so "nothing was written" can be asserted over storage as a whole. */
+function snapshotStorage(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const k = localStorage.key(i);
+    if (k != null) out[k] = localStorage.getItem(k) ?? '';
+  }
+  return out;
 }
 
 beforeEach(() => {
@@ -265,5 +276,97 @@ describe('positions CRUD + decisions', () => {
     putCustomization({ ...c, activeViewId: c.views[0].id });
     __resetMemory();
     expect(getCustomization().views.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The fault latch (AC-56, AC-61) — spec §2.9, §2.10. This is a LIVE SHIPPED DEFECT, not a refactor:
+ * `read()` caught to an empty portfolio and the very next mutator's `write()` overwrote the
+ * unparseable-but-possibly-recoverable blob. `orders/store.ts` (`ordersFaulted()`) is the pattern.
+ * Per spec §7 invariant 2 this test must FAIL against the pre-latch store or it proves nothing.
+ */
+describe('fault latch (AC-56) — an unparseable blob is never overwritten', () => {
+  const CORRUPT = '{"schema_version":2,"positions":{ THIS IS NOT JSON';
+
+  beforeEach(() => {
+    localStorage.clear();
+    __resetMemory();
+  });
+
+  it('refuses every mutator and leaves the damaged blob byte-identical', () => {
+    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    __resetMemory();
+
+    expect(positionsFaulted()).toBe(true);
+
+    expect(putPosition(mkPosition({ id: 'p-new' }))).toBe(false);
+    expect(removePosition('p-new')).toBe(false);
+    expect(appendDecision({ trade_id: 'p-new' } as unknown as DecisionRecord)).toBe(false);
+    expect(putCustomization(getCustomization())).toBe(false);
+
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(CORRUPT);
+  });
+
+  it('leaves the WHOLE of storage byte-identical — nothing is rerouted to another key (AC-61)', () => {
+    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    __resetMemory();
+    const before = snapshotStorage();
+
+    putPosition(mkPosition({ id: 'p-new' }));
+    removePosition('p-1');
+    appendDecision({ trade_id: 'p-new' } as unknown as DecisionRecord);
+    putCustomization(getCustomization());
+
+    // Not just "the damaged key survives": no fresh positions key is invented either (spec §2
+    // *Not buildable* — routing new positions to a fresh key while faulted).
+    expect(snapshotStorage()).toEqual(before);
+  });
+
+  it('is not faulted for an absent blob, and mutators still work', () => {
+    __resetMemory();
+    expect(positionsFaulted()).toBe(false);
+    expect(putPosition(mkPosition({ id: 'p-ok' }))).toBe(true);
+    expect(allPositions().map((p) => p.id)).toContain('p-ok');
+  });
+
+  it('determines fault synchronously at initialisation, not on the first write', () => {
+    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    __resetMemory();
+    // No mutator has been called yet.
+    expect(positionsFaulted()).toBe(true);
+  });
+
+  it('a corrupt blob still degrades to an empty portfolio and never throws', () => {
+    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    __resetMemory();
+    expect(() => allPositions()).not.toThrow();
+    expect(allPositions()).toEqual([]);
+    expect(positionsFaulted()).toBe(true);
+  });
+
+  it('clears the latch on a later hydration of a readable blob (the flag is not sticky)', () => {
+    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    __resetMemory();
+    expect(positionsFaulted()).toBe(true);
+
+    // Repaired outside the app (the store itself never repairs, prunes or deletes it).
+    localStorage.setItem(
+      PORTFOLIO_V2_KEY,
+      JSON.stringify({ schema_version: 2, positions: { 'p-1': mkPosition() }, decisions: [] }),
+    );
+    __resetMemory();
+    expect(positionsFaulted()).toBe(false);
+    expect(putPosition(mkPosition({ id: 'p-2' }))).toBe(true);
+  });
+
+  it('the v1→v2 migration write still lands (the latch does not block a clean promote)', () => {
+    localStorage.setItem(
+      PORTFOLIO_V1_KEY,
+      JSON.stringify({ schema_version: 1, trades: { TSLA: v1Trade() }, decisions: [] }),
+    );
+    __resetMemory();
+    expect(allPositions()).toHaveLength(1);
+    expect(positionsFaulted()).toBe(false);
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
   });
 });

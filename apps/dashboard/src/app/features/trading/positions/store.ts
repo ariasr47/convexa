@@ -6,6 +6,14 @@
  * and NEVER throws into the UI (`[best-effort-isolated-or-null]`). A readable prior blob is NEVER
  * silently discarded — migration is read-time + idempotent.
  *
+ * FAULT LATCH (`positionsFaulted()`, spec §2.9/§2.10, AC-56/AC-61): when the blob does not parse the
+ * store degrades to empty in memory AND refuses every durable write, so the
+ * unparseable-but-possibly-recoverable blob is left byte-identical. `[loss-free-durable-migration]`
+ * reads "degrades to empty WITHOUT destroying the original" — this store honoured only the first
+ * clause until now. Determination is SYNCHRONOUS at hydration (localStorage is synchronous), so no
+ * frame paints enabled affordances on a faulted store, and mutators return `false` as the second
+ * line of defence. Modelled on `orders/store.ts` `ordersFaulted()`.
+ *
  * v1→v2 migration (ARCHITECTURE_CONTRACT §1.3): the v1 `trades: Record<ticker, GhostTrade>` map is
  * read from the OLD key and each existing trade is re-keyed by its own `id` into the flat
  * `positions: Record<PositionId, Position>` map (loss-free one-to-one; the ticker is on the record).
@@ -43,6 +51,8 @@ function empty(): PersistShapeV2 {
 }
 
 let memory: PersistShapeV2 | null = null; // fallback / cache
+/** Set SYNCHRONOUSLY by read() (spec §2.9); no frame ever paints on a stale value. */
+let faulted = false;
 
 /** Re-key one v1 trade into a v2 position. Additive fields absent ⇒ manual entry. */
 function v1TradeToPosition(t: GhostTrade): Position {
@@ -104,6 +114,10 @@ function hydrateCustomization(c: CustomizationState | undefined): CustomizationS
 
 function read(): PersistShapeV2 {
   if (memory) return memory;
+  // Cleared BEFORE the resolution below, never after it: the v1→v2 promote at the bottom of this
+  // try writes through `write()`, which consults the latch — a clear placed after that write would
+  // refuse the legitimate migration.
+  faulted = false;
   try {
     // 4-case brand × version resolution (FRONTEND_EXECUTION_CONTRACT §A.3), first hit wins:
     //   (1) convexa.positions.v2  → hydrate
@@ -129,19 +143,30 @@ function read(): PersistShapeV2 {
     }
     memory = empty();
   } catch {
-    // Corrupt/unreadable store ⇒ empty in-memory portfolio, NEVER discard the readable prior blob.
+    // Corrupt/unreadable store ⇒ empty in-memory portfolio. The prior blob is left INTACT: the latch
+    // below refuses every write until it is repaired or cleared OUTSIDE the app (this store never
+    // repairs, prunes or deletes it, and never routes new records to a second key).
     memory = empty();
+    faulted = true;
   }
   return memory;
 }
 
-function write(s: PersistShapeV2) {
+function write(s: PersistShapeV2): boolean {
+  if (positionsFaulted()) return false; // NEVER overwrite a readable-but-unparseable prior blob
   memory = s;
   try {
     localStorage.setItem(V2_KEY, JSON.stringify(s));
   } catch {
-    /* in-memory only */
+    /* quota/private mode — keep the in-memory copy this session */
   }
+  return true;
+}
+
+/** Is the durable store faulted? Reading forces hydration so the answer is always current. */
+export function positionsFaulted(): boolean {
+  read();
+  return faulted;
 }
 
 // ---- Positions ---------------------------------------------------------------------------------
@@ -154,23 +179,27 @@ export function getPosition(id: PositionId): Position | null {
   return read().positions[id] ?? null;
 }
 
-export function putPosition(p: Position) {
+/** Returns false when the store is faulted (nothing written, nothing partial). */
+export function putPosition(p: Position): boolean {
   const s = read();
-  write({ ...s, positions: { ...s.positions, [p.id]: p } });
+  if (faulted) return false;
+  return write({ ...s, positions: { ...s.positions, [p.id]: p } });
 }
 
-export function removePosition(id: PositionId) {
+export function removePosition(id: PositionId): boolean {
   const s = read();
+  if (faulted) return false;
   const positions = { ...s.positions };
   delete positions[id];
-  write({ ...s, positions });
+  return write({ ...s, positions });
 }
 
 // ---- Decisions ---------------------------------------------------------------------------------
 
-export function appendDecision(rec: DecisionRecord) {
+export function appendDecision(rec: DecisionRecord): boolean {
   const s = read();
-  write({ ...s, decisions: [...s.decisions, rec] });
+  if (faulted) return false;
+  return write({ ...s, decisions: [...s.decisions, rec] });
 }
 
 /** Records for one position, newest first. */
@@ -192,9 +221,10 @@ export function getCustomization(): CustomizationState {
   return read().customization;
 }
 
-export function putCustomization(c: CustomizationState) {
+export function putCustomization(c: CustomizationState): boolean {
   const s = read();
-  write({ ...s, customization: c });
+  if (faulted) return false;
+  return write({ ...s, customization: c });
 }
 
 // ---- Misc --------------------------------------------------------------------------------------
@@ -206,6 +236,7 @@ export function newId(): string {
 /** Test/internal seam: reset the in-memory cache so the next read re-hydrates from localStorage. */
 export function __resetMemory() {
   memory = null;
+  faulted = false;
 }
 
 export const PORTFOLIO_V1_KEY = V1_KEY;
