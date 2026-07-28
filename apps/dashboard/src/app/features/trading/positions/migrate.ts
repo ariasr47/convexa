@@ -196,7 +196,19 @@ export function liftLegacyRecord(raw: unknown): SimPosition | null {
       id,
       legs: carried ?? [leg],
       // VERBATIM, including `''` on a pending limit. Never backfilled with an invented timestamp.
-      opened_time: typeof r.entry_time === 'string' ? r.entry_time : '',
+      //
+      // ⚠ THE LIFT MUST BE IDEMPOTENT. An ALREADY-LIFTED record carries `opened_time`, not
+      // `entry_time` — and this function has two callers, one of which (`importArchive`) is handed
+      // exactly that shape when a trader re-imports a v2 archive of their own book. Reading only
+      // `entry_time` there silently replaced every position's real entry time with the
+      // pending-limit sentinel `''`: a loss-free migration losing a fact on the way back in. Read
+      // whichever the record actually holds, preferring the already-lifted field.
+      opened_time:
+        typeof r.opened_time === 'string'
+          ? r.opened_time
+          : typeof r.entry_time === 'string'
+            ? r.entry_time
+            : '',
       status,
       entry_mode: ENTRY_MODES.has(r.entry_mode as string) ? (r.entry_mode as EntryMode) : 'manual',
       schema_version: SIM_POSITION_SCHEMA_VERSION,

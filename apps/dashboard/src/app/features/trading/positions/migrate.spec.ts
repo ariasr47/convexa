@@ -49,6 +49,27 @@ describe('liftLegacyRecord — the ONE lift', () => {
     expect(p.target).toBe(22);
   });
 
+  /**
+   * ⚠ THE LIFT IS IDEMPOTENT, and this is not cosmetic. `liftLegacyRecord` has TWO production
+   * callers, and one of them — `importArchive` — is handed ALREADY-LIFTED records whenever a trader
+   * re-imports a v2 archive of their own book. Lifting one must be a no-op. It was NOT: the lift
+   * read `entry_time` only, which an already-lifted record does not have, so every position's real
+   * `opened_time` was silently replaced by the pending-limit sentinel `''` on the way back in.
+   * Found by the archive round-trip case; pinned here, at the function.
+   */
+  it('is IDEMPOTENT — lifting an already-lifted record changes nothing, `opened_time` included', () => {
+    const once = lift(LEGACY_V2_RECORD);
+    expect(once.opened_time).toBe('2026-06-12T15:32:00Z');
+    expect(lift(once)).toEqual(once);
+    expect(lift(lift(once))).toEqual(once);
+  });
+
+  it('an already-lifted PENDING limit keeps its empty opened_time, and gains no invented one', () => {
+    const pending = lift({ ...LEGACY_V2_RECORD, entry_time: '', status: 'pending' });
+    expect(pending.opened_time).toBe('');
+    expect(lift(pending).opened_time).toBe('');
+  });
+
   it('sets instrument_kind option and multiplier 100 on every migrated leg', () => {
     const p = lift(LEGACY_V1_RECORD);
     expect(p.legs[0].kind).toBe('option');
