@@ -88,7 +88,11 @@ real when it is not.
   migration. **UX's U17 is cut**; nothing else in the UX position changes. Reversible on request.
 - **A surface that renders position-context alerts.** `useGhostTrade` returns `alerts` (line 543) and
   **no component renders it** — verified. Building that surface is deliberately a separate feature;
-  UX's three qualifier strings are retained in §4 as **Future copy, pending a consumer**.
+  UX's qualifier strings are retained in §4 as **Future copy, pending a consumer**.
+- **A per-ticker position picker.** This is the honest way to restore `position_eval` for a trader
+  holding more than one open position on the focused ticker — let them say *which* position they mean,
+  instead of the app picking one and calling it theirs (§2.8). It belongs **with the alert surface
+  above**, which ruling #9 already deferred, not in this release.
 - **Naming the currently-`Custom` shapes** (ratios, backspreads, non-iron butterflies/condors, boxes,
   jade lizards) — a pure function change, driven by what actually shows up as `Custom`.
 - **A cash-secured / collateral framing** — returns only when a cash or buying-power model exists,
@@ -485,32 +489,64 @@ A single-leg entry is a one-element array, so there is exactly **one** open path
 path plus a multi-leg path. That is what keeps `single-shared-sim-entry-dialog` a variant rather than
 a fork at the data boundary.
 
-### 2.8 `eval_subject` and the suppression of `position_eval` for multi-leg
+### 2.8 `eval_subject` and the suppression of `position_eval`
 
-Owner ruling #9: **suppress for multi-leg.** Single-leg positions keep today's behaviour
-byte-identically; a multi-leg position gets **no** reassessment evaluation, stated plainly — the app
-does not give advice about a four-leg position derived from one leg. Two fixes are **kept anyway**
-because they cost nothing and repair real bugs: the **`leg.id` final tiebreak** (without it two
-identical legs make the choice depend on array order, so the alert subject could change on reload with
-no user action) and the **short-leg fallback** (the original long-only rule silently killed the alert
-for every short put — the most common short structure there is).
+Suppression is decided at **two** levels, and both must be stated because the shipped code only ever
+had to answer the second. **Which POSITION on the focused ticker** is answered first; **which LEG
+within that position** second.
+
+**Level 1 — position selection on the focused ticker.** Shipped `model/store.ts` holds exactly **one
+ghost trade per ticker**, so `gt.positionQuery` is unambiguous today. After the merge a ticker can hold
+N positions, and nothing in ruling #9 or the council answered which one speaks for the ticker. **Ruled
+2026-07-28 (conductor default-with-veto): suppress when the ticker holds more than one open position.**
+
+| Open positions on the focused ticker | Behaviour |
+|---|---|
+| **0** | As today — no position context, nothing sent. |
+| **exactly 1** | **Today's behaviour, byte-identical** (then level 2 applies within that position). |
+| **more than 1** | **Suppressed** — no position-context evaluation is surfaced, and the reason is stated rather than left as silence. |
+
+**Carry the reasoning — it is the load-bearing part.** This is **owner ruling #9 applied one level up,
+not a new decision**: #9 established that the app does not evaluate a subject it cannot faithfully
+represent, and silently picking one of N positions is the same approximation the owner rejected for
+legs — **worse**, because the trader has no way to see which one was picked. **The planner's proposed
+default was considered and rejected:** most-recently-opened `open` position plus its `eval_subject`
+leg. It is deterministic, but it makes the app quietly assert *"this is your NVDA position"* when it is
+one of three. **No regression, by construction:** a ticker holding 2+ positions is a state that
+**cannot exist today**, so nothing a shipped user currently sees changes — which is also why AC-73
+survives verbatim: it was only ever well-defined for the exactly-one-position case, and that case stays
+byte-identical.
+
+**Level 2 — leg selection within the chosen position.** Owner ruling #9: **suppress for multi-leg.** A
+single-leg position keeps today's behaviour byte-identically; a multi-leg position gets **no**
+reassessment evaluation — the app does not give advice about a four-leg position derived from one leg.
+Two fixes are **kept anyway** because they cost nothing and repair real bugs: the **`leg.id` final
+tiebreak** (without it two identical legs make the choice depend on array order, so the alert subject
+could change on reload with no user action) and the **short-leg fallback** (the original long-only rule
+silently killed the alert for every short put — the most common short structure there is).
 
 ```
 eval_subject:
   | { kind: 'whole_position'; leg_id }                  // exactly one option leg — the position IS the leg
   | { kind: 'primary_leg';   leg_id; of_legs: number }  // multi-leg — evaluation SUPPRESSED in v1
-  | { kind: 'none';          reason: 'no_option_leg' }  // shares-only — nothing was sent
+  | { kind: 'none';          reason: EvalNoneReason }   // nothing was sent
+                                                        //   'no_option_leg'      — shares-only
+                                                        //   'multiple_positions' — >1 open position on the ticker
 ```
 
-Selection among option legs: the **long** option leg with the largest `|qty × multiplier|`, ties
-broken by nearest expiration, then lowest strike, then `leg.id` lexicographic; **if there is no long
-option leg, the short option leg** with the largest `|qty × multiplier|` and the same tiebreaks, still
-`kind: 'primary_leg'`. `none` is reachable only when there is no option leg at all.
+`EvalNoneReason` is a **closed vocabulary** in the same style as every other discriminant here
+(snake_case, exhaustive, no free text), so the surface can state *which* absence it is instead of
+rendering nothing unexplained. Selection among option legs: the **long** option leg with the largest
+`|qty × multiplier|`, ties broken by nearest expiration, then lowest strike, then `leg.id`
+lexicographic; **if there is no long option leg, the short option leg** with the largest
+`|qty × multiplier|` and the same tiebreaks, still `kind: 'primary_leg'`. Within a position, `none` is
+reachable only when there is no option leg at all.
 
-**No wire change.** The `pos_*` params are unchanged and derived from the selected leg; the fetch is
-**unconditional and its shape never branches**, so the request stays byte-identical and the *render*
-decides. That is the easiest form of `additive-keeps-score-byte-identical` to prove and it means the
-owner can revisit the suppression after ship without re-architecture. `primary_leg_label` on the
+**No wire change, at either level.** The `pos_*` params are unchanged; the fetch is **unconditional and
+its shape never branches** — it does not branch on leg count and it does not branch on position count —
+so the request stays byte-identical and the *render* decides in both cases. That is the easiest form of
+`additive-keeps-score-byte-identical` to prove (AC-74, which this ruling does not weaken), and it means
+the owner can revisit either suppression after ship without re-architecture. `primary_leg_label` on the
 projection is **deferred with the copy** — under suppression v1 needs only `leg_id` + `of_legs`, so the
 FE lane must not build a dead field.
 
@@ -738,7 +774,9 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 81 | As a designer I want no new token values | The feature adds zero values to `tokens.ts`, contains zero hardcoded hexes, and renders with dark/light parity | test |
 | 82 | As an existing user I want a new column without my saved views being touched | The table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording. **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
 
-**82 acceptance criteria.**
+| 83 | As a trader holding three NVDA positions I don't want the app calling one of them "my position" | Position-context behaviour on the focused ticker depends on the **count of open positions** on it, three ways: **0** ⇒ no evaluation, as today · **exactly 1** ⇒ **byte-identical to today**, then the multi-leg rule applies within it · **more than 1** ⇒ **no evaluation is surfaced**, and the projection carries the explicit `multiple_positions` reason rather than an unexplained silence. The `pos_*` request stays unconditional and byte-identical in all three cases — suppression is a render decision, and a `pos_*` request still appearing for a 3-position ticker is **correct** | test |
+
+**83 acceptance criteria.**
 
 ---
 
@@ -1170,9 +1208,12 @@ Open Positions to export an archive of what loaded.
 
 ### Future copy — retained, NOT shipped in v1
 
-Ruling #9 suppresses `position_eval` for multi-leg, and `useGhostTrade`'s `alerts` (line 543) has **no
+Ruling #9 suppresses `position_eval` for multi-leg, the 2026-07-28 ruling suppresses it for a ticker
+holding more than one open position (§2.8), and `useGhostTrade`'s `alerts` (line 543) has **no
 component consumer** — verified. These strings are kept in the spec **pending a consumer** and must
-not be wired to anything in this release:
+not be wired to anything in this release. Both suppressions are **render** decisions and are fully
+observable without them (AC-74, AC-83): the copy is what a future alert surface will say, not what
+makes the suppression true.
 
 ```
 POSITION_EVAL_LEG_QUALIFIER(legLabel, legCount)   [FUTURE — pending a consumer]
@@ -1191,10 +1232,17 @@ POSITION_EVAL_NONE_EQUITY                          [FUTURE — pending a consume
 POSITION_EVAL_NONE_SHORT                           [FUTURE — pending a consumer]
   "No position-context read — Convexa's read is built on a long option leg, and this position
    doesn't have one. Silence here doesn't mean nothing changed."
+
+POSITION_EVAL_NONE_MULTI_POSITION                  [FUTURE — pending a consumer]
+  "No position-context read — you're holding more than one position on this ticker, and Convexa
+   won't pick one and call it yours. Silence here doesn't mean nothing changed."
 ```
 
 (The short-leg fallback in §2.8 means `POSITION_EVAL_NONE_SHORT` is unreachable even once a consumer
-exists; it is retained because the selection rule is owner-revisitable.)
+exists; it is retained because the selection rule is owner-revisitable.
+`POSITION_EVAL_NONE_MULTI_POSITION` is the level-1 counterpart of `POSITION_EVAL_NONE_EQUITY` — same
+construction, same closing clause — and is the string a per-ticker position picker would replace, not
+supplement, if that Future item ever lands.)
 
 ### Design direction (DESIGN_RULES §1.1–§1.4 → the FE lane builds to this exactly)
 
