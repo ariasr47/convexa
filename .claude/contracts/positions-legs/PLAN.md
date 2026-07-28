@@ -29,9 +29,10 @@ Every task's requirements implicitly include this section.
 | After | Unit | Files | e2e |
 |---|---|---|---|
 | R1 (original baseline) | 645 | 75 | 15/15 |
-| **build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED on `feat/positions-legs`)** | **747** | **79** | **15/15** |
+| build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED) | 747 | 79 | 15/15 |
+| **build phase 2 — F5 · F6 · F7 · F8 · F9 (LANDED on `feat/positions-legs`)** | **858** | **84** | **15/15** |
 
-Phase 1 also confirmed: `tsc` clean, lint 0 errors, `apps/api` diff empty, nothing pre-existing changed or deleted. Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
+Both phases confirmed: `tsc` clean, lint **0 errors at exactly the pre-existing 29 warnings** (that warning count is itself a baseline — do not add to it), `apps/api` diff empty, nothing pre-existing changed or deleted, and **`convexa.positions.v3` written nowhere** (the cutover is still F18). Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
 
 **Binding invariants** (spec §8): `loss-free-durable-migration` (HARD, severity-promoted) · `additive-keeps-score-byte-identical` · `no-real-order-path` · `single-shared-sim-entry-dialog` · `digested-labels-not-raw-dump` · `theme-token-discipline` · `live-vs-static-isolation` · `best-effort-isolated-or-null` · `model-read-carries-its-assumptions`.
 
@@ -42,6 +43,8 @@ Phase 1 also confirmed: `tsc` clean, lint 0 errors, `apps/api` diff empty, nothi
 **Never render the literal `undefined` / `null` / `NaN` in a cell** (spec §2.2, AC-26).
 
 **The `max_loss` column must FIT — a squeeze is a bounce.** If `max_loss` cannot sit inside the existing framed-table treatment at **both** shipped densities (`comfortable`, `compact`) and **every** shipped breakpoint above `md` without shrinking another column below its design width, without horizontal scroll on desktop, without truncating `unlimited risk` / `unnamed shape` into a shared prefix or an ellipsis that reads as data, and without dropping any text below the 11px floor — **STOP and raise a GATE Z bounce to the conductor.** Do not silently squeeze, do not unilaterally re-lay-out the table, do not shorten the withheld-reason labels. This is an escalation instruction, not a footnote (spec §4 *The risk slot*, `_MANIFEST.md` Lane instruction).
+
+> **✅ THE BOUNCE HAPPENED AND IS RULED (build phase 2): the column renders at `lg` and above, not at `md` and below.** The escalation above worked exactly as intended — the lane measured, bounced rather than squeezed, and shipped everything except the `FIGMA_COLUMNS` entry. **The rule stands unchanged for every remaining task**; the ruling narrows *where* the column renders, not *whether* a failure escalates. Details and the remaining obligations live in **F11**.
 
 ### Conformance spec
 
@@ -1976,10 +1979,13 @@ Expected: PASS.
 
 - [ ] **Step 5: Verify the Future copy is unwired**
 
+⚠ **CORRECTED (build phase 2). The property is UNWIRED, not UNDEFINED — do not "fix" a match by deleting the constants.** F9 defines all five strings in `positions/labels.ts` under a marked FUTURE block, wired to nothing, which is exactly right. A grep for "no matches anywhere" is therefore self-defeating: it now matches the definitions and would fail GATE Q on correct code. Exclude the definition site:
+
 ```bash
-grep -rn "POSITION_EVAL_LEG_QUALIFIER\|POSITION_EVAL_TIP\|POSITION_EVAL_NONE_EQUITY\|POSITION_EVAL_NONE_SHORT\|POSITION_EVAL_NONE_MULTI_POSITION" apps/dashboard/src
+grep -rn "POSITION_EVAL_LEG_QUALIFIER\|POSITION_EVAL_TIP\|POSITION_EVAL_NONE_EQUITY\|POSITION_EVAL_NONE_SHORT\|POSITION_EVAL_NONE_MULTI_POSITION" apps/dashboard/src \
+  | grep -v "features/trading/positions/labels.ts"
 ```
-Expected: no matches. Those **five** strings are Future copy pending a consumer (spec §4) and must not appear in code in this release — including `POSITION_EVAL_NONE_MULTI_POSITION`, whose *behaviour* F18 ships while its *string* stays unwired.
+Expected: **no matches outside `labels.ts`.** Those **five** strings are Future copy pending a consumer (spec §4): defined, exported, and referenced by **no component** — including `POSITION_EVAL_NONE_MULTI_POSITION`, whose *behaviour* F18 ships while its *string* stays unwired.
 
 - [ ] **Step 6: Commit**
 
@@ -2651,7 +2657,21 @@ Add, **verbatim from spec §4** (do not paraphrase, do not re-wrap the sentences
 
 Run: `npx nx test @org/dashboard`
 
-The `Strategy` deletion will break `derive.ts`, `usePortfolio.ts`, `PositionRow.tsx`, `PositionCard.tsx`, `CustomizationToolbar.tsx` and their specs. **Fix compile errors only** — swap `strategyOf(p)` for `structureKindOf(p)` and `strategyLabel(s)` for `STRUCTURE_LABELS[s]` at each site, and change `GROUP_AXES` (`CustomizationToolbar.tsx:43-47`) to `[{ key: 'none', label: 'None' }, { key: 'ticker', label: 'Ticker' }, { key: 'structure', label: 'Structure' }]`. Do **not** start the render redesign here; that is F11.
+The `Strategy` deletion will break `derive.ts`, `usePortfolio.ts`, `PositionRow.tsx`, `PositionCard.tsx`, `CustomizationToolbar.tsx` and their specs. **Fix compile errors only** — swap `strategyLabel(s)` for `STRUCTURE_LABELS[s]` at each site, and change `GROUP_AXES` (`CustomizationToolbar.tsx:43-47`) to `[{ key: 'none', label: 'None' }, { key: 'ticker', label: 'Ticker' }, { key: 'structure', label: 'Structure' }]`. Do **not** start the render redesign here; that is F11.
+
+⚠ **CORRECTED (build phase 2): `strategyOf(p)` does NOT swap directly for `structureKindOf(p)`.** `structureKindOf` takes a `SimPosition`, but `DerivedRow.position` is still a **legless v2 `Position`** until F18 — so the naive swap does not type-check. Two **transitional bridges** exist in `derive.ts` instead:
+
+```ts
+export function structureOfLegacy(p: Position): StructureKind
+export function maxLossOfLegacy(p: Position, kind: StructureKind): MaxLossResult
+```
+
+Both route through **the ONE lift (`liftLegacyRecord`) and the ONE recogniser** rather than deriving the name a second way — which is the whole point. For a shipped single-leg long option they yield exactly `long_call` / `long_put`, **byte-identical to the deleted `strategyOf`**, so AC-53's "long calls still grouped together" holds through the transition.
+
+**These are BRIDGES, not design.** They exist only because the store and the render path cross over at different tasks. **A transitional helper that outlives its transition is how a second source of truth gets born**, so their deletion is an explicit obligation, not a cleanup nicety:
+
+- **F11 Step 8** — remove every bridge *call site* the `PositionView` render path makes redundant.
+- **F18** — delete both *functions* outright, when the last legless `Position` disappears.
 
 Expected: back to ≥ 645 passing.
 
@@ -2796,7 +2816,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 Spec §4 *The `contract` cell*, *The risk slot*, *Component states*, *The four not-a-number literals*, *Design direction*. AC-1, AC-22, AC-23, AC-26, AC-28, AC-29, AC-31, AC-32, AC-33, AC-34, AC-41, AC-42, AC-78, AC-82.
 
-**⚠ CARRY THE GATE Z BOUNCE.** This is the task that adds `max_loss` to the table. Re-read the Global Constraints escalation instruction before you start laying the column out. If it cannot fit at both densities and every breakpoint above `md` within the stated limits, **stop and bounce to the conductor** — this is not a judgement call you get to make.
+**⚠ THE BOUNCE ALREADY HAPPENED, AND IT IS RULED: `max_loss` renders at `lg` and above, not at `md` and below.**
+
+Build phase 2 measured the column in a real browser (Cypress, seeded 4-row portfolio, dark + light, `comfortable` + `compact`):
+
+| Viewport | Result |
+|---|---|
+| 1440 | fits |
+| 1280 (`lg`) | fits |
+| **900 (`md`)** | **overflows its host — 895 vs 835**; without the column it fits |
+
+The lane correctly bounced rather than squeezing: it shipped every other part of F9 and **deliberately withheld the `FIGMA_COLUMNS` entry**, pinning the deferral with `expect(FIGMA_COLUMNS).not.toContain('max_loss')` in `defaults.spec.ts:78-87` so the next task has to invert it **consciously** rather than drift into it.
+
+**The ruling's basis — carry this, because it is the difference between meeting the constraint and compromising it.** Spec §4 requires the column to fit *"every shipped breakpoint **above** `md`"*. **MUI's `md` is 900px**, so `lg` (1280) and 1440 are the breakpoints the constraint covers, and both pass. The failure is **at** `md` — a breakpoint the constraint never covered. Below `sm` the table has already collapsed to cards (`PositionsView.tsx:97-98`), where the figure has its footer home (slot 5). **The only band without the figure is `md`–`lg`**, and that band is outside what the spec asked for. This is the constraint being **met**, not waived.
+
+**The remaining fit obligation stands unchanged:** a failure at `lg` or above is still a **GATE Z bounce to the conductor, never a squeeze**. Re-read the Global Constraints escalation instruction before laying the column out.
+
+**AC-82 is being amended to carry the breakpoint condition — verify against AC-82 by number, do not restate the condition from this plan.**
 
 **Files:**
 - Modify: `apps/dashboard/src/app/features/trading/positions/PositionRow.tsx` (`RowContext:62-72`, `cellContent:78-394`, `PositionRow:472-537`)
@@ -2899,21 +2935,55 @@ export interface RowContext {
 
 All four literals share **identical treatment** — MUI `variant="body2"`, `color: 'text.disabled'`, the same `Tooltip arrow` — and differ **by text and testid only**.
 
-- [ ] **Step 5: Add the column to the table**
+- [ ] **Step 5: Flip `FIGMA_COLUMNS` — the column becomes visible, behind the `lg`-and-above condition**
 
-`PositionsView.tsx:31-42` — insert `'max_loss'` into `FIGMA_COLUMNS` between `'trend'` and `'expiry'`, and rename `'strategy'` to `'structure'`. `FIGMA_COLUMNS` must keep mirroring `DEFAULT_COLUMNS` exactly; add an assertion to `defaults.spec.ts` that the two arrays are deep-equal so they cannot drift again.
+`PositionsView.tsx:31-42` currently holds `FIGMA_COLUMNS` **without** `max_loss` (the phase-2 deferral). This task adds it, **conditioned on the breakpoint** rather than unconditionally:
 
-- [ ] **Step 6: Verify the fit — this is the GATE Z checkpoint**
+- `'max_loss'` sits between `'trend'` and `'expiry'`, matching §4 Flows 2's left→right scan order.
+- The column is present **only at `lg` and above**. `TableLayout` already reads `useMediaQuery(theme.breakpoints.down('md'))` for the card fallback (`:97-98`); add the `lg` test beside it and build the visible set from it, e.g. `const columns = isLgUp ? FIGMA_COLUMNS : FIGMA_COLUMNS.filter((c) => c !== 'max_loss')`. Keep the derivation in **one** place — do not fork `FIGMA_COLUMNS` into two constants, which would reintroduce the drift `defaults.spec.ts` exists to prevent.
+- The `md`–`lg` band renders the table **without** the column; below `sm` the card's footer slot 5 already carries the figure. No band loses the figure silently — the card home covers the small end, and `md`–`lg` is the deliberate gap the ruling accepts.
+
+- [ ] **Step 6: Invert the deferral assertion in `defaults.spec.ts`**
+
+`defaults.spec.ts:78-87` currently pins the deferral:
+
+```ts
+it('GATE Z — is NOT yet in FIGMA_COLUMNS: making it visible is F11`s, with the fit checkpoint', () => {
+  expect(FIGMA_COLUMNS).not.toContain('max_loss');
+});
+```
+
+**Invert it deliberately — that assertion exists precisely so this flip cannot happen by accident.** Replace it with the positive form plus the breakpoint condition, and update its sibling at `:89-90`:
+
+```ts
+it('is in FIGMA_COLUMNS — the fit was measured and ruled at `lg` and above (AC-82)', () => {
+  expect(FIGMA_COLUMNS).toContain('max_loss');
+});
+
+it('FIGMA_COLUMNS and DEFAULT_COLUMNS now agree exactly — no pending key remains', () => {
+  expect(FIGMA_COLUMNS).toEqual(DEFAULT_COLUMNS);
+});
+```
+
+The `toEqual(DEFAULT_COLUMNS)` form is the drift guard the original Step 5 asked for; it only becomes assertable once the deferral is lifted.
+
+- [ ] **Step 7: Re-measure the fit — at `lg` and above ONLY**
 
 ```bash
 npx nx serve dashboard
 ```
 
-At `md`, `lg` and `xl`, in **both** `comfortable` and `compact` density, confirm: no horizontal scroll on desktop; no other column shrunk below its design width; `unlimited risk` and `unnamed shape` both fully legible and distinguishable at a glance; no text below 11px. Capture a screenshot of each density for the review record.
+At **`lg` (1280) and 1440**, in **both** `comfortable` and `compact` density, in **both** colour schemes, confirm: no horizontal scroll; no other column shrunk below its design width; `unlimited risk` and `unnamed shape` both fully legible and **distinguishable at a glance**, never clipped to a shared prefix; no text below 11px. Capture a screenshot of each density for the review record.
 
-**If any of those fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor with the screenshots and the specific constraint that could not be met.**
+**Do not re-measure at `md` expecting a pass** — the ruling puts the column above that breakpoint, and phase 2 already measured 895 vs 835 there. Assert instead that the `md` render **omits** the column.
 
-- [ ] **Step 7: Run the tests and commit**
+**If any check at `lg` or above fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor** with the screenshots and the specific constraint that could not be met.
+
+- [ ] **Step 8: Delete the transitional bridges you no longer need**
+
+`derive.ts` carries `structureOfLegacy` and `maxLossOfLegacy` (added in F9, see that task's Step 5). Any call site in the row/card render path that now has a `PositionView` in hand must read `view.structure` / `view.max_loss` **directly** and stop routing through a bridge. Remove every bridge call this task makes redundant; the functions themselves die in F18, when the last legless `Position` disappears.
+
+- [ ] **Step 9: Run the tests and commit**
 
 ```bash
 npx nx test @org/dashboard
@@ -3142,11 +3212,33 @@ The `aria-expanded="true"` assertion is not decoration — without it a selector
 Run: `npx nx e2e dashboard-e2e`
 Expected: 15/15 + the new case. If the expansion overflows, fix the card (slot 5 stacks vertically; never a horizontal mini-table inside a 393px card) — never widen the assertion.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Record the pre-existing 900px page overflow — an OBSERVATION, not a gate**
+
+Build phase 2 found, while measuring the `max_loss` column, that the **`/positions` page itself overflows at 900px** — `scrollWidth` 965 vs 900 — and that this is **byte-identical with and without the `max_loss` column**. The shipped e2e only ever asserted at 393px, so the `md` boundary was never covered and the defect has been latent.
+
+**It is pre-existing and OUT OF SCOPE for this feature.** The conductor has logged it as a standing item.
+
+Record the measurement in this spec as a **commented, non-asserting note** so GATE Q does not attribute it to `positions-legs`:
+
+```ts
+// PRE-EXISTING, OUT OF SCOPE (logged as a standing item, build phase 2):
+// `/positions` overflows at 900px — scrollWidth 965 vs 900 — BYTE-IDENTICALLY with and without the
+// `max_loss` column, i.e. this feature neither causes nor worsens it. The shipped e2e only asserted
+// at 393px, which is why the md boundary went uncovered. Do NOT add an assertion here: this row
+// would then fail on a defect this feature did not introduce, and the failure would be misread as a
+// regression from the leg refactor. The 393px guard below is the one that gates.
+```
+
+**V3 must not fail on it**, and no task in this plan may attempt to fix it. If a later task's measurement at `md` shows the same 965/900, that is this known item, not a new regression.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add apps/dashboard-e2e/src/e2e/mobile-no-overflow.cy.ts
 git commit -m "test(e2e): assert 393px no-overflow with a 4-leg disclosure EXPANDED, both schemes
+
+Note the pre-existing, out-of-scope 900px page overflow as a non-asserting
+observation so GATE Q does not attribute it to this feature.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
@@ -3555,6 +3647,14 @@ else, read ALL of: v2/legacy-v2, v1/legacy-v1
 
 Delete the transitional in-memory lift from F10 — `allPositions()` now returns `SimPosition[]` directly. `openPosition`, `closePosition`, `cancelLimit`, `fillLimit` write `SimPosition`. Every mutator checks `health.faulted` first and returns `{ ok: false }` rather than attempting a write. Delete `rows: DerivedRow[]`, `markFor`, and `DerivedRow`/`RowMetrics` from `derive.ts` — every consumer moved to `views` in F10–F14.
 
+**Deletion obligation — the transitional bridges die HERE.** `derive.ts`'s `structureOfLegacy` and `maxLossOfLegacy` (F9 Step 5) exist only to bridge a legless v2 `Position` to the leg-based recogniser. Once `allPositions()` returns `SimPosition[]`, their reason to exist is gone:
+
+```bash
+grep -rn "structureOfLegacy\|maxLossOfLegacy" apps/dashboard/src
+```
+
+Expected **after** this task: **no matches at all** — both functions deleted, `applyFilter`'s call at `derive.ts:72` reading `view.structure` instead. **A transitional helper that outlives its transition is how a second source of truth gets born**, and this feature exists to kill one of those, not to plant another. If a call site still needs a bridge here, that consumer has not been moved to `PositionView` and *that* is the bug.
+
 `recordDecision` keeps writing to the **one** log via the positions store's `appendDecision`. That is DECISION_QUEUE **Q2 resolved** — the two competing `appendDecision` definitions collapse to one.
 
 **`outcomes/` keeps its zero-write boundary, and counts a multi-leg position as exactly ONE ledger record** — a per-leg harvest would multiply `N` and invalidate every Wilson interval the track record prints.
@@ -3841,7 +3941,7 @@ Verify **AC-83** (`SPEC.md` §3 section H, `test`) — the B1 ruling, implemente
 - [ ] **exactly 1 open position** — today's behaviour, **byte-identical**, then the multi-leg rule applies within it; this is the arm AC-73 rests on, and AC-73 survives verbatim because it was only ever well-defined for this case
 - [ ] **more than 1 open position** — evaluation **suppressed** on every surface, the projection carrying `EvalNoneReason.multiple_positions` rather than an unexplained silence
 - [ ] the `pos_*` request is **present and byte-identical** in all three arms — a request still appearing for a 3-position ticker is **correct, not a defect** (AC-83 repeats AC-74's clause)
-- [ ] `POSITION_EVAL_NONE_MULTI_POSITION` is **not rendered** anywhere — it is `[FUTURE — pending a consumer]` and this release ships no consumer
+- [ ] `POSITION_EVAL_NONE_MULTI_POSITION` is **defined but not rendered** — re-run F6 Step 5's grep in its corrected form (**no matches outside `positions/labels.ts`**). It is `[FUTURE — pending a consumer]` and this release ships no consumer. **A match inside `labels.ts` is correct and expected; the fix for a match elsewhere is to unwire the consumer, never to delete the constant.**
 
 - [ ] **Step 6: Report**
 

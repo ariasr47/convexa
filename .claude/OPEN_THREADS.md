@@ -939,6 +939,14 @@ also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
   GitHub Actions workflow (run `nx test` + conformance on push, then deploy) is the standing follow-on.
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
+- **`/positions` page overflows horizontally at the `md` boundary (PRE-EXISTING, measured 2026-07-28):**
+  at 900px the page's `scrollWidth` is **965 vs a 900 host**. Measured in a real browser by the
+  `positions-legs` phase-2 lane and confirmed **byte-identical with and without** that feature's new
+  `max_loss` column — so it is **not** attributable to `positions-legs`, which is why that feature's
+  column was ruled to render at **`lg` and above only**. Root cause of the blind spot: the shipped e2e
+  asserts no-overflow **only at 393px**, so the `md` boundary has never been covered. Fix is two parts —
+  the page-level overflow itself, and **extending the no-overflow e2e route set to the `md` breakpoint**
+  so it cannot regress unobserved again. Small, unscheduled; do NOT fold it into `positions-legs`.
 - **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
   `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
   hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".

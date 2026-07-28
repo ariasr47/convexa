@@ -772,7 +772,7 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 79 | As a keyboard/mobile user I want the floor held | The leg disclosure is keyboard-operable with a visible authored `:focus-visible` ring and correct `aria-expanded`/`aria-controls`; leg text is ≥ 11px; mobile hit targets are ≥ 44px; stat values are never headings | test |
 | 80 | As a trader I want reading to be free of side effects | Expanding, collapsing, grouping, sorting and switching views trigger **no fetch and no store write**, and nothing on this surface can reach a real order path | test |
 | 81 | As a designer I want no new token values | The feature adds zero values to `tokens.ts`, contains zero hardcoded hexes, and renders with dark/light parity | test |
-| 82 | As an existing user I want a new column without my saved views being touched | The table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording. **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
+| 82 | As an existing user I want a new column without my saved views being touched | **At `lg` and above** the table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording; **at `md` and below the column is not rendered at all**, and the figure remains available on the card (footer slot 5). **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
 
 | 83 | As a trader holding three NVDA positions I don't want the app calling one of them "my position" | Position-context behaviour on the focused ticker depends on the **count of open positions** on it, three ways: **0** ⇒ no evaluation, as today · **exactly 1** ⇒ **byte-identical to today**, then the multi-leg rule applies within it · **more than 1** ⇒ **no evaluation is surfaced**, and the projection carries the explicit `multiple_positions` reason rather than an unexplained silence. The `pos_*` request stays unconditional and byte-identical in all three cases — suppression is a render decision, and a `pos_*` request still appearing for a 3-position ticker is **correct** | test |
 
@@ -792,7 +792,8 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 2. **Scan the book** — one dense `<tr>` per `SimPosition`, always. Left→right each row answers, in
    order: **what it is** (ticker + structure) → **how big** (qty) → **what I paid or received** (net
    entry) → **what it's worth** (mark) → **am I up** (P/L, P/L%, Δ since entry, trend) → **what I can
-   lose** (the `max_loss` column — see *The risk slot* below) → **when does it end** (expiry).
+   lose** (the `max_loss` column — **`lg` and above only**, see *The risk slot* below) → **when does it
+   end** (expiry).
 3. **Inspect the legs** — a `⌄` disclosure at the right edge of the `contract` cell, present only when
    `legs.length > 1`, opening a sibling `<tr colSpan>` with one indented line per leg. Instant, no
    keyframe. State is ephemeral.
@@ -870,10 +871,13 @@ precisely what the owner's Q2 answer was aimed at. **Max loss gains a table colu
 **Three homes, one figure, identical wording in all three** — the same unsigned figure or the same one
 withheld-reason label, never both, never differently phrased:
 
-1. **Card footer slot 5** (below `md`), label `Max loss`.
+1. **Card footer slot 5** (below `md`, where the table has already collapsed to cards), label
+   `Max loss`.
 2. **The leg disclosure** (multi-leg only) — the assumption sentence when a figure exists, the
    reason's tip when one does not.
-3. **The table column** — `Max loss`, right-aligned mono `tabular-nums`, untinted.
+3. **The table column, at `lg` and above only** — `Max loss`, right-aligned mono `tabular-nums`,
+   untinted. **At `md` and below the column is not rendered** (see the GATE Z ruling below); the
+   figure remains available on the card.
 
 **The column, specified against the shipped machinery** (verified in code, not guessed —
 `positions/types.ts:96-119` and `positions/defaults.ts:11-80`):
@@ -885,10 +889,12 @@ withheld-reason label, never both, never differently phrased:
   the build until it is labelled**. No `TABLE_HEADER_LABELS` override: the header copy and the
   menu/tooltip copy are the same two words, so it stays out of that thin override map.
 - **Added to `FIGMA_COLUMNS`** (`PositionsView.tsx:31`) — this is the line that actually makes the
-  column render. The shipped table renders `const columns = FIGMA_COLUMNS` (`:209`) and **ignores the
-  persisted `working.columns` entirely**; a key that is not in `FIGMA_COLUMNS` appears nowhere, and
-  there is no column picker to opt in with (`CustomizationToolbar.tsx:51` — the columns UI is
-  explicitly "future"). Place it between `trend` and `expiry`, matching §4 Flows 2's left→right order.
+  column render, **gated to `lg` and above** per the GATE Z ruling below. The shipped table renders
+  `const columns = FIGMA_COLUMNS` (`:209`) and **ignores the persisted `working.columns` entirely**; a
+  key that is not in `FIGMA_COLUMNS` appears nowhere, and there is no column picker to opt in with
+  (`CustomizationToolbar.tsx:51` — the columns UI is explicitly "future"). Place it between `trend` and
+  `expiry`, matching §4 Flows 2's left→right order. The breakpoint gate belongs on the rendered set,
+  **not** on `DEFAULT_COLUMNS`/`OPTIONAL_COLUMNS` — a viewport must never change what is stored.
 - **Added to `DEFAULT_COLUMNS`, and NOT to `OPTIONAL_COLUMNS`.** `defaults.ts:27` binds the partition
   *"Every `ColumnKey` appears in exactly one of DEFAULT_COLUMNS / OPTIONAL_COLUMNS"*, asserted by
   `defaults.spec.ts:20-25` (no duplicate across the partition, no gap against the label map). Since the
@@ -920,6 +926,26 @@ unbuilt and out of scope (§1), and every other column keeps its REVISION-2 posi
 If it cannot be made to fit within those constraints, that is a **GATE Z bounce to the conductor, not a
 silent squeeze** and not a unilateral re-layout of the table.
 
+**GATE Z bounce — RULED 2026-07-28 (conductor default-with-veto): the column renders at `lg` and above,
+and is not rendered at `md` and below.** The build lane measured the real render in a browser (Cypress,
+seeded 4-row portfolio, dark + light, `comfortable` + `compact`): `max_loss` **fits at 1440px and
+1280px**, but **at 900px the table overflows its host — 895 vs 835**, where without the column it fits.
+The lane bounced instead of squeezing, and shipped the key, label, partition entry and cell renderer
+while deliberately leaving `max_loss` out of `FIGMA_COLUMNS`, pinned by a `defaults.spec.ts` assertion
+so the next task must consciously invert it. Two reasons this is the constraint being **met, not
+compromised**:
+
+1. **The constraint above requires fitting "every shipped breakpoint above `md`".** MUI's `md` is
+   900px, so `lg` (1280) and 1440 both qualify and both pass. The failure is **at** `md`, which the
+   constraint never covered — the lane over-tested, which is how we learned this. And below `sm` the
+   table has already collapsed to cards, where the figure has its own home (slot 5), so the only band
+   without the figure in the table is `md`–`lg`.
+2. **The `md` boundary is already broken, independently of this feature.** The lane measured
+   `/positions` overflowing at 900px (`scrollWidth` 965 vs 900) **byte-identically with and without the
+   column**. Hiding the column there is the honest response to a pre-existing defect, not a workaround
+   for a regression of ours. **That page-level overflow is logged separately and is explicitly NOT in
+   this feature's scope** — do not widen this release to fix it.
+
 ### Banner region — the collision rule
 
 One banner region directly above the table, in `CustomizationToolbar`'s existing banner slot. Fixed
@@ -944,7 +970,7 @@ not read this banner will lose a trade.
 | Position card (393px) | 5-item footer; collapsed height equals a 1-leg card | skeleton card | n/a | same withheld words as the row | same dim treatment as shipped | same as the row; the CTA above is refused |
 | Leg disclosure | instant open, one line per leg, left rule | n/a | n/a | the failed leg shows `unavailable` on its own line; resolved legs still show their marks | each leg shows its own basis; `last_known` on all legs | fully usable (a read) |
 | Structure chip | outlined neutral chip: `divider` border, `text.secondary` ink, **no colour** | n/a | n/a | `Custom` (neutral) for a malformed record | never dims | unchanged |
-| Risk slot | one max-loss figure (untinted mono) **or** one stated reason | n/a | n/a | figure/reason unchanged (static) | **never dims** — not live-derived | unchanged |
+| Risk slot (card footer always; table column `lg`+) | one max-loss figure (untinted mono) **or** one stated reason | n/a | n/a | figure/reason unchanged (static) | **never dims** — not live-derived | unchanged |
 | P/L% cell | bare number; header tip basis-aware, row tip names the basis | skeleton | n/a | `unavailable`; or **`no basis`** (`cell-no-basis`, `NO_BASIS_TIP`) while the dollar P/L still renders; or `—` for a pending limit | dims with the live block | unchanged |
 | Group subtotal | signed dollar direction (the only tinted aggregate) | n/a | n/a | `· N positions excluded (unavailable)` | header carries `⏸` | unchanged |
 | Entry CTA (`+ Open simulated position`) | `primary.main`, the one amber on the page | n/a | n/a | n/a | enabled (offline disables no control) | `aria-disabled="true"`, **focusable**, tooltip reachable, `aria-describedby` the banner, activation a no-op; the dialog never opens |
