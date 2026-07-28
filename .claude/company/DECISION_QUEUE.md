@@ -18,7 +18,7 @@
   · recommend: YES — Value H, blocked a month, zero code, unblocks the whole monetization track
   and the vendor/overnight decision together · defer-cost: every week of product work continues
   against a stack that may be unsellable as-is.
-- **[Q2]** Rule on the split decision log — `appendDecision` writes to TWO stores
+- ~~**[Q2]**~~ **DECIDED — see Decided below.** Rule on the split decision log — `appendDecision` writes to TWO stores
   (`convexa.ghost-trade.v1` live from the Ticker page; `convexa.positions.v2` from Positions), so
   Ticker ghost-trade records land in a key nothing reads; outcome-ledger already unions both, so it
   is correct either way — the question is whether the split is INTENDED (then: union + document,
@@ -36,6 +36,15 @@
   small; the defer trigger makes waiting honest instead of indefinite.
 
 ## Decided
+- [Q2] DECIDED 2026-07-27: **the split is NOT intended — unify.** Settled by an owner brainstorm on the
+  positions model (the Webull-import track): `GhostTrade` and `Position` are the same concept built
+  twice, so the two `appendDecision` definitions (`model/store.ts:59` → `convexa.ghost-trade.v1`,
+  `positions/store.ts:171` → `convexa.positions.v2`) collapse to one when the two position systems
+  merge. Q2's own recommendation ("unify only as its own deliberate feature, never on another
+  feature's critical path") is honoured: the unification rides the **`positions-legs`** feature —
+  where the durable migration is happening anyway — rather than being bolted onto something else.
+  Sequencing rationale: migrating ONE store is routine; migrating two that disagree about which is
+  authoritative, while carrying an un-backed-up trading history, is how data is lost.
 - [Q4] DECIDED 2026-07-22: **(a) — full "Curvature Terminal" direction approved, all four stages**
   (Stage 0 floor repair → 1 token swap → 2 signature → 3 surface sweep), each a GATE V program under
   the DESIGN_RULES loop. Decision made on VERIFIED evidence (real-browser verification pass,
