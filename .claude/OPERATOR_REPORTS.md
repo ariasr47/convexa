@@ -106,8 +106,9 @@ Above the fold, use the right column. The left column may appear only in the foo
 | Internal | Say instead |
 |---|---|
 | GATE I / discovery | picking the next feature |
-| GATE A·X / GATE P·X | architecture plan locked / product plan locked |
-| GATE U·X / fan-out | design locked — starting the build(s) |
+| GATE C / council / R1–R4 | the design session |
+| GATE C R2 conflict / R3 reconcile | a disagreement between the design voices / settling it |
+| GATE PLAN / fan-out | plan written — starting the build(s) |
 | GATE M / GATE V | quick server-side fix / quick visual fix |
 | GATE Q / QA / conformance / lint | quality check / the automated checks |
 | GATE S / archive | shipped |
@@ -137,8 +138,9 @@ agreed field list both sides build against").
 
 ---
 **Technical detail** *(skip freely)*
-GATE U·X closed · wrote INTERFACE/BACKEND/FRONTEND contracts under .claude/contracts/checkout-redesign/ ·
-contract_lint 0 · launch prompts §4/§5 dispatched as background subagents.
+GATE C closed (council R1–R4 + skeptic; 3 conflicts, 1 escalated) · wrote SPEC.md +
+INTERFACE_CONTRACT.md under .claude/contracts/checkout-redesign/ · contract_lint 0 · GATE PLAN done ·
+launch prompts §2/§3 dispatched as background subagents.
 ```
 
 ### 6.2 Decision card (a blocking, irreversible choice)

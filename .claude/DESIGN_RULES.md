@@ -1,8 +1,8 @@
 # DESIGN_RULES — the front-end design-quality canon (rule of record)
 
 > The SINGLE source for the kit's design-quality discipline. The role prompts POINT here
-> (`agents/delivery-ux` · `agents/delivery-frontend` · `agents/qa-verify` · `ROLE_LAUNCH_PROMPTS` §3/§5
-> · `ORCHESTRATOR` GATE U·X / GATE V) and never restate the rules — a rule stated twice is a rule that
+> (`agents/delivery-ux` · `agents/delivery-frontend` · `agents/qa-verify` · `ROLE_LAUNCH_PROMPTS` §1/§3
+> · `ORCHESTRATOR` GATE C / GATE V) and never restate the rules — a rule stated twice is a rule that
 > drifts. Scope: every feature with a user-facing surface. §7 says which role owns which part.
 
 ## 1. The non-negotiable loop
@@ -105,4 +105,5 @@ vision least. Over-decoration and excess animation are themselves tells that a d
   fallback note.
 - **QA** verifies the §5 quality floor as part of the GATE Q sweep — review-kind under the
   risk-based rule (`qa-verify` §4) unless a case is marked `test:`.
-- **GATE V** (the visual fast-path) and **GATE U·X** read this file as part of their audit sets.
+- **GATE V** (the visual fast-path) and **GATE C** (the design council) read this file as part of their
+  audit sets.
