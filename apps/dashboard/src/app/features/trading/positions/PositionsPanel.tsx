@@ -20,9 +20,7 @@ import { Box, Typography } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useMemo, useState } from 'react';
 import { CustomizationToolbar } from './CustomizationToolbar';
-import type { RowContext } from './PositionRow';
 import { PositionsView } from './PositionsView';
-import type { DerivedRow } from './derive';
 import { deriveGroups } from './derive';
 import type { PositionStatus } from './types';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
@@ -82,12 +80,8 @@ export function PositionsPanel({
   // Orders panel above.
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
-  // Build a markRes for a row by re-running the existing engine off the row's tracked stats.
-  const markResFor = (row: DerivedRow): RowContext['markRes'] => {
-    if (row.position.status !== 'open' && row.position.status !== 'pending') return null;
-    return pf.markFor(row.position);
-  };
-
+  // No `markResFor` any more: every presentational component reads the `PositionView` the hook
+  // already built (`pf.rows[i].view`), so the row and the card can never disagree about a number.
   const { working } = pf;
   const groups = useMemo(
     () =>
@@ -151,7 +145,6 @@ export function PositionsPanel({
         streamOffline={streamOffline}
         totalCount={pf.positions.length}
         isHistory={isHistoryFilter(working.filter.status)}
-        markResFor={markResFor}
         trendFor={pf.trendFor}
         onOpenEntry={onRequestOpenEntry}
         onClearFilter={() =>

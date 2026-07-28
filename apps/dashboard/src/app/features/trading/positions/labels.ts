@@ -64,6 +64,41 @@ export const PENDING_PL_TIP = 'Fills at your limit; no P/L until it fills.';
 export const ROW_UNAVAILABLE_TIP =
   "This position's contract couldn't be priced this cycle — it's safe; other positions are unaffected.";
 
+// ---- The three `—` tips (SPEC §4 *The four not-a-number literals*) ------------------------------
+//
+// `—` is NOT-APPLICABLE: the field does not apply to this instrument, or the answer lives one level
+// down. It keeps its shipped `text.disabled` treatment and stays untestidded; only its TIP says
+// which of the two it is, so it can never be read as `unavailable` or as `not recorded`.
+
+export const SHARES_FIELD_TIP =
+  'Not applicable — this position holds shares, which have no strike or expiry.';
+
+export const MULTI_LEG_STRIKE_TIP = 'Multiple legs — expand the position to see each strike.';
+
+// ---- Mark provenance on a STRUCTURE (SPEC §4) ---------------------------------------------------
+
+/** Replaces the generic unavailable tip when SOME legs priced and some did not. */
+export function partialMarkTip(resolvedLegs: number, totalLegs: number): string {
+  return (
+    `${totalLegs - resolvedLegs} of ${totalLegs} legs couldn't be priced this cycle. A partial ` +
+    'spread price would be wrong, not just incomplete — so no P/L is shown. Your other positions ' +
+    'are unaffected.'
+  );
+}
+
+/** Appended when the legs did not all price on the same rung of the ladder. */
+export const WEAKEST_BASIS_TIP =
+  'Legs priced on different bases — this net uses the weakest (theoretical). Expand the position ' +
+  'to see each leg.';
+
+/** AC-27 — each row's P/L% tip names THAT ROW's basis. No new column; the tip carries it. */
+export function plPctBasisTip(basis: 'net_debit' | 'net_credit'): string {
+  return basis === 'net_debit'
+    ? 'Measured against your net debit — the money you paid to open this position.'
+    : 'Measured against your net credit — the money you received to open this position. A gain ' +
+        'here means the structure is worth less than you sold it for.';
+}
+
 // ---- positions-legs — the structure/leg/net-entry glossary (SPEC §4 *Copy — exact strings*) -----
 
 export const NET_ENTRY_TIP =

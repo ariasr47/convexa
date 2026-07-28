@@ -212,8 +212,11 @@ export function viewOf(
   } = {},
 ): PositionView {
   const legMarks = new Map<LegId, MarkResult | null>();
+  // `'mark' in opts` — NOT `?? FX_MARK`: an EXPLICIT `null` is the unresolved-leg case every
+  // withholding test is built on, and `??` would silently resolve it back to a mark.
+  const fallback = 'mark' in opts ? (opts.mark as MarkResult | null) : FX_MARK;
   for (const l of p.legs) {
-    legMarks.set(l.id, opts.marks ? (opts.marks.get(l.id) ?? null) : (opts.mark ?? FX_MARK));
+    legMarks.set(l.id, opts.marks ? (opts.marks.get(l.id) ?? null) : fallback);
   }
   return buildPositionView({ position: p, legMarks, dte: opts.dte ?? 24 });
 }

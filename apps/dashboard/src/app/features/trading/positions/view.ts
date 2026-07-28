@@ -47,6 +47,8 @@ export interface LegDisplayRow {
   size_text: string;
   /** `$400 Call`, `Shares`, or `not recorded` when the facts were never held. */
   instrument_text: string;
+  /** `Jul 18`; `—` for an equity leg; `not recorded` when the record never held one. */
+  expiry_text: string;
   instrument_kind: InstrumentKind;
   /** THIS leg's own mark — per-leg truth is fully visible even when the aggregate is withheld. */
   mark: number | null;
@@ -75,6 +77,8 @@ export interface PositionView {
   eval_subject: EvalSubject;
   /** Structure-level qty text — `2 ×` for options, `100 sh` for equity, `1 ×` for a covered call. */
   qty_text: string;
+  /** The unit-aware tip beside it (SPEC §4 *Qty, unit-aware*) — leg formatting stays in here. */
+  qty_tip: string;
   unavailable: boolean;
   frozen: boolean;
   /** True when the saved record can NEVER be priced (a missing strike/right), not just this cycle. */
@@ -82,6 +86,8 @@ export interface PositionView {
   dte: number | null;
   nearest_expiration: string | null;
   multi_expiration: boolean;
+  /** Distinct option expirations. Drives the card's `+N more` suffix — never two dates in one slot. */
+  expiration_count: number;
 }
 
 // ---- Small pure formatters ----------------------------------------------------------------------
@@ -118,6 +124,13 @@ const strikeText = (k: number) => `$${k}`;
 
 const isOption = (l: Leg) => l.kind === 'option';
 const isEquity = (l: Leg) => l.kind === 'equity';
+
+/**
+ * `1 leg` / `4 legs`. SINGULAR MATTERS: SPEC §4's row anatomy for a malformed migrated record reads
+ * `TSLA · 1 leg`, and `1 legs` under a structure chip is the kind of tell that makes a trader
+ * distrust every other number on the row.
+ */
+const legCountText = (n: number) => `${n} leg${n === 1 ? '' : 's'}`;
 
 /** The distinct strikes across the option legs, ascending. */
 function distinctStrikes(legs: readonly Leg[]): number[] {
@@ -172,7 +185,7 @@ function structureLine(p: SimPosition, kind: StructureKind): string {
   // Equity only.
   if (options.length === 0) {
     const qty = equities.reduce((n, l) => n + l.qty, 0);
-    return equities.length > 0 ? `${qty} shares` : `${legs.length} legs`;
+    return equities.length > 0 ? `${qty} shares` : legCountText(legs.length);
   }
 
   // Equity + options (covered call, protective put, collar): shares first, then each option.
@@ -191,7 +204,7 @@ function structureLine(p: SimPosition, kind: StructureKind): string {
   const expiries = distinctExpirations(options);
 
   // An unnamed shape gets a plain leg count — no diagnosis, no strike archaeology (AC-15).
-  if (kind === 'custom' || strikes.length === 0) return `${legs.length} legs`;
+  if (kind === 'custom' || strikes.length === 0) return legCountText(legs.length);
 
   const right = sharedRight(options);
   const head = strikes.map(strikeText).join('/');
@@ -235,6 +248,10 @@ function legRow(l: Leg, res: MarkResult | null): LegDisplayRow {
         : l.strike != null && l.right != null
           ? `${strikeText(l.strike)} ${rightWord(l.right)}`
           : NOT_RECORDED,
+    // `—` says the field does not apply to this instrument; `not recorded` says the saved record
+    // never held it. Two different truths, never one literal for the other's meaning (SPEC §4).
+    expiry_text:
+      l.kind === 'equity' ? '—' : l.expiration != null ? monthDay(l.expiration) : NOT_RECORDED,
     instrument_kind: l.kind,
     mark: resolved ? (res as MarkResult).mark : null,
     basis: resolved ? (res as MarkResult).basis : null,
@@ -251,6 +268,36 @@ function qtyText(p: SimPosition): string {
   // A ratio's legs disagree; the structure-level size is the largest, and the disclosure carries
   // each leg's own size. Never a sum — 1 long + 2 short is not "3 contracts".
   return `${Math.max(...options.map((l) => l.qty))} ×`;
+}
+
+/**
+ * The unit-aware qty tip (SPEC §4 *Qty, unit-aware*). Composed from the LEGS here, not in a
+ * component: a covered call's tip has to name both halves, and leg formatting never leaves this
+ * module. For `FX_COVERED_CALL` this reads exactly the spec's string.
+ */
+function qtyTip(p: SimPosition, label: string): string {
+  const options = p.legs.filter(isOption);
+  const equities = p.legs.filter(isEquity);
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+  if (options.length === 0) {
+    return `${plural(
+      equities.reduce((n, l) => n + l.qty, 0),
+      'share',
+    )}.`;
+  }
+  const size = Math.max(...options.map((l) => l.qty));
+  if (equities.length === 0) {
+    return `${plural(size, 'contract')} — ${options[0].multiplier} shares each.`;
+  }
+  const shares = equities.reduce((n, l) => n + l.qty, 0);
+  const optionParts = options
+    .map((l) => `${l.qty} ${l.side} ${l.right ?? 'option'}`)
+    .join(' plus ');
+  return (
+    `${size} ${label.toLowerCase()} — ${plural(shares, 'share')} plus ${optionParts}. ` +
+    "Expand the position to see each leg's size."
+  );
 }
 
 // ---- The projection -----------------------------------------------------------------------------
@@ -297,6 +344,7 @@ export function buildPositionView(args: {
     legs: position.legs.map((l) => legRow(l, legMarks.get(l.id) ?? null)),
     eval_subject: evalSubjectOf(position),
     qty_text: qtyText(position),
+    qty_tip: qtyTip(position, STRUCTURE_LABELS[structure]),
     unavailable: mark.unavailable,
     frozen: mark.frozen,
     // PERMANENT, not this-cycle: the fact was never recorded, so no future cycle can fix it. This is
@@ -305,5 +353,6 @@ export function buildPositionView(args: {
     dte,
     nearest_expiration: expiries.length > 0 ? expiries[0] : null,
     multi_expiration: expiries.length > 1,
+    expiration_count: expiries.length,
   };
 }

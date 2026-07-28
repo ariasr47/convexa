@@ -17,7 +17,7 @@ import {
   TABLE_HEADER_LABELS,
 } from './defaults';
 import { STALE_SAVED_VIEW_CUSTOMIZATION } from './fixtures';
-import { FIGMA_COLUMNS } from './PositionsView';
+import { FIGMA_COLUMNS, visibleColumnsFor } from './PositionsView';
 import type { ColumnKey } from './types';
 
 describe('column partition', () => {
@@ -75,19 +75,27 @@ describe('the max_loss column (AC-82, Q6 ruling)', () => {
     expect(TABLE_HEADER_LABELS.max_loss).toBeUndefined();
   });
 
-  it('GATE Z — is NOT yet in FIGMA_COLUMNS: making it visible is F11`s, with the fit checkpoint', () => {
+  it('is in FIGMA_COLUMNS — the fit was measured and RULED at `lg` and above (AC-82)', () => {
     // The table renders `FIGMA_COLUMNS` directly and IGNORES the persisted `working.columns`, so
-    // THIS list is the one line that makes the column visible. It is deliberately not flipped yet:
-    // measured in a real browser, the column fits at 1280px/1440px in both densities and both
-    // schemes, but at the 900px md boundary it pushes the table 60px past its host (895 vs 835).
-    // SPEC §4 *The risk slot* mandates a bounce over a silent squeeze or a unilateral re-layout.
-    // F11 sets the widths, flips this line, and re-runs the check — at which point this expectation
-    // inverts to `toContain` and the mirror below becomes an equality.
-    expect(FIGMA_COLUMNS).not.toContain('max_loss');
+    // THIS list is the one line that makes the column visible. The phase-2 deferral is now lifted
+    // DELIBERATELY: the column fits at 1280px/1440px in both densities and both schemes, and the
+    // GATE Z ruling of 2026-07-28 puts it at `lg`+ only, gated on the RENDERED set.
+    expect(FIGMA_COLUMNS).toContain('max_loss');
   });
 
-  it('FIGMA_COLUMNS and DEFAULT_COLUMNS agree on everything except that one pending key', () => {
-    expect(FIGMA_COLUMNS).toEqual(DEFAULT_COLUMNS.filter((c) => c !== 'max_loss'));
+  it('FIGMA_COLUMNS and DEFAULT_COLUMNS now agree EXACTLY — no pending key remains', () => {
+    expect(FIGMA_COLUMNS).toEqual(DEFAULT_COLUMNS);
+  });
+
+  it('AC-82 — the breakpoint gate binds the RENDERED set, never what is STORED', () => {
+    // A viewport must never change what is stored. `DEFAULT_COLUMNS` (which seeds every saved
+    // view's `columns`) is identical at both breakpoints; only the rendered set narrows.
+    expect(visibleColumnsFor(true)).toContain('max_loss');
+    expect(visibleColumnsFor(false)).not.toContain('max_loss');
+    expect(visibleColumnsFor(false)).toEqual(FIGMA_COLUMNS.filter((c) => c !== 'max_loss'));
+    // …and the gate is derived from ONE list, so the two can never drift apart.
+    expect(visibleColumnsFor(true)).toEqual(FIGMA_COLUMNS);
+    expect(defaultConfig().columns).toEqual(DEFAULT_COLUMNS);
   });
 });
 

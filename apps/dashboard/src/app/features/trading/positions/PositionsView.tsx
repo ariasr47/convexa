@@ -28,19 +28,19 @@ import type { PlSample } from './useTrends';
  * do NOT read the persisted `working.columns` for the visible set (an existing user's saved columns
  * must not override the Figma layout). `working.columns` stays in the model for when customization returns.
  *
- * ⚠ `max_loss` IS DELIBERATELY ABSENT FROM THIS LIST AND MUST BE ADDED BY F11 — see the GATE Z
- * measurement below. The key, its label, its partition membership and its cell renderer all exist
- * (`types.ts`, `defaults.ts`, `PositionRow.tsx`); this list is the ONE line that makes it visible,
- * and flipping it is F11's job because F11 owns both the row widths and the mandated fit checkpoint.
+ * `max_loss` sits between `trend` and `expiry`, matching SPEC §4 Flows 2's left→right scan order.
+ * It is RENDERED ONLY AT `lg` AND ABOVE — see `visibleColumnsFor` below and the GATE Z ruling.
  *
- * MEASURED in a real browser (Cypress, seeded 4-row portfolio, both schemes, both densities):
+ * MEASURED in a real browser (Cypress, seeded portfolio, both schemes, both densities):
  *   1440px · 1280px — the table fits its host and the page does not scroll. PASSES.
  *   900px (the md boundary, the NARROWEST width the table renders at) — WITH the column the table
  *     overflows its host: scrollWidth 895 vs clientWidth 835. WITHOUT it, the table fits.
  *     (The PAGE also overflows at 900px — 965 vs 900 — but that is PRE-EXISTING and byte-identical
  *     with and without the column; the shipped 393px e2e never covered the md boundary.)
- * SPEC §4 *The risk slot* forbids a silent squeeze or a unilateral re-layout, so the column stays
- * inert here until F11 sets the widths and re-runs the check.
+ * SPEC §4 requires the column to fit "every shipped breakpoint ABOVE `md`"; MUI's `md` is 900px, so
+ * `lg` and 1440 are what the constraint covers and both pass. GATE Z RULED 2026-07-28: the column
+ * renders at `lg`+ and is not rendered at `md` and below, where the card's footer slot 5 carries the
+ * figure. A failure at `lg` or above remains a BOUNCE, never a squeeze.
  *
  * That the table ignores the persisted `working.columns` is WHY AC-82 holds structurally today: no
  * saved view's stored column list gains `max_loss`, because no saved view drives this list. That is
@@ -57,8 +57,20 @@ export const FIGMA_COLUMNS: ColumnKey[] = [
   'pl_pct',
   'delta_entry',
   'trend',
+  'max_loss',
   'expiry',
 ];
+
+/**
+ * The ONE derivation of the rendered column set. Deliberately NOT a second `FIGMA_COLUMNS` constant:
+ * two lists is exactly the drift `defaults.spec.ts` exists to prevent.
+ *
+ * The gate belongs on the RENDERED set and never on `DEFAULT_COLUMNS`/`OPTIONAL_COLUMNS` — a
+ * viewport must never change what is STORED, which is the guarantee AC-82 asserts against storage.
+ */
+export function visibleColumnsFor(isLgUp: boolean): ColumnKey[] {
+  return isLgUp ? FIGMA_COLUMNS : FIGMA_COLUMNS.filter((c) => c !== 'max_loss');
+}
 const headerLabel = (c: ColumnKey) =>
   c === 'simulated' ? '' : (TABLE_HEADER_LABELS[c] ?? COLUMN_LABELS[c]);
 
@@ -72,7 +84,6 @@ export interface ViewProps {
   totalCount: number;
   /** Is the active filter the closed/history view (status = closed/cancelled)? */
   isHistory: boolean;
-  markResFor: (row: DerivedRow) => RowContext['markRes'];
   trendFor: (id: string) => PlSample[];
   onOpenEntry: () => void;
   onClearFilter: () => void;
@@ -113,7 +124,12 @@ export function PositionsView(props: ViewProps) {
   // The multi-column table overflows a phone; below md we always render cards regardless of the
   // saved layout preference (which stays honored at md+). MUI's useMediaQuery is SSR/test-safe
   // (no matchMedia ⇒ false ⇒ desktop table), so existing table specs are unaffected.
-  const isNarrow = useMediaQuery(useTheme().breakpoints.down('md'));
+  const theme = useTheme();
+  const isNarrow = useMediaQuery(theme.breakpoints.down('md'));
+  // The GATE Z gate, derived HERE beside the card fallback so there is exactly one place a viewport
+  // decides what renders — and nowhere a viewport decides what is stored.
+  const isLgUp = useMediaQuery(theme.breakpoints.up('lg'));
+  const visibleColumns = visibleColumnsFor(isLgUp);
   const effectiveLayout: LayoutMode = isNarrow ? 'card' : props.layout;
 
   if (visibleRowCount === 0) {
@@ -163,16 +179,20 @@ export function PositionsView(props: ViewProps) {
           {HISTORY_CAPTION}
         </Typography>
       )}
-      {effectiveLayout === 'table' ? <TableLayout {...props} /> : <CardLayout {...props} />}
+      {effectiveLayout === 'table' ? (
+        <TableLayout {...props} visibleColumns={visibleColumns} />
+      ) : (
+        <CardLayout {...props} />
+      )}
     </Box>
   );
 }
 
 function ctxFor(props: ViewProps, row: DerivedRow): RowContext {
   return {
-    row,
-    markRes: props.markResFor(row),
+    view: row.view,
     trend: props.trendFor(row.position.id),
+    sessionDelta: row.metrics.sessionDelta,
     streamOffline: props.streamOffline,
     onClose: props.onClose,
     onCancel: props.onCancel,
@@ -223,9 +243,10 @@ const thSx = {
   whiteSpace: 'nowrap' as const,
 };
 
-function TableLayout(props: ViewProps) {
+function TableLayout(props: ViewProps & { visibleColumns: ColumnKey[] }) {
   const { density } = props;
-  const columns = FIGMA_COLUMNS; // REVISION 2 — fixed Figma set, not props.columns
+  // REVISION 2 — the fixed Figma set (not `props.columns`), narrowed by the ONE breakpoint gate.
+  const columns = props.visibleColumns;
   const isGrouped = props.groups.length > 1 || props.groups[0]?.key !== '__all__';
   const tdPad = density === 'compact' ? '7px 12px' : '12px';
   return (
@@ -357,7 +378,7 @@ function CardLayout(props: ViewProps) {
             {g.rows.map((row) => (
               <PositionCard
                 key={row.position.id}
-                row={row}
+                view={row.view}
                 ctx={ctxFor(props, row)}
                 streamOffline={props.streamOffline}
                 onClose={props.onClose}

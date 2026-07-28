@@ -80,7 +80,6 @@ function props(over: Partial<ViewProps> = {}): ViewProps {
     streamOffline: false,
     totalCount: 1,
     isHistory: false,
-    markResFor: () => ({ mark: 6.2, basis: 'snapshot', frozen: false }),
     trendFor: () => [],
     onOpenEntry: vi.fn(),
     onClearFilter: vi.fn(),
