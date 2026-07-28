@@ -24,7 +24,14 @@ Every task's requirements implicitly include this section.
   (if the passthrough form is rejected by this workspace, run `npx vitest run src/app/features/trading/positions/leg.spec.ts` from `apps/dashboard`)
 - e2e: `npx nx e2e dashboard-e2e`
 
-**Test baseline to protect: 645 passing / 75 files; e2e 15/15.** Any drop below that count is a regression to fix, never a rewrite of the assertion. Record the number at the end of every task.
+**Test baseline to protect — it RATCHETS UP as tasks land. Compare against the current figure, not the original one.** Any drop below the current figure is a regression to fix, never a rewrite of the assertion. Record the new number at the end of every task and update this line.
+
+| After | Unit | Files | e2e |
+|---|---|---|---|
+| R1 (original baseline) | 645 | 75 | 15/15 |
+| **build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED on `feat/positions-legs`)** | **747** | **79** | **15/15** |
+
+Phase 1 also confirmed: `tsc` clean, lint 0 errors, `apps/api` diff empty, nothing pre-existing changed or deleted. Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
 
 **Binding invariants** (spec §8): `loss-free-durable-migration` (HARD, severity-promoted) · `additive-keeps-score-byte-identical` · `no-real-order-path` · `single-shared-sim-entry-dialog` · `digested-labels-not-raw-dump` · `theme-token-discipline` · `live-vs-static-isolation` · `best-effort-isolated-or-null` · `model-read-carries-its-assumptions`.
 
@@ -179,6 +186,8 @@ Execution order is the numeric order below, with the Track V tasks interleaved a
 
 ### Task R1: Working-tree reconciliation and baseline capture
 
+> **✅ LANDED — build phase 1.** Branch `feat/positions-legs` created; baseline captured at 645/75, e2e 15/15, empty `apps/api` diff.
+
 A parallel session was active in `apps/dashboard/src/app/` on 2026-07-27 (`_MANIFEST.md` Notes, spec §7 Coordination note). This refactor touches the whole trading domain and pins copy constants in `labels.ts` / `defaults.ts` — both collision candidates. **A merge conflict inside a durable-migration change is the worst possible place to have one.** Nothing else in this plan starts until this task is green.
 
 **Files:** none modified — this task reads and reports.
@@ -244,6 +253,8 @@ Expected: empty output. This command is re-run at the end of every Track F task 
 
 ### Task F1: Fault latch on the shipped positions store (AC-56)
 
+> **✅ LANDED — build phase 1, `feat/positions-legs`. Do not re-do this task.** Two instructions below were wrong as written and are corrected in place (Steps 2 and 3), so the record matches what shipped and the technique survives for the next defect-repair task.
+
 **This repairs a live data-loss defect and it lands first, before any shape change.** `positions/store.ts` `read()` catches to `memory = empty()` (line 131) and the very next `putPosition` calls `write()` → `localStorage.setItem(V2_KEY, …)` (line 141), destroying an unparseable-but-possibly-recoverable blob. `orders/store.ts` already guards correctly (`if (ordersFaulted()) return false; // NEVER overwrite a readable-but-unparseable prior blob`, line 83) and is the pattern to copy. Spec §2.10, §2.9; AC-56, AC-61.
 
 The shape change this feature makes parse failures **more** likely, not less — which is exactly why the latch goes in before the shape moves.
@@ -301,10 +312,28 @@ describe('fault latch (AC-56) — an unparseable blob is never overwritten', () 
 
 Add `positionsFaulted` to the import list at the top of the file.
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [ ] **Step 2: Prove the defect FOR THE RIGHT REASON — with a throwaway probe, before the permanent test**
+
+⚠ **CORRECTED (build phase 1).** Running the Step 1 test against today's store fails with `positionsFaulted is not a function` — which **masks** the data loss instead of demonstrating it. "Red" is not enough: §7 invariant 2 requires a test that fails against today's `positions/store.ts` **because the blob is destroyed**, or it proves nothing.
+
+So before writing the permanent test, prove the defect with a **throwaway probe** that uses **only shipped exports** — no symbol the fix will introduce:
+
+```ts
+it('PROBE — today`s store replaces the corrupt blob wholesale on the first write', () => {
+  const CORRUPT = '{"schema_version":2,"positions":{ THIS IS NOT JSON';
+  localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+  __resetMemory();
+  putPosition(mkPosition({ id: 'p-new' })); // shipped signature: returns void today
+  expect(localStorage.getItem(PORTFOLIO_V2_KEY)).not.toBe(CORRUPT); // ← the data loss, observed
+});
+```
+
+Watch it pass against the pre-latch store — **that passing probe IS the defect**. Then delete it and write the permanent re-runnable tests from Step 1, which assert the inverse (`toBe(CORRUPT)`).
+
+**Generalise this for any later defect-repair task:** when the repair introduces a new symbol, a test that names that symbol cannot distinguish "defect present" from "function missing". Either probe with shipped exports first, or mutation-check the fix by reverting it and confirming the permanent test goes red on the assertion — not on an import.
 
 Run: `npx nx test @org/dashboard -- src/app/features/trading/positions/store.spec.ts`
-Expected: FAIL — `positionsFaulted is not a function`. This test **must** fail against today's store; if it passes, the test is not exercising the defect and proves nothing (spec §7 invariant 2).
+Expected after the probe is removed: FAIL on the Step 1 assertions.
 
 - [ ] **Step 3: Implement the latch**
 
@@ -315,11 +344,20 @@ let memory: PersistShapeV2 | null = null; // fallback / cache
 let faulted = false; // set SYNCHRONOUSLY by read(); no frame ever paints on a stale value
 ```
 
-In `read()`, set it on both paths — success clears it, the catch sets it:
+⚠ **CORRECTED (build phase 1). Hoist a SINGLE clear to the top of `read()`, before the `try`** — do not scatter `faulted = false` before each early return:
 
 ```ts
-    memory = empty();
-    faulted = false;
+function read(): PersistShapeV2 {
+  if (memory) return memory;
+  faulted = false; // clear ONCE, up front — covers all three exit paths below
+  try {
+```
+
+**Why the per-return placement is wrong, stated so it is not re-introduced:** the v1-migration path calls `write(migrated)` **before** its `return memory` (line 127), and `write` now consults the latch. Clearing the flag only at the return leaves it stale-true while that migration write runs, so a first-ever v1→v2 migration silently refuses to persist. One clear at the top has no such ordering hazard.
+
+Then the `catch` sets it:
+
+```ts
   } catch {
     // Corrupt/unreadable store ⇒ empty in-memory portfolio. The prior blob is left INTACT:
     // the latch below refuses every write until it is repaired or cleared outside the app.
@@ -328,8 +366,6 @@ In `read()`, set it on both paths — success clears it, the catch sets it:
   }
   return memory;
 ```
-
-Also set `faulted = false` immediately before each of the two early `return memory` statements inside the `try` (the v2-hit path at line 120 and the v1-migrated path at line 128).
 
 Change `write` and every mutator to return `boolean`:
 
@@ -393,7 +429,7 @@ Run: `npx nx test @org/dashboard -- src/app/features/trading/positions/store.spe
 Expected: PASS.
 
 Then the full suite: `npx nx test @org/dashboard`
-Expected: ≥ 645 passing, 75 files. The v1→v2 migration write inside `read()` (line 127) now goes through `write()` — confirm the existing migration tests still pass; if one fails because `write` returned `false`, the `faulted = false` assignments in Step 3 were placed after the early returns instead of before them.
+Expected: ≥ 645 passing, 75 files. The v1→v2 migration write inside `read()` (line 127) now goes through `write()` — confirm the existing migration tests still pass. A failure there means the Step 3 clear was scattered per-return instead of hoisted above the `try`; that is exactly the hazard Step 3 now calls out.
 
 - [ ] **Step 5: Commit**
 
@@ -407,6 +443,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ### Task F2: `leg.ts` — the leg shape and its arithmetic
+
+> **✅ LANDED — build phase 1.** Do not re-do this task.
 
 Spec §2.1 (durable shape, the three hard stands), §2.2 (P/L composition and `pl_pct_state`). AC-23, AC-24, AC-25, AC-26.
 
@@ -715,6 +753,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ### Task V1: Shared fixture library
 
+> **✅ LANDED — build phase 1.** See the corrected Produces block below: `FX_SHORT_CALL` and `FX_PUT_DEBIT_SPREAD` were added, and `short_straddle` / `long_strangle` are built locally in the specs.
+
 **Sequence point: after F2, before F3.** Spec §7 names this explicitly: *"Fixtures the suite does not have today and must gain, because every existing fixture is a long single leg and the suite is therefore structurally blind to exactly what this feature adds."* Building them once, here, keeps every later task from inventing its own near-duplicate.
 
 **Files:**
@@ -725,13 +765,15 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `Leg`, `SimPosition`, `SIM_POSITION_SCHEMA_VERSION` from `./leg`.
 - Produces, used by F3–F8, F10–F19, V2–V7:
   `mkLeg(over?): Leg` · `mkPosition(legs, over?): SimPosition` ·
-  `FX_LONG_CALL` · `FX_LONG_PUT` · `FX_SHORT_PUT` · `FX_SHARES_LONG` · `FX_SHARES_SHORT` ·
-  `FX_CALL_DEBIT_SPREAD` · `FX_PUT_CREDIT_SPREAD` · `FX_SHORT_VERTICAL` (= a call credit spread) ·
+  `FX_LONG_CALL` · `FX_LONG_PUT` · `FX_SHORT_CALL` · `FX_SHORT_PUT` · `FX_SHARES_LONG` · `FX_SHARES_SHORT` ·
+  `FX_CALL_DEBIT_SPREAD` · `FX_PUT_DEBIT_SPREAD` · `FX_PUT_CREDIT_SPREAD` · `FX_SHORT_VERTICAL` (= a call credit spread) ·
   `FX_COVERED_CALL` · `FX_PROTECTIVE_PUT` · `FX_ZERO_COST_COLLAR` · `FX_LONG_STRADDLE` ·
   `FX_SHORT_STRANGLE` · `FX_IRON_CONDOR` · `FX_IRON_BUTTERFLY` · `FX_CALENDAR` · `FX_DIAGONAL` ·
   `FX_RATIO_1X2` (a `custom` residue case) · `FX_SIX_LEG` (AC-13) ·
   `LEGACY_V2_BLOB` · `LEGACY_V1_BLOB` · `COLLIDING_ID_PAIR` · `MALFORMED_LEGACY_RECORD` ·
   `UNPARSEABLE_BLOB` · `STALE_SAVED_VIEW_CUSTOMIZATION`
+
+  ⚠ **CORRECTED (build phase 1): `FX_SHORT_CALL` and `FX_PUT_DEBIT_SPREAD` were missing from the original list.** §7 requires the recogniser be covered across **all 22** members, and four named members had no fixture: `short_call`, `put_debit_spread`, `short_straddle`, `long_strangle`. Two are now exported fixtures (above); the remaining two — **`short_straddle` and `long_strangle`** — are built **locally inside the specs** from `mkLeg`/`mkPosition`, because they are one-line inversions of `FX_LONG_STRADDLE` / `FX_SHORT_STRANGLE` and do not earn a module-level name. **A downstream task must not re-add any of these four under a second name** — reach for the exports above, or build the straddle/strangle inversions locally exactly as F3 does.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -873,11 +915,13 @@ Then define each fixture. The exact leg sets:
 |---|---|
 | `FX_LONG_CALL` | 1× long call $400 @ 12.40 |
 | `FX_LONG_PUT` | 1× long put $380 @ 9.10 |
+| `FX_SHORT_CALL` | 1× short call $400 @ 12.40 |
 | `FX_SHORT_PUT` | 1× short put $380 @ 9.10 |
 | `FX_SHARES_LONG` | equity long qty 100, multiplier 1, entry 250, `expiration/strike/right` all `null` |
 | `FX_SHARES_SHORT` | equity short qty 100, multiplier 1, entry 250, all option facts `null` |
 | `FX_CALL_DEBIT_SPREAD` | long call $400 @ 12.40 + short call $420 @ 6.10 |
 | `FX_SHORT_VERTICAL` | short call $400 @ 12.40 + long call $420 @ 6.10 (a **call credit spread**) |
+| `FX_PUT_DEBIT_SPREAD` | long put $400 @ 11.90 + short put $380 @ 5.60 |
 | `FX_PUT_CREDIT_SPREAD` | short put $380 @ 9.10 + long put $360 @ 4.20 |
 | `FX_COVERED_CALL` | equity long qty 100 mult 1 @ 250 + short call $420 qty 1 @ 6.10 |
 | `FX_PROTECTIVE_PUT` | equity long qty 100 mult 1 @ 250 + long put $240 qty 1 @ 5.00 |
@@ -1006,6 +1050,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ### Task F3: `structure.ts` — the recogniser
 
+> **✅ LANDED — build phase 1.** Do not re-do this task. The member coverage below is corrected: all 21 named members are now exercised.
+
 Spec §2.3 in full. AC-14 through AC-21. Read §2.3 before writing a line: it names the recogniser rules for every contested member, it forbids a confidence measure, and it forbids reading `entry_price`.
 
 **The governance line, to quote when in doubt:** *PM owns which shapes are named. UX owns the label text. The architect owns the recogniser and one structural requirement — the enum ↔ label map must be total and 1:1.*
@@ -1038,8 +1084,9 @@ import { describe, expect, it } from 'vitest';
 import {
   FX_CALENDAR, FX_CALL_DEBIT_SPREAD, FX_COVERED_CALL, FX_DIAGONAL, FX_IRON_BUTTERFLY,
   FX_IRON_CONDOR, FX_LONG_CALL, FX_LONG_PUT, FX_LONG_STRADDLE, FX_PROTECTIVE_PUT,
-  FX_PUT_CREDIT_SPREAD, FX_RATIO_1X2, FX_SHARES_LONG, FX_SHARES_SHORT, FX_SHORT_PUT,
-  FX_SHORT_STRANGLE, FX_SHORT_VERTICAL, FX_SIX_LEG, FX_ZERO_COST_COLLAR, mkLeg, mkPosition,
+  FX_PUT_CREDIT_SPREAD, FX_PUT_DEBIT_SPREAD, FX_RATIO_1X2, FX_SHARES_LONG, FX_SHARES_SHORT,
+  FX_SHORT_CALL, FX_SHORT_PUT, FX_SHORT_STRANGLE, FX_SHORT_VERTICAL, FX_SIX_LEG,
+  FX_ZERO_COST_COLLAR, mkLeg, mkPosition,
 } from './fixtures';
 import { STRUCTURE_KINDS, STRUCTURE_LABELS, STRUCTURE_ORDINAL, structureKindOf } from './structure';
 
@@ -1050,8 +1097,10 @@ describe('structureKindOf — the named set', () => {
     ['long_call', FX_LONG_CALL],
     ['long_put', FX_LONG_PUT],
     ['short_put', FX_SHORT_PUT],
+    ['short_call', FX_SHORT_CALL],
     ['call_debit_spread', FX_CALL_DEBIT_SPREAD],
     ['call_credit_spread', FX_SHORT_VERTICAL],
+    ['put_debit_spread', FX_PUT_DEBIT_SPREAD],
     ['put_credit_spread', FX_PUT_CREDIT_SPREAD],
     ['covered_call', FX_COVERED_CALL],
     ['protective_put', FX_PROTECTIVE_PUT],
@@ -1064,6 +1113,22 @@ describe('structureKindOf — the named set', () => {
     ['diagonal', FX_DIAGONAL],
   ])('recognises %s', (kind, p) => {
     expect(structureKindOf(p)).toBe(kind);
+  });
+
+  // The two inversions that do not earn a module-level fixture (see V1's Produces note).
+  it('recognises short_straddle — the long straddle with both sides sold', () => {
+    const p = mkPosition(FX_LONG_STRADDLE.legs.map((l) => ({ ...l, side: 'short' as const })));
+    expect(structureKindOf(p)).toBe('short_straddle');
+  });
+
+  it('recognises long_strangle — the short strangle with both sides bought', () => {
+    const p = mkPosition(FX_SHORT_STRANGLE.legs.map((l) => ({ ...l, side: 'long' as const })));
+    expect(structureKindOf(p)).toBe('long_strangle');
+  });
+
+  it('covers ALL 21 named members — no member is left unexercised', () => {
+    const covered = new Set(STRUCTURE_KINDS.filter((k) => k !== 'custom'));
+    expect(covered.size).toBe(21); // the it.each table above plus the two inversions must reach every one
   });
 });
 
@@ -1275,6 +1340,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ### Task F4: `maxLoss.ts` — the closed eligible set
+
+> **✅ LANDED — build phase 1.** Do not re-do this task. Note the `FX_ZERO_COST_COLLAR` clamp-to-$0 consequence, flagged for the render tasks in F11 and F13.
 
 Spec §2.4 in full, plus §4 *The risk slot*. AC-28, AC-29.
 
@@ -1933,6 +2000,16 @@ Spec §2.6 in full, plus the *Failure modes + isolation* table. AC-45 through AC
 
 This task is **pure**: it takes already-parsed source material and returns a result. It touches no storage and is wired to nothing yet. F18 wires it into the store; F19 wires the *same function* into the archive import — **one migrate function, two callers**. If they diverge, importing your own backup produces different records than the migration did, a discrepancy nobody would notice until it mattered.
 
+> ⚠ **BINDING REQUIREMENT — a LOGICAL source is ONE source, even when it exists under two keys.** (Surfaced in build phase 1; it lands here and in F18.)
+>
+> `resolveDurable` (`shared/lib/durable/resolveDurable.ts:33-44`) **promotes a legacy-brand blob to the new key BEFORE anything parses it** — it `setItem`s `fromOld` under `newKey` and only then returns the string. So a user holding an unparseable `gammaflow.positions.v2` ends up holding **the same corrupt bytes under `convexa.positions.v2` as well**. Nothing is lost and the F1 latch protects both, but the accounting must not see two failures where there is one blob:
+>
+> - **`unread_sources` must list the logical source ONCE**, never both the current-brand and legacy-brand key for the same store. It feeds `StoreHealth` and therefore the faulted banner's read of what could not be loaded.
+> - **`source_counts` must be keyed by LOGICAL source**, never by physical storage key, or provenance misreports `read`/`contributed` for a trader whose brand hop happened to promote.
+> - **The abort-entirely decision must not double-count.** One unreadable store is one unread source; `aborted` is already correct either way, but a doubled `unread_sources` makes the *reason* the trader is shown wrong.
+>
+> **This is the same class of error as the id-collision finding that forced the distinct-id count in AC-46: two names for one thing.** `unionSources` therefore takes **exactly two `ParsedSource` entries** — one per logical store — and its `key` field is the **logical** label (`'convexa.positions.v2'`, `'convexa.ghost-trade.v1'`), not whichever physical key happened to answer. Resolving the brand hop is the **caller's** job (F18), and the caller passes the result down as one source.
+
 **Files:**
 - Create: `apps/dashboard/src/app/features/trading/positions/migrate.ts`
 - Test: `apps/dashboard/src/app/features/trading/positions/migrate.spec.ts`
@@ -2058,6 +2135,28 @@ describe('unionSources', () => {
     ]);
     expect(r.decisions).toHaveLength(2);
     expect(r.decisions.map((d) => d.id)).toEqual(['d-1', 'd-2']);
+  });
+
+  it('a LOGICAL source is ONE source: an unreadable store reports ONE unread key, not its brand pair', () => {
+    // The caller resolves the brand hop and passes ONE entry per logical store. Even though
+    // `resolveDurable` may have promoted identical corrupt bytes to BOTH the convexa and gammaflow
+    // keys, the union must never be handed — or emit — two entries for one blob.
+    const r = unionSources([
+      src('convexa.positions.v2', [], [], false),
+      src('convexa.ghost-trade.v1', [LEGACY_V1_RECORD]),
+    ]);
+    expect(r.unread_sources).toEqual(['convexa.positions.v2']);
+    expect(r.unread_sources).toHaveLength(1);
+    expect(Object.keys(r.source_counts).sort()).toEqual(['convexa.ghost-trade.v1', 'convexa.positions.v2']);
+    expect(Object.keys(r.source_counts)).toHaveLength(2); // never 4 — no legacy-brand key appears
+  });
+
+  it('source_counts is keyed by LOGICAL source — no gammaflow.* key ever appears', () => {
+    const r = unionSources([
+      src('convexa.positions.v2', [LEGACY_V2_RECORD]),
+      src('convexa.ghost-trade.v1', [LEGACY_V1_RECORD]),
+    ]);
+    for (const k of Object.keys(r.source_counts)) expect(k).not.toMatch(/^gammaflow\./);
   });
 
   it('AC-57 — ABORTS ENTIRELY if ANY source is unread; no partial result is offered', () => {
@@ -2713,6 +2812,8 @@ Spec §4 *The `contract` cell*, *The risk slot*, *Component states*, *The four n
 
 Extend `positions.risk.spec.tsx` with a `describe('the four not-a-number literals (AC-31)')` block and a `describe('the risk slot (AC-28/29)')` block. Risk-based: assert the **distinctions**, not the wording.
 
+⚠ **FIXTURE TRAP — do NOT use `FX_ZERO_COST_COLLAR` as the collar's `Max loss` example.** Its equity leg is deliberately priced at **0** so the position nets under `NET_BASIS_EPS` and reaches `no_basis`. That makes its max loss compute `0 − 24000` and clamp to **`$0`** — arithmetically correct, and useless as a demo: the risk slot renders `$0` and looks broken. **Use `FX_PROTECTIVE_PUT` (a sane `$1500`) for any figure-bearing risk-slot case.** `FX_ZERO_COST_COLLAR` stays exactly where it belongs — the `cell-no-basis` case in the four-literals block.
+
 ```ts
 it('renders four DISTINCT literals, each independently assertable, none for another`s meaning', async () => {
   // a shares row (—), an unresolvable-leg row (unavailable), a malformed record (not recorded),
@@ -2902,6 +3003,8 @@ Spec §4 *The mobile card at 393px*, *Component states*. AC-30, AC-33, AC-34, AC
 - Produces: `PositionCardProps { view: PositionView; ctx: RowContext; streamOffline: boolean; onClose: (id: string) => void }`.
 
 - [ ] **Step 1: Write the failing test**
+
+⚠ **FIXTURE TRAP — the same one F11 carries.** Do **not** build the card's risk-slot figure case on `FX_ZERO_COST_COLLAR`: its equity leg is priced at 0 so the position reaches `no_basis`, which makes max loss clamp to **`$0`** and the footer slot look broken. **Use `FX_PROTECTIVE_PUT` (`$1500`).** Keep `FX_ZERO_COST_COLLAR` for the `no_basis` P/L% case only.
 
 ```ts
 it('AC-30 — the collapsed card carries AT MOST ONE risk figure or reason, never three', …)
@@ -3393,6 +3496,10 @@ it('AC-55 — closed and cancelled positions survive with their close data', …
 it('AC-52 — a trader with no saved data gets a normal empty portfolio, no notice, no error', …)
 it('AC-51 — the merge notice appears ONLY for a trader who had items in BOTH places, survives reload, never returns after dismissal', …)
 it('AC-56/61 — starting from an unparseable v3 blob, every mutator leaves storage byte-identical', …)
+it('an unparseable gammaflow.positions.v2 reports ONE unread source, not the promoted brand pair', …)
+  // seed ONLY the legacy key with corrupt bytes; resolveDurable promotes them to the convexa key
+  // before any parse, so both keys now hold the same corrupt blob. StoreHealth.unread_sources must
+  // still have length 1, and provenance must not be written at all (the promote aborts).
 ```
 
 For AC-58's second case, assert by **construction**, following the `?raw` import-allowlist idiom already used for `LiveTabPanel` in `positions.risk.spec.tsx`:
@@ -3430,8 +3537,11 @@ else, read ALL of: v2/legacy-v2, v1/legacy-v1
   -> delete nothing, ever
 ```
 
-- Use `resolveDurable(V2_KEY, LEGACY_V2_KEY)` and `resolveDurable(V1_KEY, LEGACY_V1_KEY)` **per source key** to resolve the brand hop — that helper is right for a *rename* and is exactly what this uses it for. It is the **wrong shape for a merge of two live stores**, so the union sits **above** it.
-- A source that throws on parse ⇒ `ok: false` for that source. `unionSources` reports `aborted`.
+- Use `resolveDurable(V2_KEY, LEGACY_V2_KEY)` and `resolveDurable(V1_KEY, LEGACY_V1_KEY)` **per LOGICAL source** to resolve the brand hop — that helper is right for a *rename* and is exactly what this uses it for. It is the **wrong shape for a merge of two live stores**, so the union sits **above** it. **Exactly two `ParsedSource` entries reach `unionSources`, never four**, and each carries the **logical** label (`'convexa.positions.v2'`, `'convexa.ghost-trade.v1'`).
+
+  ⚠ **This is where the promote actually runs, so this is where the two-names-for-one-thing hazard is real.** `resolveDurable` `setItem`s the legacy blob under the new key **before** anything parses it (`resolveDurable.ts:33-44`), so a user with an unparseable `gammaflow.positions.v2` now holds **the same corrupt bytes under `convexa.positions.v2` too**. Nothing is lost and the F1 latch protects both — but if this caller enumerates physical keys instead of logical stores, `unread_sources` reports two failures for one blob and `source_counts` misreports provenance. **Resolve first, then hand the union one entry per store.** Same class of error as the id collision that forced the distinct-id count in AC-46 (F7 carries the binding requirement and its tests).
+
+- A source that throws on parse ⇒ `ok: false` for that **logical** source. `unionSources` reports `aborted`.
 - **`aborted === true` ⇒ the promote-write is ABORTED ENTIRELY**, `faulted = true`, the store runs in memory from whatever parsed. **No partial v3 blob is ever written** — writing v3 permanently stops the read path from consulting sources, and a partial v3 would freeze a truncated history behind a key that claims completeness. A migration that half-succeeds is worse than one that does not run.
 - The v3 blob itself failing to parse ⇒ `faulted = true`, sources are **not** consulted (v3 exists), nothing is written.
 - **The promote-write runs on first load of the new build even when there are no sources** (all counts zero). Deferring it leaves the union path armed indefinitely, so a source blob appearing later — a stale tab, a restored profile — would be unioned in at an unpredictable moment.
