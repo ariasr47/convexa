@@ -152,6 +152,23 @@ export interface CustomizationState {
   working: ViewConfig;
 }
 
+// ---- Store health (SPEC §2.9) -------------------------------------------------------------------
+
+/**
+ * The durable store's fault state, returned by the portfolio hook on the SAME object the view layer
+ * already reads — so the state cannot be dropped by a caller forgetting to inspect a return value.
+ *
+ * Fault determination is SYNCHRONOUS at store initialisation (`localStorage` is synchronous, so this
+ * is free), which is what guarantees no frame ever paints enabled affordances on a faulted store.
+ * Declared here, once, so F16 and F18 share ONE definition.
+ */
+export interface StoreHealth {
+  /** True iff any source blob, or the v3 blob itself, failed to parse. */
+  faulted: boolean;
+  /** The storage keys that failed. Populated at the cutover; `[]` while the store is still v2. */
+  unread_sources: string[];
+}
+
 // ---- Persist shape (v2) ------------------------------------------------------------------------
 
 export interface PersistShapeV2 {

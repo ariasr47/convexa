@@ -23,6 +23,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { theme } from '@/shared/theme/theme';
 import type { DerivedGroup, DerivedRow } from './derive';
+import { rowOfLegacy } from './fixtures';
 import { PositionsView, type ViewProps } from './PositionsView';
 import type { Position } from './types';
 
@@ -54,10 +55,8 @@ function pos(over: Partial<Position> = {}): Position {
 }
 
 function rowOf(p: Position): DerivedRow {
-  return {
-    position: p,
+  return rowOfLegacy(p, {
     metrics: {
-      id: p.id,
       plDollar: p.status === 'open' ? 120 : null,
       plPct: p.status === 'open' ? 24 : null,
       unavailable: false,
@@ -65,8 +64,7 @@ function rowOf(p: Position): DerivedRow {
       sessionDelta: null,
       dte: 24,
     },
-    structure: p.right === 'call' ? 'long_call' : 'long_put',
-  };
+  });
 }
 
 function groupsOf(rows: DerivedRow[]): DerivedGroup[] {

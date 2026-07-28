@@ -1,8 +1,14 @@
 /**
- * usePortfolio — the portfolio brain. Owns the durable flat positions collection, the per-row
- * tracked-contract fetch + honest mark/P-L (the EXISTING `computeMark`/`pl` run per row), the
- * resting-limit fill lifecycle (fills only on a LIVE cross at the limit price), the decision log,
- * the ephemeral per-position trend + session delta, and the durable customization/saved-view state.
+ * usePortfolio — the portfolio brain. Owns the durable flat positions collection, the per-CONTRACT
+ * tracked-contract fetch (de-duplicated across the whole portfolio) + the honest per-LEG mark
+ * ladder (the EXISTING `computeMark`, untouched, run per leg), the `PositionView` projection every
+ * presentational component reads, the resting-limit fill lifecycle (fills only on a LIVE cross at
+ * the limit price, and only when EVERY leg is fresh), the decision log, the ephemeral per-position
+ * trend + session delta, and the durable customization/saved-view state.
+ *
+ * TRANSITIONAL: the durable store is still v2. Legacy records are lifted IN MEMORY through the same
+ * `liftLegacyRecord` the real migration uses, so the render path is proven on the new shape before
+ * anything writes in it. `convexa.positions.v3` is written NOWHERE until the F18 cutover.
  *
  * Everything is simulation-only — no code path places a real order (`[no-real-order-path]`). Positions
  * never feed signals/score/tier/fingerprint (`[additive-keeps-score-byte-identical]`). Per-row
@@ -20,9 +26,12 @@ import {
   TrackedContract,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { compositeLimitWouldFill, legContractKey } from './composeMark';
 import { cloneConfig, configEqual } from './defaults';
-import { DerivedRow, RowMetrics, structureOfLegacy } from './derive';
-import { LIMIT_FILL_BASIS, limitWouldFill, resolveManualFill } from './entry';
+import { DerivedRow, RowMetrics } from './derive';
+import { LIMIT_FILL_BASIS, resolveManualFill } from './entry';
+import { legValue, type Leg, type LegId, type SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
 import {
   allPositions,
   appendDecision,
@@ -30,6 +39,7 @@ import {
   getCustomization,
   getPosition,
   newId,
+  positionsFaulted,
   putCustomization,
   putPosition,
 } from './store';
@@ -43,9 +53,11 @@ import {
   Position,
   PositionId,
   SavedView,
+  StoreHealth,
   ViewConfig,
 } from './types';
 import { usePlTrends } from './useTrends';
+import { buildPositionView, type PositionView } from './view';
 
 export interface OpenPositionInput {
   ticker: string;
@@ -70,11 +82,22 @@ export interface OpenResult {
   position?: Position;
 }
 
-/** One row's per-cycle live data (the contract lookup + computed mark/P-L). */
-interface RowLive {
+/** One CONTRACT's per-cycle lookup result, shared by every leg that references it. */
+interface ContractLive {
   tracked: TrackedContract | null;
   unavailable: boolean;
-  markRes: MarkResult | null;
+}
+
+/**
+ * TRANSITIONAL UNITS BRIDGE. A durable record's `limit_price` is a PER-UNIT price (SPEC §4 *Copy*:
+ * `Fills at your limit $8.40 · Net debit $840`), while `composePositionMark.net_mark` is a DOLLAR
+ * net. Handing the per-unit number straight to `compositeLimitWouldFill` would compare $840 of mark
+ * against a $8.40 limit and silently stop every shipped resting limit from ever filling — so the
+ * limit is converted to its net-dollar equivalent through the SAME leg arithmetic the mark uses.
+ * For the shipped single-leg long option this reduces to `mark <= limit`, byte-identically.
+ */
+function netLimitOf(p: SimPosition, limitPrice: number): number {
+  return p.legs.reduce((sum, l) => sum + legValue(l, limitPrice), 0);
 }
 
 export function usePortfolio(
@@ -87,8 +110,9 @@ export function usePortfolio(
   const [positions, setPositions] = useState<Position[]>(() => allPositions());
   const [historyVersion, setHistoryVersion] = useState(0);
   const [custom, setCustom] = useState<CustomizationState>(() => getCustomization());
-  const [rowLive, setRowLive] = useState<Record<PositionId, RowLive>>({});
-  const lastMarkRef = useRef<Map<PositionId, number>>(new Map());
+  const [contractLive, setContractLive] = useState<Record<string, ContractLive>>({});
+  /** Keyed by `LegId` — the mark ladder resolves LEGS now, not positions. */
+  const lastMarkRef = useRef<Map<LegId, number>>(new Map());
   const trends = usePlTrends();
 
   const refreshPositions = useCallback(() => setPositions(allPositions()), []);
@@ -98,32 +122,62 @@ export function usePortfolio(
   const tier = data?.signals.opportunity_tier ?? 'dormant';
   const servedAt = data?.meta.served_at;
 
-  // ---- Per-row tracked-contract fetch (per-row isolation) -------------------------------------
-  // Fetch the held contract's stats for every OPEN or PENDING position, on mount + each bundle
-  // refresh. A single row's lookup failure marks ONLY that row unavailable; others/bundle/SSE intact.
-  const trackable = useMemo(
-    () => positions.filter((p) => p.status === 'open' || p.status === 'pending'),
+  // ---- The render path, on `PositionView` (the store is STILL v2) ------------------------------
+  // TRANSITIONAL (removed at the F18 cutover): legacy v2 records are lifted IN MEMORY through the
+  // SAME `liftLegacyRecord` the real migration uses, so the whole render path is exercised against
+  // the new shape before a single byte is written in it. NOTHING DURABLE CHANGES HERE.
+  const simPositions = useMemo(
+    () => positions.map((p) => liftLegacyRecord(p)).filter((p): p is SimPosition => p != null),
     [positions],
   );
-  const trackKey = trackable.map((p) => p.id).join(',');
+  const positionById = useMemo(
+    () => new Map(positions.map((p) => [p.id, p] as const)),
+    [positions],
+  );
+
+  // ---- Per-CONTRACT tracked-contract fetch, de-duplicated across the WHOLE portfolio -----------
+  // A condor plus a covered call on the same underlying must not issue duplicate lookups (SPEC
+  // §2.5). Per-contract isolation is preserved: one contract's 404 marks ONLY the legs referencing
+  // it and every other row keeps rendering. Resolution is per-leg at the FETCH layer even though
+  // display is all-or-nothing, so a row renders while its slowest leg is still in flight.
+  const contractKeys = useMemo(() => {
+    const keys = new Map<
+      string,
+      { ticker: string; expiration: string; strike: number; right: OptionRight }
+    >();
+    for (const p of simPositions) {
+      if (p.status !== 'open' && p.status !== 'pending') continue;
+      for (const l of p.legs) {
+        const key = legContractKey(l);
+        if (key && !keys.has(key)) {
+          keys.set(key, {
+            ticker: l.ticker,
+            expiration: l.expiration as string,
+            strike: l.strike as number,
+            right: l.right as OptionRight,
+          });
+        }
+      }
+    }
+    return keys;
+  }, [simPositions]);
+  const trackKey = [...contractKeys.keys()].sort().join(',');
 
   useEffect(() => {
     let cancelled = false;
-    trackable.forEach((p) => {
-      fetchTrackedContract(p.ticker, { expiration: p.expiration, strike: p.strike, right: p.right })
+    contractKeys.forEach((c, key) => {
+      fetchTrackedContract(c.ticker, {
+        expiration: c.expiration,
+        strike: c.strike,
+        right: c.right,
+      })
         .then((tc) => {
           if (cancelled) return;
-          setRowLive((prev) => ({
-            ...prev,
-            [p.id]: { tracked: tc, unavailable: tc == null, markRes: prev[p.id]?.markRes ?? null },
-          }));
+          setContractLive((prev) => ({ ...prev, [key]: { tracked: tc, unavailable: tc == null } }));
         })
         .catch(() => {
           if (cancelled) return;
-          setRowLive((prev) => ({
-            ...prev,
-            [p.id]: { tracked: null, unavailable: true, markRes: prev[p.id]?.markRes ?? null },
-          }));
+          setContractLive((prev) => ({ ...prev, [key]: { tracked: null, unavailable: true } }));
         });
     });
     return () => {
@@ -132,85 +186,170 @@ export function usePortfolio(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackKey, servedAt]);
 
-  // ---- Per-row mark + P/L (computed each render; last-good mark kept for offline) --------------
-  const markFor = useCallback(
-    (p: Position): MarkResult | null => {
-      const rl = rowLive[p.id];
-      if (!rl || !rl.tracked || !m) return null;
+  // ---- Per-LEG mark (computed each render; last-good mark kept for offline) --------------------
+  const legMarkFor = useCallback(
+    (l: Leg): MarkResult | null => {
+      if (!m) return null;
+      // EQUITY BYPASSES THE LADDER ENTIRELY (SPEC §2.5): its mark is the live underlying mid (the
+      // bundle price when not live), multiplier 1, and it NEVER issues a contract lookup. This
+      // branch lives here in the resolver, NOT inside `computeMark`.
+      if (l.kind === 'equity') {
+        if (streamOffline) {
+          // A dimmed but PRESENT number — a stream drop must never blank a loaded read.
+          return {
+            mark: lastMarkRef.current.get(l.id) ?? m.price,
+            basis: 'last_known',
+            frozen: false,
+          };
+        }
+        const closed = session === 'overnight' || session === 'closed';
+        return {
+          mark: isLive ? (live?.mid ?? m.price) : m.price,
+          basis: 'snapshot',
+          frozen: closed && !isLive,
+        };
+      }
+      const key = legContractKey(l);
+      if (key == null) return null; // a malformed record: never priceable, in any cycle
+      const cl = contractLive[key];
+      if (!cl || !cl.tracked) return null;
       return computeMark({
-        tracked: rl.tracked,
-        strike: p.strike,
-        right: p.right,
+        tracked: cl.tracked,
+        strike: l.strike as number,
+        right: l.right as OptionRight,
         anchorSpot: m.price,
         liveUnderlying: live?.mid ?? null,
         isLive,
         marketSession: session,
         streamOffline,
-        lastMark: lastMarkRef.current.get(p.id) ?? null,
+        lastMark: lastMarkRef.current.get(l.id) ?? null,
       });
     },
-    [rowLive, m, live?.mid, isLive, session, streamOffline],
+    [contractLive, m, live?.mid, isLive, session, streamOffline],
+  );
+
+  const legMarksById = useMemo(() => {
+    const out = new Map<PositionId, Map<LegId, MarkResult | null>>();
+    for (const p of simPositions) {
+      const marks = new Map<LegId, MarkResult | null>();
+      for (const l of p.legs) marks.set(l.id, legMarkFor(l));
+      out.set(p.id, marks);
+    }
+    return out;
+  }, [simPositions, legMarkFor]);
+
+  /** The nearest resolvable DTE across the position's option legs. */
+  const dteFor = useCallback(
+    (p: SimPosition): number | null => {
+      let best: number | null = null;
+      for (const l of p.legs) {
+        const key = legContractKey(l);
+        const dte = key ? (contractLive[key]?.tracked?.dte ?? null) : null;
+        if (dte != null && (best == null || dte < best)) best = dte;
+      }
+      return best;
+    },
+    [contractLive],
+  );
+
+  /** THE projection every presentational component reads. Rebuilt per cycle, never persisted. */
+  const views = useMemo<PositionView[]>(
+    () =>
+      simPositions.map((p) =>
+        buildPositionView({
+          position: p,
+          legMarks: legMarksById.get(p.id) ?? new Map(),
+          dte: dteFor(p),
+        }),
+      ),
+    [simPositions, legMarksById, dteFor],
+  );
+
+  // The shipped per-position mark, re-sourced from the leg ladder so the row and the projection can
+  // never disagree. A lifted legacy record has exactly ONE leg, so this IS that leg's mark.
+  const markFor = useCallback(
+    (p: Position): MarkResult | null => {
+      const marks = legMarksById.get(p.id);
+      if (!marks) return null;
+      for (const res of marks.values()) return res;
+      return null;
+    },
+    [legMarksById],
   );
 
   // Build the row metrics for every position (the live-derived view).
   const rows = useMemo<DerivedRow[]>(() => {
-    return positions.map((p) => {
-      const rl = rowLive[p.id];
-      const markRes = p.status === 'open' || p.status === 'pending' ? markFor(p) : null;
-      const unavailable =
-        (p.status === 'open' || p.status === 'pending') && (rl?.unavailable ?? false);
-      const mark = markRes?.mark ?? null;
-      const plNow =
-        p.status === 'open' ? pl(mark, p.entry_mark, p.qty) : { dollar: null, pct: null };
+    const out: DerivedRow[] = [];
+    for (const view of views) {
+      const p = positionById.get(view.position.id);
+      if (!p) continue;
+      const unavailable = (p.status === 'open' || p.status === 'pending') && view.mark.unavailable;
+      const plDollar = p.status === 'open' && !unavailable ? view.pl_dollar : null;
+      const plPct =
+        p.status === 'open' && !unavailable && view.pl_pct.kind === 'value'
+          ? view.pl_pct.value
+          : null;
       const sessAnchor = trends.sessionAnchor(p.id);
       const sessionDelta =
-        plNow.dollar != null && sessAnchor != null && !streamOffline
-          ? plNow.dollar - sessAnchor
-          : null;
+        plDollar != null && sessAnchor != null && !streamOffline ? plDollar - sessAnchor : null;
       const metrics: RowMetrics = {
         id: p.id,
-        plDollar: unavailable ? null : plNow.dollar,
-        plPct: unavailable ? null : plNow.pct,
+        plDollar,
+        plPct,
         unavailable,
-        deltaEntry: unavailable ? null : plNow.dollar,
+        deltaEntry: plDollar,
         sessionDelta,
-        dte: rl?.tracked?.dte ?? null,
+        dte: view.dte,
       };
-      return { position: p, metrics, structure: structureOfLegacy(p) };
-    });
+      out.push({ position: p, metrics, structure: view.structure, view });
+    }
+    return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [positions, rowLive, markFor, streamOffline, historyVersion]);
+  }, [views, positionById, streamOffline, historyVersion]);
 
   // ---- Keep last-good mark + feed the trend/session ring buffers (live-derived, ephemeral) ----
   useEffect(() => {
-    positions.forEach((p) => {
-      if (p.status !== 'open') return;
-      const markRes = markFor(p);
-      if (markRes && !markRes.frozen && markRes.basis !== 'last_known' && markRes.mark != null) {
-        lastMarkRef.current.set(p.id, markRes.mark);
-        const plNow = pl(markRes.mark, p.entry_mark, p.qty);
-        if (plNow.dollar != null) trends.record(p.id, plNow.dollar);
+    for (const view of views) {
+      const p = view.position;
+      if (p.status !== 'open') continue;
+      const marks = legMarksById.get(p.id);
+      const fresh =
+        marks != null &&
+        !view.mark.unavailable &&
+        !view.mark.frozen &&
+        view.mark.basis !== 'last_known';
+      if (fresh && view.pl_dollar != null) {
+        for (const [legId, res] of marks) {
+          if (res?.mark != null) lastMarkRef.current.set(legId, res.mark);
+        }
+        trends.record(p.id, view.pl_dollar);
       } else if (streamOffline) {
         trends.recordBreak(p.id); // gap = broken line (never 0/interpolated)
       }
-    });
+    }
+    // Deliberately the SHIPPED dependency shape (`contractLive` replaces `rowLive`): `trends.record`
+    // bumps a version to re-render, so depending on `views` here would re-arm this effect from its
+    // own write and spin. Deps decide WHEN it runs; the body always closes over the latest values.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowLive, live?.mid, streamOffline]);
+  }, [contractLive, live?.mid, streamOffline]);
 
   // ---- Resting-limit fill lifecycle (fills only on a LIVE cross at the limit price) -----------
   useEffect(() => {
     if (streamOffline || !isLive) return; // no fills off a non-live mark
-    positions.forEach((p) => {
-      if (p.status !== 'pending' || p.limit_price == null) return;
-      const markRes = markFor(p);
-      const liveMark =
-        markRes && !markRes.frozen && markRes.basis !== 'last_known' ? markRes.mark : null;
-      if (limitWouldFill(liveMark, p.limit_price, true)) {
-        fillLimit(p);
+    for (const view of views) {
+      const sp = view.position;
+      if (sp.status !== 'pending' || sp.limit_price == null) continue;
+      const marks = legMarksById.get(sp.id);
+      const legacy = positionById.get(sp.id);
+      if (!marks || !legacy) continue;
+      // The COMPOSITE rule: every leg must be live, non-frozen and non-`last_known`, so a structure
+      // with one stale leg never fills (SPEC §2.5, AC-44).
+      if (compositeLimitWouldFill(marks, sp, netLimitOf(sp, sp.limit_price))) {
+        fillLimit(legacy);
       }
-    });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowLive, live?.mid, streamOffline, isLive]);
+  }, [contractLive, live?.mid, streamOffline, isLive]);
 
   // ---- Decision records ----------------------------------------------------------------------
   const recordDecision = useCallback(
@@ -469,9 +608,15 @@ export function usePortfolio(
 
   const trendFor = useCallback((id: PositionId) => trends.series(id), [trends]);
 
+  // Computed SYNCHRONOUSLY on every render (`localStorage` is synchronous, so this is free), which
+  // is what guarantees no frame ever paints enabled affordances on a faulted store (SPEC §2.9).
+  const health: StoreHealth = { faulted: positionsFaulted(), unread_sources: [] };
+
   return {
     positions,
     rows,
+    views,
+    health,
     decisionsFor,
     markFor,
     trendFor,

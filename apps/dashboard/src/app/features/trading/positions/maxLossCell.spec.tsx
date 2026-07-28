@@ -12,6 +12,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { DerivedRow } from './derive';
+import { rowOfLegacy } from './fixtures';
 import { MAX_LOSS_WITHHELD_META } from './labels';
 import { cellContent, type RowContext } from './PositionRow';
 import type { Position } from './types';
@@ -47,6 +48,9 @@ function ctxFor(row: DerivedRow): RowContext {
 }
 
 const rowFor = (p: Position, structure: DerivedRow['structure']): DerivedRow => ({
+  // The projection comes from a VALID lift; `position`/`structure` are overridden per case so the
+  // transitional bridge (`maxLossOfLegacy`) can still be driven through its reason branches.
+  view: rowOfLegacy(pos()).view,
   position: p,
   structure,
   metrics: {

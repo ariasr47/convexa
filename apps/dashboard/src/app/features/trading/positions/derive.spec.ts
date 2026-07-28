@@ -12,6 +12,7 @@ import {
   RowMetrics,
   subtotalOf,
 } from './derive';
+import { rowOfLegacy } from './fixtures';
 import { STRUCTURE_LABELS } from './structure';
 import type { Position } from './types';
 
@@ -45,7 +46,7 @@ function row(p: Position, plDollar: number | null, extra: Partial<RowMetrics> = 
     dte: 10,
     ...extra,
   };
-  return { position: p, metrics, structure: p.right === 'call' ? 'long_call' : 'long_put' };
+  return { ...rowOfLegacy(p), position: p, metrics };
 }
 
 describe('filter (AC-4, AC-24)', () => {

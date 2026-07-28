@@ -8,6 +8,7 @@ import { maxLossOf, type MaxLossResult } from './maxLoss';
 import { liftLegacyRecord } from './migrate';
 import { STRUCTURE_LABELS, structureKindOf, type StructureKind } from './structure';
 import type { FilterState, GroupAxis, Position, SortDir, SortKey } from './types';
+import type { PositionView } from './view';
 
 /**
  * The structure axis over a still-v2 `Position`. TRANSITIONAL: the durable record has no `legs`
@@ -51,6 +52,14 @@ export interface DerivedRow {
   position: Position;
   metrics: RowMetrics;
   structure: StructureKind;
+  /**
+   * The per-cycle projection every presentational component reads (SPEC §2.7). TRANSITIONAL
+   * companion to `position`/`structure`: the render path moved onto `PositionView` at F11 while the
+   * store is still v2-backed, so this row still carries the legacy record for the derivation
+   * pipeline (filter/sort/group/subtotal) and the projection for the render. Both disappear into one
+   * at the F18 cutover.
+   */
+  view: PositionView;
 }
 
 export interface DerivedGroup {
