@@ -8,39 +8,15 @@
  * leg arithmetic. That is what lets the F18 cutover swap the store underneath without touching this
  * file, and it is why the axis that used to be `strategyOf(position)` is now `view.structure`.
  */
-import { maxLossOf, type MaxLossResult } from './maxLoss';
-import { liftLegacyRecord } from './migrate';
-import {
-  STRUCTURE_LABELS,
-  STRUCTURE_ORDINAL,
-  structureKindOf,
-  type StructureKind,
-} from './structure';
-import type { FilterState, GroupAxis, Position, PositionId, SortDir, SortKey } from './types';
+import { STRUCTURE_LABELS, STRUCTURE_ORDINAL } from './structure';
+import type { FilterState, GroupAxis, PositionId, SortDir, SortKey } from './types';
 import type { PositionView } from './view';
 
-/**
- * The structure axis over a still-v2 `Position`. TRANSITIONAL: the durable record has no `legs`
- * until the F18 cutover, so the row is lifted through the ONE migration lift and handed to the ONE
- * recogniser rather than re-deriving the name a second way. For a shipped single-leg long option
- * that yields exactly `long_call` / `long_put` — byte-identical to the deleted `strategyOf`.
- */
-export function structureOfLegacy(p: Position): StructureKind {
-  const lifted = liftLegacyRecord(p);
-  return lifted ? structureKindOf(lifted) : 'custom';
-}
-
-/**
- * The max-loss result for a still-v2 `Position`. TRANSITIONAL, for the same reason as
- * `structureOfLegacy`: one lift, one closed eligible set, no second arithmetic. A row that cannot
- * even be lifted has no payoff to read, so it withholds with the unnamed-shape reason rather than
- * printing anything.
- */
-export function maxLossOfLegacy(p: Position, kind: StructureKind): MaxLossResult {
-  const lifted = liftLegacyRecord(p);
-  if (lifted == null) return { kind: 'withheld', reason: 'unnamed_shape' };
-  return maxLossOf(lifted, kind);
-}
+// `structureOfLegacy` and `maxLossOfLegacy` are DELETED at the cutover, exactly as F9 promised when
+// it added them. They bridged a legless v2 `Position` to the leg-based recogniser; `allPositions()`
+// returns `SimPosition[]` now, so their reason to exist is gone. A transitional helper that outlives
+// its transition is how a second source of truth gets born — and this feature exists to kill one of
+// those, not to plant another. Every consumer reads `view.structure` / `view.max_loss` directly.
 
 /**
  * The ephemeral per-position session Δ. It is the ONE sortable datum that is not on the projection

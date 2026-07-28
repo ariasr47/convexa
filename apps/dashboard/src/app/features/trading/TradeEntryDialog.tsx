@@ -1,8 +1,13 @@
 /**
  * TradeEntryDialog — the ONE shared sim-entry dialog (sim-entry-unification, owner items 2+3).
  * Used by BOTH launch sites:
- *   - Ticker page (`ticker/TickerDashboard.tsx`) → `useGhostTrade.openTrade` (single-trade engine);
+ *   - Ticker page (`ticker/TickerDashboard.tsx`) → `usePortfolio.openPosition`, single-leg variant
+ *     (no `multiLeg`, no `restingLimit`) — the page has no resting-limit lifecycle of its own;
  *   - Positions page (`positions/PositionsPanel.tsx`) → the server-gated `usePortfolio.openPosition`.
+ *
+ * Both write into the ONE book (`convexa.positions.v3`) through the SAME function: the v3 cutover
+ * deleted the Ticker page's separate ghost-trade engine, so a trader cannot produce two competing
+ * records of one trade (AC-72). A single-leg entry is a one-element `legs` array — one open path.
  *
  * Skin/structure are the REDESIGNED ghost-trade dialog (Figma 118:1446): a 400px panel-raised slate
  * dialog (`extrasFor(theme).panelRaised` — theme-native, zero hardcoded hex), uppercase field labels,

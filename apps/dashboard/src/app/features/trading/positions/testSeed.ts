@@ -13,6 +13,7 @@
  *  - Simulation-only: no real order path, never feeds signals/score/tier/fingerprint.
  *  - Best-effort: any storage failure is swallowed so it can NEVER break the login flow.
  */
+import { liftLegacyRecord } from './migrate';
 import { allPositions, putPosition } from './store';
 import type { Position } from './types';
 import { PORTFOLIO_SCHEMA_VERSION } from './types';
@@ -29,8 +30,15 @@ export const TEST_ACCOUNT_PASSWORD = 'convexa-test-2026';
 
 const SEED_MARKER_KEY = `convexa.test-seed.${TEST_ACCOUNT_EMAIL}`;
 
-/** A small, plausible simulated portfolio: four open single-leg longs + one realized close. Fixed
- *  ids make the seed itself idempotent by construction (a re-run overwrites by the same id). */
+/**
+ * A small, plausible simulated portfolio: four open single-leg longs + one realized close. Fixed
+ * ids make the seed itself idempotent by construction (a re-run overwrites by the same id).
+ *
+ * Authored in the LEGACY flat shape and written through the ONE lift (`liftLegacyRecord`), not
+ * hand-converted to `SimPosition`. Two reasons: a second hand-written conversion is a second source
+ * of truth for what a migrated record looks like, and this seed then exercises the same path a real
+ * user's records take.
+ */
 const TEST_POSITIONS: Position[] = [
   {
     id: 'seed-tsla-260c',
@@ -130,7 +138,10 @@ export function seedTestPositionsIfNeeded(email: string | null | undefined): voi
     if (localStorage.getItem(SEED_MARKER_KEY)) return; // already handled on this browser+account
     // Non-destructive: only populate when the store is empty (never clobber real positions).
     if (allPositions().length === 0) {
-      for (const p of TEST_POSITIONS) putPosition(p);
+      for (const p of TEST_POSITIONS) {
+        const lifted = liftLegacyRecord(p);
+        if (lifted) putPosition(lifted);
+      }
     }
     // Mark handled regardless — a deliberate later deletion of the seeded rows stays deleted.
     localStorage.setItem(SEED_MARKER_KEY, new Date().toISOString());

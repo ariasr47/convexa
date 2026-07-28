@@ -129,6 +129,12 @@ export function PositionsPanel({
         // Driven FROM the health flag, computed synchronously at store init — never from trying a
         // write and failing. That is what guarantees no frame paints an enabled affordance.
         faulted={pf.health.faulted}
+        // The banner region's two dismissible notices. Both PRODUCED by the store read (the merge
+        // notice from `provenance`, the stale-view name from read-time view normalization) — F14
+        // built the props and the render; this is the producer they were waiting on.
+        mergeNoticePending={pf.mergeNoticePending}
+        onDismissMerge={pf.dismissMerge}
+        staleViewName={pf.staleViewName}
       />
 
       {/* Honest browser-local disclosure (D6d, mandatory) — a subtle info line; shown whether signed

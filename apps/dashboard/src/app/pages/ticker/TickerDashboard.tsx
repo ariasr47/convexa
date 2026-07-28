@@ -25,21 +25,32 @@ import {
   TradeEntryDialog,
   TradeEntrySubmit,
 } from '@/features/trading/TradeEntryDialog';
-import { NewTradeForm, useGhostTrade } from '@/features/trading/model/useGhostTrade';
 import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
 import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
 import { parseTriggerSeed } from '@/features/trading/orders/seed';
 import type { OrderProvenance } from '@/features/trading/orders/types';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
 import { createOrder } from '@/features/trading/orders/useOrders';
+import { tickerEvalSubject } from '@/features/trading/positions/evalSubject';
 import { positionsFaulted } from '@/features/trading/positions/store';
+import { usePortfolio, type OpenPositionInput } from '@/features/trading/positions/usePortfolio';
 import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
 import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
-import { Alert, Box, Button, Container, Fade, Skeleton, Tooltip, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Fade,
+  Skeleton,
+  Snackbar,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
   getTicker,
@@ -106,8 +117,26 @@ export function TickerDashboard() {
 
   // "Live" only if a real tick arrived recently AND the transport isn't offline.
   const isLive = (live?.live ?? false) && !streamOffline;
-  const gt = useGhostTrade(ticker, data, live, isLive, streamOffline);
+  // ONE BOOK. The Ticker page reads the SAME portfolio hook the Positions page does — there is no
+  // separate ghost-trade concept any more, so a trader cannot produce two competing records of one
+  // trade (AC-72). The store's subscription seam propagates a close made on `/positions` to this
+  // page without a reload, and an open made here to `/positions` (AC-70/AC-71).
+  const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const persona = usePersona();
+
+  /**
+   * LEVEL 1 + LEVEL 2 position-context selection, in ONE named helper so the rule reads the way the
+   * ruling reads (SPEC §2.8). `pos_*` is derived from the selected leg and the fetch NEVER branches
+   * on leg count or on position count — suppression happens at the RENDER, below.
+   */
+  const evalSel = tickerEvalSubject(pf.positions, ticker);
+  const positionQuery = evalSel.queryLeg
+    ? {
+        expiration: evalSel.queryLeg.expiration ?? '',
+        strike: evalSel.queryLeg.strike ?? 0,
+        right: (evalSel.queryLeg.right ?? 'call') as OptionRight,
+      }
+    : undefined;
 
   // AI recommendation (independently-nullable sibling card).
   const { personas: readPersonas } = useReadPersonas(persona.personas);
@@ -141,15 +170,17 @@ export function TickerDashboard() {
 
   const load = useCallback(() => {
     if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
-    const pf = pendingPrefill.current;
+    const dte = pendingPrefill.current;
     pendingPrefill.current = null; // consume one-shot
     setLoading(true);
+    // THE REQUEST IS UNCONDITIONAL AND ITS SHAPE NEVER BRANCHES — not on leg count, not on position
+    // count (SPEC §2.8, AC-74/AC-77/AC-83). There is deliberately no position-count guard here.
     getTicker(ticker, {
       expirations: selected ?? undefined,
       darkPool,
-      position: gt.positionQuery,
-      minDte: pf?.min,
-      maxDte: pf?.max,
+      position: positionQuery,
+      minDte: dte?.min,
+      maxDte: dte?.max,
     })
       .then((d) => {
         setData(d);
@@ -157,7 +188,15 @@ export function TickerDashboard() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [ticker, selected, darkPool, gt.positionQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    ticker,
+    selected,
+    darkPool,
+    positionQuery?.expiration,
+    positionQuery?.strike,
+    positionQuery?.right,
+  ]);
 
   // Reset the filter to "all" whenever the ticker changes; clear data + any prior error.
   useEffect(() => {
@@ -219,9 +258,13 @@ export function TickerDashboard() {
   // shared `TradeEntryDialog` is untouched and unforked (`[single-shared-sim-entry-dialog]`), so the
   // direct-Accept path carries the rec identity and `not_attributable_by_path` stays 0.
   const [entryRecFingerprint, setEntryRecFingerprint] = useState<string | null>(null);
+  /** A refused open is SHOWN, never swallowed — including the faulted-store refusal (AC-61). */
+  const [entryError, setEntryError] = useState<string | null>(null);
   const [showPrimeBanner, setShowPrimeBanner] = useState(false);
   const prevTierRef = useRef<string | null>(null);
-  const tradeOpen = gt.trade?.status === 'open';
+  // "This ticker already has an open position" — derived from the ONE book. The Prime banner and the
+  // ghost dialog both keyed off `gt.trade`; they key off the portfolio now.
+  const tradeOpen = evalSel.position != null;
   useEffect(() => {
     const t = sig?.opportunity_tier;
     if (t === 'prime' && sig?.prime_prompt_eligible && prevTierRef.current !== 'prime')
@@ -604,11 +647,12 @@ export function TickerDashboard() {
         </Fade>
       )}
 
-      {/* Ghost-trade entry — the SHARED sim-entry dialog (`trading/TradeEntryDialog`). The single-
-          trade engine has no resting-limit lifecycle (no `restingLimit`), so the mode-tagged submit
-          maps onto the existing `NewTradeForm`: manual/limit open immediately at the typed price
-          (basis `manual`, the shipped behavior); market opens at the resolved snapshot/theoretical
-          fill. `useGhostTrade.openTrade` is unchanged. */}
+      {/* Entry — the SHARED sim-entry dialog (`trading/TradeEntryDialog`), now writing into the ONE
+          book through `usePortfolio.openPosition`. `useGhostTrade` is gone: the Ticker page no
+          longer offers a position concept separate from the portfolio (AC-72). The dialog stays
+          single-leg here (no `multiLeg`, no `restingLimit`) — that is a variant of the one shared
+          dialog, never a fork — so `s.legs` is a one-element array and there is exactly ONE open
+          path for one leg and for six. */}
       <TradeEntryDialog
         open={entryOpen && !tradeOpen && !storeFaulted}
         ticker={ticker}
@@ -618,34 +662,22 @@ export function TickerDashboard() {
         prefill={entryPrefill}
         onClose={() => setEntryOpen(false)}
         onConfirm={(s: TradeEntrySubmit) => {
-          // The Ticker page's single-trade ghost engine holds ONE contract, which is exactly why it
-          // leaves `multiLeg` off: the dialog can only ever hand it a one-element array here. It
-          // joins the multi-leg book at the F18 cutover, when this page writes through
-          // `usePortfolio` instead of `useGhostTrade`.
-          const leg = s.legs[0];
-          const base = {
-            expiration: leg.expiration ?? '',
-            strike: leg.strike ?? 0,
-            right: (leg.right ?? 'call') as OptionRight,
-            qty: leg.qty,
+          // MANUAL and LIMIT both open immediately at the typed price here — this page has no
+          // resting-limit lifecycle, which is the shipped single-trade behaviour, so the price rides
+          // the leg and the mode stays `manual`. MARKET carries its resolved fill through.
+          const typed = s.entryMode === 'limit' ? s.limitPrice : (s.legs[0].price ?? 0);
+          const input: OpenPositionInput = {
+            legs: [{ ...s.legs[0], ticker, price: typed }],
+            entryMode: s.entryMode === 'market' ? 'market' : 'manual',
+            ...(s.entryMode === 'market'
+              ? { resolvedMark: s.resolvedMark, resolvedBasis: s.resolvedBasis }
+              : {}),
             stop: s.stop,
             target: s.target,
+            aiRecFingerprint: entryRecFingerprint,
           };
-          const form: NewTradeForm =
-            s.entryMode === 'market'
-              ? {
-                  ...base,
-                  entryMark: s.resolvedMark,
-                  entryBasis: s.resolvedBasis,
-                  aiRecFingerprint: entryRecFingerprint,
-                }
-              : {
-                  ...base,
-                  entryMark: s.entryMode === 'manual' ? (leg.price ?? 0) : s.limitPrice,
-                  entryBasis: 'manual',
-                  aiRecFingerprint: entryRecFingerprint,
-                };
-          gt.openTrade(form);
+          const res = pf.openPosition(input);
+          setEntryError(!res.ok && res.reason ? res.reason : null);
           setEntryOpen(false);
         }}
       />
@@ -683,6 +715,16 @@ export function TickerDashboard() {
         onClose={() => setCustomizeOpen(false)}
         persona={persona}
       />
+
+      <Snackbar open={!!entryError} autoHideDuration={6000} onClose={() => setEntryError(null)}>
+        <Alert
+          severity="warning"
+          onClose={() => setEntryError(null)}
+          data-testid="entry-failure-toast"
+        >
+          {entryError}
+        </Alert>
+      </Snackbar>
 
       {/* The structured-state export floor — reachable from the rec panel ("View what's sent"). */}
       <StateExportDrawer

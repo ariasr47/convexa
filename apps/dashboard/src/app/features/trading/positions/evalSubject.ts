@@ -20,14 +20,15 @@ import type { Leg, LegId, SimPosition } from './leg';
 
 /**
  * The `none` branch's reason — a CLOSED vocabulary (SPEC §2.8), snake_case, exhaustive, no free
- * text. It is a named union rather than an inline literal so that F18 adds `'multiple_positions'`
- * in ONE line and the compiler propagates the new member to every exhaustive switch.
+ * text.
  *
- * `multiple_positions` is deliberately NOT a member here: it is a TICKER-level fact (>1 open
- * position on the focused ticker) while `evalSubjectOf` is POSITION-level. Within a position,
- * `none` is reachable only when there is no option leg at all.
+ * TWO LEVELS, and the second member is why this is a named union rather than an inline literal:
+ *  - `no_option_leg`      — POSITION-level (shares-only). Decided by `evalSubjectOf` below. Within a
+ *                           position, `none` is reachable only when there is no option leg at all.
+ *  - `multiple_positions` — TICKER-level (>1 open position on the focused ticker). Decided ONE LEVEL
+ *                           UP, in `tickerEvalSubject`, which `evalSubjectOf` knows nothing about.
  */
-export type EvalNoneReason = 'no_option_leg';
+export type EvalNoneReason = 'no_option_leg' | 'multiple_positions';
 
 export type EvalSubject =
   | { kind: 'whole_position'; leg_id: LegId }
@@ -61,4 +62,82 @@ export function evalSubjectOf(p: SimPosition): EvalSubject {
   // Exactly one option leg AND no other leg at all ⇒ the position IS the leg.
   if (p.legs.length === 1) return { kind: 'whole_position', leg_id: chosen.id };
   return { kind: 'primary_leg', leg_id: chosen.id, of_legs: p.legs.length };
+}
+
+/** What the Ticker page needs to know about the focused ticker, level 1 and level 2 together. */
+export interface TickerEvalSelection {
+  /** The position whose leg supplies the `pos_*` params, or null when there is none to send. */
+  position: SimPosition | null;
+  /** The leg those params are read off. Present whenever `position` is — the request never branches. */
+  queryLeg: Leg | null;
+  /** What the RENDER is allowed to say. `none` carries its reason rather than an unexplained null. */
+  subject: EvalSubject;
+  /** The evaluation is not surfaced on ANY surface. A RENDER decision — never a fetch decision. */
+  suppressed: boolean;
+}
+
+/**
+ * LEVEL 1 — which position on the focused ticker speaks for it (SPEC §2.8, ruled 2026-07-28).
+ *
+ * | open positions on the focused ticker | behaviour                                            |
+ * |--------------------------------------|------------------------------------------------------|
+ * | 0                                    | as today — no position context                       |
+ * | exactly 1                            | today's behaviour, BYTE-IDENTICAL; level 2 applies   |
+ * | more than 1                          | SUPPRESSED, reason `multiple_positions`              |
+ *
+ * WHY THE REJECTED ALTERNATIVE IS REJECTED, stated here so a later reader does not re-propose it:
+ * picking one of N (e.g. the most recently opened) is deterministic, but it makes the app quietly
+ * assert *"this is your NVDA position"* when it is one of three. This is **owner ruling #9 applied
+ * one level up** — #9 established that the app does not evaluate a subject it cannot faithfully
+ * represent, and picking one of N is the same approximation the owner rejected for legs, with LESS
+ * visibility. There is no regression by construction: a ticker holding 2+ positions cannot exist
+ * under the shipped one-ghost-trade-per-ticker store.
+ *
+ * SUPPRESSION IS A RENDER DECISION ONLY. `position` is still returned when N > 1 — deterministically,
+ * by lowest id — precisely so the `pos_*` request stays UNCONDITIONAL and its shape never branches,
+ * on leg count or on position count (AC-74, AC-77, AC-83). A `pos_*` request appearing in the
+ * network tab for a ticker holding three positions is CORRECT, not a defect. What that pick must
+ * never do is reach a surface, and `suppressed` is what stops it.
+ */
+export function tickerEvalSubject(
+  positions: readonly SimPosition[],
+  ticker: string,
+): TickerEvalSelection {
+  const symbol = ticker.toUpperCase();
+  const open = positions
+    .filter((p) => p.status === 'open' && (p.legs[0]?.ticker ?? '').toUpperCase() === symbol)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  /** The leg the `pos_*` params are read off — the SAME selection rule at every position count. */
+  const legOf = (p: SimPosition): Leg | null => {
+    const s = evalSubjectOf(p);
+    return s.kind === 'none' ? null : (p.legs.find((l) => l.id === s.leg_id) ?? null);
+  };
+
+  if (open.length === 0) {
+    return {
+      position: null,
+      queryLeg: null,
+      subject: { kind: 'none', reason: 'no_option_leg' },
+      suppressed: true,
+    };
+  }
+  if (open.length === 1) {
+    const only = open[0];
+    const subject = evalSubjectOf(only);
+    // Level 2 (ruling #9): a multi-leg position is suppressed too, and a shares-only position has
+    // nothing to evaluate. A single OPTION leg is the one arm that surfaces — byte-identical.
+    return {
+      position: only,
+      queryLeg: legOf(only),
+      subject,
+      suppressed: subject.kind !== 'whole_position',
+    };
+  }
+  return {
+    position: open[0],
+    queryLeg: legOf(open[0]),
+    subject: { kind: 'none', reason: 'multiple_positions' },
+    suppressed: true,
+  };
 }

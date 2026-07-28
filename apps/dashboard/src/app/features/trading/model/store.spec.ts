@@ -1,27 +1,29 @@
 /**
- * Unit — the ghost-trade durable store (`model/store.ts`). Risk-based: round-trip, the append-only
- * decision log, corrupt-blob degradation WITHOUT destroying the original, storage-failure isolation,
- * and the legacy-brand read (gammaflow → convexa, promote-forward, never delete the old blob).
+ * Unit — the retired ghost-trade blob, read-only (`model/store.ts`). Risk-based: the READ contract
+ * that the v3 union and the outcome-ledger harvest depend on (round-trip of an existing blob,
+ * corrupt-blob degradation WITHOUT destroying the original, the legacy-brand promote), plus the
+ * thing this module now exists to guarantee — **it cannot write**.
  *
- * NOTE (documented split — do NOT "unify"): this store's `appendDecision` writes
- * `convexa.ghost-trade.v1`; the positions store has its OWN `appendDecision` writing
- * `convexa.positions.v2`. Each store's contract is tested against ITS OWN key.
+ * The write paths (`putTrade`, `clearTrade`, the second `appendDecision`) are DELETED at the v3
+ * cutover, together with `useGhostTrade`. That deletion is the structural half of the union's
+ * once-only guarantee: the residual hole a once-only migration cannot close on its own is a stale
+ * tab on the pre-v3 build writing a NEW v1 record, and there is no writer left to do it.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import {
   __resetMemory,
   allDecisions,
-  appendDecision,
-  clearTrade,
+  allTrades,
   decisionsForTrade,
   getTrade,
   GHOST_TRADE_KEY,
   GHOST_TRADE_LEGACY_KEY,
-  putTrade,
 } from './store';
-import type { DecisionRecord, GhostTrade } from './types';
+import storeSource from './store?raw';
+import type { DecisionRecord } from './types';
 
-function trade(over: Partial<GhostTrade> = {}): GhostTrade {
+/** The retired record shape, as it still sits in a real browser's localStorage. */
+function trade(over: Record<string, unknown> = {}) {
   return {
     id: 't-1',
     ticker: 'TSLA',
@@ -57,46 +59,53 @@ function decision(over: Partial<DecisionRecord> = {}): DecisionRecord {
   };
 }
 
+function seed(key: string, trades: Record<string, unknown>, decisions: DecisionRecord[] = []) {
+  const blob = JSON.stringify({ schema_version: 1, trades, decisions });
+  localStorage.setItem(key, blob);
+  __resetMemory();
+  return blob;
+}
+
 beforeEach(() => {
   localStorage.clear();
   __resetMemory();
 });
 
-describe('trade round-trip', () => {
-  it('puts, reads (ticker case-insensitive), and clears a trade — durably under its OWN key', () => {
-    putTrade(trade());
-    expect(getTrade('tsla')?.id).toBe('t-1'); // case-insensitive key
-    // Durable under convexa.ghost-trade.v1 (this store's key), not the positions store's key.
-    expect(localStorage.getItem(GHOST_TRADE_KEY)).toContain('t-1');
-    expect(localStorage.getItem('convexa.positions.v2')).toBeNull();
-    // Survives a reload (re-hydrate from localStorage).
-    __resetMemory();
-    expect(getTrade('TSLA')?.entry_mark).toBe(5);
-    clearTrade('TSLA');
-    expect(getTrade('TSLA')).toBeNull();
+describe('AC-58 — the v1 writer is GONE, by construction', () => {
+  it('the module contains no setItem call at all', () => {
+    expect(storeSource).not.toMatch(/setItem/);
   });
 
-  it('clearTrade removes only that ticker', () => {
-    putTrade(trade({ id: 'a', ticker: 'TSLA' }));
-    putTrade(trade({ id: 'b', ticker: 'AAPL' }));
-    clearTrade('TSLA');
-    expect(getTrade('TSLA')).toBeNull();
-    expect(getTrade('AAPL')?.id).toBe('b');
+  it('exports no write function — putTrade, clearTrade and appendDecision are deleted', async () => {
+    const mod = (await import('./store')) as Record<string, unknown>;
+    for (const name of ['putTrade', 'clearTrade', 'appendDecision', 'write']) {
+      expect(mod[name], `${name} must not exist`).toBeUndefined();
+    }
   });
 });
 
-describe('append-only decision log', () => {
-  it('appends (never rewrites), reads oldest-first globally and newest-first per trade', () => {
-    appendDecision(decision({ event_type: 'open', clock_time: '2026-06-20T10:00:00Z' }));
-    appendDecision(decision({ event_type: 'close', clock_time: '2026-06-21T10:00:00Z' }));
-    appendDecision(decision({ trade_id: 'other', event_type: 'reject' }));
+describe('read contract (the migration + harvest source)', () => {
+  it('reads an existing blob by ticker, case-insensitively, and survives a reload', () => {
+    seed(GHOST_TRADE_KEY, { TSLA: trade() });
+    expect((getTrade('tsla') as { id: string }).id).toBe('t-1');
+    __resetMemory();
+    expect((getTrade('TSLA') as { entry_mark: number }).entry_mark).toBe(5);
+    expect(Object.keys(allTrades())).toEqual(['TSLA']);
+  });
+
+  it('reads the append-only log oldest-first globally and newest-first per trade', () => {
+    seed(GHOST_TRADE_KEY, {}, [
+      decision({ event_type: 'open', clock_time: '2026-06-20T10:00:00Z' }),
+      decision({ event_type: 'close', clock_time: '2026-06-21T10:00:00Z' }),
+      decision({ trade_id: 'other', event_type: 'reject' }),
+    ]);
     expect(allDecisions().map((d) => d.event_type)).toEqual(['open', 'close', 'reject']);
     expect(decisionsForTrade('t-1').map((d) => d.event_type)).toEqual(['close', 'open']);
   });
 });
 
 describe('failure isolation', () => {
-  it('a corrupt blob degrades to empty WITHOUT throwing and WITHOUT destroying the original blob', () => {
+  it('a corrupt blob degrades to empty WITHOUT throwing and WITHOUT destroying the original', () => {
     localStorage.setItem(GHOST_TRADE_KEY, '{ not json');
     __resetMemory();
     expect(() => getTrade('TSLA')).not.toThrow();
@@ -105,30 +114,17 @@ describe('failure isolation', () => {
     // The unreadable original is left intact for manual recovery — a read never wipes it.
     expect(localStorage.getItem(GHOST_TRADE_KEY)).toBe('{ not json');
   });
-
-  it('a localStorage write failure degrades to in-memory only, never throws into the UI', () => {
-    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('quota');
-    });
-    expect(() => putTrade(trade())).not.toThrow();
-    expect(getTrade('TSLA')?.id).toBe('t-1'); // still readable in memory
-    spy.mockRestore();
-  });
 });
 
 describe('brand migration (gammaflow → convexa)', () => {
   it('reads a legacy-brand blob, promotes it forward, and NEVER deletes the original', () => {
-    const legacyBlob = JSON.stringify({
-      schema_version: 1,
-      trades: { TSLA: trade({ id: 'legacy-brand' }) },
-      decisions: [decision({ trade_id: 'legacy-brand' })],
-    });
-    localStorage.setItem(GHOST_TRADE_LEGACY_KEY, legacyBlob);
-    __resetMemory();
-    // Loss-free read through the legacy key…
-    expect(getTrade('TSLA')?.id).toBe('legacy-brand');
+    const legacyBlob = seed(GHOST_TRADE_LEGACY_KEY, { TSLA: trade({ id: 'legacy-brand' }) }, [
+      decision({ trade_id: 'legacy-brand' }),
+    ]);
+    expect((getTrade('TSLA') as { id: string }).id).toBe('legacy-brand');
     expect(decisionsForTrade('legacy-brand')).toHaveLength(1);
-    // …promoted forward under the new brand, with the old blob byte-identical (rollback-safe).
+    // Promoted forward under the new brand, with the old blob byte-identical (rollback-safe). The
+    // promote lives in `resolveDurable`, not here — which is why this module still has no setItem.
     expect(localStorage.getItem(GHOST_TRADE_KEY)).toBe(legacyBlob);
     expect(localStorage.getItem(GHOST_TRADE_LEGACY_KEY)).toBe(legacyBlob);
   });
@@ -138,11 +134,7 @@ describe('brand migration (gammaflow → convexa)', () => {
       GHOST_TRADE_LEGACY_KEY,
       JSON.stringify({ schema_version: 1, trades: { TSLA: trade({ id: 'old' }) }, decisions: [] }),
     );
-    localStorage.setItem(
-      GHOST_TRADE_KEY,
-      JSON.stringify({ schema_version: 1, trades: { TSLA: trade({ id: 'new' }) }, decisions: [] }),
-    );
-    __resetMemory();
-    expect(getTrade('TSLA')?.id).toBe('new');
+    seed(GHOST_TRADE_KEY, { TSLA: trade({ id: 'new' }) });
+    expect((getTrade('TSLA') as { id: string }).id).toBe('new');
   });
 });

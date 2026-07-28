@@ -20,25 +20,24 @@ import { EXCLUSION_PRECEDENCE, FAMILY_ORDER } from './types';
 
 // The FORBIDDEN importers, enumerated by §5.1 boundary 2 — every module that must NOT reach the
 // outcomes module. Imported as SOURCE TEXT (`?raw`), so this asserts the import graph itself.
-import modelStore from '@/features/trading/model/store?raw';
-import modelTypes from '@/features/trading/model/types?raw';
-import useGhostTrade from '@/features/trading/model/useGhostTrade?raw';
-import ordersStore from '@/features/trading/orders/store?raw';
-import useOrders from '@/features/trading/orders/useOrders?raw';
-import positionsStore from '@/features/trading/positions/store?raw';
-import usePortfolio from '@/features/trading/positions/usePortfolio?raw';
-import portfolioPanel from '@/features/trading/positions/PortfolioPanel?raw';
 import personasStore from '@/features/personas/store?raw';
 import personasTemplate from '@/features/personas/template?raw';
+import modelStore from '@/features/trading/model/store?raw';
+import modelTypes from '@/features/trading/model/types?raw';
+import ordersStore from '@/features/trading/orders/store?raw';
+import useOrders from '@/features/trading/orders/useOrders?raw';
+import portfolioPanel from '@/features/trading/positions/PortfolioPanel?raw';
+import positionsStore from '@/features/trading/positions/store?raw';
+import usePortfolio from '@/features/trading/positions/usePortfolio?raw';
 import aiRecPanel from '@/pages/ticker/widgets/ai-rec/AiRecPanel?raw';
 
 // The modules under test, as source.
-import ledgerSource from './ledger?raw';
 import archiveSource from './archive?raw';
-import sectionSource from './TrackRecordSection?raw';
 import archiveBlockSource from './ArchiveBlock?raw';
 import copySource from './copy?raw';
+import ledgerSource from './ledger?raw';
 import sourcesSource from './sources?raw';
+import sectionSource from './TrackRecordSection?raw';
 
 /**
  * Strip comments before scanning. These modules carry deliberate ⚠ warnings that QUOTE the forbidden
@@ -51,7 +50,6 @@ const code = (src: string): string =>
 const FORBIDDEN_IMPORTERS: [string, string][] = [
   ['features/trading/model/store', modelStore],
   ['features/trading/model/types', modelTypes],
-  ['features/trading/model/useGhostTrade', useGhostTrade],
   ['features/trading/orders/store', ordersStore],
   ['features/trading/orders/useOrders', useOrders],
   ['features/trading/positions/store', positionsStore],
@@ -104,7 +102,7 @@ const Q35 = [
   'A new close path or a new `closeTrade` `via` literal appeared in production.',
   '`outcomes/ledger.isCloseBearing` enumerates the close-bearing events, and it does NOT know about',
   'this one — so every position closed through it will silently fall to `unresolved_join` and vanish',
-  'from every rate, in the quiet direction that trips none of this feature\'s own alarms.',
+  "from every rate, in the quiet direction that trips none of this feature's own alarms.",
   'Do NOT widen the predicate to make this pass: `accept` is ambiguous (a non-closing Hold/Trim/Add',
   'path writes it) and `accept` + `ai_verdict: "Roll"` does not close either. Read §2/Q3.5, then',
   'update the predicate, this scan, and the fixtures together.',
@@ -128,37 +126,39 @@ const TRADING_SOURCES = import.meta.glob('../**/*.{ts,tsx}', {
 }) as Record<string, string>;
 
 describe('⚠ §2/Q3.5 — the close-bearing set is PINNED by a source scan (the guard)', () => {
-  it('`closeTrade`s `via` producers are EXACTLY the enumerated set: the default `close`, the Exit accept, and the roll', () => {
-    // Three producers, and the predicate in `ledger.isCloseBearing` names all three. A fourth would
-    // be counted by nobody.
-    expect(new Set(viaLiteralsIn(useGhostTrade)), Q35).toEqual(new Set(['accept', 'roll']));
-    // ...and the third is the DEFAULT, pinned by the signature itself.
-    expect(code(useGhostTrade), Q35).toMatch(/via:\s*DecisionEvent\s*=\s*'close'/);
+  it('`closeTrade` has NO producer left at all — and the predicate still recognises its records', () => {
+    // `model/useGhostTrade` is DELETED at the v3 cutover, and it was the only `closeTrade` caller.
+    // So the live producer set is now EMPTY — asserted over the whole tree, not over one file, so a
+    // reintroduced caller anywhere is caught.
+    const producers = Object.entries(TRADING_SOURCES)
+      .filter(([path]) => !/\.spec\.|\/fixtures\.ts$/.test(path))
+      .flatMap(([, src]) => viaLiteralsIn(src));
+    expect(producers, Q35).toEqual([]);
+    // The PREDICATE must NOT be narrowed to match. `accept` and `roll` close-bearing records are
+    // sitting in real users' durable history right now, and the ledger has to keep counting them;
+    // narrowing it would make those positions vanish from every rate, quietly.
+    expect(code(ledgerSource), Q35).toMatch(/'accept'/);
+    expect(code(ledgerSource), Q35).toMatch(/'roll'/);
   });
 
   it('`status: "closed"` is written by NO production module outside the two named close paths', () => {
-    // `useGhostTrade.closeTrade` + `usePortfolio.closePosition` are the two. `testSeed.ts` is the
-    // known third writer and is NOT a close path: it writes a fabricated closed position with no
-    // decision record at all, which the spine rule excludes structurally (§2/Q3.3). A FOURTH entry
-    // here means a new close path exists and the join has not been told about it.
+    // `usePortfolio.closePosition` is now the ONLY close path — `useGhostTrade` is deleted and the
+    // Ticker page closes through the one book. `testSeed.ts` is the known second writer and is NOT a
+    // close path: it writes a fabricated closed position with no decision record at all, which the
+    // spine rule excludes structurally (§2/Q3.3). A THIRD entry here means a new close path exists
+    // and the join has not been told about it.
     const writers = Object.entries(TRADING_SOURCES)
       .filter(([path]) => !/\.spec\.|\/fixtures\.ts$/.test(path))
       .filter(([, src]) => WRITES_CLOSED.test(code(src)))
       .map(([path]) => path.replace(/^\.\.\//, ''))
       .sort();
-    expect(writers, Q35).toEqual([
-      'model/useGhostTrade.ts',
-      'positions/testSeed.ts',
-      'positions/usePortfolio.ts',
-    ]);
+    expect(writers, Q35).toEqual(['positions/testSeed.ts', 'positions/usePortfolio.ts']);
   });
 
   it('the guard BITES — it fails on a new `via` literal and on a new close path (a scan that cannot fail guards nothing)', () => {
     // The scan is only worth its brittleness if it actually detects the drift it exists for. Prove
     // it against a mutated source rather than trusting the regex.
-    const mutated = useGhostTrade.replace("closeTrade('roll'", "closeTrade('expire'");
-    expect(mutated).not.toBe(useGhostTrade); // the mutation actually applied
-    expect(new Set(viaLiteralsIn(mutated))).not.toEqual(new Set(['accept', 'roll']));
+    expect(viaLiteralsIn("closeTrade('expire', x)")).toEqual(['expire']); // a new via IS detected
     expect(WRITES_CLOSED.test(code("const x = { ...p, status: 'closed' };"))).toBe(true);
     // ...and it reads CODE, not prose: this file's own ⚠ warnings quote the patterns verbatim.
     expect(WRITES_CLOSED.test(code("// a comment about status: 'closed'"))).toBe(false);
@@ -187,10 +187,13 @@ describe('boundary 2 — the outcome ledger is a ONE-WAY LEAF: nothing imports i
 describe('boundary 1 + 3 — the ledger is a pure client-local read', () => {
   it('the read module has ZERO write functions and touches no storage write API', () => {
     for (const fn of Object.values(ledgerModule)) {
-      if (typeof fn === 'function') expect(fn.name).not.toMatch(/^(set|put|save|write|append|delete|remove|clear)/i);
+      if (typeof fn === 'function')
+        expect(fn.name).not.toMatch(/^(set|put|save|write|append|delete|remove|clear)/i);
     }
     const ledger = code(ledgerSource);
-    expect(ledger).not.toMatch(/localStorage\.setItem|localStorage\.removeItem|localStorage\.clear/);
+    expect(ledger).not.toMatch(
+      /localStorage\.setItem|localStorage\.removeItem|localStorage\.clear/,
+    );
     expect(ledger).not.toMatch(/\b(putPosition|putTrade|putOrder|appendDecision|saveActiveId)\b/);
     // The harvest reads raw blobs — read-only, and it must stay that way. It deliberately does NOT
     // use `resolveDurable`, which promotes-forward (a write).
@@ -222,7 +225,9 @@ describe('AC-2 / AC-25 — the readout AND the archive are UNGATED', () => {
     // which a gate could be enforced, so an FE-only gate would be decorative — and a decorative gate
     // is FORBIDDEN, not merely useless (`[server-side-gate-enforcement]`).
     for (const [name, source] of OUTCOMES_SOURCES) {
-      expect(source, name).not.toMatch(/useGate|simTradeGate|SignInPrompt|gate\.guard|gate\.prompt/);
+      expect(source, name).not.toMatch(
+        /useGate|simTradeGate|SignInPrompt|gate\.guard|gate\.prompt/,
+      );
     }
   });
 });
@@ -308,7 +313,9 @@ describe('AC-6 / AC-14 / AC-E17 — the negative space in the surface', () => {
 
   it('AC-E10 — the demo seed gets no special case: no seed/demo/test-data string is renderable, and no code branch mentions it', () => {
     // ("sample count" in the empty-state copy is the statistical sample — not seeded data.)
-    expect(RENDERED_COPY.toLowerCase()).not.toMatch(/\bseed(ed|ing)?\b|\bdemo\b|test data|sample data/);
+    expect(RENDERED_COPY.toLowerCase()).not.toMatch(
+      /\bseed(ed|ing)?\b|\bdemo\b|test data|sample data/,
+    );
     // The seed is excluded STRUCTURALLY by the DecisionRecord-as-spine rule — no branch knows it exists.
     for (const [name, source] of OUTCOMES_SOURCES) {
       expect(source, name).not.toMatch(/testSeed|seedPortfolio/);

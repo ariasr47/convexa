@@ -1,47 +1,72 @@
 /**
- * Client-local durable store for the positions portfolio (v2). Backed by localStorage, versioned,
- * exportable. The server stores none of this.
+ * Client-local durable store for the positions portfolio — **`convexa.positions.v3`**, the ONE book
+ * both pages read. Backed by localStorage, versioned, exportable. The server stores none of this.
  *
- * GUARDED everywhere: a storage/parse/migration failure degrades to an empty in-memory portfolio
- * and NEVER throws into the UI (`[best-effort-isolated-or-null]`). A readable prior blob is NEVER
- * silently discarded — migration is read-time + idempotent.
+ * ── THE CUTOVER (SPEC §2.6) ──────────────────────────────────────────────────────────────────────
+ * v3 is reached by a **UNION**, not the shipped read-new-else-old chain:
  *
- * FAULT LATCH (`positionsFaulted()`, spec §2.9/§2.10, AC-56/AC-61): when the blob does not parse the
- * store degrades to empty in memory AND refuses every durable write, so the
- * unparseable-but-possibly-recoverable blob is left byte-identical. `[loss-free-durable-migration]`
- * reads "degrades to empty WITHOUT destroying the original" — this store honoured only the first
- * clause until now. Determination is SYNCHRONOUS at hydration (localStorage is synchronous), so no
- * frame paints enabled affordances on a faulted store, and mutators return `false` as the second
- * line of defence. Modelled on `orders/store.ts` `ordersFaulted()`.
+ *   if convexa.positions.v3 exists  -> it ALONE is authoritative; NO source is consulted. Done.
+ *   else, read ALL of: positions.v2 (either brand), ghost-trade.v1 (either brand)
+ *     -> lift each record through the ONE lift, union by record id, keep-first v2-before-v1
+ *     -> union decisions by decisionIdentity()
+ *     -> write ONE v3 blob carrying provenance, in a SINGLE setItem
+ *     -> delete nothing, ever
  *
- * v1→v2 migration (ARCHITECTURE_CONTRACT §1.3): the v1 `trades: Record<ticker, GhostTrade>` map is
- * read from the OLD key and each existing trade is re-keyed by its own `id` into the flat
- * `positions: Record<PositionId, Position>` map (loss-free one-to-one; the ticker is on the record).
- * Decisions carry over verbatim (same `trade_id` join). New optional fields are left absent ⇒ a v1
- * record reads as a `manual` open position. The v1 blob is left intact (read old-if-new-absent).
+ * FOUR THINGS THAT MUST NOT GO WRONG, and where each is enforced:
+ *
+ *  1. **THE UNION RUNS EXACTLY ONCE.** A repeated union is a RESURRECTION MACHINE — a record the
+ *     trader closed or removed in v3 comes back out of a source blob. Enforced by the first branch
+ *     of `read()`: once the v3 key exists, no source is read again, for any reason. Corrupt or
+ *     absent provenance NEVER re-arms it (provenance is non-load-bearing by construction: it is
+ *     never an input to P/L, grouping, the recogniser, the ledger or the archive's record set, so it
+ *     can cost at most one notice and never a record). The residual hole — a stale tab on the
+ *     pre-v3 build writing a NEW v1 record — is closed structurally in this same release:
+ *     `useGhostTrade` and every `model/store` write path are DELETED.
+ *  2. **THE PROMOTE ABORTS ENTIRELY** if any source is unreadable. A partial v3 would freeze a
+ *     truncated history behind a key that claims completeness, and writing v3 permanently stops the
+ *     read path from consulting sources. A migration that half-succeeds is worse than one that does
+ *     not run.
+ *  3. **A LOGICAL SOURCE IS ONE SOURCE.** `resolveDurable` promotes a legacy-brand blob to the new
+ *     key BEFORE anything parses it, so an unparseable `gammaflow.positions.v2` leaves the same
+ *     corrupt bytes under `convexa.positions.v2`. Resolve FIRST, then hand the union exactly one
+ *     entry per store — never one per physical key, or `unread_sources` reports two failures for one
+ *     blob and `source_counts` misreports provenance.
+ *  4. **NEVER-DELETE IS THE BACKUP.** No delete path, no prune, no compaction, no "clean up the old
+ *     keys" step. The untouched v2/v1 blobs ARE the rollback.
+ *
+ * FAULT LATCH (`positionsHealth()`, SPEC §2.9/§2.10, AC-56/AC-61): when a blob does not parse the
+ * store degrades to empty/partial in memory AND refuses every durable write, so the
+ * unparseable-but-possibly-recoverable blob is left byte-identical. Determination is SYNCHRONOUS at
+ * hydration (localStorage is synchronous), so no frame paints enabled affordances on a faulted
+ * store, and mutators return `false` as the second line of defence.
  */
-import type { GhostTrade } from '@/features/trading/model/types';
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
 import { defaultCustomization } from './defaults';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord, unionSources, type ParsedSource } from './migrate';
 import {
   CustomizationState,
   DecisionRecord,
-  PersistShapeV1,
-  PersistShapeV2,
+  PersistShapeV3,
   PORTFOLIO_SCHEMA_VERSION,
-  Position,
   PositionId,
+  Provenance,
+  StoreHealth,
 } from './types';
 
-// Current-brand durable keys. The `.v1`/`.v2` segment + in-blob schema_version are UNCHANGED — only
-// the brand prefix flipped (rebrand-convexa). The legacy `gammaflow.*` keys are retained ONLY as the
-// migration source for `resolveDurable` (read-new-else-old, promote forward, never delete old).
-const V1_KEY = 'convexa.ghost-trade.v1';
+// The current-brand durable keys. The legacy `gammaflow.*` keys are retained ONLY as migration
+// sources for `resolveDurable` (read-new-else-old, promote forward, NEVER delete old).
+const V3_KEY = 'convexa.positions.v3';
 const V2_KEY = 'convexa.positions.v2';
-const LEGACY_V1_KEY = 'gammaflow.ghost-trade.v1';
+const V1_KEY = 'convexa.ghost-trade.v1';
 const LEGACY_V2_KEY = 'gammaflow.positions.v2';
+const LEGACY_V1_KEY = 'gammaflow.ghost-trade.v1';
 
-function empty(): PersistShapeV2 {
+/** The LOGICAL source labels the union accounts by — one per store, never per physical key. */
+const SOURCE_V2 = V2_KEY;
+const SOURCE_V1 = V1_KEY;
+
+function empty(): PersistShapeV3 {
   return {
     schema_version: PORTFOLIO_SCHEMA_VERSION,
     positions: {},
@@ -50,57 +75,41 @@ function empty(): PersistShapeV2 {
   };
 }
 
-let memory: PersistShapeV2 | null = null; // fallback / cache
-/** Set SYNCHRONOUSLY by read() (spec §2.9); no frame ever paints on a stale value. */
+let memory: PersistShapeV3 | null = null; // fallback / cache
+/** Set SYNCHRONOUSLY by read() (SPEC §2.9); no frame ever paints on a stale value. */
 let faulted = false;
+/** The LOGICAL storage keys that failed to read this hydration. */
+let unreadSources: string[] = [];
 
-/** Re-key one v1 trade into a v2 position. Additive fields absent ⇒ manual entry. */
-function v1TradeToPosition(t: GhostTrade): Position {
-  return {
-    id: t.id,
-    ticker: t.ticker,
-    expiration: t.expiration,
-    strike: t.strike,
-    right: t.right,
-    side: 'long',
-    qty: t.qty,
-    entry_mark: t.entry_mark,
-    entry_basis: t.entry_basis,
-    entry_time: t.entry_time,
-    stop: t.stop ?? null,
-    target: t.target ?? null,
-    status: t.status, // 'open' | 'closed' — both valid PositionStatus
-    realized_pl_dollar: t.realized_pl_dollar,
-    realized_pl_pct: t.realized_pl_pct,
-    close_time: t.close_time,
-    schema_version: PORTFOLIO_SCHEMA_VERSION,
-  };
+// ---- External-store subscription (the `orders/store.ts` seam, copied verbatim) -------------------
+// AC-70/AC-71: a position opened on the Ticker page must appear in the portfolio, and a close on the
+// Positions page must reflect on the Ticker page, WITHOUT a reload. `model/store.ts` had no
+// subscription seam; the one book needs one, and both pages subscribe.
+
+let version = 0;
+const listeners = new Set<() => void>();
+
+export function subscribePositions(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
-/** Migrate a parsed v1 blob into a v2 shape (positions re-keyed by id, decisions verbatim). */
-function migrateV1(v1: PersistShapeV1): PersistShapeV2 {
-  const positions: Record<PositionId, Position> = {};
-  for (const t of Object.values(v1.trades ?? {})) {
-    if (t && typeof t.id === 'string') positions[t.id] = v1TradeToPosition(t);
-  }
-  return {
-    schema_version: PORTFOLIO_SCHEMA_VERSION,
-    positions,
-    decisions: Array.isArray(v1.decisions) ? v1.decisions : [],
-    customization: defaultCustomization(), // absent in v1 ⇒ defaults
-  };
+export function getPositionsVersion(): number {
+  return version;
 }
 
-/** Normalize a parsed v2 blob, filling any absent top-level slices with defaults (never throws). */
-function hydrateV2(raw: Partial<PersistShapeV2>): PersistShapeV2 {
-  const base = empty();
-  return {
-    schema_version: PORTFOLIO_SCHEMA_VERSION,
-    positions: raw.positions && typeof raw.positions === 'object' ? raw.positions : base.positions,
-    decisions: Array.isArray(raw.decisions) ? raw.decisions : base.decisions,
-    customization: hydrateCustomization(raw.customization),
-  };
+function notify() {
+  version += 1;
+  listeners.forEach((l) => {
+    try {
+      l();
+    } catch {
+      /* a bad listener never breaks the store */
+    }
+  });
 }
+
+// ---- Hydration ----------------------------------------------------------------------------------
 
 function hydrateCustomization(c: CustomizationState | undefined): CustomizationState {
   const d = defaultCustomization();
@@ -112,54 +121,194 @@ function hydrateCustomization(c: CustomizationState | undefined): CustomizationS
   return { views, activeViewId, working: c.working };
 }
 
-function read(): PersistShapeV2 {
-  if (memory) return memory;
-  // Cleared BEFORE the resolution below, never after it: the v1→v2 promote at the bottom of this
-  // try writes through `write()`, which consults the latch — a clear placed after that write would
-  // refuse the legitimate migration.
-  faulted = false;
+/**
+ * Provenance is NON-LOAD-BEARING BY CONSTRUCTION. Anything unrecognised reads as ABSENT: records
+ * stay authoritative, the migration is never re-armed, the read never fails, and the merge notice is
+ * suppressed (fail-closed — showing a merge notice to a trader whose merge state is unknown is a
+ * false claim; suppressing it costs one informational message).
+ */
+function hydrateProvenance(raw: unknown): Provenance | undefined {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.migrated_at !== 'string') return undefined;
+  const counts: Provenance['source_counts'] = {};
+  if (r.source_counts != null && typeof r.source_counts === 'object') {
+    for (const [k, v] of Object.entries(r.source_counts as Record<string, unknown>)) {
+      if (v == null || typeof v !== 'object') continue;
+      const e = v as Record<string, unknown>;
+      counts[k] = {
+        read: typeof e.read === 'number' ? e.read : 0,
+        contributed: typeof e.contributed === 'number' ? e.contributed : 0,
+      };
+    }
+  }
+  return {
+    migrated_at: r.migrated_at,
+    source_counts: counts,
+    merge_notice_dismissed: r.merge_notice_dismissed === true,
+  };
+}
+
+/**
+ * One record out of a parsed v3 blob. A well-formed v3 record is kept VERBATIM. A record that
+ * somehow has no `legs` is LIFTED rather than dropped — `loss-free` beats tidy, and the lift is the
+ * same one the migration and the archive import use.
+ */
+function hydrateV3Position(raw: unknown): SimPosition | null {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== 'string' || r.id.length === 0) return null;
+  if (Array.isArray(r.legs) && r.legs.length > 0) return r as unknown as SimPosition;
+  const lifted = liftLegacyRecord(r);
+  if (lifted == null) return null;
+  if (typeof r.opened_time === 'string') lifted.opened_time = r.opened_time;
+  return lifted;
+}
+
+function hydrateV3(raw: Partial<PersistShapeV3>): PersistShapeV3 {
+  const positions: Record<PositionId, SimPosition> = {};
+  if (raw.positions && typeof raw.positions === 'object') {
+    for (const value of Object.values(raw.positions as Record<string, unknown>)) {
+      const p = hydrateV3Position(value);
+      if (p != null) positions[p.id] = p;
+    }
+  }
+  const provenance = hydrateProvenance((raw as Record<string, unknown>).provenance);
+  return {
+    schema_version: PORTFOLIO_SCHEMA_VERSION,
+    positions,
+    decisions: Array.isArray(raw.decisions) ? raw.decisions : [],
+    customization: hydrateCustomization(raw.customization),
+    ...(provenance ? { provenance } : {}),
+  };
+}
+
+// ---- The union promote --------------------------------------------------------------------------
+
+interface LogicalSource {
+  parsed: ParsedSource;
+  /** The v2 blob's customization, when this source is the v2 store and it read. */
+  customization?: CustomizationState;
+}
+
+/**
+ * Read ONE LOGICAL SOURCE across both brand keys.
+ *
+ * `resolveDurable` is the right helper for a RENAME and is used here for exactly that — the brand
+ * hop — and NOTHING else. It runs BEFORE any parse, so the two brand keys are already two names for
+ * one blob by the time this returns; the caller hands the union a single entry, so `unread_sources`
+ * and `source_counts` count that blob once.
+ */
+function readLogicalSource(
+  key: string,
+  legacyKey: string,
+  label: string,
+  recordsOf: (blob: Record<string, unknown>) => unknown,
+): LogicalSource {
+  let rawText: string | null = null;
   try {
-    // 4-case brand × version resolution (FRONTEND_EXECUTION_CONTRACT §A.3), first hit wins:
-    //   (1) convexa.positions.v2  → hydrate
-    //   (2) gammaflow.positions.v2 → hydrate + promote to convexa.positions.v2 (resolveDurable)
-    //   (3) convexa.ghost-trade.v1 → migrateV1 → write convexa.positions.v2
-    //   (4) gammaflow.ghost-trade.v1 → migrateV1 → write convexa.positions.v2 (legacy ver + brand hop)
-    // The v2 read across both brands promotes the v2 blob forward; the v1 read across both brands is
-    // the existing chain. Every SOURCE blob is left intact (resolveDurable never deletes the old key;
-    // migrateV1 reads, never removes). The ghost-trade key promotes into convexa.positions.v2 here —
-    // NOT into convexa.ghost-trade.v1 — so it never conflicts with the ghost-trade store's own promote.
-    const rawV2 = resolveDurable(V2_KEY, LEGACY_V2_KEY);
-    if (rawV2) {
-      memory = hydrateV2(JSON.parse(rawV2) as Partial<PersistShapeV2>);
-      return memory;
-    }
-    // No v2 blob under either brand — migrate from a readable v1 ghost-trade blob (either brand).
-    const rawV1 = resolveDurable(V1_KEY, LEGACY_V1_KEY);
-    if (rawV1) {
-      const migrated = migrateV1(JSON.parse(rawV1) as PersistShapeV1);
-      memory = migrated;
-      write(migrated); // persist under convexa.positions.v2; leave every source blob intact
-      return memory;
-    }
-    memory = empty();
+    rawText = resolveDurable(key, legacyKey);
   } catch {
-    // Corrupt/unreadable store ⇒ empty in-memory portfolio. The prior blob is left INTACT: the latch
-    // below refuses every write until it is repaired or cleared OUTSIDE the app (this store never
-    // repairs, prunes or deletes it, and never routes new records to a second key).
+    // Storage unavailable is an INCOMPLETE read, never an empty one.
+    return { parsed: { key: label, ok: false, records: [], decisions: [] } };
+  }
+  // An ABSENT blob is a COMPLETE read of nothing — it must not abort the promote.
+  if (rawText == null) return { parsed: { key: label, ok: true, records: [], decisions: [] } };
+  try {
+    const blob = JSON.parse(rawText) as Record<string, unknown>;
+    const map = recordsOf(blob);
+    const records = map != null && typeof map === 'object' ? Object.values(map) : [];
+    const decisions = Array.isArray(blob.decisions) ? blob.decisions : [];
+    const customization = blob.customization as CustomizationState | undefined;
+    return { parsed: { key: label, ok: true, records, decisions }, customization };
+  } catch {
+    // Corrupt ⇒ UNREAD. The blob is left exactly as it is, under both brand keys.
+    return { parsed: { key: label, ok: false, records: [], decisions: [] } };
+  }
+}
+
+function read(): PersistShapeV3 {
+  if (memory) return memory;
+  // Cleared BEFORE anything below, never after: `write()` consults the latch, and the promote at the
+  // bottom of this function goes through it.
+  faulted = false;
+  unreadSources = [];
+
+  // ── 1. v3 exists ⇒ IT ALONE IS AUTHORITATIVE. No source is consulted, ever again. ──────────────
+  let rawV3: string | null = null;
+  try {
+    rawV3 = localStorage.getItem(V3_KEY);
+  } catch {
+    // Storage unavailable: refuse every write rather than run a migration we cannot persist.
     memory = empty();
     faulted = true;
+    unreadSources = [V3_KEY];
+    return memory;
   }
+  if (rawV3 != null) {
+    try {
+      memory = hydrateV3(JSON.parse(rawV3) as Partial<PersistShapeV3>);
+    } catch {
+      // The v3 blob itself failed to parse. Sources are NOT consulted (v3 exists — consulting them
+      // now would be the resurrection this design forbids) and NOTHING is written.
+      memory = empty();
+      faulted = true;
+      unreadSources = [V3_KEY];
+    }
+    return memory;
+  }
+
+  // ── 2. No v3 ⇒ the union runs, ONCE. ──────────────────────────────────────────────────────────
+  const v2 = readLogicalSource(V2_KEY, LEGACY_V2_KEY, SOURCE_V2, (b) => b.positions);
+  const v1 = readLogicalSource(V1_KEY, LEGACY_V1_KEY, SOURCE_V1, (b) => b.trades);
+  // EXACTLY TWO ParsedSource entries reach the union, never four. Order IS source precedence.
+  const union = unionSources([v2.parsed, v1.parsed]);
+  const customization = hydrateCustomization(v2.customization);
+
+  if (union.aborted) {
+    // ABORT ENTIRELY. The store runs in memory from whatever parsed; every durable write is refused;
+    // every source blob is left byte-identical. No partial v3 is ever written.
+    memory = {
+      schema_version: PORTFOLIO_SCHEMA_VERSION,
+      positions: union.positions,
+      decisions: union.decisions,
+      customization,
+    };
+    faulted = true;
+    unreadSources = union.unread_sources;
+    return memory;
+  }
+
+  const promoted: PersistShapeV3 = {
+    schema_version: PORTFOLIO_SCHEMA_VERSION,
+    positions: union.positions,
+    decisions: union.decisions,
+    customization,
+    provenance: {
+      migrated_at: new Date().toISOString(),
+      source_counts: union.source_counts,
+      merge_notice_dismissed: false,
+    },
+  };
+  memory = promoted;
+  // THE PROMOTE-WRITE RUNS EVEN WHEN THERE ARE NO SOURCES (all counts zero). Deferring it leaves the
+  // union path armed indefinitely, so a source blob appearing later — a stale tab, a restored
+  // profile — would be unioned in at an unpredictable moment. ONE setItem: `setItem` is
+  // all-or-nothing, so either the whole v3 blob lands or none of it does, and the sources are
+  // untouched either way (the migration simply retries on the next load).
+  write(promoted);
   return memory;
 }
 
-function write(s: PersistShapeV2): boolean {
+function write(s: PersistShapeV3): boolean {
   if (positionsFaulted()) return false; // NEVER overwrite a readable-but-unparseable prior blob
   memory = s;
   try {
-    localStorage.setItem(V2_KEY, JSON.stringify(s));
+    localStorage.setItem(V3_KEY, JSON.stringify(s));
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
+  notify();
   return true;
 }
 
@@ -169,18 +318,52 @@ export function positionsFaulted(): boolean {
   return faulted;
 }
 
+/**
+ * Fault state on the READ path, alongside the records (SPEC §2.9) — returned on the same object the
+ * view layer already reads, so the state cannot be dropped by a caller forgetting to inspect a
+ * return value.
+ */
+export function positionsHealth(): StoreHealth {
+  read();
+  return { faulted, unread_sources: [...unreadSources] };
+}
+
+// ---- Provenance + the merge notice ---------------------------------------------------------------
+
+export function getProvenance(): Provenance | null {
+  return read().provenance ?? null;
+}
+
+/**
+ * The merge notice appears ONLY for a trader who actually had items in BOTH places. Absent or
+ * corrupt provenance ⇒ suppressed (fail-closed). The notice itself states NO counts at all (SPEC §4
+ * ruling 2); the counts stay in provenance, inspectable for support, out of the trader's read.
+ */
+export function shouldShowMergeNotice(): boolean {
+  const p = getProvenance();
+  if (p == null || p.merge_notice_dismissed) return false;
+  const contributing = Object.values(p.source_counts).filter((c) => c.contributed > 0);
+  return contributing.length >= 2;
+}
+
+export function dismissMergeNotice(): boolean {
+  const s = read();
+  if (faulted || s.provenance == null) return false;
+  return write({ ...s, provenance: { ...s.provenance, merge_notice_dismissed: true } });
+}
+
 // ---- Positions ---------------------------------------------------------------------------------
 
-export function allPositions(): Position[] {
+export function allPositions(): SimPosition[] {
   return Object.values(read().positions);
 }
 
-export function getPosition(id: PositionId): Position | null {
+export function getPosition(id: PositionId): SimPosition | null {
   return read().positions[id] ?? null;
 }
 
 /** Returns false when the store is faulted (nothing written, nothing partial). */
-export function putPosition(p: Position): boolean {
+export function putPosition(p: SimPosition): boolean {
   const s = read();
   if (faulted) return false;
   return write({ ...s, positions: { ...s.positions, [p.id]: p } });
@@ -196,6 +379,7 @@ export function removePosition(id: PositionId): boolean {
 
 // ---- Decisions ---------------------------------------------------------------------------------
 
+/** THE one decision log (DECISION_QUEUE Q2 resolved — the second `appendDecision` is deleted). */
 export function appendDecision(rec: DecisionRecord): boolean {
   const s = read();
   if (faulted) return false;
@@ -209,8 +393,7 @@ export function decisionsForPosition(id: PositionId): DecisionRecord[] {
     .reverse();
 }
 
-/** The full append-only log, oldest first (ai-rec-backtest-orders: feeds the orders Export JSON —
- *  a read, never a new write path; the log stays single-sourced here). */
+/** The full append-only log, oldest first (feeds the orders Export JSON — a read, never a write). */
 export function allDecisions(): DecisionRecord[] {
   return read().decisions;
 }
@@ -237,9 +420,11 @@ export function newId(): string {
 export function __resetMemory() {
   memory = null;
   faulted = false;
+  unreadSources = [];
 }
 
 export const PORTFOLIO_V1_KEY = V1_KEY;
 export const PORTFOLIO_V2_KEY = V2_KEY;
+export const PORTFOLIO_V3_KEY = V3_KEY;
 export const PORTFOLIO_LEGACY_V1_KEY = LEGACY_V1_KEY;
 export const PORTFOLIO_LEGACY_V2_KEY = LEGACY_V2_KEY;

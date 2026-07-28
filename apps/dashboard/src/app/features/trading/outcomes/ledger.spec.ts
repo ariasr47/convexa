@@ -7,11 +7,20 @@
  * The boundary these specs control is **localStorage** — this feature consumes no endpoint, so
  * there is no API client to mock and none is invented.
  */
-import { beforeEach, describe, expect, it } from 'vitest';
 import { __resetMemory as resetGhost } from '@/features/trading/model/store';
 import { __resetOrdersMemory } from '@/features/trading/orders/store';
 import { __resetMemory as resetPositions } from '@/features/trading/positions/store';
-import { closedOutcome, decision, digest, ghostTrade, order, outcomes, position, seedStores } from './fixtures';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  closedOutcome,
+  decision,
+  digest,
+  ghostTrade,
+  order,
+  outcomes,
+  position,
+  seedStores,
+} from './fixtures';
 import { computeLedgerRead, isCloseBearing, wilsonInterval } from './ledger';
 import { EXCLUSION_PRECEDENCE, N_MIN } from './types';
 
@@ -329,15 +338,29 @@ describe('the join (§3.5)', () => {
   it('⚠ the digest is read from the SAME entry record the join fixed — never borrowed from another record with the same trade_id', () => {
     // An `accept` record for the same trade carries a digest the `open` record lacks. Reading across
     // would fabricate context the entry did not observe and under-count pre-capture.
-    const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' }); // NO digest
+    const entry = decision({
+      trade_id: 'p-1',
+      event_type: 'open',
+      clock_time: '2026-03-04T14:00:00.000Z',
+    }); // NO digest
     const accepted = decision({
       trade_id: 'p-1',
       event_type: 'accept',
       clock_time: '2026-03-04T15:00:00.000Z',
-      entry_context: digest({ persona_id: 'borrowed', setups: [{ name: 'gamma_squeeze', conviction: 'high' }] }),
+      entry_context: digest({
+        persona_id: 'borrowed',
+        setups: [{ name: 'gamma_squeeze', conviction: 'high' }],
+      }),
     });
-    const exit = decision({ trade_id: 'p-1', event_type: 'close', clock_time: '2026-03-05T14:00:00.000Z' });
-    seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, accepted, exit] });
+    const exit = decision({
+      trade_id: 'p-1',
+      event_type: 'close',
+      clock_time: '2026-03-05T14:00:00.000Z',
+    });
+    seedStores({
+      positions: [position({ id: 'p-1' })],
+      positionDecisions: [entry, accepted, exit],
+    });
     const read = computeLedgerRead();
     expect(read.coverage.counted).toBe(1);
     expect(familyOf(read, 'persona').coverage.pre_capture).toBe(1); // the ENTRY predates capture
@@ -456,7 +479,11 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
       // exit, and therefore a fill-quality class, from a mark no close ever happened at.
       for (const verdict of ['Hold', 'Trim', 'Add']) {
         reset();
-        const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+        const entry = decision({
+          trade_id: 'p-1',
+          event_type: 'open',
+          clock_time: '2026-03-04T14:00:00.000Z',
+        });
         const midLife = decision({
           trade_id: 'p-1',
           event_type: 'accept',
@@ -477,7 +504,11 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
       // the Hold/Trim/Add write and records `accept` + `ai_verdict: 'Roll'` — WITHOUT closing. The
       // position here closed by some other means whose record never landed; a rule reading
       // `ai_verdict ∈ {Exit, Roll}` would hand it this live-position mark as an exit basis.
-      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const entry = decision({
+        trade_id: 'p-1',
+        event_type: 'open',
+        clock_time: '2026-03-04T14:00:00.000Z',
+      });
       const deferred = decision({
         trade_id: 'p-1',
         event_type: 'accept',
@@ -492,7 +523,11 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
     });
 
     it('case 5 — an `alert` whose `ai_verdict` is PROSE is never close-bearing: `event_type` is the gate', () => {
-      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const entry = decision({
+        trade_id: 'p-1',
+        event_type: 'open',
+        clock_time: '2026-03-04T14:00:00.000Z',
+      });
       const alert = decision({
         trade_id: 'p-1',
         event_type: 'alert',
@@ -513,8 +548,17 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
       // names from different stores. Latest-by-clock_time resolves it; on an exact tie, the worst
       // basis wins — deterministic, total, and it can only ever move an outcome OUT of the headline.
       const tie = '2026-03-05T14:00:00.000Z';
-      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
-      const quoted = decision({ trade_id: 'p-1', event_type: 'close', clock_time: tie, mark_basis: 'snapshot' });
+      const entry = decision({
+        trade_id: 'p-1',
+        event_type: 'open',
+        clock_time: '2026-03-04T14:00:00.000Z',
+      });
+      const quoted = decision({
+        trade_id: 'p-1',
+        event_type: 'close',
+        clock_time: tie,
+        mark_basis: 'snapshot',
+      });
       const modeled = decision({
         trade_id: 'p-1',
         event_type: 'accept',
@@ -523,7 +567,10 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
         mark_basis: 'modeled',
       });
       // Order-independent: the worst basis wins whichever way the union happens to iterate.
-      for (const order2 of [[quoted, modeled], [modeled, quoted]]) {
+      for (const order2 of [
+        [quoted, modeled],
+        [modeled, quoted],
+      ]) {
         reset();
         seedStores({ positions: [position({ id: 'p-1' })], positionDecisions: [entry, ...order2] });
         const read = computeLedgerRead();
@@ -536,7 +583,11 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
     it('the tie-break is NOT generalized to "worst basis among ALL close-bearing records" — only among EXACT clock_time ties', () => {
       // Generalizing would fold an earlier record's basis into the exit, excluding outcomes for
       // something untrue of their exits. An EARLIER modeled close must not poison a LATER quoted one.
-      const entry = decision({ trade_id: 'p-1', event_type: 'open', clock_time: '2026-03-04T14:00:00.000Z' });
+      const entry = decision({
+        trade_id: 'p-1',
+        event_type: 'open',
+        clock_time: '2026-03-04T14:00:00.000Z',
+      });
       const earlierModeled = decision({
         trade_id: 'p-1',
         event_type: 'roll',
@@ -680,8 +731,16 @@ describe('⚠ the close-bearing predicate + the exit-basis join (§2/Q3.5)', () 
       // up in the exclusion breakdown the day it closes. `no_decision_record` is therefore a LIVE,
       // GROWING bucket driven by ordinary activity — not a demo-seed curiosity.
       const legA = closedOutcome('p-lega', { exitEvent: 'roll', exitVerdict: 'Roll', plPct: -25 });
-      const legB = decision({ trade_id: 'p-legb', event_type: 'roll', clock_time: '2026-03-05T14:00:00.000Z' });
-      const closeB = decision({ trade_id: 'p-legb', event_type: 'close', clock_time: '2026-03-09T14:00:00.000Z' });
+      const legB = decision({
+        trade_id: 'p-legb',
+        event_type: 'roll',
+        clock_time: '2026-03-05T14:00:00.000Z',
+      });
+      const closeB = decision({
+        trade_id: 'p-legb',
+        event_type: 'close',
+        clock_time: '2026-03-09T14:00:00.000Z',
+      });
       seedStores({
         positions: [legA.position, position({ id: 'p-legb' })],
         positionDecisions: [...legA.decisions, legB, closeB],
@@ -752,6 +811,7 @@ describe('the read`s basis (§3.4.6)', () => {
     expect(basis.sources).toEqual([
       'convexa.ghost-trade.v1',
       'convexa.positions.v2',
+      'convexa.positions.v3',
       'convexa.orders.v1',
     ]);
     expect(basis.identity_rule).toContain('trade_id');
@@ -775,7 +835,11 @@ describe('§8 non-goal 15 — the roll-up is not a back door into the cells', ()
     expect(serialized).not.toContain('p-1');
     expect(read.coverage.excluded_by_reason.modeled_basis).toBe(1);
     for (const key of Object.keys(read.coverage.excluded_by_reason)) {
-      expect(typeof read.coverage.excluded_by_reason[key as keyof typeof read.coverage.excluded_by_reason]).toBe('number');
+      expect(
+        typeof read.coverage.excluded_by_reason[
+          key as keyof typeof read.coverage.excluded_by_reason
+        ],
+      ).toBe('number');
     }
     // `computeLedgerRead` takes ONE option — a label injector. No filter, no include-list.
     expect(computeLedgerRead.length).toBeLessThanOrEqual(2);

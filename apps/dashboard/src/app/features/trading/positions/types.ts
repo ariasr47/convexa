@@ -8,14 +8,15 @@
  *
  * Schema is versioned; v1 (single trade per ticker) migrates loss-free into v2 (flat positions map).
  */
-import type { DecisionRecord, GhostTrade, MarkBasis } from '@/features/trading/model/types';
+import type { DecisionRecord, MarkBasis } from '@/features/trading/model/types';
 import type { OptionRight } from '@org/api';
-import type { Leg } from './leg';
+import type { Leg, SimPosition } from './leg';
 import type { StructureKind } from './structure';
 
 export type { DecisionRecord, MarkBasis } from '@/features/trading/model/types';
 
-export const PORTFOLIO_SCHEMA_VERSION = 2;
+/** v3 — `convexa.positions.v3`, the ONE book both pages read (the F18 cutover). */
+export const PORTFOLIO_SCHEMA_VERSION = 3;
 
 /** How a position was OPENED (entry provenance / fill mode). UX_BLUEPRINT §2.1. */
 export type EntryMode = 'manual' | 'market' | 'limit';
@@ -34,9 +35,14 @@ export type EntryBasis = MarkBasis | 'user_entered' | 'limit_fill' | 'trigger_fi
 export type PositionId = string;
 
 /**
- * One position — the evolution of `GhostTrade`. Every new field is additive/optional so a v1
- * `GhostTrade` reads as a valid `Position` after the re-key migration (a v1 record has no
- * `entry_mode`/`limit_price` ⇒ it reads as a `manual` open position, which is exactly what it was).
+ * ⚠ **LEGACY SOURCE SHAPE — no longer written by anything.** As of the v3 cutover the durable record
+ * is `SimPosition` (`./leg`) and the ONE book is `convexa.positions.v3`. This interface survives to
+ * describe the `convexa.positions.v2` / `gammaflow.positions.v2` blobs the union still READS (and
+ * that the outcome ledger still harvests from on a browser that has not loaded the new build), and
+ * the v1 archive envelopes the import still accepts. Nothing writes it.
+ *
+ * Every field was additive/optional so a v1 ghost trade read as a valid `Position` after the re-key
+ * migration; the same discipline is what lets `liftLegacyRecord` read it now.
  */
 export interface Position {
   id: PositionId;
@@ -67,7 +73,8 @@ export interface Position {
   // provenance stays on the order, single-sourced, reachable via this join.
   origin_order_id?: string;
   /**
-   * TRANSITIONAL (F15 → F18) — the position's LEGS. Additive + optional, NO version bump, exactly
+   * TRANSITIONAL (F15 → F18), and the reason this legacy shape still matters — the position's LEGS.
+   * Additive + optional, NO version bump, exactly
    * the `entry_mode` / `origin_order_id` discipline this record already follows.
    *
    * WHY IT EXISTS BEFORE THE v3 CUTOVER: multi-leg entry (F15) ships before the store cutover
@@ -183,11 +190,38 @@ export interface CustomizationState {
 export interface StoreHealth {
   /** True iff any source blob, or the v3 blob itself, failed to parse. */
   faulted: boolean;
-  /** The storage keys that failed. Populated at the cutover; `[]` while the store is still v2. */
+  /** The LOGICAL storage keys that failed — one entry per store, never per physical brand key. */
   unread_sources: string[];
 }
 
-// ---- Persist shape (v2) ------------------------------------------------------------------------
+// ---- Provenance (v3) ---------------------------------------------------------------------------
+
+/**
+ * What the union did, recorded on the v3 blob so support can inspect it.
+ *
+ * **NON-LOAD-BEARING BY CONSTRUCTION.** It is never an input to P/L, grouping, the recogniser, the
+ * outcome ledger or the archive's record set. Corrupt or absent provenance reads as ABSENT: the
+ * records stay authoritative, the migration is NEVER re-armed, the read never fails, and the merge
+ * notice is suppressed (fail-closed). It can cost at most one informational notice, never a record.
+ */
+export interface Provenance {
+  migrated_at: string;
+  /** Keyed by LOGICAL source. `read` = rows offered; `contributed` = DISTINCT ids it added. */
+  source_counts: Record<string, { read: number; contributed: number }>;
+  merge_notice_dismissed: boolean;
+}
+
+// ---- Persist shape (v3 — the ONE book) ----------------------------------------------------------
+
+export interface PersistShapeV3 {
+  schema_version: number;
+  positions: Record<PositionId, SimPosition>;
+  decisions: DecisionRecord[];
+  customization: CustomizationState;
+  provenance?: Provenance;
+}
+
+// ---- Legacy persist shapes — READ-ONLY migration/harvest sources, written by nothing -------------
 
 export interface PersistShapeV2 {
   schema_version: number;
@@ -196,9 +230,9 @@ export interface PersistShapeV2 {
   customization: CustomizationState;
 }
 
-/** v1 shape (the shipped ghost-trade store) — read-only, for migration. */
+/** v1 shape (the retired ghost-trade store) — read-only, for migration. */
 export interface PersistShapeV1 {
   schema_version: number;
-  trades: Record<string, GhostTrade>;
+  trades: Record<string, unknown>;
   decisions: DecisionRecord[];
 }

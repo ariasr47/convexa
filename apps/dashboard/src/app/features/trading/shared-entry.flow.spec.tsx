@@ -286,8 +286,8 @@ describe('sim-entry-unification — one shared dialog across both launch sites',
     await waitFor(() => {
       const p = allPositions().find((x) => x.limit_price === 4);
       expect(p?.status).toBe('open');
-      expect(p?.entry_mark).toBe(4);
-      expect(p?.entry_basis).toBe('limit_fill');
+      expect(p?.legs[0].entry_price).toBe(4);
+      expect(p?.legs[0].entry_basis).toBe('limit_fill');
     });
   }, 20000);
 });

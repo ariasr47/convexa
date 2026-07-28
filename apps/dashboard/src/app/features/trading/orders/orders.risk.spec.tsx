@@ -445,9 +445,9 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       const pos = allPositions()[0];
       expect(pos.origin_order_id).toBe(o.id);
       expect(filled.position_id).toBe(pos.id);
-      expect(pos.entry_basis).toBe('trigger_fill');
-      expect(pos.entry_mark).toBeCloseTo(6.545, 3);
-      expect(pos.qty).toBe(2);
+      expect(pos.legs[0].entry_basis).toBe('trigger_fill');
+      expect(pos.legs[0].entry_price).toBeCloseTo(6.545, 3);
+      expect(pos.legs[0].qty).toBe(2);
       expect(pos.stop).toBe(3);
       expect(pos.target).toBe(9);
 
@@ -610,8 +610,8 @@ describe('orders · live-only evaluation and stream degradation', () => {
       expect(getOrder(o.id)?.fill_mark).toBe(4);
       expect(getOrder(o.id)?.fill_basis).toBe('limit_fill');
       const pos = allPositions().find((p) => p.origin_order_id === o.id);
-      expect(pos?.entry_mark).toBe(4);
-      expect(pos?.entry_basis).toBe('limit_fill');
+      expect(pos?.legs[0].entry_price).toBe(4);
+      expect(pos?.legs[0].entry_basis).toBe('limit_fill');
     },
     T,
   );

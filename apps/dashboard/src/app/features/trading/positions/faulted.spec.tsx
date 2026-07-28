@@ -22,7 +22,9 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PortfolioPanel } from './PortfolioPanel';
 import { EMPTY_FAULTED, EMPTY_NO_POSITIONS, TR_ARCHIVE_PARTIAL_NOTE } from './labels';
-import { PORTFOLIO_V2_KEY, __resetMemory, newId, positionsFaulted, putPosition } from './store';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
+import { PORTFOLIO_V3_KEY, __resetMemory, newId, positionsFaulted, putPosition } from './store';
 import type { Position } from './types';
 import { usePortfolio } from './usePortfolio';
 
@@ -83,8 +85,9 @@ function makeBundle(): TickerBundle {
   } as unknown as TickerBundle;
 }
 
-function pos(over: Partial<Position> = {}): Position {
-  return {
+/** A durable record, authored flat and put through the ONE lift — never a hand conversion. */
+function pos(over: Partial<Position> = {}): SimPosition {
+  const raw: Position = {
     id: newId(),
     ticker: 'TSLA',
     expiration: '2026-07-17',
@@ -100,6 +103,7 @@ function pos(over: Partial<Position> = {}): Position {
     schema_version: 2,
     ...over,
   };
+  return liftLegacyRecord(raw) as SimPosition;
 }
 
 /** The captured `faulted` flag on the VERY FIRST render pass, before any effect flushes. */
@@ -133,7 +137,7 @@ function Harness({ streamOffline = false }: { streamOffline?: boolean }) {
 
 /** Corrupt the store, then mount the real feature subtree over it. */
 async function mountFaulted(props: Parameters<typeof Harness>[0] = {}) {
-  localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+  localStorage.setItem(PORTFOLIO_V3_KEY, CORRUPT);
   __resetMemory();
   const r = render(<Harness {...props} />);
   await waitFor(() => expect(screen.getByTestId('customization-toolbar')).toBeInTheDocument());
@@ -141,7 +145,7 @@ async function mountFaulted(props: Parameters<typeof Harness>[0] = {}) {
 }
 
 async function mountHealthy(seed = true) {
-  localStorage.removeItem(PORTFOLIO_V2_KEY);
+  localStorage.removeItem(PORTFOLIO_V3_KEY);
   __resetMemory();
   if (seed) putPosition(pos());
   const r = render(<Harness />);
@@ -262,11 +266,11 @@ describe('AC-61 — nothing is written, from any surface', () => {
     // snapshot is taken over the write attempts only.
     expect(storageSnapshot()).toBe(before);
     // And the damaged blob itself is untouched, byte for byte.
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(CORRUPT);
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(CORRUPT);
   });
 
   it('the latch is PER-STORE — a faulted positions store leaves the orders store usable', async () => {
-    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    localStorage.setItem(PORTFOLIO_V3_KEY, CORRUPT);
     __resetMemory();
     expect(positionsFaulted()).toBe(true);
     // `best-effort-isolated-or-null`: an unrelated durable store is unaffected and still writes.
@@ -291,7 +295,7 @@ describe('AC-65 — faulted and offline are independent, and legible together', 
   });
 
   it('offline alone disables no control — the two states never borrow each other`s treatment', async () => {
-    localStorage.removeItem(PORTFOLIO_V2_KEY);
+    localStorage.removeItem(PORTFOLIO_V3_KEY);
     __resetMemory();
     putPosition(pos());
     render(<Harness streamOffline />);
@@ -342,7 +346,7 @@ describe('AC-62 / AC-67 — what the banner says, and what the empty surface say
 
 describe('AC-68 — export still works, and says it is partial', () => {
   it('the Archive lead carries the partial note and the `Export archive` label is UNCHANGED', () => {
-    localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+    localStorage.setItem(PORTFOLIO_V3_KEY, CORRUPT);
     __resetMemory();
     render(
       <ThemeProvider theme={themeForPref('dark')}>
@@ -359,7 +363,7 @@ describe('AC-68 — export still works, and says it is partial', () => {
   });
 
   it('a HEALTHY store shows no partial note at all', () => {
-    localStorage.removeItem(PORTFOLIO_V2_KEY);
+    localStorage.removeItem(PORTFOLIO_V3_KEY);
     __resetMemory();
     render(
       <ThemeProvider theme={themeForPref('dark')}>

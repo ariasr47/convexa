@@ -1,7 +1,6 @@
 /**
- * Integration — `usePortfolio` emits `PositionView[]` over a de-duplicated per-LEG fan-out, while
- * the durable store is STILL the proven v2 store (SPEC §2.5, §2.7; AC-38, AC-39, AC-40, AC-42,
- * AC-43).
+ * Integration — `usePortfolio` emits `PositionView[]` over a de-duplicated per-LEG fan-out, on the
+ * cut-over `convexa.positions.v3` store (SPEC §2.5, §2.7; AC-38, AC-39, AC-40, AC-42, AC-43).
  *
  * Risk-based. The four things here regress silently and are invisible to review:
  *   1. the fan-out DE-DUPLICATION — two positions sharing one contract must issue ONE lookup, and
@@ -11,15 +10,16 @@
  *   4. all-or-nothing withholding, and the excluded-but-COUNTED subtotal.
  *
  * Mocks ONLY the network boundary (`@org/api`'s `fetchTrackedContract`) — never the store, never the
- * derivation, never a live backend. `convexa.positions.v3` is written NOWHERE: this task moves the
- * render path onto the new shape while the store is untouched.
+ * derivation, never a live backend.
  */
 import type { LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deriveGroups } from './derive';
-import { PORTFOLIO_V2_KEY, __resetMemory, putPosition } from './store';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
+import { PORTFOLIO_V2_KEY, PORTFOLIO_V3_KEY, __resetMemory, putPosition } from './store';
 import type { Position } from './types';
 import { usePortfolio } from './usePortfolio';
 
@@ -59,8 +59,9 @@ function liveUpdate(over: Partial<LiveUpdate> = {}): LiveUpdate {
   return { ticker: 'TSLA', mid: 252, live: true, market_session: 'regular', ...over } as LiveUpdate;
 }
 
-function pos(over: Partial<Position> = {}): Position {
-  return {
+/** A durable record, authored flat and put through the ONE lift — never a hand conversion. */
+function pos(over: Partial<Position> = {}): SimPosition {
+  const raw: Position = {
     id: 'p-1',
     ticker: 'TSLA',
     expiration: '2026-08-21',
@@ -76,6 +77,7 @@ function pos(over: Partial<Position> = {}): Position {
     schema_version: 2,
     ...over,
   };
+  return liftLegacyRecord(raw) as SimPosition;
 }
 
 type Portfolio = ReturnType<typeof usePortfolio>;
@@ -134,17 +136,18 @@ describe('usePortfolio · the PositionView projection', () => {
     expect(pf.views.every((v) => 'strategy' in v === false)).toBe(true);
   });
 
-  it('AC-43 — the render path moved, but NOTHING durable did: v3 is written nowhere', async () => {
+  it('AC-43/AC-80 — RENDERING writes nothing: the book is byte-identical after a mount', async () => {
     putPosition(pos());
-    const before = localStorage.getItem(PORTFOLIO_V2_KEY);
+    const before = localStorage.getItem(PORTFOLIO_V3_KEY);
     await mount();
-    expect(localStorage.getItem('convexa.positions.v3')).toBeNull();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(before);
+    // The superseded keys are never written to, and never re-created.
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeNull();
     expect(localStorage.getItem('gammaflow.positions.v3')).toBeNull();
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(before);
   });
 
   it('exposes health.faulted from the store SYNCHRONOUSLY on the first render', async () => {
-    localStorage.setItem(PORTFOLIO_V2_KEY, '{"schema_version":2,"positions":{ NOT JSON');
+    localStorage.setItem(PORTFOLIO_V3_KEY, '{"schema_version":3,"positions":{ NOT JSON');
     __resetMemory();
     let firstPaint: boolean | null = null;
     function Capture() {
@@ -175,7 +178,10 @@ describe('usePortfolio · the resolver fan-out', () => {
   it('never issues a contract lookup for a closed position, and never one it cannot key', async () => {
     putPosition(pos({ id: 'closed', status: 'closed' }));
     // A record whose `right` was never recorded cannot be keyed in ANY cycle.
-    putPosition({ ...pos({ id: 'malformed' }), right: undefined } as unknown as Position);
+    putPosition({
+      ...pos({ id: 'malformed' }),
+      legs: [{ ...pos().legs[0], right: null }],
+    } as unknown as SimPosition);
     await mount();
     expect(fetchSpy).not.toHaveBeenCalled();
     // …and it still renders: `unpriceable` selects the PERMANENT tip, not the this-cycle one.
@@ -305,7 +311,7 @@ describe('usePortfolio · openPosition — ONE code path for one leg and for six
     expect(view).toBeDefined();
     expect(view?.structure).toBe('iron_condor');
     // …and it SURVIVES the durable round-trip through the ONE lift, not just in memory.
-    const blob = JSON.parse(localStorage.getItem(PORTFOLIO_V2_KEY) as string);
+    const blob = JSON.parse(localStorage.getItem(PORTFOLIO_V3_KEY) as string);
     const record = Object.values(blob.positions).find(
       (r) => ((r as { legs?: unknown[] }).legs ?? []).length === 4,
     ) as { legs: { side: string; strike: number; entry_price: number }[] };
@@ -316,7 +322,7 @@ describe('usePortfolio · openPosition — ONE code path for one leg and for six
 
   it('MULTI-UNDERLYING is REJECTED AT CONSTRUCTION — nothing is written, and the refusal is stated', async () => {
     await mount();
-    const before = localStorage.getItem(PORTFOLIO_V2_KEY);
+    const before = localStorage.getItem(PORTFOLIO_V3_KEY);
     let result: { ok: boolean; reason?: string } | undefined;
     act(() => {
       result = pf.openPosition({
@@ -326,7 +332,7 @@ describe('usePortfolio · openPosition — ONE code path for one leg and for six
     });
     expect(result?.ok).toBe(false);
     expect(result?.reason).toMatch(/same underlying/i);
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(before);
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(before);
   });
 
   it('a SINGLE-leg entry takes the same path and still produces exactly one leg', async () => {

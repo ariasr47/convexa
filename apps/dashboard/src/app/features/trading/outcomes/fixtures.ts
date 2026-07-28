@@ -4,12 +4,20 @@
  * it consumes NO endpoint and makes no network call of any kind, so there is no API client to mock.
  * The specs drive the real derivation over real localStorage blobs.
  */
-import type { DecisionRecord, EntryContextDigest, GhostTrade } from '@/features/trading/model/types';
 import { GHOST_TRADE_KEY } from '@/features/trading/model/store';
+import type { DecisionRecord, EntryContextDigest } from '@/features/trading/model/types';
 import { ORDERS_KEY } from '@/features/trading/orders/store';
 import type { SimOrder } from '@/features/trading/orders/types';
 import { PORTFOLIO_V2_KEY } from '@/features/trading/positions/store';
 import type { Position } from '@/features/trading/positions/types';
+
+/**
+ * The retired ghost-trade record shape, declared HERE and nowhere else. `GhostTrade` is deleted from
+ * the kernel at the v3 cutover, but the `convexa.ghost-trade.v1` blob still exists in real browsers
+ * and is still a migration + harvest source — so the ledger fixtures must keep being able to seed
+ * one. Test-only; nothing in app code depends on it.
+ */
+export type LegacyGhostTrade = Position & { schema_version: 1 };
 
 export const digest = (over: Partial<EntryContextDigest> = {}): EntryContextDigest => ({
   opportunity_score: 71,
@@ -61,7 +69,7 @@ export const position = (over: Partial<Position> = {}): Position =>
     ...over,
   }) as Position;
 
-export const ghostTrade = (over: Partial<GhostTrade> = {}): GhostTrade =>
+export const ghostTrade = (over: Partial<LegacyGhostTrade> = {}): LegacyGhostTrade =>
   ({
     id: 'g-1',
     ticker: 'NVDA',
@@ -79,7 +87,7 @@ export const ghostTrade = (over: Partial<GhostTrade> = {}): GhostTrade =>
     close_time: '2026-03-05T14:00:00.000Z',
     schema_version: 1,
     ...over,
-  }) as GhostTrade;
+  }) as LegacyGhostTrade;
 
 export const order = (over: Partial<SimOrder> = {}): SimOrder =>
   ({
@@ -176,7 +184,7 @@ export function outcomes(
 }
 
 export interface SeedInput {
-  ghostTrades?: GhostTrade[];
+  ghostTrades?: LegacyGhostTrade[];
   ghostDecisions?: DecisionRecord[];
   positions?: Position[];
   positionDecisions?: DecisionRecord[];

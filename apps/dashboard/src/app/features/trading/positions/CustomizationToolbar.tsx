@@ -33,7 +33,8 @@ import {
 import { useState, type ReactNode } from 'react';
 import { FaultedBanner, Refused } from './FaultedBanner';
 import { MERGE_NOTICE, MERGE_NOTICE_EXPORT, SAVED_VIEW_TIP, staleViewNotice } from './labels';
-import type { GroupAxis, Position, PositionStatus } from './types';
+import type { SimPosition } from './leg';
+import type { GroupAxis, PositionStatus } from './types';
 import type { usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
@@ -51,7 +52,7 @@ const GROUP_AXES: { key: GroupAxis; label: string }[] = [
 interface ToolbarProps {
   pf: Portfolio;
   /** Retained for callers + future filter/columns UI; unused by the REVISION-2 one-row toolbar. */
-  positions?: Position[];
+  positions?: SimPosition[];
   /** Gate a save-view WRITE (UX_BLUEPRINT §2.6): logged-out ⇒ run shows the sign-in prompt instead of
    *  saving. Defaults to running the action directly (e.g. in isolated renders). */
   guardSaveView?: (run: () => void) => void;

@@ -44,7 +44,10 @@ function focusedTicker(): string {
   const counts = new Map<string, number>();
   for (const p of allPositions()) {
     if (p.status !== 'open' && p.status !== 'pending') continue;
-    counts.set(p.ticker, (counts.get(p.ticker) ?? 0) + 1);
+    // Single-underlying is enforced at construction, so leg 0 IS the position's ticker.
+    const tk = p.legs[0]?.ticker;
+    if (!tk) continue;
+    counts.set(tk, (counts.get(tk) ?? 0) + 1);
   }
   let best: string | null = null;
   let bestN = 0;

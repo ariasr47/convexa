@@ -25,19 +25,25 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { defaultCustomization } from '@/features/trading/positions/defaults';
+import type { SimPosition } from '@/features/trading/positions/leg';
+import { liftLegacyRecord } from '@/features/trading/positions/migrate';
 import * as positions from '@/features/trading/positions/store';
 import {
   PORTFOLIO_LEGACY_V1_KEY,
   PORTFOLIO_LEGACY_V2_KEY,
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
 } from '@/features/trading/positions/store';
-import type { CustomizationState, PersistShapeV2, Position } from '@/features/trading/positions/types';
+import type {
+  CustomizationState,
+  PersistShapeV2,
+  Position,
+} from '@/features/trading/positions/types';
 import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
 
 import * as ghost from '@/features/trading/model/store';
 import { GHOST_TRADE_KEY, GHOST_TRADE_LEGACY_KEY } from '@/features/trading/model/store';
-import type { GhostTrade } from '@/features/trading/model/types';
 
 import * as personas from '@/features/personas/store';
 import { __resetPersonas, PERSONAS_KEY, PERSONAS_LEGACY_KEY } from '@/features/personas/store';
@@ -86,7 +92,7 @@ function aPosition(over: Partial<Position> = {}): Position {
   };
 }
 
-function aTrade(over: Partial<GhostTrade> = {}): GhostTrade {
+function aTrade(over: Record<string, unknown> = {}) {
   return {
     id: 'legacy',
     ticker: 'TSLA',
@@ -103,6 +109,9 @@ function aTrade(over: Partial<GhostTrade> = {}): GhostTrade {
     ...over,
   };
 }
+
+/** The ONE lift is how a legacy row becomes a durable record now — never a second hand conversion. */
+const lifted = (raw: unknown) => liftLegacyRecord(raw) as SimPosition;
 
 function v2Blob(over: Partial<PersistShapeV2> = {}): string {
   return JSON.stringify({
@@ -260,8 +269,8 @@ describe('legacy gammaflow.* data carried WHOLE into convexa.*', () => {
         .sort(),
     ).toEqual(['a', 'c1']);
     const a = positions.getPosition('a')!;
-    expect(a.entry_mark).toBe(7);
-    expect(a.qty).toBe(3);
+    expect(a.legs[0].entry_price).toBe(7);
+    expect(a.legs[0].qty).toBe(3);
     expect(a.status).toBe('open');
     expect(positions.getPosition('c1')!.status).toBe('closed');
     expect(positions.getPosition('c1')!.realized_pl_dollar).toBe(600);
@@ -373,7 +382,7 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     const all = positions.allPositions();
     expect(all).toHaveLength(1);
     expect(all[0].id).toBe('g3');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy(); // migrated into v2
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy(); // unioned into the ONE book
     expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBeTruthy(); // source ghost-trade intact
   });
 
@@ -391,9 +400,9 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     const all = positions.allPositions();
     expect(all).toHaveLength(1);
     expect(all[0].id).toBe('legacy'); // whole — legacy version + brand hop in one read
-    expect(all[0].qty).toBe(2);
+    expect(all[0].legs[0].qty).toBe(2);
     expect(all[0].status).toBe('open');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy(); // migrated trade landed in convexa v2
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy(); // landed in the ONE book
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY)).toBeTruthy(); // gammaflow source intact (rollback-safe)
     // Per FRONTEND_EXECUTION_CONTRACT §A.3 the v1 resolve uses resolveDurable('convexa.ghost-trade.v1',
     // 'gammaflow.ghost-trade.v1'), so it ALSO promotes the ghost blob forward to convexa.ghost-trade.v1
@@ -403,7 +412,7 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
     );
   });
 
-  it('positions read prefers v2 over v1 when both legacy versions exist', () => {
+  it('positions UNIONS v2 and v1 when both legacy versions exist — the else-chain WAS the bug', () => {
     localStorage.setItem(
       PORTFOLIO_LEGACY_V2_KEY,
       v2Blob({ positions: { fromv2: aPosition({ id: 'fromv2' }) } }),
@@ -417,7 +426,16 @@ describe('positions 4-case resolution (brand × version), first hit wins, source
       }),
     );
     positions.__resetMemory();
-    expect(positions.allPositions().map((p) => p.id)).toEqual(['fromv2']);
+    // The shipped read-new-else-old chain returned ONLY `fromv2` and silently dropped every
+    // Ticker-page ghost trade for any user who had ever opened the Positions page. The v3 migration
+    // is a UNION precisely so that loss cannot happen (SPEC §2.6) — v2 still takes PRECEDENCE on a
+    // colliding id, but v1-only records are kept.
+    expect(
+      positions
+        .allPositions()
+        .map((p) => p.id)
+        .sort(),
+    ).toEqual(['fromv1', 'fromv2']);
   });
 });
 
@@ -429,10 +447,11 @@ describe('absent old data → clean new user; subsequent writes persist ONLY to 
     // positions
     positions.__resetMemory();
     expect(positions.allPositions()).toEqual([]);
-    positions.putPosition(aPosition({ id: 'new' }));
+    positions.putPosition(lifted(aPosition({ id: 'new' })));
     positions.__resetMemory(); // reload
     expect(positions.allPositions().map((p) => p.id)).toEqual(['new']);
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeNull(); // never wrote a superseded key
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V2_KEY)).toBeNull(); // never wrote the old key
 
     // personas

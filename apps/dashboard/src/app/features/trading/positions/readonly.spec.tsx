@@ -28,8 +28,10 @@ import { PortfolioPanel } from './PortfolioPanel';
 import { PositionsView } from './PositionsView';
 import { defaultConfig } from './defaults';
 import { FX_IRON_CONDOR, viewOf } from './fixtures';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
 import {
-  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
   __resetMemory,
   getCustomization,
   newId,
@@ -107,7 +109,7 @@ function storageSnapshot(): string {
 
 /** The BOOK only — the positions map + the decision log, with the view preferences left out. */
 function bookSnapshot(): string {
-  const raw = localStorage.getItem(PORTFOLIO_V2_KEY);
+  const raw = localStorage.getItem(PORTFOLIO_V3_KEY);
   if (!raw) return 'absent';
   const parsed = JSON.parse(raw) as Record<string, unknown>;
   return JSON.stringify({ positions: parsed.positions, decisions: parsed.decisions });
@@ -117,8 +119,9 @@ function savedViewsSnapshot(): string {
   return JSON.stringify(getCustomization().views);
 }
 
-function pos(over: Partial<Position> = {}): Position {
-  return {
+/** A durable record, authored flat and put through the ONE lift — never a hand conversion. */
+function pos(over: Partial<Position> = {}): SimPosition {
+  const raw: Position = {
     id: newId(),
     ticker: 'TSLA',
     expiration: '2026-07-17',
@@ -134,6 +137,7 @@ function pos(over: Partial<Position> = {}): Position {
     schema_version: 2,
     ...over,
   };
+  return liftLegacyRecord(raw) as SimPosition;
 }
 
 function makeBundle(): TickerBundle {
@@ -240,7 +244,7 @@ describe('AC-80 · the leg disclosure is a pure read', () => {
     const keys = Object.keys(defaultConfig());
     expect(keys.some((k) => /expand|open|disclos/i.test(k))).toBe(false);
     putCustomization(getCustomization());
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY) ?? '').not.toMatch(/expand|disclos/i);
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY) ?? '').not.toMatch(/expand|disclos/i);
   });
 });
 

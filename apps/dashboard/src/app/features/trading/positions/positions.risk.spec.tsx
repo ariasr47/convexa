@@ -51,7 +51,7 @@ import {
 import { MAX_LOSS_WITHHELD_META } from './labels';
 import {
   PORTFOLIO_V1_KEY,
-  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
   __resetMemory,
   allPositions,
   decisionsForPosition,
@@ -349,7 +349,7 @@ describe('positions · end-to-end flow (centerpiece)', () => {
     const lots = allPositions();
     expect(lots).toHaveLength(2);
     expect(new Set(lots.map((p) => p.id)).size).toBe(2);
-    expect(lots.map((p) => p.entry_mark).sort()).toEqual([5, 7]);
+    expect(lots.map((p) => p.legs[0].entry_price).sort()).toEqual([5, 7]);
 
     // --- per-row marks update on the feed ---
     pushLive({ mid: 252 });
@@ -377,7 +377,7 @@ describe('positions · end-to-end flow (centerpiece)', () => {
       expect(pending?.status).toBe('open');
     });
     const filled = allPositions().find((p) => p.limit_price === 4)!;
-    expect(filled.entry_mark).toBe(4); // filled AT the limit, never better
+    expect(filled.legs[0].entry_price).toBe(4); // filled AT the limit, never better
     expect(decisionsForPosition(filled.id).some((d) => d.event_type === 'limit_filled')).toBe(true);
 
     // --- SSE DROP: live cells dim + ⏸ offline + last-known; static records persist ---
@@ -523,14 +523,14 @@ describe('positions · durability across reload', () => {
     const migrated = screen.getByTestId('cell-contract');
     expect(within(migrated).getByText('TSLA')).toBeInTheDocument();
     expect(allPositions()[0].id).toBe('legacy-1');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
 
     // Reload (re-mount) — still exactly one open position, intact.
     __resetMemory();
     cleanup();
     renderHarness();
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(1));
-    expect(allPositions()[0].entry_mark).toBe(5);
+    expect(allPositions()[0].legs[0].entry_price).toBe(5);
   }, 20000);
 });
 
@@ -927,7 +927,7 @@ describe('positions · AC-82 — a saved view is never rewritten by the new colu
     await user.click(screen.getByTestId('group-select-ticker'));
     await user.click(screen.getByTestId('view-picker'));
 
-    const stored = JSON.parse(localStorage.getItem(PORTFOLIO_V2_KEY) as string) as {
+    const stored = JSON.parse(localStorage.getItem(PORTFOLIO_V3_KEY) as string) as {
       customization: { views: { config: { columns: string[] } }[] };
     };
     // No view is rewritten, no stored column list GAINS `max_loss`, and re-saving is never required

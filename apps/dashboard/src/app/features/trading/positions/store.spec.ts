@@ -1,9 +1,12 @@
 /**
- * Unit — durable store + v1→v2 migration (AC-30, AC-31, AC-36). The store is the only place the
+ * Unit — the durable store + the legacy-source migration into `convexa.positions.v3` (AC-30, AC-31,
+ * AC-36). The store is the only place the
  * migration + the corrupt-blob isolation are exercised in isolation; the flow-integration suite
  * re-checks the observable behavior end-to-end.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
 import {
   __resetMemory,
   allPositions,
@@ -15,6 +18,7 @@ import {
   PORTFOLIO_LEGACY_V2_KEY,
   PORTFOLIO_V1_KEY,
   PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
   positionsFaulted,
   putCustomization,
   putPosition,
@@ -40,8 +44,12 @@ function v1Trade(over: Partial<Record<string, unknown>> = {}) {
   };
 }
 
-function mkPosition(over: Partial<Position> = {}): Position {
-  return {
+/**
+ * A durable record, authored in the LEGACY flat shape and lifted through the ONE lift — never a
+ * second hand-written conversion, which would be a second definition of what a migrated record is.
+ */
+function mkPosition(over: Partial<Position> = {}): SimPosition {
+  const raw: Position = {
     id: 'p-1',
     ticker: 'AAPL',
     expiration: '2026-08-21',
@@ -57,6 +65,7 @@ function mkPosition(over: Partial<Position> = {}): Position {
     schema_version: 2,
     ...over,
   };
+  return liftLegacyRecord(raw) as SimPosition;
 }
 
 /** Every durable byte, so "nothing was written" can be asserted over storage as a whole. */
@@ -89,10 +98,10 @@ describe('v1→v2 migration', () => {
     expect(positions).toHaveLength(1);
     const p = positions[0];
     expect(p.id).toBe('t-1');
-    expect(p.ticker).toBe('TSLA');
+    expect(p.legs[0].ticker).toBe('TSLA');
     expect(p.status).toBe('open');
-    expect(p.entry_mark).toBe(5);
-    expect(p.qty).toBe(2);
+    expect(p.legs[0].entry_price).toBe(5);
+    expect(p.legs[0].qty).toBe(2);
     // A v1 record had no entry_mode ⇒ it reads as a manual entry.
     expect(p.entry_mode ?? 'manual').toBe('manual');
   });
@@ -125,7 +134,7 @@ describe('v1→v2 migration', () => {
     expect(decisionsForPosition('t-1')[0].event_type).toBe('open');
   });
 
-  it('writes a v2 blob and leaves the readable v1 blob intact (never discards it)', () => {
+  it('writes the v3 blob and leaves the readable v1 blob intact (never discards it)', () => {
     localStorage.setItem(
       PORTFOLIO_V1_KEY,
       JSON.stringify({
@@ -135,8 +144,8 @@ describe('v1→v2 migration', () => {
       }),
     );
     __resetMemory();
-    allPositions(); // triggers migration + write-back
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    allPositions(); // triggers the union + the promote
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
     expect(localStorage.getItem(PORTFOLIO_V1_KEY)).toBeTruthy(); // v1 left intact
   });
 
@@ -189,9 +198,9 @@ describe('brand migration (gammaflow → convexa, loss-free)', () => {
     const positions = allPositions();
     expect(positions).toHaveLength(1);
     expect(positions[0].id).toBe('t-1');
-    expect(positions[0].schema_version).toBe(2);
-    // Written forward under convexa.positions.v2; the legacy source is never deleted.
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(positions[0].schema_version).toBe(3);
+    // Written forward under convexa.positions.v3; the legacy source is never deleted.
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
     expect(localStorage.getItem(PORTFOLIO_LEGACY_V1_KEY)).toBe(legacyV1);
   });
 
@@ -247,7 +256,7 @@ describe('store failure isolation (AC-36)', () => {
 describe('positions CRUD + decisions', () => {
   it('puts, reads, and removes a position', () => {
     putPosition(mkPosition());
-    expect(getPosition('p-1')?.ticker).toBe('AAPL');
+    expect(getPosition('p-1')?.legs[0].ticker).toBe('AAPL');
     removePosition('p-1');
     expect(getPosition('p-1')).toBeNull();
   });
@@ -359,7 +368,7 @@ describe('fault latch (AC-56) — an unparseable blob is never overwritten', () 
     expect(putPosition(mkPosition({ id: 'p-2' }))).toBe(true);
   });
 
-  it('the v1→v2 migration write still lands (the latch does not block a clean promote)', () => {
+  it('the union promote still lands (the latch does not block a clean promote)', () => {
     localStorage.setItem(
       PORTFOLIO_V1_KEY,
       JSON.stringify({ schema_version: 1, trades: { TSLA: v1Trade() }, decisions: [] }),
@@ -367,6 +376,6 @@ describe('fault latch (AC-56) — an unparseable blob is never overwritten', () 
     __resetMemory();
     expect(allPositions()).toHaveLength(1);
     expect(positionsFaulted()).toBe(false);
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
   });
 });

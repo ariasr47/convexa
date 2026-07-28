@@ -63,6 +63,24 @@ function basisReason(entryLeg: string, exitLeg: string): ExclusionReason | null 
   return 'unpriced_basis';
 }
 
+/**
+ * The position's ENTRY basis, from wherever the durable record holds it.
+ *
+ * Post-cutover the record is a `SimPosition` and the basis is a LEG fact — read off the primary
+ * option leg (the same leg the row's entry figure is anchored to). A pre-cutover harvested record
+ * still carries the flat `entry_basis`, and this reads it unchanged. NO FAN-OUT PER LEG: a multi-leg
+ * position is exactly ONE ledger record, or every Wilson interval the track record prints is wrong.
+ * An absent basis falls through to `basisReason`'s fail-honest unrecognised branch.
+ */
+function entryBasisOf(p: Position): unknown {
+  const legs = (p as { legs?: { kind?: string; entry_basis?: unknown }[] }).legs;
+  if (Array.isArray(legs) && legs.length > 0) {
+    const head = legs.find((l) => l.kind === 'option') ?? legs[0];
+    return head?.entry_basis;
+  }
+  return p.entry_basis;
+}
+
 /** The §2/Q3.4 ladder as a rank: `unpriced` (2) > `modeled` (1) > `quoted` (0). An unrecognized
  *  basis ranks WORST, the same fail-honest direction `basisReason` takes. Used only by the exact-
  *  `clock_time` tie-break, which can therefore only ever move an outcome OUT of the headline. */
@@ -465,7 +483,7 @@ export function computeLedgerRead(
       continue;
     }
     // 5/6. the basis reasons.
-    const reason = basisReason(String(p.entry_basis), String(exit.mark_basis));
+    const reason = basisReason(String(entryBasisOf(p)), String(exit.mark_basis));
     if (reason) {
       excluded[reason] += 1;
       continue;

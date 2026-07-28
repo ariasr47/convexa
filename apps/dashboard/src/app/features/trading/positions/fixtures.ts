@@ -376,7 +376,12 @@ const STALE_STORED_CONFIG = {
     ticker: null,
     status: ['open'],
     structure: undefined,
-    strategy: 'long_call',
+    // A value that NO LONGER EXISTS in `STRUCTURE_KINDS` — that is the whole point of the fixture
+    // (AC-54: the view OPENS, shows rows, is FLAGGED `adjusted`, and is not healed in storage).
+    // `long_call` was here originally, but it is still a member, so `adjusted` stayed false and the
+    // fixture could not reach the state it exists to seed. AC-53's survives-by-identity case is
+    // covered directly in `defaults.spec.ts`.
+    strategy: 'long_butterfly',
     expiry: null,
   },
 } as unknown as ViewConfig;
