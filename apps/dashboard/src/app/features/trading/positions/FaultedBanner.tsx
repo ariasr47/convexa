@@ -17,6 +17,7 @@
  */
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Box, Tooltip, Typography } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { cloneElement, type MouseEvent, type ReactElement } from 'react';
 import {
   FAULTED_BANNER_ACTION_EXPORT,
@@ -35,13 +36,56 @@ export const FAULTED_BANNER_ID = 'store-faulted-banner';
 const ARCHIVE_TESTID = 'tr-archive';
 
 /**
+ * THE VISUAL HALF OF A REFUSAL (SPEC §4, "RULED 2026-07-28"; AC-63, AC-69).
+ *
+ * The aria half alone shipped once and was wrong: the CTA rendered as a fully bright amber button
+ * with the fault banner sitting right above it, so it looked live and then refused — which is
+ * *"accepts input and fails after the fact"*, the very failure §2.9 exists to prevent, arriving one
+ * layer up. A refusal has to be **visible before it is read**.
+ *
+ * The theme's OWN disabled ink/fill/border, so this is one treatment in two colour schemes and adds
+ * no token (`theme-token-discipline`): no hex, no opacity hack. `boxShadow: none` because a raised
+ * control reads as live even when its ink is quiet, and the hover block repeats the resting values
+ * so hover shifts neither colour nor elevation.
+ *
+ * ─ WHAT THIS DELIBERATELY DOES NOT DO, and must never start doing. ─
+ * No `disabled`, no `pointerEvents: 'none'`, no `tabIndex: -1`. Each of those would swallow the
+ * pointer or drop the tab stop, putting the tooltip that explains the refusal out of reach — the
+ * exact defect the HTML `disabled` attribute was banned for. This is IN ADDITION TO the aria half,
+ * never INSTEAD OF it. `cursor: not-allowed` is the one pointer cue that costs nothing: it changes
+ * the cursor without stopping the hover that opens the tooltip.
+ *
+ * Scope: refused CONTROLS only. Faulted dims no DATA — no figure, no live block, no `⏸` (AC-65).
+ */
+const refusedSx = {
+  color: 'action.disabled',
+  bgcolor: 'action.disabledBackground',
+  borderColor: 'action.disabledBackground',
+  boxShadow: 'none',
+  cursor: 'not-allowed',
+  '&:hover': {
+    color: 'action.disabled',
+    bgcolor: 'action.disabledBackground',
+    borderColor: 'action.disabledBackground',
+    boxShadow: 'none',
+  },
+} as const;
+
+/**
  * Wrap ANY control to refuse it while the store is faulted.
  *
  * `when === false` returns the child untouched, so a healthy surface is byte-identical to shipped
  * and this component costs nothing. When refused, the child keeps its tab stop, gains
  * `aria-disabled`, is described by the banner, shows `WRITE_REFUSED_TIP` on hover AND on focus (MUI
- * `Tooltip` gives both, which a `disabled` child would silently lose), and does nothing at all when
- * clicked or activated from the keyboard.
+ * `Tooltip` gives both, which a `disabled` child would silently lose), does nothing at all when
+ * clicked or activated from the keyboard, and — the half that is visible from across the room —
+ * takes the reduced-emphasis treatment above.
+ *
+ * The treatment is applied HERE, once, rather than at each of the consumer sites: every refused
+ * control in the app already routes through this primitive (pinned by faulted.spec.tsx's
+ * `data-refused` census), so one implementation is also the only place it can be forgotten. The
+ * child must therefore be an `sx`-taking MUI element (`Box`/`Button`/`IconButton`/`MenuItem`) —
+ * all five call sites are, and the site's own `sx` is MERGED with, never replaced by, this one.
  */
 export function Refused({ when, children }: { when: boolean; children: ReactElement }) {
   if (!when) return children;
@@ -49,6 +93,7 @@ export function Refused({ when, children }: { when: boolean; children: ReactElem
     e.preventDefault();
     e.stopPropagation();
   };
+  const ownSx = (children.props as { sx?: SxProps<Theme> }).sx;
   const blocked = cloneElement(children as ReactElement<Record<string, unknown>>, {
     'aria-disabled': true,
     'aria-describedby': FAULTED_BANNER_ID,
@@ -58,6 +103,9 @@ export function Refused({ when, children }: { when: boolean; children: ReactElem
     onKeyDown: (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') swallow(e);
     },
+    // Array form: MUI merges left-to-right, so the site keeps its own geometry and only the
+    // emphasis is overridden.
+    sx: [...(Array.isArray(ownSx) ? ownSx : [ownSx]), refusedSx].filter(Boolean),
   });
   return (
     <Tooltip arrow title={WRITE_REFUSED_TIP}>

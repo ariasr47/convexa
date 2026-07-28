@@ -153,6 +153,39 @@ async function mountHealthy(seed = true) {
   return r;
 }
 
+/**
+ * Does this element's own emotion class resolve its ink/fill to the theme's DISABLED tokens?
+ *
+ * `sx` compiles to emotion classes, so `getAttribute('style')` is always empty; and the theme is
+ * CSS-variable-backed, so `action.disabled` serialises as `var(--mui-palette-action-disabled)`
+ * rather than a colour literal — both forms are checked. Compound rules (`.css-x.Mui-disabled{…}`)
+ * are excluded: they are in the sheet but apply to nobody here, and counting them would let a
+ * control "prove" a treatment it does not render.
+ */
+function bindsDisabledInk(el: Element): boolean {
+  const sheet = Array.from(document.querySelectorAll('style'))
+    .map((s) => s.textContent ?? '')
+    .join('\n')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+  const a = themeForPref('dark').palette.action;
+  const tokens = [
+    '--mui-palette-action-disabled',
+    a.disabled.toLowerCase().replace(/\s+/g, ''),
+    a.disabledBackground.toLowerCase().replace(/\s+/g, ''),
+  ];
+  return Array.from(el.classList)
+    .filter((c) => c.startsWith('css-'))
+    .some((c) =>
+      Array.from(sheet.matchAll(new RegExp(`\\.${c.toLowerCase()}\\{([^{}]*)\\}`, 'g'))).some((m) =>
+        tokens.some((t) => m[1].includes(t)),
+      ),
+    );
+}
+
+const describeControl = (el: Element) =>
+  el.getAttribute('data-testid') ?? el.getAttribute('aria-label') ?? el.textContent ?? '?';
+
 function storageSnapshot(): string {
   const out: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
@@ -249,7 +282,26 @@ describe('AC-63 — the reason for a refusal is reachable, not swallowed', () =>
       expect(el).toHaveAttribute('aria-disabled', 'true');
       expect(el).not.toHaveAttribute('disabled');
       expect(el).toHaveAttribute('aria-describedby', 'store-faulted-banner');
+      // …and AC-63's other half, in the REAL tree: it also LOOKS refused. The treatment lives in
+      // the one primitive, so what can still break here is a site that stops routing through it —
+      // which is exactly how the aria-only version shipped past a green suite once already.
+      expect(bindsDisabledInk(el), `not visibly refused: ${describeControl(el)}`).toBe(true);
     }
+  });
+
+  it('the entry CTA is a visibly QUIETER control while faulted than while healthy', async () => {
+    await mountFaulted();
+    const faultedCta = screen.getByTestId('open-entry');
+    const faultedClass = faultedCta.className;
+    expect(bindsDisabledInk(faultedCta)).toBe(true);
+
+    cleanup();
+    await mountHealthy();
+    const healthyCta = screen.getByTestId('open-entry');
+    // THE COMPARISON QA HAD TO MAKE BY EYE. The same CTA, the same page, the same theme — the only
+    // difference is store health, and it has to be visible before it is read.
+    expect(healthyCta.className).not.toBe(faultedClass);
+    expect(bindsDisabledInk(healthyCta)).toBe(false); // vacuity guard: healthy is NOT dimmed
   });
 });
 

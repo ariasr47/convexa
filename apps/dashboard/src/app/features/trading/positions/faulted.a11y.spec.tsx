@@ -313,6 +313,219 @@ describe('dark/light parity of the refused treatment', () => {
 });
 
 // =================================================================================================
+// AC-63 — THE VISUAL HALF. A refused control must LOOK refused.
+//
+// This block exists because its absence shipped. The lane built the aria/keyboard half correctly,
+// the whole behavioural suite went green, and the CTA still rendered as a fully bright, fully opaque
+// amber button while the fault banner sat above it — indistinguishable from enabled. A control that
+// looks live and then refuses is the *"accepts input and fails after the fact"* failure §2.9 exists
+// to prevent, arriving one layer up, and no assertion anywhere could see it.
+//
+// So: the refusal must be assertable as a STYLE difference, in BOTH colour schemes, and the
+// assertions must be able to go red. `getAttribute('style')` is always empty — `sx` compiles to
+// emotion CLASSES — and the theme is CSS-variable-backed, so `action.disabled` serialises as
+// `var(--mui-palette-action-disabled)` rather than a colour literal. Both forms are checked, so this
+// keeps working if the variable layer is ever turned off.
+// =================================================================================================
+
+/**
+ * Every injected CSS declaration that ACTUALLY APPLIES to an element's emotion classes, including
+ * the `:hover` rule — emotion emits that as a separate selector on the same class, so a naive "up
+ * to the first `}`" read would miss exactly the hover-shift half of the requirement.
+ *
+ * Only the bare class and its pseudo-classes count. A compound rule like `.css-x.Mui-disabled{…}`
+ * is in the sheet but applies to nobody here, and counting it would let a control "prove" a
+ * property (or fail one) it does not actually render.
+ */
+function injectedCss(el: Element, scope: 'base' | 'hover' | 'all' = 'all'): string {
+  const sheet = Array.from(document.querySelectorAll('style'))
+    .map((s) => s.textContent ?? '')
+    .join('\n')
+    .replace(/\s+/g, '');
+  let out = '';
+  for (const c of Array.from(el.classList).filter((c) => c.startsWith('css-'))) {
+    const selector =
+      scope === 'base'
+        ? `\\.${c}`
+        : scope === 'hover'
+          ? `\\.${c}:hover`
+          : `\\.${c}(?::[\\w-]+(?:\\([^()]*\\))?)*`;
+    for (const m of sheet.matchAll(new RegExp(`${selector}\\{([^{}]*)\\}`, 'g'))) {
+      out += `${m[1]};`;
+    }
+  }
+  return out.toLowerCase();
+}
+
+/**
+ * The value that actually WINS for one property in a class body. Emotion concatenates the
+ * component's own styles and the `sx` layer into ONE class, so an overridden declaration is still
+ * present in the text — "the amber is gone" is a CASCADE claim (last declaration wins), not a
+ * text-absence claim, and asserting it as absence would assert something false.
+ *
+ * One level of custom-property indirection is resolved: MUI v7 paints a Button's variant colour as
+ * `background-color: var(--variant-containedBg)` and defines that property in the same class body,
+ * so a check that stopped at the pointer would be checking the pointer, not the colour.
+ */
+function effective(css: string, prop: string): string {
+  const read = (p: string) => {
+    const hits = Array.from(css.matchAll(new RegExp(`(?:^|;)${p}:([^;]*)`, 'g')));
+    return hits.length ? hits[hits.length - 1][1] : '';
+  };
+  const value = read(prop);
+  const pointer = value.match(/^var\((--variant-[\w-]+)\)$/);
+  return pointer ? read(pointer[1]) || value : value;
+}
+
+/** Does a resolved value bind the theme's disabled ink/fill — in EITHER serialised form? */
+function bindsDisabled(value: string, scheme: 'dark' | 'light'): boolean {
+  const a = themeForPref(scheme).palette.action;
+  return [
+    '--mui-palette-action-disabled',
+    a.disabled.toLowerCase().replace(/\s+/g, ''),
+    a.disabledBackground.toLowerCase().replace(/\s+/g, ''),
+  ].some((t) => value.includes(t));
+}
+
+/** The brand amber the enabled CTA wears — the thing that must NOT survive the refusal. */
+function bindsPrimary(value: string, scheme: 'dark' | 'light'): boolean {
+  return ['--mui-palette-primary-main', themeForPref(scheme).palette.primary.main.toLowerCase()].some(
+    (t) => value.includes(t),
+  );
+}
+
+describe('AC-63 · a refused control is VISIBLY refused, in both colour schemes', () => {
+  for (const scheme of ['dark', 'light'] as const) {
+    it(`${scheme}: the refused CTA wears the theme's disabled tokens and the enabled one does not`, () => {
+      // The same control, twice, under one theme — the ONLY difference is the refusal.
+      wrap(
+        <>
+          <Refused when={false}>
+            <Button variant="contained" data-testid="enabled">
+              + Open simulated trade
+            </Button>
+          </Refused>
+          <Refused when>
+            <Button variant="contained" data-testid="refused">
+              + Open simulated trade
+            </Button>
+          </Refused>
+        </>,
+        scheme,
+      );
+      const enabled = screen.getByTestId('enabled');
+      const refused = screen.getByTestId('refused');
+
+      // VACUITY GUARD. If the sheet were empty or the classes unfound, every assertion below is
+      // trivially satisfiable and the test would "pass" by finding nothing at all. So first prove
+      // the ENABLED control resolves to the brand amber on a real fill.
+      const enabledCss = injectedCss(enabled, 'base');
+      const refusedCss = injectedCss(refused, 'base');
+      expect(enabledCss.length).toBeGreaterThan(0);
+      expect(refusedCss.length).toBeGreaterThan(0);
+      expect(bindsPrimary(effective(enabledCss, 'background-color'), scheme)).toBe(true);
+      expect(bindsDisabled(effective(enabledCss, 'background-color'), scheme)).toBe(false);
+      expect(bindsDisabled(effective(enabledCss, 'color'), scheme)).toBe(false);
+
+      // THE ASSERTION. Delete the treatment and both halves of this go red: the refused control
+      // wears a different class, and what that class RESOLVES to is the theme's own disabled
+      // ink and fill — not the amber, in either scheme.
+      expect(refused.className).not.toBe(enabled.className);
+      for (const prop of ['background-color', 'color'] as const) {
+        const won = effective(refusedCss, prop);
+        expect(won, `${scheme}: refused ${prop} must resolve to a disabled token`).not.toBe('');
+        expect(bindsDisabled(won, scheme), `${scheme}: refused ${prop} = ${won}`).toBe(true);
+        expect(bindsPrimary(won, scheme), `${scheme}: refused ${prop} is still amber`).toBe(false);
+      }
+    });
+
+    it(`${scheme}: hover shifts neither colour nor elevation on a refused control`, async () => {
+      const user = userEvent.setup();
+      wrap(
+        <Refused when>
+          <Button variant="contained" data-testid="refused">
+            Close
+          </Button>
+        </Refused>,
+        scheme,
+      );
+      const refused = screen.getByTestId('refused');
+      const cls = refused.className;
+      // No elevation at rest: a raised, shadowed control reads as live even when its ink is quiet.
+      expect(effective(injectedCss(refused, 'base'), 'box-shadow')).toBe('none');
+
+      // The `:hover` rule is a real, separate selector on the same emotion class, so it is read on
+      // its own rather than inferred from the absence of one. MUI ships its own hover rule for this
+      // button, so this is NOT vacuous by construction — remove the treatment and the winning
+      // declarations become `--variant-containedBg: primary.dark` + a shadow, and this goes red.
+      const hoverCss = injectedCss(refused, 'hover');
+      expect(hoverCss.length).toBeGreaterThan(0); // vacuity guard: there IS a hover rule
+      expect(bindsDisabled(effective(hoverCss, 'background-color'), scheme)).toBe(true);
+      expect(bindsDisabled(effective(hoverCss, 'color'), scheme)).toBe(true);
+      expect(effective(hoverCss, 'box-shadow')).toBe('none');
+
+      await user.hover(refused);
+      // …and hovering does not swap the class out for a live-looking one.
+      expect(refused.className).toBe(cls);
+    });
+  }
+
+  it('a REFUSED control is still a first-class tab stop — the treatment is additive, never `disabled`', async () => {
+    const user = userEvent.setup();
+    wrap(
+      <Refused when>
+        <Button variant="contained" data-testid="refused">
+          + Open simulated trade
+        </Button>
+      </Refused>,
+    );
+    const refused = screen.getByTestId('refused');
+    // The three ways a dimming treatment could recreate the exact defect the HTML `disabled`
+    // attribute was banned for. Each is a regression, not a refinement (SPEC §4).
+    expect(refused).not.toBeDisabled();
+    expect(refused).not.toHaveAttribute('disabled');
+    expect(injectedCss(refused)).not.toContain('pointer-events:none');
+    expect(refused.getAttribute('tabindex')).not.toBe('-1');
+    await user.tab();
+    expect(document.activeElement).toBe(refused);
+  });
+
+  it('the treatment MERGES with the control’s own sx — it never discards it', () => {
+    wrap(
+      <Refused when>
+        <Box component="button" data-testid="refused" sx={{ borderRadius: '6px', px: '9px' }}>
+          Close
+        </Box>
+      </Refused>,
+    );
+    const css = injectedCss(screen.getByTestId('refused'), 'base');
+    // The site's own geometry survives…
+    expect(css).toContain('border-radius:6px');
+    expect(css).toContain('padding-left:9px');
+    // …and the refusal is layered on top of it.
+    expect(bindsDisabled(effective(css, 'color'), 'dark')).toBe(true);
+  });
+
+  it('`when={false}` adds NO style at all — a healthy surface is byte-identical to shipped', () => {
+    wrap(
+      <>
+        <Button variant="contained" data-testid="bare">
+          Close
+        </Button>
+        <Refused when={false}>
+          <Button variant="contained" data-testid="passthrough">
+            Close
+          </Button>
+        </Refused>
+      </>,
+    );
+    expect(screen.getByTestId('passthrough').className).toBe(
+      screen.getByTestId('bare').className,
+    );
+  });
+});
+
+// =================================================================================================
 // The export pointer moves FOCUS — it does not duplicate the export button
 // =================================================================================================
 
