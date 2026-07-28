@@ -453,8 +453,21 @@ create a brand-new `orders/ → positions/` edge that does not exist today.
 | `model/store` write paths (`putTrade`, `clearTrade`, the 2nd `appendDecision`) | **deleted** | one store, one log — **Q2 resolved** |
 | `model/store` read paths | demoted to a read-only legacy source consumed by `positions/migrate` | migration + harvest only |
 | `model/useGhostTrade` | **deleted**; the Ticker page consumes `usePortfolio` scoped to the focused ticker | this *is* the merge |
-| `model/OpportunityTier` | → a `pages/ticker` widget | one consumer; already a named deferral |
+| `model/OpportunityTier` | **SPLIT** — the colour-bearing widget + Prime banner → `pages/ticker/widgets/opportunity-tier/`; the closed tier **`WORD` lookup stays in the kernel** as `model/tier.ts` | **three** consumers, not one — corrected against the code at F17 (see below) |
 | `model/captureDigest` | **stays** in the kernel | both recorders use it |
+
+**Correction recorded — `model/OpportunityTier` had THREE consumers, not one.** This spec (and the
+build plan after it) carried "one consumer; already a named deferral" from R1. Verified false at F17:
+`pages/ticker` renders it in the Opportunity tile **and** the Prime banner, and
+**`features/trading/outcomes/ledger.ts` prints it in the track record's tier cells**. Moving the whole
+module to `pages/ticker/widgets/` would therefore have created a **`features/ → pages/` import and
+inverted the downward-only dependency direction this very section binds.** The lane split it instead:
+the colour-bearing helper and the banner are page chrome and moved; the six-line closed `WORD` lookup
+stayed in the kernel as `model/tier.ts`, for exactly the reason `MarkBasis` and `DecisionRecord` stay —
+more than one domain reads it. **Do not "finish" this move later.** The split is the resolution, not a
+half-done migration, and completing it would invert the dependency direction. (The colour helper is
+deliberately *not* shared: it returns a palette colour, and a **rate must never be tinted** — the
+outcome-ledger canon.)
 
 New under `features/trading/positions/`: **`leg`** (the type + sign/value/cost primitives),
 **`structure`** (the recogniser, pure + total), **`migrate`** (the ONE lift function, shared by the
@@ -598,7 +611,7 @@ its own AC (AC-56). The shape change makes parse failures *more* likely, not les
 | SSE drop | Every leg resolves to `last_known` ⇒ a dimmed but present number, `⏸` markers, basis `last_known`. Static reads (structure line, qty, net entry, max loss, expiry, status) never dim. Behaviour must be **unchanged from shipped** (`live-vs-static-isolation`). |
 | A recogniser miss | Renders `Custom`. Cosmetic by construction — the label never feeds P/L, fills, persistence or any fetch. |
 | A saved view referencing a value that no longer exists | The filter on that axis degrades to "no filter" for rendering. The view **opens, shows rows, never errors, never blanks**, is visibly flagged `adjusted`, and **the store is not written until the user chooses to save**. Reading a view never mutates it. |
-| Faulted + offline together | Independent and independently legible. Faulted dims nothing and shows no `⏸`; offline disables no control. Both banners render, in the §4 priority order. |
+| Faulted + offline together | Independent and independently legible. Faulted **dims no data** and shows no `⏸` — only refused *controls* take the reduced-emphasis treatment (§4); offline disables no control. Both banners render, in the §4 priority order. |
 
 **Must never be partially applied:** the v3 promote-write (one `setItem`, or nothing); the union
 itself (abort entirely rather than freeze a partial history); a position's net mark and P/L (all legs
@@ -697,7 +710,7 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 34 | As a credit trader I don't want to be told I "paid" money I received | No surface reads `Cost`; a debit reads `Net debit`, a credit reads `Net credit`, derived from the sign; the confirm button label is unchanged; the P/L tooltip no longer claims a universal ×100 | review |
 | 35 | As a trader I want the legs one click away, not on another page | The leg disclosure appears only when a position has more than one leg; expanding it shows one line per leg with side as a **word**, size, instrument, and that leg's own mark + basis | review |
 | 36 | As a trader I want density to survive | Leg-disclosure state is ephemeral: it is absent from the saved view config, never persisted, and gone after reload | test |
-| 37 | As a trader I want a long strike list to be legible, not truncated-looking | An over-long structure line collapses to a first-and-last form (e.g. `$380…$460 condor (4 legs)`) authored in the string, never a CSS ellipsis mid-number, with the full list reachable in the tooltip **and** the disclosure | review |
+| 37 | As a trader I want a long strike list to be legible, not truncated-looking | An over-long structure line collapses to a first-and-last form (e.g. `$380…$460 (4 legs)`) authored in the string, never a CSS ellipsis mid-number, with the full list reachable in the tooltip **and** the disclosure. On a multi-leg row the line carries the leg **facts** only — the structure **name** lives once, in the `Structure` chip | review |
 
 ### D — Live / degraded (`live-vs-static-isolation` must survive the refactor)
 
@@ -738,9 +751,9 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 |---|---|---|---|
 | 61 | As a trader I want the app to never take an input it will not keep | While the store is faulted, **no durable write occurs from any surface** — attempting to open, close, cancel or save a view leaves browser storage byte-identical | test |
 | 62 | As a trader I want to know what happened and what was protected | The faulted banner renders above the table, is non-dismissible, carries a warning icon, reads the §4 copy verbatim, and its two actions (export pointer, reload) are present and operable | review |
-| 63 | As a keyboard user I want to reach the reason a control is refused | Every mutating control renders `aria-disabled="true"`, **remains focusable and tooltip-reachable**, is described by the banner, and does nothing when activated; the entry dialog never opens | test |
+| 63 | As a keyboard user I want to reach the reason a control is refused — and to see it is refused before I try | Every mutating control **renders visibly refused** (reduced-emphasis token treatment, no hover elevation or colour shift — distinguishable from its enabled state in both colour schemes) **and** renders `aria-disabled="true"`, **remains focusable and tooltip-reachable**, is described by the banner, and does nothing when activated; the entry dialog never opens. The HTML `disabled` attribute is never used, and nothing else (`pointer-events: none`, tab-order removal) may make the reason unreachable | test |
 | 64 | As a trader I don't want one frame of a working app | No frame ever paints an enabled entry / close / cancel / save affordance on a faulted store — the refusal is present on the first paint | test |
-| 65 | As a trader I want two different problems to read differently | Faulted and offline are independent: faulted dims nothing and shows no `⏸`; offline disables no control; when both apply, both banners render in the declared priority order | test |
+| 65 | As a trader I want two different problems to read differently | Faulted and offline are independent: faulted **dims no data** — no figure, no live block, no `⏸`, and no number changes (only refused *controls* take the reduced-emphasis treatment of AC-63); offline disables no control; when both apply, both banners render in the declared priority order | test |
 | 66 | As a trader I don't want a notice I can never dismiss | While faulted, **no dismissible notice renders** — not the merge notice, not the stale-saved-view notice | test |
 | 67 | As a trader with nothing loaded I don't want to be told I have no history | Faulted with zero rows renders the faulted empty copy; the normal "no positions yet" empty state is never shown in this state | review |
 | 68 | As a trader exporting under fault I want to know it is partial | While faulted, the Archive block and the post-export snack both carry the partial-archive note; the `Export archive` label is unchanged and export still works | review |
@@ -770,7 +783,7 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 77 | As an operator I want scoring untouched | Opportunity score and tier on the Ticker page are unchanged by any position activity, and the `apps/api` diff is empty | test |
 | 78 | As a trader I don't want colour telling me a lie | Green/red appear **only** on P/L $, P/L %, the group subtotal, the sparkline stroke and the realized-close figure. Structure chips, leg sides, `Call`/`Put`, `debit`/`credit`, the risk slot, `—`, `unavailable`, `not recorded` and offline tags are untinted | test |
 | 79 | As a keyboard/mobile user I want the floor held | The leg disclosure is keyboard-operable with a visible authored `:focus-visible` ring and correct `aria-expanded`/`aria-controls`; leg text is ≥ 11px; mobile hit targets are ≥ 44px; stat values are never headings | test |
-| 80 | As a trader I want reading to be free of side effects | Expanding, collapsing, grouping, sorting and switching views trigger **no fetch and no store write**, and nothing on this surface can reach a real order path | test |
+| 80 | As a trader I want reading my book to never change my book | Expanding, collapsing, grouping, sorting and switching views trigger **zero fetches**, leave **the book byte-identical** (no position, leg, decision or provenance byte moves), and **rewrite no saved view**. The one byte that legitimately moves is `customization.working` — the durable view preference, which is what a view *preference* means and which predates this feature. Nothing on this surface can reach a real order path | test |
 | 81 | As a designer I want no new token values | The feature adds zero values to `tokens.ts`, contains zero hardcoded hexes, and renders with dark/light parity | test |
 | 82 | As an existing user I want a new column without my saved views being touched | **At `lg` and above** the table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording; **at `md` and below the column is not rendered at all**, and the figure remains available on the card (footer slot 5). **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
 
@@ -811,16 +824,41 @@ Header stays `Ticker`; internal key `contract`. Never more than one line, never 
 today's `whiteSpace: nowrap`); the ticker stays bold mono, the descriptor stays `text.secondary` at
 `0.8rem` — multi-leg must not promote the descriptor.
 
+**RULED 2026-07-28 (GATE Z bounce, phase 4) — for a MULTI-LEG position the collapsed line carries the
+leg FACTS and drops the structure WORD. The `Structure` chip is the authoritative name.**
+
 | Structure | Cell text |
 |---|---|
 | Single-leg option (today) | `TSLA` · `$400 Call` — **byte-identical to shipped** |
-| Vertical | `TSLA` · `$400/$420 Call vertical` |
-| Calendar / diagonal | `TSLA` · `$400 Call calendar · Jul 18 → Aug 15` |
-| Iron condor | `TSLA` · `$380/$400/$440/$460 condor` |
+| Vertical | `TSLA` · `$400/$420 Call` |
+| Calendar / diagonal | `TSLA` · `$400 Call · Jul 18 → Aug 15` |
+| Iron condor | `TSLA` · `$380/$400/$440/$460` |
 | Covered call | `TSLA` · `100 sh + $420 Call` |
 | Shares only | `TSLA` · `100 shares` |
 | Unrecognised shape | `TSLA` · `4 legs` |
-| Over-long strike list | `TSLA` · `$380…$460 condor (4 legs)` — **authored in the string**, full list in tooltip **and** disclosure |
+| Over-long strike list | `TSLA` · `$380…$460 (4 legs)` — **authored in the string**, full list in tooltip **and** disclosure |
+
+**Why.** The lane re-measured at 1280 with a real 4-leg condor row and the 10px headroom is
+**overdrawn: min-content 1207 against the 1190 host, −17px.** The `contract` cell grows **+123px** to
+carry `TSLA · $360…$440 condor (4 legs)`, and every other column shrinks 5–13px to pay for it —
+including `Max loss`, 131→118. Nothing clips today and there is no page scroll, but §4 bans shrinking
+any other column below its design width, so the lane **bounced instead of squeezing, exactly as
+instructed.** The fix is deduplication, not compression: the `Structure` chip already carries
+`Iron condor` through the closed label lookup and is the **authoritative** name, so the line restating
+"condor" is the same **two names for one thing** pattern that forced the distinct-id count in AC-46 and
+the one-logical-source rule in the union. **This removes the duplication from the LINE, not from the
+table** — the name is still on every row, in the column whose job it is.
+
+**Two alternatives rejected, with their reasons, so neither returns:**
+
+- **Dropping the `Structure` column for multi-leg rows.** A column that is blank on some rows breaks
+  the property that a column means the same thing in every row — which is precisely what this feature
+  exists to establish.
+- **Accepting the compression.** `Max loss` is the column the owner ruled in **one turn after being
+  told it would otherwise be invisible**; paying for the condor by shrinking it is the wrong trade.
+
+**The lane must RE-MEASURE at 1280 after this change.** A still-overdrawn result is **another bounce,
+not a squeeze** — the standing rule above is unchanged by this ruling.
 
 Expiry stays in its own `expiry` column for single-expiry structures; it appears inside the structure
 line **only** for multi-expiry structures, where the `expiry` column then shows the **nearest** expiry
@@ -989,14 +1027,14 @@ not read this banner will lose a trade.
 
 | Component | default | loading | empty | error / unavailable | offline / stale | store-faulted |
 |---|---|---|---|---|---|---|
-| Position row (table) | one `<tr>`; structure line; figures mono `tabular-nums` | skeleton row | n/a | `pl`/`pl_pct`/`mark` all read `unavailable` (`cell-unavailable`); row excluded from subtotal **and counted** | live block dims to `0.5`, `⏸ offline` appended, basis `last_known`; static cells never dim | rows render normally and their numbers are correct; nothing dims; `Close` is `aria-disabled` + focusable |
+| Position row (table) | one `<tr>`; structure line; figures mono `tabular-nums` | skeleton row | n/a | `pl`/`pl_pct`/`mark` all read `unavailable` (`cell-unavailable`); row excluded from subtotal **and counted** | live block dims to `0.5`, `⏸ offline` appended, basis `last_known`; static cells never dim | rows render normally and their numbers are correct; the live block does **not** dim; `Close` is **visibly refused** (reduced-emphasis tokens) **and** `aria-disabled` + focusable |
 | Position card (393px) | 5-item footer; collapsed height equals a 1-leg card | skeleton card | n/a | same withheld words as the row | same dim treatment as shipped | same as the row; the CTA above is refused |
 | Leg disclosure | instant open, one line per leg, left rule | n/a | n/a | the failed leg shows `unavailable` on its own line; resolved legs still show their marks | each leg shows its own basis; `last_known` on all legs | fully usable (a read) |
 | Structure chip | outlined neutral chip: `divider` border, `text.secondary` ink, **no colour** | n/a | n/a | `Custom` (neutral) for a malformed record | never dims | unchanged |
 | Risk slot (card footer always; table column `lg`+) | one max-loss figure (untinted mono) **or** one stated reason | n/a | n/a | figure/reason unchanged (static) | **never dims** — not live-derived | unchanged |
 | P/L% cell | bare number; header tip basis-aware, row tip names the basis | skeleton | n/a | `unavailable`; or **`no basis`** (`cell-no-basis`, `NO_BASIS_TIP`) while the dollar P/L still renders; or `—` for a pending limit | dims with the live block | unchanged |
 | Group subtotal | signed dollar direction (the only tinted aggregate) | n/a | n/a | `· N positions excluded (unavailable)` | header carries `⏸` | unchanged |
-| Entry CTA (`+ Open simulated position`) | `primary.main`, the one amber on the page | n/a | n/a | n/a | enabled (offline disables no control) | `aria-disabled="true"`, **focusable**, tooltip reachable, `aria-describedby` the banner, activation a no-op; the dialog never opens |
+| Entry CTA (`+ Open simulated position`) | `primary.main`, the one amber on the page | n/a | n/a | n/a | enabled (offline disables no control) | **Visibly refused** (see below): reduced-emphasis token treatment, **plus** `aria-disabled="true"`, **focusable**, tooltip reachable, `aria-describedby` the banner, activation a no-op; the dialog never opens |
 | Entry dialog | SIM variant; leg rows; net labelled as computed | n/a | n/a | per-field validation, unchanged | unchanged | **never opens** |
 | Table body | grouped/sorted rows | skeleton | `EMPTY_NO_POSITIONS`, or the filtered empty + `Clear filter` | n/a | rows persist | `EMPTY_FAULTED` when zero rows parsed |
 | Banner region | absent | absent | absent | absent | live-offline banner | faulted banner (non-dismissible, warning-class **with icon**) + the offline banner beneath it if both apply |
@@ -1274,6 +1312,24 @@ order's `Cancel` · the saved-view `Save`, `Save as`, `Delete`. **Not affected, 
 usable:** sort, group, filter, density, layout, switching between existing saved views, expanding
 legs, the Track record read, and Export archive.
 
+**RULED 2026-07-28 — a refused control must LOOK refused, and this section previously under-specified
+it against §2.9.** The lane followed the component table literally (`aria-disabled` + focusable +
+tooltip, no visual change listed) and reported the refused CTA rendering **visually identical to an
+enabled one**. That contradicts §2.9, which requires entry affordances be *"visibly refused rather
+than accepting input and failing after the fact"* — **a control that looks live and then refuses is
+the very failure this state exists to prevent, one layer up.** Every refused control therefore also
+takes a **reduced-emphasis treatment**: the theme's own disabled ink/fill/border tokens (via the MUI
+palette or `extrasFor(theme)`) and no hover elevation or hover colour shift, so the refusal is
+**visible before it is read**, in both colour schemes. **Tokens only — no opacity hacks, no hardcoded
+hex** (`theme-token-discipline`).
+
+**This is IN ADDITION TO, and never INSTEAD OF, `aria-disabled="true"` + remaining focusable + the
+reachable tooltip + `aria-describedby`.** The whole reason the HTML `disabled` attribute was rejected
+is that it drops the control out of the tab order and swallows pointer events, making the *reason*
+unreachable by keyboard and hover. A dimming treatment that reintroduces that — by setting `disabled`,
+by `pointer-events: none`, or by removing it from the tab order — recreates the exact defect and is a
+regression, not a refinement.
+
 **The Ticker-page door** (the state is not scoped to `/positions`), one line above the refused CTA:
 
 ```
@@ -1463,8 +1519,12 @@ ordering, tint decisions a human can see in a screenshot).
    on the first paint; the state present on the **Ticker** page too.
 8. **`live-vs-static-isolation`.** The SSE-drop degrade must be behaviourally unchanged after the
    refactor; static cells never dim; offline and partial-unavailable never render alike.
-9. **Ephemerality.** Disclosure state absent from the durable view config; expanding/grouping/sorting
-   triggers no fetch and no store write.
+9. **Ephemerality, and reads that never write the book.** Disclosure state absent from the durable view
+   config; expanding/grouping/sorting triggers **zero fetches**, leaves **the book byte-identical**, and
+   **rewrites no saved view**. *(Corrected 2026-07-28 — this previously read "no store write", which is
+   false: the shipped code persists `customization.working`, because a durable view preference is the
+   point of a view preference, and it predates this feature. Assert the strongest **true** form; the
+   thing that actually matters is that **the book is never written on a read**, and that is unweakened.)*
 10. **`additive-keeps-score-byte-identical`.** Empty `apps/api` diff; `pos_*` request shape unchanged.
 11. **393px no-overflow**, both colour schemes — and the case **must expand a leg block before
     asserting**. The shipped e2e visits `/positions` and asserts `scrollWidth` on the cold render

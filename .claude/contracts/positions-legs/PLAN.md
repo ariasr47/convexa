@@ -31,7 +31,8 @@ Every task's requirements implicitly include this section.
 | R1 (original baseline) | 645 | 75 | 15/15 |
 | build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED) | 747 | 79 | 15/15 |
 | build phase 2 — F5 · F6 · F7 · F8 · F9 (LANDED) | 858 | 84 | 15/15 |
-| **build phase 3 — F10 · F11 · F12 · F13 · V2 · V3 (LANDED on `feat/positions-legs`)** | **921** | **88** | **19/19** |
+| build phase 3 — F10 · F11 · F12 · F13 · V2 · V3 (LANDED) | 921 | 88 | 19/19 |
+| **build phase 4 — F14 · V5 · F15 · F16 · V6 · F17 (LANDED on `feat/positions-legs`)** | **1004** | **93** | **19/19** |
 
 Both phases confirmed: `tsc` clean, lint **0 errors at exactly the pre-existing 29 warnings** (that warning count is itself a baseline — do not add to it), `apps/api` diff empty, nothing pre-existing changed or deleted, and **`convexa.positions.v3` written nowhere** (the cutover is still F18). Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
 
@@ -3010,11 +3011,25 @@ At **`lg` (1280) and 1440**, in **both** `comfortable` and `compact` density, in
 
 **If any check at `lg` or above fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor** with the screenshots and the specific constraint that could not be met.
 
-- [ ] **Step 8: Delete the transitional bridges you no longer need**
+- [ ] **Step 8 (REOPENED by build phase 4): drop the structure word from the COLLAPSED line for a multi-leg position, then re-measure at 1280**
+
+⚠ **THE FIT BOUNCED A SECOND TIME, AND IT IS RULED.** The `lg`+ headroom recorded in Global Constraints was measured on the *existing* rows. With a **real 4-leg condor row** present, min-content at 1280 is **1207 against the 1190 host — 17px overdrawn.** The `contract` cell grows **+123px** to carry `TSLA · $360…$440 condor (4 legs)`, and every other column shrinks 5–13px to pay for it, including **`Max loss` 131 → 118**.
+
+**RULED → the collapsed structure line DROPS THE STRUCTURE WORD for a multi-leg position.** The `Structure` chip already carries `Iron condor` through the closed lookup and is **authoritative**; the line restating it is the same **two names for one thing** pattern that forced AC-46's distinct-id count and the union's one-logical-source rule. Removing the duplicate is the only change here that costs the trader nothing — the name is still on the row, once, in the column whose job it is.
+
+**Rejected, so they are not re-proposed:**
+- *Drop the `Structure` column for multi-leg rows* — a column that is blank on some rows breaks "a column means the same thing in every row".
+- *Accept the compression* — `Max loss` is the column the owner ruled in specifically **so it would be visible**; squeezing it 131 → 118 to make room defeats the ruling it exists to satisfy.
+
+**The spec author is writing the new collapsed form — reference `SPEC.md` §4 for it; do not restate or invent the string here.** The full list stays reachable in the tooltip and the disclosure (AC-37), and `structure_line_full` is unchanged.
+
+**Then RE-MEASURE at 1280, with a 4-leg condor row present**, both densities, both schemes. **A still-overdrawn result is ANOTHER BOUNCE to the conductor, not a squeeze** — do not shrink a column, do not shorten a withheld-reason label, do not drop below 11px.
+
+- [ ] **Step 9: Delete the transitional bridges you no longer need**
 
 `derive.ts` carries `structureOfLegacy` and `maxLossOfLegacy` (added in F9, see that task's Step 5). Any call site in the row/card render path that now has a `PositionView` in hand must read `view.structure` / `view.max_loss` **directly** and stop routing through a bridge. Remove every bridge call this task makes redundant; the functions themselves die in F18, when the last legless `Position` disappears.
 
-- [ ] **Step 9: Run the tests and commit**
+- [ ] **Step 10: Run the tests and commit**
 
 ```bash
 npx nx test @org/dashboard
@@ -3351,19 +3366,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the test**
 
+⚠ **CORRECTED (build phase 4): "grouping and sorting trigger no store write" is FALSE as originally written, and asserting it would have failed on correct code.** The shipped store persists `customization.working` on a group/sort/density change — that is the **point** of a durable view preference, it predates this feature, and AC-80 / §7 invariant 9 overstated the property. **The spec author is correcting AC-80; verify against the corrected AC.**
+
+Assert the strongest form that is **true**, and name the one byte that legitimately moves:
+
 ```ts
-/**
- * AC-80: expanding, collapsing, grouping, sorting and switching views trigger NO fetch and NO
- * store write. The whole surface is a read; nothing on it can reach a real order path.
- */
 it('expanding and collapsing a leg block issues zero fetches and leaves storage byte-identical', …)
-it('grouping and sorting are a pure re-derivation — zero fetches, zero writes', …)
+it('grouping and sorting issue ZERO fetches — they are a pure re-derivation, never a refetch', …)
+it('grouping and sorting leave the BOOK byte-identical — no position, no leg, no decision is touched', …)
+it('grouping and sorting rewrite ONLY `customization.working` — the durable view preference, by design', …)
+  // name it explicitly: this is the one byte that moves, and it moved before this feature existed
+it('AC-82 — no SAVED VIEW is rewritten: `customization.views` is byte-identical', …)
 it('switching between existing saved views issues zero fetches', …)
 it('AC-36 — the expansion state is absent from the persisted view config after a reload', …)
 it('the portfolio never issues a bundle/scoring request', …)
 ```
 
-Assert fetches by counting calls on the mocked `fetchTrackedContract` and the global `fetch` spy; assert writes by snapshotting **every** `convexa.*` key before and after and comparing byte-for-byte.
+Assert fetches by counting calls on the mocked `fetchTrackedContract` and the global `fetch` spy. Assert writes by snapshotting **every** `convexa.*` key before and after and diffing **per top-level slice** — `positions`, `decisions`, `customization.views` must be byte-identical; `customization.working` is the sole permitted delta. A whole-blob byte comparison is the wrong instrument here: it would fail on the one legitimate write and tempt someone to weaken the whole assertion.
 
 - [ ] **Step 2: Run it, then commit**
 
@@ -3573,7 +3592,11 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 Spec §2.7 (the module-boundary table). No AC — this is the housekeeping that lets F18 delete `model/useGhostTrade.ts` without dragging an unrelated widget with it.
 
-`model/OpportunityTier.tsx` has **one consumer** and is already a named deferral. It moves to `pages/ticker/widgets/`; `model/` narrows to the trading kernel (`DecisionRecord`, `DecisionEvent`, `MarkBasis`, `EntryContextDigest`, `CapturedSetup`, `TradeAlert`, `computeMark`, `bsPrice`, `captureDigest`) and no further.
+⚠ **CORRECTED (build phase 4): `model/OpportunityTier.tsx` has THREE consumers, not one — and moving the whole module would have INVERTED the dependency direction Step 3 itself demands.** One consumer is **`features/trading/outcomes/ledger.ts`**, which needs only the six-line tier `WORD` lookup. Relocating the module wholesale to `pages/ticker/widgets/` would have forced `features/trading/outcomes/` to import from `pages/` — an upward edge, and precisely the `@nx/enforce-module-boundaries` violation this task's own lint gate exists to catch.
+
+**What actually shipped, and why it is the right split:** the React widget moved to `pages/ticker/widgets/opportunity-tier/`, and the **`WORD` lookup stayed in the kernel as `model/tier.ts`**, imported by both the widget and the ledger. Presentation went up to the page; the shared vocabulary stayed down in the kernel. `model/` narrows to the trading kernel (`DecisionRecord`, `DecisionEvent`, `MarkBasis`, `EntryContextDigest`, `CapturedSetup`, `TradeAlert`, `computeMark`, `bsPrice`, `captureDigest`, `tier`) and no further.
+
+⚠ **Do NOT "finish" this move later.** `model/tier.ts` sitting in the kernel is not a half-done relocation — it is the **correct end state**. Pulling it up into the widget re-creates the upward `outcomes/ → pages/` edge and breaks the lane boundary. The file carries a comment saying so; leave it there.
 
 **Files:**
 - Move: `apps/dashboard/src/app/features/trading/model/OpportunityTier.tsx` → `apps/dashboard/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx` (+ an `index.ts` barrel matching the sibling widgets)
@@ -3709,6 +3732,29 @@ else, read ALL of: v2/legacy-v2, v1/legacy-v1
 - Bump `PORTFOLIO_SCHEMA_VERSION` to `3`. Keep the exported key constants and add `PORTFOLIO_V3_KEY`.
 - Keep the F1 fault latch verbatim on top of all of it.
 
+- [ ] **Step 3b: A v2 record carrying `legs` must migrate with ALL its legs — this is `loss-free-durable-migration` territory**
+
+⚠ **NEW OBLIGATION (build phase 4). The v2 `Position` can now carry multi-leg data.** F15 shipped multi-leg entry *before* the cutover, and the plan was silent on where such a position is persisted in the meantime. The lane added an **additive-optional `legs?: Leg[]`** to the v2 record (`positions/types.ts:85`) with **no version bump**, following the same `entry_mode` / `origin_order_id` discipline the record already uses, and made the ONE lift treat it as **authoritative** when present.
+
+That was the right call: flattening a spread into the flat single-contract fields would have **destroyed three of a condor's four legs at write time**. The flat fields (`ticker`, `strike`, `right`, `expiration`, `qty`, `entry_mark`) become a documented **lossy first-leg summary** that dies here.
+
+**The consequence this step owns:** a real four-leg condor can already be sitting in `convexa.positions.v2` when the union runs. If `liftLegacyRecord` prefers the flat summary over `legs`, that condor **re-reads as a single long call after the cutover** — a silent, total, irreversible loss of three legs, in exactly the shape the severity-promoted invariant exists to prevent, on a record the trader entered *through the shipped UI*.
+
+**Requirement:** `liftLegacyRecord` must treat `legs` as authoritative whenever it is present and non-empty, ignoring the flat summary entirely; the flat fields are consulted **only** for a record with no `legs`. Verify by test, not by reading the code:
+
+```ts
+it('a v2 record carrying `legs` migrates to v3 with ALL FOUR legs intact, not its first-leg summary', () => {
+  // seed convexa.positions.v2 with a 4-leg condor whose flat fields describe ONLY leg 0
+  const migrated = allPositions().find((p) => p.id === 'v2-condor')!;
+  expect(migrated.legs).toHaveLength(4);
+  expect(migrated.legs.map((l) => l.strike).sort((a, b) => a! - b!)).toEqual([360, 380, 420, 440]);
+  expect(structureKindOf(migrated)).toBe('iron_condor'); // NOT long_call
+});
+
+it('a v2 record with NO `legs` still lifts through the flat summary, unchanged', …)
+it('the flat summary is never merged with `legs` — no leg is duplicated or invented', …)
+```
+
 - [ ] **Step 4: Point `usePortfolio` at v3**
 
 Delete the transitional in-memory lift from F10 — `allPositions()` now returns `SimPosition[]` directly. `openPosition`, `closePosition`, `cancelLimit`, `fillLimit` write `SimPosition`. Every mutator checks `health.faulted` first and returns `{ ok: false }` rather than attempting a write. Delete `rows: DerivedRow[]`, `markFor`, and `DerivedRow`/`RowMetrics` from `derive.ts` — every consumer moved to `views` in F10–F14.
@@ -3724,6 +3770,16 @@ Expected **after** this task: **no matches at all** — both functions deleted, 
 `recordDecision` keeps writing to the **one** log via the positions store's `appendDecision`. That is DECISION_QUEUE **Q2 resolved** — the two competing `appendDecision` definitions collapse to one.
 
 **`outcomes/` keeps its zero-write boundary, and counts a multi-leg position as exactly ONE ledger record** — a per-leg harvest would multiply `N` and invalidate every Wilson interval the track record prints.
+
+- [ ] **Step 4b: Produce `staleViewName` — F14 built the consumer, this task owes the producer**
+
+⚠ **UNFINISHED HAND-OFF (build phase 4).** F14 shipped the banner region and its props, including `staleViewName?: string | null` (`CustomizationToolbar.tsx:70`) and the `staleViewNotice(viewName)` render at `:180`. **Nothing sets it** — a repo-wide search finds the prop only in `bannerRegion.spec.tsx`, never in application code. The producer is the **store read**, which is this task's work.
+
+Left implied, the stale-view notice ships with a prop nothing ever sets, and **AC-54 fails at GATE Q** — the notice is unreachable in the running app no matter how correct the component is.
+
+Wire it: `normalizeViewConfig` (F9) already returns `{ config, adjusted, staleFilterValue }` and is already applied on read. Surface `adjusted` + the **active view's name** out of the store's customization read, thread it through `usePortfolio` → `PositionsPage` → `PortfolioPanel` → `PositionsPanel` → `CustomizationToolbar`, and pass `staleViewName={adjusted ? activeView.name : null}`.
+
+**Reading a view still must not write** (AC-54, AC-82): normalization stays in memory, the store is written only when the user chooses to save. Verify with the seeded `STALE_SAVED_VIEW_CUSTOMIZATION` fixture (V1) that the notice **renders** and that `customization.views` is byte-identical afterwards.
 
 - [ ] **Step 5: Merge the Ticker page onto the one book**
 
@@ -3937,19 +3993,23 @@ it('AC-76 — every position surface stays labelled SIMULATED; the paper badge a
 it('AC-70/AC-71 — a position opened on the Ticker page appears in the portfolio, and a close propagates back, without a reload', …)
 ```
 
-**Two cases INHERITED from V3 and V2 — this is the first point they are buildable.** Both need a genuine multi-leg record, which does not exist until F15/F18; V3's tripwire goes red when they become possible, and that red is the signal to land them here.
+✅ **CORRECTED (build phase 4): the two cases this task expected to INHERIT are already closed — do not re-add them.** F15 made multi-leg representable and thereby retired V3's tripwire by doing its job, so the lane deleted the tripwire and wrote its **replacement verbatim in `mobile-no-overflow.cy.ts`**: a real four-leg iron condor seeded the way the entry path writes one, the disclosure clicked, and **both** `aria-expanded="true"` **and four `leg-line`s asserted as vacuity guards before measuring**. That closes **§7 invariant 11 and AC-30 early**, in the e2e tier where they belong.
 
-- **AC-30, the 393px no-overflow with a 4-leg disclosure EXPANDED** (moved from V3 Step 1). It must **expand a leg block before asserting** — the shipped guard only ever measured the cold render, so a 4-leg expansion could overflow while the guard stayed green. Assert `aria-expanded="true"` first, so a selector that silently stops matching cannot make the overflow check vacuous:
+**So this task does NOT own them.** Do not duplicate the 393px-expanded overflow case or the collapsed-height comparison here — a second copy in a different tier is a second source of truth, and the jsdom tier still cannot measure height honestly (every box is 0). If either case needs to change, change it where it lives.
+
+⚠ **This task DOES own the durable-data half of F18 Step 3b, end to end.** A v2 record carrying `legs?: Leg[]` (the pre-cutover multi-leg persistence added in F15) must survive the union with **every leg intact**. F18 proves it at the store level; this task proves it **on the rendered page**, which is where a trader would actually discover the loss:
 
 ```ts
-cy.get('[data-testid="leg-disclosure-toggle"]').first().click();
-cy.get('[aria-expanded="true"]').should('exist');
-cy.document().then((d) => expect(d.documentElement.scrollWidth).to.be.at.most(d.defaultView!.innerWidth));
+it('a four-leg condor entered BEFORE the cutover still renders as a condor AFTER it', async () => {
+  // seed convexa.positions.v2 with a 4-leg condor whose flat fields describe only leg 0,
+  // then load the page through the real store + migration
+  expect(await screen.findByText('Iron condor')).toBeInTheDocument(); // not "Long call"
+  await userEvent.click(screen.getByTestId('leg-disclosure-toggle'));
+  expect(screen.getAllByTestId('leg-line')).toHaveLength(4);
+});
 ```
 
-- **AC-30's collapsed-height equality** — *a card's collapsed height is identical for a 1-leg and a 4-leg position*. **This cannot live in a jsdom component test: jsdom measures every box at 0**, so `getBoundingClientRect().height === height` passes vacuously for any two elements. It needs a **real browser and a multi-leg record**, which only this task has. Measure both cards in the same viewport and compare.
-
-The spec author is annotating **AC-30** to point at V7 as its home — **reference the annotated AC rather than restating the condition from this plan.**
+A condor entered through the shipped UI and re-read as a single long call afterwards is the **silent, total, irreversible** loss `loss-free-durable-migration` was promoted on severity to prevent. **Assert it; do not note it.**
 
 The stale-saved-view case **requires** `STALE_SAVED_VIEW_CUSTOMIZATION` from V1 — that state only exists for a user with pre-existing durable state, which a fresh browser cannot reproduce, so without the fixture the AC is unverifiable at GATE Q.
 
