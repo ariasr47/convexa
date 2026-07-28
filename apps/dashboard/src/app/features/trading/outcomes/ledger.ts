@@ -17,7 +17,7 @@
  * never a second, independent read of the stores. Two independent reads is how a numerator and a
  * denominator drift apart.
  */
-import { WORD as TIER_WORD } from '@/features/trading/model/OpportunityTier';
+import { WORD as TIER_WORD } from '@/features/trading/model/tier';
 import type { DecisionRecord, EntryContextDigest } from '@/features/trading/model/types';
 import type { SimOrder } from '@/features/trading/orders/types';
 import type { Position } from '@/features/trading/positions/types';

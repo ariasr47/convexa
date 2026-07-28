@@ -16,10 +16,10 @@
  * Scans use the Vite `?raw` idiom and are MUTATION-GUARDED (house rule). Comments are stripped
  * where a token may legitimately be MENTIONED as documentation (e.g. "brandGradient was deleted").
  */
-import { render } from '@testing-library/react';
-import { ThemeProvider } from '@mui/material/styles';
-import { createElement } from 'react';
 import { Box } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { render } from '@testing-library/react';
+import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { AVATAR_SX } from '@/features/auth/avatar';
@@ -43,7 +43,8 @@ function stripComments(src: string): string {
 
 // ---- WCAG luminance/contrast, computed in-spec (§8-7 method) -----------------------------------
 
-const hexRgb = (h: string): number[] => (h.replace('#', '').match(/../g) ?? []).map((x) => parseInt(x, 16));
+const hexRgb = (h: string): number[] =>
+  (h.replace('#', '').match(/../g) ?? []).map((x) => parseInt(x, 16));
 const chan = (c: number): number => {
   const s = c / 255;
   return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
@@ -62,7 +63,13 @@ const composite = (fg: string, alpha: number, bg: string): string => {
   const b = hexRgb(bg);
   return (
     '#' +
-    f.map((v, i) => Math.round(alpha * v + (1 - alpha) * b[i]).toString(16).padStart(2, '0')).join('')
+    f
+      .map((v, i) =>
+        Math.round(alpha * v + (1 - alpha) * b[i])
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
   );
 };
 
@@ -279,7 +286,9 @@ describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info site
       [],
     );
     expect(
-      hoverAmber(`'&:hover': { borderColor: 'color-mix(in srgb, var(--mui-palette-primary-main) 40%, x)' }`),
+      hoverAmber(
+        `'&:hover': { borderColor: 'color-mix(in srgb, var(--mui-palette-primary-main) 40%, x)' }`,
+      ),
     ).toHaveLength(1);
   });
 
@@ -320,7 +329,7 @@ describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info site
 const TEXT_AMBER_CONSUMERS = [
   '/src/app/features/trading/positions/LiveTabPanel.tsx', //     LOCKED chip (11px)
   '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
-  '/src/app/features/trading/model/OpportunityTier.tsx', //      Prime banner body text
+  '/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx', // Prime banner body text
   '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
   '/src/app/features/trading/TradeEntryDialog.tsx', //           provenance chip label (13px)
   '/src/app/shared/ui/TintChip.tsx', //                          the `emphasis` tone text

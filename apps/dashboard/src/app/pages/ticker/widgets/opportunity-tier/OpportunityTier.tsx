@@ -1,6 +1,7 @@
 /**
- * Opportunity escalation ladder: the tier word/emphasis for the Opportunity tile + the Prime
- * setup banner. Tiers are server-emitted (signals.opportunity_tier); emphasis is non-directional
+ * Opportunity escalation ladder — the Ticker page's tier CHROME: the emphasis colour for the
+ * Opportunity tile and the Prime setup banner. Relocated out of the trading kernel (F17), which
+ * narrows to the decision/mark vocabulary and holds no React widget. Tiers are server-emitted (signals.opportunity_tier); emphasis is non-directional
  * (info → warning, never green/red) — this is a read, not advice. The trade it offers is simulated.
  */
 import BoltIcon from '@mui/icons-material/Bolt';
@@ -8,18 +9,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, Button, IconButton } from '@mui/material';
 import { alpha, Theme } from '@mui/material/styles';
 import type { OpportunityTier } from '@org/api';
+// The tier WORD map stays in the trading KERNEL: `outcomes/ledger.ts` reads the same closed lookup,
+// and `features/ -> pages/` would invert the downward-only dependency direction (SPEC §2.7).
+import { WORD } from '@/features/trading/model/tier';
 import { extrasFor } from '@/shared/theme/tokens';
-
-/** The tier word map — the SINGLE source of the tier display label. Exported so a second consumer
- *  (the outcome ledger's tier cells) reads the same closed lookup instead of re-deriving a tier from
- *  `opportunity_score`. Deliberately NOT `tierMeta`: that returns a palette colour, and a rate must
- *  never be tinted (outcome-ledger AC-14). */
-export const WORD: Record<OpportunityTier, string> = {
-  dormant: 'Dormant',
-  watch: 'Watch',
-  actionable: 'Actionable',
-  prime: 'Prime',
-};
 
 /** Tier word + a non-directional emphasis color for the tile's left accent.
  *  Stage-1 rebind (§3.3-3): tier emphasis is an ACTIVE/brand state, not a warning —

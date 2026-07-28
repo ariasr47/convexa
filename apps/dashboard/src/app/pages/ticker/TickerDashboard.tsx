@@ -25,7 +25,6 @@ import {
   TradeEntryDialog,
   TradeEntrySubmit,
 } from '@/features/trading/TradeEntryDialog';
-import { PrimeBanner, tierMeta } from '@/features/trading/model/OpportunityTier';
 import { NewTradeForm, useGhostTrade } from '@/features/trading/model/useGhostTrade';
 import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
 import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
@@ -39,6 +38,7 @@ import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDraw
 import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
 import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
+import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { Alert, Box, Button, Container, Fade, Skeleton, Tooltip, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {

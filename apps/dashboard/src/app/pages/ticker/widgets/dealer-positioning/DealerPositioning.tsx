@@ -5,12 +5,12 @@
  * (`[live-vs-static-isolation]`). Each nullable metric independently shows its own "unavailable"
  * (`[best-effort-isolated-or-null]`). Re-skin/componentize only — values + copy preserved byte-for-byte.
  */
+import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
+import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
 import type { MarketState, OffExchange, Signals } from '@org/api';
-import { OPPORTUNITY_TIER_INFO } from '@/features/trading/model/OpportunityTier';
-import { StatTile } from '../_kit/StatTile';
-import { Widget } from '@/shared/ui/Widget';
 import { fmtUsdCompact, netDexTip, skewState, skewTip, termTip, volOiTip } from '../_kit/copy';
+import { StatTile } from '../_kit/StatTile';
 
 const GRID = {
   display: 'grid',
