@@ -140,7 +140,10 @@ export function FaultedBanner({ onReload }: { onReload?: () => void }) {
               if (!target) return;
               if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
               target.focus();
-              target.scrollIntoView({ block: 'start' });
+              // Optional-called: jsdom does not implement `scrollIntoView`, and an uncaught
+              // TypeError inside a click handler turns the whole suite red on a purely cosmetic
+              // scroll. Focus is the part that matters and it has already happened.
+              target.scrollIntoView?.({ block: 'start' });
             }}
             sx={linkSx}
           >
