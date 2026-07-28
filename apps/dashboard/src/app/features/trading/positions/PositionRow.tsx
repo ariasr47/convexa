@@ -24,6 +24,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useId, useState } from 'react';
+import { Refused } from './FaultedBanner';
 import {
   DELTA_ENTRY_TIP,
   ENTRY_BASIS_META,
@@ -102,6 +103,12 @@ export interface RowContext {
   /** Ephemeral session Δ — a live-derived per-cycle datum, like `trend`; never persisted. */
   sessionDelta: number | null;
   streamOffline: boolean;
+  /**
+   * The durable store is faulted (SPEC §2.9). NOTHING dims and no ⏸ appears — faulted and offline
+   * are independent states — but every WRITE affordance on the row is refused: `aria-disabled`,
+   * still focusable, tooltip-reachable, and a no-op.
+   */
+  faulted?: boolean;
   onClose: (id: string) => void;
   onCancel: (id: string) => void;
   /** ai-rec-backtest-orders (AC-31): open the originating sim order's detail (positions created by
@@ -515,9 +522,11 @@ export function PendingAffordance({ ctx }: { ctx: RowContext }) {
           {liveMark != null ? ` (live ${netMoney(liveMark)})` : ''}
         </Typography>
       )}
-      <Button size="small" onClick={() => onCancel(p.id)}>
-        Cancel
-      </Button>
+      <Refused when={!!ctx.faulted}>
+        <Button size="small" onClick={() => onCancel(p.id)}>
+          Cancel
+        </Button>
+      </Refused>
     </Stack>
   );
 }
@@ -605,9 +614,11 @@ export function PositionRow({
         ))}
         <Box component="td" sx={tdSx}>
           {p.status === 'open' && (
-            <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
-              Close
-            </Box>
+            <Refused when={!!ctx.faulted}>
+              <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
+                Close
+              </Box>
+            </Refused>
           )}
           {p.status === 'pending' && <PendingAffordance ctx={ctx} />}
           {isTerminal && <ClosedSummary view={ctx.view} />}

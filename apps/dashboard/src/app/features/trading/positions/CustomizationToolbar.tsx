@@ -31,6 +31,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState, type ReactNode } from 'react';
+import { FaultedBanner, Refused } from './FaultedBanner';
 import { MERGE_NOTICE, MERGE_NOTICE_EXPORT, SAVED_VIEW_TIP, staleViewNotice } from './labels';
 import type { GroupAxis, Position, PositionStatus } from './types';
 import type { usePortfolio } from './usePortfolio';
@@ -389,43 +390,49 @@ export function CustomizationToolbar({
                   >
                     ✎
                   </IconButton>
-                  <IconButton
-                    size="small"
-                    aria-label="delete view"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteOpen(v.id);
-                      setViewAnchor(null);
-                    }}
-                  >
-                    🗑
-                  </IconButton>
+                  <Refused when={faulted}>
+                    <IconButton
+                      size="small"
+                      aria-label="delete view"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteOpen(v.id);
+                        setViewAnchor(null);
+                      }}
+                    >
+                      🗑
+                    </IconButton>
+                  </Refused>
                 </Box>
               )}
             </MenuItem>
           ))}
           <Divider />
           {hasUnsavedChanges && !activeView.builtin && (
+            <Refused when={faulted}>
+              <MenuItem
+                onClick={() => {
+                  guard(() => pf.saveChanges());
+                  setViewAnchor(null);
+                }}
+                data-testid="save-changes"
+              >
+                Save changes to '{activeView.name}'
+              </MenuItem>
+            </Refused>
+          )}
+          <Refused when={faulted}>
             <MenuItem
               onClick={() => {
-                guard(() => pf.saveChanges());
+                setName('');
+                setSaveAsOpen(true);
                 setViewAnchor(null);
               }}
-              data-testid="save-changes"
+              data-testid="save-as-new"
             >
-              Save changes to '{activeView.name}'
+              Save as new view…
             </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              setName('');
-              setSaveAsOpen(true);
-              setViewAnchor(null);
-            }}
-            data-testid="save-as-new"
-          >
-            Save as new view…
-          </MenuItem>
+          </Refused>
           <Divider />
           <MenuItem disableRipple sx={{ pointerEvents: 'none' }}>
             <Tooltip arrow title={SAVED_VIEW_TIP}>
@@ -475,28 +482,33 @@ export function CustomizationToolbar({
 
         {/* Spacer + the primary CTA. */}
         <Box sx={{ flex: 1 }} />
-        <Box
-          component="button"
-          type="button"
-          onClick={() => onOpenEntry?.()}
-          disabled={!canOpenEntry}
-          data-testid="open-entry"
-          sx={{
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            border: 'none',
-            font: 'inherit',
-            padding: '8px 15px',
-            borderRadius: '8px',
-            fontSize: '0.82rem',
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
-            cursor: canOpenEntry ? 'pointer' : 'not-allowed',
-            opacity: canOpenEntry ? 1 : 0.5,
-          }}
-        >
-          + Open simulated position
-        </Box>
+        <Refused when={faulted}>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onOpenEntry?.()}
+            // While FAULTED the HTML `disabled` attribute must never appear here: it would take the
+            // control out of the tab order and swallow the hover, putting the reason for the
+            // refusal out of reach of both keyboard and mouse. `Refused` owns that treatment.
+            disabled={!faulted && !canOpenEntry}
+            data-testid="open-entry"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              border: 'none',
+              font: 'inherit',
+              padding: '8px 15px',
+              borderRadius: '8px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              cursor: canOpenEntry && !faulted ? 'pointer' : 'not-allowed',
+              opacity: canOpenEntry ? 1 : 0.5,
+            }}
+          >
+            + Open simulated position
+          </Box>
+        </Refused>
       </Box>
 
       {/* Status-pill row. */}
@@ -544,6 +556,7 @@ export function CustomizationToolbar({
         mergeNoticePending={mergeNoticePending}
         staleViewName={staleViewName}
         onDismissMerge={onDismissMerge}
+        faultedSlot={<FaultedBanner />}
       />
 
       {/* Save-as-new dialog. */}

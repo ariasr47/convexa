@@ -33,6 +33,7 @@ import { parseTriggerSeed } from '@/features/trading/orders/seed';
 import type { OrderProvenance } from '@/features/trading/orders/types';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
 import { createOrder } from '@/features/trading/orders/useOrders';
+import { positionsFaulted } from '@/features/trading/positions/store';
 import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
@@ -208,6 +209,9 @@ export function TickerDashboard() {
   const checked = selected ?? allDates; // dates shown ticked in the menu
 
   // Ghost-trade entry dialog + Prime banner.
+  // Synchronous — `localStorage` is synchronous, so this is free, and it is what guarantees the
+  // refusal is present on the FIRST paint rather than after an effect (AC-64).
+  const storeFaulted = positionsFaulted();
   const [entryOpen, setEntryOpen] = useState(false);
   const [entryPrefill, setEntryPrefill] = useState<EntryPrefill | undefined>();
   // outcome-ledger (AC-E18): the rec identity the CURRENT prefill came from. Threaded through the
@@ -447,6 +451,9 @@ export function TickerDashboard() {
               streamOffline={streamOffline}
               selected={selected}
               onOpenTrade={() => openEntry()}
+              // The faulted state follows the STORE, not the route (SPEC §2.9). Computed
+              // synchronously on every render, so no frame paints an enabled CTA on a faulted book.
+              storeFaulted={storeFaulted}
               freshness={{
                 snapshotIso: fresh?.snapshot_iso ?? null,
                 dataAgeSeconds: fresh?.data_age_seconds ?? null,
@@ -603,7 +610,7 @@ export function TickerDashboard() {
           (basis `manual`, the shipped behavior); market opens at the resolved snapshot/theoretical
           fill. `useGhostTrade.openTrade` is unchanged. */}
       <TradeEntryDialog
-        open={entryOpen && !tradeOpen}
+        open={entryOpen && !tradeOpen && !storeFaulted}
         ticker={ticker}
         expirations={allDates}
         strikes={strikeList}

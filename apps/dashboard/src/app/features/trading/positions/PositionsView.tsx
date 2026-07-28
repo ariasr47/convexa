@@ -17,7 +17,13 @@ import { Box, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
 import type { DerivedGroup } from './derive';
-import { EMPTY_FILTERED, EMPTY_NO_POSITIONS, HISTORY_CAPTION, money } from './labels';
+import {
+  EMPTY_FAULTED,
+  EMPTY_FILTERED,
+  EMPTY_NO_POSITIONS,
+  HISTORY_CAPTION,
+  money,
+} from './labels';
 import { PositionCard } from './PositionCard';
 import { PositionRow, RowContext } from './PositionRow';
 import type { ColumnKey, Density, LayoutMode } from './types';
@@ -81,6 +87,8 @@ export interface ViewProps {
   layout: LayoutMode;
   density: Density;
   streamOffline: boolean;
+  /** The durable store is faulted (SPEC §2.9) — refuses every write affordance, dims nothing. */
+  faulted?: boolean;
   /** Total positions in the (unfiltered) collection — distinguishes "no positions" vs "filtered empty". */
   totalCount: number;
   /** Is the active filter the closed/history view (status = closed/cancelled)? */
@@ -147,6 +155,18 @@ export function PositionsView(props: ViewProps) {
         </Typography>
       );
     }
+    // FAULTED + ZERO ROWS is its own state (AC-67). The normal "no positions yet" copy is never
+    // shown here: it would tell a trader with a damaged blob that they have no history, which is
+    // both false and the single most alarming thing this surface could say.
+    if (props.faulted) {
+      return (
+        <Box sx={{ mt: 2 }} data-testid="empty-faulted">
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {EMPTY_FAULTED}
+          </Typography>
+        </Box>
+      );
+    }
     if (totalCount === 0) {
       return (
         <Box sx={{ mt: 2 }} data-testid="empty-no-positions">
@@ -194,6 +214,7 @@ export function PositionsView(props: ViewProps) {
 function ctxFor(props: ViewProps, view: PositionView): RowContext {
   return {
     view,
+    faulted: props.faulted,
     trend: props.trendFor(view.position.id),
     sessionDelta: props.sessionDeltaFor?.(view.position.id) ?? null,
     streamOffline: props.streamOffline,

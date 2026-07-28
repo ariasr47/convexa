@@ -126,6 +126,9 @@ export function PositionsPanel({
         streamOffline={streamOffline}
         onOpenEntry={onRequestOpenEntry}
         canOpenEntry={!!data}
+        // Driven FROM the health flag, computed synchronously at store init — never from trying a
+        // write and failing. That is what guarantees no frame paints an enabled affordance.
+        faulted={pf.health.faulted}
       />
 
       {/* Honest browser-local disclosure (D6d, mandatory) — a subtle info line; shown whether signed
@@ -144,6 +147,7 @@ export function PositionsPanel({
         layout={working.layout}
         density={working.density}
         streamOffline={streamOffline}
+        faulted={pf.health.faulted}
         totalCount={pf.positions.length}
         isHistory={isHistoryFilter(working.filter.status)}
         trendFor={pf.trendFor}
@@ -161,8 +165,10 @@ export function PositionsPanel({
           rests a limit `pending` (fills only on a live cross via the existing resolver lifecycle), so
           `restingLimit` is on. Its mode-tagged submit is structurally an `OpenPositionInput`; confirm
           stays the server-gated write upstream (`useGate` → POST /api/positions/sim-trade/gate). */}
+      {/* The dialog NEVER OPENS on a faulted store (AC-63): the refusal is applied at the source,
+          not by opening something the confirm would then refuse. */}
       <TradeEntryDialog
-        open={entryOpen}
+        open={entryOpen && !pf.health.faulted}
         ticker={ticker}
         expirations={expirations}
         strikes={strikeList}

@@ -23,6 +23,7 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Box } from '@mui/material';
 import { useId, useState } from 'react';
+import { Refused } from './FaultedBanner';
 import { MAX_LOSS_LABEL, MAX_LOSS_WITHHELD_META, money } from './labels';
 import { LegDisclosureButton, LegDisclosurePanel } from './LegDisclosure';
 import {
@@ -241,9 +242,11 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
       {p.status === 'pending' && <PendingAffordance ctx={ctx} />}
       {p.status === 'open' && (
         <Box sx={{ mt: '10px' }}>
-          <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
-            Close
-          </Box>
+          <Refused when={!!ctx.faulted}>
+            <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
+              Close
+            </Box>
+          </Refused>
         </Box>
       )}
     </Box>

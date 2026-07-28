@@ -13,13 +13,14 @@
  * (`[live-vs-static-isolation]`). The last-trade readout (`data-testid="last-trade"`, its 4 states) is
  * preserved byte-for-byte.
  */
+import { Refused, TickerFaultedNotice } from '@/features/trading/positions/FaultedBanner';
+import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { LiveUpdate, MarketState, Signals } from '@org/api';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
-import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 const REGIME_TIP =
   'Positive gamma: dealers dampen moves → range-bound, fade extremes. Negative gamma: dealers ' +
@@ -248,6 +249,12 @@ interface TickerHeaderProps {
   selected: string[] | null;
   /** Persistent "+ Open simulated trade" CTA, right-aligned in the header (kept out of the analysis flow). */
   onOpenTrade?: () => void;
+  /**
+   * THE TICKER-PAGE DOOR (SPEC §2.9, §4, AC-69). The faulted state is NOT scoped to `/positions`:
+   * this CTA opens the same shared dialog against the same book, so it carries the same refused
+   * treatment and its own one-line notice. `aria-disabled` + focusable, never HTML `disabled`.
+   */
+  storeFaulted?: boolean;
   /** REST-bundle freshness — folded into the deck hero's meta line (relocated `FreshnessLine`). The
    *  freshness reflects the STATIC path only (never live/SSE) — `[live-vs-static-isolation]`. */
   freshness?: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
@@ -261,6 +268,7 @@ export function TickerHeader({
   streamOffline,
   selected,
   onOpenTrade,
+  storeFaulted = false,
   freshness,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
@@ -362,18 +370,33 @@ export function TickerHeader({
         {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the
             analysis flow. Opens the shipped simulated-trade entry dialog. */}
         {onOpenTrade && (
-          <Button
-            variant="contained"
-            size="small"
-            onClick={onOpenTrade}
-            data-testid="open-sim-trade"
-            // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width) so
-            // its nowrap label can never force the viewport wider. Still THE one entry point to the
-            // shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
-            sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5, alignSelf: { xs: 'flex-start', sm: 'auto' } }}
+          <Stack
+            sx={{
+              flexShrink: 0,
+              // `flex-end` (not `stretch`): without it the notice's width would drag the CTA out
+              // into a full-width bar across the header — amber is spent exactly once on this page
+              // and a 800px slab of it is not that one spend.
+              alignItems: { xs: 'flex-start', sm: 'flex-end' },
+              alignSelf: { xs: 'flex-start', sm: 'auto' },
+              maxWidth: 460,
+            }}
           >
-            + Open simulated trade
-          </Button>
+            {storeFaulted && <TickerFaultedNotice />}
+            <Refused when={storeFaulted}>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={onOpenTrade}
+                data-testid="open-sim-trade"
+                // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
+                // so its nowrap label can never force the viewport wider. Still THE one entry point
+                // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
+                sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
+              >
+                + Open simulated trade
+              </Button>
+            </Refused>
+          </Stack>
         )}
       </Stack>
     </Box>

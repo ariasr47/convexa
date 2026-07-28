@@ -278,7 +278,15 @@ function LegFields({
   const isOption = draft.kind === 'option';
   const suffix = index === 0 ? '' : ` leg ${index + 1}`;
   return (
-    <Box data-testid={`entry-leg-${index}`}>
+    <Box
+      data-testid={`entry-leg-${index}`}
+      sx={
+        // A `divider` rule between legs so a four-leg form reads as FOUR OBJECTS rather than one
+        // long ribbon of controls — the same idea as the leg block's left rule in the book, and it
+        // costs no colour. Absent for a single leg, where the shipped layout is unchanged.
+        index > 0 ? { borderTop: '1px solid', borderColor: 'divider', pt: 1.5 } : undefined
+      }
+    >
       {total > 1 && (
         <Stack direction="row" sx={{ alignItems: 'center', mb: 0.5 }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', flexGrow: 1 }}>
@@ -296,37 +304,40 @@ function LegFields({
       )}
 
       <Stack spacing={2}>
-        {/* Buy / Sell — direction lives HERE and nowhere else. UNTINTED: a short leg is not a loss
-            (SPEC §4 Design direction 4), which is why it does not borrow the Call/Put green/red. */}
+        {/* Direction and instrument SIDE BY SIDE — two stacked full-width toggle groups per leg
+            turns a four-leg form into a wall of controls; paired, a leg reads as one line of
+            decisions. Buy/Sell is UNTINTED: a short leg is not a loss (SPEC §4 Design direction 4),
+            which is why it does not borrow the Call/Put green/red beneath it. */}
         {multiLeg && (
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            fullWidth
-            value={draft.side}
-            onChange={(_, v) => v && onPatch({ side: v as LegSide })}
-            aria-label={`direction${suffix}`}
-            data-testid={`entry-side-${index}`}
-          >
-            <ToggleButton value="long">Buy</ToggleButton>
-            <ToggleButton value="short">Sell</ToggleButton>
-          </ToggleButtonGroup>
-        )}
-
-        {/* Instrument kind. Shares carry no strike/expiry/right at all — never a zero-filled one. */}
-        {multiLeg && (
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            fullWidth
-            value={draft.kind}
-            onChange={(_, v) => v && onPatch({ kind: v as InstrumentKind })}
-            aria-label={`instrument${suffix}`}
-            data-testid={`entry-kind-${index}`}
-          >
-            <ToggleButton value="option">Option</ToggleButton>
-            <ToggleButton value="equity">Shares</ToggleButton>
-          </ToggleButtonGroup>
+          <Stack direction="row" spacing={1}>
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={draft.side}
+              onChange={(_, v) => v && onPatch({ side: v as LegSide })}
+              aria-label={`direction${suffix}`}
+              data-testid={`entry-side-${index}`}
+              sx={{ flex: 1 }}
+            >
+              <ToggleButton value="long">Buy</ToggleButton>
+              <ToggleButton value="short">Sell</ToggleButton>
+            </ToggleButtonGroup>
+            {/* Shares carry no strike/expiry/right at all — never a zero-filled one. */}
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              fullWidth
+              value={draft.kind}
+              onChange={(_, v) => v && onPatch({ kind: v as InstrumentKind })}
+              aria-label={`instrument${suffix}`}
+              data-testid={`entry-kind-${index}`}
+              sx={{ flex: 1 }}
+            >
+              <ToggleButton value="option">Option</ToggleButton>
+              <ToggleButton value="equity">Shares</ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
         )}
 
         {isOption && (
@@ -396,45 +407,50 @@ function LegFields({
           </>
         )}
 
-        <Box>
-          <FieldLabel htmlFor={id('entry-qty')}>{isOption ? 'Quantity' : 'Shares'}</FieldLabel>
-          <TextField
-            id={id('entry-qty')}
-            size="small"
-            fullWidth
-            type="number"
-            value={draft.qty}
-            onChange={(e) => onPatch({ qty: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
-            slotProps={{
-              // `min: 1` — NO FORM FIELD ACCEPTS A NEGATIVE QUANTITY (AC-11). Direction is the
-              // Buy/Sell control above, and a sign convention here would give it two homes.
-              htmlInput: { min: 1, 'aria-label': `Quantity${suffix}` },
-            }}
-            sx={inputSx}
-          />
-        </Box>
-
-        {showPrice && (
-          <Box>
-            <FieldLabel htmlFor={id('entry-leg-price')}>
-              {isOption ? 'Price per contract' : 'Average share price'}
-            </FieldLabel>
+        {/* Size and price side by side — both are short numerics, and pairing them keeps a leg to
+            three rows instead of five. */}
+        <Stack direction="row" spacing={2}>
+          <Box sx={{ flex: 1 }}>
+            <FieldLabel htmlFor={id('entry-qty')}>{isOption ? 'Quantity' : 'Shares'}</FieldLabel>
             <TextField
-              id={id('entry-leg-price')}
+              id={id('entry-qty')}
               size="small"
               fullWidth
               type="number"
-              value={draft.price}
+              value={draft.qty}
               onChange={(e) =>
-                onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
+                onPatch({ qty: Math.max(1, Math.floor(Number(e.target.value) || 1)) })
               }
               slotProps={{
-                htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
+                // `min: 1` — NO FORM FIELD ACCEPTS A NEGATIVE QUANTITY (AC-11). Direction is the
+                // Buy/Sell control above, and a sign convention here would give it two homes.
+                htmlInput: { min: 1, 'aria-label': `Quantity${suffix}` },
               }}
               sx={inputSx}
             />
           </Box>
-        )}
+          {showPrice && (
+            <Box sx={{ flex: 1 }}>
+              <FieldLabel htmlFor={id('entry-leg-price')}>
+                {isOption ? 'Price per contract' : 'Avg share price'}
+              </FieldLabel>
+              <TextField
+                id={id('entry-leg-price')}
+                size="small"
+                fullWidth
+                type="number"
+                value={draft.price}
+                onChange={(e) =>
+                  onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
+                }
+                slotProps={{
+                  htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
+                }}
+                sx={inputSx}
+              />
+            </Box>
+          )}
+        </Stack>
       </Stack>
     </Box>
   );
