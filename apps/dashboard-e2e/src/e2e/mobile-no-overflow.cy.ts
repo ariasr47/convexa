@@ -205,12 +205,55 @@ const SEEDED_POSITIONS = {
   },
 };
 
-function seedPositions(win: Window) {
+/**
+ * A FOUR-LEG iron condor, written exactly the way the multi-leg entry path writes one (F15): the
+ * additive optional `legs` array is authoritative and the flat contract fields beside it are the
+ * lossy first-leg summary an older reader would fall back to.
+ */
+function condorLeg(over: Record<string, unknown>) {
+  return {
+    kind: 'option',
+    ticker: 'META',
+    side: 'long',
+    qty: 1,
+    multiplier: 100,
+    entry_price: 12.4,
+    entry_basis: 'user_entered',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    ...over,
+  };
+}
+
+const CONDOR = {
+  id: 'e2e-condor',
+  ticker: 'META',
+  expiration: '2026-08-21',
+  strike: 440,
+  right: 'call',
+  side: 'long',
+  qty: 1,
+  entry_mark: 12.4,
+  entry_basis: 'user_entered',
+  entry_mode: 'manual',
+  entry_time: '2026-06-12T15:32:00Z',
+  status: 'open',
+  schema_version: 2,
+  legs: [
+    condorLeg({ id: 'e2e-condor-l0', strike: 440 }),
+    condorLeg({ id: 'e2e-condor-l1', strike: 420, side: 'short', entry_price: 6.1 }),
+    condorLeg({ id: 'e2e-condor-l2', strike: 380, right: 'put', side: 'short', entry_price: 5 }),
+    condorLeg({ id: 'e2e-condor-l3', strike: 360, right: 'put', entry_price: 2.5 }),
+  ],
+};
+
+function seedPositions(win: Window, opts: { withCondor?: boolean } = {}) {
   win.localStorage.setItem(
     'convexa.positions.v2',
     JSON.stringify({
       schema_version: 2,
-      positions: SEEDED_POSITIONS,
+      positions: opts.withCondor ? { ...SEEDED_POSITIONS, 'e2e-condor': CONDOR } : SEEDED_POSITIONS,
       decisions: [],
       // No `customization` — the store seeds its own defaults, which is what a real user has.
     }),
@@ -333,47 +376,38 @@ for (const scheme of ['dark', 'light'] as const) {
     });
 
     /**
-     * THE 4-LEG-EXPANDED CASE IS BLOCKED, AND THIS IS THE TRIPWIRE THAT SAYS SO.
+     * THE 4-LEG-EXPANDED CASE — SPEC §7 invariant 11, AC-30.
      *
-     * SPEC §7 invariant 11 requires the 393px guard to EXPAND A LEG BLOCK before asserting, because
-     * the shipped guard only ever measured the cold render. That case cannot be built yet: the
-     * durable store is still `convexa.positions.v2`, whose record shape is ONE CONTRACT
-     * (`ticker/expiration/strike/right`), and the one lift function maps each record to exactly ONE
-     * leg. A multi-leg position is therefore UNREPRESENTABLE in the seedable store until the
-     * multi-leg entry path (F15) or the v3 cutover (F18) lands. The disclosure control only exists
-     * for `legs.length > 1`, so there is nothing to click.
+     * THIS REPLACES THE V3 TRIPWIRE, WHICH F15 RETIRED BY DOING ITS JOB. That tripwire asserted the
+     * v2 record shape (one contract, no `legs`) made a multi-leg position UNREPRESENTABLE in the
+     * seedable store, and said in as many words that whoever made it representable must replace it
+     * with the real assertion. F15 added the additive optional `legs` array to the durable record —
+     * the multi-leg entry path ships before the v3 cutover, and flattening a spread into the flat
+     * contract fields would destroy three of its four legs — so the store can now hold one and the
+     * case below is buildable. The tripwire's own replacement text is carried out verbatim:
+     * `aria-expanded="true"` is asserted BEFORE measuring, because without it a selector that stops
+     * matching makes the overflow check vacuous, which is the exact failure this case closes.
      *
-     * This is written as a live TRIPWIRE rather than a `.skip` so the case cannot rot silently: the
-     * moment the store can hold a multi-leg position, THIS TEST GOES RED and whoever lands that
-     * change must replace it with the real assertion, which is:
-     *
-     *   cy.get('[data-testid="position-card"]').first().find('button[aria-expanded]').click();
-     *   cy.get('[aria-expanded="true"]').should('exist');   // the expansion actually happened
-     *   assertNoHorizontalOverflow();
-     *
-     * (The `aria-expanded="true"` assertion is not decoration — without it a selector that stops
-     * matching makes the overflow check vacuous, which is the exact failure this extension closes.)
+     * The seeded record is a real four-leg iron condor, written the way the entry path writes one.
      */
-    it('TRIPWIRE — a multi-leg position is not yet representable in the v2 store, so no disclosure exists', () => {
+    it('a 4-leg disclosure EXPANDED at 393px still does not overflow', () => {
       cy.visit('/positions', {
         onBeforeLoad(win) {
           win.localStorage.setItem(
             'convexa.uiprefs.v1',
             JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
           );
-          seedPositions(win);
+          seedPositions(win, { withCondor: true });
         },
       });
-      cy.get('[data-testid="position-card"]').should('have.length', 4);
-      // The v2 record shape itself: one contract, no `legs` array anywhere to seed.
-      cy.window().then((win) => {
-        const blob = JSON.parse(win.localStorage.getItem('convexa.positions.v2') as string);
-        const records = Object.values(blob.positions) as Record<string, unknown>[];
-        expect(records).to.have.length(4);
-        for (const r of records) expect(r).to.not.have.property('legs');
-      });
-      // …and so the leg disclosure — the thing the expanded case needs — cannot appear.
-      cy.get('[data-testid="leg-disclosure-toggle"]').should('not.exist');
+      cy.get('[data-testid="position-card"]').should('have.length', 5);
+      // VACUITY GUARD 1 — the multi-leg record really did survive the round-trip as four legs.
+      cy.get('[data-testid="leg-disclosure-toggle"]').should('have.length', 1);
+      cy.get('[data-testid="leg-disclosure-toggle"]').click();
+      // VACUITY GUARD 2 — the expansion actually happened, and it really is four leg lines.
+      cy.get('[aria-expanded="true"]').should('exist');
+      cy.get('[data-testid="leg-line"]').should('have.length', 4);
+      assertNoHorizontalOverflow();
     });
 
     it('below md the nav collapses: hamburger present, no inline nav row', () => {

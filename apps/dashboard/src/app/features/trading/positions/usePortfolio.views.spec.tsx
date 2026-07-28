@@ -272,3 +272,87 @@ describe('usePortfolio · the resting composite limit (AC-44)', () => {
     expect(pf.positions.find((p) => p.id === 'lim')?.status).toBe('pending');
   });
 });
+
+describe('usePortfolio · openPosition — ONE code path for one leg and for six (F15)', () => {
+  const optionLeg = (over: Record<string, unknown> = {}) => ({
+    kind: 'option' as const,
+    ticker: 'TSLA',
+    side: 'long' as const,
+    qty: 1,
+    multiplier: 100,
+    price: 12.4,
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call' as const,
+    ...over,
+  });
+
+  it('a MULTI-LEG position is persisted with every leg — never flattened to its first contract', async () => {
+    await mount();
+    act(() => {
+      pf.openPosition({
+        entryMode: 'manual',
+        // A textbook iron condor: long the wings, short the body, one expiration.
+        legs: [
+          optionLeg({ strike: 440, price: 12.4 }),
+          optionLeg({ side: 'short', strike: 420, price: 6.1 }),
+          optionLeg({ side: 'short', strike: 380, right: 'put', price: 5 }),
+          optionLeg({ strike: 360, right: 'put', price: 2.5 }),
+        ],
+      });
+    });
+    const view = pf.views.find((v) => v.position.legs.length === 4);
+    expect(view).toBeDefined();
+    expect(view?.structure).toBe('iron_condor');
+    // …and it SURVIVES the durable round-trip through the ONE lift, not just in memory.
+    const blob = JSON.parse(localStorage.getItem(PORTFOLIO_V2_KEY) as string);
+    const record = Object.values(blob.positions).find(
+      (r) => ((r as { legs?: unknown[] }).legs ?? []).length === 4,
+    ) as { legs: { side: string; strike: number; entry_price: number }[] };
+    expect(record.legs.map((l) => l.strike).sort((a, b) => a - b)).toEqual([360, 380, 420, 440]);
+    // Per-leg prices are the trader's OWN typed prices — never back-solved from a net.
+    expect(record.legs.map((l) => l.entry_price)).toEqual([12.4, 6.1, 5, 2.5]);
+  });
+
+  it('MULTI-UNDERLYING is REJECTED AT CONSTRUCTION — nothing is written, and the refusal is stated', async () => {
+    await mount();
+    const before = localStorage.getItem(PORTFOLIO_V2_KEY);
+    let result: { ok: boolean; reason?: string } | undefined;
+    act(() => {
+      result = pf.openPosition({
+        entryMode: 'manual',
+        legs: [optionLeg(), optionLeg({ ticker: 'AAPL', side: 'short' })],
+      });
+    });
+    expect(result?.ok).toBe(false);
+    expect(result?.reason).toMatch(/same underlying/i);
+    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(before);
+  });
+
+  it('a SINGLE-leg entry takes the same path and still produces exactly one leg', async () => {
+    await mount();
+    act(() => {
+      pf.openPosition({ entryMode: 'manual', legs: [optionLeg({ strike: 410 })] });
+    });
+    const view = pf.views.find((v) => v.position.legs[0]?.strike === 410);
+    expect(view?.position.legs).toHaveLength(1);
+    expect(view?.structure).toBe('long_call');
+  });
+
+  it('a MULTI-LEG resting limit never fills: its per-unit limit has no structure-level meaning', async () => {
+    fetchSpy.mockImplementation(async () => quote());
+    await mount({ live: liveUpdate({ mid: 100 }), isLive: true }); // deep in the money for a fill
+    act(() => {
+      pf.openPosition({
+        entryMode: 'limit',
+        limitPrice: 99,
+        legs: [optionLeg(), optionLeg({ side: 'short', strike: 420 })],
+      });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const pending = pf.positions.find((p) => (p.legs ?? []).length === 2);
+    expect(pending?.status).toBe('pending'); // still resting — NEVER filled off an undefined number
+  });
+});

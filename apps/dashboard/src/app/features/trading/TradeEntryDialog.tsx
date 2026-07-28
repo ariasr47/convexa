@@ -26,28 +26,6 @@
  * (server-gated, on Positions) write. No new/changed API call: the only network touch is the
  * EXISTING `GET /api/contract` lookup (`fetchTrackedContract`) both old dialogs already made.
  */
-import CloseIcon from '@mui/icons-material/Close';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogContent,
-  IconButton,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { alpha } from '@mui/material/styles';
-import { fetchTrackedContract, OptionRight } from '@org/api';
-import { useEffect, useState, type ReactNode } from 'react';
 import {
   alreadyMetNotice,
   dialogScenarioStrip,
@@ -75,8 +53,45 @@ import {
 import { triggerMet } from '@/features/trading/orders/engine';
 import type { Trigger } from '@/features/trading/orders/types';
 import { resolveMarketFill, type ResolvedFill } from '@/features/trading/positions/entry';
-import { DISCLAIMER, SIMULATED_TIP } from '@/features/trading/positions/labels';
+import {
+  DIALOG_FILL_MODE_SINGLE_LEG_ONLY,
+  DIALOG_NET_COMPUTED,
+  DIALOG_NET_INCOMPLETE,
+  DISCLAIMER,
+  netEntryPhrase,
+  SIMULATED_TIP,
+} from '@/features/trading/positions/labels';
+import {
+  netEntryCost,
+  type InstrumentKind,
+  type Leg,
+  type LegSide,
+  type SimPosition,
+} from '@/features/trading/positions/leg';
+import { STRUCTURE_LABELS, structureKindOf } from '@/features/trading/positions/structure';
+import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import { extrasFor } from '@/shared/theme/tokens';
+import CloseIcon from '@mui/icons-material/Close';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogContent,
+  IconButton,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
+import { fetchTrackedContract, OptionRight } from '@org/api';
+import { useEffect, useState, type ReactNode } from 'react';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */
 export type FillMode = 'manual' | 'market' | 'limit';
@@ -99,26 +114,38 @@ export interface EntryPrefill {
   sizingNote?: string;
 }
 
-/** Common facts every confirm carries (the contract + risk plan). */
+/** Common facts every confirm carries (the underlying + the risk plan). */
 interface SubmitBase {
   ticker: string;
-  expiration: string;
-  strike: number;
-  right: OptionRight;
-  qty: number;
   stop: number | null;
   target: number | null;
 }
 
+/** The single-contract facts the ORDER variant still carries flat — a sim order is one option. */
+interface OrderContract {
+  expiration: string;
+  strike: number;
+  right: OptionRight;
+  qty: number;
+}
+
 /**
  * The mode-tagged confirm payload. Structurally a `positions/usePortfolio.OpenPositionInput`, so the
- * Positions host passes it straight through; the Ticker host maps it onto a ghost-trade
+ * Positions host passes it straight through; the Ticker host maps `legs[0]` onto a ghost-trade
  * `NewTradeForm` (manual/limit → the typed price with basis `manual`; market → the resolved fill).
+ *
+ * A SINGLE-LEG ENTRY IS A ONE-ELEMENT ARRAY — there is exactly one open path, never a single-leg
+ * path plus a multi-leg path (SPEC §2.7 *Entry input shape*).
  */
 export type TradeEntrySubmit =
-  | (SubmitBase & { entryMode: 'manual'; price: number })
-  | (SubmitBase & { entryMode: 'market'; resolvedMark: number; resolvedBasis: MarketFillBasis })
-  | (SubmitBase & { entryMode: 'limit'; limitPrice: number });
+  | (SubmitBase & { entryMode: 'manual'; legs: LegInput[] })
+  | (SubmitBase & {
+      entryMode: 'market';
+      legs: LegInput[];
+      resolvedMark: number;
+      resolvedBasis: MarketFillBasis;
+    })
+  | (SubmitBase & { entryMode: 'limit'; legs: LegInput[]; limitPrice: number });
 
 // ---- ai-rec-backtest-orders: the additive ORDER VARIANT seam (UX §3) ----------------------------
 // Host-passed. ABSENT ⇒ the dialog is byte-identical to shipped (protects AC-47/48). Present ⇒ the
@@ -147,7 +174,7 @@ export interface OrderPlan {
 }
 
 /** The order-variant confirm payload (the host persists it via the gated orders-store write). */
-export interface OrderEntrySubmit extends SubmitBase {
+export interface OrderEntrySubmit extends SubmitBase, OrderContract {
   trigger: Trigger | null;
   /** null ⇒ market-on-trigger. */
   limitPrice: number | null;
@@ -181,6 +208,238 @@ export function goodTilToExpiresAt(date: string): string {
   return new Date(y, m - 1, d, 23, 59, 59, 999).toISOString();
 }
 
+/**
+ * ONE drafted leg. Local dialog state only — nothing here is durable until the host writes.
+ *
+ * The three hard stands (SPEC §2.1) are enforced at the INPUT: `qty` is unsigned and the Buy/Sell
+ * control carries direction (no field anywhere accepts a negative quantity, AC-11); `multiplier` is
+ * decided from the instrument kind at CONSTRUCTION and stored, never re-derived downstream; `price`
+ * is per-unit and non-negative — debit vs credit is a property of the composition.
+ */
+export interface LegDraft {
+  /** Stable local key. Never durable — `openPosition` mints the real `LegId`. */
+  key: string;
+  kind: InstrumentKind;
+  side: LegSide;
+  qty: number;
+  expiration: string;
+  strike: number | '';
+  right: OptionRight;
+  /** PER-UNIT. `''` = not typed yet, which is what makes the running net read INCOMPLETE. */
+  price: number | '';
+}
+
+let draftSeq = 0;
+function newDraft(over: Partial<LegDraft> = {}): LegDraft {
+  return {
+    key: `leg-${++draftSeq}`,
+    kind: 'option',
+    side: 'long',
+    qty: 1,
+    expiration: '',
+    strike: '',
+    right: 'call',
+    price: '',
+    ...over,
+  };
+}
+
+/** `100` for a standard option contract, `1` for equity — decided HERE and stored on the leg. */
+const multiplierFor = (kind: InstrumentKind) => (kind === 'option' ? 100 : 1);
+
+/**
+ * One leg's fields. For a SINGLE leg the ids and the layout are the shipped ones, so the common path
+ * gains ZERO steps (AC-7); additional legs suffix their ids so they stay unique.
+ */
+function LegFields({
+  draft,
+  index,
+  total,
+  multiLeg,
+  expirations,
+  strikes,
+  inputSx,
+  showPrice,
+  onPatch,
+  onRemove,
+}: {
+  draft: LegDraft;
+  index: number;
+  total: number;
+  multiLeg: boolean;
+  expirations: string[];
+  strikes: number[];
+  inputSx: object;
+  showPrice: boolean;
+  onPatch: (patch: Partial<LegDraft>) => void;
+  onRemove: () => void;
+}) {
+  const id = (base: string) => (index === 0 ? base : `${base}-${index}`);
+  const isOption = draft.kind === 'option';
+  const suffix = index === 0 ? '' : ` leg ${index + 1}`;
+  return (
+    <Box data-testid={`entry-leg-${index}`}>
+      {total > 1 && (
+        <Stack direction="row" sx={{ alignItems: 'center', mb: 0.5 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', flexGrow: 1 }}>
+            Leg {index + 1}
+          </Typography>
+          <Button
+            size="small"
+            onClick={onRemove}
+            data-testid={`entry-remove-leg-${index}`}
+            sx={{ color: 'text.secondary', minWidth: 0 }}
+          >
+            Remove
+          </Button>
+        </Stack>
+      )}
+
+      <Stack spacing={2}>
+        {/* Buy / Sell — direction lives HERE and nowhere else. UNTINTED: a short leg is not a loss
+            (SPEC §4 Design direction 4), which is why it does not borrow the Call/Put green/red. */}
+        {multiLeg && (
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            fullWidth
+            value={draft.side}
+            onChange={(_, v) => v && onPatch({ side: v as LegSide })}
+            aria-label={`direction${suffix}`}
+            data-testid={`entry-side-${index}`}
+          >
+            <ToggleButton value="long">Buy</ToggleButton>
+            <ToggleButton value="short">Sell</ToggleButton>
+          </ToggleButtonGroup>
+        )}
+
+        {/* Instrument kind. Shares carry no strike/expiry/right at all — never a zero-filled one. */}
+        {multiLeg && (
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            fullWidth
+            value={draft.kind}
+            onChange={(_, v) => v && onPatch({ kind: v as InstrumentKind })}
+            aria-label={`instrument${suffix}`}
+            data-testid={`entry-kind-${index}`}
+          >
+            <ToggleButton value="option">Option</ToggleButton>
+            <ToggleButton value="equity">Shares</ToggleButton>
+          </ToggleButtonGroup>
+        )}
+
+        {isOption && (
+          <>
+            <Box>
+              <FieldLabel htmlFor={id('entry-expiration')}>Expiration</FieldLabel>
+              <Select
+                id={id('entry-expiration')}
+                size="small"
+                fullWidth
+                value={draft.expiration}
+                onChange={(e) => onPatch({ expiration: String(e.target.value) })}
+                sx={inputSx}
+                inputProps={{ 'aria-label': `Expiration${suffix}` }}
+              >
+                {expirations.map((d) => (
+                  <MenuItem key={d} value={d}>
+                    {d}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            <Box>
+              <FieldLabel htmlFor={id('entry-strike')}>Strike</FieldLabel>
+              <Select
+                id={id('entry-strike')}
+                size="small"
+                fullWidth
+                value={draft.strike === '' ? '' : String(draft.strike)}
+                onChange={(e) => onPatch({ strike: Number(e.target.value) })}
+                sx={inputSx}
+                inputProps={{ 'aria-label': `Strike${suffix}` }}
+              >
+                {strikes.map((k) => (
+                  <MenuItem key={k} value={String(k)}>
+                    ${k}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            {/* Call / Put — active CALL = success green, active PUT = error red. A DOMAIN fact on an
+                instrument control, not a claim about money: the tint ban is on POSITION and P&L
+                surfaces (SPEC §4 Design direction 4). */}
+            <ToggleButtonGroup
+              exclusive
+              size="small"
+              value={draft.right}
+              onChange={(_, v) => v && onPatch({ right: v as OptionRight })}
+              fullWidth
+              sx={{
+                '& .MuiToggleButton-root.Mui-selected': { color: 'common.white' },
+                '& .MuiToggleButton-root[value="call"].Mui-selected': {
+                  bgcolor: 'success.main',
+                  '&:hover': { bgcolor: 'success.dark' },
+                },
+                '& .MuiToggleButton-root[value="put"].Mui-selected': {
+                  bgcolor: 'error.main',
+                  '&:hover': { bgcolor: 'error.dark' },
+                },
+              }}
+            >
+              <ToggleButton value="call">Call</ToggleButton>
+              <ToggleButton value="put">Put</ToggleButton>
+            </ToggleButtonGroup>
+          </>
+        )}
+
+        <Box>
+          <FieldLabel htmlFor={id('entry-qty')}>{isOption ? 'Quantity' : 'Shares'}</FieldLabel>
+          <TextField
+            id={id('entry-qty')}
+            size="small"
+            fullWidth
+            type="number"
+            value={draft.qty}
+            onChange={(e) => onPatch({ qty: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
+            slotProps={{
+              // `min: 1` — NO FORM FIELD ACCEPTS A NEGATIVE QUANTITY (AC-11). Direction is the
+              // Buy/Sell control above, and a sign convention here would give it two homes.
+              htmlInput: { min: 1, 'aria-label': `Quantity${suffix}` },
+            }}
+            sx={inputSx}
+          />
+        </Box>
+
+        {showPrice && (
+          <Box>
+            <FieldLabel htmlFor={id('entry-leg-price')}>
+              {isOption ? 'Price per contract' : 'Average share price'}
+            </FieldLabel>
+            <TextField
+              id={id('entry-leg-price')}
+              size="small"
+              fullWidth
+              type="number"
+              value={draft.price}
+              onChange={(e) =>
+                onPatch({ price: e.target.value === '' ? '' : Number(e.target.value) })
+              }
+              slotProps={{
+                htmlInput: { min: 0, 'aria-label': `Price leg ${index + 1}` },
+              }}
+              sx={inputSx}
+            />
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
 interface Props {
   open: boolean;
   ticker: string;
@@ -192,6 +451,17 @@ interface Props {
    *  (Positions). Controls the limit-mode copy + confirm label ONLY — the emitted payload is the same
    *  mode-tagged union either way. Absent (Ticker), a limit opens immediately at your price. */
   restingLimit?: boolean;
+  /**
+   * THE SIM MULTI-LEG VARIANT (SPEC §4 Flows 1, AC-4..AC-13). Enables leg rows: add/remove, a
+   * per-leg Buy/Sell control, a per-leg instrument kind, and per-leg prices.
+   *
+   * ONLY a host that persists a `SimPosition` may turn this on. The Ticker page's single-trade
+   * ghost engine can hold neither a second leg nor a short side, so it leaves this OFF and the
+   * dialog is byte-identical to shipped there; it joins at the F18 cutover, when that page starts
+   * writing through `usePortfolio`. This is a SIM capability flag and nothing else — a real-money
+   * entry surface is a structurally separate component, not a third value of a mode here.
+   */
+  multiLeg?: boolean;
   /** ai-rec-backtest-orders: the additive order-variant seam. Absent ⇒ byte-identical to shipped. */
   orderPlan?: OrderPlan;
   /** Order-variant confirm (required when `orderPlan` is passed). */
@@ -232,6 +502,7 @@ export function TradeEntryDialog({
   spot,
   prefill,
   restingLimit = false,
+  multiLeg = false,
   orderPlan,
   onConfirmOrder,
   orderError,
@@ -241,10 +512,19 @@ export function TradeEntryDialog({
   // Phones get a full-screen sheet (this form has many fields); tablets+ keep the centered dialog.
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [mode, setMode] = useState<FillMode>('manual');
-  const [expiration, setExpiration] = useState('');
-  const [strike, setStrike] = useState<number | ''>('');
-  const [right, setRight] = useState<OptionRight>('call');
-  const [qty, setQty] = useState(1);
+  // THE LEG DRAFTS. Seeded to exactly ONE row, so the single-leg path is byte-identical to shipped;
+  // a multi-leg entry is the SAME array with more elements — never a second dialog, never a spread
+  // builder, never a wizard (`[single-shared-sim-entry-dialog]`, AC-8).
+  const [legs, setLegs] = useState<LegDraft[]>(() => [newDraft()]);
+  const head = legs[0];
+  const patchLeg = (index: number, patch: Partial<LegDraft>) =>
+    setLegs((prev) => prev.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+  // The first leg's contract facts drive the shipped single-contract resolver + the ORDER variant,
+  // both of which are single-option by construction.
+  const expiration = head.expiration;
+  const strike = head.strike;
+  const right = head.right;
+  const qty = head.qty;
   const [stop, setStop] = useState<number | ''>('');
   const [target, setTarget] = useState<number | ''>('');
   const [manualPrice, setManualPrice] = useState<number | ''>('');
@@ -271,10 +551,16 @@ export function TradeEntryDialog({
       : '';
     const exp = prefill?.expiration || expirations[0] || '';
     setMode('manual');
-    setExpiration(exp);
-    setStrike(prefill?.strike ?? nearest);
-    setRight(prefill?.right ?? 'call');
-    setQty(prefill?.qty && prefill.qty >= 1 ? prefill.qty : 1);
+    // ONE row, always — the multi-leg variant is entered by ADDING to this array, never by opening
+    // something else.
+    setLegs([
+      newDraft({
+        expiration: exp,
+        strike: prefill?.strike ?? nearest,
+        right: prefill?.right ?? 'call',
+        qty: prefill?.qty && prefill.qty >= 1 ? prefill.qty : 1,
+      }),
+    ]);
     setStop(prefill?.stop ?? '');
     setTarget(prefill?.target ?? '');
     setManualPrice('');
@@ -329,9 +615,67 @@ export function TradeEntryDialog({
   }, [open, ticker, expiration, strike, right, spot]);
 
   // ---- Derived previews / guards per mode ------------------------------------------------------
-  const manualCost = manualPrice !== '' ? Number(manualPrice) * 100 * qty : null;
-  const marketCost = marketFill ? marketFill.mark * 100 * qty : null;
-  const limitCost = limitPrice !== '' ? Number(limitPrice) * 100 * qty : null;
+  //
+  // MARKET and LIMIT resolve ONE option contract, and a per-unit limit has no defined meaning for a
+  // structure (`composeMark.netLimitDollarsFor` carries that ruling). So both modes are available
+  // only for a single OPTION leg — and the boundary is STATED to the trader, never applied silently.
+  const singleOptionEntry = legs.length === 1 && legs[0].kind === 'option';
+  const effectiveMode: FillMode = singleOptionEntry ? mode : 'manual';
+
+  /**
+   * The per-unit price THIS leg would open at, or `null` when it is not known yet. For the shipped
+   * single-option path that is the mode's price; for every additional leg it is the trader's own
+   * typed per-leg price. There is NO back-solved, allocated or apportioned price anywhere: that
+   * would fabricate an instrument fact in the same audit spine where the lift refuses to backfill an
+   * invented `entry_time`, and the same lift is reused by the archive import.
+   */
+  const priceOfDraft = (d: LegDraft, index: number): number | null => {
+    if (singleOptionEntry && index === 0) {
+      if (effectiveMode === 'manual') return manualPrice === '' ? null : Number(manualPrice);
+      if (effectiveMode === 'market') return marketFill?.mark ?? null;
+      return limitPrice === '' ? null : Number(limitPrice);
+    }
+    return d.price === '' ? null : Number(d.price);
+  };
+
+  const draftPrices = legs.map(priceOfDraft);
+  const everyLegPriced = draftPrices.every((p) => p != null);
+
+  /** The drafted structure, as a `SimPosition` the SHARED recogniser and leg arithmetic can read. */
+  const draftPosition: SimPosition = {
+    id: 'draft',
+    legs: legs.map((d, i): Leg => {
+      const isOption = d.kind === 'option';
+      return {
+        id: d.key,
+        kind: d.kind,
+        ticker,
+        side: d.side,
+        qty: d.qty,
+        multiplier: multiplierFor(d.kind),
+        entry_price: draftPrices[i] ?? 0,
+        entry_basis: 'manual',
+        expiration: isOption ? d.expiration || null : null,
+        strike: isOption ? (d.strike === '' ? null : Number(d.strike)) : null,
+        right: isOption ? d.right : null,
+      };
+    }),
+    opened_time: '',
+    status: 'open',
+    entry_mode: 'manual',
+    schema_version: 3,
+  };
+
+  // AC-18 — the derived name follows the legs immediately, with no reload: it is recomputed from
+  // the drafts on every render by the SAME recogniser the book uses. Never stored, never chosen.
+  const draftStructureLabel = STRUCTURE_LABELS[structureKindOf(draftPosition)];
+
+  /**
+   * The running net, in DOLLARS, > 0 debit and < 0 credit — or `null` until EVERY leg has a price.
+   * NEVER a partial sum (AC-10): a partial net is not merely incomplete, it can be sign-inverted.
+   */
+  const runningNet = everyLegPriced ? netEntryCost(draftPosition) : null;
+  const netPhrase = runningNet == null ? DIALOG_NET_INCOMPLETE : netEntryPhrase(runningNet);
   // The live-mark hint for the Limit preview: the same resolved mid/theoretical mark the market fill
   // uses (resolveMarketFill is the single source of that value).
   const liveMark = marketFill?.mark ?? null;
@@ -357,41 +701,47 @@ export function TradeEntryDialog({
     isOrder &&
     (goodTil === '' || goodTil < todayIso() || (expiration !== '' && goodTil > expiration));
 
+  /** Every OPTION leg must name its contract; an equity leg has no contract to name. */
+  const everyLegAddressed = legs.every(
+    (d) => d.qty >= 1 && (d.kind === 'equity' || (d.strike !== '' && !!d.expiration)),
+  );
+
   const canConfirm = (() => {
-    if (strike === '' || !expiration || qty < 1) return false;
+    if (!everyLegAddressed) return false;
     if (isOrder) {
       if (goodTilInvalid) return false;
       if (priceMode === 'limit') return limitPrice !== '' && Number(limitPrice) > 0;
       return true; // market-on-trigger needs no price
     }
-    if (mode === 'manual') return manualPrice !== '' && Number(manualPrice) > 0;
-    if (mode === 'market') return marketFill != null && fillState === 'idle';
-    return limitPrice !== '' && Number(limitPrice) > 0; // limit
+    if (effectiveMode === 'market') return marketFill != null && fillState === 'idle';
+    // AC-10 — a partial net never confirms: every leg carries a price, or nothing opens.
+    return everyLegPriced && draftPrices.every((p) => (p as number) > 0);
   })();
 
   // "Place limit order" only when the host actually rests the order (Positions lifecycle).
+  // THE ACTION'S NAME NEVER CHANGES PER CASE otherwise — one leg or six, it reads the same.
   const confirmLabel = isOrder
     ? ORDER_CONFIRM_LABEL
-    : restingLimit && mode === 'limit'
+    : restingLimit && effectiveMode === 'limit'
       ? 'Place limit order'
       : 'Open simulated position';
-  const priceLabel = mode === 'limit' ? 'Limit price' : 'Manual price';
+  const priceLabel = effectiveMode === 'limit' ? 'Limit price' : 'Manual price';
 
   const handleConfirm = () => {
-    if (strike === '' || !expiration) return;
+    if (!everyLegAddressed) return;
     const base: SubmitBase = {
       ticker,
-      expiration,
-      strike: Number(strike),
-      right,
-      qty,
       stop: stop === '' ? null : Number(stop),
       target: target === '' ? null : Number(target),
     };
     if (isOrder) {
-      if (goodTilInvalid) return;
+      if (goodTilInvalid || strike === '' || !expiration) return;
       onConfirmOrder?.({
         ...base,
+        expiration,
+        strike: Number(strike),
+        right,
+        qty,
         trigger: orderTrigger,
         limitPrice: priceMode === 'limit' && limitPrice !== '' ? Number(limitPrice) : null,
         expiresAt: goodTilToExpiresAt(goodTil),
@@ -399,19 +749,40 @@ export function TradeEntryDialog({
       });
       return;
     }
-    if (mode === 'manual' && manualPrice !== '') {
-      onConfirm({ ...base, entryMode: 'manual', price: Number(manualPrice) });
-    } else if (mode === 'market' && marketFill) {
+
+    // ONE payload shape for one leg and for six. `multiplier` is decided here, at construction, and
+    // travels with the leg — it is never re-derived from `kind` downstream.
+    const legInputs: LegInput[] = legs.map((d, i) => ({
+      kind: d.kind,
+      ticker,
+      side: d.side,
+      qty: d.qty,
+      multiplier: multiplierFor(d.kind),
+      price: draftPrices[i],
+      expiration: d.kind === 'option' ? d.expiration || null : null,
+      strike: d.kind === 'option' ? (d.strike === '' ? null : Number(d.strike)) : null,
+      right: d.kind === 'option' ? d.right : null,
+    }));
+
+    if (effectiveMode === 'market') {
+      if (!marketFill) return;
       // Safe narrow: `resolveMarketFill` only ever returns `snapshot` or `theoretical`.
       onConfirm({
         ...base,
         entryMode: 'market',
+        legs: legInputs,
         resolvedMark: marketFill.mark,
         resolvedBasis: marketFill.basis as MarketFillBasis,
       });
-    } else if (mode === 'limit' && limitPrice !== '') {
-      onConfirm({ ...base, entryMode: 'limit', limitPrice: Number(limitPrice) });
+      return;
     }
+    if (effectiveMode === 'limit') {
+      if (limitPrice === '') return;
+      onConfirm({ ...base, entryMode: 'limit', legs: legInputs, limitPrice: Number(limitPrice) });
+      return;
+    }
+    if (!everyLegPriced) return;
+    onConfirm({ ...base, entryMode: 'manual', legs: legInputs });
   };
 
   // Recessed field fill (Figma). Matches BOTH the TextField case (`.MuiOutlinedInput-root` is a
@@ -518,99 +889,103 @@ export function TradeEntryDialog({
           )}
 
           {/* Fill-mode segmented control (shipped 3-mode — replaced by the 2-option entry-price
-              control in the ORDER VARIANT ONLY, §3.1-6). */}
+              control in the ORDER VARIANT ONLY, §3.1-6). Market/Limit resolve ONE option contract,
+              so once the entry is not a single option leg they are refused VISIBLY, never hidden. */}
           {!isOrder && (
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={mode}
-              onChange={(_, v) => v && setMode(v)}
-              fullWidth
-              aria-label="fill mode"
-            >
-              <ToggleButton value="manual">Manual price</ToggleButton>
-              <ToggleButton value="market">Market</ToggleButton>
-              <ToggleButton value="limit">Limit</ToggleButton>
-            </ToggleButtonGroup>
+            <Box>
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={effectiveMode}
+                onChange={(_, v) => v && singleOptionEntry && setMode(v)}
+                fullWidth
+                aria-label="fill mode"
+              >
+                <ToggleButton value="manual">Manual price</ToggleButton>
+                <ToggleButton
+                  value="market"
+                  aria-disabled={!singleOptionEntry}
+                  title={singleOptionEntry ? undefined : DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
+                >
+                  Market
+                </ToggleButton>
+                <ToggleButton
+                  value="limit"
+                  aria-disabled={!singleOptionEntry}
+                  title={singleOptionEntry ? undefined : DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
+                >
+                  Limit
+                </ToggleButton>
+              </ToggleButtonGroup>
+              {!singleOptionEntry && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                  data-testid="entry-fill-mode-note"
+                >
+                  {DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
+                </Typography>
+              )}
+            </Box>
           )}
 
-          {/* Expiration. */}
-          <Box>
-            <FieldLabel htmlFor="entry-expiration">Expiration</FieldLabel>
-            <Select
-              id="entry-expiration"
-              size="small"
-              fullWidth
-              value={expiration}
-              onChange={(e) => setExpiration(String(e.target.value))}
-              sx={inputSx}
-              inputProps={{ 'aria-label': 'Expiration' }}
-            >
-              {expirations.map((d) => (
-                <MenuItem key={d} value={d}>
-                  {d}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
+          {/* THE DERIVED NAME (AC-18) — read from the drafted legs by the SAME recogniser the book
+              uses, recomputed on every keystroke, never stored and never chosen. Neutral register:
+              a structure name is not a direction, so it is never tinted. */}
+          {!isOrder && multiLeg && (
+            <Box>
+              <FieldLabel>Structure</FieldLabel>
+              <Chip
+                size="small"
+                variant="outlined"
+                label={draftStructureLabel}
+                data-testid="entry-structure-name"
+                sx={{ borderColor: 'divider', color: 'text.secondary' }}
+              />
+            </Box>
+          )}
 
-          {/* Strike. */}
-          <Box>
-            <FieldLabel htmlFor="entry-strike">Strike</FieldLabel>
-            <Select
-              id="entry-strike"
-              size="small"
-              fullWidth
-              value={strike === '' ? '' : String(strike)}
-              onChange={(e) => setStrike(Number(e.target.value))}
-              sx={inputSx}
-              inputProps={{ 'aria-label': 'Strike' }}
-            >
-              {strikes.map((s) => (
-                <MenuItem key={s} value={String(s)}>
-                  ${s}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
-
-          {/* Call / Put — active CALL = success green, active PUT = error red. */}
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            value={right}
-            onChange={(_, v) => v && setRight(v)}
-            fullWidth
-            sx={{
-              '& .MuiToggleButton-root.Mui-selected': { color: 'common.white' },
-              '& .MuiToggleButton-root[value="call"].Mui-selected': {
-                bgcolor: 'success.main',
-                '&:hover': { bgcolor: 'success.dark' },
-              },
-              '& .MuiToggleButton-root[value="put"].Mui-selected': {
-                bgcolor: 'error.main',
-                '&:hover': { bgcolor: 'error.dark' },
-              },
-            }}
-          >
-            <ToggleButton value="call">Call</ToggleButton>
-            <ToggleButton value="put">Put</ToggleButton>
-          </ToggleButtonGroup>
-
-          {/* Quantity. */}
-          <Box>
-            <FieldLabel htmlFor="entry-qty">Quantity</FieldLabel>
-            <TextField
-              id="entry-qty"
-              size="small"
-              fullWidth
-              type="number"
-              value={qty}
-              onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-              slotProps={{ htmlInput: { min: 1, 'aria-label': 'Quantity' } }}
-              sx={inputSx}
+          {/* THE LEG ROWS. One row for a plain long call, six for an exotic — the SAME rows, the
+              SAME dialog, no wizard and no step flow (AC-8, AC-13). */}
+          {legs.map((d, i) => (
+            <LegFields
+              key={d.key}
+              draft={d}
+              index={i}
+              total={legs.length}
+              multiLeg={!isOrder && multiLeg}
+              expirations={expirations}
+              strikes={strikes}
+              inputSx={inputSx}
+              // The single-option path keeps the SHIPPED mode-scoped price field below; every other
+              // shape prices per leg, because that is the only honest way to net a structure.
+              showPrice={!isOrder && !singleOptionEntry}
+              onPatch={(patch) => patchLeg(i, patch)}
+              onRemove={() => setLegs((prev) => prev.filter((_, j) => j !== i))}
             />
-          </Box>
+          ))}
+
+          {/* Add a leg — INSIDE this dialog. NO leg-count cap is enforced or messaged (AC-13). */}
+          {!isOrder && multiLeg && (
+            <Button
+              size="small"
+              onClick={() =>
+                setLegs((prev) => [
+                  ...prev,
+                  newDraft({
+                    expiration: prev[0]?.expiration ?? '',
+                    strike: prev[0]?.strike ?? '',
+                    right: prev[0]?.right ?? 'call',
+                    side: 'short',
+                  }),
+                ])
+              }
+              data-testid="entry-add-leg"
+              sx={{ alignSelf: 'flex-start', color: 'info.main' }}
+            >
+              + Add leg
+            </Button>
+          )}
 
           {/* ORDER VARIANT — the entry trigger section (§3.1-5). */}
           {isOrder && (
@@ -720,8 +1095,9 @@ export function TradeEntryDialog({
             </Box>
           )}
 
-          {/* Mode-scoped price (hidden in Market mode). Manual and Limit keep separate typed values. */}
-          {!isOrder && mode !== 'market' && (
+          {/* Mode-scoped price (hidden in Market mode). Manual and Limit keep separate typed values.
+              Only the SINGLE-OPTION path uses it — every other shape prices per leg above. */}
+          {!isOrder && singleOptionEntry && effectiveMode !== 'market' && (
             <Box>
               <FieldLabel htmlFor="entry-price">{priceLabel}</FieldLabel>
               <TextField
@@ -729,10 +1105,10 @@ export function TradeEntryDialog({
                 size="small"
                 fullWidth
                 type="number"
-                value={mode === 'limit' ? limitPrice : manualPrice}
+                value={effectiveMode === 'limit' ? limitPrice : manualPrice}
                 onChange={(e) => {
                   const v = e.target.value === '' ? ('' as const) : Number(e.target.value);
-                  if (mode === 'limit') setLimitPrice(v);
+                  if (effectiveMode === 'limit') setLimitPrice(v);
                   else setManualPrice(v);
                 }}
                 slotProps={{ htmlInput: { 'aria-label': priceLabel } }}
@@ -812,7 +1188,21 @@ export function TradeEntryDialog({
 
           {/* Fill preview — per mode, honest about the basis (S6). Not part of the order variant
               (an order fills LATER, on live crosses — the §3.1-6 helpers state the semantics). */}
-          {!isOrder && (
+          {!isOrder && !singleOptionEntry ? (
+            // THE MULTI-LEG / EQUITY NET. Computed from the trader's own per-leg prices and SAID to
+            // be — the app never asks for a net and never splits one across legs. Until every leg
+            // has a price it reads INCOMPLETE, never a partial sum (AC-9, AC-10, AC-22).
+            <Box>
+              <Typography
+                variant="body2"
+                sx={{ color: runningNet == null ? 'text.secondary' : 'text.primary' }}
+                data-testid="entry-net"
+              >
+                {runningNet == null ? netPhrase : `${netPhrase} · ${DIALOG_NET_COMPUTED}`}
+              </Typography>
+              <Chip size="small" variant="outlined" sx={{ mt: 0.5 }} label="user-entered price" />
+            </Box>
+          ) : !isOrder ? (
             <Box>
               {fillState === 'loading' ? (
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -822,15 +1212,18 @@ export function TradeEntryDialog({
                 <Typography variant="body2" color="error">
                   Couldn't load the chain for entry — try again.
                 </Typography>
-              ) : mode === 'manual' ? (
+              ) : effectiveMode === 'manual' ? (
                 <>
                   <Typography
                     variant="body2"
                     sx={{ color: manualPrice === '' ? 'text.secondary' : 'text.primary' }}
+                    data-testid="entry-net"
                   >
                     {manualPrice === ''
                       ? 'Enter a price — opens at exactly the price you type.'
-                      : `Opens at your price $${Number(manualPrice).toFixed(2)} · Cost $${manualCost?.toFixed(0)} — user-entered, not a market quote.`}
+                      : runningNet != null && runningNet < 0
+                        ? `Opens at your price $${Number(manualPrice).toFixed(2)} · ${netPhrase} — you receive this at open.`
+                        : `Opens at your price $${Number(manualPrice).toFixed(2)} · ${netPhrase} — user-entered, not a market quote.`}
                   </Typography>
                   <Chip
                     size="small"
@@ -847,7 +1240,7 @@ export function TradeEntryDialog({
                     </Typography>
                   )}
                 </>
-              ) : mode === 'market' ? (
+              ) : effectiveMode === 'market' ? (
                 fillState === 'no_resolvable' ? (
                   <Typography variant="body2" color="error">
                     No quote or theoretical mark available for this contract — a market order can't
@@ -855,9 +1248,12 @@ export function TradeEntryDialog({
                   </Typography>
                 ) : marketFill ? (
                   <>
-                    <Typography variant="body2" sx={{ color: 'text.primary' }}>
-                      Fill: mid ${marketFill.mark.toFixed(2)} · Cost ${marketCost?.toFixed(0)} (mid
-                      × 100 × qty)
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.primary' }}
+                      data-testid="entry-net"
+                    >
+                      {`Fill: mid $${marketFill.mark.toFixed(2)} · ${netPhrase} (mid × 100 × qty)`}
                     </Typography>
                     <Chip
                       size="small"
@@ -905,14 +1301,15 @@ export function TradeEntryDialog({
                 <Typography
                   variant="body2"
                   sx={{ color: limitPrice === '' ? 'text.secondary' : 'text.primary' }}
+                  data-testid="entry-net"
                 >
                   {limitPrice === ''
                     ? 'Enter a limit price to see the fill.'
-                    : `Fills at your limit $${Number(limitPrice).toFixed(2)} · Cost $${limitCost?.toFixed(0)} (price × 100 × qty)`}
+                    : `Fills at your limit $${Number(limitPrice).toFixed(2)} · ${netPhrase}`}
                 </Typography>
               )}
             </Box>
-          )}
+          ) : null}
 
           {/* ORDER VARIANT — a refused order write (faulted store) surfaces inline; nothing partial. */}
           {isOrder && orderError && (

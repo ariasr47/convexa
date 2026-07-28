@@ -169,6 +169,7 @@ export function PositionsPanel({
         spot={m?.price ?? 0}
         prefill={entryPrefill}
         restingLimit
+        multiLeg
         onClose={() => onEntryOpen(false)}
         onConfirm={onConfirm}
       />

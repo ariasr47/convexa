@@ -10,6 +10,8 @@ import {
   composePositionMark,
   compositeLimitWouldFill,
   legContractKey,
+  netLimitDollarsFor,
+  type NetLimitDollars,
 } from './composeMark';
 import {
   FX_CALL_DEBIT_SPREAD,
@@ -190,13 +192,17 @@ describe('AC-44 — a composite limit never fills off a stale leg', () => {
     ],
     { status: 'pending', limit_price: 600 },
   );
+  // The freshness rule is what these cases exercise; the limit itself is held constant at a dollar
+  // net the position comfortably crosses. `as NetLimitDollars` appears ONLY here, in the spec, and
+  // is exactly why the production type is branded — see the units cases below.
+  const NET_600 = 600 as NetLimitDollars;
 
   it('fills when EVERY leg is live, non-frozen and non-last_known and the net crosses', () => {
     const marks = new Map([
       ['a', mr(9, 'snapshot')],
       ['b', mr(3, 'modeled')],
     ]);
-    expect(compositeLimitWouldFill(marks, p, 600)).toBe(true);
+    expect(compositeLimitWouldFill(marks, p, NET_600)).toBe(true);
   });
 
   it('refuses when ANY leg is last_known', () => {
@@ -204,7 +210,7 @@ describe('AC-44 — a composite limit never fills off a stale leg', () => {
       ['a', mr(9, 'snapshot')],
       ['b', mr(3, 'last_known')],
     ]);
-    expect(compositeLimitWouldFill(marks, p, 600)).toBe(false);
+    expect(compositeLimitWouldFill(marks, p, NET_600)).toBe(false);
   });
 
   it('refuses when ANY leg is frozen', () => {
@@ -212,7 +218,7 @@ describe('AC-44 — a composite limit never fills off a stale leg', () => {
       ['a', mr(9, 'snapshot', true)],
       ['b', mr(3, 'modeled')],
     ]);
-    expect(compositeLimitWouldFill(marks, p, 600)).toBe(false);
+    expect(compositeLimitWouldFill(marks, p, NET_600)).toBe(false);
   });
 
   it('refuses when ANY leg is unresolved', () => {
@@ -220,7 +226,7 @@ describe('AC-44 — a composite limit never fills off a stale leg', () => {
       ['a', mr(9, 'snapshot')],
       ['b', null],
     ]);
-    expect(compositeLimitWouldFill(marks, p, 600)).toBe(false);
+    expect(compositeLimitWouldFill(marks, p, NET_600)).toBe(false);
   });
 
   it('refuses when the net has not crossed the limit', () => {
@@ -228,6 +234,88 @@ describe('AC-44 — a composite limit never fills off a stale leg', () => {
       ['a', mr(11, 'snapshot')],
       ['b', mr(3, 'modeled')],
     ]);
-    expect(compositeLimitWouldFill(marks, p, 600)).toBe(false);
+    expect(compositeLimitWouldFill(marks, p, NET_600)).toBe(false);
+  });
+});
+
+/**
+ * F15 Step 3b — the UNITS DEFECT, closed by construction.
+ *
+ * The shipped function compared a DOLLAR net against a PER-UNIT limit. Left alone it silently stops
+ * every resting limit from ever filling: no error, no throw, nothing red. These cases pin both the
+ * conversion and the boundary it is defined on.
+ */
+describe('netLimitDollarsFor — a per-unit limit becomes a dollar net, or nothing at all', () => {
+  it('a per-unit limit is CONVERTED before comparison — the two units are never mixed', () => {
+    const single = mkPosition([mkLeg({ id: 'a', qty: 2, multiplier: 100 })], {
+      status: 'pending',
+      limit_price: 8.4,
+    });
+    // 8.40 per unit x 100 x 2 contracts = $1680 of net, not $8.40.
+    expect(netLimitDollarsFor(single)).toBeCloseTo(1680, 6);
+  });
+
+  it('a single-leg long option still fills exactly when mark <= limit — byte-identical to shipped', () => {
+    const single = mkPosition([mkLeg({ id: 'a', qty: 1, multiplier: 100 })], {
+      status: 'pending',
+      limit_price: 8.4,
+    });
+    const net = netLimitDollarsFor(single) as NetLimitDollars;
+    const at = new Map([['a', mr(8.4, 'snapshot')]]);
+    const below = new Map([['a', mr(8.39, 'snapshot')]]);
+    const above = new Map([['a', mr(8.41, 'snapshot')]]);
+    expect(compositeLimitWouldFill(at, single, net)).toBe(true); // mark == limit
+    expect(compositeLimitWouldFill(below, single, net)).toBe(true); // mark <  limit
+    expect(compositeLimitWouldFill(above, single, net)).toBe(false); // mark >  limit
+  });
+
+  it('a SHORT single leg compares against a NEGATIVE net, and the sign is not lost', () => {
+    const shortLeg = mkPosition([mkLeg({ id: 'a', side: 'short', qty: 1, multiplier: 100 })], {
+      status: 'pending',
+      limit_price: 6,
+    });
+    const net = netLimitDollarsFor(shortLeg) as NetLimitDollars;
+    expect(net).toBeCloseTo(-600, 6); // sold: a CREDIT, so the net is negative
+    // A short leg's net_mark rises (toward 0) as the option gets cheaper, so it crosses a -600
+    // limit only while the mark is at or above 6.00. Losing that sign would invert the fill rule.
+    expect(compositeLimitWouldFill(new Map([['a', mr(6.5, 'snapshot')]]), shortLeg, net)).toBe(
+      true,
+    );
+    expect(compositeLimitWouldFill(new Map([['a', mr(5.5, 'snapshot')]]), shortLeg, net)).toBe(
+      false,
+    );
+  });
+
+  it('a MULTI-LEG position has no interpretable per-unit limit, so it never fills off one', () => {
+    const spread = mkPosition(
+      [mkLeg({ id: 'a' }), mkLeg({ id: 'b', side: 'short', strike: 420 })],
+      { status: 'pending', limit_price: 8.4 },
+    );
+    // Not 0, not a guess — ABSENT. The naive "same per-unit price on every leg" conversion would
+    // net to exactly 0 here and fill on a number the trader never meant.
+    expect(netLimitDollarsFor(spread)).toBeNull();
+  });
+
+  it('an absent or non-finite limit yields null rather than a phantom zero', () => {
+    const noLimit = mkPosition([mkLeg({ id: 'a' })], { status: 'pending' });
+    expect(netLimitDollarsFor(noLimit)).toBeNull();
+    expect(
+      netLimitDollarsFor(
+        mkPosition([mkLeg({ id: 'a' })], { status: 'pending', limit_price: Number.NaN }),
+      ),
+    ).toBeNull();
+  });
+
+  it('THE UNITS BUG IS UNREPRESENTABLE — a per-unit price cannot be passed at all', () => {
+    const single = mkPosition([mkLeg({ id: 'a' })], { status: 'pending', limit_price: 8.4 });
+    const marks = new Map([['a', mr(8, 'snapshot')]]);
+    // @ts-expect-error a raw per-unit `number` is not a `NetLimitDollars`. If this line ever STOPS
+    // erroring, the brand has been weakened and the defect is representable again — `nx typecheck`
+    // fails on an unused @ts-expect-error, so this assertion cannot rot.
+    compositeLimitWouldFill(marks, single, single.limit_price as number);
+    // …and the sanctioned route still works.
+    expect(
+      compositeLimitWouldFill(marks, single, netLimitDollarsFor(single) as NetLimitDollars),
+    ).toBe(true);
   });
 });

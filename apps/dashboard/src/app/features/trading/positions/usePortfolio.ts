@@ -26,10 +26,10 @@ import {
   TrackedContract,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { compositeLimitWouldFill, legContractKey } from './composeMark';
+import { compositeLimitWouldFill, legContractKey, netLimitDollarsFor } from './composeMark';
 import { cloneConfig, configEqual } from './defaults';
 import { LIMIT_FILL_BASIS, resolveManualFill } from './entry';
-import { legValue, type Leg, type LegId, type SimPosition } from './leg';
+import type { InstrumentKind, Leg, LegId, LegSide, SimPosition } from './leg';
 import { liftLegacyRecord } from './migrate';
 import {
   allPositions,
@@ -58,22 +58,48 @@ import {
 import { usePlTrends } from './useTrends';
 import { buildPositionView, type PositionView } from './view';
 
-export interface OpenPositionInput {
+/**
+ * ONE drafted leg, as the shared entry dialog emits it. `price` is PER-UNIT and POSITIVE — direction
+ * lives in `side` and nowhere else (SPEC §2.1's hard stands), and `multiplier` is set at
+ * CONSTRUCTION (100 for a contract, 1 for equity) and stored, never re-derived downstream.
+ *
+ * `price: null` means the trader has not typed one yet. The dialog will not confirm in that state —
+ * a partial net is never shown and never saved.
+ */
+export interface LegInput {
+  kind: InstrumentKind;
   ticker: string;
-  expiration: string;
-  strike: number;
-  right: OptionRight;
+  side: LegSide;
   qty: number;
+  multiplier: number;
+  price: number | null;
+  expiration: string | null;
+  strike: number | null;
+  right: OptionRight | null;
+}
+
+/**
+ * A SINGLE-LEG ENTRY IS A ONE-ELEMENT ARRAY, so there is exactly ONE open path — never a single-leg
+ * path plus a multi-leg path (SPEC §2.7 *Entry input shape*). That is what keeps
+ * `single-shared-sim-entry-dialog` a variant rather than a fork at the data boundary.
+ */
+export interface OpenPositionInput {
+  legs: LegInput[];
   entryMode: EntryMode;
-  /** manual: the typed price. market: ignored (resolved). limit: the limit price. */
-  price?: number;
+  /** limit: the PER-UNIT limit price. Single-leg only — see `composeMark.netLimitDollarsFor`. */
   limitPrice?: number;
-  /** Pre-resolved fill (market mode) so the dialog's own fetch isn't repeated. */
+  /** Pre-resolved fill (market mode, single leg) so the dialog's own fetch isn't repeated. */
   resolvedMark?: number;
   resolvedBasis?: EntryBasis;
   stop?: number | null;
   target?: number | null;
 }
+
+/** Refusals `openPosition` can return. Each is SHOWN to the trader; none is ever swallowed. */
+export const OPEN_REFUSED_MULTI_UNDERLYING =
+  'Every leg of a position must be on the same underlying — no position was opened.';
+export const OPEN_REFUSED_NO_LEGS = 'No legs to open — no position was opened.';
+export const OPEN_REFUSED_NO_MARKET_FILL = "Couldn't fill at market — no position was opened.";
 
 export interface OpenResult {
   ok: boolean;
@@ -85,18 +111,6 @@ export interface OpenResult {
 interface ContractLive {
   tracked: TrackedContract | null;
   unavailable: boolean;
-}
-
-/**
- * TRANSITIONAL UNITS BRIDGE. A durable record's `limit_price` is a PER-UNIT price (SPEC §4 *Copy*:
- * `Fills at your limit $8.40 · Net debit $840`), while `composePositionMark.net_mark` is a DOLLAR
- * net. Handing the per-unit number straight to `compositeLimitWouldFill` would compare $840 of mark
- * against a $8.40 limit and silently stop every shipped resting limit from ever filling — so the
- * limit is converted to its net-dollar equivalent through the SAME leg arithmetic the mark uses.
- * For the shipped single-leg long option this reduces to `mark <= limit`, byte-identically.
- */
-function netLimitOf(p: SimPosition, limitPrice: number): number {
-  return p.legs.reduce((sum, l) => sum + legValue(l, limitPrice), 0);
 }
 
 export function usePortfolio(
@@ -326,13 +340,18 @@ export function usePortfolio(
     if (streamOffline || !isLive) return; // no fills off a non-live mark
     for (const view of views) {
       const sp = view.position;
-      if (sp.status !== 'pending' || sp.limit_price == null) continue;
+      if (sp.status !== 'pending') continue;
+      // The units conversion lives in ONE place and is the ONLY way to obtain the branded dollar
+      // net (`composeMark.ts`). `null` = this position has no interpretable limit (none recorded,
+      // or more than one leg), so it never fills off one.
+      const netLimit = netLimitDollarsFor(sp);
+      if (netLimit == null) continue;
       const marks = legMarksById.get(sp.id);
       const legacy = positionById.get(sp.id);
       if (!marks || !legacy) continue;
       // The COMPOSITE rule: every leg must be live, non-frozen and non-`last_known`, so a structure
       // with one stale leg never fills (SPEC §2.5, AC-44).
-      if (compositeLimitWouldFill(marks, sp, netLimitOf(sp, sp.limit_price))) {
+      if (compositeLimitWouldFill(marks, sp, netLimit)) {
         fillLimit(legacy);
       }
     }
@@ -385,71 +404,91 @@ export function usePortfolio(
     [historyVersion],
   );
 
-  // ---- Open a position (the 3 entry modes) ---------------------------------------------------
+  // ---- Open a position — ONE code path for one leg and for six ------------------------------
   const openPosition = useCallback(
     (input: OpenPositionInput): OpenResult => {
-      const ticker = input.ticker.toUpperCase();
-      const base = {
+      if (input.legs.length === 0) return { ok: false, reason: OPEN_REFUSED_NO_LEGS };
+
+      // SINGLE-UNDERLYING IS ENFORCED AT CONSTRUCTION, NOT BY THE TYPE (SPEC §2.1): the schema is
+      // permissive so a future broker import can be held verbatim; construction is narrow so this
+      // app never mints a shape it cannot name, price or reason about.
+      const tickers = new Set(input.legs.map((l) => l.ticker.toUpperCase()));
+      if (tickers.size !== 1) return { ok: false, reason: OPEN_REFUSED_MULTI_UNDERLYING };
+      const ticker = [...tickers][0];
+
+      const now = new Date().toISOString();
+      const isLimit = input.entryMode === 'limit';
+      const limitPrice = input.limitPrice ?? input.legs[0]?.price ?? 0;
+
+      // MARKET is single-leg by construction (the dialog resolves ONE contract's fill), so its
+      // resolved mark applies to the one leg it resolved. A missing resolution NEVER opens.
+      if (
+        input.entryMode === 'market' &&
+        (input.resolvedMark == null || input.resolvedBasis == null)
+      )
+        return { ok: false, reason: OPEN_REFUSED_NO_MARKET_FILL };
+
+      const priceFor = (li: LegInput): { mark: number; basis: EntryBasis } => {
+        if (input.entryMode === 'market')
+          return { mark: input.resolvedMark as number, basis: input.resolvedBasis as EntryBasis };
+        if (isLimit) return { mark: limitPrice, basis: LIMIT_FILL_BASIS };
+        // MANUAL — the trader's own per-unit price for THIS leg. Never back-solved, never
+        // apportioned from a net: that would fabricate an instrument fact in the same audit spine
+        // where the lift refuses to backfill an invented entry_time.
+        const fill = resolveManualFill(li.price ?? 0);
+        return { mark: fill.mark, basis: fill.basis };
+      };
+
+      const legs: Leg[] = input.legs.map((li) => {
+        const { mark, basis } = priceFor(li);
+        return {
+          id: newId(),
+          kind: li.kind,
+          ticker,
+          side: li.side,
+          qty: li.qty,
+          // STORED at construction, never re-derived from `kind` downstream.
+          multiplier: li.multiplier,
+          entry_price: mark,
+          entry_basis: basis,
+          expiration: li.expiration,
+          strike: li.strike,
+          right: li.right,
+        };
+      });
+
+      const head = legs[0];
+      const p: Position = {
         id: newId(),
+        // TRANSITIONAL FLAT SUMMARY (dies at F18). `legs` below is authoritative; these fields
+        // describe only the FIRST leg and exist so a reader that predates this release does not
+        // crash on the record. Nothing in this release reads them once `legs` is present.
         ticker,
-        expiration: input.expiration,
-        strike: input.strike,
-        right: input.right,
-        side: 'long' as const,
-        qty: input.qty,
+        expiration: head.expiration ?? '',
+        strike: head.strike ?? 0,
+        right: (head.right ?? 'call') as OptionRight,
+        side: 'long',
+        qty: head.qty,
+        entry_mark: head.entry_price,
+        entry_basis: head.entry_basis,
+        entry_time: isLimit ? '' : now, // VERBATIM `''` on a resting limit — never backfilled
         stop: input.stop ?? null,
         target: input.target ?? null,
-        schema_version: PORTFOLIO_SCHEMA_VERSION,
+        status: isLimit ? 'pending' : 'open',
         entry_mode: input.entryMode,
+        schema_version: PORTFOLIO_SCHEMA_VERSION,
+        legs,
+        ...(isLimit ? { placed_time: now, limit_price: limitPrice } : {}),
       };
 
-      if (input.entryMode === 'manual') {
-        const fill = resolveManualFill(input.price ?? 0);
-        const p: Position = {
-          ...base,
-          entry_mark: fill.mark,
-          entry_basis: fill.basis,
-          entry_time: new Date().toISOString(),
-          status: 'open',
-        };
-        putPosition(p);
-        refreshPositions();
-        recordDecision({ event_type: 'open' }, p, fill.mark, fill.basis);
-        return { ok: true, position: p };
-      }
-
-      if (input.entryMode === 'market') {
-        // The dialog already resolved the market fill (or signalled it cannot fill).
-        if (input.resolvedMark == null || input.resolvedBasis == null) {
-          return { ok: false, reason: "Couldn't fill at market — no position was opened." };
-        }
-        const p: Position = {
-          ...base,
-          entry_mark: input.resolvedMark,
-          entry_basis: input.resolvedBasis,
-          entry_time: new Date().toISOString(),
-          status: 'open',
-        };
-        putPosition(p);
-        refreshPositions();
-        recordDecision({ event_type: 'open' }, p, input.resolvedMark, input.resolvedBasis);
-        return { ok: true, position: p };
-      }
-
-      // limit — rests pending; fills later on a live cross.
-      const limitPrice = input.limitPrice ?? input.price ?? 0;
-      const p: Position = {
-        ...base,
-        entry_mark: limitPrice,
-        entry_basis: LIMIT_FILL_BASIS,
-        entry_time: '',
-        placed_time: new Date().toISOString(),
-        status: 'pending',
-        limit_price: limitPrice,
-      };
       putPosition(p);
       refreshPositions();
-      recordDecision({ event_type: 'limit_placed' }, p, limitPrice, LIMIT_FILL_BASIS);
+      recordDecision(
+        { event_type: isLimit ? 'limit_placed' : 'open' },
+        p,
+        head.entry_price,
+        head.entry_basis,
+      );
       return { ok: true, position: p };
     },
     [recordDecision, refreshPositions],

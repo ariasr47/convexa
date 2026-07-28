@@ -93,8 +93,51 @@ const ENTRY_MODES: ReadonlySet<string> = new Set<EntryMode>(['manual', 'market',
 const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
+const LEG_KINDS: ReadonlySet<string> = new Set(['option', 'equity']);
+const LEG_SIDES: ReadonlySet<string> = new Set(['long', 'short']);
+
 /**
- * THE ONE LIFT. A legacy `Position` / `GhostTrade` row -> a one-leg `SimPosition`.
+ * Read a carried `legs` array off a durable record, or `null` when there is nothing usable there.
+ *
+ * TOTAL and NON-FABRICATING, exactly like the single-leg branch: a leg with an unusable `qty` or
+ * `multiplier` is not repaired, it makes the whole array unusable, and the record then lifts through
+ * the flat fields rather than through a half-invented leg set. Contract facts stay nullable —
+ * `not recorded` is a real, renderable outcome; a guessed strike is not.
+ *
+ * Leg ids are minted DETERMINISTICALLY from the record id when a stored leg has none, so a repeated
+ * lift of the same row produces the same leg ids — the archive import and the store migration must
+ * agree exactly.
+ */
+function readCarriedLegs(raw: unknown, recordId: string): Leg[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out: Leg[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const l = raw[i];
+    if (l == null || typeof l !== 'object' || Array.isArray(l)) return null;
+    const o = l as Record<string, unknown>;
+    const qty = num(o.qty);
+    const multiplier = num(o.multiplier);
+    if (qty == null || qty <= 0 || multiplier == null || multiplier <= 0) return null;
+    if (!LEG_KINDS.has(o.kind as string) || !LEG_SIDES.has(o.side as string)) return null;
+    out.push({
+      id: str(o.id) ?? `${recordId}-l${i}`,
+      kind: o.kind as Leg['kind'],
+      ticker: (str(o.ticker) ?? '').toUpperCase(),
+      side: o.side as Leg['side'],
+      qty,
+      multiplier,
+      entry_price: num(o.entry_price) ?? 0,
+      entry_basis: (str(o.entry_basis) as EntryBasis | null) ?? 'manual',
+      expiration: str(o.expiration),
+      strike: num(o.strike),
+      right: o.right === 'call' || o.right === 'put' ? (o.right as OptionRight) : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * THE ONE LIFT. A legacy `Position` / `GhostTrade` row -> a `SimPosition`.
  *
  * FORBIDDEN FROM FABRICATING a `right`, a `strike` or an `entry_time`. A malformed legacy record
  * lifts to a leg carrying `null`s, renders `Custom`, and shows `not recorded` in the cells whose
@@ -118,21 +161,29 @@ export function liftLegacyRecord(raw: unknown): SimPosition | null {
 
     const right = r.right === 'call' || r.right === 'put' ? (r.right as OptionRight) : null;
 
-    const leg: Leg = {
-      // Minted DETERMINISTICALLY from the record id, so a repeated lift of the same row produces
-      // the same leg id — the archive import and the store migration must agree exactly.
-      id: `${id}-l0`,
-      kind: 'option',
-      ticker: (str(r.ticker) ?? '').toUpperCase(),
-      side: 'long',
-      qty: num(r.qty) ?? 0,
-      multiplier: 100,
-      entry_price: num(r.entry_mark) ?? 0,
-      entry_basis: (str(r.entry_basis) as EntryBasis | null) ?? 'manual',
-      expiration: str(r.expiration),
-      strike: num(r.strike),
-      right,
-    };
+    // A record written by the multi-leg entry path (F15) carries its LEGS verbatim, and they are
+    // AUTHORITATIVE — the flat contract fields beside them describe only the first leg and would
+    // destroy the rest. Records that predate multi-leg entry have no `legs` and take the branch
+    // below, byte-identically to what shipped.
+    const carried = readCarriedLegs(r.legs, id);
+    const leg: Leg =
+      carried != null
+        ? carried[0]
+        : {
+            // Minted DETERMINISTICALLY from the record id, so a repeated lift of the same row produces
+            // the same leg id — the archive import and the store migration must agree exactly.
+            id: `${id}-l0`,
+            kind: 'option',
+            ticker: (str(r.ticker) ?? '').toUpperCase(),
+            side: 'long',
+            qty: num(r.qty) ?? 0,
+            multiplier: 100,
+            entry_price: num(r.entry_mark) ?? 0,
+            entry_basis: (str(r.entry_basis) as EntryBasis | null) ?? 'manual',
+            expiration: str(r.expiration),
+            strike: num(r.strike),
+            right,
+          };
 
     const status = POSITION_STATUSES.has(r.status as string)
       ? (r.status as PositionStatus)
@@ -143,7 +194,7 @@ export function liftLegacyRecord(raw: unknown): SimPosition | null {
 
     const p: SimPosition = {
       id,
-      legs: [leg],
+      legs: carried ?? [leg],
       // VERBATIM, including `''` on a pending limit. Never backfilled with an invented timestamp.
       opened_time: typeof r.entry_time === 'string' ? r.entry_time : '',
       status,

@@ -10,6 +10,7 @@
  */
 import type { DecisionRecord, GhostTrade, MarkBasis } from '@/features/trading/model/types';
 import type { OptionRight } from '@org/api';
+import type { Leg } from './leg';
 import type { StructureKind } from './structure';
 
 export type { DecisionRecord, MarkBasis } from '@/features/trading/model/types';
@@ -65,6 +66,23 @@ export interface Position {
   // the SimOrder whose fill created this position (the position→order backlink, AC-31). Full
   // provenance stays on the order, single-sourced, reachable via this join.
   origin_order_id?: string;
+  /**
+   * TRANSITIONAL (F15 → F18) — the position's LEGS. Additive + optional, NO version bump, exactly
+   * the `entry_mode` / `origin_order_id` discipline this record already follows.
+   *
+   * WHY IT EXISTS BEFORE THE v3 CUTOVER: multi-leg entry (F15) ships before the store cutover
+   * (F18), and the flat contract fields above can describe exactly ONE contract. Writing a spread
+   * through them would DESTROY three of its four legs — a data loss inside the one feature whose
+   * hardest invariant is `loss-free-durable-migration`. So the legs are carried alongside, and the
+   * ONE lift (`migrate.liftLegacyRecord`) treats this array as AUTHORITATIVE when it is present.
+   *
+   * The flat fields are then a LOSSY SUMMARY of the first leg, kept only so a reader that predates
+   * this release does not crash on the record. They are never read by anything in this release once
+   * `legs` is present. Both this field and the flat summary disappear into `SimPosition` at F18.
+   *
+   * A record WITHOUT this field is byte-identical to what shipped and lifts exactly as before.
+   */
+  legs?: Leg[];
 }
 
 // The old two-member `Strategy` axis (`long_call` | `long_put`) and its `strategyOf` derivation are

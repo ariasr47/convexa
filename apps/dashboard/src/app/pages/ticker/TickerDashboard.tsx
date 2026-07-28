@@ -14,26 +14,8 @@
  * `[best-effort-isolated-or-null]`, `[additive-keeps-score-byte-identical]`, `[no-real-order-path]`,
  * `[operator-vs-trader-path-separation]`.
  */
-import { Alert, Box, Button, Container, Fade, Skeleton, Tooltip, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import { getTicker, LiveUpdate, RecResponse, streamTicker, TickerBundle } from '@org/api';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
-import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
-import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
-import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
-import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { useGate } from '@/features/auth/useGate';
-import { PrimeBanner, tierMeta } from '@/features/trading/model/OpportunityTier';
-import { NewTradeForm, useGhostTrade } from '@/features/trading/model/useGhostTrade';
-import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
-import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
-import { parseTriggerSeed } from '@/features/trading/orders/seed';
-import type { OrderProvenance } from '@/features/trading/orders/types';
-import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
-import { createOrder } from '@/features/trading/orders/useOrders';
 import { PersonaCustomizeForm } from '@/features/personas/components';
 import { usePersona } from '@/features/personas/usePersona';
 import {
@@ -43,8 +25,34 @@ import {
   TradeEntryDialog,
   TradeEntrySubmit,
 } from '@/features/trading/TradeEntryDialog';
+import { PrimeBanner, tierMeta } from '@/features/trading/model/OpportunityTier';
+import { NewTradeForm, useGhostTrade } from '@/features/trading/model/useGhostTrade';
+import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
+import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
+import { parseTriggerSeed } from '@/features/trading/orders/seed';
+import type { OrderProvenance } from '@/features/trading/orders/types';
+import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
+import { createOrder } from '@/features/trading/orders/useOrders';
+import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
+import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
+import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
+import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
+import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
+import { Alert, Box, Button, Container, Fade, Skeleton, Tooltip, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import {
+  getTicker,
+  LiveUpdate,
+  OptionRight,
+  RecResponse,
+  streamTicker,
+  TickerBundle,
+} from '@org/api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
+import { WidgetSelectionProvider } from '@/shared/ui/Widget';
 import {
   DealerFlowProjection,
   DealerPositioning,
@@ -57,9 +65,8 @@ import {
   Setups,
   TermStructureCard,
 } from './widgets';
-import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 import { humanAge, StatSkeleton } from './widgets/_kit';
-import { WidgetSelectionProvider } from '@/shared/ui/Widget';
+import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
 // A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
@@ -604,11 +611,16 @@ export function TickerDashboard() {
         prefill={entryPrefill}
         onClose={() => setEntryOpen(false)}
         onConfirm={(s: TradeEntrySubmit) => {
+          // The Ticker page's single-trade ghost engine holds ONE contract, which is exactly why it
+          // leaves `multiLeg` off: the dialog can only ever hand it a one-element array here. It
+          // joins the multi-leg book at the F18 cutover, when this page writes through
+          // `usePortfolio` instead of `useGhostTrade`.
+          const leg = s.legs[0];
           const base = {
-            expiration: s.expiration,
-            strike: s.strike,
-            right: s.right,
-            qty: s.qty,
+            expiration: leg.expiration ?? '',
+            strike: leg.strike ?? 0,
+            right: (leg.right ?? 'call') as OptionRight,
+            qty: leg.qty,
             stop: s.stop,
             target: s.target,
           };
@@ -622,7 +634,7 @@ export function TickerDashboard() {
                 }
               : {
                   ...base,
-                  entryMark: s.entryMode === 'manual' ? s.price : s.limitPrice,
+                  entryMark: s.entryMode === 'manual' ? (leg.price ?? 0) : s.limitPrice,
                   entryBasis: 'manual',
                   aiRecFingerprint: entryRecFingerprint,
                 };

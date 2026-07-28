@@ -88,15 +88,78 @@ export function legContractKey(l: Leg): string | null {
   return `${l.ticker.toUpperCase()}|${l.expiration}|${l.strike}|${l.right}`;
 }
 
+// ---- What a limit price MEANS for a structure (RULED HERE, F15 Step 3b) -------------------------
+//
+// The question had never been answered, and the unanswered question was showing up as a UNITS BUG:
+// `compositeLimitWouldFill` compared `net_mark` (DOLLARS) against a `limit` every caller supplied
+// as a PER-UNIT price. $840 of mark against an $8.40 limit — every resting limit silently stops
+// filling. No error, no throw, nothing red.
+//
+// The three readings are NOT interchangeable:
+//
+//   (a) a PER-UNIT price on some designated leg — meaningless for a condor, and the naive
+//       "apply the same per-unit price to every leg" conversion nets to ZERO on a balanced
+//       four-leg structure regardless of the number the trader typed. Actively wrong.
+//   (b) a NET DEBIT/CREDIT for the whole structure, in dollars — what a broker's combo order
+//       actually takes, and what SPEC §4's `Net debit $840` copy already shows the trader.
+//   (c) PER-LEG limits — a different feature entirely.
+//
+// **THE RULING: (b) is the correct product answer, and v1 does not adopt it durably.** Reading (b)
+// would re-interpret the SHIPPED durable `limit_price`, which is per-unit (SPEC §4: `Fills at your
+// limit $8.40 · Net debit $840`), on records that already exist. Every existing pending record would
+// be read 100x wrong — precisely the class of silent corruption `loss-free-durable-migration` exists
+// to prevent, and it would need a migration this release has no budget for. SPEC §1 also puts
+// multi-leg simulated ORDERS out of scope, so nothing in v1 needs (b) durably.
+//
+// **SO, IN v1:** the durable `limit_price` STAYS PER-UNIT and stays SINGLE-LEG-ONLY. `netLimitDollars`
+// is defined ONLY for a one-leg position, where per-unit -> dollars is exact. A multi-leg position
+// has no interpretable limit and therefore NEVER fills off one — refusing to fill on a number whose
+// meaning is undefined is the only honest behaviour, and it is strictly safer than the alternative.
+// The entry dialog enforces the same boundary at the input end: Limit (and Market) are single-leg
+// modes, stated to the trader rather than silently dropped.
+//
+// **AND THE UNITS BUG IS MADE UNREPRESENTABLE, NOT MERELY FIXED:** the parameter is a BRANDED type
+// that no numeric literal and no per-unit price can inhabit. The only way to obtain one is
+// `netLimitDollarsFor`, which owns the conversion. `compositeLimitWouldFill(marks, p, 8.4)` does not
+// compile.
+
+declare const NET_LIMIT_DOLLARS_BRAND: unique symbol;
+
+/**
+ * A limit expressed as a DOLLAR NET for the whole position — the same units as
+ * `PositionMark.net_mark`. Nominal on purpose: a per-unit price is a `number` and a `number` is not
+ * assignable here, so the two can never be mixed again.
+ */
+export type NetLimitDollars = number & { readonly [NET_LIMIT_DOLLARS_BRAND]: 'dollar net' };
+
+/**
+ * THE ONE CONVERSION from a durable per-unit `limit_price` to a dollar net.
+ *
+ * Returns `null` — never a number — when the position's limit is not interpretable:
+ *   · no `limit_price` recorded, or
+ *   · MORE THAN ONE LEG, where a per-unit price has no defined structure-level meaning (above).
+ *
+ * For the shipped single-leg long option this is exactly `sign x limit x multiplier x qty`, so
+ * `net_mark <= netLimitDollars` reduces to the shipped `mark <= limit`, byte-identically.
+ */
+export function netLimitDollarsFor(p: SimPosition): NetLimitDollars | null {
+  if (p.limit_price == null || !Number.isFinite(p.limit_price)) return null;
+  if (p.legs.length !== 1) return null;
+  return legValue(p.legs[0], p.limit_price) as NetLimitDollars;
+}
+
 /**
  * The composite of `limitWouldFill` (positions/entry.ts): today it requires a live, non-frozen,
  * non-`last_known` mark; the composite version requires that of EVERY leg, so a structure with one
- * stale leg never fills.
+ * stale leg never fills (AC-44).
+ *
+ * The limit arrives as DOLLARS — see the block above. Both sides of the comparison are now the same
+ * unit by TYPE, not by convention.
  */
 export function compositeLimitWouldFill(
   legMarks: ReadonlyMap<LegId, MarkResult | null>,
   p: SimPosition,
-  limit: number,
+  netLimitDollars: NetLimitDollars,
 ): boolean {
   for (const l of p.legs) {
     const res = legMarks.get(l.id) ?? null;
@@ -104,5 +167,5 @@ export function compositeLimitWouldFill(
     if (res.frozen || res.basis === 'last_known') return false;
   }
   const composed = composePositionMark(legMarks, p);
-  return composed.net_mark != null && composed.net_mark <= limit;
+  return composed.net_mark != null && composed.net_mark <= netLimitDollars;
 }

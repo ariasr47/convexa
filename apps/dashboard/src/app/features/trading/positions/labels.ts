@@ -148,6 +148,39 @@ export const TR_ARCHIVE_PARTIAL_NOTE =
   "Some saved data in this browser couldn't be read, so this archive holds only the records that " +
   'loaded. It is not a complete backup.';
 
+// ---- The entry dialog's net (SPEC §4 *Copy*) ----------------------------------------------------
+
+/**
+ * `Net debit $840` / `Net credit $115`. THE QUALIFIER WORD IS DERIVED FROM THE SIGN, never from the
+ * structure name — a vertical can be either. The figure is UNSIGNED: a sign plus a qualifier word
+ * would make the same claim twice and disagree whenever the two conventions point opposite ways.
+ * No abbreviation (`Dr`/`Cr`/`db`) — abbreviating into an 11px floor is a slop tell.
+ *
+ * The word `Cost` is retired from every surface that can show a credit.
+ */
+export function netEntryPhrase(netDollars: number): string {
+  const word = netDollars < 0 ? 'credit' : 'debit';
+  return `Net ${word} $${Math.abs(Math.round(netDollars))}`;
+}
+
+/**
+ * Until EVERY leg has a price the running net reads INCOMPLETE — never a partial sum (AC-10). A
+ * partial net is not merely incomplete, it can be sign-inverted: drop the short leg of a credit
+ * spread and a credit reads as a debit.
+ */
+export const DIALOG_NET_INCOMPLETE = 'Net entry incomplete — enter a price for every leg.';
+
+/** The disclosure that the net is the trader's own arithmetic, not a quote (AC-9, AC-22). */
+export const DIALOG_NET_COMPUTED = 'computed from your leg prices';
+
+/**
+ * Market and Limit resolve ONE option contract, and a per-unit limit has no defined meaning for a
+ * structure (`composeMark.netLimitDollarsFor`). The boundary is STATED rather than silently applied:
+ * a mode that quietly stops working is the failure mode this app is built against.
+ */
+export const DIALOG_FILL_MODE_SINGLE_LEG_ONLY =
+  'Market and Limit fill one option contract, so they are single-leg only. Enter a price for each leg instead.';
+
 // ---- The risk slot ------------------------------------------------------------------------------
 
 /** The risk slot's label, in all three of its homes — bound into the COLUMN_LABELS pair. */
