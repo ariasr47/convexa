@@ -200,8 +200,11 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           </Box>
         </Box>
         <Box component="span">{expiryStr}</Box>
-        {/* THE RISK SLOT — static, never dims, never tinted. ONE figure or ONE reason, never both. */}
-        <Box component="span" data-testid="card-risk-slot" sx={{ ml: 'auto' }}>
+        {/* THE RISK SLOT — static, never dims, never tinted. ONE figure or ONE reason, never both.
+            No `ml: auto`: with five items the footer wraps at 393px, and pushing the last one hard
+            right leaves a ragged orphan line. Flowing them in the spec's left-to-right scan order
+            wraps evenly and keeps the order readable (verified in a real browser at 393px). */}
+        <Box component="span" data-testid="card-risk-slot">
           {MAX_LOSS_LABEL}{' '}
           {view.max_loss.kind === 'figure' ? (
             <Box component="span" sx={footValSx} data-testid="card-max-loss">
