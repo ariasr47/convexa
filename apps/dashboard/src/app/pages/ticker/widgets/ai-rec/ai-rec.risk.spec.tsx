@@ -27,11 +27,6 @@
  * Server-side enforcement (key resolution, allowance decrement, caps) is backend-verified — these
  * tests cover the FE half only: render what the wire says, leak nothing it doesn't.
  */
-import type { RecResponse, RecStatus, RecStrategy, TickerBundle } from '@org/api';
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/app';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
@@ -40,7 +35,15 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { maskedKeyLabel } from '@/features/auth/copy';
 import { makeBundle } from '@/features/auth/testBackend';
 import { PRESETS } from '@/features/personas/presets';
-import { clearTrade, getTrade } from '@/features/trading/model/store';
+import {
+  __resetMemory as __resetPositions,
+  allPositions,
+} from '@/features/trading/positions/store';
+import type { RecResponse, RecStatus, RecStrategy, TickerBundle } from '@org/api';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COPY, EXPORT_HEADER } from './copy';
 import { biasToRight, parseQty, recToPrefill } from './prefill';
 
@@ -86,7 +89,11 @@ function producedRec(over: Partial<RecResponse> = {}): RecResponse {
 
 const producedOwn = () => producedRec({ key_source: 'own_key' });
 const producedShared = (remaining = 2, total = 3) =>
-  producedRec({ key_source: 'shared_admin', remaining_free_uses: remaining, free_uses_total: total });
+  producedRec({
+    key_source: 'shared_admin',
+    remaining_free_uses: remaining,
+    free_uses_total: total,
+  });
 const recUnavailable = (
   reason: 'no_key' | 'over_limit' | 'shared_key_unconfigured',
   extra: Partial<RecResponse> = {},
@@ -193,7 +200,12 @@ function installBackend(cfg: BackendCfg = {}) {
           state.authenticated
             ? {
                 authenticated: true,
-                user: { id: 'u-1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+                user: {
+                  id: 'u-1',
+                  email: 'a@x.com',
+                  display_name: null,
+                  auth_methods: ['password'],
+                },
                 google_available: false,
                 settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
               }
@@ -222,7 +234,11 @@ function installBackend(cfg: BackendCfg = {}) {
         if (method === 'DELETE') {
           state.aiKey.set = false;
           state.aiKey.last4 = null;
-          return json({ set: false, last4: null, storage_available: state.aiKey.storage_available });
+          return json({
+            set: false,
+            last4: null,
+            storage_available: state.aiKey.storage_available,
+          });
         }
       }
       if (url.includes('/api/ticker/')) {
@@ -268,7 +284,9 @@ function installBackend(cfg: BackendCfg = {}) {
     responsesSeen,
     esCount: () => esInstances.length,
     emit: (payload: unknown) =>
-      esInstances.forEach((es) => es.onmessage?.({ data: JSON.stringify(payload) } as MessageEvent)),
+      esInstances.forEach((es) =>
+        es.onmessage?.({ data: JSON.stringify(payload) } as MessageEvent),
+      ),
     setState: (patch: Partial<typeof state>) => Object.assign(state, patch),
   };
 }
@@ -336,7 +354,7 @@ async function ask(user: ReturnType<typeof renderApp>) {
 
 beforeEach(() => {
   localStorage.clear();
-  clearTrade('TSLA');
+  __resetPositions(); // the ONE book — the ghost-trade store has no writer any more
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -478,9 +496,7 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
       const block = await within(panel()).findByTestId(cta);
       expect(within(block).getByTestId('ai-rec-add-key-cta')).toBeEnabled();
       expect(within(panel()).queryByText(REC_BODY)).toBeNull();
-      expect(
-        within(panel()).queryByRole('button', { name: COPY.action.accept }),
-      ).toBeNull();
+      expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
     } else {
       // Produced states: the offered affordance is Accept; the provenance chip matches the source.
       await within(panel()).findByText(REC_BODY);
@@ -693,7 +709,7 @@ describe('ai-rec · advice behind Accept', () => {
     await within(panel()).findByText(REC_BODY);
     await user.click(within(panel()).getByRole('button', { name: COPY.action.accept }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
-    expect(getTrade('TSLA')).toBeNull(); // advice, not a command
+    expect(allPositions()).toEqual([]); // advice, not a command
   });
 });
 

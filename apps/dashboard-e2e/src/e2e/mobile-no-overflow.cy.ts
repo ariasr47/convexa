@@ -158,6 +158,108 @@ const ROUTES: Array<{ path: string; ready: () => Cypress.Chainable }> = [
   { path: '/settings', ready: () => cy.get('[data-testid="settings-page"]') },
 ];
 
+// ---- A SEEDED positions book ---------------------------------------------------------------------
+//
+// Without this, `/positions` renders its EMPTY state at 393px and the overflow assertion above is
+// close to vacuous — it measures a page with no position cards on it. These four records exercise
+// the widest content the surface can carry from the durable store: the structure line, the five-item
+// footer (Qty · Net debit/credit · Mark · expiry · the RISK SLOT), and the malformed-record row
+// whose cells read `Custom` / `unavailable` / `not recorded` / `unnamed shape`.
+
+/** A shipped v2 record. NOTE THE SHAPE: ONE contract per record — see the TRIPWIRE case below. */
+function v2Position(over: Record<string, unknown>) {
+  return {
+    ticker: 'TSLA',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    side: 'long',
+    qty: 2,
+    entry_mark: 12.4,
+    entry_basis: 'user_entered',
+    entry_mode: 'manual',
+    entry_time: '2026-06-12T15:32:00Z',
+    status: 'open',
+    schema_version: 2,
+    ...over,
+  };
+}
+
+const SEEDED_POSITIONS = {
+  'e2e-1': v2Position({ id: 'e2e-1' }),
+  'e2e-2': v2Position({ id: 'e2e-2', ticker: 'NVDA', strike: 170, right: 'put', qty: 1 }),
+  'e2e-3': v2Position({ id: 'e2e-3', ticker: 'SPY', strike: 560, qty: 3, entry_mark: 6.1 }),
+  // A MALFORMED migrated record — no `right`, no `expiration`. The lift is forbidden from
+  // fabricating either, so this row carries the longest withheld/not-recorded copy on the surface.
+  'e2e-4': {
+    id: 'e2e-4',
+    ticker: 'AMD',
+    strike: 160,
+    side: 'long',
+    qty: 2,
+    entry_mark: 5.2,
+    entry_basis: 'user_entered',
+    entry_time: '2026-06-26T15:10:00Z',
+    status: 'open',
+    schema_version: 2,
+  },
+};
+
+/**
+ * A FOUR-LEG iron condor, written exactly the way the multi-leg entry path writes one (F15): the
+ * additive optional `legs` array is authoritative and the flat contract fields beside it are the
+ * lossy first-leg summary an older reader would fall back to.
+ */
+function condorLeg(over: Record<string, unknown>) {
+  return {
+    kind: 'option',
+    ticker: 'META',
+    side: 'long',
+    qty: 1,
+    multiplier: 100,
+    entry_price: 12.4,
+    entry_basis: 'user_entered',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    ...over,
+  };
+}
+
+const CONDOR = {
+  id: 'e2e-condor',
+  ticker: 'META',
+  expiration: '2026-08-21',
+  strike: 440,
+  right: 'call',
+  side: 'long',
+  qty: 1,
+  entry_mark: 12.4,
+  entry_basis: 'user_entered',
+  entry_mode: 'manual',
+  entry_time: '2026-06-12T15:32:00Z',
+  status: 'open',
+  schema_version: 2,
+  legs: [
+    condorLeg({ id: 'e2e-condor-l0', strike: 440 }),
+    condorLeg({ id: 'e2e-condor-l1', strike: 420, side: 'short', entry_price: 6.1 }),
+    condorLeg({ id: 'e2e-condor-l2', strike: 380, right: 'put', side: 'short', entry_price: 5 }),
+    condorLeg({ id: 'e2e-condor-l3', strike: 360, right: 'put', entry_price: 2.5 }),
+  ],
+};
+
+function seedPositions(win: Window, opts: { withCondor?: boolean } = {}) {
+  win.localStorage.setItem(
+    'convexa.positions.v2',
+    JSON.stringify({
+      schema_version: 2,
+      positions: opts.withCondor ? { ...SEEDED_POSITIONS, 'e2e-condor': CONDOR } : SEEDED_POSITIONS,
+      decisions: [],
+      // No `customization` — the store seeds its own defaults, which is what a real user has.
+    }),
+  );
+}
+
 function stubNetwork() {
   cy.intercept('GET', '/api/auth/session*', {
     body: { authenticated: false, user: null, google_available: false, settings: null },
@@ -170,7 +272,9 @@ function stubNetwork() {
       cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
     },
   });
-  cy.intercept('GET', '/api/personas*', { body: [{ id: 'default', name: 'Default (no persona)' }] });
+  cy.intercept('GET', '/api/personas*', {
+    body: [{ id: 'default', name: 'Default (no persona)' }],
+  });
   cy.intercept('GET', '/api/contract/**', { statusCode: 404, body: null });
   // scanner: the more specific universe path FIRST, then the poll read.
   cy.intercept('GET', '/api/scan/universe*', {
@@ -179,6 +283,23 @@ function stubNetwork() {
   cy.intercept('GET', '/api/scan*', { body: scan });
 }
 
+// PRE-EXISTING, OUT OF SCOPE (logged as a standing item, build phase 2; RE-MEASURED build phase 3):
+// `/positions` overflows at 900px — documentElement scrollWidth 965 vs innerWidth 900 —
+// BYTE-IDENTICALLY with and without the `max_loss` column, and byte-identically before and after
+// the phase-3 render change. i.e. this feature neither causes nor worsens the PAGE overflow. The
+// shipped e2e only ever asserted at 393px, which is why the md boundary went uncovered.
+//
+// Phase 3 additionally measured the TABLE inside its framed host at 900px, with an identical
+// four-record seed on both builds:
+//   before phase 3 : table scrollWidth  998 vs host clientWidth 835  (already over by 163px)
+//   after  phase 3 : table scrollWidth 1027 vs host clientWidth 835  (over by 192px)
+// So the md-band table overflow is ALSO pre-existing — phase 2's note that "without the column it
+// fits" at 900px does not hold for a content-full book — and phase 3 adds 29px of it through the
+// wider `Net entry` copy (`$1830 debit` vs `$8.40`). The `max_loss` column is NOT rendered at md.
+//
+// Do NOT add an assertion for either figure here: this row would then fail on a defect this feature
+// did not introduce, and the failure would be misread as a regression from the leg refactor. The
+// 393px guard below is the one that gates.
 function assertNoHorizontalOverflow() {
   cy.window().then((win) => {
     const doc = win.document.documentElement;
@@ -228,6 +349,64 @@ for (const scheme of ['dark', 'light'] as const) {
       cy.get('[data-testid="scan-card"]').should('have.length', 3);
       // The whole card is the navigation target, and it goes to the Ticker page — nothing else.
       cy.get('[data-testid="scan-card"]').first().should('have.attr', 'href', '/ticker/SPY');
+      assertNoHorizontalOverflow();
+    });
+
+    // ---- positions-legs V3: the guard must measure a CONTENT-FULL book, not an empty state ------
+
+    it('/positions fits at 393px with a SEEDED book — cards, five-item footers, the risk slot', () => {
+      cy.visit('/positions', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem(
+            'convexa.uiprefs.v1',
+            JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
+          );
+          seedPositions(win);
+        },
+      });
+      cy.get('[data-testid="portfolio-panel"]');
+      // VACUITY GUARDS — without these a selector that silently stops matching turns the overflow
+      // check into a measurement of an empty page.
+      cy.get('[data-testid="position-card"]').should('have.length', 4);
+      cy.get('[data-testid="card-footer"]').first().children().should('have.length', 5); // Qty · Net debit/credit · Mark · expiry · the risk slot
+      cy.get('[data-testid="card-max-loss"]').should('have.length', 4);
+      // The malformed record renders its stated reason, not a blank and not a number.
+      cy.contains('[data-testid="card-max-loss"]', 'unnamed shape').should('exist');
+      assertNoHorizontalOverflow();
+    });
+
+    /**
+     * THE 4-LEG-EXPANDED CASE — SPEC §7 invariant 11, AC-30.
+     *
+     * THIS REPLACES THE V3 TRIPWIRE, WHICH F15 RETIRED BY DOING ITS JOB. That tripwire asserted the
+     * v2 record shape (one contract, no `legs`) made a multi-leg position UNREPRESENTABLE in the
+     * seedable store, and said in as many words that whoever made it representable must replace it
+     * with the real assertion. F15 added the additive optional `legs` array to the durable record —
+     * the multi-leg entry path ships before the v3 cutover, and flattening a spread into the flat
+     * contract fields would destroy three of its four legs — so the store can now hold one and the
+     * case below is buildable. The tripwire's own replacement text is carried out verbatim:
+     * `aria-expanded="true"` is asserted BEFORE measuring, because without it a selector that stops
+     * matching makes the overflow check vacuous, which is the exact failure this case closes.
+     *
+     * The seeded record is a real four-leg iron condor, written the way the entry path writes one.
+     */
+    it('a 4-leg disclosure EXPANDED at 393px still does not overflow', () => {
+      cy.visit('/positions', {
+        onBeforeLoad(win) {
+          win.localStorage.setItem(
+            'convexa.uiprefs.v1',
+            JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
+          );
+          seedPositions(win, { withCondor: true });
+        },
+      });
+      cy.get('[data-testid="position-card"]').should('have.length', 5);
+      // VACUITY GUARD 1 — the multi-leg record really did survive the round-trip as four legs.
+      cy.get('[data-testid="leg-disclosure-toggle"]').should('have.length', 1);
+      cy.get('[data-testid="leg-disclosure-toggle"]').click();
+      // VACUITY GUARD 2 — the expansion actually happened, and it really is four leg lines.
+      cy.get('[aria-expanded="true"]').should('exist');
+      cy.get('[data-testid="leg-line"]').should('have.length', 4);
       assertNoHorizontalOverflow();
     });
 

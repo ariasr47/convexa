@@ -10,27 +10,10 @@ export const SCHEMA_VERSION = 1;
  *  `manual` = a user-typed entry price (manual/limit fill mode in the entry dialog) — not a market quote. */
 export type MarkBasis = 'snapshot' | 'modeled' | 'theoretical' | 'last_known' | 'manual';
 
-export interface GhostTrade {
-  id: string;
-  ticker: string;
-  expiration: string; // YYYY-MM-DD
-  strike: number;
-  right: OptionRight;
-  side: 'long'; // long single-leg only (v1)
-  qty: number;
-  entry_mark: number; // option mid (or theoretical) at entry — the fill basis
-  entry_basis: MarkBasis;
-  entry_time: string; // ISO-8601
-  // Optional risk plan seeded from an AI rec's exit_plan (UX_BLUEPRINT §5) and editable at entry.
-  // Additive + optional: older records simply lack them; not used by the mark/P-L math (v1).
-  stop?: number | null;
-  target?: number | null;
-  status: 'open' | 'closed';
-  realized_pl_dollar?: number;
-  realized_pl_pct?: number;
-  close_time?: string;
-  schema_version: number;
-}
+// `GhostTrade` is DELETED. It merged into `SimPosition` (`positions/leg.ts`) at the v3 cutover, and
+// the `convexa.ghost-trade.v1` blob that held them is now read ONLY as a migration/harvest source,
+// through `positions/migrate.liftLegacyRecord`, which is total over arbitrary material and therefore
+// needs no interface to lean on. Everything below stays in the kernel: three domains import it.
 
 export type DecisionEvent =
   | 'open'

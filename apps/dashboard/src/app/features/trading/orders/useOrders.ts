@@ -15,13 +15,19 @@
  *  - Store faults degrade to the honest unavailable state; create REFUSES to write into a faulted
  *    store (`[best-effort-isolated-or-null]`, AC-29).
  */
-import type { OptionRight, TickerBundle } from '@org/api';
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { entryContextFor } from '@/features/trading/model/captureDigest';
 import type { DecisionEvent, DecisionRecord } from '@/features/trading/model/types';
 import { SCHEMA_VERSION as DECISION_SCHEMA } from '@/features/trading/model/types';
-import { allDecisions, appendDecision, newId, putPosition } from '@/features/trading/positions/store';
-import { PORTFOLIO_SCHEMA_VERSION, Position } from '@/features/trading/positions/types';
+import type { SimPosition } from '@/features/trading/positions/leg';
+import {
+  allDecisions,
+  appendDecision,
+  newId,
+  putPosition,
+} from '@/features/trading/positions/store';
+import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
+import type { OptionRight, TickerBundle } from '@org/api';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { STORE_FAULT_TITLE } from './copy';
 import { EngineTick, evaluateOrder, isClockExpired, OrderTransition } from './engine';
 import {
@@ -90,7 +96,10 @@ function orderDecision(
     position_fingerprint: '',
     schema_version: DECISION_SCHEMA,
     // outcome-ledger capture (decision-point events only) — never gates the order write.
-    ...entryContextFor(event, { bundle: ctx.bundle ?? null, aiRecFingerprint: recIdentityOf(order) }),
+    ...entryContextFor(event, {
+      bundle: ctx.bundle ?? null,
+      aiRecFingerprint: recIdentityOf(order),
+    }),
     ...extra,
   } as DecisionRecord;
 }
@@ -206,22 +215,33 @@ export function applyOrderTransition(
   }
 
   // filled — trigger + fill may have collapsed in one tick; both facts are recorded (arch §2).
-  const position: Position = {
+  // A sim-order fill produces exactly ONE position in the ONE book (AC-18). Post-cutover that book
+  // holds `SimPosition`s, so the fill is written as a one-element leg list — the same single open
+  // path a one-leg manual entry takes. The order→position link stays an id string: no new edge out
+  // of `orders/` (SPEC §2.7).
+  const position: SimPosition = {
     id: newId(),
-    ticker: current.ticker,
-    expiration: current.expiration,
-    strike: current.strike,
-    right: current.right,
-    side: 'long',
-    qty: current.qty,
-    entry_mark: transition.fill_mark,
-    entry_basis: transition.fill_basis,
-    entry_time: transition.filled_time,
-    stop: current.stop,
-    target: current.target,
+    legs: [
+      {
+        id: `${newId()}-l0`,
+        kind: 'option',
+        ticker: current.ticker,
+        side: 'long',
+        qty: current.qty,
+        multiplier: 100,
+        entry_price: transition.fill_mark,
+        entry_basis: transition.fill_basis,
+        expiration: current.expiration,
+        strike: current.strike,
+        right: current.right,
+      },
+    ],
+    opened_time: transition.filled_time,
     status: 'open',
     entry_mode: current.limit_price != null ? 'limit' : 'market',
     limit_price: current.limit_price,
+    stop: current.stop,
+    target: current.target,
     schema_version: PORTFOLIO_SCHEMA_VERSION,
     origin_order_id: current.id,
   };
@@ -261,11 +281,13 @@ export function applyOrderTransition(
     clock_time: transition.filled_time,
     trade_id: position.id,
     contract: {
-      ticker: position.ticker,
-      expiration: position.expiration,
-      strike: position.strike,
-      right: position.right,
-      qty: position.qty,
+      // Read off the position's ONE leg — the fill created it, so this is the same contract the
+      // order names, and the record is byte-identical to what shipped.
+      ticker: position.legs[0].ticker,
+      expiration: position.legs[0].expiration ?? '',
+      strike: position.legs[0].strike ?? 0,
+      right: position.legs[0].right ?? current.right,
+      qty: position.legs[0].qty,
     },
     mark_price: transition.fill_mark,
     mark_basis: transition.fill_basis as DecisionRecord['mark_basis'],

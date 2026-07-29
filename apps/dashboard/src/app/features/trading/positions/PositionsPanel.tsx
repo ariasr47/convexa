@@ -12,17 +12,15 @@
  * on an SSE drop via PositionsView/PositionRow while static records persist (`[live-vs-static-isolation]`);
  * positions never feed scoring (`[additive-keeps-score-byte-identical]`).
  */
+import { SignInPrompt } from '@/features/auth/SignInPrompt';
+import { AUTH_COPY } from '@/features/auth/copy';
+import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
+import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
 import { Box, Typography } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useMemo, useState } from 'react';
-import { SignInPrompt } from '@/features/auth/SignInPrompt';
-import { AUTH_COPY } from '@/features/auth/copy';
-import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
-import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
 import { CustomizationToolbar } from './CustomizationToolbar';
-import type { RowContext } from './PositionRow';
 import { PositionsView } from './PositionsView';
-import type { DerivedRow } from './derive';
 import { deriveGroups } from './derive';
 import type { PositionStatus } from './types';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
@@ -82,22 +80,19 @@ export function PositionsPanel({
   // Orders panel above.
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
-  // Build a markRes for a row by re-running the existing engine off the row's tracked stats.
-  const markResFor = (row: DerivedRow): RowContext['markRes'] => {
-    if (row.position.status !== 'open' && row.position.status !== 'pending') return null;
-    return pf.markFor(row.position);
-  };
-
+  // No `markResFor` any more: every presentational component reads the `PositionView` the hook
+  // already built (`pf.rows[i].view`), so the row and the card can never disagree about a number.
   const { working } = pf;
   const groups = useMemo(
     () =>
-      deriveGroups(pf.rows, {
+      deriveGroups(pf.views, {
         filter: working.filter,
         sortKey: working.sortKey,
         sortDir: working.sortDir,
         group: working.group,
+        sessionDeltaOf: pf.sessionDeltaFor,
       }),
-    [pf.rows, working.filter, working.sortKey, working.sortDir, working.group],
+    [pf.views, pf.sessionDeltaFor, working.filter, working.sortKey, working.sortDir, working.group],
   );
 
   const strikeList = Array.from(
@@ -131,6 +126,15 @@ export function PositionsPanel({
         streamOffline={streamOffline}
         onOpenEntry={onRequestOpenEntry}
         canOpenEntry={!!data}
+        // Driven FROM the health flag, computed synchronously at store init — never from trying a
+        // write and failing. That is what guarantees no frame paints an enabled affordance.
+        faulted={pf.health.faulted}
+        // The banner region's two dismissible notices. Both PRODUCED by the store read (the merge
+        // notice from `provenance`, the stale-view name from read-time view normalization) — F14
+        // built the props and the render; this is the producer they were waiting on.
+        mergeNoticePending={pf.mergeNoticePending}
+        onDismissMerge={pf.dismissMerge}
+        staleViewName={pf.staleViewName}
       />
 
       {/* Honest browser-local disclosure (D6d, mandatory) — a subtle info line; shown whether signed
@@ -149,13 +153,14 @@ export function PositionsPanel({
         layout={working.layout}
         density={working.density}
         streamOffline={streamOffline}
+        faulted={pf.health.faulted}
         totalCount={pf.positions.length}
         isHistory={isHistoryFilter(working.filter.status)}
-        markResFor={markResFor}
         trendFor={pf.trendFor}
+        sessionDeltaFor={pf.sessionDeltaFor}
         onOpenEntry={onRequestOpenEntry}
         onClearFilter={() =>
-          pf.setFilter({ ticker: null, strategy: null, expiry: null, status: ['open'] })
+          pf.setFilter({ ticker: null, structure: null, expiry: null, status: ['open'] })
         }
         onClose={pf.closePosition}
         onCancel={pf.cancelLimit}
@@ -166,14 +171,17 @@ export function PositionsPanel({
           rests a limit `pending` (fills only on a live cross via the existing resolver lifecycle), so
           `restingLimit` is on. Its mode-tagged submit is structurally an `OpenPositionInput`; confirm
           stays the server-gated write upstream (`useGate` → POST /api/positions/sim-trade/gate). */}
+      {/* The dialog NEVER OPENS on a faulted store (AC-63): the refusal is applied at the source,
+          not by opening something the confirm would then refuse. */}
       <TradeEntryDialog
-        open={entryOpen}
+        open={entryOpen && !pf.health.faulted}
         ticker={ticker}
         expirations={expirations}
         strikes={strikeList}
         spot={m?.price ?? 0}
         prefill={entryPrefill}
         restingLimit
+        multiLeg
         onClose={() => onEntryOpen(false)}
         onConfirm={onConfirm}
       />

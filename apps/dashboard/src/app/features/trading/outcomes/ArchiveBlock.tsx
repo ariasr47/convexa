@@ -16,6 +16,8 @@
  * line. Nothing is parsed-and-written before Import is pressed; a declined import leaves the stores
  * byte-untouched and says so.
  */
+import { TR_ARCHIVE_PARTIAL_NOTE } from '@/features/trading/positions/labels';
+import { positionsFaulted } from '@/features/trading/positions/store';
 import {
   Alert,
   Box,
@@ -86,15 +88,32 @@ type DialogState =
   | { step: 'report'; report: ImportReport }
   | { step: 'declined'; reason: DeclineReason };
 
-export function ArchiveBlock({ onImported }: { onImported: () => void }) {
+export function ArchiveBlock({
+  onImported,
+  // READ FROM THE STORE, synchronously on every render — not threaded as a prop. `TrackRecordSection`
+  // is bound by AC-E17 to exactly one prop, and correctly so: it is a STATIC historical read that
+  // must never take a liveness input. Store health is not liveness, and this block already imports
+  // the positions store for the archive itself, so it asks directly.
+  faulted = positionsFaulted(),
+}: {
+  onImported: () => void;
+  /**
+   * The positions store is faulted (SPEC §2.9, AC-68). Export STILL WORKS and the `Export archive`
+   * label is UNCHANGED — an archive of what loaded is exactly what a trader in this state needs.
+   * What changes is honesty about completeness: the lead and the post-export snack both say the
+   * archive holds only the records that could be read.
+   */
+  faulted?: boolean;
+}) {
   const [dialog, setDialog] = useState<DialogState>({ step: 'closed' });
   const [snack, setSnack] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onExport = useCallback(() => {
     const { filename, empty } = downloadArchive();
-    setSnack(empty ? trExportEmpty(filename) : trExportOk(filename));
-  }, []);
+    const base = empty ? trExportEmpty(filename) : trExportOk(filename);
+    setSnack(faulted ? `${base} ${TR_ARCHIVE_PARTIAL_NOTE}` : base);
+  }, [faulted]);
 
   const onPick = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,8 +157,12 @@ export function ArchiveBlock({ onImported }: { onImported: () => void }) {
       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
         {TR_ARCHIVE_HEADING}
       </Typography>
-      <Typography variant="body2" data-testid="tr-archive-lead" sx={{ color: 'text.secondary', mb: 1 }}>
-        {TR_ARCHIVE_LEAD}
+      <Typography
+        variant="body2"
+        data-testid="tr-archive-lead"
+        sx={{ color: 'text.secondary', mb: 1 }}
+      >
+        {faulted ? `${TR_ARCHIVE_LEAD} ${TR_ARCHIVE_PARTIAL_NOTE}` : TR_ARCHIVE_LEAD}
       </Typography>
       <Stack direction="row" spacing={1}>
         {/* Always enabled, never gated, never disabled — an empty archive is a valid archive. */}
@@ -167,12 +190,17 @@ export function ArchiveBlock({ onImported }: { onImported: () => void }) {
       <Dialog open={dialog.step !== 'closed'} onClose={() => setDialog({ step: 'closed' })}>
         {dialog.step === 'confirm' && (
           <>
-            <DialogTitle data-testid="tr-import-confirm-title">{TR_IMPORT_CONFIRM_TITLE}</DialogTitle>
+            <DialogTitle data-testid="tr-import-confirm-title">
+              {TR_IMPORT_CONFIRM_TITLE}
+            </DialogTitle>
             <DialogContent>
               <Typography variant="body2" data-testid="tr-import-confirm-body">
                 {TR_IMPORT_CONFIRM_BODY}
               </Typography>
-              <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
+              <Typography
+                variant="caption"
+                sx={{ display: 'block', mt: 1, color: 'text.secondary' }}
+              >
                 {trImportConfirmFile(dialog.filename)}
               </Typography>
             </DialogContent>

@@ -24,6 +24,7 @@
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { AUTH_COPY } from '@/features/auth/copy';
+import { themeForPref } from '@/shared/theme/theme';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
 import { streamTicker } from '@org/api';
@@ -36,14 +37,30 @@ import { LiveTabPanel } from './LiveTabPanel';
 // zero-import lock is asserted on the SOURCE TEXT, so it is enforced by construction.
 import liveTabSource from './LiveTabPanel?raw';
 import { PortfolioPanel } from './PortfolioPanel';
+import { PositionsView, type ViewProps } from './PositionsView';
+import type { DerivedGroup } from './derive';
+import {
+  FX_PROTECTIVE_PUT,
+  FX_SHARES_LONG,
+  FX_SHORT_CALL,
+  FX_ZERO_COST_COLLAR,
+  MALFORMED_LEGACY_RECORD,
+  viewOf,
+  viewOfLegacy,
+} from './fixtures';
+import { MAX_LOSS_WITHHELD_META } from './labels';
 import {
   PORTFOLIO_V1_KEY,
-  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
   __resetMemory,
   allPositions,
   decisionsForPosition,
+  getCustomization,
+  putCustomization,
 } from './store';
+import type { Position } from './types';
 import { usePortfolio } from './usePortfolio';
+import type { PositionView } from './view';
 
 const theme = createTheme();
 
@@ -332,7 +349,7 @@ describe('positions · end-to-end flow (centerpiece)', () => {
     const lots = allPositions();
     expect(lots).toHaveLength(2);
     expect(new Set(lots.map((p) => p.id)).size).toBe(2);
-    expect(lots.map((p) => p.entry_mark).sort()).toEqual([5, 7]);
+    expect(lots.map((p) => p.legs[0].entry_price).sort()).toEqual([5, 7]);
 
     // --- per-row marks update on the feed ---
     pushLive({ mid: 252 });
@@ -360,7 +377,7 @@ describe('positions · end-to-end flow (centerpiece)', () => {
       expect(pending?.status).toBe('open');
     });
     const filled = allPositions().find((p) => p.limit_price === 4)!;
-    expect(filled.entry_mark).toBe(4); // filled AT the limit, never better
+    expect(filled.legs[0].entry_price).toBe(4); // filled AT the limit, never better
     expect(decisionsForPosition(filled.id).some((d) => d.event_type === 'limit_filled')).toBe(true);
 
     // --- SSE DROP: live cells dim + ⏸ offline + last-known; static records persist ---
@@ -506,14 +523,14 @@ describe('positions · durability across reload', () => {
     const migrated = screen.getByTestId('cell-contract');
     expect(within(migrated).getByText('TSLA')).toBeInTheDocument();
     expect(allPositions()[0].id).toBe('legacy-1');
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
 
     // Reload (re-mount) — still exactly one open position, intact.
     __resetMemory();
     cleanup();
     renderHarness();
     await waitFor(() => expect(screen.getAllByTestId('position-row').length).toBe(1));
-    expect(allPositions()[0].entry_mark).toBe(5);
+    expect(allPositions()[0].legs[0].entry_price).toBe(5);
   }, 20000);
 });
 
@@ -689,5 +706,236 @@ describe('positions · additive (never a scoring input)', () => {
     );
     expect(nonAuth.length).toBeGreaterThan(0);
     expect(nonAuth.every((u) => u.includes('/api/contract/'))).toBe(true);
+  }, 20000);
+});
+
+// =================================================================================================
+// 7. The row on `PositionView` — the four literals, the risk slot, and the breakpoint gate (F11)
+//
+// Component-level: drives the REAL `PositionsView` off the REAL projection (`buildPositionView` via
+// the shared fixture library), with NO network at all. Risk-based — these assert the DISTINCTIONS a
+// well-meaning "let's shorten this cell" erases, never the wording, which is review-class.
+// =================================================================================================
+
+/** A query-aware `matchMedia` so the `lg` gate can actually be exercised (jsdom has none). */
+function stubViewport(width: number) {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((q: string) => {
+      const min = /min-width:\s*([\d.]+)px/.exec(q);
+      const max = /max-width:\s*([\d.]+)px/.exec(q);
+      const matches = !((min && width < Number(min[1])) || (max && width > Number(max[1])));
+      return {
+        matches,
+        media: q,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        onchange: null,
+        dispatchEvent: () => false,
+      };
+    }),
+  );
+}
+
+function groupsOf(views: PositionView[]): DerivedGroup[] {
+  return [{ key: '__all__', label: 'All', views, subtotal: 0, excludedCount: 0 }];
+}
+
+function viewProps(views: PositionView[], over: Partial<ViewProps> = {}): ViewProps {
+  return {
+    groups: groupsOf(views),
+    columns: [],
+    layout: 'table',
+    density: 'comfortable',
+    streamOffline: false,
+    totalCount: views.length,
+    isHistory: false,
+    trendFor: () => [],
+    onOpenEntry: vi.fn(),
+    onClearFilter: vi.fn(),
+    onClose: vi.fn(),
+    onCancel: vi.fn(),
+    ...over,
+  };
+}
+
+function renderTable(views: PositionView[], over: Partial<ViewProps> = {}) {
+  return render(
+    <ThemeProvider theme={themeForPref('dark')}>
+      <PositionsView {...viewProps(views, over)} />
+    </ThemeProvider>,
+  );
+}
+
+/** A legacy record whose expiry and right were NEVER recorded — it lifts to nulls, never guesses. */
+const UNRECORDED_FACTS = {
+  ...(MALFORMED_LEGACY_RECORD as unknown as Position),
+  id: 'p-unrecorded',
+  expiration: undefined as unknown as string,
+} as Position;
+
+describe('positions · the four not-a-number literals (AC-31)', () => {
+  beforeEach(() => stubViewport(1440));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('renders four DISTINCT literals, each independently assertable, none for the meaning of another', () => {
+    renderTable([
+      viewOf(FX_SHARES_LONG), //                    —            not applicable to the instrument
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }), // unavailable  the lookup failed this cycle
+      viewOfLegacy(UNRECORDED_FACTS), //               not recorded the record never held the fact
+      viewOf(FX_ZERO_COST_COLLAR), //               no basis     the denominator is about zero
+    ]);
+    expect(screen.getAllByTestId('cell-unavailable').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('cell-not-recorded')).toBeInTheDocument();
+    expect(screen.getByTestId('cell-no-basis')).toBeInTheDocument();
+    // …and no two of them share their text.
+    const texts = new Set([
+      screen.getAllByTestId('cell-unavailable')[0].textContent,
+      screen.getByTestId('cell-not-recorded').textContent,
+      screen.getByTestId('cell-no-basis').textContent,
+      '—',
+    ]);
+    expect(texts.size).toBe(4);
+  });
+
+  it('AC-26 — the literal text undefined, null and NaN never appear in any cell', () => {
+    renderTable([
+      viewOf(FX_SHARES_LONG),
+      viewOf(FX_PROTECTIVE_PUT, { mark: null }),
+      viewOfLegacy(UNRECORDED_FACTS),
+      viewOf(FX_ZERO_COST_COLLAR),
+      viewOf(FX_SHORT_CALL),
+    ]);
+    expect(screen.getByTestId('positions-table').textContent).not.toMatch(/undefined|null|NaN/);
+  });
+
+  it('AC-31 — `no basis` is a CELL-level state: the dollar P/L beside it still renders a figure', () => {
+    renderTable([viewOf(FX_ZERO_COST_COLLAR)]);
+    const row = screen.getByTestId('position-row');
+    expect(within(row).getByTestId('cell-no-basis')).toBeInTheDocument();
+    expect(within(row).getByTestId('cell-pl').textContent).toMatch(/[+−]\$\d/);
+  });
+
+  it('a shares row states NOT-APPLICABLE, never `unavailable` and never `not recorded`', () => {
+    renderTable([viewOf(FX_SHARES_LONG)]);
+    const row = screen.getByTestId('position-row');
+    expect(within(row).queryByTestId('cell-not-recorded')).toBeNull();
+    expect(within(row).queryByTestId('cell-unavailable')).toBeNull();
+    expect(within(row).getByTestId('cell-qty').textContent).toBe('100 sh');
+  });
+});
+
+describe('positions · the risk slot (AC-28/AC-29/AC-42)', () => {
+  beforeEach(() => stubViewport(1440));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('AC-28 — the risk slot renders an UNSIGNED figure, never +$ or −$', () => {
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    const cell = screen.getByTestId('cell-max-loss');
+    expect(cell.textContent).toMatch(/^\$\d/);
+    expect(cell.textContent).not.toMatch(/^[+−]/);
+  });
+
+  it('AC-29 — an ineligible structure renders a reason, never a bare —, never 0, never a number', () => {
+    renderTable([viewOf(FX_SHORT_CALL)]);
+    const cell = screen.getByTestId('cell-max-loss');
+    expect(cell.textContent).toBe(MAX_LOSS_WITHHELD_META.unbounded.label);
+    expect(cell.textContent).not.toMatch(/\d/);
+    expect(cell.textContent).not.toBe('—');
+  });
+
+  it('AC-29 — `unlimited risk` and `unnamed shape` stay distinguishable, never clipped to a prefix', () => {
+    renderTable([viewOf(FX_SHORT_CALL), viewOfLegacy(UNRECORDED_FACTS)]);
+    const texts = screen.getAllByTestId('cell-max-loss').map((n) => n.textContent);
+    expect(texts).toHaveLength(2);
+    expect(new Set(texts).size).toBe(texts.length);
+    for (const t of texts) expect(t).not.toMatch(/…|\.\.\./);
+  });
+
+  it('AC-42/AC-29 — the risk slot NEVER dims: it is STATIC, not live-derived (className identity)', () => {
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    const online = screen.getByTestId('cell-max-loss').className;
+    const onlinePl = screen.getByTestId('cell-pl').className;
+    cleanup();
+
+    renderTable([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
+    // The live cell DID change (so the guard is not vacuous) and the static risk slot did NOT.
+    expect(screen.getByTestId('cell-pl').className).not.toBe(onlinePl);
+    expect(screen.getByTestId('cell-max-loss').className).toBe(online);
+  });
+
+  it('every static read survives an SSE drop byte-identically (live-vs-static-isolation)', () => {
+    const STATIC = ['structure-line', 'cell-entry', 'cell-qty', 'cell-max-loss', 'cell-structure'];
+    const probe = () =>
+      STATIC.map((t) => [screen.getByTestId(t).textContent, screen.getByTestId(t).className]);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    const before = probe();
+    cleanup();
+    renderTable([viewOf(FX_PROTECTIVE_PUT)], { streamOffline: true });
+    expect(probe()).toEqual(before);
+  });
+});
+
+describe('positions · the max_loss breakpoint gate (AC-82, GATE Z ruling)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('renders the column at `lg` and above', () => {
+    stubViewport(1280);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    expect(screen.getByTestId('cell-max-loss')).toBeInTheDocument();
+    expect(within(screen.getByTestId('positions-table')).getByText('Max loss')).toBeInTheDocument();
+  });
+
+  it('OMITS the column at `md` — the ruled band, asserted rather than re-measured', () => {
+    stubViewport(900);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    expect(screen.queryByTestId('cell-max-loss')).toBeNull();
+    expect(within(screen.getByTestId('positions-table')).queryByText('Max loss')).toBeNull();
+  });
+
+  it('below `md` the figure is NOT lost — the card footer carries it (no band loses it silently)', () => {
+    stubViewport(393);
+    renderTable([viewOf(FX_PROTECTIVE_PUT)]);
+    expect(screen.getByTestId('positions-cards')).toBeInTheDocument();
+    expect(screen.getByTestId('card-max-loss').textContent).toMatch(/^\$\d/);
+  });
+});
+
+describe('positions · AC-82 — a saved view is never rewritten by the new column', () => {
+  it('a view stored BEFORE this release is byte-identical after a render, a group and a view switch', async () => {
+    const user = userEvent.setup();
+    stubViewport(1440);
+    installBackend();
+    // PRE-RELEASE BYTES, on purpose: these column lists are what is already sitting in a shipped
+    // user's localStorage — the builtin view WITHOUT `max_loss`, plus a hand-picked named view.
+    const PRE_RELEASE_BUILTIN = ['contract', 'structure', 'qty', 'entry', 'mark', 'pl', 'expiry'];
+    const seeded = getCustomization();
+    seeded.views = [
+      { ...seeded.views[0], config: { ...seeded.views[0].config, columns: PRE_RELEASE_BUILTIN } },
+      {
+        id: 'v-tech',
+        name: 'Tech swings',
+        config: { ...seeded.working, columns: ['contract', 'pl', 'expiry'] },
+      },
+    ] as typeof seeded.views;
+    putCustomization(seeded);
+    const before = JSON.stringify(getCustomization().views);
+
+    renderHarness();
+    await user.click(screen.getByTestId('group-select-ticker'));
+    await user.click(screen.getByTestId('view-picker'));
+
+    const stored = JSON.parse(localStorage.getItem(PORTFOLIO_V3_KEY) as string) as {
+      customization: { views: { config: { columns: string[] } }[] };
+    };
+    // No view is rewritten, no stored column list GAINS `max_loss`, and re-saving is never required
+    // to keep a view as it was — including the seeded builtin one.
+    expect(JSON.stringify(stored.customization.views)).toBe(before);
+    for (const v of stored.customization.views) {
+      expect(v.config.columns).not.toContain('max_loss');
+    }
+    vi.unstubAllGlobals();
   }, 20000);
 });

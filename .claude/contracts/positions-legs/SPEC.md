@@ -453,8 +453,21 @@ create a brand-new `orders/ → positions/` edge that does not exist today.
 | `model/store` write paths (`putTrade`, `clearTrade`, the 2nd `appendDecision`) | **deleted** | one store, one log — **Q2 resolved** |
 | `model/store` read paths | demoted to a read-only legacy source consumed by `positions/migrate` | migration + harvest only |
 | `model/useGhostTrade` | **deleted**; the Ticker page consumes `usePortfolio` scoped to the focused ticker | this *is* the merge |
-| `model/OpportunityTier` | → a `pages/ticker` widget | one consumer; already a named deferral |
+| `model/OpportunityTier` | **SPLIT** — the colour-bearing widget + Prime banner → `pages/ticker/widgets/opportunity-tier/`; the closed tier **`WORD` lookup stays in the kernel** as `model/tier.ts` | **three** consumers, not one — corrected against the code at F17 (see below) |
 | `model/captureDigest` | **stays** in the kernel | both recorders use it |
+
+**Correction recorded — `model/OpportunityTier` had THREE consumers, not one.** This spec (and the
+build plan after it) carried "one consumer; already a named deferral" from R1. Verified false at F17:
+`pages/ticker` renders it in the Opportunity tile **and** the Prime banner, and
+**`features/trading/outcomes/ledger.ts` prints it in the track record's tier cells**. Moving the whole
+module to `pages/ticker/widgets/` would therefore have created a **`features/ → pages/` import and
+inverted the downward-only dependency direction this very section binds.** The lane split it instead:
+the colour-bearing helper and the banner are page chrome and moved; the six-line closed `WORD` lookup
+stayed in the kernel as `model/tier.ts`, for exactly the reason `MarkBasis` and `DecisionRecord` stay —
+more than one domain reads it. **Do not "finish" this move later.** The split is the resolution, not a
+half-done migration, and completing it would invert the dependency direction. (The colour helper is
+deliberately *not* shared: it returns a palette colour, and a **rate must never be tinted** — the
+outcome-ledger canon.)
 
 New under `features/trading/positions/`: **`leg`** (the type + sign/value/cost primitives),
 **`structure`** (the recogniser, pure + total), **`migrate`** (the ONE lift function, shared by the
@@ -542,6 +555,22 @@ lexicographic; **if there is no long option leg, the short option leg** with the
 `|qty × multiplier|` and the same tiebreaks, still `kind: 'primary_leg'`. Within a position, `none` is
 reachable only when there is no option leg at all.
 
+**Which position supplies the params when the evaluation is suppressed — RATIFIED 2026-07-28.** The
+unconditional-request rule means *something* must still supply `pos_*` when a ticker holds N>1 open
+positions. `tickerEvalSubject` picks the **lowest-id open position, deterministically, for the request
+only**, and returns `subject: { kind: 'none', reason: 'multiple_positions' }` with `suppressed: true`
+for the render. The alternative — dropping `pos_*` when N>1 — **is branching the fetch on position
+count, which AC-74 and AC-83 both forbid**; it would be a GATE Z amendment, not a build choice. Lowest
+id is chosen because it is stable across reloads and re-sorts, the same property the `leg.id` tiebreak
+exists for one level down.
+
+> **STANDING CAVEAT — the picked position must NEVER reach a surface.** It exists to keep a request
+> shape constant, and nothing else. If a future feature surfaces it — names it, highlights its row,
+> labels an alert with it — that is exactly the *"quietly assert **this** is your NVDA position"*
+> failure ruling #9 was made to prevent, arriving through the back door. **The test asserting the pick
+> stays unsurfaced is the guard** (`pos-params.spec.tsx`, which asserts both halves: the params are
+> emitted, and the subject is `none`/`suppressed`).
+
 **No wire change, at either level.** The `pos_*` params are unchanged; the fetch is **unconditional and
 its shape never branches** — it does not branch on leg count and it does not branch on position count —
 so the request stays byte-identical and the *render* decides in both cases. That is the easiest form of
@@ -585,6 +614,27 @@ violates the second, so `loss-free-durable-migration` is **half-violated in ship
 readable-but-unparseable prior blob`) and is the pattern to copy. Fixing this is in scope and carries
 its own AC (AC-56). The shape change makes parse failures *more* likely, not less.
 
+### 2.11 View normalization on read — in memory only, never persisted
+
+**Correction 2026-07-28 — a false premise this spec implied and the build plan carried.**
+`normalizeViewConfig` was **not applied on read** before the cutover phase: it was referenced only by
+two spec files and by **no application code**. Two consequences nobody had noticed — `staleViewName`
+had **no producer**, so the stale-saved-view notice could never fire; and the `strategy` → `structure`
+group/sort renames were **dead in the running app**. It is now wired into `usePortfolio`'s
+customization read, which is what makes AC-54 and the §4 notice reachable at all.
+
+**The wiring rule, stated exactly, because getting it wrong silently breaks two guarantees:**
+
+> **Saved views are normalized for RENDER, never in storage. Only `working` is normalized, and only
+> in memory, until the user chooses to save. The stored `views[]` stay byte-for-byte verbatim.**
+
+That last clause is not a preference — it is what keeps **AC-82's storage guarantee** (no view's stored
+column list mutates, no view is rewritten, re-saving is never required) and **AC-54's non-writing
+requirement** (*"reading a view never mutates it"*, which is `loss-free-durable-migration` expressed at
+the UI layer) true at the same time. **Do not later "helpfully" persist the normalized view.** Writing
+the normalized result back would heal the stale value silently, which is precisely what the notice's
+own copy — *"Save the view to keep it this way"* rather than "We fixed your view" — exists to avoid.
+
 ### Failure modes + isolation
 
 | Failure | Behaviour |
@@ -598,7 +648,7 @@ its own AC (AC-56). The shape change makes parse failures *more* likely, not les
 | SSE drop | Every leg resolves to `last_known` ⇒ a dimmed but present number, `⏸` markers, basis `last_known`. Static reads (structure line, qty, net entry, max loss, expiry, status) never dim. Behaviour must be **unchanged from shipped** (`live-vs-static-isolation`). |
 | A recogniser miss | Renders `Custom`. Cosmetic by construction — the label never feeds P/L, fills, persistence or any fetch. |
 | A saved view referencing a value that no longer exists | The filter on that axis degrades to "no filter" for rendering. The view **opens, shows rows, never errors, never blanks**, is visibly flagged `adjusted`, and **the store is not written until the user chooses to save**. Reading a view never mutates it. |
-| Faulted + offline together | Independent and independently legible. Faulted dims nothing and shows no `⏸`; offline disables no control. Both banners render, in the §4 priority order. |
+| Faulted + offline together | Independent and independently legible. Faulted **dims no data** and shows no `⏸` — only refused *controls* take the reduced-emphasis treatment (§4); offline disables no control. Both banners render, in the §4 priority order. |
 
 **Must never be partially applied:** the v3 promote-write (one `setItem`, or nothing); the union
 itself (abort entirely rather than freeze a partial history); a position's net mark and P/L (all legs
@@ -690,14 +740,14 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 27 | As a trader I want to know what a percentage is measured against | The P/L% column header carries a basis-aware tip and each row's P/L% cell tip names **that row's** basis (net debit vs net credit). No new column is added | review |
 | 28 | As a defined-risk trader I want to know what I can lose | Each of the **15** structures in the eligible set (§2.4) shows **one** max-loss figure in the risk slot, rendered **unsigned** (`$560`, never `+$560`/`−$560`), with its at-expiration assumption disclosed (held to expiration, excludes fees, slippage, assignment and taxes). This includes a plain long call, a long put, a short put and 100 long shares — not only the multi-leg structures | test |
 | 29 | As a trader with an unbounded or multi-expiry shape I want honesty, not a number | Every other structure — `Custom`, any structurally unbounded shape (`short_call`, `short_straddle`, `short_strangle`, `shares_short`), `calendar`, `diagonal` — shows **no figure and one short stated reason** in the risk slot (`unlimited risk` · `mixed expiries` · `unnamed shape`): never blank, never `0`, never a bare `—`, never the word `Unlimited` standing alone as a figure, never a computed number | test |
-| 30 | As a mobile trader I want the card to stay a scan surface | The collapsed card carries **at most one** risk figure (or its one reason), never three; `/positions` keeps `scrollWidth ≤ innerWidth` at 393px in both colour schemes, including with a 4-leg disclosure expanded | test |
+| 30 | As a mobile trader I want the card to stay a scan surface | The collapsed card carries **at most one** risk figure (or its one reason), never three; `/positions` keeps `scrollWidth ≤ innerWidth` at 393px in both colour schemes, including with a 4-leg disclosure expanded | test — **browser check verified at V7**, not in phase 3 (multi-leg is unrepresentable until the store can hold it at F15/F18, and jsdom measures every box at 0, so neither the unit nor the browser check is possible earlier). **GATE Q should look for it in V7's full-page integration over a seeded durable store.** The AC itself is unweakened |
 | 31 | As a trader I want four different truths to look different | `—` (not applicable), `unavailable` (failed this cycle), `not recorded` (the saved record never held this fact) and `no basis` (the denominator is about zero, while the dollar P/L beside it still renders) are **four** distinct literals, each independently assertable — three by their own testid (`cell-unavailable`, `cell-not-recorded`, `cell-no-basis`) and `—` by its shipped treatment — and none is ever rendered for another's meaning | test |
 | 32 | As an old user I don't want a permanent lie about transience | A record that can never be priced renders `unavailable` with the permanent tip (`UNPRICEABLE_RECORD_TIP`), not the this-cycle tip; it is excluded from the group subtotal and counted in `· N positions excluded (unavailable)`; it is still listed, still closable, never hidden, never pruned | review |
 | 33 | As a share holder I want empty cells to be legible | A shares position renders `—` (not blank, not `N/A`, not `0`) in strike / right / expiry / DTE, carries a `Shares` chip, and its qty reads `100 sh` | review |
 | 34 | As a credit trader I don't want to be told I "paid" money I received | No surface reads `Cost`; a debit reads `Net debit`, a credit reads `Net credit`, derived from the sign; the confirm button label is unchanged; the P/L tooltip no longer claims a universal ×100 | review |
 | 35 | As a trader I want the legs one click away, not on another page | The leg disclosure appears only when a position has more than one leg; expanding it shows one line per leg with side as a **word**, size, instrument, and that leg's own mark + basis | review |
 | 36 | As a trader I want density to survive | Leg-disclosure state is ephemeral: it is absent from the saved view config, never persisted, and gone after reload | test |
-| 37 | As a trader I want a long strike list to be legible, not truncated-looking | An over-long structure line collapses to a first-and-last form (e.g. `$380…$460 condor (4 legs)`) authored in the string, never a CSS ellipsis mid-number, with the full list reachable in the tooltip **and** the disclosure | review |
+| 37 | As a trader I want a long strike list to be legible, not truncated-looking | An over-long structure line collapses to a first-and-last form (e.g. `$380…$460 (4 legs)`) authored in the string, never a CSS ellipsis mid-number, with the full list reachable in the tooltip **and** the disclosure. On a multi-leg row the line carries the leg **facts** only — the structure **name** lives once, in the `Structure` chip | review |
 
 ### D — Live / degraded (`live-vs-static-isolation` must survive the refactor)
 
@@ -738,9 +788,9 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 |---|---|---|---|
 | 61 | As a trader I want the app to never take an input it will not keep | While the store is faulted, **no durable write occurs from any surface** — attempting to open, close, cancel or save a view leaves browser storage byte-identical | test |
 | 62 | As a trader I want to know what happened and what was protected | The faulted banner renders above the table, is non-dismissible, carries a warning icon, reads the §4 copy verbatim, and its two actions (export pointer, reload) are present and operable | review |
-| 63 | As a keyboard user I want to reach the reason a control is refused | Every mutating control renders `aria-disabled="true"`, **remains focusable and tooltip-reachable**, is described by the banner, and does nothing when activated; the entry dialog never opens | test |
+| 63 | As a keyboard user I want to reach the reason a control is refused — and to see it is refused before I try | Every mutating control **renders visibly refused** (reduced-emphasis token treatment, no hover elevation or colour shift — distinguishable from its enabled state in both colour schemes) **and** renders `aria-disabled="true"`, **remains focusable and tooltip-reachable**, is described by the banner, and does nothing when activated; the entry dialog never opens. The HTML `disabled` attribute is never used, and nothing else (`pointer-events: none`, tab-order removal) may make the reason unreachable | test |
 | 64 | As a trader I don't want one frame of a working app | No frame ever paints an enabled entry / close / cancel / save affordance on a faulted store — the refusal is present on the first paint | test |
-| 65 | As a trader I want two different problems to read differently | Faulted and offline are independent: faulted dims nothing and shows no `⏸`; offline disables no control; when both apply, both banners render in the declared priority order | test |
+| 65 | As a trader I want two different problems to read differently | Faulted and offline are independent: faulted **dims no data** — no figure, no live block, no `⏸`, and no number changes (only refused *controls* take the reduced-emphasis treatment of AC-63); offline disables no control; when both apply, both banners render in the declared priority order | test |
 | 66 | As a trader I don't want a notice I can never dismiss | While faulted, **no dismissible notice renders** — not the merge notice, not the stale-saved-view notice | test |
 | 67 | As a trader with nothing loaded I don't want to be told I have no history | Faulted with zero rows renders the faulted empty copy; the normal "no positions yet" empty state is never shown in this state | review |
 | 68 | As a trader exporting under fault I want to know it is partial | While faulted, the Archive block and the post-export snack both carry the partial-archive note; the `Export archive` label is unchanged and export still works | review |
@@ -770,9 +820,9 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 | 77 | As an operator I want scoring untouched | Opportunity score and tier on the Ticker page are unchanged by any position activity, and the `apps/api` diff is empty | test |
 | 78 | As a trader I don't want colour telling me a lie | Green/red appear **only** on P/L $, P/L %, the group subtotal, the sparkline stroke and the realized-close figure. Structure chips, leg sides, `Call`/`Put`, `debit`/`credit`, the risk slot, `—`, `unavailable`, `not recorded` and offline tags are untinted | test |
 | 79 | As a keyboard/mobile user I want the floor held | The leg disclosure is keyboard-operable with a visible authored `:focus-visible` ring and correct `aria-expanded`/`aria-controls`; leg text is ≥ 11px; mobile hit targets are ≥ 44px; stat values are never headings | test |
-| 80 | As a trader I want reading to be free of side effects | Expanding, collapsing, grouping, sorting and switching views trigger **no fetch and no store write**, and nothing on this surface can reach a real order path | test |
+| 80 | As a trader I want reading my book to never change my book | Expanding, collapsing, grouping, sorting and switching views trigger **zero fetches**, leave **the book byte-identical** (no position, leg, decision or provenance byte moves), and **rewrite no saved view**. The one byte that legitimately moves is `customization.working` — the durable view preference, which is what a view *preference* means and which predates this feature. Nothing on this surface can reach a real order path | test |
 | 81 | As a designer I want no new token values | The feature adds zero values to `tokens.ts`, contains zero hardcoded hexes, and renders with dark/light parity | test |
-| 82 | As an existing user I want a new column without my saved views being touched | The table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording. **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
+| 82 | As an existing user I want a new column without my saved views being touched | **At `lg` and above** the table shows a `Max loss` column rendering the **same** figure-or-reason as the card, with the same unsigned formatting and the same wording; **at `md` and below the column is not rendered at all**, and the figure remains available on the card (footer slot 5). **Every pre-existing saved view is byte-identical in storage after the update: no view's stored column list gains `max_loss`, no view is rewritten, and re-saving is never required to keep a view as it was** — including the seeded builtin view. *(Assert this against storage, not against the render. In v1 it holds **structurally**, because the table ignores the persisted `working.columns` and renders a fixed set — it is not a designed safeguard. A later refactor that restores column customization removes that structural guarantee and must re-establish it deliberately.)* | test |
 
 | 83 | As a trader holding three NVDA positions I don't want the app calling one of them "my position" | Position-context behaviour on the focused ticker depends on the **count of open positions** on it, three ways: **0** ⇒ no evaluation, as today · **exactly 1** ⇒ **byte-identical to today**, then the multi-leg rule applies within it · **more than 1** ⇒ **no evaluation is surfaced**, and the projection carries the explicit `multiple_positions` reason rather than an unexplained silence. The `pos_*` request stays unconditional and byte-identical in all three cases — suppression is a render decision, and a `pos_*` request still appearing for a 3-position ticker is **correct** | test |
 
@@ -792,7 +842,8 @@ risk-based rule (`qa-verify` §4). No one-test-per-AC mirroring.
 2. **Scan the book** — one dense `<tr>` per `SimPosition`, always. Left→right each row answers, in
    order: **what it is** (ticker + structure) → **how big** (qty) → **what I paid or received** (net
    entry) → **what it's worth** (mark) → **am I up** (P/L, P/L%, Δ since entry, trend) → **what I can
-   lose** (the `max_loss` column — see *The risk slot* below) → **when does it end** (expiry).
+   lose** (the `max_loss` column — **`lg` and above only**, see *The risk slot* below) → **when does it
+   end** (expiry).
 3. **Inspect the legs** — a `⌄` disclosure at the right edge of the `contract` cell, present only when
    `legs.length > 1`, opening a sibling `<tr colSpan>` with one indented line per leg. Instant, no
    keyframe. State is ephemeral.
@@ -810,16 +861,41 @@ Header stays `Ticker`; internal key `contract`. Never more than one line, never 
 today's `whiteSpace: nowrap`); the ticker stays bold mono, the descriptor stays `text.secondary` at
 `0.8rem` — multi-leg must not promote the descriptor.
 
+**RULED 2026-07-28 (GATE Z bounce, phase 4) — for a MULTI-LEG position the collapsed line carries the
+leg FACTS and drops the structure WORD. The `Structure` chip is the authoritative name.**
+
 | Structure | Cell text |
 |---|---|
 | Single-leg option (today) | `TSLA` · `$400 Call` — **byte-identical to shipped** |
-| Vertical | `TSLA` · `$400/$420 Call vertical` |
-| Calendar / diagonal | `TSLA` · `$400 Call calendar · Jul 18 → Aug 15` |
-| Iron condor | `TSLA` · `$380/$400/$440/$460 condor` |
+| Vertical | `TSLA` · `$400/$420 Call` |
+| Calendar / diagonal | `TSLA` · `$400 Call · Jul 18 → Aug 15` |
+| Iron condor | `TSLA` · `$380/$400/$440/$460` |
 | Covered call | `TSLA` · `100 sh + $420 Call` |
 | Shares only | `TSLA` · `100 shares` |
 | Unrecognised shape | `TSLA` · `4 legs` |
-| Over-long strike list | `TSLA` · `$380…$460 condor (4 legs)` — **authored in the string**, full list in tooltip **and** disclosure |
+| Over-long strike list | `TSLA` · `$380…$460 (4 legs)` — **authored in the string**, full list in tooltip **and** disclosure |
+
+**Why.** The lane re-measured at 1280 with a real 4-leg condor row and the 10px headroom is
+**overdrawn: min-content 1207 against the 1190 host, −17px.** The `contract` cell grows **+123px** to
+carry `TSLA · $360…$440 condor (4 legs)`, and every other column shrinks 5–13px to pay for it —
+including `Max loss`, 131→118. Nothing clips today and there is no page scroll, but §4 bans shrinking
+any other column below its design width, so the lane **bounced instead of squeezing, exactly as
+instructed.** The fix is deduplication, not compression: the `Structure` chip already carries
+`Iron condor` through the closed label lookup and is the **authoritative** name, so the line restating
+"condor" is the same **two names for one thing** pattern that forced the distinct-id count in AC-46 and
+the one-logical-source rule in the union. **This removes the duplication from the LINE, not from the
+table** — the name is still on every row, in the column whose job it is.
+
+**Two alternatives rejected, with their reasons, so neither returns:**
+
+- **Dropping the `Structure` column for multi-leg rows.** A column that is blank on some rows breaks
+  the property that a column means the same thing in every row — which is precisely what this feature
+  exists to establish.
+- **Accepting the compression.** `Max loss` is the column the owner ruled in **one turn after being
+  told it would otherwise be invisible**; paying for the condor by shrinking it is the wrong trade.
+
+**The lane must RE-MEASURE at 1280 after this change.** A still-overdrawn result is **another bounce,
+not a squeeze** — the standing rule above is unchanged by this ruling.
 
 Expiry stays in its own `expiry` column for single-expiry structures; it appears inside the structure
 line **only** for multi-expiry structures, where the `expiry` column then shows the **nearest** expiry
@@ -870,10 +946,13 @@ precisely what the owner's Q2 answer was aimed at. **Max loss gains a table colu
 **Three homes, one figure, identical wording in all three** — the same unsigned figure or the same one
 withheld-reason label, never both, never differently phrased:
 
-1. **Card footer slot 5** (below `md`), label `Max loss`.
+1. **Card footer slot 5** (below `md`, where the table has already collapsed to cards), label
+   `Max loss`.
 2. **The leg disclosure** (multi-leg only) — the assumption sentence when a figure exists, the
    reason's tip when one does not.
-3. **The table column** — `Max loss`, right-aligned mono `tabular-nums`, untinted.
+3. **The table column, at `lg` and above only** — `Max loss`, right-aligned mono `tabular-nums`,
+   untinted. **At `md` and below the column is not rendered** (see the GATE Z ruling below); the
+   figure remains available on the card.
 
 **The column, specified against the shipped machinery** (verified in code, not guessed —
 `positions/types.ts:96-119` and `positions/defaults.ts:11-80`):
@@ -885,10 +964,12 @@ withheld-reason label, never both, never differently phrased:
   the build until it is labelled**. No `TABLE_HEADER_LABELS` override: the header copy and the
   menu/tooltip copy are the same two words, so it stays out of that thin override map.
 - **Added to `FIGMA_COLUMNS`** (`PositionsView.tsx:31`) — this is the line that actually makes the
-  column render. The shipped table renders `const columns = FIGMA_COLUMNS` (`:209`) and **ignores the
-  persisted `working.columns` entirely**; a key that is not in `FIGMA_COLUMNS` appears nowhere, and
-  there is no column picker to opt in with (`CustomizationToolbar.tsx:51` — the columns UI is
-  explicitly "future"). Place it between `trend` and `expiry`, matching §4 Flows 2's left→right order.
+  column render, **gated to `lg` and above** per the GATE Z ruling below. The shipped table renders
+  `const columns = FIGMA_COLUMNS` (`:209`) and **ignores the persisted `working.columns` entirely**; a
+  key that is not in `FIGMA_COLUMNS` appears nowhere, and there is no column picker to opt in with
+  (`CustomizationToolbar.tsx:51` — the columns UI is explicitly "future"). Place it between `trend` and
+  `expiry`, matching §4 Flows 2's left→right order. The breakpoint gate belongs on the rendered set,
+  **not** on `DEFAULT_COLUMNS`/`OPTIONAL_COLUMNS` — a viewport must never change what is stored.
 - **Added to `DEFAULT_COLUMNS`, and NOT to `OPTIONAL_COLUMNS`.** `defaults.ts:27` binds the partition
   *"Every `ColumnKey` appears in exactly one of DEFAULT_COLUMNS / OPTIONAL_COLUMNS"*, asserted by
   `defaults.spec.ts:20-25` (no duplicate across the partition, no gap against the label map). Since the
@@ -920,6 +1001,49 @@ unbuilt and out of scope (§1), and every other column keeps its REVISION-2 posi
 If it cannot be made to fit within those constraints, that is a **GATE Z bounce to the conductor, not a
 silent squeeze** and not a unilateral re-layout of the table.
 
+**GATE Z bounce — RULED 2026-07-28 (conductor default-with-veto): the column renders at `lg` and above,
+and is not rendered at `md` and below.** The build lane measured the real render in a browser (Cypress,
+seeded 4-row portfolio, dark + light, `comfortable` + `compact`): `max_loss` **fits at 1440px and
+1280px**, but **at 900px the table overflows its host**. The lane bounced instead of squeezing, and
+shipped the key, label, partition entry and cell renderer while deliberately leaving `max_loss` out of
+`FIGMA_COLUMNS`, pinned by a `defaults.spec.ts` assertion so the next task must consciously invert it.
+Two reasons this is the constraint being **met, not compromised**:
+
+1. **The constraint above requires fitting "every shipped breakpoint above `md`".** MUI's `md` is
+   900px, so `lg` (1280) and 1440 both qualify and both pass. The failure is **at** `md`, which the
+   constraint never covered — the lane over-tested, which is how we learned this. And below `sm` the
+   table has already collapsed to cards, where the figure has its own home (slot 5), so the only band
+   without the figure in the table is `md`–`lg`.
+2. **The `md` boundary is already broken, independently of this feature.** `/positions` overflows at
+   900px (`scrollWidth` 965 vs 900) **byte-identically with and without the column**. Hiding the column
+   there is the honest response to a pre-existing defect, not a workaround for a regression of ours.
+   **That page-level overflow is logged separately and is explicitly NOT in this feature's scope** — do
+   not widen this release to fix it.
+
+**Correction to this block's own measurement claim (phase 3, A/B'd against a worktree at `6f0a2ae`
+with an identical four-record seed).** It previously recorded the `md` table overflow as *895 vs 835,
+where without the column it fits*. **That was wrong.** The measured truth: at `md` the **table** was
+**already overflowing before this feature — 998 against an 835 host** — and after phase 3 it is
+**1027**, i.e. this work adds ~29px, through the wider `Net entry` copy rather than the column. The
+**page**-level figure is unchanged and exactly as logged above (965 vs 900, byte-identical with and
+without the column). **The ruling is unaffected and in fact stands on stronger ground than when it was
+made:** `md` was already broken before we arrived, so hiding the column there withholds a figure from a
+band that was already failing rather than conceding one that was passing. Recorded as a correction
+rather than an edit because the compounding memory has to track *truth*, not just recurrence.
+
+**Measured fit headroom at `lg`+ — 10px. Treat this as a standing constraint, not a footnote.** The
+column passes, but not comfortably. Measured: the page caps the table host at **1190px at both 1440 and
+1280**; table `scrollWidth` is **1190** — no scroll, nothing shrunk, nothing below the 11px floor, both
+densities, both colour schemes. Probing min-content gave **1180 against that 1190 host — 10px of
+slack**. Substituting each withheld-reason label in turn: `unlimited risk` **1166** · `mixed expiries`
+**1171** · `unnamed shape` **1180**, the widest. So **the longest string this feature's copy can ever
+produce fits, with 10px to spare** — which is a documented tightness, not a squeeze.
+
+**Therefore: any future column, and any copy change that lengthens a withheld-reason label or a
+figure, MUST re-measure at 1280 before it lands.** A longer ticker or a five-figure P/L eats that
+margin. A change that consumes it is a GATE Z bounce under the rule above, not a judgement call at
+build time.
+
 ### Banner region — the collision rule
 
 One banner region directly above the table, in `CustomizationToolbar`'s existing banner slot. Fixed
@@ -940,14 +1064,14 @@ not read this banner will lose a trade.
 
 | Component | default | loading | empty | error / unavailable | offline / stale | store-faulted |
 |---|---|---|---|---|---|---|
-| Position row (table) | one `<tr>`; structure line; figures mono `tabular-nums` | skeleton row | n/a | `pl`/`pl_pct`/`mark` all read `unavailable` (`cell-unavailable`); row excluded from subtotal **and counted** | live block dims to `0.5`, `⏸ offline` appended, basis `last_known`; static cells never dim | rows render normally and their numbers are correct; nothing dims; `Close` is `aria-disabled` + focusable |
+| Position row (table) | one `<tr>`; structure line; figures mono `tabular-nums` | skeleton row | n/a | `pl`/`pl_pct`/`mark` all read `unavailable` (`cell-unavailable`); row excluded from subtotal **and counted** | live block dims to `0.5`, `⏸ offline` appended, basis `last_known`; static cells never dim | rows render normally and their numbers are correct; the live block does **not** dim; `Close` is **visibly refused** (reduced-emphasis tokens) **and** `aria-disabled` + focusable |
 | Position card (393px) | 5-item footer; collapsed height equals a 1-leg card | skeleton card | n/a | same withheld words as the row | same dim treatment as shipped | same as the row; the CTA above is refused |
 | Leg disclosure | instant open, one line per leg, left rule | n/a | n/a | the failed leg shows `unavailable` on its own line; resolved legs still show their marks | each leg shows its own basis; `last_known` on all legs | fully usable (a read) |
 | Structure chip | outlined neutral chip: `divider` border, `text.secondary` ink, **no colour** | n/a | n/a | `Custom` (neutral) for a malformed record | never dims | unchanged |
-| Risk slot | one max-loss figure (untinted mono) **or** one stated reason | n/a | n/a | figure/reason unchanged (static) | **never dims** — not live-derived | unchanged |
+| Risk slot (card footer always; table column `lg`+) | one max-loss figure (untinted mono) **or** one stated reason | n/a | n/a | figure/reason unchanged (static) | **never dims** — not live-derived | unchanged |
 | P/L% cell | bare number; header tip basis-aware, row tip names the basis | skeleton | n/a | `unavailable`; or **`no basis`** (`cell-no-basis`, `NO_BASIS_TIP`) while the dollar P/L still renders; or `—` for a pending limit | dims with the live block | unchanged |
 | Group subtotal | signed dollar direction (the only tinted aggregate) | n/a | n/a | `· N positions excluded (unavailable)` | header carries `⏸` | unchanged |
-| Entry CTA (`+ Open simulated position`) | `primary.main`, the one amber on the page | n/a | n/a | n/a | enabled (offline disables no control) | `aria-disabled="true"`, **focusable**, tooltip reachable, `aria-describedby` the banner, activation a no-op; the dialog never opens |
+| Entry CTA (`+ Open simulated position`) | `primary.main`, the one amber on the page | n/a | n/a | n/a | enabled (offline disables no control) | **Visibly refused** (see below): reduced-emphasis token treatment, **plus** `aria-disabled="true"`, **focusable**, tooltip reachable, `aria-describedby` the banner, activation a no-op; the dialog never opens |
 | Entry dialog | SIM variant; leg rows; net labelled as computed | n/a | n/a | per-field validation, unchanged | unchanged | **never opens** |
 | Table body | grouped/sorted rows | skeleton | `EMPTY_NO_POSITIONS`, or the filtered empty + `Clear filter` | n/a | rows persist | `EMPTY_FAULTED` when zero rows parsed |
 | Banner region | absent | absent | absent | absent | live-offline banner | faulted banner (non-dismissible, warning-class **with icon**) + the offline banner beneath it if both apply |
@@ -961,8 +1085,9 @@ not read this banner will lose a trade.
 | Surface | Today | New |
 |---|---|---|
 | `entry` column header | `Entry` | **`Net entry`** |
-| `entry` cell, debit | `$8.40` | **`$8.40 debit`** |
-| `entry` cell, credit | *(unrepresentable)* | **`$1.15 credit`** |
+| `entry` cell, debit | `$8.40` (per-unit) | **`$1830 debit`** — the **dollar net**, unsigned |
+| `entry` cell, credit | *(unrepresentable)* | **`$115 credit`** — the **dollar net**, unsigned |
+| `mark` cell | `$8.60` (per-unit) | **`$1860`** — the **dollar net**, unsigned |
 | Card footer | `Entry $8.40` | **`Net debit $840`** / **`Net credit $115`** |
 | Dialog, manual | `… · Cost $840 — user-entered, not a market quote.` | `Opens at your price $8.40 · **Net debit $840** — user-entered, not a market quote.` |
 | Dialog, credit structure | — | `Opens at your price $1.15 · **Net credit $115** — you receive this at open.` |
@@ -973,6 +1098,31 @@ not read this banner will lose a trade.
 
 The qualifier word is **derived from the sign, never from the structure name** — a vertical can be
 either. **No abbreviation** (`Dr`/`Cr`/`db`): abbreviating into an 11px floor is a slop tell.
+
+**RULED 2026-07-28 — the `Net entry` and `Mark` table cells render DOLLAR NETS, not per-unit prices.**
+The lane surfaced a real contradiction inside this section (the copy table showed a per-unit `$8.40
+debit` while the build plan specified `money(|net|)`) rather than picking silently; dollar nets ship.
+Three reasons, in order of weight:
+
+1. **A per-unit price is undefined for a mixed structure.** A covered call has an equity leg and an
+   option leg; there is no single per-unit number that means anything. Per-unit would give a column
+   that means different things in different rows — **the exact defect class this feature exists to
+   remove.**
+2. **The row becomes arithmetically legible:** `mark − net entry = P/L`, checkable by eye. On a money
+   screen that is worth real money.
+3. The projection carries only dollar nets, so this is also the honest reading of what the data is.
+
+**Reversible, at a stated cost:** restoring a per-unit reading would require a `net_entry_per_unit`
+field on the `PositionView` projection. Recorded here so a later reversal is a known change rather
+than a rediscovery.
+
+**The formatter is unsigned, and this is not a detail.** The shipped `money()` prefixes a sign
+(`+$840` / `−$840`), so using it here would render **`+$840 debit`** — a sign and a qualifier word
+making the same claim twice, and disagreeing whenever the sign convention and the debit/credit word
+point opposite ways. **Direction is carried by the qualifier word alone** (`debit` / `credit`); the
+figure is unsigned. This is the same unsigned rule the risk slot already binds (§2.4) and for the same
+reason. The dialog's per-unit strings (`Opens at your price $8.40 · …`) are unaffected — a per-unit
+price is well defined for a single leg the trader just typed.
 
 **Qty, unit-aware** — option: `2 ×`, tip *"2 contracts — 100 shares each."* · equity: **`100 sh`**,
 tip *"100 shares."* · mixed (covered call): the structure-level unit `1 ×`, tip *"1 covered call — 100
@@ -1199,6 +1349,24 @@ order's `Cancel` · the saved-view `Save`, `Save as`, `Delete`. **Not affected, 
 usable:** sort, group, filter, density, layout, switching between existing saved views, expanding
 legs, the Track record read, and Export archive.
 
+**RULED 2026-07-28 — a refused control must LOOK refused, and this section previously under-specified
+it against §2.9.** The lane followed the component table literally (`aria-disabled` + focusable +
+tooltip, no visual change listed) and reported the refused CTA rendering **visually identical to an
+enabled one**. That contradicts §2.9, which requires entry affordances be *"visibly refused rather
+than accepting input and failing after the fact"* — **a control that looks live and then refuses is
+the very failure this state exists to prevent, one layer up.** Every refused control therefore also
+takes a **reduced-emphasis treatment**: the theme's own disabled ink/fill/border tokens (via the MUI
+palette or `extrasFor(theme)`) and no hover elevation or hover colour shift, so the refusal is
+**visible before it is read**, in both colour schemes. **Tokens only — no opacity hacks, no hardcoded
+hex** (`theme-token-discipline`).
+
+**This is IN ADDITION TO, and never INSTEAD OF, `aria-disabled="true"` + remaining focusable + the
+reachable tooltip + `aria-describedby`.** The whole reason the HTML `disabled` attribute was rejected
+is that it drops the control out of the tab order and swallows pointer events, making the *reason*
+unreachable by keyboard and hover. A dimming treatment that reintroduces that — by setting `disabled`,
+by `pointer-events: none`, or by removing it from the tab order — recreates the exact defect and is a
+regression, not a refinement.
+
 **The Ticker-page door** (the state is not scoped to `/positions`), one line above the refused CTA:
 
 ```
@@ -1388,8 +1556,12 @@ ordering, tint decisions a human can see in a screenshot).
    on the first paint; the state present on the **Ticker** page too.
 8. **`live-vs-static-isolation`.** The SSE-drop degrade must be behaviourally unchanged after the
    refactor; static cells never dim; offline and partial-unavailable never render alike.
-9. **Ephemerality.** Disclosure state absent from the durable view config; expanding/grouping/sorting
-   triggers no fetch and no store write.
+9. **Ephemerality, and reads that never write the book.** Disclosure state absent from the durable view
+   config; expanding/grouping/sorting triggers **zero fetches**, leaves **the book byte-identical**, and
+   **rewrites no saved view**. *(Corrected 2026-07-28 — this previously read "no store write", which is
+   false: the shipped code persists `customization.working`, because a durable view preference is the
+   point of a view preference, and it predates this feature. Assert the strongest **true** form; the
+   thing that actually matters is that **the book is never written on a read**, and that is unweakened.)*
 10. **`additive-keeps-score-byte-identical`.** Empty `apps/api` diff; `pos_*` request shape unchanged.
 11. **393px no-overflow**, both colour schemes — and the case **must expand a leg block before
     asserting**. The shipped e2e visits `/positions` and asserts `scrollWidth` on the cold render
@@ -1416,6 +1588,16 @@ a long single leg and the suite is therefore structurally blind to exactly what 
 record** (missing `right`), and a **seeded saved view** whose filter references a stale value (without
 it, the stale-view AC is unverifiable at GATE Q — the state only exists for a user with pre-existing
 durable state, which a fresh browser cannot reproduce).
+
+**Correction 2026-07-28 — the stale-saved-view fixture had to change to reach the state it exists to
+seed.** `STALE_SAVED_VIEW_CUSTOMIZATION` originally filtered on `strategy: 'long_call'`, which is
+**still a valid `StructureKind`** (§2.3), so `normalizeViewConfig` returns `adjusted: false`, the
+notice never renders, and **AC-54 was unverifiable through it** — the fixture demonstrated the
+survives-by-mapping case while claiming to seed the degraded one. It now filters on a genuinely
+**retired** value (`long_butterfly` — a shape this feature deliberately routes to `Custom`). Nothing
+was lost: AC-53's survives-by-identity case is covered directly in `defaults.spec.ts`. **GATE Q should
+verify AC-54 through the corrected fixture**, and should treat a fixture whose filter value is still a
+live enum member as a false pass, not a pass.
 
 **Coordination note (from `_MANIFEST.md`):** a parallel session has been active in
 `apps/dashboard/src/app/` — this refactor touches the whole trading domain and pins copy constants in

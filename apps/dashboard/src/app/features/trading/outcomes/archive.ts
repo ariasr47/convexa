@@ -19,16 +19,12 @@
  * Hence: no `useGate`, no `gate.guard`, no `simTradeGate`, no `SignInPrompt`, no `features/auth`
  * import anywhere in this module or its surface.
  */
-import {
-  allDecisions as allGhostDecisions,
-  allTrades,
-  appendDecision as appendGhostDecision,
-  getTrade,
-  putTrade,
-} from '@/features/trading/model/store';
-import type { DecisionRecord, GhostTrade } from '@/features/trading/model/types';
+import { allDecisions as allGhostDecisions } from '@/features/trading/model/store';
+import type { DecisionRecord } from '@/features/trading/model/types';
 import { allOrders, getOrder, ordersFaulted, putOrder } from '@/features/trading/orders/store';
 import type { SimOrder } from '@/features/trading/orders/types';
+import type { SimPosition } from '@/features/trading/positions/leg';
+import { liftLegacyRecord } from '@/features/trading/positions/migrate';
 import {
   allDecisions as allPositionDecisions,
   allPositions,
@@ -43,22 +39,38 @@ import { decisionIdentity, readSources } from './sources';
 
 /** The stamp that identifies the file as ours. */
 export const ARCHIVE_SCHEMA = 'convexa.archive';
-/** The envelope version. A file stamped with anything else is DECLINED — never half-read. */
-export const ARCHIVE_VERSION = 1;
+/**
+ * The envelope version. A file from a HIGHER version is DECLINED — never half-read. A file from a
+ * LOWER one still imports: v2 (the merged book) is what we write, v1 (the split ghost-trade +
+ * positions stores) is what a trader may already have on disk, and refusing their own backup
+ * because we reorganised our storage would be the exact loss this module exists to prevent.
+ */
+export const ARCHIVE_VERSION = 2;
 
 export interface ArchiveEnvelope {
   schema: typeof ARCHIVE_SCHEMA;
   version: number;
   exported_at: string;
-  /** ONE envelope spanning ALL THREE stores. The EXPORT FORMAT IS THE IMPORT FORMAT — the file is
-   *  round-trippable by construction. (This supersedes the old ghost-trade-only `exportLog()`, which
-   *  was never a complete backup.) */
+  /**
+   * ONE envelope spanning every store. THE EXPORT FORMAT IS THE IMPORT FORMAT — the file is
+   * round-trippable by construction.
+   *
+   * v2 writes exactly two slots: the merged `positions` book and `orders`. `ghost_trade` is the v1
+   * slot: never written any more, still READ, and still routed through the IDENTICAL
+   * `liftLegacyRecord` the store migration uses. ONE migrate function, two callers — if they
+   * diverged, importing your own backup would produce different records than the migration did.
+   */
   stores: {
-    ghost_trade: { trades: Record<string, GhostTrade>; decisions: DecisionRecord[] };
-    positions: { positions: Record<string, Position>; decisions: DecisionRecord[] };
+    /** LEGACY (v1 files only). Absent from every v2 envelope this build writes. */
+    ghost_trade?: { trades: Record<string, unknown>; decisions: DecisionRecord[] };
+    positions: { positions: Record<string, SimPosition | Position>; decisions: DecisionRecord[] };
     orders: { orders: Record<string, SimOrder> };
   };
 }
+
+/** The v1 slot, normalized — absent reads as empty, never as a failure. */
+const ghostSlot = (env: ArchiveEnvelope) =>
+  env.stores.ghost_trade ?? { trades: {}, decisions: [] as DecisionRecord[] };
 
 /** `convexa-archive-{YYYY-MM-DD}` — the house filename convention (§4.12). */
 export function archiveFilename(now: Date = new Date()): string {
@@ -68,18 +80,27 @@ export function archiveFilename(now: Date = new Date()): string {
   return `convexa-archive-${y}-${m}-${d}.json`;
 }
 
-/** Build the envelope: a pure read of the three stores. Never throws. */
+/**
+ * Build the envelope: a pure read of the stores. Never throws.
+ *
+ * v2 exports the MERGED book only. The two legacy blobs are deliberately NOT copied in: they were
+ * already unioned into it, so carrying them too would make the file describe every pre-cutover
+ * record twice and hand a re-import the resurrection problem the union exists to close. They are
+ * still on disk, untouched, and they are still the rollback.
+ *
+ * NO `provenance` IS EVER EXPORTED. Provenance is a fact about THIS device's migration; a file that
+ * carried it would let an import claim a migration that did not happen here.
+ */
 export function buildArchive(now: Date = new Date()): ArchiveEnvelope {
   const orders: Record<string, SimOrder> = {};
   for (const o of allOrders()) orders[o.id] = o;
-  const positions: Record<string, Position> = {};
+  const positions: Record<string, SimPosition> = {};
   for (const p of allPositions()) positions[p.id] = p;
   return {
     schema: ARCHIVE_SCHEMA,
     version: ARCHIVE_VERSION,
     exported_at: now.toISOString(),
     stores: {
-      ghost_trade: { trades: allTrades(), decisions: allGhostDecisions() },
       positions: { positions, decisions: allPositionDecisions() },
       orders: { orders },
     },
@@ -89,9 +110,10 @@ export function buildArchive(now: Date = new Date()): ArchiveEnvelope {
 /** An archive with nothing in it is still a VALID archive (AC-21) — it just says so. */
 export function isArchiveEmpty(env: ArchiveEnvelope): boolean {
   const s = env.stores;
+  const ghost = ghostSlot(env);
   return (
-    Object.keys(s.ghost_trade.trades).length === 0 &&
-    s.ghost_trade.decisions.length === 0 &&
+    Object.keys(ghost.trades).length === 0 &&
+    ghost.decisions.length === 0 &&
     Object.keys(s.positions.positions).length === 0 &&
     s.positions.decisions.length === 0 &&
     Object.keys(s.orders.orders).length === 0
@@ -151,13 +173,16 @@ export function parseArchive(text: string): ParseResult {
   const o = raw as Record<string, unknown>;
   if (o.schema !== ARCHIVE_SCHEMA) return { ok: false, reason: 'not_ours' };
   if (typeof o.version !== 'number' || o.version > ARCHIVE_VERSION) {
-    // A file from a version we don't understand is DECLINED, never half-read.
+    // Only a FUTURE version is declined — never half-read. A v1 file still parses (AC-60): the
+    // trader's own backup must survive our storage reorganisation.
     return { ok: false, reason: 'version' };
   }
   const stores = asRecordMap<unknown>(o.stores);
   const ghost = asRecordMap<unknown>(stores.ghost_trade);
   const positions = asRecordMap<unknown>(stores.positions);
   const orders = asRecordMap<unknown>(stores.orders);
+  // ANY `provenance` on the file is DROPPED HERE, at the parse, before it can reach a merge: an
+  // imported provenance would claim a migration that did not happen on this device (AC-60).
   return {
     ok: true,
     envelope: {
@@ -166,11 +191,11 @@ export function parseArchive(text: string): ParseResult {
       exported_at: typeof o.exported_at === 'string' ? o.exported_at : '',
       stores: {
         ghost_trade: {
-          trades: asRecordMap<GhostTrade>(ghost.trades),
+          trades: asRecordMap<unknown>(ghost.trades),
           decisions: asArray<DecisionRecord>(ghost.decisions),
         },
         positions: {
-          positions: asRecordMap<Position>(positions.positions),
+          positions: asRecordMap<SimPosition | Position>(positions.positions),
           decisions: asArray<DecisionRecord>(positions.decisions),
         },
         orders: { orders: asRecordMap<SimOrder>(orders.orders) },
@@ -221,7 +246,7 @@ export function importArchive(env: ArchiveEnvelope): ImportResult {
   // shape, so a write against a faulted store would silently REPLACE the unreadable blob. Refusing
   // is the only non-destructive answer (`[loss-free-durable-migration]`).
   const raw = readSources();
-  if (!raw.ghost.ok || !raw.positions.ok || !raw.orders.ok || ordersFaulted()) {
+  if (!raw.ghost.ok || !raw.positions.ok || !raw.book.ok || !raw.orders.ok || ordersFaulted()) {
     return { ok: false, reason: 'store_unreadable' };
   }
 
@@ -254,19 +279,29 @@ export function importArchive(env: ArchiveEnvelope): ImportResult {
         });
       }
     };
-    mergeDecisions(env.stores.ghost_trade.decisions, allGhostDecisions(), appendGhostDecision);
-    mergeDecisions(env.stores.positions.decisions, allPositionDecisions(), appendPositionDecision);
+    // ONE LOG. The second `appendDecision` is deleted (DECISION_QUEUE Q2 resolved), so a v1
+    // envelope's two logs merge into the single positions log, de-duped by the ONE identity rule —
+    // no drops, no doubles, no renumbering, no lost timestamps (AC-49).
+    mergeDecisions(
+      [...ghostSlot(env).decisions, ...env.stores.positions.decisions],
+      [...allGhostDecisions(), ...allPositionDecisions()],
+      appendPositionDecision,
+    );
 
-    // --- ghost trades (keyed by TICKER in that store: an incoming trade for a ticker that already
-    //     holds a different trade is a CONFLICT — the existing one is kept, never replaced) ---
-    for (const t of Object.values(env.stores.ghost_trade.trades)) {
-      if (!t || typeof t.ticker !== 'string') continue;
-      tally(getTrade(t.ticker), t, () => putTrade(t));
-    }
-
-    // --- positions ---
-    for (const p of Object.values(env.stores.positions.positions)) {
-      if (!p || typeof p.id !== 'string') continue;
+    // --- positions, from BOTH halves of a v1 envelope, through the IDENTICAL lift the store
+    //     migration uses. ONE migrate function, two callers (SPEC §2.6): if they diverged,
+    //     importing your own backup would produce different records than the migration did — a
+    //     discrepancy nobody would notice until it mattered.
+    //
+    //     The ghost-trade half no longer has a store of its own to merge back into: its writer is
+    //     deleted, and its records belong in the one book like everything else. Keyed by RECORD ID
+    //     there, not by ticker, so two trades on one symbol are two positions (AC-46).
+    for (const raw of [
+      ...Object.values(env.stores.positions.positions),
+      ...Object.values(ghostSlot(env).trades),
+    ]) {
+      const p = liftLegacyRecord(raw);
+      if (p == null) continue;
       tally(getPosition(p.id), p, () => putPosition(p));
     }
 

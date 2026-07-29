@@ -24,7 +24,17 @@ Every task's requirements implicitly include this section.
   (if the passthrough form is rejected by this workspace, run `npx vitest run src/app/features/trading/positions/leg.spec.ts` from `apps/dashboard`)
 - e2e: `npx nx e2e dashboard-e2e`
 
-**Test baseline to protect: 645 passing / 75 files; e2e 15/15.** Any drop below that count is a regression to fix, never a rewrite of the assertion. Record the number at the end of every task.
+**Test baseline to protect — it RATCHETS UP as tasks land. Compare against the current figure, not the original one.** Any drop below the current figure is a regression to fix, never a rewrite of the assertion. Record the new number at the end of every task and update this line.
+
+| After | Unit | Files | e2e |
+|---|---|---|---|
+| R1 (original baseline) | 645 | 75 | 15/15 |
+| build phase 1 — R1 · F1 · V1 · F2 · F3 · F4 (LANDED) | 747 | 79 | 15/15 |
+| build phase 2 — F5 · F6 · F7 · F8 · F9 (LANDED) | 858 | 84 | 15/15 |
+| build phase 3 — F10 · F11 · F12 · F13 · V2 · V3 (LANDED) | 921 | 88 | 19/19 |
+| **build phase 4 — F14 · V5 · F15 · F16 · V6 · F17 (LANDED on `feat/positions-legs`)** | **1004** | **93** | **19/19** |
+
+Both phases confirmed: `tsc` clean, lint **0 errors at exactly the pre-existing 29 warnings** (that warning count is itself a baseline — do not add to it), `apps/api` diff empty, nothing pre-existing changed or deleted, and **`convexa.positions.v3` written nowhere** (the cutover is still F18). Where a task below says "≥ 645 passing", read it as "≥ the current figure in this table".
 
 **Binding invariants** (spec §8): `loss-free-durable-migration` (HARD, severity-promoted) · `additive-keeps-score-byte-identical` · `no-real-order-path` · `single-shared-sim-entry-dialog` · `digested-labels-not-raw-dump` · `theme-token-discipline` · `live-vs-static-isolation` · `best-effort-isolated-or-null` · `model-read-carries-its-assumptions`.
 
@@ -35,6 +45,18 @@ Every task's requirements implicitly include this section.
 **Never render the literal `undefined` / `null` / `NaN` in a cell** (spec §2.2, AC-26).
 
 **The `max_loss` column must FIT — a squeeze is a bounce.** If `max_loss` cannot sit inside the existing framed-table treatment at **both** shipped densities (`comfortable`, `compact`) and **every** shipped breakpoint above `md` without shrinking another column below its design width, without horizontal scroll on desktop, without truncating `unlimited risk` / `unnamed shape` into a shared prefix or an ellipsis that reads as data, and without dropping any text below the 11px floor — **STOP and raise a GATE Z bounce to the conductor.** Do not silently squeeze, do not unilaterally re-lay-out the table, do not shorten the withheld-reason labels. This is an escalation instruction, not a footnote (spec §4 *The risk slot*, `_MANIFEST.md` Lane instruction).
+
+> **✅ THE BOUNCE HAPPENED AND IS RULED (build phase 2): the column renders at `lg` and above, not at `md` and below.** The escalation above worked exactly as intended — the lane measured, bounced rather than squeezed, and shipped everything except the `FIGMA_COLUMNS` entry. **The rule stands unchanged for every remaining task**; the ruling narrows *where* the column renders, not *whether* a failure escalates. Details and the remaining obligations live in **F11**.
+
+**THE TABLE HAS ~10px OF HEADROOM AT `lg`+. ANY future column, or ANY copy change that lengthens a withheld-reason label or a figure, MUST RE-MEASURE.** Phase 3 measured it precisely: the page caps the table host at **1190px at both 1440 and 1280**, and the table measures **1190** — it passes with nothing shrunk, nothing below 11px, in both densities and both colour schemes. Min-content probes put the true margin at **1180 vs 1190 — 10px**, with the three withheld labels substituted one at a time:
+
+| Substituted label | Min-content width |
+|---|---|
+| `unlimited risk` | 1166 |
+| `mixed expiries` | 1171 |
+| **`unnamed shape`** | **1180** — the widest the copy can produce |
+
+So the longest string this feature's copy can render fits, **barely**. A longer ticker, a five-figure P/L, one more column, or a withheld label a few characters longer eats that margin entirely. **Treat 10px as the budget, re-measure before spending it, and a failure is still a GATE Z bounce — never a squeeze.**
 
 ### Conformance spec
 
@@ -179,6 +201,8 @@ Execution order is the numeric order below, with the Track V tasks interleaved a
 
 ### Task R1: Working-tree reconciliation and baseline capture
 
+> **✅ LANDED — build phase 1.** Branch `feat/positions-legs` created; baseline captured at 645/75, e2e 15/15, empty `apps/api` diff.
+
 A parallel session was active in `apps/dashboard/src/app/` on 2026-07-27 (`_MANIFEST.md` Notes, spec §7 Coordination note). This refactor touches the whole trading domain and pins copy constants in `labels.ts` / `defaults.ts` — both collision candidates. **A merge conflict inside a durable-migration change is the worst possible place to have one.** Nothing else in this plan starts until this task is green.
 
 **Files:** none modified — this task reads and reports.
@@ -244,6 +268,8 @@ Expected: empty output. This command is re-run at the end of every Track F task 
 
 ### Task F1: Fault latch on the shipped positions store (AC-56)
 
+> **✅ LANDED — build phase 1, `feat/positions-legs`. Do not re-do this task.** Two instructions below were wrong as written and are corrected in place (Steps 2 and 3), so the record matches what shipped and the technique survives for the next defect-repair task.
+
 **This repairs a live data-loss defect and it lands first, before any shape change.** `positions/store.ts` `read()` catches to `memory = empty()` (line 131) and the very next `putPosition` calls `write()` → `localStorage.setItem(V2_KEY, …)` (line 141), destroying an unparseable-but-possibly-recoverable blob. `orders/store.ts` already guards correctly (`if (ordersFaulted()) return false; // NEVER overwrite a readable-but-unparseable prior blob`, line 83) and is the pattern to copy. Spec §2.10, §2.9; AC-56, AC-61.
 
 The shape change this feature makes parse failures **more** likely, not less — which is exactly why the latch goes in before the shape moves.
@@ -301,10 +327,28 @@ describe('fault latch (AC-56) — an unparseable blob is never overwritten', () 
 
 Add `positionsFaulted` to the import list at the top of the file.
 
-- [ ] **Step 2: Run it to make sure it fails**
+- [ ] **Step 2: Prove the defect FOR THE RIGHT REASON — with a throwaway probe, before the permanent test**
+
+⚠ **CORRECTED (build phase 1).** Running the Step 1 test against today's store fails with `positionsFaulted is not a function` — which **masks** the data loss instead of demonstrating it. "Red" is not enough: §7 invariant 2 requires a test that fails against today's `positions/store.ts` **because the blob is destroyed**, or it proves nothing.
+
+So before writing the permanent test, prove the defect with a **throwaway probe** that uses **only shipped exports** — no symbol the fix will introduce:
+
+```ts
+it('PROBE — today`s store replaces the corrupt blob wholesale on the first write', () => {
+  const CORRUPT = '{"schema_version":2,"positions":{ THIS IS NOT JSON';
+  localStorage.setItem(PORTFOLIO_V2_KEY, CORRUPT);
+  __resetMemory();
+  putPosition(mkPosition({ id: 'p-new' })); // shipped signature: returns void today
+  expect(localStorage.getItem(PORTFOLIO_V2_KEY)).not.toBe(CORRUPT); // ← the data loss, observed
+});
+```
+
+Watch it pass against the pre-latch store — **that passing probe IS the defect**. Then delete it and write the permanent re-runnable tests from Step 1, which assert the inverse (`toBe(CORRUPT)`).
+
+**Generalise this for any later defect-repair task:** when the repair introduces a new symbol, a test that names that symbol cannot distinguish "defect present" from "function missing". Either probe with shipped exports first, or mutation-check the fix by reverting it and confirming the permanent test goes red on the assertion — not on an import.
 
 Run: `npx nx test @org/dashboard -- src/app/features/trading/positions/store.spec.ts`
-Expected: FAIL — `positionsFaulted is not a function`. This test **must** fail against today's store; if it passes, the test is not exercising the defect and proves nothing (spec §7 invariant 2).
+Expected after the probe is removed: FAIL on the Step 1 assertions.
 
 - [ ] **Step 3: Implement the latch**
 
@@ -315,11 +359,20 @@ let memory: PersistShapeV2 | null = null; // fallback / cache
 let faulted = false; // set SYNCHRONOUSLY by read(); no frame ever paints on a stale value
 ```
 
-In `read()`, set it on both paths — success clears it, the catch sets it:
+⚠ **CORRECTED (build phase 1). Hoist a SINGLE clear to the top of `read()`, before the `try`** — do not scatter `faulted = false` before each early return:
 
 ```ts
-    memory = empty();
-    faulted = false;
+function read(): PersistShapeV2 {
+  if (memory) return memory;
+  faulted = false; // clear ONCE, up front — covers all three exit paths below
+  try {
+```
+
+**Why the per-return placement is wrong, stated so it is not re-introduced:** the v1-migration path calls `write(migrated)` **before** its `return memory` (line 127), and `write` now consults the latch. Clearing the flag only at the return leaves it stale-true while that migration write runs, so a first-ever v1→v2 migration silently refuses to persist. One clear at the top has no such ordering hazard.
+
+Then the `catch` sets it:
+
+```ts
   } catch {
     // Corrupt/unreadable store ⇒ empty in-memory portfolio. The prior blob is left INTACT:
     // the latch below refuses every write until it is repaired or cleared outside the app.
@@ -328,8 +381,6 @@ In `read()`, set it on both paths — success clears it, the catch sets it:
   }
   return memory;
 ```
-
-Also set `faulted = false` immediately before each of the two early `return memory` statements inside the `try` (the v2-hit path at line 120 and the v1-migrated path at line 128).
 
 Change `write` and every mutator to return `boolean`:
 
@@ -393,7 +444,7 @@ Run: `npx nx test @org/dashboard -- src/app/features/trading/positions/store.spe
 Expected: PASS.
 
 Then the full suite: `npx nx test @org/dashboard`
-Expected: ≥ 645 passing, 75 files. The v1→v2 migration write inside `read()` (line 127) now goes through `write()` — confirm the existing migration tests still pass; if one fails because `write` returned `false`, the `faulted = false` assignments in Step 3 were placed after the early returns instead of before them.
+Expected: ≥ 645 passing, 75 files. The v1→v2 migration write inside `read()` (line 127) now goes through `write()` — confirm the existing migration tests still pass. A failure there means the Step 3 clear was scattered per-return instead of hoisted above the `try`; that is exactly the hazard Step 3 now calls out.
 
 - [ ] **Step 5: Commit**
 
@@ -407,6 +458,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ### Task F2: `leg.ts` — the leg shape and its arithmetic
+
+> **✅ LANDED — build phase 1.** Do not re-do this task.
 
 Spec §2.1 (durable shape, the three hard stands), §2.2 (P/L composition and `pl_pct_state`). AC-23, AC-24, AC-25, AC-26.
 
@@ -715,6 +768,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ### Task V1: Shared fixture library
 
+> **✅ LANDED — build phase 1.** See the corrected Produces block below: `FX_SHORT_CALL` and `FX_PUT_DEBIT_SPREAD` were added, and `short_straddle` / `long_strangle` are built locally in the specs.
+
 **Sequence point: after F2, before F3.** Spec §7 names this explicitly: *"Fixtures the suite does not have today and must gain, because every existing fixture is a long single leg and the suite is therefore structurally blind to exactly what this feature adds."* Building them once, here, keeps every later task from inventing its own near-duplicate.
 
 **Files:**
@@ -725,13 +780,15 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `Leg`, `SimPosition`, `SIM_POSITION_SCHEMA_VERSION` from `./leg`.
 - Produces, used by F3–F8, F10–F19, V2–V7:
   `mkLeg(over?): Leg` · `mkPosition(legs, over?): SimPosition` ·
-  `FX_LONG_CALL` · `FX_LONG_PUT` · `FX_SHORT_PUT` · `FX_SHARES_LONG` · `FX_SHARES_SHORT` ·
-  `FX_CALL_DEBIT_SPREAD` · `FX_PUT_CREDIT_SPREAD` · `FX_SHORT_VERTICAL` (= a call credit spread) ·
+  `FX_LONG_CALL` · `FX_LONG_PUT` · `FX_SHORT_CALL` · `FX_SHORT_PUT` · `FX_SHARES_LONG` · `FX_SHARES_SHORT` ·
+  `FX_CALL_DEBIT_SPREAD` · `FX_PUT_DEBIT_SPREAD` · `FX_PUT_CREDIT_SPREAD` · `FX_SHORT_VERTICAL` (= a call credit spread) ·
   `FX_COVERED_CALL` · `FX_PROTECTIVE_PUT` · `FX_ZERO_COST_COLLAR` · `FX_LONG_STRADDLE` ·
   `FX_SHORT_STRANGLE` · `FX_IRON_CONDOR` · `FX_IRON_BUTTERFLY` · `FX_CALENDAR` · `FX_DIAGONAL` ·
   `FX_RATIO_1X2` (a `custom` residue case) · `FX_SIX_LEG` (AC-13) ·
   `LEGACY_V2_BLOB` · `LEGACY_V1_BLOB` · `COLLIDING_ID_PAIR` · `MALFORMED_LEGACY_RECORD` ·
   `UNPARSEABLE_BLOB` · `STALE_SAVED_VIEW_CUSTOMIZATION`
+
+  ⚠ **CORRECTED (build phase 1): `FX_SHORT_CALL` and `FX_PUT_DEBIT_SPREAD` were missing from the original list.** §7 requires the recogniser be covered across **all 22** members, and four named members had no fixture: `short_call`, `put_debit_spread`, `short_straddle`, `long_strangle`. Two are now exported fixtures (above); the remaining two — **`short_straddle` and `long_strangle`** — are built **locally inside the specs** from `mkLeg`/`mkPosition`, because they are one-line inversions of `FX_LONG_STRADDLE` / `FX_SHORT_STRANGLE` and do not earn a module-level name. **A downstream task must not re-add any of these four under a second name** — reach for the exports above, or build the straddle/strangle inversions locally exactly as F3 does.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -873,11 +930,13 @@ Then define each fixture. The exact leg sets:
 |---|---|
 | `FX_LONG_CALL` | 1× long call $400 @ 12.40 |
 | `FX_LONG_PUT` | 1× long put $380 @ 9.10 |
+| `FX_SHORT_CALL` | 1× short call $400 @ 12.40 |
 | `FX_SHORT_PUT` | 1× short put $380 @ 9.10 |
 | `FX_SHARES_LONG` | equity long qty 100, multiplier 1, entry 250, `expiration/strike/right` all `null` |
 | `FX_SHARES_SHORT` | equity short qty 100, multiplier 1, entry 250, all option facts `null` |
 | `FX_CALL_DEBIT_SPREAD` | long call $400 @ 12.40 + short call $420 @ 6.10 |
 | `FX_SHORT_VERTICAL` | short call $400 @ 12.40 + long call $420 @ 6.10 (a **call credit spread**) |
+| `FX_PUT_DEBIT_SPREAD` | long put $400 @ 11.90 + short put $380 @ 5.60 |
 | `FX_PUT_CREDIT_SPREAD` | short put $380 @ 9.10 + long put $360 @ 4.20 |
 | `FX_COVERED_CALL` | equity long qty 100 mult 1 @ 250 + short call $420 qty 1 @ 6.10 |
 | `FX_PROTECTIVE_PUT` | equity long qty 100 mult 1 @ 250 + long put $240 qty 1 @ 5.00 |
@@ -1006,6 +1065,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ### Task F3: `structure.ts` — the recogniser
 
+> **✅ LANDED — build phase 1.** Do not re-do this task. The member coverage below is corrected: all 21 named members are now exercised.
+
 Spec §2.3 in full. AC-14 through AC-21. Read §2.3 before writing a line: it names the recogniser rules for every contested member, it forbids a confidence measure, and it forbids reading `entry_price`.
 
 **The governance line, to quote when in doubt:** *PM owns which shapes are named. UX owns the label text. The architect owns the recogniser and one structural requirement — the enum ↔ label map must be total and 1:1.*
@@ -1038,8 +1099,9 @@ import { describe, expect, it } from 'vitest';
 import {
   FX_CALENDAR, FX_CALL_DEBIT_SPREAD, FX_COVERED_CALL, FX_DIAGONAL, FX_IRON_BUTTERFLY,
   FX_IRON_CONDOR, FX_LONG_CALL, FX_LONG_PUT, FX_LONG_STRADDLE, FX_PROTECTIVE_PUT,
-  FX_PUT_CREDIT_SPREAD, FX_RATIO_1X2, FX_SHARES_LONG, FX_SHARES_SHORT, FX_SHORT_PUT,
-  FX_SHORT_STRANGLE, FX_SHORT_VERTICAL, FX_SIX_LEG, FX_ZERO_COST_COLLAR, mkLeg, mkPosition,
+  FX_PUT_CREDIT_SPREAD, FX_PUT_DEBIT_SPREAD, FX_RATIO_1X2, FX_SHARES_LONG, FX_SHARES_SHORT,
+  FX_SHORT_CALL, FX_SHORT_PUT, FX_SHORT_STRANGLE, FX_SHORT_VERTICAL, FX_SIX_LEG,
+  FX_ZERO_COST_COLLAR, mkLeg, mkPosition,
 } from './fixtures';
 import { STRUCTURE_KINDS, STRUCTURE_LABELS, STRUCTURE_ORDINAL, structureKindOf } from './structure';
 
@@ -1050,8 +1112,10 @@ describe('structureKindOf — the named set', () => {
     ['long_call', FX_LONG_CALL],
     ['long_put', FX_LONG_PUT],
     ['short_put', FX_SHORT_PUT],
+    ['short_call', FX_SHORT_CALL],
     ['call_debit_spread', FX_CALL_DEBIT_SPREAD],
     ['call_credit_spread', FX_SHORT_VERTICAL],
+    ['put_debit_spread', FX_PUT_DEBIT_SPREAD],
     ['put_credit_spread', FX_PUT_CREDIT_SPREAD],
     ['covered_call', FX_COVERED_CALL],
     ['protective_put', FX_PROTECTIVE_PUT],
@@ -1064,6 +1128,22 @@ describe('structureKindOf — the named set', () => {
     ['diagonal', FX_DIAGONAL],
   ])('recognises %s', (kind, p) => {
     expect(structureKindOf(p)).toBe(kind);
+  });
+
+  // The two inversions that do not earn a module-level fixture (see V1's Produces note).
+  it('recognises short_straddle — the long straddle with both sides sold', () => {
+    const p = mkPosition(FX_LONG_STRADDLE.legs.map((l) => ({ ...l, side: 'short' as const })));
+    expect(structureKindOf(p)).toBe('short_straddle');
+  });
+
+  it('recognises long_strangle — the short strangle with both sides bought', () => {
+    const p = mkPosition(FX_SHORT_STRANGLE.legs.map((l) => ({ ...l, side: 'long' as const })));
+    expect(structureKindOf(p)).toBe('long_strangle');
+  });
+
+  it('covers ALL 21 named members — no member is left unexercised', () => {
+    const covered = new Set(STRUCTURE_KINDS.filter((k) => k !== 'custom'));
+    expect(covered.size).toBe(21); // the it.each table above plus the two inversions must reach every one
   });
 });
 
@@ -1275,6 +1355,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ---
 
 ### Task F4: `maxLoss.ts` — the closed eligible set
+
+> **✅ LANDED — build phase 1.** Do not re-do this task. Note the `FX_ZERO_COST_COLLAR` clamp-to-$0 consequence, flagged for the render tasks in F11 and F13.
 
 Spec §2.4 in full, plus §4 *The risk slot*. AC-28, AC-29.
 
@@ -1909,10 +1991,13 @@ Expected: PASS.
 
 - [ ] **Step 5: Verify the Future copy is unwired**
 
+⚠ **CORRECTED (build phase 2). The property is UNWIRED, not UNDEFINED — do not "fix" a match by deleting the constants.** F9 defines all five strings in `positions/labels.ts` under a marked FUTURE block, wired to nothing, which is exactly right. A grep for "no matches anywhere" is therefore self-defeating: it now matches the definitions and would fail GATE Q on correct code. Exclude the definition site:
+
 ```bash
-grep -rn "POSITION_EVAL_LEG_QUALIFIER\|POSITION_EVAL_TIP\|POSITION_EVAL_NONE_EQUITY\|POSITION_EVAL_NONE_SHORT\|POSITION_EVAL_NONE_MULTI_POSITION" apps/dashboard/src
+grep -rn "POSITION_EVAL_LEG_QUALIFIER\|POSITION_EVAL_TIP\|POSITION_EVAL_NONE_EQUITY\|POSITION_EVAL_NONE_SHORT\|POSITION_EVAL_NONE_MULTI_POSITION" apps/dashboard/src \
+  | grep -v "features/trading/positions/labels.ts"
 ```
-Expected: no matches. Those **five** strings are Future copy pending a consumer (spec §4) and must not appear in code in this release — including `POSITION_EVAL_NONE_MULTI_POSITION`, whose *behaviour* F18 ships while its *string* stays unwired.
+Expected: **no matches outside `labels.ts`.** Those **five** strings are Future copy pending a consumer (spec §4): defined, exported, and referenced by **no component** — including `POSITION_EVAL_NONE_MULTI_POSITION`, whose *behaviour* F18 ships while its *string* stays unwired.
 
 - [ ] **Step 6: Commit**
 
@@ -1932,6 +2017,16 @@ Spec §2.6 in full, plus the *Failure modes + isolation* table. AC-45 through AC
 **This is the single most important decision in the feature: the v3 migration is a UNION, not an else-chain.** A read-new-else-old chain would silently drop every Ticker-page ghost trade belonging to any trader who has ever opened `/positions` — `outcomes/sources.ts:160` already documents the consequence in shipped code (*"v1-only positions exist and are PERMANENT"*). That is the silent / total / irreversible loss that got `loss-free-durable-migration` promoted on severity. Not negotiable.
 
 This task is **pure**: it takes already-parsed source material and returns a result. It touches no storage and is wired to nothing yet. F18 wires it into the store; F19 wires the *same function* into the archive import — **one migrate function, two callers**. If they diverge, importing your own backup produces different records than the migration did, a discrepancy nobody would notice until it mattered.
+
+> ⚠ **BINDING REQUIREMENT — a LOGICAL source is ONE source, even when it exists under two keys.** (Surfaced in build phase 1; it lands here and in F18.)
+>
+> `resolveDurable` (`shared/lib/durable/resolveDurable.ts:33-44`) **promotes a legacy-brand blob to the new key BEFORE anything parses it** — it `setItem`s `fromOld` under `newKey` and only then returns the string. So a user holding an unparseable `gammaflow.positions.v2` ends up holding **the same corrupt bytes under `convexa.positions.v2` as well**. Nothing is lost and the F1 latch protects both, but the accounting must not see two failures where there is one blob:
+>
+> - **`unread_sources` must list the logical source ONCE**, never both the current-brand and legacy-brand key for the same store. It feeds `StoreHealth` and therefore the faulted banner's read of what could not be loaded.
+> - **`source_counts` must be keyed by LOGICAL source**, never by physical storage key, or provenance misreports `read`/`contributed` for a trader whose brand hop happened to promote.
+> - **The abort-entirely decision must not double-count.** One unreadable store is one unread source; `aborted` is already correct either way, but a doubled `unread_sources` makes the *reason* the trader is shown wrong.
+>
+> **This is the same class of error as the id-collision finding that forced the distinct-id count in AC-46: two names for one thing.** `unionSources` therefore takes **exactly two `ParsedSource` entries** — one per logical store — and its `key` field is the **logical** label (`'convexa.positions.v2'`, `'convexa.ghost-trade.v1'`), not whichever physical key happened to answer. Resolving the brand hop is the **caller's** job (F18), and the caller passes the result down as one source.
 
 **Files:**
 - Create: `apps/dashboard/src/app/features/trading/positions/migrate.ts`
@@ -2058,6 +2153,28 @@ describe('unionSources', () => {
     ]);
     expect(r.decisions).toHaveLength(2);
     expect(r.decisions.map((d) => d.id)).toEqual(['d-1', 'd-2']);
+  });
+
+  it('a LOGICAL source is ONE source: an unreadable store reports ONE unread key, not its brand pair', () => {
+    // The caller resolves the brand hop and passes ONE entry per logical store. Even though
+    // `resolveDurable` may have promoted identical corrupt bytes to BOTH the convexa and gammaflow
+    // keys, the union must never be handed — or emit — two entries for one blob.
+    const r = unionSources([
+      src('convexa.positions.v2', [], [], false),
+      src('convexa.ghost-trade.v1', [LEGACY_V1_RECORD]),
+    ]);
+    expect(r.unread_sources).toEqual(['convexa.positions.v2']);
+    expect(r.unread_sources).toHaveLength(1);
+    expect(Object.keys(r.source_counts).sort()).toEqual(['convexa.ghost-trade.v1', 'convexa.positions.v2']);
+    expect(Object.keys(r.source_counts)).toHaveLength(2); // never 4 — no legacy-brand key appears
+  });
+
+  it('source_counts is keyed by LOGICAL source — no gammaflow.* key ever appears', () => {
+    const r = unionSources([
+      src('convexa.positions.v2', [LEGACY_V2_RECORD]),
+      src('convexa.ghost-trade.v1', [LEGACY_V1_RECORD]),
+    ]);
+    for (const k of Object.keys(r.source_counts)) expect(k).not.toMatch(/^gammaflow\./);
   });
 
   it('AC-57 — ABORTS ENTIRELY if ANY source is unread; no partial result is offered', () => {
@@ -2552,7 +2669,21 @@ Add, **verbatim from spec §4** (do not paraphrase, do not re-wrap the sentences
 
 Run: `npx nx test @org/dashboard`
 
-The `Strategy` deletion will break `derive.ts`, `usePortfolio.ts`, `PositionRow.tsx`, `PositionCard.tsx`, `CustomizationToolbar.tsx` and their specs. **Fix compile errors only** — swap `strategyOf(p)` for `structureKindOf(p)` and `strategyLabel(s)` for `STRUCTURE_LABELS[s]` at each site, and change `GROUP_AXES` (`CustomizationToolbar.tsx:43-47`) to `[{ key: 'none', label: 'None' }, { key: 'ticker', label: 'Ticker' }, { key: 'structure', label: 'Structure' }]`. Do **not** start the render redesign here; that is F11.
+The `Strategy` deletion will break `derive.ts`, `usePortfolio.ts`, `PositionRow.tsx`, `PositionCard.tsx`, `CustomizationToolbar.tsx` and their specs. **Fix compile errors only** — swap `strategyLabel(s)` for `STRUCTURE_LABELS[s]` at each site, and change `GROUP_AXES` (`CustomizationToolbar.tsx:43-47`) to `[{ key: 'none', label: 'None' }, { key: 'ticker', label: 'Ticker' }, { key: 'structure', label: 'Structure' }]`. Do **not** start the render redesign here; that is F11.
+
+⚠ **CORRECTED (build phase 2): `strategyOf(p)` does NOT swap directly for `structureKindOf(p)`.** `structureKindOf` takes a `SimPosition`, but `DerivedRow.position` is still a **legless v2 `Position`** until F18 — so the naive swap does not type-check. Two **transitional bridges** exist in `derive.ts` instead:
+
+```ts
+export function structureOfLegacy(p: Position): StructureKind
+export function maxLossOfLegacy(p: Position, kind: StructureKind): MaxLossResult
+```
+
+Both route through **the ONE lift (`liftLegacyRecord`) and the ONE recogniser** rather than deriving the name a second way — which is the whole point. For a shipped single-leg long option they yield exactly `long_call` / `long_put`, **byte-identical to the deleted `strategyOf`**, so AC-53's "long calls still grouped together" holds through the transition.
+
+**These are BRIDGES, not design.** They exist only because the store and the render path cross over at different tasks. **A transitional helper that outlives its transition is how a second source of truth gets born**, so their deletion is an explicit obligation, not a cleanup nicety:
+
+- **F11 Step 8** — remove every bridge *call site* the `PositionView` render path makes redundant.
+- **F18** — delete both *functions* outright, when the last legless `Position` disappears.
 
 Expected: back to ≥ 645 passing.
 
@@ -2665,7 +2796,25 @@ The effect fetches each distinct key **once**, storing results in `contractLive:
 
 4. `views = useMemo(() => simPositions.map((p) => buildPositionView({ position: p, legMarks: legMarksFor(p), dte: dteFor(p) })), […])`.
 
-5. Replace the resting-limit effect's `limitWouldFill(liveMark, p.limit_price, true)` with `compositeLimitWouldFill(legMarksFor(p), p, p.limit_price)`.
+5. Replace the resting-limit effect's `limitWouldFill(liveMark, p.limit_price, true)` with the composite check — **but NOT as `compositeLimitWouldFill(legMarksFor(p), p, p.limit_price)`, which is a units bug.**
+
+   ⚠ **CORRECTNESS ITEM (build phase 3). `compositeLimitWouldFill` compares a DOLLAR net against a PER-UNIT limit.** `composePositionMark.net_mark` is a dollar net (`SUM s × mark × multiplier × qty`), while a durable record's `limit_price` is **per-unit** — §4's copy is explicit: `Fills at your limit $8.40 · Net debit $840`. Passing `p.limit_price` straight in compares **$840 of mark against a $4 limit**, so **every shipped resting limit silently stops filling** — a live behaviour break with no error, no throw, and no existing test to catch it.
+
+   Convert at the call site, through the **same leg arithmetic the mark uses**, so the two sides are in the same units by construction:
+
+```ts
+/** A per-unit limit price -> the DOLLAR net the composed mark is measured in. Same arithmetic as
+ *  `legValue`, so a single-leg long option reduces to `mark <= limit` byte-identically. */
+function netLimitOf(p: SimPosition, limitPrice: number): number {
+  return p.legs.reduce((sum, l) => sum + sideSign(l) * limitPrice * l.multiplier * l.qty, 0);
+}
+```
+
+```ts
+if (compositeLimitWouldFill(marks, sp, netLimitOf(sp, sp.limit_price))) { … }
+```
+
+   **The defect is still inside `compositeLimitWouldFill` itself** (`composeMark.ts:107`, `composed.net_mark <= limit`) — this step only stops *this* call site tripping over it. **F15 owns the real fix**, because F15 owns the entry dialog's limit mode and therefore owns the question this units bug is really asking.
 
 6. Add `health: { faulted: positionsFaulted(), unread_sources: [] }` to the return object, computed **synchronously** on every render (localStorage is synchronous, so this is free, and it guarantees no frame ever paints enabled affordances on a faulted store).
 
@@ -2697,7 +2846,25 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 Spec §4 *The `contract` cell*, *The risk slot*, *Component states*, *The four not-a-number literals*, *Design direction*. AC-1, AC-22, AC-23, AC-26, AC-28, AC-29, AC-31, AC-32, AC-33, AC-34, AC-41, AC-42, AC-78, AC-82.
 
-**⚠ CARRY THE GATE Z BOUNCE.** This is the task that adds `max_loss` to the table. Re-read the Global Constraints escalation instruction before you start laying the column out. If it cannot fit at both densities and every breakpoint above `md` within the stated limits, **stop and bounce to the conductor** — this is not a judgement call you get to make.
+**⚠ THE BOUNCE ALREADY HAPPENED, AND IT IS RULED: `max_loss` renders at `lg` and above, not at `md` and below.**
+
+Build phase 2 measured the column in a real browser (Cypress, seeded 4-row portfolio, dark + light, `comfortable` + `compact`):
+
+| Viewport | Result |
+|---|---|
+| 1440 | fits — table 1190 in a 1190 host |
+| 1280 (`lg`) | fits — table 1190 in a 1190 host |
+| **900 (`md`)** | **table overflows its 835 host** |
+
+⚠ **CORRECTED (build phase 3): the `md` overflow is PRE-EXISTING, not caused by this column.** Phase 2 recorded it as *"without the column it fits"* — that was wrong. Phase 3 A/B'd it against a worktree at `6f0a2ae` with an identical seed: the table at `md` measured **998 vs an 835 host BEFORE any of this feature landed**, and 1027 after — so this feature adds ~29px (the wider `Net entry` copy), on top of an overflow that was already 163px. **The ruling is unaffected and better supported:** the column is not the cause, and putting it above `md` neither creates nor worsens the pre-existing condition. The page-level figure is separately logged and unchanged — 965 vs 900, byte-identical with and without the column (V3 Step 3).
+
+The lane correctly bounced rather than squeezing: it shipped every other part of F9 and **deliberately withheld the `FIGMA_COLUMNS` entry**, pinning the deferral with `expect(FIGMA_COLUMNS).not.toContain('max_loss')` in `defaults.spec.ts:78-87` so the next task has to invert it **consciously** rather than drift into it.
+
+**The ruling's basis — carry this, because it is the difference between meeting the constraint and compromising it.** Spec §4 requires the column to fit *"every shipped breakpoint **above** `md`"*. **MUI's `md` is 900px**, so `lg` (1280) and 1440 are the breakpoints the constraint covers, and both pass. The failure is **at** `md` — a breakpoint the constraint never covered. Below `sm` the table has already collapsed to cards (`PositionsView.tsx:97-98`), where the figure has its footer home (slot 5). **The only band without the figure is `md`–`lg`**, and that band is outside what the spec asked for. This is the constraint being **met**, not waived.
+
+**The remaining fit obligation stands unchanged:** a failure at `lg` or above is still a **GATE Z bounce to the conductor, never a squeeze**. Re-read the Global Constraints escalation instruction before laying the column out.
+
+**AC-82 is being amended to carry the breakpoint condition — verify against AC-82 by number, do not restate the condition from this plan.**
 
 **Files:**
 - Modify: `apps/dashboard/src/app/features/trading/positions/PositionRow.tsx` (`RowContext:62-72`, `cellContent:78-394`, `PositionRow:472-537`)
@@ -2712,6 +2879,8 @@ Spec §4 *The `contract` cell*, *The risk slot*, *Component states*, *The four n
 - [ ] **Step 1: Write the failing test**
 
 Extend `positions.risk.spec.tsx` with a `describe('the four not-a-number literals (AC-31)')` block and a `describe('the risk slot (AC-28/29)')` block. Risk-based: assert the **distinctions**, not the wording.
+
+⚠ **FIXTURE TRAP — do NOT use `FX_ZERO_COST_COLLAR` as the collar's `Max loss` example.** Its equity leg is deliberately priced at **0** so the position nets under `NET_BASIS_EPS` and reaches `no_basis`. That makes its max loss compute `0 − 24000` and clamp to **`$0`** — arithmetically correct, and useless as a demo: the risk slot renders `$0` and looks broken. **Use `FX_PROTECTIVE_PUT` (a sane `$1500`) for any figure-bearing risk-slot case.** `FX_ZERO_COST_COLLAR` stays exactly where it belongs — the `cell-no-basis` case in the four-literals block.
 
 ```ts
 it('renders four DISTINCT literals, each independently assertable, none for another`s meaning', async () => {
@@ -2798,21 +2967,69 @@ export interface RowContext {
 
 All four literals share **identical treatment** — MUI `variant="body2"`, `color: 'text.disabled'`, the same `Tooltip arrow` — and differ **by text and testid only**.
 
-- [ ] **Step 5: Add the column to the table**
+- [ ] **Step 5: Flip `FIGMA_COLUMNS` — the column becomes visible, behind the `lg`-and-above condition**
 
-`PositionsView.tsx:31-42` — insert `'max_loss'` into `FIGMA_COLUMNS` between `'trend'` and `'expiry'`, and rename `'strategy'` to `'structure'`. `FIGMA_COLUMNS` must keep mirroring `DEFAULT_COLUMNS` exactly; add an assertion to `defaults.spec.ts` that the two arrays are deep-equal so they cannot drift again.
+`PositionsView.tsx:31-42` currently holds `FIGMA_COLUMNS` **without** `max_loss` (the phase-2 deferral). This task adds it, **conditioned on the breakpoint** rather than unconditionally:
 
-- [ ] **Step 6: Verify the fit — this is the GATE Z checkpoint**
+- `'max_loss'` sits between `'trend'` and `'expiry'`, matching §4 Flows 2's left→right scan order.
+- The column is present **only at `lg` and above**. `TableLayout` already reads `useMediaQuery(theme.breakpoints.down('md'))` for the card fallback (`:97-98`); add the `lg` test beside it and build the visible set from it, e.g. `const columns = isLgUp ? FIGMA_COLUMNS : FIGMA_COLUMNS.filter((c) => c !== 'max_loss')`. Keep the derivation in **one** place — do not fork `FIGMA_COLUMNS` into two constants, which would reintroduce the drift `defaults.spec.ts` exists to prevent.
+- The `md`–`lg` band renders the table **without** the column; below `sm` the card's footer slot 5 already carries the figure. No band loses the figure silently — the card home covers the small end, and `md`–`lg` is the deliberate gap the ruling accepts.
+
+- [ ] **Step 6: Invert the deferral assertion in `defaults.spec.ts`**
+
+`defaults.spec.ts:78-87` currently pins the deferral:
+
+```ts
+it('GATE Z — is NOT yet in FIGMA_COLUMNS: making it visible is F11`s, with the fit checkpoint', () => {
+  expect(FIGMA_COLUMNS).not.toContain('max_loss');
+});
+```
+
+**Invert it deliberately — that assertion exists precisely so this flip cannot happen by accident.** Replace it with the positive form plus the breakpoint condition, and update its sibling at `:89-90`:
+
+```ts
+it('is in FIGMA_COLUMNS — the fit was measured and ruled at `lg` and above (AC-82)', () => {
+  expect(FIGMA_COLUMNS).toContain('max_loss');
+});
+
+it('FIGMA_COLUMNS and DEFAULT_COLUMNS now agree exactly — no pending key remains', () => {
+  expect(FIGMA_COLUMNS).toEqual(DEFAULT_COLUMNS);
+});
+```
+
+The `toEqual(DEFAULT_COLUMNS)` form is the drift guard the original Step 5 asked for; it only becomes assertable once the deferral is lifted.
+
+- [ ] **Step 7: Re-measure the fit — at `lg` and above ONLY**
 
 ```bash
 npx nx serve dashboard
 ```
 
-At `md`, `lg` and `xl`, in **both** `comfortable` and `compact` density, confirm: no horizontal scroll on desktop; no other column shrunk below its design width; `unlimited risk` and `unnamed shape` both fully legible and distinguishable at a glance; no text below 11px. Capture a screenshot of each density for the review record.
+At **`lg` (1280) and 1440**, in **both** `comfortable` and `compact` density, in **both** colour schemes, confirm: no horizontal scroll; no other column shrunk below its design width; `unlimited risk` and `unnamed shape` both fully legible and **distinguishable at a glance**, never clipped to a shared prefix; no text below 11px. Capture a screenshot of each density for the review record.
 
-**If any of those fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor with the screenshots and the specific constraint that could not be met.**
+**Do not re-measure at `md` expecting a pass** — the ruling puts the column above that breakpoint, and the `md` table overflow is **pre-existing** (998 vs an 835 host before this feature; see the corrected table above). Assert instead that the `md` render **omits** the column.
 
-- [ ] **Step 7: Run the tests and commit**
+**If any check at `lg` or above fails: STOP. Do not squeeze. Do not shorten the labels. Do not re-lay-out the table. Raise a GATE Z bounce to the conductor** with the screenshots and the specific constraint that could not be met.
+
+- [ ] **Step 8 (REOPENED by build phase 4): drop the structure word from the COLLAPSED line for a multi-leg position, then re-measure at 1280**
+
+⚠ **THE FIT BOUNCED A SECOND TIME, AND IT IS RULED.** The `lg`+ headroom recorded in Global Constraints was measured on the *existing* rows. With a **real 4-leg condor row** present, min-content at 1280 is **1207 against the 1190 host — 17px overdrawn.** The `contract` cell grows **+123px** to carry `TSLA · $360…$440 condor (4 legs)`, and every other column shrinks 5–13px to pay for it, including **`Max loss` 131 → 118**.
+
+**RULED → the collapsed structure line DROPS THE STRUCTURE WORD for a multi-leg position.** The `Structure` chip already carries `Iron condor` through the closed lookup and is **authoritative**; the line restating it is the same **two names for one thing** pattern that forced AC-46's distinct-id count and the union's one-logical-source rule. Removing the duplicate is the only change here that costs the trader nothing — the name is still on the row, once, in the column whose job it is.
+
+**Rejected, so they are not re-proposed:**
+- *Drop the `Structure` column for multi-leg rows* — a column that is blank on some rows breaks "a column means the same thing in every row".
+- *Accept the compression* — `Max loss` is the column the owner ruled in specifically **so it would be visible**; squeezing it 131 → 118 to make room defeats the ruling it exists to satisfy.
+
+**The spec author is writing the new collapsed form — reference `SPEC.md` §4 for it; do not restate or invent the string here.** The full list stays reachable in the tooltip and the disclosure (AC-37), and `structure_line_full` is unchanged.
+
+**Then RE-MEASURE at 1280, with a 4-leg condor row present**, both densities, both schemes. **A still-overdrawn result is ANOTHER BOUNCE to the conductor, not a squeeze** — do not shrink a column, do not shorten a withheld-reason label, do not drop below 11px.
+
+- [ ] **Step 9: Delete the transitional bridges you no longer need**
+
+`derive.ts` carries `structureOfLegacy` and `maxLossOfLegacy` (added in F9, see that task's Step 5). Any call site in the row/card render path that now has a `PositionView` in hand must read `view.structure` / `view.max_loss` **directly** and stop routing through a bridge. Remove every bridge call this task makes redundant; the functions themselves die in F18, when the last legless `Position` disappears.
+
+- [ ] **Step 10: Run the tests and commit**
 
 ```bash
 npx nx test @org/dashboard
@@ -2903,10 +3120,13 @@ Spec §4 *The mobile card at 393px*, *Component states*. AC-30, AC-33, AC-34, AC
 
 - [ ] **Step 1: Write the failing test**
 
+⚠ **FIXTURE TRAP — the same one F11 carries.** Do **not** build the card's risk-slot figure case on `FX_ZERO_COST_COLLAR`: its equity leg is priced at 0 so the position reaches `no_basis`, which makes max loss clamp to **`$0`** and the footer slot look broken. **Use `FX_PROTECTIVE_PUT` (`$1500`).** Keep `FX_ZERO_COST_COLLAR` for the `no_basis` P/L% case only.
+
 ```ts
 it('AC-30 — the collapsed card carries AT MOST ONE risk figure or reason, never three', …)
 it('the footer has EXACTLY five items for both a 1-leg and a 4-leg position', …)
-it('AC-30 — a 1-leg card and a 4-leg card have the same collapsed height', …)
+// AC-30 collapsed-height equality is NOT assertable here — jsdom measures every box at 0, so the
+// comparison passes vacuously. It needs a real browser and a multi-leg record: it lives in V7.
 it('AC-33 — a shares card reads `100 sh`, carries the Shares chip, and shows — for strike/expiry', …)
 it('the structure line gets minWidth 0 + ellipsis while the chip never shrinks', …)
 it('multi-expiry shows the NEAREST expiry with a `+1 more` suffix — never two dates in one slot', …)
@@ -3020,30 +3240,60 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 **Files:**
 - Modify: `apps/dashboard-e2e/src/e2e/mobile-no-overflow.cy.ts`
 
-- [ ] **Step 1: Extend the spec**
+- [ ] **Step 1: Extend the spec — the 393px no-overflow guard**
 
-Seed a durable `convexa.positions.v2` blob (via `cy.window().then(w => w.localStorage.setItem(...))` before `cy.visit`) containing a 4-leg iron condor, in **both** colour schemes, at 393×852. Then:
+⚠ **CORRECTED (build phase 3): the 4-leg-EXPANDED assertion is not buildable here, and it has MOVED to V7.** While the durable store is still v2, **a multi-leg position is unrepresentable**: a v2 record *is* one contract, and the ONE lift maps each record to exactly one leg — so `legs.length > 1` cannot occur, and the disclosure control (which exists only when `legs.length > 1`, AC-35) cannot render. Empirically confirmed at 393px against a seeded book: `disclosures: 0`. Multi-leg first exists after **F15** (the entry path) and **F18** (the cutover), so **V7** — the full-page integration over a seeded durable store — is the first honest home for the expanded case.
+
+**V3 stays where it is and still gates.** It validated 393px no-overflow for real, in both colour schemes, and that result stands.
+
+So this step ships the cold-render guard (both schemes, 393×852, seeded book) **plus a live TRIPWIRE** — not a `.skip`, which rots silently:
 
 ```ts
-cy.get('[data-testid="position-card"]').first().find('button[aria-expanded]').click();
-cy.get('[aria-expanded="true"]').should('exist'); // the expansion actually happened
-cy.document().then((doc) => {
-  expect(doc.documentElement.scrollWidth).to.be.at.most(doc.defaultView!.innerWidth);
+it('TRIPWIRE — a multi-leg position is not yet representable in the v2 store, so no disclosure exists', () => {
+  // ASSERTS THE BLOCKING PRECONDITION. It goes RED the moment the store can hold a multi-leg
+  // position (F15/F18), which is the signal to delete this case — the real assertion already
+  // lives in V7. Replacement, for when that happens:
+  //   cy.get('[data-testid="leg-disclosure-toggle"]').first().click();
+  //   cy.get('[aria-expanded="true"]').should('exist');
+  //   cy.document().then((d) => expect(d.documentElement.scrollWidth).to.be.at.most(d.defaultView!.innerWidth));
+  cy.get('[data-testid="leg-disclosure-toggle"]').should('not.exist');
 });
 ```
 
-The `aria-expanded="true"` assertion is not decoration — without it a selector that silently stops matching turns the overflow check vacuous, which is the exact failure mode the extension exists to close.
+**Keep the tripwire.** It is the forcing function that makes the move to V7 impossible to forget; a `.skip` or a TODO comment would not go red and would simply be lost.
 
 - [ ] **Step 2: Run it**
 
 Run: `npx nx e2e dashboard-e2e`
-Expected: 15/15 + the new case. If the expansion overflows, fix the card (slot 5 stacks vertically; never a horizontal mini-table inside a 393px card) — never widen the assertion.
+Expected: green, including the tripwire. If the tripwire goes red, multi-leg has become representable — **delete it and move its replacement assertion into V7**, do not weaken it.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Record the pre-existing 900px page overflow — an OBSERVATION, not a gate**
+
+Build phase 2 found, while measuring the `max_loss` column, that the **`/positions` page itself overflows at 900px** — `scrollWidth` 965 vs 900 — and that this is **byte-identical with and without the `max_loss` column**. The shipped e2e only ever asserted at 393px, so the `md` boundary was never covered and the defect has been latent.
+
+**It is pre-existing and OUT OF SCOPE for this feature.** The conductor has logged it as a standing item.
+
+Record the measurement in this spec as a **commented, non-asserting note** so GATE Q does not attribute it to `positions-legs`:
+
+```ts
+// PRE-EXISTING, OUT OF SCOPE (logged as a standing item, build phase 2):
+// `/positions` overflows at 900px — scrollWidth 965 vs 900 — BYTE-IDENTICALLY with and without the
+// `max_loss` column, i.e. this feature neither causes nor worsens it. The shipped e2e only asserted
+// at 393px, which is why the md boundary went uncovered. Do NOT add an assertion here: this row
+// would then fail on a defect this feature did not introduce, and the failure would be misread as a
+// regression from the leg refactor. The 393px guard below is the one that gates.
+```
+
+**V3 must not fail on it**, and no task in this plan may attempt to fix it. If a later task's measurement at `md` shows the same 965/900, that is this known item, not a new regression.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add apps/dashboard-e2e/src/e2e/mobile-no-overflow.cy.ts
 git commit -m "test(e2e): assert 393px no-overflow with a 4-leg disclosure EXPANDED, both schemes
+
+Note the pre-existing, out-of-scope 900px page overflow as a non-asserting
+observation so GATE Q does not attribute it to this feature.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
@@ -3116,19 +3366,23 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the test**
 
+⚠ **CORRECTED (build phase 4): "grouping and sorting trigger no store write" is FALSE as originally written, and asserting it would have failed on correct code.** The shipped store persists `customization.working` on a group/sort/density change — that is the **point** of a durable view preference, it predates this feature, and AC-80 / §7 invariant 9 overstated the property. **The spec author is correcting AC-80; verify against the corrected AC.**
+
+Assert the strongest form that is **true**, and name the one byte that legitimately moves:
+
 ```ts
-/**
- * AC-80: expanding, collapsing, grouping, sorting and switching views trigger NO fetch and NO
- * store write. The whole surface is a read; nothing on it can reach a real order path.
- */
 it('expanding and collapsing a leg block issues zero fetches and leaves storage byte-identical', …)
-it('grouping and sorting are a pure re-derivation — zero fetches, zero writes', …)
+it('grouping and sorting issue ZERO fetches — they are a pure re-derivation, never a refetch', …)
+it('grouping and sorting leave the BOOK byte-identical — no position, no leg, no decision is touched', …)
+it('grouping and sorting rewrite ONLY `customization.working` — the durable view preference, by design', …)
+  // name it explicitly: this is the one byte that moves, and it moved before this feature existed
+it('AC-82 — no SAVED VIEW is rewritten: `customization.views` is byte-identical', …)
 it('switching between existing saved views issues zero fetches', …)
 it('AC-36 — the expansion state is absent from the persisted view config after a reload', …)
 it('the portfolio never issues a bundle/scoring request', …)
 ```
 
-Assert fetches by counting calls on the mocked `fetchTrackedContract` and the global `fetch` spy; assert writes by snapshotting **every** `convexa.*` key before and after and comparing byte-for-byte.
+Assert fetches by counting calls on the mocked `fetchTrackedContract` and the global `fetch` spy. Assert writes by snapshotting **every** `convexa.*` key before and after and diffing **per top-level slice** — `positions`, `decisions`, `customization.views` must be byte-identical; `customization.working` is the sole permitted delta. A whole-blob byte comparison is the wrong instrument here: it would fail on the one legitimate write and tempt someone to weaken the whole assertion.
 
 - [ ] **Step 2: Run it, then commit**
 
@@ -3200,6 +3454,32 @@ Single-underlying is enforced **at construction**, not by the type: an assert at
 `openPosition` mints a `LegId` per leg via `newId()`, builds the `SimPosition`, and keeps exactly one code path for one leg and for six.
 
 An **order trigger still creates a single-option position, exactly as today** — multi-leg simulated orders are out of scope; do not touch `useOrderEngine`.
+
+- [ ] **Step 3b: Fix `compositeLimitWouldFill`, and DECIDE what a limit price means for a structure**
+
+⚠ **CORRECTNESS OBLIGATION, not a cleanup (build phase 3).** `compositeLimitWouldFill` (`composeMark.ts:96-108`) compares `composed.net_mark` — a **dollar** net — against its `limit` parameter, which every caller supplies as a **per-unit** price. F10 papered over this at the one live call site with `netLimitOf`; **the defect is still in the function** and the next caller inherits it. Left alone it silently stops resting limits from filling — no error, no throw, nothing red.
+
+**This task owns the fix because this task owns the limit mode of the entry dialog**, and the units bug is a symptom of a product question that has never been answered:
+
+**Decide, and write the decision into the code as a comment:** *what does a limit price mean for a four-leg structure?* The plausible readings are not interchangeable —
+
+- a **per-unit** price on some designated leg (meaningless for a condor);
+- a **net debit/credit for the whole structure** (what a broker's combo order actually takes, and what §4's `Net debit $840` copy implies);
+- **per-leg limits** (a different feature entirely).
+
+Spec §1 puts **multi-leg simulated ORDERS out of scope**, and §2.5 notes a composite limit can only fill when *every* leg has a live, non-frozen, non-`last_known` mark. So the minimum honest answer is likely: **keep the durable field per-unit, make `compositeLimitWouldFill` take an explicitly-named dollar net, and convert at the boundary** — the F10 shape, promoted from a call-site patch into the function's contract. Rename the parameter so the units are unmissable (`netLimitDollars`, not `limit`), and make a single-leg long option provably reduce to `mark <= limit`.
+
+**If the honest answer turns out to require multi-leg resting limits, that is out of scope (§1) — bounce to the conductor rather than building it here.**
+
+Required tests:
+
+```ts
+it('a per-unit limit is converted to a dollar net before comparison — units cannot be mixed', …)
+it('a single-leg long option still fills exactly when mark <= limit — byte-identical to shipped', …)
+it('a credit structure`s limit compares against a NEGATIVE net, and the sign is not lost', …)
+it('no caller passes a per-unit price into the dollar-net parameter', …)
+  // grep-style guard, or a branded type — the units bug must be unrepresentable, not merely fixed
+```
 
 - [ ] **Step 4: Run the tests and commit**
 
@@ -3312,7 +3592,11 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 Spec §2.7 (the module-boundary table). No AC — this is the housekeeping that lets F18 delete `model/useGhostTrade.ts` without dragging an unrelated widget with it.
 
-`model/OpportunityTier.tsx` has **one consumer** and is already a named deferral. It moves to `pages/ticker/widgets/`; `model/` narrows to the trading kernel (`DecisionRecord`, `DecisionEvent`, `MarkBasis`, `EntryContextDigest`, `CapturedSetup`, `TradeAlert`, `computeMark`, `bsPrice`, `captureDigest`) and no further.
+⚠ **CORRECTED (build phase 4): `model/OpportunityTier.tsx` has THREE consumers, not one — and moving the whole module would have INVERTED the dependency direction Step 3 itself demands.** One consumer is **`features/trading/outcomes/ledger.ts`**, which needs only the six-line tier `WORD` lookup. Relocating the module wholesale to `pages/ticker/widgets/` would have forced `features/trading/outcomes/` to import from `pages/` — an upward edge, and precisely the `@nx/enforce-module-boundaries` violation this task's own lint gate exists to catch.
+
+**What actually shipped, and why it is the right split:** the React widget moved to `pages/ticker/widgets/opportunity-tier/`, and the **`WORD` lookup stayed in the kernel as `model/tier.ts`**, imported by both the widget and the ledger. Presentation went up to the page; the shared vocabulary stayed down in the kernel. `model/` narrows to the trading kernel (`DecisionRecord`, `DecisionEvent`, `MarkBasis`, `EntryContextDigest`, `CapturedSetup`, `TradeAlert`, `computeMark`, `bsPrice`, `captureDigest`, `tier`) and no further.
+
+⚠ **Do NOT "finish" this move later.** `model/tier.ts` sitting in the kernel is not a half-done relocation — it is the **correct end state**. Pulling it up into the widget re-creates the upward `outcomes/ → pages/` edge and breaks the lane boundary. The file carries a comment saying so; leave it there.
 
 **Files:**
 - Move: `apps/dashboard/src/app/features/trading/model/OpportunityTier.tsx` → `apps/dashboard/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx` (+ an `index.ts` barrel matching the sibling widgets)
@@ -3393,6 +3677,10 @@ it('AC-55 — closed and cancelled positions survive with their close data', …
 it('AC-52 — a trader with no saved data gets a normal empty portfolio, no notice, no error', …)
 it('AC-51 — the merge notice appears ONLY for a trader who had items in BOTH places, survives reload, never returns after dismissal', …)
 it('AC-56/61 — starting from an unparseable v3 blob, every mutator leaves storage byte-identical', …)
+it('an unparseable gammaflow.positions.v2 reports ONE unread source, not the promoted brand pair', …)
+  // seed ONLY the legacy key with corrupt bytes; resolveDurable promotes them to the convexa key
+  // before any parse, so both keys now hold the same corrupt blob. StoreHealth.unread_sources must
+  // still have length 1, and provenance must not be written at all (the promote aborts).
 ```
 
 For AC-58's second case, assert by **construction**, following the `?raw` import-allowlist idiom already used for `LiveTabPanel` in `positions.risk.spec.tsx`:
@@ -3430,8 +3718,11 @@ else, read ALL of: v2/legacy-v2, v1/legacy-v1
   -> delete nothing, ever
 ```
 
-- Use `resolveDurable(V2_KEY, LEGACY_V2_KEY)` and `resolveDurable(V1_KEY, LEGACY_V1_KEY)` **per source key** to resolve the brand hop — that helper is right for a *rename* and is exactly what this uses it for. It is the **wrong shape for a merge of two live stores**, so the union sits **above** it.
-- A source that throws on parse ⇒ `ok: false` for that source. `unionSources` reports `aborted`.
+- Use `resolveDurable(V2_KEY, LEGACY_V2_KEY)` and `resolveDurable(V1_KEY, LEGACY_V1_KEY)` **per LOGICAL source** to resolve the brand hop — that helper is right for a *rename* and is exactly what this uses it for. It is the **wrong shape for a merge of two live stores**, so the union sits **above** it. **Exactly two `ParsedSource` entries reach `unionSources`, never four**, and each carries the **logical** label (`'convexa.positions.v2'`, `'convexa.ghost-trade.v1'`).
+
+  ⚠ **This is where the promote actually runs, so this is where the two-names-for-one-thing hazard is real.** `resolveDurable` `setItem`s the legacy blob under the new key **before** anything parses it (`resolveDurable.ts:33-44`), so a user with an unparseable `gammaflow.positions.v2` now holds **the same corrupt bytes under `convexa.positions.v2` too**. Nothing is lost and the F1 latch protects both — but if this caller enumerates physical keys instead of logical stores, `unread_sources` reports two failures for one blob and `source_counts` misreports provenance. **Resolve first, then hand the union one entry per store.** Same class of error as the id collision that forced the distinct-id count in AC-46 (F7 carries the binding requirement and its tests).
+
+- A source that throws on parse ⇒ `ok: false` for that **logical** source. `unionSources` reports `aborted`.
 - **`aborted === true` ⇒ the promote-write is ABORTED ENTIRELY**, `faulted = true`, the store runs in memory from whatever parsed. **No partial v3 blob is ever written** — writing v3 permanently stops the read path from consulting sources, and a partial v3 would freeze a truncated history behind a key that claims completeness. A migration that half-succeeds is worse than one that does not run.
 - The v3 blob itself failing to parse ⇒ `faulted = true`, sources are **not** consulted (v3 exists), nothing is written.
 - **The promote-write runs on first load of the new build even when there are no sources** (all counts zero). Deferring it leaves the union path armed indefinitely, so a source blob appearing later — a stale tab, a restored profile — would be unioned in at an unpredictable moment.
@@ -3441,13 +3732,54 @@ else, read ALL of: v2/legacy-v2, v1/legacy-v1
 - Bump `PORTFOLIO_SCHEMA_VERSION` to `3`. Keep the exported key constants and add `PORTFOLIO_V3_KEY`.
 - Keep the F1 fault latch verbatim on top of all of it.
 
+- [ ] **Step 3b: A v2 record carrying `legs` must migrate with ALL its legs — this is `loss-free-durable-migration` territory**
+
+⚠ **NEW OBLIGATION (build phase 4). The v2 `Position` can now carry multi-leg data.** F15 shipped multi-leg entry *before* the cutover, and the plan was silent on where such a position is persisted in the meantime. The lane added an **additive-optional `legs?: Leg[]`** to the v2 record (`positions/types.ts:85`) with **no version bump**, following the same `entry_mode` / `origin_order_id` discipline the record already uses, and made the ONE lift treat it as **authoritative** when present.
+
+That was the right call: flattening a spread into the flat single-contract fields would have **destroyed three of a condor's four legs at write time**. The flat fields (`ticker`, `strike`, `right`, `expiration`, `qty`, `entry_mark`) become a documented **lossy first-leg summary** that dies here.
+
+**The consequence this step owns:** a real four-leg condor can already be sitting in `convexa.positions.v2` when the union runs. If `liftLegacyRecord` prefers the flat summary over `legs`, that condor **re-reads as a single long call after the cutover** — a silent, total, irreversible loss of three legs, in exactly the shape the severity-promoted invariant exists to prevent, on a record the trader entered *through the shipped UI*.
+
+**Requirement:** `liftLegacyRecord` must treat `legs` as authoritative whenever it is present and non-empty, ignoring the flat summary entirely; the flat fields are consulted **only** for a record with no `legs`. Verify by test, not by reading the code:
+
+```ts
+it('a v2 record carrying `legs` migrates to v3 with ALL FOUR legs intact, not its first-leg summary', () => {
+  // seed convexa.positions.v2 with a 4-leg condor whose flat fields describe ONLY leg 0
+  const migrated = allPositions().find((p) => p.id === 'v2-condor')!;
+  expect(migrated.legs).toHaveLength(4);
+  expect(migrated.legs.map((l) => l.strike).sort((a, b) => a! - b!)).toEqual([360, 380, 420, 440]);
+  expect(structureKindOf(migrated)).toBe('iron_condor'); // NOT long_call
+});
+
+it('a v2 record with NO `legs` still lifts through the flat summary, unchanged', …)
+it('the flat summary is never merged with `legs` — no leg is duplicated or invented', …)
+```
+
 - [ ] **Step 4: Point `usePortfolio` at v3**
 
 Delete the transitional in-memory lift from F10 — `allPositions()` now returns `SimPosition[]` directly. `openPosition`, `closePosition`, `cancelLimit`, `fillLimit` write `SimPosition`. Every mutator checks `health.faulted` first and returns `{ ok: false }` rather than attempting a write. Delete `rows: DerivedRow[]`, `markFor`, and `DerivedRow`/`RowMetrics` from `derive.ts` — every consumer moved to `views` in F10–F14.
 
+**Deletion obligation — the transitional bridges die HERE.** `derive.ts`'s `structureOfLegacy` and `maxLossOfLegacy` (F9 Step 5) exist only to bridge a legless v2 `Position` to the leg-based recogniser. Once `allPositions()` returns `SimPosition[]`, their reason to exist is gone:
+
+```bash
+grep -rn "structureOfLegacy\|maxLossOfLegacy" apps/dashboard/src
+```
+
+Expected **after** this task: **no matches at all** — both functions deleted, `applyFilter`'s call at `derive.ts:72` reading `view.structure` instead. **A transitional helper that outlives its transition is how a second source of truth gets born**, and this feature exists to kill one of those, not to plant another. If a call site still needs a bridge here, that consumer has not been moved to `PositionView` and *that* is the bug.
+
 `recordDecision` keeps writing to the **one** log via the positions store's `appendDecision`. That is DECISION_QUEUE **Q2 resolved** — the two competing `appendDecision` definitions collapse to one.
 
 **`outcomes/` keeps its zero-write boundary, and counts a multi-leg position as exactly ONE ledger record** — a per-leg harvest would multiply `N` and invalidate every Wilson interval the track record prints.
+
+- [ ] **Step 4b: Produce `staleViewName` — F14 built the consumer, this task owes the producer**
+
+⚠ **UNFINISHED HAND-OFF (build phase 4).** F14 shipped the banner region and its props, including `staleViewName?: string | null` (`CustomizationToolbar.tsx:70`) and the `staleViewNotice(viewName)` render at `:180`. **Nothing sets it** — a repo-wide search finds the prop only in `bannerRegion.spec.tsx`, never in application code. The producer is the **store read**, which is this task's work.
+
+Left implied, the stale-view notice ships with a prop nothing ever sets, and **AC-54 fails at GATE Q** — the notice is unreachable in the running app no matter how correct the component is.
+
+Wire it: `normalizeViewConfig` (F9) already returns `{ config, adjusted, staleFilterValue }` and is already applied on read. Surface `adjusted` + the **active view's name** out of the store's customization read, thread it through `usePortfolio` → `PositionsPage` → `PortfolioPanel` → `PositionsPanel` → `CustomizationToolbar`, and pass `staleViewName={adjusted ? activeView.name : null}`.
+
+**Reading a view still must not write** (AC-54, AC-82): normalization stays in memory, the store is written only when the user chooses to save. Verify with the seeded `STALE_SAVED_VIEW_CUSTOMIZATION` fixture (V1) that the notice **renders** and that `customization.views` is byte-identical afterwards.
 
 - [ ] **Step 5: Merge the Ticker page onto the one book**
 
@@ -3661,6 +3993,24 @@ it('AC-76 — every position surface stays labelled SIMULATED; the paper badge a
 it('AC-70/AC-71 — a position opened on the Ticker page appears in the portfolio, and a close propagates back, without a reload', …)
 ```
 
+✅ **CORRECTED (build phase 4): the two cases this task expected to INHERIT are already closed — do not re-add them.** F15 made multi-leg representable and thereby retired V3's tripwire by doing its job, so the lane deleted the tripwire and wrote its **replacement verbatim in `mobile-no-overflow.cy.ts`**: a real four-leg iron condor seeded the way the entry path writes one, the disclosure clicked, and **both** `aria-expanded="true"` **and four `leg-line`s asserted as vacuity guards before measuring**. That closes **§7 invariant 11 and AC-30 early**, in the e2e tier where they belong.
+
+**So this task does NOT own them.** Do not duplicate the 393px-expanded overflow case or the collapsed-height comparison here — a second copy in a different tier is a second source of truth, and the jsdom tier still cannot measure height honestly (every box is 0). If either case needs to change, change it where it lives.
+
+⚠ **This task DOES own the durable-data half of F18 Step 3b, end to end.** A v2 record carrying `legs?: Leg[]` (the pre-cutover multi-leg persistence added in F15) must survive the union with **every leg intact**. F18 proves it at the store level; this task proves it **on the rendered page**, which is where a trader would actually discover the loss:
+
+```ts
+it('a four-leg condor entered BEFORE the cutover still renders as a condor AFTER it', async () => {
+  // seed convexa.positions.v2 with a 4-leg condor whose flat fields describe only leg 0,
+  // then load the page through the real store + migration
+  expect(await screen.findByText('Iron condor')).toBeInTheDocument(); // not "Long call"
+  await userEvent.click(screen.getByTestId('leg-disclosure-toggle'));
+  expect(screen.getAllByTestId('leg-line')).toHaveLength(4);
+});
+```
+
+A condor entered through the shipped UI and re-read as a single long call afterwards is the **silent, total, irreversible** loss `loss-free-durable-migration` was promoted on severity to prevent. **Assert it; do not note it.**
+
 The stale-saved-view case **requires** `STALE_SAVED_VIEW_CUSTOMIZATION` from V1 — that state only exists for a user with pre-existing durable state, which a fresh browser cannot reproduce, so without the fixture the AC is unverifiable at GATE Q.
 
 - [ ] **Step 2: Run it, then commit**
@@ -3731,7 +4081,7 @@ Verify **AC-83** (`SPEC.md` §3 section H, `test`) — the B1 ruling, implemente
 - [ ] **exactly 1 open position** — today's behaviour, **byte-identical**, then the multi-leg rule applies within it; this is the arm AC-73 rests on, and AC-73 survives verbatim because it was only ever well-defined for this case
 - [ ] **more than 1 open position** — evaluation **suppressed** on every surface, the projection carrying `EvalNoneReason.multiple_positions` rather than an unexplained silence
 - [ ] the `pos_*` request is **present and byte-identical** in all three arms — a request still appearing for a 3-position ticker is **correct, not a defect** (AC-83 repeats AC-74's clause)
-- [ ] `POSITION_EVAL_NONE_MULTI_POSITION` is **not rendered** anywhere — it is `[FUTURE — pending a consumer]` and this release ships no consumer
+- [ ] `POSITION_EVAL_NONE_MULTI_POSITION` is **defined but not rendered** — re-run F6 Step 5's grep in its corrected form (**no matches outside `positions/labels.ts`**). It is `[FUTURE — pending a consumer]` and this release ships no consumer. **A match inside `labels.ts` is correct and expected; the fix for a match elsewhere is to unwire the consumer, never to delete the constant.**
 
 - [ ] **Step 6: Report**
 

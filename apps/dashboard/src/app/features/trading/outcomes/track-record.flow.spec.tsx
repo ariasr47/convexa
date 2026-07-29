@@ -9,11 +9,15 @@
  * The journey: nothing recorded → history builds → a cell clears the floor → records that must not
  * count arrive → a store goes unreadable → an archive is exported, imported, re-imported, declined.
  */
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
 import { __resetMemory as resetGhost } from '@/features/trading/model/store';
 import { __resetOrdersMemory } from '@/features/trading/orders/store';
-import { __resetMemory as resetPositions, PORTFOLIO_V2_KEY } from '@/features/trading/positions/store';
+import {
+  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
+  __resetMemory as resetPositions,
+} from '@/features/trading/positions/store';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { buildArchive } from './archive';
 import { closedOutcome, digest, order, outcomes, position, seedStores } from './fixtures';
 import { TrackRecordSection } from './TrackRecordSection';
@@ -136,7 +140,9 @@ describe('a cell clears the floor (AC-7 … AC-12, AC-17)', () => {
     seedCounted();
     mount();
     // 12/20 ⇒ a Wilson band ~36–80: 44pp wide. A barely-cleared floor must never read as a verdict.
-    expect(screen.getByTestId('tr-wide-prime').textContent).toBe('still wide — not a conclusion yet');
+    expect(screen.getByTestId('tr-wide-prime').textContent).toBe(
+      'still wide — not a conclusion yet',
+    );
   });
 
   it('⚠ AC-14 — no rate is tinted: a 90% cell and a 10% cell are styled IDENTICALLY', () => {
@@ -292,7 +298,9 @@ describe('coverage honesty (AC-19, AC-E13, AC-E14, AC-E18)', () => {
       'Of your 20 counted outcomes, 10 carry a recorded setup — 10 predate capture.',
     );
     expect(screen.queryByTestId('tr-cell-unknown')).toBeNull();
-    expect(screen.getByTestId('tr-epoch').textContent).toContain('We started recording entry context on');
+    expect(screen.getByTestId('tr-epoch').textContent).toContain(
+      'We started recording entry context on',
+    );
     expect(screen.getByTestId('tr-epoch').textContent).toContain('2026');
   });
 
@@ -339,7 +347,9 @@ describe('coverage honesty (AC-19, AC-E13, AC-E14, AC-E18)', () => {
     });
     mount((id) => (id === 'scalper-1' ? 'Scalper' : null));
     expect(screen.getByTestId('tr-cell-scalper-1').textContent).toContain('Scalper');
-    expect(screen.getByTestId('tr-cell-custom-xyz').textContent).toContain('Persona no longer saved');
+    expect(screen.getByTestId('tr-cell-custom-xyz').textContent).toContain(
+      'Persona no longer saved',
+    );
     expect(surfaceText()).not.toContain('custom-xyz');
   });
 });
@@ -386,7 +396,7 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     });
     seedStores({});
     mount(); // no session, no auth provider, no gate — see the mount() note above
-    const before = localStorage.getItem(PORTFOLIO_V2_KEY);
+    const before = localStorage.getItem(PORTFOLIO_V3_KEY);
 
     pickFile(file);
     await screen.findByTestId('tr-import-confirm-title');
@@ -395,7 +405,7 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     expect(body).toContain('only adds');
     expect(body).toContain('never deletes, never overwrites and never replaces');
     // ...and NOTHING has been written yet.
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(before);
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(before);
 
     fireEvent.click(screen.getByTestId('tr-import-confirm'));
     await screen.findByTestId('tr-import-done-title');
@@ -405,7 +415,7 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     expect(screen.getByTestId('tr-import-conflict').textContent).toBe(
       '0 collided with a different record — your existing record was kept.',
     );
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).not.toBe(before);
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).not.toBe(before);
   });
 
   it('AC-24 — re-importing the SAME file reports 0 added and leaves the counted N, the rates and the coverage statement identical', async () => {
@@ -474,7 +484,7 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     seedStores({ positions, positionDecisions: decisions });
     mount();
     const readBefore = screen.getByTestId('tr-read-prime').textContent;
-    const blobBefore = localStorage.getItem(PORTFOLIO_V2_KEY);
+    const blobBefore = localStorage.getItem(PORTFOLIO_V3_KEY);
 
     pickFile('{ not an archive at all');
     await screen.findByTestId('tr-import-confirm-title');
@@ -486,7 +496,7 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
 
     fireEvent.click(screen.getByText('Done'));
     expect(screen.getByTestId('tr-read-prime').textContent).toBe(readBefore);
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBe(blobBefore); // byte-untouched
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBe(blobBefore); // byte-untouched
   });
 
   it('AC-E16 — a colliding, DIFFERING record is reported as a conflict, and the existing record wins', async () => {
@@ -499,7 +509,10 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
         exported_at: '',
         stores: {
           ghost_trade: { trades: {}, decisions: [] },
-          positions: { positions: { 'p-1': position({ id: 'p-1', realized_pl_pct: 999 }) }, decisions: [] },
+          positions: {
+            positions: { 'p-1': position({ id: 'p-1', realized_pl_pct: 999 }) },
+            decisions: [],
+          },
           orders: { orders: {} },
         },
       }),
@@ -510,7 +523,9 @@ describe('the archive: export → import → re-import → decline (AC-20 … AC
     expect(screen.getByTestId('tr-import-conflict').textContent).toBe(
       '1 collided with a different record — your existing record was kept.',
     );
-    expect(JSON.parse(localStorage.getItem(PORTFOLIO_V2_KEY) ?? '{}').positions['p-1'].realized_pl_pct).toBe(20);
+    expect(
+      JSON.parse(localStorage.getItem(PORTFOLIO_V3_KEY) ?? '{}').positions['p-1'].realized_pl_pct,
+    ).toBe(20);
   });
 
   it('AC-21 — export works with zero history and says the archive is empty', async () => {

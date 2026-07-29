@@ -25,12 +25,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '@/app';
+import type { SimPosition } from '@/features/trading/positions/leg';
+import { liftLegacyRecord } from '@/features/trading/positions/migrate';
 import {
   __resetMemory,
   allPositions,
   getCustomization,
   newId,
-  PORTFOLIO_V2_KEY,
+  PORTFOLIO_V3_KEY,
   putCustomization,
   putPosition,
 } from '@/features/trading/positions/store';
@@ -151,8 +153,11 @@ const QUOTE: TrackedContract = {
   dte: 24,
 };
 
-/** Seed one open simulated position directly into the durable store. */
-function seedPosition(over: Partial<Position> = {}): Position {
+/**
+ * Seed one open simulated position directly into the durable store, authored in the legacy flat
+ * shape and put through the ONE lift — the same path a real user's records take.
+ */
+function seedPosition(over: Partial<Position> = {}): SimPosition {
   const p: Position = {
     id: over.id ?? newId(),
     ticker: 'TSLA',
@@ -171,8 +176,9 @@ function seedPosition(over: Partial<Position> = {}): Position {
     entry_mode: 'manual',
     ...over,
   };
-  putPosition(p);
-  return p;
+  const lifted = liftLegacyRecord(p) as SimPosition;
+  putPosition(lifted);
+  return lifted;
 }
 
 type ContractResolver = 'quote' | 'notfound' | 'throw' | 'nullquote';
@@ -321,7 +327,7 @@ describe('store', () => {
     // (its ring buffer is unit-tested in useTrends.spec) — no stale carry, no throw.
     expect(within(within(row).getByTestId('cell-contract')).getByText('TSLA')).toBeInTheDocument();
     expect(allPositions().length).toBe(1);
-    expect(allPositions()[0].entry_mark).toBe(5);
+    expect(allPositions()[0].legs[0].entry_price).toBe(5);
   });
 
   it('customization + saved views survive nav + reload', async () => {
@@ -563,11 +569,10 @@ describe('invariants (positions)', () => {
     expect(screen.queryByText(/place real order/i)).toBeNull();
   });
 
-  it('brand swap is UI-only (store key unchanged)', async () => {
-    // Seed positions/views under the EXISTING durable key BEFORE the rebrand-era mount.
+  it('brand swap is UI-only (the durable book is unaffected by it)', async () => {
+    // Seed positions/views into the durable book BEFORE the rebrand-era mount.
     seedPosition({ id: 'pre-rebrand-1' });
-    // The durable blob lives under the unchanged v2 key.
-    expect(localStorage.getItem(PORTFOLIO_V2_KEY)).toBeTruthy();
+    expect(localStorage.getItem(PORTFOLIO_V3_KEY)).toBeTruthy();
 
     renderAt('/positions');
     // After the (UI-only) rebrand, the pre-seeded position is present — the store key did not change.

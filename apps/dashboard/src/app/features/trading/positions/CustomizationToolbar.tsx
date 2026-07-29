@@ -5,7 +5,7 @@
  * Static/durable: untouched by an SSE drop.
  *
  * Re-skin (convexa-redesign · Positions): re-laid-out to the frame — a single controls row (View ·
- * Table/Cards · Comfortable/Compact · Group None/Ticker/Strategy · spacer · the blue "+ Open
+ * Table/Cards · Comfortable/Compact · Group None/Ticker/Structure · spacer · the blue "+ Open
  * simulated position" pill), then a status-pill row (open/pending/closed/cancelled + History + the
  * offline banner). Layout/density/group are segmented pill controls; the saved-view wiring is unchanged.
  * REVISION 2 (owner 2026-06-29): the Sort select + Desc/Asc toggle, the Filters ▾ menu, and the
@@ -13,6 +13,7 @@
  * `derive` sort/filter logic + `working.*` stay in the model (default sort `pl_dollar`/`desc`), only
  * the controls are gone. The Open-CTA handler (`onOpenEntry`, gated upstream) lands here.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import {
   Box,
   Button,
@@ -29,27 +30,29 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
-import { extrasFor } from '@/shared/theme/tokens';
-import { SAVED_VIEW_TIP } from './labels';
-import type { GroupAxis, Position, PositionStatus } from './types';
+import { useState, type ReactNode } from 'react';
+import { FaultedBanner, Refused } from './FaultedBanner';
+import { MERGE_NOTICE, MERGE_NOTICE_EXPORT, SAVED_VIEW_TIP, staleViewNotice } from './labels';
+import type { SimPosition } from './leg';
+import type { GroupAxis, PositionStatus } from './types';
 import type { usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
 
 const STATUSES: PositionStatus[] = ['open', 'pending', 'closed', 'cancelled'];
-// REVISION 2 — Group shows None · Ticker · Strategy only (the inline Expiry option is dropped to match
-// the frame). The `expiry` group axis remains in the model + derive for later; only the UI option goes.
+// REVISION 2 — Group shows None · Ticker · Structure only (the inline Expiry option is dropped to
+// match the frame). The `expiry` axis remains reachable in `derive.ts` for later; only the UI option
+// and the GroupAxis member go (ruling #10).
 const GROUP_AXES: { key: GroupAxis; label: string }[] = [
   { key: 'none', label: 'None' },
   { key: 'ticker', label: 'Ticker' },
-  { key: 'strategy', label: 'Strategy' },
+  { key: 'structure', label: 'Structure' },
 ];
 
 interface ToolbarProps {
   pf: Portfolio;
   /** Retained for callers + future filter/columns UI; unused by the REVISION-2 one-row toolbar. */
-  positions?: Position[];
+  positions?: SimPosition[];
   /** Gate a save-view WRITE (UX_BLUEPRINT §2.6): logged-out ⇒ run shows the sign-in prompt instead of
    *  saving. Defaults to running the action directly (e.g. in isolated renders). */
   guardSaveView?: (run: () => void) => void;
@@ -59,7 +62,150 @@ interface ToolbarProps {
   onOpenEntry?: () => void;
   /** Whether the entry dialog can open yet (an anchor bundle is present). */
   canOpenEntry?: boolean;
+  /** The durable store is faulted (SPEC §2.9). Drives the banner region's top slot AND suppresses
+   *  every dismissible notice beneath it. Threaded from `pf.health.faulted`, never from a failed try. */
+  faulted?: boolean;
+  /** The one-time merge notice is owed to this trader and not yet dismissed (AC-51). */
+  mergeNoticePending?: boolean;
+  /** The ACTIVE saved view degraded a stale filter for rendering (AC-54) — its name, or null. */
+  staleViewName?: string | null;
+  /** Durable dismissal of the merge notice (it must never reappear). Absent ⇒ the notice is inert. */
+  onDismissMerge?: () => void;
 }
+
+/**
+ * THE BANNER REGION (SPEC §4 *Banner region — the collision rule*). One region, fixed priority, top
+ * to bottom:
+ *
+ *   1. `store-faulted` — NON-dismissible (F16 renders the banner itself into this slot)
+ *   2. live-offline    — NON-dismissible, shipped copy byte-identical
+ *   3. AT MOST ONE dismissible notice — the merge notice first if pending, otherwise the
+ *      stale-saved-view notice; the second appears only after the first is dismissed.
+ *
+ * WHILE FAULTED NO DISMISSIBLE NOTICE RENDERS AT ALL (AC-66). Two independent reasons, both real: a
+ * dismissal cannot be persisted in a store that refuses writes, so the notice would return forever;
+ * and the merge notice would be a FALSE CLAIM, because a fault aborts the promote entirely.
+ *
+ * Faulted and offline are INDEPENDENT (AC-65): faulted dims nothing and shows no ⏸, offline disables
+ * no control, and when both apply both banners render in this order.
+ */
+function BannerRegion({
+  faulted,
+  streamOffline,
+  mergeNoticePending,
+  staleViewName,
+  onDismissMerge,
+  faultedSlot,
+}: {
+  faulted: boolean;
+  streamOffline: boolean;
+  mergeNoticePending: boolean;
+  staleViewName: string | null;
+  onDismissMerge?: () => void;
+  faultedSlot?: ReactNode;
+}) {
+  // EPHEMERAL, deliberately. Dismissing the stale-view notice is a read-side gesture and MUST NOT
+  // write: reading a view never mutates it (AC-54). The merge notice's dismissal is durable and
+  // therefore belongs to the host, which is why it arrives as a callback instead.
+  const [staleDismissed, setStaleDismissed] = useState(false);
+
+  const showMerge = !faulted && mergeNoticePending;
+  const showStale = !faulted && !showMerge && staleViewName != null && !staleDismissed;
+
+  return (
+    <>
+      {faulted && faultedSlot}
+
+      {/* Live-offline — SHIPPED, unchanged, byte-identical copy. Non-dismissible. */}
+      {streamOffline && (
+        <Typography
+          component="p"
+          data-testid="offline-banner"
+          sx={{ fontSize: '0.78rem', color: 'warning.main', mb: '10px', m: '0 0 10px' }}
+        >
+          ⚠ Live marks paused — P/L shown is from the last update. Records persist.
+        </Typography>
+      )}
+
+      {showMerge && (
+        <Box
+          data-testid="merge-notice"
+          sx={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '8px',
+            flexWrap: 'wrap',
+            m: '0 0 10px',
+          }}
+        >
+          <Typography component="p" sx={{ fontSize: '0.78rem', color: 'text.secondary', m: 0 }}>
+            {MERGE_NOTICE}
+          </Typography>
+          {/* The export POINTER. It does not duplicate the Archive block's button and does not
+              rename the shipped `Export archive` action. */}
+          <Box
+            component="a"
+            href="#tr-archive"
+            data-testid="merge-notice-export"
+            sx={{ fontSize: '0.78rem', color: 'info.main', whiteSpace: 'nowrap' }}
+          >
+            {MERGE_NOTICE_EXPORT}
+          </Box>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onDismissMerge?.()}
+            data-testid="merge-notice-dismiss"
+            aria-label="Dismiss the merge notice"
+            sx={dismissSx}
+          >
+            Dismiss
+          </Box>
+        </Box>
+      )}
+
+      {showStale && (
+        // `info`-class: NO burnt orange and NO warning icon. Nothing broke and no data was lost —
+        // dressing this as a warning would be dishonest in the other direction.
+        <Box
+          data-testid="stale-view-notice"
+          sx={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '8px',
+            flexWrap: 'wrap',
+            m: '0 0 10px',
+          }}
+        >
+          <Typography component="p" sx={{ fontSize: '0.78rem', color: 'info.main', m: 0 }}>
+            {staleViewNotice(staleViewName as string)}
+          </Typography>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => setStaleDismissed(true)}
+            data-testid="stale-view-dismiss"
+            aria-label="Dismiss the adjusted-view notice"
+            sx={dismissSx}
+          >
+            Dismiss
+          </Box>
+        </Box>
+      )}
+    </>
+  );
+}
+
+const dismissSx = {
+  cursor: 'pointer',
+  border: 'none',
+  background: 'none',
+  font: 'inherit',
+  fontSize: '0.78rem',
+  color: 'text.secondary',
+  p: 0,
+  whiteSpace: 'nowrap' as const,
+};
 
 // ---- Segmented-control building blocks (the frame's pill groups; mode-aware via extrasFor) ------
 const segContainerSx = (theme: { palette: { mode: string } }) => ({
@@ -143,6 +289,10 @@ export function CustomizationToolbar({
   streamOffline,
   onOpenEntry,
   canOpenEntry,
+  faulted = false,
+  mergeNoticePending = false,
+  staleViewName = null,
+  onDismissMerge,
 }: ToolbarProps) {
   const guard = guardSaveView ?? ((run: () => void) => run());
   const { working, activeView, custom, hasUnsavedChanges } = pf;
@@ -241,43 +391,49 @@ export function CustomizationToolbar({
                   >
                     ✎
                   </IconButton>
-                  <IconButton
-                    size="small"
-                    aria-label="delete view"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteOpen(v.id);
-                      setViewAnchor(null);
-                    }}
-                  >
-                    🗑
-                  </IconButton>
+                  <Refused when={faulted}>
+                    <IconButton
+                      size="small"
+                      aria-label="delete view"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteOpen(v.id);
+                        setViewAnchor(null);
+                      }}
+                    >
+                      🗑
+                    </IconButton>
+                  </Refused>
                 </Box>
               )}
             </MenuItem>
           ))}
           <Divider />
           {hasUnsavedChanges && !activeView.builtin && (
+            <Refused when={faulted}>
+              <MenuItem
+                onClick={() => {
+                  guard(() => pf.saveChanges());
+                  setViewAnchor(null);
+                }}
+                data-testid="save-changes"
+              >
+                Save changes to '{activeView.name}'
+              </MenuItem>
+            </Refused>
+          )}
+          <Refused when={faulted}>
             <MenuItem
               onClick={() => {
-                guard(() => pf.saveChanges());
+                setName('');
+                setSaveAsOpen(true);
                 setViewAnchor(null);
               }}
-              data-testid="save-changes"
+              data-testid="save-as-new"
             >
-              Save changes to '{activeView.name}'
+              Save as new view…
             </MenuItem>
-          )}
-          <MenuItem
-            onClick={() => {
-              setName('');
-              setSaveAsOpen(true);
-              setViewAnchor(null);
-            }}
-            data-testid="save-as-new"
-          >
-            Save as new view…
-          </MenuItem>
+          </Refused>
           <Divider />
           <MenuItem disableRipple sx={{ pointerEvents: 'none' }}>
             <Tooltip arrow title={SAVED_VIEW_TIP}>
@@ -315,7 +471,7 @@ export function CustomizationToolbar({
           onChange={(v) => pf.setWorking({ density: v })}
         />
 
-        {/* Group segmented (None · Ticker · Strategy) — REVISION 2: Expiry option dropped. */}
+        {/* Group segmented (None · Ticker · Structure) — REVISION 2: Expiry option dropped. */}
         <Segmented
           ariaLabel="group"
           testid="group-select"
@@ -327,28 +483,33 @@ export function CustomizationToolbar({
 
         {/* Spacer + the primary CTA. */}
         <Box sx={{ flex: 1 }} />
-        <Box
-          component="button"
-          type="button"
-          onClick={() => onOpenEntry?.()}
-          disabled={!canOpenEntry}
-          data-testid="open-entry"
-          sx={{
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            border: 'none',
-            font: 'inherit',
-            padding: '8px 15px',
-            borderRadius: '8px',
-            fontSize: '0.82rem',
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
-            cursor: canOpenEntry ? 'pointer' : 'not-allowed',
-            opacity: canOpenEntry ? 1 : 0.5,
-          }}
-        >
-          + Open simulated position
-        </Box>
+        <Refused when={faulted}>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onOpenEntry?.()}
+            // While FAULTED the HTML `disabled` attribute must never appear here: it would take the
+            // control out of the tab order and swallow the hover, putting the reason for the
+            // refusal out of reach of both keyboard and mouse. `Refused` owns that treatment.
+            disabled={!faulted && !canOpenEntry}
+            data-testid="open-entry"
+            sx={{
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              border: 'none',
+              font: 'inherit',
+              padding: '8px 15px',
+              borderRadius: '8px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              cursor: canOpenEntry && !faulted ? 'pointer' : 'not-allowed',
+              opacity: canOpenEntry ? 1 : 0.5,
+            }}
+          >
+            + Open simulated position
+          </Box>
+        </Refused>
       </Box>
 
       {/* Status-pill row. */}
@@ -389,16 +550,15 @@ export function CustomizationToolbar({
         </Box>
       </Box>
 
-      {/* Offline banner (only on a stream drop). */}
-      {streamOffline && (
-        <Typography
-          component="p"
-          data-testid="offline-banner"
-          sx={{ fontSize: '0.78rem', color: 'warning.main', mb: '10px', m: '0 0 10px' }}
-        >
-          ⚠ Live marks paused — P/L shown is from the last update. Records persist.
-        </Typography>
-      )}
+      {/* THE banner region — one place, fixed priority (SPEC §4). */}
+      <BannerRegion
+        faulted={faulted}
+        streamOffline={!!streamOffline}
+        mergeNoticePending={mergeNoticePending}
+        staleViewName={staleViewName}
+        onDismissMerge={onDismissMerge}
+        faultedSlot={<FaultedBanner />}
+      />
 
       {/* Save-as-new dialog. */}
       <Dialog open={saveAsOpen} onClose={() => setSaveAsOpen(false)}>

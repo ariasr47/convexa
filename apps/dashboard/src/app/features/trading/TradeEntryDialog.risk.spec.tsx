@@ -16,12 +16,12 @@
  * that both pages mount THIS dialog live in `shared-entry.flow.spec.tsx`; the Act flow lives in
  * `orders/orders.risk.spec.tsx`. Mocks ONLY the network boundary (`fetch`).
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { TrackedContract } from '@org/api';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import {
   OrderEntrySubmit,
   OrderPlan,
@@ -99,9 +99,14 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
     renderDialog({ onConfirm });
     await user.type(screen.getByLabelText('Manual price'), '3');
     await user.click(screen.getByRole('button', { name: 'Open simulated position' }));
+    // ONE payload shape for one leg and for six (SPEC §2.7): a single-leg entry is a ONE-ELEMENT
+    // ARRAY, so there is never a single-leg path beside a multi-leg one.
     expect(onConfirm).toHaveBeenCalledWith(
-      expect.objectContaining({ entryMode: 'manual', price: 3, ticker: 'TSLA' }),
+      expect.objectContaining({ entryMode: 'manual', ticker: 'TSLA' }),
     );
+    const submitted = onConfirm.mock.calls[0][0] as TradeEntrySubmit;
+    expect(submitted.legs).toHaveLength(1);
+    expect(submitted.legs[0]).toMatchObject({ price: 3, qty: 1, side: 'long', multiplier: 100 });
   });
 
   it('market resolves the live mid (snapshot basis) or degrades to a LABELED theoretical mark', async () => {
@@ -197,14 +202,17 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
     await screen.findByText('snapshot mid');
     await user.click(screen.getByRole('button', { name: 'Open simulated position' }));
     const submit = onConfirm.mock.calls[0][0] as TradeEntrySubmit;
-    expect(submit).toMatchObject({
+    expect(submit).toMatchObject({ ticker: 'TSLA', stop: 6, target: 12.5 });
+    expect(submit.legs).toHaveLength(1);
+    expect(submit.legs[0]).toMatchObject({
+      kind: 'option',
       ticker: 'TSLA',
+      side: 'long',
       expiration: '2026-07-17',
       strike: 250,
       right: 'put',
       qty: 2,
-      stop: 6,
-      target: 12.5,
+      multiplier: 100,
     });
   });
 });

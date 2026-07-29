@@ -5,7 +5,9 @@
  * fault. Simulation-only; this seam only ever writes to the client-local positions store.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { __resetMemory, allPositions, putPosition } from './store';
+import type { SimPosition } from './leg';
+import { liftLegacyRecord } from './migrate';
+import { __resetMemory, allPositions, PORTFOLIO_V3_KEY, putPosition } from './store';
 import { seedTestPositionsIfNeeded, TEST_ACCOUNT_EMAIL, TEST_SEED_MARKER_KEY } from './testSeed';
 import type { Position } from './types';
 
@@ -62,13 +64,8 @@ describe('seedTestPositionsIfNeeded', () => {
     expect(allPositions().length).toBeGreaterThan(0);
     // Simulate the user deleting every seeded row (store back to empty).
     localStorage.setItem(
-      'convexa.positions.v2',
-      JSON.stringify({
-        schema_version: 2,
-        positions: {},
-        decisions: [],
-        customization: undefined,
-      }),
+      PORTFOLIO_V3_KEY,
+      JSON.stringify({ schema_version: 3, positions: {}, decisions: [] }),
     );
     __resetMemory();
     // Marker is still set → the second sign-in must NOT re-seed.
@@ -77,7 +74,7 @@ describe('seedTestPositionsIfNeeded', () => {
   });
 
   it('is non-destructive: does not clobber existing positions, but marks handled', () => {
-    putPosition(mkPosition());
+    putPosition(liftLegacyRecord(mkPosition()) as SimPosition);
     expect(allPositions()).toHaveLength(1);
     seedTestPositionsIfNeeded(TEST_ACCOUNT_EMAIL);
     // The pre-existing (real) position survives and no seed rows were added.

@@ -23,13 +23,13 @@
  * `isLive`/`streamOffline`/`live` inputs as the hero (via `connectionChip`), so they freeze/dim on an
  * SSE drop and NEVER show a stale "live".
  */
+import type { usePersona } from '@/features/personas/usePersona';
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Box, Stack, Typography } from '@mui/material';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
-import type { usePersona } from '@/features/personas/usePersona';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 interface CommandDeckProps {
   // Hero (TickerHeader) inputs.
@@ -40,6 +40,8 @@ interface CommandDeckProps {
   streamOffline: boolean;
   selected: string[] | null;
   onOpenTrade: () => void;
+  /** The durable positions store is faulted — refuses this CTA (AC-69). */
+  storeFaulted?: boolean;
   freshness: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
   // Control strip (TickerToolbar) inputs.
   symbol: string;
@@ -148,6 +150,7 @@ export function CommandDeck(props: CommandDeckProps) {
     streamOffline,
     selected,
     onOpenTrade,
+    storeFaulted,
     freshness,
     symbol,
     onSymbolChange,
@@ -238,6 +241,7 @@ export function CommandDeck(props: CommandDeckProps) {
             streamOffline={streamOffline}
             selected={selected}
             onOpenTrade={onOpenTrade}
+            storeFaulted={storeFaulted}
             freshness={freshness}
           />
 

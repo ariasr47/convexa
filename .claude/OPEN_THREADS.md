@@ -939,6 +939,36 @@ also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
   GitHub Actions workflow (run `nx test` + conformance on push, then deploy) is the standing follow-on.
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
+- **`/positions` page overflows horizontally at the `md` boundary (PRE-EXISTING, measured 2026-07-28):**
+  at 900px the page's `scrollWidth` is **965 vs a 900 host**. Measured in a real browser by the
+  `positions-legs` phase-2 lane and confirmed **byte-identical with and without** that feature's new
+  `max_loss` column — so it is **not** attributable to `positions-legs`, which is why that feature's
+  column was ruled to render at **`lg` and above only**. Root cause of the blind spot: the shipped e2e
+  asserts no-overflow **only at 393px**, so the `md` boundary has never been covered. Fix is two parts —
+  the page-level overflow itself, and **extending the no-overflow e2e route set to the `md` breakpoint**
+  so it cannot regress unobserved again. Small, unscheduled; do NOT fold it into `positions-legs`.
+  **Corrected 2026-07-28 (phase 3 A/B against a worktree at `6f0a2ae`, identical seed):** the **table**
+  at `md` was ALREADY 998 vs an 835 host before `positions-legs` phase 3 — the earlier "without the
+  column it fits" reading was wrong. Phase 3 takes it to 1027 (~29px, the wider `Net entry` copy). The
+  **page** figure is the byte-identical one. So the `md` band was broken before this feature arrived,
+  which is why the `lg`-and-above ruling stands on stronger ground than when it was made.
+- **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
+  2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
+  HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
+  **Always use `--files=`; never bare `format:write`.** Worth a line in `CLAUDE.md`/`AGENTS.md` if it
+  bites twice.
+- **⚠ `apps/dashboard/src/app/features/trading/outcomes/sources.ts` contains literal NUL bytes**
+  (pre-existing — confirmed via `git show HEAD`), in `decisionIdentity`'s composite key template
+  (`k:${trade_id}\x00${event_type}\x00${clock_time}`). It makes the file register as **binary** to
+  `grep`/`ripgrep`, so it is **silently invisible to source sweeps** — including the boundary/negative-space
+  greps this delivery system relies on. A guard that cannot see a file is not a guard. Replace the raw
+  NULs with an escaped separator (or ` ` in source) so the file is text again. Small, unscheduled.
+- **Fixed in passing (`positions-legs` phase 3), worth knowing it was ever broken:** the shipped
+  `formatExpiry` **crashed the `/positions` page to a white screen** on any record with no
+  `expiration` (`p.expiration.split` on `undefined`) — found because a pre-phase-3 build white-screened
+  on a seeded book. Superseded by the three-way expiry cell. No durable data was at risk, but it is a
+  reminder that the positions surface had **no negative-space coverage for a malformed record** before
+  this feature; that coverage now exists (the four not-a-number literals).
 - **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
   `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
   hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".

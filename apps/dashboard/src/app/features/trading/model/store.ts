@@ -1,18 +1,34 @@
 /**
- * Client-local durable store for the ghost trade + append-only decision history.
- * Backed by localStorage, versioned, and exportable. The server stores none of this (v1).
- * All access is guarded so a storage failure (private mode, quota) degrades to in-memory only
- * and never throws into the UI.
+ * ⚠ **READ-ONLY LEGACY SOURCE.** This module used to be the ghost trade's durable store. As of the
+ * v3 cutover it has **no write path at all** — the trade put, the trade clear and the second
+ * decision append are DELETED, along with `useGhostTrade` itself, in the same release that made
+ * `convexa.positions.v3` live. (Their names are absent even from this comment: the tests below grep
+ * this file's own source for them, and a mention would be indistinguishable from a survivor.)
+ *
+ * That deletion is not tidying, it is the structural half of the migration's once-only guarantee:
+ * the union runs exactly once, and the residual hole it cannot close on its own is **a stale tab
+ * still running the pre-v3 build writing a NEW `convexa.ghost-trade.v1` record**. Removing the
+ * writer removes the hole. `positions/migration.spec.ts` pins it BY CONSTRUCTION: it imports this
+ * file's own source text and asserts it contains no localStorage-write call anywhere — which is why
+ * the name of that call does not appear in this comment either.
+ *
+ * What survives, and only for this: the blob is a **migration source** for the v3 union and a
+ * **harvest source** for the outcome ledger. It is never repaired, never pruned, never deleted —
+ * the untouched v1 blob IS the rollback (`[loss-free-durable-migration]`).
+ *
+ * Reads stay guarded so a storage failure degrades to in-memory only and never throws into the UI.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import { DecisionRecord, GhostTrade, SCHEMA_VERSION } from './types';
+import { DecisionRecord, SCHEMA_VERSION } from './types';
 
 const STORAGE_KEY = 'convexa.ghost-trade.v1';
 const LEGACY_STORAGE_KEY = 'gammaflow.ghost-trade.v1';
 
 interface PersistShape {
   schema_version: number;
-  trades: Record<string, GhostTrade>; // by ticker — the current open or just-closed trade
+  /** By ticker. Typed `unknown` because `GhostTrade` is gone — nothing interprets these but the
+   *  ONE lift (`positions/migrate.liftLegacyRecord`), which is total over arbitrary material. */
+  trades: Record<string, unknown>;
   decisions: DecisionRecord[]; // global, append-only
 }
 
@@ -31,42 +47,16 @@ function read(): PersistShape {
   return memory;
 }
 
-function write(s: PersistShape) {
-  memory = s;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch {
-    /* in-memory only */
-  }
-}
-
-export function getTrade(ticker: string): GhostTrade | null {
+export function getTrade(ticker: string): unknown | null {
   return read().trades[ticker.toUpperCase()] ?? null;
 }
 
-export function putTrade(trade: GhostTrade) {
-  const s = read();
-  write({ ...s, trades: { ...s.trades, [trade.ticker.toUpperCase()]: trade } });
-}
-
-export function clearTrade(ticker: string) {
-  const s = read();
-  const trades = { ...s.trades };
-  delete trades[ticker.toUpperCase()];
-  write({ ...s, trades });
-}
-
-export function appendDecision(rec: DecisionRecord) {
-  const s = read();
-  write({ ...s, decisions: [...s.decisions, rec] });
-}
-
-/** Every trade in this store, by ticker (outcome-ledger: the archive's read of this store). */
-export function allTrades(): Record<string, GhostTrade> {
+/** Every trade in this store, by ticker (migration + archive read of this store). */
+export function allTrades(): Record<string, unknown> {
   return read().trades;
 }
 
-/** The full append-only log in this store, oldest first (outcome-ledger: the archive's read). */
+/** The full append-only log in this store, oldest first (migration + archive read). */
 export function allDecisions(): DecisionRecord[] {
   return read().decisions;
 }
