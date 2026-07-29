@@ -46,10 +46,15 @@ You almost certainly do not need it — the migration never deletes its source d
 simulated positions."*
 
 ⚠️ **Known rough edge, not part of this feature:** while signed out, the **+ Open simulated position**
-button still looks fully enabled and **does nothing at all when clicked** — no dialog, no prompt, no
-message. This comes from the accounts feature, not from `positions-legs`. If you click it and nothing
-happens, you are signed out. (It is the same class of problem this feature *fixed* for the faulted
-state, so it is worth fixing there too.)
+button looks like a normal enabled CTA, and **clicking it changes nothing you can see.** It is not wired
+to nothing — it asks for the sign-in prompt to be shown, but that prompt is *already* on screen
+permanently, in the wide banner above the table. So the click re-asserts a message you are already
+reading. Measured: the page text does not change by a single character across the click.
+
+If you click it and nothing appears to happen, **you are signed out** — use the **Sign in** button in
+that banner. This comes from the accounts feature, not from `positions-legs`, and it is queued as the
+next item (`.claude/BACKLOG.md` §A). It is the same class of problem this feature *fixed* for the
+faulted state — a control that looks usable, accepts the click, then declines silently.
 
 ### 0.4 Know which page does what
 

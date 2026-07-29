@@ -507,6 +507,33 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
+- **⏭ NEXT — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
+  `positions-legs` manual-verification recon). **Small, FE-only, GATE-V shaped.**
+  **The defect:** on `/positions` while signed out, `+ Open simulated position` renders as a **normal,
+  fully-enabled CTA** — not greyed, focusable, no tooltip. Clicking it calls
+  `PortfolioPanel.tsx:59 requestOpenEntry()` → `gate.prompt(AUTH_COPY.positions.gateTrack)`, whose text is
+  **already permanently on screen** in the `positions-signin-prompt` banner (measured: banner top 227 ×
+  1192 wide; CTA top 450, far right; **page-text diff across the click = 0 characters**). So the handler is
+  not empty — it re-asserts a message you are already reading, and the click is a **visual no-op**.
+  **Why it matters:** it is the same failure class `positions-legs` just closed one level over — a control
+  that **looks usable, accepts the click, then declines silently**, which SPEC §2.9's *"visibly refused
+  rather than accepting input and failing after the fact"* exists to prevent. The faulted store now obeys
+  that rule; this signed-out path predates it and does not.
+  **Proposed fix (small):** route the CTA through the **`Refused` primitive `positions-legs` already
+  built** (the shared wrapper all eight refused controls use) — reduced-emphasis token treatment while
+  signed out, `aria-disabled` **and still focusable**, tooltip carrying the reason; the existing **Sign in**
+  button in the banner stays the real path forward. One call site, no new component, no new copy pattern.
+  **Decision impact:** a trader who cannot tell a refused control from a live one mis-reads the app's state
+  at the exact moment it is refusing to record something — observable as: signed out, the control now looks
+  refused **before** the click, and the reason is reachable by hover **and** keyboard.
+  **Do NOT touch the server-side gate.** `handleConfirm` must keep awaiting
+  `POST /api/positions/sim-trade/gate` before any local write — that is `[server-side-gate-enforcement]`
+  canon. This item is purely about the affordance being honest before it is touched.
+  **Invariant watch:** `theme-token-discipline` (tokens only, dark/light parity) ·
+  `server-side-gate-enforcement` (unchanged) · the `aria-disabled`-not-`disabled` rule (an HTML `disabled`
+  button swallows pointer events, making the tooltip unreachable — the exact defect GATE Q caught).
+  **Sweep the other gated CTAs while in there** — the same pattern likely affects every signed-out write
+  affordance, not just this one. **Source:** `docs/VERIFY_POSITIONS_LEGS.md` §0.3.
 - **Dashboard folder restructure + Cypress swap + kit sync** — `✓ SHIPPED (2026-07-16, on main)`.
   **Owner-directed maintenance, NOT a conductor pipeline feature** (no BRIEF / no contracts / no GATE Q —
   logged here for provenance because it moved canon-relevant structure). Three parts:
