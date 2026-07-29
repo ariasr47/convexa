@@ -399,6 +399,20 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   [direction/strength/momentum/…] off ADX/RSI/EMA, no raw indicator series; iv-rank — the rich/cheap
   `band` [premium_rich|neutral|premium_cheap] cut server-side from the rank, no raw IV history on the wire
   or in the UI. 2 binding.)*
+- **`[absent-is-not-none]`** (promoted 2026-07-28, 3 binding) — a surface that can be **uncurated,
+  unattempted or inapplicable** must distinguish **"we do not know"** from **"we checked and there is
+  nothing"**, and must carry that distinction **all the way to the consumer** rather than collapsing it at
+  a boundary. Enforce it in the **type or the closed vocabulary**, not in prose: a caller must not be able
+  to treat unknown as empty without handling it. The failure this prevents is a **fabricated claim** — the
+  app asserting "no earnings scheduled" for a ticker nobody ever checked, or "not applicable" about a fact
+  that *is* applicable and simply was never recorded. *(bundle-events — the loader's `None` vs `[]` plus
+  the closed `state` enum as the sole disambiguator, since both states carry an empty list;
+  expiration-events — carried one level down, an empty `expirations` array under `state: unknown` must
+  never read as "no expiry is affected"; positions-legs — carried into the **client render**, where **four**
+  distinct not-a-number literals are each independently assertable: `—` not applicable · `unavailable`
+  failed this cycle · `not recorded` the saved record never held this fact · `no basis` the denominator is
+  about zero while the dollar figure beside it renders fine. Never `undefined`/`null`/`NaN`, which are
+  indistinguishable from an interpolation bug in a screenshot. 3 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -543,6 +557,52 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `NO_BACKEND_CHANGE` — reuses `GET /api/contract` + SSE `mid`, `ghost-trade/mark.ts` (P/L) + the
   latency-trend ring buffer. Client-local durable store (loss-free v1→v2 migration); positions are **never
   an input** to `signals`/score/tier/`state_fingerprint`; `SIMULATED` everywhere. *(2026-06-24.)*
+  **⚠ SUPERSEDED IN PART by `positions-legs` (2026-07-28) — read the next entry.** The single-contract
+  `Position`, the two-member `Strategy`, the split `GhostTrade`/`Position` stores and the
+  `strategy`/`expiry` group axes described above no longer exist.
+- **Multi-leg positions — one book (`positions-legs`, FE-only, shipped 2026-07-28)** — the model rebuild
+  that makes a **spread a first-class thing the app understands**, sequenced deliberately **ahead** of the
+  broker importer so the importer is never built against a model that cannot represent what it imports.
+  **A position is `Leg[]`.** `GhostTrade` and `Position` merge into ONE `SimPosition`; the two
+  `appendDecision` definitions collapse to one (resolves DECISION_QUEUE **Q2**); the ×100 multiplier moves
+  **onto the leg**, so equity legs finally work (it was hardcoded, making 100 shares wrong by 100×).
+  **`Strategy` → `StructureKind`, DERIVED from leg shape and NEVER STORED** — 22 members, produced by a
+  **total exact-match recogniser with no confidence measure, which must never acquire one**: any leg set
+  that is not an exact match renders `Custom`, *the residue of an exact match, never a judgement*. The
+  recogniser **never reads `entry_price`** (debit/credit comes from strike geometry), so a mistyped price
+  cannot flip a label. `cash_secured_put` is deliberately **not** a member — its legs are identical to a
+  naked short put, and the adopted rule is *"if the thing that makes a name true is a **leg** it can be
+  named; a fact about the **account** cannot."*
+  **Durable:** ONE union migration `convexa.positions.v2` + `.ghost-trade.v1` → **`convexa.positions.v3`**,
+  executed **once** (a repeat resurrects deleted records), **aborting entirely** if any source is
+  unreadable rather than freezing a partial history behind a key claiming completeness, counting **distinct
+  ids** (collisions between the two stores are the *expected* case), counting a **logical** source once
+  even though `resolveDurable` leaves the same bytes under both brand keys, and carrying
+  `provenance{migrated_at,source_counts,merge_notice_dismissed}` in the single promote-write — where
+  **corrupt or absent provenance must NEVER re-arm the migration.** The v1 writer died in the same release.
+  **Max loss** ships for a **closed 15-member eligible set** — eligibility is *membership in a closed set,
+  not a detection heuristic*, so an under-detected unbounded shape is ineligible **by construction**;
+  everything else renders one of exactly three stated reasons (`unlimited risk` · `mixed expiries` ·
+  `unnamed shape`) and carries its at-expiration assumption. Rendered in the card footer always, and in a
+  `max_loss` table column **at `lg` and above only**.
+  **`store-faulted` is a first-class product state:** a persistent non-dismissible banner (**NOTHING was
+  deleted** · new positions will not be saved until resolved · Export), fault determined **synchronously at
+  store init**, scoped to the **store not the route** (the Ticker page opens the same dialog), and refusals
+  that are `aria-disabled` **and still focusable** **and visibly quiet** — never the HTML `disabled`
+  attribute, which swallows pointer events and makes the reason unreachable. Faulted dims **no data**.
+  `position_eval` is **suppressed** for a multi-leg position *and* for a ticker holding **more than one**
+  open position — the app does not evaluate a subject it cannot faithfully represent — while the `pos_*`
+  request stays unconditional and byte-identical (suppression is a **render** decision at both levels).
+  **Two live data-loss defects were repaired here:** `positions/store.ts` had **no fault latch** (an
+  unparseable blob was destroyed by the next write), and `liftLegacyRecord` was **not idempotent**, so
+  re-importing your own v2 archive replaced every position's `opened_time` with the pending sentinel.
+  `NO_BACKEND_CHANGE` — `apps/api` diff empty; positions remain **never an input** to
+  `signals`/score/tier/`state_fingerprint`; `SIMULATED` everywhere, Live tab still a zero-import
+  placeholder. Multi-leg **orders** are deliberately OUT (a resting composite limit inherits the
+  every-leg-live rule — a second feature), and the durable `limit_price` stays **per-unit and
+  single-leg-only**, with `netLimitDollarsFor` returning `null` for multi-leg so nothing fills off a number
+  whose meaning is undefined. Graduated **`[absent-is-not-none]`** (§5). *(QA_REPORT PASS 83/83,
+  de-correlated model, after one GATE Z bounce.)*
 - **Convexa multi-page shell + landing (FE-only)** — the rebrand + IA restructure (feature 1 of the
   owner pivot). Single `BrowserRouter`/dark-MUI theme: `/` Convexa landing (dark-fintech splash —
   hero hook "See the AI read on your real positioning", convexity-curve motif, value cards for the

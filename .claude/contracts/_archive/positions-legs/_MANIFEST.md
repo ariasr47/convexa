@@ -1,18 +1,16 @@
 # positions-legs — pipeline manifest
-Stage:        **GATE C CLOSED @ 2026-07-28 — SPEC APPROVED by the owner.** Council ran R1→R3 · R4
-              synthesis · S2 skeptic (PASS, 0 Critical) · fix pass · UX copy pass (R5) · two post-R4
-              owner rulings folded. §9 is EMPTY. Next: **GATE PLAN** (`superpowers:writing-plans`
-              over SPEC.md → PLAN.md, Global Constraints copying the conformance block verbatim),
-              then Frontend lane only (backend is NO_BACKEND_CHANGE).
+Stage:        **SHIPPED + ARCHIVED @ 2026-07-28 (GATE S).** Merged to `main` (`2675a7c`, --no-ff).
+              Council (R1-R3 - R4 - S2 - R5 copy) -> GATE PLAN (28 tasks) -> 5 sequenced build phases ->
+              GATE Q FAIL (80/83 + 1 build-health) -> GATE Z bounce -> fix -> **GATE Q RE-RUN PASS 83/83**.
 Repos:        frontend (`apps/dashboard` + the durable stores). `apps/api` diff MUST be empty.
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    **locked** — `APPROVED 2026-07-28`, 82 ACs, §9 empty
+  - SPEC.md                    **locked** — `APPROVED 2026-07-28`, **83 ACs**, §9 empty
   - INTERFACE_CONTRACT.md      NO_BACKEND_CHANGE — embedded `## Conformance spec` asserting the
     existing, unchanged `GET /api/contract/{ticker}` shape the positions surface consumes (15 required
     fields; validated non-vacuous — PASS on a synthetic response, FAIL on a mutated one)
 Open amendments: none
-QA (GATE Q):  n/a
+QA (GATE Q):  QA_REPORT PASS 83/83 (re-run, de-correlated Sonnet vs Opus builders)
 Council:      18 conflicts raised / 18 accepted / 0 rejected (quote-verified). 10 technical settled by
               the voices; 4 owner-ruled (payoff math = MAX LOSS ONLY · `position_eval` SUPPRESSED for
               multi-leg · call/put tint SCOPED to gamma surfaces · faulted store = STRICT refuse-all-
@@ -59,4 +57,5 @@ Lane instruction (GATE Z, not a squeeze): if `max_loss` cannot fit the framed-ta
               densities and every breakpoint above `md`, **bounce to the conductor** — never shrink a
               column below its design width, never truncate `unlimited risk` / `unnamed shape` into a
               shared prefix, never go below the 11px floor.
-Last gateway:  GATE C @ 2026-07-28 (CLOSED — spec approved; ledger rows appended @ gate C)
+Last gateway:  GATE S @ 2026-07-28 — SHIPPED. Graduated `[absent-is-not-none]` (3 binding);
+              `structural-over-prose-enforcement` reached 3 instances and STAYS on the watch list.

@@ -929,6 +929,49 @@ three-value vocabulary is pinned only as `string?` on the wire spec and verified
 selftest + live three-state reads). QA judged that the accurate ceiling of the harness, not a defect. See
 also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
 
+## 7x. Multi-leg positions — one book (SHIPPED + ARCHIVED — FE-only, 5-phase build)
+Contracts archived at `.claude/contracts/_archive/positions-legs/`. Owner-directed 2026-07-27, sequenced
+**ahead of the Webull importer deliberately** — the importer must not be built against a model that cannot
+represent what it imports. Capability detail in CONTEXT §6, not restated here.
+**Shape:** GATE I → the full **council** (18 conflicts: 10 settled by the voices, 4 owner-ruled, 1
+conductor default-with-veto, 1 moot) → R4 synthesis → **S2 skeptic PASS, 0 Critical** → a narrow **R5 UX
+copy pass** for four strings no council artifact carried → GATE PLAN (28 tasks) → **five sequenced build
+phases**, each a fresh lane told to stop at the boundary and report → GATE Q → GATE Z bounce → re-verify.
+**QA PASS 83/83** (de-correlated Sonnet against Opus builders). test 1087/97 · lint 0 errors · typecheck 0 ·
+e2e 19/19 · conformance 1/1 · `apps/api` + `libs/api` diffs **empty** — all exit codes checked explicitly.
+**Two LIVE data-loss defects were found and repaired here, neither of them the feature's own doing:**
+(a) `positions/store.ts` had **no fault latch** — `read()` caught an unparseable blob to empty and the next
+`write()` **destroyed it**; reproduced against the old code before fixing (one corrupt character replaced
+the whole book with a single position). (b) `liftLegacyRecord` was **not idempotent**, and its second
+production caller is `importArchive` — so a trader re-importing their own v2 archive had every position's
+`opened_time` silently replaced by the pending-limit sentinel. A loss-free migration losing a fact on the
+way back **in**. Also fixed in passing: `formatExpiry` crashed `/positions` to a white screen on any record
+with no expiration — latent until records could lack one, so the equity-leg work would have exposed it live.
+**What the process caught, worth keeping:** **21 plan/spec defects** were found by lanes **refusing to
+invent around a bad instruction** — the two highest-value being an instruction that would have compared a
+**dollar** net against a **per-unit** `limit_price` (silently stopping every shipped resting limit from ever
+filling, with no error and no test), and a step that would have **flattened a spread into flat fields**,
+destroying three legs of every four-leg position at write time. Two **GATE Z fit bounces** were raised
+rather than squeezed (the `max_loss` column at `md`; then the condor row overdrawing the 10px budget at
+`lg`), and a fixture was caught that **could not reach the state it existed to seed** — `long_call` was
+still a live enum member, so AC-54 was green and proving nothing. **Two lane self-reports were wrong about
+checks they claimed clean** (a non-zero exit code behind a "1004 passed" summary; a `tsc`-clean claim while
+`nx typecheck` exited 1), both caught downstream — the concrete argument for a de-correlated GATE Q over
+builder self-verification.
+**GATE S — canon:** graduated **`[absent-is-not-none]`** (3 binding, and the first instance from an
+*unrelated* feature family — the ledger had explicitly held it at 2 pending exactly that).
+`structural-over-prose-enforcement` reached its **3rd** instance and **stays on the watch list** — the
+objection was never volume, it is the absence of a statable violation test.
+**Deferred seams (named, not built):** the **Webull/broker importer** and `BrokerPosition` (a NEW type
+later needs no further migration — `PositionView` is the seam) · **multi-leg orders** (a resting composite
+limit inherits the every-leg-live rule) · breakeven + max gain (zero migration cost to add) · **an in-app
+repair/re-import path for a faulted store** (today's recourse is export-only — the accepted cost of the
+STRICT ruling) · a **per-ticker position picker** (the honest way to restore `position_eval` for a trader
+holding >1 position on a ticker — belongs with the deferred alert surface) · the **alert surface** itself
+(`useGhostTrade` returned `alerts` that nothing rendered; the five `POSITION_EVAL_NONE_*` strings ship
+defined-but-unwired, pending that consumer) · a table column for max loss at `md` (blocked on the
+pre-existing `md` page overflow, §8).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1070,3 +1113,12 @@ also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
   indicator/OHLC/series dump; the wire enum/token is authoritative (FE renders via a closed lookup, never
   re-derives from the scalar); no raw series on the wire or in the UI. (ai-context-pack — the TI regime
   labels; iv-rank — the rich/cheap `band` cut server-side, no raw IV history.) See PROJECT_CONTEXT §5.
+- **`[absent-is-not-none]`** (promoted 2026-07-28, 3 binding) — a surface that can be uncurated,
+  unattempted or inapplicable must distinguish **"we do not know"** from **"we checked and there is
+  nothing"**, and carry that distinction all the way to the consumer rather than collapsing it at a
+  boundary; enforce it in the type or the closed vocabulary, never in prose. Prevents a **fabricated
+  claim** — "no earnings scheduled" for a ticker nobody checked, or "not applicable" about a fact that is
+  applicable and was simply never recorded. (bundle-events — `None` vs `[]` + the closed `state` enum as
+  sole disambiguator; expiration-events — the same rule one level down; positions-legs — carried into the
+  client render as **four** independently-assertable not-a-number literals, `—` / `unavailable` /
+  `not recorded` / `no basis`, never `undefined`/`null`/`NaN`.) See PROJECT_CONTEXT §5.
