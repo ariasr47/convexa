@@ -10,7 +10,8 @@
     "lint": "nx run-many -t lint",
     "format": "nx format:write",
     "format:check": "nx format:check",
-    "graph": "nx graph"
+    "graph": "nx graph",
+    "ports:free": "node tools/free-ports.mjs"
   },
   "private": true,
   "devDependencies": {

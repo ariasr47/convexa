@@ -66,3 +66,7 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   it_. **Verify with a byte scan, not by eye** — a NUL renders as nothing in a diff, an editor, or a
   terminal:
   `python -c "import io;print(io.open('FILE','rb').read().count(bytes([0])))"`
+- **Orphaned dev servers hold ports and serve STALE code.** uvicorn's `multiprocessing` children
+  outlive a killed parent (three orphans on :8000 once fed a verification pass last session's build);
+  Vite lingers on :4200/:4300. When a port is busy — or before any run-the-app verification —
+  `npm run ports:free` (kills listener trees on 8000/4200/4300; extra ports as args).
