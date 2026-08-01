@@ -223,7 +223,9 @@ a green suite hid) RESOLVED + re-verified → **PASS**. **GATE Z**: the conforma
 reconciled to **standalone-file canonical** (`.claude/tools/conformance/ai_recommendations.json`;
 `interface_conformance.py` gained POST-body support); the full doc/linter standardization is tracked as
 BACKLOG §E **system-12**.
-**Deferred seams (specified, not built):** BYO-key / per-user credentials (provider-port-like seam);
+**Deferred seams (specified, not built** — *audited 2026-07-28; one has since shipped, marked inline*
+**):** ~~BYO-key / per-user credentials (provider-port-like seam)~~ **→ BUILT: shipped as §7h
+`byo-ai-key` (2026-06-29)**;
 in-app LLM **reassessment** of an open position (entry only shipped — the position-aware sibling reuses
 the same surface); token streaming (whole-rec render shipped); AI-rec acceptance/outcome analytics
 (leverages the ghost-trade decision history); a vendor/model swap behind the LLM seam.
@@ -244,7 +246,9 @@ not connected" placeholder — no broker, no order path). Reuses `ghost-trade/ma
 `no-real-order-path`** into canon (2 binding: ai-recommendations + this — see §9 + DECISION_LEDGER).
 Backend untouched. **Deferred seams (specified, not built):** the real **Live** broker integration
 (blocked on the vendor/broker decision — §1; the locked tab marks the seam); same-contract merge/average
-(chose stack); closed-position pruning/archive policy; multi-leg strategy grouping beyond long-call/put.
+(chose stack); closed-position pruning/archive policy; ~~multi-leg strategy grouping beyond
+long-call/put~~ **→ BUILT: shipped as §7x `positions-legs` (2026-07-28) — the 22-member `StructureKind`
+plus grouping on the Structure axis. Audited 2026-07-28.**
 
 ## 7d. Convexa multi-page shell + landing (SHIPPED + ARCHIVED — FE-only)
 Contracts archived at `.claude/contracts/_archive/app-shell-landing/`. Feature 1 of the **owner pivot**
@@ -320,9 +324,11 @@ each gained an instance → **no new graduation**. The informal "stateless serve
 the trading path** (auth = a contained, swappable state store outside it — a descriptive narrowing, NOT a
 Promoted-canon demotion; single-sourced in CONTEXT §5). New watch-list key `server-side-gate-enforcement`.
 **Deferred seams (specified, not built):** provision the real **Google Cloud OAuth client** (then Google
-flips on, config-only) + the account-linking **explicit-confirm** consent UX; the **persistent-DB adapter**
-(behind the existing ports — replaces the reset-on-restart in-memory store; set `AUTH_SESSION_SIGNING_KEY`
-for cross-restart cookies); **password-reset / email-verification** (Future — needs durable store + email
+flips on, config-only) + the account-linking **explicit-confirm** consent UX; ~~the **persistent-DB
+adapter** (behind the existing ports — replaces the reset-on-restart in-memory store; set
+`AUTH_SESSION_SIGNING_KEY` for cross-restart cookies)~~ **→ BUILT: shipped as §7j `persistent-db`
+(2026-06-29), and exercised for real on Railway at §7k. Audited 2026-07-28.**;
+**password-reset / email-verification** (Future — needs durable store + email
 sender); **"log out everywhere"** + multi-device session sync (SessionStore supports revoke-all); migrating
 the **heavy client-local stores** (positions portfolio, saved views) to be account-scoped server-side; and —
 on the **go-live trigger** (real persistence / public exposure) — the deferred **Security/red-team role
@@ -975,11 +981,23 @@ pre-existing `md` page overflow, §8).
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
-- **Theme audit gaps** (`docs/THEME_AUDIT.md`): `palette.secondary` unset (**MUI purple leaks** through),
-  explicit `contrastText`, light `text.primary`, dark `shadows`. Ties `[theme-token-discipline]`.
-  **→ FOLDED into redesign Stage 1 scope (owner ruling 2026-07-22 — see the brand proposal §6a).**
-- **CI/CD not wired:** push ≠ deploy — the owner deploys `convexa.pages.dev` via the runbook by hand. A
-  GitHub Actions workflow (run `nx test` + conformance on push, then deploy) is the standing follow-on.
+- **~~Theme audit gaps~~ → LARGELY CLOSED, verified 2026-07-28** (`docs/THEME_AUDIT.md`). The headline
+  gap is **gone**: `palette.secondary` is now explicitly set for **both** modes
+  (`shared/theme/theme.ts:146` dark, `:167` light), so the **MUI purple no longer leaks**. `shadows` and
+  `contrastText` both appear in the theme. This closed exactly as its own fold-in note predicted — via
+  redesign Stage 1 (owner ruling 2026-07-22). **Left open:** re-walk `docs/THEME_AUDIT.md` against the
+  shipped theme and retire the document, or record what genuinely remains — it is currently the only
+  reason this bullet still exists. Ties `[theme-token-discipline]`.
+- **~~CI/CD not wired~~ → CORRECTED 2026-07-28: CI *is* wired; only conformance-in-CI and CD are missing.**
+  `.github/workflows/ci.yml` has existed since **2026-07-22** and runs, on every push to `main` and every
+  PR: `nx format:check --base=remotes/origin/main`, then `nx run-many -t lint test build typecheck` across
+  all projects, then `dashboard-e2e:e2e` as its own step (deliberately separate so the dev server + browser
+  don't contend with the vitest workers — that contention flaked the unit tests). **It runs `typecheck`**,
+  so the `nx typecheck` failure that failed GATE Q on `positions-legs` would have been caught on push too.
+  **What is genuinely still missing:** (a) the **conformance sweep** (`interface_conformance.py`) is NOT in
+  CI — it runs only inside gates; (b) **CD** — push still ≠ deploy, and `convexa.pages.dev` is applied by
+  hand from `docs/DEPLOY_RUNBOOK.md`. The old wording under-described the safety net, which invites someone
+  to rebuild what already exists. See `docs/TECH_DEBT.md` #4/#5/#7.
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
 - **`/positions` page overflows horizontally at the `md` boundary (PRE-EXISTING, measured 2026-07-28):**
@@ -1005,7 +1023,7 @@ pre-existing `md` page overflow, §8).
   (`k:${trade_id}\x00${event_type}\x00${clock_time}`). It makes the file register as **binary** to
   `grep`/`ripgrep`, so it is **silently invisible to source sweeps** — including the boundary/negative-space
   greps this delivery system relies on. A guard that cannot see a file is not a guard. Replace the raw
-  NULs with an escaped separator (or ` ` in source) so the file is text again. Small, unscheduled.
+  NULs with an escaped separator (or `\0` in source) so the file is text again. Small, unscheduled.
 - **Fixed in passing (`positions-legs` phase 3), worth knowing it was ever broken:** the shipped
   `formatExpiry` **crashed the `/positions` page to a white screen** on any record with no
   `expiration` (`p.expiration.split` on `undefined`) — found because a pre-phase-3 build white-screened
@@ -1015,8 +1033,11 @@ pre-existing `md` page overflow, §8).
 - **Phase 2 SEO prerendering — CHECKPOINTED** (Phase 1 — meta/OG/robots/sitemap — already shipped). Plan at
   `~/.claude/plans/we-are-concerned-with-shiny-pnueli.md`; needs a router restructure to `RouteRecord[]` + a
   hand-written Emotion SSR collector. **Do on a branch.** See BACKLOG §B "Prerender public pages (SSG)".
-  **→ SEQUENCED BEHIND redesign Stage 2 (owner ruling 2026-07-22, proposal §6a): Stage 2 rebuilds the
-  landing/router; the prerender plan RE-DERIVES on the new landing — do not start it in parallel.**
+  **→ ~~SEQUENCED BEHIND redesign Stage 2~~ — BLOCKER CLEARED 2026-07-28.** Stage 2 shipped
+  **2026-07-22** (`51b9d7e`) and §7u records **all four redesign stages COMPLETE**. The instruction "do
+  not start it in parallel" no longer applies: the landing/router it was waiting on now exists, so the
+  plan should be **re-derived against the shipped landing** and the item is **actionable, not blocked**.
+  It has been sitting mislabelled as blocked for six days.
 - **Live gamma-flip anchoring:** when not in RTH, anchor the flip search to `gex_spot` (the
   close) instead of the live mid, for consistency with the bundle and to avoid a gapped
   pre-market anchor selecting a different crossing when multiple exist. Also lower the per-tick
