@@ -54,22 +54,6 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 
 ## The items that matter
 
-### 2. Python dependencies are completely unpinned — score 32 **[measured]**
-
-**All 15** entries in `apps/api/requirements.txt` carry **no version constraint whatsoever** — `numpy`,
-`scipy`, `fastapi`, `uvicorn`, `pydantic`, `anthropic`, `psycopg`, `cryptography`, `argon2-cffi`,
-`authlib`, `massive`, and the rest.
-
-**Why it matters commercially.** `apps/api/Dockerfile` installs from this file, and Railway builds that
-image. So **your production build is not reproducible**: two deploys of the same commit can install
-different library versions, and a breaking major release lands in production silently, at whatever
-moment you next deploy. Pydantic and FastAPI in particular have shipped breaking majors. You would find
-out from a failed boot or, worse, from changed numbers.
-
-**Fix:** `pip freeze` the working venv into pinned versions, keep the human-readable file as
-`requirements.in` if you want the comments. **Effort: under an hour.** This is the single best
-risk-per-minute item in the register.
-
 ### 1. `outcomes/sources.ts` reads as a BINARY file — score 40 **[measured]**
 
 **Corrected 2026-07-28 after looking harder.** My first write-up said grep "skips" the file. That
@@ -102,6 +86,22 @@ with no content and may reason on it as though empty.
 **Fix:** replace the two raw NULs with a printable delimiter, or with the two-character escape `\` + `0`
 so the source stays text. **Effort: minutes.** Verify by confirming `git diff` renders a normal line diff
 afterwards — that is the acceptance test, not the grep behaviour.
+
+### 2. Python dependencies are completely unpinned — score 32 **[measured]**
+
+**All 15** entries in `apps/api/requirements.txt` carry **no version constraint whatsoever** — `numpy`,
+`scipy`, `fastapi`, `uvicorn`, `pydantic`, `anthropic`, `psycopg`, `cryptography`, `argon2-cffi`,
+`authlib`, `massive`, and the rest.
+
+**Why it matters commercially.** `apps/api/Dockerfile` installs from this file, and Railway builds that
+image. So **your production build is not reproducible**: two deploys of the same commit can install
+different library versions, and a breaking major release lands in production silently, at whatever
+moment you next deploy. Pydantic and FastAPI in particular have shipped breaking majors. You would find
+out from a failed boot or, worse, from changed numbers.
+
+**Fix:** `pip freeze` the working venv into pinned versions, keep the human-readable file as
+`requirements.in` if you want the comments. **Effort: under an hour.** This is the single best
+risk-per-minute item in the register.
 
 ### 3. e2e asserts no-overflow at one breakpoint only — score 25 **[measured]**
 
