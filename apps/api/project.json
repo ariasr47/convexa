@@ -3,7 +3,10 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/api",
-  "tags": ["scope:backend", "type:app"],
+  "tags": [
+    "scope:backend",
+    "type:app"
+  ],
   "targets": {
     "serve": {
       "executor": "nx:run-commands",
@@ -32,6 +35,14 @@
         "{workspaceRoot}/.claude/tools/interface_conformance.py",
         "{workspaceRoot}/.claude/tools/conformance/ai_recommendations.json"
       ],
+      "cache": false
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/api",
+        "command": ".venv\\Scripts\\python.exe -m pytest"
+      },
       "cache": false
     }
   }

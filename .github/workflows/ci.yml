@@ -39,5 +39,19 @@ jobs:
       # its own step so the dev server + browser never compete with the vitest
       # workers for the runner's CPUs (that contention flaked the unit tests
       # under Cypress, and the separation is still worth keeping).
-      - run: npx nx run-many -t lint test build typecheck
+      # `api:test` is EXCLUDED here on purpose: like this repo's other api targets (serve,
+      # serve-worker, conformance) it invokes the Windows venv path `.venv\Scripts\python.exe`,
+      # which does not exist on a Linux runner. It runs in its own step below instead, so the
+      # backend suite is genuinely in CI rather than nominally in it.
+      - run: npx nx run-many -t lint test build typecheck --exclude=api
       - run: npx nx run dashboard-e2e:e2e
+
+      # Backend characterization tests (apps/api/tests). They import ONLY src.core.signals, which
+      # pulls in nothing beyond the stdlib — verified, no numpy/scipy/fastapi — so this needs pytest
+      # and nothing else. That is why there is no pip install of requirements.txt here.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r apps/api/requirements-dev.txt
+      - run: python -m pytest
+        working-directory: apps/api

@@ -13,8 +13,14 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
 - `apps/api` — **Python** FastAPI backend (`nx serve api` → uvicorn :8000). Not an npm
   workspace member; it has its own `.venv` (`cd apps/api && py -m venv .venv &&
 .venv/Scripts/python.exe -m pip install -r requirements.txt`). Nx project name `api`
-  (distinct from the TS lib `@org/api`). No pytest suite — verified by app-run +
-  `.claude/tools/interface_conformance.py`.
+  (distinct from the TS lib `@org/api`). **Tests: `nx test api`** (pytest; dev deps in
+  `requirements-dev.txt`, deliberately NOT in the Docker-installed `requirements.txt`). The suite is
+  **characterization tests over the scoring path** — golden fixtures captured from real bundles pin
+  `generate_signals` / `state_fingerprint` / the gate, so `[additive-keeps-score-byte-identical]` is
+  checked on every push instead of re-proven by hand per feature. Re-baseline a DELIBERATE score
+  change with `tests/capture_fixtures.py` (needs a live API); the fixture diff is the before/after
+  that `[score-change-is-deliberate-and-measured]` requires. Everything else is still verified by
+  app-run + `.claude/tools/interface_conformance.py`.
 - `apps/dashboard` — React 19 + Vite + MUI frontend (`nx serve dashboard` → :4200, proxies
   `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
 - `apps/dashboard-e2e` — Playwright e2e for the dashboard.
