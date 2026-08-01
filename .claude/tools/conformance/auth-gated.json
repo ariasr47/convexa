@@ -1,0 +1,54 @@
+{
+  "_comment": "Runnable (system-1) conformance spec for the AUTH-GATED surface — the endpoints every earlier spec explicitly omitted because the runner was cookieless (TECH_DEBT #12; see the omission note in conformance/byo-ai-key.json). Requires a session: run with --auth-signup (bootstraps a throwaway user via POST /api/auth/signup and replays its Set-Cookie on every endpoint marked 'auth': true) or --auth-cookie NAME=VALUE. Only statically-checkable, environment-INDEPENDENT shapes are asserted; VALUES stay env-dependent (e.g. ai-key storage_available is false when AI_KEY_ENCRYPTION_KEY is unset — the SHAPE is invariant either way, per AC-18's never-5xx rule). The PUT ai-key probe mutates only the throwaway signup user's own credential row (in-memory by default; one disposable user per run on a persistent store) and asserts the masked-hint shape — never the key/ciphertext (AC-10). Boot: npx nx serve api (uvicorn :8000), or any --url.",
+  "version": "1.0",
+  "feature": "auth-gated sweep (tech-debt #12)",
+  "endpoints": [
+    {
+      "id": "settings_read_signed_in",
+      "_note": "INTERFACE user-accounts §2.6 — 401 anonymous, 200 bag signed-in. Default-created on first read; all three prefs nullable.",
+      "method": "GET",
+      "path": "/api/auth/settings",
+      "auth": true,
+      "required": {
+        "active_persona_id": "string|null",
+        "default_ticker": "string|null",
+        "theme": "string|null"
+      }
+    },
+    {
+      "id": "ai_key_hint_read_signed_in",
+      "_note": "byo-ai-key §1.3 masked-hint read — {set,last4,storage_available}, NEVER the key/ciphertext. Fresh throwaway user ⇒ set:false.",
+      "method": "GET",
+      "path": "/api/auth/ai-key",
+      "auth": true,
+      "required": {
+        "set": "boolean",
+        "last4": "string|null",
+        "storage_available": "boolean"
+      }
+    },
+    {
+      "id": "ai_key_put_masked_echo",
+      "_note": "byo-ai-key §1.1 — PUT stores (or reports storage-unavailable as 200 set:false, AC-18) and echoes ONLY the masked shape (AC-10). Mutates the throwaway user only. last4 is absent on the storage-unavailable variant ⇒ optional.",
+      "method": "PUT",
+      "path": "/api/auth/ai-key",
+      "auth": true,
+      "body": { "key": "sk-conformance-throwaway-00000000" },
+      "required": {
+        "set": "boolean",
+        "last4": "string|null?",
+        "storage_available": "boolean"
+      }
+    },
+    {
+      "id": "sim_trade_gate_signed_in",
+      "_note": "positions write gate (ARCHITECTURE §8a; [server-side-gate-enforcement] canon) — 403 anonymous, 200 {authorized:true} with a session. The signed-in 200 arm was previously unverifiable by this tool.",
+      "method": "POST",
+      "path": "/api/positions/sim-trade/gate",
+      "auth": true,
+      "required": {
+        "authorized": "boolean"
+      }
+    }
+  ]
+}

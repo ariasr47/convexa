@@ -18,16 +18,29 @@ Usage:
     python .claude/tools/interface_conformance.py --spec .claude/tools/conformance/<feature>.json --url <backend-base-url>
     # offline: validate a captured response against one endpoint (CI / no server):
     python .claude/tools/interface_conformance.py --spec SPEC.json --sample resp.json --endpoint /api/example
+    # auth-gated endpoints (spec entries carrying "auth": true) — EITHER bootstrap a throwaway
+    # session (POST /api/auth/signup with a unique generated user, Set-Cookie captured):
+    python .claude/tools/interface_conformance.py --spec SPEC.json --url <base> --auth-signup
+    # OR supply an existing session cookie verbatim:
+    python .claude/tools/interface_conformance.py --spec SPEC.json --url <base> --auth-cookie "convexa_session=..."
 
 Spec schema (JSON):
     {"endpoints": [{
        "method": "GET", "path": "/api/example/{id}",
        "path_params": {"id": "abc"}, "query": {"limit": 7},
+       "auth": true,
        "required": { "<dot.path>": "<typespec>", ... }
     }]}
 Type specs: number | string | boolean | object | array | null ; unions "object|null"; trailing "?" =
 optional (absent ⇒ pass, present ⇒ must match). A path segment "name[]" means "the value at name is an
 array — apply the rest of the path to EACH element" (empty array ⇒ vacuously passes).
+`"auth": true` marks an endpoint as session-gated: in live mode its request carries the session
+Cookie (from --auth-signup or --auth-cookie; running such a spec without either is a spec error).
+Endpoints without the flag are fetched anonymously, exactly as before — the anonymous surface stays
+verified as anonymous. The Set-Cookie capture is manual (header parse), so it works regardless of
+the cookie's Secure attribute even against a local http backend; the throwaway signup user persists
+only for the process lifetime on the default in-memory store (a persistent store accrues one
+disposable user per --auth-signup run).
 
 Exit: 1 if any endpoint FAILs (missing field / type mismatch / non-200 / unreachable), else 0.
 Stdlib only (urllib/json/re/argparse). Run with the project interpreter (project.json `backend.python`).
@@ -109,7 +122,7 @@ def extract_spec_from_contract(text: str) -> dict:
     return json.loads(m.group(1))
 
 
-def fetch(base: str, ep: dict):
+def fetch(base: str, ep: dict, cookie: str | None = None):
     path = ep["path"]
     for k, v in ep.get("path_params", {}).items():
         path = path.replace("{" + k + "}", urllib.parse.quote(str(v)))
@@ -122,11 +135,45 @@ def fetch(base: str, ep: dict):
     if ep.get("body") is not None:
         data = json.dumps(ep["body"]).encode("utf-8")
         headers["Content-Type"] = "application/json"
+    if ep.get("auth"):
+        if not cookie:
+            raise Fail("endpoint is auth-gated ('auth': true) but no session cookie is available "
+                       "— pass --auth-signup or --auth-cookie")
+        headers["Cookie"] = cookie
     req = urllib.request.Request(url, method=ep.get("method", "GET"), data=data, headers=headers)
     with urllib.request.urlopen(req, timeout=30) as resp:
         if resp.status != 200:
             raise Fail(f"HTTP {resp.status}")
         return json.loads(resp.read().decode("utf-8"))
+
+
+def bootstrap_session(base: str) -> str:
+    """POST /api/auth/signup with a unique throwaway user; return the 'name=value' session cookie.
+
+    Manual Set-Cookie parse (first attribute pair) rather than a CookieJar, deliberately: a jar
+    honors the cookie's Secure attribute and would refuse to replay it over a local http:// base,
+    which is exactly where this tool runs during verification.
+    """
+    import uuid
+    tag = uuid.uuid4().hex[:12]
+    body = {"email": f"conformance-{tag}@sweep.invalid",
+            "password": f"Sweep-{tag}!x9",
+            "display_name": "conformance sweep"}
+    req = urllib.request.Request(
+        base.rstrip("/") + "/api/auth/signup",
+        method="POST",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        if resp.status != 200:
+            raise Fail(f"auth bootstrap: signup returned HTTP {resp.status}")
+        set_cookie = resp.headers.get("Set-Cookie")
+    if not set_cookie or "=" not in set_cookie.split(";", 1)[0]:
+        raise Fail("auth bootstrap: signup succeeded but no Set-Cookie header was returned")
+    cookie = set_cookie.split(";", 1)[0].strip()
+    print(f"  auth: session bootstrapped via /api/auth/signup ({body['email']})")
+    return cookie
 
 
 def validate_endpoint(ep: dict, payload) -> list[str]:
@@ -144,6 +191,11 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--url", default=None, help="base URL of a running backend (live mode)")
     ap.add_argument("--sample", default=None, help="captured JSON response (offline mode)")
     ap.add_argument("--endpoint", default=None, help="with --sample: the spec path to validate against")
+    ap.add_argument("--auth-signup", action="store_true",
+                    help="live mode: bootstrap a throwaway session via POST /api/auth/signup for "
+                         "endpoints marked 'auth': true")
+    ap.add_argument("--auth-cookie", default=None, metavar="NAME=VALUE",
+                    help="live mode: an existing session cookie to send on 'auth': true endpoints")
     args = ap.parse_args(argv[1:])
 
     try:
@@ -165,10 +217,17 @@ def main(argv: list[str]) -> int:
         payload = json.loads(Path(args.sample).read_text(encoding="utf-8"))
         cases = [(eps[0], payload, None)]
     elif args.url:
+        cookie = args.auth_cookie
+        if cookie is None and args.auth_signup and any(ep.get("auth") for ep in endpoints):
+            try:
+                cookie = bootstrap_session(args.url)
+            except (urllib.error.URLError, Fail, json.JSONDecodeError, TimeoutError) as e:
+                print(f"auth bootstrap error: {e}")
+                return 2
         cases = []
         for ep in endpoints:
             try:
-                cases.append((ep, fetch(args.url, ep), None))
+                cases.append((ep, fetch(args.url, ep, cookie), None))
             except (urllib.error.URLError, Fail, json.JSONDecodeError, TimeoutError) as e:
                 cases.append((ep, None, str(e)))
     else:

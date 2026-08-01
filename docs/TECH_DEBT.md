@@ -38,7 +38,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~10~~ | ~~npm dependency drift~~ — ✅ **FIXED `5616de8`** (all minor/patch + both HIGH audit findings cleared) | Dependency | 2 | 2 | 2 | ~~16~~ |
 | ~~22~~ | ~~`react-router-dom` open-redirect → XSS~~ — ✅ **FIXED `1d67257`** (v7.18.2 + a new client-side navigation guard; the remaining audit-high is RSC-mode only and does not apply — see the commit) | Security | 3 | 4 | 3 | ~~21~~ |
 | 11 | 2 timing-flaky specs on cold runs — *carried; NOT reproduced in ~10 full runs on 2026-07-28* | Test | 2 | 2 | 2 | 16 |
-| 12 | Conformance runner is cookieless | Security | 2 | 3 | 3 | 15 |
+| ~~12~~ | ~~Conformance runner is cookieless~~ — ✅ **FIXED** (`--auth-signup`/`--auth-cookie` + per-endpoint `"auth": true`; new `conformance/auth-gated.json` sweeps the settings/ai-key/sim-trade-gate surface, 4/4 live PASS) | Security | 2 | 3 | 3 | ~~15~~ |
 | ~~13~~ | ~~Orphaned dev servers hold ports~~ — ✅ **FIXED `e9cbc67`** (`npm run ports:free` + a CLAUDE.md trap) | Infra | 2 | 1 | 1 | ~~15~~ |
 | 14 | No auth schema-migration path | Architecture | 3 | 4 | 4 | 14 |
 | 15 | 27 accepted lint warnings | Code | 1 | 2 | 2 | 12 |
@@ -169,8 +169,8 @@ harness plus fixtures**, and it retires a recurring per-feature cost.
 CORS defaulting to localhost in prod, `AUTH_COOKIE_SECURE` misconfiguration risk, no SSE connection
 ceiling, public OpenAPI docs, broad CORS methods/headers, Google OAuth state cleanup. None was a
 go-live blocker; all become more relevant the moment the site gets real traffic. Related: the
-conformance runner is **cookieless**, so auth-gated endpoints are verified by runtime and FE tests
-rather than by the sweep.
+conformance runner ~~is **cookieless**~~ can now authenticate (`--auth-signup` bootstraps a throwaway
+session; `.claude/tools/conformance/auth-gated.json` is the standing auth-gated sweep).
 
 **Dependencies [measured]** — npm drift is healthy, not rot: patch/minor across Nx 23.0→23.1,
 React 19.0→19.2.8, MUI 9.1.1→9.2.0, Vitest, Cypress, Prettier. One major waiting: `@babel/core` 7→8.
