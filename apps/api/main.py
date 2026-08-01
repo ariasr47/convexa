@@ -641,11 +641,22 @@ def compute_ticker(ticker: str, market_data: dict | None,
     return bundle
 
 
+# S3c (system-6 fast-follow, LOW): FastAPI publishes Swagger UI at /docs, ReDoc at /redoc and the
+# schema at /openapi.json BY DEFAULT. That hands the public internet the full route list, request/
+# response schemas and parameter definitions — not an auth bypass, but free enumeration and
+# fingerprinting. Gated behind an OPT-IN env so an unconfigured deployment (i.e. production) is
+# closed; set ENABLE_API_DOCS=1 in a local .env when you want the interactive docs. Config-only —
+# no scoring/engine/state_fingerprint touch.
+_docs_enabled = os.environ.get("ENABLE_API_DOCS", "").strip() in ("1", "true", "True")
+
 app = FastAPI(
     title="Convexa Volatility API",
     description="Serves net dealer gamma profiles, greeks, and trade signals for a single "
                 "ticker on demand, over a selectable expiration (DTE) window.",
     version="3.0.0",
+    docs_url="/docs" if _docs_enabled else None,
+    redoc_url="/redoc" if _docs_enabled else None,
+    openapi_url="/openapi.json" if _docs_enabled else None,
 )
 
 # --- Scanner embedded-worker seam (Scanner v1 P2, default OFF). When SCANNER_EMBEDDED=1, run the
@@ -666,18 +677,47 @@ if os.getenv("SCANNER_EMBEDDED", "").strip() in ("1", "true", "True"):
 # to the existing localhost dev origins when unset so LOCAL dev is byte-for-byte unchanged. NEVER
 # "*" with credentials (incompatible with allow_credentials=True and a real leak). Config-only — no
 # scoring/engine/state_fingerprint touch.
-_DEFAULT_DEV_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+# S2-prod (system-6 fast-follow, MEDIUM): the unset default USED TO BE the localhost dev list, which
+# fails OPEN in the wrong direction — an unconfigured production deployment would accept credentialed
+# cross-origin requests from a page served at localhost:3000, bypassing the Pages proxy entirely.
+# Now unset => [] (DENY ALL), so a deployment that forgets ALLOWED_ORIGINS fails CLOSED.
+#
+# This costs local dev nothing: the dashboard dev server proxies /api -> :8000, so the browser is
+# SAME-ORIGIN at :4200 and this middleware is never on its path. If you do need cross-origin locally,
+# set ALLOWED_ORIGINS in apps/api/.env (see .env.example).
 _cors_env = os.environ.get("ALLOWED_ORIGINS", "").strip()
-_allowed_origins = (
-    [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else _DEFAULT_DEV_ORIGINS
-)
+_allowed_origins = [o.strip() for o in _cors_env.split(",") if o.strip()] if _cors_env else []
+if not _allowed_origins:
+    # Deliberately conspicuous, matching the HIGH-3 stable-key warning below: a silent deny-all is
+    # indistinguishable from a broken deployment when someone is debugging a CORS error.
+    logger.warning(
+        "[security] ALLOWED_ORIGINS is unset -> CORS deny-all (fail-closed). This is correct for "
+        "the proxied same-origin deployment; set ALLOWED_ORIGINS if a browser must call this API "
+        "cross-origin."
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # S6g (system-6 fast-follow, LOW): was ["*"]/["*"]. Wildcards with credentials are unnecessarily
+    # permissive even behind a locked origin list; these are the methods and headers this API
+    # actually uses.
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Cookie", "Authorization"],
 )
+
+# S3c, second half — the part that is easy to miss. The friendly `/{ticker}` catch-all at the bottom
+# of this file was safe ONLY because FastAPI registered /docs, /redoc and /openapi.json ahead of it.
+# Turning the docs off removes those routes, and "docs" is a perfectly valid 4-letter ticker: the
+# path then falls through to the catch-all and triggers a REAL VENDOR FETCH for a symbol named
+# "DOCS" (observed: a full computed bundle came back). These explicit stubs keep the paths claimed so
+# they 404 cleanly instead of costing a vendor call. Registered here, well before the catch-all.
+if not _docs_enabled:
+    for _docs_path in ("/docs", "/redoc", "/openapi.json"):
+
+        @app.get(_docs_path, include_in_schema=False)
+        async def _docs_disabled():  # noqa: F811 — one handler per path, intentionally identical
+            raise HTTPException(status_code=404, detail="Not Found")
 
 # HIGH-3 (system-6 S4e): conspicuous startup WARNING when ACCOUNT_STORE=postgres but a stable key
 # is missing. In persistent mode the ephemeral per-process fallback is a silent data-integrity trap:
@@ -1739,8 +1779,14 @@ def _scan_warm_bundle(t: str, min_dte, max_dte, expirations, dark_pool: bool,
     return bundle
 
 
-# Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it
-# can't shadow /docs, /openapi.json, or the /api/* routes above.
+# Friendly per-ticker route (e.g. /TSLA). Declared LAST and constrained to letters so it can't
+# shadow the /api/* routes above.
+#
+# ⚠ IT NO LONGER SHADOW-PROOFS ITSELF AGAINST THE DOCS PATHS. That used to be free: FastAPI
+# registered /docs, /redoc and /openapi.json ahead of this route, so they always won. Disabling the
+# docs (S3c) REMOVES those routes — and `/docs` is a valid 4-letter ticker, so it fell straight
+# through to here and triggered a REAL VENDOR FETCH for a symbol named "DOCS". The explicit 404
+# stubs registered next to the CORS block above restore the invariant this comment used to describe.
 @app.get("/{ticker}")
 async def get_ticker_page(
     ticker: str = Path(..., pattern=r"^[A-Za-z]{1,6}$", description="Underlying symbol, e.g. TSLA"),
