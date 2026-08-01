@@ -20,20 +20,20 @@
  * Mocks ONLY the network boundary (`fetch` + `EventSource`). MUI `sx` compiles to CLASSES — we assert
  * className identity, never `getAttribute('style')`.
  */
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import type { GateApi } from '@/features/auth/useGate';
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { ScanRow } from '@org/api';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { AuthProvider } from '@/features/auth/AuthContext';
-import type { GateApi } from '@/features/auth/useGate';
-import { theme } from '@/shared/theme/theme';
-import { Scanner } from './Scanner';
 import { ScanCardList } from './ScanCard';
 import { ScanTable } from './ScanTable';
 import { ScanToolbar } from './ScanToolbar';
+import { Scanner } from './Scanner';
 import { ViewEditorDialog } from './ViewEditorDialog';
 import { SCAN_COLUMNS, SORTABLE_COLUMNS } from './labels';
 
@@ -163,7 +163,13 @@ describe('direction colour never leaks onto a rate or a proximity', () => {
       within(down).getByTestId('cell-chg').className,
     );
     // Everything else is a rate / a no-side datum: identical classes ⇒ provably untinted.
-    for (const id of ['cell-score', 'cell-dist-flip', 'cell-dist-wall', 'cell-regime', 'cell-vol']) {
+    for (const id of [
+      'cell-score',
+      'cell-dist-flip',
+      'cell-dist-wall',
+      'cell-regime',
+      'cell-vol',
+    ]) {
       expect(
         within(up).getByTestId(id).className,
         `${id} must be className-identical across a positive and a negative row`,
@@ -579,6 +585,48 @@ describe('the four honest page states', () => {
       "Sweep hasn't reported yet — showing the last known rows.",
     );
     expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
+  });
+});
+
+// =================================================================================================
+// 8b. index-first-defaults AC-3 — the zero-state lead group vs the saved-view no-regroup guarantee
+// =================================================================================================
+describe('zero-state lead group (index-first-defaults AC-3)', () => {
+  /** Mixed-membership fixture: wire order deliberately interleaves lead/non-lead, scores desc. */
+  const MIXED = ['GME', 'SPY', 'COIN', 'QQQ'];
+
+  const rowOrder = () =>
+    screen.getAllByTestId('scan-row').map((r) => r.getAttribute('data-symbol'));
+
+  it('a DEFAULT (no saved) view leads with "Indexes & megacaps", each group internally score-desc', async () => {
+    installScanBackend({ authenticated: false, symbols: MIXED });
+    renderPage();
+    await screen.findByTestId('scan-table');
+
+    // Exactly ONE labeled group header, reusing the table's own header treatment.
+    const headers = screen.getAllByTestId('scan-group-header');
+    expect(headers).toHaveLength(1);
+    expect(headers[0]).toHaveTextContent('Indexes & megacaps');
+
+    // Lead members first (score-desc among themselves), then the rest (score-desc among themselves)
+    // — scores are 90,89,88,87 in wire order, so within-group order proves the sort survived.
+    expect(rowOrder()).toEqual(['SPY', 'QQQ', 'GME', 'COIN']);
+  });
+
+  it('a SAVED view is NEVER regrouped — no header, order exactly as today (score-desc)', async () => {
+    installScanBackend({ authenticated: true, symbols: MIXED });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    expect(screen.queryByTestId('scan-group-header')).toBeNull();
+    expect(rowOrder()).toEqual(['GME', 'SPY', 'COIN', 'QQQ']);
+  });
+
+  it('a default view with NO lead member degrades to the flat table (no orphan header)', async () => {
+    installScanBackend({ authenticated: false, symbols: ['GME', 'COIN'] });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    expect(screen.queryByTestId('scan-group-header')).toBeNull();
+    expect(rowOrder()).toEqual(['GME', 'COIN']);
   });
 });
 

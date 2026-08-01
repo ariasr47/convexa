@@ -134,9 +134,11 @@ export const AUTH_COPY = {
  *  the ONLY credential datum the FE ever receives — the full key is never shown again (AC-7/10). */
 export const maskedKeyLabel = (last4: string | null) => `Key set ···· ${last4 ?? '????'}`;
 
-/** App defaults applied when a server pref value is null (UX_BLUEPRINT §2.9). */
+/** App defaults applied when a server pref value is null (UX_BLUEPRINT §2.9).
+ *  `ticker`: TSLA → SPY (index-first-defaults AC-1) — the UNSET fallback only; a stored
+ *  `default_ticker` preference (server or client-local) always wins and is never migrated (AC-2). */
 export const SETTINGS_DEFAULTS = {
   personaId: 'default',
-  ticker: 'TSLA',
+  ticker: 'SPY',
   theme: 'dark' as const,
 };

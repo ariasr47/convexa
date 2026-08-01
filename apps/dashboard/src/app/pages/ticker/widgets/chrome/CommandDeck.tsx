@@ -43,6 +43,9 @@ interface CommandDeckProps {
   /** The durable positions store is faulted — refuses this CTA (AC-69). */
   storeFaulted?: boolean;
   freshness: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
+  /** index-first-defaults AC-4 — forwarded to the deck hero (`TickerHeader`): the single-name
+   *  honesty caption. True ONLY for a confirmed non-universe symbol (AC-5). */
+  singleNameCaveat?: boolean;
   // Control strip (TickerToolbar) inputs.
   symbol: string;
   onSymbolChange: (v: string) => void;
@@ -152,6 +155,7 @@ export function CommandDeck(props: CommandDeckProps) {
     onOpenTrade,
     storeFaulted,
     freshness,
+    singleNameCaveat,
     symbol,
     onSymbolChange,
     onSubmitSymbol,
@@ -243,6 +247,7 @@ export function CommandDeck(props: CommandDeckProps) {
             onOpenTrade={onOpenTrade}
             storeFaulted={storeFaulted}
             freshness={freshness}
+            singleNameCaveat={singleNameCaveat}
           />
 
           {/* Tier 2 — the segmented control strip (one instrument panel). */}

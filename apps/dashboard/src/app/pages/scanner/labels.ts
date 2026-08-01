@@ -44,7 +44,55 @@ export const SCAN_COPY = {
   sweepBehind: (age: string) => `Sweep last ran ${age} ago — showing the last known rows.`,
   updated: (rel: string) => `Updated ${rel} ago`,
   sortAria: (col: string) => `Sort by ${col}`,
+  /** index-first-defaults AC-3 — the zero-state lead-group header (SPEC §4: the one pinned label). */
+  leadGroup: 'Indexes & megacaps',
 } as const;
+
+/**
+ * index-first-defaults AC-3 — the CLOSED lead-group membership for the scanner's zero-state (no
+ * saved view). The universe payload (`GET /api/scan/universe`, INTERFACE §3.2) carries NO ETF/index
+ * marker, so per the SPEC this is the sanctioned fallback: a named FE constant mirroring the
+ * server-curated universe's index/sector/asset-class ETFs plus its megacap line
+ * (`apps/api/src/scanner/config/universe.json`, as shipped 2026-07-26). A closed lookup, NEVER a
+ * heuristic — an unknown symbol simply is not in the lead group. If the owner re-curates the
+ * universe, this list is re-mirrored by hand (same maintenance contract as the closed label maps).
+ */
+export const INDEX_MEGACAP_SYMBOLS = [
+  // Index / sector / asset-class ETFs:
+  'SPY',
+  'QQQ',
+  'IWM',
+  'DIA',
+  'SMH',
+  'XLF',
+  'XLE',
+  'XLK',
+  'XLV',
+  'XLI',
+  'XLY',
+  'GLD',
+  'SLV',
+  'TLT',
+  'HYG',
+  'GDX',
+  'EEM',
+  'XBI',
+  // The megacap line (highest-liquidity single names):
+  'AAPL',
+  'MSFT',
+  'NVDA',
+  'AMZN',
+  'META',
+  'GOOGL',
+  'TSLA',
+  'AVGO',
+  'NFLX',
+] as const;
+
+const INDEX_MEGACAP_SET: ReadonlySet<string> = new Set(INDEX_MEGACAP_SYMBOLS);
+
+/** Closed lead-group membership test (case-canonical: the wire is already UPPER). */
+export const isIndexMegacap = (symbol: string): boolean => INDEX_MEGACAP_SET.has(symbol);
 
 /** The locked column set + order (UX §1.1, left→right triage reading order). */
 export const SCAN_COLUMNS = [

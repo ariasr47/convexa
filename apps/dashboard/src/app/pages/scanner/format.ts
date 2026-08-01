@@ -9,7 +9,7 @@
  * on a row that has never been computed.
  */
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@org/api';
-import { SCAN_COPY } from './labels';
+import { isIndexMegacap, SCAN_COPY } from './labels';
 
 /** Honestly-missing. Every nullable numeric renders THIS, never `0`, never a fabricated value. */
 export const EM_DASH = '—';
@@ -96,6 +96,19 @@ export function sortRows(rows: ScanRow[], sort: ScanViewSort): ScanRow[] {
       return cmp !== 0 ? cmp * sign : a.index - b.index;
     })
     .map((entry) => entry.row);
+}
+
+/**
+ * index-first-defaults AC-3 — STABLE partition of already-sorted rows into the "Indexes & megacaps"
+ * lead group vs the remaining rows. Called AFTER `sortRows`, so each side keeps the caller's sort
+ * order internally (score-desc by default, exactly as today). Membership is the CLOSED
+ * `isIndexMegacap` lookup — never a heuristic. Pure re-order: no row is dropped, added, or changed.
+ */
+export function partitionLeadGroup(rows: ScanRow[]): { lead: ScanRow[]; rest: ScanRow[] } {
+  const lead: ScanRow[] = [];
+  const rest: ScanRow[] = [];
+  for (const row of rows) (isIndexMegacap(row.symbol) ? lead : rest).push(row);
+  return { lead, rest };
 }
 
 /**

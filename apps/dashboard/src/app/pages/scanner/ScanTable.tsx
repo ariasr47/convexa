@@ -9,10 +9,11 @@
  * ring) and the row body forwards a click to the same route. There is no order, trade, or broker
  * affordance anywhere on this surface.
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { Box } from '@mui/material';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@org/api';
+import { Fragment } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { extrasFor } from '@/shared/theme/tokens';
 import {
   ChgCell,
   LabelCell,
@@ -26,7 +27,21 @@ import {
   UpdatedCell,
   volTextOf,
 } from './ScanCells';
-import { COLUMN_LABELS, SCAN_COLUMNS, SCAN_COPY, SORTABLE_COLUMNS, type ScanColumn } from './labels';
+import {
+  COLUMN_LABELS,
+  SCAN_COLUMNS,
+  SCAN_COPY,
+  SORTABLE_COLUMNS,
+  type ScanColumn,
+} from './labels';
+
+/** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
+ *  remaining-universe tail); a labelled group gets the table's own header treatment. */
+export interface ScanGroup {
+  key: string;
+  label: string | null;
+  rows: ScanRow[];
+}
 
 export interface ScanTableProps {
   rows: ScanRow[];
@@ -36,6 +51,9 @@ export interface ScanTableProps {
   /** Gate for the sanctioned price flash — off while the sweep is down (nothing is changing). */
   flashActive: boolean;
   onSort: (sort: ScanViewSort) => void;
+  /** Zero-state grouping (index-first-defaults AC-3). Absent ⇒ the flat `rows` render exactly as
+   *  today — a SAVED view is never regrouped. When present, `rows` must equal the concatenation. */
+  groups?: ScanGroup[];
 }
 
 const thSx = {
@@ -198,7 +216,11 @@ function ScanTableRow({
       }}
     >
       {SCAN_COLUMNS.map((column) => (
-        <Box component="td" key={column} sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}>
+        <Box
+          component="td"
+          key={column}
+          sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
+        >
           {cellContent(column, row, nowS, flashActive)}
         </Box>
       ))}
@@ -206,8 +228,18 @@ function ScanTableRow({
   );
 }
 
-export function ScanTable({ rows, sort, density, nowS, flashActive, onSort }: ScanTableProps) {
+export function ScanTable({
+  rows,
+  sort,
+  density,
+  nowS,
+  flashActive,
+  onSort,
+  groups,
+}: ScanTableProps) {
   const navigate = useNavigate();
+  // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
+  const sections: ScanGroup[] = groups ?? [{ key: 'all', label: null, rows }];
   return (
     <Box
       sx={{
@@ -235,15 +267,34 @@ export function ScanTable({ rows, sort, density, nowS, flashActive, onSort }: Sc
           </Box>
         </Box>
         <Box component="tbody">
-          {rows.map((row) => (
-            <ScanTableRow
-              key={row.symbol}
-              row={row}
-              density={density}
-              nowS={nowS}
-              flashActive={flashActive}
-              onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
-            />
+          {sections.map((group) => (
+            <Fragment key={group.key}>
+              {group.label != null && (
+                /* AC-3: the lead-group header REUSES the table's header treatment (same type ramp,
+                   same secondary token) — no new visual language, no color semantics. Non-sticky:
+                   it scrolls with its rows. */
+                <Box component="tr" data-testid="scan-group-header">
+                  <Box
+                    component="th"
+                    scope="colgroup"
+                    colSpan={SCAN_COLUMNS.length}
+                    sx={{ ...thSx, position: 'static', zIndex: 'auto' }}
+                  >
+                    {group.label}
+                  </Box>
+                </Box>
+              )}
+              {group.rows.map((row) => (
+                <ScanTableRow
+                  key={row.symbol}
+                  row={row}
+                  density={density}
+                  nowS={nowS}
+                  flashActive={flashActive}
+                  onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
+                />
+              ))}
+            </Fragment>
           ))}
         </Box>
       </Box>

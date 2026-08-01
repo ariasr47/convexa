@@ -86,7 +86,7 @@ beforeEach(() => {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
-    const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'TSLA';
+    const tk = (url.match(/\/api\/ticker\/([A-Z]+)/) ?? [])[1] ?? 'SPY';
     // user-accounts: who-am-I read on mount (signed-in path; gating covered in the auth suite).
     if (url.includes('/api/auth/session'))
       return json({
@@ -179,20 +179,21 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(screen.getByTestId('landing')).toBeInTheDocument();
     expect(esLog.length).toBe(0);
 
-    // --- CTA into /ticker → exactly ONE EventSource opens for TSLA ---
+    // --- CTA into /ticker → exactly ONE EventSource opens for the default (unset pref ⇒ SPY,
+    //     index-first-defaults AC-1) ---
     await user.click(screen.getByTestId('cta-primary'));
     await screen.findByText('Call wall');
-    expect(openFor('TSLA').length).toBe(1); // exactly one, open
+    expect(openFor('SPY').length).toBe(1); // exactly one, open
 
     // --- nav to /positions → the Ticker feed CLOSES (no leak) ---
     await user.click(screen.getByTestId('nav-positions'));
     await screen.findByTestId('portfolio-panel');
-    // The TSLA stream the Ticker page opened was closed on unmount. (The Positions page may open its
-    // own single TSLA stream, but the Ticker-page instance must be closed — and there is never more
+    // The SPY stream the Ticker page opened was closed on unmount. (The Positions page may open its
+    // own single SPY stream, but the Ticker-page instance must be closed — and there is never more
     // than one open at a time for the symbol.)
-    expect(openFor('TSLA').length).toBeLessThanOrEqual(1);
-    const firstTickerEs = esLog.find((es) => es.symbol === 'TSLA');
-    if (!firstTickerEs) throw new Error('expected a TSLA EventSource to have been opened');
+    expect(openFor('SPY').length).toBeLessThanOrEqual(1);
+    const firstTickerEs = esLog.find((es) => es.symbol === 'SPY');
+    if (!firstTickerEs) throw new Error('expected a SPY EventSource to have been opened');
     expect(firstTickerEs.closed).toBe(true);
 
     // --- back to /ticker → a FRESH feed reopens (cold-start path) ---
@@ -200,13 +201,13 @@ describe('live-lifecycle (centerpiece flow)', () => {
     await user.click(screen.getByTestId('nav-ticker'));
     await screen.findByText('Call wall');
     expect(esLog.length).toBeGreaterThan(beforeReturn); // a new EventSource was constructed
-    expect(openFor('TSLA').length).toBe(1); // exactly one open for the symbol
+    expect(openFor('SPY').length).toBe(1); // exactly one open for the symbol
 
     // --- /scanner → the Ticker feed closes again; the scan surface opens NO ticker feed ---
     const fetchBeforeScanner = fetchMock.mock.calls.length;
     await user.click(screen.getByTestId('nav-scanner'));
     await screen.findByTestId('scanner-page');
-    expect(openFor('TSLA').length).toBeLessThanOrEqual(1);
+    expect(openFor('SPY').length).toBeLessThanOrEqual(1);
     // The Scanner polls its OWN read (`/api/scan`) and nothing else: it is poll-based and never
     // subscribes per row (`[live-vs-static-isolation]`). Assert no NEW ticker-bundle fetch — the
     // real page must not resurrect the ticker feed it just left.

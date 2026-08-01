@@ -13,12 +13,15 @@ import {
   EM_DASH,
   fmtPrice,
   fmtSignedPct,
+  partitionLeadGroup,
   relAge,
   sortRows,
   sweepBanner,
   updatedText,
 } from './format';
 import {
+  INDEX_MEGACAP_SYMBOLS,
+  isIndexMegacap,
   regimeLabel,
   statusMeta,
   tierLabel,
@@ -155,7 +158,10 @@ describe('sortRows — client-side re-order, nulls last, stable', () => {
 
   it('symbol-asc is alphabetical, ties keep wire order, and the input array is not mutated', () => {
     const tied = [row({ symbol: 'ZZ', score: 5 }), row({ symbol: 'YY', score: 5 })];
-    expect(sortRows(tied, { key: 'score', dir: 'desc' }).map((r) => r.symbol)).toEqual(['ZZ', 'YY']);
+    expect(sortRows(tied, { key: 'score', dir: 'desc' }).map((r) => r.symbol)).toEqual([
+      'ZZ',
+      'YY',
+    ]);
     expect(sortRows(rows, { key: 'symbol', dir: 'asc' }).map((r) => r.symbol)).toEqual([
       'AAA',
       'BBB',
@@ -163,6 +169,41 @@ describe('sortRows — client-side re-order, nulls last, stable', () => {
       'DDD',
     ]);
     expect(rows.map((r) => r.symbol)).toEqual(['AAA', 'BBB', 'CCC', 'DDD']); // untouched
+  });
+});
+
+describe('partitionLeadGroup — the zero-state lead group (index-first-defaults AC-3)', () => {
+  it('membership is the CLOSED lookup: every listed symbol is lead, anything else is rest', () => {
+    for (const s of INDEX_MEGACAP_SYMBOLS) expect(isIndexMegacap(s)).toBe(true);
+    expect(isIndexMegacap('GME')).toBe(false);
+    expect(isIndexMegacap('ZZZZ')).toBe(false);
+    expect(isIndexMegacap('')).toBe(false);
+    // Closed means closed: no case-folding heuristic hides in the lookup (the wire is UPPER).
+    expect(isIndexMegacap('spy')).toBe(false);
+  });
+
+  it('is a STABLE pure re-order: per-group order preserved, no row dropped/added/changed', () => {
+    const rows = [
+      row({ symbol: 'GME', score: 95 }),
+      row({ symbol: 'SPY', score: 90 }),
+      row({ symbol: 'COIN', score: 80 }),
+      row({ symbol: 'QQQ', score: 70 }),
+      row({ symbol: 'NVDA', score: null }),
+    ];
+    const { lead, rest } = partitionLeadGroup(rows);
+    // Incoming (already-sorted) order is preserved INSIDE each group — score-desc stays score-desc.
+    expect(lead.map((r) => r.symbol)).toEqual(['SPY', 'QQQ', 'NVDA']);
+    expect(rest.map((r) => r.symbol)).toEqual(['GME', 'COIN']);
+    // Nothing lost, nothing fabricated, input untouched.
+    expect(lead.length + rest.length).toBe(rows.length);
+    expect(lead[0]).toBe(rows[1]); // same object identity — a re-order, never a rebuild
+    expect(rows.map((r) => r.symbol)).toEqual(['GME', 'SPY', 'COIN', 'QQQ', 'NVDA']);
+  });
+
+  it('degenerates honestly: all-lead and no-lead inputs produce an empty other side', () => {
+    expect(partitionLeadGroup([row({ symbol: 'SPY' })]).rest).toEqual([]);
+    expect(partitionLeadGroup([row({ symbol: 'GME' })]).lead).toEqual([]);
+    expect(partitionLeadGroup([])).toEqual({ lead: [], rest: [] });
   });
 });
 
@@ -180,12 +221,12 @@ describe('sweepBanner', () => {
       text: "Sweep hasn't reported yet — showing the last known rows.",
     });
     expect(sweepBanner(hb(), NOW).engaged).toBe(false);
-    expect(sweepBanner(hb({ updated_at: NOW - 400, sweep_last_completed: NOW - 180 }), NOW)).toEqual(
-      { engaged: true, text: 'Sweep last ran 3 min ago — showing the last known rows.' },
-    );
-    // Behind with NO completed pass: we cannot honestly say "last ran X ago".
     expect(
-      sweepBanner(hb({ updated_at: NOW - 400, sweep_last_completed: null }), NOW).text,
-    ).toBe("Sweep hasn't reported yet — showing the last known rows.");
+      sweepBanner(hb({ updated_at: NOW - 400, sweep_last_completed: NOW - 180 }), NOW),
+    ).toEqual({ engaged: true, text: 'Sweep last ran 3 min ago — showing the last known rows.' });
+    // Behind with NO completed pass: we cannot honestly say "last ran X ago".
+    expect(sweepBanner(hb({ updated_at: NOW - 400, sweep_last_completed: null }), NOW).text).toBe(
+      "Sweep hasn't reported yet — showing the last known rows.",
+    );
   });
 });

@@ -19,7 +19,7 @@ import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { LiveUpdate, MarketState, Signals } from '@org/api';
-import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP } from '../_kit/copy';
+import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 
 const REGIME_TIP =
@@ -258,6 +258,10 @@ interface TickerHeaderProps {
   /** REST-bundle freshness — folded into the deck hero's meta line (relocated `FreshnessLine`). The
    *  freshness reflects the STATIC path only (never live/SSE) — `[live-vs-static-isolation]`. */
   freshness?: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
+  /** index-first-defaults AC-4 — render the one-line single-name honesty caption under the meta
+   *  line. The CALLER owns the membership decision (true ONLY for a confirmed non-universe symbol;
+   *  unknown/failed reads stay false — AC-5). Muted caption, token-only, never warn/red. */
+  singleNameCaveat?: boolean;
 }
 
 export function TickerHeader({
@@ -270,6 +274,7 @@ export function TickerHeader({
   onOpenTrade,
   storeFaulted = false,
   freshness,
+  singleNameCaveat = false,
 }: TickerHeaderProps) {
   const reduced = useReducedMotion();
   const conn = connectionChip(live, streamOffline, reduced);
@@ -365,6 +370,20 @@ export function TickerHeader({
               </>
             )}
           </Stack>
+
+          {/* index-first-defaults AC-4 — the single-name honesty caption, on the freshness/context
+              line of the deck. Muted secondary-text token ONLY (both themes via the palette) — no
+              warn/red semantics, no icon, never blocking. Absent for universe members AND while the
+              universe is unknown (AC-5 — absence IS the degraded state). */}
+          {singleNameCaveat && (
+            <Typography
+              variant="caption"
+              data-testid="single-name-caveat"
+              sx={{ color: 'text.secondary' }}
+            >
+              {SINGLE_NAME_CAVEAT}
+            </Typography>
+          )}
         </Stack>
 
         {/* Persistent trade CTA (right-aligned) — primary action kept in the header, out of the

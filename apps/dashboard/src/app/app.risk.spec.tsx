@@ -4,8 +4,9 @@
  * We test ONLY the invariants where a silent regression is plausible AND invisible:
  *
  *   1. The ROUTE TABLE contract — one parameterized walk proving every route resolves to its page
- *      inside the shell (`/` is never a ticker redirect; bare `/ticker` defaults to TSLA;
- *      `/ticker/:symbol` deep-links). Folded into the same walk: `operator-vs-trader-path-separation`
+ *      inside the shell (`/` is never a ticker redirect; bare `/ticker` falls back to SPY when no
+ *      preference is set — index-first-defaults AC-1; `/ticker/:symbol` deep-links). Preference
+ *      precedence (AC-2: server-wins signed in, client-local anonymous) rides its own describe. Folded into the same walk: `operator-vs-trader-path-separation`
  *      (promoted) — NO anchor to `/_ops` exists on ANY rendered shell surface, enforced by
  *      construction on every case.
  *   2. `/_ops/metrics` renders OFF the shell (own chrome, no trader nav).
@@ -29,10 +30,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import App from './app';
+import { __resetLocalPrefs, saveLocalDefaultTicker } from '@/features/auth/localPrefs';
 import { makeBundle } from '@/features/auth/testBackend';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
+import App from './app';
 
 /** The shared fixture pinned to the requested symbol (the walk deep-links non-TSLA tickers). */
 function bundleFor(ticker: string): TickerBundle {
@@ -46,9 +48,13 @@ function bundleFor(ticker: string): TickerBundle {
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+/** Per-test who-am-I body (default anonymous). Set BEFORE render to walk the signed-in path. */
+let sessionBody: unknown;
 
 beforeEach(() => {
+  sessionBody = { authenticated: false, user: null, google_available: false, settings: null };
   localStorage.clear();
+  __resetLocalPrefs(); // the uiprefs store caches in module memory — clearing storage isn't enough
   __resetMemory();
   class SilentEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
@@ -114,9 +120,8 @@ beforeEach(() => {
           universe_size: 1,
         },
       });
-    // user-accounts: the app reads who-am-I once on mount (non-blocking; anonymous here).
-    if (url.includes('/api/auth/session'))
-      return json({ authenticated: false, user: null, google_available: false, settings: null });
+    // user-accounts: the app reads who-am-I once on mount (non-blocking; anonymous by default).
+    if (url.includes('/api/auth/session')) return json(sessionBody);
     if (url.includes('/api/auth/ai-key'))
       return json({ error: 'auth_required', message: 'sign in' }, 403);
     throw new Error(`Unexpected fetch in test: ${url}`);
@@ -159,9 +164,9 @@ describe('route table', () => {
   }> = [
     { path: '/', ready: () => screen.findByTestId('landing') },
     {
-      path: '/ticker', // bare → default-TSLA redirect
+      path: '/ticker', // bare → unset-fallback SPY redirect (index-first-defaults AC-1)
       ready: () => screen.findByText('Call wall'),
-      expectFetch: '/api/ticker/TSLA',
+      expectFetch: '/api/ticker/SPY',
     },
     {
       path: '/ticker/NVDA', // URL-addressable symbol deep-link
@@ -192,6 +197,52 @@ describe('route table', () => {
     expect(() => renderAt('/definitely/not/a/route')).not.toThrow();
     expect(screen.queryByTestId('landing')).toBeNull();
     expect(screen.queryByText('Call wall')).toBeNull();
+  });
+});
+
+// =================================================================================================
+// 1b. Bare `/ticker` preference precedence (index-first-defaults AC-2) — the stored
+//     `default_ticker` ALWAYS beats the new SPY fallback; only the UNSET case changed (AC-1,
+//     asserted in the walk above). Silently regressable: a fallback-order bug still renders a
+//     perfectly healthy ticker page — just the wrong one.
+// =================================================================================================
+describe('bare /ticker — default_ticker preference wins over the SPY fallback', () => {
+  it('anonymous: the CLIENT-LOCAL pref routes to its ticker (not SPY)', async () => {
+    saveLocalDefaultTicker('MSFT');
+    renderAt('/ticker');
+    await screen.findByText('Call wall');
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/MSFT'));
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+  });
+
+  it('signed-in: the SERVER pref wins — even over a conflicting leftover local pref', async () => {
+    saveLocalDefaultTicker('MSFT'); // leftover anonymous pref; must NOT be applied signed-in
+    sessionBody = {
+      authenticated: true,
+      user: { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+      google_available: false,
+      settings: { active_persona_id: null, default_ticker: 'NVDA', theme: 'dark' },
+    };
+    renderAt('/ticker');
+    await screen.findByText('Call wall');
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/NVDA'));
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/MSFT'));
+    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+  });
+
+  it('signed-in with NO server pref: the unset fallback (SPY) applies — no migration, no rewrite', async () => {
+    sessionBody = {
+      authenticated: true,
+      user: { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+      google_available: false,
+      settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+    };
+    renderAt('/ticker');
+    await screen.findByText('Call wall');
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+    // `[loss-free-durable-migration]` untouched: resolving the fallback never WRITES a preference.
+    const calls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((u) => u.includes('/api/auth/settings'))).toBe(false);
   });
 });
 

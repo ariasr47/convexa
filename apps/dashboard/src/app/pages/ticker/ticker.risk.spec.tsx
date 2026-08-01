@@ -257,8 +257,14 @@ beforeEach(() => {
         cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
       });
     }
-    if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+    if (url.includes('/api/personas'))
+      return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
+    // index-first-defaults: the page's silent best-effort universe read (single-name caveat). TSLA
+    // is a member here so the caveat stays out of this suite's frame (its states live in
+    // `single-name-caveat.spec.tsx`).
+    if (url.includes('/api/scan/universe'))
+      return json({ symbols: ['SPY', 'QQQ', 'TSLA'], universe_size: 3 });
     throw new Error(`Unexpected fetch from Ticker page: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -312,7 +318,9 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     });
 
     // Live tiles degrade: dimmed + ⏸, last-known value RETAINED (never blanked).
-    expect(within(screen.getByTestId('live-tape')).getAllByText('⏸ offline').length).toBeGreaterThan(0);
+    expect(
+      within(screen.getByTestId('live-tape')).getAllByText('⏸ offline').length,
+    ).toBeGreaterThan(0);
     expect(screen.getByTestId('last-trade')).toHaveTextContent('⏸ Last trade $251.13');
     expect(screen.getByText('⚠ Live offline — reconnecting…')).toBeInTheDocument();
 
@@ -323,9 +331,7 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
       expect(within(w).queryByText(/⏸/)).toBeNull();
     });
     expect(screen.getByTestId('widget-gex-strike-profile')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('dealer-positioning')).getByText('$260'),
-    ).toBeInTheDocument(); // call wall value intact
+    expect(within(screen.getByTestId('dealer-positioning')).getByText('$260')).toBeInTheDocument(); // call wall value intact
     // OFFLINE is neither the cold skeleton nor a refresh/error state (3 distinct states).
     expect(screen.queryByTestId('cold-skeleton')).toBeNull();
     expect(screen.queryByText(/Couldn't refresh/)).toBeNull();
@@ -335,7 +341,9 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     pushLive({ live: true, mid: 251, gamma_flip: 248, last_trade: 251.55 });
     expect(screen.getByTestId('last-trade')).toHaveTextContent('● Last trade $251.55');
     expect(screen.queryByText('⚠ Live offline — reconnecting…')).toBeNull();
-    STATIC_WIDGETS.forEach((id, i) => expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]));
+    STATIC_WIDGETS.forEach((id, i) =>
+      expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]),
+    );
 
     // POST-SUCCESS REFRESH FAILURE: the next poll 500s → soft warning, bundle KEPT, no error page.
     tickerOk = false;
@@ -344,7 +352,9 @@ describe('Ticker · stream isolation (live-vs-static-isolation)', () => {
     });
     await screen.findByText(/Couldn't refresh/);
     expect(screen.getByText('Call wall')).toBeInTheDocument();
-    STATIC_WIDGETS.forEach((id, i) => expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]));
+    STATIC_WIDGETS.forEach((id, i) =>
+      expect(screen.getByTestId(id).textContent).toBe(staticBefore[i]),
+    );
     expect(screen.queryByText('Retry')).toBeNull(); // NOT the cold-start error screen
     expect(screen.queryByTestId('cold-skeleton')).toBeNull(); // and NOT the cold skeleton
   });

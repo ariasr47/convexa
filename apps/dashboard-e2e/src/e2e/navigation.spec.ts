@@ -112,14 +112,16 @@ test.describe('client-side navigation', () => {
   });
 
   test('the /ticker redirect resolves to the default symbol', async ({ page }) => {
-    // `<Route path="/ticker" element={<Navigate to="/ticker/TSLA" replace />} />` — a redirect route,
-    // which is router behaviour rather than page behaviour and therefore worth pinning across an
-    // upgrade. `replace` also means it must NOT leave an extra history entry.
+    // `<Route path="/ticker" element={<DefaultTickerRedirect />} />` — the effective-default
+    // redirect (index-first-defaults AC-1/AC-2: a stored `default_ticker` pref wins; the UNSET
+    // fallback is SPY). Router behaviour rather than page behaviour and therefore worth pinning
+    // across an upgrade. `replace` also means it must NOT leave an extra history entry. This run is
+    // anonymous with no client-local pref, so the unset SPY fallback is what resolves.
     await page.goto('/');
     await expect(page.getByTestId('landing')).toBeAttached();
 
     await page.goto('/ticker');
-    await expect(page).toHaveURL(/\/ticker\/TSLA$/);
+    await expect(page).toHaveURL(/\/ticker\/SPY$/);
 
     // One Back should return to the landing page, not to the bare /ticker that redirected away.
     await page.goBack();

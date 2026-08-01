@@ -20,7 +20,10 @@
  *                                                    stays full-bleed below the bar (AppShell's <Outlet/>
  *                                                    adds no width container). FLAGGED for a GATE Z
  *                                                    contract/README amendment (see report).
- *      - `/ticker`           → index redirect to `/ticker/TSLA` (bare → default TSLA, AC-Route-3)
+ *      - `/ticker`           → <DefaultTickerRedirect/> — the EFFECTIVE default ticker: the stored
+ *                              `default_ticker` pref wins (server-wins signed-in, client-local
+ *                              anonymous); unset ⇒ SPY (index-first-defaults AC-1/AC-2; supersedes
+ *                              the old static `/ticker/TSLA` redirect of AC-Route-3)
  *      - `/ticker/:symbol`   → <TickerDashboard/>   (relocated, unchanged; URL-addressable symbol)
  *      - `/positions`        → <PositionsPage/>     (relocated PortfolioPanel, standalone wrapper)
  *      - `/scanner`          → <Scanner/>           (static coming-soon)
@@ -38,9 +41,10 @@
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
+import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { AppShell } from '@/shell/AppShell';
 
@@ -77,6 +81,22 @@ function RouteFallback() {
  *  or blanks the persistent shell (AC-Nav-4). */
 const lazyRoute = (el: ReactElement) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 
+/**
+ * Bare `/ticker` → the EFFECTIVE default ticker (index-first-defaults AC-1/AC-2). The stored
+ * `default_ticker` preference wins via useSettings' existing precedence (D7: server-wins signed in,
+ * client-local anonymous); ONLY the unset fallback moved TSLA → SPY (`SETTINGS_DEFAULTS.ticker`).
+ * Waits for the ONE non-blocking who-am-I read (`ready`) behind the quiet route fill so a signed-in
+ * trader's server pref is honored on a cold entry; a who-am-I transport fault resolves `ready` AS
+ * anonymous (AuthContext), so a degraded auth subsystem can never hang this redirect (AC-J1 spirit
+ * intact — deep links `/ticker/:ticker` never pass through here and never wait).
+ */
+function DefaultTickerRedirect() {
+  const { ready } = useAuth();
+  const { effective } = useSettings();
+  if (!ready) return <RouteFallback />;
+  return <Navigate to={`/ticker/${encodeURIComponent(effective.defaultTicker)}`} replace />;
+}
+
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
 export function AppRoutes() {
@@ -92,8 +112,8 @@ export function AppRoutes() {
             top nav shows on `/` too. Full-bleed below the bar (no width container). `/` is NEVER a
             redirect to a ticker. EAGER (the entry experience — no chunk wait on first paint). */}
         <Route index element={<Landing />} />
-        {/* Bare `/ticker` → default TSLA (index redirect; `/` itself is never redirected). */}
-        <Route path="/ticker" element={<Navigate to="/ticker/TSLA" replace />} />
+        {/* Bare `/ticker` → the effective default (pref-wins; unset ⇒ SPY). `/` never redirects. */}
+        <Route path="/ticker" element={<DefaultTickerRedirect />} />
         <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
         <Route path="/positions" element={lazyRoute(<PositionsPage />)} />
         <Route path="/scanner" element={lazyRoute(<Scanner />)} />

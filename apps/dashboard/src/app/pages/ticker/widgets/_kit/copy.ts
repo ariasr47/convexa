@@ -22,6 +22,16 @@ export const OFFLINE_CHIP_TOOLTIP =
   'as of the last data load — only live price, the last trade, spread, net flow and the live ' +
   'gamma flip are paused. Reconnecting automatically; no refresh needed.';
 
+/**
+ * index-first-defaults AC-4 — the one-line single-name honesty caption (SPEC §4, copy EXACT).
+ * `[model-read-carries-its-assumptions]` applied to the whole surface: advisory framing, muted
+ * secondary-text token only — never warn/red semantics, never blocking, never a modal. Renders ONLY
+ * for a symbol confirmed NOT in the scanner universe (AC-5: unknown ⇒ no caption — absent-is-not-none).
+ */
+export const SINGLE_NAME_CAVEAT =
+  'Single-name read — dealer-positioning evidence is strongest on index and high-liquidity ' +
+  'tickers. Treat these levels as context, not a forecast.';
+
 export const LAST_TRADE_TOOLTIP =
   'The last actual trade printed for this ticker, live off the trade tape — use it to reconcile ' +
   "against your broker's last trade (e.g. Webull). This is a readout only: the headline price and " +

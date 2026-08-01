@@ -65,6 +65,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
+import { useUniverseMembership } from './useUniverseMembership';
 import {
   DealerFlowProjection,
   DealerPositioning,
@@ -99,7 +100,9 @@ function StatGridSkeleton() {
 }
 
 export function TickerDashboard() {
-  const { ticker = 'TSLA' } = useParams();
+  // The route always supplies `:ticker`; the fallback is defensive only and tracks the app default
+  // (index-first-defaults AC-1: TSLA → SPY everywhere an unset fallback existed).
+  const { ticker = 'SPY' } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState<TickerBundle | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +126,9 @@ export function TickerDashboard() {
   // page without a reload, and an open made here to `/positions` (AC-70/AC-71).
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
   const persona = usePersona();
+  // index-first-defaults AC-4/AC-5 — silent best-effort universe read; only a CONFIRMED nonmember
+  // shows the single-name caveat ('unknown' never does — absent-is-not-none).
+  const universeMembership = useUniverseMembership(ticker);
 
   /**
    * LEVEL 1 + LEVEL 2 position-context selection, in ONE named helper so the rule reads the way the
@@ -502,6 +508,7 @@ export function TickerDashboard() {
                 dataAgeSeconds: fresh?.data_age_seconds ?? null,
                 refreshing: loading,
               }}
+              singleNameCaveat={universeMembership === 'nonmember'}
               symbol={symbol}
               onSymbolChange={setSymbol}
               onSubmitSymbol={onSubmitSymbol}

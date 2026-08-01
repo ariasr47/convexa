@@ -15,14 +15,15 @@
  * A row is a link to the Ticker page and nothing else (`[no-real-order-path]`, AC-11); customization
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
+import { Jargon } from '@/shared/ui/Jargon';
 import { Alert, Box, Skeleton, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { useState } from 'react';
-import { Jargon } from '@/shared/ui/Jargon';
-import { ScanCardList } from './ScanCard';
-import { ScanTable } from './ScanTable';
-import { ScanToolbar } from './ScanToolbar';
+import { useMemo, useState } from 'react';
+import { partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
+import { ScanCardList } from './ScanCard';
+import { ScanTable, type ScanGroup } from './ScanTable';
+import { ScanToolbar } from './ScanToolbar';
 import { useScan } from './useScan';
 import { ViewEditorDialog } from './ViewEditorDialog';
 
@@ -79,6 +80,27 @@ export function Scanner() {
   const isNarrow = useMediaQuery(useTheme().breakpoints.down('sm'));
   // The sanctioned price flash only fires when the data really is turning over.
   const flashActive = !scan.workerDown && !scan.degraded;
+
+  // index-first-defaults AC-3 — the ZERO-STATE lead group. Only a view that is NOT a saved one
+  // (`source !== 'account'`) is regrouped: a user's saved view renders exactly as saved. The
+  // partition runs AFTER the existing sort, so each group keeps today's internal order (score-desc
+  // by default), and it degenerates to the flat table when no lead member is present.
+  const groups = useMemo<ScanGroup[] | undefined>(() => {
+    if (scan.view == null || scan.view.source === 'account') return undefined;
+    const { lead, rest } = partitionLeadGroup(scan.rows);
+    if (lead.length === 0) return undefined;
+    return [
+      { key: 'lead', label: SCAN_COPY.leadGroup, rows: lead },
+      { key: 'rest', label: null, rows: rest },
+    ];
+  }, [scan.view, scan.rows]);
+  // The rows in final display order (lead-first when grouped) — shared by the table AND the <sm
+  // card list, so the first paint leads with the strong-signal set at every width (card chrome
+  // itself is unchanged).
+  const displayRows = useMemo(
+    () => (groups ? groups.flatMap((g) => g.rows) : scan.rows),
+    [groups, scan.rows],
+  );
 
   return (
     <Box data-testid="scanner-page" sx={{ maxWidth: 1240, mx: 'auto', p: 3 }}>
@@ -138,15 +160,16 @@ export function Scanner() {
           )}
         </Box>
       ) : isNarrow ? (
-        <ScanCardList rows={scan.rows} nowS={scan.nowS} flashActive={flashActive} />
+        <ScanCardList rows={displayRows} nowS={scan.nowS} flashActive={flashActive} />
       ) : (
         <ScanTable
-          rows={scan.rows}
+          rows={displayRows}
           sort={scan.sort}
           density={scan.density}
           nowS={scan.nowS}
           flashActive={flashActive}
           onSort={scan.setSort}
+          groups={groups}
         />
       )}
 
