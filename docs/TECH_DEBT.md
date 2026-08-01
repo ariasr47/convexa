@@ -31,9 +31,9 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~3~~ | ~~e2e asserts no-overflow at **one breakpoint only**~~ — ✅ **FIXED `bb821d6`** (md+lg gated; the md overflow fixed with it) | Test | 2 | 3 | 1 | ~~25~~ |
 | 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
-| 6 | 6 security fast-follows still open | Security | 2 | 4 | 2 | **24** |
+| ~~6~~ | ~~6 security fast-follows~~ — ✅ **5 of 6 CLOSED `b136a77`** (S6h needs no action while Google is off) **+ a HIGH bypass found and closed `41a4c96`** | Security | 2 | 4 | 2 | ~~24~~ |
 | 7 | Conformance check is **not in CI** | Infra | 2 | 3 | 2 | **20** |
-| 8 | `nx format:write` repo-wide hazard undocumented | Docs | 2 | 2 | 1 | **20** |
+| ~~8~~ | ~~`nx format:write` repo-wide hazard undocumented~~ — ✅ **FIXED `e66e7ff`** (CLAUDE.md "Traps" + eslint worktree ignore) | Docs | 2 | 2 | 1 | ~~20~~ |
 | 9 | **Backend has zero automated tests** | Test | 4 | 5 | 4 | **18** ⚠ |
 | 10 | npm dependency drift | Dependency | 2 | 2 | 2 | 16 |
 | 11 | 2 timing-flaky specs on cold runs | Test | 2 | 2 | 2 | 16 |
@@ -192,7 +192,9 @@ untied to the account — that last one is the real product limit, and it is a f
 
 Sized to run **alongside** feature work, not instead of it.
 
-### Phase 0 — one sitting, roughly half a day
+### Phase 0 — ✅ COMPLETE 2026-07-28
+
+_Was: one sitting, roughly half a day._
 Items **1, 2, 4, 8** (now: de-binary , pin the Python deps, and the two doc fixes). Pin the Python deps, de-binary `sources.ts`, correct the CI claim in §8, and write
 the `format:write` hazard into `CLAUDE.md`. All four are config or prose, none touches application
 logic, and together they close the highest-scoring risks in the register.
