@@ -29,7 +29,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~1~~ | ~~`outcomes/sources.ts` **reads as a binary file**~~ — ✅ **FIXED `98c29ae`** | Code | 3 | 5 | 1 | ~~40~~ |
 | ~~2~~ | ~~Python dependencies are **completely unpinned**~~ — ✅ **FIXED `65526ee`** | Dependency | 3 | 5 | 2 | ~~32~~ |
 | ~~3~~ | ~~e2e asserts no-overflow at **one breakpoint only**~~ — ✅ **FIXED `bb821d6`** (md+lg gated; the md overflow fixed with it) | Test | 2 | 3 | 1 | ~~25~~ |
-| 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
+| ~~4~~ | ~~Canon says "CI not wired" — **it is**~~ — ✅ **FIXED `6fda9b7`** | Docs | 2 | 3 | 1 | ~~25~~ |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
 | ~~6~~ | ~~6 security fast-follows~~ — ✅ **ALL 6 RESOLVED** — `b136a77` (CORS/docs/wildcards) + `86adf3b` (S5c ceilings) + `41a4c96` (a HIGH bypass this work surfaced) | Security | 2 | 4 | 2 | ~~24~~ |
 | 7 | Conformance check is **not in CI** | Infra | 2 | 3 | 2 | **20** |
