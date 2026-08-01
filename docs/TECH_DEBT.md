@@ -28,7 +28,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 |---|---|---|---|---|---|---|
 | ~~1~~ | ~~`outcomes/sources.ts` **reads as a binary file**~~ — ✅ **FIXED `98c29ae`** | Code | 3 | 5 | 1 | ~~40~~ |
 | ~~2~~ | ~~Python dependencies are **completely unpinned**~~ — ✅ **FIXED `65526ee`** | Dependency | 3 | 5 | 2 | ~~32~~ |
-| 3 | e2e asserts no-overflow at **one breakpoint only** | Test | 2 | 3 | 1 | **25** |
+| ~~3~~ | ~~e2e asserts no-overflow at **one breakpoint only**~~ — ✅ **FIXED `bb821d6`** (md+lg gated; the md overflow fixed with it) | Test | 2 | 3 | 1 | ~~25~~ |
 | 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
 | 6 | 6 security fast-follows still open | Security | 2 | 4 | 2 | **24** |
@@ -103,15 +103,18 @@ out from a failed boot or, worse, from changed numbers.
 `requirements.in` if you want the comments. **Effort: under an hour.** This is the single best
 risk-per-minute item in the register.
 
-### 3. e2e asserts no-overflow at one breakpoint only — score 25 **[measured]**
+### 3. e2e asserts no-overflow at one breakpoint only — score 25 — ✅ **FIXED 2026-07-28 (`bb821d6`)**
 
 The shipped no-overflow suite checks **393px and nothing else**. Consequence, observed twice during
 `positions-legs`: the `/positions` page has been overflowing at 900px for an unknown length of time
 without anyone noticing, and the new max-loss column had to bounce **twice** because layout headroom
 was never under test.
 
-**Fix:** extend the existing route set to the `md` and `lg` breakpoints. The harness already exists;
-this is adding entries to a list. **Effort: 1–2 hours.**
+**Fix:** ✅ **DONE.** Root cause was ONE element — `CustomizationToolbar`'s control row had
+`flexWrap: { xs: 'wrap', sm: 'nowrap' }`, so wrapping switched off at **600px** while the row needs
+~934px: the whole **600–1199px band** could not wrap and pushed the entry CTA off-screen. Now wraps
+until `lg`. e2e gained md (900) + lg (1280) across all five routes with `/positions` seeded —
+**29/29, up from 19.**
 
 ### 4. The canon states something false about CI — score 25 — ✅ **FIXED 2026-07-28 (`6fda9b7`)**
 
@@ -195,7 +198,8 @@ the `format:write` hazard into `CLAUDE.md`. All four are config or prose, none t
 logic, and together they close the highest-scoring risks in the register.
 
 ### Phase 1 — fold into the next feature's verification pass
-Items **3, 7, 11**. Extend the no-overflow e2e to `md`/`lg`, add the conformance sweep to `ci.yml`, and
+~~Items **3, 7, 11**~~ — **#3 DONE 2026-07-28 (`bb821d6`)**. Remaining: **7** (conformance in CI) and
+**11** (the two cold-run flaky specs). Originally items **3, 7, 11**. Extend the no-overflow e2e to `md`/`lg`, add the conformance sweep to `ci.yml`, and
 chase the two cold-run flaky specs. These are natural companions to any FE feature's QA gate — do them
 when a lane is already in the test harness.
 

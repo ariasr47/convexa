@@ -1000,19 +1000,17 @@ pre-existing `md` page overflow, §8).
   to rebuild what already exists. See `docs/TECH_DEBT.md` #4/#5/#7.
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
-- **`/positions` page overflows horizontally at the `md` boundary (PRE-EXISTING, measured 2026-07-28):**
-  at 900px the page's `scrollWidth` is **965 vs a 900 host**. Measured in a real browser by the
-  `positions-legs` phase-2 lane and confirmed **byte-identical with and without** that feature's new
-  `max_loss` column — so it is **not** attributable to `positions-legs`, which is why that feature's
-  column was ruled to render at **`lg` and above only**. Root cause of the blind spot: the shipped e2e
-  asserts no-overflow **only at 393px**, so the `md` boundary has never been covered. Fix is two parts —
-  the page-level overflow itself, and **extending the no-overflow e2e route set to the `md` breakpoint**
-  so it cannot regress unobserved again. Small, unscheduled; do NOT fold it into `positions-legs`.
-  **Corrected 2026-07-28 (phase 3 A/B against a worktree at `6f0a2ae`, identical seed):** the **table**
-  at `md` was ALREADY 998 vs an 835 host before `positions-legs` phase 3 — the earlier "without the
-  column it fits" reading was wrong. Phase 3 takes it to 1027 (~29px, the wider `Net entry` copy). The
-  **page** figure is the byte-identical one. So the `md` band was broken before this feature arrived,
-  which is why the `lg`-and-above ruling stands on stronger ground than when it was made.
+- **~~`/positions` overflows horizontally at the `md` boundary~~ → ✅ FIXED 2026-07-28 (`bb821d6`).**
+  Root cause was **one element**, found by walking the DOM rather than reading the summary figure:
+  `CustomizationToolbar`'s control row carried `flexWrap: { xs: 'wrap', sm: 'nowrap' }`, so wrapping
+  switched **off at 600px** while the row's content measures ~934px — the **entire 600–1199px band**
+  could not wrap and pushed the `open-entry` CTA off-screen (right edge 958 in a 900 viewport). Every
+  other element the sweep flagged was an ancestor relaying that child's overflow. Now
+  `{ xs: 'wrap', lg: 'nowrap' }` — `lg` is the first breakpoint whose content box (~1137px) fits it.
+  **The blind spot is closed too:** the e2e asserted at 393px and nothing else (one `cy.viewport` call
+  in the whole project). It now gates **md (900) + lg (1280)** across all five trader routes with
+  `/positions` seeded — **29/29, up from 19**. The earlier phase-2/phase-3 measurements are kept in the
+  spec file as the diagnosis trail.
 - **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
   2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
   HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
