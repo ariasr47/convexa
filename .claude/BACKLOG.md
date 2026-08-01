@@ -45,9 +45,16 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
    diff; no new ledger rows (all touched keys already canon). Seams → OPEN_THREADS §7y (the
    hand-mirrored `INDEX_MEGACAP_SYMBOLS` maintenance contract). *(original entry:)* default ticker →
    SPY (pref wins), scanner zero-state leads indexes+megacaps, single-name honesty caption.
-2. **⏭ NEXT — `broker-connect` (X1)** — READ-ONLY real positions via **SnapTrade** (free ≤5 connections; Webull
-   officially partnered 2025-12-16 — Webull-direct is dead, do not build it). Full council. **Fires the
-   deferred system-6 security review** (first real-account connection — the long-standing trigger).
+2. **⏭ NEXT — `broker-connect` (X1)** — READ-ONLY real positions behind the **`PositionsProvider` port**,
+   two candidate adapters the council must weigh (CORRECTED 2026-08-01 after owner question): (a)
+   **Webull-direct via the owner's own Individual OpenAPI keys** (free; 1–2 day individual application;
+   account+positions endpoints + official Python SDK; no intermediary; BYO-credential pattern = byo-ai-key
+   precedent; verify options/multi-leg payload shape at application time) — likely v1 for the edge-first
+   personal phase; (b) **SnapTrade** (free ≤5 connections, then ~$1–2/user/mo; OAuth UX; multi-broker;
+   Webull officially partnered 2025-12-16) — the named adapter for the later external-users phase. The
+   earlier "Webull-direct is dead" verdict applied only to third-party/platform access, NOT self-use.
+   Full council. **Fires the deferred system-6 security review** (first real-account connection — the
+   long-standing trigger; broker App Secret ⇒ `[secret-encrypted-at-rest]`).
    `[no-real-order-path]` narrowing (read OK, no execution) formalizes at its GATE S as planned.
 3. **`vol-normalized-gex` (X2)** — GATE-M-shaped: vol-normalize the GEX read (+ intraday recompute where
    data allows) + a public-ready methodology note. Evidence: raw GEX showed no predictive power in the
