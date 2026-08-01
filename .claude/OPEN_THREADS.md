@@ -1011,6 +1011,21 @@ pre-existing `md` page overflow, §8).
   in the whole project). It now gates **md (900) + lg (1280)** across all five trader routes with
   `/positions` seeded — **29/29, up from 19**. The earlier phase-2/phase-3 measurements are kept in the
   spec file as the diagnosis trail.
+- **⚠ `nx run-many -t lint` FAILS LOCALLY on a machine that has git worktrees** (found 2026-07-28,
+  during the Playwright migration; **pre-existing, verified by stashing every change and re-running**).
+  The `.claude` project's lint walks `.claude/worktrees/**`, which are **gitignored** — so they are
+  absent from a CI checkout and **CI is unaffected**, but locally it reports **157 errors** from
+  worktree copies of `libs/api` etc. The trap is that `nx run-many -t lint` (the exact command CI
+  runs) is therefore unreliable on the owner's machine and looks like a real regression. Fix is an
+  eslint ignore for `.claude/worktrees/**`. Small, unscheduled.
+- **E2E RUNNER: Playwright again as of 2026-07-28** (`8c1c2b8` port + `ff2e849` cutover). Cypress is
+  fully removed — config, specs, `src/support/`, the `@nx/cypress` plugin and all three packages.
+  Ported assertion-for-assertion at **equal coverage** (chromium only, same 29 tests) and proved
+  equivalent three ways: same count, same `--list` inventory, and a **mutation check** that failed
+  exactly one test with the real overflow number. **29/29 in ~4s vs ~16s.** CI gained
+  `npx playwright install --with-deps chromium`. **WebKit/Firefox were deliberately NOT added** —
+  widening coverage is a separate decision, and mixing it into a port makes a translation bug
+  indistinguishable from a real one. That remains the open follow-on if Safari coverage matters.
 - **⚠ TOOLING HAZARD — `nx format:write` is REPO-WIDE and destructive** (found `positions-legs` phase 5,
   2026-07-28): a bare `nx format:write` ran an organize-imports pass over **92 unrelated files** — blog
   HTML, READMEs, auth modules. The lane caught it and reverted everything outside its change set.
