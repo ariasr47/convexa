@@ -27,11 +27,17 @@ jobs:
 
       - run: npm ci
 
+      # Playwright needs its browser binary; chromium only, matching the suite's projects.
+      # (The suite migrated from Cypress on 2026-07-28 — Cypress downloaded its binary via a
+      # postinstall hook, Playwright is explicit about it.)
+      - run: npx playwright install --with-deps chromium
+
       - run: npx nx format:check --base="remotes/origin/main"
       # This workspace is not connected to Nx Cloud, so the Cloud-only steps
       # (start-ci-run, record, fix-ci, the atomized e2e-ci target) are omitted;
-      # plain "e2e" runs the Cypress suite in a single task instead. It gets its
-      # own step so the dev server + browser never compete with the vitest
-      # workers for the runner's CPUs (that contention flaked the unit tests).
+      # plain "e2e" runs the Playwright suite in a single task instead. It keeps
+      # its own step so the dev server + browser never compete with the vitest
+      # workers for the runner's CPUs (that contention flaked the unit tests
+      # under Cypress, and the separation is still worth keeping).
       - run: npx nx run-many -t lint test build typecheck
       - run: npx nx run dashboard-e2e:e2e

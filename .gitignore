@@ -78,3 +78,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Playwright (e2e migrated from Cypress 2026-07-28)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

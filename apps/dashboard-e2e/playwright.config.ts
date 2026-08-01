@@ -1,17 +1,18 @@
-import { defineConfig, devices } from '@playwright/test';
-import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
+import { nxE2EPreset } from '@nx/playwright/preset';
+import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright e2e config for the dashboard.
  *
- * MIGRATION NOTE (2026-07-28): this repo ran Playwright, moved to Cypress on 2026-07-16, and is
- * moving back. During the port BOTH runners are live — `@nx/playwright/plugin` is registered in
- * nx.json under the target name **`e2e-pw`** while `@nx/cypress/plugin` keeps **`e2e`** — so the two
- * suites can be run against each other assertion-for-assertion before either is deleted. The suite
- * being ported exists to catch SILENT regressions, so the risk in a migration is not "does it
- * compile" but "did an assertion quietly get weaker in translation". Side-by-side is how that is
- * caught. At cutover this takes over `e2e` and the Cypress config/plugin/specs are removed.
+ * MIGRATION NOTE (2026-07-28): this repo ran Playwright, moved to Cypress on 2026-07-16, and moved
+ * back. The port ran with BOTH runners live for one commit (`8c1c2b8`) — Playwright under `e2e-pw`,
+ * Cypress keeping `e2e` — so the suites could be checked against each other before either was
+ * deleted. The suite being ported exists to catch SILENT regressions, so the migration risk was
+ * never "does it compile", it was "did an assertion quietly get weaker in translation". Equivalence
+ * was established three ways: same test COUNT (29), same test INVENTORY via `--list`, and a MUTATION
+ * check — reverting the CustomizationToolbar `flexWrap` fix failed exactly one test, `/positions
+ * fits 900px`, with the real number. Cypress was removed only after that.
  *
  * DELIBERATELY EQUAL COVERAGE, not expanded: chromium only, same five routes, same viewports, same
  * two colour schemes. Adding WebKit/Firefox is a separate decision with its own failures to triage —

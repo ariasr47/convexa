@@ -362,9 +362,10 @@ async function assertNoHorizontalOverflow(page: Page) {
     scrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth,
   }));
-  expect(scrollWidth, `scrollWidth ${scrollWidth} must fit innerWidth ${innerWidth}`).toBeLessThanOrEqual(
-    innerWidth,
-  );
+  expect(
+    scrollWidth,
+    `scrollWidth ${scrollWidth} must fit innerWidth ${innerWidth}`,
+  ).toBeLessThanOrEqual(innerWidth);
 }
 
 for (const scheme of ['dark', 'light'] as const) {
