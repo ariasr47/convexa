@@ -1151,36 +1151,54 @@ async def get_ticker_bundle(
                         position_ctx=position_ctx, verbose=debug)
 
 
+# HIGH-2 BYPASS CLOSED (2026-07-28). The throttle was applied to /api/ticker and /api/stream only,
+# but EVERY route below calls the same `_serve` and therefore triggers the same vendor fetches. An
+# attacker enumerating tickers against /api/market-data — or the friendly /SYMBOL route — did exactly
+# the damage the limiter exists to prevent, uncounted. Same helper, same fail-open semantics, checked
+# BEFORE any vendor call. Returning the 429 Response directly bypasses `response_model`, which is
+# what we want: an over-limit reply is not a MarketState.
 @app.get("/api/market-data", response_model=MarketState)
 async def get_market_data(
+    request: Request,
     ticker: str = Query(..., description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
     expirations: str | None = _Expirations,
     dark_pool: bool = _DarkPool,
 ):
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     return (await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool))["market_state"]
 
 
 @app.get("/api/strike-profile")
 async def get_strike_profile(
+    request: Request,
     ticker: str = Query(..., description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
     expirations: str | None = _Expirations,
     dark_pool: bool = _DarkPool,
 ):
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     return (await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool))["strike_profile"]
 
 
 @app.get("/api/signals")
 async def get_signals(
+    request: Request,
     ticker: str = Query(..., description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
     expirations: str | None = _Expirations,
     dark_pool: bool = _DarkPool,
 ):
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     return (await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool))["signals"]
 
 
@@ -1789,6 +1807,7 @@ def _scan_warm_bundle(t: str, min_dte, max_dte, expirations, dark_pool: bool,
 # stubs registered next to the CORS block above restore the invariant this comment used to describe.
 @app.get("/{ticker}")
 async def get_ticker_page(
+    request: Request,
     ticker: str = Path(..., pattern=r"^[A-Za-z]{1,6}$", description="Underlying symbol, e.g. TSLA"),
     min_dte: int | None = _MinDTE,
     max_dte: int | None = _MaxDTE,
@@ -1796,6 +1815,13 @@ async def get_ticker_page(
     dark_pool: bool = _DarkPool,
 ):
     """Same full bundle as /api/ticker/{ticker}, on the friendly /SYMBOL URL."""
+    # HIGH-2 BYPASS: this route is the SAME bundle as /api/ticker/{ticker} and was completely
+    # unthrottled — the cheapest way to enumerate tickers against the vendor bill. It is also the
+    # route every stray crawler hit lands on (`/health`, `/login`, … are all valid 1-6 letter
+    # "tickers"), so it is the one that most needs the guard, not the one that least does.
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
     return await _serve(ticker, min_dte, max_dte, _parse_expirations(expirations), dark_pool)
 
 
