@@ -1,47 +1,65 @@
+# PINNED DELIBERATELY (2026-07-28). Do NOT relax these to bare names.
+#
+# This file is what apps/api/Dockerfile installs, and Railway builds that image. Unpinned, two
+# deploys of the SAME commit could install different library versions, so a breaking major of
+# pydantic/fastapi/numpy could land in production silently, at whatever moment you next deployed.
+# Exact pins make the build reproducible and make every dependency change a visible, reviewable
+# diff instead of a surprise.
+#
+# Versions are the set this app is known to run on (captured from the working .venv, python 3.14).
+#
+# TO BUMP: change the pin, run the app + the conformance sweep, and commit the version change on
+# its own so it is bisectable. To see what is available:
+#   .venv/Scripts/python.exe -m pip list --outdated
+#
+# KNOWN GAP: only these DIRECT dependencies are pinned; their transitive dependencies still float.
+# That closes the major-version surprise, not full reproducibility. A real lockfile (pip-compile or
+# uv, with a hash-pinned requirements.lock) is the complete answer — see docs/TECH_DEBT.md.
+
 # Data Handling & Math
-numpy
-scipy
+numpy==2.5.0
+scipy==1.18.0
 
 # API & Networking
-requests
+requests==2.34.2
 
 # Backend
-fastapi
-uvicorn
-pydantic
+fastapi==0.138.0
+uvicorn==0.49.0
+pydantic==2.13.4
 
 # Utilities
-python-dotenv
-tzdata  # IANA tz database for zoneinfo on Windows (no system tz db)
+python-dotenv==1.2.2
+tzdata==2026.2  # IANA tz database for zoneinfo on Windows (no system tz db)
 
-massive
+massive==2.8.0
 
 # --- user-accounts (auth subpackage; server-side only) ---
 # Password hashing for the credential store. argon2-cffi ships prebuilt wheels (no compiler
 # needed on Windows) and is a current, well-vetted KDF. Used ONLY inside src/auth/ — never logs
 # or returns plaintext (BACKEND_EXECUTION_CONTRACT §4).
-argon2-cffi
+argon2-cffi==25.1.0
 # Google OAuth Authorization-Code flow (server-side, config-gated OFF when creds absent —
 # BACKEND_EXECUTION_CONTRACT §6). Authlib's requests client handles the code→token exchange;
 # the browser never sees the client secret or Google tokens.
-authlib
+authlib==1.7.2
 
 # --- byo-ai-key (per-user encrypted AI key; server-side only) ---
 # Symmetric, decryptable encryption-at-rest for the per-user Anthropic key (Fernet). The key must
 # RECOVER to plaintext server-side to call Anthropic, so this is encryption (NOT hashing like
 # argon2). Keyed by the gitignored env AI_KEY_ENCRYPTION_KEY (absent ⇒ ephemeral per-process key,
 # no crash). Used ONLY inside src/auth/crypto.py — never logs/returns the key (byo-ai-key §4/§7).
-cryptography
+cryptography==49.0.0
 
 # --- persistent-db (Postgres auth store; server-side only) ---
 # psycopg 3, the SYNC Postgres driver (the auth ports are sync -- NO async). [binary] ships a
 # prebuilt wheel so no local C build toolchain is needed on Windows / a slim image. Used ONLY
 # inside src/auth/postgres_store.py (the auth leaf) when ACCOUNT_STORE=postgres; in-memory stays
 # the default. The DB only ever sees ciphertext + the masked last4 (persistent-db ARCHITECTURE 3.4/8).
-psycopg[binary]
+psycopg[binary]==3.3.4
 # The connection pool (psycopg_pool.ConnectionPool) -- one process-wide pool replaces the in-memory
 # adapter module lock (ARCHITECTURE 1.3). No ORM, no migration framework (idempotent bootstrap DDL).
-psycopg-pool
+psycopg-pool==3.3.1
 
 # --- ai-recommendations (in-app LLM proxy; server-side only) ---
 # The Anthropic SDK for the in-app AI recommendation call (src/core/ai_recommendation.py ->
@@ -49,4 +67,4 @@ psycopg-pool
 # silently degrades to the deterministic StubLLMProvider (canned "[STUB]" answers, NOT live model
 # output), so it MUST be installed for real recommendations. The key is read server-side only (the
 # user's own key from the auth store, or the shared ANTHROPIC_API_KEY) and never reaches the browser.
-anthropic
+anthropic==0.115.0
