@@ -31,8 +31,11 @@ const reset = () => {
   __resetOrdersMemory();
 };
 
-const familyOf = (read: ReturnType<typeof computeLedgerRead>, key: string) =>
-  read.families.find((f) => f.key === key)!;
+const familyOf = (read: ReturnType<typeof computeLedgerRead>, key: string) => {
+  const family = read.families.find((f) => f.key === key);
+  if (!family) throw new Error(`ledger read carries no family "${key}"`);
+  return family;
+};
 
 /** The balance identity, asserted as a CI check — NEVER a runtime throw. */
 const expectBalances = (read: ReturnType<typeof computeLedgerRead>) => {

@@ -97,8 +97,8 @@ describe('§8-2 · token-map completeness — no orphan token', () => {
 describe('§8-4 · first-paint theme-color matches the new ink byte-exactly', () => {
   it('the STATIC <meta name="theme-color"> content === palette.dark.background.default', () => {
     const m = indexHtml.match(/<meta name="theme-color" content="([^"]+)"/);
-    expect(m, 'index.html must carry the static theme-color meta').toBeTruthy();
-    expect(m![1]).toBe(palette.dark.background.default);
+    if (!m) throw new Error('index.html must carry the static theme-color meta');
+    expect(m[1]).toBe(palette.dark.background.default);
   });
 });
 

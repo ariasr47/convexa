@@ -274,7 +274,7 @@ export function TickerHeader({
   const reduced = useReducedMotion();
   const conn = connectionChip(live, streamOffline, reduced);
   // Headline price flash on a live NBBO-mid change (live only; inert when static/offline).
-  const priceFlash = useFlashOnChange(isLive ? live!.mid : null, {
+  const priceFlash = useFlashOnChange(isLive && live ? live.mid : null, {
     active: isLive && !streamOffline,
   });
 
@@ -322,7 +322,7 @@ export function TickerHeader({
               component="span"
               sx={[{ fontVariantNumeric: 'tabular-nums' }, flashColorSx(priceFlash)]}
             >
-              {m.ticker} · ${(isLive ? live!.mid : m.price)?.toFixed(2)}
+              {m.ticker} · ${(isLive && live ? live.mid : m.price)?.toFixed(2)}
             </Box>
             <Typography
               component="span"

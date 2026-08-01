@@ -210,7 +210,13 @@ export function useLatencyTrend() {
   const scopes = useMemo(() => ['global', ...Object.keys(data?.per_ticker ?? {})], [data]);
   // If the active scope vanished, the chart shows the kept line + a "dropped" chip (handled in UI).
 
-  const activeSamples = useMemo(() => seriesRef.current.get(scope) ?? [], [scope, version]);
+  const activeSamples = useMemo(() => {
+    // `version` is the ring buffer's append counter: `seriesRef` is a mutable ref, so the memo's
+    // TRUE input key is (scope, version) — reading `version` here makes the dependency genuine
+    // (each append must re-derive; dropping it would freeze the chart on the first poll).
+    void version;
+    return seriesRef.current.get(scope) ?? [];
+  }, [scope, version]);
 
   // ---- Derive chart lines from stored snapshots (no refetch on any switch) -------------------
   const lineKeys = useMemo<string[]>(() => {

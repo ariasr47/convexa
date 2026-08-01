@@ -132,8 +132,9 @@ export function SettingsPage() {
 
   // Show the display name when set; otherwise the email is the single primary line (don't repeat it
   // as a secondary line — that read as duplicated for accounts with no display name).
-  const hasDisplayName = !!auth.user?.display_name?.trim();
-  const primaryName = hasDisplayName ? auth.user!.display_name!.trim() : auth.user?.email || '';
+  const displayName = auth.user?.display_name?.trim();
+  const hasDisplayName = !!displayName;
+  const primaryName = displayName || auth.user?.email || '';
 
   return (
     <Container maxWidth="sm" sx={{ py: 4, maxWidth: 640 }} data-testid="settings-page">

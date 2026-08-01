@@ -238,10 +238,12 @@ describe('MarketContext · five-level null matrix (best-effort-isolated-or-null)
 describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
   it('renders that label’s unavailable state and never the raw token; siblings unaffected', () => {
     // A label family WITH a pinned per-row empty sentence.
+    const baseDirection = tiRead().direction;
+    if (!baseDirection) throw new Error('tiRead fixture must carry a direction read');
     const r1 = renderMc(
       pack({
         trend_momentum: tiRead({
-          direction: { ...tiRead().direction!, label: 'sideways' as never },
+          direction: { ...baseDirection, label: 'sideways' as never },
         }),
       }),
     );

@@ -74,7 +74,7 @@ function StickyCondensed({
   reduced: boolean;
 }) {
   const conn = connectionChip(live, streamOffline, reduced);
-  const price = (isLive ? live!.mid : m.price)?.toFixed(2);
+  const price = (isLive && live ? live.mid : m.price)?.toFixed(2);
   const expLabel =
     selected === null
       ? 'All expirations'

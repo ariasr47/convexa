@@ -268,12 +268,15 @@ describe('legacy gammaflow.* data carried WHOLE into convexa.*', () => {
         .map((p) => p.id)
         .sort(),
     ).toEqual(['a', 'c1']);
-    const a = positions.getPosition('a')!;
+    const a = positions.getPosition('a');
+    if (!a) throw new Error('position "a" missing after migration');
     expect(a.legs[0].entry_price).toBe(7);
     expect(a.legs[0].qty).toBe(3);
     expect(a.status).toBe('open');
-    expect(positions.getPosition('c1')!.status).toBe('closed');
-    expect(positions.getPosition('c1')!.realized_pl_dollar).toBe(600);
+    const c1 = positions.getPosition('c1');
+    if (!c1) throw new Error('position "c1" missing after migration');
+    expect(c1.status).toBe('closed');
+    expect(c1.realized_pl_dollar).toBe(600);
     expect(positions.decisionsForPosition('c1')).toHaveLength(1);
     const c = positions.getCustomization();
     expect(c.activeViewId).toBe('v-named');

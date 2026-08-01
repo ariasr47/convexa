@@ -440,6 +440,9 @@ describe('Ticker · independent nullability (null matrix)', () => {
 // =================================================================================================
 describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => {
   it('when a label CONTRADICTS its scalar, the LABEL wins (iv-rank band, trend direction, term state, gamma regime)', async () => {
+    const tmFix = PACK_FIX.trend_momentum;
+    const dirFix = tmFix?.direction;
+    if (!tmFix || !dirFix) throw new Error('PACK_FIX fixture must carry trend_momentum.direction');
     bundleProvider = () =>
       richBundle(
         {
@@ -449,8 +452,8 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
           market_context: {
             ...PACK_FIX,
             trend_momentum: {
-              ...PACK_FIX.trend_momentum!,
-              direction: { ...PACK_FIX.trend_momentum!.direction!, label: 'downtrend' },
+              ...tmFix,
+              direction: { ...dirFix, label: 'downtrend' },
             },
           },
           // Backwardation scalars (near 60 > far 40, slope −20) but the wire state says CONTANGO.

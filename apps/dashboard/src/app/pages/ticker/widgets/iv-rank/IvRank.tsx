@@ -254,13 +254,14 @@ export function IvRank({ read }: Props) {
       bodyVariant="inset"
     >
       <Box data-testid="iv-rank">
-        {body === 'unavailable' ? (
+        {read == null || body === 'unavailable' ? (
           // Whole-read null / unknown state: the shell + ONE muted line. No sub-content, no footer.
+          // (`read == null` implies body === 'unavailable'; restated so TS narrows the branches.)
           <EmptyLine text={IVR_WHOLE_EMPTY} testid="ivr-whole-empty" />
         ) : body === 'building' ? (
-          <BuildingBody read={read!} />
+          <BuildingBody read={read} />
         ) : (
-          <ComputedBody read={read!} />
+          <ComputedBody read={read} />
         )}
       </Box>
     </Widget>

@@ -578,7 +578,7 @@ export function TickerDashboard() {
                     callWall={m.call_wall}
                     putWall={m.put_wall}
                     gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-                    liveSpot={isLive ? live!.mid : null}
+                    liveSpot={isLive && live ? live.mid : null}
                   />
                 )}
 

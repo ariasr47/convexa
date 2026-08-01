@@ -32,7 +32,9 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
   // Live value-flash on SSE updates — ONLY while genuinely live (frozen on an SSE drop, never a stale
   // flash) `[live-vs-static-isolation]`. VWAP is a static bundle field (no offline, no flash).
   const active = isLive && !streamOffline;
-  const netFlowFlash = useFlashOnChange(isLive ? live!.net_flow : null, { active });
+  // Narrowed live read: non-null exactly when the stream is genuinely live (isLive ⇒ live != null).
+  const netFlow = isLive && live ? live.net_flow : null;
+  const netFlowFlash = useFlashOnChange(netFlow, { active });
   const spreadFlash = useFlashOnChange(isLive ? (live?.spread ?? null) : null, {
     active,
     tone: 'neutral',
@@ -50,10 +52,8 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
       <Box sx={GRID} data-testid="live-tape">
         <StatTile
           label={`Net flow (${live ? Math.round(live.flow_window_s / 60) : 5}m)`}
-          value={
-            isLive ? `${live!.net_flow >= 0 ? '+' : ''}${live!.net_flow.toLocaleString()}` : '—'
-          }
-          accent={!isLive ? 'neutral' : live!.net_flow >= 0 ? 'up' : 'down'}
+          value={netFlow != null ? `${netFlow >= 0 ? '+' : ''}${netFlow.toLocaleString()}` : '—'}
+          accent={netFlow == null ? 'neutral' : netFlow >= 0 ? 'up' : 'down'}
           offline={streamOffline}
           flash={netFlowFlash}
           info="Aggressive buys minus sells over the last few minutes, from the live trade tape. Positive = buyers lifting the ask; negative = sellers hitting the bid."

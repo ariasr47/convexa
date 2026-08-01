@@ -376,7 +376,8 @@ describe('positions · end-to-end flow (centerpiece)', () => {
       const pending = allPositions().find((p) => p.limit_price === 4);
       expect(pending?.status).toBe('open');
     });
-    const filled = allPositions().find((p) => p.limit_price === 4)!;
+    const filled = allPositions().find((p) => p.limit_price === 4);
+    if (!filled) throw new Error('expected the $4 limit position to exist after the fill');
     expect(filled.legs[0].entry_price).toBe(4); // filled AT the limit, never better
     expect(decisionsForPosition(filled.id).some((d) => d.event_type === 'limit_filled')).toBe(true);
 
@@ -597,7 +598,8 @@ describe('positions · failure isolation', () => {
     // Cancel it.
     await user.click(within(screen.getByTestId('pending-affordance')).getByText('Cancel'));
     await waitFor(() => expect(allPositions().some((p) => p.status === 'cancelled')).toBe(true));
-    const cancelled = allPositions().find((p) => p.status === 'cancelled')!;
+    const cancelled = allPositions().find((p) => p.status === 'cancelled');
+    if (!cancelled) throw new Error('expected a cancelled position to exist');
     expect(decisionsForPosition(cancelled.id).some((d) => d.event_type === 'limit_cancelled')).toBe(
       true,
     );

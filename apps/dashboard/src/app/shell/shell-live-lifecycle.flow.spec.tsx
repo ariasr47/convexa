@@ -191,7 +191,8 @@ describe('live-lifecycle (centerpiece flow)', () => {
     // own single TSLA stream, but the Ticker-page instance must be closed — and there is never more
     // than one open at a time for the symbol.)
     expect(openFor('TSLA').length).toBeLessThanOrEqual(1);
-    const firstTickerEs = esLog.find((es) => es.symbol === 'TSLA')!;
+    const firstTickerEs = esLog.find((es) => es.symbol === 'TSLA');
+    if (!firstTickerEs) throw new Error('expected a TSLA EventSource to have been opened');
     expect(firstTickerEs.closed).toBe(true);
 
     // --- back to /ticker → a FRESH feed reopens (cold-start path) ---

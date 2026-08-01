@@ -120,9 +120,9 @@ describe('type-floor source scan — no chip/label fontSize below 11px', () => {
   it('the exemption list is LIVE — every exempted file still exists and still carries a sub-floor size', () => {
     for (const file of EXEMPT_CHART_TICKS) {
       const entry = Object.entries(SOURCES).find(([k]) => appPath(k) === file);
-      expect(entry, `${file} exempted but missing — remove the entry`).toBeTruthy();
+      if (!entry) throw new Error(`${file} exempted but missing — remove the entry`);
       expect(
-        floorViolations({ [`/src/app/${file}`]: entry![1] }, []).length,
+        floorViolations({ [`/src/app/${file}`]: entry[1] }, []).length,
         `${file} exempted but carries no sub-floor fontSize anymore — remove the entry`,
       ).toBeGreaterThan(0);
     }

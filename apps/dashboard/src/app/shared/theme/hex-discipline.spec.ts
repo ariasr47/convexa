@@ -93,8 +93,9 @@ describe('[theme-token-discipline] · zero hardcoded hex outside shared/theme', 
   it('the exemption list is live — every entry still exists AND still carries hex (stale entries must be removed)', () => {
     for (const [file, why] of Object.entries(EXEMPT)) {
       const entry = Object.entries(SOURCES).find(([k]) => appPath(k) === file);
-      expect(entry, `${file} is exempted (“${why}”) but no longer exists — remove the entry`).toBeTruthy();
-      const hasHex = (stripComments(entry![1]).match(HEX) ?? []).length > 0;
+      if (!entry)
+        throw new Error(`${file} is exempted (“${why}”) but no longer exists — remove the entry`);
+      const hasHex = (stripComments(entry[1]).match(HEX) ?? []).length > 0;
       expect(hasHex, `${file} is exempted but carries no hex anymore — remove the entry`).toBe(true);
     }
   });
