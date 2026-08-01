@@ -1004,6 +1004,69 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   visibly; not blocking.
 
 ### C. Strategic / blocked (high value, gated on a decision or heavy lift)
+
+- **HORIZONTAL SCALE — get the caches out of the process** *(owner-raised 2026-07-28; **owner flagged
+  STAGE 3 as the one they were thinking about**)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  Captured from a design conversation so it can be picked up cold. The owner's question was: *"Can't we
+  just save the results of the Massive calls? How will my app ever be scalable?"*
+
+  **First, a correction that changes the framing.** The security review and my own earlier summary
+  described unthrottled vendor routes as a risk to "the Massive bill". `OPEN_THREADS` §1 says Massive is
+  **~$200-400/mo FLAT per asset class**, not metered per call. So the real exposure from abuse is
+  **exhausting the vendor's rate limit** — which breaks the app for real users while it happens — not a
+  runaway invoice. Fix it for availability, not for cost.
+
+  **WHAT ALREADY EXISTS (four layers, verified in code 2026-07-28):** `_cache` — the finished bundle,
+  keyed `(ticker, min_dte, max_dte)`, **60s TTL, in-memory** · `_snapshot_cache` — full chain per ticker,
+  in-memory · `chain_store` — the chain a live SSE session already fetched, reused by cold page loads
+  (this is what took a cold load **7.8s -> 1.2s**), **process-local by its own docstring** · `_inflight` —
+  request coalescing, so 50 simultaneous SPY requests cost **one** vendor call · `ScanStore` — the
+  scanner's rows, **disk SQLite (default) or Postgres, i.e. the ONLY cross-process persistent one.**
+
+  **THE ACTUAL BLOCKER — and it is not the vendor.** Every layer above except `ScanStore` lives inside
+  ONE Python process. With one Railway container that is fine. With two: each has its own cold cache so
+  vendor calls **double**, two users get **different answers** depending which container they hit, and
+  every deploy throws all of it away. **The app cannot scale horizontally today** because the memory is
+  in the wrong place, not because Massive is slow.
+
+  **Separate the three problems people conflate as "scale":** (1) *vendor pressure* — how often you ask
+  Massive; caching solves it, largely DONE. (2) *latency* — how fast one user gets an answer; caching
+  solves it, largely DONE. (3) *concurrency* — how many users at once; **caching does not touch this.**
+
+  **THE STAGES, in the order to actually do them:**
+  - **Stage 1 — move the bundle cache out of the process** (Redis, or a Postgres table). One vendor call
+    then warms EVERY replica, restarts stop going cold, answers become consistent across containers.
+    The single unlock, and smaller than it sounds: `_cache` is already cleanly keyed and coalescing
+    already exists. *Value H · Effort M.*
+  - **Stage 2 — precompute the popular set.** Generalise the pattern already shipped twice: the scanner
+    sweep worker computes off the request path into a store. Keep the top ~50 tickers permanently warm so
+    a user request is a STORE READ, not a vendor call. **Already blessed by canon** — the narrowed
+    "single-ticker, on-demand" decision says the request path computes one ticker while multi-ticker
+    compute happens in a bounded off-request worker writing a side-store (`OPEN_THREADS` §9).
+    *Value H · Effort M.*
+  - **Stage 3 — SSE fan-out. <- THE OWNER'S INTEREST.** Each live ticker holds a Massive websocket **per
+    process**, so three replicas = three sockets for the same symbol. Pattern: ONE subscriber process per
+    ticker publishing to Redis pub/sub, web processes merely relay. This is also where the still-open
+    **S5c SSE connection ceiling** lands (`docs/TECH_DEBT.md`; the last genuine MEDIUM from the security
+    review, and the one that can take the CURRENT single container down). *Value H · Effort L.*
+  - **Stage 4 — leftovers.** Per-admin AI metering counters are process-local (already noted, §7j).
+    Positions/saved views are still browser-local and unsynced (§7c).
+
+  **THE CONSTRAINT THAT MUST SURVIVE ALL OF IT:** do not buy scale with staleness. This is a trading app —
+  a ten-minute-old gamma profile presented as current is **worse than a slow one**. The shipped design
+  already takes this seriously (stale flags, freshness metadata, `[live-vs-static-isolation]`). A shared
+  cache must store **data plus its age**, and the UI must keep telling the truth about it.
+
+  **Decision impact:** none today — it improves no trading decision at one user. It is a *capacity*
+  item, and the honest trigger is **a second replica or genuine concurrent users**. Doing Stage 1 now
+  would be premature; doing Stage 3 now is premature EXCEPT for its safety half (the S5c ceiling), which
+  protects the single container that exists. **Recommended order if picked up: S5c ceiling first (small,
+  protects today), then Stage 1 (the unlock), then 2, then the rest of 3.**
+  **Invariant watch:** `additive-keeps-score-byte-identical` (a shared cache must not become a second
+  transform — `compute_ticker` stays the sole one, same `market_data` in => byte-identical bundle out) ·
+  `live-vs-static-isolation` · `best-effort-isolated-or-null` (a cache miss/outage degrades to a vendor
+  fetch, never an error).
 - **`tradeable-rec-inputs` — the AI cannot fill its own output schema (24-item program)** —
   <!-- atlas: theme=trust-the-signal horizon=next -->
   `LOGGED 2026-07-27 (owner-supplied downstream-AI analysis + conductor viability triage)`. **Source:** a
