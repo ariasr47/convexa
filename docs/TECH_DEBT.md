@@ -13,8 +13,12 @@ markers** in application source, **zero skipped tests**, no committed build outp
 green, and CI runs lint + test + build + typecheck + e2e on every push and PR. Most of what follows is
 **config and process debt, not code rot.**
 
-The two most valuable items are also among the cheapest: unpinned Python dependencies, and a file that
-is invisible to `grep`.
+The two most valuable items are also among the cheapest: a source file that **git renders as binary, so
+changes to it cannot be code-reviewed**, and completely unpinned Python dependencies.
+
+**Re-ranked 2026-07-28.** The `sources.ts` item was first filed as a grep nuisance scoring 30. On closer
+inspection the grep half was overstated and the `git diff` half was missed entirely — it is now #1 at 40.
+The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 
 ---
 
@@ -22,8 +26,8 @@ is invisible to `grep`.
 
 | # | Item | Type | I | R | E | Score |
 |---|---|---|---|---|---|---|
-| 1 | Python dependencies are **completely unpinned** | Dependency | 3 | 5 | 2 | **32** |
-| 2 | `outcomes/sources.ts` is **invisible to ripgrep** | Code | 2 | 4 | 1 | **30** |
+| 1 | `outcomes/sources.ts` **reads as a binary file** — unreviewable in `git diff` | Code | 3 | 5 | 1 | **40** |
+| 2 | Python dependencies are **completely unpinned** | Dependency | 3 | 5 | 2 | **32** |
 | 3 | e2e asserts no-overflow at **one breakpoint only** | Test | 2 | 3 | 1 | **25** |
 | 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
@@ -50,7 +54,7 @@ is invisible to `grep`.
 
 ## The items that matter
 
-### 1. Python dependencies are completely unpinned — score 32 **[measured]**
+### 2. Python dependencies are completely unpinned — score 32 **[measured]**
 
 **All 15** entries in `apps/api/requirements.txt` carry **no version constraint whatsoever** — `numpy`,
 `scipy`, `fastapi`, `uvicorn`, `pydantic`, `anthropic`, `psycopg`, `cryptography`, `argon2-cffi`,
@@ -66,18 +70,38 @@ out from a failed boot or, worse, from changed numbers.
 `requirements.in` if you want the comments. **Effort: under an hour.** This is the single best
 risk-per-minute item in the register.
 
-### 2. `outcomes/sources.ts` is invisible to ripgrep — score 30 **[measured]**
+### 1. `outcomes/sources.ts` reads as a BINARY file — score 40 **[measured]**
 
-The file contains **literal NUL bytes** in `decisionIdentity`'s composite key template
-(`k:${trade_id}\x00${event_type}\x00${clock_time}`). `git show HEAD` confirms it is pre-existing.
+**Corrected 2026-07-28 after looking harder.** My first write-up said grep "skips" the file. That
+overstated one half and missed the more serious half. What is actually true, all verified:
 
-**Why it matters.** `grep`/`ripgrep` treat the file as **binary and skip it**. This delivery system's
-guards are largely greps — boundary scans, negative-space scans, "no raw hex", "no `disabled` attribute"
-sweeps. **A guard that cannot see a file is not a guard**, and this file sits inside the trading domain.
-Nobody has been told their sweep was incomplete.
+Two **literal NUL bytes** sit at offsets 6347 and 6363 — line 130, inside `decisionIdentity`'s composite
+key: `` `k:${d.trade_id}<NUL>${d.event_type}<NUL>${d.clock_time}` ``. Pre-existing (`git show HEAD`
+confirms). Every tool that auto-detects binary content mis-classifies this 223-line TypeScript file:
 
-**Fix:** replace the raw NULs with an escaped separator (`\0` in source, or a printable delimiter).
-**Effort: minutes.**
+| Tool | Behaviour |
+|---|---|
+| `grep -rn` (the usual sweep form) | **Matches, but refuses to print the lines** — `Binary file … matches`, no line number, no content |
+| `grep -c` / `grep -l` | Work normally |
+| `grep -a` | Works fully — but only if someone thought to pass it |
+| ripgrep-backed agent search | Returns `binary file matches (found NUL byte around offset 6347)` — a hit with **no content** |
+| **`git diff`** | **`Binary files a/… and b/… differ`** — **no line diff at all** |
+
+**The `git diff` row is the real cost, and it is not hypothetical.** Commit `6260d92` — the
+`positions-legs` **cutover**, the highest-risk change in that feature — modified this file, and that
+modification is **unreviewable**: the diff renders as "binary files differ". The same will apply to every
+future PR touching it on GitHub. A module that reads the user's durable blobs and reports per-source
+success is precisely the one you most want a line diff for.
+
+**The grep half is real but milder than I first claimed.** You do get a signal (`Binary file … matches`),
+so a sweep is not silently empty. The genuine hazards are (a) losing line numbers and content, so a sweep
+cannot say *where*; (b) tooling that parses grep output positionally — `| cut -d: -f1`, a script pulling
+line numbers — silently drops the non-conforming binary notice; (c) an agent-driven audit gets a match
+with no content and may reason on it as though empty.
+
+**Fix:** replace the two raw NULs with a printable delimiter, or with the two-character escape `\` + `0`
+so the source stays text. **Effort: minutes.** Verify by confirming `git diff` renders a normal line diff
+afterwards — that is the acceptance test, not the grep behaviour.
 
 ### 3. e2e asserts no-overflow at one breakpoint only — score 25 **[measured]**
 
@@ -101,8 +125,8 @@ recurrence — a promoted rule contradicted by reality gets demoted, not left st
 that under-describes your safety net invites someone to rebuild it. Note also that **CI runs
 `typecheck`**, so the type error that failed GATE Q this week would have been caught on push anyway.
 
-**Fix:** correct §8 to say CI exists and name what is genuinely missing — **conformance** (#7) and
-**CD** (#5). **Effort: minutes.**
+**Fix:** ✅ **DONE 2026-07-28** — §8 rewritten to say CI exists and to name what is genuinely missing:
+**conformance-in-CI** (#7) and **CD** (#5).
 
 ### 5. No CD — the live site is 29 days behind — score 24 **[measured]**
 
@@ -166,7 +190,7 @@ untied to the account — that last one is the real product limit, and it is a f
 Sized to run **alongside** feature work, not instead of it.
 
 ### Phase 0 — one sitting, roughly half a day
-Items **1, 2, 4, 8**. Pin the Python deps, de-binary `sources.ts`, correct the CI claim in §8, and write
+Items **1, 2, 4, 8** (now: de-binary , pin the Python deps, and the two doc fixes). Pin the Python deps, de-binary `sources.ts`, correct the CI claim in §8, and write
 the `format:write` hazard into `CLAUDE.md`. All four are config or prose, none touches application
 logic, and together they close the highest-scoring risks in the register.
 
