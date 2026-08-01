@@ -39,14 +39,14 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~22~~ | ~~`react-router-dom` open-redirect → XSS~~ — ✅ **FIXED `1d67257`** (v7.18.2 + a new client-side navigation guard; the remaining audit-high is RSC-mode only and does not apply — see the commit) | Security | 3 | 4 | 3 | ~~21~~ |
 | 11 | 2 timing-flaky specs on cold runs — *carried; NOT reproduced in ~10 full runs on 2026-07-28* | Test | 2 | 2 | 2 | 16 |
 | 12 | Conformance runner is cookieless | Security | 2 | 3 | 3 | 15 |
-| 13 | Orphaned dev servers hold ports | Infra | 2 | 1 | 1 | 15 |
+| ~~13~~ | ~~Orphaned dev servers hold ports~~ — ✅ **FIXED `e9cbc67`** (`npm run ports:free` + a CLAUDE.md trap) | Infra | 2 | 1 | 1 | ~~15~~ |
 | 14 | No auth schema-migration path | Architecture | 3 | 4 | 4 | 14 |
 | 15 | 27 accepted lint warnings | Code | 1 | 2 | 2 | 12 |
 | 16 | >500kB JS chunk, no code splitting | Code | 2 | 2 | 3 | 12 |
 | 17 | AI metering counters are process-local | Architecture | 1 | 3 | 3 | 12 |
 | 18 | Four modules over 1200 LOC | Code | 3 | 2 | 4 | 10 |
-| 19 | Stale brand refs in `apps/api/README.md` | Docs | 1 | 1 | 1 | 10 |
-| 20 | Five copy constants defined but unwired | Code | 1 | 1 | 2 | 8 |
+| ~~19~~ | ~~Stale brand refs in `apps/api/README.md`~~ — ✅ **FIXED `3a4ba61`** (also corrected the stale "separate repo" claim + run paths) | Docs | 1 | 1 | 1 | ~~10~~ |
+| ~~20~~ | ~~Five copy constants defined but unwired~~ — ✅ **RESOLVED `0183136`** (kept deliberately unwired per the shipped SPEC; the prose rule is now a standing structural test, `positions/future-copy.spec.ts`) | Code | 1 | 1 | 2 | ~~8~~ |
 | 21 | Durable stores are browser-local only | Architecture | 3 | 4 | 5 | 7 |
 
 ⚠ ~~**#9 is mis-ranked by the formula**~~ — it was, and it was done anyway (`f7f6996`), ahead of higher-scoring items, precisely because the formula under-ranked it.
