@@ -15,9 +15,10 @@ selectable expiration window (stable swing levels, not 0DTE noise) and the live 
 layer. The computed bundle is also designed to feed a **downstream AI** that produces
 risk-first trade recommendations; the dashboard is the human view of the same data.
 
-- Backend: FastAPI (`main.py`, `src/`), data via the Massive (Polygon-style) API.
-- Frontend: React + Vite + MUI (separate repo, `gammaflow-web`), consumes the API over a
-  `/api` proxy + SSE.
+- Backend: FastAPI (`main.py`, `src/`) — this app, `apps/api` in the Nx monorepo; data via
+  the Massive (Polygon-style) API.
+- Frontend: React + Vite + MUI (`apps/dashboard` in the same monorepo), consumes the API
+  over a `/api` proxy + SSE.
 - Field-level reference for the AI: [`market_state_glossary.md`](market_state_glossary.md).
 - AI hand-off contract: [`prompts/strategy_prompt.md`](prompts/strategy_prompt.md).
 
@@ -183,10 +184,10 @@ OI columns, and `ai_eval` / fingerprint.
 ## Run
 
 ```bash
-# backend (from repo root)
-.venv/Scripts/python.exe main.py        # uvicorn on 127.0.0.1:8000
+# backend (from the workspace root)
+npx nx serve api                         # uvicorn on 127.0.0.1:8000
 
-# frontend (gammaflow-web)
+# frontend
 npx nx serve dashboard                   # Vite on localhost:4200, proxies /api -> :8000
 ```
 
