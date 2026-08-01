@@ -30,7 +30,35 @@
 
 ---
 
-## Last GATE I — 2026-07-22 (OWNER DECISION Q4(a): the Curvature Terminal redesign — 4-stage program)
+## Last GATE I — 2026-08-01 (OWNER ROADMAP ADOPTION: edge-first — `docs/ROADMAP_2026-08.md` is the standing order)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+**Owner-directed, off the deep-research cycle** (evidence: `docs/MARKET_REALITY_REPORT_2026-08-01.html`,
+4 sourced research tracks + canon; frame locked by owner Q&A 2026-08-01: *my edge first, business later* ·
+10–25 h/wk · owner will be the public face · minimize spend, ~$1k/mo ceiling). **The roadmap doc is the
+standing order for sequencing** — this entry records the queue + what it displaces; the doc carries the
+rationale, budget variants, and the pre-committed kill/continue gates.
+**Strategy in one line:** prove the edge on the owner's own trading first (the outcome ledger is the
+judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-writing** — never before.
+**Queue (in order):**
+1. **⏭ NEXT — `index-first-defaults` (N3)** — small GATE-V-shaped FE feature: default ticker → SPY,
+   scanner default view pinned to indexes+liquid megacaps, a one-line honesty caveat on thin single
+   names. Evidence: the documented GEX edge is index-first; single-name is the weak case. BRIEF at
+   `.claude/contracts/index-first-defaults/BRIEF.md`.
+2. **`broker-connect` (X1)** — READ-ONLY real positions via **SnapTrade** (free ≤5 connections; Webull
+   officially partnered 2025-12-16 — Webull-direct is dead, do not build it). Full council. **Fires the
+   deferred system-6 security review** (first real-account connection — the long-standing trigger).
+   `[no-real-order-path]` narrowing (read OK, no execution) formalizes at its GATE S as planned.
+3. **`vol-normalized-gex` (X2)** — GATE-M-shaped: vol-normalize the GEX read (+ intraday recompute where
+   data allows) + a public-ready methodology note. Evidence: raw GEX showed no predictive power in the
+   independent backtest; vol-normalized did.
+4. **`alerts` v1 (X3)** — level-touch / tier-change / score-gate, simple delivery.
+5. **Ledger checkpoint (X4)** at N≥20 closed outcomes → first deliberate score change only if justified,
+   under `[score-change-is-deliberate-and-measured]`.
+**Owner habits (not pipeline features, tracked in the roadmap):** N1 deploy (runbook, `ALLOWED_ORIGINS`) ·
+N2 mirror every real trade · N4 daily public read on X (by hand; automation is L1).
+**Displaced (not dropped):** `signed-out-refused-affordances` — it only matters when strangers use the
+app; revisit at L4 (first external users). **Explicitly cut:** 0DTE arms race, breadth chasing, direct
+broker APIs, real-time quote display to others, real order execution (invariant stands).
 <!-- atlas: theme=trust-the-signal horizon=now -->
 **Chosen → the redesign program (Q4 decided (a), full direction)** — owner-directed off the decision
 queue, not a harvest cull. Evidence chain: `DESIGN_REVIEW_2026-07-22.md` (structural) →
@@ -507,7 +535,10 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 ## Pool
 
 ### A. Queued / in-mind (decided to build next)
-- **⏭ NEXT — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
+> **⏭ The queue is owned by the 2026-08-01 roadmap adoption above** (`docs/ROADMAP_2026-08.md`):
+> `index-first-defaults` → `broker-connect` (SnapTrade) → `vol-normalized-gex` → `alerts` → ledger
+> checkpoint. Items below remain in the pool but are displaced by it.
+- **DISPLACED to L4 (was ⏭ NEXT) — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
   `positions-legs` manual-verification recon). **Small, FE-only, GATE-V shaped.**
   **The defect:** on `/positions` while signed out, `+ Open simulated position` renders as a **normal,
   fully-enabled CTA** — not greyed, focusable, no tooltip. Clicking it calls

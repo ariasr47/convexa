@@ -1,0 +1,336 @@
+<title>Convexa — Market Reality Report</title>
+<style>
+  :root{
+    --bg:#f4f3ef; --surface:#ffffff; --surface2:#faf9f6; --ink:#23262c; --muted:#686d77;
+    --line:#e2dfd7; --amber:#a86410; --amber-ink:#7d4a0a; --amber-soft:#f6e9d4;
+    --good:#1e7a4d; --warn:#a35f14; --bad:#b3403f; --absent:#9aa0ab;
+    --chip-good-bg:#e4f2ea; --chip-warn-bg:#f8ecdc; --chip-bad-bg:#f9e6e5; --chip-absent-bg:#eeeef0;
+    --mono:"Cascadia Code","Consolas","SF Mono",ui-monospace,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){ :root{
+    --bg:#14161c; --surface:#1d2028; --surface2:#181b22; --ink:#e9e7e1; --muted:#9aa0ab;
+    --line:#2d313a; --amber:#e8a33d; --amber-ink:#f0b968; --amber-soft:#2c2415;
+    --good:#57b98a; --warn:#e09a4a; --bad:#e07a78; --absent:#767c87;
+    --chip-good-bg:#1b2e25; --chip-warn-bg:#302517; --chip-bad-bg:#331f1f; --chip-absent-bg:#232630;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#14161c; --surface:#1d2028; --surface2:#181b22; --ink:#e9e7e1; --muted:#9aa0ab;
+    --line:#2d313a; --amber:#e8a33d; --amber-ink:#f0b968; --amber-soft:#2c2415;
+    --good:#57b98a; --warn:#e09a4a; --bad:#e07a78; --absent:#767c87;
+    --chip-good-bg:#1b2e25; --chip-warn-bg:#302517; --chip-bad-bg:#331f1f; --chip-absent-bg:#232630;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f3ef; --surface:#ffffff; --surface2:#faf9f6; --ink:#23262c; --muted:#686d77;
+    --line:#e2dfd7; --amber:#a86410; --amber-ink:#7d4a0a; --amber-soft:#f6e9d4;
+    --good:#1e7a4d; --warn:#a35f14; --bad:#b3403f; --absent:#9aa0ab;
+    --chip-good-bg:#e4f2ea; --chip-warn-bg:#f8ecdc; --chip-bad-bg:#f9e6e5; --chip-absent-bg:#eeeef0;
+  }
+  html{scroll-behavior:smooth} @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;margin:0;
+       font-size:16px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 22px 90px}
+  a{color:var(--amber);text-decoration:none;border-bottom:1px solid transparent}
+  a:hover,a:focus-visible{border-bottom-color:var(--amber)}
+  a:focus-visible{outline:2px solid var(--amber);outline-offset:2px;border-radius:2px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+           color:var(--amber);margin:0 0 6px}
+  h1{font-size:clamp(30px,5vw,44px);line-height:1.08;letter-spacing:-.02em;margin:4px 0 10px;text-wrap:balance}
+  h2{font-size:24px;letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance}
+  h3{font-size:17px;margin:22px 0 8px}
+  p{margin:10px 0;max-width:76ch}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+          padding:26px 28px;margin:22px 0}
+  .lede{font-size:18px;color:var(--muted);max-width:70ch}
+  .meta{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-top:14px}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 4px}
+  .toc a{font-family:var(--mono);font-size:12px;padding:6px 12px;border:1px solid var(--line);
+         border-radius:999px;color:var(--ink);background:var(--surface)}
+  .toc a:hover{border-color:var(--amber)}
+  .verdict{border-left:4px solid var(--amber);background:var(--surface)}
+  .verdict-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:16px}
+  .vcard{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+  .vcard .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+              display:inline-block;padding:3px 9px;border-radius:4px;margin-bottom:8px}
+  .tag.yes{background:var(--chip-good-bg);color:var(--good)}
+  .tag.cond{background:var(--chip-warn-bg);color:var(--warn)}
+  .tag.no{background:var(--chip-bad-bg);color:var(--bad)}
+  .vcard p{font-size:14.5px;margin:6px 0 0;color:var(--ink)}
+  .vcard strong{display:block;font-size:15.5px;margin-bottom:2px}
+  table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+  .tablewrap{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+     text-align:left;color:var(--muted);background:var(--surface2);padding:10px 12px;
+     border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.name{font-weight:600;white-space:nowrap}
+  td.price{font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .chip{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px;white-space:nowrap;display:inline-block}
+  .c-strong{background:var(--chip-good-bg);color:var(--good)}
+  .c-adeq{background:var(--chip-warn-bg);color:var(--warn)}
+  .c-weak{background:var(--chip-bad-bg);color:var(--bad)}
+  .c-abs{background:var(--chip-absent-bg);color:var(--absent)}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 2px;font-size:12.5px;color:var(--muted)}
+  ul{padding-left:22px;margin:8px 0} li{margin:7px 0;max-width:78ch}
+  ol{padding-left:24px;margin:8px 0} ol li{margin:12px 0;max-width:78ch}
+  .quote{font-size:14.5px;border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:12px 0;
+         color:var(--muted);font-style:italic;max-width:72ch}
+  .quote b{color:var(--ink);font-style:normal}
+  .callout{background:var(--amber-soft);border:1px solid var(--line);border-radius:8px;
+           padding:14px 18px;margin:16px 0;font-size:15px;max-width:none}
+  .callout .eyebrow{margin-bottom:4px}
+  .cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:0 34px}
+  .footnote{font-size:13px;color:var(--muted);max-width:none}
+  .srcs{font-size:13px;color:var(--muted);columns:2;column-gap:34px}
+  .srcs li{break-inside:avoid;margin:5px 0}
+  @media (max-width:700px){.srcs{columns:1}}
+  .kicker{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .num{font-family:var(--mono);color:var(--amber);font-weight:600}
+  .divider{border:none;border-top:1px solid var(--line);margin:22px 0}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Convexa · Deep Research · 2026-08-01</p>
+  <h1>Market Reality Report</h1>
+  <p class="lede">A comparison of Convexa against the dealer-positioning and options-analytics market, the evidence on whether the underlying signal is real, the economics of running it as a product — and an honest answer to "is this worth developing?"</p>
+  <p class="meta">Method: 4 parallel research tracks (direct GEX competitors · flow/AI platforms &amp; the free floor · academic + practitioner evidence &amp; user sentiment · adjacent tools + data/broker economics) · ~120 sourced claims · pricing fetched from live vendor pages on 2026-08-01. Internal picture from the project's own canon. Pricing in this niche changes fast — treat this as a snapshot.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#verdict">Verdict</a><a href="#landscape">The market</a><a href="#matrix">Feature comparison</a>
+    <a href="#truth">The honest truth</a><a href="#pros">What you have</a><a href="#gaps">The gaps</a>
+    <a href="#economics">Economics</a><a href="#focus">Immediate focus</a><a href="#plan">Best results</a><a href="#sources">Sources</a>
+  </nav>
+</header>
+
+<section id="verdict" class="verdict">
+  <p class="eyebrow">The answer first</p>
+  <h2>Is it worth developing?</h2>
+  <p><strong>Yes — but not for the reason you might hope, and not on the current path.</strong> The verdict splits three ways:</p>
+  <div class="verdict-grid">
+    <div class="vcard"><span class="tag yes">Yes — already</span>
+      <strong>As your own trading instrument &amp; engineering asset</strong>
+      <p>It already passes its own bar ("which trading decision does this improve?"). Nothing on the market combines your live single-view read with a decision ledger. The codebase is also an exceptional portfolio piece — the delivery discipline behind it is rarer than the product.</p></div>
+    <div class="vcard"><span class="tag cond">Conditional</span>
+      <strong>As an indie business (~$1–5k MRR class)</strong>
+      <p>Viable — Gexbot, Volland and OptionStrat prove solo founders live here — but only if you now spend most effort on distribution, fix a data-licensing landmine before your first paying user, and reposition around the two things nobody does: freshness and a public track record.</p></div>
+    <div class="vcard"><span class="tag no">Realistically no</span>
+      <strong>As a venture-scale company</strong>
+      <p>The niche's only public P&amp;L (BlackBoxStocks: $2.57M revenue, shrinking 17%/yr at ~$100/mo) shows the ceiling of the mid-band. Customers structurally churn — 70–90% of new retail traders wash out within a year. This is a lifestyle-business market with one meme-powered outlier.</p></div>
+  </div>
+  <div class="callout">
+    <p class="eyebrow">The single most important sentence in this report</p>
+    Your bottleneck is not the product. Convexa has more shipped, more honest, and better-engineered surface than several tools charging $99/mo — and <b>zero users, zero distribution channel, and a live site five weeks behind the code</b>. Every survivor in this niche won with a free-content flywheel (X + Discord + a free daily artifact) built <em>before</em> monetization. Feature work is now the comfortable form of procrastination.
+  </div>
+</section>
+
+<section id="landscape">
+  <p class="eyebrow">Landscape</p>
+  <h2>The market you're actually in</h2>
+  <p>Three concentric rings compete for the same subscriber: direct dealer-positioning tools, broad flow platforms, and an increasingly dangerous free floor from brokerages.</p>
+
+  <h3>Direct competitors — dealer positioning / GEX</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Product</th><th>Price /mo</th><th>Angle</th><th>What users say</th></tr>
+    <tr><td class="name">SpotGamma</td><td class="price">$89–299</td><td>The incumbent. Daily levels + founder's note; HIRO/TRACE real-time on the $299 tier; 3,500 tickers; heavy media presence.</td><td>Note is loved; "static pre-open levels", "hindsight bias", refund complaints, pricey.</td></tr>
+    <tr><td class="name">Unusual Whales</td><td class="price">$50–120</td><td>The price anchor. Flow + dark pool + GEX/vanna/charm + paper trading + MCP/AI access at $50. Massive community.</td><td>Breadth-for-price praised; greeks are <b>next-day, OI-based</b>; firehose, no signals by design.</td></tr>
+    <tr><td class="name">Menthor Q</td><td class="price">$129–349</td><td>Models + education + mentorship funnel; 20+ models, 6 GEX levels.</td><td>Harshest reviews in the set: "no better than an 8-ball", "a lagging indicator", levels-as-lottery, billing friction.</td></tr>
+    <tr><td class="name">Volland</td><td class="price">$99–1,000</td><td>The methodology purist: trade-by-trade dealer-direction inference, vanna/charm trinity, ~1,000 tickers @ 2-min.</td><td>Most respected methodology; premium-priced; little third-party criticism found.</td></tr>
+    <tr><td class="name">Gexbot</td><td class="price">$50–350</td><td>The indie proof-of-concept. Per-<em>second</em> GEX, 56 tickers, WebSocket/API, Sierra/Bookmap integrations. Pseudonymous solo founder.</td><td>"Updates in realtime, not day-old levels"; loved by scalpers, index-only depth.</td></tr>
+    <tr><td class="name">OptionsDepth</td><td class="price">$199–249</td><td>CBOE participant-tagged data (no sign-guessing), SPX/VIX only, 1-min updates. Launched June 2024.</td><td>Young, thin review footprint; strongest data-provenance claim in the set.</td></tr>
+    <tr><td class="name">Tier1Alpha</td><td class="price">$49.95 (via Hedgeye)</td><td>Research-letter shape: daily gamma models, vol-control flows.</td><td>Charts circulate widely on X; not a self-serve tool.</td></tr>
+    <tr><td class="name">TradingVolatility</td><td class="price">~$80 + passes</td><td>Cheap, data-forward; ships an API <b>and an MCP server for AI agents</b>.</td><td>Thin footprint; 15-min-delayed quotes disclosed.</td></tr>
+  </table></div>
+
+  <h3>The free floor (what $0 already buys)</h3>
+  <p>Chains + greeks + IV rank + strategy builders + institutional-grade paper trading are free at every major broker. <strong>Robinhood Cortex ($5/mo) turns a plain-English thesis into a specific options strategy</strong>; Webull's Vega AI is free; TradingView's AI copilot is in beta. Not free anywhere: real-time flow, dealer positioning, and cross-source synthesis — that's the paid moat, and it's where Convexa lives.</p>
+
+  <h3>Price ladder</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Band</th><th>Occupants</th><th>Read</th></tr>
+    <tr><td class="price">$5–22</td><td>Robinhood Cortex, OptionStrat Live, Options AI, Magnifi, Danelfin</td><td>Commodity analytics + chat AI. Race to the bottom.</td></tr>
+    <tr><td class="price">$49–99</td><td>UW, Gexbot Classic, SpotGamma Standard, Cheddar, InsiderFinance, T1A</td><td><b>The crowded belt.</b> UW's $50 anchors it. Entry here needs a sharp wedge.</td></tr>
+    <tr><td class="price">$129–349</td><td>MenthorQ, SpotGamma Alpha, Volland 0DTE, Gexbot Quant, OptionsDepth</td><td>Must justify with real-time depth or unique data. The public P&amp;L in this band (BLBX) is shrinking.</td></tr>
+    <tr><td class="price">$400+</td><td>Volland Insight/Universe, SpotGamma Institutional</td><td>Prosumer/institutional; not an indie entry point.</td></tr>
+  </table></div>
+</section>
+
+<section id="matrix">
+  <p class="eyebrow">Head to head</p>
+  <h2>Convexa vs. the direct set</h2>
+  <p class="legend"><span class="chip c-strong">STRONG</span> market-leading &nbsp;<span class="chip c-adeq">ADEQUATE</span> functional &nbsp;<span class="chip c-weak">WEAK</span> exists, limited &nbsp;<span class="chip c-abs">ABSENT</span> doesn't exist</p>
+  <div class="tablewrap"><table>
+    <tr><th>Capability</th><th>Convexa</th><th>SpotGamma</th><th>Unusual Whales</th><th>Volland</th><th>Gexbot</th><th>OptionsDepth</th></tr>
+    <tr><td class="name">Intraday GEX freshness</td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-strong">STRONG</span></td></tr>
+    <tr><td class="name">Dealer-direction methodology</td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-strong">STRONG</span></td></tr>
+    <tr><td class="name">Live per-ticker feed (price/flow/flip)</td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-weak">WEAK</span></td></tr>
+    <tr><td class="name">Ticker breadth</td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-weak">WEAK</span></td></tr>
+    <tr><td class="name">Vanna / charm / higher-order</td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td></tr>
+    <tr><td class="name">Interpretation (setups + scoring)</td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-weak">WEAK</span></td></tr>
+    <tr><td class="name">AI recommendations (structured)</td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">Paper trading (multi-leg book)</td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">Outcome tracking / track record</td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">Multi-ticker scanner</td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-weak">WEAK</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">Alerts</td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-weak">WEAK</span></td></tr>
+    <tr><td class="name">Charting integrations / level export</td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-weak">WEAK</span></td></tr>
+    <tr><td class="name">Broker import (read-only)</td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">API / MCP for AI agents</td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-strong">STRONG</span></td><td><span class="chip c-abs">ABSENT</span></td><td><span class="chip c-adeq">ADEQUATE</span></td><td><span class="chip c-abs">ABSENT</span></td></tr>
+    <tr><td class="name">Price (as shipped)</td><td class="price">unlaunched</td><td class="price">$89–299</td><td class="price">$50–120</td><td class="price">$99–1,000</td><td class="price">$50–350</td><td class="price">$199–249</td></tr>
+  </table></div>
+  <p class="footnote">Ratings weight what buyers in this niche actually evaluate, per the review corpus. Convexa's "intraday freshness" is ADEQUATE not STRONG: the live layer (NBBO mid, net flow, analytic flip reprice) is genuinely real-time, but the GEX <em>profile</em> rests on OI snapshots refreshed per fetch/120s — faster than SpotGamma's core levels and UW's next-day greeks, behind Gexbot's per-second volume-blended recalc. "Dealer-direction methodology" is WEAK for everyone using the long-calls/short-puts sign convention — including Convexa; only Volland (trade-level inference) and OptionsDepth (exchange-tagged) escape it.</p>
+</section>
+
+<section id="truth">
+  <p class="eyebrow">Evidence layer</p>
+  <h2>The honest truth about what you're selling</h2>
+
+  <h3>1 · The mechanism is real; the cheap metric mostly isn't</h3>
+  <p>Dealer gamma-hedging feedback is validated in peer-reviewed literature — Baltussen et al. (<em>Journal of Financial Economics</em>, 2021) across 60+ futures markets, Barbon &amp; Buraschi ("Gamma Fragility") for equities. But the version an indie app can cheaply compute — overnight OI × the "dealers are long calls, short puts" sign convention — is exactly the version the strongest evidence undermines: OptionMetrics showed net-sign GEX fails to explain vol/returns once you split dealer books; Cboe's own flow data shows 0DTE customer flow is roughly <em>balanced</em>, so OI-sign GEX estimates a quantity that may be near zero with a huge error bar; an independent backtest found raw GEX had <em>no</em> predictive power (vol-normalized GEX did). Vendors themselves concede this in their explainers.</p>
+  <div class="callout"><p class="eyebrow">What this means for Convexa</p>
+  If you ship naive OI-GEX as the headline, you are selling the discredited version of a true idea — same as SpotGamma, UW and MenthorQ, and their users' #1 complaint ("works in hindsight", "lagging") is the symptom. The defensible versions are: <b>vol-normalization, intraday recalculation, index-first framing, and an explicit public methodology</b>. Volland and OptionsDepth are already marketing against sign-convention GEX; the counter is honesty, not silence — and honesty is already your house style.</div>
+
+  <h3>2 · Where GEX works — and where your app currently points</h3>
+  <p>Practitioner + academic consensus: the signal is most usable on <strong>SPX/SPY/QQQ</strong> (deep, 0DTE-dominated, flow-diverse) and least reliable on single names, where earnings and concentrated flow break the sign convention. ~56% of retail options volume is now ≤5 DTE. Convexa's deliberate 7–45 DTE swing framing is a legitimate niche (it sidesteps the 0DTE arms race Gexbot wins), but the app's any-ticker single-name emphasis points at the weakest part of the evidence. The scanner universe concept fits an index+liquid-megacap framing well.</p>
+
+  <h3>3 · Why people pay, why they cancel</h3>
+  <ul>
+    <li><strong>They pay for a daily ritual and live levels</strong> — SpotGamma's founder's note, Gexbot's chart-integrated real-time ladders — and for feeling institutional. Nobody in the sampled communities credibly attributes audited P&amp;L improvement to any GEX tool.</li>
+    <li><strong>They cancel on lag, price, and hindsight-bias</strong>: "realtime was wrong", "static pre-open levels", "$600/yr is spendy", "levels work until they don't". Billing/refund friction is the #2 complaint archetype (SpotGamma refunds, UW "all sales final", MenthorQ cutting access on auto-renew cancellation).</li>
+  </ul>
+
+  <h3>4 · The AI-advice trust problem</h3>
+  <p>Adoption is high, trust is shallow: ~62% of surveyed retail investors have used AI to inform decisions, but only 23% trust it beyond "somewhat", and over half of those who acted on AI stock picks report a bad outcome. FINRA's experiment found only parity-level willingness to act on AI vs human information. Meanwhile the SEC's first AI-enforcement actions (Delphia, Global Predictions) targeted <em>overstated AI-investing claims specifically</em>, and FINRA's 2025 oversight report added a dedicated AI section.</p>
+  <div class="callout"><p class="eyebrow">Framing rule</p>
+  "<b>AI that explains today's dealer positioning in plain English</b>" is the high-trust, low-regulatory-risk framing. "AI tells you what to trade" is the lowest-trust, highest-risk framing available. Convexa's canon already does the right thing internally (advisory-only, assumptions-carried, risk-first, no auto-act, mandatory confirm, educational disclaimers) — make the <em>marketing copy</em> match that discipline exactly, and mirror Options AI's disclaimer structure.</div>
+</section>
+
+<section id="pros">
+  <p class="eyebrow">Assets</p>
+  <h2>What you genuinely have (the pros)</h2>
+  <ul>
+    <li><strong>An unoccupied intersection.</strong> Nobody — literally nobody in the researched set — combines dealer levels + live flow + an interpretation layer (setups/score) + structured AI reads + a paper-trading book + outcome tracking in one loop. UW is explicitly criticized for having no signals; SpotGamma has no paper trading; Gexbot has no interpretation. The <em>synthesis</em> is your product, not the GEX.</li>
+    <li><strong>The track-record wedge is wide open.</strong> Every competitor's performance claim is a backtest or self-reported (Tickeron's 68–83%, Danelfin's backtests, Cheddar's vendor-adjacent 63%) and reviewers discount all of it. Convexa's outcome ledger — Wilson intervals, no window-shopping, closed-only, nothing silently excluded — is the only architecture in the field built to <em>publish an honest forward record</em>. That is simultaneously the differentiation and the compliance-safe posture.</li>
+    <li><strong>Freshness is on the right side of the #1 complaint.</strong> Live SSE (NBBO mid, 5-min net flow, live analytic flip), 120s chain refresh on active sessions, 1.2s warm loads, honest live-vs-stale states. The market's loudest complaint is staleness; your architecture was built against it.</li>
+    <li><strong>Honesty as engineering, matching the market's distrust.</strong> The promoted invariants read like direct answers to the review corpus: <span class="kicker">absent-is-not-none</span> ↔ fabricated-claim complaints · <span class="kicker">model-read-carries-its-assumptions</span> ↔ "imperfect heuristics" criticism · outcome ledger ↔ "hindsight bias". This is marketable, not just admirable — a public "how we compute this and where it fails" page would be unique in the niche.</li>
+    <li><strong>Unit economics that scale correctly.</strong> BYO Anthropic keys mean AI cost scales with users, not with you; derived-analytics architecture (never redistributing raw quotes) is the one OPRA-viable indie shape; server-side gates and per-seat sessions already exist (the group-buy resale problem incumbents suffer is pre-answered).</li>
+    <li><strong>A multi-leg model better than the journaling incumbents'.</strong> TraderSync mishandles ITM expirations; Edgewonk can't model spreads at all. Convexa's leg-first book, structure recognizer, and decision-linked ledger journal the <em>decision</em>, not just the fill — no incumbent does.</li>
+    <li><strong>Sequencing discipline that de-risks the broker step.</strong> The model rebuild shipped before the importer, so SnapTrade import lands on a representation that can hold what it imports.</li>
+    <li><strong>A development system that is itself an asset.</strong> The council/QA/ledger pipeline produced 35 shipped features with de-correlated verification as a solo operator. Whatever happens to Convexa commercially, this capability compounds.</li>
+  </ul>
+</section>
+
+<section id="gaps">
+  <p class="eyebrow">Liabilities</p>
+  <h2>Where the gaps are (the honest cons)</h2>
+  <ol>
+    <li><strong>Distribution is zero, and it is the whole game.</strong> No X presence, no Discord, no content engine, no waitlist; the live site is the June 29 build. Every survivor's path was identical: free daily artifact on X → Discord community → paid tier, with near-zero CAC. Gexbot posted free GEX charts for ~16 months before charging. There is no feature that substitutes for this.</li>
+    <li><strong>A data-licensing landmine sits under the first paying user.</strong> Massive's individual plans ($29–199/mo) are personal-use licenses; powering a customer-facing product requires Options Business at <span class="num">$1,999/mo</span>. The indie-viable alternates: Databento OPRA at $199/mo (compute greeks yourself — which would also unify your two-gamma-source split and enable intraday vol-normalized GEX), ThetaData commercial (unpublished, they court fintechs), or Tradier's BYO-account entitlement. Server-side "calculations on behalf of customers" also brushes OPRA's non-display category — <em>get vendor guidance in writing before charging anyone</em>.</li>
+    <li><strong>The headline metric carries the field's weakest methodology.</strong> Vendor greeks + OI sign convention = the same naive GEX the evidence discredits and rivals attack. Mitigations are known (index-first, vol-normalize, intraday recalc, methodology page) but unshipped.</li>
+    <li><strong>Table-stakes features are missing:</strong> alerts (every rival has them; your levels/score/tier are alert-shaped already) and charting export (TradingView/ThinkorSwim level export is the single most universal integration — traders live in their charts, not your app). Mobile/PWA is behind that.</li>
+    <li><strong>Single-browser durable stores cap the product.</strong> The entire trading history lives in one browser's localStorage — no sync, no multi-device, tied to nothing. You've flagged it yourself (#21); it becomes acute the day a second user matters.</li>
+    <li><strong>No commercial spine:</strong> no billing/subscriptions, no per-seat plans, no onboarding, no ToS/disclaimer page, no marketing site beyond the splash. All solvable; all unstarted.</li>
+    <li><strong>The score is still unvalidated</strong> — by design you built the ledger to measure it, but today the 0–100 and the tier bands are hand-tuned constants. Until N accumulates, don't market the score; market the levels, the read, and the honesty.</li>
+    <li><strong>Solo-operator concentration risk.</strong> One person, one data vendor, one LLM vendor. The provider port and LLM seam mitigate architecturally, but commercially this is a bus-factor-one subscription product — worth being honest about in your own planning.</li>
+  </ol>
+</section>
+
+<section id="economics">
+  <p class="eyebrow">Unit economics</p>
+  <h2>What it costs to run this as a product</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Scenario</th><th>Data</th><th>Broker import</th><th>AI</th><th>Realistic fixed floor</th></tr>
+    <tr><td class="name">Beta, &lt;100 users<br><span class="kicker">derived analytics only</span></td><td class="price">$199–500/mo<br><span class="kicker">Databento OPRA / ThetaData</span></td><td class="price">$0<br><span class="kicker">SnapTrade free ≤5 conn.</span></td><td class="price">~$0<br><span class="kicker">BYO-key + small admin allowance</span></td><td class="price">≈ $250–550/mo</td></tr>
+    <tr><td class="name">~1,000 users<br><span class="kicker">derived analytics only</span></td><td class="price">~$2,000/mo<br><span class="kicker">commercial license tier</span></td><td class="price">$1–2/connected user</td><td class="price">scales with users (BYO)</td><td class="price">≈ $3–4k/mo → needs ~$29 × 150–300 subs to clear</td></tr>
+    <tr><td class="name">Any scale, showing real-time quotes</td><td class="price" colspan="3">$650–1,500/mo OPRA redistributor + $1.25/user + agreements + monthly reporting</td><td class="price">Structurally not an indie feature — don't</td></tr>
+  </table></div>
+  <p><strong>The shape that works:</strong> levels, scores, labels and reads on your own surface (derived analytics, flat cost); SnapTrade for read-only positions (linear cost, Webull officially covered since Dec 2025 — skip the direct integration entirely; Schwab's third-party review specifically scrutinizes AI-recommendation apps); BYO-key AI (already built). The washout economics (70–90% first-year trader churn) mean LTV is capped — which is why fixed costs must stay near zero until the community exists, and why annual plans and a generous refund policy (a cheap trust wedge in this niche) matter early.</p>
+</section>
+
+<section id="focus">
+  <p class="eyebrow">Priorities</p>
+  <h2>What to focus on immediately</h2>
+  <ol>
+    <li><strong>Decide what this is.</strong> Personal instrument, indie business, or portfolio piece. Everything below assumes "indie business"; if it's the others, you're already done — keep building for your own edge and skip the rest.</li>
+    <li><strong>Deploy.</strong> The live site is five weeks behind main, missing two data-loss fixes and all security hardening. Run the manual runbook, set <span class="kicker">ALLOWED_ORIGINS</span>, then automate. Nothing else on this list is possible against a stale build. <em>(This was already your own #1 open item; the research only raises the stakes.)</em></li>
+    <li><strong>Resolve data licensing before the first dollar.</strong> Written vendor guidance on serving derived analytics commercially. Evaluate Databento OPRA $199/mo + in-house greeks seriously — it fixes cost, license, the two-gamma-source split, and enables the intraday vol-normalized GEX the evidence actually supports. This is a provider-port swap; your architecture anticipated it.</li>
+    <li><strong>Reposition: index-first, freshness-forward, methodology-open.</strong> Lead with SPX/SPY/QQQ + liquid megacaps (the scanner universe is this already). Publish a "how we compute this, and where it fails" page — no rival dares. Reframe every AI touchpoint as <em>explains</em>, never <em>tells you what to trade</em>; keep the educational disclaimer posture everywhere public.</li>
+    <li><strong>Start the distribution engine now, before more features.</strong> The proven playbook, in order: an X account posting one free daily artifact (an honest morning levels-read for SPY/QQQ — your event calendar + levels + regime read generates it automatically); a Discord; a free tier of the app (the scanner table is a natural free surface). Target: a habit, not virality. Gexbot took ~16 months of free posts; UW's free tier feeds 405k newsletter readers.</li>
+    <li><strong>Make the outcome ledger your public trust weapon.</strong> Run the AI rec + score on the universe daily, record every call in the ledger, and publish the rolling track record — wins, losses, Wilson intervals, no window-shopping. "We publish our own track record and nobody else will" is the sharpest sentence available to you in this market, and your architecture is the only one built to say it safely.</li>
+    <li><strong>Ship the two table-stakes features:</strong> alerts (level-touch, tier-change, score-gate — the plumbing exists) and TradingView level export (a webhook/copyable-levels endpoint is enough to start). These close the two loudest "why not" objections a trialing user will have.</li>
+    <li><strong>Then the commercial spine:</strong> Stripe + plans + ToS/disclaimers, account-scoped position storage (your #21 — becomes mandatory with real users), and SnapTrade read-only import (the model is ready for it; it's the retention feature, because imported real positions are the switching cost).</li>
+  </ol>
+  <p class="footnote">Sequencing note: items 2–4 are days each, not weeks. Item 5 is a standing daily habit, not a project. Items 6–8 are your next three delivery-pipeline features, in that order — and they displace the queued small fixes and `broker-connect` until the funnel exists.</p>
+</section>
+
+<section id="plan">
+  <p class="eyebrow">Operating guidance</p>
+  <h2>How to get the best results</h2>
+  <div class="cols2">
+    <div>
+      <h3>A realistic 90-day shape</h3>
+      <ul>
+        <li><strong>Weeks 1–2:</strong> deploy + licensing decision + AI-copy reframe + methodology page. Start daily X posts (automated artifact, hand-touched).</li>
+        <li><strong>Weeks 3–6:</strong> alerts + level export ship; free tier defined (scanner + delayed levels); waitlist/beta invite loop into Discord.</li>
+        <li><strong>Weeks 7–12:</strong> public track record page goes live with ≥20 recorded outcomes; billing + $29–39 founding-member tier; first 10 paying users recruited by hand from the Discord.</li>
+      </ul>
+      <h3>Pricing posture</h3>
+      <ul>
+        <li>Free tier that's genuinely useful (the funnel), paid at <strong>$29–49/mo</strong> — under the UW anchor, above the commodity belt, honest about being one ticker deep and index-first.</li>
+        <li>Generous trial + no-questions refund — the anti-pattern to the niche's #2 complaint, and it costs you almost nothing at this scale.</li>
+        <li>Later: an MCP/API surface for AI-agent traders — nascent channel, only UW and TradingVolatility are there, and you're natively positioned for it.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Metrics that tell you the truth</h3>
+      <ul>
+        <li><strong>Leading:</strong> daily-artifact impressions → Discord joins → free-tier signups (the funnel exists or it doesn't).</li>
+        <li><strong>Product:</strong> D30 return rate of free users (the "ritual" test — this niche retains on habit), levels-page opens per user per week.</li>
+        <li><strong>Business:</strong> free→paid conversion, 3-month churn (expect brutal; structural washout is 70–90%/yr), MRR vs the ~$550/mo floor.</li>
+        <li><strong>Honesty:</strong> the track record itself. If the score's hit rate is indistinguishable from noise at N≥100, say so publicly and sell the <em>data + honesty</em>, not the score.</li>
+      </ul>
+      <h3>Kill / continue criteria (pre-commit now)</h3>
+      <ul>
+        <li><strong>Continue</strong> if by day 90: a daily posting habit held, ≥300 Discord members or ≥1k followers, ≥50 active free users, ≥10 paying.</li>
+        <li><strong>Reassess</strong> if the funnel exists but conversion doesn't — usually a positioning problem, cheap to iterate.</li>
+        <li><strong>Kill the business (keep the instrument)</strong> if after 6 months of consistent distribution effort the funnel won't fill — the product keeps its personal value either way, which is this project's real downside protection.</li>
+      </ul>
+    </div>
+  </div>
+  <hr class="divider">
+  <p><strong>The one-paragraph summary:</strong> Convexa is a genuinely differentiated synthesis in a crowded but shallow market — better engineered than most incumbents, aimed at the two complaints (staleness, hindsight-bias) users actually churn on, with the only honest-track-record architecture in the field. It is worth developing <em>if</em> the next quarter is spent on deployment, licensing, positioning and distribution rather than features. The market's economics cap the realistic outcome at a healthy indie business; the downside is protected because the instrument keeps its personal trading value and the delivery system keeps its career value regardless. The riskiest path is the current one: building excellent software nobody can see.</p>
+</section>
+
+<section id="sources">
+  <p class="eyebrow">Appendix</p>
+  <h2>Method, sources &amp; caveats</h2>
+  <p class="footnote">Four research agents ran independently with mandatory URL citation; internal product facts come from the repo's own canon (PROJECT_CONTEXT, DECISION_LEDGER, TECH_DEBT, OPEN_THREADS). Key primary sources below; competitor pricing fetched from live pages 2026-08-01.</p>
+  <ul class="srcs">
+    <li>SpotGamma pricing/features — spotgamma.com/subscribe-to-spotgamma</li>
+    <li>Unusual Whales pricing, GEX pages, MCP — unusualwhales.com/pricing · /stock/SPX/greek-exposure · /public-api/mcp</li>
+    <li>Menthor Q pricing + Trustpilot corpus — menthorq.com/pricing · trustpilot.com/review/menthorq.com</li>
+    <li>Volland tiers + methodology — vol.land/pricing · wizofops.com/volland.html</li>
+    <li>Gexbot pricing/origin — gexbot.com/pricing · Stock Market Options Trading podcast ep. 109</li>
+    <li>OptionsDepth — optionsdepth.com (CBOE participant-tagged claim)</li>
+    <li>BlackBoxStocks public financials — stockanalysis.com/stocks/blbx · 10-K via StockTitan</li>
+    <li>Robinhood Cortex — robinhood.com newsroom (Mar 2025, HOOD Summit)</li>
+    <li>Baltussen et al., JFE 2021 (SSRN 3760365) · Barbon &amp; Buraschi, "Gamma Fragility" (SSRN 3725454)</li>
+    <li>OptionMetrics "Gamma Gravity" (2022) · Cboe/Mandy Xu 0DTE impact study (2023)</li>
+    <li>Dim, Eraker &amp; Vilkov 0DTE gamma (SSRN 4692190)</li>
+    <li>SqueezeMetrics GEX paper + "The Implied Order Book"</li>
+    <li>FINRA Foundation "The Machines Are Coming" (2024) · SEC AI-washing actions (Delphia, Global Predictions)</li>
+    <li>OPRA fee schedule via marketdata.app + ThetaData guides (redistributor $650–1,500/mo · $1.25/user nonpro)</li>
+    <li>Massive plans — massive.com/options · /business-options ($1,999/mo) · Databento OPRA $199 — databento.com/blog</li>
+    <li>SnapTrade pricing + Webull partnership — snaptrade.com/pricing · Yahoo Finance 2025-12-16</li>
+    <li>Journaling set — tradesviz.com/pricing · tradervue.com · TraderSync Trustpilot · Edgewonk reviews</li>
+    <li>Retail market stats — NYSE data insights · CoinLaw retail options statistics · MEMX insights · LSU retail-options paper</li>
+  </ul>
+  <h3>Caveats the researchers flagged</h3>
+  <ul>
+    <li>Unverifiable: Unusual Whales revenue/subscribers; churn rates anywhere in the category; TradingVolatility monthly sub price; ThetaData/Plaid/dxFeed commercial pricing; Gexbot/OptionStrat revenue; whether OPRA's redistributor fee applies to delayed-only display (vendor-blog-sourced — verify with OPRA before relying on it).</li>
+    <li>Review-site sources are heavily affiliate-driven; Trustpilot/Whop quotes were preferred where available. Reddit quotes came via archive APIs where Reddit blocked fetchers.</li>
+    <li>This report is market research, not financial or legal advice; data-licensing conclusions need confirmation with the vendors in writing.</li>
+  </ul>
+</section>
+
+</div>
