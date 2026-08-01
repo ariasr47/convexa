@@ -477,9 +477,25 @@ Pages) → Pages Function proxy → **backend https://convexa-production.up.rail
 `google_available:false` since Google OAuth is unconfigured — correct). The deferred Docker/Postgres runtime
 verifications from `containerize-apps`/`persistent-db` are now exercised for real on Railway. **Remaining
 hardening (NOT blocking — post-launch):** set `ALLOWED_ORIGINS=https://convexa.pages.dev` in Railway (the
-proxy is same-origin so CORS isn't hit, but lock it per the security review); the 6 MED/LOW security
-fast-follows (`_archive/deploy/SECURITY_REVIEW.md`); CI/CD; custom domain; prerender/SEO (BACKLOG §B);
-provision Google OAuth creds to enable "Continue with Google".
+proxy is same-origin so CORS isn't hit, but lock it per the security review); CI/CD; custom domain;
+prerender/SEO (BACKLOG §B); provision Google OAuth creds to enable "Continue with Google".
+**✅ THE 6 MED/LOW SECURITY FAST-FOLLOWS ARE ALL RESOLVED (2026-07-28).** `b136a77` — CORS now **fails
+closed** (unset `ALLOWED_ORIGINS` was defaulting to the *localhost dev list* in prod, i.e. failing open;
+it is now deny-all + a startup warning, so the Railway step above matters more, not less), `/docs`
+`/redoc` `/openapi.json` are **opt-in** behind `ENABLE_API_DOCS`, and the CORS method/header wildcards
+are narrowed. `86adf3b` — **S5c live-hub ceilings** (`MAX_LIVE_SESSIONS` 50 / `MAX_LIVE_SUBSCRIBERS` 500,
+503 + `Retry-After`; sessions and subscribers capped **separately** so many viewers on ONE ticker — one
+socket — are never refused while enumeration across many tickers is). S4b was an ops-doc gap, now in
+`.env.example`; S6h needs no action while Google OAuth is config-gated off.
+**⚠ AND A HIGH-SEVERITY BYPASS THE WORK SURFACED (`41a4c96`):** the go-live per-IP rate limiter guarded
+only `/api/ticker` and `/api/stream`, while **`/api/market-data`, `/api/strike-profile`, `/api/signals`
+and the friendly `/{ticker}`** all called the same `_serve` and hit the vendor **uncounted** — `/TSLA`
+being both the cheapest enumeration route and where every stray crawler probe (`/health`, `/login`, …)
+lands, since those are all valid 1–6-letter "tickers". All **6 of 6** vendor-cost routes now share one
+per-IP budget; an audit script in the commit walks every route and proves it.
+**Framing correction worth keeping:** the review (and my own summaries) called this a risk to the
+"Massive bill". Massive is **flat-rate** (§1), so the real exposure was **vendor rate-limit exhaustion**
+— which breaks the app for real users while it happens — not a metered invoice. Same fix, different why.
 
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 Contracts archived at `.claude/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
