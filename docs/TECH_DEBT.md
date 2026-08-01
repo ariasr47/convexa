@@ -41,8 +41,8 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~12~~ | ~~Conformance runner is cookieless~~ — ✅ **FIXED** (`--auth-signup`/`--auth-cookie` + per-endpoint `"auth": true`; new `conformance/auth-gated.json` sweeps the settings/ai-key/sim-trade-gate surface, 4/4 live PASS) | Security | 2 | 3 | 3 | ~~15~~ |
 | ~~13~~ | ~~Orphaned dev servers hold ports~~ — ✅ **FIXED `e9cbc67`** (`npm run ports:free` + a CLAUDE.md trap) | Infra | 2 | 1 | 1 | ~~15~~ |
 | 14 | No auth schema-migration path | Architecture | 3 | 4 | 4 | 14 |
-| 15 | 27 accepted lint warnings | Code | 1 | 2 | 2 | 12 |
-| 16 | >500kB JS chunk, no code splitting | Code | 2 | 2 | 3 | 12 |
+| ~~15~~ | ~~27 accepted lint warnings~~ — ✅ **FIXED `39d5748`** (27 → 0, no behavior change; the one exhaustive-deps case made a genuine dependency, not disabled) | Code | 1 | 2 | 2 | ~~12~~ |
+| ~~16~~ | ~~>500kB JS chunk, no code splitting~~ — ✅ **FIXED `ca0a914`** (route-level `React.lazy`; 1 chunk @ 1,306 kB → 25 chunks, largest 286 kB; landing stays eager) | Code | 2 | 2 | 3 | ~~12~~ |
 | 17 | AI metering counters are process-local | Architecture | 1 | 3 | 3 | 12 |
 | 18 | Four modules over 1200 LOC | Code | 3 | 2 | 4 | 10 |
 | ~~19~~ | ~~Stale brand refs in `apps/api/README.md`~~ — ✅ **FIXED `3a4ba61`** (also corrected the stale "separate repo" claim + run paths) | Docs | 1 | 1 | 1 | ~~10~~ |
@@ -177,10 +177,10 @@ React 19.0→19.2.8, MUI 9.1.1→9.2.0, Vitest, Cypress, Prettier. One major wai
 
 **Code [measured]** — four modules over 1200 LOC (`TradeEntryDialog.tsx` 1370, `convexa.ts` 1276,
 `AiRecPanel.tsx` 1248, `ai_recommendation.py` 922). None is *incoherent* — they are large because they
-are complete — so this is watch-don't-act until one of them resists a change. 27 accepted lint warnings,
-almost all non-null assertions. Five `POSITION_EVAL_NONE_*` constants are deliberately unwired pending
-the alert surface — **not** dead code, but they will read as dead to a future reader if that surface
-never lands.
+are complete — so this is watch-don't-act until one of them resists a change. ~~27 accepted lint
+warnings~~ (cleared 2026-08-01, `39d5748`). The five `POSITION_EVAL_NONE_*` constants stay deliberately
+unwired pending the alert surface — now pinned by `positions/future-copy.spec.ts` (exists + no consumer)
+instead of relying on a comment being read.
 
 **Architecture [carried]** — no schema-migration path for the auth Postgres tables (bootstrap is
 `CREATE TABLE IF NOT EXISTS`, so a column change has no story); per-admin AI metering counters are
@@ -212,10 +212,11 @@ attention and their own verification; they are not "while you're in there" work.
 next feature that touches scoring** — it is the one that stops a recurring manual cost.
 
 ### Phase 3 — pull, don't push
-Items **10, 12, 14, 16, 17, 18, 21**. Do these when something concrete asks for them: bump npm when a
-CVE or a needed feature lands; add auth migrations when the schema first has to change; split the big
-modules when one actually resists a change; make the stores account-scoped when multi-device becomes a
-real requirement rather than a nice idea.
+~~Items **10, 12, 14, 16, 17, 18, 21**~~ — #10/#12/#16 closed; remaining: **14, 17, 18, 21**. Do these
+when something concrete asks for them: add auth migrations when the schema first has to change; make
+the AI metering shared when a second replica exists; split the big modules when one actually resists a
+change; make the stores account-scoped when multi-device becomes a real requirement rather than a nice
+idea.
 
 ---
 
