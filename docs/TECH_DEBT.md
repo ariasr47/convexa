@@ -31,7 +31,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~3~~ | ~~e2e asserts no-overflow at **one breakpoint only**~~ — ✅ **FIXED `bb821d6`** (md+lg gated; the md overflow fixed with it) | Test | 2 | 3 | 1 | ~~25~~ |
 | 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
-| ~~6~~ | ~~6 security fast-follows~~ — ✅ **5 of 6 CLOSED `b136a77`** (S6h needs no action while Google is off) **+ a HIGH bypass found and closed `41a4c96`** | Security | 2 | 4 | 2 | ~~24~~ |
+| ~~6~~ | ~~6 security fast-follows~~ — ✅ **ALL 6 RESOLVED** — `b136a77` (CORS/docs/wildcards) + `86adf3b` (S5c ceilings) + `41a4c96` (a HIGH bypass this work surfaced) | Security | 2 | 4 | 2 | ~~24~~ |
 | 7 | Conformance check is **not in CI** | Infra | 2 | 3 | 2 | **20** |
 | ~~8~~ | ~~`nx format:write` repo-wide hazard undocumented~~ — ✅ **FIXED `e66e7ff`** (CLAUDE.md "Traps" + eslint worktree ignore) | Docs | 2 | 2 | 1 | ~~20~~ |
 | 9 | **Backend has zero automated tests** | Test | 4 | 5 | 4 | **18** ⚠ |
