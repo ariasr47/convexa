@@ -19,6 +19,28 @@
 
 const VIEWPORT = { width: 393, height: 852 };
 
+/**
+ * THE WIDER BANDS (added 2026-07-28, tech-debt #3).
+ *
+ * Until now this suite asserted at 393px and NOTHING else — one `cy.viewport` call in the whole e2e
+ * project. That is why `/positions` overflowed at 900px for an unknown length of time without any
+ * test noticing: it was found by hand, during an unrelated feature, and recorded in a comment. A
+ * comment does not fail a build.
+ *
+ * `md` (900) and `lg` (1280) are the two bands that were unguarded and that carry the app's densest
+ * surfaces — the multi-column positions table and the 11-column scanner. Breakpoints are MUI
+ * defaults (sm 600 · md 900 · lg 1200 · xl 1536).
+ *
+ * ONE SCHEME for the wider bands, deliberately: horizontal overflow is a box-geometry property and
+ * dark/light change no widths — same fonts, same padding, same borders. 393px keeps BOTH schemes
+ * because that is the band where content is tightest and the existing coverage is worth keeping. If
+ * a scheme-dependent width ever appears, this is the assumption to revisit.
+ */
+const WIDE_VIEWPORTS = [
+  { label: 'md 900', width: 900, height: 900 },
+  { label: 'lg 1280', width: 1280, height: 900 },
+] as const;
+
 /** Interface-shaped bundle (mirrors the suite's shared fixture; enough for a content-full board). */
 const bundle = {
   market_state: {
@@ -283,23 +305,27 @@ function stubNetwork() {
   cy.intercept('GET', '/api/scan*', { body: scan });
 }
 
-// PRE-EXISTING, OUT OF SCOPE (logged as a standing item, build phase 2; RE-MEASURED build phase 3):
-// `/positions` overflows at 900px — documentElement scrollWidth 965 vs innerWidth 900 —
-// BYTE-IDENTICALLY with and without the `max_loss` column, and byte-identically before and after
-// the phase-3 render change. i.e. this feature neither causes nor worsens the PAGE overflow. The
-// shipped e2e only ever asserted at 393px, which is why the md boundary went uncovered.
+// ---- THE md OVERFLOW: FIXED 2026-07-28, AND NOW GATED ------------------------------------------
 //
-// Phase 3 additionally measured the TABLE inside its framed host at 900px, with an identical
-// four-record seed on both builds:
-//   before phase 3 : table scrollWidth  998 vs host clientWidth 835  (already over by 163px)
-//   after  phase 3 : table scrollWidth 1027 vs host clientWidth 835  (over by 192px)
-// So the md-band table overflow is ALSO pre-existing — phase 2's note that "without the column it
-// fits" at 900px does not hold for a content-full book — and phase 3 adds 29px of it through the
-// wider `Net entry` copy (`$1830 debit` vs `$8.40`). The `max_loss` column is NOT rendered at md.
+// HISTORY (kept, because the diagnosis is the useful part). `/positions` overflowed at 900px —
+// documentElement scrollWidth 958 vs innerWidth 900 — and it did so BYTE-IDENTICALLY with and
+// without `positions-legs`' `max_loss` column, so that feature neither caused nor worsened it.
+// Phase 3 also measured the TABLE inside its framed host at 900px on an identical four-record seed:
+// 998 vs 835 before that feature, 1027 after. Both pre-existing. At the time this comment said "do
+// NOT assert either figure here", because the row would have failed on a defect that feature did
+// not introduce and the failure would have been misread as a regression from the leg refactor.
 //
-// Do NOT add an assertion for either figure here: this row would then fail on a defect this feature
-// did not introduce, and the failure would be misread as a regression from the leg refactor. The
-// 393px guard below is the one that gates.
+// ROOT CAUSE, found 2026-07-28 by walking the DOM rather than guessing: a SINGLE element was past
+// the edge — `open-entry`, the `+ Open simulated position` CTA, right edge 958 in a 900 viewport.
+// Every other element the sweep flagged was an ancestor merely relaying that child's overflow.
+// `CustomizationToolbar`'s control row carried `flexWrap: { xs: 'wrap', sm: 'nowrap' }`, so wrapping
+// switched OFF at 600px while the row's content measures ~934px — meaning the entire 600–1199px
+// band could not wrap and pushed the CTA off-screen. Now `{ xs: 'wrap', lg: 'nowrap' }`: `lg` is the
+// first breakpoint whose content box (~1137px) actually fits the row. At 900px the five control
+// groups sit on one line and the CTA wraps beneath them, left-aligned; at 1280px it is one row again.
+//
+// The `md`/`lg` assertions below are what stop this returning. The comment above them was true for
+// six days and enforced nothing.
 function assertNoHorizontalOverflow() {
   cy.window().then((win) => {
     const doc = win.document.documentElement;
@@ -428,5 +454,38 @@ for (const scheme of ['dark', 'light'] as const) {
         cy.get(`[data-testid="nav-drawer-${e}"]`).should('be.visible');
       }
     });
+  });
+}
+
+// ---- THE WIDE BANDS — md and lg (tech-debt #3) ---------------------------------------------------
+//
+// The same `scrollWidth <= innerWidth` gate as above, at the two widths that were previously
+// unguarded. `/positions` is SEEDED here for the same reason it is seeded at 393px: at these widths
+// it renders the multi-column TABLE, and an empty book would make the measurement close to vacuous —
+// it is the content-full table that overflows, not the empty state.
+for (const vp of WIDE_VIEWPORTS) {
+  describe(`${vp.label} no-overflow · dark scheme`, () => {
+    beforeEach(() => {
+      cy.viewport(vp.width, vp.height);
+      stubNetwork();
+    });
+
+    for (const r of ROUTES) {
+      it(`${r.path} fits ${vp.width}px (scrollWidth <= innerWidth)`, () => {
+        cy.visit(r.path, {
+          onBeforeLoad(win) {
+            win.localStorage.setItem(
+              'convexa.uiprefs.v1',
+              JSON.stringify({ schema_version: 1, theme: 'dark', default_ticker: null }),
+            );
+            if (r.path === '/positions') seedPositions(win, { withCondor: true });
+          },
+        });
+        r.ready();
+        // VACUITY GUARD for the seeded route: prove the book actually rendered before measuring.
+        if (r.path === '/positions') cy.get('[data-testid="portfolio-panel"]').should('exist');
+        assertNoHorizontalOverflow();
+      });
+    }
   });
 }

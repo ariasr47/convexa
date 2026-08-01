@@ -332,7 +332,14 @@ export function CustomizationToolbar({
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+          // WRAP UNTIL THERE IS GENUINELY ROOM. This row carries five control groups (view picker,
+          // layout, density, group axis) plus the primary CTA, and its content measures ~934px. The
+          // previous `sm: 'nowrap'` turned wrapping off at 600px, so from 600px to 1199px the row
+          // could not wrap and pushed the CTA past the viewport — measured on /positions at 900px:
+          // documentElement scrollWidth 958 vs innerWidth 900, with `open-entry`'s right edge at 958
+          // and every other reported offender merely an ancestor relaying that child's overflow.
+          // `lg` (1200px) is the first breakpoint whose content box (~1137px) actually fits ~934px.
+          flexWrap: { xs: 'wrap', lg: 'nowrap' },
           rowGap: '8px',
           mb: '6px',
         }}
