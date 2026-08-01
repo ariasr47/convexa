@@ -26,8 +26,8 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 
 | # | Item | Type | I | R | E | Score |
 |---|---|---|---|---|---|---|
-| 1 | `outcomes/sources.ts` **reads as a binary file** — unreviewable in `git diff` | Code | 3 | 5 | 1 | **40** |
-| 2 | Python dependencies are **completely unpinned** | Dependency | 3 | 5 | 2 | **32** |
+| ~~1~~ | ~~`outcomes/sources.ts` **reads as a binary file**~~ — ✅ **FIXED `98c29ae`** | Code | 3 | 5 | 1 | ~~40~~ |
+| ~~2~~ | ~~Python dependencies are **completely unpinned**~~ — ✅ **FIXED `65526ee`** | Dependency | 3 | 5 | 2 | ~~32~~ |
 | 3 | e2e asserts no-overflow at **one breakpoint only** | Test | 2 | 3 | 1 | **25** |
 | 4 | Canon says "CI not wired" — **it is** | Docs | 2 | 3 | 1 | **25** |
 | 5 | No CD: live site is **29 days behind `main`** | Infra | 4 | 4 | 3 | **24** |
@@ -54,7 +54,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 
 ## The items that matter
 
-### 1. `outcomes/sources.ts` reads as a BINARY file — score 40 **[measured]**
+### 1. `outcomes/sources.ts` reads as a BINARY file — score 40 — ✅ **FIXED 2026-07-28 (`98c29ae`)**
 
 **Corrected 2026-07-28 after looking harder.** My first write-up said grep "skips" the file. That
 overstated one half and missed the more serious half. What is actually true, all verified:
@@ -87,7 +87,7 @@ with no content and may reason on it as though empty.
 so the source stays text. **Effort: minutes.** Verify by confirming `git diff` renders a normal line diff
 afterwards — that is the acceptance test, not the grep behaviour.
 
-### 2. Python dependencies are completely unpinned — score 32 **[measured]**
+### 2. Python dependencies are completely unpinned — score 32 — ✅ **FIXED 2026-07-28 (`65526ee`)**
 
 **All 15** entries in `apps/api/requirements.txt` carry **no version constraint whatsoever** — `numpy`,
 `scipy`, `fastapi`, `uvicorn`, `pydantic`, `anthropic`, `psycopg`, `cryptography`, `argon2-cffi`,
@@ -113,7 +113,7 @@ was never under test.
 **Fix:** extend the existing route set to the `md` and `lg` breakpoints. The harness already exists;
 this is adding entries to a list. **Effort: 1–2 hours.**
 
-### 4. The canon states something false about CI — score 25 **[measured]**
+### 4. The canon states something false about CI — score 25 — ✅ **FIXED 2026-07-28 (`6fda9b7`)**
 
 `OPEN_THREADS.md` §8 says *"CI/CD not wired: push ≠ deploy… A GitHub Actions workflow is the standing
 follow-on."* **`.github/workflows/ci.yml` has existed since 2026-07-22** and runs, on every push to
