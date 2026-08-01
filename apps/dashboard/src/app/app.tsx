@@ -27,19 +27,55 @@
  *
  * The live-SSE session stays page-scoped to the Ticker viewer (it owns its own subscription effect);
  * making the Ticker page a child route is what gives mount-on-enter / teardown-on-leave for free.
+ *
+ * CODE SPLITTING (tech-debt #16): every page except <Landing/> is a `React.lazy` route so each
+ * page's JS ships as its own chunk. Landing stays EAGER — it is the `/` entry experience and must
+ * paint synchronously with the shell. The <Suspense> boundary wraps each route ELEMENT (not the
+ * route tree), so the persistent shell/nav never falls back during a page-chunk load (AC-Nav-4),
+ * and the Ticker page's page-scoped SSE lifecycle is untouched: lazy() resolves the module ONCE
+ * (module registry), then mount/unmount semantics are identical to the eager import.
  */
+import { lazy, Suspense, type ReactElement } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
-import { BlogPage } from '@/pages/blog/BlogPage';
 import { Landing } from '@/pages/landing/Landing';
-import { OperatorMetrics } from '@/pages/operator-metrics/operator-metrics';
-import { PositionsPage } from '@/pages/positions/PositionsPage';
-import { Scanner } from '@/pages/scanner/Scanner';
 import { AppShell } from '@/shell/AppShell';
-import { TickerDashboard } from '@/pages/ticker/TickerDashboard';
+
+// Lazy page chunks (named exports mapped to lazy's `default` shape).
+const TickerDashboard = lazy(() =>
+  import('@/pages/ticker/TickerDashboard').then((m) => ({ default: m.TickerDashboard })),
+);
+const PositionsPage = lazy(() =>
+  import('@/pages/positions/PositionsPage').then((m) => ({ default: m.PositionsPage })),
+);
+const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
+const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
+const SettingsPage = lazy(() =>
+  import('@/features/auth/SettingsPage').then((m) => ({ default: m.SettingsPage })),
+);
+const OperatorMetrics = lazy(() =>
+  import('@/pages/operator-metrics/operator-metrics').then((m) => ({ default: m.OperatorMetrics })),
+);
+
+/** Minimal page-chunk loading fill — theme tokens only (`[theme-token-discipline]`), centered,
+ *  quiet. Shown inside the shell's <Outlet/> region; the nav chrome stays interactive. */
+function RouteFallback() {
+  return (
+    <Box
+      data-testid="route-fallback"
+      sx={{ display: 'flex', justifyContent: 'center', py: 8, color: 'text.secondary' }}
+    >
+      <CircularProgress size={24} color="inherit" aria-label="Loading page" />
+    </Box>
+  );
+}
+
+/** Per-route Suspense: the boundary lives on the route ELEMENT so a loading page never unmounts
+ *  or blanks the persistent shell (AC-Nav-4). */
+const lazyRoute = (el: ReactElement) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 
 /** The route table only (ARCHITECTURE §1.2). Must render UNDER a Router + the auth/theme providers
  *  (supplied by <App/>). */
@@ -48,24 +84,24 @@ export function AppRoutes() {
     <Routes>
       {/* Operator-only readout — off the trader shell, unlinked. FIRST so `/*` never shadows it.
           This is the ONLY nav-less route (operator-vs-trader separation invariant). */}
-      <Route path="/_ops/metrics" element={<OperatorMetrics />} />
+      <Route path="/_ops/metrics" element={lazyRoute(<OperatorMetrics />)} />
 
       {/* The persistent shell group: the nav bar mounts once; pages swap in the <Outlet/>. */}
       <Route element={<AppShell />}>
         {/* Landing — OWNER DECISION (convexa-redesign): now the shell INDEX route so the persistent
             top nav shows on `/` too. Full-bleed below the bar (no width container). `/` is NEVER a
-            redirect to a ticker. */}
+            redirect to a ticker. EAGER (the entry experience — no chunk wait on first paint). */}
         <Route index element={<Landing />} />
         {/* Bare `/ticker` → default TSLA (index redirect; `/` itself is never redirected). */}
         <Route path="/ticker" element={<Navigate to="/ticker/TSLA" replace />} />
-        <Route path="/ticker/:ticker" element={<TickerDashboard />} />
-        <Route path="/positions" element={<PositionsPage />} />
-        <Route path="/scanner" element={<Scanner />} />
+        <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
+        <Route path="/positions" element={lazyRoute(<PositionsPage />)} />
+        <Route path="/scanner" element={lazyRoute(<Scanner />)} />
         {/* Blog — static index (zero data work); each card is a full-document anchor to the
             standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}
-        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog" element={lazyRoute(<BlogPage />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
       </Route>
     </Routes>
   );
