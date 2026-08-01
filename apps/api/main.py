@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from src.core.engine import QuantEngine
 from src.core.signals import (generate_signals, evaluate_gate,
                               compute_opportunity_tier, position_fingerprint)
-from src.core.live import LiveHub
+from src.core.live import LiveCapacityError, LiveHub
 from src.core import chain_store
 from src.core.darkpool import analyze_off_exchange
 # Market-context pack (ai-context-pack): a ONE-WAY LEAF like darkpool/ai_recommendation —
@@ -237,8 +237,17 @@ _last_position_fingerprint: dict = {}
 _inflight: dict = {}
 
 # Real-time hub: one live stream/session per active ticker, ref-counted by SSE subscribers.
+# S5c (system-6 fast-follow, MEDIUM): the subscribers dict was UNBOUNDED. Two ceilings, defaults on
+# — this is a capacity guard, so unlike the fail-open rate limiter it is worth having by default.
+# 0/unset disables either one. See LiveHub's docstring for why sessions and subscribers are capped
+# separately rather than with one blunt total.
+MAX_LIVE_SESSIONS = int(os.getenv("MAX_LIVE_SESSIONS", "50"))
+MAX_LIVE_SUBSCRIBERS = int(os.getenv("MAX_LIVE_SUBSCRIBERS", "500"))
 live_hub = LiveHub(data_provider, quant_engine, flow_window=FLOW_WINDOW_SECONDS,
-                   throttle=LIVE_THROTTLE_SECONDS, chain_refresh=CHAIN_REFRESH_SECONDS)
+                   throttle=LIVE_THROTTLE_SECONDS, chain_refresh=CHAIN_REFRESH_SECONDS,
+                   max_sessions=MAX_LIVE_SESSIONS, max_subscribers=MAX_LIVE_SUBSCRIBERS)
+logger.info(f"Live hub ceilings: max_sessions={MAX_LIVE_SESSIONS or 'OFF'} "
+            f"max_subscribers={MAX_LIVE_SUBSCRIBERS or 'OFF'}")
 
 
 _EXCHANGE_TZ = zoneinfo.ZoneInfo("America/New_York")
@@ -1516,7 +1525,20 @@ async def stream_ticker(
         return limited
     t = ticker.upper()
     filt = (min_dte, max_dte, _parse_expirations(expirations))
-    queue = await live_hub.subscribe(t, filt)
+    # S5c: the hub refuses at its ceiling BEFORE opening a Massive WebSocket. 503 (not 429) because
+    # this is a SERVER capacity limit, not a per-caller quota — a well-behaved client that happens to
+    # arrive when the box is full gets an honest "try again", with Retry-After. The FE already treats
+    # a failed stream as the live-offline degrade, so the static bundle keeps rendering
+    # ([live-vs-static-isolation]) rather than the page breaking.
+    try:
+        queue = await live_hub.subscribe(t, filt)
+    except LiveCapacityError as exc:
+        logger.warning(f"[{t}] live subscribe REFUSED — {exc.kind} ceiling {exc.limit} reached")
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Live streaming is at capacity. Try again shortly."},
+            headers={"Retry-After": "30"},
+        )
 
     async def event_gen():
         try:

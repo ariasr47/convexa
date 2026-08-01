@@ -252,6 +252,19 @@ class LiveSession:
         return out
 
 
+class LiveCapacityError(RuntimeError):
+    """
+    The live hub is at capacity and REFUSED a new subscription (S5c). Carries which ceiling was hit
+    so the caller can log/serve it precisely. Raised BEFORE any session is created or any Massive
+    WebSocket is opened, so a refusal costs nothing upstream.
+    """
+
+    def __init__(self, kind: str, limit: int):
+        self.kind = kind          # "sessions" | "subscribers"
+        self.limit = limit
+        super().__init__(f"live hub at capacity ({kind} limit {limit})")
+
+
 class LiveHub:
     """
     One LiveSession per ticker, ref-counted by SSE subscribers. Teardown is deferred by a
@@ -260,18 +273,42 @@ class LiveHub:
     absorbs React StrictMode's mount/unmount/remount, fast ticker switch-backs, and brief
     reconnects -- which would otherwise tear down and rebuild the (expensive) ws stream
     repeatedly, leaving racey gaps with no data.
+
+    CAPACITY CEILINGS (S5c, system-6 fast-follow). The subscribers dict was unbounded, so an
+    attacker opening SSE connections across many tickers could hold an unbounded number of Massive
+    WebSockets and asyncio queues open until the container died. Two SEPARATE ceilings, because the
+    two resources are not the same shape:
+
+      max_sessions    -- distinct tickers with a live session. THIS is the expensive one: each
+                         session holds its own Massive WebSocket. Enforced ONLY when a NEW session
+                         would be created.
+      max_subscribers -- total SSE clients across all sessions. Bounds memory: each subscriber owns
+                         a queue of up to 100 payloads.
+
+    The split matters. A blunt total cap would reject the COMMON case (many traders watching SPY,
+    which costs ONE socket) while permitting the actual attack (one connection each across hundreds
+    of distinct tickers, which costs hundreds). Joining an ALREADY-RUNNING session opens no socket,
+    so it is never refused by the session ceiling — only by the subscriber ceiling.
     """
     GRACE_SECONDS = 8.0
 
-    def __init__(self, provider, engine, *, flow_window, throttle, chain_refresh):
+    def __init__(self, provider, engine, *, flow_window, throttle, chain_refresh,
+                 max_sessions: int = 0, max_subscribers: int = 0):
         self.provider = provider
         self.engine = engine
         self.flow_window = flow_window
         self.throttle = throttle
         self.chain_refresh = chain_refresh
+        # 0 / negative => OFF, matching the PUBLIC_RATE_LIMIT_PER_MIN convention.
+        self.max_sessions = max_sessions if max_sessions and max_sessions > 0 else 0
+        self.max_subscribers = max_subscribers if max_subscribers and max_subscribers > 0 else 0
         self.sessions: dict = {}
         self._pending_stop: dict = {}   # ticker -> scheduled-stop task
         self._lock = asyncio.Lock()
+
+    def subscriber_count(self) -> int:
+        """Total SSE subscribers across every live session."""
+        return sum(len(s.subscribers) for s in self.sessions.values())
 
     async def subscribe(self, ticker: str, filt: tuple) -> asyncio.Queue:
         async with self._lock:
@@ -279,6 +316,16 @@ class LiveHub:
             if pending:
                 pending.cancel()        # a new subscriber arrived within the grace window
             sess = self.sessions.get(ticker)
+
+            # Ceilings are checked INSIDE the lock and BEFORE any allocation, so a refusal never
+            # leaves a half-built session, never opens a WebSocket, and cannot race another
+            # subscriber into exceeding the cap. A cancelled pending-stop above is harmless: the
+            # session it would have stopped still exists and is still counted.
+            if self.max_subscribers and self.subscriber_count() >= self.max_subscribers:
+                raise LiveCapacityError("subscribers", self.max_subscribers)
+            if sess is None and self.max_sessions and len(self.sessions) >= self.max_sessions:
+                raise LiveCapacityError("sessions", self.max_sessions)
+
             if sess is None:
                 sess = LiveSession(ticker, self.provider, self.engine,
                                    flow_window=self.flow_window, throttle=self.throttle,
