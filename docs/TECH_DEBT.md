@@ -34,7 +34,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | ~~6~~ | ~~6 security fast-follows~~ — ✅ **ALL 6 RESOLVED** — `b136a77` (CORS/docs/wildcards) + `86adf3b` (S5c ceilings) + `41a4c96` (a HIGH bypass this work surfaced) | Security | 2 | 4 | 2 | ~~24~~ |
 | 7 | Conformance check is **not in CI** | Infra | 2 | 3 | 2 | **20** |
 | ~~8~~ | ~~`nx format:write` repo-wide hazard undocumented~~ — ✅ **FIXED `e66e7ff`** (CLAUDE.md "Traps" + eslint worktree ignore) | Docs | 2 | 2 | 1 | ~~20~~ |
-| 9 | **Backend has zero automated tests** | Test | 4 | 5 | 4 | **18** ⚠ |
+| ~~9~~ | ~~**Backend has zero automated tests**~~ — ✅ **FIXED `f7f6996`** (27 characterization tests pinning the scoring path; mutation-checked 3 ways) | Test | 4 | 5 | 4 | ~~18~~ |
 | 10 | npm dependency drift | Dependency | 2 | 2 | 2 | 16 |
 | 11 | 2 timing-flaky specs on cold runs | Test | 2 | 2 | 2 | 16 |
 | 12 | Conformance runner is cookieless | Security | 2 | 3 | 3 | 15 |
@@ -48,7 +48,7 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | 20 | Five copy constants defined but unwired | Code | 1 | 1 | 2 | 8 |
 | 21 | Durable stores are browser-local only | Architecture | 3 | 4 | 5 | 7 |
 
-⚠ **#9 is mis-ranked by the formula and you should know it.** See the note under it.
+⚠ ~~**#9 is mis-ranked by the formula**~~ — it was, and it was done anyway (`f7f6996`), ahead of higher-scoring items, precisely because the formula under-ranked it.
 
 ---
 
@@ -144,7 +144,7 @@ defer it again. That is the loop that turns a deploy into an event.
 `docs/DEPLOY_RUNBOOK.md` on a fixed cadence. **Effort: half a day for automation.** The runbook is
 current and was exercised for real in June.
 
-### 9. The backend has zero automated tests — score 18, and the formula is wrong here **[measured]**
+### 9. The backend has zero automated tests — score 18 — ✅ **FIXED 2026-07-28 (`f7f6996`)**
 
 `apps/api` has **52 source files and 0 test files**. `CLAUDE.md` states this openly: verification is
 by app-run plus `interface_conformance.py`.
