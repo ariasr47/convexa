@@ -35,8 +35,9 @@ The register's own numbering below (`### 1`, `### 2`, …) follows the table.
 | 7 | Conformance check is **not in CI** | Infra | 2 | 3 | 2 | **20** |
 | ~~8~~ | ~~`nx format:write` repo-wide hazard undocumented~~ — ✅ **FIXED `e66e7ff`** (CLAUDE.md "Traps" + eslint worktree ignore) | Docs | 2 | 2 | 1 | ~~20~~ |
 | ~~9~~ | ~~**Backend has zero automated tests**~~ — ✅ **FIXED `f7f6996`** (27 characterization tests pinning the scoring path; mutation-checked 3 ways) | Test | 4 | 5 | 4 | ~~18~~ |
-| 10 | npm dependency drift | Dependency | 2 | 2 | 2 | 16 |
-| 11 | 2 timing-flaky specs on cold runs | Test | 2 | 2 | 2 | 16 |
+| ~~10~~ | ~~npm dependency drift~~ — ✅ **FIXED `5616de8`** (all minor/patch + both HIGH audit findings cleared) | Dependency | 2 | 2 | 2 | ~~16~~ |
+| **22** | **`react-router-dom` open-redirect → XSS (2 moderate CVEs) — fix is a SEMVER MAJOR (6.30.3 → 7.18.2)** | Security | 3 | 4 | 3 | **21** |
+| 11 | 2 timing-flaky specs on cold runs — *carried; NOT reproduced in ~10 full runs on 2026-07-28* | Test | 2 | 2 | 2 | 16 |
 | 12 | Conformance runner is cookieless | Security | 2 | 3 | 3 | 15 |
 | 13 | Orphaned dev servers hold ports | Infra | 2 | 1 | 1 | 15 |
 | 14 | No auth schema-migration path | Architecture | 3 | 4 | 4 | 14 |
