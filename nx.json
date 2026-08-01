@@ -53,6 +53,13 @@
       }
     },
     {
+      "plugin": "@nx/playwright/plugin",
+      "options": {
+        "targetName": "e2e-pw",
+        "ciTargetName": "e2e-pw-ci"
+      }
+    },
+    {
       "plugin": "@nx/cypress/plugin",
       "options": {
         "targetName": "e2e",

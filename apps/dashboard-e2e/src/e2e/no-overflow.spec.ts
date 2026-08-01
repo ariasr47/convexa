@@ -1,0 +1,489 @@
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * NO-HORIZONTAL-OVERFLOW enforcement (redesign-stage-0 FRONTEND_EXECUTION_CONTRACT §8.1;
+ * convexa-design skill rule 9 — `scrollWidth 580 vs 393` was the documented failure).
+ * Silently-regressing: ANY future component can break it, so it is a re-runnable real-browser test,
+ * not a one-off review.
+ *
+ * PORTED FROM `mobile-no-overflow.cy.ts` (2026-07-28), assertion-for-assertion. Renamed because the
+ * suite stopped being mobile-only when md/lg were added — the old name had become a lie.
+ *
+ * On every trader route:
+ *   `document.documentElement.scrollWidth <= window.innerWidth`
+ * at 393×852 in BOTH colour schemes, and at md (900) + lg (1280) in one scheme (see WIDE_VIEWPORTS),
+ * plus the mobile-nav presence check (the hamburger renders below md; the drawer carries the nav).
+ *
+ * The network boundary is stubbed so the ticker board actually renders content-full (an error/blank
+ * page would make the check vacuous). SSE is left unstubbed — the static board renders from the REST
+ * bundle regardless (`[live-vs-static-isolation]`).
+ *
+ * TRANSLATION NOTES, so a reader can audit the port rather than trust it:
+ *  - `cy.intercept` → ONE `page.route('**\/api/**')` handler with explicit URL branching. Playwright
+ *    resolves overlapping route patterns by registration order, and `/api/scan/universe` vs
+ *    `/api/scan` overlap; a single handler removes the ordering subtlety entirely.
+ *  - `cy.visit(path, { onBeforeLoad(win) { win.localStorage… } })` → `page.addInitScript`, which runs
+ *    before any page script on every navigation — the same "seed before the app reads it" guarantee.
+ *  - `.should('have.length', n)` → `toHaveCount(n)`; `.should('exist')` → `toBeAttached()`;
+ *    `.should('not.exist')` → `toHaveCount(0)`; `.should('not.be.visible')` → `toBeHidden()`.
+ *  - Cypress retried its assertions implicitly; Playwright's `expect` is web-first and auto-retries,
+ *    so no explicit waits were added — and none should be.
+ */
+
+const VIEWPORT = { width: 393, height: 852 };
+
+/**
+ * THE WIDER BANDS (tech-debt #3). Until 2026-07-28 this suite asserted at 393px and NOTHING else,
+ * which is why `/positions` overflowed at 900px unnoticed — found by hand, during an unrelated
+ * feature, and recorded in a comment. A comment does not fail a build.
+ *
+ * `md` (900) and `lg` (1280) carry the app's densest surfaces — the multi-column positions table and
+ * the 11-column scanner. Breakpoints are MUI defaults (sm 600 · md 900 · lg 1200 · xl 1536).
+ *
+ * ONE SCHEME for the wider bands, deliberately: horizontal overflow is box geometry and dark/light
+ * change no widths — same fonts, padding, borders. 393px keeps BOTH schemes because that is where
+ * content is tightest. If a scheme-dependent width ever appears, this is the assumption to revisit.
+ */
+const WIDE_VIEWPORTS = [
+  { label: 'md 900', width: 900, height: 900 },
+  { label: 'lg 1280', width: 1280, height: 900 },
+] as const;
+
+/** Interface-shaped bundle (enough for a content-full board). */
+const bundle = {
+  market_state: {
+    ticker: 'TSLA',
+    price: 250,
+    gex_spot: 250,
+    timestamp: 1,
+    timestamp_iso: '2026-06-23T14:00:00Z',
+    call_wall: 260,
+    put_wall: 240,
+    peak_gex_strike: 255,
+    gamma_flip: 248,
+    max_pain: 250,
+    max_pain_expiration: '2026-06-26',
+    net_gex: 1,
+    call_gex: 1,
+    put_gex: -1,
+    total_gex: 1,
+    net_dex: 1,
+    call_dex: 1,
+    put_dex: -1,
+    net_vanna: null,
+    net_charm: null,
+    net_volga: null,
+    vwap: 249,
+    vwap_upper_2: null,
+    vwap_upper_3: null,
+    vwap_lower_2: null,
+    vwap_lower_3: null,
+    dte_min: 7,
+    dte_max: 45,
+    atm_iv: 45,
+    hv_30d: 40,
+    iv_hv_ratio: 1.1,
+    net_flow: null,
+    put_call_ratio: 0.8,
+    chain_vol_oi_ratio: 0.5,
+    total_volume: 100000,
+    vol_oi_unusual_threshold: 1,
+    iv_skew: null,
+    term_structure: null,
+    dealer_flow_projection: null,
+  },
+  signals: {
+    ticker: 'TSLA',
+    regime: 'positive_gamma',
+    regime_note: null,
+    vol_regime: 'neutral',
+    distances: {},
+    setups: [],
+    opportunity_score: 42,
+    opportunity_tier: 'watch',
+    prime_prompt_eligible: false,
+  },
+  strike_profile: {
+    ticker: 'TSLA',
+    spot: 250,
+    strikes: [245, 250, 255].map((strike) => ({
+      strike,
+      net_gex: strike === 250 ? 2 : -1,
+      call_gex: 1,
+      put_gex: -1,
+      call_oi: 10,
+      put_oi: 10,
+      total_oi: 20,
+      net_dex: 0,
+      call_dex: 0,
+      put_dex: 0,
+      volume: 5,
+      vol_oi_ratio: 0.25,
+    })),
+  },
+  expirations: [
+    { date: '2026-07-17', dte: 24 },
+    { date: '2026-08-21', dte: 59 },
+  ],
+  ai_eval: {
+    ready: true,
+    reasons: [],
+    changed: true,
+    state_fingerprint: 'fp-e2e',
+    score_threshold: 50,
+  },
+  meta: {
+    served_at: '2026-06-23T14:00:00Z',
+    cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
+    freshness: {
+      snapshot_iso: '2026-06-23T14:00:00Z',
+      data_age_seconds: 10,
+      stale: false,
+      stale_after_seconds: 600,
+    },
+  },
+  position_eval: null,
+};
+
+/** Interface-shaped scan payload — enough for a content-full table/card render. */
+const scan = {
+  view: {
+    source: 'default',
+    authenticated: false,
+    name: null,
+    symbols: ['SPY', 'QQQ', 'NVDA'],
+    sort: { key: 'score', dir: 'desc' },
+    density: 'compact',
+  },
+  rows: ['SPY', 'QQQ', 'NVDA'].map((symbol, i) => ({
+    symbol,
+    price: 500.25 + i,
+    chg_pct: i === 1 ? -1.42 : 1.24,
+    score: 82 - i,
+    tier: 'prime',
+    regime: 'positive_gamma',
+    vol_regime: 'iv_rich',
+    flip: 495.5,
+    dist_to_flip_pct: 1.01,
+    call_wall: 510,
+    put_wall: 490,
+    dist_to_wall_pct: 1.94,
+    as_of: Math.floor(Date.now() / 1000) - 42,
+    status: 'ok',
+  })),
+  sweep: {
+    updated_at: Math.floor(Date.now() / 1000),
+    sweep_last_completed: Math.floor(Date.now() / 1000) - 30,
+    universe_size: 3,
+  },
+};
+
+/** Route → a marker proving the destination page actually rendered before we measure. */
+const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
+  { path: '/', ready: async (p) => void (await expect(p.getByTestId('landing')).toBeAttached()) },
+  {
+    path: '/ticker/TSLA',
+    ready: async (p) => void (await expect(p.getByText('Call wall').first()).toBeAttached()),
+  },
+  {
+    path: '/positions',
+    ready: async (p) => void (await expect(p.getByTestId('portfolio-panel')).toBeAttached()),
+  },
+  {
+    path: '/scanner',
+    ready: async (p) => void (await expect(p.getByTestId('scanner-page')).toBeAttached()),
+  },
+  {
+    path: '/settings',
+    ready: async (p) => void (await expect(p.getByTestId('settings-page')).toBeAttached()),
+  },
+];
+
+// ---- A SEEDED positions book ---------------------------------------------------------------------
+//
+// Without this, `/positions` renders its EMPTY state and the overflow assertion is close to vacuous —
+// it measures a page with no positions on it. These four records exercise the widest content the
+// surface can carry from the durable store: the structure line, the five-item footer (Qty · Net
+// debit/credit · Mark · expiry · the RISK SLOT), and the malformed-record row whose cells read
+// `Custom` / `unavailable` / `not recorded` / `unnamed shape`.
+
+/** A shipped v2 record. NOTE THE SHAPE: ONE contract per record. */
+function v2Position(over: Record<string, unknown>) {
+  return {
+    ticker: 'TSLA',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    side: 'long',
+    qty: 2,
+    entry_mark: 12.4,
+    entry_basis: 'user_entered',
+    entry_mode: 'manual',
+    entry_time: '2026-06-12T15:32:00Z',
+    status: 'open',
+    schema_version: 2,
+    ...over,
+  };
+}
+
+const SEEDED_POSITIONS = {
+  'e2e-1': v2Position({ id: 'e2e-1' }),
+  'e2e-2': v2Position({ id: 'e2e-2', ticker: 'NVDA', strike: 170, right: 'put', qty: 1 }),
+  'e2e-3': v2Position({ id: 'e2e-3', ticker: 'SPY', strike: 560, qty: 3, entry_mark: 6.1 }),
+  // A MALFORMED migrated record — no `right`, no `expiration`. The lift is forbidden from
+  // fabricating either, so this row carries the longest withheld/not-recorded copy on the surface.
+  'e2e-4': {
+    id: 'e2e-4',
+    ticker: 'AMD',
+    strike: 160,
+    side: 'long',
+    qty: 2,
+    entry_mark: 5.2,
+    entry_basis: 'user_entered',
+    entry_time: '2026-06-26T15:10:00Z',
+    status: 'open',
+    schema_version: 2,
+  },
+};
+
+/**
+ * A FOUR-LEG iron condor, written exactly the way the multi-leg entry path writes one (F15): the
+ * additive optional `legs` array is authoritative and the flat contract fields beside it are the
+ * lossy first-leg summary an older reader would fall back to.
+ */
+function condorLeg(over: Record<string, unknown>) {
+  return {
+    kind: 'option',
+    ticker: 'META',
+    side: 'long',
+    qty: 1,
+    multiplier: 100,
+    entry_price: 12.4,
+    entry_basis: 'user_entered',
+    expiration: '2026-08-21',
+    strike: 400,
+    right: 'call',
+    ...over,
+  };
+}
+
+const CONDOR = {
+  id: 'e2e-condor',
+  ticker: 'META',
+  expiration: '2026-08-21',
+  strike: 440,
+  right: 'call',
+  side: 'long',
+  qty: 1,
+  entry_mark: 12.4,
+  entry_basis: 'user_entered',
+  entry_mode: 'manual',
+  entry_time: '2026-06-12T15:32:00Z',
+  status: 'open',
+  schema_version: 2,
+  legs: [
+    condorLeg({ id: 'e2e-condor-l0', strike: 440 }),
+    condorLeg({ id: 'e2e-condor-l1', strike: 420, side: 'short', entry_price: 6.1 }),
+    condorLeg({ id: 'e2e-condor-l2', strike: 380, right: 'put', side: 'short', entry_price: 5 }),
+    condorLeg({ id: 'e2e-condor-l3', strike: 360, right: 'put', entry_price: 2.5 }),
+  ],
+};
+
+/**
+ * Seed localStorage BEFORE any page script runs — the `onBeforeLoad` equivalent. `addInitScript`
+ * re-applies on every navigation in the page's lifetime, which is what the seeded routes need.
+ */
+async function seed(
+  page: Page,
+  opts: { scheme: 'dark' | 'light'; positions?: 'none' | 'book' | 'book+condor' },
+) {
+  const positions =
+    opts.positions === 'book'
+      ? SEEDED_POSITIONS
+      : opts.positions === 'book+condor'
+        ? { ...SEEDED_POSITIONS, 'e2e-condor': CONDOR }
+        : null;
+
+  await page.addInitScript(
+    ({ scheme, positions }) => {
+      window.localStorage.setItem(
+        'convexa.uiprefs.v1',
+        JSON.stringify({ schema_version: 1, theme: scheme, default_ticker: null }),
+      );
+      if (positions) {
+        window.localStorage.setItem(
+          'convexa.positions.v2',
+          // No `customization` — the store seeds its own defaults, which is what a real user has.
+          JSON.stringify({ schema_version: 2, positions, decisions: [] }),
+        );
+      }
+    },
+    { scheme: opts.scheme, positions },
+  );
+}
+
+/** ONE handler, explicit branching — see the translation note at the top of the file. */
+async function stubNetwork(page: Page) {
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname;
+
+    if (path.startsWith('/api/auth/session')) {
+      return route.fulfill({
+        json: { authenticated: false, user: null, google_available: false, settings: null },
+      });
+    }
+    if (path.startsWith('/api/ticker/')) return route.fulfill({ json: bundle });
+    if (path.startsWith('/api/recommendation/status/')) {
+      return route.fulfill({
+        json: {
+          availability: { in_app_enabled: true },
+          gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+          cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
+        },
+      });
+    }
+    if (path.startsWith('/api/personas')) {
+      return route.fulfill({ json: [{ id: 'default', name: 'Default (no persona)' }] });
+    }
+    if (path.startsWith('/api/contract/')) return route.fulfill({ status: 404, body: '' });
+    if (path.startsWith('/api/scan/universe')) {
+      return route.fulfill({ json: { symbols: ['SPY', 'QQQ', 'NVDA'], universe_size: 3 } });
+    }
+    if (path.startsWith('/api/scan')) return route.fulfill({ json: scan });
+
+    // Anything else (incl. SSE) is left to the network, exactly as the Cypress suite did.
+    return route.fallback();
+  });
+}
+
+async function assertNoHorizontalOverflow(page: Page) {
+  const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  expect(scrollWidth, `scrollWidth ${scrollWidth} must fit innerWidth ${innerWidth}`).toBeLessThanOrEqual(
+    innerWidth,
+  );
+}
+
+for (const scheme of ['dark', 'light'] as const) {
+  test.describe(`393px no-overflow · ${scheme} scheme`, () => {
+    test.use({ viewport: VIEWPORT });
+
+    test.beforeEach(async ({ page }) => {
+      await stubNetwork(page);
+    });
+
+    for (const r of ROUTES) {
+      test(`${r.path} fits the viewport (scrollWidth <= innerWidth)`, async ({ page }) => {
+        await seed(page, { scheme });
+        await page.goto(r.path);
+        await r.ready(page);
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+
+    test('/scanner collapses the dense table to cards below sm (no clipped columns at 393px)', async ({
+      page,
+    }) => {
+      await seed(page, { scheme });
+      await page.goto('/scanner');
+      await expect(page.getByTestId('scanner-page')).toBeAttached();
+      // The 11-column terminal table does not exist at phone width — cards do.
+      await expect(page.getByTestId('scan-cards')).toBeAttached();
+      await expect(page.getByTestId('scan-table')).toHaveCount(0);
+      await expect(page.getByTestId('scan-card')).toHaveCount(3);
+      // The whole card is the navigation target, and it goes to the Ticker page — nothing else.
+      await expect(page.getByTestId('scan-card').first()).toHaveAttribute('href', '/ticker/SPY');
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('/positions fits at 393px with a SEEDED book — cards, five-item footers, the risk slot', async ({
+      page,
+    }) => {
+      await seed(page, { scheme, positions: 'book' });
+      await page.goto('/positions');
+      await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+      // VACUITY GUARDS — without these a selector that silently stops matching turns the overflow
+      // check into a measurement of an empty page.
+      await expect(page.getByTestId('position-card')).toHaveCount(4);
+      // Qty · Net debit/credit · Mark · expiry · the risk slot
+      await expect(page.getByTestId('card-footer').first().locator('> *')).toHaveCount(5);
+      await expect(page.getByTestId('card-max-loss')).toHaveCount(4);
+      // The malformed record renders its stated reason, not a blank and not a number.
+      await expect(
+        page.getByTestId('card-max-loss').filter({ hasText: 'unnamed shape' }).first(),
+      ).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
+    /**
+     * THE 4-LEG-EXPANDED CASE — SPEC §7 invariant 11, AC-30. `aria-expanded="true"` is asserted
+     * BEFORE measuring, because without it a selector that stops matching makes the overflow check
+     * vacuous — the exact failure this case closes.
+     */
+    test('a 4-leg disclosure EXPANDED at 393px still does not overflow', async ({ page }) => {
+      await seed(page, { scheme, positions: 'book+condor' });
+      await page.goto('/positions');
+      await expect(page.getByTestId('position-card')).toHaveCount(5);
+      // VACUITY GUARD 1 — the multi-leg record really did survive the round-trip as four legs.
+      await expect(page.getByTestId('leg-disclosure-toggle')).toHaveCount(1);
+      await page.getByTestId('leg-disclosure-toggle').click();
+      // VACUITY GUARD 2 — the expansion actually happened, and it really is four leg lines.
+      await expect(page.locator('[aria-expanded="true"]').first()).toBeAttached();
+      await expect(page.getByTestId('leg-line')).toHaveCount(4);
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('below md the nav collapses: hamburger present, no inline nav row', async ({ page }) => {
+      await seed(page, { scheme });
+      await page.goto('/scanner');
+      await expect(page.getByTestId('scanner-page')).toBeAttached();
+      await expect(page.getByTestId('nav-menu-button')).toBeVisible();
+      await expect(page.getByTestId('nav-ticker')).toBeHidden(); // inline nav hidden below md
+      // The drawer carries ALL four entries (incl. Blog, which previously clipped off-screen).
+      await page.getByTestId('nav-menu-button').click();
+      for (const e of ['ticker', 'positions', 'scanner', 'blog']) {
+        await expect(page.getByTestId(`nav-drawer-${e}`)).toBeVisible();
+      }
+    });
+  });
+}
+
+// ---- THE WIDE BANDS — md and lg ------------------------------------------------------------------
+//
+// `/positions` is SEEDED here for the same reason it is seeded at 393px: at these widths it renders
+// the multi-column TABLE, and an empty book would make the measurement close to vacuous — it is the
+// content-full table that overflows, not the empty state.
+//
+// HISTORY worth keeping: /positions overflowed at 900px (documentElement scrollWidth 958 vs
+// innerWidth 900) because `CustomizationToolbar`'s control row carried
+// `flexWrap: { xs: 'wrap', sm: 'nowrap' }` — wrapping switched OFF at 600px while the row's content
+// measures ~934px, so the ENTIRE 600–1199px band could not wrap and pushed the `open-entry` CTA
+// off-screen. Fixed by wrapping until `lg`. These assertions are what stop it returning.
+for (const vp of WIDE_VIEWPORTS) {
+  test.describe(`${vp.label} no-overflow · dark scheme`, () => {
+    test.use({ viewport: { width: vp.width, height: vp.height } });
+
+    test.beforeEach(async ({ page }) => {
+      await stubNetwork(page);
+    });
+
+    for (const r of ROUTES) {
+      test(`${r.path} fits ${vp.width}px (scrollWidth <= innerWidth)`, async ({ page }) => {
+        await seed(page, {
+          scheme: 'dark',
+          positions: r.path === '/positions' ? 'book+condor' : 'none',
+        });
+        await page.goto(r.path);
+        await r.ready(page);
+        // VACUITY GUARD for the seeded route: prove the book actually rendered before measuring.
+        if (r.path === '/positions') {
+          await expect(page.getByTestId('portfolio-panel')).toBeAttached();
+        }
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+  });
+}
