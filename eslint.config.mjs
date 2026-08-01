@@ -25,6 +25,15 @@ export default [
       '**/test-output',
       // apps/api is the Python backend — not part of the JS/TS lint graph.
       'apps/api/**',
+      // Git worktrees live here and are GITIGNORED, so they never exist in a CI checkout — but
+      // locally they are full copies of the repo, and linting them reported 157 errors from code
+      // that is not in this working tree. That made `nx run-many -t lint` (the exact command CI
+      // runs) fail on any machine that has a worktree, looking exactly like a real regression.
+      '.claude/worktrees/**',
+      // Playwright artifacts (e2e migrated from Cypress 2026-07-28).
+      '**/playwright-report',
+      '**/blob-report',
+      '**/test-results',
     ],
   },
   {

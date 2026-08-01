@@ -33,3 +33,30 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
 
 `npm run dev` (serve all), `test`, `lint`, `format` / `format:check`, `graph`, plus
 `serve:api` / `serve:dashboard`.
+
+## Traps (learned the hard way — read before running these)
+
+- **NEVER run a bare `nx format:write`.** It is **repo-wide**: one bare run reformatted **92
+  unrelated files** — blog HTML, READMEs, auth modules — because it applies an organize-imports pass
+  to everything it can parse. **Always scope it:** `npx nx format:write --files path/a,path/b`.
+  `format:check` takes the same `--files` flag. (Found 2026-07-28; the lane caught it and reverted
+  everything outside its change set.)
+- **A green `nx test` does NOT mean the types are sound.** Vitest transpiles without typechecking, so
+  a type error reaches a branch happily. This repo has been bitten **three times** — a duplicate `sx`
+  that only `nx build` caught (`OPEN_THREADS` §7l), a stale spec assertion that failed GATE Q, and a
+  missing DOM lib during the Playwright migration. **Run `nx typecheck` before claiming green.** CI
+  runs it, so it will find you eventually — the question is whether it does so before or after you
+  said the work was done.
+- **Check EXIT CODES, not printed summaries.** A suite once printed `1004 passed` while exiting
+  non-zero, and a report called it green. `echo $?` or `PIPESTATUS`, always.
+- **e2e is Playwright** (migrated back from Cypress 2026-07-28). It needs its browser binary:
+  `npx playwright install chromium`. Specs are `apps/dashboard-e2e/src/e2e/*.spec.ts`.
+- **NUL bytes make a source file BINARY to git and grep.** `outcomes/sources.ts` used raw NULs as a
+  key separator, so `git diff` rendered "Binary files differ" and its changes were **unreviewable**.
+  Write the separator as the two-character escape (backslash then zero), never a literal NUL.
+  **This trap landed three times in one session** — once in the source file, once in
+  `.claude/OPEN_THREADS.md` (which made the **canon** partially invisible to grep, silently
+  truncating `grep "^## "` two-thirds of the way through), and once _inside the sentence documenting
+  it_. **Verify with a byte scan, not by eye** — a NUL renders as nothing in a diff, an editor, or a
+  terminal:
+  `python -c "import io;print(io.open('FILE','rb').read().count(bytes([0])))"`
