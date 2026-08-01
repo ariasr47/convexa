@@ -416,6 +416,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
+- **Index-first defaults (`index-first-defaults`, FE-only, shipped 2026-08-01)** — the edge-first
+  roadmap's first feature (`docs/ROADMAP_2026-08.md`): bare `/ticker` falls back to **SPY** via a
+  pref-wins `DefaultTickerRedirect` (a stored `default_ticker` ALWAYS wins; auth fault ⇒ anonymous,
+  never a hang; deep links unaffected); the scanner zero-state leads with an **"Indexes & megacaps"**
+  group (closed lookup `INDEX_MEGACAP_SYMBOLS` — a hand-mirrored copy of `universe.json`'s ETF+megacap
+  lines, see OPEN_THREADS §7y seams; saved views render as saved); non-universe tickers show a
+  one-line muted single-name honesty caption whose rule honors `[absent-is-not-none]` (universe
+  unknown/failed/empty ⇒ NO caption). `NO_BACKEND_CHANGE`; QA PASS 6/6; suite 1104/99.
 - On-demand bundle: `GET /{ticker}` & `/api/ticker/{ticker}` (+ slices) with DTE/expiration filter.
 - GEX strike-profile chart (walls always in-window, spot/flip/live reference lines, tooltips).
 - Live SSE: mid, spread, **net flow (5m, signed)**, live gamma flip; session-aware status chip.

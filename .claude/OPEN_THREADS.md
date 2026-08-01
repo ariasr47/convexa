@@ -994,6 +994,23 @@ holding >1 position on a ticker — belongs with the deferred alert surface) · 
 defined-but-unwired, pending that consumer) · a table column for max loss at `md` (blocked on the
 pre-existing `md` page overflow, §8).
 
+### 7y. index-first-defaults (SHIPPED + ARCHIVED 2026-08-01 — the roadmap's first feature)
+First feature of the owner-adopted edge-first roadmap (`docs/ROADMAP_2026-08.md`; BACKLOG GATE I
+2026-08-01). GATE V fast-path, FE-only, `NO_BACKEND_CHANGE` (QA-proved empty `apps/api` diff).
+Shipped (`832f0a7`): bare `/ticker` fallback TSLA→SPY via a new pref-wins `DefaultTickerRedirect`
+(user `default_ticker` always wins — server-wins signed-in, local anonymous; a who-am-I fault
+degrades to anonymous, never hangs; deep links never wait); the scanner zero-state leads with an
+**"Indexes & megacaps"** group (closed lookup, saved views untouched); the one-line single-name
+honesty caption on non-universe tickers (`[model-read-carries-its-assumptions]` applied to the
+surface; muted token-only). `[absent-is-not-none]` carried into the caption rule: universe
+fetch failed/pending/EMPTY ⇒ `unknown` ⇒ NO caption — the app never claims "thin name" from
+"we don't know". QA PASS 6/6 (de-correlated Sonnet, all gates independently re-run; suite
+**1104/99 the new baseline**, e2e 33/33). Ledger: no new rows — every touched key already canon.
+**Deferred seams:** `INDEX_MEGACAP_SYMBOLS` in `pages/scanner/labels.ts` is a HAND-MIRRORED copy
+of `universe.json`'s ETF+megacap lines (documented in its docblock) — re-mirror on any universe
+re-curation, or later derive a marker server-side; the caveat's membership rule could graduate
+from universe-membership to a real options-liquidity floor if one ever ships on the bundle.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

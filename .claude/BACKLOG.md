@@ -40,11 +40,12 @@ rationale, budget variants, and the pre-committed kill/continue gates.
 **Strategy in one line:** prove the edge on the owner's own trading first (the outcome ledger is the
 judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-writing** — never before.
 **Queue (in order):**
-1. **⏭ NEXT — `index-first-defaults` (N3)** — small GATE-V-shaped FE feature: default ticker → SPY,
-   scanner default view pinned to indexes+liquid megacaps, a one-line honesty caveat on thin single
-   names. Evidence: the documented GEX edge is index-first; single-name is the weak case. BRIEF at
-   `.claude/contracts/index-first-defaults/BRIEF.md`.
-2. **`broker-connect` (X1)** — READ-ONLY real positions via **SnapTrade** (free ≤5 connections; Webull
+1. **`index-first-defaults` (N3) — ✓ SHIPPED + ARCHIVED same day (2026-08-01, `832f0a7`).** GATE V
+   fast-path; QA PASS 6/6 (de-correlated Sonnet); suite 1104/99 the new baseline; empty `apps/api`
+   diff; no new ledger rows (all touched keys already canon). Seams → OPEN_THREADS §7y (the
+   hand-mirrored `INDEX_MEGACAP_SYMBOLS` maintenance contract). *(original entry:)* default ticker →
+   SPY (pref wins), scanner zero-state leads indexes+megacaps, single-name honesty caption.
+2. **⏭ NEXT — `broker-connect` (X1)** — READ-ONLY real positions via **SnapTrade** (free ≤5 connections; Webull
    officially partnered 2025-12-16 — Webull-direct is dead, do not build it). Full council. **Fires the
    deferred system-6 security review** (first real-account connection — the long-standing trigger).
    `[no-real-order-path]` narrowing (read OK, no execution) formalizes at its GATE S as planned.
