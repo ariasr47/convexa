@@ -48,7 +48,7 @@ afterEach(() => {
 
 describe('requestRecommendation', () => {
   it('POSTs to /api/recommendation/{ticker} with only identifiers + gating context — NO key', async () => {
-    const fetchFn = stubFetch((_url) => ok({ status: 'produced' }));
+    const fetchFn = stubFetch(() => ok({ status: 'produced' }));
     await requestRecommendation('tsla', REQ);
 
     const [url, init] = fetchFn.mock.calls[0];

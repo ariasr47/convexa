@@ -10,8 +10,9 @@
  *  2. Durability — saved views + the book restore after reload; v1→v2 migration carry-over.
  *  3. Isolation — one row's contract-lookup failure never poisons the others; a market entry with no
  *     resolvable price can never create a position.
- *  4. `no-real-order-path` — the Live tab is inert BY CONSTRUCTION (a `?raw` import-allowlist scan of
- *     LiveTabPanel: it can wire to nothing) + rendered inertness + the PAPER/disclosure honesty rail.
+ *  4. `no-real-order-path` — the PAPER/disclosure honesty rail on the sim surface; the Broker tab's
+ *     negative space (no order affordance, no TradeEntryDialog, no sim-store write) is owned by its
+ *     successor suite `features/trading/broker/broker.risk.spec.tsx` (broker-connect supersede).
  *  5. `additive-keeps-score-byte-identical` — the portfolio never issues a bundle/scoring request.
  *  6. Grouping/customization is a pure re-derivation (never a refetch).
  *
@@ -31,11 +32,10 @@ import { streamTicker } from '@org/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
+// broker-connect: the Broker tab's S1 CTA is a router deep-link (`/settings#brokerage`), so the
+// harness mounts under a MemoryRouter exactly as the app mounts under its BrowserRouter.
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LiveTabPanel } from './LiveTabPanel';
-// The Vite `?raw` idiom (fileURLToPath(new URL(...)) THROWS in this Vitest env): the Live tab's
-// zero-import lock is asserted on the SOURCE TEXT, so it is enforced by construction.
-import liveTabSource from './LiveTabPanel?raw';
 import { PortfolioPanel } from './PortfolioPanel';
 import { PositionsView, type ViewProps } from './PositionsView';
 import type { DerivedGroup } from './derive';
@@ -217,6 +217,13 @@ function installBackend(cfg: Cfg = {}) {
         });
       // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
       if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
+      // broker-connect: the Broker tab's gated reads — the fresh-session no-credential arm. The
+      // FULL broker state machine is owned by the broker suites; here the tab only needs its
+      // honest S1, and the negative-space assertions need these routes to exist.
+      if (url.includes('/api/broker/credential'))
+        return json({ set: false, last4: null, storage_available: true });
+      if (url.includes('/api/broker/book'))
+        return json({ state: 'unknown', reason: 'no_credential_stored', positions: [] });
       if (url.includes('/api/contract/')) {
         const u = new URL(url, 'http://x');
         const s = Number(u.searchParams.get('strike'));
@@ -274,20 +281,22 @@ function Harness({ forceOffline = false }: { forceOffline?: boolean }) {
   const pf = usePortfolio('TSLA', data, live, isLive, streamOffline);
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <AuthDialogProvider>
-          <PortfolioPanel
-            pf={pf}
-            data={data}
-            live={live}
-            isLive={isLive}
-            streamOffline={streamOffline}
-            ticker="TSLA"
-            entryOpen={entryOpen}
-            onEntryOpen={setEntryOpen}
-          />
-        </AuthDialogProvider>
-      </AuthProvider>
+      <MemoryRouter>
+        <AuthProvider>
+          <AuthDialogProvider>
+            <PortfolioPanel
+              pf={pf}
+              data={data}
+              live={live}
+              isLive={isLive}
+              streamOffline={streamOffline}
+              ticker="TSLA"
+              entryOpen={entryOpen}
+              onEntryOpen={setEntryOpen}
+            />
+          </AuthDialogProvider>
+        </AuthProvider>
+      </MemoryRouter>
     </ThemeProvider>
   );
 }
@@ -559,15 +568,22 @@ describe('positions · failure isolation', () => {
     );
     expect(screen.getAllByTestId('cell-mark').length).toBeGreaterThan(0); // the healthy row still marks
 
-    // --- Live tab: no positions, no entry, no order, no network call ---
+    // --- Broker tab (broker-connect): no sim rows, no entry affordance, and the ONLY network
+    //     calls it adds are the gated /api/broker/* reads — never a bundle/contract/scoring one.
     await fetchSettled();
-    const fetchBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callsBefore = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) =>
+      String(c[0]),
+    );
     await user.click(screen.getByTestId('tab-live'));
-    expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('broker-tab-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('position-row')).toBeNull();
     expect(screen.queryByTestId('open-entry')).toBeNull();
-    // switching to Live triggered no extra fetch
-    expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(fetchBefore);
+    await waitFor(() => expect(screen.getByTestId('broker-s1')).toBeInTheDocument());
+    const added = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls
+      .map((c) => String(c[0]))
+      .slice(callsBefore.length);
+    expect(added.length).toBeGreaterThan(0);
+    for (const url of added) expect(url).toMatch(/\/api\/broker\//);
   }, 20000);
 
   it('a market entry with NO resolvable price cannot create a position (isolated failure)', async () => {
@@ -633,44 +649,12 @@ describe('positions · failure isolation', () => {
 // 5. no-real-order-path — structural locks (HARD invariants)
 // =================================================================================================
 describe('positions · no-real-order-path', () => {
-  it('LiveTabPanel is inert BY CONSTRUCTION: its import allowlist admits no data source, and it renders no affordance', () => {
-    // Source-text scan (comments stripped so prose can't false-positive): every import specifier
-    // must be MUI, the static copy module, or the static hatch value — nothing live, ever.
-    const src = liveTabSource.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
-    expect(specifiers.length).toBeGreaterThan(0);
-    // redesign-stage-3 §4.2 (a DELIBERATE, named allowlist extension): `@/shared/theme/tokens`
-    // is a STATIC VALUE module (pure design-token constants — no store, no transport, no hook,
-    // no position data), the same class as `./labels` and the hatch value. The LOCKED chip's
-    // text-grade amber resolves via its `extrasFor` — the zero-import lock is about DATA
-    // sources and stays intact. Anything live remains forbidden.
-    const allowed = [
-      /^@mui\//,
-      /^@\/shared\/ui\/ComingSoonBox$/,
-      /^@\/shared\/theme\/tokens$/,
-      /^\.\/labels$/,
-    ];
-    for (const spec of specifiers) {
-      expect(
-        allowed.some((re) => re.test(spec)),
-        `forbidden import in LiveTabPanel: ${spec}`,
-      ).toBe(true);
-    }
-    // No transport escape hatches either (an inline fetch/EventSource would bypass imports).
-    expect(src).not.toMatch(/\bfetch\s*\(/);
-    expect(src).not.toMatch(/\bEventSource\b/);
-
-    // Rendered inertness: no buttons, no links, no inputs.
-    render(
-      <ThemeProvider theme={theme}>
-        <LiveTabPanel />
-      </ThemeProvider>,
-    );
-    expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.queryByRole('link')).toBeNull();
-    expect(screen.queryByRole('textbox')).toBeNull();
-  });
+  // SUPERSEDED (broker-connect): the "LiveTabPanel is inert BY CONSTRUCTION" `?raw` allowlist test
+  // guarded the LOCKED placeholder, which the sanctioned Broker tab replaced. Its SUCCESSOR is the
+  // broker negative-space suite — `features/trading/broker/broker.risk.spec.tsx` — which scans the
+  // ENTIRE broker module for TradeEntryDialog references, sim-store imports, `convexa.` durable
+  // keys, order-affordance testids across every rendered state, and the trader-visible `live`
+  // freshness word (negation-only allowance). Never deleted without replacement.
 
   it('SIMULATED is unmistakable: PAPER badge + the mandatory browser-local disclosure; no real-order affordance', async () => {
     const user = userEvent.setup();
@@ -682,7 +666,11 @@ describe('positions · no-real-order-path', () => {
       AUTH_COPY.positions.disclosure,
     );
     expect(screen.queryByText(/place real order/i)).toBeNull();
-    expect(screen.queryByText(/broker/i)).toBeNull();
+    // The SIM surface itself never mentions the broker; the ONLY /broker/i text on the whole
+    // panel is the second tab's own label (the broker-connect tab, internal testid `tab-live`).
+    const brokerMentions = screen.queryAllByText(/broker/i);
+    expect(brokerMentions).toHaveLength(1);
+    expect(brokerMentions[0].closest('[data-testid="tab-live"]')).not.toBeNull();
   });
 });
 

@@ -332,9 +332,9 @@ export const EMPTY_NO_POSITIONS = 'No simulated positions yet. Open one to start
 export const EMPTY_FILTERED = 'No positions match this filter.';
 export const HISTORY_CAPTION = 'Closed and cancelled positions are kept here — never pruned.';
 
-// ---- Live tab (locked) copy (UX_BLUEPRINT §6 S10) ---------------------------------------------
-export const LIVE_HEADING = 'Live positions — coming soon';
-export const LIVE_BODY =
-  "Connecting a real brokerage to track the risk you're actually carrying is on the roadmap. " +
-  'For now, everything in Convexa is simulated (paper).';
-export const LIVE_LOCK_CHIP = 'coming soon';
+// ---- Live tab (locked) copy — RETIRED by broker-connect ----------------------------------------
+// The LOCKED placeholder (`LiveTabPanel`) was replaced by the real read-only Broker tab
+// (`features/trading/broker/BrokerTabPanel`); its trader-visible strings live in
+// `features/trading/broker/copy.ts`. The `LIVE_*` constants are deliberately DELETED, not kept:
+// dead "coming soon" copy beside a shipped surface is exactly the stale-claim class this app
+// refuses (`[no-real-order-path]` narrowing recorded at GATE S).

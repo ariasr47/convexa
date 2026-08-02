@@ -1,16 +1,20 @@
 /**
- * Portfolio shell (UX_BLUEPRINT §6 S1): the two tabs (Simulated · Live), the customization toolbar,
- * and the all-positions surface. Re-homes the single-position ghost-trade panel into a portfolio
- * surface. Switching tabs re-derives the view only — it triggers no fetch and mutates no position.
+ * Portfolio shell (UX_BLUEPRINT §6 S1): the two tabs (Simulated · Broker), the customization
+ * toolbar, and the all-positions surface. Re-homes the single-position ghost-trade panel into a
+ * portfolio surface. Switching to Simulated re-derives the view only; switching to Broker mounts
+ * the read-only broker surface, whose ONLY network calls are the gated `/api/broker/*` reads —
+ * never a bundle/scoring request, never SSE.
  *
- * The Live tab renders the LOCKED placeholder (zero data source, zero network) — when Live is active
- * NO position data, entry affordance, or feed is wired.
+ * broker-connect: the LOCKED `LiveTabPanel` placeholder is REPLACED by `BrokerTabPanel` (the
+ * sanctioned unlock). The trader-visible label reads "Broker" (the poll-honesty label ruling);
+ * the internal `tab-live` testid stays per the decisions.md internal-names carve-out. READ-ONLY
+ * renders as ABSENCE on that surface — no entry affordance is wired to it in any state.
  *
  * Re-skin (convexa-redesign · Positions): the outer `Card`/"Positions portfolio" heading/`SIMULATED`
- * chip chrome is removed — underline tabs (Simulated + green PAPER badge ‖ 🔒 Live) render directly
- * under the page header. The gated "Open simulated position" CTA moves onto the toolbar's blue pill
- * (`data-testid="open-entry"`). The mandatory `positions-disclosure` (D6d) + the in-context sign-in
- * prompt + the server-gate wiring are all preserved verbatim. No data/handler changes.
+ * chip chrome is removed — underline tabs render directly under the page header. The gated "Open
+ * simulated position" CTA moves onto the toolbar's blue pill (`data-testid="open-entry"`). The
+ * mandatory `positions-disclosure` (D6d) + the in-context sign-in prompt + the server-gate wiring
+ * are all preserved verbatim.
  */
 import { Alert, Box, Snackbar } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
@@ -18,7 +22,7 @@ import { useState } from 'react';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
-import { LiveTabPanel } from './LiveTabPanel';
+import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
 import { PositionsPanel } from './PositionsPanel';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
 
@@ -131,19 +135,20 @@ export function PortfolioPanel({
             PAPER
           </Box>
         </Box>
+        {/* Internal name/testid keep `live` (decisions.md I-4 carve-out); the trader reads "Broker". */}
         <Box
           component="button"
           type="button"
           onClick={() => setTab('live')}
           data-testid="tab-live"
-          sx={{ ...tabSx(tab === 'live', 'text.primary', 'text.disabled'), ml: '18px' }}
+          sx={{ ...tabSx(tab === 'live', 'primary.main', 'text.secondary'), ml: '18px' }}
         >
-          🔒 Live
+          Broker
         </Box>
       </Box>
 
       {tab === 'live' ? (
-        <LiveTabPanel />
+        <BrokerTabPanel data={data} live={live} isLive={isLive} streamOffline={streamOffline} />
       ) : (
         <PositionsPanel
           pf={pf}

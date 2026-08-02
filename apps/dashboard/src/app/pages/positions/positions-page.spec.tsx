@@ -258,6 +258,12 @@ beforeEach(() => {
       });
     // user-accounts (AC-E7): the Positions sim-trade WRITE awaits the SERVER gate first; signed-in ⇒ authorize.
     if (url.includes('/api/positions/sim-trade/gate')) return json({ authorized: true });
+    // broker-connect: the Broker tab's gated reads — fresh-session no-credential arm (full state
+    // machine owned by the broker suites).
+    if (url.includes('/api/broker/credential'))
+      return json({ set: false, last4: null, storage_available: true });
+    if (url.includes('/api/broker/book'))
+      return json({ state: 'unknown', reason: 'no_credential_stored', positions: [] });
     if (url.includes('/api/ticker/')) return json(makeBundle(tk));
     if (url.includes('/api/recommendation/status/')) {
       return json({
@@ -543,7 +549,7 @@ async function fetchSettled() {
 }
 
 describe('invariants (positions)', () => {
-  it('Positions Live tab stays LOCKED', async () => {
+  it('Broker tab (the sanctioned unlock) adds ONLY /api/broker/* reads and exposes no entry affordance', async () => {
     const user = userEvent.setup();
     seedPosition();
     renderAt('/positions');
@@ -551,10 +557,15 @@ describe('invariants (positions)', () => {
     await fetchSettled();
     const fetchBefore = fetchMock.mock.calls.length;
     await user.click(screen.getByTestId('tab-live'));
-    // The zero-import LOCKED placeholder; no position rows, no entry affordance, no extra network call.
-    expect(screen.getByTestId('live-locked-panel')).toBeInTheDocument();
+    // broker-connect superseded the LOCKED placeholder: a fresh session lands on the honest S1
+    // not-connected state (never an empty table), still with zero write affordances.
+    expect(screen.getByTestId('broker-tab-panel')).toBeInTheDocument();
+    await screen.findByTestId('broker-s1');
     expect(screen.queryByTestId('open-entry')).toBeNull();
-    expect(fetchMock.mock.calls.length).toBe(fetchBefore);
+    expect(screen.queryByTestId('position-row')).toBeNull();
+    const added = fetchMock.mock.calls.slice(fetchBefore).map((c) => String(c[0]));
+    expect(added.length).toBeGreaterThan(0);
+    for (const u of added) expect(u).toMatch(/\/api\/broker\//);
   });
 
   it('everything stays SIMULATED', async () => {

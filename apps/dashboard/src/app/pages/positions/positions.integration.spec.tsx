@@ -661,8 +661,11 @@ describe('AC-76 — every position surface stays SIMULATED', () => {
     await waitFor(() => expect(rows()).toHaveLength(1));
     expect(within(screen.getByTestId('tab-simulated')).getByText('PAPER')).toBeInTheDocument();
     expect(screen.getByTestId('positions-disclosure')).toBeInTheDocument();
-    expect(screen.getByTestId('tab-live').textContent).toContain('Live');
+    // broker-connect: the second tab now reads "Broker" (the poll-honesty label ruling); the
+    // internal `tab-live` testid stays per the decisions.md carve-out. It is a TAB, not an order
+    // affordance — the no-order-path assertions below are about write affordances.
+    expect(screen.getByTestId('tab-live').textContent).toContain('Broker');
     expect(screen.queryByText(/place real order/i)).toBeNull();
-    expect(screen.queryByRole('button', { name: /broker|real money/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /real money|place order/i })).toBeNull();
   });
 });

@@ -326,8 +326,10 @@ describe('§8-3 · amber census — hover chrome, deck, and the MOVE→info site
 // (scanner) The `/scanner` coming-soon stub's 11px amber pill and its Ticker link were RETIRED with
 // the real Scanner page (Scanner v1 P4). The scan surface's one amber spend is the per-row tier
 // chip, which lives in `shared/ui/TintChip.tsx` — already on this list.
+// (broker-connect) `positions/LiveTabPanel.tsx` (the LOCKED chip) left this list WITH its file:
+// the placeholder was replaced by the real Broker tab, which spends NO amber (steel-outline chip;
+// burnt-orange `warning.*` for its S8/unreadable banners only, icon always — the MUI Alert).
 const TEXT_AMBER_CONSUMERS = [
-  '/src/app/features/trading/positions/LiveTabPanel.tsx', //     LOCKED chip (11px)
   '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
   '/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx', // Prime banner body text
   '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
