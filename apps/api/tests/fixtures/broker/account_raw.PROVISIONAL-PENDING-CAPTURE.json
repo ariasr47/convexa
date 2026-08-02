@@ -1,0 +1,22 @@
+{
+  "__PROVISIONAL_PENDING_CAPTURE__": "PROVISIONAL-PENDING-CAPTURE: hand-derived from Webull OpenAPI docs (GET /app/subscriptions/list + GET /account/profile, v1). NOT a captured payload. Replaced wholesale by account_raw.json after the owner's B1 run.",
+  "captured": false,
+  "subscriptions": [
+    {
+      "subscription_id": "ACCT_REDACTED",
+      "account_id": "ACCT_REDACTED",
+      "user_id": "ACCT_REDACTED",
+      "account_type": "CASH",
+      "region": "US",
+      "status": "ACTIVE",
+      "subscription_status": "VALID"
+    }
+  ],
+  "profile": {
+    "account_id": "ACCT_REDACTED",
+    "account_type": "CASH",
+    "currency": "USD",
+    "region": "US",
+    "status": "ACTIVE"
+  }
+}

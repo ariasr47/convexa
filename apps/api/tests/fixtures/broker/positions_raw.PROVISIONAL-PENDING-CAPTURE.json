@@ -1,0 +1,78 @@
+{
+  "__PROVISIONAL_PENDING_CAPTURE__": "PROVISIONAL-PENDING-CAPTURE: hand-derived from Webull OpenAPI docs + webull-python-sdk-trade==0.1.18 request definitions (GET /account/positions, v1). NOT a captured payload. Replaced wholesale by positions_raw.json from tests/capture_broker_fixtures.py after the owner's B1 run; B4 reconciliation is then a fixture-diff, not a rewrite.",
+  "captured": false,
+  "pages": [
+    {
+      "has_next": false,
+      "holdings": [
+        {
+          "id": 1001,
+          "account_id": "ACCT_REDACTED",
+          "instrument_id": "913256135",
+          "instrument_type": "EQUITY",
+          "symbol": "AAPL",
+          "short_name": "Apple Inc",
+          "currency": "USD",
+          "quantity": "100",
+          "unit_cost": "142.7500",
+          "total_cost": "14275.00",
+          "last_price": "150.1000",
+          "market_value": "15010.00",
+          "unrealized_profit_loss": "735.00",
+          "unrealized_profit_loss_rate": "0.0515"
+        },
+        {
+          "id": 1002,
+          "account_id": "ACCT_REDACTED",
+          "instrument_id": "1044277987",
+          "instrument_type": "OPTION",
+          "symbol": "SPY260918C00500000",
+          "underlying_symbol": "SPY",
+          "option_type": "CALL",
+          "strike_price": "500.00",
+          "expire_date": "2026-09-18",
+          "contract_multiplier": "100",
+          "currency": "USD",
+          "quantity": "2",
+          "unit_cost": "3.2500",
+          "total_cost": "650.00",
+          "last_price": "4.1000",
+          "market_value": "820.00",
+          "unrealized_profit_loss": "170.00",
+          "unrealized_profit_loss_rate": "0.2615"
+        },
+        {
+          "id": 1003,
+          "account_id": "ACCT_REDACTED",
+          "instrument_id": "1044278101",
+          "instrument_type": "OPTION",
+          "symbol": "SPY260918P00480000",
+          "underlying_symbol": "SPY",
+          "option_type": "PUT",
+          "strike_price": "480.00",
+          "expire_date": "2026-09-18",
+          "contract_multiplier": "100",
+          "currency": "USD",
+          "quantity": "-1",
+          "unit_cost": "2.1000",
+          "total_cost": "-210.00",
+          "last_price": "1.5500",
+          "market_value": "-155.00",
+          "unrealized_profit_loss": "55.00",
+          "unrealized_profit_loss_rate": "0.2619"
+        },
+        {
+          "id": 1004,
+          "account_id": "ACCT_REDACTED",
+          "instrument_id": "2088113355",
+          "instrument_type": "WARRANT",
+          "symbol": "XYZW",
+          "short_name": "XYZ Corp Warrants",
+          "currency": "USD",
+          "quantity": "50",
+          "unit_cost": "0.8000"
+        }
+      ]
+    }
+  ]
+}

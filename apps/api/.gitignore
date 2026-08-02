@@ -6,6 +6,9 @@ conf/token.txt
 *.pem
 # Generated runtime state (per-ticker JSON rewritten on each on-demand request)
 data/
+# broker-connect B1: RAW Webull capture scratch (pre-sanitization). Only the sanitized
+# fixtures beside it are ever committed.
+tests/fixtures/broker/_raw_scratch/
 # Python
 __pycache__/
 *.py[cod]

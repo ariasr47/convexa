@@ -1,0 +1,17 @@
+{
+  "__PROVISIONAL_PENDING_CAPTURE__": "PROVISIONAL-PENDING-CAPTURE: no rate-limit header names are documented for the Webull Individual OpenAPI read endpoints; whether any are exposed is a capture fact. The 429/throttle mapping in the adapter is therefore keyed on http_status/error-code, not headers, until the B1 run says otherwise. Replaced wholesale by rate_limit_headers.json after the owner's B1 run.",
+  "captured": false,
+  "subscriptions": {},
+  "profile": {},
+  "positions": {},
+  "throttle_probe": {
+    "http_status": 429,
+    "exception": {
+      "exception_type": "ServerException",
+      "error_code": "RATE_LIMIT_EXCEEDED",
+      "error_msg": "too many requests",
+      "http_status": 429,
+      "request_id": "ACCT_REDACTED"
+    }
+  }
+}
