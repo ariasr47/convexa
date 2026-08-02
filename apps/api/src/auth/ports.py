@@ -100,11 +100,17 @@ class SettingsRecord:
 @dataclass
 class CredentialRecord:
     """
-    The per-user BYO-AI-key credential record (byo-ai-key BACKEND_EXECUTION_CONTRACT §4).
+    The per-user encrypted credential record (byo-ai-key BACKEND_EXECUTION_CONTRACT §4;
+    broker-connect extends it with the `kind` discriminator — ONE store, never a fork).
 
     The RECORD is the contract. It stores the ENCRYPTED ciphertext of the key (never plaintext)
     plus a NON-SECRET masked hint (`last4`) captured as cleartext metadata at SAVE time — so the
     masked-hint read NEVER decrypts. `user_id` is the opaque server id, never the email.
+
+    `kind` discriminates credential families on the SAME row shape: `"ai"` (the original
+    BYO-AI-key rows — the default, so every existing call site is untouched) and
+    `"broker_webull"` (broker-connect: the ciphertext is a JSON blob of both halves,
+    `last4` = last 4 of the App Key). Rows are keyed on (user_id, kind).
 
     HARD floor: `ciphertext` is treated as a secret (never logged, never returned to a browser).
     `last4` is the ONLY credential datum a response may carry.
@@ -114,6 +120,7 @@ class CredentialRecord:
     last4: str                       # cleartext masked hint (last 4 chars) — set at save time
     created_at: float
     updated_at: float
+    kind: str = "ai"                 # credential-kind discriminator (additive; default = legacy)
 
 
 # ----------------------------------------------------------------------------- ports
@@ -189,23 +196,28 @@ class UserSettingsStore(ABC):
 
 class UserCredentialStore(ABC):
     """
-    The FOURTH storage port (byo-ai-key BACKEND_EXECUTION_CONTRACT §4): the per-user encrypted AI
-    key. Mirrors the other three ports. The adapter stores the ciphertext + masked hint; it NEVER
-    sees the encryption secret (the crypto leaf owns that). `get_decrypted` is the ONLY decrypting
-    op and is server-side ONLY — used SOLELY by §1 resolution, NEVER feeding a response.
+    The FOURTH storage port (byo-ai-key BACKEND_EXECUTION_CONTRACT §4): the per-user encrypted
+    credentials. Mirrors the other three ports. The adapter stores the ciphertext + masked hint;
+    it NEVER sees the encryption secret (the crypto leaf owns that). `get_decrypted` is the ONLY
+    decrypting op and is server-side ONLY — used SOLELY by §1 resolution, NEVER feeding a
+    response.
+
+    broker-connect: every method takes the ADDITIVE `kind` keyword (default `"ai"` — existing
+    call sites unchanged); adapters key rows on (user_id, kind). One store, never a fork.
     """
 
     @abstractmethod
-    def set_key(self, user_id: str, ciphertext: str, last4: str) -> None:
-        """Encrypt-at-rest store / OVERWRITE (rotate == overwrite, no history)."""
+    def set_key(self, user_id: str, ciphertext: str, last4: str, kind: str = "ai") -> None:
+        """Encrypt-at-rest store / OVERWRITE of the (user_id, kind) row (rotate == overwrite,
+        no history)."""
 
     @abstractmethod
-    def get_record(self, user_id: str) -> Optional[CredentialRecord]:
+    def get_record(self, user_id: str, kind: str = "ai") -> Optional[CredentialRecord]:
         """Raw record (ciphertext + hint). Server-side only; the caller never serializes ciphertext."""
 
     @abstractmethod
-    def delete_key(self, user_id: str) -> None:
-        """Delete the stored key (→ role no-key fallback). Idempotent."""
+    def delete_key(self, user_id: str, kind: str = "ai") -> None:
+        """Delete the stored (user_id, kind) credential. Idempotent."""
 
 
 # ----------------------------------------------------------------------------- store bundle

@@ -75,11 +75,13 @@ class _SharedDB:
                     scan_view         TEXT
                 );
                 CREATE TABLE IF NOT EXISTS ai_credentials (
-                    user_id    TEXT PRIMARY KEY,
+                    user_id    TEXT NOT NULL,
+                    kind       TEXT NOT NULL DEFAULT 'ai',
                     ciphertext TEXT NOT NULL,
                     last4      TEXT NOT NULL,
                     created_at REAL NOT NULL,
-                    updated_at REAL NOT NULL
+                    updated_at REAL NOT NULL,
+                    PRIMARY KEY (user_id, kind)
                 );
                 """
             )
@@ -253,44 +255,48 @@ class SqliteUserSettingsStore(UserSettingsStore):
 
 class SqliteUserCredentialStore(UserCredentialStore):
     """
-    In-memory adapter for the per-user encrypted AI key (byo-ai-key §4). Stores the Fernet
-    ciphertext + the cleartext masked hint (`last4`) — NEVER the plaintext key. RESETS on restart
-    (accepted prototype — AC-20). The plaintext is never written to a column; the only decryptable
-    material is the ciphertext, decrypted server-side ONLY at resolution.
+    In-memory adapter for the per-user encrypted credentials (byo-ai-key §4; broker-connect adds
+    the `kind` discriminator — rows keyed on (user_id, kind), default kind="ai" so the legacy
+    call sites behave byte-identically). Stores the Fernet ciphertext + the cleartext masked hint
+    (`last4`) — NEVER the plaintext key. RESETS on restart (accepted prototype — AC-20). The
+    plaintext is never written to a column; the only decryptable material is the ciphertext,
+    decrypted server-side ONLY at resolution.
     """
 
-    def set_key(self, user_id: str, ciphertext: str, last4: str) -> None:
+    def set_key(self, user_id: str, ciphertext: str, last4: str, kind: str = "ai") -> None:
         now = time.time()
         with _db._lock:
             with _db._conn:
                 # Overwrite (rotate == overwrite, no history). Preserve created_at on update.
                 row = _db._conn.execute(
-                    "SELECT created_at FROM ai_credentials WHERE user_id = ?",
-                    (user_id,)).fetchone()
+                    "SELECT created_at FROM ai_credentials WHERE user_id = ? AND kind = ?",
+                    (user_id, kind)).fetchone()
                 created_at = row["created_at"] if row else now
                 _db._conn.execute(
-                    "INSERT INTO ai_credentials (user_id, ciphertext, last4, created_at, "
-                    "updated_at) VALUES (?,?,?,?,?) "
-                    "ON CONFLICT(user_id) DO UPDATE SET ciphertext=excluded.ciphertext, "
+                    "INSERT INTO ai_credentials (user_id, kind, ciphertext, last4, created_at, "
+                    "updated_at) VALUES (?,?,?,?,?,?) "
+                    "ON CONFLICT(user_id, kind) DO UPDATE SET ciphertext=excluded.ciphertext, "
                     "last4=excluded.last4, updated_at=excluded.updated_at",
-                    (user_id, ciphertext, last4, created_at, now))
+                    (user_id, kind, ciphertext, last4, created_at, now))
 
-    def get_record(self, user_id: str) -> Optional[CredentialRecord]:
+    def get_record(self, user_id: str, kind: str = "ai") -> Optional[CredentialRecord]:
         with _db._lock:
             row = _db._conn.execute(
-                "SELECT * FROM ai_credentials WHERE user_id = ?", (user_id,)).fetchone()
+                "SELECT * FROM ai_credentials WHERE user_id = ? AND kind = ?",
+                (user_id, kind)).fetchone()
         if not row:
             return None
         return CredentialRecord(
             user_id=row["user_id"], ciphertext=row["ciphertext"], last4=row["last4"],
-            created_at=row["created_at"], updated_at=row["updated_at"],
+            created_at=row["created_at"], updated_at=row["updated_at"], kind=row["kind"],
         )
 
-    def delete_key(self, user_id: str) -> None:
+    def delete_key(self, user_id: str, kind: str = "ai") -> None:
         with _db._lock:
             with _db._conn:
                 _db._conn.execute(
-                    "DELETE FROM ai_credentials WHERE user_id = ?", (user_id,))
+                    "DELETE FROM ai_credentials WHERE user_id = ? AND kind = ?",
+                    (user_id, kind))
 
 
 def make_stores() -> AuthStores:

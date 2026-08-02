@@ -68,6 +68,15 @@ class AiKeyBody(BaseModel):
     key: str
 
 
+class BrokerCredentialBody(BaseModel):
+    # broker-connect §5: BOTH halves, write-only, browser→server only. Fields are optional at
+    # the Pydantic layer ON PURPOSE: the router does the both-halves 422 itself, because
+    # FastAPI's default validation error echoes the request body back (`input`) — which would
+    # leak the present half when the other is missing (AC-5).
+    app_key: str | None = None
+    app_secret: str | None = None
+
+
 def _error_response(err: errors.AuthError) -> JSONResponse:
     return JSONResponse(status_code=err.status, content=err.envelope())
 
@@ -244,3 +253,47 @@ async def delete_ai_key(request: Request):
     if not resolved.authenticated:
         return _error_response(errors.auth_required())
     return svc.delete_ai_key(resolved.user)
+
+
+# --------------------------------------------------------- broker-connect §5 credential trio
+# The byo-ai-key trio mirrored onto the Webull App Key/Secret pair (kind="broker_webull" in the
+# ONE credential store). Same gate (anonymous ⇒ 403 auth_required), same write-only/masked-hint
+# floor: no response ever carries a key half or ciphertext; errors echo NO fragment of any
+# input; storage-unavailable ⇒ 200 set:false, never a 5xx. Mounted by main.py beside the auth
+# router — a separate prefix, the same leaf.
+
+broker_credential_router = APIRouter(prefix="/api/broker", tags=["broker"])
+
+
+@broker_credential_router.get("/credential")
+async def get_broker_credential(request: Request):
+    """Masked-hint read: `{set, last4, storage_available}`. `last4` is of the APP KEY."""
+    svc = get_service()
+    resolved = svc.resolve_session(_cookie(request))
+    if not resolved.authenticated:
+        return _error_response(errors.auth_required())
+    return svc.broker_credential_hint(resolved.user)
+
+
+@broker_credential_router.put("/credential")
+async def put_broker_credential(body: BrokerCredentialBody, request: Request):
+    """Set/replace BOTH halves as one record (rotate = overwrite). 422 when either half is
+    missing/empty — the body never echoes any fragment of either input."""
+    svc = get_service()
+    resolved = svc.resolve_session(_cookie(request))
+    if not resolved.authenticated:
+        return _error_response(errors.auth_required())
+    try:
+        return svc.set_broker_credential(resolved.user, body.app_key or "", body.app_secret or "")
+    except errors.AuthError as e:
+        return _error_response(e)   # the both-halves 422 (fragment-free message)
+
+
+@broker_credential_router.delete("/credential")
+async def delete_broker_credential(request: Request):
+    """Delete (idempotent). Also invalidates the server-side book cache — no ghost book."""
+    svc = get_service()
+    resolved = svc.resolve_session(_cookie(request))
+    if not resolved.authenticated:
+        return _error_response(errors.auth_required())
+    return svc.delete_broker_credential(resolved.user)

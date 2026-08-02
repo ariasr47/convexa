@@ -153,12 +153,40 @@ class _SharedPool:
                 cur.execute(
                     """
                     CREATE TABLE IF NOT EXISTS ai_credentials (
-                        user_id    TEXT PRIMARY KEY,
+                        user_id    TEXT NOT NULL,
+                        kind       TEXT NOT NULL DEFAULT 'ai',
                         ciphertext TEXT NOT NULL,
                         last4      TEXT NOT NULL,
                         created_at DOUBLE PRECISION NOT NULL,
                         updated_at DOUBLE PRECISION NOT NULL
                     )
+                    """
+                )
+                # broker-connect schema-evolution (ARCHITECTURE §3.7 seam, second use): the
+                # credential-kind discriminator lands ADDITIVELY on an already-deployed
+                # ai_credentials table. Existing rows keep their data and become kind='ai'
+                # ([loss-free-durable-migration] — nothing durable is reshaped, a column is
+                # added with the legacy default). The PK moves user_id -> (user_id, kind) via
+                # an idempotent, named-constraint swap (multi-replica-safe: the second racer's
+                # DO block sees the named constraint and no-ops).
+                cur.execute(
+                    "ALTER TABLE ai_credentials ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL "
+                    "DEFAULT 'ai'")
+                cur.execute(
+                    """
+                    DO $$ BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM pg_constraint
+                            WHERE conname = 'ai_credentials_user_kind_pk'
+                              AND conrelid = 'ai_credentials'::regclass
+                        ) THEN
+                            ALTER TABLE ai_credentials
+                                DROP CONSTRAINT IF EXISTS ai_credentials_pkey;
+                            ALTER TABLE ai_credentials
+                                ADD CONSTRAINT ai_credentials_user_kind_pk
+                                PRIMARY KEY (user_id, kind);
+                        END IF;
+                    END $$
                     """
                 )
                 # Index for revoke_all_for_user ("log out everywhere") — the single-session reads
@@ -382,7 +410,7 @@ class PgUserCredentialStore(UserCredentialStore):
     def __init__(self, pool: _SharedPool):
         self._p = pool
 
-    def set_key(self, user_id: str, ciphertext: str, last4: str) -> None:
+    def set_key(self, user_id: str, ciphertext: str, last4: str, kind: str = "ai") -> None:
         now = time.time()
         # ONE atomic upsert (set OR rotate). created_at is OMITTED from the DO UPDATE SET clause so
         # the existing value is PRESERVED on rotate (set on first insert) — the clean single-
@@ -390,32 +418,33 @@ class PgUserCredentialStore(UserCredentialStore):
         with self._p._pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO ai_credentials (user_id, ciphertext, last4, created_at, "
-                    "updated_at) VALUES (%s,%s,%s,%s,%s) "
-                    "ON CONFLICT (user_id) DO UPDATE SET ciphertext=EXCLUDED.ciphertext, "
+                    "INSERT INTO ai_credentials (user_id, kind, ciphertext, last4, created_at, "
+                    "updated_at) VALUES (%s,%s,%s,%s,%s,%s) "
+                    "ON CONFLICT (user_id, kind) DO UPDATE SET ciphertext=EXCLUDED.ciphertext, "
                     "last4=EXCLUDED.last4, updated_at=EXCLUDED.updated_at",
-                    (user_id, ciphertext, last4, now, now))
+                    (user_id, kind, ciphertext, last4, now, now))
             conn.commit()
 
-    def get_record(self, user_id: str) -> Optional[CredentialRecord]:
+    def get_record(self, user_id: str, kind: str = "ai") -> Optional[CredentialRecord]:
         with self._p._pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT user_id, ciphertext, last4, created_at, updated_at "
-                    "FROM ai_credentials WHERE user_id = %s", (user_id,))
+                    "SELECT user_id, ciphertext, last4, created_at, updated_at, kind "
+                    "FROM ai_credentials WHERE user_id = %s AND kind = %s", (user_id, kind))
                 row = cur.fetchone()
         if not row:
             return None
         return CredentialRecord(
             user_id=row[0], ciphertext=row[1], last4=row[2],
-            created_at=row[3], updated_at=row[4],
+            created_at=row[3], updated_at=row[4], kind=row[5],
         )
 
-    def delete_key(self, user_id: str) -> None:
+    def delete_key(self, user_id: str, kind: str = "ai") -> None:
         with self._p._pool.connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "DELETE FROM ai_credentials WHERE user_id = %s", (user_id,))
+                    "DELETE FROM ai_credentials WHERE user_id = %s AND kind = %s",
+                    (user_id, kind))
             conn.commit()
 
 

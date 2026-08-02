@@ -44,6 +44,7 @@ from src.core import ai_recommendation as ai_rec
 # only inside src/auth/, never serialized into any payload, never reach the browser.
 from src import auth
 from src.auth.router import router as auth_router
+from src.auth.router import broker_credential_router
 # Scanner (Scanner v1): two one-way LEAVES read ONLY here (main.py is the sole web orchestration
 # boundary; no scoring module imports them). `scanstore` is the sweep's persistent store (read for
 # /api/scan* + the warm-click bundle-blob); `src.scanner.universe` is the owner-curated universe the
@@ -760,6 +761,10 @@ _warn_missing_stable_keys()
 # boot; a config error surfaces here rather than mid-request. Absent Google creds ⇒ google_available
 # false, NO crash (AC-G2).
 app.include_router(auth_router)
+# broker-connect: the /api/broker/credential trio lives in the auth leaf (it is credential
+# storage — the byo-ai-key shape on kind="broker_webull"); the /api/broker/book endpoints are
+# wired below at the same orchestration boundary. Server-gated, all five.
+app.include_router(broker_credential_router)
 try:
     auth.get_service()
 except Exception:

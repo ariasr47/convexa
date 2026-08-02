@@ -19,13 +19,14 @@ EVER logged or returned. Login failure is generic + non-enumerating (AC-C3/H3).
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 import secrets
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
 from . import cookies, crypto, errors, google_oauth, passwords
 from .ports import AuthStores, SessionRecord, UserRecord
@@ -40,6 +41,10 @@ SESSION_IDLE_SECONDS = int(os.getenv("AUTH_SESSION_IDLE_SECONDS", str(7 * 24 * 3
 SESSION_ABSOLUTE_SECONDS = int(os.getenv("AUTH_SESSION_ABSOLUTE_SECONDS", str(30 * 24 * 3600)))
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+# broker-connect: the credential-kind discriminator value for the Webull App Key/Secret pair
+# (ONE store, kind-discriminated — never a second credential store).
+CREDENTIAL_KIND_BROKER = "broker_webull"
 
 
 def _signing_key() -> str:
@@ -86,6 +91,23 @@ class AuthService:
         # who-am-I can advertise it and the login form can pre-fill it. None in production (postgres
         # skips seeding), so `demo_seed` is null there and no pre-fill ever shows.
         self._demo_seed_email: Optional[str] = None
+        # broker-connect: the B5 book-cache invalidation hook (set by main.py at wiring time —
+        # the auth leaf never imports the broker leaf). Called on broker-credential delete AND
+        # set/rotate so a dead credential never leaves a ghost book (AC-3).
+        self._broker_cache_invalidator: Optional[Callable[[str], None]] = None
+
+    def set_broker_cache_invalidator(self, fn: Callable[[str], None]) -> None:
+        """Register the per-user broker book-cache invalidation hook (main.py wiring)."""
+        self._broker_cache_invalidator = fn
+
+    def _invalidate_broker_cache(self, user_id: str) -> None:
+        """Best-effort: a hook fault must never break a credential write/delete."""
+        if self._broker_cache_invalidator is None:
+            return
+        try:
+            self._broker_cache_invalidator(user_id)
+        except Exception:
+            logger.warning("auth: broker cache invalidation hook faulted", exc_info=False)
 
     def set_demo_seed_hint(self, email: str) -> None:
         """Record the seeded test-account email (dev-only; surfaced in the who-am-I `demo_seed`)."""
@@ -384,6 +406,93 @@ class AuthService:
         if rec is None:
             return None
         return crypto.decrypt(rec.ciphertext)  # None on decrypt failure (handled as no usable key)
+
+    # ------------------------------------------------------------------ broker credential
+    # (broker-connect B3 — the byo-ai-key trio mirrored onto kind="broker_webull". The App Key +
+    # App Secret are ONE logical record: json blob -> ONE Fernet ciphertext; both halves or 422,
+    # never one. last4 = last 4 of the APP KEY (the secret is never hinted).)
+
+    def broker_credential_hint(self, user: UserRecord) -> dict:
+        """Masked-hint read `{set, last4, storage_available}`. NEVER decrypts, NEVER returns
+        key/ciphertext. A store fault ⇒ storage-unavailable (200 set:false), never a 5xx."""
+        try:
+            rec = self.stores.credentials.get_record(user.id, kind=CREDENTIAL_KIND_BROKER)
+        except Exception:
+            logger.warning("auth: broker-credential hint read faulted; reporting storage "
+                           "unavailable", exc_info=False)
+            return {"set": False, "last4": None, "storage_available": False}
+        if rec is None:
+            return {"set": False, "last4": None, "storage_available": True}
+        return {"set": True, "last4": rec.last4, "storage_available": True}
+
+    def set_broker_credential(self, user: UserRecord, app_key: str, app_secret: str) -> dict:
+        """
+        Set/replace BOTH halves as one record (rotate == overwrite, no history). Raises a 422
+        `AuthError` when either half is empty — a message that echoes NO fragment of either
+        input. Store/crypto fault ⇒ 200 `{set:false, storage_available:false}`, never a 5xx.
+        Neither half is ever logged. Invalidates the broker book cache (a rotated credential
+        must not serve the previous credential's book).
+        """
+        app_key = (app_key or "").strip()
+        app_secret = (app_secret or "").strip()
+        if not app_key or not app_secret:
+            raise errors.validation(
+                "Enter both the App Key and the App Secret — they are saved together.")
+        last4 = app_key[-4:] if len(app_key) >= 4 else app_key
+        try:
+            blob = json.dumps({"app_key": app_key, "app_secret": app_secret})
+            ciphertext = crypto.encrypt(blob)
+            self.stores.credentials.set_key(user.id, ciphertext, last4,
+                                            kind=CREDENTIAL_KIND_BROKER)
+        except Exception:
+            logger.warning("auth: broker-credential store faulted; reporting storage "
+                           "unavailable", exc_info=False)
+            return {"set": False, "storage_available": False}
+        self._invalidate_broker_cache(user.id)
+        return {"set": True, "last4": last4, "storage_available": True}
+
+    def delete_broker_credential(self, user: UserRecord) -> dict:
+        """
+        Delete (idempotent). ALWAYS calls the book-cache invalidation hook — a deleted
+        credential must never leave a ghost book (AC-3). Store fault ⇒ storage-unavailable,
+        never a 5xx.
+        """
+        self._invalidate_broker_cache(user.id)
+        try:
+            self.stores.credentials.delete_key(user.id, kind=CREDENTIAL_KIND_BROKER)
+        except Exception:
+            logger.warning("auth: broker-credential delete faulted; reporting storage "
+                           "unavailable", exc_info=False)
+            return {"set": False, "storage_available": False}
+        return {"set": False, "storage_available": True}
+
+    def get_decrypted_broker_credential(self, user_id: str) -> tuple[str, str] | None:
+        """
+        SERVER-SIDE ONLY (main.py's per-request resolution): decrypt the stored pair for ONE
+        call. Returns (app_key, app_secret), or None when nothing is stored OR the ciphertext
+        cannot be decrypted/parsed (secret changed / restart / corrupt). The result NEVER feeds
+        a response, is NEVER logged, and never raises.
+        """
+        try:
+            rec = self.stores.credentials.get_record(user_id, kind=CREDENTIAL_KIND_BROKER)
+        except Exception:
+            logger.warning("auth: broker-credential decrypted read faulted; treating as none",
+                           exc_info=False)
+            return None
+        if rec is None:
+            return None
+        blob = crypto.decrypt(rec.ciphertext)  # None on decrypt failure
+        if blob is None:
+            return None
+        try:
+            parsed = json.loads(blob)
+            app_key, app_secret = parsed["app_key"], parsed["app_secret"]
+            if not isinstance(app_key, str) or not isinstance(app_secret, str):
+                return None
+            return app_key, app_secret
+        except Exception:
+            # Corrupt blob = no usable credential; never a leak, never a raise.
+            return None
 
     # ------------------------------------------------------------------ google flow
 
