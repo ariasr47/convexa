@@ -876,6 +876,94 @@ def _resolve_ai_key(resolved) -> "ai_rec.ResolvedKey":
         user_id=user.id, own_key=own_key, is_admin=_is_admin(user.email))
 
 
+# --- broker-connect (B5): the read-only broker book surface --------------------------------
+# The broker subpackage is a ONE-WAY LEAF (a sibling of src/auth/ — see src/broker/__init__).
+# main.py is the sole orchestration boundary: it resolves the session + the stored credential
+# per request and hands the leaf an in-memory VALUE OBJECT; the leaf never imports auth, and
+# nothing on the bundle/SSE/scoring path imports the leaf ([additive-keeps-score-byte-identical],
+# pinned by tests/test_broker_isolation.py). Broker-side trouble is NEVER a 5xx here: every
+# fault degrades to a typed state inside a 200 ([best-effort-isolated-or-null]; the auth GATE
+# refusals stay real 401/403 — the carve-out).
+
+_broker_service = None
+
+
+def _get_broker_service():
+    """Build (once) the book service over the env-selected provider (POSITIONS_PROVIDER:
+    webull default | stub) and register the credential-delete cache invalidation hook —
+    a deleted credential must never leave a ghost book (AC-3)."""
+    global _broker_service
+    if _broker_service is None:
+        from src.broker import get_positions_provider
+        from src.broker.service import BrokerBookService
+        _broker_service = BrokerBookService(get_positions_provider())
+        try:
+            auth.get_service().set_broker_cache_invalidator(_broker_service.invalidate)
+        except Exception:
+            logger.warning("broker: cache-invalidator registration deferred", exc_info=False)
+    return _broker_service
+
+
+try:
+    # Eager wiring at boot so the delete-invalidation hook exists before any request; a config
+    # error (unknown POSITIONS_PROVIDER) defers to first use rather than crashing boot.
+    _get_broker_service()
+except Exception:
+    logger.warning("broker: service init deferred (will retry on first request)", exc_info=False)
+
+
+def _resolve_broker_credential(user):
+    """
+    Per-request credential resolution at THIS boundary (the byo-ai-key precedent): returns
+    ("ok", BrokerCredential) | ("none", None) | ("unreadable", None). Decryption happens in
+    the auth leaf; the plaintext lives only in the request-scope VO. A decrypt failure is
+    `unreadable` — no-usable-credential, never a leak, never "Webull rejected".
+    """
+    from src.broker.ports import BrokerCredential
+    svc = auth.get_service()
+    hint = svc.broker_credential_hint(user)
+    if not hint.get("set"):
+        return ("none", None)
+    pair = svc.get_decrypted_broker_credential(user.id)
+    if pair is None:
+        return ("unreadable", None)
+    return ("ok", BrokerCredential(app_key=pair[0], app_secret=pair[1]))
+
+
+async def _serve_broker_book(request: Request, *, refresh: bool):
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate                      # real 401/403/503 — the auth carve-out
+    resolved, _ok = _resolve_auth(request)
+    user = resolved.user
+    try:
+        service = _get_broker_service()
+        resolution = _resolve_broker_credential(user)
+        call = service.refresh_book if refresh else service.get_book
+        # The provider fetch blocks (HTTP to the broker); keep it OFF the event loop so a slow
+        # broker can never stall the bundle or the SSE stream.
+        book = await asyncio.to_thread(call, user.id, resolution)
+        return book.to_wire()
+    except Exception:
+        # Never a 5xx for broker-side trouble — the typed catch-all arm.
+        logger.warning("broker: book serve faulted (adapter_fault)", exc_info=False)
+        return {"state": "unknown", "reason": "adapter_fault", "positions": []}
+
+
+@app.get("/api/broker/book")
+async def broker_book(request: Request):
+    """Read the owner's broker book (INTERFACE §6): TTL cache when fresh (`basis: cache`),
+    else fetch. No credential ⇒ the `unknown`/`no_credential_stored` 200 product state."""
+    return await _serve_broker_book(request, refresh=False)
+
+
+@app.post("/api/broker/book/refresh")
+async def broker_book_refresh(request: Request):
+    """Force-fetch (C4): always REQUESTS a fresh read; the server may throttle (cached
+    snapshot, `last_attempt_at` unmoved — visibly not an attempt), never a silent no-op."""
+    return await _serve_broker_book(request, refresh=True)
+
+
 def _parse_expirations(csv: str | None) -> tuple | None:
     """Normalize a comma-separated expirations param to a sorted tuple (cache-stable), or None."""
     if not csv:
