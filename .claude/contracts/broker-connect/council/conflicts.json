@@ -1,0 +1,67 @@
+{
+  "conflicts": [
+    {
+      "id": "C1a",
+      "raised_by": "architect",
+      "quote": "The cadence figure comes from the wire (a `refresh_seconds`-style field), never hardcoded in FE copy — a hardcoded \"every 60s\" goes stale the day the poll changes.",
+      "source": "ux",
+      "why": "No poll cadence exists in v1 (on-demand fetch + short server TTL cache + explicit user refresh; background poller is a named deferred seam). A refresh_seconds field would put a scheduled-refresh claim on the wire that no scheduler backs; dependent copy inherits the fiction.",
+      "proposal": "Envelope carries as_of + basis (fresh vs served-from-cache) + a server-supplied max-staleness datum derived from the TTL. UX rewrites affected strings to on-demand truth. Cadence field + original copy return together with the v2 poller.",
+      "kind": "technical"
+    },
+    {
+      "id": "C1b",
+      "raised_by": "pm",
+      "quote": "The cadence figure comes from the wire (a `refresh_seconds`-style field), never hardcoded in FE copy — a hardcoded \"every 60s\" goes stale the day the poll changes.",
+      "source": "ux",
+      "why": "Same conflict as C1a from the product side: copy promising automatic refresh the product never performs is a freshness fabrication — never-auto-refreshing data presented as scheduled.",
+      "proposal": "v1 provenance copy states the on-demand basis; staleness renders from as-of age against a server-declared threshold, never a cadence. AC-7/AC-11 language follows the on-demand framing.",
+      "kind": "technical"
+    },
+    {
+      "id": "C1c",
+      "raised_by": "ux",
+      "quote": "**Webull · read-only** &nbsp;·&nbsp; `as of 2:41:07 PM` &nbsp;·&nbsp; refreshes about every {cadence} — a snapshot, never live.",
+      "source": "ux",
+      "why": "Own-lane copy self-falsified by the architect's refresh model, surfaced rather than silently patched. Same root as C1a/C1b; also infects S6 trigger, S7 'this cycle', and PM AC-11.",
+      "proposal": "Header: 'Webull · read-only · as of {time} · read on demand — a snapshot, never live.' S6 keys off an explicit age threshold; S7: 'Couldn't reach Webull just now — showing your book as of {time}.'",
+      "kind": "technical"
+    },
+    {
+      "id": "C2",
+      "raised_by": "architect",
+      "quote": "**AC-6** *(blocked-on-approval; verified in the named runtime follow-up)* With a connected broker and a non-empty Webull book, the Live tab lists the owner's actual positions — symbols and quantities matching what the Webull app shows — with a multi-leg options position rendered as one position with its legs, not N unrelated rows.",
+      "source": "pm",
+      "why": "Commits pre-capture to a payload capability the BRIEF orders treated as OPEN. If Webull reports options per-contract flat with no grouping identity, 'one position with its legs' requires heuristic composition — the same class of fabrication AC-14 forbids in the flattening direction.",
+      "proposal": "Split: AC-6a unconditional (every reported holding appears; symbols/quantities match; count never understates). AC-6b conditional on capture (grouping identity present ⇒ legs render grouped; flat payload ⇒ the rendering fallback is a named post-capture PRODUCT decision for the owner).",
+      "kind": "technical"
+    },
+    {
+      "id": "C3",
+      "raised_by": "pm",
+      "quote": "**PM treats the blocked Webull approval as a sequencing fact** (payload capture is build task #1; design proceeds now), not as a reason to ship an unverified adapter behind a flag or to invent a mock-only \"done.\" Falsified if the PM's definition of done doesn't include a live payload capture.",
+      "source": "architect",
+      "why": "Quietly decides a ship-timing question that is the owner's: if approval outlasts the build, 'done requires live capture' holds GATE S hostage to a third party. Ship-19/20-with-AC-6-deferred vs hold-for-capture is a priority call.",
+      "proposal": "Keep capture as build task #1; if approval lags at GATE Q, the conductor presents the owner an explicit either/or rather than either lane pre-deciding.",
+      "kind": "product"
+    },
+    {
+      "id": "C4",
+      "raised_by": "ux",
+      "quote": "**AC-8** A manual refresh affordance exists; using it updates the as-of stamp on success.",
+      "source": "pm",
+      "why": "Under throttle+TTL a refresh can honestly serve the cache — a success whose stamp does not move. As written AC-8 either fails on the honest cache-serve or forces bypassing the throttle protecting the owner's broker rate limits.",
+      "proposal": "Reword AC-8: refresh either advances the stamp or visibly states the snapshot came from cache and why (throttled / broker unreachable) — never a silent no-op.",
+      "kind": "technical"
+    },
+    {
+      "id": "C5",
+      "raised_by": "ux",
+      "quote": "Rate limiting is handled server-side (throttle + TTL cache); a rate-limited moment serves the cached book with its honest `as_of`/`basis`, or `unknown` if there is none.",
+      "source": "architect",
+      "why": "Incomplete envelope story: with a valid cache an outage becomes invisible — only signal is an old as_of. Stale (nobody asked recently) and degraded (last attempt FAILED) are different honesty claims and trader actions; AC-12/S7 become unrenderable. Also last-known rows after cache expiry exist only in client session memory, so 'your last confirmed book stays below' is conditionally true.",
+      "proposal": "Additive fields on BrokerBook: last_attempt_at + closed last_attempt_outcome (ok | broker_unreachable | rate_limited | credential_rejected | adapter_fault). S7/S8 'last-known book' clauses become conditional on a confirmed same-session book.",
+      "kind": "technical"
+    }
+  ]
+}
