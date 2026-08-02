@@ -37,8 +37,10 @@ import {
 import { alpha } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePersona } from '@/features/personas/usePersona';
 import { AiKeySection } from './AiKeySection';
+import { BrokerageSection } from './BrokerageSection';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { avatarInitial, AVATAR_SX } from './avatar';
@@ -96,6 +98,16 @@ export function SettingsPage() {
   const persona = usePersona();
   const [tickerDraft, setTickerDraft] = useState(settings.effective.defaultTicker);
   const [savedOpen, setSavedOpen] = useState(false);
+  const { hash } = useLocation();
+
+  // broker-connect: the Broker tab's S1 CTA deep-links `/settings#brokerage` — land on the
+  // section, not the page top. (Guarded: jsdom has no scrollIntoView.)
+  useEffect(() => {
+    if (hash === '#brokerage') {
+      const el = document.getElementById('brokerage');
+      el?.scrollIntoView?.({ block: 'start' });
+    }
+  }, [hash]);
 
   // Keep the ticker text field synced to the effective value when it changes from outside
   // (e.g. who-am-I resolves, or an account switch). Server-wins, so the field never overwrites it.
@@ -209,6 +221,11 @@ export function SettingsPage() {
         {/* ===== 2. AI key panel (re-skin only; all logic + testids + the security floor preserved) ===== */}
         <PanelCard heading={C.aiKey.heading} testId="settings-ai-key-panel">
           <AiKeySection embedded />
+        </PanelCard>
+
+        {/* ===== 2b. Brokerage panel (broker-connect — the byo-ai-key shape; #brokerage anchor) ===== */}
+        <PanelCard heading={C.brokerage.heading} testId="settings-brokerage-panel">
+          <BrokerageSection embedded />
         </PanelCard>
 
         {/* ===== 3. Preferences panel — appearance only (score-neutral) ===== */}

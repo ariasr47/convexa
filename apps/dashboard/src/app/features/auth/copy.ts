@@ -123,6 +123,45 @@ export const AUTH_COPY = {
         'manual export hand-off still works without a key.',
       anonymous: 'Sign in to add your own Anthropic key for AI recommendations.',
     },
+    // broker-connect (SPEC §4, verbatim). The byo-ai-key write-only/masked shape reused
+    // deliberately: keys are SENT on save; only the App Key's last-4 hint is ever read back.
+    // No reveal/show/copy control exists anywhere.
+    brokerage: {
+      heading: 'Brokerage',
+      helper:
+        'Connect Webull with your own Individual OpenAPI keys. Convexa reads positions only — ' +
+        'it never places, changes, or cancels an order.',
+      appKeyLabel: 'App Key',
+      appSecretLabel: 'App Secret',
+      inputHelper: 'Both halves are saved together, encrypted. Neither is ever shown again.',
+      connectBtn: 'Connect Webull',
+      connectingBtn: 'Connecting…',
+      /** Saved-state masked hint — the ONLY credential datum this browser ever holds. */
+      savedLabel: (last4: string | null) => `Webull · key ····${last4 ?? '????'}`,
+      savedSubLine:
+        'Saved encrypted. The full keys are never shown again and never sent to this browser — ' +
+        'only the last 4 of the App Key remain as the hint.',
+      replaceBtn: 'Replace keys',
+      replaceSubmitBtn: 'Replace keys',
+      replacingBtn: 'Replacing…',
+      cancelBtn: 'Cancel',
+      disconnectBtn: 'Disconnect',
+      disconnectConfirmTitle: 'Disconnect Webull?',
+      disconnectConfirmBody:
+        'Convexa deletes your keys and stops reading your positions. Nothing changes at Webull — ' +
+        'this only removes what Convexa stored.',
+      disconnectConfirmBtn: 'Disconnect',
+      disconnectCancelBtn: 'Keep connection',
+      savedToast: 'Webull keys saved.',
+      removedToast: 'Webull disconnected.',
+      /** NEVER echoes any fragment of either input (AC-5). */
+      saveError: "Couldn't save your keys. Please try again.",
+      validationBoth: 'Enter both the App Key and the App Secret — they are saved together.',
+      storageUnavailable:
+        "Key storage isn't set up on this deployment yet, so Webull keys can't be saved right " +
+        'now. Nothing was stored.',
+      anonymous: 'Sign in to connect your Webull account.',
+    },
   },
   gate: {
     // The "couldn't reach sign-in" copy on a gated action when the auth subsystem is degraded (503).
