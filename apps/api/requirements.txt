@@ -68,3 +68,18 @@ psycopg-pool==3.3.1
 # output), so it MUST be installed for real recommendations. The key is read server-side only (the
 # user's own key from the auth store, or the shared ANTHROPIC_API_KEY) and never reaches the browser.
 anthropic==0.115.0
+
+# --- broker-connect (Webull read-only positions adapter; server-side only) ---
+# The Individual OpenAPI read path (signed client + GET account/positions) needs ONLY the
+# core SDK. webull-python-sdk-trade is DELIBERATELY not installed: its read request classes
+# are one-line path wrappers (mirrored inline in src/broker/webull_adapter.py), and its
+# dependency chain (webull-python-sdk-trade-events-core) pins grpcio==1.51.1, which has no
+# wheels for python >= 3.12 and fails to build from source. Consequence: no order/trade/place
+# module exists on disk at all — the strongest form of [no-real-order-path]'s import-scope
+# arm (pinned by tests/test_broker_isolation.py). SDK used ONLY inside webull_adapter.py.
+webull-python-sdk-core==0.1.18
+# Compat shims for the SDK's vendored requests/six (broken on modern Python: `cgi` removed
+# in 3.13; vendored six.moves relies on the find_module protocol removed in 3.12). The
+# adapter aliases the real `six` into the vendored paths at transport construction.
+six==1.17.0
+legacy-cgi==2.6.4; python_version >= "3.13"
