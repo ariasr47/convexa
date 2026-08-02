@@ -29,6 +29,7 @@ import { buildBrokerPositionView, type BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
 import { snapshotAgeSeconds } from './predicates';
 import { ProvenanceHeader } from './ProvenanceHeader';
+import { BrokerReassessAction } from './reassess';
 import { resolveRenderState } from './renderState';
 import { useBrokerBook } from './useBrokerBook';
 import { useBrokerMarks } from './useBrokerMarks';
@@ -151,6 +152,8 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
               streamOffline,
               isStale: render.isStale,
               asOf,
+              // F6 — the ONLY action on a broker row: advisory reassessment (never a write).
+              actions: <BrokerReassessAction view={v} book={book} />,
             };
             return compact ? (
               <BrokerPositionCard key={v.broker.broker_position_id} {...shared} />
