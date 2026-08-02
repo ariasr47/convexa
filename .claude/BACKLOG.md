@@ -63,7 +63,8 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
 5. **Ledger checkpoint (X4)** at N≥20 closed outcomes → first deliberate score change only if justified,
    under `[score-change-is-deliberate-and-measured]`.
 **Owner habits (not pipeline features, tracked in the roadmap):** N1 deploy (runbook, `ALLOWED_ORIGINS`) ·
-N2 mirror every real trade · N4 daily public read on X (by hand; automation is L1).
+N2 mirror every real trade · N4 daily public read on X — **DEFERRED by owner 2026-08-01 until personal
+testing shakes out the quirks** (business-path gates slide with it; edge test unaffected).
 **Displaced (not dropped):** `signed-out-refused-affordances` — it only matters when strangers use the
 app; revisit at L4 (first external users). **Explicitly cut:** 0DTE arms race, breadth chasing, direct
 broker APIs, real-time quote display to others, real order execution (invariant stands).

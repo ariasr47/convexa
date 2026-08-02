@@ -1,5 +1,5 @@
 # broker-connect — pipeline manifest
-Stage:        GATE PLAN — spec OWNER-APPROVED 2026-08-01; plan being written (then Backend ‖ Frontend fan-out)
+Stage:        BOTH LANES DONE (BE B1–B6 @ 75d27a4..b86c02d, 116 pytest · FE F1–F8 @ b4eba42..9d3a14d, 1208 unit/37 e2e/lint 0/0) — BLOCKED ON OWNER CAPTURE RUN, then: B4 reconciliation + 3 routed decisions (AC-6b grouping · AC-22 P/L render · cost-basis UNIT clarification [FE assumed per-unit — interface must state it; GATE Z one-liner]) + disclaimer copy amendment ("No brokerage connection." now false — SettingsPage/Footer/Landing) → GATE Q (incl. system-6 V5 red-team) → GATE S
 Repos:        both
 Brief:        BRIEF.md present
 Contracts:

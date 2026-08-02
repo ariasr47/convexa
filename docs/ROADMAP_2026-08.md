@@ -27,7 +27,7 @@ an audience takes ~12–16 months to grow and compounds while you trade.
 | N1 | **Deploy `main` to production** (manual runbook, set `ALLOWED_ORIGINS`, verify, then automate CD) | Chore, ~half day | Not started |
 | N2 | **Trade through the app — every trade** (mirror every real trade as a sim position + decision record; the ledger can only validate what's recorded) | Habit, ~10 min/trade | Not started |
 | N3 | **Index-first defaults** (default ticker SPY; scanner view pinned to indexes+megacaps; a one-line honesty caveat on thin single names) | Small GATE-V feature | Not started |
-| N4 | **Start the public habit v0** (X account; one daily post: your morning read — screenshot + 3 lines; no build, hand-made) | Habit, 20–30 min/day | Not started |
+| N4 | **Start the public habit v0** (X account; one daily post: your morning read — screenshot + 3 lines; no build, hand-made) | Habit, 20–30 min/day | **DEFERRED by owner 2026-08-01** — starts only after personal testing has shaken out the quirks. Consequence accepted: the audience-compounding clock starts later, and every business-path gate (L1/L3/L4 and the day-90 business test) slides with it. The edge test (ledger N≥30) is unaffected. |
 
 Why these four: N1 is data-safety for YOUR trading history (two data-loss fixes and all
 security hardening exist only on `main`; the live site is the June 29 build). N2 starts the
