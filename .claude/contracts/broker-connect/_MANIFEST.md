@@ -1,10 +1,10 @@
 # broker-connect — pipeline manifest
-Stage:        GATE C — council COMPLETE (R1–R4 + S2 loop 1 + verification: ALL FIXED); awaiting OWNER SPEC APPROVAL → GATE PLAN
+Stage:        GATE PLAN — spec OWNER-APPROVED 2026-08-01; plan being written (then Backend ‖ Frontend fan-out)
 Repos:        both
 Brief:        BRIEF.md present
 Contracts:
-  - SPEC.md                    draft (synthesized + S2-amended; locks on owner approval)
-  - INTERFACE_CONTRACT.md      draft (locks on owner approval; conformance block S2-verified)
+  - SPEC.md                    locked (owner-approved 2026-08-01)
+  - INTERFACE_CONTRACT.md      locked (owner-approved 2026-08-01; changes henceforth = GATE Z amendments)
 Open amendments: none
 QA (GATE Q):  n/a
 Last gateway:  GATE C @ 2026-08-01
