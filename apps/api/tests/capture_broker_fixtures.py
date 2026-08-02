@@ -123,8 +123,57 @@ def write_fixture(path: Path, payload, secrets: tuple[str, ...]) -> None:
 
 # --------------------------------------------------------------------------- SDK plumbing
 
+def _shim_ssl_wrap_socket() -> None:
+    """
+    Python 3.12 REMOVED `ssl.wrap_socket` (deprecated since 3.7); this venv is 3.14.
+
+    The SDK's vendored urllib3 imports three names on ONE line
+    (`vendored/requests/packages/urllib3/util/ssl_.py:60`):
+
+        from ssl import wrap_socket, CERT_NONE, PROTOCOL_SSLv23
+
+    so the single missing name aborts the whole statement inside its bare
+    `except ImportError: pass`, leaving **PROTOCOL_SSLv23 unbound as a module
+    global** even though `ssl.PROTOCOL_SSLv23` itself still exists. The failure
+    then surfaces far away, on the first HTTPS call, as
+    `NameError: name 'PROTOCOL_SSLv23' is not defined` at that file's line 230.
+
+    Restoring a working module-level `wrap_socket` BEFORE the SDK is imported lets
+    that import line bind all three names. urllib3's live code paths use
+    `SSLContext.wrap_socket` (lines 359/372) and never call this, but it delegates
+    correctly if anything does.
+    """
+    import ssl
+    if hasattr(ssl, "wrap_socket"):
+        return
+
+    def wrap_socket(sock, keyfile=None, certfile=None, server_side=False,
+                    cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS_CLIENT,
+                    ca_certs=None, do_handshake_on_connect=True,
+                    suppress_ragged_eofs=True, ciphers=None, **_kwargs):
+        context = ssl.SSLContext(ssl_version)
+        # check_hostname must go False BEFORE verify_mode=CERT_NONE, or SSLContext raises.
+        if cert_reqs == ssl.CERT_NONE:
+            context.check_hostname = False
+        context.verify_mode = cert_reqs
+        if certfile:
+            context.load_cert_chain(certfile, keyfile)
+        if ca_certs:
+            context.load_verify_locations(ca_certs)
+        if ciphers:
+            context.set_ciphers(ciphers)
+        return context.wrap_socket(
+            sock, server_side=server_side,
+            do_handshake_on_connect=do_handshake_on_connect,
+            suppress_ragged_eofs=suppress_ragged_eofs)
+
+    ssl.wrap_socket = wrap_socket  # type: ignore[attr-defined]
+
+
 def _shim_sdk_compat() -> None:
-    """Alias the real `six` into the SDK's two vendored six paths (see module docstring)."""
+    """Alias the real `six` into the SDK's two vendored six paths (see module docstring),
+    and restore `ssl.wrap_socket` for the vendored urllib3 (see `_shim_ssl_wrap_socket`)."""
+    _shim_ssl_wrap_socket()
     import six  # noqa: F401  (requirements.txt)
     import six.moves  # noqa: F401
     import six.moves.http_client, six.moves.queue  # noqa: E401,F401
