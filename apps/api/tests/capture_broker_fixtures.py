@@ -223,14 +223,27 @@ def _do(client, request):
     """
     Low-level call returning (status, headers, parsed_body, exception). Uses the client's
     internal do_action so response HEADERS are observable (get_response drops them).
+
+    Shape note (the SDK's 5-tuple is easy to misread): `_implementation_of_do_action` returns
+    `(status, headers, body, exception, response)` where **`body` is `response.content`** —
+    raw bytes, already gzip-decoded by requests — and **`response` is the requests `Response`
+    OBJECT, never parsed JSON** (`client.py:289` → `http/response.py:166`). Treating
+    `response` as the parsed body yields `AttributeError: 'Response' object has no attribute
+    'get'` at the first `.get(...)` downstream, so the body is parsed here, once, for all
+    five capture steps.
     """
     status, headers, body, exception, response = client._implementation_of_do_action(request)
-    parsed = response
-    if parsed is None and body:
+    parsed = None
+    if body:
         try:
             parsed = json.loads(body if isinstance(body, str) else body.decode("utf-8"))
         except Exception:
             parsed = {"_unparsed_body_snippet": str(body)[:500]}
+    elif response is not None:
+        try:                      # defensive: empty body but a Response exists
+            parsed = response.json()
+        except Exception:
+            parsed = None
     return status, dict(headers or {}), parsed, exception
 
 
