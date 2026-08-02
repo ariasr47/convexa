@@ -58,6 +58,13 @@ export interface LegDisplayRow {
 }
 
 export interface PositionView {
+  /**
+   * broker-connect (ADDITIVE): which book this projection came from. The sim builder below always
+   * emits `'sim'`; `broker/brokerView.buildBrokerPositionView` emits `'broker'`. This is the ONE
+   * discriminator the shared render grammar keys on — `SimPosition` itself is NOT widened, and a
+   * broker view is never persisted anywhere durable.
+   */
+  origin: 'sim' | 'broker';
   position: SimPosition;
   /**
    * The position's ONE underlying. Single-underlying is enforced at construction (SPEC §2.7), so
@@ -365,6 +372,7 @@ export function buildPositionView(args: {
   const expiries = distinctExpirations(options);
 
   return {
+    origin: 'sim',
     position,
     // Single-underlying is enforced at CONSTRUCTION, so every leg agrees; leg 0 IS the position's
     // ticker. `''` is unreachable for a real record (`legs.length >= 1`) and is not a rendered value.
