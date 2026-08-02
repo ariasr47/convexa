@@ -158,7 +158,10 @@ export function buildBrokerPositionView(args: BuildBrokerViewArgs): BrokerPositi
     ? anyUnparseableBasis
       ? UNAVAILABLE
       : NOT_PROVIDED
-    : `$${Math.abs(base.net_entry_cost).toFixed(2)} ${base.net_entry_basis === 'net_debit' ? 'debit' : 'credit'}`;
+    : `$${Math.abs(base.net_entry_cost).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })} ${base.net_entry_basis === 'net_debit' ? 'debit' : 'credit'}`;
 
   const stale =
     book != null &&
