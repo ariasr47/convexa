@@ -1,0 +1,22 @@
+{
+  "captured": true,
+  "subscriptions": [
+    {
+      "subscription_id": "ACCT_REDACTED",
+      "user_id": "ACCT_REDACTED",
+      "account_id": "ACCT_REDACTED",
+      "account_number": "ACCT_REDACTED"
+    },
+    {
+      "subscription_id": "ACCT_REDACTED",
+      "user_id": "ACCT_REDACTED",
+      "account_id": "ACCT_REDACTED",
+      "account_number": "ACCT_REDACTED"
+    }
+  ],
+  "profile": {
+    "account_number": "ACCT_REDACTED",
+    "account_type": "MARGIN",
+    "account_status": "NORMAL"
+  }
+}
