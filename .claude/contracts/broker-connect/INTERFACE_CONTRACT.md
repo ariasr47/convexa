@@ -112,11 +112,11 @@ is derived FE-side from leg shape and never stored — one authority.
 | `kind` | enum `equity \| option` | always (closed) |
 | `symbol` | string | always (broker instrument symbol) |
 | `underlying` | string | always |
-| `expiry` | string `YYYY-MM-DD` | iff `kind: option` |
-| `strike` | number | iff `kind: option` |
-| `right` | enum `call \| put` | iff `kind: option` |
+| `expiry` | string `YYYY-MM-DD` | iff `kind: option` **AND the broker supplies it** — see Amendment 1 |
+| `strike` | number | iff `kind: option` **AND the broker supplies it** — see Amendment 1 |
+| `right` | enum `call \| put` | iff `kind: option` **AND the broker supplies it** — see Amendment 1 |
 | `quantity` | number, **signed** (short = negative; one convention, stated here once) | always |
-| `multiplier` | number, explicit per-leg (never hardcoded ×100 — the positions-legs lesson) | always |
+| `multiplier` | number, explicit per-leg (never hardcoded ×100 — the positions-legs lesson) | **always when known** — see Amendment 1 |
 | `cost_basis` | `BrokerFact` | always |
 | `broker_mark` | `BrokerFact` | always |
 
@@ -231,3 +231,40 @@ limits — `--auth-signup` (fresh throwaway account) is the only sanctioned mode
   ]
 }
 ```
+
+---
+
+## Amendments (post-lock)
+
+> The contract locked at GATE C (owner-approved 2026-08-01). Changes after that point are recorded
+> here as numbered amendments with their evidence — never as silent edits to the tables above. The
+> affected table rows point here.
+
+### Amendment 1 (2026-08-03) — `BrokerLeg` presence under a feed that carries no contract detail
+
+**Evidence.** The owner's real Webull capture (`CAPTURE_FINDINGS.md`; fixtures under
+`apps/api/tests/fixtures/broker/`) proved `/account/positions` returns **13 generic keys for option
+rows, identical to stock rows** — no `option_type`, `strike_price`, `expire_date`,
+`contract_multiplier`, or `underlying_symbol`, and `symbol` is the bare underlying ticker, not an
+OCC contract code. The council designed against a *flat* payload; the real payload is flat **and
+anonymous**. The locked presence rules (`expiry`/`strike`/`right` = "iff `kind: option`";
+`multiplier` = "always") cannot be satisfied for any real Webull option position.
+
+**Change.**
+- `expiry`, `strike`, `right`: presence becomes **"iff `kind: option` AND the broker's payload
+  carries the fact; omitted otherwise — absent, never null-padded."** A position with any omitted
+  option fact is `fidelity: partial`, and **each omission is named in `fidelity_notes`**.
+- `multiplier`: presence becomes **"always when known — supplied by the broker, or reproduced
+  exactly from broker-supplied aggregates under the guards in `RECONCILIATION_PLAN.md` §4. Omitted
+  when neither holds; every multiplier-dependent output is then withheld (`not provided`), never
+  defaulted to 1 or 100."**
+
+**Scope.** Presence rules only. **No new field, no new endpoint, no method change, no envelope
+change** — the `## Conformance spec` block below is untouched and still passes. `[absent-is-not-none]`
+is preserved: every omission is paired with a named `fidelity_notes` entry, so "we don't know" is
+never renderable as "there is nothing."
+
+**Rejected alternative** (recorded so it isn't re-proposed): mapping every option to
+`fidelity: unrecognized` + `legs: []` is legal under the *unamended* contract, but discards the
+quantity, cost basis and mark Webull **does** supply — on 9 of the owner's 14 real positions. It
+would report less than we honestly know.
