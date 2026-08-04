@@ -154,6 +154,82 @@ def _unrecognized(pid: str, notes: list[str], unrealized: BrokerFact) -> BrokerP
                           fidelity_notes=notes, legs=[], unrealized_pl=unrealized)
 
 
+# ------------------------------------------------------- multiplier reconstruction (R2b)
+# OWNER RULING 2026-08-03 (RECONCILIATION_PLAN §4): reconstruct the contract multiplier from
+# Webull's OWN cost aggregate — with all four guards binding. The reconstruction is not a
+# guess about options in general; it reproduces a broker-SUPPLIED number (`total_cost`), so
+# a multiplier-dependent figure is a restatement of Webull's own arithmetic rather than a
+# Convexa derivation. `positions-legs` learned the hard way never to hardcode x100, and the
+# guards are what distinguish this from that mistake — the whole basis of the ruling. They
+# are not decoration; do not relax them without going back to the owner.
+#
+# ONE flippable constant. Set it False and every option row falls to the withhold path
+# (multiplier omitted, `not provided` rendered) with no other behaviour change.
+_RECONSTRUCT_MULTIPLIER_FROM_COST = True
+
+_MULTIPLIER_RATIO_TOLERANCE = 0.01    # guard 2: |ratio - mult| <= 1% of the rounded mult
+_MULTIPLIER_ROUNDTRIP_ABS = 0.01      # guard 3: round-trip floor, in currency units
+_MULTIPLIER_ROUNDTRIP_REL = 0.005     # guard 3: round-trip tolerance vs |total_cost|
+_MULTIPLIER_MIN_UNIT_COST = 0.05      # guard 4: below 5c a 2-decimal unit_cost can distort
+                                      #          the ratio by >10% (the deep-OTM landmine)
+
+
+def _derive_multiplier(entry: dict, qty: float) -> Optional[float]:
+    """
+    Reproduce the contract multiplier from `total_cost / (unit_cost * qty)`, or return None.
+
+    None is a first-class answer: the caller withholds every multiplier-dependent output
+    rather than emitting a plausible-looking 1 or 100. Four guards, all binding:
+      1. `mult >= 1`            — a sub-unit scale is never a contract multiplier.
+      2. ratio tolerance        — the ratio must sit within 1% of the whole number it rounds to.
+      3. round-trip             — `unit_cost * mult * qty` must reproduce the broker's own
+                                  `total_cost` within max(0.01, 0.5% of it). This is the
+                                  binding guard in practice: it is roughly twice as tight as
+                                  guard 2, which stands as belt-and-braces.
+      4. precision floor        — reject `abs(unit_cost) < 0.05`, where 2-decimal rounding
+                                  alone can move the ratio more than the tolerances allow.
+    """
+    if not _RECONSTRUCT_MULTIPLIER_FROM_COST:
+        return None
+    unit_ok, unit_cost = _parse_number(entry.get("unit_cost"))
+    total_ok, total_cost = _parse_number(entry.get("total_cost"))
+    if not unit_ok or not total_ok or unit_cost is None or total_cost is None:
+        return None
+    if qty == 0:
+        return None
+    if abs(unit_cost) < _MULTIPLIER_MIN_UNIT_COST:          # guard 4 (covers unit_cost == 0)
+        return None
+
+    ratio = total_cost / (unit_cost * qty)                  # signs cancel on a short
+    mult = float(round(ratio))
+    if mult < 1:                                            # guard 1
+        return None
+    if abs(ratio - mult) > _MULTIPLIER_RATIO_TOLERANCE * mult:      # guard 2
+        return None
+    tolerance = max(_MULTIPLIER_ROUNDTRIP_ABS,
+                    _MULTIPLIER_ROUNDTRIP_REL * abs(total_cost))
+    if abs(unit_cost * mult * qty - total_cost) > tolerance:        # guard 3
+        return None
+    return mult
+
+
+# ------------------------------------------------------------------------ fidelity notes
+# FIXED strings — never interpolated with payload content (a hygiene test enforces it). Each
+# names an omission so the FE can render "we don't know" instead of "there is nothing".
+_NOTE_NO_CONTRACT_DETAIL = (
+    "Webull's positions feed carries no strike, expiry, or call/put for a held option — "
+    "Convexa will not guess them")
+_NOTE_MISSING_FACT = {
+    "strike": "strike not supplied by the broker — Convexa will not guess it",
+    "expiry": "expiry not supplied by the broker — Convexa will not guess it",
+    "right": "call/put not supplied by the broker — Convexa will not guess it",
+}
+_NOTE_MULTIPLIER_WITHHELD = ("contract multiplier not supplied and not reproducible from "
+                             "Webull's own cost aggregate")
+_NOTE_MULTIPLIER_RECONSTRUCTED = ("contract multiplier not supplied — reproduced exactly "
+                                  "from Webull's own total_cost")
+
+
 # ----------------------------------------------------------------------------- entry mapping
 # The real payload's 13 keys, CONFIRMED by capture, identical on STOCK and OPTION rows:
 #   instrument_id · instrument_type · symbol · short_name · qty · unit_cost · currency ·
@@ -178,45 +254,72 @@ def _map_entry(entry: dict, index: int) -> BrokerPosition:
         return _unrecognized(pid, ["quantity missing or unparseable"], unrealized)
 
     symbol = str(entry.get("symbol") or "").strip()
-    notes: list[str] = []
-    fidelity = "exact"
 
     if itype == _EQUITY_TYPE:
         if not symbol:
             return _unrecognized(pid, ["equity entry without a symbol"], unrealized)
         leg = BrokerLeg(kind="equity", symbol=symbol, underlying=symbol,
                         quantity=qty,                    # SIGNED as the payload carries it
-                        multiplier=1.0,                  # explicit shares-multiplier
+                        multiplier=1.0,                  # a share's scale is 1 BY DEFINITION
                         cost_basis=_fact(entry, "unit_cost"),
                         broker_mark=_fact(entry, "last_price"))
-        return BrokerPosition(pid, fidelity, notes, [leg], unrealized)
+        return BrokerPosition(pid, "exact", [], [leg], unrealized)
 
-    # ---- option
+    return _map_option_entry(entry, pid, qty, symbol, unrealized)
+
+
+def _map_option_entry(entry: dict, pid: str, qty: float, symbol: str,
+                      unrealized: BrokerFact) -> BrokerPosition:
+    """
+    ONE `BrokerLeg` per option row, honest about what the feed did and did not carry
+    (INTERFACE §4 as amended by Amendment 1, 2026-08-03).
+
+    The real Webull feed carries NO contract detail for a held option — no strike, expiry,
+    call/put, multiplier or underlying symbol; `symbol` is the bare underlying ticker, not an
+    OCC code. So: the ticker rides VERBATIM (an OCC code is never synthesized and the
+    underlying is never derived from a symbol prefix), the facts Webull DID supply — signed
+    quantity, per-contract cost basis and mark — ride as themselves, and every fact it did
+    not supply is OMITTED and NAMED in `fidelity_notes`.
+
+    The rejected alternative — `unrecognized` + `legs: []` for every option — is legal under
+    the unamended contract but reports less than we honestly know, on 9 of 14 real positions.
+
+    Contract facts are read conditionally rather than assumed absent: the presence rule is
+    "iff the broker supplies it", so a feed that one day DOES carry them maps to a full,
+    `exact` leg with no notes and no code change.
+    """
+    if not symbol:
+        return _unrecognized(pid, ["option entry without a symbol"], unrealized)
+
     right_raw = str(entry.get("option_type") or "").strip().lower()
     right = right_raw if right_raw in ("call", "put") else None
     strike_ok, strike = _parse_number(entry.get("strike_price"))
+    strike = strike if strike_ok else None
     expiry = str(entry.get("expire_date") or "").strip() or None
-    mult_ok, mult = _parse_number(entry.get("contract_multiplier"))
-    if right is None or not strike_ok or expiry is None:
-        return _unrecognized(
-            pid, ["option entry missing right/strike/expiry — not representable"], unrealized)
-    if not mult_ok or mult is None:
-        # NEVER a plausible-looking x100 guess — an explicit multiplier or no leg at all.
-        return _unrecognized(
-            pid, ["option entry missing an explicit contract multiplier — Convexa does not "
-                  "assume x100"], unrealized)
-    underlying = str(entry.get("underlying_symbol") or "").strip()
-    if not underlying:
-        # Derive from the OCC-style symbol prefix; honest about the derivation.
-        underlying = "".join(ch for ch in symbol if ch.isalpha())[:6] or symbol
-        fidelity = "partial"
-        notes.append("underlying not supplied — derived from the contract symbol")
-    leg = BrokerLeg(kind="option", symbol=symbol or pid, underlying=underlying,
-                    quantity=qty, multiplier=mult,
+
+    notes: list[str] = []
+    missing = [name for name, value in (("strike", strike), ("expiry", expiry),
+                                        ("right", right)) if value is None]
+    if len(missing) == 3:
+        notes.append(_NOTE_NO_CONTRACT_DETAIL)          # the real Webull case, named once
+    else:
+        notes.extend(_NOTE_MISSING_FACT[name] for name in missing)
+
+    mult_ok, supplied_mult = _parse_number(entry.get("contract_multiplier"))
+    multiplier = supplied_mult if mult_ok else None
+    if multiplier is None:
+        # Broker-supplied FIRST; reconstruction only as a fallback; withhold if neither.
+        multiplier = _derive_multiplier(entry, qty)
+        notes.append(_NOTE_MULTIPLIER_RECONSTRUCTED if multiplier is not None
+                     else _NOTE_MULTIPLIER_WITHHELD)
+
+    leg = BrokerLeg(kind="option", symbol=symbol, underlying=symbol,
+                    quantity=qty,                       # SIGNED as the payload carries it
+                    multiplier=multiplier,              # None ⇒ omitted, never defaulted
                     cost_basis=_fact(entry, "unit_cost"),
                     broker_mark=_fact(entry, "last_price"),
                     expiry=expiry, strike=strike, right=right)
-    return BrokerPosition(pid, fidelity, notes, [leg], unrealized)
+    return BrokerPosition(pid, "partial" if notes else "exact", notes, [leg], unrealized)
 
 
 def map_positions(entries: list) -> list[BrokerPosition]:

@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+from src.broker import webull_adapter as wa
 from src.broker.ports import BrokerCredential, BrokerFact
 from src.broker.webull_adapter import (
     WebullProvider,
@@ -315,6 +316,240 @@ def test_option_entries_carry_no_contract_detail_at_all():
         for key in absent:
             assert key not in e
         assert e["symbol"].isalpha()                   # bare ticker, never an OCC code
+
+
+# --------------------------------------------- R2: honest option mapping (Amendment 1)
+
+def test_the_real_book_maps_to_five_exact_nine_partial_zero_unrecognized():
+    """R2's done-condition. The rejected alternative — every option as
+    `unrecognized` + `legs: []` — is contract-legal but throws away the quantity, cost basis
+    and mark Webull DOES supply on 9 of 14 real positions."""
+    book = _provider(FakeTransport()).fetch_book(CRED)
+    counts = {"exact": 0, "partial": 0, "unrecognized": 0}
+    for p in book.positions:
+        counts[p.fidelity] += 1
+    assert counts == {"exact": 5, "partial": 9, "unrecognized": 0}
+    by_id = _mapped_by_id(book)
+    for oid in OPTION_IDS:
+        assert len(by_id[oid].legs) == 1               # exactly one leg per contract row
+        assert by_id[oid].legs[0].kind == "option"
+
+
+def test_option_symbol_and_underlying_are_the_bare_ticker_verbatim():
+    """`symbol` is the bare underlying ticker, NOT an OCC code — so an OCC code is never
+    synthesized, and `underlying` is never derived from a contract-symbol prefix."""
+    by_id = _mapped_by_id(map_positions(_entries()))
+    for oid, ticker in ((ID_NVDA_OPT, "NVDA"), (ID_PLTR_OPT, "PLTR"),
+                        (ID_META_OPT_SHORT, "META"), (ID_AAPL_OPT_LONG, "AAPL")):
+        leg = by_id[oid].legs[0]
+        assert leg.symbol == ticker
+        assert leg.underlying == ticker
+
+
+def test_option_contract_facts_are_omitted_on_the_wire_never_null_padded():
+    by_id = _mapped_by_id(map_positions(_entries()))
+    for oid in OPTION_IDS:
+        leg = by_id[oid].legs[0]
+        assert (leg.expiry, leg.strike, leg.right) == (None, None, None)
+        wire = leg.to_wire()
+        for absent in ("expiry", "strike", "right"):
+            assert absent not in wire, f"{oid}: {absent} must be ABSENT, not null"
+
+
+def test_every_omission_is_named_in_fidelity_notes():
+    """`[absent-is-not-none]`: an omitted fact is never silently gone — Amendment 1 pairs
+    every omission with a named note, so the FE can say "we don't know" rather than
+    rendering "there is nothing"."""
+    by_id = _mapped_by_id(map_positions(_entries()))
+    for oid in OPTION_IDS:
+        notes = " ".join(by_id[oid].fidelity_notes).lower()
+        assert by_id[oid].fidelity_notes
+        for named in ("strike", "expiry", "call/put"):
+            assert named in notes, f"{oid}: {named} omission is not named"
+
+
+def test_fidelity_notes_never_leak_payload_values():
+    """Hygiene: the notes are FIXED strings. No quantity, cost, mark or id may appear."""
+    entries = _entries()
+    by_id = _mapped_by_id(map_positions(entries))
+    for entry in entries:
+        notes = by_id[str(entry["instrument_id"])].fidelity_notes
+        for key in ("qty", "unit_cost", "total_cost", "last_price", "market_value",
+                    "unrealized_profit_loss", "instrument_id"):
+            value = str(entry[key])
+            assert not any(value in n for n in notes), f"{key}={value} leaked into a note"
+
+
+def test_option_leg_carries_the_quantity_and_facts_webull_did_supply():
+    by_id = _mapped_by_id(map_positions(_entries()))
+    nvda = by_id[ID_NVDA_OPT].legs[0]
+    assert nvda.quantity == 10.0
+    assert nvda.cost_basis == BrokerFact("supplied", 7.89)     # per-contract unit_cost
+    assert nvda.broker_mark == BrokerFact("supplied", 4.85)    # per-contract last_price
+    short = by_id[ID_AAPL_OPT_SHORT].legs[0]
+    assert short.quantity == -10.0                             # signed, straight from `qty`
+
+
+def test_option_facts_carry_through_when_a_broker_does_supply_them():
+    """The presence rule is "iff the broker supplies it" — not "never". A feed that DOES
+    carry contract detail maps to a full, `exact` leg with no notes."""
+    entry = _synthetic(instrument_id="555", instrument_type="OPTION", symbol="SPY",
+                       qty="2", unit_cost="3.25", last_price="4.10", total_cost="650.00",
+                       option_type="CALL", strike_price="500", expire_date="2026-09-18",
+                       contract_multiplier="100", underlying_symbol="SPY")
+    pos = _mapped_by_id(map_positions([entry]))["555"]
+    assert pos.fidelity == "exact"
+    assert pos.fidelity_notes == []
+    leg = pos.legs[0]
+    assert (leg.right, leg.strike, leg.expiry) == ("call", 500.0, "2026-09-18")
+    assert leg.multiplier == 100.0
+    wire = leg.to_wire()
+    assert wire["strike"] == 500.0 and wire["expiry"] == "2026-09-18"
+
+
+def test_a_partially_supplied_option_names_only_the_facts_that_are_missing():
+    entry = _synthetic(instrument_id="556", instrument_type="OPTION", symbol="SPY",
+                       qty="2", unit_cost="3.25", total_cost="650.00",
+                       option_type="PUT", contract_multiplier="100")
+    pos = _mapped_by_id(map_positions([entry]))["556"]
+    assert pos.fidelity == "partial"
+    notes = " ".join(pos.fidelity_notes).lower()
+    assert "strike" in notes and "expiry" in notes
+    assert "call/put" not in notes                  # `right` WAS supplied — not an omission
+    assert pos.legs[0].right == "put"
+
+
+def test_option_without_a_symbol_is_unrecognized_never_an_anonymous_leg():
+    entry = _synthetic(instrument_id="557", instrument_type="OPTION", symbol="", qty="1")
+    pos = _mapped_by_id(map_positions([entry]))["557"]
+    assert pos.fidelity == "unrecognized" and pos.legs == []
+
+
+# ---------------------------------- R2b: multiplier reconstruction, behind four guards
+# OWNER RULING 2026-08-03: reconstruct the x100 from Webull's own cost aggregate, with all
+# four guards binding. The guards are not decoration — they are the whole basis of the
+# ruling — so they are pinned by value here as well as by behaviour.
+
+def test_multiplier_guard_constants_are_the_owner_ruled_values():
+    assert wa._RECONSTRUCT_MULTIPLIER_FROM_COST is True     # the single flippable constant
+    assert wa._MULTIPLIER_RATIO_TOLERANCE == 0.01           # guard 2: 1% of the rounded mult
+    assert wa._MULTIPLIER_ROUNDTRIP_ABS == 0.01             # guard 3
+    assert wa._MULTIPLIER_ROUNDTRIP_REL == 0.005            # guard 3
+    assert wa._MULTIPLIER_MIN_UNIT_COST == 0.05             # guard 4: the precision floor
+
+
+def test_every_real_option_row_reconstructs_to_one_hundred():
+    by_id = _mapped_by_id(map_positions(_entries()))
+    assert {by_id[oid].legs[0].multiplier for oid in OPTION_IDS} == {100.0}
+
+
+def test_the_reconstruction_exactly_reproduces_webulls_own_total_cost():
+    """The reconstruction is not a guess about options in general — it reproduces a
+    broker-SUPPLIED aggregate. That is the property that makes "Net entry" a restatement of
+    Webull's own number rather than a Convexa derivation."""
+    by_id = _mapped_by_id(map_positions(_entries()))
+    for oid in OPTION_IDS:
+        raw = _entry(oid)
+        leg = by_id[oid].legs[0]
+        reproduced = leg.cost_basis.value * leg.multiplier * leg.quantity
+        total_cost = float(raw["total_cost"])
+        tolerance = max(0.01, 0.005 * abs(total_cost))
+        assert abs(reproduced - total_cost) <= tolerance
+
+
+def test_a_reconstructed_multiplier_is_named_in_fidelity_notes_as_reconstructed():
+    by_id = _mapped_by_id(map_positions(_entries()))
+    notes = " ".join(by_id[ID_NVDA_OPT].fidelity_notes).lower()
+    assert "multiplier" in notes and "total_cost" in notes
+
+
+def test_reconstruction_is_behind_one_flippable_constant_and_withholds_when_off(monkeypatch):
+    """Flip one module constant and the withhold path takes over on every option row:
+    multiplier None, key ABSENT on the wire, the withhold named in the notes. Never a
+    plausible-looking default."""
+    monkeypatch.setattr(wa, "_RECONSTRUCT_MULTIPLIER_FROM_COST", False)
+    by_id = _mapped_by_id(map_positions(_entries()))
+    for oid in OPTION_IDS:
+        leg = by_id[oid].legs[0]
+        assert leg.multiplier is None
+        assert "multiplier" not in leg.to_wire()
+        assert by_id[oid].fidelity == "partial"
+        notes = " ".join(by_id[oid].fidelity_notes).lower()
+        assert "multiplier not supplied and not reproducible" in notes
+    # The rest of the row is unaffected — quantity and the supplied facts still ride.
+    assert by_id[ID_NVDA_OPT].legs[0].quantity == 10.0
+    assert by_id[ID_NVDA_OPT].legs[0].cost_basis == BrokerFact("supplied", 7.89)
+
+
+def _derived(**overrides):
+    entry = _synthetic(instrument_id="600", instrument_type="OPTION", symbol="ZZZ", **overrides)
+    return _mapped_by_id(map_positions([entry]))["600"].legs[0].multiplier
+
+
+def test_guard_one_rejects_a_multiplier_below_one():
+    # total_cost < unit_cost x qty ⇒ ratio 0.4 ⇒ rounds to 0. A sub-unit multiplier is never
+    # a contract multiplier; withhold rather than emit a nonsense scale.
+    assert _derived(qty="10", unit_cost="10.00", total_cost="40.00") is None
+
+
+def test_guard_two_and_three_reject_a_ratio_that_drifts_off_a_whole_multiplier():
+    # ratio 10.4: 4% off the nearest whole multiplier. Guard 2 (1% of mult = 0.1) rejects it;
+    # guard 3's round-trip would reject it too.
+    assert _derived(qty="10", unit_cost="10.00", total_cost="1040.00") is None
+
+
+def test_guard_three_round_trip_rejects_what_the_ratio_tolerance_alone_would_admit():
+    # ratio 99.5 -> rounds to 100, and |99.5-100| = 0.5 is INSIDE guard 2's 1%-of-100 = 1.0
+    # window. Only the round-trip check catches it: 10.00 x 100 x 10 = 10000 misses the
+    # broker's own 9950 by 50, outside max(0.01, 0.005 x 9950) = 49.75.
+    assert _derived(qty="10", unit_cost="10.00", total_cost="9950.00") is None
+
+
+def test_guard_four_precision_floor_rejects_a_deep_otm_unit_cost():
+    # unit_cost 0.04 reconstructs a clean ratio of exactly 100 — every other guard passes —
+    # but below 5 cents a 2-decimal rounding can distort the ratio by >10%. The deep-OTM
+    # landmine: withheld on principle, not on arithmetic.
+    assert _derived(qty="10", unit_cost="0.04", total_cost="40.00") is None
+    assert _derived(qty="10", unit_cost="0.05", total_cost="50.00") == 100.0   # at the floor
+
+
+def test_reconstruction_needs_the_brokers_aggregate_and_withholds_without_it():
+    assert _derived(qty="10", unit_cost="7.89", total_cost="7889.00") == 100.0
+    for missing in ({"total_cost": None}, {"total_cost": "not-a-number"},
+                    {"unit_cost": None}, {"qty": "0", "total_cost": "0"},
+                    {"unit_cost": "0.00", "total_cost": "0.00"}):
+        fields = {"instrument_id": "601", "instrument_type": "OPTION", "symbol": "ZZZ",
+                  "qty": "10", "unit_cost": "7.89", "total_cost": "7889.00", **missing}
+        pos = _mapped_by_id(map_positions([_synthetic(**fields)]))["601"]
+        assert pos.legs[0].multiplier is None, missing
+
+
+def test_a_broker_supplied_multiplier_always_beats_the_reconstruction():
+    """"Known" means broker-supplied FIRST, reconstructed only as a fallback — and a
+    non-standard supplied multiplier carries through untouched, never normalized to 100."""
+    leg_mult = _derived(qty="10", unit_cost="10.00", total_cost="10000.00",
+                        contract_multiplier="5")
+    assert leg_mult == 5.0
+
+
+def test_a_withheld_multiplier_never_defaults_to_one_or_a_hundred():
+    entry = _synthetic(instrument_id="602", instrument_type="OPTION", symbol="ZZZ",
+                       qty="10", unit_cost="10.00", total_cost="40.00")   # guard 1 rejects
+    pos = _mapped_by_id(map_positions([entry]))["602"]
+    leg = pos.legs[0]
+    assert leg.multiplier is None
+    assert leg.multiplier not in (1.0, 100.0)
+    assert "multiplier" not in leg.to_wire()
+    assert pos.fidelity == "partial"
+
+
+def test_equity_multiplier_is_never_reconstructed_it_is_one_by_definition():
+    """A share's multiplier is 1 by the definition of the unit, not an inference — and the
+    real payload proves reconstruction would be noisy there anyway (AMD's rounded
+    `unit_cost` misses `total_cost` by 0.12)."""
+    by_id = _mapped_by_id(map_positions(_entries()))
+    assert {by_id[sid].legs[0].multiplier for sid in STOCK_IDS} == {1.0}
+    assert all(by_id[sid].fidelity == "exact" for sid in STOCK_IDS)
 
 
 # ------------------------------------------------------------------ unrepresentable entries
