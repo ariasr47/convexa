@@ -2,11 +2,15 @@
 Webull positions adapter — `PositionsProvider` #1 (broker-connect B4).
 
 Maps the Webull Individual OpenAPI read payloads into OUR leg-first records (`ports.py`).
-The mapping is deliberately organized as small per-fact extractors so reconciling against the
-REAL captured payloads (task B1, owner-present) is a contained diff: every assumption that is
-not yet capture-confirmed is marked `PROVISIONAL(capture)` below and is pinned by the
-characterization tests over `tests/fixtures/broker/*` (which prefer the captured fixtures the
-moment they exist).
+The mapping is deliberately organized as small per-fact extractors, which is what made
+reconciling against the REAL captured payloads a contained diff.
+
+**RECONCILED against the owner's real capture (2026-08-03, R1).** Every field name, type
+token and shape below is now a CONFIRMED capture fact pinned by the characterization tests
+over `tests/fixtures/broker/*` — no provisional guesses remain. The corrections reality
+forced: `qty` (not `quantity`) · `"STOCK"` (not `"EQUITY"`) · `instrument_id` and no `id` key
+at all · all numerics are strings · option rows carry the SAME 13 generic keys as stock rows,
+with no contract detail whatsoever (see `_map_option_entry`).
 
 SDK surface (CAPTURE_FINDINGS §f): `webull-python-sdk-core` ONLY. The read requests are
 defined inline over `webullsdkcore.request.ApiRequest` (mirroring webull-python-sdk-trade's
@@ -42,10 +46,17 @@ logger = logging.getLogger("Convexa")
 _MAX_PAGES = 50          # hard cap; owner-scale book is one page
 _PAGE_SIZE = 100
 
-# PROVISIONAL(capture): the flat-payload assumption. If the B1 capture shows a grouping
-# identity for multi-leg option positions, set this to that key and extend `map_positions`
-# to emit one multi-leg position per group (the AC-6b grouped arm). Until then the payload is
-# treated as FLAT: one single-leg position per contract, NEVER composed by heuristic.
+# The instrument_type vocabulary, CONFIRMED by capture: Webull says STOCK, not EQUITY. Read
+# in exactly two places (the guard and the branch) via these constants so they cannot drift —
+# a silent drift here maps an entire real book to `unrecognized`.
+_EQUITY_TYPE = "STOCK"
+_OPTION_TYPE = "OPTION"
+
+# CONFIRMED by capture (CAPTURE_FINDINGS §a): the payload is FLAT — the grouping-identity
+# candidate list came back EMPTY across all 14 real positions, so AC-6b's flat arm is a
+# settled fact, not a fallback. One single-leg position per contract, NEVER composed by
+# heuristic. If a future capture ever DOES show a grouping identity, set this to that key and
+# extend `map_positions` to emit one multi-leg position per group (the AC-6b grouped arm).
 _GROUPING_IDENTITY_KEY: Optional[str] = None
 
 
@@ -74,8 +85,12 @@ def account_ref_for(account_identifier: str) -> str:
 
 # ----------------------------------------------------------------------------- failure map
 
-# PROVISIONAL(capture): code hints pending the B1 corrupted-secret probe; the fixtures
-# (error_bad_credential / rate_limit_headers) are the truth these are reconciled against.
+# CONFIRMED by capture: the corrupted-secret probe returned http_status 401 + error_code
+# `UNAUTHORIZED` with an EMPTY error_msg (CAPTURE_FINDINGS §c) — covered by both the status
+# check and the `UNAUTHORIZED` hint below. The wider hint list stays: it costs nothing and
+# covers the neighbouring codes Webull may return for an unapproved or expired key.
+# Rate limiting was never observed (Webull returned no 429 and NO rate-limit headers at all,
+# §d) — the hints below are OUR mapping logic, pinned by a synthetic test.
 _CREDENTIAL_REJECTED_CODE_HINTS = (
     "INVALID_SIGNATURE", "INVALID_ACCESS", "INVALID_TOKEN", "INVALID_KEY", "EXPIRED",
     "UNAUTHORIZED", "ACCESS_DENIED", "FORBIDDEN", "AUTH_FAIL", "PERMISSION")
@@ -111,7 +126,9 @@ def map_failure(exc: BaseException) -> str:
 # ----------------------------------------------------------------------------- fact parsing
 
 def _parse_number(value: Any) -> tuple[bool, Optional[float]]:
-    """(parseable, value). Webull emits numerics as strings — PROVISIONAL(capture) detail."""
+    """(parseable, value). Webull emits EVERY numeric as a string — confirmed by capture
+    across all 14 real positions (`qty`, `unit_cost`, `total_cost`, `last_price`,
+    `market_value`, both `unrealized_*` fields, `holding_proportion`)."""
     if isinstance(value, bool):
         return False, None
     if isinstance(value, (int, float)):
@@ -138,19 +155,22 @@ def _unrecognized(pid: str, notes: list[str], unrealized: BrokerFact) -> BrokerP
 
 
 # ----------------------------------------------------------------------------- entry mapping
-# PROVISIONAL(capture): field names below (`instrument_type`, `quantity`, `unit_cost`,
-# `last_price`, `unrealized_profit_loss`, `option_type`, `strike_price`, `expire_date`,
-# `contract_multiplier`, `underlying_symbol`) mirror the provisional fixtures derived from
-# Webull's documented shapes. Each is read in exactly one place here, so a captured rename is
-# a one-line diff pinned by the fixture tests.
+# The real payload's 13 keys, CONFIRMED by capture, identical on STOCK and OPTION rows:
+#   instrument_id · instrument_type · symbol · short_name · qty · unit_cost · currency ·
+#   total_cost · last_price · market_value · unrealized_profit_loss ·
+#   unrealized_profit_loss_rate · holding_proportion
+# Each is read in exactly one place here, so a future vendor rename stays a one-line diff
+# pinned by the fixture tests.
 
 def _map_entry(entry: dict, index: int) -> BrokerPosition:
-    pid = str(entry.get("id") or entry.get("instrument_id") or f"webull-{index}")
+    pid = str(entry.get("instrument_id") or f"webull-{index}")
     unrealized = _fact(entry, "unrealized_profit_loss")
     itype = str(entry.get("instrument_type") or "").strip().upper()
 
-    qty_ok, qty = _parse_number(entry.get("quantity"))
-    if itype not in ("EQUITY", "OPTION"):
+    # `qty` — signed as the payload carries it (a short is already negative; no sign
+    # synthesis anywhere in this module).
+    qty_ok, qty = _parse_number(entry.get("qty"))
+    if itype not in (_EQUITY_TYPE, _OPTION_TYPE):
         return _unrecognized(
             pid, [f"instrument_type {itype or '(missing)'} is not representable in the "
                   f"leg-first book model"], unrealized)
@@ -161,7 +181,7 @@ def _map_entry(entry: dict, index: int) -> BrokerPosition:
     notes: list[str] = []
     fidelity = "exact"
 
-    if itype == "EQUITY":
+    if itype == _EQUITY_TYPE:
         if not symbol:
             return _unrecognized(pid, ["equity entry without a symbol"], unrealized)
         leg = BrokerLeg(kind="equity", symbol=symbol, underlying=symbol,
@@ -216,14 +236,17 @@ def map_positions(entries: list) -> list[BrokerPosition]:
             out.append(_map_entry(entry, i))
         except Exception:
             # Contained: the entry surfaces as unrecognized; no payload content in the note.
-            out.append(_unrecognized(str(entry.get("id") or f"webull-{i}"),
+            out.append(_unrecognized(str(entry.get("instrument_id") or f"webull-{i}"),
                                      ["entry could not be mapped"],
                                      BrokerFact("not_supplied")))
     return out
 
 
 def _extract_account_id(subscriptions_payload: Any) -> Optional[str]:
-    """PROVISIONAL(capture): /app/subscriptions/list → the first entry's account_id."""
+    """/app/subscriptions/list → the first entry's `account_id`. CONFIRMED correct by capture
+    (§b). FLAGGED, not a bug: the owner's response carried TWO subscription entries and this
+    takes the first — an unpinned choice on a single data point. If multi-account selection
+    ever matters it becomes a real product decision, not a silent index."""
     entries = subscriptions_payload
     if isinstance(subscriptions_payload, dict):
         entries = subscriptions_payload.get("data") or subscriptions_payload.get("items") or []
@@ -329,8 +352,8 @@ class WebullProvider(PositionsProvider):
                 if not (isinstance(page, dict) and page.get("has_next")):
                     break
                 tail = page_entries[-1] if page_entries else None
-                last_id = (str(tail.get("instrument_id") or tail.get("id"))
-                           if isinstance(tail, dict) else None)
+                last_id = (str(tail.get("instrument_id"))
+                           if isinstance(tail, dict) and tail.get("instrument_id") else None)
                 if last_id is None:
                     break
 
@@ -347,4 +370,8 @@ class WebullProvider(PositionsProvider):
         return ProviderCapabilities(
             provider_id="webull", refresh_basis="on_demand_snapshot",
             supplies_cost_basis=True, supplies_broker_mark=True,
-            supplies_unrealized_pl=True)  # PROVISIONAL(capture): confirmed by question (e)
+            # CONFIRMED by capture question (e): every real position carried
+            # `unrealized_profit_loss`. It is carried VERBATIM (INTERFACE §4) even though
+            # Webull's own option figure is arithmetically wrong by ~100x — correcting a
+            # broker-stated fact and still labelling it the broker's would be a fabrication.
+            supplies_unrealized_pl=True)

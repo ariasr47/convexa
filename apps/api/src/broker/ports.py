@@ -3,8 +3,8 @@ Broker PORT + record shapes (broker-connect INTERFACE_CONTRACT §1/§2/§4).
 
 A structural sibling of `src/auth/ports.py`: the records ARE the contract, defined against
 OUR leg-first model — never Webull's payload — so a payload surprise is an adapter mapping
-problem, never a port reopening. `to_wire()` emits EXACTLY the interface's presence rules:
-absent means ABSENT, never null-padded.
+problem, never a port reopening. `to_wire()` emits EXACTLY the interface's presence rules
+(including Amendment 1, 2026-08-03): absent means ABSENT, never null-padded.
 
 READ-ONLY IS A TYPE-SURFACE FACT (`[no-real-order-path]`): `PositionsProvider` has exactly
 two methods — `fetch_book` and `describe`. There is NO write method, nonexistent rather than
@@ -55,18 +55,29 @@ class BrokerFact:
 
 @dataclass(frozen=True)
 class BrokerLeg:
-    """One leg in OUR model. Quantity is SIGNED (short = negative — one convention, stated
-    once); multiplier is EXPLICIT per-leg (never a hardcoded x100)."""
+    """
+    One leg in OUR model. Quantity is SIGNED (short = negative — one convention, stated
+    once); multiplier is EXPLICIT per-leg (never a hardcoded x100).
+
+    PRESENCE (INTERFACE §4 as amended by Amendment 1, 2026-08-03): `expiry`/`strike`/`right`
+    ride the wire iff `kind: option` AND THE BROKER SUPPLIED THE FACT; `multiplier` rides it
+    only when KNOWN — supplied by the broker, or reproduced exactly from broker-supplied
+    aggregates. Unknown means the key is ABSENT, never a null and never a plausible default:
+    a null-padded `strike: null` reads to a consumer as a fact, and a defaulted
+    `multiplier: 100` is the exact fabrication class `positions-legs` learned the hard way.
+    Every omission is paired with a named `BrokerPosition.fidelity_notes` entry, so "we don't
+    know" is never renderable as "there is nothing" (`[absent-is-not-none]`).
+    """
     kind: Literal["equity", "option"]
     symbol: str
     underlying: str
     quantity: float
-    multiplier: float
+    multiplier: Optional[float]     # None ⇒ unknown ⇒ omitted; NEVER defaulted to 1 or 100
     cost_basis: BrokerFact
     broker_mark: BrokerFact
-    expiry: Optional[str] = None    # YYYY-MM-DD, iff option
-    strike: Optional[float] = None  # iff option
-    right: Optional[Literal["call", "put"]] = None  # iff option
+    expiry: Optional[str] = None    # YYYY-MM-DD, iff option AND supplied
+    strike: Optional[float] = None  # iff option AND supplied
+    right: Optional[Literal["call", "put"]] = None  # iff option AND supplied
 
     def to_wire(self) -> dict:
         wire = {
@@ -74,14 +85,16 @@ class BrokerLeg:
             "symbol": self.symbol,
             "underlying": self.underlying,
             "quantity": self.quantity,
-            "multiplier": self.multiplier,
             "cost_basis": self.cost_basis.to_wire(),
             "broker_mark": self.broker_mark.to_wire(),
         }
+        if self.multiplier is not None:
+            wire["multiplier"] = self.multiplier
         if self.kind == "option":
-            wire["expiry"] = self.expiry
-            wire["strike"] = self.strike
-            wire["right"] = self.right
+            for key, value in (("expiry", self.expiry), ("strike", self.strike),
+                               ("right", self.right)):
+                if value is not None:
+                    wire[key] = value
         return wire
 
 
