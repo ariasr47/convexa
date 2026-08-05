@@ -261,3 +261,42 @@ Installed for the read path (requirements.txt):
   received, ... body:...')`) — default level must stay above DEBUG in any deployed env.
 - `ServerException.__str__` embeds `request.string_to_sign` context in client internals; the
   adapter maps exceptions to the closed failure-cause enum and never surfaces exception text.
+
+## (i) — Instrument-detail lookup probe (R7)
+
+**Probed:** 2026-08-05T03:38:59+00:00 · region `us` · tool
+`tests/probe_webull_instrument.py` · subject: option `instrument_id` `1058096497`,
+read from the committed `fixtures/broker/positions_raw.json` (the probe takes no
+account-identifying input). Budget: 5/8 calls, 0.6s apart,
+no 429 retried. `/account/positions` was NOT touched.
+
+Answers the owner's Q1 ruling ("research a secondary lookup first" — RECONCILIATION_PLAN §3).
+
+### Desk research recorded before the probe (do not redo)
+
+- `webullsdkcore` (the only installed SDK) exposes no instrument/quote lookup request classes — only generic HTTP transport/signing.
+- `webull-python-sdk-mdata` exists on PyPI (v0.1.18) with "Option Market Data" endpoints (Tick/Snapshot/Historical-Bars) — but they take an ALREADY-KNOWN option code as INPUT to return pricing. They do not resolve instrument_id -> spec. Not a solution.
+- `webull-python-sdk-trade` is deliberately NOT installed (its chain pins `grpcio==1.51.1`, unbuildable on py>=3.12) and its absence is a `[no-real-order-path]` asset — do NOT add it.
+- A promising endpoint is NAMED but UNVERIFIED: "Query Trade Instrument" (`developer.webull.com/api-doc/trade/order/query-trade-instrument/`), signature `getTradeInstrument(instrumentId)`. Its exact method/path/params could NOT be confirmed — Webull's docs site is a JS-rendered SPA that defeats automated fetching. Converting this guess into a recorded fact is the entire point of the probe.
+- Options ORDER PLACEMENT requires the caller to supply `strike_price`/`option_expire_date`/`option_type` directly — so Webull's systems clearly hold this data; it is just not confirmed as a documented public read.
+
+### Attempts
+
+| # | path | param spelling | HTTP status | error_code | response top-level keys | classification |
+|---|------|----------------|-------------|------------|-------------------------|----------------|
+| 1 | `/trade/instrument` | `instrument_id` | 200 | (none) | `['instrument_id']` | `echo_only` |
+| 2 | `/instrument/query` | `instrument_id` | 404 | `SDK.UnknownServerError` | `['error_msg']` | `endpoint_absent` |
+| 3 | `/quote/instrument` | `instrument_id` | 404 | `SDK.UnknownServerError` | `['error_msg']` | `endpoint_absent` |
+| 4 | `/trade/instrument` | `instrument_ids` | 500 | `INTERNAL_ERROR` | `['error_code']` | `other` |
+| 5 | `/trade/instrument` | `instrumentId` | 500 | `INTERNAL_ERROR` | `['error_code']` | `other` |
+
+Response VALUES are never recorded — only the top-level key set. The three failure classes are
+kept distinct on purpose: `endpoint_absent` (Webull has no such read), `not_permitted_for_this_key`
+(the read exists but this key cannot see it — an entitlement question, not a dead end),
+`bad_params` (worth exactly one spelling retry — this run performs it, `instrument_ids` then
+`instrumentId`, on the first non-404 path if there was one). `other` covers 429/5xx/transport,
+which prove nothing either way.
+
+### Conclusion
+
+CONCLUSION: OUTCOME B (echo sub-case) — a Webull instrument read EXISTS and answers HTTP 200 (`/trade/instrument`), but every parameter spelling tried returned a bare ECHO of the id with NO contract detail (2 endpoint_absent, 0 not_permitted_for_this_key, 0 bad_params, 1 echo_only, 2 other, across 5 calls). Practically this is Outcome B — the honest generic option row stands as the v1 answer — but it is NOT the same dead end as `endpoint_absent`: the route is live, so the gap is a parameter/entitlement question the owner can put to Webull, not a proven product ceiling. `fidelity_notes` must therefore keep the capture-scoped wording ("Webull's positions feed carries no…") and must NOT strengthen to "Webull's API exposes no contract detail" — that claim is not earned while a 200 route remains unexplained.
