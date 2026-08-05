@@ -94,6 +94,32 @@ which is exactly why this was cheap to fix now.
 |-----|---------|------------------------------------------|-------------|
 | `ai-external-no-llm` | 2026-06-23 | `ai-recommendations` · GATE S — owner decision (2026-06-23): GammaFlow now CALLS an LLM in-app for a risk-first entry rec. Contradicts the absolute "does not call an LLM." | **NARROWED, not erased.** New rule: GammaFlow MAY call an LLM **only** as a best-effort, isolated, gated, **advisory consumer** of already-computed state (never a scoring/gate/fingerprint input, no recompute, off the SSE path, server-side key, no auto-act, no real order); the AI is otherwise external + the manual hand-off remains valid. Prose narrowed in CONTEXT §8. Earning rows (trade-tracker-sim, trader-personas — "no LLM call") retained as provenance: they still comply (they made no call). |
 
+### Candidate — `vendor-contract-verified-not-faked` (broker-connect, 2026-08-05; SEVERITY path argued)
+**The rule:** where our code meets a THIRD-PARTY SDK's return contract, at least one test must
+exercise that contract with a **vendor-shaped object**, not a hand-made fake. A fake transport that
+returns tidy dicts tests our mapping and nothing else — it structurally cannot see what the vendor
+actually hands back.
+**Earned the hard way, twice in one feature, both live-only failures behind a fully green suite:**
+1. **S-1 (Critical).** `_shim_sdk_compat()` restored `six`/`cgi` but not the vendored `ssl` names
+   Python ≥3.12 removed, so the shipped adapter **could not complete a single HTTPS request** —
+   surfaced as a generic `adapter_fault`, indistinguishable from a broker outage. The *capture tool*
+   had the shim; the product's copy had silently diverged. A third casualty (`HAS_SNI`) would have
+   produced SNI-less TLS — intermittent, and worse than the total failure.
+2. **The Response-object bug.** `ApiClient.get_response()` returns the transport OBJECT, not parsed
+   JSON. The adapter passed it to the mappers, which correctly answered "nothing here" — so a
+   healthy 13-position book read as `adapter_fault` + "no account id". **The identical defect had
+   already been found and fixed in the capture tool** (`3416ef3`); the product carried its own copy.
+**Both were product/tool divergences of code that was supposed to be one implementation** — which is
+why the fix in both cases was to make it literally one (`_shim_sdk_compat` now lives in the product
+and the tools import it; `_parsed` is the single decode point). The R8 cross-ticker bug the same week
+was a THIRD instance of the same shape: two "deliberate mirrors" that drifted, fixed by extracting a
+shared resolver.
+**Severity argument:** the failure mode is a feature that is 100% dead in production while every
+gate reports green, and it degrades into a *plausible* error state rather than a loud one — the
+operator cannot tell "broken build" from "broker is down". Not yet promoted: it has 1 shipped
+feature (3 instances within it). **Re-assess at the next vendor-SDK integration** — SnapTrade would
+be exactly it.
+
 ## Watch list (keys logged, not yet at threshold)
 - _(`single-shared-sim-entry-dialog` GRADUATED 2026-07-02 — 2 binding (sim-entry-unification created
   the single dialog + deleted the forks; ai-rec-backtest-orders honored it via the additive order

@@ -1011,6 +1011,53 @@ of `universe.json`'s ETF+megacap lines (documented in its docblock) — re-mirro
 re-curation, or later derive a marker server-side; the caveat's membership rule could graduate
 from universe-membership to a real options-liquidity floor if one ever ships on the bundle.
 
+### 7z. broker-connect — REAL brokerage positions, read-only (SHIPPED + ARCHIVED 2026-08-05)
+The 2026-06-24 OWNER PIVOT's **Track B**, finally unblocked, and roadmap X1. Convexa reads the
+owner's REAL Webull book (read-only) behind a `PositionsProvider` port; adapter #1 is
+**Webull-direct via the owner's own Individual OpenAPI keys** (SnapTrade remains the named
+external-users adapter, designed-for/not-built). **Live-verified by the owner 2026-08-05** against
+their actual book — 13 positions, every net-entry figure arithmetically confirmed.
+**Formalizes the `[no-real-order-path]` narrowing** the pivot anticipated: reading real positions
+is permitted; real order EXECUTION is not — and here it is STRUCTURAL, not policy: the port has no
+write method, and **no order/trade SDK module exists on disk at all** (the trade package is
+deliberately uninstalled; it would also drag an unbuildable `grpcio`).
+**Credentials** are per-user via Settings (Fernet, ciphertext-only, masked last-4, rotate/delete) —
+never an env var; the owner corrected an early conductor default to env and was right.
+**The capture forced a design the council did not anticipate:** Webull's `/account/positions`
+returns **zero contract-identifying detail for options** — no strike/expiry/right/multiplier, and
+`symbol` is the bare underlying. So an option renders as an honest single-leg `partial` position
+naming exactly what is missing, never a guessed structure (**AC-6b's flat arm is a settled fact**).
+`INTERFACE_CONTRACT` **Amendment 1** (GATE Z, presence-rules only) permits omitting those facts.
+The **×100 multiplier is RECONSTRUCTED** from Webull's own `total_cost` under four guards (owner
+ruling; all 9 captured option rows resolved exactly 100, none near a threshold) — otherwise
+withheld, never defaulted.
+**R7 probe (owner-run) settled the lookup question:** `/trade/instrument` is LIVE and accepts
+`instrument_id` but returns a bare ECHO; the sibling paths 404 and alternate spellings 500. Outcome
+B *in effect* — but NOT `endpoint_absent`, so the notes keep capture-scoped wording and the gap
+stays a parameter/entitlement question for Webull, not a proven ceiling.
+**system-6 security review FIRED here** (the standing "going live" trigger): 1 Critical + 3 High +
+M-1/M-3 found and fixed, each with a test that would have caught it. See `SECURITY_REVIEW_BROKER.md`.
+**Two live defects escaped every green suite for the SAME reason** — every test injects a fake
+transport, so nothing exercised the real SDK contract: **S-1** (the shipped adapter could not
+complete ONE HTTPS request on py≥3.12 — a missing vendored-`ssl` shim the *capture tool* had but
+the product didn't) and the **Response-object bug** (`get_response()` returns the transport object,
+not parsed JSON — the identical defect already fixed once in the capture tool). Both were
+product/tool divergences of code that was supposed to be the same. Now ONE shared shim + one shared
+parse, with contract-level tests.
+**Also fixed here, pre-existing and shipped:** the cross-ticker mark bug — equity legs priced off
+the FOCUSED ticker instead of their own symbol, in BOTH the broker view and the **already-shipped
+sim book** (`R8`). Contamination of durable history was audited and found **zero** (the book was
+empty). `docs/diagnostics/` carries both audit tools.
+**Deferred seams (named, not built):** option-leg **grouping by underlying** (owner-chosen shape:
+collapse by ticker with an expand, netted cost, **never named a "vertical"** — Webull cannot prove
+which legs pair; upgrades automatically if contract detail ever appears) → **the next feature** ·
+SnapTrade adapter for external users · a background refresh poller (v1 is on-demand + TTL) ·
+M-2 (SDK's vendored **2018 CA bundle**) and M-5 remain OPEN, transport-layer · the AC-3
+GET-vs-DELETE in-flight race (real, ~32% in a tight synthetic loop, needs overlapping requests) ·
+`ModeledPl` renders on desktop rows but not mobile cards for `unrecognized` · `Build reassessment`
+renders on `partial` option rows carrying `position: null` (owner has not ruled) · the owner's real
+book is committed in `positions_raw.json` (repo is PRIVATE — verified; revisit before any open-source).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

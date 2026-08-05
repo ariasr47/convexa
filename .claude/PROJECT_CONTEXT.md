@@ -424,6 +424,27 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   lines, see OPEN_THREADS §7y seams; saved views render as saved); non-universe tickers show a
   one-line muted single-name honesty caption whose rule honors `[absent-is-not-none]` (universe
   unknown/failed/empty ⇒ NO caption). `NO_BACKEND_CHANGE`; QA PASS 6/6; suite 1104/99.
+- **Real brokerage positions, READ-ONLY (`broker-connect`, FE+BE, shipped 2026-08-05)** — the owner
+  pivot's Track B. `src/broker/` is a one-way leaf behind a `PositionsProvider` port
+  (`POSITIONS_PROVIDER`: `webull` default · `stub` · `snaptrade` reserved) with **no write method —
+  nonexistent, not disabled** — and **no order/trade SDK module on disk at all**: the structural
+  form of `[no-real-order-path]`, whose narrowing (read positions OK, execution never) this feature
+  formalizes. Five endpoints: `GET/PUT/DELETE /api/broker/credential` (byo-ai-key pattern — Fernet,
+  ciphertext-only, masked last-4, **per-user, never an env var**) + `GET /api/broker/book` +
+  `POST /api/broker/book/refresh` (force-fetch, server-throttled on ATTEMPTS not successes). The
+  `BrokerBook` envelope makes honesty typed: closed `state: ok|empty|unknown` as the SOLE
+  disambiguator, `as_of`/`basis`/`stale_after_seconds`, and `last_attempt_at`/`last_attempt_outcome`
+  over one shared six-value failure vocabulary — **stale and degraded are independent derived
+  predicates**, never wire booleans. v1 is **on-demand + TTL cache, no poller, nothing on SSE**; the
+  trader-visible tab reads **"Broker"**, never "Live". **Webull supplies NO option contract detail**
+  (no strike/expiry/right/multiplier; `symbol` is the bare underlying), so an option is an honest
+  single-leg `partial` position naming what is missing — never a guessed structure — per
+  INTERFACE_CONTRACT **Amendment 1** (presence-rules only); the ×100 multiplier is **reconstructed
+  from Webull's own `total_cost` under four guards**, else withheld. P/L is **Convexa-modeled,
+  live, dual-basis-labeled** (owner ruling); Webull's own figure is carried verbatim but **not
+  rendered** — it is ~100× wrong for options (it nets a ×100 cost against a non-×100 market value).
+  Score/tier/`state_fingerprint` byte-identical with and without a broker connected. system-6
+  security review fired and closed here. QA PASS after one GATE Z cycle; owner live-verified.
 - On-demand bundle: `GET /{ticker}` & `/api/ticker/{ticker}` (+ slices) with DTE/expiration filter.
 - GEX strike-profile chart (walls always in-window, spot/flip/live reference lines, tooltips).
 - Live SSE: mid, spread, **net flow (5m, signed)**, live gamma flip; session-aware status chip.

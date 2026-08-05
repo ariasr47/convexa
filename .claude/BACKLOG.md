@@ -45,7 +45,12 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
    diff; no new ledger rows (all touched keys already canon). Seams → OPEN_THREADS §7y (the
    hand-mirrored `INDEX_MEGACAP_SYMBOLS` maintenance contract). *(original entry:)* default ticker →
    SPY (pref wins), scanner zero-state leads indexes+megacaps, single-name honesty caption.
-2. **⏭ NEXT — `broker-connect` (X1)** — READ-ONLY real positions behind the **`PositionsProvider` port**,
+2. **`broker-connect` (X1) — ✓ SHIPPED + ARCHIVED (2026-08-05).** Read-only real Webull positions;
+   owner live-verified against their actual 13-position book. QA PASS after one GATE Z security
+   cycle; **system-6 fired and closed** (1C+3H+2M fixed, each with a regression test).
+   `[no-real-order-path]` narrowing FORMALIZED and made structural. Seams → OPEN_THREADS §7z.
+   New ledger candidate `vendor-contract-verified-not-faked` (3 instances in one feature).
+   *(original entry:)* **⏭ was NEXT — `broker-connect` (X1)** — READ-ONLY real positions behind the **`PositionsProvider` port**,
    two candidate adapters the council must weigh (CORRECTED 2026-08-01 after owner question): (a)
    **Webull-direct via the owner's own Individual OpenAPI keys** (free; 1–2 day individual application;
    account+positions endpoints + official Python SDK; no intermediary; BYO-credential pattern = byo-ai-key
@@ -56,11 +61,22 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
    Full council. **Fires the deferred system-6 security review** (first real-account connection — the
    long-standing trigger; broker App Secret ⇒ `[secret-encrypted-at-rest]`).
    `[no-real-order-path]` narrowing (read OK, no execution) formalizes at its GATE S as planned.
-3. **`vol-normalized-gex` (X2)** — GATE-M-shaped: vol-normalize the GEX read (+ intraday recompute where
+3. **⏭ NEXT — `broker-option-grouping`** (owner-chosen 2026-08-05, straight off the live verify).
+   Collapse a ticker's option legs into ONE expandable row with the NETTED entry cost, and
+   **never name the structure** — Webull supplies no strike/expiry/right, so the app cannot prove
+   which legs pair; grouping by underlying is a FACT, calling it a vertical is a GUESS. Rejected
+   alternatives (recorded so they aren't re-litigated): inferring spreads from matching qty +
+   opposite side (works on today's book, silently merges the wrong legs the day two same-sized
+   spreads exist on one ticker) and manual user pairing (never wrong, but manual forever).
+   Upgrades automatically to real structures if a contract-detail lookup ever lands (see §7z's R7
+   probe: `/trade/instrument` is LIVE but echoes — a parameter/entitlement question for Webull).
+   **Invariant watch:** `absent-is-not-none` (a group is a count + a net, never an unearned label) ·
+   `model-read-carries-its-assumptions` · `theme-token-discipline`. FE-only expected.
+4. **`vol-normalized-gex` (X2)** — GATE-M-shaped: vol-normalize the GEX read (+ intraday recompute where
    data allows) + a public-ready methodology note. Evidence: raw GEX showed no predictive power in the
    independent backtest; vol-normalized did.
-4. **`alerts` v1 (X3)** — level-touch / tier-change / score-gate, simple delivery.
-5. **Ledger checkpoint (X4)** at N≥20 closed outcomes → first deliberate score change only if justified,
+5. **`alerts` v1 (X3)** — level-touch / tier-change / score-gate, simple delivery.
+6. **Ledger checkpoint (X4)** at N≥20 closed outcomes → first deliberate score change only if justified,
    under `[score-change-is-deliberate-and-measured]`.
 **Owner habits (not pipeline features, tracked in the roadmap):** N1 deploy (runbook, `ALLOWED_ORIGINS`) ·
 N2 mirror every real trade · N4 daily public read on X — **DEFERRED by owner 2026-08-01 until personal
