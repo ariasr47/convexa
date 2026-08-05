@@ -44,6 +44,13 @@ export const STALE_SNAPSHOT_SX = { opacity: 0.62 } as const;
  * The tri-state literal with its honest tooltip (the fifth not-a-number literal's tip).
  * `tip` overrides the default `not provided` explanation where the slot has a more specific one
  * (G3: the modeled figure's "we can't identify this contract" case).
+ *
+ * CONTRAST: `text.secondary`, not `text.disabled` — measured in the running app, `text.disabled`
+ * renders these at 2.54:1 (dark) / 2.65:1 (light), under the 4.5:1 floor. That was tolerable while
+ * the literal was rare; post-R4 it IS the content of the P/L slot on 9 of 14 real rows, and an
+ * unreadable honesty literal defeats the whole point of having one. The italic still marks it as
+ * not-a-number, and the coloured figure still outranks it. Existing token, no new value
+ * (`[theme-token-discipline]`).
  */
 export function FactText({ text, testid, tip }: { text: string; testid?: string; tip?: string }) {
   if (text === NOT_PROVIDED) {
@@ -52,7 +59,7 @@ export function FactText({ text, testid, tip }: { text: string; testid?: string;
         <Box
           component="span"
           data-testid={testid}
-          sx={{ color: 'text.disabled', fontStyle: 'italic' }}
+          sx={{ color: 'text.secondary', fontStyle: 'italic' }}
         >
           {NOT_PROVIDED}
         </Box>
@@ -61,7 +68,7 @@ export function FactText({ text, testid, tip }: { text: string; testid?: string;
   }
   if (text === UNAVAILABLE) {
     return (
-      <Box component="span" data-testid={testid} sx={{ color: 'text.disabled' }}>
+      <Box component="span" data-testid={testid} sx={{ color: 'text.secondary' }}>
         {UNAVAILABLE}
       </Box>
     );
@@ -115,7 +122,7 @@ export function ModeledPl({
     // genuinely transient unresolved mark keeps `unavailable`.
     const permanent = !view.entry_known || view.unpriceable;
     figure = (
-      <Typography component="span" data-testid="broker-pl" sx={{ color: 'text.disabled' }}>
+      <Typography component="span" data-testid="broker-pl" sx={{ color: 'text.secondary' }}>
         <FactText
           text={permanent ? NOT_PROVIDED : UNAVAILABLE}
           tip={view.unpriceable ? BROKER_COPY.modeled.unpriceableTip : undefined}
@@ -193,7 +200,7 @@ export function FidelityNotes({ notes }: { notes: string[] }) {
           key={n}
           component="div"
           data-testid="broker-fidelity-note"
-          sx={{ fontSize: '0.75rem', color: 'text.disabled', mt: '2px' }}
+          sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: '2px' }}
         >
           {n}
         </Typography>
