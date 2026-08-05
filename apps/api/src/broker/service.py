@@ -14,7 +14,25 @@ The rules this module IS:
 - Refresh has FORCE-FETCH semantics: always *requests* a fresh read; the server may throttle
   (`BROKER_REFRESH_MIN_INTERVAL_SECONDS`, server-authoritative — protects the owner's own
   broker rate limits; there is no client retry parameter).
+- The throttle bounds ATTEMPTS, not successes (H-2, system-6 security review). It used to sit
+  only on the refresh arm, and the GET arm's only brake was the TTL — which requires a
+  *successful* snapshot to exist. So before the first success, or under `credential_rejected`
+  / an outage, EVERY GET was a real broker call (proven: 20 GETs → 20 contacts) and S5's
+  "Try again" button was an unthrottled retry loop against the owner's own key. One
+  server-authoritative interval now governs both arms.
 - Broker-side trouble is NEVER a 5xx: every outcome is a typed state inside a 200.
+
+CONCURRENCY (H-3, system-6 security review). The lock used to be process-global AND held
+across the blocking broker HTTP call, so one account's slow fetch stalled every other
+account's broker request (proven: account B waited 3.80s for its own 2.0s fetch behind
+account A) and enough of them would occupy the shared `asyncio.to_thread` executor and reach
+non-broker surfaces — across `[best-effort-isolated-or-null]`'s "a broker failure degrades the
+Broker tab ONLY". Now: one `threading.Condition` PER USER (keyed exactly like the cache and
+the throttle), held only around the state read/decision and the state commit — NEVER across
+`fetch_book`. A second request for the same account while a contact is in flight does not
+queue behind the network: it serves the honest current envelope and is not an attempt. It
+waits only when there is nothing honest to say at all (no snapshot AND no attempt history),
+because `unknown` has no "someone else is asking" reason and fabricating one would be a lie.
 
 Cache keys are the OPAQUE server user id — never an email, never a broker account number
 (the AC-23 backend boundary). Part of the broker leaf: stdlib + the leaf's own ports only;
@@ -65,6 +83,16 @@ class _UserState:
     snapshot: Optional[_Snapshot] = None
     last_attempt_ts: Optional[float] = None
     last_attempt_outcome: Optional[str] = None
+    # A broker contact for THIS user is in flight (set/cleared under the user's condition).
+    in_flight: bool = False
+    # Set by `invalidate` on the state object it detaches, so an in-flight fetch that started
+    # before a credential delete can never commit its book (AC-3: no ghost book).
+    invalidated: bool = False
+
+    def has_anything_to_serve(self) -> bool:
+        """True when `_assemble` can produce an HONEST envelope: a cached book, or an attempt
+        to report. False means the only available answer would be an invented failure cause."""
+        return self.snapshot is not None or self.last_attempt_ts is not None
 
 
 class BrokerBookService:
@@ -83,27 +111,53 @@ class BrokerBookService:
                                            str(DEFAULT_REFRESH_MIN_INTERVAL_SECONDS)))
         self._clock = clock
         self._users: dict[str, _UserState] = {}   # keyed on the OPAQUE server user id ONLY
-        self._lock = threading.Lock()
+        self._conds: dict[str, threading.Condition] = {}   # ONE PER USER (H-3)
+        # Guards the two registries ONLY. Held for a dict lookup and nothing else — never
+        # across `fetch_book`, never while a per-user condition is held.
+        self._registry = threading.Lock()
 
     # ------------------------------------------------------------------ public surface
 
     def get_book(self, user_id: str, resolution: CredentialResolution) -> BrokerBook:
-        """GET semantics: serve the TTL cache when fresh enough (`basis: cache`), else fetch."""
-        with self._lock:
-            return self._serve(user_id, resolution, force=False)
+        """GET semantics: serve the TTL cache when fresh enough (`basis: cache`), else fetch —
+        subject to the same server-authoritative interval as refresh (H-2)."""
+        return self._serve(user_id, resolution, force=False)
 
     def refresh_book(self, user_id: str, resolution: CredentialResolution) -> BrokerBook:
         """POST /refresh semantics: force-fetch, server-side throttle (C4)."""
-        with self._lock:
-            return self._serve(user_id, resolution, force=True)
+        return self._serve(user_id, resolution, force=True)
 
     def invalidate(self, user_id: str) -> None:
         """Credential delete/rotate hook: drop the WHOLE user state — snapshot AND attempt
-        history. No field of the old book may survive (AC-3)."""
-        with self._lock:
-            self._users.pop(user_id, None)
+        history. No field of the old book may survive (AC-3).
+
+        The popped state is also marked `invalidated`, so a fetch that was already in flight
+        commits nothing and any waiter on it wakes into the not-connected answer. Never blocks
+        on the in-flight call: the per-user condition is only ever held for state work."""
+        with self._registry:
+            detached = self._users.pop(user_id, None)
+            cond = self._conds.get(user_id)
+        if detached is None or cond is None:
+            return
+        with cond:
+            detached.invalidated = True
+            cond.notify_all()
 
     # ------------------------------------------------------------------ internals
+
+    def _cond_for(self, user_id: str) -> threading.Condition:
+        with self._registry:
+            cond = self._conds.get(user_id)
+            if cond is None:
+                cond = self._conds[user_id] = threading.Condition()
+            return cond
+
+    def _state_for(self, user_id: str) -> _UserState:
+        with self._registry:
+            state = self._users.get(user_id)
+            if state is None:
+                state = self._users[user_id] = _UserState()
+            return state
 
     def _serve(self, user_id: str, resolution: CredentialResolution, force: bool) -> BrokerBook:
         status, credential = resolution
@@ -112,32 +166,47 @@ class BrokerBookService:
             # absent when no_credential_stored), no cache read — delete already invalidated.
             return BrokerBook(state="unknown", reason=REASON_NO_CREDENTIAL)
 
-        ustate = self._users.setdefault(user_id, _UserState())
-        now = self._clock()
+        cond = self._cond_for(user_id)
+        ustate = self._state_for(user_id)
 
         if status == "unreadable":
             # Pre-contact failure IS an attempt (C5's named carve-out): the pipeline ran and
             # failed before broker contact. Last good book (if any) keeps serving.
-            ustate.last_attempt_ts = now
-            ustate.last_attempt_outcome = "credential_unreadable"
-            return self._assemble(ustate, basis="cache", fallback_reason="credential_unreadable")
+            with cond:
+                ustate.last_attempt_ts = self._clock()
+                ustate.last_attempt_outcome = "credential_unreadable"
+                return self._assemble(ustate, basis="cache",
+                                      fallback_reason="credential_unreadable")
 
-        if not force:
-            snap = ustate.snapshot
-            if snap is not None and (now - snap.fetched_at) < self._ttl:
-                return self._assemble(ustate, basis="cache")
-            return self._attempt(ustate, credential, now)
+        # --- decide under the user's condition; claim the contact; then RELEASE it ---------
+        with cond:
+            while True:
+                now = self._clock()
+                if not force:
+                    snap = ustate.snapshot
+                    if snap is not None and (now - snap.fetched_at) < self._ttl:
+                        return self._assemble(ustate, basis="cache")
+                # H-2: ONE server-authoritative interval, both arms. A throttled serve is NOT
+                # an attempt (C5) — `last_attempt_at` does not move and no `as_of` is invented.
+                if ustate.last_attempt_ts is not None and \
+                        (now - ustate.last_attempt_ts) < self._min_interval:
+                    return self._assemble(ustate, basis="cache")
+                if not ustate.in_flight:
+                    ustate.in_flight = True
+                    break
+                # A contact for THIS account is already out. Never queue behind network I/O
+                # and never duplicate the call: serve what we honestly have.
+                if ustate.has_anything_to_serve():
+                    return self._assemble(ustate, basis="cache")
+                # Nothing honest to serve yet (cold start). Wait for the in-flight result and
+                # re-decide — on wake the throttle arm above will serve it.
+                cond.wait()
+                if ustate.invalidated:
+                    return BrokerBook(state="unknown", reason=REASON_NO_CREDENTIAL)
 
-        # force-fetch (refresh): server-authoritative throttle. Throttle is NOT an attempt.
-        if ustate.last_attempt_ts is not None and \
-                (now - ustate.last_attempt_ts) < self._min_interval:
-            return self._assemble(ustate, basis="cache")
-        return self._attempt(ustate, credential, now)
-
-    def _attempt(self, ustate: _UserState, credential: BrokerCredential,
-                 now: float) -> BrokerBook:
-        """One real broker contact. Success replaces the snapshot; failure NEVER evicts."""
+        # --- the blocking broker call, with NO lock held ----------------------------------
         prior_ref = ustate.snapshot.account_ref if ustate.snapshot else None
+        fetched: Optional[BrokerBook]
         try:
             fetched = self._provider.fetch_book(credential, prior_ref)
         except Exception:
@@ -146,6 +215,21 @@ class BrokerBookService:
             logger.warning("broker: provider raised out of fetch_book (adapter_fault)",
                            exc_info=False)
             fetched = None
+
+        # --- commit under the condition again --------------------------------------------
+        with cond:
+            try:
+                return self._commit(ustate, fetched, now)
+            finally:
+                ustate.in_flight = False
+                cond.notify_all()
+
+    def _commit(self, ustate: _UserState, fetched: Optional[BrokerBook],
+                now: float) -> BrokerBook:
+        """Record one real broker contact. Success replaces the snapshot; failure NEVER
+        evicts. A credential deleted mid-flight discards the result entirely (AC-3)."""
+        if ustate.invalidated:
+            return BrokerBook(state="unknown", reason=REASON_NO_CREDENTIAL)
 
         ustate.last_attempt_ts = now
         if fetched is not None and fetched.state in ("ok", "empty"):

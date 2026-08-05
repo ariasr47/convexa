@@ -34,6 +34,7 @@ import hashlib
 import hmac
 import logging
 import os
+import re
 import secrets as _secrets
 import sys
 from typing import Any, Callable, Optional
@@ -427,6 +428,72 @@ def _shim_vendored_ssl() -> None:
         vendored.HAS_SNI = _ssl.HAS_SNI
 
 
+# --------------------------------------------------------------- SDK log egress (H-1)
+# The SDK's own logger interpolates the requests exception on any transport IOError
+# (`webullsdkcore/client.py:284-286`), and that string embeds the FULL request URL — including
+# `?account_id=<the owner's real brokerage account number>` (Webull's API shape; the account id
+# has to ride the query string). Under the app's real logging config that is an ERROR record,
+# i.e. emitted, which defeats `account_ref`'s whole purpose one layer below it and violates
+# SPEC §8.1 ("no ... account number ... in logs at any default level").
+#
+# We never patch site-packages. Instead the vendor logger is routed through OUR sanitizing
+# handler and stops propagating, so no record it produces can reach any other handler with the
+# account number still in it.
+
+_SDK_LOGGER_NAME = "webullsdkcore"
+_LOG_REDACTED = "REDACTED"
+
+# `key=value` in a URL query string / exception text. Longest spellings first so a compound
+# key is never partially matched. Values stop at the first query/format delimiter.
+_SENSITIVE_QUERY_RE = re.compile(
+    r"(?i)(sec_account_id|secaccountid|subscription_id|subscriptionid|account_number|"
+    r"accountnumber|account_no|accountno|account_id|accountid|customer_id|customerid|"
+    r"user_id|userid|app_key|appkey|access_key|accesskey|signature|token)"
+    r"=(?P<value>[^&\s'\"),;>\]}]*)")
+
+
+def redact_sensitive(text: str) -> str:
+    """Scrub account-identifying (and key-ish) query values out of arbitrary log text."""
+    return _SENSITIVE_QUERY_RE.sub(lambda m: f"{m.group(1)}={_LOG_REDACTED}", text)
+
+
+class _SdkLogRedactor(logging.Filter):
+    """Rewrites the record's FORMATTED text, so it does not matter which `%s` argument the
+    vendor happened to put the URL in. Never drops a record — the cause stays observable."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            message = record.getMessage()
+        except Exception:                      # pragma: no cover - malformed vendor record
+            message = str(record.msg)
+        record.msg = redact_sensitive(message)
+        record.args = ()
+        # A traceback would carry the same URL verbatim; the typed cause we log ourselves
+        # (`fetch_book`) is the diagnostic that matters.
+        record.exc_info = None
+        record.exc_text = None
+        return True
+
+
+_sdk_log_redaction_installed = False
+
+
+def _install_sdk_log_redaction() -> None:
+    """Idempotently route `webullsdkcore*` records through the redactor and stop them
+    propagating. A handler filter (not a logger filter) is what makes this cover the CHILD
+    loggers — `Logger.filter` only runs on the originating logger, `Handler.filter` runs for
+    every ancestor handler the record propagates to."""
+    global _sdk_log_redaction_installed
+    if _sdk_log_redaction_installed:
+        return
+    vendor_logger = logging.getLogger(_SDK_LOGGER_NAME)
+    handler = logging.StreamHandler()
+    handler.addFilter(_SdkLogRedactor())
+    handler.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    vendor_logger.addHandler(handler)
+    vendor_logger.propagate = False      # nothing unredacted reaches root / lastResort
+    _sdk_log_redaction_installed = True
+
 
 def _shim_sdk_compat() -> None:
     """
@@ -436,9 +503,10 @@ def _shim_sdk_compat() -> None:
     `legacy-cgi` (requirements.txt, py>=3.13) restores `cgi`. Recorded in CAPTURE_FINDINGS
     for the system-6 dependency review.
 
-    Then `_shim_vendored_ssl()` (S-1) — MUST run after the six aliasing, because importing
-    the vendored ssl_ module pulls the vendored `six` in. Every SDK entry point in this
-    module funnels through here, so no SDK code can run before the shim is in place.
+    Then `_shim_vendored_ssl()` (S-1 — MUST run after the six aliasing, because importing the
+    vendored ssl_ module pulls the vendored `six` in) and `_install_sdk_log_redaction()` (H-1).
+    Every SDK entry point in this module funnels through here, so no SDK code can run — or
+    log — before both defenses are in place.
     """
     import six  # noqa: F401
     import six.moves  # noqa: F401
@@ -455,6 +523,7 @@ def _shim_sdk_compat() -> None:
         for name in ("parse", "request", "error", "response", "robotparser"):
             sys.modules[f"{prefix}.moves.urllib.{name}"] = getattr(six.moves.urllib, name)
     _shim_vendored_ssl()
+    _install_sdk_log_redaction()
 
 
 class _SdkTransport:

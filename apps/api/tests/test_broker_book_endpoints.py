@@ -194,6 +194,78 @@ def test_invalidate_drops_snapshot_and_attempt_history():
                               "positions": []}
 
 
+# ------------------------------------------- H-2: the throttle bounds ATTEMPTS, not successes
+
+def test_get_without_a_good_snapshot_is_throttled_not_one_contact_per_request():
+    """The review's executed proof, inverted into a test: 20 GETs used to be 20 real Webull
+    calls whenever no SUCCESSFUL snapshot existed, because the TTL gate needs one to exist.
+    S5's `Try again` button drives exactly this path during an outage."""
+    clock = FakeClock()
+    provider = ScriptedProvider(BrokerBook(state="unknown", reason="credential_rejected"))
+    svc = _service(provider, clock)
+    for _ in range(20):
+        book = svc.get_book("u1", CRED_OK)
+        clock.advance(0.5)                           # 20 requests inside the 15s interval
+    assert provider.calls == 1                       # was 20
+    assert (book.state, book.reason) == ("unknown", "credential_rejected")
+
+
+def test_a_throttled_get_moves_nothing_and_invents_no_as_of():
+    """C5 survives the new arm: a throttle is not an attempt, and a throttled read must not
+    fabricate freshness."""
+    clock = FakeClock()
+    provider = ScriptedProvider(BrokerBook(state="unknown", reason="broker_unreachable"))
+    svc = _service(provider, clock)
+    first = svc.get_book("u1", CRED_OK)
+    clock.advance(5)
+    throttled = svc.get_book("u1", CRED_OK)
+    assert provider.calls == 1
+    assert throttled.last_attempt_at == first.last_attempt_at        # UNMOVED
+    assert throttled.last_attempt_outcome == "broker_unreachable"    # still honest
+    wire = throttled.to_wire()
+    assert "as_of" not in wire and "basis" not in wire
+
+
+def test_the_get_throttle_releases_after_the_server_interval():
+    """The brake is a cooldown, not a lockout — the owner is never stuck on a stale failure."""
+    clock = FakeClock()
+    provider = ScriptedProvider(BrokerBook(state="unknown", reason="broker_unreachable"),
+                                BrokerBook(state="ok", positions=_ok_positions(),
+                                           account_ref="ref0"))
+    svc = _service(provider, clock)
+    svc.get_book("u1", CRED_OK)
+    clock.advance(5)
+    svc.get_book("u1", CRED_OK)
+    assert provider.calls == 1                       # throttled
+    clock.advance(20)                                # past the 15s interval
+    recovered = svc.get_book("u1", CRED_OK)
+    assert provider.calls == 2
+    assert (recovered.state, recovered.basis) == ("ok", "fresh")
+
+
+def test_the_get_throttle_is_per_account_not_global():
+    """Same property the refresh throttle already had: one account's cooldown must never
+    starve another's first read."""
+    clock = FakeClock()
+    provider = ScriptedProvider(BrokerBook(state="unknown", reason="broker_unreachable"))
+    svc = _service(provider, clock)
+    svc.get_book("u1", CRED_OK)
+    svc.get_book("u2", CRED_OK)
+    assert provider.calls == 2
+
+
+def test_credential_unreadable_is_still_an_attempt_under_the_new_throttle():
+    """The pre-contact carve-out is not a broker contact, so the throttle must not swallow it
+    — `credential_unreadable` has a different remedy (Replace) and must keep surfacing."""
+    clock = FakeClock()
+    svc = _service(ScriptedProvider(), clock)
+    first = svc.get_book("u1", ("unreadable", None))
+    clock.advance(1)
+    second = svc.get_book("u1", ("unreadable", None))
+    assert second.last_attempt_at > first.last_attempt_at
+    assert second.last_attempt_outcome == "credential_unreadable"
+
+
 def test_raising_provider_is_adapter_fault_never_a_raise():
     clock = FakeClock()
     svc = _service(ScriptedProvider(RuntimeError("boom")), clock)
