@@ -125,7 +125,11 @@ function DialogFixture({ autoFocusField = false }: { autoFocusField?: boolean })
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Sign in</DialogTitle>
         <DialogContent>
-          <TextField autoFocus={autoFocusField} label="Email" slotProps={{ htmlInput: { 'data-testid': 'field' } }} />
+          <TextField
+            autoFocus={autoFocusField}
+            label="Email"
+            slotProps={{ htmlInput: { 'data-testid': 'field' } }}
+          />
         </DialogContent>
         <DialogActions>
           <Button data-testid="close" onClick={() => setOpen(false)}>
@@ -271,7 +275,10 @@ describe('the seam is installed for the real app', () => {
   }) as Record<string, string>;
 
   it('the scan is not vacuous', () => {
-    expect(Object.keys(SOURCES).sort()).toEqual(['/src/app/shared/theme/theme.ts', '/src/main.tsx']);
+    expect(Object.keys(SOURCES).sort()).toEqual([
+      '/src/app/shared/theme/theme.ts',
+      '/src/main.tsx',
+    ]);
   });
 
   it('main.tsx installs the handoff before rendering', () => {
