@@ -1,14 +1,21 @@
 /**
  * useBrokerMarks — the market-data axis for broker rows: per-CONTRACT tracked-contract fetch
- * (de-duplicated across the book) + the EXISTING per-leg mark ladder (`computeMark`, untouched),
- * mirroring `usePortfolio`'s resolver exactly so a broker leg and a sim leg with the same
- * contract price identically (same math, no new math — the owner's P/L ruling).
+ * (de-duplicated across the book) + per-UNDERLYING spot fan-out + the EXISTING per-leg mark ladder,
+ * run through the SHARED `resolveLegMark` so a broker leg and a sim leg with the same contract
+ * price identically (same math, no new math — the owner's P/L ruling).
  *
- * Isolation: consumes ONLY `@org/api` (`fetchTrackedContract`) and the model ladder. Never the
- * positions store, never a durable key, never SSE directly (the page's stream props arrive as
- * arguments — broker data itself NEVER rides SSE).
+ * That identity used to rest on this file holding a byte-identical COPY of `usePortfolio`'s
+ * resolver. R8 proved a copy is not an invariant: the same cross-ticker equity bug lived in both,
+ * and fixing one alone would have broken the identity the copy existed to guarantee. The resolver
+ * now lives in `model/legMark.ts` and both hooks call it.
+ *
+ * Isolation: consumes ONLY `@org/api` (`fetchTrackedContract`, `getTicker` via `useTickerSpots`)
+ * and the model ladder. Never the positions store, never a durable key, never SSE directly (the
+ * page's stream props arrive as arguments — broker data itself NEVER rides SSE).
  */
-import { computeMark, type MarkResult } from '@/features/trading/model/mark';
+import { resolveLegMark } from '@/features/trading/model/legMark';
+import { type MarkResult } from '@/features/trading/model/mark';
+import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
 import { legContractKey } from '@/features/trading/positions/composeMark';
 import type { Leg } from '@/features/trading/positions/leg';
 import {
@@ -102,46 +109,34 @@ export function useBrokerMarks(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackKey, servedAt]);
 
-  const m = data?.market_state;
   const session = live?.market_session ?? null;
+
+  // Per-UNDERLYING spot fan-out (R8). The real Webull book spans ten underlyings while the page
+  // holds ONE bundle and ONE stream — so every distinct symbol gets its own spot, and a leg is
+  // never priced off whichever ticker is on screen.
+  const legTickers = useMemo(() => {
+    const set = new Set<string>();
+    for (const legs of legsById.values())
+      for (const l of legs) if (l.ticker) set.add(l.ticker.toUpperCase());
+    return [...set];
+  }, [legsById]);
+  const spots = useTickerSpots(legTickers, data, live);
 
   const legMarkFor = useCallback(
     (l: Leg): MarkResult | null => {
-      if (!m) return null;
-      // Equity bypasses the ladder (the usePortfolio rule, verbatim): live underlying mid, and a
-      // stream drop keeps a dimmed-but-PRESENT number — never a blank.
-      if (l.kind === 'equity') {
-        if (streamOffline) {
-          return {
-            mark: lastMarkRef.current.get(l.id) ?? m.price,
-            basis: 'last_known',
-            frozen: false,
-          };
-        }
-        const closed = session === 'overnight' || session === 'closed';
-        return {
-          mark: isLive ? (live?.mid ?? m.price) : m.price,
-          basis: 'snapshot',
-          frozen: closed && !isLive,
-        };
-      }
-      const key = legContractKey(l);
-      if (key == null) return null;
-      const cl = contractLive[key];
-      if (!cl || !cl.tracked) return null;
-      return computeMark({
-        tracked: cl.tracked,
-        strike: l.strike as number,
-        right: l.right as OptionRight,
-        anchorSpot: m.price,
-        liveUnderlying: live?.mid ?? null,
+      const key = l.kind === 'option' ? legContractKey(l) : null;
+      return resolveLegMark({
+        leg: l,
+        spot: spots.spotOf(l.ticker),
+        liveUnderlying: spots.liveUnderlyingOf(l.ticker),
         isLive,
         marketSession: session,
         streamOffline,
         lastMark: lastMarkRef.current.get(l.id) ?? null,
+        tracked: key != null ? (contractLive[key]?.tracked ?? null) : null,
       });
     },
-    [contractLive, m, live?.mid, isLive, session, streamOffline],
+    [contractLive, spots, isLive, session, streamOffline],
   );
 
   const legMarksOf = useCallback(
@@ -151,7 +146,10 @@ export function useBrokerMarks(
       for (const l of legs) {
         const res = legMarkFor(l);
         out.set(l.id, res);
-        // Keep the last GOOD mark for ⏸ last-known (fresh, resolved bases only).
+        // Keep the last GOOD mark for ⏸ last-known (fresh, resolved bases only). The per-ticker
+        // correction sits INSIDE `legMarkFor`, i.e. strictly BEFORE this write — otherwise a
+        // session that once wrote a foreign price would keep serving it from the cache under ⏸
+        // until a reload (R8).
         if (res?.mark != null && res.basis !== 'last_known' && !res.frozen) {
           lastMarkRef.current.set(l.id, res.mark);
         }

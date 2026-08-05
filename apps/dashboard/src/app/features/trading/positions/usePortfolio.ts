@@ -17,8 +17,10 @@
  * an SSE drop while records/history/customization persist (`[live-vs-static-isolation]`).
  */
 import { entryContextFor } from '@/features/trading/model/captureDigest';
-import { computeMark, MarkResult } from '@/features/trading/model/mark';
+import { resolveLegMark } from '@/features/trading/model/legMark';
+import { MarkResult } from '@/features/trading/model/mark';
 import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
+import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
 import {
   fetchTrackedContract,
   LiveUpdate,
@@ -134,6 +136,11 @@ interface ContractLive {
 }
 
 export function usePortfolio(
+  /**
+   * The ticker the PAGE is focused on (its bundle + its SSE). It is NOT the book's ticker — the
+   * book can span many underlyings — so it is used ONLY as the pre-bundle fallback for identifying
+   * which symbol the stream belongs to. Every leg is priced off its own ticker (R8).
+   */
   focusedTicker: string,
   data: TickerBundle | null,
   live: LiveUpdate | null,
@@ -221,46 +228,40 @@ export function usePortfolio(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trackKey, servedAt]);
 
+  // ---- Per-UNDERLYING spot fan-out (R8) --------------------------------------------------------
+  // The book is multi-ticker; the page is not. Every DISTINCT underlying in the open/pending book
+  // gets its own spot — the focused one from the bundle already in hand, the rest fetched the same
+  // way and on the same terms as the per-contract fan-out above. A leg is never priced off the
+  // ticker that happens to be on screen (see `model/legMark.ts`).
+  const legTickers = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of simPositions) {
+      if (p.status !== 'open' && p.status !== 'pending') continue;
+      for (const l of p.legs) if (l.ticker) set.add(l.ticker.toUpperCase());
+    }
+    return [...set];
+  }, [simPositions]);
+  const spots = useTickerSpots(legTickers, data, live, focusedTicker);
+
   // ---- Per-LEG mark (computed each render; last-good mark kept for offline) --------------------
+  // ONE resolver, shared verbatim with the broker book's `useBrokerMarks` (`model/legMark.ts`), so
+  // a broker leg and a sim leg with the same contract still price identically — now by
+  // construction rather than by two copies that have to be edited in lockstep.
   const legMarkFor = useCallback(
     (l: Leg): MarkResult | null => {
-      if (!m) return null;
-      // EQUITY BYPASSES THE LADDER ENTIRELY (SPEC §2.5): its mark is the live underlying mid (the
-      // bundle price when not live), multiplier 1, and it NEVER issues a contract lookup. This
-      // branch lives here in the resolver, NOT inside `computeMark`.
-      if (l.kind === 'equity') {
-        if (streamOffline) {
-          // A dimmed but PRESENT number — a stream drop must never blank a loaded read.
-          return {
-            mark: lastMarkRef.current.get(l.id) ?? m.price,
-            basis: 'last_known',
-            frozen: false,
-          };
-        }
-        const closed = session === 'overnight' || session === 'closed';
-        return {
-          mark: isLive ? (live?.mid ?? m.price) : m.price,
-          basis: 'snapshot',
-          frozen: closed && !isLive,
-        };
-      }
-      const key = legContractKey(l);
-      if (key == null) return null; // a malformed record: never priceable, in any cycle
-      const cl = contractLive[key];
-      if (!cl || !cl.tracked) return null;
-      return computeMark({
-        tracked: cl.tracked,
-        strike: l.strike as number,
-        right: l.right as OptionRight,
-        anchorSpot: m.price,
-        liveUnderlying: live?.mid ?? null,
+      const key = l.kind === 'option' ? legContractKey(l) : null;
+      return resolveLegMark({
+        leg: l,
+        spot: spots.spotOf(l.ticker),
+        liveUnderlying: spots.liveUnderlyingOf(l.ticker),
         isLive,
         marketSession: session,
         streamOffline,
         lastMark: lastMarkRef.current.get(l.id) ?? null,
+        tracked: key != null ? (contractLive[key]?.tracked ?? null) : null,
       });
     },
-    [contractLive, m, live?.mid, isLive, session, streamOffline],
+    [contractLive, spots, isLive, session, streamOffline],
   );
 
   const legMarksById = useMemo(() => {
@@ -379,8 +380,10 @@ export function usePortfolio(
     // Deliberately the SHIPPED dependency shape (`contractLive` replaces `rowLive`): `trends.record`
     // bumps a version to re-render, so depending on `views` here would re-arm this effect from its
     // own write and spin. Deps decide WHEN it runs; the body always closes over the latest values.
+    // `spots` (R8) joins them so a FOREIGN ticker's spot landing also refreshes the last-known
+    // cache — it is a `useMemo`'d value, so it cannot re-arm this effect from its own writes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractLive, live?.mid, streamOffline]);
+  }, [contractLive, spots, live?.mid, streamOffline]);
 
   // ---- Resting-limit fill lifecycle (fills only on a LIVE cross at the limit price) -----------
   useEffect(() => {
@@ -402,7 +405,7 @@ export function usePortfolio(
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractLive, live?.mid, streamOffline, isLive]);
+  }, [contractLive, spots, live?.mid, streamOffline, isLive]);
 
   // ---- Decision records ----------------------------------------------------------------------
   /**

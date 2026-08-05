@@ -41,9 +41,16 @@ import {
 
 const theme = createTheme();
 
-/** Minimal bundle — the broker mark path reads market_state.price + meta.served_at only. */
+/**
+ * Minimal bundle — the broker mark path reads market_state.ticker + .price + meta.served_at.
+ *
+ * `ticker` is REQUIRED here (R8): the mark path names which underlying this bundle's price belongs
+ * to, so a leg on a different symbol is priced off its own spot instead of borrowing this one. It
+ * is a required field on the real wire (`MarketState.ticker`); omitting it from the fixture made
+ * every equity mark below withhold, which quietly turned the ⏸-last-known assertion vacuous.
+ */
 const BUNDLE = {
-  market_state: { price: 250 },
+  market_state: { ticker: 'TSLA', price: 250 },
   meta: { served_at: '2026-08-01T14:59:30Z' },
 } as unknown as TickerBundle;
 
@@ -250,9 +257,7 @@ describe('BrokerTabPanel · degraded/warning family', () => {
     expect(banner).toHaveTextContent('a fault on our side');
     expect(banner).not.toHaveTextContent('Webull stopped accepting');
     expect(screen.queryByTestId('broker-reauth-banner')).toBeNull();
-    expect(screen.getByTestId('broker-replace-cta')).toHaveTextContent(
-      BROKER_COPY.unreadable.cta,
-    );
+    expect(screen.getByTestId('broker-replace-cta')).toHaveTextContent(BROKER_COPY.unreadable.cta);
   });
 
   it('stamp invariant: an as-of stamp is present whenever any broker datum renders (S3/S4/S6/S7/S8)', async () => {
@@ -304,9 +309,7 @@ describe('BrokerTabPanel · two-axis degradation', () => {
     renderPanel({ streamOffline: false });
     await screen.findByTestId('broker-row');
     const label = screen.getByTestId('broker-pl-label').textContent ?? '';
-    expect(label).toBe(
-      BROKER_COPY.modeled.dualLabel(stampTime(BOOK_OK_STALE.as_of as string)),
-    );
+    expect(label).toBe(BROKER_COPY.modeled.dualLabel(stampTime(BOOK_OK_STALE.as_of as string)));
     expect(label).not.toBe(BROKER_COPY.modeled.label);
     expect(screen.getByTestId('broker-pl').textContent).not.toContain('⏸');
     // The snapshot fields carry the S6 treatment + the age-foregrounded stamp.
@@ -317,7 +320,9 @@ describe('BrokerTabPanel · two-axis degradation', () => {
     // The panel derives staleness against the REAL clock — a genuinely fresh as_of, not the
     // fixed-instant fixture stamp (which is days old by the time this suite runs).
     const justNow = new Date(Date.now() - 30_000).toISOString();
-    installFetch({ book: equityBook({ as_of: justNow, basis: 'fresh', last_attempt_at: justNow }) });
+    installFetch({
+      book: equityBook({ as_of: justNow, basis: 'fresh', last_attempt_at: justNow }),
+    });
     renderPanel({ streamOffline: false });
     await screen.findByTestId('broker-row');
     expect(screen.getByTestId('broker-pl-label')).toHaveTextContent(BROKER_COPY.modeled.label);

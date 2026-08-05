@@ -105,8 +105,10 @@ describe('broker module · source scans (the LiveTabPanel inert-test successor)'
 // Shared render harness (network boundary only)
 // =================================================================================================
 
+/** `ticker` is REQUIRED (R8): it names which underlying this bundle's price belongs to, so a leg
+ *  on another symbol withholds instead of borrowing it. Required on the real wire. */
 const BUNDLE = {
-  market_state: { price: 250 },
+  market_state: { ticker: 'TSLA', price: 250 },
   meta: { served_at: '2026-08-01T14:59:30Z' },
 } as unknown as TickerBundle;
 
@@ -151,8 +153,10 @@ function renderPanel() {
 /** Every wire arm the surface can render — the sweep set for §2 and §3. */
 const ALL_ARMS: [string, BrokerBook][] = [
   ['S1 no credential', BOOK_NO_CREDENTIAL],
-  ['S3 ok (equity+spread+partial+unrecognized)',
-    { ...BOOK_OK_FRESH, positions: [POS_EQUITY, POS_SPREAD, POS_PARTIAL, POS_UNRECOGNIZED] }],
+  [
+    'S3 ok (equity+spread+partial+unrecognized)',
+    { ...BOOK_OK_FRESH, positions: [POS_EQUITY, POS_SPREAD, POS_PARTIAL, POS_UNRECOGNIZED] },
+  ],
   ['S4 empty', BOOK_EMPTY],
   ['S5 unreachable', bookUnknown('broker_unreachable')],
   ['S5 rate limited', bookUnknown('rate_limited')],
@@ -178,23 +182,26 @@ describe('broker surface · zero order affordances on every wire arm', () => {
   const FORBIDDEN_TESTIDS = ['open-entry', 'pending-affordance', 'position-row'];
   const FORBIDDEN_BUTTONS = /^(close|trim|roll|add|cancel order|place|buy|sell|execute)$/i;
 
-  it.each(ALL_ARMS)('%s: no order/trade/close/modify affordance — not even disabled', async (_label, book) => {
-    install(book);
-    renderPanel();
-    await screen.findByTestId('broker-tab-panel');
-    // Let the state settle (any arm's terminal testid is fine; we just need the fetch to land).
-    await vi.waitFor(() => {
-      expect(screen.queryByTestId('broker-s9')).toBeNull();
-    });
-    for (const tid of FORBIDDEN_TESTIDS) {
-      expect(screen.queryByTestId(tid), tid).toBeNull();
-    }
-    for (const btn of screen.queryAllByRole('button')) {
-      expect(btn.textContent ?? '', 'order-verb button').not.toMatch(FORBIDDEN_BUTTONS);
-    }
-    // No "coming soon" order copy either — the out-of-scope list bans implying a path exists.
-    expect(document.body.textContent).not.toMatch(/coming soon|place (an )?order/i);
-  });
+  it.each(ALL_ARMS)(
+    '%s: no order/trade/close/modify affordance — not even disabled',
+    async (_label, book) => {
+      install(book);
+      renderPanel();
+      await screen.findByTestId('broker-tab-panel');
+      // Let the state settle (any arm's terminal testid is fine; we just need the fetch to land).
+      await vi.waitFor(() => {
+        expect(screen.queryByTestId('broker-s9')).toBeNull();
+      });
+      for (const tid of FORBIDDEN_TESTIDS) {
+        expect(screen.queryByTestId(tid), tid).toBeNull();
+      }
+      for (const btn of screen.queryAllByRole('button')) {
+        expect(btn.textContent ?? '', 'order-verb button').not.toMatch(FORBIDDEN_BUTTONS);
+      }
+      // No "coming soon" order copy either — the out-of-scope list bans implying a path exists.
+      expect(document.body.textContent).not.toMatch(/coming soon|place (an )?order/i);
+    },
+  );
 });
 
 // =================================================================================================
@@ -232,16 +239,19 @@ describe('broker surface · the forbidden freshness word', () => {
     }
   });
 
-  it.each(ALL_ARMS)('%s: the RENDERED text never claims `live` (testids/routes exempt by construction)', async (_label, book) => {
-    install(book);
-    renderPanel();
-    await screen.findByTestId('broker-tab-panel');
-    await vi.waitFor(() => {
-      expect(screen.queryByTestId('broker-s9')).toBeNull();
-    });
-    const rendered = document.body.textContent ?? '';
-    expect(liveViolations(rendered), _label).toHaveLength(0);
-  });
+  it.each(ALL_ARMS)(
+    '%s: the RENDERED text never claims `live` (testids/routes exempt by construction)',
+    async (_label, book) => {
+      install(book);
+      renderPanel();
+      await screen.findByTestId('broker-tab-panel');
+      await vi.waitFor(() => {
+        expect(screen.queryByTestId('broker-s9')).toBeNull();
+      });
+      const rendered = document.body.textContent ?? '';
+      expect(liveViolations(rendered), _label).toHaveLength(0);
+    },
+  );
 });
 
 // =================================================================================================
