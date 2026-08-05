@@ -379,3 +379,100 @@ def test_desk_research_keeps_the_grpcio_locked_trade_package_excluded():
     text = "\n".join(probe.DESK_RESEARCH)
     assert "webull-python-sdk-trade" in text
     assert "NOT installed" in text
+
+
+# ---------------------------------------------------------------------------------------------
+# ECHO_ONLY — the fifth outcome, proved by the FIRST LIVE RUN (2026-08-05).
+#
+# `GET /trade/instrument?instrument_id=1058096497` answered **HTTP 200** with the payload
+# `{"instrument_id": "1058096497"}` — a bare echo of the id we sent, carrying no strike, expiry,
+# right or multiplier. The original classifier keyed resolution off HTTP status alone, so it
+# (a) reported OUTCOME A — "Webull DOES resolve contract detail" — which was false and would have
+# scheduled an enrichment feature that cannot work, and (b) stopped the sweep on that 2xx, so the
+# remaining candidate paths and parameter spellings were never tried.
+#
+# These tests pin both halves of the correction. They are the regression net for a bug that a
+# green suite could not see, because nothing offline had ever produced a contentless 200.
+# ---------------------------------------------------------------------------------------------
+
+REAL_ECHO_PAYLOAD = {"instrument_id": "1058096497"}
+
+
+def test_the_real_live_echo_is_not_a_resolution():
+    """The exact payload the live run returned must classify as ECHO_ONLY, never RESOLVED."""
+    record = probe.build_attempt(P1, "instrument_id", 200, REAL_ECHO_PAYLOAD, None)
+    assert record["classification"] == probe.ECHO_ONLY
+    assert record["classification"] != probe.RESOLVED
+
+
+@pytest.mark.parametrize("payload", [
+    {"strike_price": "180.00"},
+    {"expire_date": "2026-09-18"},
+    {"option_type": "CALL"},
+    {"contract_multiplier": 100},
+    {"underlying_symbol": "NVDA"},
+    {"data": {"instrument": {"strikePrice": 180}}},      # nested envelope still counts
+    [{"underlying_symbol": "NVDA"}],                      # list envelope still counts
+])
+def test_payloads_that_carry_real_contract_detail_resolve(payload):
+    assert probe.carries_contract_detail(payload) is True
+
+
+@pytest.mark.parametrize("payload", [
+    REAL_ECHO_PAYLOAD, {}, None, {"instrument_id": "1", "region": "us"}, [], [{"id": 1}],
+])
+def test_payloads_without_contract_detail_do_not_resolve(payload):
+    assert probe.carries_contract_detail(payload) is False
+
+
+def test_an_echo_does_not_stop_the_sweep():
+    """The original bug: a contentless 200 short-circuited every remaining candidate."""
+    client = _ScriptedClient({(P1, "instrument_id"): (200, REAL_ECHO_PAYLOAD)})
+    result = _run(client)
+
+    tried = [c[0] for c in client.calls]
+    assert P1 in tried, "the echoing path must still be attempted"
+    assert len(client.calls) > 1, "an echo must NOT end the sweep — remaining candidates are owed"
+    assert result["resolved"] is None
+    assert result["outcome"] == "B"
+    assert any(a["classification"] == probe.ECHO_ONLY for a in result["attempts"])
+
+
+def test_echo_path_gets_the_spelling_retries_because_it_demonstrably_exists():
+    """A 200-but-empty route is the best lead available; spend the retry budget on IT."""
+    client = _ScriptedClient({(P1, "instrument_id"): (200, REAL_ECHO_PAYLOAD)})
+    _run(client)
+    retried_params = [c[1] for c in client.calls if c[0] == P1]
+    for spelling in probe.RETRY_PARAMS:
+        assert spelling in retried_params, f"{spelling} should have been tried against {P1}"
+
+
+def test_a_late_real_resolution_after_an_echo_is_still_found():
+    """Sweeping past the echo must actually be able to succeed, or continuing is pointless."""
+    client = _ScriptedClient({
+        (P1, "instrument_id"): (200, REAL_ECHO_PAYLOAD),
+        (P1, "instrument_ids"): (200, {"strike_price": "180.00", "option_type": "CALL"}),
+    })
+    result = _run(client)
+    assert result["outcome"] == "A"
+    assert result["resolved"]["param"] == "instrument_ids"
+
+
+def test_echo_conclusion_does_not_overclaim_that_the_api_has_no_detail():
+    """An unexplained live 200 route means the strong 'Webull exposes nothing' claim is unearned."""
+    client = _ScriptedClient({(P1, "instrument_id"): (200, REAL_ECHO_PAYLOAD)})
+    result = _run(client)
+    counts = {}
+    for a in result["attempts"]:
+        counts[a["classification"]] = counts.get(a["classification"], 0) + 1
+    line = probe._conclusion_line({**result, "counts": counts})
+
+    assert "OUTCOME B (echo sub-case)" in line
+    # The strong claim ("Webull's API exposes no contract detail") may APPEAR only inside the
+    # sentence FORBIDDING it — so assert the prohibition, not the mere absence of the phrase.
+    assert "must NOT" in line and "not earned" in line
+    assert "endpoint_absent" not in line.split("NOT the same dead end")[0].split("CONCLUSION:")[1][:120], \
+        "the echo sub-case must not be summarized as an absent endpoint"
+    assert "entitlement" in line or "parameter" in line
+    # And it must say plainly that the route is alive — that is the whole distinction.
+    assert "EXISTS" in line or "is live" in line

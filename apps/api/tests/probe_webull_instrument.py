@@ -91,6 +91,20 @@ NOT_PERMITTED = "not_permitted_for_this_key"
 BAD_PARAMS = "bad_params"
 OTHER = "other"                          # 429/5xx/transport: honestly none of the three
 RESOLVED = "resolved"
+# A FIFTH outcome the first live run proved is real and that HTTP status alone cannot see:
+# `GET /trade/instrument?instrument_id=...` returned **HTTP 200 with the payload
+# `{"instrument_id": "<the id we sent>"}`** — a bare echo carrying no contract detail at all.
+# Treating that as success (the original bug) both mislabels the product conclusion AND stops
+# the sweep early, so the remaining candidates never get tried. An echo is NOT a resolution.
+ECHO_ONLY = "echo_only"
+
+# The facts that make a lookup USEFUL. A 2xx that carries none of these has resolved nothing.
+# Matched case-insensitively against every key at ANY depth (a nested `{"data": {...}}` or
+# `{"instrument": {...}}` envelope must still count as resolved).
+_CONTRACT_DETAIL_KEYS = (
+    "strike", "expir", "option_type", "optiontype", "right", "put_call", "putcall",
+    "multiplier", "contract_size", "contractsize", "underlying",
+)
 
 _PERMISSION_CODE_HINTS = ("PERMISSION", "FORBIDDEN", "UNAUTHORIZED", "NOT_AUTHORIZED",
                           "NO_AUTH", "SCOPE", "SUBSCRIPTION", "ENTITLE")
@@ -138,7 +152,38 @@ def scrub_secrets(text: str, secrets: tuple[str, ...]) -> str:
 
 
 def is_success(status) -> bool:
+    """HTTP-level success ONLY. Necessary for a resolution, never sufficient — see
+    `carries_contract_detail`. Kept separate so the distinction stays visible at every call site."""
     return bool(isinstance(status, int) and 200 <= status < 300)
+
+
+def carries_contract_detail(payload) -> bool:
+    """Does this payload actually carry option contract identity, at ANY nesting depth?
+
+    The whole point of the probe. `{"instrument_id": "1058096497"}` — the real 2026-08-05
+    response — is a 200 that resolves NOTHING; only the presence of a strike/expiry/right/
+    multiplier/underlying key makes a lookup useful. Depth-walked so a `{"data": {...}}` or
+    `{"instrument": {...}}` envelope still counts.
+    """
+    found = False
+
+    def walk(node):
+        nonlocal found
+        if found:
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                kl = str(k).lower()
+                if any(h in kl for h in _CONTRACT_DETAIL_KEYS):
+                    found = True
+                    return
+                walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(payload)
+    return found
 
 
 def classify_failure(status, error_code=None) -> str:
@@ -189,8 +234,13 @@ def build_attempt(path, param_name, status, payload, exception, secrets=()) -> d
         "http_status": http_status,
         "error_code": error_code,
         "response_keys": response_key_set(payload),
-        "classification": (RESOLVED if is_success(http_status)
-                           else classify_failure(http_status, error_code)),
+        # A 2xx is only a RESOLUTION if the body actually carries contract identity; a 2xx that
+        # doesn't is ECHO_ONLY and the sweep must continue past it (live-proved 2026-08-05).
+        "classification": (
+            (RESOLVED if carries_contract_detail(payload) else ECHO_ONLY)
+            if is_success(http_status)
+            else classify_failure(http_status, error_code)
+        ),
         "exception": _exception_shape(exception),
     }
     return sanitize_payload(record, tuple(s for s in secrets if s))
@@ -271,7 +321,9 @@ def run_probe(client, instrument_id, *, request_factory=None, sleep=time.sleep,
             raw_sink.append({"path": path, "param": param_name, "status": status,
                              "headers": dict(headers or {}), "payload": payload,
                              "exception": _exception_shape(exc)})
-        if is_success(record["http_status"]):
+        # ONLY a real resolution stops the sweep. An ECHO_ONLY 200 is a live-proved outcome
+        # (see ECHO_ONLY) and must NOT short-circuit the remaining candidates.
+        if record["classification"] == RESOLVED:
             state["resolved"] = record
         return record
 
@@ -279,8 +331,12 @@ def run_probe(client, instrument_id, *, request_factory=None, sleep=time.sleep,
         if attempt(path, PRIMARY_PARAM) is None or state["resolved"]:
             break
 
+    # A path that answered 2xx-but-empty EXISTS — it is the best lead we have, so spend the
+    # remaining budget varying the parameter spelling against it before concluding anything.
     if not state["resolved"]:
-        retry_path = _retry_candidate(attempts)
+        echo_path = next((a["path"] for a in attempts
+                          if a["classification"] == ECHO_ONLY), None)
+        retry_path = echo_path or _retry_candidate(attempts)
         if retry_path:
             for param_name in RETRY_PARAMS:
                 if attempt(retry_path, param_name) is None or state["resolved"]:
@@ -326,7 +382,22 @@ def _conclusion_line(ctx: dict) -> str:
         )
     counts = ctx["counts"]
     breakdown = ", ".join(f"{counts.get(k, 0)} {k}" for k in
-                          (ENDPOINT_ABSENT, NOT_PERMITTED, BAD_PARAMS, OTHER))
+                          (ENDPOINT_ABSENT, NOT_PERMITTED, BAD_PARAMS, ECHO_ONLY, OTHER))
+    echoes = [a for a in ctx["attempts"] if a["classification"] == ECHO_ONLY]
+    if echoes:
+        paths = ", ".join(sorted({f"`{a['path']}`" for a in echoes}))
+        return (
+            f"CONCLUSION: OUTCOME B (echo sub-case) — a Webull instrument read EXISTS and "
+            f"answers HTTP 200 ({paths}), but every parameter spelling tried returned a bare "
+            f"ECHO of the id with NO contract detail ({breakdown}, across {ctx['calls']} "
+            f"calls). Practically this is Outcome B — the honest generic option row stands as "
+            f"the v1 answer — but it is NOT the same dead end as `endpoint_absent`: the route "
+            f"is live, so the gap is a parameter/entitlement question the owner can put to "
+            f"Webull, not a proven product ceiling. `fidelity_notes` must therefore keep the "
+            f"capture-scoped wording (\"Webull's positions feed carries no…\") and must NOT "
+            f"strengthen to \"Webull's API exposes no contract detail\" — that claim is not "
+            f"earned while a 200 route remains unexplained."
+        )
     return (
         f"CONCLUSION: OUTCOME B — no probed Webull read endpoint resolved an option "
         f"`instrument_id` into contract detail ({breakdown}, across {ctx['calls']} calls). "
