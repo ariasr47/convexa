@@ -120,3 +120,52 @@ def test_install_is_idempotent():
     wa._install_sdk_log_redaction()
     wa._install_sdk_log_redaction()
     assert logging.getLogger(wa._SDK_LOGGER_NAME).handlers == before
+
+
+# ---------------------------------------------------------------------------------------------
+# M-3 — the SDK's own debug dump must be DISARMED, not merely un-set.
+#
+# `webullsdkcore/http/response.py` reads WEBULL_API_DEBUG per request and, when it is "sdk",
+# prints the SIGNED request (App Key + Signature headers) and full response bodies — through a
+# logger it configures at IMPORT TIME with propagate=False and its own StreamHandler. Those
+# records therefore bypass H-1's sanitizing handler entirely, and no app-side logging config can
+# silence them. Without this defense, "SDK log egress is closed" is true only at the default
+# level — which is the most dangerous kind of security claim: correct until someone sets a var.
+# ---------------------------------------------------------------------------------------------
+import logging as _logging
+import os as _os
+
+import pytest as _pytest
+
+_adapter = _pytest.importorskip("src.broker.webull_adapter", reason="SDK-adjacent shim")
+
+
+def test_debug_env_var_is_cleared_so_the_credential_dump_branch_is_dead(monkeypatch):
+    monkeypatch.setenv("WEBULL_API_DEBUG", "sdk")
+    _adapter._shim_sdk_compat()
+    assert _os.environ.get("WEBULL_API_DEBUG") is None, (
+        "the SDK's dump branch keys off this var; leaving it set leaks App Key + Signature"
+    )
+
+
+def test_debug_env_var_is_cleared_case_insensitively(monkeypatch):
+    # The SDK lowercases before comparing, so any casing arms it.
+    monkeypatch.setenv("WEBULL_API_DEBUG", "SDK")
+    _adapter._shim_sdk_compat()
+    assert _os.environ.get("WEBULL_API_DEBUG") is None
+
+
+def test_vendor_logger_is_detached_from_its_own_stderr_handler():
+    """Belt and braces: even if something re-sets the var later, records must route through
+    OUR redactor rather than straight to stderr."""
+    _adapter._shim_sdk_compat()
+    vendor_log = _logging.getLogger("webullsdkcore.http.response")
+    assert vendor_log.handlers == [], "vendor's own StreamHandler bypasses H-1's redaction"
+    assert vendor_log.propagate is True, "propagate=False would strand records off our handler"
+
+
+def test_disarm_is_idempotent_and_safe_to_call_repeatedly():
+    for _ in range(3):
+        _adapter._shim_sdk_compat()
+    assert _os.environ.get("WEBULL_API_DEBUG") is None
+    assert _logging.getLogger("webullsdkcore.http.response").handlers == []

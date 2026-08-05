@@ -495,6 +495,38 @@ def _install_sdk_log_redaction() -> None:
     _sdk_log_redaction_installed = True
 
 
+def _disarm_sdk_debug_dump() -> None:
+    """
+    Neutralize the SDK's own debug dump (M-3, system-6 review — the gap that made H-1's
+    redaction only conditionally true).
+
+    `webullsdkcore/http/response.py` reads `WEBULL_API_DEBUG` per request and, when it is set
+    to `sdk`, prints the SIGNED REQUEST (App Key + Signature headers) and full response bodies.
+    It does this through a logger it configures AT IMPORT TIME with `propagate = False` and its
+    own `StreamHandler` — so those records never reach the sanitizing handler H-1 installs, and
+    no logging config the app sets can silence them. Redaction alone therefore closes SDK log
+    egress only at the default level, which reads as "secured" while a single env var undoes it.
+
+    Two moves, both required:
+      1) Clear the env var in THIS process before any request runs, so the branch is dead. The
+         app never wants a mode that prints credentials; a human who genuinely needs the vendor
+         dump can run the SDK outside the app.
+      2) Detach that logger's own handlers and re-enable propagation, so anything it does emit
+         travels the normal path — through H-1's redactor — instead of straight to stderr.
+
+    Idempotent, and safe when the SDK is absent (the tools import this module without it).
+    """
+    os.environ.pop("WEBULL_API_DEBUG", None)
+    try:
+        import webullsdkcore.http.response as _resp  # noqa: F401  (import for its logger)
+    except Exception:
+        return
+    vendor_log = logging.getLogger("webullsdkcore.http.response")
+    for handler in list(vendor_log.handlers):
+        vendor_log.removeHandler(handler)
+    vendor_log.propagate = True
+
+
 def _shim_sdk_compat() -> None:
     """
     webull-python-sdk-core 0.1.18 vendors an ancient requests/six pair that breaks on modern
@@ -524,6 +556,7 @@ def _shim_sdk_compat() -> None:
             sys.modules[f"{prefix}.moves.urllib.{name}"] = getattr(six.moves.urllib, name)
     _shim_vendored_ssl()
     _install_sdk_log_redaction()
+    _disarm_sdk_debug_dump()
 
 
 class _SdkTransport:
