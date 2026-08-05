@@ -8,6 +8,7 @@ import os
 import zoneinfo
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Path, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 
@@ -668,6 +669,31 @@ app = FastAPI(
     redoc_url="/redoc" if _docs_enabled else None,
     openapi_url="/openapi.json" if _docs_enabled else None,
 )
+
+
+# --------------------------------------------------------------- 422 body echo (M-1, GATE Z)
+# FastAPI's DEFAULT RequestValidationError handler echoes the offending value back to the
+# client under `input` (and sometimes `ctx`). On the credential routes that value IS the
+# secret: a wrong-TYPED `app_key` / `app_secret` / AI `key` returned the raw submitted key
+# verbatim in a 422 body — reproduced live on BOTH `PUT /api/broker/credential` and the
+# already-shipped `PUT /api/auth/ai-key`.
+#
+# `src/auth/router.py` already defends the MISSING-half case by making the fields optional at
+# the Pydantic layer and doing the both-halves 422 itself; that defense simply does not reach
+# a type error, which Pydantic raises before any router code runs. So the fix goes where it
+# cannot be bypassed: APP-WIDE, on the handler itself. No endpoint in this app needs its
+# request value read back to it, and `[secret-encrypted-at-rest]` is explicit that a stored
+# secret is never returned in a response — a 422 body is a response.
+#
+# `type`, `loc` and `msg` are KEPT: the client must still learn WHICH field was wrong and why.
+# Only the submitted VALUE is dropped.
+@app.exception_handler(RequestValidationError)
+async def _validation_error_without_body_echo(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": [{"type": e.get("type"), "loc": list(e.get("loc", [])),
+                             "msg": e.get("msg")}
+                            for e in exc.errors()]})
 
 # --- Scanner embedded-worker seam (Scanner v1 P2, default OFF). When SCANNER_EMBEDDED=1, run the
 # sweep loop INSIDE this API process (one-terminal dev). Production runs the worker as a SEPARATE
