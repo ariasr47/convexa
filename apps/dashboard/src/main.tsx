@@ -2,6 +2,12 @@ import { StrictMode } from 'react';
 import * as ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './app/app';
+import { installModalFocusHandoff } from './app/shared/a11y/modalFocusHandoff';
+
+// Keeps focus out of the `aria-hidden` background whenever a Modal (Dialog/Drawer/Menu/Select) opens
+// or closes — see `shared/a11y/modalFocusHandoff.ts`. Installed BEFORE the first render so no modal
+// can ever be managed by the unwrapped ModalManager.
+installModalFocusHandoff();
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
