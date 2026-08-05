@@ -18,10 +18,14 @@
  *  - the dual-basis label input (`modeled_label`) derived from book-snapshot staleness so the
  *    panel renders `modeled now · on your book as of {time}` without re-deriving (AC-21).
  *
- * UNIT ASSUMPTION (flagged to the conductor): `cost_basis` and `broker_mark` are PER-UNIT dollar
- * figures (per share / per contract-unit), matching `entry_price`/mark in the existing ladder.
- * The adapter (task B4) must map to the same unit; a mismatch is a GATE Z clarification, not a
- * silent FE re-scale.
+ * UNIT FACT (capture-confirmed, 2026-08-03 — was an assumption, is now evidence): `cost_basis` and
+ * `broker_mark` are PER-UNIT dollar figures (per share / per contract-unit), matching
+ * `entry_price`/mark in the existing ladder. Webull's `unit_cost` and `last_price` are per-unit;
+ * its `total_cost` and `market_value` are POSITION-LEVEL aggregates — and on an OPTION row
+ * `total_cost` includes the ×100 multiplier while `market_value` does NOT. That asymmetry is
+ * precisely why Webull's own option P/L (`market_value − total_cost`, exactly, on every row) is
+ * ~100× wrong. The adapter maps the per-unit fields, never the aggregates; a future mismatch is a
+ * GATE Z clarification, not a silent FE re-scale.
  *
  * Hard constraints honored: `SimPosition` is NOT widened (the in-memory mapped value below is a
  * projection INPUT, never persisted); this module never imports `positions/store` and never
@@ -140,10 +144,19 @@ export interface BrokerPositionView extends PositionView {
   modeled_label: 'single' | 'dual';
   leg_reads: BrokerLegRead[];
   /**
-   * Webull's own unrealized P/L, CARRIED VERBATIM (tri-state) — never computed, never blended.
-   * Deliberately NOT rendered yet: whether/how the static broker-reported reference renders
-   * beside the modeled read is a NAMED post-capture owner decision (SPEC §9.3, plan §decisions
-   * #2). The datum rides the view so that ruling is a render change, not a plumbing change.
+   * Webull's own unrealized P/L, CARRIED VERBATIM (tri-state) — never computed, never blended,
+   * and **NOT RENDERED**.
+   *
+   * DECIDED, not pending (owner ruling Q2, 2026-08-03): the modeled figure only, for now. The
+   * capture then independently vindicated it — Webull computes an option row's P/L as
+   * `market_value − total_cost` while ×100'ing only the cost, so its own figure is ~100× wrong
+   * (NVDA: it reports −7840.50 where the true economic figure is −3040). Rendering it beside the
+   * modeled read would put a broken number under a Webull-branded basis label.
+   *
+   * It stays CARRIED because the tri-state pattern requires it and because reversing the ruling
+   * must be a render change, not a plumbing change. A regression spec asserts the distinctive
+   * captured values never reach rendered text, and a source scan asserts this file is the only
+   * non-fixture module under `broker/` that names the field.
    */
   unrealized_pl: BrokerFact;
 }

@@ -17,6 +17,9 @@
  * SCORE-NEUTRAL (AC-F4): nothing here is wired into any bundle/score path; the helper copy reinforces
  * it ("Affects appearance only."). Theme/persona/ticker are never scoring inputs.
  */
+import { usePersona } from '@/features/personas/usePersona';
+import { DisclaimerCopy } from '@/shared/copy/disclaimer';
+import { extrasFor } from '@/shared/theme/tokens';
 import {
   Alert,
   Box,
@@ -38,15 +41,13 @@ import { alpha } from '@mui/material/styles';
 import type { ThemePref } from '@org/api';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { usePersona } from '@/features/personas/usePersona';
 import { AiKeySection } from './AiKeySection';
-import { BrokerageSection } from './BrokerageSection';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { avatarInitial, AVATAR_SX } from './avatar';
+import { AVATAR_SX, avatarInitial } from './avatar';
+import { BrokerageSection } from './BrokerageSection';
 import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
 import { useSettings } from './useSettings';
-import { extrasFor } from '@/shared/theme/tokens';
 
 const C = AUTH_COPY.settings;
 
@@ -354,14 +355,14 @@ export function SettingsPage() {
           )}
         </PanelCard>
 
-        {/* Footer disclaimer — reuse the Landing caption (verbatim). */}
+        {/* The standing disclaimer — ONE shared source with the site footer, so the two copies
+            cannot drift again (they already had; see `shared/copy/disclaimer.tsx`). */}
         <Typography
           variant="caption"
           data-testid="settings-disclaimer"
           sx={{ color: 'text.secondary', mt: 1 }}
         >
-          Convexa is an analysis tool. All positions and trades shown are <strong>simulated</strong>{' '}
-          (paper). Not investment advice. No brokerage connection.
+          <DisclaimerCopy />
         </Typography>
       </Stack>
 

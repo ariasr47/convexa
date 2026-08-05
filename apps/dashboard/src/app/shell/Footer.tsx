@@ -7,6 +7,7 @@
  * ConvexaMark wordmark and the simulated/paper honesty disclaimer (`[no-real-order-path]`). Content
  * constrained to the same `lg` column as the rest of the page.
  */
+import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import { Box, Container, Link, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
@@ -34,8 +35,7 @@ export function Footer() {
             sx={{ color: 'text.secondary' }}
             data-testid="footer-disclaimer"
           >
-            Convexa is an analysis tool. All positions and trades shown are{' '}
-            <strong>simulated</strong> (paper). Not investment advice. No brokerage connection.
+            <DisclaimerCopy />
           </Typography>
           <Typography
             variant="caption"
