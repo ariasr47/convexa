@@ -179,3 +179,86 @@ def test_without_the_shim_the_same_call_is_the_S1_adapter_fault(loopback_egress,
         for name, value in saved.items():
             setattr(vendored, name, value)
     assert vendored.resolve_ssl_version(None) is not None      # restored for the next test
+
+
+# ---------------------------------------------------------------------------------------------
+# THE SDK RETURN-CONTRACT TRAP (live-caught 2026-08-05, owner's first real connect).
+#
+# `ApiClient.get_response()` returns the vendored-requests **Response OBJECT**, not the parsed
+# body (`client.py`: `status, headers, body, exception, response = ...; return response`).
+# `_SdkTransport` handed that object straight to `_extract_account_id`/`_page_entries`, which
+# both fall through their `isinstance(dict|list)` guards and answer "nothing here" — so a
+# perfectly healthy account with two subscriptions and 14 positions surfaced as
+# `adapter_fault` + "no account id in subscriptions payload".
+#
+# This is the SECOND instance of this exact trap (capture_broker_fixtures had it, fixed in
+# 3416ef3) and the second time — after S-1 — that a product/tool pair diverged silently. It
+# survived every existing test because they all inject a fake transport returning plain dicts,
+# which is precisely the boundary that hides the real contract. These tests exercise the
+# contract itself: a Response-shaped object in, parsed data out.
+# ---------------------------------------------------------------------------------------------
+import json as _json
+
+from src.broker.webull_adapter import _SdkTransport, _extract_account_id
+
+
+class _ResponseLike:
+    """Mimics vendored-requests' Response: has .json()/.content, and NO .get()/.__iter__."""
+
+    def __init__(self, payload):
+        self._payload = payload
+        self.content = _json.dumps(payload).encode("utf-8")
+
+    def json(self):
+        return self._payload
+
+
+# The real captured subscriptions shape: a BARE LIST of entries carrying account_id.
+_REAL_SUBS = [
+    {"subscription_id": "s1", "user_id": "u1", "account_id": "ACC123", "account_number": "N1"},
+    {"subscription_id": "s2", "user_id": "u1", "account_id": "ACC456", "account_number": "N2"},
+]
+
+
+def test_parsed_unwraps_a_response_object_into_real_data():
+    out = _SdkTransport._parsed(_ResponseLike(_REAL_SUBS))
+    assert isinstance(out, list), "a Response object must never reach the mappers"
+    assert out == _REAL_SUBS
+
+
+def test_account_id_is_found_through_the_transport_contract():
+    """The end-to-end shape of the live failure: object in → account id out."""
+    parsed = _SdkTransport._parsed(_ResponseLike(_REAL_SUBS))
+    assert _extract_account_id(parsed) == "ACC123"
+
+
+def test_a_raw_response_object_would_have_yielded_no_account_id():
+    """Pins WHY this was invisible: the pre-fix value is silently account-less."""
+    assert _extract_account_id(_ResponseLike(_REAL_SUBS)) is None
+
+
+def test_parsed_passes_already_parsed_payloads_through_untouched():
+    """Fake transports in the other tests hand back plain dicts/lists — must stay valid."""
+    assert _SdkTransport._parsed(_REAL_SUBS) == _REAL_SUBS
+    assert _SdkTransport._parsed({"holdings": []}) == {"holdings": []}
+    assert _SdkTransport._parsed(None) is None
+
+
+def test_parsed_falls_back_to_content_when_json_raises():
+    class _NoJson:
+        content = _json.dumps({"holdings": [{"instrument_id": "1"}]}).encode("utf-8")
+
+        def json(self):
+            raise ValueError("not json")
+
+    assert _SdkTransport._parsed(_NoJson()) == {"holdings": [{"instrument_id": "1"}]}
+
+
+def test_parsed_returns_none_on_an_unparseable_body_rather_than_raising():
+    class _Junk:
+        content = b"<html>gateway</html>"
+
+        def json(self):
+            raise ValueError("nope")
+
+    assert _SdkTransport._parsed(_Junk()) is None

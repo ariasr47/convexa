@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 import logging
 import os
 import re
@@ -581,14 +582,49 @@ class _SdkTransport:
             req.add_query_param(k, v)
         return req
 
+    @staticmethod
+    def _parsed(response: Any) -> Any:
+        """
+        Return the DECODED JSON body — never the transport object.
+
+        `ApiClient.get_response()` returns the vendored-requests **`Response` OBJECT**, not the
+        parsed body (`client.py`: `status, headers, body, exception, response = ...; return
+        response`). Handing that object to `_extract_account_id` / `_page_entries` makes both
+        fall through their `isinstance(dict|list)` guards and answer "nothing here" — which
+        surfaced as a live `adapter_fault` + `no account id in subscriptions payload` against a
+        perfectly healthy account whose payload plainly contains one.
+
+        This is the SECOND instance of this exact SDK-contract trap: `capture_broker_fixtures`
+        had the same defect (fixed in `3416ef3`) and, like S-1's shim, the product carried its
+        own silently-diverged copy. It survived every test because each one injects a fake
+        transport returning plain dicts, so nothing exercised the real return contract.
+        """
+        if response is None or isinstance(response, (dict, list)):
+            return response          # already parsed (fake transports in tests, or an empty body)
+        for attr in ("json",):       # vendored-requests Response
+            method = getattr(response, attr, None)
+            if callable(method):
+                try:
+                    return method()
+                except Exception:
+                    break            # not JSON — fall through to the raw-body path below
+        body = getattr(response, "content", None) or getattr(response, "text", None)
+        if not body:
+            return None
+        try:
+            return json.loads(body if isinstance(body, str) else body.decode("utf-8"))
+        except Exception:
+            return None              # unparseable ⇒ the callers' honest "nothing here" path
+
     def subscriptions(self):
-        return self._client.get_response(self._request("/app/subscriptions/list", {}))
+        return self._parsed(self._client.get_response(self._request("/app/subscriptions/list", {})))
 
     def positions_page(self, account_id: str, last_instrument_id: Optional[str] = None):
         params = {"account_id": account_id, "page_size": _PAGE_SIZE}
         if last_instrument_id is not None:
             params["last_instrument_id"] = last_instrument_id
-        return self._client.get_response(self._request("/account/positions", params))
+        return self._parsed(
+            self._client.get_response(self._request("/account/positions", params)))
 
 
 # ----------------------------------------------------------------------------- the provider
