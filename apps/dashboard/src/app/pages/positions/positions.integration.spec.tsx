@@ -382,10 +382,20 @@ describe('the book renders ONE row per position (AC-1, AC-2, AC-3, AC-23)', () =
   it('AC-23 — every position shows ONE net P/L figure covering all of its legs', async () => {
     seedV2([VERTICAL(), SINGLE()]);
     renderAt();
-    await waitFor(() => expect(rows()).toHaveLength(2));
-    for (const row of rows()) {
-      expect(within(row).getAllByTestId('cell-pl')).toHaveLength(1);
-    }
+    // The assertion MUST live inside the waitFor. `cell-pl` does not exist until the row's mark
+    // resolves — `PositionRow`'s `pl` case renders `unavailableCell` while `pl_dollar` is null —
+    // and that resolution is an async per-row `GET /api/contract`. Waiting only for the ROWS to
+    // appear and then asserting synchronously raced the marks: green locally, ~50% red on a loaded
+    // CI runner, failing with `Unable to find an element by: [data-testid="cell-pl"]`.
+    // Retry the whole thing instead. (The property under test is unchanged: exactly ONE net P/L
+    // figure per row, however many legs it has.)
+    await waitFor(() => {
+      const current = rows();
+      expect(current).toHaveLength(2);
+      for (const row of current) {
+        expect(within(row).getAllByTestId('cell-pl')).toHaveLength(1);
+      }
+    });
   });
 });
 
