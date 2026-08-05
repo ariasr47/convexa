@@ -9,8 +9,13 @@
  *  - book-snapshot axis (`isStale`): the S6 treatment on ONLY the snapshot fields (legs,
  *    quantities, broker facts); the modeled figure keeps updating under its DUAL-basis label.
  *
- * Fidelity ≠ exact renders the explicit cannot-fully-display entry — surfaced, never dropped,
- * never flattened into a plausible-looking wrong position (AC-14).
+ * FIDELITY (G1, corrected post-capture). Only `unrecognized` — a position with NO mapped legs —
+ * gets the bare cannot-fully-display entry. `partial` renders the FULL row grammar plus its
+ * fidelity notes: under the real Webull feed 9 of 14 positions are `partial` (the feed carries no
+ * strike/expiry/right for a held option), and routing them all into the bare state discarded the
+ * quantity, cost and mark Webull DID supply. Reporting less than we honestly know is its own
+ * dishonesty. Nothing is invented in the gap — the missing facts render `not provided` and each
+ * omission is named in the notes.
  */
 import { money } from '@/features/trading/positions/labels';
 import { typographyTokens } from '@/shared/theme/tokens';
@@ -35,12 +40,20 @@ export interface BrokerRowProps {
 /** The S6 stale treatment for snapshot-family cells: dimmed, marked, never blanked. */
 export const STALE_SNAPSHOT_SX = { opacity: 0.62 } as const;
 
-/** The tri-state literal with its honest tooltip (the fifth not-a-number literal's tip). */
-export function FactText({ text, testid }: { text: string; testid?: string }) {
+/**
+ * The tri-state literal with its honest tooltip (the fifth not-a-number literal's tip).
+ * `tip` overrides the default `not provided` explanation where the slot has a more specific one
+ * (G3: the modeled figure's "we can't identify this contract" case).
+ */
+export function FactText({ text, testid, tip }: { text: string; testid?: string; tip?: string }) {
   if (text === NOT_PROVIDED) {
     return (
-      <Tooltip title={BROKER_COPY.notProvidedTip}>
-        <Box component="span" data-testid={testid} sx={{ color: 'text.disabled', fontStyle: 'italic' }}>
+      <Tooltip title={tip ?? BROKER_COPY.notProvidedTip}>
+        <Box
+          component="span"
+          data-testid={testid}
+          sx={{ color: 'text.disabled', fontStyle: 'italic' }}
+        >
           {NOT_PROVIDED}
         </Box>
       </Tooltip>
@@ -96,10 +109,17 @@ export function ModeledPl({
       </Typography>
     );
   } else {
-    // Withheld: missing cost basis ⇒ the feed literal; an unresolved mark ⇒ the shipped family.
+    // G3 — PERMANENT vs THIS-CYCLE. `unavailable` is a this-cycle framing: it promises a refresh
+    // might fix it. A contract the feed never identified (`unpriceable`), or a cost basis it never
+    // sent, will still be missing next cycle — that is the FEED literal, `not provided`. Only a
+    // genuinely transient unresolved mark keeps `unavailable`.
+    const permanent = !view.entry_known || view.unpriceable;
     figure = (
       <Typography component="span" data-testid="broker-pl" sx={{ color: 'text.disabled' }}>
-        <FactText text={view.entry_known ? UNAVAILABLE : NOT_PROVIDED} />
+        <FactText
+          text={permanent ? NOT_PROVIDED : UNAVAILABLE}
+          tip={view.unpriceable ? BROKER_COPY.modeled.unpriceableTip : undefined}
+        />
       </Typography>
     );
   }
@@ -143,8 +163,13 @@ export function LegLines({ view }: { view: BrokerPositionView }) {
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {leg.side_word} {leg.size_text} {leg.instrument_text}
-            {leg.expiry_text !== '—' ? ` · ${leg.expiry_text}` : ''}
+            {leg.side_word} {leg.size_text} <FactText text={leg.instrument_text} />
+            {leg.expiry_text !== '—' && (
+              <>
+                {' · '}
+                <FactText text={leg.expiry_text} />
+              </>
+            )}
             {' · cost '}
             <FactText text={read?.cost_basis_text ?? NOT_PROVIDED} />
           </Typography>
@@ -154,17 +179,16 @@ export function LegLines({ view }: { view: BrokerPositionView }) {
   );
 }
 
-/** The explicit cannot-fully-display entry (fidelity partial/unrecognized). Counted, named, honest. */
-export function UnfaithfulEntry({ view }: { view: BrokerPositionView }) {
+/**
+ * The named omissions, shared by the FULL `partial` row and the bare `unrecognized` entry (G1).
+ * ONE component so the two states can never disagree about how an omission is surfaced — and the
+ * `broker-fidelity-note` testid stays the single hook for "every omission is named".
+ */
+export function FidelityNotes({ notes }: { notes: string[] }) {
+  if (notes.length === 0) return null;
   return (
-    <Box data-testid="broker-row-unfaithful" sx={{ minWidth: 0 }}>
-      <Typography component="div" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
-        {view.ticker || view.broker.broker_position_id}
-      </Typography>
-      <Typography component="div" sx={{ fontSize: '0.8rem', color: 'text.secondary', mt: '2px' }}>
-        {BROKER_COPY.cannotFullyDisplay}
-      </Typography>
-      {view.fidelity_notes.map((n) => (
+    <>
+      {notes.map((n) => (
         <Typography
           key={n}
           component="div"
@@ -174,6 +198,25 @@ export function UnfaithfulEntry({ view }: { view: BrokerPositionView }) {
           {n}
         </Typography>
       ))}
+    </>
+  );
+}
+
+/**
+ * The explicit cannot-fully-display entry — `unrecognized` ONLY (a position with no mapped legs).
+ * Counted, named, honest: surfaced rather than dropped, and never flattened into a plausible-looking
+ * wrong position (AC-14).
+ */
+export function UnfaithfulEntry({ view }: { view: BrokerPositionView }) {
+  return (
+    <Box data-testid="broker-row-unfaithful" sx={{ minWidth: 0 }}>
+      <Typography component="div" sx={{ fontWeight: 700, fontSize: '0.9rem' }}>
+        {view.ticker || view.broker.broker_position_id}
+      </Typography>
+      <Typography component="div" sx={{ fontSize: '0.8rem', color: 'text.secondary', mt: '2px' }}>
+        {BROKER_COPY.cannotFullyDisplay}
+      </Typography>
+      <FidelityNotes notes={view.fidelity_notes} />
     </Box>
   );
 }
@@ -206,7 +249,8 @@ export function StructureChip({ view }: { view: BrokerPositionView }) {
 }
 
 export function BrokerPositionRow({ view, streamOffline, isStale, asOf, actions }: BrokerRowProps) {
-  const unfaithful = view.fidelity !== 'exact';
+  // G1 — ONLY `unrecognized` (no mapped legs) gets the bare entry. `partial` keeps the full grammar.
+  const unfaithful = view.fidelity === 'unrecognized';
   return (
     <Box
       data-testid="broker-row"
@@ -250,6 +294,8 @@ export function BrokerPositionRow({ view, streamOffline, isStale, asOf, actions 
               </Typography>
             </Box>
             <LegLines view={view} />
+            {/* `partial`: the full row above, plus every omission named underneath it. */}
+            <FidelityNotes notes={view.fidelity_notes} />
           </Box>
 
           <Box sx={isStale ? STALE_SNAPSHOT_SX : undefined}>

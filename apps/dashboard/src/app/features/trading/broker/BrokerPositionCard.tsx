@@ -7,6 +7,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Box, Typography } from '@mui/material';
 import {
   FactText,
+  FidelityNotes,
   LegLines,
   ModeledPl,
   STALE_SNAPSHOT_SX,
@@ -15,8 +16,15 @@ import {
   type BrokerRowProps,
 } from './BrokerPositionRow';
 
-export function BrokerPositionCard({ view, streamOffline, isStale, asOf, actions }: BrokerRowProps) {
-  const unfaithful = view.fidelity !== 'exact';
+export function BrokerPositionCard({
+  view,
+  streamOffline,
+  isStale,
+  asOf,
+  actions,
+}: BrokerRowProps) {
+  // G1 — the row's rule, verbatim: only `unrecognized` collapses to the bare entry.
+  const unfaithful = view.fidelity === 'unrecognized';
   return (
     <Box
       data-testid="broker-card"
@@ -86,6 +94,8 @@ export function BrokerPositionCard({ view, streamOffline, isStale, asOf, actions
 
           <Box sx={isStale ? STALE_SNAPSHOT_SX : undefined}>
             <LegLines view={view} />
+            {/* `partial`: the full card above, plus every omission named underneath it. */}
+            <FidelityNotes notes={view.fidelity_notes} />
           </Box>
         </>
       )}

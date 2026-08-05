@@ -133,6 +133,15 @@ export const BROKER_COPY = {
       'current read of the book.',
     /** For the broker-reported reference IF the owner rules it in (SPEC §9.3 — carried, unrendered). */
     brokerReportedTip: "Webull's own unrealized P/L, as of the stamp above.",
+    /**
+     * G3 — the PERMANENT withhold. `unavailable` frames a gap as "this cycle"; a contract Convexa
+     * cannot identify will not become priceable on the next refresh, so the figure renders `not
+     * provided` and this tip says why. (Wordsmithing open — GATE Q review, not an amendment.)
+     */
+    unpriceableTip:
+      "Convexa's model won't value a contract it can't identify. Webull's feed carries no strike, " +
+      'expiry, or call/put for this holding, so there is nothing to price it against — refreshing ' +
+      "won't change that. Your quantity and cost are still shown exactly as Webull reported them.",
   },
 
   /** The explicit cannot-fully-display entry (fidelity partial/unrecognized — AC-14). */

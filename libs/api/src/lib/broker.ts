@@ -52,19 +52,31 @@ export type BrokerOptionRight = 'call' | 'put';
 
 export interface BrokerLeg {
   kind: BrokerLegKind;
-  /** Broker instrument symbol (e.g. the OCC option symbol). */
+  /**
+   * The broker's own instrument symbol, VERBATIM. Not an OCC contract code: the real Webull
+   * positions feed returns the bare underlying ticker on option rows exactly as on stock rows
+   * (capture-confirmed, `CAPTURE_FINDINGS.md`), so two option positions on one underlying carry
+   * the same `symbol`. Never parsed, never synthesized into a contract code.
+   */
   symbol: string;
   underlying: string;
-  /** iff `kind: option` — `YYYY-MM-DD`. */
+  /** iff `kind: option` AND the broker supplies it — `YYYY-MM-DD`. Amendment 1: omitted otherwise,
+   *  never null-padded; every omission is named in `fidelity_notes`. */
   expiry?: string;
-  /** iff `kind: option`. */
+  /** iff `kind: option` AND the broker supplies it — see Amendment 1. */
   strike?: number;
-  /** iff `kind: option`. */
+  /** iff `kind: option` AND the broker supplies it — see Amendment 1. */
   right?: BrokerOptionRight;
   /** SIGNED — short = negative (one convention, stated in the contract once). */
   quantity: number;
-  /** Explicit per-leg multiplier — never hardcoded ×100. */
-  multiplier: number;
+  /**
+   * Explicit per-leg multiplier — never hardcoded ×100. **Always when KNOWN** (Amendment 1):
+   * supplied by the broker, or reproduced exactly from broker-supplied aggregates under the
+   * guards. OMITTED when neither holds — and then every multiplier-dependent output is WITHHELD
+   * (`not provided`). A consumer must never coerce an absent multiplier to 1 or to 100: that is
+   * the exact hardcode the positions-legs work exists to have killed.
+   */
+  multiplier?: number;
   cost_basis: BrokerFact;
   broker_mark: BrokerFact;
 }

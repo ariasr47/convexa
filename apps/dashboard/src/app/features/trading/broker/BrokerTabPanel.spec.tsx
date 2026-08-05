@@ -356,16 +356,20 @@ describe('BrokerTabPanel · refresh + fidelity', () => {
     expect(screen.getByTestId('broker-row')).toBeInTheDocument();
   });
 
-  it('fidelity partial/unrecognized render the explicit cannot-fully-display entry; the count never understates (AC-14)', async () => {
+  it('fidelity: UNRECOGNIZED gets the cannot-fully-display entry, PARTIAL keeps its full row; the count never understates (AC-14)', async () => {
     installFetch({ book: equityBook({ positions: [POS_EQUITY, POS_PARTIAL, POS_UNRECOGNIZED] }) });
     renderPanel();
     await screen.findByTestId('broker-rows');
     expect(screen.getByTestId('broker-count')).toHaveTextContent('3 positions'); // all counted
+
+    // R4/G1 — the bare entry is for `unrecognized` ONLY (no mapped legs). Routing `partial` there
+    // too blanked 9 of the owner's 14 real rows and threw away the quantity/cost Webull DID send.
     const unfaithful = screen.getAllByTestId('broker-row-unfaithful');
-    expect(unfaithful).toHaveLength(2);
-    for (const entry of unfaithful) {
-      expect(entry).toHaveTextContent(BROKER_COPY.cannotFullyDisplay);
-    }
-    expect(screen.getAllByTestId('broker-fidelity-note').length).toBeGreaterThan(0); // dropped facts NAMED
+    expect(unfaithful).toHaveLength(1);
+    expect(unfaithful[0]).toHaveTextContent(BROKER_COPY.cannotFullyDisplay);
+
+    // The `partial` row renders the full grammar — and still names every omission.
+    expect(screen.getAllByTestId('broker-snapshot-fields')).toHaveLength(2); // equity + partial
+    expect(screen.getAllByTestId('broker-fidelity-note').length).toBe(2); // partial + unrecognized
   });
 });

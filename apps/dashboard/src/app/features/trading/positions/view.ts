@@ -36,8 +36,15 @@ export const STRUCTURE_LINE_MAX_STRIKES = 3;
 
 /** U+2026, authored in the string. NEVER three periods, and never a CSS ellipsis mid-number. */
 const ELLIPSIS = '…';
-/** The literal for a fact the saved record never held (SPEC §4, the four not-a-number literals). */
-const NOT_RECORDED = 'not recorded';
+/**
+ * The literal for a fact OUR OWN SAVED RECORD never held (SPEC §4, the four not-a-number literals).
+ *
+ * EXPORTED (additively, for reading only) so `broker/brokerView.ts` can SUBSTITUTE it: a broker row
+ * with no strike/expiry is missing that fact from the FEED, not from a record of ours, and the two
+ * truths must never share one literal. The broker projection swaps it for `not provided` — it does
+ * not, and must not, change what this module emits for the sim book.
+ */
+export const NOT_RECORDED = 'not recorded';
 
 export interface LegDisplayRow {
   leg_id: LegId;
