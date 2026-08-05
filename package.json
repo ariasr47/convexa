@@ -11,7 +11,8 @@
     "format": "nx format:write",
     "format:check": "nx format:check",
     "graph": "nx graph",
-    "ports:free": "node tools/free-ports.mjs"
+    "ports:free": "node tools/free-ports.mjs",
+    "worktree:link": "node tools/link-workspace.mjs"
   },
   "private": true,
   "devDependencies": {
@@ -55,10 +56,7 @@
     "vite": "^8.2.0",
     "vitest": "~4.1.10"
   },
-  "workspaces": [
-    "apps/*",
-    "libs/*"
-  ],
+  "workspaces": ["apps/*", "libs/*"],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
