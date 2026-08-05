@@ -46,12 +46,23 @@ jobs:
       - run: npx nx run-many -t lint test build typecheck --exclude=api
       - run: npx nx run dashboard-e2e:e2e
 
-      # Backend characterization tests (apps/api/tests). They import ONLY src.core.signals, which
-      # pulls in nothing beyond the stdlib — verified, no numpy/scipy/fastapi — so this needs pytest
-      # and nothing else. That is why there is no pip install of requirements.txt here.
+      # Backend tests (apps/api/tests).
+      #
+      # This step used to install requirements-dev.txt ALONE, on the premise that the suite imported
+      # only `src.core.signals` and therefore needed nothing beyond pytest and the stdlib. That
+      # premise died with broker-connect: `test_broker_book_endpoints.py` and
+      # `test_broker_credential_endpoints.py` are ENDPOINT tests built on `fastapi.testclient`, and
+      # they also import `src.auth` / `src.broker.service`, which pull the real dependency tree.
+      # Collection failed with `ModuleNotFoundError: No module named 'fastapi'`, so the whole
+      # backend suite was skipped — the exact "nominally in CI rather than genuinely in it" failure
+      # the note above this step exists to prevent.
+      #
+      # So install the runtime pins too. This does NOT touch the production image: apps/api/
+      # Dockerfile installs requirements.txt only, and requirements-dev.txt (the test runner) stays
+      # out of it — that separation was always about the image surface, never about CI.
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r apps/api/requirements-dev.txt
+      - run: pip install -r apps/api/requirements.txt -r apps/api/requirements-dev.txt
       - run: python -m pytest
         working-directory: apps/api
