@@ -62,8 +62,7 @@ from capture_broker_fixtures import (  # the B1 tool — importable, it is __mai
     _do,
     _exception_shape,
     _interesting_headers,  # noqa: F401  (kept in scope: raw scratch header capture)
-    _shim_sdk_compat,
-    _shim_ssl_wrap_socket,  # noqa: F401  (called by _shim_sdk_compat; named here as the pin)
+    _shim_sdk_compat,      # re-exported from src/broker/webull_adapter.py — ONE shim (S-1)
     assert_no_nul_bytes,
     sanitize_payload,
     write_fixture,

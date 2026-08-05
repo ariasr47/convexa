@@ -373,6 +373,61 @@ def _page_entries(page: Any) -> list:
 
 # ----------------------------------------------------------------------------- SDK transport
 
+_VENDORED_SSL_MODULE = "webullsdkcore.vendored.requests.packages.urllib3.util.ssl_"
+
+
+def _shim_vendored_ssl() -> None:
+    """
+    Restore the ssl names Python >=3.12 leaves UNBOUND inside the SDK's vendored urllib3.
+    THE single implementation of this shim (S-1, system-6 security review): the runtime
+    adapter AND the capture/probe tools both call it, so it can never diverge again.
+
+    `vendored/requests/packages/urllib3/util/ssl_.py:59-62` is:
+
+        try:                       # Test for SSL features
+            import ssl
+            from ssl import wrap_socket, CERT_NONE, PROTOCOL_SSLv23
+            from ssl import HAS_SNI                      # Has SNI?
+        except ImportError:
+            pass
+
+    `ssl.wrap_socket` was REMOVED in 3.12, so the third line aborts the whole `try` inside a
+    bare `except ImportError: pass`. The damage is silent and lands two lines wide:
+      * `PROTOCOL_SSLv23` and `CERT_NONE` are left unbound as module globals, so
+        `resolve_ssl_version(None)` / `resolve_cert_reqs(None)` raise `NameError` on the FIRST
+        HTTPS connect (`connection.py:342-346`, reached because requests 2.18.3 never supplies
+        an `ssl_context`). The NameError escapes far from here and `map_failure` classifies it
+        as `adapter_fault` — indistinguishable from a Webull outage.
+      * `HAS_SNI` never executes either, so it keeps its module default of False and
+        `ssl_wrap_socket` calls `context.wrap_socket(sock)` with NO `server_hostname`. A
+        name-binding fix that restores only the first two names produces SNI-less TLS to
+        `api.webull.com` — a *worse* failure than the NameError because it is intermittent.
+
+    We bind the names on the VENDORED module and nowhere else. We deliberately do NOT restore
+    a module-level `ssl.wrap_socket` (the review's I-3): the only reader of that name is the
+    Python-2 fallback `SSLContext` class in the same file, which is dead here (the real
+    `ssl.SSLContext` imports fine on its own line), and any such shim is an insecure-by-default
+    primitive (`cert_reqs=CERT_NONE`, `check_hostname=False`) installed process-wide.
+
+    Idempotent, and a no-op when the SDK is not installed.
+    """
+    import ssl as _ssl
+    try:
+        from webullsdkcore.vendored.requests.packages.urllib3.util import ssl_ as vendored
+    except Exception:              # SDK absent (CI) or vendored layout changed — nothing to do
+        return
+    if not hasattr(vendored, "PROTOCOL_SSLv23"):
+        # PROTOCOL_TLS_CLIENT is the modern spelling of what the vendored code wanted; the
+        # context is then explicitly configured by `create_urllib3_context` either way.
+        vendored.PROTOCOL_SSLv23 = getattr(_ssl, "PROTOCOL_TLS_CLIENT",
+                                           getattr(_ssl, "PROTOCOL_SSLv23", None))
+    if not hasattr(vendored, "CERT_NONE"):
+        vendored.CERT_NONE = _ssl.CERT_NONE
+    if not getattr(vendored, "HAS_SNI", False):
+        vendored.HAS_SNI = _ssl.HAS_SNI
+
+
+
 def _shim_sdk_compat() -> None:
     """
     webull-python-sdk-core 0.1.18 vendors an ancient requests/six pair that breaks on modern
@@ -380,6 +435,10 @@ def _shim_sdk_compat() -> None:
     removed in 3.12). Alias the REAL `six` into both vendored paths before SDK imports run;
     `legacy-cgi` (requirements.txt, py>=3.13) restores `cgi`. Recorded in CAPTURE_FINDINGS
     for the system-6 dependency review.
+
+    Then `_shim_vendored_ssl()` (S-1) — MUST run after the six aliasing, because importing
+    the vendored ssl_ module pulls the vendored `six` in. Every SDK entry point in this
+    module funnels through here, so no SDK code can run before the shim is in place.
     """
     import six  # noqa: F401
     import six.moves  # noqa: F401
@@ -395,6 +454,7 @@ def _shim_sdk_compat() -> None:
         sys.modules[prefix + ".moves.urllib"] = six.moves.urllib
         for name in ("parse", "request", "error", "response", "robotparser"):
             sys.modules[f"{prefix}.moves.urllib.{name}"] = getattr(six.moves.urllib, name)
+    _shim_vendored_ssl()
 
 
 class _SdkTransport:

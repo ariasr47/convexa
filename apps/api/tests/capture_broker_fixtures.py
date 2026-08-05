@@ -27,12 +27,13 @@ even installed; see requirements.txt):
     plus ONE deliberately-corrupted-secret call to capture the bad-credential error shape
     (question c) and the response/exception headers observed (question d).
 
-SDK COMPAT SHIM. webull-python-sdk-core 0.1.18 vendors an ancient `requests`/`six` pair that
-breaks on modern Python (`cgi` removed in 3.13; the vendored `six.moves` relies on the
-`find_module` import protocol removed in 3.12). `_shim_sdk_compat()` aliases the REAL
-installed `six` into both vendored paths before the SDK imports run; `legacy-cgi` (a
-requirements.txt dep on py>=3.13) restores the `cgi` module. Recorded for the system-6
-dependency review.
+SDK COMPAT SHIM — ONE implementation, owned by the product. This tool used to carry its own
+copy of the shim (six aliasing + an `ssl.wrap_socket` restoration). That copy is what made the
+capture work while the SHIPPED adapter could not complete a single HTTPS request on Python
+>=3.12 — the two diverged silently and the divergence was invisible until the system-6 review
+executed both (S-1, Critical). The shim now lives in `src/broker/webull_adapter.py` and this
+tool IMPORTS it, so "what the capture proved" and "what ships" are the same code by
+construction. See that module for what it restores and why.
 """
 from __future__ import annotations
 
@@ -46,6 +47,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+
+# This tool runs STANDALONE (`.venv/Scripts/python.exe tests/capture_broker_fixtures.py`), so
+# only `tests/` is on sys.path. Append `apps/api` — computed from __file__, never from cwd —
+# so the SDK compat shim can be imported from the product instead of re-implemented here (S-1).
+# Append, not insert: nothing of ours may shadow an installed package.
+if str(HERE.parent) not in sys.path:
+    sys.path.append(str(HERE.parent))
+
+from src.broker.webull_adapter import _shim_sdk_compat  # noqa: E402  (needs the path above)
+
 FIXTURES_DIR = HERE / "fixtures" / "broker"
 SCRATCH_DIR = FIXTURES_DIR / "_raw_scratch"          # gitignored — raw payloads only ever land here
 FINDINGS_PATH = HERE.parents[2] / ".claude" / "contracts" / "broker-connect" / "CAPTURE_FINDINGS.md"
@@ -119,75 +130,6 @@ def write_fixture(path: Path, payload, secrets: tuple[str, ...]) -> None:
     path.write_text(text + "\n", encoding="utf-8", newline="\n")
     assert_no_nul_bytes(path)
     print(f"  wrote {path.relative_to(HERE.parent)}")
-
-
-# --------------------------------------------------------------------------- SDK plumbing
-
-def _shim_ssl_wrap_socket() -> None:
-    """
-    Python 3.12 REMOVED `ssl.wrap_socket` (deprecated since 3.7); this venv is 3.14.
-
-    The SDK's vendored urllib3 imports three names on ONE line
-    (`vendored/requests/packages/urllib3/util/ssl_.py:60`):
-
-        from ssl import wrap_socket, CERT_NONE, PROTOCOL_SSLv23
-
-    so the single missing name aborts the whole statement inside its bare
-    `except ImportError: pass`, leaving **PROTOCOL_SSLv23 unbound as a module
-    global** even though `ssl.PROTOCOL_SSLv23` itself still exists. The failure
-    then surfaces far away, on the first HTTPS call, as
-    `NameError: name 'PROTOCOL_SSLv23' is not defined` at that file's line 230.
-
-    Restoring a working module-level `wrap_socket` BEFORE the SDK is imported lets
-    that import line bind all three names. urllib3's live code paths use
-    `SSLContext.wrap_socket` (lines 359/372) and never call this, but it delegates
-    correctly if anything does.
-    """
-    import ssl
-    if hasattr(ssl, "wrap_socket"):
-        return
-
-    def wrap_socket(sock, keyfile=None, certfile=None, server_side=False,
-                    cert_reqs=ssl.CERT_NONE, ssl_version=ssl.PROTOCOL_TLS_CLIENT,
-                    ca_certs=None, do_handshake_on_connect=True,
-                    suppress_ragged_eofs=True, ciphers=None, **_kwargs):
-        context = ssl.SSLContext(ssl_version)
-        # check_hostname must go False BEFORE verify_mode=CERT_NONE, or SSLContext raises.
-        if cert_reqs == ssl.CERT_NONE:
-            context.check_hostname = False
-        context.verify_mode = cert_reqs
-        if certfile:
-            context.load_cert_chain(certfile, keyfile)
-        if ca_certs:
-            context.load_verify_locations(ca_certs)
-        if ciphers:
-            context.set_ciphers(ciphers)
-        return context.wrap_socket(
-            sock, server_side=server_side,
-            do_handshake_on_connect=do_handshake_on_connect,
-            suppress_ragged_eofs=suppress_ragged_eofs)
-
-    ssl.wrap_socket = wrap_socket  # type: ignore[attr-defined]
-
-
-def _shim_sdk_compat() -> None:
-    """Alias the real `six` into the SDK's two vendored six paths (see module docstring),
-    and restore `ssl.wrap_socket` for the vendored urllib3 (see `_shim_ssl_wrap_socket`)."""
-    _shim_ssl_wrap_socket()
-    import six  # noqa: F401  (requirements.txt)
-    import six.moves  # noqa: F401
-    import six.moves.http_client, six.moves.queue  # noqa: E401,F401
-    import six.moves.urllib, six.moves.urllib.parse, six.moves.urllib.request  # noqa: E401,F401
-    import six.moves.urllib.error, six.moves.urllib.response, six.moves.urllib.robotparser  # noqa: E401,F401
-    for prefix in ("webullsdkcore.vendored.six",
-                   "webullsdkcore.vendored.requests.packages.urllib3.packages.six"):
-        sys.modules[prefix] = six
-        sys.modules[prefix + ".moves"] = six.moves
-        for name in ("http_client", "queue"):
-            sys.modules[f"{prefix}.moves.{name}"] = getattr(six.moves, name)
-        sys.modules[prefix + ".moves.urllib"] = six.moves.urllib
-        for name in ("parse", "request", "error", "response", "robotparser"):
-            sys.modules[f"{prefix}.moves.urllib.{name}"] = getattr(six.moves.urllib, name)
 
 
 def _build_requests():
