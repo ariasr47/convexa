@@ -110,6 +110,18 @@ const COMMON = {
     MuiLink: {
       defaultProps: { color: 'info.main' } as const,
     },
+    // HALF OF THE MODAL FOCUS HANDOFF — see `shared/a11y/modalFocusHandoff.ts` for the full trace.
+    // MUI's FocusTrap restores focus to the trigger BEFORE ModalManager drops `aria-hidden` from the
+    // app root, and `Dialog` sets `closeAfterTransition`, so that window lasts the whole exit fade:
+    // Chrome blocks the aria-hidden and the focused control leaves the accessibility tree. Restoring
+    // focus is therefore taken over by the `ModalManager` seam, which does it AFTER the attribute is
+    // gone. Standing MUI's own restore down here is what makes that ordering the only one there is.
+    // Applies to every Modal descendant — Dialog, Drawer, and Popover (so Menu/Select too).
+    // NOT a focus REGRESSION: focus still returns to the trigger, and `modalFocusHandoff.spec.tsx`
+    // asserts both halves — remove this and its autoFocus case fails.
+    MuiModal: {
+      defaultProps: { disableRestoreFocus: true } as const,
+    },
     // Snackbars are OVERLAYS → the top of the elevation ladder: the lightest surface (panelRaised)
     // + an e4 shadow so the toast clearly floats above the page, instead of MUI's default inverted
     // (near-white) SnackbarContent. Mode-aware — themes are swapped at the provider.
