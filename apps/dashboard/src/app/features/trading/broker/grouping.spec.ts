@@ -59,9 +59,14 @@ describe("AC-8 — a group's net equals the signed sum of its members' rendered 
   it('AAPL / META / TSLA reproduce SPEC §1 to the cent, and equal Σ member.net_entry_cost', () => {
     const { groups } = groupsOf(BOOK_CAPTURED_COMPLETE);
     const byKey = new Map(groups.map((g) => [g.key, g]));
-    const aapl = byKey.get('AAPL')!;
-    const meta = byKey.get('META')!;
-    const tsla = byKey.get('TSLA')!;
+    const mustGet = (k: string) => {
+      const g = byKey.get(k);
+      if (g == null) throw new Error(`no group ${k}`);
+      return g;
+    };
+    const aapl = mustGet('AAPL');
+    const meta = mustGet('META');
+    const tsla = mustGet('TSLA');
     expect(aapl.net_entry_text).toBe('$3,850.00 debit');
     expect(meta.net_entry_text).toBe('$3,805.00 debit');
     expect(tsla.net_entry_text).toBe('$13,760.00 debit');
@@ -221,7 +226,8 @@ describe('AC-6 / AC-6c — leg_count comes from the wire legs, not the position 
 describe('AC-22 — an equity leg is never a member and never a contributor', () => {
   it("AAPL's group has 2 option-only members; the equity row sits in ungrouped", () => {
     const { groups, ungrouped } = groupsOf(BOOK_CAPTURED_COMPLETE);
-    const aapl = groups.find((g) => g.key === 'AAPL')!;
+    const aapl = groups.find((g) => g.key === 'AAPL');
+    if (aapl == null) throw new Error('no AAPL group');
     expect(aapl.members).toHaveLength(2);
     expect(aapl.members.every((m) => m.broker.legs.every((l) => l.kind === 'option'))).toBe(true);
     expect(ungrouped.some((v) => v.broker.legs.some((l) => l.underlying === 'AAPL'))).toBe(true);
@@ -403,7 +409,8 @@ describe('singleton agreement on the captured lone legs', () => {
   it('NVDA and PLTR: group text is byte-identical to the member text', () => {
     const { groups } = groupsOf(BOOK_CAPTURED_COMPLETE);
     for (const key of ['NVDA', 'PLTR']) {
-      const g = groups.find((x) => x.key === key)!;
+      const g = groups.find((x) => x.key === key);
+      if (g == null) throw new Error(`no group ${key}`);
       expect(g.members).toHaveLength(1);
       expect(g.net_entry_text).toBe(g.members[0].net_entry_text);
     }
