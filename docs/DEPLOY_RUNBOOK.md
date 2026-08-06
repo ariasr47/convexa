@@ -35,11 +35,34 @@ deploying.
 
 ---
 
+## Naming convention (adopted 2026-08-06)
+
+- **Project = the product.** One Railway project per deployable product: `convexa`.
+- **Environment = the stage.** Use environments for staging/prod, **never a second project** —
+  environments share the service topology and variable references; two projects drift apart.
+- **Service = the role, lowercase-hyphenated**, named after the thing in the repo it runs:
+  `apps/api` → **`api`**, `worker.py` sweeping the scanner → **`scanner-worker`**. Never repeat the
+  product name in a service name; the project already carries it.
+- **`Postgres` keeps its capitalised plugin name** deliberately — it is Railway's own convention and
+  renaming it would rewrite `${{Postgres.DATABASE_URL}}` for no real gain.
+- **Rename early: names leak.** A service name appears inside reference strings _and_ in
+  auto-injected variables (`RAILWAY_SERVICE_API_URL`). Railway rewrites references on rename —
+  verified on the 2026-08-06 rename, where `${{convexa.MASSIVE_API_KEY}}` became
+  `${{api.MASSIVE_API_KEY}}` on its own — but **verify it with
+  `variables(..., unrendered: true)` after any rename**. The default variables query returns
+  _resolved_ values, so a broken reference looks like a healthy literal, and the symptom would be a
+  service that boots fine and then fails every vendor call.
+
+---
+
 ## Phase 1 — Backend (web) on Railway
 
 1. Railway → **New Project** → Deploy from GitHub repo `ariasr47/convexa`.
 2. Service → Settings → Build: **Dockerfile**, Dockerfile path `apps/api/Dockerfile`, **Root Directory
-   `apps/api`**. Name it something like **`api`** — you will add a sibling shortly.
+   `apps/api`**. Name it **`api`** — the role, not the product. The project already says `convexa`;
+   a service called `convexa` inside project `convexa` makes every reference and log line ambiguous,
+   and `${{convexa.X}}` reads like a project reference rather than a service one.
+   _(Applied 2026-08-06 — the live service was renamed `convexa` → `api`.)_
 3. Add the **Postgres** plugin to the project.
 4. Service → **Variables**:
 
@@ -79,7 +102,7 @@ deploying.
      registration to the world.
    - `SEED_ACCOUNTS` — **your testing logins, which stay valid and active under the lockdown.** JSON
      array: `[{"email":"qa1@…","password":"…","display_name":"QA 1"}]`. Seeded idempotently at every
-     boot on the same path as `OWNER_EMAIL`, and it *does* work on Postgres. JSON rather than
+     boot on the same path as `OWNER_EMAIL`, and it _does_ work on Postgres. JSON rather than
      `email:password` because a delimiter format silently truncates any password containing `:` or
      `,`. ⚠ Do **not** try to use `SEED_TEST_ACCOUNT` for this — it seeds a fixed credential whose
      default password is published in this repo, and it deliberately refuses to run against Postgres.
@@ -118,7 +141,9 @@ deploying.
 ## Phase 1b — Sweep worker on Railway (NEW — this is the part the old runbook lacks)
 
 7. In the **same** Railway project → **New Service** → **same GitHub repo**, same build settings as step 2
-   (Dockerfile `apps/api/Dockerfile`, root `apps/api`). Name it **`worker`**.
+   (Dockerfile `apps/api/Dockerfile`, root `apps/api`). Name it **`scanner-worker`**, not `worker` —
+   `worker` is a role with no object, and `alerts` v1 on the roadmap would make it a second one.
+   _(Applied 2026-08-06.)_
 8. Service → Settings → **Start Command**: `python worker.py`
    _(This is the only difference from the web service — same image, different entrypoint.)_
 9. Service → Variables — the worker needs the **data + store** vars, not the web/AI ones:
