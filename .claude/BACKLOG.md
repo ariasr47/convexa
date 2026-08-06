@@ -773,7 +773,19 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   *Value M–H (verification integrity, and it silently degrades every run-the-app gate) · Effort S.*
   Decision-impact cull **N/A** (tooling/correctness class). Ties `CLAUDE.md`'s traps section, which should
   be corrected in the same change.
-- **`scanner-market-hours-gate` — the sweep worker runs 24/7 with no session awareness (deployed-cost gap)** —
+- **`scanner-market-hours-gate` — ✓ SHIPPED 2026-08-06 (`797e801`), owner-directed, no pipeline.**
+  Built and deployed **before the worker's first deploy**, exactly as this entry recommended — the
+  owner chose it over deploying the worker ungated. `src/scanner/session_gate.py` + both lanes in
+  `loop.py`; `SCAN_MARKET_HOURS_ONLY` **defaults ON**, fails **OPEN** on a session-lookup error, and
+  the fast lane keeps writing the heartbeat every `SCAN_IDLE_INTERVAL_SECONDS` while idle so a
+  resting worker stays distinguishable from a dead one (carrying `sweep_last_completed` forward
+  unchanged). api 326 (+24). ⚠ **Holidays are NOT covered** — `classify_session()` has no holiday
+  calendar, so a market holiday sweeps as its weekday session; weekends are covered. Closing that
+  needs a real exchange calendar and is the remaining piece of this item.
+  Also of note: the deterministic bounded test path in `loop.run` is deliberately exempt from the
+  gate — with it on, every existing scanner test would idle forever whenever the suite ran outside
+  04:00–20:00 ET, turning them into time-of-day flakes.
+  *(original entry:)* **`scanner-market-hours-gate` — the sweep worker runs 24/7 with no session awareness (deployed-cost gap)** —
   <!-- atlas: theme=the-machine horizon=next -->
   `SURFACED 2026-07-26 (post-ship, conductor-verified in code)`. **Not a bug — a deployment-cost gap the
   v1 scope never covered.** `apps/api/src/scanner/loop.py` + `worker.py` contain **no** session /
