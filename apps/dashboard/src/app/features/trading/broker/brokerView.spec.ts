@@ -8,25 +8,33 @@ import { mkLeg, mkPosition } from '@/features/trading/positions/fixtures';
 import { buildPositionView } from '@/features/trading/positions/view';
 import { describe, expect, it } from 'vitest';
 import {
-  AS_OF_AT_THRESHOLD,
-  FIXED_NOW_MS,
-  POS_NO_COST_BASIS,
-  POS_SPREAD,
-  POS_UNRECOGNIZED,
-  STALE_AFTER_SECONDS,
-  equityLeg,
-  optionLeg,
-  supplied,
-  unparseable,
-} from './fixtures';
-import {
+  NOTE_MULTIPLIER_RECONSTRUCTED,
   NOT_PROVIDED,
   UNAVAILABLE,
   brokerFactText,
   brokerLegId,
   brokerLegsOf,
   buildBrokerPositionView,
+  netEntryFigureText,
+  restsOnDerivedSize,
+  withheldLiteralOf,
 } from './brokerView';
+import {
+  AS_OF_AT_THRESHOLD,
+  BOOK_CF_NO_RECON_NOTE,
+  FIXED_NOW_MS,
+  NOTE_MULTIPLIER_RECONSTRUCTED as FIXTURE_NOTE,
+  POS_CAPTURE_NVDA_OPTION,
+  POS_NO_COST_BASIS,
+  POS_SPREAD,
+  POS_UNRECOGNIZED,
+  SINGLE_LEG_CASCADE_ARMS,
+  STALE_AFTER_SECONDS,
+  equityLeg,
+  optionLeg,
+  supplied,
+  unparseable,
+} from './fixtures';
 
 const mark = (m: number): MarkResult => ({ mark: m, basis: 'snapshot', frozen: false });
 
@@ -206,5 +214,84 @@ describe('buildBrokerPositionView — the projection', () => {
       book,
     });
     expect(past.modeled_label).toBe('dual');
+  });
+});
+
+describe('the corrected four-step cascade (SPEC §2.6)', () => {
+  const cascade = (o: Partial<Parameters<typeof withheldLiteralOf>[0]>) =>
+    withheldLiteralOf({
+      contributing_legs: 2,
+      legs_multiplier_unknown: 0,
+      legs_basis_not_supplied: 0,
+      legs_basis_unparseable: 0,
+      ...o,
+    });
+
+  it('step 1 — a missing contract size is PERMANENT and outranks everything', () => {
+    expect(cascade({ legs_multiplier_unknown: 1, legs_basis_unparseable: 1 })).toBe(NOT_PROVIDED);
+  });
+
+  it('step 2 beats step 3 — PERMANENCE FIRST. This is the shipped bug, corrected', () => {
+    expect(cascade({ legs_basis_not_supplied: 1, legs_basis_unparseable: 1 })).toBe(NOT_PROVIDED);
+  });
+
+  it('step 3 — a transient cause alone is `unavailable`', () => {
+    expect(cascade({ legs_basis_unparseable: 2 })).toBe(UNAVAILABLE);
+  });
+
+  it('step 4 — nothing withheld means the FIGURE renders (null, never a sixth literal)', () => {
+    expect(cascade({})).toBeNull();
+  });
+
+  it('a zero-leg subject nets nothing — `not provided`, never a figure', () => {
+    expect(cascade({ contributing_legs: 0 })).toBe(NOT_PROVIDED);
+  });
+});
+
+describe('AC-15b — the correction is a BYTE-IDENTICAL no-op at leg level', () => {
+  it.each(SINGLE_LEG_CASCADE_ARMS)('single-leg literal unchanged: %s', (_l, position, expected) => {
+    const v = buildBrokerPositionView({
+      position,
+      legMarks: new Map(),
+      dte: null,
+      nowMs: FIXED_NOW_MS,
+      book: null,
+    });
+    if (expected === 'FIGURE') expect(v.net_entry_text).toMatch(/^\$[\d,]+\.\d{2} (debit|credit)$/);
+    else expect(v.net_entry_text).toBe(expected);
+  });
+});
+
+describe('the shared net-entry figure formatter', () => {
+  it('is the shipped grammar, to the character', () => {
+    expect(netEntryFigureText(13760, 'net_debit')).toBe('$13,760.00 debit');
+    expect(netEntryFigureText(-1250, 'net_credit')).toBe('$1,250.00 credit');
+  });
+  it('renders a POSITIVE magnitude with a direction WORD — never a minus sign', () => {
+    expect(netEntryFigureText(-1250, 'net_credit')).not.toMatch(/[-−]/);
+  });
+});
+
+describe('P2 — the provenance boolean comes from ONE exported production constant', () => {
+  const viewOf = (p: typeof POS_CAPTURE_NVDA_OPTION) =>
+    buildBrokerPositionView({
+      position: p,
+      legMarks: new Map(),
+      dte: null,
+      nowMs: FIXED_NOW_MS,
+      book: null,
+    });
+
+  it('the constant equals the fixtures note verbatim (the FE/BE prose seam)', () => {
+    expect(NOTE_MULTIPLIER_RECONSTRUCTED).toBe(FIXTURE_NOTE);
+  });
+  it('TRUE on a captured option position, FALSE with the note absent', () => {
+    expect(viewOf(POS_CAPTURE_NVDA_OPTION).net_rests_on_derived_size).toBe(true);
+    expect(viewOf(BOOK_CF_NO_RECON_NOTE.positions[0]).net_rests_on_derived_size).toBe(false);
+  });
+  it('MUTATION GUARD: exact-string membership, not a substring sniff', () => {
+    expect(restsOnDerivedSize([NOTE_MULTIPLIER_RECONSTRUCTED])).toBe(true);
+    expect(restsOnDerivedSize([`${NOTE_MULTIPLIER_RECONSTRUCTED} (edited)`])).toBe(false);
+    expect(restsOnDerivedSize([])).toBe(false);
   });
 });

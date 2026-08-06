@@ -58,6 +58,75 @@ export const NOT_PROVIDED = 'not provided';
 export const UNAVAILABLE = 'unavailable';
 
 /**
+ * The adapter's reconstructed-multiplier note, verbatim (`webull_adapter.py`'s
+ * `_NOTE_MULTIPLIER_RECONSTRUCTED`, appended ONLY on the fallback branch at `:231-232`).
+ *
+ * ONE production constant, matched against nothing else — never against `fixtures.ts`, which is
+ * test-support imported by no render code (P2). The residual is a prose-string match across the FE/BE
+ * seam and it fails SAFE: a backend copy edit flips the boolean false, the composition-only copy
+ * renders, and member rows still carry the backend's own note verbatim on expand (SPEC §2.7).
+ */
+export const NOTE_MULTIPLIER_RECONSTRUCTED =
+  "contract multiplier not supplied — reproduced exactly from Webull's own total_cost";
+
+/** True iff this position's own notes say the contract size was worked out rather than supplied. */
+export function restsOnDerivedSize(notes: readonly string[]): boolean {
+  return notes.includes(NOTE_MULTIPLIER_RECONSTRUCTED);
+}
+
+/** Cause counts over the legs CONTRIBUTING to one netted figure — a position's, or a group's. */
+export interface WithholdingInput {
+  /** `0` ⇒ there is nothing to net (the zero-leg unrecognized entry). */
+  contributing_legs: number;
+  legs_multiplier_unknown: number;
+  legs_basis_not_supplied: number;
+  legs_basis_unparseable: number;
+}
+
+/**
+ * The withheld-literal cascade — ONE function, called at BOTH levels (SPEC §2.6). Returns the literal
+ * to render, or `null` when the figure itself renders.
+ *
+ *   1. any contributing leg's multiplier absent → `not provided`  (a units fact we do not hold)
+ *   2. else any cost basis `not_supplied`       → `not provided`  (PERMANENT)
+ *   3. else any cost basis `unparseable`        → `unavailable`   (transient — a refresh may fix it)
+ *   4. else                                     → null (the figure)
+ *
+ * PERMANENCE FIRST. The shipped leg-level expression had steps 2 and 3 inverted — unreachable at N=1
+ * (they cannot both fire) and reachable the moment a group of ≥2 legs exists, where `unavailable`
+ * would sell the trader a refresh that cannot work. Applied at leg level this is BYTE-IDENTICAL to the
+ * shipped output (pinned by AC-15b over `SINGLE_LEG_CASCADE_ARMS`), which is what makes one shared
+ * function safe at both levels rather than a risky unification.
+ *
+ * The literal is chosen from per-leg CAUSE STATES, never by inspecting a number: `brokerLegsOf` writes
+ * `entry_price: 0` for a non-supplied basis and `multiplier: NaN` for an omitted one, so a degraded sum
+ * is a plausible-looking `0` or a `NaN` — and a `$0.00`/`$NaN` in the Net entry cell is the precise
+ * failure this feature exists to prevent.
+ */
+export function withheldLiteralOf(
+  input: WithholdingInput,
+): typeof NOT_PROVIDED | typeof UNAVAILABLE | null {
+  if (input.contributing_legs === 0) return NOT_PROVIDED;
+  if (input.legs_multiplier_unknown > 0) return NOT_PROVIDED;
+  if (input.legs_basis_not_supplied > 0) return NOT_PROVIDED;
+  if (input.legs_basis_unparseable > 0) return UNAVAILABLE;
+  return null;
+}
+
+/**
+ * The net-entry figure grammar, extracted so a group and its children can never render two grammars in
+ * one column (SPEC §2.2). A POSITIVE magnitude plus the direction WORD — never a minus sign, and never
+ * a colour (green/red is reserved for P/L direction).
+ */
+export function netEntryFigureText(dollars: number, basis: 'net_debit' | 'net_credit'): string {
+  const magnitude = Math.abs(dollars).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `$${magnitude} ${basis === 'net_debit' ? 'debit' : 'credit'}`;
+}
+
+/**
  * G2 — the closed substitution. `positions/view.ts` emits `not recorded` ("our own saved record
  * never held it") for a leg with no strike/expiry. On a BROKER row that literal is simply false:
  * Convexa holds no record of this position at all — the fact is missing from Webull's FEED. Every
@@ -139,6 +208,13 @@ export interface BrokerPositionView extends PositionView {
   multiplier_known: boolean;
   /** What the net-entry slot renders: the figure, or the withheld literal. */
   net_entry_text: string;
+  /**
+   * SPEC §2.7 — derived HERE and nowhere else: true iff this position's `fidelity_notes` carry the
+   * reconstructed-multiplier note. The group ORs it across members. A hardcoded group-level sentence
+   * would keep asserting reconstruction after the feed changed, on a zero-line diff; a derived one
+   * disappears on that same diff.
+   */
+  net_rests_on_derived_size: boolean;
   /** AC-21 dual-basis input: 'dual' iff the book snapshot is stale (the mark feed axis is the
    *  component's — `streamOffline` — never this module's). */
   modeled_label: 'single' | 'dual';
@@ -190,7 +266,6 @@ export function buildBrokerPositionView(args: BuildBrokerViewArgs): BrokerPositi
   const base = buildPositionView({ position: simShape, legMarks, dte });
 
   const entry_known = legs.length > 0 && bp.legs.every((l) => l.cost_basis.state === 'supplied');
-  const anyUnparseableBasis = bp.legs.some((l) => l.cost_basis.state === 'unparseable');
   // G4 — Amendment 1's multiplier gate. Guard-only against the owner's real book (the backend
   // reconstructed ×100 for all 9 option rows under R2b's guards), but the withhold path is BUILT
   // and TESTED either way: a future account or a deep-OTM row that trips a guard must render
@@ -204,16 +279,13 @@ export function buildBrokerPositionView(args: BuildBrokerViewArgs): BrokerPositi
   const withheldEntry = !entry_known || !multiplier_known;
   const pl_dollar = withheldEntry ? null : base.pl_dollar;
   const pl_pct = withheldEntry ? ({ kind: 'unavailable' } as const) : base.pl_pct;
-  const net_entry_text = !multiplier_known
-    ? NOT_PROVIDED // a units fact we do not hold — never `unavailable`, which implies "this cycle"
-    : withheldEntry
-      ? anyUnparseableBasis
-        ? UNAVAILABLE
-        : NOT_PROVIDED
-      : `$${Math.abs(base.net_entry_cost).toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} ${base.net_entry_basis === 'net_debit' ? 'debit' : 'credit'}`;
+  const net_entry_text =
+    withheldLiteralOf({
+      contributing_legs: bp.legs.length,
+      legs_multiplier_unknown: bp.legs.filter((l) => l.multiplier == null).length,
+      legs_basis_not_supplied: bp.legs.filter((l) => l.cost_basis.state === 'not_supplied').length,
+      legs_basis_unparseable: bp.legs.filter((l) => l.cost_basis.state === 'unparseable').length,
+    }) ?? netEntryFigureText(base.net_entry_cost, base.net_entry_basis);
 
   // The composed net mark is a dollar figure — `mark × multiplier × qty`. With an unknown
   // multiplier it is `NaN` by construction (above), so it is nulled here rather than left to leak
@@ -260,6 +332,7 @@ export function buildBrokerPositionView(args: BuildBrokerViewArgs): BrokerPositi
     entry_known,
     multiplier_known,
     net_entry_text,
+    net_rests_on_derived_size: restsOnDerivedSize(bp.fidelity_notes ?? []),
     modeled_label: stale ? 'dual' : 'single',
     leg_reads: bp.legs.map((l: BrokerLeg, i) => ({
       leg_id: brokerLegId(bp.broker_position_id, i),
