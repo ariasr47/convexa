@@ -22,6 +22,8 @@ export function BrokerPositionCard({
   isStale,
   asOf,
   actions,
+  nested,
+  secondaryClause,
 }: BrokerRowProps) {
   // G1 — the row's rule, verbatim: only `unrecognized` collapses to the bare entry.
   const unfaithful = view.fidelity === 'unrecognized';
@@ -29,11 +31,11 @@ export function BrokerPositionCard({
     <Box
       data-testid="broker-card"
       sx={{
-        border: '1px solid',
+        border: nested ? 'none' : '1px solid',
         borderColor: 'divider',
-        borderRadius: '10px',
-        padding: '12px',
-        mb: '10px',
+        borderRadius: nested ? 0 : '10px',
+        padding: nested ? '8px 0' : '12px',
+        mb: nested ? '4px' : '10px',
         minWidth: 0,
       }}
     >
@@ -71,6 +73,7 @@ export function BrokerPositionCard({
               >
                 {view.structure_line_collapsed}
               </Typography>
+              {secondaryClause != null && <Box sx={{ mt: '4px' }}>{secondaryClause}</Box>}
             </Box>
             <ModeledPl view={view} streamOffline={streamOffline} asOf={asOf} />
           </Box>

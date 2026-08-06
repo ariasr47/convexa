@@ -35,6 +35,18 @@ export interface BrokerRowProps {
   asOf: string | null;
   /** F6 slot — the advisory reassessment affordance (never a write). */
   actions?: ReactNode;
+  /**
+   * broker-option-grouping F9 — true when this row/card renders INSIDE a `BrokerGroupPanel`. Drops
+   * the row's own border/outer padding (chrome supplied by the parent); never a field, a literal or
+   * a figure. Nesting must never double the frame (the concrete 393px-overflow mechanism, SPEC §4).
+   */
+  nested?: boolean;
+  /**
+   * broker-option-grouping F9 — chrome/secondary text ONLY (SPEC §2.5, AC-23): the lone-leg clause
+   * rendered under the snapshot fields for a `leg_count === 1` entry. May change ONLY chrome or
+   * secondary text — never a field, a literal or a figure.
+   */
+  secondaryClause?: ReactNode;
 }
 
 /** The S6 stale treatment for snapshot-family cells: dimmed, marked, never blanked. */
@@ -255,7 +267,15 @@ export function StructureChip({ view }: { view: BrokerPositionView }) {
   );
 }
 
-export function BrokerPositionRow({ view, streamOffline, isStale, asOf, actions }: BrokerRowProps) {
+export function BrokerPositionRow({
+  view,
+  streamOffline,
+  isStale,
+  asOf,
+  actions,
+  nested,
+  secondaryClause,
+}: BrokerRowProps) {
   // G1 — ONLY `unrecognized` (no mapped legs) gets the bare entry. `partial` keeps the full grammar.
   const unfaithful = view.fidelity === 'unrecognized';
   return (
@@ -266,8 +286,8 @@ export function BrokerPositionRow({ view, streamOffline, isStale, asOf, actions 
         gridTemplateColumns: 'minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(110px, 1fr) auto',
         alignItems: 'start',
         gap: '12px',
-        padding: '12px 14px',
-        borderBottom: '1px solid',
+        padding: nested ? '8px 0' : '12px 14px',
+        borderBottom: nested ? 'none' : '1px solid',
         borderColor: 'divider',
         '&:focus-within': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: -2 },
       }}
@@ -300,6 +320,7 @@ export function BrokerPositionRow({ view, streamOffline, isStale, asOf, actions 
                 {view.structure_line_collapsed}
               </Typography>
             </Box>
+            {secondaryClause != null && <Box sx={{ mt: '4px' }}>{secondaryClause}</Box>}
             <LegLines view={view} />
             {/* `partial`: the full row above, plus every omission named underneath it. */}
             <FidelityNotes notes={view.fidelity_notes} />

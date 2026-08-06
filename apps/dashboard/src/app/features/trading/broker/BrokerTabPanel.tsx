@@ -17,16 +17,18 @@
  * carve-out) — no broker request is issued anonymously.
  */
 import { useAuth } from '@/features/auth/AuthContext';
-import { useGate } from '@/features/auth/useGate';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
+import { useGate } from '@/features/auth/useGate';
 import { Alert, Box, Button, Skeleton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@org/api';
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { BrokerGroupHeader, BrokerGroupPanel, LoneLegClause } from './BrokerGroupHeader';
 import { BrokerPositionCard } from './BrokerPositionCard';
 import { BrokerPositionRow } from './BrokerPositionRow';
 import { buildBrokerPositionView, type BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
+import { groupBook } from './grouping';
 import { snapshotAgeSeconds } from './predicates';
 import { ProvenanceHeader } from './ProvenanceHeader';
 import { BrokerReassessAction } from './reassess';
@@ -78,6 +80,21 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
       ),
     [book, marks, nowMs],
   );
+
+  // broker-option-grouping F9 — composed strictly downstream of `views` (SPEC §2.9: zero new fetch,
+  // never touches marks/contracts). EPHEMERAL, React-local, keyed on the stable `GroupKey`, so the
+  // 30s `nowMs` tick and every refresh rebuild the derived data WITHOUT remounting the group and
+  // expand state survives them (SPEC §2.10 — no durable key: this module never touches a
+  // `convexa.*` key).
+  const grouped = useMemo(() => groupBook(views, book, nowMs), [views, book, nowMs]);
+  const [expandedKeys, setExpandedKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleGroup = (key: string) =>
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   // ---- Session still resolving: a cold skeleton, never a premature prompt or claim -------------
   if (!auth.ready) {
@@ -146,7 +163,63 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
           >
             {BROKER_COPY.positionsCount(views.length)}
           </Typography>
-          {views.map((v) => {
+          {/* broker-option-grouping F9 — groups (key ascending, already sorted by groupBook) first,
+              then ungrouped in the book's own order (AC-33: stable, not a specific interleave). */}
+          {grouped.groups.map((g) => {
+            // §2.5/§2.6: `leg_count === 1` (not `position_count`) is the render branch — see
+            // PLAN F9's recorded reconciliation: a single member carrying two option legs must
+            // still render as a GROUP header, never the lone-leg clause.
+            if (g.leg_count === 1) {
+              const member = g.members[0];
+              const shared = {
+                view: member,
+                streamOffline,
+                isStale: render.isStale,
+                asOf,
+                actions: <BrokerReassessAction view={member} book={book} />,
+                secondaryClause: <LoneLegClause />,
+              };
+              return compact ? (
+                <BrokerPositionCard key={member.broker.broker_position_id} {...shared} />
+              ) : (
+                <BrokerPositionRow key={member.broker.broker_position_id} {...shared} />
+              );
+            }
+            const expanded = expandedKeys.has(g.key);
+            const panelId = `broker-group-panel-${g.key}`;
+            return (
+              <Box key={g.key} data-testid="broker-group-entry">
+                <BrokerGroupHeader
+                  group={g}
+                  variant={compact ? 'card' : 'row'}
+                  expanded={expanded}
+                  onToggle={() => toggleGroup(g.key)}
+                  panelId={panelId}
+                  streamOffline={streamOffline}
+                  isStale={render.isStale}
+                  asOf={asOf}
+                />
+                <BrokerGroupPanel group={g} id={panelId} expanded={expanded}>
+                  {g.members.map((m) => {
+                    const shared = {
+                      view: m,
+                      streamOffline,
+                      isStale: render.isStale,
+                      asOf,
+                      actions: <BrokerReassessAction view={m} book={book} />,
+                      nested: true,
+                    };
+                    return compact ? (
+                      <BrokerPositionCard key={m.broker.broker_position_id} {...shared} />
+                    ) : (
+                      <BrokerPositionRow key={m.broker.broker_position_id} {...shared} />
+                    );
+                  })}
+                </BrokerGroupPanel>
+              </Box>
+            );
+          })}
+          {grouped.ungrouped.map((v) => {
             const shared = {
               view: v,
               streamOffline,
@@ -170,7 +243,10 @@ export function BrokerTabPanel({ data, live, isLive, streamOffline }: Props) {
     <Box data-testid="broker-tab-panel" sx={{ mt: '4px' }}>
       {/* ---- S1 — never connected ---------------------------------------------------------- */}
       {render.state === 'S1_never_connected' && (
-        <Box data-testid="broker-s1" sx={{ mt: '24px', textAlign: 'center', py: '40px', px: '16px' }}>
+        <Box
+          data-testid="broker-s1"
+          sx={{ mt: '24px', textAlign: 'center', py: '40px', px: '16px' }}
+        >
           <Typography component="h3" sx={{ fontSize: '1.15rem', fontWeight: 700, m: '0 0 8px' }}>
             {BROKER_COPY.s1.heading}
           </Typography>

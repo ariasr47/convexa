@@ -239,6 +239,34 @@ function GroupPl({
   );
 }
 
+/**
+ * The lone-leg secondary clause (SPEC §2.5, §4, AC-23) — PLAIN TEXT, no button, no chevron, never a
+ * ghost one. Supplied to today's `BrokerPositionRow`/`BrokerPositionCard` via the `secondaryClause`
+ * prop for a `leg_count === 1` entry; this module is the one place it is authored, matching the
+ * group header's own `CountClause`. Snapshot-family: the caller places it inside the same
+ * `isStale`-gated box as the rest of the snapshot fields, so it dims/undims WITH them.
+ */
+export function LoneLegClause() {
+  return (
+    <Tooltip title={GROUP_COPY.loneLegTip}>
+      <Box
+        component="span"
+        tabIndex={0}
+        data-testid="broker-lone-leg-clause"
+        sx={{
+          display: 'inline-block',
+          fontSize: '0.8rem',
+          color: 'text.secondary',
+          ...MONO,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {GROUP_COPY.loneLegClause}
+      </Box>
+    </Tooltip>
+  );
+}
+
 export function BrokerGroupHeader({
   group,
   variant,

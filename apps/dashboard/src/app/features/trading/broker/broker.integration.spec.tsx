@@ -113,7 +113,13 @@ function makeBundle() {
     },
     strike_profile: { ticker: 'TSLA', spot: 250, strikes: [strike(245), strike(250)] },
     expirations: [{ date: '2026-09-18', dte: 47 }],
-    ai_eval: { ready: true, reasons: [], changed: true, state_fingerprint: 'fp', score_threshold: 50 },
+    ai_eval: {
+      ready: true,
+      reasons: [],
+      changed: true,
+      state_fingerprint: 'fp',
+      score_threshold: 50,
+    },
     meta: {
       served_at: asOfIso,
       cache: { hit: false, age_seconds: 0, ttl_seconds: 60 },
@@ -284,7 +290,11 @@ describe('broker-connect · the full journey through the real app', () => {
     expect(screen.getByTestId('broker-readonly-chip')).toHaveTextContent('Webull · read-only');
     expect(screen.getByTestId('broker-as-of-stamp')).toBeInTheDocument();
     expect(screen.getByTestId('broker-count')).toHaveTextContent('1 position');
-    expect(screen.getByText(/NVDA/)).toBeInTheDocument();
+    // broker-option-grouping: NVDA_SPREAD is ONE position carrying TWO option legs — the
+    // anti-coincidence case (SPEC §2.4/§2.6, `BOOK_CF_TWO_LEG_MEMBER`) — so it renders as a 2-leg
+    // GROUP header, not a lone-leg row; its underlying member still renders (hidden) inside the
+    // collapsed panel, so "NVDA" is now present at least twice (header + nested member).
+    expect(screen.getAllByText(/NVDA/).length).toBeGreaterThan(0);
     // Read-only is ABSENCE, even here in the full app.
     expect(screen.queryByRole('button', { name: /^(close|trim|roll)$/i })).toBeNull();
 
