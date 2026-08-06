@@ -20,7 +20,7 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
   checked on every push instead of re-proven by hand per feature. Re-baseline a DELIBERATE score
   change with `tests/capture_fixtures.py` (needs a live API); the fixture diff is the before/after
   that `[score-change-is-deliberate-and-measured]` requires. Everything else is still verified by
-  app-run + `.claude/tools/interface_conformance.py`.
+  app-run + `.claude/tools/interface_conformance.mjs`.
 - `apps/dashboard` — React 19 + Vite + MUI frontend (`nx serve dashboard` → :4200, proxies
   `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
 - `apps/dashboard-e2e` — Playwright e2e for the dashboard.

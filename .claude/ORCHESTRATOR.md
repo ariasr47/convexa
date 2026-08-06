@@ -25,7 +25,7 @@
 5. **Write** the output contract(s) to the exact paths in §3 (correct repo — see §2).
 6. **Update** `.claude/contracts/{FEATURE}/_MANIFEST.md` (§4).
 7. **Gate-check (mechanical, system-3):** run
-   `<project.json backend.python> .claude/tools/contract_lint.py {FEATURE}`. A non-zero exit (**ERROR** —
+   `node .claude/tools/gates.mjs contract_lint {FEATURE}`. A non-zero exit (**ERROR** —
    a missing artifact, missing acceptance criteria, `SPEC.md` not referencing the interface, a
    missing/unparseable conformance block, a missing manifest/BRIEF field, or a promoted key missing from
    canon) **blocks the handoff**; fix the structural violation before routing. WARNINGs are advisory —
@@ -44,8 +44,11 @@ gateway you name.
 ---
 
 ## 1. File topology (what's constant vs variable)
-- **Constant (every session reads, I rarely write):**
-  `.claude/PROJECT_CONTEXT.md` (ground truth) · `.claude/OPEN_THREADS.md` (open/resolved log).
+- **Constant (every session reads, I rarely write):** the project context file's **invariant floor
+  only** (`node .claude/tools/gates.mjs context_for --print`, no feature — the always-load sections)
+  · `.claude/OPEN_THREADS.md` **§9 only** (the promoted invariants). The full planning surface —
+  `BACKLOG.md`, `OPEN_THREADS.md` §1–§8, `DECISION_LEDGER.md`, the full context file — is
+  **gate-loaded, not constant**: GATE I reads it when it runs (§3), and no other gate needs it whole.
 - **Session-resume overlay (read at boot if present):** `.claude/RESUME.md` — the conductor's own
   "where we are right now + what's next" snapshot, written/refreshed at GATE R (§3). The `/conductor` boot
   reads it LAST, after the canon, as an overlay (reconcile + flag divergence, never a replacement); a fresh
@@ -53,21 +56,40 @@ gateway you name.
   remove it once consumed so it never goes stale against the canon.
 - **Standing references (I route to, don't duplicate):**
   `.claude/COMPRESSOR_PROMPTS.md` (#1 Universal · #2 Session-Transition · #4 Resume) ·
-  `.claude/ROLE_LAUNCH_PROMPTS.md` (§1 The Design Council · §2 Backend · §3 Frontend · §4 QA/Verify) ·
+  `.claude/ROLE_LAUNCH_PROMPTS.md` (§0 Summary contract · §1 The Design Council · §2 Backend
+  · §3 Frontend · §4 QA/Verify · §5 Planner) ·
   `.claude/BACKLOG.md` (the standing idea pool + roadmap-discovery method — feeds GATE I) ·
   `.claude/DECISION_LEDGER.md` (the compounding-memory ledger + promotion rule — captured every
   gateway, graduated at GATE S, fed forward into GATE I) ·
   `.claude/agents/*` (per-role lane-fenced subagents — system-4) ·
-  `.claude/tools/*` (`contract_lint.py` — system-3 gate-check; `interface_conformance.py` — system-1
-  runtime conformance; `context_for.py` — system-5 context pack; `path_guard.js` — system-4b write fence) ·
+  `.claude/tools/*` (`contract_lint.mjs` — system-3 gate-check; `interface_conformance.mjs` — system-1
+  runtime conformance; `context_for.mjs` — system-5 context pack; `path_guard.js` — system-4b write fence) ·
   `.claude/commands/*` (slash commands: `/conductor` boot · `/council` {feature} the design council ·
   `/status` pipeline state · `/gatecheck` {feature} mechanical gates · `/pack` {feature} context pack).
 - **Operating mode (system-9-lite, adopted):** run each role as a **fresh spawn** of its
-  `.claude/agents/delivery-*` subagent (+ a `context_for.py` pack), discarded after each handoff —
+  `.claude/agents/delivery-*` subagent (+ a `context_for.mjs` pack), discarded after each handoff —
   never a long-lived role session. The conductor stays manual (you); the role work is disposable +
   fresh. See `ROLE_LAUNCH_PROMPTS.md` "Running a role — the LITE path." **Exception:** GATE I
   (Discovery) has no subagent — the conductor runs it **inline** (rationale in §3 GATE I); every other
   gateway spawns its lane-fenced subagent.
+- **Model routing (adopted 2026-08-03):** every `.claude/agents/*` file declares its own `model:`, so a
+  role's model no longer follows whichever model the conductor happens to be running.
+  **Opus decides and judges; Sonnet executes** — the three council voices, the R4 synthesizer and QA
+  run Opus; the two build lanes run Sonnet. `council-skeptic` declares a *different* model from
+  `council-synthesizer` by construction, which is what makes S2 an independent check rather than a
+  second opinion from the same blind spots; `qa-verify` differs from both build lanes for the same
+  reason. A declared model is a **floor**: a role may be escalated upward for one feature, and is
+  never routed downward at dispatch — a pipeline that can quietly buy less never fails visibly, it
+  just produces slightly worse specs forever. **Escalation is my call, surfaced as a Decision card**
+  (`OPERATOR_REPORTS.md` §3.3), and the sanctioned trigger is rework: a lane bouncing GATE Z twice on
+  the same feature. **`council-skeptic` is never escalated** — raising it to the synthesizer's model
+  deletes the property it exists to provide. `kit_lint` fails any agent that declares no model at all.
+- **The conductor's own model — Opus, held for the whole feature.** The conductor is not a subagent, so
+  no frontmatter reaches it: this one is a recommendation the kit cannot enforce. Three of its jobs are
+  inline judgement — R3 reconcile, GATE I discovery, GATE S promotion — so by the rule above it decides,
+  and decides on Opus. **Do not switch model mid-feature to save tokens.** Switching invalidates the
+  prompt cache of the longest-lived context in the pipeline, several times over; a "cheap to coordinate,
+  expensive to decide" split costs more than it saves. Per-role spend is visible in `/usage`.
 - **Variable (per feature — what I produce):** `.claude/contracts/{FEATURE}/` containing `BRIEF.md` (the
   chosen idea that seeds the pipeline — output of GATE I), **`SPEC.md`** (the council's synthesized
   design) and **`INTERFACE_CONTRACT.md`** (the FE-to-BE single source of truth; both build lanes bind to
@@ -82,7 +104,7 @@ contract** (they ship code), so the next gateway after them is **QA/Verify (GATE
 
 ## 2. Project layout (route writes correctly — read `.claude/project.json`)
 The per-project seam is `.claude/project.json`. It names the **backend** lane (`backend.dir` +
-`backend.serve_cmd`/`port`/`python`) and the **frontend** lane (`frontend.dir` +
+`backend.serve_cmd`/`port`) and the **frontend** lane (`frontend.dir` +
 `frontend.serve_cmd`/`port`/`test_cmd`). Resolve every path/command/port from there — never hardcode a
 project's internal layout into a contract or a launch.
 - **All `.claude/` contracts** live in `.claude/contracts/{FEATURE}/` at the workspace root — the
@@ -114,12 +136,15 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 > The only divergent gate — and the **one role the conductor runs INLINE itself**, not as a fresh
 > `delivery-*` subagent. This is a deliberate, reasoned exception to fresh-subagent-per-gateway
 > (system-9-lite), on three concrete grounds:
-> 1. **Inputs = the conductor's boot state.** Discovery's audit set (CONTEXT + OPEN_THREADS + BACKLOG +
->    LEDGER) is exactly what the conductor reconstructs at boot. A discovery subagent would re-read all of
->    it cold — paying max context for the one step whose inputs the conductor already holds.
+> 1. **Its output is a judgement whose alternatives vanish in a summary.** Every other gate hands
+>    back an inspectable artifact (a spec, a plan, a verdict); Discovery hands back a CHOICE. A
+>    spawned selector that surfaces fewer candidates fails invisibly — you see what it picked, never
+>    what it failed to surface. Delegate what produces an artifact; keep what produces an unseen
+>    judgement (dispatcher-minus-one spec §3, consistent with published multi-agent guidance: lead
+>    agents keep planning/synthesis/stop decisions; summaries are lossy handoffs).
 > 2. **It precedes the BRIEF that sharding needs.** GATE I runs *before* any `BRIEF.md` exists, so it
->    cannot use the system-5 sharded pack (`context_for.py` keys off the BRIEF's `Context tags:`). It needs
->    the whole canon — again, already in hand.
+>    cannot use the system-5 sharded pack (`context_for.mjs` keys off the BRIEF's `Context tags:`). It
+>    needs the whole planning surface — loaded here, at the gate (below), not at boot.
 > 3. **No code to lane-fence from.** Its only outputs (`BACKLOG.md` + the chosen `BRIEF.md`) are the
 >    conductor's own `.claude/` planning surface; the tool-fence that justifies the author subagents
 >    (can't `Edit` `src/`) buys nothing here.
@@ -135,10 +160,11 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Trigger:** "what's next / groom the backlog / roadmap review / out of queued work."
 - **Use when:** the active pipeline has drained, or on a periodic review, to generate + cull the
   next wave of features/improvements.
-- **Audit:** `PROJECT_CONTEXT.md` (what exists), `OPEN_THREADS.md` (deferred §7 + open §1/§9 +
-  the "deferred seams" noted inside each shipped thread), `BACKLOG.md` (the standing pool),
-  `DECISION_LEDGER.md` (the **Promoted canon** — the accumulated invariants every candidate must
-  respect), plus any usage-friction notes I name.
+- **Audit (LOAD NOW — these are not in your boot):** read `BACKLOG.md`, `OPEN_THREADS.md`, and
+  `DECISION_LEDGER.md` in full at this gate — the one point their full text is needed. (They are
+  resent on every later turn of this session; that is the accepted price of keeping this judgement
+  inline, paid only by sessions that actually run Discovery.) Plus `PROJECT_CONTEXT.md` (what
+  exists), and any usage-friction notes I name.
 - **Method (diverge → converge):**
   0. **Load the canon (REUSE step of §3a):** read the ledger's Promoted-canon keys first — they bound
      the whole pool. A candidate that fights a promoted invariant is reshaped or culled, not promoted;
@@ -160,19 +186,24 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
      invariant it would touch.
   5. **Cull to ONE** next feature.
 - **Write:** update `BACKLOG.md` (the full prioritized pool — diverge) **and** create
-  `.claude/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a).
+  `.claude/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a). The created
+  `BRIEF.md` must fill `Considered:` with the full cull set, not only the winner.
 - **Route:** the chosen `BRIEF.md`'s `{GOAL}` opens **GATE C** — the Design Council.
 
 ### GATE C — Design council  → Plan (GATE PLAN)
 - **Trigger:** "design it / run the council / the brief is ready."
 - **Run with:** `/council {FEATURE}` — that command is the authority for rounds, prompts and dispatch.
-- **Audit:** `PROJECT_CONTEXT.md`, `OPEN_THREADS.md`, the feature's `BRIEF.md`, `DESIGN_RULES.md`
+- **Audit:** the feature's context pack (`.claude/contracts/{FEATURE}/_context-pack.md`; regenerate via
+  `node .claude/tools/gates.mjs context_for {FEATURE} --write` if absent — by GATE C a `BRIEF.md`
+  exists, so the pack is available; this is the same source the council voices already receive) +
+  `OPEN_THREADS.md` **§9 only**, the feature's `BRIEF.md`, `DESIGN_RULES.md`
   (pointer, not restated), and the promoted canon.
 - **Rounds:** R1 blind positions (architect / pm / ux in parallel) → R2 cross-critique (quoted
   conflicts, tagged `technical` or `product`) → **R3 reconcile — mine**: technical conflicts go back to
   the two voices involved for one exchange, product conflicts go to the user ONE at a time as Decision
-  cards → R4 synthesis by a fresh agent that is none of the three voices. Then **S2**, an adversarial
-  spec review on a different base model; Critical findings loop back to R4 (cap 2 passes).
+  cards → R4 synthesis by `council-synthesizer`, a fresh agent that is none of the three voices. Then
+  **S2**, an adversarial spec review by `council-skeptic`, whose file declares a different model from
+  the synthesizer's; Critical findings loop back to R4 (cap 2 passes).
 - **Write:** `SPEC.md` + `INTERFACE_CONTRACT.md`, plus the round artifacts under `council/`.
   `INTERFACE_CONTRACT.md` MUST carry a machine-checkable `## Conformance spec` json block (or be
   explicitly `NO_BACKEND_CHANGE`) — `contract_lint` ERRORs without it and GATE Q cannot verify.
@@ -180,17 +211,20 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 
 ### GATE PLAN — Plan the approved spec  → Backend ‖ Frontend
 - **Trigger:** "the spec is approved / plan it."
-- **Do:** run `superpowers:writing-plans` over `SPEC.md` to produce `PLAN.md` with backend, frontend and
-  verification task tracks. The plan's **Global Constraints must copy the conformance block verbatim**
-  so both lanes inherit the same binding shape.
+- **Do:** spawn ONE fresh `delivery-planner` subagent (`ROLE_LAUNCH_PROMPTS.md` §5) — never plan
+  inline; the plan's generative work must not enter this session's persistent context. The planner
+  runs `superpowers:writing-plans` over `SPEC.md` and writes `PLAN.md`; its plan's **Global
+  Constraints must copy the conformance block verbatim** so both lanes inherit the same binding
+  shape. **Revisions within this session continue the SAME planner agent** (§5's loop rule) — a
+  fresh spawn per revision pays the cold-start 2–4× over.
 - **Route:** Backend (`ROLE_LAUNCH_PROMPTS.md` §2) and Frontend (§3) **in parallel**.
 
 ### GATE M — Math / Infra drift fast-path: Architect → Backend (skip PM + UX)   *(= your Routine B)*
 - **Trigger:** "math drift / fix the calc / schema change / model divergence in {function}."
 - **Use when:** a calculation, API/provider change, or data-type change with **no UI implication**.
 - **Audit:** `PROJECT_CONTEXT.md` §3 (core math/domain constraints) + §5 (resolved decisions — do NOT
-  reopen), `OPEN_THREADS.md`, and the exact source file(s) you name (e.g. a core calc/engine module, a
-  signals module, a provider/port adapter — under `backend.dir`).
+  reopen), `OPEN_THREADS.md` **§9 only**, and the exact source file(s) you name (e.g. a core calc/engine
+  module, a signals module, a provider/port adapter — under `backend.dir`).
 - **Compress:** Compressor **#2** targeting Backend; isolate affected functions + data types.
 - **Write:** overwrite `INTERFACE_CONTRACT.md` (only the changed types/fields/presence) plus the
   affected part of `SPEC.md` §2 (architecture) / §5 (error handling) with **strict types and explicit
@@ -206,9 +240,10 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   math."
 - **Use when:** component states, layout, copy, or stream-degradation behavior change with **no
   engine/endpoint change**.
-- **Audit:** `PROJECT_CONTEXT.md` (the live-vs-static / degradation rules), `SPEC.md` §4,
-  `DESIGN_RULES.md` (the design-quality canon — pointer, not restated), the named frontend file(s)
-  under `frontend.dir` (e.g. the main view/component you name).
+- **Audit:** `PROJECT_CONTEXT.md`'s invariant floor (`node .claude/tools/gates.mjs context_for --print`,
+  no feature — §5 carries the live-vs-static / degradation rules) or the feature's context pack if one
+  exists, `SPEC.md` §4, `DESIGN_RULES.md` (the design-quality canon — pointer, not restated), the named
+  frontend file(s) under `frontend.dir` (e.g. the main view/component you name).
 - **Compress:** compile exact visual expectations, state changes, and component touchpoints.
 - **Write:** overwrite `SPEC.md` §4 (component states, copy, design direction — new design blueprint).
 - **Token-saving isolation:** backend untouched — flag `NO_BACKEND_CHANGE` in the manifest; do not
@@ -262,15 +297,20 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   shipped code in both lanes (`backend.dir` + `frontend.dir`), the BRIEF "Invariant watch" + the
   promoted canon (§5).
 - **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §4; subagent `.claude/agents/qa-verify.md`)
-  — a different session from the builders (no marking own homework; ideally a different model →
-  foreshadows system-6). Confirms every AC point-by-point, **fixes nothing**.
-- **Runtime conformance (system-1):** against the running backend (`backend.serve_cmd`), run
-  `<project.json backend.python> .claude/tools/interface_conformance.py --contract
-  .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url <backend-base-url>`. A conformance
-  **FAIL** (the live BE does not emit a field the interface promises / the FE consumes) is a **GATE Q
-  FAIL** → bounce to Backend. Integration is now **verified, not asserted**.
-- **Write:** `QA_REPORT.md` (AC verbatim · verdict {PASS|FAIL|UNVERIFIABLE} · evidence + overall verdict).
-  On any FAIL, the QA session also writes the GATE Z bounce ("Amendments bounced to {owner}").
+  — a different session from the builders (no marking own homework; `qa-verify.md` declares a
+  different model from both build lanes by design, system-6). Confirms every AC point-by-point,
+  **fixes nothing**.
+- **Runtime conformance (system-1):** QA independently re-runs `interface_conformance.mjs` against the
+  running backend — never trusts the receipt the backend lane already wrote — into its own
+  `conformance-receipt-qa.json`, and compares the two `verdict` fields. QA's verdict is authoritative
+  (it is the fresh role that fixes nothing). Backend `PASS` against QA `FAIL` is the serious case: drift
+  arrived after the backend's run, or the backend never ran it. A missing backend receipt is a skipped
+  deliverable, also a bounce. `UNVERIFIABLE` (the backend could not be booted) is not a failure — it
+  surfaces in QA's summary line so it stays visible. Integration is now **verified, not asserted**.
+  See `qa-verify.md`'s "Conformance" section for the exact invocation.
+- **Write:** `QA_REPORT.md` (AC verbatim · verdict {PASS|FAIL|UNVERIFIABLE} · evidence + overall verdict)
+  and `conformance-receipt-qa.json`. On any FAIL, the QA session also writes the GATE Z bounce
+  ("Amendments bounced to {owner}").
 - **Route:** all PASS (no invariant broken) → **GATE S**. Any FAIL → **GATE Z** to the owning lane; the
   executioner fixes, then **GATE Q RE-RUNS** (re-verify the fix — never trust it unobserved).
 - **Guard:** QA verifies, never repairs. GATE S MUST NOT fire without a passing `QA_REPORT.md`.
@@ -279,15 +319,22 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Trigger:** "shipped / both lanes done / archive {FEATURE}."
 - **Precondition:** a passing `QA_REPORT.md` exists (GATE Q) — "verified end-to-end" now means the QA
   role's point-by-point pass, not a human checkbox.
+- **Promote the conformance spec (before archiving):** extract the JSON inside the feature's
+  `## Conformance spec` fenced block from `INTERFACE_CONTRACT.md` and write it, unwrapped, as
+  `.claude/tools/conformance/{FEATURE}.json` — `interface_conformance.mjs --spec` expects raw JSON, not
+  a markdown-fenced block. The contract is about
+  to be archived; the standalone spec outlives it and stays runnable, so the directory accumulates a
+  cross-feature regression suite as a by-product of shipping. Features marked `NO_BACKEND_CHANGE`
+  have no block and promote nothing.
 - **Do:** move `.claude/contracts/{FEATURE}/` → `.claude/contracts/_archive/{FEATURE}/`; refresh
   `OPEN_THREADS.md` (flip the thread to SHIPPED + ARCHIVED) and `PROJECT_CONTEXT.md` (fold the
   new capability into §6 / conventions) **only if the feature is verified end-to-end**.
 - **Promote (compounding memory):** finalize the feature's `DECISION_LEDGER.md` rows, then **DETECT** —
-  tally the ledger; any key now in **≥3 distinct shipped features (or ≥2 if every instance is
-  `binding:yes`)** **GRADUATES**: write its prose **once** into `PROJECT_CONTEXT.md` §5 + a locked
-  pointer in `OPEN_THREADS.md` §9, add it to the ledger's "Promoted canon" index with provenance, and
-  move near-threshold keys to the ledger watch list. Single-source: canon prose lives in CONTEXT/§9;
-  the ledger only indexes it.
+  run `node .claude/tools/gates.mjs ledger_tally` (the count is code, not judgement; never tally by
+  reading the ledger into context). Any key it marks **GRADUATES**: write its prose **once** into
+  `PROJECT_CONTEXT.md` §5 + a locked pointer in `OPEN_THREADS.md` §9, add it to the ledger's
+  "Promoted canon" index with provenance, and move `watch` keys to the ledger watch list. The
+  graduation prose and the binding-or-not judgement stay yours — only the counting moved.
 - **Guard:** confirm both lanes verified before archiving; never archive a half-shipped feature. Never
   promote a key that isn't **binding** (a future feature could violate it) — same bar as the GATE I cull.
 
@@ -330,9 +377,14 @@ Invariant watch: <canonical keys from DECISION_LEDGER.md "Promoted canon" this f
                  additive-keeps-score-byte-identical, best-effort-isolated-or-null) + any other locked
                  rule it must not touch (the named domain invariants, etc.)>
 Context tags:    <optional (system-5): PROJECT_CONTEXT section tags this feature needs, e.g.
-                 architecture,backend,personas,observability — context_for.py loads these + the
+                 architecture,backend,personas,observability — context_for.mjs loads these + the
                  always-load invariant floor (§3,§5). Omit ⇒ invariant floor only.>
 Source:          <backlog item / deferred seam / friction note it came from>
+Considered:      <the candidate set the cull ran over — each as `name (culled: reason)` or
+                 `name (blocked-on X)`, with the winner marked CHOSEN. This is the audit trail for
+                 the one judgement that never leaves the conductor: a reader can see what LOST and
+                 why, which a bare choice never shows. Also the comparison surface for any future
+                 test of spawning this gate (spec §5's shortlist diff).>
 ```
 The Orchestrator drafts `BRIEF.md` at GATE I, then immediately feeds `Goal` into GATE C's opening
 move (§3) so discovery flows straight into the pipeline.
@@ -377,10 +429,10 @@ referencing files rather than pasting them.
   the ledger's "Demoted" table with evidence), not left standing. Demotion bar mirrors promotion: a
   one-off feature carve-out is an exception, not a demotion. Stops the compounding memory from calcifying
   a wrong-but-repeated rule into law.
-- **Mechanical gate-check (system-3):** `.claude/tools/contract_lint.py` runs at every gateway (§0
+- **Mechanical gate-check (system-3):** `.claude/tools/contract_lint.mjs` runs at every gateway (§0
   step 7); a structural ERROR blocks the handoff. It checks **structure**, not code.
 - **Integration is verified, not asserted (system-1):** at GATE Q,
-  `.claude/tools/interface_conformance.py` runs the live backend's response against the
+  `.claude/tools/interface_conformance.mjs` runs the live backend's response against the
   `## Conformance spec` embedded in `INTERFACE_CONTRACT.md` — proving the BE emits the fields the
   interface promises (= what the FE consumes). A conformance FAIL bounces to Backend (GATE Z).
 - **Lane enforcement via subagents (system-4 + 4b):** each role has a tool-fenced subagent in
@@ -392,15 +444,18 @@ referencing files rather than pasting them.
   per-role *intra*-lane rule (e.g. an author Write-ing into source) — a session-global hook can't see the
   active role, so that residual rests on the tool-allowlist + prompt.
 - **Ground-truth retrieval (system-5):** a session may load the minimal context pack via
-  `<project.json backend.python> .claude/tools/context_for.py {FEATURE} --print` instead of re-reading all of
-  `PROJECT_CONTEXT.md` (selected from the BRIEF's `Context tags:` + the section shard tags). The
+  `node .claude/tools/gates.mjs context_for {FEATURE} --write` instead of re-reading all of
+  `PROJECT_CONTEXT.md` (selected from the BRIEF's `Context tags:` + the section shard tags). This writes
+  `.claude/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
+  pack's contents — relaying it by value routes the whole pack through the conductor's own context. The
   invariant-bearing sections (§3 math, §5 decisions/promoted invariants) are **`always`-load** — sharding
   cuts tokens by relevance but NEVER drops a binding rule a feature could violate. Decouples per-session
   cost from total canon size; the whole file stays the single source (logical slice, not a split).
 - **QA gates the ship (system-2):** GATE S requires a passing `QA_REPORT.md` from a FRESH QA/Verify
   session (GATE Q, `ROLE_LAUNCH_PROMPTS.md` §4) — never the builder's self-verification. QA confirms
   every AC point-by-point and **repairs nothing**; a failing AC bounces via GATE Z and GATE Q re-runs
-  on the fix. (Run QA on a different model where possible — de-correlates blind spots, system-6.)
+  on the fix. (QA's agent file declares a different model from both build lanes by design — de-
+  correlates blind spots, system-6.)
   **Verification is mandatory for every AC; an automated *test* is required only per the RISK-BASED rule
   in `agents/qa-verify.md` §4 (amended 2026-07-13)** — test the invariants/negative-space + silently-
   regressing behaviors; verify visible/intentional things (copy, presence) by review/QA, recorded as such.

@@ -1058,6 +1058,34 @@ GET-vs-DELETE in-flight race (real, ~32% in a tight synthetic loop, needs overla
 renders on `partial` option rows carrying `position: null` (owner has not ruled) · the owner's real
 book is committed in `positions_raw.json` (repo is PRIVATE — verified; revisit before any open-source).
 
+### 7aa. delivery-kit v1.8.0 install — verified, 2 real breaks repaired (2026-08-05)
+The kit install (`.py` tools → `.mjs` + `gates.mjs`) was itself clean: all 6 tools run, all 12
+conformance specs intact, `contract_lint` passes on a real archived feature, the anonymous
+conformance sweep passes live, and the kit's own `ORCHESTRATOR.md` carries zero stale refs. But
+"0 drift" checked the KIT's files — not what convexa depends on. Two things were actually broken:
+1. **`nx run api:conformance` was dead** — `apps/api/project.json` invoked the deleted
+   `interface_conformance.py` (and listed it as a cache input, so invalidation was wrong too).
+   Repaired to `node …/interface_conformance.mjs`; the target executes again.
+2. **⚠ A convexa-local feature was silently reverted by the port.** `interface_conformance.py`
+   had gained `--auth-signup` / `--auth-cookie` + per-endpoint `"auth": true` (tech-debt #12,
+   commit `39379ab`) — the `.mjs` port dropped it, so `conformance/auth-gated.json` (4 endpoints)
+   went from 4/4 PASS to 4/4 FAIL with bare 401/403s that read as "the endpoints are broken"
+   rather than "the runner cannot authenticate". **Restored in the `.mjs`** (bootstrap via
+   `/api/auth/signup`, manual Set-Cookie parse so a Secure attribute cannot block a local http
+   run, loud actionable failure when the flag is missing). Verified live: 4/4 PASS with
+   `--auth-signup`, 4/4 loud FAIL exit 1 without, anonymous specs unaffected, and the same
+   through `gates.mjs`.
+   **This is a KIT-FEEDBACK item, not a convexa one:** the fix lives only here again, so the next
+   kit install will revert it a second time unless it flows back to `KIT_BACKLOG.md`
+   (`C:\Dev\delivery-kit`). The auth capability belongs in the kit's own runner — every consumer
+   with gated endpoints needs it.
+**Also corrected (live instruction, not history):** `CLAUDE.md` and `PROJECT_CONTEXT.md` each told
+every agent the FE↔BE seam is verified by `interface_conformance.py`. CLAUDE.md matters most — it
+is auto-loaded into every session. **Deliberately NOT rewritten:** `BACKLOG.md` (dated history),
+all `_archive/` contracts, `docs/SYSTEM_ANALYSIS.md`, `DECISION_LEDGER.md`, and the conformance
+JSON `_comment` fields — those describe the tool as it existed then, and editing them would
+falsify the record.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

@@ -954,7 +954,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   ceiling), but never silently drops a required case (untestable → GATE Z bounce). QA enforces
   **AC↔test traceability** at GATE Q: every AC maps to ≥1 named passing test (an uncovered AC is a FAIL
   even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
-  critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
+  critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.mjs`).
 - One Nx monorepo: backend `apps/api`, frontend `apps/dashboard`, shared TS client `libs/api`
   (`@org/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
   `C:\Dev\GammaFlow` is history only.)

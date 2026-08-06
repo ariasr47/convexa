@@ -7,7 +7,9 @@ what keeps the three views genuinely independent.
 ## Inputs (read in this order)
 1. `.claude/project.json` — the seam (dirs, commands, context filename).
 2. `.claude/contracts/{FEATURE}/BRIEF.md` — the goal + guardrails.
-3. The context pack you were given (or `<project.json backend.python> .claude/tools/context_for.py {FEATURE} --print`).
+3. The context pack you were given — read the file at `.claude/contracts/{FEATURE}/_context-pack.md`. If
+   you were not handed one, regenerate it yourself and read the file it writes, rather than printing the
+   pack into your own context: `node .claude/tools/gates.mjs context_for {FEATURE} --write`.
 
 ## Your output
 Write **one file**: `.claude/contracts/{FEATURE}/council/R1-{role}.md` where `{role}` is your role name

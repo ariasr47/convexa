@@ -3,14 +3,14 @@ description: Run the mechanical gates (contract linter + interface conformance) 
 argument-hint: <feature-folder>
 ---
 Run the mechanical gate-checks for feature `$ARGUMENTS` and report the results plainly. **Fix nothing**
-— this is a gate, not a repair. (Substitute the interpreter + backend URL from `.claude/project.json`:
-`backend.python` and `http://127.0.0.1:<backend.port>`.)
+— this is a gate, not a repair. (Substitute the backend URL from `.claude/project.json`:
+`http://127.0.0.1:<backend.port>`.)
 
 1. Structural checks (missing artifact, missing acceptance criteria, `SPEC.md` not referencing the
    interface, a missing/unparseable conformance block, manifest/BRIEF fields) + canon single-source:
-   `<project.json backend.python> .claude/tools/contract_lint.py $ARGUMENTS`
+   `node .claude/tools/gates.mjs contract_lint $ARGUMENTS`
 2. Then, if the backend is running and `INTERFACE_CONTRACT.md` carries a `## Conformance spec` block, run
-   `<project.json backend.python> .claude/tools/interface_conformance.py --contract
+   `node .claude/tools/gates.mjs interface_conformance --contract
    .claude/contracts/$ARGUMENTS/INTERFACE_CONTRACT.md --url <backend-base-url>`.
 
 Summarize: ERRORs (block the handoff — must fix before routing) vs WARNINGs (advisory, judge them). If

@@ -38,7 +38,7 @@ a machine-checkable conformance block:
 }
 ```
 
-placed under a heading spelled exactly `## Conformance spec`. `interface_conformance.py` extracts it by
+placed under a heading spelled exactly `## Conformance spec`. `interface_conformance.mjs` extracts it by
 that heading; a different spelling breaks the gate.
 
 ## MANDATORY — refuse to finish without an interface

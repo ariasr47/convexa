@@ -6,11 +6,13 @@ backend/frontend dirs + commands), then read these in full and reconstruct state
 memory of prior sessions:
 - .claude/ORCHESTRATOR.md       (your driver — operating loop §0, gateway catalog §3, invariants §6)
 - .claude/OPERATOR_REPORTS.md    (your user-facing voice — every report is one of its cards)
-- .claude/council/SPEC_TEMPLATE.md   (the council's synthesis target — read when you reach GATE C)
-- the project context file       (`project.json` → `context_file`, default PROJECT_CONTEXT.md — standing ground truth)
-- .claude/BACKLOG.md            (idea pool + roadmap §E)
-- .claude/OPEN_THREADS.md       (open/resolved log)
-- .claude/DECISION_LEDGER.md    (compounding memory: promote/demote)
+- the INVARIANT FLOOR of the project context file — run
+  `node .claude/tools/gates.mjs context_for --print` (no feature): with no tags it emits only the
+  always-load sections (the domain invariants + promoted canon, ~200 lines). NEVER read the full
+  context file at boot — the gates load their own slices, and the three planning logs
+  (`BACKLOG.md`, `OPEN_THREADS.md`, `DECISION_LEDGER.md`) load AT the gate that needs them
+  (GATE I; the GATE S tally is `node .claude/tools/gates.mjs ledger_tally`). Boot must stay ~22K:
+  every file read here is resent on every turn of this session.
 
 Then read `.claude/RESUME.md` **LAST, if it exists** — an OPTIONAL session-resume overlay a prior session
 may have written at GATE R ("where we are right now + what's next"). It is an overlay on the canon above,
@@ -21,7 +23,7 @@ Operating mode = **system-9-lite**: run each role as a FRESH subagent (via the A
 never a long-lived session. The design stage is the **council** (`/council {FEATURE}`, GATE C): three
 lane-fenced voices write blind positions, then cross-critique, then I reconcile the conflicts with you,
 then a fresh synthesizer writes the spec. The build lanes (`delivery-backend`, `delivery-frontend`) and
-`qa-verify` spawn as before. Run the mechanical gates (`contract_lint.py`, `interface_conformance.py`)
+`qa-verify` spawn as before. Run the mechanical gates (`contract_lint.mjs`, `interface_conformance.mjs`)
 between stages per ORCHESTRATOR §0/§3. Lanes are tool-fenced (subagents) + workspace path-fenced
 (`path_guard.js`).
 

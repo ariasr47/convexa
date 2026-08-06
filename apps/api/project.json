@@ -27,12 +27,12 @@
     "conformance": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "apps\\api\\.venv\\Scripts\\python.exe .claude\\tools\\interface_conformance.py --spec .claude\\tools\\conformance\\ai_recommendations.json --url http://127.0.0.1:8000"
+        "command": "node .claude\\tools\\interface_conformance.mjs --spec .claude\\tools\\conformance\\ai_recommendations.json --url http://127.0.0.1:8000"
       },
       "inputs": [
         "{projectRoot}/main.py",
         "{projectRoot}/src/**/*",
-        "{workspaceRoot}/.claude/tools/interface_conformance.py",
+        "{workspaceRoot}/.claude/tools/interface_conformance.mjs",
         "{workspaceRoot}/.claude/tools/conformance/ai_recommendations.json"
       ],
       "cache": false

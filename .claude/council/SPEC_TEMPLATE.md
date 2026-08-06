@@ -78,7 +78,7 @@ retries. Not "handle errors gracefully" — the actual behavior.>
 
 > **Decision 2026-07-22:** the interface is **its own file**, not a section of this spec. The council's
 > synthesis writes BOTH `SPEC.md` and `INTERFACE_CONTRACT.md`. Both build lanes bind to the small file;
-> `interface_conformance.py --contract INTERFACE_CONTRACT.md` reads it unchanged. A change to it after
+> `interface_conformance.mjs --contract INTERFACE_CONTRACT.md` reads it unchanged. A change to it after
 > approval is a GATE Z amendment — a visible file-level event, not an edit buried in a long spec.
 
 **Interface:** `.claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md`
@@ -128,7 +128,7 @@ unlisted open question that everyone "sort of knew about" is how a spec lies.>
 
 **Endpoints:** <method · path · purpose · auth · error semantics · streaming/SSE semantics if any>
 
-**Conformance spec** — machine-checkable. `interface_conformance.py` runs this against the live
+**Conformance spec** — machine-checkable. `interface_conformance.mjs` runs this against the live
 backend at G1. Dot-paths, `name[]` for array fan-out, `type|null` / `type?` for optional unions:
 
 ```json
