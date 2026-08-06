@@ -713,24 +713,68 @@ if os.getenv("SCANNER_EMBEDDED", "").strip() in ("1", "true", "True"):
 #      re-seeding each boot is what makes "an account that persists restarts" true on a dev box.
 #      On Railway (ACCOUNT_STORE=postgres) the row survives and this is a cheap no-op.
 # Unset OWNER_EMAIL/OWNER_PASSWORD => nothing happens, app byte-identical. Never logs the password.
+def _extra_seed_accounts() -> list[tuple[str, str, str | None]]:
+    """
+    Additional accounts to seed at boot — the owner's testing logins, which must stay valid and
+    active in production while registration is closed.
+
+    JSON, deliberately: `SEED_ACCOUNTS=[{"email":"a@b.c","password":"...","display_name":"QA"}]`.
+    A `email:password` delimiter format cannot survive a password containing `:` or `,`, and
+    silently truncating someone's password to a shorter working one is the kind of bug that only
+    shows up as "I can't log in" months later.
+
+    NOT a relaxation of the `SEED_TEST_ACCOUNT` Postgres guard, which stays exactly as it is: that
+    path seeds a FIXED credential whose default password is published in this repo, and putting it
+    in a production database would be a real hole. This path only ever creates accounts whose
+    passwords the operator chose and injected as runtime env ([no-secrets-in-image]).
+    """
+    raw = os.getenv("SEED_ACCOUNTS", "").strip()
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+        out: list[tuple[str, str, str | None]] = []
+        for entry in parsed:
+            email = str(entry.get("email", "")).strip()
+            password = str(entry.get("password", ""))
+            if not email or not password:
+                logger.warning("[main] SEED_ACCOUNTS: skipping an entry missing email or password")
+                continue
+            name = entry.get("display_name")
+            out.append((email, password, str(name).strip() if name else None))
+        return out
+    except Exception:
+        # Never take boot down over a malformed env; loud, and names no secret.
+        logger.warning("[main] SEED_ACCOUNTS is not valid JSON — no extra accounts seeded")
+        return []
+
+
 @app.on_event("startup")
 async def _seed_owner_account():
+    accounts = _extra_seed_accounts()
     email = os.getenv("OWNER_EMAIL", "").strip()
     password = os.getenv("OWNER_PASSWORD", "")
-    if not email or not password:
-        return
+    if email and password:
+        accounts.insert(0, (email, password, os.getenv("OWNER_DISPLAY_NAME", "").strip() or None))
+    for acct_email, acct_password, acct_name in accounts:
+        _seed_one_account(acct_email, acct_password, acct_name)
+
+
+def _seed_one_account(email: str, password: str, display_name: str | None) -> None:
     try:
-        svc = auth.get_service()
-        if svc.stores.users.get_by_email(email) is not None:
-            logger.info("[main] owner account already present; seed is a no-op")
-            return
-        svc.signup(email=email, password=password,
-                   display_name=os.getenv("OWNER_DISPLAY_NAME", "").strip() or None)
-        logger.info("[main] seeded the owner account")
+        # `ensure_account` is the established operator-seed path: idempotent, race-safe on the
+        # unique-email constraint, opens no session, and bypasses the signup validation floor by
+        # design (an operator seed is not user input). Unlike SEED_TEST_ACCOUNT this is NOT
+        # refused on Postgres — a persistent owner account in production is the entire point.
+        created = auth.get_service().ensure_account(
+            email=email, password=password, display_name=display_name)
+        # Logs the ADDRESS (needed to tell which seed ran) and never the password.
+        logger.info("[main] seed: account %s %s", email,
+                    "created" if created else "already present (no-op)")
     except Exception:
-        # Never take the app down over the seed; sign-in simply won't have an account to find,
-        # which is loud in the only place it matters (the owner tries to log in and cannot).
-        logger.warning("[main] owner-account seed failed", exc_info=False)
+        # Never take the app down over a seed; sign-in simply won't have an account to find,
+        # which is loud in the only place it matters (someone tries to log in and cannot).
+        logger.warning("[main] seed: account seed failed for %s", email, exc_info=False)
 
 
 # CORS allowlist (env-gated, defense-in-depth) — [R2]. Under the deployed shape the browser is

@@ -175,3 +175,68 @@ def test_the_ticker_bundle_stays_public(client):
     regression, not a tightening — and it must not have touched the bundle at all."""
     r = client.get("/api/ticker/SPY")
     assert r.status_code != 403
+
+
+# --------------------------------------------------------------------------- the operator seeds
+
+def test_seed_accounts_parses_json_and_survives_a_password_with_delimiters():
+    """The reason this is JSON and not `email:password` — a delimiter format silently truncates a
+    password containing `:` or `,`, which surfaces months later as 'I cannot log in'."""
+    import json as _json
+    import os as _os
+
+    from main import _extra_seed_accounts
+
+    nasty = "p:a,s:s,w0rd!"
+    prior = _os.environ.get("SEED_ACCOUNTS")
+    _os.environ["SEED_ACCOUNTS"] = _json.dumps(
+        [{"email": "qa1@test.invalid", "password": nasty, "display_name": "QA 1"}])
+    try:
+        out = _extra_seed_accounts()
+        assert out == [("qa1@test.invalid", nasty, "QA 1")]
+    finally:
+        if prior is None:
+            _os.environ.pop("SEED_ACCOUNTS", None)
+        else:
+            _os.environ["SEED_ACCOUNTS"] = prior
+
+
+def test_malformed_seed_accounts_never_takes_boot_down():
+    import os as _os
+
+    from main import _extra_seed_accounts
+
+    prior = _os.environ.get("SEED_ACCOUNTS")
+    _os.environ["SEED_ACCOUNTS"] = "not json at all"
+    try:
+        assert _extra_seed_accounts() == []
+    finally:
+        if prior is None:
+            _os.environ.pop("SEED_ACCOUNTS", None)
+        else:
+            _os.environ["SEED_ACCOUNTS"] = prior
+
+
+def test_a_seeded_account_can_log_in_while_signups_are_closed(client, monkeypatch):
+    """The owner's requirement: testing accounts stay valid and active under the lockdown."""
+    from src import auth as _auth
+
+    email = _fresh_email("seeded-qa")
+    _auth.get_service().ensure_account(email=email, password="seeded-pw-12345", display_name="QA")
+
+    monkeypatch.setenv("SIGNUPS_ENABLED", "")
+    monkeypatch.setenv("OWNER_EMAILS", "")
+    r = client.post("/api/auth/login", json={"email": email, "password": "seeded-pw-12345"})
+    assert r.status_code == 200, r.text
+
+
+def test_the_fixed_credential_dev_seed_is_still_refused_on_postgres(monkeypatch, caplog):
+    """The SEED_TEST_ACCOUNT guard must NOT have been relaxed while adding SEED_ACCOUNTS — its
+    default password is published in this repo, so seeding it into a production store is a hole."""
+    import inspect
+
+    import main as _main
+
+    src = inspect.getsource(_main._seed_test_account)
+    assert 'ACCOUNT_STORE' in src and 'postgres' in src, (
+        "the dev-only fixed-credential seed must still refuse ACCOUNT_STORE=postgres")

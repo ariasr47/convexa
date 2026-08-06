@@ -255,11 +255,14 @@ class AuthService:
     def ensure_account(self, *, email: str, password: str,
                        display_name: str | None) -> bool:
         """
-        Idempotently ensure a (dev/test) account exists with these credentials. Returns True when it
-        creates the account, False when it already existed. Creates the settings row on create and
-        does NOT open a session. Used ONLY by the gated dev seed at boot (main.py `_seed_test_account`)
-        — never on a request path. Bypasses the signup validation floor by design (operator seed, not
-        user input). No AI key is attached here (seeded accounts set the BYO key via the Settings UI).
+        Idempotently ensure an account exists with these credentials. Returns True when it creates
+        the account, False when it already existed. Creates the settings row on create and does NOT
+        open a session. Used ONLY by the OPERATOR SEEDS at boot — `_seed_test_account` (dev-only,
+        refused on Postgres) and `_seed_owner_account` (the 2026-08-06 lockdown; allowed on Postgres,
+        because a persistent owner account in production is its purpose) — never on a request path.
+        Bypasses the signup validation floor by design (operator seed, not user input) and therefore
+        also bypasses the registration lockdown, which gates the two USER-facing doors only.
+        No AI key is attached here (seeded accounts set the BYO key via the Settings UI).
         """
         if self.stores.users.get_by_email(email) is not None:
             return False
