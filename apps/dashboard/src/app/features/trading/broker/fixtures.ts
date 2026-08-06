@@ -372,3 +372,372 @@ export const BOOK_REFRESH_FAILED: BrokerBook = servedBook({
   last_attempt_at: '2026-08-01T15:00:30Z',
   last_attempt_outcome: 'broker_unreachable',
 });
+
+// =================================================================================================
+// broker-option-grouping — the CAPTURE-COMPLETE book (SPEC §1) + the [CF] constructed arms. ADDITIVE.
+// The composed figure this app renders is `unit_cost × contract size × SIGNED quantity`, summed —
+// never Webull's raw `total_cost`, which this app never displays. Per-unit costs reproduce SPEC §1's
+// pinned ticker nets to the cent; NVDA @7.89 and AAPL −10 @3.07 are anchored to shipped passing
+// assertions. This file stays on Layer 2's EXEMPT list, which is why the arms live here.
+// =================================================================================================
+
+/** Every captured option leg took the ×100 reconstruction fallback, so every one carries BOTH notes. */
+const CAPTURED_OPTION_NOTES = [NOTE_NO_CONTRACT_DETAIL, NOTE_MULTIPLIER_RECONSTRUCTED];
+
+function capturedOption(
+  id: string,
+  underlying: string,
+  quantity: number,
+  unitCost: number,
+  mark: number,
+  unrealized: BrokerFact = notSupplied(),
+): BrokerPosition {
+  return {
+    broker_position_id: id,
+    fidelity: 'partial',
+    fidelity_notes: CAPTURED_OPTION_NOTES,
+    legs: [
+      genericOptionLeg({
+        symbol: underlying,
+        underlying,
+        quantity,
+        multiplier: 100,
+        cost_basis: supplied(unitCost),
+        broker_mark: supplied(mark),
+      }),
+    ],
+    unrealized_pl: unrealized,
+  };
+}
+
+function capturedEquity(
+  id: string,
+  underlying: string,
+  quantity: number,
+  unitCost: number,
+  mark: number,
+): BrokerPosition {
+  return {
+    broker_position_id: id,
+    fidelity: 'exact',
+    legs: [
+      equityLeg({
+        symbol: underlying,
+        underlying,
+        quantity,
+        cost_basis: supplied(unitCost),
+        broker_mark: supplied(mark),
+      }),
+    ],
+    unrealized_pl: notSupplied(),
+  };
+}
+
+// 5 equity rows (AAPL's is AC-22's live instance).
+export const POS_CB_EQ_AMD = POS_CAPTURE_AMD_STOCK;
+export const POS_CB_EQ_AAPL = capturedEquity('913256135', 'AAPL', 50, 188.42, 201.1);
+export const POS_CB_EQ_INTC = capturedEquity('913255417', 'INTC', 200, 31.18, 34.02);
+export const POS_CB_EQ_MU = capturedEquity('913255902', 'MU', 40, 96.55, 104.7);
+export const POS_CB_EQ_SPCX = capturedEquity('913257741', 'SPCX', 300, 9.42, 8.88);
+
+// 9 option legs, in SPEC §1's fixture order.
+export const POS_CB_NVDA = POS_CAPTURE_NVDA_OPTION; // +10 @ 7.89  → $7,890.00 debit
+export const POS_CB_PLTR = capturedOption('1058096512', 'PLTR', 10, 4.99, 3.4);
+export const POS_CB_TSLA_P10 = capturedOption('1061810101', 'TSLA', 10, 10.62, 9.1);
+export const POS_CB_AAPL_P10 = capturedOption('1061810120', 'AAPL', 10, 6.92, 7.4);
+export const POS_CB_AAPL_M10 = POS_CAPTURE_SHORT_OPTION; // −10 @ 3.07 → $3,070.00 credit
+/** NOT `POS_CAPTURE_NO_MULTIPLIER`: that is the guard-REFUSED arm. All 9 captured legs reconstructed. */
+export const POS_CB_TSLA_M4 = capturedOption('1062038045', 'TSLA', -4, 8.49, 0.02);
+export const POS_CB_TSLA_P4 = capturedOption('1062038112', 'TSLA', 4, 16.34, 15.2);
+export const POS_CB_META_M5 = capturedOption('1062038210', 'META', -5, 2.15, 1.8);
+export const POS_CB_META_P5 = capturedOption('1062038307', 'META', 5, 9.76, 10.3);
+
+/** 14 holdings ⇒ 3 groups (TSLA 3 · AAPL 2 · META 2) + 2 lone legs + 5 equity rows = 10 entries (AC-1). */
+export const BOOK_CAPTURED_COMPLETE: BrokerBook = {
+  state: 'ok',
+  as_of: AS_OF_FRESH,
+  basis: 'fresh',
+  stale_after_seconds: STALE_AFTER_SECONDS,
+  account_ref: 'acctref0123456789',
+  positions: [
+    POS_CB_EQ_AMD,
+    POS_CB_EQ_AAPL,
+    POS_CB_EQ_INTC,
+    POS_CB_EQ_MU,
+    POS_CB_EQ_SPCX,
+    POS_CB_NVDA,
+    POS_CB_PLTR,
+    POS_CB_TSLA_P10,
+    POS_CB_AAPL_P10,
+    POS_CB_AAPL_M10,
+    POS_CB_TSLA_M4,
+    POS_CB_TSLA_P4,
+    POS_CB_META_M5,
+    POS_CB_META_P5,
+  ],
+  last_attempt_at: AS_OF_FRESH,
+  last_attempt_outcome: 'ok',
+};
+
+// ---- [CF] arms — the captured book exercises NONE of these ---------------------------------------
+
+function cfBook(positions: BrokerPosition[], over: Partial<BrokerBook> = {}): BrokerBook {
+  return {
+    state: 'ok',
+    as_of: AS_OF_FRESH,
+    basis: 'fresh',
+    stale_after_seconds: STALE_AFTER_SECONDS,
+    account_ref: 'acctref0123456789',
+    positions,
+    last_attempt_at: AS_OF_FRESH,
+    last_attempt_outcome: 'ok',
+    ...over,
+  };
+}
+
+/** One constructed option position; `legs` explicit so a two-leg member is expressible. */
+function cfOption(id: string, legs: BrokerLeg[], notes = CAPTURED_OPTION_NOTES): BrokerPosition {
+  return {
+    broker_position_id: id,
+    fidelity: 'partial',
+    fidelity_notes: notes,
+    legs,
+    unrealized_pl: notSupplied(),
+  };
+}
+
+const cfLeg = (over: Partial<BrokerLeg>): BrokerLeg =>
+  genericOptionLeg({ symbol: 'TSLA', underlying: 'TSLA', multiplier: 100, ...over });
+
+/** A leg with `multiplier` genuinely ABSENT (never null-padded, never defaulted). */
+const cfLegNoSize = (over: Partial<BrokerLeg>): BrokerLeg => ({
+  kind: 'option',
+  symbol: 'TSLA',
+  underlying: 'TSLA',
+  quantity: -3,
+  cost_basis: supplied(8.1),
+  broker_mark: supplied(0.03),
+  ...over,
+});
+
+/** AC-9b — signed net is a CREDIT: +2 @ 1.00 (200 debit) vs −6 @ 3.00 (1,800 credit). */
+export const BOOK_CF_CREDIT: BrokerBook = cfBook([
+  cfOption('cf-credit-1', [
+    cfLeg({ quantity: 2, cost_basis: supplied(1), broker_mark: supplied(1.2) }),
+  ]),
+  cfOption('cf-credit-2', [
+    cfLeg({ quantity: -6, cost_basis: supplied(3), broker_mark: supplied(2.4) }),
+  ]),
+]);
+
+/** AC-9c + P3 — the legs cancel exactly: +10 @ 5.00 vs −10 @ 5.00 ⇒ `$0.00`, no direction word. */
+export const BOOK_CF_ZERO_NET: BrokerBook = cfBook([
+  cfOption('cf-zero-1', [
+    cfLeg({ quantity: 10, cost_basis: supplied(5), broker_mark: supplied(5.5) }),
+  ]),
+  cfOption('cf-zero-2', [
+    cfLeg({ quantity: -10, cost_basis: supplied(5), broker_mark: supplied(4.8) }),
+  ]),
+]);
+
+/** AC-12 — one leg's cost was NEVER supplied (permanent). */
+export const BOOK_CF_NO_COST: BrokerBook = cfBook([
+  cfOption('cf-nocost-1', [
+    cfLeg({ quantity: 3, cost_basis: supplied(4), broker_mark: supplied(4.4) }),
+  ]),
+  cfOption('cf-nocost-2', [
+    cfLeg({ quantity: -3, cost_basis: notSupplied(), broker_mark: notSupplied() }),
+  ]),
+]);
+
+/** AC-12 — one leg's contract size could not be reconstructed. */
+export const BOOK_CF_NO_SIZE: BrokerBook = cfBook([
+  cfOption('cf-nosize-1', [
+    cfLeg({ quantity: 3, cost_basis: supplied(4), broker_mark: supplied(4.4) }),
+  ]),
+  cfOption('cf-nosize-2', [cfLegNoSize({})], [NOTE_NO_CONTRACT_DETAIL, NOTE_MULTIPLIER_WITHHELD]),
+]);
+
+/** AC-14 — carried but unreadable this cycle (transient), nothing permanent. */
+export const BOOK_CF_UNPARSEABLE: BrokerBook = cfBook([
+  cfOption('cf-unparse-1', [
+    cfLeg({ quantity: 3, cost_basis: supplied(4), broker_mark: supplied(4.4) }),
+  ]),
+  cfOption('cf-unparse-2', [
+    cfLeg({ quantity: -3, cost_basis: unparseable(), broker_mark: supplied(3.9) }),
+  ]),
+]);
+
+/** AC-15 — a permanent and a transient cause on different legs. `not provided` must win. */
+export const BOOK_CF_MIXED_CAUSE: BrokerBook = cfBook([
+  cfOption('cf-mixed-1', [
+    cfLeg({ quantity: 3, cost_basis: notSupplied(), broker_mark: notSupplied() }),
+  ]),
+  cfOption('cf-mixed-2', [
+    cfLeg({ quantity: -3, cost_basis: unparseable(), broker_mark: supplied(3.9) }),
+  ]),
+]);
+
+/** AC-17b — ONE doubly-broken leg beside one healthy leg: the union count is 1, never 2. */
+export const BOOK_CF_DOUBLY_BROKEN: BrokerBook = cfBook([
+  cfOption('cf-double-1', [
+    cfLeg({ quantity: 3, cost_basis: supplied(4), broker_mark: supplied(4.4) }),
+  ]),
+  cfOption(
+    'cf-double-2',
+    [cfLegNoSize({ cost_basis: notSupplied(), broker_mark: notSupplied() })],
+    [NOTE_NO_CONTRACT_DETAIL, NOTE_MULTIPLIER_WITHHELD],
+  ),
+]);
+
+/**
+ * AC-6 / AC-6c — the ANTI-COINCIDENCE book: one member position carries TWO option legs, so
+ * leg_count (3) ≠ position_count (2) and a leg-counting implementation FAILS instead of passing.
+ */
+export const BOOK_CF_TWO_LEG_MEMBER: BrokerBook = cfBook([
+  cfOption('cf-2leg-1', [
+    cfLeg({ quantity: 2, cost_basis: supplied(6), broker_mark: supplied(6.5) }),
+    cfLeg({ quantity: -2, cost_basis: supplied(2), broker_mark: supplied(1.8) }),
+  ]),
+  cfOption('cf-2leg-2', [
+    cfLeg({ quantity: 1, cost_basis: supplied(9), broker_mark: supplied(9.4) }),
+  ]),
+]);
+
+/**
+ * AC-4b / Layer 3 — the FUTURE FEED: two option legs on one ticker WITH strike, expiry and right.
+ * The post-`/trade/instrument` world, simulable today; the fixture that fails on the day
+ * `positions/structure.ts:153`'s guard stops firing. TSLA deliberately: a neutral underlying that is
+ * not itself a B2 term (SPEC §2.3, §9 item 5).
+ */
+export const BOOK_CF_FUTURE_FEED: BrokerBook = cfBook([
+  cfOption(
+    'cf-future-1',
+    [
+      {
+        kind: 'option',
+        symbol: 'TSLA260821C00250000',
+        underlying: 'TSLA',
+        expiry: '2026-08-21',
+        strike: 250,
+        right: 'call',
+        quantity: 1,
+        multiplier: 100,
+        cost_basis: supplied(4.2),
+        broker_mark: supplied(5.1),
+      },
+    ],
+    [NOTE_MULTIPLIER_RECONSTRUCTED],
+  ),
+  cfOption(
+    'cf-future-2',
+    [
+      {
+        kind: 'option',
+        symbol: 'TSLA260821C00260000',
+        underlying: 'TSLA',
+        expiry: '2026-08-21',
+        strike: 260,
+        right: 'call',
+        quantity: -1,
+        multiplier: 100,
+        cost_basis: supplied(1.9),
+        broker_mark: supplied(2.2),
+      },
+    ],
+    [NOTE_MULTIPLIER_RECONSTRUCTED],
+  ),
+]);
+
+/** P1 — the provenance FALSE branch: a real figure renders, with no derived-size clause anywhere. */
+export const BOOK_CF_NO_RECON_NOTE: BrokerBook = cfBook([
+  cfOption(
+    'cf-norecon-1',
+    [cfLeg({ quantity: 2, cost_basis: supplied(3), broker_mark: supplied(3.3) })],
+    [NOTE_NO_CONTRACT_DETAIL],
+  ),
+  cfOption(
+    'cf-norecon-2',
+    [cfLeg({ quantity: 2, cost_basis: supplied(4), broker_mark: supplied(4.1) })],
+    [NOTE_NO_CONTRACT_DETAIL],
+  ),
+]);
+
+/** SPEC §2.11 — the shipped `unrealized_pl` render regression, extended to the GROUP surface. */
+export const BOOK_CF_UNREALIZED_LEAK: BrokerBook = cfBook([
+  {
+    ...cfOption('cf-leak-1', [
+      genericOptionLeg({
+        symbol: 'NVDA',
+        underlying: 'NVDA',
+        quantity: 10,
+        cost_basis: supplied(7.89),
+        broker_mark: supplied(4.85),
+      }),
+    ]),
+    unrealized_pl: supplied(-7840.5),
+  },
+  {
+    ...cfOption('cf-leak-2', [
+      genericOptionLeg({
+        symbol: 'NVDA',
+        underlying: 'NVDA',
+        quantity: 5,
+        cost_basis: supplied(6.1),
+        broker_mark: supplied(5.2),
+      }),
+    ]),
+    unrealized_pl: supplied(267.63),
+  },
+]);
+
+/**
+ * AC-15b — the SINGLE-LEG cascade arms. The third element is what the SHIPPED `brokerView.ts`
+ * renders today (`FIGURE` = a dollar figure, not a literal). The byte-identity test asserts the
+ * CORRECTED shared cascade produces exactly the same thing for every arm.
+ */
+export const SINGLE_LEG_CASCADE_ARMS: ReadonlyArray<[string, BrokerPosition, string]> = [
+  [
+    'all supplied',
+    cfOption('sl-ok', [
+      cfLeg({ quantity: 1, cost_basis: supplied(4), broker_mark: supplied(4.2) }),
+    ]),
+    'FIGURE',
+  ],
+  [
+    'cost not supplied',
+    cfOption('sl-nocost', [
+      cfLeg({ quantity: 1, cost_basis: notSupplied(), broker_mark: notSupplied() }),
+    ]),
+    'not provided',
+  ],
+  [
+    'cost unparseable',
+    cfOption('sl-unparse', [
+      cfLeg({ quantity: 1, cost_basis: unparseable(), broker_mark: supplied(4.2) }),
+    ]),
+    'unavailable',
+  ],
+  [
+    'size absent, cost supplied',
+    cfOption('sl-nosize', [
+      cfLegNoSize({ quantity: 1, cost_basis: supplied(4), broker_mark: supplied(4.2) }),
+    ]),
+    'not provided',
+  ],
+  [
+    'size absent AND cost not supplied',
+    cfOption('sl-double', [
+      cfLegNoSize({ quantity: 1, cost_basis: notSupplied(), broker_mark: notSupplied() }),
+    ]),
+    'not provided',
+  ],
+  [
+    'size absent AND cost unparseable (permanence wins)',
+    cfOption('sl-both', [
+      cfLegNoSize({ quantity: 1, cost_basis: unparseable(), broker_mark: supplied(4.2) }),
+    ]),
+    'not provided',
+  ],
+  ['zero legs (unrecognized)', POS_UNRECOGNIZED, 'not provided'],
+];
