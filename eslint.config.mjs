@@ -85,4 +85,61 @@ export default [
       ],
     },
   },
+  // ---- broker-option-grouping · Layer 1 of the no-naming machinery (SPEC §2.3) -------------------
+  // File-NAMED deliberately: a directory-wide override would have to re-exempt every shipped module in
+  // broker/. That means an implementer CAN forget to add a fourth file here — which is why Layer 2's
+  // file set is defined by EXCLUSION and its glob shaped so that forgetting is VISIBLE, not silent.
+  // SUBSTITUTION RECORDED FOR GATE Q (SPEC §2.3 / PLAN F6 Step 2): the negation-glob allow-list
+  // form (`group: ['**', '!./brokerView', '!./predicates', '!@org/api']`) was tried FIRST and does
+  // NOT bite correctly on this ESLint version — it flagged the allow-listed specifiers themselves
+  // (`@org/api`, `./brokerView`, `./predicates`) as restricted, which would make grouping.ts
+  // unbuildable. Per the documented fallback, this override uses the GUARANTEED three-specifier
+  // deny-list instead — the same list used for the presentational modules below. This is a WEAKER
+  // guarantee than a true allow-list (it only closes the three specifiers holding the four naming
+  // entry points, not every future path), but it is proven to bite (see F6 Step 2/3 verification).
+  {
+    files: ['**/features/trading/broker/grouping.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@/features/trading/positions/structure',
+                '@/features/trading/positions/view',
+                '@/features/trading/positions/leg',
+              ],
+              message:
+                'grouping.ts may not import positions/{structure,view,leg} (SPEC §2.3): those three specifiers hold all four entry points to the naming machine. Use ./brokerView, ./predicates or @org/api types instead.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      '**/features/trading/broker/BrokerGroupHeader.tsx',
+      '**/features/trading/broker/groupCopy.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/features/trading/positions/structure',
+                '**/features/trading/positions/view',
+                '**/features/trading/positions/leg',
+              ],
+              message:
+                'A group-rendering or group-copy module may not import positions/{structure,view,leg}: those three specifiers hold all four entry points to the naming machine plus the label dictionary (SPEC §2.3). Any further module this feature adds joins this override.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
