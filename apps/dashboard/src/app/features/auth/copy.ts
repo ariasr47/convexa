@@ -22,6 +22,10 @@ export const AUTH_COPY = {
     submitting: 'Creating account…',
     switch: 'Already have an account? Sign in',
     emailTaken: 'That email is already registered. Try signing in instead.',
+    // Owner lockdown (2026-08-06). Must NOT reuse the `unavailable` copy — "temporarily
+    // unavailable" would claim a fault where there is a deliberate policy, and the user would
+    // retry forever. States the reason and that there is nothing to wait for.
+    signupsClosed: 'New sign-ups are closed while Convexa is in private testing.',
     invalidEmail: 'Enter a valid email address.',
     // {N} is the backend password floor, surfaced in the 422 message; the copy reads the number.
     passwordFloor: (n: number) => `Password must be at least ${n} characters.`,

@@ -135,15 +135,20 @@ async function stubNetwork(
 }
 
 test.describe('broker tab', () => {
-  test('signed out: the Broker tab shows the sign-in prompt and issues NO broker request', async ({
+  // OWNER LOCKDOWN (2026-08-06): `/positions` is behind `RequireAuth`, so signed out you now get
+  // the ROUTE wall and the Broker tab is never reachable. The in-tab `broker-signin-prompt` still
+  // exists for the case where a session expires while the page is open; it is simply no longer the
+  // signed-out ENTRY path. The security half of this test is unchanged and now stronger: a
+  // signed-out visitor issues NO broker request, because the page that would issue it never mounts.
+  test('signed out: the route wall stands in front of the Broker tab and NO broker request is issued', async ({
     page,
   }) => {
     let brokerCalls = 0;
     await stubNetwork(page, { authenticated: false, onBrokerCall: () => (brokerCalls += 1) });
     await page.setViewportSize(DESKTOP);
     await page.goto('/positions');
-    await page.getByTestId('tab-live').click();
-    await expect(page.getByTestId('broker-signin-prompt')).toBeVisible();
+    await expect(page.getByTestId('require-auth-wall')).toBeVisible();
+    await expect(page.getByTestId('tab-live')).toHaveCount(0);
     expect(brokerCalls).toBe(0);
   });
 

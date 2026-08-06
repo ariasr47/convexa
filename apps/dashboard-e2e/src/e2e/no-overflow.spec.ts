@@ -329,8 +329,20 @@ async function stubNetwork(page: Page) {
     const path = url.pathname;
 
     if (path.startsWith('/api/auth/session')) {
+      // Owner lockdown (2026-08-06): /positions and /scanner sit behind RequireAuth, so these
+      // layout/nav walks must be SIGNED IN — the wall is not what they are testing.
       return route.fulfill({
-        json: { authenticated: false, user: null, google_available: false, settings: null },
+        json: {
+          authenticated: true,
+          user: {
+            id: 'e2e',
+            email: 'e2e@test.invalid',
+            display_name: null,
+            auth_methods: ['password'],
+          },
+          google_available: false,
+          settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+        },
       });
     }
     if (path.startsWith('/api/ticker/')) return route.fulfill({ json: bundle });

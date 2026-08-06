@@ -40,15 +40,15 @@
  *
  * Mocks ONLY the network boundary (`fetch` + `EventSource` via testBackend); never a live backend.
  */
+import App from '@/app';
+import { __resetMemory, allPositions } from '@/features/trading/positions/store';
+import { PositionsPage } from '@/pages/positions/PositionsPage';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '@/app';
-import { __resetMemory, allPositions } from '@/features/trading/positions/store';
-import { PositionsPage } from '@/pages/positions/PositionsPage';
 import { AuthProvider, useAuth } from './AuthContext';
 import { AuthDialog, type AuthMode } from './AuthDialog';
 import { AuthDialogProvider } from './AuthDialogProvider';
@@ -249,15 +249,17 @@ describe('auth · session lifecycle', () => {
     const user = userEvent.setup();
     let view = mountApp('/positions');
 
-    // Anonymous: a gated write prompts instead of executing (no crash, no redirect loop).
-    await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
-    await user.click(screen.getByTestId('open-entry'));
-    const prompt = await screen.findByTestId('positions-signin-prompt');
+    // OWNER LOCKDOWN (2026-08-06): `/positions` is behind `RequireAuth`, so the anonymous arm is
+    // now the route WALL rather than the in-context write prompt — the page never mounts, so the
+    // gated write is unreachable and the server is never called. (The in-context prompt still
+    // guards the ghost-trade write on the PUBLIC ticker page; that path is unchanged.)
+    const prompt = await screen.findByTestId('require-auth-wall');
+    expect(screen.queryByTestId('open-entry')).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(backend.calls.simTradeGate).toBe(0);
 
-    // Sign UP from the in-context prompt.
-    await user.click(within(prompt).getByTestId('positions-signin-prompt-button'));
+    // Sign UP from the wall.
+    await user.click(within(prompt).getByTestId('require-auth-signin'));
     await user.click(await screen.findByTestId('auth-mode-switch')); // login → signup
     await user.type(screen.getByTestId('auth-email'), 'new@user.com');
     await user.type(screen.getByTestId('auth-password'), 'longenoughpw');
@@ -265,6 +267,8 @@ describe('auth · session lifecycle', () => {
 
     // Signed in: the account control flips and the gated write now executes (the entry dialog opens).
     await waitFor(() => expect(screen.getByTestId('account-avatar')).toBeInTheDocument());
+    // The wall drops and the LAZY page mounts — wait for the real surface before driving it.
+    await screen.findByTestId('open-entry');
     await user.click(screen.getByTestId('open-entry'));
     await waitFor(() => expect(screen.getByRole('dialog')).toBeInTheDocument());
 
@@ -281,12 +285,12 @@ describe('auth · session lifecycle', () => {
     await waitFor(() => expect(screen.getByTestId('account-signin')).toBeInTheDocument());
     expect(backend.state.session.authenticated).toBe(false);
 
-    // Gated actions RE-GATE after logout (fresh mount, fresh who-am-I ⇒ anonymous again).
+    // RE-GATES after logout (fresh mount, fresh who-am-I ⇒ anonymous again). Under the lockdown
+    // that means the wall returns and the page does not mount — the strongest form of re-gating.
     view.unmount();
     mountApp('/positions');
-    await waitFor(() => expect(screen.getByTestId('open-entry')).toBeEnabled());
-    await user.click(screen.getByTestId('open-entry'));
-    expect(await screen.findByTestId('positions-signin-prompt')).toBeInTheDocument();
+    expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
+    expect(screen.queryByTestId('open-entry')).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(backend.calls.simTradeGate).toBe(0); // the FE gate never even reached the server
   }, 30000);
@@ -423,12 +427,7 @@ function GoogleHarness() {
       <button onClick={() => auth.refresh()} data-testid="refresh-session">
         refresh
       </button>
-      <AuthDialog
-        open
-        mode="login"
-        onClose={() => undefined}
-        onModeChange={() => undefined}
-      />
+      <AuthDialog open mode="login" onClose={() => undefined} onModeChange={() => undefined} />
     </>
   );
 }

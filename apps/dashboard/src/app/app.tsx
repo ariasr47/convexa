@@ -38,15 +38,16 @@
  * and the Ticker page's page-scoped SSE lifecycle is untouched: lazy() resolves the module ONCE
  * (module registry), then mount/unmount semantics are identical to the eager import.
  */
-import { lazy, Suspense, type ReactElement } from 'react';
-import { Box, CircularProgress } from '@mui/material';
-import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { RequireAuth } from '@/features/auth/RequireAuth';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { AppShell } from '@/shell/AppShell';
+import { Box, CircularProgress } from '@mui/material';
+import { lazy, Suspense, type ReactElement } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 // Lazy page chunks (named exports mapped to lazy's `default` shape).
 const TickerDashboard = lazy(() =>
@@ -115,8 +116,20 @@ export function AppRoutes() {
         {/* Bare `/ticker` → the effective default (pref-wins; unset ⇒ SPY). `/` never redirects. */}
         <Route path="/ticker" element={<DefaultTickerRedirect />} />
         <Route path="/ticker/:ticker" element={lazyRoute(<TickerDashboard />)} />
-        <Route path="/positions" element={lazyRoute(<PositionsPage />)} />
-        <Route path="/scanner" element={lazyRoute(<Scanner />)} />
+        {/* OWNER LOCKDOWN 2026-08-06 — private testing. Positions + Scanner are behind a sign-in
+            wall; Landing, /ticker/*, /blog and /settings stay PUBLIC by owner decision. The wall is
+            UX only — /api/scan* and the positions write gate refuse signed-out callers server-side
+            ([server-side-gate-enforcement]). Remove both wrappers to reopen. */}
+        <Route
+          path="/positions"
+          element={
+            <RequireAuth surface="your positions">{lazyRoute(<PositionsPage />)}</RequireAuth>
+          }
+        />
+        <Route
+          path="/scanner"
+          element={<RequireAuth surface="the scanner">{lazyRoute(<Scanner />)}</RequireAuth>}
+        />
         {/* Blog — static index (zero data work); each card is a full-document anchor to the
             standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}
         <Route path="/blog" element={lazyRoute(<BlogPage />)} />

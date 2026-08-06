@@ -353,12 +353,7 @@ export interface AiEval {
 // ---- Backend observability (operator-only; the trader FE IGNORES these) ---------------------
 // Fixed stage vocabulary + kind taxonomy (the operator readout maps io_* → "I/O", else → "CPU").
 export type StageName =
-  | 'vendor_fetch'
-  | 'engine_build'
-  | 'off_exchange'
-  | 'signals'
-  | 'persist'
-  | 'serialize_wrap';
+  'vendor_fetch' | 'engine_build' | 'off_exchange' | 'signals' | 'persist' | 'serialize_wrap';
 export type StageKind = 'io_vendor' | 'cpu_engine' | 'cpu_signals' | 'io_disk' | 'serialize';
 
 export interface MetaTimingStage {
@@ -548,7 +543,10 @@ export type AuthErrorCode =
   | 'bad_credentials'
   | 'auth_required'
   | 'auth_unavailable'
-  | 'google_unavailable';
+  | 'google_unavailable'
+  /** Owner lockdown (2026-08-06): registration is closed. A POLICY refusal, not a fault — the FE
+   *  must not fold it into `auth_unavailable`, which claims a transient problem. */
+  | 'signups_closed';
 
 /** A typed auth failure carrying the server `error` code + safe `message`. The FE maps off `code`;
  *  `message` is a fallback only (never enumerating, never a secret/hash/password). */
@@ -714,12 +712,7 @@ export interface ScanRow {
 /** The closed sortable-key set the FE may offer (INTERFACE §2.3). Sorting is a CLIENT-SIDE re-order
  *  of the returned rows; it never re-derives a value and never refetches. */
 export type ScanSortKey =
-  | 'score'
-  | 'symbol'
-  | 'price'
-  | 'chg_pct'
-  | 'dist_to_flip_pct'
-  | 'dist_to_wall_pct';
+  'score' | 'symbol' | 'price' | 'chg_pct' | 'dist_to_flip_pct' | 'dist_to_wall_pct';
 export interface ScanViewSort {
   key: ScanSortKey;
   dir: 'asc' | 'desc';

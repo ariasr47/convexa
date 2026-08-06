@@ -29,7 +29,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
-from . import errors, get_service
+from . import errors, get_service, policy
 from .cookies import COOKIE_NAME
 
 logger = logging.getLogger("Convexa")
@@ -109,6 +109,11 @@ async def session_status(request: Request):
 
 @router.post("/signup")
 async def signup(body: SignupBody):
+    # Owner lockdown. [server-side-gate-enforcement]: the OUTERMOST precondition — refused before
+    # the body is validated and before the store is touched, so a bypassed or absent FE check
+    # changes nothing. The same predicate guards the Google door (service.google_callback).
+    if not policy.registration_allowed(body.email):
+        return _error_response(errors.signups_closed())
     svc = get_service()
     try:
         identity, sid = svc.signup(

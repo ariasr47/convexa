@@ -706,6 +706,33 @@ if os.getenv("SCANNER_EMBEDDED", "").strip() in ("1", "true", "True"):
         logger.info("[main] SCANNER_EMBEDDED=1 -> launching in-process sweep worker")
         app.state._scanner_task = asyncio.create_task(worker.run_worker())
 
+# Owner-account seed (owner lockdown, 2026-08-06). Idempotent: creates the owner's account at
+# startup ONLY if that email has no user yet. Two reasons it exists:
+#   1. With sign-ups closed, there must still be a way to HAVE an account.
+#   2. The local/default store is in-memory SQLite and RESETS ON RESTART (accepted prototype) —
+#      re-seeding each boot is what makes "an account that persists restarts" true on a dev box.
+#      On Railway (ACCOUNT_STORE=postgres) the row survives and this is a cheap no-op.
+# Unset OWNER_EMAIL/OWNER_PASSWORD => nothing happens, app byte-identical. Never logs the password.
+@app.on_event("startup")
+async def _seed_owner_account():
+    email = os.getenv("OWNER_EMAIL", "").strip()
+    password = os.getenv("OWNER_PASSWORD", "")
+    if not email or not password:
+        return
+    try:
+        svc = auth.get_service()
+        if svc.stores.users.get_by_email(email) is not None:
+            logger.info("[main] owner account already present; seed is a no-op")
+            return
+        svc.signup(email=email, password=password,
+                   display_name=os.getenv("OWNER_DISPLAY_NAME", "").strip() or None)
+        logger.info("[main] seeded the owner account")
+    except Exception:
+        # Never take the app down over the seed; sign-in simply won't have an account to find,
+        # which is loud in the only place it matters (the owner tries to log in and cannot).
+        logger.warning("[main] owner-account seed failed", exc_info=False)
+
+
 # CORS allowlist (env-gated, defense-in-depth) — [R2]. Under the deployed shape the browser is
 # SAME-ORIGIN (the Cloudflare Pages Function proxies /api/* on the *.pages.dev origin), so this
 # middleware is not on the browser's hot path; but a locked, env-driven allowlist is the security
@@ -1698,9 +1725,13 @@ def _scan_view_response(view: dict, source: str, authenticated: bool) -> dict:
 
 
 @app.get("/api/scan/universe")
-async def get_scan_universe():
-    """The read-only owner-curated tracked universe for the view editor (INTERFACE §3.2). Anonymous-
-    open, always 200. No add/request/remove path in v1 ([no-universe-admin])."""
+async def get_scan_universe(request: Request):
+    """The read-only owner-curated tracked universe for the view editor (INTERFACE §3.2).
+    **OWNER LOCKDOWN 2026-08-06: now SESSION-GATED.** Was anonymous-open; the private-testing
+    lockdown closed the scanner to signed-out callers ([server-side-gate-enforcement])."""
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
     try:
         symbols = list(get_universe().universe)
     except Exception:
@@ -1780,17 +1811,27 @@ def _building_row_wire(symbol: str) -> dict:
 
 @app.get("/api/scan/view")
 async def get_scan_view(request: Request):
-    """The caller's effective view (INTERFACE §3.3). Anonymous-open, always 200 — a read is never
-    gated; anonymous always gets a readable default (AC-4)."""
+    """The caller's effective view (INTERFACE §3.3).
+    **OWNER LOCKDOWN 2026-08-06: now SESSION-GATED.** Was anonymous-open with a readable default
+    (AC-4); the private-testing lockdown supersedes that ([server-side-gate-enforcement])."""
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
     view, source, authed = _effective_view(request)
     return _scan_view_response(view, source, authed)
 
 
 @app.get("/api/scan")
 async def get_scan(request: Request):
-    """The requested-or-default view as slim rows + sweep metadata (INTERFACE §3.1). Anonymous-open,
-    best-effort ALWAYS 200 + status — a store outage degrades content (stale/building rows, sweep
-    null), never a 5xx. Every view symbol is present in `rows` (building-fill)."""
+    """The requested-or-default view as slim rows + sweep metadata (INTERFACE §3.1).
+    **OWNER LOCKDOWN 2026-08-06: now SESSION-GATED.** Was anonymous-open. Past the gate the
+    best-effort rule is unchanged: ALWAYS 200 + status, a store outage degrades content
+    (stale/building rows, sweep null) and never a 5xx, every view symbol present in `rows`.
+    The gate is the OUTERMOST precondition and is the one thing that MAY refuse
+    ([server-side-gate-enforcement]; the auth carve-out on [best-effort-isolated-or-null])."""
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
     view, source, authed = _effective_view(request)
     view_wire = _scan_view_response(view, source, authed)
     symbols = view_wire["symbols"]

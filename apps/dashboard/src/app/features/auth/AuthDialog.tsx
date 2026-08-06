@@ -10,6 +10,8 @@
  * On success the dialog closes and (when opened from a gated action) `onSuccess` fires so the caller
  * can return the user to the surface with the action now available (AC-C1/D6c).
  */
+import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
+import { extrasFor } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -28,8 +30,6 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { AuthError } from '@org/api';
 import { useEffect, useState } from 'react';
-import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
-import { extrasFor } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';
 import { GoogleButton } from './GoogleButton';
@@ -92,6 +92,10 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
       switch (err.code) {
         case 'email_taken':
           return { email: AUTH_COPY.signup.emailTaken };
+        case 'signups_closed':
+          // Owner lockdown. Deliberately NOT the `unavailable` default — that reads as a transient
+          // fault and invites a retry loop against a door that is closed on purpose.
+          return { form: AUTH_COPY.signup.signupsClosed };
         case 'bad_credentials':
           // NON-ENUMERATING — fixed copy, identical for wrong-email and wrong-password.
           return { form: AUTH_COPY.login.badCredentials };

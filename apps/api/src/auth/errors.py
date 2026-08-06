@@ -55,6 +55,13 @@ def settings_auth_required() -> AuthError:
     return AuthError(401, "auth_required", "Sign in to access settings.")
 
 
+def signups_closed() -> AuthError:
+    # Owner lockdown (2026-08-06): new registrations are off while the app is in private testing.
+    # 403 not 409 — this is a policy refusal, not a conflict, and it must NOT be enumerable
+    # (identical whether or not the email already exists).
+    return AuthError(403, "signups_closed", "New sign-ups are closed right now.")
+
+
 def auth_unavailable() -> AuthError:
     return AuthError(503, "auth_unavailable", "Sign-in is temporarily unavailable.")
 

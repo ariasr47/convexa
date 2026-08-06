@@ -51,6 +51,17 @@ let fetchMock: ReturnType<typeof vi.fn>;
 /** Per-test who-am-I body (default anonymous). Set BEFORE render to walk the signed-in path. */
 let sessionBody: unknown;
 
+/** Owner lockdown (2026-08-06): `/positions` and `/scanner` sit behind `RequireAuth`, so any walk
+ *  that expects those PAGES must be signed in. Call BEFORE `renderAt`. */
+function signedIn() {
+  sessionBody = {
+    authenticated: true,
+    user: { id: 'u1', email: 'a@x.com', display_name: null, auth_methods: ['password'] },
+    google_available: false,
+    settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+  };
+}
+
 beforeEach(() => {
   sessionBody = { authenticated: false, user: null, google_available: false, settings: null };
   localStorage.clear();
@@ -161,6 +172,8 @@ describe('route table', () => {
     ready: () => Promise<unknown>;
     /** A bundle fetch the route MUST have issued (the redirect/deep-link proof), if any. */
     expectFetch?: string;
+    /** Owner lockdown: the route is behind `RequireAuth`, so walk it signed in. */
+    authed?: boolean;
   }> = [
     { path: '/', ready: () => screen.findByTestId('landing') },
     {
@@ -173,13 +186,16 @@ describe('route table', () => {
       ready: () => screen.findByText('Call wall'),
       expectFetch: '/api/ticker/NVDA',
     },
-    { path: '/positions', ready: () => screen.findByTestId('portfolio-panel') },
-    { path: '/scanner', ready: () => screen.findByTestId('scanner-page') },
+    // Gated by the owner lockdown — walked SIGNED IN, since the page is what this test is about.
+    // The signed-out arm is its own test below.
+    { path: '/positions', ready: () => screen.findByTestId('portfolio-panel'), authed: true },
+    { path: '/scanner', ready: () => screen.findByTestId('scanner-page'), authed: true },
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];
 
   it.each(walk)('$path resolves to its page inside the shell, with no /_ops link', async (c) => {
+    if (c.authed) signedIn();
     renderAt(c.path);
     await c.ready();
     // Every walked route renders INSIDE the persistent shell.
@@ -191,6 +207,25 @@ describe('route table', () => {
     if (c.path === '/') expect(screen.queryByLabelText('Ticker')).toBeNull();
     // Promoted invariant, enforced on EVERY shell surface: the operator route is unlinked.
     expectNoOpsLink();
+  });
+
+  // Owner lockdown (2026-08-06) — the negative space of the two walked-signed-in routes above.
+  it.each([
+    { path: '/positions', page: 'portfolio-panel' },
+    { path: '/scanner', page: 'scanner-page' },
+  ])('signed out, $path shows the sign-in wall and NOT the page', async (c) => {
+    renderAt(c.path); // sessionBody stays anonymous
+    expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
+    expect(screen.queryByTestId(c.page)).toBeNull();
+    // Refused VISIBLY, inside the shell — never a silent bounce that leaves no explanation.
+    expect(screen.getByTestId('app-shell')).toBeInTheDocument();
+    expect(screen.getByTestId('require-auth-signin')).toBeInTheDocument();
+  });
+
+  it('signed out, the PUBLIC routes are untouched by the lockdown', async () => {
+    renderAt('/ticker/SPY');
+    await screen.findByText('Call wall');
+    expect(screen.queryByTestId('require-auth-wall')).toBeNull();
   });
 
   it('an unknown route resolves to NO page (never silently mounts the wrong surface)', () => {
@@ -270,6 +305,7 @@ describe('mobile nav drawer', () => {
 
   it('carries EXACTLY the 4 NAV entries, no /_ops link, aria-current on the active entry', async () => {
     const user = userEvent.setup();
+    signedIn(); // gated by the owner lockdown
     renderAt('/positions');
     await screen.findByTestId('portfolio-panel');
 
@@ -297,6 +333,7 @@ describe('mobile nav drawer', () => {
 
   it('a drawer link navigates AND closes the drawer (the branch behavior, re-expressed)', async () => {
     const user = userEvent.setup();
+    signedIn(); // gated by the owner lockdown
     renderAt('/scanner');
     await screen.findByTestId('scanner-page');
 
@@ -314,6 +351,7 @@ describe('mobile nav drawer', () => {
 describe('shell persistence', () => {
   it('the SAME shell DOM node survives every in-shell navigation', async () => {
     const user = userEvent.setup();
+    signedIn(); // gated by the owner lockdown
     renderAt('/scanner');
     const shell = screen.getByTestId('app-shell');
 

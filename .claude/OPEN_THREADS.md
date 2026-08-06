@@ -1141,6 +1141,34 @@ R-3 Layer 1 does not bite the relative import form on the two presentational mod
 regex covers them) · R-4 the group literal drops the leg row's `unpriceableTip` · **R-5 → BACKLOG §B:
 `npm run ports:free` is IPv4-only.**
 
+### 7ac. Private-testing lockdown (owner-directed 2026-08-06, NO pipeline — fast path by request)
+Owner asked for this directly and **explicitly waived the council/gates**. Recorded here because it
+is security-relevant config a future session must not undo by accident.
+**What changed:** new registrations are **closed, failing closed** — `SIGNUPS_ENABLED` unset ⇒ off.
+Enforced on **both** doors from ONE predicate (`src/auth/policy.py`): `POST /api/auth/signup` and
+the Google callback's create-a-new-user step (`service.google_callback` step 3, which silently
+creates accounts and would otherwise have stayed a wide-open side door). `OWNER_EMAILS` may always
+register. A startup seed (`OWNER_EMAIL`/`OWNER_PASSWORD`, idempotent) creates the owner's account —
+needed because with sign-ups closed there must still be a way to *have* one, and because the
+default in-memory store resets on restart, so re-seeding each boot is what makes it survive one.
+**Access narrowed:** `/api/scan`, `/api/scan/universe` and `GET /api/scan/view` were
+**anonymous-open by contract** and are now session-gated; FE `/scanner` + `/positions` sit behind a
+`RequireAuth` wall. **Landing, `/ticker/*`, `/blog`, `/settings` stay PUBLIC by owner decision.**
+This is a deliberate **narrowing of the `user-accounts` hybrid-access model** (PROJECT_CONTEXT §5),
+in the same shape as the `scanner` single-ticker narrowing — not a violation. Reopen by setting
+`SIGNUPS_ENABLED=1` and removing the two `RequireAuth` wrappers + the three `_gate_or_response`
+calls; every touch point says so in a comment.
+**Verified live, not asserted:** stranger signup → 403 `signups_closed`; owner login → 200; the
+three scan reads → 403 `auth_required` signed out, 200 with the owner session; `/api/ticker/SPY`
+never 403; both walls render and the ticker page does not. api **298** (was 272, +26 lockdown
+tests incl. non-enumerability and a no-account-written proof), dashboard **1442**, typecheck 0,
+lint 0/0.
+**Known-open:** the AI-cost worry that prompted this was **already closed** — non-admin accounts get
+zero shared-key allowance and must BYO key (`byo-ai-key`), so a stranger could never spend the
+owner's budget · `SIGNUPS_ENABLED=1` is required locally for the test suite and for
+`interface_conformance.mjs --auth-signup`, documented in `.env.example` · **none of this protects
+the live site until N1 deploy runs** — `convexa.pages.dev` is still the 2026-06-29 build.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

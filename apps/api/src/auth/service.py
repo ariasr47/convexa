@@ -28,7 +28,7 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from . import cookies, crypto, errors, google_oauth, passwords
+from . import cookies, crypto, errors, google_oauth, passwords, policy
 from .ports import AuthStores, SessionRecord, UserRecord
 
 logger = logging.getLogger("Convexa")
@@ -546,7 +546,12 @@ class AuthService:
             existing = self.stores.users.get_by_email(identity.email)
             if existing is not None:
                 user = self.stores.users.attach_google(existing.id, identity.sub)
-        # 3. No match → create a Google-only user (no local password) + its settings row.
+        # 3. No match → this is a REGISTRATION, not a login. Owner lockdown applies here exactly as
+        #    it does on /signup — otherwise "Continue with Google" stays a wide-open second door
+        #    while the front door is bolted. Steps 1 and 2 are untouched: an existing user (or a
+        #    verified-email link to one) is a LOGIN and must keep working while sign-ups are closed.
+        if user is None and not policy.registration_allowed(identity.email):
+            raise errors.signups_closed()
         if user is None:
             user = self.stores.users.create(
                 email=identity.email, password_hash=None,
