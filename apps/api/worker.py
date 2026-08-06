@@ -40,6 +40,8 @@ def _loop_config() -> LoopConfig:
     return LoopConfig(
         fast_interval=float(os.getenv("SCAN_FAST_INTERVAL_SECONDS", "30")),
         stale_after=float(os.getenv("SCAN_STALE_AFTER_SECONDS", "180")),
+        # Heartbeat cadence while the market-hours gate holds the sweep off (see session_gate).
+        idle_interval=float(os.getenv("SCAN_IDLE_INTERVAL_SECONDS", "300")),
         sweep=SweepConfig(
             move_threshold_pct=float(os.getenv("SCAN_MOVE_THRESHOLD_PCT", "0.75")),
             slow_batch_size=int(os.getenv("SCAN_SLOW_BATCH_SIZE", "4")),

@@ -15,10 +15,12 @@ import logging
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Optional
 
+from src.core.live import classify_session
 from src.scanstore import BundleBlob, ScanRow, ScanStore, SweepHeartbeat
 
 from .projection import (TierBands, project_building, project_error, project_price_only,
                          project_row, refresh_status)
+from .session_gate import should_sweep
 from .tiering import SweepConfig, SymbolSched, plan_cycle, pct_move
 
 logger = logging.getLogger("Convexa")
@@ -28,6 +30,9 @@ logger = logging.getLogger("Convexa")
 class LoopConfig:
     fast_interval: float = 30.0     # D4 fast-lane poll cadence (seconds)
     stale_after: float = 180.0      # structure freshness budget (~3 min) -> `stale`
+    # Heartbeat cadence while the market-hours gate holds the sweep off. Slow on purpose: it exists
+    # only so an intentionally idle worker stays distinguishable from a dead one.
+    idle_interval: float = 300.0
     sweep: SweepConfig = field(default_factory=SweepConfig)
 
 
@@ -41,6 +46,8 @@ class LoopDeps:
     clock: Callable[[], float]
     sleep: Callable[[float], Awaitable[None]]
     config: LoopConfig = field(default_factory=LoopConfig)
+    # Injected like every other input so the gate is testable without controlling the clock.
+    session: Callable[[], str] = classify_session
 
 
 class SweepState:
@@ -146,16 +153,43 @@ async def slow_cycle(deps: LoopDeps, st: SweepState) -> None:
                         sweep_last_completed=st.sweep_last_completed, universe_size=len(deps.universe)))
 
 
+def _idle_heartbeat(deps: LoopDeps, st: SweepState) -> None:
+    """Write the heartbeat WITHOUT sweeping, so a deliberately-resting worker stays distinguishable
+    from a dead one (`model-read-carries-its-assumptions`; the shipped worker-down banner keys off
+    heartbeat age). `sweep_last_completed` is carried forward UNCHANGED — the page must keep showing
+    honestly how old the structure data is, not pretend a pass just finished."""
+    _safe_heartbeat(deps.store, SweepHeartbeat(updated_at=deps.clock(),
+                    sweep_last_completed=st.sweep_last_completed,
+                    universe_size=len(deps.universe)))
+
+
 async def _fast_lane(deps: LoopDeps, st: SweepState, stop: asyncio.Event) -> None:
+    idle = False
     while not stop.is_set():
-        await fast_tick(deps, st)
-        await deps.sleep(deps.config.fast_interval)
+        if should_sweep(deps.session):
+            if idle:
+                logger.info("[worker] market-hours gate: session covered -> resuming the sweep")
+                idle = False
+            await fast_tick(deps, st)
+            await deps.sleep(deps.config.fast_interval)
+        else:
+            if not idle:
+                logger.info("[worker] market-hours gate: outside vendor coverage -> idling the "
+                            "sweep; heartbeat continues every %ss", deps.config.idle_interval)
+                idle = True
+            _idle_heartbeat(deps, st)
+            await deps.sleep(deps.config.idle_interval)
 
 
 async def _slow_lane(deps: LoopDeps, st: SweepState, stop: asyncio.Event,
-                     max_slow_cycles: Optional[int]) -> None:
+                     max_slow_cycles: Optional[int], *, respect_gate: bool = True) -> None:
     cycles = 0
     while not stop.is_set():
+        # The expensive lane — this is the one actually re-fetching whole option chains overnight.
+        # It writes no heartbeat while idle: the fast lane owns that, so the two cannot disagree.
+        if respect_gate and not should_sweep(deps.session):
+            await deps.sleep(deps.config.idle_interval)
+            continue
         await slow_cycle(deps, st)
         cycles += 1
         if max_slow_cycles is not None and cycles >= max_slow_cycles:
@@ -178,8 +212,12 @@ async def run(deps: LoopDeps, *, stop_event: Optional[asyncio.Event] = None,
 
     if max_slow_cycles is not None:
         # Deterministic bounded run (tests): one fast poll, then the slow lane to completion.
+        # `respect_gate=False` ON PURPOSE. This path must complete a fixed number of cycles; with
+        # the gate on it would idle forever whenever the suite happens to run outside 04:00–20:00 ET
+        # or at a weekend, turning every scanner test into a time-of-day flake. The gate is covered
+        # directly in test_scanner_session_gate.py instead, which is where it belongs.
         await fast_tick(deps, st)
-        await _slow_lane(deps, st, stop, max_slow_cycles)
+        await _slow_lane(deps, st, stop, max_slow_cycles, respect_gate=False)
         stop.set()
         return
 
