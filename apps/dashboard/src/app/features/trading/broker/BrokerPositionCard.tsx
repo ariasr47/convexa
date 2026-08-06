@@ -40,8 +40,15 @@ export function BrokerPositionCard({
       }}
     >
       {unfaithful ? (
-        <Box sx={isStale ? STALE_SNAPSHOT_SX : undefined}>
-          <UnfaithfulEntry view={view} />
+        // F10 — parity repair. Desktop's `BrokerPositionRow` renders `<ModeledPl>` OUTSIDE the
+        // `unfaithful` branch (the P/L block sits in the right rail regardless of fidelity); this
+        // card omitted the slot entirely, which `[absent-is-not-none]` forbids — the mobile reader
+        // could not tell "no answer" from "nothing to say". Side-by-side, matching the row's layout.
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+          <Box sx={{ minWidth: 0, ...(isStale ? STALE_SNAPSHOT_SX : {}) }}>
+            <UnfaithfulEntry view={view} />
+          </Box>
+          <ModeledPl view={view} streamOffline={streamOffline} asOf={asOf} />
         </Box>
       ) : (
         <>

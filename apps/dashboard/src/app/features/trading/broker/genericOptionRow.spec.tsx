@@ -123,6 +123,32 @@ describe('R4 · G1 — fidelity routing', () => {
 });
 
 // =================================================================================================
+// broker-option-grouping F10 — defect repair: the mobile/desktop `ModeledPl` parity split on
+// `unrecognized`. `BrokerPositionRow` renders `<ModeledPl>` OUTSIDE the `unfaithful` branch;
+// `BrokerPositionCard` rendered it only INSIDE the non-unfaithful branch, so the mobile card
+// OMITTED the slot entirely on an `unrecognized` entry — the shape `[absent-is-not-none]`
+// forbids, since the mobile reader cannot tell "no answer" from "nothing to say". Named
+// pre-existing-defect repair (owner ruling Q1 = A, 2026-08-06); NOT grouping behaviour.
+// =================================================================================================
+
+describe('R4/F10 · G1 parity — the modeled P/L withheld literal on `unrecognized` (AC-24b)', () => {
+  it('an `unrecognized` entry renders the withheld modeled P/L with its label on BOTH form factors', () => {
+    const view = viewOf(POS_UNRECOGNIZED);
+    const shared = { view, streamOffline: false, isStale: false, asOf: null };
+    const desktop = render(<BrokerPositionRow {...shared} />);
+    const desktopPl = desktop.getByTestId('broker-pl').textContent;
+    const desktopLabel = desktop.getByTestId('broker-pl-label').textContent;
+    desktop.unmount();
+
+    const mobile = render(<BrokerPositionCard {...shared} />);
+    expect(mobile.getByTestId('broker-pl').textContent).toBe(desktopPl);
+    expect(mobile.getByTestId('broker-pl-label').textContent).toBe(desktopLabel);
+    expect(desktopPl).toBe('not provided'); // the literal, not a blank and not a number
+    mobile.unmount();
+  });
+});
+
+// =================================================================================================
 // G2 — `not recorded` belongs to OUR records and appears in NO broker state
 // =================================================================================================
 
