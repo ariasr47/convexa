@@ -1,0 +1,32 @@
+[
+  {
+    "quote": "A cannot-fully-display (`unrecognized`) entry is never absorbed into a group, never hidden by a collapse, and never counted in a group's leg count; it renders as its own entry with its shipped treatment.",
+    "source": "pm",
+    "why": "\"its shipped treatment\" is not one treatment \u2014 it differs by form factor, which is the whole point of \u00a77z. `BrokerPositionRow` renders `<ModeledPl>` for an `unrecognized` entry; `BrokerPositionCard` does not. AC-24 as written therefore PRESERVES the divergence, while UX \u00a78 rules the opposite: \"I rule the **desktop behaviour correct**... Mobile should converge on rendering the withheld literal with its label.\" One of the two has to give, and it is a scope question, not a fact question: the repair is a pre-existing defect inside this feature's blast radius, cheap on its own, but it is real-money render behaviour on a surface the owner reads and it is not part of grouping. I am routing it to the owner rather than settling it, because a lane deciding to widen scope into a shipped defect is exactly the call the owner is entitled to make. My lane's input, no more: the repair does not touch the grouping module (it is a change to `BrokerPositionCard`'s `unrecognized` branch), so it is separable in both directions at no structural cost.",
+    "proposal": "Route as one owner question at R3, alongside the `Build reassessment` one: \"Grouping ships on top of a known mobile/desktop parity defect \u2014 an `unrecognized` broker entry shows a modeled-P/L slot on desktop and no slot at all on mobile. Fix it inside this feature (small, closes the split before grouping deepens it), or ship grouping and file the repair separately?\" Whichever way it goes, AC-24 should name the treatment it means per form factor instead of saying \"shipped\", because \"shipped\" currently means two different things.",
+    "kind": "product",
+    "raised_by": "architect",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "**My recommendation: (c).** One action per group, in the group header's right rail; the per-leg duplicates disappear inside an expanded group.",
+    "source": "ux",
+    "why": "The disagreement is genuine and I am not settling it. I ruled the opposite \u2014 `Build reassessment` stays on the expanded leg row, and the collapsed group carries no reassess affordance and no disabled ghost of one \u2014 on precedent: `positions-legs` already suppresses `position_eval` for a multi-leg position and for a ticker holding more than one open position, because \"the app does not evaluate a subject it cannot faithfully represent\". A group is precisely a multi-leg subject this feature explicitly refuses to name, so a group-level action would have the app offer to evaluate, in one gesture, the very thing it just declined to describe. UX's counter-argument is real too \u2014 five identical buttons imply per-contract precision we do not have, and the question the trader is asking IS ticker-level. This is a priority/value call between two defensible reads of the same honesty doctrine, which is exactly what the BRIEF routes to the owner. One correction that must ride along regardless of the answer: UX costs (c) as \"a copy and placement change only\", and the architect's \u00a78 finding contradicts that \u2014 a group is not a `BrokerPositionView`, so (c) needs a new builder or a synthesized merged view, and a merged view asserts the pairing to an AI in a payload carrying a structure field.",
+    "proposal": "Route ONE owner question at R3, with both recommendations named and the cost of each stated: \"On broker option legs Convexa cannot identify, should `Build reassessment` (a) stay on the expanded leg row only [PM: no new claim, matches the existing multi-leg suppression rule, costs one click], (b) disappear from broker option rows entirely, or (c) move to the group as one ticker-level request per name [UX: matches the decision the trader is making; NOT placement-only \u2014 per the architect it needs a new builder or a merged view, and a merged view is the pairing guess in an AI payload]?\" Do not resolve it in council, and do not let (c) reach the owner priced as free.",
+    "kind": "product",
+    "raised_by": "pm",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "A cannot-fully-display (`unrecognized`) entry is never absorbed into a group, never hidden by a collapse, and never counted in a group's leg count; it renders as its own entry with its shipped treatment.",
+    "source": "pm",
+    "why": "There is no single 'shipped treatment' \u2014 \u00a77z records that `BrokerPositionRow` renders `<ModeledPl>` for `unrecognized` and `BrokerPositionCard` does not, so this AC names one behaviour where two exist and a test written to it passes on both form factors while the split survives. AC-29's parity check covers group rows only, and AC-5 pins expanded legs to today's rendering, so nothing in the set catches it. The BRIEF's own feasibility note says a desktop-only grouping 'would deepen an existing split'. Under `absent-is-not-none` the omitted mobile slot is the forbidden shape: the mobile reader cannot tell whether a P/L exists, was withheld, or was lost to a render bug. I am NOT asserting the repair is in scope \u2014 my R1 \u00a78 did assert that, and scope is the PM's lane, so I am handing the call back rather than keeping it.",
+    "proposal": "The owner rules one of two, and AC-24 is reworded to match. (a) IN: mobile renders the withheld literal with its label for `unrecognized`, AC-24 reads 'renders identically on both form factors', and the parity AC covers ungrouped entries as well as groups. (b) OUT: AC-24 reads 'unchanged on each form factor, including the recorded desktop/mobile `ModeledPl` divergence', so the split ships as a named deferral rather than as something an AC silently blesses. Either is defensible; what is not defensible is 'its shipped treatment' standing while two treatments exist.",
+    "kind": "product",
+    "raised_by": "ux",
+    "self_revision": false,
+    "quote_verified": true
+  }
+]

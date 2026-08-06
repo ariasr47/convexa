@@ -22,7 +22,7 @@ import { FactText, STALE_SNAPSHOT_SX } from './BrokerPositionRow';
 import { UNAVAILABLE } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
 import { GROUP_COPY } from './groupCopy';
-import { withheldCauseOf, withheldCountOf, type BrokerGroup } from './grouping';
+import { plWithheldLiteralOf, withheldCauseOf, withheldCountOf, type BrokerGroup } from './grouping';
 
 /** The desktop grid — IDENTICAL to `BrokerPositionRow`'s, so every column lines up. */
 const ROW_GRID_TEMPLATE = 'minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(110px, 1fr) auto';
@@ -210,7 +210,14 @@ function GroupPl({
       </Typography>
     );
   } else {
-    const literal = group.net_entry.kind === 'withheld' ? group.net_entry.literal : UNAVAILABLE;
+    // AC-11 / [absent-is-not-none] fix (GATE Q FAIL B1): the literal is DERIVED through the
+    // shared permanence-first cascade over the group's own members — never hardcoded to
+    // `UNAVAILABLE`. On the real feed every option leg is `unpriceable` (no strike/expiry/right),
+    // which is PERMANENT for this axis, so this now renders `not provided`, matching every
+    // expanded member row's own conclusion (`BrokerPositionRow.tsx:135`) instead of promising a
+    // refresh that cannot work. The `?? UNAVAILABLE` fallback is defensive only — unreachable
+    // given the `pl_dollar != null` guard above already selects this branch.
+    const literal = plWithheldLiteralOf(group) ?? UNAVAILABLE;
     figure = (
       <Typography component="span" data-testid="broker-group-pl" sx={{ color: 'text.secondary' }}>
         <FactText text={literal} />
@@ -258,7 +265,14 @@ export function LoneLegClause() {
           fontSize: '0.8rem',
           color: 'text.secondary',
           ...MONO,
-          whiteSpace: 'nowrap',
+          // Deliberately NOT `nowrap` (unlike this module's other clauses): on a narrow mobile
+          // card this clause sits in the SAME flex row as the P/L block (`BrokerPositionCard.tsx`),
+          // and a forced single line overflowed its own column into the P/L label at 393px (GATE Q
+          // finding §3.3, `broker-option-grouping` bounce — 33.0×13.8px, non-blocking, logged).
+          // Allowing it to wrap keeps it inside its own column instead of spilling sideways; the
+          // text and testid are unchanged.
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
         }}
       >
         {GROUP_COPY.loneLegClause}

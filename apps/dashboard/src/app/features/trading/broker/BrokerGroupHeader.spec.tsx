@@ -169,28 +169,60 @@ describe.each(['row', 'card'] as const)('BrokerGroupHeader — variant %s', (var
     expect(screen.getByTestId('broker-group-net-label')).toBeTruthy();
   });
 
-  it('AC-16a — only two literals can appear in the withheld slots', () => {
-    for (const book of [
-      BOOK_CF_NO_COST,
-      BOOK_CF_NO_SIZE,
-      BOOK_CF_UNPARSEABLE,
-      BOOK_CF_MIXED_CAUSE,
-      BOOK_CF_DOUBLY_BROKEN,
-    ]) {
+  it('AC-16a — the net and P/L withheld slots each render the CORRECT literal for their cause, never a loose set membership', () => {
+    // Tightened per GATE Q FAIL B1: the old form accepted EITHER literal for both slots, which
+    // could not distinguish right from wrong and is exactly how the AC-11 defect (`unavailable`
+    // over a `not provided` cause) shipped green. AC-13 pins the rule this table encodes: when the
+    // net is withheld, the P/L is withheld WITH it, for the SAME reason — so every book below
+    // expects the identical literal in both slots.
+    const cases: ReadonlyArray<[string, BrokerBook, 'not provided' | 'unavailable']> = [
+      ['BOOK_CF_NO_COST', BOOK_CF_NO_COST, 'not provided'],
+      ['BOOK_CF_NO_SIZE', BOOK_CF_NO_SIZE, 'not provided'],
+      ['BOOK_CF_UNPARSEABLE', BOOK_CF_UNPARSEABLE, 'unavailable'],
+      ['BOOK_CF_MIXED_CAUSE', BOOK_CF_MIXED_CAUSE, 'not provided'],
+      ['BOOK_CF_DOUBLY_BROKEN', BOOK_CF_DOUBLY_BROKEN, 'not provided'],
+    ];
+    for (const [label, book, expected] of cases) {
       const g = groupByKey(book, 'TSLA');
       const { unmount } = renderHeader(g, variant);
       const net = screen.getByTestId('broker-group-net').textContent;
-      const pl = screen.getByTestId('broker-group-pl').textContent ?? '';
-      expect(['not provided', 'unavailable']).toContain(net);
-      expect(
-        pl === 'not provided' ||
-          pl === 'unavailable' ||
-          pl.includes('not provided') ||
-          pl.includes('unavailable'),
-      ).toBe(true);
+      const pl = screen.getByTestId('broker-group-pl').textContent;
+      expect(net, `${label} net`).toBe(expected);
+      expect(pl, `${label} pl`).toBe(expected);
       const header = screen.getByTestId('broker-group-header').textContent ?? '';
       expect(header).not.toContain('not recorded');
       expect(header).not.toContain('no basis');
+      unmount();
+    }
+  });
+
+  it('AC-11 / [absent-is-not-none] — the REAL feed shape (unpriceable, no injected marks): the group P/L never disagrees with its members', () => {
+    // The captured book's own real shape: cost basis is fully known (the net is a FIGURE) but
+    // every leg is `unpriceable` (no strike/expiry/right), so `pl_dollar` is null on every member
+    // AND on the group. This is the exact input that made the old hardcoded branch render
+    // `unavailable` above members reading `not provided` — the collapse `[absent-is-not-none]`
+    // forbids.
+    const groupsNoMarks = groupBook(
+      BOOK_CAPTURED_COMPLETE.positions.map((position) =>
+        buildBrokerPositionView({
+          position,
+          legMarks: new Map(),
+          dte: null,
+          nowMs: FIXED_NOW_MS,
+          book: BOOK_CAPTURED_COMPLETE,
+        }),
+      ),
+      BOOK_CAPTURED_COMPLETE,
+      FIXED_NOW_MS,
+    );
+    for (const key of ['AAPL', 'META', 'TSLA']) {
+      const g = groupsNoMarks.groups.find((x) => x.key === key);
+      if (g == null) throw new Error(`no group ${key}`);
+      expect(g.net_entry.kind).toBe('value'); // the net STILL renders a figure
+      expect(g.pl_dollar).toBeNull();
+      const { unmount } = renderHeader(g, variant);
+      const headerPl = screen.getByTestId('broker-group-pl').textContent;
+      expect(headerPl).toBe('not provided');
       unmount();
     }
   });

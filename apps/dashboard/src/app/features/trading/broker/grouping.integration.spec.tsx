@@ -314,6 +314,56 @@ describe('AC-8 · the group net is the signed sum of its members’ own net-entr
 });
 
 // =================================================================================================
+// AC-11 / [absent-is-not-none] — the group P/L never disagrees with its expanded members, on the
+// REAL feed (no stubbed contract lookups: `/api/contract/` 404s for every option leg, exactly as
+// production does for a broker feed carrying no strike/expiry/right)
+// =================================================================================================
+
+describe('AC-11 · the group P/L literal is byte-identical to its expanded members’, end to end', () => {
+  it('captured book: every group header P/L reads the SAME literal its members read — never `unavailable` over `not provided`', async () => {
+    installFetch({ book: BOOK_CAPTURED_COMPLETE });
+    const r = renderPanel();
+    await screen.findByTestId('broker-rows');
+
+    for (const [ticker, legCount] of [
+      ['AAPL', 2],
+      ['META', 2],
+      ['TSLA', 3],
+    ] as const) {
+      const toggle = findGroupToggle(ticker, legCount);
+      const user = userEvent.setup();
+      await user.click(toggle);
+
+      const entry = must(
+        toggle.closest('[data-testid="broker-group-entry"]'),
+        `${ticker} group entry`,
+      ) as HTMLElement;
+      const panel = must(
+        entry.querySelector('[data-testid="broker-group-panel"]'),
+        `${ticker} group panel`,
+      ) as HTMLElement;
+
+      // The net entry still renders a FIGURE — cost basis is fully known on this feed. This is
+      // exactly the shape that made the old hardcoded branch fall through to `unavailable`.
+      const netText = within(entry).getByTestId('broker-group-net').textContent ?? '';
+      expect(netText).toMatch(/debit|credit/);
+
+      const headerPl = within(entry).getByTestId('broker-group-pl').textContent;
+      expect(headerPl).toBe('not provided');
+
+      const memberPls = within(panel)
+        .getAllByTestId('broker-pl')
+        .map((el) => el.textContent);
+      expect(memberPls.length).toBe(legCount);
+      for (const memberPl of memberPls) {
+        expect(memberPl).toBe(headerPl);
+      }
+    }
+    r.unmount();
+  });
+});
+
+// =================================================================================================
 // AC-20 / AC-21 — no-book states vs degraded/reauth states
 // =================================================================================================
 

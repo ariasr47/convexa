@@ -30,6 +30,34 @@
 
 ---
 
+## Last GATE I — 2026-08-06 (queue-drain cull → `broker-option-grouping`; the owner pick held, one entry re-assessed DOWN)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline was **drained** (`.claude/contracts/` held only `_archive/`); ran the full harvest → cull
+rather than rubber-stamping the queue. **Chosen → `broker-option-grouping`** (roadmap queue item 3,
+owner-chosen 2026-08-05 off the live broker verify). Brief at
+`.claude/contracts/broker-option-grouping/BRIEF.md` — it carries the full `Considered:` cull set;
+not restated here. FE-only expected (empty `apps/api` diff); the seam is `brokerView.ts`, already a
+pure `BrokerBook → PositionView[]` projection, so grouping is a pure layer over its output.
+**The cull did not just confirm the queue — it changed two things:**
+1. **`split-decision-log` RE-ASSESSED DOWN (§B).** Its entry reads as an evidence-leak emergency
+   ("half the decision records written to a dead-letter key"), which would outrank a UI feature
+   outright given the roadmap's edge test depends on ledger N. But the entry's own interim note
+   settles it: **outcome-ledger's reader unions both durable logs and de-dupes**, so the ledger is
+   **not losing evidence today**. Remaining harm = store-split integrity + a migration hazard
+   (`[loss-free-durable-migration]` is binding when it IS fixed). **Value M–H → M.** Recorded here
+   so the next GATE I does not re-derive the alarm from the entry's framing.
+2. **`responsive-layout`'s data-loss alarm is STALE — cleared, not acted on.** §B still warns the
+   branch "exists ONLY on this machine — never pushed" and recommends pushing it. **Verified at this
+   gate:** `origin/feat/responsive-layout` exists at `a7b92eb`, identical to local, 0 ahead / 0
+   behind. The chore is done; §B corrected in place. What actually remains is the owner **device
+   review** (notch safe-areas, fluid type, <375px polish) — a real parked item, not a risk.
+**Runner-up if a different shape is wanted:** `vol-normalized-gex` (X2 — strongest decision impact
+in the pool, heavier GATE-M math track, the roadmap's own next-in-line) or the §B
+**distance-to-spot level tiles** (best raw value/effort at H·S). Both stay queued, not dropped.
+**Non-blocking, folded into the BRIEF rather than asked here:** §7z's UNRULED `Build reassessment`
+on `partial` option rows carrying `position: null` sits on exactly the rows this feature
+restructures → routed as a council R3 **product** conflict so the surface is touched once.
+
 ## Last GATE I — 2026-08-01 (OWNER ROADMAP ADOPTION: edge-first — `docs/ROADMAP_2026-08.md` is the standing order)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 **Owner-directed, off the deep-research cycle** (evidence: `docs/MARKET_REALITY_REPORT_2026-08-01.html`,
@@ -61,7 +89,20 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
    Full council. **Fires the deferred system-6 security review** (first real-account connection — the
    long-standing trigger; broker App Secret ⇒ `[secret-encrypted-at-rest]`).
    `[no-real-order-path]` narrowing (read OK, no execution) formalizes at its GATE S as planned.
-3. **⏭ NEXT — `broker-option-grouping`** (owner-chosen 2026-08-05, straight off the live verify).
+3. **`broker-option-grouping` — ✓ SHIPPED + ARCHIVED (2026-08-06)** → `_archive/broker-option-grouping/`.
+   Full pipeline, single-lane (FE-only, `NO_BACKEND_CHANGE`, empty `apps/api` diff): GATE I → C (council
+   R1–R3, 25 conflicts / 25 quotes verified / 0 technical unresolved / 2 owner rulings; R4 ×3, S2 ×2) →
+   PLAN → FE ×3 phases → **Q FAIL → Z → Q PASS**. Final **49 PASS / 0 FAIL / 1 UNVERIFIABLE**
+   (AC-1b owner-only); conformance backend PASS · QA PASS agreeing; dashboard **122 files / 1439 tests**
+   (from 116/1291), e2e **41** (from 37), api 272 unchanged, lint 0/0, typecheck 0.
+   **GATE S graduated TWO keys:** `structural-over-prose-enforcement` (4 features — held back three times
+   for lacking a statable violation test; this ship supplied it) and `single-motion-moment` (2 binding —
+   **crossed at redesign-stage-3 2026-07-22 and was missed at that GATE S**, surfaced by `ledger_tally`).
+   **Two canon errors corrected at this ship:** the captured book is 14 holdings / 3 groups + 2 lone legs,
+   not "13 positions / 4 verticals + 1 lone" (and TSLA's +10/−4/+4 makes the rejected pairing heuristic
+   wrong on the owner's *actual* book today); and the rendered group nets are Convexa's composition
+   (META 3,805.00 / NVDA 7,890.00), **not** Webull's raw `total_cost` (3,802.00 / 7,889.00) which the app
+   never displays. Seams → OPEN_THREADS §7ab. *(original entry:)* **⏭ was NEXT — `broker-option-grouping`** (owner-chosen 2026-08-05, straight off the live verify).
    Collapse a ticker's option legs into ONE expandable row with the NETTED entry cost, and
    **never name the structure** — Webull supplies no strike/expiry/right, so the app cannot prove
    which legs pair; grouping by underlying is a FACT, calling it a vertical is a GUESS. Rejected
@@ -712,6 +753,26 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`ports-free-is-ipv4-only` — the tool written to prevent the stale-server trap does not prevent it** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  `SURFACED 2026-08-06 (broker-option-grouping GATE Q re-run, finding R-5; QA-measured, not inferred)`.
+  **`npm run ports:free` reported "all clear" while three IPv6-only orphans were live** —
+  `[::1]:4200`, `[::1]:4300`, `[::1]:4301` — one of them **answering 200 on :4300**. QA had to kill them
+  with `taskkill /T /F` and restart with `--strictPort` before any measurement was trustworthy.
+  **Why it matters more than its size:** `CLAUDE.md` documents "orphaned dev servers hold ports and serve
+  STALE code" as a hard-won trap and names `ports:free` as *the* remedy — so the trap is still fully
+  reachable **through the tool written to close it**, and worse, the tool now returns a confident
+  all-clear that suppresses the manual check a careful session would otherwise do. Vite binds IPv6 on this
+  box (already recorded: use `localhost:4300`, not `127.0.0.1`), so the IPv6 case is the **common** one
+  here, not an edge case. A verification pass fed by a stale server is exactly how a previous session's
+  build once got certified.
+  **Fix:** make the port sweep resolve both address families (`netstat -ano` already lists `[::]`/`[::1]`
+  rows — the filter is what drops them), and consider having it exit non-zero when it kills something, so
+  a caller can tell "nothing was running" from "I just cleaned up after you". Keep the existing guard that
+  never touches the owner's `pdf-translator` on 8001.
+  *Value M–H (verification integrity, and it silently degrades every run-the-app gate) · Effort S.*
+  Decision-impact cull **N/A** (tooling/correctness class). Ties `CLAUDE.md`'s traps section, which should
+  be corrected in the same change.
 - **`scanner-market-hours-gate` — the sweep worker runs 24/7 with no session awareness (deployed-cost gap)** —
   <!-- atlas: theme=the-machine horizon=next -->
   `SURFACED 2026-07-26 (post-ship, conductor-verified in code)`. **Not a bug — a deployment-cost gap the
@@ -826,7 +887,10 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   measurement must not itself become a failure path).
 - **`responsive-layout` — PARKED MID-FLIGHT on a local-only branch** — `RAISED + PARKED 2026-07-16 (owner:
   <!-- atlas: theme=reach horizon=next -->
-  "pausing to think")`. ⚠ **`feat/responsive-layout` exists ONLY on this machine — never pushed.** 2 commits,
+  "pausing to think")`. ~~⚠ **`feat/responsive-layout` exists ONLY on this machine — never pushed.**~~
+  **CORRECTED 2026-08-06 (GATE I): the branch IS pushed** — `origin/feat/responsive-layout` @ `a7b92eb`,
+  identical to local, 0 ahead / 0 behind. The data-loss risk is gone; only the owner device review
+  remains. 2 commits,
   both green: `d2bac85` responsive top nav (hamburger + drawer < `md`, 48px targets) · `a7b92eb` positions →
   cards < `md` + TradeEntryDialog/AuthDialog → fullScreen < `sm`. **Already fine, no change needed:** landing
   + ticker (container queries; bento 1-col; 0 overflow). **NOT done (needs owner device review):**
@@ -834,8 +898,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Env constraint:** the preview pane clamps ~390–497px and screenshots hang → true phone width **cannot be
   visually verified here**; the work was verified **structurally** (JS overflow probes + tests). Owner has a
   manual checklist (DevTools device toolbar; or `nx serve dashboard --host` + LAN IP:4300). Resume:
-  `git checkout feat/responsive-layout`. **Recommended: `git push -u origin feat/responsive-layout`** — a
-  local-only branch is one disk failure from gone. *Value M–H (mobile usability) · Effort S–M remaining.*
+  `git checkout feat/responsive-layout`. ~~**Recommended: `git push -u origin feat/responsive-layout`** — a
+  local-only branch is one disk failure from gone.~~ (Done — see the 2026-08-06 correction above.)
+  *Value M–H (mobile usability) · Effort S–M remaining.*
   Decision-impact cull **N/A** (UX/platform-reach class). **Invariant watch:** `theme-token-discipline`.
 - **Restructure deferrals** — `RAISED 2026-07-16` → **GROOMED 2026-07-16 (hygiene batch): (a) CULLED,
   <!-- atlas: theme=the-machine horizon=later -->

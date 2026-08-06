@@ -63,6 +63,15 @@ export interface BrokerGroup {
   legs_basis_not_supplied: number;
   legs_basis_unparseable: number;
   legs_multiplier_unknown: number;
+  /**
+   * Σ legs of members whose CONTRACT Convexa can never identify (`unpriceable` —
+   * `positions/view.ts:413`; no strike/expiry/right on this feed, SPEC §1). PERMANENT for the
+   * modeled-P/L axis ONLY — net entry needs no live price, so this never gates it. The same fact
+   * that already selects `not provided` at leg level (`BrokerPositionRow.tsx:135`), carried here
+   * so `plWithheldLiteralOf` renders the SAME permanence-first precedence rather than a hardcoded
+   * literal (AC-11 bounce).
+   */
+  legs_unpriceable: number;
   /** The UNION cardinality. Summing the cause counts double-counts a doubly-broken leg. */
   legs_withholding_permanent: number;
   legs_withholding_transient: number;
@@ -104,6 +113,41 @@ export function withheldCountOf(group: BrokerGroup): number | null {
   return group.net_entry.literal === NOT_PROVIDED
     ? group.legs_withholding_permanent
     : group.legs_withholding_transient;
+}
+
+/**
+ * The literal the group's MODELED-P/L slot renders when `pl_dollar` is `null` — SAME precedence
+ * as the net (SPEC §4's component-state table: "withheld literal + label, same precedence as the
+ * net"), derived through the ONE shared cascade (`withheldLiteralOf`, §2.6) rather than a
+ * hardcoded literal or a second copy of the rule (AC-11 bounce, GATE Q FAIL B1):
+ *
+ *  - when the NET is itself withheld, the P/L is withheld WITH it, for the SAME reason (AC-13) —
+ *    the net's own literal, verbatim, never re-derived;
+ *  - when the NET is a FIGURE (every cost/multiplier fact is known — `entry_known` and
+ *    `multiplier_known` both true, so NEITHER of the net axis's own causes apply) but
+ *    `pl_dollar` is STILL null, the remaining candidate cause is P/L-SPECIFIC: a contract
+ *    Convexa can never price (`legs_unpriceable` — PERMANENT, the exact leg-level predicate
+ *    `BrokerPositionRow.tsx:135` applies: `!entry_known || unpriceable`) beats a genuinely
+ *    THIS-CYCLE mark failure (`unavailable`, the default fallback). Fed through the shared
+ *    cascade's `legs_unpriceable` bucket — never through `legs_multiplier_unknown`, which stays
+ *    reserved for the net axis's own fact.
+ *
+ * Returns `null` when `pl_dollar` is a figure (nothing to render here).
+ */
+export function plWithheldLiteralOf(
+  group: BrokerGroup,
+): typeof NOT_PROVIDED | typeof UNAVAILABLE | null {
+  if (group.pl_dollar != null) return null;
+  if (group.net_entry.kind === 'withheld') return group.net_entry.literal;
+  return (
+    withheldLiteralOf({
+      contributing_legs: group.leg_count,
+      legs_multiplier_unknown: 0,
+      legs_basis_not_supplied: 0,
+      legs_basis_unparseable: 0,
+      legs_unpriceable: group.legs_unpriceable,
+    }) ?? UNAVAILABLE
+  );
 }
 
 /** Which cause the rendered literal names (drives the one tooltip and the one reason line). */
@@ -176,6 +220,14 @@ function buildGroup(
     else if (unreadable) legs_withholding_transient += 1;
   }
 
+  // P/L-AXIS-ONLY permanent cause (§ plWithheldLiteralOf doc): `unpriceable` is a per-MEMBER fact
+  // (positions/view.ts:413 — no strike/expiry/right), so its leg contribution is counted per
+  // member, not per wire leg's own state.
+  const legs_unpriceable = members.reduce(
+    (acc, m) => (m.unpriceable ? acc + m.broker.legs.length : acc),
+    0,
+  );
+
   // THE GATE, evaluated BEFORE any sum, AND over members.
   const entry_known = leg_count > 0 && members.every((m) => m.entry_known);
   const multiplier_known = leg_count > 0 && members.every((m) => m.multiplier_known);
@@ -218,6 +270,7 @@ function buildGroup(
     legs_basis_not_supplied,
     legs_basis_unparseable,
     legs_multiplier_unknown,
+    legs_unpriceable,
     legs_withholding_permanent,
     legs_withholding_transient,
     net_rests_on_derived_size: members.some((m) => m.net_rests_on_derived_size),

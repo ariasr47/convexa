@@ -1,0 +1,62 @@
+[
+  {
+    "quote": "The netted entry is produced by running the **existing** `buildPositionView` composition over the union of a group's mapped legs \u2014 not by summing already-formatted per-position figures.",
+    "source": "ux",
+    "why": "This builds the naming machine into the feature. `buildPositionView` runs `structureKindOf` over its leg set and emits `structure`, `structure_label`, `structure_line` (three variants), `max_loss`, a scalar `qty` and an `eval_subject`. Today those come back inert only because of the guard at `positions/structure.ts:153` (`if (l.expiration == null || l.strike == null || l.right == null) return 'custom'`) \u2014 every Webull option leg trips it. The moment `/trade/instrument` yields strike/expiry/right, that guard stops firing and a merged two-leg set on one ticker returns `call_debit_spread`. The name appears by itself, with nobody deciding it, and UX's own \u00a76.1 ban on a group chip is enforced only by whatever the renderer chooses not to read. UX's falsification clause is also too narrow: it names only \"rendered strings\" and \"per-position dollar totals\" as the alternatives, and there is a third one that carries neither defect.",
+    "proposal": "Call the pure leg-math helpers over the union of the members' MAPPED legs, without calling `buildPositionView`: `netEntryCost` / `legCost` / `legPl` / `plPctStateOf` from `positions/leg.ts` and the composer's all-or-nothing rule. Numerically identical to what UX asked for (both are \u03a3 `legCost`), and the per-leg cause states UX needs for the \u00a75 precedence are reachable via `member.broker.legs[i].cost_basis.state` \u2014 so all-or-nothing withholding and permanent-beats-transient are both implementable exactly as UX wrote them. The grouping module additionally never imports `positions/structure.ts`, never constructs a `SimPosition`, and never calls `buildPositionView`, enforced by a source-scan spec in the shape of the shipped `unrealized_pl` scan.",
+    "kind": "technical",
+    "raised_by": "architect",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "**Byte-identical notes across grouped legs render ONCE, at group level, on expand; a leg whose note text differs keeps its own.**",
+    "source": "ux",
+    "why": "This cannot be built without contradicting two things the same round asserts. (1) PM AC-5 (ship-blocking, `test`) requires that expanding a group reveals the per-leg rows \"exactly as they render today: same fields, same not-a-number literals, same fidelity notes, same per-leg figures \u2014 nothing dropped, nothing added\". Deduping drops notes from every member but one. (2) UX's own architect assumption says the children are reused \"**unchanged in their internals**; only their *container* changes (border, padding, indent), supplied by the parent\" \u2014 but `FidelityNotes` is rendered INSIDE `BrokerPositionRow` (`BrokerPositionRow.tsx:305`), so suppressing it requires a new prop that changes what the child renders, which is UX's own stated falsification condition. The dedup would also fire on essentially every row: the adapter's notes are FIXED strings never interpolated with payload content (`webull_adapter.py:221-232`, enforced by a hygiene test), so `_NOTE_NO_CONTRACT_DETAIL` and `_NOTE_MULTIPLIER_RECONSTRUCTED` are byte-identical across all 9 option legs. Every member in every group would lose both notes. That removes the \"per-leg truth stays visible\" half of the withheld-aggregate story, which is the mitigation the whole feature rests on.",
+    "proposal": "Hoist WITHOUT suppressing, or defer. Either (a) render the shared note once at group level as an ADDITIONAL line and leave the child rows untouched \u2014 AC-5 holds, no child prop, no diff to the shipped components; or (b) drop the dedup from v1 and file it as its own change against `FidelityNotes` on both the broker and sim surfaces, where it can be ruled on once. If PM and UX prefer real suppression, AC-5 must be reworded first, because as written it forbids it.",
+    "kind": "technical",
+    "raised_by": "architect",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "This is a copy and placement change only \u2014 no write path, `no-real-order-path` untouched.",
+    "source": "ux",
+    "why": "The write-path half is right; the \"copy and placement only\" half names a mechanism that does not exist. `buildBrokerReassessment` takes a `BrokerPositionView` and returns `position: null` whenever the subject leg lacks expiration/strike/right (`reassess.tsx:66-76`) \u2014 which is every Webull option leg. A GROUP is not a `BrokerPositionView`: it has no `structure`, no `eval_subject`, no scalar `qty`, no `max_loss`, by construction and on purpose. So option (c) needs either a new builder or a synthesized merged view \u2014 and a synthesized merged view is the forbidden guess in its most damaging location, because it asserts the pairing inside a payload handed to an AI, in fields (`structure`, `structure_line`) that would then carry a name. UX's own risk 6 names \"the reassessment request's `structure` field\" as one of the three ways the structure name creeps back in; option (c) is the mechanism that opens it.",
+    "proposal": "Keep the owner question at R3 exactly as both PM and UX framed it \u2014 that ruling is the owner's and I am not taking it. But attach the structural fact to option (c) before it is put to them: it is not a copy/placement change, it requires a new reassessment subject that the app cannot honestly name until contract detail lands, and it would be the first place a group-level structure claim reaches an AI payload. My \u00a78 position stands under either ruling: if the affordance renders at all, its LOCATION is member-level, inside the disclosure. If the owner still wants one action per ticker, that is a new builder and a bigger feature, not this one.",
+    "kind": "technical",
+    "raised_by": "architect",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "The group's basis descriptor cannot honestly say whether the \u00d7100 came from Webull or from the backend's guarded reconstruction, because `BrokerLeg.multiplier` is a bare `number?` with no provenance.",
+    "source": "architect",
+    "why": "If this stands, two shipped-in-this-feature copy obligations become unwritable and my own tooltip becomes the exact failure my lane exists to prevent \u2014 a number asserting a source the data does not vouch. PM AC-9 requires the label to name 'what it rests on (a contract size Convexa reconstructed, not one Webull supplied)' and AC-10 requires the copy to disclose the reconstruction gap; my \u00a76.3 tooltip already writes the sentence 'it doesn't send an option's contract size either, so Convexa reconstructed that from Webull's own totals'. All three are provenance claims. But the BRIEF states the \u00d7100 is reconstructed under four backend guards for Webull option legs, which reads as a property of the ADAPTER, constant for every leg, not a per-row unknown needing a wire field. The architect's limitation is stated at row granularity; the copy only needs adapter granularity. One of the two framings is wrong and it changes three strings.",
+    "proposal": "Architect states, as a fact about the Webull adapter rather than about a row: does `/account/positions` ever yield a broker-stated contract size for an option leg? If NEVER, the copy may say 'reconstructed' as an adapter-level fact with no wire field and no provenance flag, and AC-9/AC-10 and my \u00a76.3 tooltip stand as written. If SOMETIMES, then AC-9, AC-10 and my tooltip all drop the provenance clause and name only the composition (per-unit cost \u00d7 contract size \u00d7 quantity, N legs), and I rewrite \u00a76.3 and \u00a76.4 accordingly \u2014 the label becomes 'netted by Convexa' with no claim about where the size came from.",
+    "kind": "technical",
+    "raised_by": "ux",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "**PM will accept that a group-level percent uses `plPctStateOf` unchanged and can therefore render `no basis`** on a near-zero net.",
+    "source": "architect",
+    "why": "This assumption is already falsified by the PM's ruling, and letting it survive into the struct puts a fourth literal on a surface with no denominator to show. PM's Out list names 'group-level quantity, percent return, greeks, breakeven, max loss'; AC-3 requires no percent-return figure on a collapsed group row; AC-16 requires that `no basis` never render on a group row. My \u00a75 rules `no basis` deliberately unreachable at group level for the same reason: it is the percentage-denominator literal, and no percentage renders. A `pl_pct` field on the group struct with any render path breaks AC-16 and adds a literal to a slot the design does not contain.",
+    "proposal": "`no basis` stays a leg-row literal in v1 and the group exposes no percent that can reach a rendered slot. Keep `plPctStateOf` uncalled at group level, or if it is computed for a future surface, the contract must state that `pl_pct` has no render path in v1 so the absence is checkable. My \u00a75 already reserves `no basis` as the correct literal for a near-zero group net the day a group percent is added \u2014 which PM has future-dated, not refused.",
+    "kind": "technical",
+    "raised_by": "ux",
+    "self_revision": false,
+    "quote_verified": true
+  },
+  {
+    "quote": "entry_known : boolean // AND over members multiplier_known: boolean // AND over members",
+    "source": "architect",
+    "why": "Booleans cannot support the copy that both the PM and I require beside a withheld net. PM AC-17 (blocks the ship): 'Beside a withheld net, the group states how many of its legs are missing the fact'. My \u00a76.4 strings are counted, never named \u2014 'Webull's data doesn't include one for 1 of these 4 legs' and 'Net entry needs all 4 legs' costs. 1 is missing from Webull's feed.' A count is the only honest way to say which legs are affected without naming one ('the short leg' would be a guess). With `entry_known: boolean` and `unavailable: boolean` as the only exposure, the string can say THAT the net is withheld but not HOW MANY legs caused it, and AC-17 is unbuildable as written.",
+    "proposal": "The group carries two integers alongside the booleans: the number of member legs whose cost basis is `not_supplied` and the number whose cost basis is `unparseable` (and, if the multiplier gate is a third distinct cause, its count too), plus the denominator already present as `leg_count`. That is derivable from the members the layer already holds, needs no `buildPositionView` call and no wire change, and makes both AC-17 and my \u00a76.4 copy expressible. The booleans stay as the gate; the counts exist only to be interpolated into a string.",
+    "kind": "technical",
+    "raised_by": "ux",
+    "self_revision": false,
+    "quote_verified": true
+  }
+]

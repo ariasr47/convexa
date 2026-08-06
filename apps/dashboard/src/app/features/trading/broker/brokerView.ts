@@ -81,16 +81,28 @@ export interface WithholdingInput {
   legs_multiplier_unknown: number;
   legs_basis_not_supplied: number;
   legs_basis_unparseable: number;
+  /**
+   * Legs whose CONTRACT Convexa can never identify — no strike/expiry/right on this feed
+   * (`unpriceable`, `positions/view.ts:413`). PERMANENT, and the SAME precedence bucket as
+   * `legs_multiplier_unknown` (step 1: a contract fact Convexa cannot state), but a DIFFERENT
+   * fact — this one gates only the modeled-P/L axis (pricing needs the contract; a net dollar
+   * figure does not). Optional and defaulted to `0` so the two existing net-entry call sites
+   * (`brokerView.ts` itself, `grouping.ts`'s net cascade) need no change; the group's P/L-only
+   * cascade call is the one that supplies it (F2 amendment — AC-11 bounce).
+   */
+  legs_unpriceable?: number;
 }
 
 /**
  * The withheld-literal cascade — ONE function, called at BOTH levels (SPEC §2.6). Returns the literal
  * to render, or `null` when the figure itself renders.
  *
- *   1. any contributing leg's multiplier absent → `not provided`  (a units fact we do not hold)
- *   2. else any cost basis `not_supplied`       → `not provided`  (PERMANENT)
- *   3. else any cost basis `unparseable`        → `unavailable`   (transient — a refresh may fix it)
- *   4. else                                     → null (the figure)
+ *   1. any contributing leg's multiplier absent  → `not provided`  (a units fact we do not hold)
+ *   1b. any contributing leg unpriceable         → `not provided`  (a contract fact we do not
+ *       hold — P/L-axis-only, `legs_unpriceable`, optional, defaults to 0 for the net axis)
+ *   2. else any cost basis `not_supplied`        → `not provided`  (PERMANENT)
+ *   3. else any cost basis `unparseable`         → `unavailable`   (transient — a refresh may fix it)
+ *   4. else                                      → null (the figure)
  *
  * PERMANENCE FIRST. The shipped leg-level expression had steps 2 and 3 inverted — unreachable at N=1
  * (they cannot both fire) and reachable the moment a group of ≥2 legs exists, where `unavailable`
@@ -108,6 +120,7 @@ export function withheldLiteralOf(
 ): typeof NOT_PROVIDED | typeof UNAVAILABLE | null {
   if (input.contributing_legs === 0) return NOT_PROVIDED;
   if (input.legs_multiplier_unknown > 0) return NOT_PROVIDED;
+  if ((input.legs_unpriceable ?? 0) > 0) return NOT_PROVIDED;
   if (input.legs_basis_not_supplied > 0) return NOT_PROVIDED;
   if (input.legs_basis_unparseable > 0) return UNAVAILABLE;
   return null;

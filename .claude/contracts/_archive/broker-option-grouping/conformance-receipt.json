@@ -1,0 +1,22 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".claude/contracts/broker-option-grouping/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "checked_at": "2026-08-06T19:50:11Z",
+  "summary": {
+    "pass": 1,
+    "fail": 0,
+    "total": 1
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/broker/book",
+      "verdict": "PASS",
+      "required_checked": 9,
+      "failures": []
+    }
+  ]
+}

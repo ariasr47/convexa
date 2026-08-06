@@ -1016,7 +1016,19 @@ The 2026-06-24 OWNER PIVOT's **Track B**, finally unblocked, and roadmap X1. Con
 owner's REAL Webull book (read-only) behind a `PositionsProvider` port; adapter #1 is
 **Webull-direct via the owner's own Individual OpenAPI keys** (SnapTrade remains the named
 external-users adapter, designed-for/not-built). **Live-verified by the owner 2026-08-05** against
-their actual book — 13 positions, every net-entry figure arithmetically confirmed.
+their actual book — every net-entry figure arithmetically confirmed.
+**⚠ COUNT CORRECTED 2026-08-06** (`broker-option-grouping` council R2/S2; measured from
+`apps/api/tests/fixtures/broker/positions_raw.json`, not remembered): the captured book is
+**14 holdings = 5 equity + 9 option legs**, splitting **TSLA·3 · AAPL·2 · META·2 · NVDA·1 ·
+PLTR·1** — so **3 groupable tickers + 2 lone legs**, NOT the "4 apparent verticals + 1 lone NVDA
+call" this thread and `RESUME.md` both originally claimed. TSLA's legs are **+10 / −4 / +4**
+(mismatched sizes), which makes the rejected qty+opposite-side pairing heuristic wrong on the
+owner's **actual** book today rather than hypothetically — the correction strengthens the
+no-naming rule rather than weakening it. Also measured there: Convexa's **rendered** group nets
+(`Σ unit_cost × reconstructed_multiplier × signed_qty`) are AAPL 3,850.00 · META **3,805.00** ·
+TSLA 13,760.00 · NVDA **7,890.00** · PLTR 4,990.00 — all debits. These are NOT Webull's raw
+`total_cost` sums (3,802.00 / 7,889.00 on the two that differ), which the app never displays;
+NVDA 7,890.00 is pinned by a shipped passing test (`broker/genericOptionRow.spec.tsx:77,264`).
 **Formalizes the `[no-real-order-path]` narrowing** the pivot anticipated: reading real positions
 is permitted; real order EXECUTION is not — and here it is STRUCTURAL, not policy: the port has no
 write method, and **no order/trade SDK module exists on disk at all** (the trade package is
@@ -1085,6 +1097,49 @@ is auto-loaded into every session. **Deliberately NOT rewritten:** `BACKLOG.md` 
 all `_archive/` contracts, `docs/SYSTEM_ANALYSIS.md`, `DECISION_LEDGER.md`, and the conformance
 JSON `_comment` fields — those describe the tool as it existed then, and editing them would
 falsify the record.
+
+### 7ab. broker-option-grouping — a count and a net, never a name (SHIPPED + ARCHIVED 2026-08-06)
+The first-named deferred seam off `broker-connect` (§7z), owner-chosen straight off using the live
+feature. A ticker's broker option legs collapse into ONE expandable row carrying a **leg count** and a
+**netted entry cost**; expanding reveals the per-leg rows unchanged. A lone leg reads
+`1 option leg · as Webull reports it`. Equities never group. **FE-only** — `NO_BACKEND_CHANGE`, and
+`git diff d53199e -- apps/api` is **0 lines / 0 files**, which is also how score invariance is closed
+(structurally: the FE cannot reach `signals.py`).
+**The rule, and why it is machinery rather than policy:** the group is **never named a structure** — not
+"vertical", not "spread", **not even the shipped `Custom`**. Webull's `/account/positions` carries no
+strike/expiry/right, so grouping by underlying is a FACT and naming the shape is a GUESS. The council
+found the trap: `positions/structure.ts:153` returns `custom` **only** because those fields are null, so
+the day `/trade/instrument` starts answering, a merged leg set would come back `call_debit_spread`
+**with nobody deciding it**. Enforcement is therefore three layers — an ESLint import allow/deny-list
+(probed live with `eslint --stdin`), a recursive two-arm source scan (whole `STRUCTURE_LABELS` values +
+a 13-regex bare-word denylist) with an anti-vacuity assertion, an every-EXEMPT-path-still-exists
+assertion and four mutation guards, and a **render regression under a future-feed fixture** that is the
+layer which fails on the day the vendor improves. This ship **graduated `structural-over-prose-enforcement`**
+(§9) after three prior holds.
+**Corrections to the record made at this ship (both were wrong in canon, both caught by council voices):**
+the captured book is **14 holdings = 5 equity + 9 option legs** (TSLA·3 · AAPL·2 · META·2 · NVDA·1 ·
+PLTR·1) ⇒ **3 groups + 2 lone legs**, not "13 positions / 4 apparent verticals + 1 lone NVDA call" —
+and TSLA's **+10 / −4 / +4** means the rejected qty-pairing heuristic would mis-pair the owner's
+**actual** book today, so the correction strengthens the rule. And the rendered group nets are
+**AAPL 3,850.00 · META 3,805.00 · TSLA 13,760.00 · NVDA 7,890.00 · PLTR 4,990.00** — Convexa's own
+composition, **not** Webull's raw `total_cost` sums (3,802.00 / 7,889.00), which the app never displays.
+**GATE Q failed once and the catch was the feature's own doctrine turned on itself:** the group P/L
+hardcoded `unavailable` while its legs said `not provided`. `unpriceable` is true for **every** broker
+option leg, so on the real book **every** group header would have promised a refresh that cannot help.
+Fixed by deriving the literal from the one shared permanence-first cascade. The suite had hidden it —
+`BrokerGroupHeader.spec.tsx` injected synthetic marks so the null branch never ran, and AC-16a asserted
+literal *membership in a set*, so it could not fail. Re-verified by observation, not by test-green.
+Final: **QA PASS 49/50, 0 FAIL, 1 UNVERIFIABLE** (AC-1b is owner-only against the live book);
+conformance backend PASS · QA PASS, agreeing; dashboard **122 files / 1439 tests**, e2e **41**, api 272
+unchanged, lint 0/0, typecheck 0. Conformance spec promoted to
+`.claude/tools/conformance/broker-option-grouping.json`.
+**Deferred seams (named, not built):** R-1 the P/L cascade call zeroes the three net-axis buckets so the
+transient default lives in a call-site `??` — one rule, not a complete delegation · **R-2 a genuine spec
+tension** between AC-13's "same reason" arm and §2.6's permanence-first rule, which diverge on
+`BOOK_CF_UNPARSEABLE` (CF-only, unreachable on the real feed; AC-13 mandates the current behaviour) ·
+R-3 Layer 1 does not bite the relative import form on the two presentational modules (Layer 2's set-A
+regex covers them) · R-4 the group literal drops the leg row's `unpriceableTip` · **R-5 → BACKLOG §B:
+`npm run ports:free` is IPv4-only.**
 
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
@@ -1264,3 +1319,15 @@ falsify the record.
   sole disambiguator; expiration-events — the same rule one level down; positions-legs — carried into the
   client render as **four** independently-assertable not-a-number literals, `—` / `unavailable` /
   `not recorded` / `no basis`, never `undefined`/`null`/`NaN`.) See PROJECT_CONTEXT §5.
+- **`structural-over-prose-enforcement`** (promoted 2026-08-06, 4 features) — enforce an invariant by
+  **construction** (type, module boundary, empty diff, mutation-tested scan, build-breaking lint), not by
+  prose someone must remember. The bar it waited three ships for, now statable: **poison what the rule
+  forbids and the build must go red — and the poison test must itself be proven non-vacuous.** Earned
+  decisively where prose could not have worked: a fallback that holds only because a vendor field is
+  absent today will break itself the day the field arrives, with nobody deciding it. (outcome-ledger ·
+  scanner · positions-legs · broker-option-grouping.) See PROJECT_CONTEXT §5.
+- **`single-motion-moment`** (promoted 2026-08-06, 2 binding — crossed at redesign-stage-3 2026-07-22,
+  missed at that GATE S, graduated on the tally) — ONE orchestrated motion moment; the app-wide keyframe
+  inventory is **set-equality pinned** so a new family is build-breaking; surviving motion is that moment
+  or a **data signal** by recorded decision, never decoration; all of it respects a shared
+  `useReducedMotion`. (redesign-stage-2 · redesign-stage-3.) See PROJECT_CONTEXT §5.

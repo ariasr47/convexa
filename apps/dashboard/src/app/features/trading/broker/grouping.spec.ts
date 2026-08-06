@@ -24,7 +24,13 @@ import {
   optionLeg,
   supplied,
 } from './fixtures';
-import { groupBook, groupNetEntryText, withheldCauseOf, withheldCountOf } from './grouping';
+import {
+  groupBook,
+  groupNetEntryText,
+  plWithheldLiteralOf,
+  withheldCauseOf,
+  withheldCountOf,
+} from './grouping';
 
 const groupsOf = (book: BrokerBook) =>
   groupBook(
@@ -75,6 +81,69 @@ describe("AC-8 — a group's net equals the signed sum of its members' rendered 
       if (g.net_entry.kind === 'value') {
         const memberSum = g.members.reduce((acc, m) => acc + m.net_entry_cost, 0);
         expect(g.net_entry.dollars).toBeCloseTo(memberSum, 6);
+      }
+    }
+  });
+});
+
+/**
+ * Real marks off each leg's own `broker_mark`, so `pl_dollar` resolves to a FIGURE — an isolated
+ * check of the ARITHMETIC ONLY, orthogonal to the withholding axis AC-12/13/14 exercise below (a
+ * test-setup concern, matching `BrokerGroupHeader.spec.tsx`'s own `marksForBook`).
+ */
+function groupsWithResolvedMarks(book: BrokerBook) {
+  const legMarks = new Map<string, { mark: number; basis: 'snapshot'; frozen: boolean }>();
+  for (const p of book.positions) {
+    p.legs.forEach((l, i) => {
+      const mark = l.broker_mark.state === 'supplied' ? (l.broker_mark.value ?? 0) : 0;
+      legMarks.set(brokerLegId(p.broker_position_id, i), { mark, basis: 'snapshot', frozen: false });
+    });
+  }
+  return groupBook(
+    book.positions.map((position) =>
+      buildBrokerPositionView({ position, legMarks, dte: null, nowMs: FIXED_NOW_MS, book }),
+    ),
+    book,
+    FIXED_NOW_MS,
+  );
+}
+
+describe('AC-11 — the group modeled P/L equals Σ member.pl_dollar, exactly', () => {
+  it('AAPL / META / TSLA: group.pl_dollar sums its own resolved members, to the cent', () => {
+    const { groups } = groupsWithResolvedMarks(BOOK_CAPTURED_COMPLETE);
+    for (const key of ['AAPL', 'META', 'TSLA']) {
+      const g = groups.find((x) => x.key === key);
+      if (g == null) throw new Error(`no group ${key}`);
+      // Guards the sum against a silent partial fold: every member must have resolved for the
+      // group total to mean anything (`Σ (member.pl_dollar ?? 0)` is the NAMED FORBIDDEN form).
+      expect(g.members.every((m) => m.pl_dollar != null)).toBe(true);
+      const memberSum = g.members.reduce((acc, m) => acc + (m.pl_dollar as number), 0);
+      expect(g.pl_dollar).not.toBeNull();
+      expect(g.pl_dollar).toBeCloseTo(memberSum, 6);
+    }
+  });
+});
+
+describe('AC-11 / [absent-is-not-none] — the REAL feed shape: the group P/L never claims `unavailable` over a PERMANENT `not provided`', () => {
+  it('captured book, NO injected marks (production never fetches a contract key for an unpriceable leg): every group P/L renders `not provided`, matching every member', () => {
+    // `groupsOf` (this file's own harness, above) already uses `legMarks: new Map()` — the exact
+    // production shape for the real feed, where every option leg is `unpriceable` (no
+    // strike/expiry/right) so `useBrokerMarks` never resolves a contract key for it.
+    const { groups } = groupsOf(BOOK_CAPTURED_COMPLETE);
+    for (const key of ['AAPL', 'META', 'TSLA']) {
+      const g = groups.find((x) => x.key === key);
+      if (g == null) throw new Error(`no group ${key}`);
+      // The net is a FIGURE (cost basis is fully known) — this is the exact shape that let the
+      // old hardcoded branch fall through to `UNAVAILABLE`.
+      expect(g.net_entry.kind).toBe('value');
+      expect(g.pl_dollar).toBeNull();
+      expect(plWithheldLiteralOf(g)).toBe('not provided');
+      // Every member independently reaches the SAME conclusion via its own leg-level predicate
+      // (`!entry_known || unpriceable`) — the byte-identity this test exists to pin.
+      for (const m of g.members) {
+        expect(m.pl_dollar).toBeNull();
+        expect(m.entry_known).toBe(true);
+        expect(m.unpriceable).toBe(true);
       }
     }
   });

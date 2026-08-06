@@ -97,6 +97,16 @@ export default [
   // deny-list instead — the same list used for the presentational modules below. This is a WEAKER
   // guarantee than a true allow-list (it only closes the three specifiers holding the four naming
   // entry points, not every future path), but it is proven to bite (see F6 Step 2/3 verification).
+  //
+  // GATE Q FINDING (2026-08-06, `broker-option-grouping` bounce): the alias-form entries below bite
+  // on `'@/features/trading/positions/structure'` (verified live via `eslint --stdin`) but do NOT
+  // bite on the equivalent RELATIVE form `'../positions/structure'` — `no-restricted-imports`
+  // `patterns.group` entries are literal specifiers, not path-normalizing, so an alias and its
+  // relative equivalent are two different strings to this rule. The relative-form entries below
+  // close that gap for the one directory depth that exists today (`grouping.ts` sits directly under
+  // `broker/`, one level above `positions/`); Layer 2's set-A regex
+  // (`/from\s+['"][^'"]*positions\/(structure|view|leg)['"]/`) already caught every import-path
+  // SHAPE regardless, so this was never a hole in the three-layer stack — only in Layer 1 alone.
   {
     files: ['**/features/trading/broker/grouping.ts'],
     rules: {
@@ -109,6 +119,9 @@ export default [
                 '@/features/trading/positions/structure',
                 '@/features/trading/positions/view',
                 '@/features/trading/positions/leg',
+                '../positions/structure',
+                '../positions/view',
+                '../positions/leg',
               ],
               message:
                 'grouping.ts may not import positions/{structure,view,leg} (SPEC §2.3): those three specifiers hold all four entry points to the naming machine. Use ./brokerView, ./predicates or @org/api types instead.',

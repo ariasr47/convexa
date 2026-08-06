@@ -413,6 +413,37 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   failed this cycle · `not recorded` the saved record never held this fact · `no basis` the denominator is
   about zero while the dollar figure beside it renders fine. Never `undefined`/`null`/`NaN`, which are
   indistinguishable from an interpolation bug in a screenshot. 3 binding.)*
+- **`[structural-over-prose-enforcement]`** (promoted 2026-08-06, 3 features — **held back three times
+  until it earned a statable violation test, which `broker-option-grouping` supplied**) — an invariant a
+  feature must hold is enforced by **construction** — a type, a module boundary, an empty diff, a
+  mutation-tested source scan, a build-breaking lint rule — rather than by **prose an implementer must
+  remember**. Where both are available, prefer the shape that makes the violation **impossible or
+  build-breaking**. **The bar this key waited for, now statable in one sentence: *poison the thing the rule
+  forbids, and the build must go red* — and the poison test itself must be proven non-vacuous, so a guard
+  that cannot demonstrate it bites is not enforcement.** The reason prose is insufficient is not
+  forgetfulness: in `broker-option-grouping`, `structure.ts:153` returns `custom` **only** because
+  strike/expiry/right are null on today's feed, so the day a vendor starts supplying them the forbidden
+  structure name would have appeared **by itself, with nobody deciding it**. No amount of remembering
+  catches that; a render regression run against a simulated future feed does.
+  *(outcome-ledger — empty `apps/api` diff, integers-only roll-up, type-level decline map, mutation-tested
+  `?raw` scan; scanner — leaf boundary, pure-logic-with-injected-clock, pins re-pointed not deleted;
+  positions-legs — max-loss eligibility as membership in a closed set rather than a detection heuristic,
+  a branded `NetLimitDollars` no numeric literal can inhabit; broker-option-grouping — the three-layer
+  no-naming stack: an ESLint import allow/deny-list probed live, a recursive two-arm source scan with an
+  anti-vacuity assertion + an every-EXEMPT-path-still-exists assertion + four mutation guards including
+  one proving arm B fires while arm A stays silent, and a render regression under a future-feed fixture.
+  4 features.)*
+- **`[single-motion-moment]`** (promoted 2026-08-06, 2 binding — **crossed at `redesign-stage-3`
+  2026-07-22 and was missed at that GATE S; graduated here on the tally**) — the app has **ONE orchestrated
+  motion moment**, and the app-wide keyframe inventory is **set-equality pinned** so a new animation family
+  is **build-breaking** rather than merely discouraged. Motion that survives is either that one moment or a
+  **data signal** by recorded decision — never decoration. Every motion respects a shared
+  `useReducedMotion`, degrading to a static frame. *(redesign-stage-2 — the hero curve-draw became the one
+  moment, dash-offset/opacity-only keyframes under a property-set pin, the generic radial blob and
+  ValueCard light-bleed deleted with zero-reference proof; redesign-stage-3 — the consolidation itself,
+  5 families dispositioned and the inventory set-equality pinned to {liveDotPulse, widgetLivePulse,
+  ordersWatchPulse} + the hero draw + flash, with the live-browser inventory verified equal to the KEEP
+  set. 2 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -445,6 +476,23 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   rendered** — it is ~100× wrong for options (it nets a ×100 cost against a non-×100 market value).
   Score/tier/`state_fingerprint` byte-identical with and without a broker connected. system-6
   security review fired and closed here. QA PASS after one GATE Z cycle; owner live-verified.
+- **Broker option legs grouped by underlying (`broker-option-grouping`, FE-only, shipped 2026-08-06)** —
+  a ticker's broker option legs collapse into ONE expandable row carrying a **leg count** and a **netted
+  entry cost** (`Σ member.net_entry_cost`); expanding reveals the per-leg rows **unchanged**. A ticker with
+  one option leg stays a plain row reading `1 option leg · as Webull reports it`; **equities never group**.
+  **The group is NEVER named a structure** — not "vertical", not "spread", **not even `Custom`** — because
+  grouping by underlying is a fact the feed supports while naming the shape is a guess it does not. This is
+  enforced **structurally, not by prose**: an import allow/deny-list keeping the grouping module clear of
+  `positions/*` (all four entry points to the naming machine take a `SimPosition`, so banning the
+  constructor closes all four), a recursive two-arm mutation-guarded source scan, and a **render regression
+  under a simulated future feed** — the layer that fails on the day a vendor starts supplying contract
+  detail and `structure.ts:153`'s `custom` fallback stops firing. Withheld figures use the **one shared
+  permanence-first cascade** at both group and leg level, so a group's literal is always **derived from its
+  members', never chosen beside them** — the GATE Q catch that made this explicit. The netted cost carries
+  its basis label and a provenance clause **gated on a derived boolean**, never hardcoded prose. Also
+  repaired here as an owner-ruled in-scope defect: the mobile card previously **omitted** the modeled-P/L
+  slot for an `unrecognized` entry while desktop rendered a withheld literal. Score/tier/`state_fingerprint`
+  untouched — empty `apps/api` diff. Graduated `[structural-over-prose-enforcement]` (§5).
 - On-demand bundle: `GET /{ticker}` & `/api/ticker/{ticker}` (+ slices) with DTE/expiration filter.
 - GEX strike-profile chart (walls always in-window, spot/flip/live reference lines, tooltips).
 - Live SSE: mid, spread, **net flow (5m, signed)**, live gamma flip; session-aware status chip.
