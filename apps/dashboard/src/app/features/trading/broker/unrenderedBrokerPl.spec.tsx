@@ -13,10 +13,12 @@
 import type { BrokerPosition } from '@org/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { BrokerGroupHeader, BrokerGroupPanel } from './BrokerGroupHeader';
 import { BrokerPositionCard } from './BrokerPositionCard';
 import { BrokerPositionRow } from './BrokerPositionRow';
 import { buildBrokerPositionView } from './brokerView';
 import {
+  BOOK_CF_UNREALIZED_LEAK,
   FIXED_NOW_MS,
   POS_CAPTURE_AMD_STOCK,
   POS_CAPTURE_NO_MULTIPLIER,
@@ -30,6 +32,7 @@ import {
   POS_SPREAD,
   POS_UNRECOGNIZED,
 } from './fixtures';
+import { groupBook } from './grouping';
 
 /** The two distinctive values from the real capture — NVDA's (wrong) option P/L and AMD's. */
 const CAPTURED_PL_VALUES = [-7840.5, 267.63];
@@ -123,6 +126,58 @@ describe('R5b · Webull’s own P/L is carried, never rendered', () => {
     const text = screen.getByText(/Webull says/).textContent ?? '';
     const leaks = CAPTURED_PL_VALUES.flatMap(renderedForms).filter((f) => text.includes(f));
     expect(leaks.length).toBeGreaterThan(0);
+  });
+
+  // broker-option-grouping F5 — the SAME regression, extended to the GROUP surface (SPEC §2.11).
+  // `BrokerGroup` carries no `unrealized_pl` field at all, but the guard belongs here rather than
+  // being assumed: a future edit that threaded a member's carried-verbatim fact through the header
+  // must trip this, exactly as it would on the leg-level row/card.
+  it('no captured broker P/L value appears in the GROUP header/panel text either', () => {
+    const views = BOOK_CF_UNREALIZED_LEAK.positions.map((p) =>
+      buildBrokerPositionView({
+        position: p,
+        legMarks: new Map(),
+        dte: null,
+        nowMs: FIXED_NOW_MS,
+        book: BOOK_CF_UNREALIZED_LEAK,
+      }),
+    );
+    const group = groupBook(views, BOOK_CF_UNREALIZED_LEAK, FIXED_NOW_MS).groups[0];
+    expect(group).toBeTruthy();
+
+    for (const variant of ['row', 'card'] as const) {
+      for (const streamOffline of [false, true]) {
+        for (const isStale of [false, true]) {
+          const r = render(
+            <>
+              <BrokerGroupHeader
+                group={group}
+                variant={variant}
+                expanded
+                onToggle={() => undefined}
+                panelId="leak-panel"
+                streamOffline={streamOffline}
+                isStale={isStale}
+                asOf={'2026-08-01T14:40:00Z'}
+              />
+              <BrokerGroupPanel group={group} id="leak-panel" expanded>
+                <div data-testid="member-slot" />
+              </BrokerGroupPanel>
+            </>,
+          );
+          const text = r.container.textContent ?? '';
+          for (const v of CAPTURED_PL_VALUES) {
+            for (const form of renderedForms(v)) {
+              expect(
+                text,
+                `"${form}" leaked (variant=${variant} offline=${streamOffline} stale=${isStale})`,
+              ).not.toContain(form);
+            }
+          }
+          r.unmount();
+        }
+      }
+    }
   });
 });
 
