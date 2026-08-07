@@ -20,10 +20,14 @@ export const SCAN_COPY = {
   subhead:
     'One dense read of the tracked universe — which ticker deserves the deep-dive right now.',
   /** The two-speed basis, always above the table (UX §2.1). */
-  cadenceHeader: 'Prices ~30s · structure ~3 min · hot names sooner',
+  cadenceHeader: 'Prices live · structure ~3 min · hot names sooner',
   cadenceGloss:
-    'Prices refresh about every 30 seconds; the full options structure re-computes about every 3 ' +
-    'minutes; names that just moved re-compute sooner. This is a polled snapshot, not a real-time feed.',
+    'Prices stream live. The options structure — score, tier, flip and walls — re-computes about ' +
+    'every 3 minutes, and names that just moved re-compute sooner, so those numbers are a recent ' +
+    'snapshot rather than a live read.',
+  /** Shown in place of the header when the price stream drops: the figures stay, dimmed, and say
+   *  why. Never blanks a row — the structure below is unaffected. */
+  cadenceHeaderOffline: 'Prices offline · showing last known · structure ~3 min',
   loading: 'Loading scan…',
   emptyViewTitle: 'No tickers in your view.',
   emptyViewBody: 'Pick tickers to build your scan.',

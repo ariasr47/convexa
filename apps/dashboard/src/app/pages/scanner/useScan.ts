@@ -1,10 +1,14 @@
 /**
  * useScan — the `/scanner` page's ONE data owner and its ONLY fetcher.
  *
- * POLL, never a stream (`[live-vs-static-isolation]`): a single `GET /api/scan` on a stable
- * `SCAN_POLL_MS` interval. There is deliberately NO `EventSource`, NO `streamTicker`, and no per-row
- * subscription anywhere on this surface, and the cadence the page STATES in its header is the same
- * cadence this constant sets.
+ * POLLED for STRUCTURE (`[live-vs-static-isolation]`): a single `GET /api/scan` on a stable
+ * `SCAN_POLL_MS` interval carries score, tier, flip and walls — everything chain-derived, which the
+ * sweep owns and which cannot be live. The cadence the page STATES in its header is the cadence this
+ * constant sets.
+ *
+ * PRICES ARE LIVE as of 2026-08-06 and are NOT this hook's business — `useLivePrices` overlays them
+ * from one shared SSE connection. Two data ages on one row, each labelled as what it is. Do not
+ * fetch a price here: a price arriving on the poll would silently fight the live one.
  *
  * The interval is created once; the hidden-tab gate is read from a REF at fire time, so visibility
  * flapping or a StrictMode double-invoke can never add a second interval or burst the backend (the
@@ -21,6 +25,7 @@
  * ⇒ the thrown `AuthError` aborts before `setSnapshot`, so NOTHING is written locally. This hook
  * writes no localStorage and owns no durable store — the server is the boundary of record.
  */
+import { useGate, type GateApi } from '@/features/auth/useGate';
 import {
   AuthError,
   getScan,
@@ -33,7 +38,6 @@ import {
   type SweepHeartbeat,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGate, type GateApi } from '@/features/auth/useGate';
 import { sortRows, sweepBanner } from './format';
 import { SCAN_COPY } from './labels';
 

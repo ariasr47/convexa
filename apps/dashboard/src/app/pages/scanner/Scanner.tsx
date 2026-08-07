@@ -24,6 +24,7 @@ import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
 import { ScanTable, type ScanGroup } from './ScanTable';
 import { ScanToolbar } from './ScanToolbar';
+import { useLivePrices } from './useLivePrices';
 import { useScan } from './useScan';
 import { ViewEditorDialog } from './ViewEditorDialog';
 
@@ -97,9 +98,25 @@ export function Scanner() {
   // The rows in final display order (lead-first when grouped) — shared by the table AND the <sm
   // card list, so the first paint leads with the strong-signal set at every width (card chrome
   // itself is unchanged).
-  const displayRows = useMemo(
+  const polledRows = useMemo(
     () => (groups ? groups.flatMap((g) => g.rows) : scan.rows),
     [groups, scan.rows],
+  );
+
+  // LIVE PRICES over the POLLED structure. Only the symbols actually on screen are subscribed —
+  // subscribing the whole universe would re-create, in a new place, the overnight waste the
+  // market-hours gate removed. One SSE connection covers all of them.
+  const live = useLivePrices(useMemo(() => polledRows.map((r) => r.symbol), [polledRows]));
+
+  // Overlay, never replace: a symbol with no live tick yet keeps the swept price, so a quiet tape
+  // or a dropped stream leaves the table fully populated ([best-effort-isolated-or-null]).
+  const displayRows = useMemo(
+    () =>
+      polledRows.map((r) => {
+        const lp = live.prices[r.symbol];
+        return lp ? { ...r, price: lp.price } : r;
+      }),
+    [polledRows, live.prices],
   );
 
   return (
@@ -117,7 +134,10 @@ export function Scanner() {
           data-testid="scan-cadence-header"
           sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: '8px', mb: 0 }}
         >
-          <Jargon term={SCAN_COPY.cadenceHeader} gloss={SCAN_COPY.cadenceGloss} />
+          <Jargon
+            term={live.offline ? SCAN_COPY.cadenceHeaderOffline : SCAN_COPY.cadenceHeader}
+            gloss={SCAN_COPY.cadenceGloss}
+          />
         </Typography>
       </Box>
 

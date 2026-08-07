@@ -644,9 +644,14 @@ function stripComments(src: string): string {
     .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
     .replace(/^\s*\/\/.*$/gm, '');
 }
-const hasLiveWord = (src: string) => /\blive\b/i.test(stripComments(src));
-const hasStreamPrimitive = (src: string) =>
-  /\bEventSource\b|\bstreamTicker\b/.test(stripComments(src));
+// RETIRED 2026-08-06 (owner decision B). `hasLiveWord` and `hasStreamPrimitive` enforced "the scan
+// surface is poll-only, and never says live". Both were premised on a constraint that no longer
+// exists: streaming the scanner used to mean ONE VENDOR SOCKET PER ROW, so 69 rows was impossible.
+// The shared multiplexer (providers/stock_stream_hub) made it one socket for any number of symbols
+// and the prices ARE live now — a guard banning the word would force the UI to lie.
+// What the guard really protected survives SERVER-side: the hazard was a row wiring itself to
+// /api/stream/{ticker}, which builds a LiveSession with an option-chain refresh loop.
+// apps/api tests/test_price_route_ordering pins that, and /api/stream/prices carries no chain.
 const usesBareExtras = (src: string) =>
   /\bextras\./.test(stripComments(src)) || /\bextrasLight\./.test(stripComments(src));
 
@@ -659,31 +664,19 @@ describe('[live-vs-static-isolation] + [theme-token-discipline] on the scan surf
   });
 
   it('MUTATION GUARD: every checker flags its violation fixture and passes a clean one', () => {
-    expect(hasLiveWord('const label = "live feed";')).toBe(true);
-    expect(hasLiveWord('/* the word live in a comment */ const x = 1;')).toBe(false);
-    expect(hasLiveWord('const x = "polled snapshot";')).toBe(false);
-    expect(hasStreamPrimitive('const es = new EventSource(url);')).toBe(true);
-    expect(hasStreamPrimitive('streamTicker(sym, {}, cb)')).toBe(true);
-    expect(hasStreamPrimitive('const id = setInterval(poll, 30000);')).toBe(false);
     expect(usesBareExtras('color: extras.textAmber')).toBe(true);
     expect(usesBareExtras('color: extrasFor(theme).panelRaised')).toBe(false);
   });
 
-  it('no scanner source says "live", mounts a stream, or dark-locks a mode-aware value', () => {
-    const live: string[] = [];
-    const streams: string[] = [];
+  it('no scanner source dark-locks a mode-aware value', () => {
     const bare: string[] = [];
     for (const [file, src] of Object.entries(SCANNER_SOURCES)) {
-      if (hasLiveWord(src)) live.push(file);
-      if (hasStreamPrimitive(src)) streams.push(file);
       if (usesBareExtras(src)) bare.push(file);
     }
-    expect(live, 'AC-9: the scan surface never uses the word "live"').toEqual([]);
-    expect(streams, '[live-vs-static-isolation]: the scan surface is poll-only').toEqual([]);
     expect(bare, 'mode-aware values must resolve via extrasFor(theme)').toEqual([]);
   });
 
-  it('the RENDERED page never says "live" — with all four row states on screen', async () => {
+  it('the RENDERED page states BOTH data ages — with all four row states on screen', async () => {
     const nowS = Date.now() / 1000;
     installScanBackend({
       symbols: ['OKY', 'STL', 'ERR', 'BLD'],
@@ -704,8 +697,17 @@ describe('[live-vs-static-isolation] + [theme-token-discipline] on the scan surf
     renderPage();
     await screen.findByTestId('scan-table');
     const page = screen.getByTestId('scanner-page');
-    expect(page.textContent ?? '').not.toMatch(/\blive\b/i);
-    expect(page.textContent ?? '').toMatch(/Prices ~30s · structure ~3 min · hot names sooner/);
+    // REPLACED 2026-08-06 (owner decision B). This used to assert the page never says "live".
+    // Prices ARE live now, so that assertion would force the UI to lie. The property worth
+    // keeping is the one underneath it: the page must state BOTH data ages, so nobody reads a
+    // 3-minute-old score as a live one — [live-vs-static-isolation] expressed as copy rather
+    // than as a ban on a word.
+    const text = page.textContent ?? '';
+    // Either state is correct — what must never happen is the page going quiet about which
+    // one it is in. Under the test's stubbed EventSource the stream never connects, so this
+    // legitimately renders the offline variant.
+    expect(text, 'the page must state the PRICE state').toMatch(/Prices (live|offline)/);
+    expect(text, 'and must not let structure pass as live').toMatch(/structure ~3 min/);
     expect(screen.getAllByTestId('scan-row')).toHaveLength(4);
   });
 });
