@@ -81,6 +81,10 @@ const CANON_KEY_RE = /^\|\s*`([a-z0-9-]+)`\s*\|/gm;
 const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // str.splitlines() breaks on far more than \n. read() has already folded \r away, but the CRLF/CR
 // alternatives are kept so pySplitlines matches str.splitlines() on raw text too.
+// DELIBERATE control characters: these are exactly what Python's str.splitlines() breaks on,
+// and dropping them would silently diverge this port from the .py behaviour it reproduces.
+// (The disable must be the LAST line before the regex to apply to it.)
+// eslint-disable-next-line no-control-regex
 const PY_LINEBREAK_RE = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/;
 // The .py sorts Path objects, not str; JS `<`/`>` on strings compare UTF-16 code units, not true
 // code points, so astral-plane names (outside the BMP) would diverge from Python's ordering. This

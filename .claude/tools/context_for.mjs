@@ -60,7 +60,7 @@ const ARCHIVE = path.join(CONTRACTS, '_archive');
 
 // §3.1: every regex is module-scope, compiled once.
 const SHARD_RE = /<!--\s*shard:\s*(.*?)\s*-->/;
-const TAGS_RE = /tags=([\w,\-]+)/;
+const TAGS_RE = /tags=([\w,-]+)/;
 // `^Context tags:\s*(.+)$` with re.M. `\s` spans newlines in BOTH engines and is greedy, so a bare
 // `Context tags:` line pulls the value off the FOLLOWING line — pinned by the corpus. (The brief
 // proposed `[ \t]*`, which would not match that shape at all; see the task-6 report.)
@@ -71,12 +71,16 @@ const SPLIT_TAGS_RE = /[,\s]+/;
 // colon further down. `[\s\S]*?` reproduces that; `[^\n]*?` does not (pinned by the corpus).
 // No `m` flag: Python's `\Z` is the absolute end of input, which is exactly JS `$` without `m`.
 const INVARIANT_WATCH_RE = /Invariant watch:([\s\S]*?)(?:\n[A-Z][a-z][\s\S]*?:|$)/;
-const WATCH_KEY_RE = /[`\[]([a-z][a-z0-9-]{3,})[`\]]/g;
+const WATCH_KEY_RE = /[`[]([a-z][a-z0-9-]{3,})[`\]]/g;
 // Python's Path.read_text() opens in universal-newline mode: \r\n and lone \r both become \n.
 const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // str.splitlines() breaks on far more than \n. The universal-newline read has already folded \r away
 // on the CLI path, but the CRLF/CR alternatives are kept so the exported parseSections() matches
 // str.splitlines() on raw text too — a strict superset that cannot fire on converted input.
+// DELIBERATE control characters: these are exactly what Python's str.splitlines() breaks on,
+// and dropping them would silently diverge this port from the .py behaviour it reproduces.
+// (The disable must be the LAST line before the regex to apply to it.)
+// eslint-disable-next-line no-control-regex
 const PY_LINEBREAK_RE = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/;
 // sorted() on str is codepoint order; §3.1 requires an explicit comparator on every .sort().
 const CODEPOINT_SORT = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
