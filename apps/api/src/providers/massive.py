@@ -19,6 +19,8 @@ from massive import RESTClient
 from massive.websocket import WebSocketClient
 from massive.websocket.models import Feed, Market
 
+from .stock_stream_hub import StockStreamHub
+
 from .base import (
     MarketDataProvider, OptionsMarketState, UnderlyingBar, IntradayBar,
     TradePrint, StreamEvent, StockSnapshot,
@@ -474,45 +476,56 @@ class MassiveProvider(MarketDataProvider):
         logger.info(f"[snapshot] per-ticker snapshot: {len(out)}/{len(wanted)} priced")
         return out
 
+    # --- shared stock stream (2026-08-06) -------------------------------------------------
+    # ONE WebSocket per provider instance, multiplexed across every watched symbol. The vendor
+    # meters CONNECTIONS, not symbols, so the previous per-ticker socket spent the scarce resource
+    # on the abundant one. `stream_stock`'s signature and contract are unchanged — only where the
+    # socket is constructed moved. See src/providers/stock_stream_hub.py.
+
+    @staticmethod
+    def _decode_stock_msg(m):
+        """SDK message -> (SYMBOL, StreamEvent), or None for anything this hub does not carry."""
+        ev = getattr(m, "event_type", None)
+        sym = getattr(m, "symbol", None)
+        if not sym:
+            return None
+        sym = str(sym).upper()
+        if ev == "Q":
+            return sym, StreamEvent(
+                kind="quote", ts=getattr(m, "timestamp", 0) or 0,
+                bid=getattr(m, "bid_price", 0.0) or 0.0,
+                ask=getattr(m, "ask_price", 0.0) or 0.0,
+                bid_size=float(getattr(m, "bid_size", 0) or 0),
+                ask_size=float(getattr(m, "ask_size", 0) or 0),
+            )
+        if ev == "T":
+            return sym, StreamEvent(
+                kind="trade", ts=getattr(m, "timestamp", 0) or 0,
+                price=getattr(m, "price", 0.0) or 0.0,
+                size=float(getattr(m, "size", 0) or 0),
+            )
+        return None
+
+    def _stock_hub(self) -> StockStreamHub:
+        hub = getattr(self, "_stock_stream_hub", None)
+        if hub is None:
+            feed = Feed.RealTime if self._feed == "realtime" else Feed.Delayed
+            hub = StockStreamHub(
+                open_socket=lambda: WebSocketClient(
+                    api_key=self.api_key, feed=feed, market=Market.Stocks),
+                decode=self._decode_stock_msg,
+                label=self.feed_label,
+            )
+            self._stock_stream_hub = hub
+        return hub
+
     async def stream_stock(self, ticker: str) -> AsyncIterator[StreamEvent]:
         """
-        Live NBBO quotes + trades for one stock ticker via the Massive WebSocket. Bridges the
-        SDK's callback/reconnect loop into an async generator through an asyncio.Queue; closing
-        the generator cancels the connect task and closes the socket.
+        Live NBBO quotes + trades for one stock ticker. Unchanged contract: an async generator that
+        yields until the consumer stops iterating, and releases its subscription on close.
+
+        What changed underneath is the connection count — this is now a view onto ONE shared socket
+        rather than a socket of its own, so watching N tickers costs one connection instead of N.
         """
-        ticker_upper = ticker.upper()
-        feed = Feed.RealTime if self._feed == "realtime" else Feed.Delayed
-        ws = WebSocketClient(api_key=self.api_key, feed=feed, market=Market.Stocks)
-        ws.subscribe(f"Q.{ticker_upper}", f"T.{ticker_upper}")
-        queue: asyncio.Queue = asyncio.Queue()
-
-        async def processor(msgs):
-            for m in msgs:
-                ev = getattr(m, "event_type", None)
-                if ev == "Q":
-                    queue.put_nowait(StreamEvent(
-                        kind="quote", ts=getattr(m, "timestamp", 0) or 0,
-                        bid=getattr(m, "bid_price", 0.0) or 0.0,
-                        ask=getattr(m, "ask_price", 0.0) or 0.0,
-                        bid_size=float(getattr(m, "bid_size", 0) or 0),
-                        ask_size=float(getattr(m, "ask_size", 0) or 0),
-                    ))
-                elif ev == "T":
-                    queue.put_nowait(StreamEvent(
-                        kind="trade", ts=getattr(m, "timestamp", 0) or 0,
-                        price=getattr(m, "price", 0.0) or 0.0,
-                        size=float(getattr(m, "size", 0) or 0),
-                    ))
-
-        task = asyncio.create_task(ws.connect(processor))
-        logger.info(f"[{ticker_upper}] Opened {self.feed_label} stock stream (Q+T)")
-        try:
-            while True:
-                yield await queue.get()
-        finally:
-            task.cancel()
-            try:
-                await ws.close()
-            except Exception:
-                pass
-            logger.info(f"[{ticker_upper}] Closed stock stream")
+        async for ev in self._stock_hub().stream(ticker):
+            yield ev
