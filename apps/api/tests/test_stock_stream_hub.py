@@ -238,3 +238,48 @@ def test_overflow_drops_the_OLDEST_and_never_blocks_the_socket():
         assert first["px"] >= overflow - QUEUE_MAXSIZE - 1, "kept the stalest tick"
         await hub._detach("SPY", q)
     asyncio.run(run())
+
+
+# --------------------------------------------------------------------- tape instrumentation
+
+def test_tape_stats_count_messages_per_symbol_and_survive_an_empty_hub():
+    """The always-on decision rests on these numbers, so a silently-zero counter would be worse
+    than no instrumentation at all — it would read as 'the tape is cheap'."""
+    async def run():
+        hub, sockets = _hub()
+        assert hub.tape_stats()["messages_total"] == 0        # empty hub must not raise
+
+        spy_t, _ = await _watch(hub, "SPY")
+        nvda_t, _ = await _watch(hub, "NVDA")
+        await sockets[0].processor(
+            [{"sym": "SPY", "px": float(i)} for i in range(30)]
+            + [{"sym": "NVDA", "px": 1.0}])
+        await _settle()
+
+        st = hub.tape_stats()
+        assert st["messages_total"] == 31
+        assert st["symbols_subscribed"] == 2
+        assert st["socket_open"] is True
+        top = {r["symbol"]: r["messages"] for r in st["top_symbols"]}
+        assert top["SPY"] == 30 and top["NVDA"] == 1
+        # Busiest first — the always-on cost is driven by the top of this list, not the mean.
+        assert st["top_symbols"][0]["symbol"] == "SPY"
+        assert st["messages_per_second"] > 0
+        assert st["decode_load_pct"] >= 0.0
+        await _stop(spy_t, nvda_t)
+    asyncio.run(run())
+
+
+def test_dropped_messages_are_counted_not_hidden():
+    """A drop means a consumer could not keep up. If that is happening, the operator must see it —
+    silently dropping ticks while reporting a healthy rate is the worst of both."""
+    async def run():
+        hub, sockets = _hub()
+        q: asyncio.Queue = asyncio.Queue(maxsize=QUEUE_MAXSIZE)
+        await hub._attach("SPY", q)
+        await _settle()
+        await sockets[0].processor(
+            [{"sym": "SPY", "px": float(i)} for i in range(QUEUE_MAXSIZE + 25)])
+        assert hub.tape_stats()["messages_dropped"] == 25
+        await hub._detach("SPY", q)
+    asyncio.run(run())

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import AsyncIterator, Callable, Optional
 
 logger = logging.getLogger("Convexa")
@@ -61,6 +62,17 @@ class StockStreamHub:
         self._ws = None
         self._task: Optional[asyncio.Task] = None
         self._lock = asyncio.Lock()
+        # --- tape instrumentation (2026-08-06) -----------------------------------------------
+        # Counters only: three int bumps and one clock read per BATCH, never per message, so the
+        # hot loop cost is not what we are trying to measure. They exist to answer one question
+        # with a number instead of a guess: what would subscribing every ticker actually cost?
+        # Read-only, operator-surface-only ([operator-vs-trader-path-separation]); nothing here
+        # touches a trader route, the bundle, or scoring.
+        self._msgs_total = 0
+        self._msgs_by_symbol: dict[str, int] = {}
+        self._msgs_dropped = 0            # queue overflow: a consumer could not keep up
+        self._decode_seconds = 0.0        # cumulative time in the decode/route loop
+        self._started_at = time.time()
 
     # ------------------------------------------------------------------ public
 
@@ -71,6 +83,28 @@ class StockStreamHub:
     @property
     def socket_open(self) -> bool:
         return self._ws is not None
+
+    def tape_stats(self) -> dict:
+        """Read-only snapshot for the operator readout. Never raises; never mutates."""
+        elapsed = max(1e-6, time.time() - self._started_at)
+        by_symbol = sorted(self._msgs_by_symbol.items(), key=lambda kv: -kv[1])
+        return {
+            "socket_open": self._ws is not None,
+            "symbols_subscribed": len(self._subs),
+            "window_seconds": round(elapsed, 1),
+            "messages_total": self._msgs_total,
+            "messages_per_second": round(self._msgs_total / elapsed, 2),
+            "messages_dropped": self._msgs_dropped,
+            # The number the always-on decision turns on: cost scales with the BUSIEST symbols,
+            # not the average, so the top of this list is what to extrapolate from.
+            "top_symbols": [
+                {"symbol": sym, "messages": n, "per_second": round(n / elapsed, 2)}
+                for sym, n in by_symbol[:15]
+            ],
+            # Share of wall-clock spent decoding+routing. Single-threaded, so this is the ceiling
+            # that binds first if every ticker were subscribed.
+            "decode_load_pct": round(100.0 * self._decode_seconds / elapsed, 2),
+        }
 
     async def stream(self, symbol: str) -> AsyncIterator:
         """Per-symbol view of the shared socket. Same contract as the old per-ticker generator."""
@@ -137,6 +171,7 @@ class StockStreamHub:
 
     async def _processor(self, msgs) -> None:
         """The single callback for the whole socket: decode, then route by symbol."""
+        t0 = time.perf_counter()
         for m in msgs:
             try:
                 decoded = self._decode(m)
@@ -145,10 +180,15 @@ class StockStreamHub:
             if decoded is None:
                 continue
             sym, event = decoded
+            self._msgs_total += 1
+            self._msgs_by_symbol[sym] = self._msgs_by_symbol.get(sym, 0) + 1
             for q in self._subs.get(sym, ()):  # snapshot-free: set is only mutated under the lock
                 if q.full():
                     try:
                         q.get_nowait()        # drop the OLDEST; newest tick wins
+                        self._msgs_dropped += 1
                     except asyncio.QueueEmpty:
                         pass
                 q.put_nowait(event)
+        # One clock read per batch, not per message.
+        self._decode_seconds += time.perf_counter() - t0

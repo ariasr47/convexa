@@ -1688,7 +1688,22 @@ async def get_metrics_readout(request: Request):
             status_code=401,
             detail="Metrics require a valid token (Authorization: Bearer <token> or X-Metrics-Token).",
         )
-    return obs.readout()
+    readout = obs.readout()
+    # Tape instrumentation (2026-08-06): what the live socket is actually carrying. Answers the
+    # always-on question with a number — cost scales with the BUSIEST symbols, and the
+    # single-threaded decode share is the ceiling that binds before bandwidth does.
+    # Best-effort and read-only: a stats failure must never break the operator readout, and this
+    # touches no trader route ([operator-vs-trader-path-separation], [best-effort-isolated-or-null]).
+    try:
+        hub = getattr(data_provider, "_stock_stream_hub", None)
+        readout["live_tape"] = hub.tape_stats() if hub is not None else {
+            "socket_open": False, "symbols_subscribed": 0, "messages_total": 0,
+            "messages_per_second": 0.0, "messages_dropped": 0, "top_symbols": [],
+            "decode_load_pct": 0.0, "window_seconds": 0.0,
+        }
+    except Exception:
+        logger.debug("live_tape stats unavailable", exc_info=True)
+    return readout
 
 
 # ⚠ REGISTERED BEFORE /api/stream/{ticker} ON PURPOSE. FastAPI matches in registration
