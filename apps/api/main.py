@@ -52,6 +52,7 @@ from src.auth.router import broker_credential_router
 # read API + the view validator resolve against. NEVER imported by engine/signals/live/darkpool/
 # chain_store/compute_ticker ([additive-keeps-score-byte-identical]).
 from src import scanstore
+from src.core import price_stream
 from src.scanner.universe import get_universe
 # bundle-events: the event-calendar WIRE PROJECTION. One-way leaf — main.py is the sole caller and
 # it is invoked only AFTER generate_signals returns; no scoring module imports it.
@@ -1688,6 +1689,69 @@ async def get_metrics_readout(request: Request):
             detail="Metrics require a valid token (Authorization: Bearer <token> or X-Metrics-Token).",
         )
     return obs.readout()
+
+
+# ⚠ REGISTERED BEFORE /api/stream/{ticker} ON PURPOSE. FastAPI matches in registration
+# order, so declared after it this route is swallowed as ticker="prices" — which builds a
+# LiveSession for a symbol named PRICES, chain-refresh loop and all. Same trap the scan
+# routes call out against the /{ticker} catch-all; verified by test_price_route_ordering.
+# --- Live scanner prices (2026-08-06) ------------------------------------------------------------
+# ONE SSE connection carrying live prices for MANY symbols, backed by the shared vendor socket.
+# Deliberately NOT /api/stream/{ticker} per row: that route builds a LiveSession, which runs a
+# chain-refresh loop — twenty rows would mean twenty option-chain REST loops. This carries the
+# cheapest thing the vendor sends and nothing else.
+# Session-gated like the rest of the scanner surface ([server-side-gate-enforcement]).
+_price_stream = None
+
+
+def _get_price_stream():
+    global _price_stream
+    if _price_stream is None:
+        _price_stream = price_stream.PriceStream(data_provider)
+    return _price_stream
+
+
+@app.get("/api/stream/prices")
+async def stream_prices(request: Request, symbols: str = ""):
+    """
+    SSE of live prices for up to 120 symbols on ONE connection. Payload carries only symbols whose
+    price CHANGED since the last flush, so a quiet tape costs nothing.
+
+    The prices here are LIVE-DERIVED: the client must degrade them visibly when this stream drops
+    ([live-vs-static-isolation]). Every other scanner field is STATIC, from the sweep, and keeps
+    rendering regardless. Touches no scoring path.
+    """
+    gate = _gate_or_response(request)
+    if gate is not None:
+        return gate
+    limited = _rate_limit_or_response(request)
+    if limited is not None:
+        return limited
+
+    requested = [s for s in (symbols or "").split(",") if s.strip()]
+    if not requested:
+        return JSONResponse(status_code=422, content={"detail": "symbols is required"})
+
+    async def event_gen():
+        yield ": connected\n\n"
+        gen = _get_price_stream().stream(requested)
+        try:
+            while True:
+                try:
+                    payload = await asyncio.wait_for(gen.__anext__(), timeout=15.0)
+                    yield f"data: {json.dumps(payload)}\n\n"
+                except asyncio.TimeoutError:
+                    yield ": heartbeat\n\n"     # quiet tape — hold the connection open
+                except StopAsyncIteration:
+                    break
+        finally:
+            await gen.aclose()   # releases every symbol subscription on the shared socket
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/stream/{ticker}")
