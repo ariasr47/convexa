@@ -1,176 +1,177 @@
-# RESUME — session handover (2026-08-06, GATE R after GATE S)
+# RESUME — session handover (2026-08-06, GATE R)
 
-> For a fresh session (normal chat OR `/conductor`). **Overlay on canon — this file WINS on
-> current status.** Written at a clean boundary: `broker-option-grouping` SHIPPED + ARCHIVED,
-> **pipeline DRAINED**, no lane running, no question outstanding. Stays UNCOMMITTED by owner
-> preference. **Supersedes the earlier 2026-08-06 RESUME** (which said the build was about to
-> start). Verified against disk, not remembered.
-
----
-
-## ⏭ THE ENTRY POINT — pipeline is DRAINED; queue says `vol-normalized-gex` (X2)
-
-`.claude/contracts/` holds only `_archive/`. Nothing is half-built. The roadmap
-(`docs/ROADMAP_2026-08.md`, the standing order) puts **`vol-normalized-gex` (X2)** next: vol-normalize
-the GEX read, intraday-recompute where the data allows, plus a public-ready "how we compute this and
-where it fails" methodology note. **GATE-M-shaped** (math, BE-heavy) — the first backend-touching
-feature in a while, and the first that will engage
-`[score-change-is-deliberate-and-measured]` if it reaches the score.
-
-Evidence for it: the independent backtest found **raw GEX had no predictive power while
-vol-normalized did**. It is the strongest decision-impact item in the pool.
-
-**Runner-up if a small win is wanted instead:** the §B **distance-to-spot level tiles**
-(Value H · Effort S — call wall / put wall / gamma flip / max pain each showing how far price sits
-from them). Also newly logged and cheap: **`ports-free-is-ipv4-only`** (§B) — see below, it is a
-verification-integrity fix, not a feature.
-
-Start either with GATE I (`go`) or jump straight to `/council {feature}` after writing its BRIEF.
+> For a fresh session (normal chat OR `/conductor`). **Overlay on canon — this file WINS on current
+> status.** Written at a clean boundary: nothing mid-gate, no lane running, no question outstanding.
+> **Supersedes both earlier 2026-08-06 RESUMEs.** Everything below is verified against disk, git and
+> production, not remembered.
+>
+> **Repo:** `main` == `origin/main`, working tree clean, **0 ahead**. Ten commits shipped today.
+> **⚠ Both hosts auto-deploy on push to `main`.** Everything below is LIVE.
 
 ---
 
-## 🔒 LOCKDOWN IS ON (owner-directed 2026-08-06, pipeline waived) — read before touching auth
+## ⏭ THE ENTRY POINT — read two instruments, then size the universe
 
-New sign-ups are **CLOSED and fail closed** (`SIGNUPS_ENABLED` unset ⇒ off), on **both** doors —
-`/api/auth/signup` and the Google create-a-new-user step — from one predicate in
-`apps/api/src/auth/policy.py`. Scanner API + FE `/scanner` + `/positions` are session-gated;
-**Landing, `/ticker/*`, `/blog`, `/settings` stay public.** Owner account is seeded at startup from
-`OWNER_EMAIL`/`OWNER_PASSWORD`. Full detail + how to reopen: `OPEN_THREADS.md` **§7ac**.
+The pipeline is **drained** (`.claude/contracts/` holds only `_archive/`). Nothing is half-built.
 
-⚠ **Set `SIGNUPS_ENABLED=1` in your LOCAL `apps/api/.env`** — the test suite and
-`interface_conformance.mjs --auth-signup` both register, and will fail without it. Leave it unset
-in production. ⚠ **This protects nothing until N1 deploy runs.**
+**The one blocking task, and it needs market hours (04:00–20:00 ET):**
 
-## ✅ WHAT SHIPPED THIS SESSION
+1. **Read `live_tape`** from `GET /api/_metrics` (needs `METRICS_SECRET_TOKEN` — owner has it) after a
+   ticker or scanner page has been open a few minutes. Look at `top_symbols` (busiest first — cost
+   scales with the loudest name, not the mean) and `decode_load_pct` (single-threaded decode share;
+   this is the ceiling that binds before bandwidth).
+2. **Read a real sweep pass time** — `sweep_last_completed` on the scan heartbeat is the ground
+   truth and has **never been read**. Everything about universe sizing turns on it.
 
-### `broker-option-grouping` — a count and a net, never a name (SHIPPED + ARCHIVED)
-A ticker's broker option legs collapse into ONE expandable row with a **leg count** and a **netted
-entry cost**; expanding shows the per-leg rows unchanged. A lone leg reads
-`1 option leg · as Webull reports it`. Equities never group. **FE-only**, empty `apps/api` diff.
-Full thread: `OPEN_THREADS.md` **§7ab**. Capability: `PROJECT_CONTEXT.md` §6. Do not restate those.
-
-Three things a future session must not re-litigate:
-- **The group is NEVER named a structure** — not "vertical", not "spread", **not even `Custom`**. This
-  is enforced by machinery, not prose: an import allow/deny-list, a recursive two-arm mutation-guarded
-  source scan, and a **render regression under a simulated future feed**. That third layer exists
-  because `positions/structure.ts:153` returns `custom` ONLY while strike/expiry/right are null — the
-  day a vendor supplies them, the forbidden name would appear **by itself, with nobody deciding it**.
-- **Withheld figures use ONE shared permanence-first cascade at both group and leg level.** A group's
-  literal is **derived from its members', never chosen beside them.** This was the GATE Q failure.
-- **The netted cost is Convexa's own composition**, not Webull's `total_cost`. Those differ, and the
-  difference is the reconstructed ×100 multiplier — which is the thing the feature must be honest about.
-
-**Pipeline shape:** GATE I → C (R1–R3: 25 conflicts, 25/25 quotes verified, 0 technical unresolved,
-2 owner rulings; R4 ×3, S2 ×2) → PLAN → FE ×3 phases → **Q FAIL → Z → Q PASS**.
-Final **49 PASS / 0 FAIL / 1 UNVERIFIABLE**; conformance backend PASS · QA PASS agreeing.
+Both instruments were built today. Neither has seen a live tape. Until they are read, any universe
+decision is a guess — including the 100-ticker list below.
 
 ---
 
-## 🎓 GATE S GRADUATED TWO KEYS (canon changed — read `PROJECT_CONTEXT.md` §5)
+## 📋 THE 100-TICKER LIST — built, validated, NOT applied
 
-1. **`structural-over-prose-enforcement`** (4 features) — enforce an invariant by **construction**, not
-   by prose someone must remember. **Held back three times** on the stated objection that it lacked a
-   crisp violation test; this ship supplied one: *poison what the rule forbids and the build must go
-   red — and the poison test must itself be proven non-vacuous.*
-2. **`single-motion-moment`** (2 binding) — ONE orchestrated motion moment; the keyframe inventory is
-   set-equality pinned so a new family is build-breaking. **It crossed at `redesign-stage-3` on
-   2026-07-22 and was MISSED at that GATE S** — surfaced now by `ledger_tally`. Worth knowing as a
-   process fact: the counting was already code, but the tally was not run at that ship.
+Owner asked for 100 to scan at once. Written to **`tmp/universe_100.json`** (gitignored). Exactly
+100, zero duplicates, keeps 68 of the current 69, drops only `CSCO`. Chosen on **options** liquidity
+(deep OI across strikes), not market cap or share volume. No index symbols — the Massive account is
+`NOT_AUTHORIZED` for `I:VIX`/`I:SPX`/`I:NDX`, so `VXX` stands in for vol.
 
-`dark-pool-context-only` still shows `GRADUATES` in the tally — that is **bookkeeping, not a miss**:
-it is explicitly recorded as pre-existing canon (`PROJECT_CONTEXT.md` §5, ledger's "Pre-existing canon"
-note). Do not re-promote it.
+⚠ **Applying it alone will make every row read `stale`.** Arithmetic, not opinion: the sweep computes
+`SCAN_SLOW_BATCH_SIZE=4` symbols per cycle, and one production trace showed ~12s per cold ticker.
+100 symbols will not finish inside `SCAN_STALE_AFTER_SECONDS=180`. Two knobs, and the honest one is
+the second: raise `SCAN_SLOW_BATCH_SIZE` (shortens the pass, costs concurrent chain fetches against
+vendor rate limits) and/or raise `SCAN_STALE_AFTER_SECONDS` to match a **measured** pass so the page
+tells the truth instead of flagging everything stale.
 
----
-
-## ⚠ TWO CANON ERRORS CORRECTED THIS SESSION — do not reintroduce
-
-Both were inherited from the previous session's record; both were caught by council voices, not by me.
-
-1. **Book composition.** Not "13 positions / 4 apparent verticals + 1 lone NVDA call". **Measured**
-   from `apps/api/tests/fixtures/broker/positions_raw.json`: **14 holdings = 5 equity + 9 option
-   legs**, TSLA·3 · AAPL·2 · META·2 · NVDA·1 · PLTR·1 ⇒ **3 groups + 2 lone legs**. TSLA is
-   **+10 / −4 / +4** — mismatched, so the rejected qty-pairing heuristic mis-pairs the owner's real
-   book **today**. Corrected in BRIEF, §7z, and here.
-2. **Group net figures.** What Convexa renders: AAPL **3,850.00** · META **3,805.00** ·
-   TSLA **13,760.00** · NVDA **7,890.00** · PLTR **4,990.00**, all debits. **Never assert 3,802.00 or
-   7,889.00** — those are Webull's raw `total_cost` sums, which the app never displays. NVDA 7,890.00
-   is pinned by a shipped test (`broker/genericOptionRow.spec.tsx:77,264`).
+**Separate the two budgets — they are independent.** Live *prices* cost message volume on the shared
+socket; the *sweep* costs pass time. A 100-row scanner with live prices over a 40-symbol structure
+sweep is a coherent shape, not a compromise.
 
 ---
 
-## 🔴 STILL NEEDS THE OWNER (not the assistant)
+## ✅ WHAT SHIPPED TODAY (10 commits, all live)
 
-1. **DEPLOY.** `convexa.pages.dev` is still the 2026-06-29 build. Roadmap N1, highest-value open item,
-   unchanged for weeks — and this session added a full feature it does not have.
-   `docs/DEPLOY_RUNBOOK.md`. ⚠ `ALLOWED_ORIGINS` unset now means **deny-all** (fails closed) — correct
-   behind the Pages proxy; the runbook's step 4/15 wording is stale.
-2. **Nothing is pushed.** `main` is **~11 commits ahead of `origin/main`**, all of this feature. The
-   `.claude/` planning writes (contracts, BACKLOG, OPEN_THREADS, PROJECT_CONTEXT, DECISION_LEDGER,
-   this file) are **uncommitted**.
-3. **Flow the conformance auth fix back to the kit** (`C:\Dev\delivery-kit` → `KIT_BACKLOG.md`). It
-   lives only in convexa **again**; the next kit install reverts it a third time.
-4. **N2 mirror every real trade** — the outcome ledger is still empty and the edge test cannot start
-   without data. **N4 social posting DEFERRED by owner** until personal testing is done.
+1. **`broker-option-grouping`** — full pipeline (GATE I → C → PLAN → FE ×3 → Q FAIL → Z → Q PASS),
+   **49/50 AC**, archived. Option legs collapse per ticker with a netted cost and are **never named a
+   structure**, enforced by three build-breaking layers. Thread: `OPEN_THREADS.md` §7ab.
+2. **Private-testing lockdown** — sign-ups CLOSED and fail closed, on **both** doors (`/signup` and
+   the Google create-user step) from one predicate in `src/auth/policy.py`. Scanner API + FE
+   `/scanner` + `/positions` session-gated. Landing, `/ticker/*`, `/blog`, `/settings` stay PUBLIC.
+   Thread: §7ac.
+3. **Market-hours gate** — the sweep worker idles outside 04:00–20:00 ET and at weekends, still
+   heartbeating so a resting worker is distinguishable from a dead one. Fails OPEN. Defaults ON.
+4. **Shared WebSocket multiplexer** — `src/providers/stock_stream_hub.py`. One vendor connection for
+   any number of symbols; was one per ticker. `stream_stock`'s signature unchanged.
+5. **Live scanner** — `GET /api/stream/prices` (backend) + `useLivePrices` (FE). Prices stream;
+   structure stays polled. **Retired the anti-stream guard** per owner decision B.
+6. **Tape instrumentation** — `live_tape` on `/api/_metrics`.
+7. **CI fix** — 4 lint errors had CI red on *every* push since the kit install.
+8. Runbook naming convention, backlog updates.
 
 ---
 
-## 🧭 KNOWN-OPEN, NON-BLOCKING (all detailed in §7ab / §7z)
+## 🔑 OWNER DECISIONS TODAY (settled — do NOT re-ask)
 
-**From this ship (R-1..R-5):** the P/L cascade call zeroes the three net-axis buckets so the transient
-default lives in a call-site `??` — one rule, not a complete delegation · **R-2 a genuine spec tension**
-between AC-13's "same reason" arm and §2.6's permanence-first rule, diverging on `BOOK_CF_UNPARSEABLE`
-(CF-only, unreachable on the real feed) · Layer 1 does not bite the relative import form on the two
-presentational modules (Layer 2 covers them) · the group literal drops the leg row's `unpriceableTip` ·
-**R-5 → BACKLOG §B `ports-free-is-ipv4-only`.**
+- **broker-option-grouping Q1 = A** — the mobile/desktop `ModeledPl` parity repair is IN scope.
+- **broker-option-grouping Q2 = A** — `Build reassessment` stays on the expanded leg row only.
+- **Lockdown scope** — landing + ticker public; scanner + positions gated; sign-ups closed.
+- **Anti-stream guard = B (retire, not narrow).** The scanner's mutation-guarded "poll-only, never
+  says live" source scan was **removed**, not scoped. Its premise (one socket per row) no longer
+  exists. What it protected survives server-side: `test_price_route_ordering`.
+- **Market-hours gate before the worker deploy** (option A) — done, then the worker was created.
+- **100 tickers** — owner wants breadth despite the roadmap's explicit breadth cut. Recorded, not
+  re-litigated.
 
-**From broker-connect (§7z), still open:** M-2 (SDK's vendored 2018 CA bundle) + M-5 · the AC-3
-GET-vs-DELETE in-flight race · `Build reassessment` on `partial` option rows carrying `position: null`
-— **owner has still not ruled** · the owner's real book is committed in `positions_raw.json` (repo
-verified PRIVATE; revisit before any open-source) · two clean worktrees under `.claude/worktrees/`
-safe to prune.
+---
+
+## ⚠ INFRASTRUCTURE — changed today, all live
+
+**Railway project `convexa`** (renamed from `zestful-courage` by the owner), env `production`:
+- Services **`api`** (renamed from `convexa`) · **`scanner-worker`** (created today, replicas **1**,
+  start command `python worker.py`, root `/apps/api`) · `Postgres`.
+- Naming convention adopted + written into `docs/DEPLOY_RUNBOOK.md`: project = product,
+  environment = stage (never a second project), service = role named after the repo path.
+- Variables set today: `SCAN_STORE=postgres` (was unset → the scanner could never have had data),
+  `IV_STORE=postgres` on **both** services (was unset → IV history reset every deploy),
+  `ALLOWED_ORIGINS`, `OWNER_EMAIL`/`OWNER_PASSWORD`/`OWNER_EMAILS`, `SEED_ACCOUNTS`,
+  `SCAN_MARKET_HOURS_ONLY=1` on the worker. `SIGNUPS_ENABLED` deliberately **unset**.
+- Cross-service refs are **references**, not literals (`${{Postgres.DATABASE_URL}}`,
+  `${{api.MASSIVE_API_KEY}}`). Railway rewrote them correctly on rename — but **verify with
+  `railway variables --json ... unrendered: true` after any rename**; the default query returns
+  RESOLVED values, so a broken reference reads as a healthy literal.
+
+---
+
+## 🔴 STILL NEEDS THE OWNER
+
+1. **N2 — mirror every real trade.** Ledger is **N=0**. The kill/continue gate needs **N≥30**. Five
+   features shipped around this today; it remains the only thing that starts the evidence clock, and
+   no amount of engineering moves it.
+2. **Read the two instruments** (above) during market hours.
+3. **Flow the kit fixes upstream** (`C:\Dev\delivery-kit` → `KIT_BACKLOG.md`). Now **two** items and
+   both have been lost to a reinstall before: the conformance `--auth-signup` support, and today's
+   4 lint fixes in `context_for.mjs` / `contract_lint.mjs`. The next kit install reverts both again.
+4. **Decide on a deploy gate.** Both hosts deploy straight from `main` with nothing between a push
+   and production. CI is green again but is not a required check.
+
+---
+
+## 🧭 KNOWN-OPEN, NON-BLOCKING
+
+- **`vol-normalized-gex` (X2) is the strongest-evidence unbuilt feature.** The 2026-08-01 research
+  (`docs/MARKET_REALITY_REPORT_2026-08-01.html`) found the mechanism is peer-reviewed but the *cheap
+  proxy Convexa currently computes* — overnight OI + the long-calls/short-puts sign convention — is
+  the version the evidence undermines: OptionMetrics (net-sign GEX fails once dealer books are
+  split), Cboe flow data (0DTE customer flow roughly balanced, so the estimate may be near zero with
+  a huge error bar), and an independent backtest (raw GEX no predictive power, vol-normalized did).
+  The report grades Convexa's dealer-direction methodology **WEAK** alongside SpotGamma and UW.
+  **Consequence worth weighing: if the ledger comes back flat at N≥30, this predicts why in advance.**
+  Argues for building X2 *before* accumulating the 30.
+- **Market holidays are not gated** — `classify_session()` has no holiday calendar, so a holiday
+  sweeps as its weekday session. Weekends are covered. Needs a real exchange calendar.
+- From §7z (broker-connect): M-2 (SDK's vendored 2018 CA bundle) + M-5 · the AC-3 GET-vs-DELETE race
+  · `Build reassessment` on `partial` rows with `position: null` (owner still hasn't ruled) ·
+  `positions_raw.json` committed (repo PRIVATE — revisit before open-sourcing).
+- Published artifact (diagrams + ranked bottlenecks), kept current:
+  `https://claude.ai/code/artifact/6de64766-4d63-4284-8932-c5c85820f2e3`
 
 ---
 
 ## ⚠ BASELINES + TRAPS
 
-**New baselines (beat, don't match):** dashboard **122 files / 1439 tests** · e2e **41** ·
-api **272** · lint 0/0 · typecheck 0.
+**Baselines — beat, don't match:** api **345** · dashboard **1442 / 122 files** · e2e **41** ·
+lint 0/0 · typecheck 0.
 
-- **⚠ `npm run ports:free` IS NOT TRUSTWORTHY** — it is **IPv4-only** and will report "all clear" while
-  IPv6 orphans serve stale code (QA measured three live on `[::1]:4200/4300/4301`, one answering 200).
-  Until `ports-free-is-ipv4-only` is fixed, **verify by hand** before any run-the-app pass. Vite binds
-  IPv6 here, so this is the common case, not an edge case.
-- **`nx typecheck` before ANY green claim** — a green `nx test` does not mean the types are sound;
-  bitten three times. If typecheck fails oddly: `rm -rf apps/dashboard/dist`, delete `*.tsbuildinfo`.
-- **Check EXIT CODES, not printed summaries** — and not through a pipe (`| tail` masks them; use
-  `PIPESTATUS`).
-- **NEVER a bare `nx format:write`** — repo-wide; once reformatted 92 unrelated files. Always `--files=`.
-- **`nx run-many -t lint` FAILS LOCALLY** — walks gitignored `.claude/worktrees/**`, ~157 phantom
-  errors. Use scoped `nx lint @org/dashboard`. CI is unaffected.
-- **The Bash tool's `cd` persists between calls.** A `cd` into a subdirectory silently breaks the next
-  call's relative paths — prefer absolute paths (bit me this session).
-- **e2e is Playwright**; needs `npx playwright install chromium`.
-- The owner also runs a **`pdf-translator`** project (port 8001). Never kill its processes.
-
----
-
-## 🧠 LEDGER CANDIDATE STILL ON WATCH
-
-**`vendor-contract-verified-not-faked`** (1 shipped feature, 3 instances; severity path argued, NOT
-promoted) — where our code meets a third-party SDK's return contract, at least one test must exercise
-it with a **vendor-shaped object**, not a hand-made fake. **Re-assess at the next vendor-SDK
-integration — SnapTrade is exactly it.** Note `broker-option-grouping` did **not** add an instance: it
-touched no vendor SDK.
+- **⚠ RUN CI'S LITERAL COMMAND BEFORE PUSHING:**
+  `npx nx run-many -t lint test build typecheck --exclude=api`. A project-scoped
+  `nx lint @org/dashboard` **misses `.claude:lint` and the `build` target** — that gap is exactly
+  how CI stayed red all morning while local runs looked green.
+- **⚠ `npm run ports:free` IS IPv4-ONLY.** It reports "all clear" while IPv6 orphans serve stale
+  code (QA measured three live on `[::1]:4200/4300/4301`, one answering 200). Verify by hand:
+  `netstat -ano | grep LISTENING | grep -E ":8000|:4200|:4300"`. Logged in BACKLOG §B.
+- **⚠ The Bash tool's `cd` persists between calls.** A `cd apps/api` silently breaks the next call's
+  relative paths. Use absolute paths. This bit twice today.
+- **⚠ Heredocs mangle `\n` and `\x1c` escapes** when generating Python/JS source. Prefer raw strings
+  or line-based edits; verify the file parses (`ast.parse`) before running it.
+- **`eslint-disable-next-line` must be the LAST line before its target.** A multi-line explanation
+  above it applies the disable to a comment and produces "unused disable" *next to* the live error.
+- **`railway variables` without `-e production` can read the wrong environment** and report a set
+  variable as NOT SET. Always pass `-e`.
+- `nx typecheck` before any green claim; `rm -rf apps/dashboard/dist` + delete `*.tsbuildinfo` on a
+  TS6305 flake. Check EXIT CODES, never printed summaries, never through a masking pipe.
+- Never a bare `nx format:write` — always `--files=`. `nx run-many -t lint` reports ~157 phantom
+  errors locally off gitignored `.claude/worktrees/**`; CI is unaffected.
+- e2e is Playwright (`npx playwright install chromium`). Vite binds IPv6 — use `localhost:4300`.
+- The owner also runs `pdf-translator` on port 8001. Never kill its processes.
 
 ---
 
-## 🗂 REPO STATE
+## 🧠 LEDGER
 
-`main`, **~11 commits ahead of `origin/main`**, nothing pushed. Working tree: modified
-`.claude/BACKLOG.md`, `.claude/OPEN_THREADS.md`, `.claude/PROJECT_CONTEXT.md`,
-`.claude/DECISION_LEDGER.md`; untracked `.claude/RESUME.md`,
-`.claude/contracts/_archive/broker-option-grouping/`, and
-`.claude/tools/conformance/broker-option-grouping.json` (the promoted spec — **13 specs now**; it
-outlives the archived contract as a standing regression).
-`origin/feat/responsive-layout` @ `a7b92eb` exists and is identical to local.
+**Graduated today:** `structural-over-prose-enforcement` (4 features — held back three times until
+`broker-option-grouping` supplied the statable bar: *poison what the rule forbids and the build must
+go red, and the poison test must itself be proven non-vacuous*) and `single-motion-moment` (2
+binding — it crossed at `redesign-stage-3` on 2026-07-22 and was **missed** at that GATE S; run
+`ledger_tally` at every ship).
+
+**On watch:** `vendor-contract-verified-not-faked` (1 feature / 3 instances; re-assess at the next
+vendor-SDK integration — SnapTrade is exactly it). `broker-option-grouping` added no instance.
