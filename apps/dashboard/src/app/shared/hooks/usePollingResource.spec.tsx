@@ -20,7 +20,7 @@ beforeEach(() => {
 
 describe('usePollingResource', () => {
   it('fetches on mount and exposes data', async () => {
-    const fetcher = vi.fn(async (_signal: AbortSignal) => ({ n: 1 }));
+    const fetcher = vi.fn(async () => ({ n: 1 }));
     const { result } = renderHook(() => usePollingResource('SPY', fetcher, { intervalMs: 60_000 }));
     await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
     expect(result.current.error).toBeNull();
@@ -106,10 +106,14 @@ describe('usePollingResource', () => {
         usePollingResource(key, fetcher, { intervalMs: 1_000, enabled }),
       { initialProps: { key: null as string | null, enabled: true } },
     );
-    await act(async () => {});
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(fetcher).not.toHaveBeenCalled();
     rerender({ key: 'Z', enabled: false });
-    await act(async () => {});
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(fetcher).not.toHaveBeenCalled();
   });
 });

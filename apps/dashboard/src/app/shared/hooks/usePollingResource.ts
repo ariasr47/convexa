@@ -64,14 +64,14 @@ export function usePollingResource<T>(
 
   // Imperative handle so interval + visibility always call the latest run without
   // re-subscribing on every data change.
-  const runRef = useRef<(force: boolean) => void>(() => {});
+  const runRef = useRef<(force: boolean) => void>(() => undefined);
 
   useEffect(() => {
     if (key == null || !enabled) {
       setData(null);
       setError(null);
       setLoading(false);
-      runRef.current = () => {};
+      runRef.current = () => undefined;
       return;
     }
 
@@ -126,7 +126,7 @@ export function usePollingResource<T>(
       ac.abort();
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVisibility);
-      runRef.current = () => {};
+      runRef.current = () => undefined;
     };
   }, [key, enabled, intervalMs]);
 
