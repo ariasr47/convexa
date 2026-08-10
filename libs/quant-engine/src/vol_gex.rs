@@ -64,8 +64,8 @@ pub struct VolNormalizedGex {
     pub vol_used: f64,
     /// Which series supplied `vol_used`.
     pub vol_basis: VolNormBasis,
-    /// Human basis for UI / methodology (static string).
-    pub basis_note: &'static str,
+    /// Human basis for UI / methodology (owned so `AnalyticsSnapshot` can Deserialize).
+    pub basis_note: String,
 }
 
 const BASIS_ATM: &str =
@@ -119,8 +119,8 @@ pub fn vol_normalize_gex(
         vol_used: round6(vol),
         vol_basis: basis,
         basis_note: match basis {
-            VolNormBasis::AtmIv => BASIS_ATM,
-            VolNormBasis::Hv30d => BASIS_HV,
+            VolNormBasis::AtmIv => BASIS_ATM.to_string(),
+            VolNormBasis::Hv30d => BASIS_HV.to_string(),
         },
     })
 }

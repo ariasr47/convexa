@@ -48,6 +48,16 @@ function bundleFor(ticker: string): TickerBundle {
 }
 
 let fetchMock: ReturnType<typeof vi.fn>;
+
+/** URL-only match — `fetch` may also pass `{ signal }` / credentials (AbortController on ticker). */
+function expectFetchUrlContaining(substr: string) {
+  const hit = fetchMock.mock.calls.some((c) => String(c[0]).includes(substr));
+  expect(hit, `expected a fetch URL containing ${substr}`).toBe(true);
+}
+function expectNoFetchUrlContaining(substr: string) {
+  const hit = fetchMock.mock.calls.some((c) => String(c[0]).includes(substr));
+  expect(hit, `expected no fetch URL containing ${substr}`).toBe(false);
+}
 /** Per-test who-am-I body (default anonymous). Set BEFORE render to walk the signed-in path. */
 let sessionBody: unknown;
 
@@ -204,7 +214,7 @@ describe('route table', () => {
     // Every walked route renders INSIDE the persistent shell.
     expect(screen.getByTestId('app-shell')).toBeInTheDocument();
     if (c.expectFetch) {
-      expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(c.expectFetch));
+      expectFetchUrlContaining(c.expectFetch);
     }
     // `/` is never a ticker redirect: no ticker input on the landing.
     if (c.path === '/') expect(screen.queryByLabelText('Ticker')).toBeNull();
@@ -249,8 +259,8 @@ describe('bare /ticker — default_ticker preference wins over the SPY fallback'
     saveLocalDefaultTicker('MSFT');
     renderAt('/ticker');
     await screen.findByText('Call wall');
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/MSFT'));
-    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+    expectFetchUrlContaining('/api/ticker/MSFT');
+    expectNoFetchUrlContaining('/api/ticker/SPY');
   });
 
   it('signed-in: the SERVER pref wins — even over a conflicting leftover local pref', async () => {
@@ -263,9 +273,9 @@ describe('bare /ticker — default_ticker preference wins over the SPY fallback'
     };
     renderAt('/ticker');
     await screen.findByText('Call wall');
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/NVDA'));
-    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/MSFT'));
-    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+    expectFetchUrlContaining('/api/ticker/NVDA');
+    expectNoFetchUrlContaining('/api/ticker/MSFT');
+    expectNoFetchUrlContaining('/api/ticker/SPY');
   });
 
   it('signed-in with NO server pref: the unset fallback (SPY) applies — no migration, no rewrite', async () => {
@@ -277,7 +287,7 @@ describe('bare /ticker — default_ticker preference wins over the SPY fallback'
     };
     renderAt('/ticker');
     await screen.findByText('Call wall');
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/ticker/SPY'));
+    expectFetchUrlContaining('/api/ticker/SPY');
     // `[loss-free-durable-migration]` untouched: resolving the fallback never WRITES a preference.
     const calls = fetchMock.mock.calls.map((c) => String(c[0]));
     expect(calls.some((u) => u.includes('/api/auth/settings'))).toBe(false);

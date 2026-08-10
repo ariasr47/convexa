@@ -1,6 +1,11 @@
 # Post-merge prod smoke — read-only checks against live URLs (no deploy secrets required).
-# Enable by setting repo variable/secret SMOKE_API_ORIGIN (and optional SMOKE_PAGES_ORIGIN).
-# Railway/Pages CD: configure auto-deploy on main in each host dashboard (see docs/DEPLOY_RUNBOOK.md).
+#
+# Configure (repo Settings → Secrets and variables → Actions → Variables):
+#   SMOKE_API_ORIGIN=https://convexa-production.up.railway.app
+#   SMOKE_PAGES_ORIGIN=https://convexa.pages.dev   (optional)
+#
+# Also accepted as Actions *secrets* with the same names (if set by mistake).
+# Railway/Pages CD: host dashboards auto-deploy on main (see docs/DEPLOY_RUNBOOK.md).
 name: Deploy smoke
 
 on:
@@ -19,19 +24,28 @@ jobs:
   smoke:
     name: Prod smoke (health · ticker · scan)
     runs-on: ubuntu-latest
-    # Skip when not configured. Set repo Variable SMOKE_API_ORIGIN (Settings → Variables).
-    if: ${{ vars.SMOKE_API_ORIGIN != '' }}
     steps:
       - name: Resolve API origin
         id: origin
         env:
-          ORIGIN: ${{ vars.SMOKE_API_ORIGIN }}
+          FROM_VAR: ${{ vars.SMOKE_API_ORIGIN }}
+          FROM_SECRET: ${{ secrets.SMOKE_API_ORIGIN }}
         run: |
+          set -euo pipefail
+          ORIGIN="${FROM_VAR:-}"
+          if [ -z "$ORIGIN" ]; then ORIGIN="${FROM_SECRET:-}"; fi
+          if [ -z "$ORIGIN" ]; then
+            echo "::notice title=Smoke skipped::Set repository variable SMOKE_API_ORIGIN under Settings → Secrets and variables → Actions → Variables"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           ORIGIN="${ORIGIN%/}"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "api=$ORIGIN" >> "$GITHUB_OUTPUT"
           echo "Using API origin: $ORIGIN"
 
       - name: Health
+        if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
           body=$(curl -fsS "${{ steps.origin.outputs.api }}/api/health")
@@ -40,6 +54,7 @@ jobs:
           echo "$body" | grep -q 'api-rust'
 
       - name: Ticker SPY (bundle)
+        if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/ticker.json -w "%{http_code}" \
@@ -48,6 +63,7 @@ jobs:
           grep -q market_state /tmp/ticker.json
 
       - name: Scan envelope
+        if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/scan.json -w "%{http_code}" \
@@ -56,6 +72,7 @@ jobs:
           grep -q '"rows"' /tmp/scan.json
 
       - name: Structure history endpoint
+        if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
           code=$(curl -sS -o /tmp/hist.json -w "%{http_code}" \
@@ -65,11 +82,13 @@ jobs:
           grep -q '"basis"' /tmp/hist.json
 
       - name: Pages SPA (optional)
-        if: ${{ vars.SMOKE_PAGES_ORIGIN != '' }}
+        if: ${{ steps.origin.outputs.skip != 'true' && (vars.SMOKE_PAGES_ORIGIN != '' || secrets.SMOKE_PAGES_ORIGIN != '') }}
         env:
-          ORIGIN: ${{ vars.SMOKE_PAGES_ORIGIN }}
+          FROM_VAR: ${{ vars.SMOKE_PAGES_ORIGIN }}
+          FROM_SECRET: ${{ secrets.SMOKE_PAGES_ORIGIN }}
         run: |
           set -euo pipefail
+          ORIGIN="${FROM_VAR:-${FROM_SECRET:-}}"
           ORIGIN="${ORIGIN%/}"
           code=$(curl -sS -o /dev/null -w "%{http_code}" "$ORIGIN/")
           test "$code" = "200"
