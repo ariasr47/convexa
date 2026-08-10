@@ -117,7 +117,9 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
         universe.universe.clone(),
     )));
 
-    // Fast lane
+    // Fast lane — always on. Prior-close / delayed snapshots still update prices overnight
+    // so /scanner is not stuck on seed "building" rows, and heartbeat stays fresh for the FE
+    // (banner threshold SWEEP_DOWN_AFTER_S ≈ 180s; idle-only heartbeats every 300s false-alarmed).
     {
         let state = state.clone();
         let st = Arc::clone(&st);
@@ -130,59 +132,57 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
             bands: cfg.bands,
         };
         tokio::spawn(async move {
-            let mut idle = false;
             loop {
-                if should_sweep(cfg_fast.market_hours_only) {
-                    if idle {
-                        info!("scanner: market-hours gate open → resuming");
-                        idle = false;
+                let universe = {
+                    let guard = st.lock().await;
+                    guard.universe.clone()
+                };
+                let snaps = match state.massive.fetch_stock_snapshots(&universe).await {
+                    Ok(m) => m,
+                    Err(e) => {
+                        warn!(error = %e, "scanner fast tick: snapshot poll failed");
+                        Default::default()
                     }
-                    // Snapshot universe under lock, release for vendor I/O.
-                    let universe = {
-                        let guard = st.lock().await;
-                        guard.universe.clone()
-                    };
-                    let snaps = match state.massive.fetch_stock_snapshots(&universe).await {
-                        Ok(m) => m,
-                        Err(e) => {
-                            warn!(error = %e, "scanner fast tick: snapshot poll failed");
-                            Default::default()
-                        }
-                    };
-                    // Re-acquire only to apply price updates.
-                    {
-                        let mut guard = st.lock().await;
-                        apply_fast_tick(&state, &mut guard, &cfg_fast, snaps).await;
-                    }
-                    tokio::time::sleep(cfg_fast.fast_interval).await;
-                } else {
-                    if !idle {
-                        info!(
-                            idle_secs = cfg_fast.idle_interval.as_secs(),
-                            "scanner: outside vendor coverage → idling"
-                        );
-                        idle = true;
-                    }
-                    {
-                        let guard = st.lock().await;
-                        idle_heartbeat(&state, &guard).await;
-                    }
-                    tokio::time::sleep(cfg_fast.idle_interval).await;
+                };
+                {
+                    let mut guard = st.lock().await;
+                    apply_fast_tick(&state, &mut guard, &cfg_fast, snaps).await;
                 }
+                tokio::time::sleep(cfg_fast.fast_interval).await;
             }
         });
     }
 
-    // Slow lane
+    // Slow lane — structure / score compute. Gated to vendor-covered hours by default, but
+    // cold-starts (never completed a full pass) keep computing so a deploy outside 04:00–20:00 ET
+    // still fills the board once.
     {
         let state = state.clone();
         let st = Arc::clone(&st);
         let cfg_slow = cfg;
         tokio::spawn(async move {
+            let mut logged_idle = false;
             loop {
-                if cfg_slow.market_hours_only && !should_sweep(true) {
+                let hours_open = should_sweep(true);
+                let need_catchup = {
+                    let guard = st.lock().await;
+                    guard.sweep_last_completed.is_none()
+                };
+                if cfg_slow.market_hours_only && !hours_open && !need_catchup {
+                    if !logged_idle {
+                        info!(
+                            idle_secs = cfg_slow.idle_interval.as_secs(),
+                            "scanner slow: outside vendor coverage → idling (full pass already done)"
+                        );
+                        logged_idle = true;
+                    }
                     tokio::time::sleep(cfg_slow.idle_interval).await;
                     continue;
+                }
+                if hours_open {
+                    logged_idle = false;
+                } else if need_catchup {
+                    info!("scanner slow: cold-start catch-up outside market hours");
                 }
 
                 // Plan under lock (cheap), then release before any analytics I/O.
@@ -234,17 +234,6 @@ fn should_sweep(market_hours_only: bool) -> bool {
     }
     let mins = et.hour() * 60 + et.minute();
     (4 * 60..20 * 60).contains(&mins)
-}
-
-async fn idle_heartbeat(state: &AppState, st: &SweepState) {
-    state
-        .scan
-        .write_heartbeat(SweepHeartbeat {
-            updated_at: now_secs(),
-            sweep_last_completed: st.sweep_last_completed,
-            universe_size: st.universe.len(),
-        })
-        .await;
 }
 
 /// Apply fast-lane snapshot results. Caller holds `SweepState` lock; no long vendor waits here.
