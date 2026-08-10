@@ -281,7 +281,9 @@ Start measurable, not aspirational:
 | Entry `index-*` | **22 KB** br | Cold app shell code |
 | Any single JS asset | **120 KB** br | Catch-all |
 
-**Why brotli, not gzip:** Cloudflare Pages (and most CDNs) negotiate `Content-Encoding: br` for modern browsers. On this app’s JS, brotli q11 is typically **~12–17% smaller** than gzip-9. The CI gate (`tools/check-dashboard-bundle.mjs`) fails on **brotli** overruns and still prints gzip for comparison. Docker/nginx enables **gzip** (stock images rarely ship `ngx_brotli`); production on Pages relies on edge brotli.
+**Why brotli, not gzip:** Cloudflare Pages (and most CDNs) negotiate `Content-Encoding: br` for modern browsers. On this app’s JS, brotli q11 is typically **~12–17% smaller** than gzip-9. The CI gate (`tools/check-dashboard-bundle.mjs`) fails on **brotli** overruns and still prints gzip for comparison.
+
+**Precompressed siblings (optional path shipped):** production build runs `tools/precompress-dashboard.mjs` and writes `*.br` / `*.gz` next to each compressible asset. Docker image `fholzer/nginx-brotli` serves them with `brotli_static` / `gzip_static` (no per-request compress CPU). Cloudflare Pages still uses edge negotiation (ignores or does not need the siblings).
 
 ### Tooling to add
 
@@ -490,3 +492,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | **Phase A shipped:** CI rename, visualizer (`ANALYZE`), gzip budget gate, root/Nx scripts, tighter `chunkSizeWarningLimit`, dynamic `bookSync` import. |
 | 2026-08-10 | **Phase B shipped:** SVG sparklines; positions-no-charts gate; route prefetch; no forced charts manualChunk under Rolldown. |
 | 2026-08-10 | Bundle gate **primary metric → brotli q11** (gzip comparative); nginx gzip enabled for Docker path. |
+| 2026-08-10 | Precompress `.br`/`.gz` on prod build; Docker → `fholzer/nginx-brotli` with `brotli_static`/`gzip_static`. |

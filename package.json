@@ -18,6 +18,7 @@
     "build:api": "nx build api --configuration=production",
     "analyze:dashboard": "node tools/analyze-dashboard.mjs",
     "check:bundle": "node tools/check-dashboard-bundle.mjs",
+    "precompress:dashboard": "node tools/precompress-dashboard.mjs",
     "typecheck": "nx run-many -t typecheck -p @convexa/dashboard,@convexa/api",
     "test": "nx run-many -t test -p @convexa/dashboard,@convexa/api,api",
     "lint": "nx run-many -t lint -p @convexa/dashboard,@convexa/api,dashboard-e2e",

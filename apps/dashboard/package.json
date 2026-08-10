@@ -8,13 +8,16 @@
       "build": {
         "configurations": {
           "production": {
-            "command": "vite build --mode production"
+            "command": "vite build --mode production && node ../../tools/precompress-dashboard.mjs"
           },
           "development": {
             "command": "vite build --mode development"
           }
         },
         "defaultConfiguration": "production"
+      },
+      "precompress": {
+        "command": "node tools/precompress-dashboard.mjs"
       },
       "analyze": {
         "command": "node tools/analyze-dashboard.mjs"
