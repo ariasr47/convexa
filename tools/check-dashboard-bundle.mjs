@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 /**
- * Gzip bundle budget gate for @convexa/dashboard production dist (§3.8 Phase A).
+ * Bundle budget gate for @convexa/dashboard production dist (§3.8).
+ *
+ * **Primary metric: Brotli (quality 11)** — what modern browsers get from Cloudflare
+ * Pages / most CDNs when Accept-Encoding includes `br`. Gzip is still reported for
+ * comparison and legacy clients, but gates fail on brotli overruns.
  *
  * Requires a prior production build:
  *   nx build @convexa/dashboard --configuration=production
@@ -10,60 +14,54 @@
  *   npm run check:bundle
  *   nx run @convexa/dashboard:check-bundle
  *
- * Budgets are gzip KB of hashed assets under apps/dashboard/dist/assets.
- * Calibrated 2026-08-10 from a clean prod build; tighten in Phase B after sparkline diet.
- *
  * Flags:
- *   --json     print machine-readable summary
- *   --list     list every .js asset with gzip KB (no fail)
+ *   --json     machine-readable summary (raw / gzip / brotli)
+ *   --list     every .js asset with raw / gzip / brotli KB (no fail)
  */
 import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
-import { createGzip } from 'node:zlib';
+import { constants, createBrotliCompress, createGzip } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assetsDir = path.join(root, 'apps', 'dashboard', 'dist', 'assets');
 
-/** @typedef {{ name: string; maxGzipKb: number; match: (file: string) => boolean }} Budget */
+/** @typedef {{ name: string; maxBrotliKb: number; match: (file: string) => boolean }} Budget */
 
 /**
- * Hard gzip budgets (KB). Calibrated 2026-08-10 from a clean
- * `vite build --mode production` (Rolldown manualChunks: react/mui/router/charts).
+ * Hard **brotli** budgets (KB, quality 11). Calibrated 2026-08-10 after Phase B.
  *
- * Observed baseline (gzip KB, approx): index 13 · react 54 · mui 100 · charts 108 ·
- * router 14 · Ticker 34 · Positions ~30 · Scanner 10. Caps leave headroom for dep bumps.
- * Phase B: positions must NOT import the charts chunk (SVG sparklines).
+ * Observed brotli (approx): mui 86 · LineChart 82 · react 47 · Ticker 35 · Positions 26 ·
+ * index 11 · router 12 · Scanner 9. Caps leave headroom for dep bumps.
  *
- * Matching is on the asset file name (`index-*.js`, `mui-*.js`, …).
+ * Gzip remains ~12–17% larger on these assets; we print it but do not gate on it.
  */
 const BUDGETS = /** @type {Budget[]} */ ([
   {
     name: 'entry-index',
-    maxGzipKb: 30,
+    maxBrotliKb: 22,
     match: (f) => /^index-.*\.js$/i.test(f),
   },
   {
     name: 'vendor-react',
-    maxGzipKb: 70,
+    maxBrotliKb: 60,
     match: (f) => /^react-.*\.js$/i.test(f),
   },
   {
     name: 'vendor-mui',
-    maxGzipKb: 130,
+    maxBrotliKb: 110,
     match: (f) => /^mui-.*\.js$/i.test(f),
   },
   {
     name: 'vendor-router',
-    maxGzipKb: 25,
+    maxBrotliKb: 20,
     match: (f) => /^router-.*\.js$/i.test(f),
   },
   {
-    // Auto-split recharts graph (no forced "charts" manualChunk — Rolldown co-location bug).
     name: 'vendor-charts',
-    maxGzipKb: 150,
+    maxBrotliKb: 110,
     match: (f) =>
       /^charts-.*\.js$/i.test(f) ||
       /^LineChart-.*\.js$/i.test(f) ||
@@ -72,34 +70,36 @@ const BUDGETS = /** @type {Budget[]} */ ([
   },
   {
     name: 'vendor-misc',
-    maxGzipKb: 40,
+    maxBrotliKb: 35,
     match: (f) => /^vendor-.*\.js$/i.test(f),
   },
   {
-    // Includes co-located recharts when GEX/term charts load with the ticker route.
     name: 'route-ticker',
-    maxGzipKb: 60,
+    maxBrotliKb: 50,
     match: (f) => /TickerDashboard/i.test(f),
   },
   {
     name: 'route-positions',
-    maxGzipKb: 50,
+    maxBrotliKb: 40,
     match: (f) => /PositionsPage/i.test(f),
   },
   {
     name: 'route-scanner',
-    maxGzipKb: 20,
+    maxBrotliKb: 16,
     match: (f) => /Scanner/i.test(f) && f.endsWith('.js'),
   },
   {
-    // Catch any single JS asset that balloons without a named budget.
     name: 'any-js-asset',
-    maxGzipKb: 160,
+    maxBrotliKb: 120,
     match: (f) => f.endsWith('.js') && !f.endsWith('.map.js'),
   },
 ]);
 
-async function gzipSize(filePath) {
+/**
+ * @param {string} filePath
+ * @param {'gzip' | 'brotli'} kind
+ */
+async function compressedSize(filePath, kind) {
   let total = 0;
   const sink = new Writable({
     write(chunk, _enc, cb) {
@@ -107,7 +107,16 @@ async function gzipSize(filePath) {
       cb();
     },
   });
-  await pipeline(createReadStream(filePath), createGzip({ level: 9 }), sink);
+  const transform =
+    kind === 'gzip'
+      ? createGzip({ level: 9 })
+      : createBrotliCompress({
+          params: {
+            // Max quality ≈ static CDN / precompress best case (CF serves strong br for assets).
+            [constants.BROTLI_PARAM_QUALITY]: 11,
+          },
+        });
+  await pipeline(createReadStream(filePath), transform, sink);
   return total;
 }
 
@@ -134,60 +143,64 @@ async function main() {
     process.exit(2);
   }
 
-  /** @type {{ file: string; gzipKb: number; rawKb: number }[]} */
+  /** @type {{ file: string; brotliKb: number; gzipKb: number; rawKb: number }[]} */
   const measured = [];
   for (const file of files) {
     const full = path.join(assetsDir, file);
     const raw = statSync(full).size;
-    const gz = await gzipSize(full);
-    measured.push({ file, gzipKb: kb(gz), rawKb: kb(raw) });
+    const [gz, br] = await Promise.all([
+      compressedSize(full, 'gzip'),
+      compressedSize(full, 'brotli'),
+    ]);
+    measured.push({ file, brotliKb: kb(br), gzipKb: kb(gz), rawKb: kb(raw) });
   }
-  measured.sort((a, b) => b.gzipKb - a.gzipKb);
+  measured.sort((a, b) => b.brotliKb - a.brotliKb);
 
   if (listOnly || asJson) {
     if (asJson) {
       console.log(
-        JSON.stringify({ assets: measured, budgets: BUDGETS.map((b) => b.name) }, null, 2),
+        JSON.stringify(
+          {
+            metric: 'brotli-q11',
+            assets: measured,
+            budgets: BUDGETS.map((b) => ({ name: b.name, maxBrotliKb: b.maxBrotliKb })),
+          },
+          null,
+          2,
+        ),
       );
     } else {
-      console.log('file\trawKB\tgzipKB');
+      console.log('file\trawKB\tgzipKB\tbrotliKB\tvsGzip%');
       for (const m of measured) {
-        console.log(`${m.file}\t${m.rawKb}\t${m.gzipKb}`);
+        const vs = m.gzipKb > 0 ? (((m.gzipKb - m.brotliKb) / m.gzipKb) * 100).toFixed(1) : '0';
+        console.log(`${m.file}\t${m.rawKb}\t${m.gzipKb}\t${m.brotliKb}\t${vs}%`);
       }
     }
     if (listOnly) process.exit(0);
   }
 
-  /** @type {{ budget: string; file: string; gzipKb: number; maxGzipKb: number }[]} */
+  /** @type {{ budget: string; file: string; brotliKb: number; maxBrotliKb: number }[]} */
   const failures = [];
-  /** @type {{ budget: string; file: string; gzipKb: number; maxGzipKb: number }[]} */
+  /** @type {{ budget: string; file: string; brotliKb: number; maxBrotliKb: number }[]} */
   const passes = [];
 
   for (const budget of BUDGETS) {
     if (budget.name === 'any-js-asset') {
       for (const m of measured) {
-        if (m.gzipKb > budget.maxGzipKb) {
-          failures.push({
-            budget: budget.name,
-            file: m.file,
-            gzipKb: m.gzipKb,
-            maxGzipKb: budget.maxGzipKb,
-          });
-        } else {
-          passes.push({
-            budget: budget.name,
-            file: m.file,
-            gzipKb: m.gzipKb,
-            maxGzipKb: budget.maxGzipKb,
-          });
-        }
+        const row = {
+          budget: budget.name,
+          file: m.file,
+          brotliKb: m.brotliKb,
+          maxBrotliKb: budget.maxBrotliKb,
+        };
+        if (m.brotliKb > budget.maxBrotliKb) failures.push(row);
+        else passes.push(row);
       }
       continue;
     }
 
     const hits = measured.filter((m) => budget.match(m.file));
     if (hits.length === 0) {
-      // Named vendor chunks may be inlined into index under some Rolldown graphs — skip missing.
       if (!asJson) {
         console.log(`[check-bundle] skip ${budget.name}: no matching asset (ok if inlined)`);
       }
@@ -197,10 +210,10 @@ async function main() {
       const row = {
         budget: budget.name,
         file: m.file,
-        gzipKb: m.gzipKb,
-        maxGzipKb: budget.maxGzipKb,
+        brotliKb: m.brotliKb,
+        maxBrotliKb: budget.maxBrotliKb,
       };
-      if (m.gzipKb > budget.maxGzipKb) failures.push(row);
+      if (m.brotliKb > budget.maxBrotliKb) failures.push(row);
       else passes.push(row);
     }
   }
@@ -213,38 +226,55 @@ async function main() {
       failures.push({
         budget: 'positions-no-charts',
         file: m.file,
-        gzipKb: m.gzipKb,
-        maxGzipKb: 0,
+        brotliKb: m.brotliKb,
+        maxBrotliKb: 0,
       });
     }
   }
 
   if (!asJson) {
-    console.log('[check-bundle] top assets (gzip KB):');
+    console.log('[check-bundle] metric: brotli q11 (gzip shown for comparison)');
+    console.log('  brotli   gzip   file');
     for (const m of measured.slice(0, 12)) {
-      console.log(`  ${m.gzipKb.toString().padStart(6)}  ${m.file}`);
+      console.log(
+        `  ${m.brotliKb.toString().padStart(6)}  ${m.gzipKb.toString().padStart(6)}  ${m.file}`,
+      );
+    }
+    const top = measured[0];
+    if (top && top.gzipKb > 0) {
+      const save = (((top.gzipKb - top.brotliKb) / top.gzipKb) * 100).toFixed(1);
+      console.log(
+        `\n[check-bundle] top asset brotli vs gzip: −${save}% (${top.gzipKb} → ${top.brotliKb} KB on ${top.file})`,
+      );
     }
     console.log('');
     if (failures.length === 0) {
       console.log(
-        `[check-bundle] OK — ${passes.length} checks within budget (${files.length} js assets)`,
+        `[check-bundle] OK — ${passes.length} brotli checks within budget (${files.length} js assets)`,
       );
-      if (posFiles.length)
-        console.log('[check-bundle] OK — PositionsPage has no charts dependency');
+      if (posFiles.length) console.log('[check-bundle] OK — PositionsPage has no charts dependency');
     } else {
-      console.error('[check-bundle] FAILED budgets:');
+      console.error('[check-bundle] FAILED budgets (brotli KB):');
       for (const f of failures) {
         if (f.budget === 'positions-no-charts') {
           console.error(`  positions-no-charts: ${f.file} still imports recharts/charts chunk`);
         } else {
-          console.error(`  ${f.budget}: ${f.file} = ${f.gzipKb} KB gzip > ${f.maxGzipKb} KB cap`);
+          console.error(
+            `  ${f.budget}: ${f.file} = ${f.brotliKb} KB br > ${f.maxBrotliKb} KB cap`,
+          );
         }
       }
-      console.error('\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard');
+      console.error(
+        '\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard',
+      );
     }
   } else if (!listOnly) {
     console.log(
-      JSON.stringify({ ok: failures.length === 0, failures, passes, assets: measured }, null, 2),
+      JSON.stringify(
+        { ok: failures.length === 0, metric: 'brotli-q11', failures, passes, assets: measured },
+        null,
+        2,
+      ),
     );
   }
 

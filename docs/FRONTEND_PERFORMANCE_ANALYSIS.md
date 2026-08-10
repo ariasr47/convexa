@@ -271,15 +271,17 @@ Do not ship public prod maps to Pages without a decision.
 
 Start measurable, not aspirational:
 
-| Budget (gzip, approx) | Cap | Applies to |
-|-----------------------|-----|------------|
-| Entry + shell JS (index + react + mui + router) | e.g. **250–320 KB** | Cold `/` interactive path |
-| Charts async | e.g. **180 KB** | After ticker/ops open chart |
-| Ticker route chunk (app code, excl. vendor) | e.g. **120 KB** | Lazy page |
-| Positions route | e.g. **100 KB** | Lazy page |
-| Any single chunk | warn **>200 KB** gzip | Visualizer + CI |
+| Budget (**brotli** q11, approx) | Cap | Applies to |
+|--------------------------------|-----|------------|
+| `mui-*` | **110 KB** br | Theme shell |
+| `LineChart-*` / charts | **110 KB** br | Async chart graph |
+| `react-*` | **60 KB** br | React runtime |
+| Ticker route | **50 KB** br | Lazy page (+ local chart graph) |
+| Positions route | **40 KB** br | Lazy page (no recharts) |
+| Entry `index-*` | **22 KB** br | Cold app shell code |
+| Any single JS asset | **120 KB** br | Catch-all |
 
-Exact numbers to be **calibrated after first visualizer run** on a clean `vite build --mode production`. Record baselines in the check script.
+**Why brotli, not gzip:** Cloudflare Pages (and most CDNs) negotiate `Content-Encoding: br` for modern browsers. On this app’s JS, brotli q11 is typically **~12–17% smaller** than gzip-9. The CI gate (`tools/check-dashboard-bundle.mjs`) fails on **brotli** overruns and still prints gzip for comparison. Docker/nginx enables **gzip** (stock images rarely ship `ngx_brotli`); production on Pages relies on edge brotli.
 
 ### Tooling to add
 
@@ -487,3 +489,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | Expanded with production bundle engineering, advanced Vite, Nx targets/configs; marked active workstream §3.8. |
 | 2026-08-10 | **Phase A shipped:** CI rename, visualizer (`ANALYZE`), gzip budget gate, root/Nx scripts, tighter `chunkSizeWarningLimit`, dynamic `bookSync` import. |
 | 2026-08-10 | **Phase B shipped:** SVG sparklines; positions-no-charts gate; route prefetch; no forced charts manualChunk under Rolldown. |
+| 2026-08-10 | Bundle gate **primary metric → brotli q11** (gzip comparative); nginx gzip enabled for Docker path. |
