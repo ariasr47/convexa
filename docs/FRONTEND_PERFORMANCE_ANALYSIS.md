@@ -2,21 +2,20 @@
 
 **Date:** 2026-08-10  
 **Scope:** `@convexa/dashboard` (React 19 + Vite 8 + MUI 9 + RR7 + Recharts 3)  
-**Status:** Living analysis + **active workstream** (backlog §3.8).  
-**Related:** `docs/IMPROVEMENT_BACKLOG.md` §3–4, `apps/dashboard/vite.config.mts`, `nx.json`, `apps/dashboard/package.json` (`nx.targets`).
+**Status:** Living analysis + **workstream closed** (backlog **§3.8** shipped A–D). Use as runbook for build/analyze/check-bundle/sourcemaps.  
+**Related:** `docs/IMPROVEMENT_BACKLOG.md` §3–4, `docs/SOURCEMAPS.md`, `apps/dashboard/vite.config.mts`, `nx.json`, `apps/dashboard/package.json` (`nx.targets`).
 
 ---
 
 ## Executive summary
 
-This frontend is **strong on product architecture and data honesty** (two-speed structure vs tape, lazy routes, token discipline, external stores, risk-oriented tests). It is **weaker on render isolation under live ticks**, **chart dependency weight**, and **production bundle engineering maturity** (budgets, visualizer, modulepreload, CI package names, advanced Vite/Nx target matrix).
+This frontend is **strong on product architecture and data honesty** (two-speed structure vs tape, lazy routes, token discipline, external stores, risk-oriented tests). The **§3.8 program closed** the prior gaps in production bundle engineering, live-tick isolation, sparklines/charts cost on the positions path, and god-module splits for TradeEntry / AiRec / ticker trade flows.
 
-You do **not** need WebGL today. The next ceiling is:
+You do **not** need WebGL today. Residual **optional** follow-ups live outside 3.8:
 
-1. **Production bundle optimization** (Vite + Nx targets + budgets + CI).
-2. **Live-update re-render scope** (SSE should not invalidate the whole desk).
-3. **Recharts cost** (especially sparklines).
-4. **God-module follow-through** (TradeEntryDialog, AiRecPanel, usePortfolio).
+1. **§4.5** Sentry (or peer) — owner-gated, multi-user / unreproducible faults only.
+2. **§3.6** list virtualization — only if measured jank at N≫50.
+3. Further TradeEntryDialogView / AiRecPanel body splits — only when churn hurts.
 
 | Area | Grade | One-line |
 |------|-------|----------|
@@ -496,3 +495,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | **Phase C shipped:** liveTapeStore external SSE snapshot; memo structure widgets; deferred portfolio marks; GEX tooltip hoist. |
 | 2026-08-10 | **Phase D shipped:** TradeEntryDialog → tradeEntry/*; AiRec reasoning/personas modules; useTickerTradeFlows. |
 | 2026-08-10 | **§4.6 hidden sourcemaps** archived out of dist; Sentry (§4.5) left open for owner call. |
+| 2026-08-10 | Workstream **closed** — backlog §3.8 checked off; status no longer “active”. |

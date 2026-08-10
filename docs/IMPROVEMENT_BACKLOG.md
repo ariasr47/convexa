@@ -23,10 +23,10 @@
 | -------------------------- | --------------- | --------------------------------------------------- |
 | Production hardening       | **1.8 partial** | **1.1–1.7, 1.9**                                    |
 | Quant calculations         | see §2          | **2.1–2.3**                                         |
-| Performance                | **3.8 active**  | **3.1–3.7** (3.5–3.6 deferred by design)            |
+| Performance                | —               | **3.1–3.8** (3.5–3.6 N/A by criteria)               |
 | React / frontend standards | **4.5 later**   | **4.1–4.4, 4.6**                                    |
 | UX                         | **5.6 owner**   | **5.1–5.5, 5.7**                                    |
-| System design              | remaining in §6 | **6.1, 6.2 first slice**                            |
+| System design              | **6.3–6.5**     | **6.1, 6.2 first slice**                            |
 | Explicit non-goals         | n/a             | n/a                                                 |
 
 _Update counts when checking items._
@@ -168,16 +168,16 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
       **Done when:** Vendor fan-out stays concurrent; `compute_ms` (or metrics) reviewed for p95 regressions.  
       **Note:** 2026-08-10 — Vendor path already `tokio::join!` (chain/daily/minutes/trades). CPU: GEX + IV structure now `spawn_blocking` + join; logs `vendor_ms` / `cpu_ms` / `total_ms` for p95.
 
-- [ ] **3.8 FE performance program — bundle engineering + live isolation** · **START IMMEDIATELY**  
-      **Evidence:** `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (2026-08-10). Runtime data plane is solid (3.1–3.3); production bundle maturity, Vite advanced config, Nx target matrix, live SSE re-render fan-out, and Recharts weight are the next ceiling.  
-      **Done when:** Phases A–C below shipped (or explicitly deferred with note); Phase D tracked as follow-ups.  
-      **Phases (execute in order; thin PRs):**
-      1. **A — Tooling & truth:** CI `@org/*` → `@convexa/*`; prod build visualizer (`ANALYZE`); gzip baseline + `check-bundle` gate; Nx targets `analyze` / `check-bundle`; document `preview` as the only path for prod-perf claims.
-      2. **B — Bundle weight:** SVG sparklines (drop Recharts from positions path); confirm charts chunk not forced by book route; hover/idle prefetch ticker chunk; tighten `chunkSizeWarningLimit` after budgets exist.
-      3. **C — Runtime isolation:** LiveStore (or equivalent) so SSE ticks do not re-render structure widgets; hoist GEX tooltip; optional `useDeferredValue` on marks.
-      4. **D — Architecture follow-through:** TradeEntryDialog / AiRecPanel / TickerDashboard thinning; virtualize only if N≫50 measured; §4.5–4.6 when multi-user needs them.  
-      **Non-goals:** WebGL, SSR/RSC rewrite, blanket `React.memo`, new chart library.  
-      **Note:** 2026-08-10 — **Phase A–D shipped.** A: brotli budgets + precompress + CF/nginx. B: SVG sparklines, positions-no-charts, prefetch. C: liveTapeStore + structure memo + deferred marks. D: TradeEntryDialog → `tradeEntry/*` (types, LegFields, view); AiRec → `useReadPersonas` + `reasoning.tsx`; Ticker → `useTickerTradeFlows`. God-module LOC: TradeEntry barrel 15 / view ~960 / legs 223; AiRec panel ~950 + reasoning 227; Ticker thinned via trade-flows hook.
+- [x] **3.8 FE performance program — bundle engineering + live isolation**  
+      **Evidence:** `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (2026-08-10).  
+      **Done when:** Phases A–D shipped (or explicitly deferred with note).  
+      **Phases (shipped):**
+      1. **A — Tooling & truth:** CI `@convexa/*`; `ANALYZE` + visualizer; brotli (not gzip) budgets + `check-bundle` gate; Nx/npm `analyze` / `check-bundle`; precompress `.br`/`.gz`; hidden sourcemaps archived out of dist (§4.6).
+      2. **B — Bundle weight:** SVG sparklines; positions-no-charts invariant; landing/nav route prefetch; no forced `charts` manualChunk under Rolldown.
+      3. **C — Runtime isolation:** `liveTapeStore` + `useTickerStreamConnection`; memo structure widgets; GEX/term tooltips hoisted; `useDeferredValue` on portfolio marks.
+      4. **D — Architecture follow-through:** TradeEntry → `tradeEntry/*`; AiRec → `useReadPersonas` + `reasoning.tsx`; ticker → `useTickerTradeFlows`. Virtualize N/A until book ≫50 (§3.6). §4.5 Sentry remains owner-gated (separate row).  
+      **Non-goals (stood):** WebGL, SSR/RSC rewrite, blanket `React.memo`, new chart library.  
+      **Note:** 2026-08-10 — **Closed.** Report + tooling remain living docs; no further 3.8 phases open.
 
 ---
 
@@ -318,9 +318,10 @@ These were audited as **avoid** unless strategy changes:
 Use this as the default sequence when picking work (edge roadmap can interrupt):
 
 1. §5.6 owner device phone sign-off (hardening already shipped)
-2. §2.5 / §2.8 only when chart or commercial needs force them
-3. §6.3+ system-design when edge roadmap is quiet
-4. **§4.5 Sentry (or peer)** only after multi-user / unreproducible FE faults — owner gate (maps already private via §4.6)
+2. Edge roadmap: N1/N2 habits + **X1 SnapTrade broker-connect** when building product next
+3. §2.5 / §2.8 only when chart or ledger evidence forces them
+4. §6.3–6.5 system-design when edge roadmap is quiet
+5. **§4.5 Sentry (or peer)** only after multi-user / unreproducible FE faults — owner gate (maps private via §4.6)
 
 ---
 
@@ -334,3 +335,4 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 | 2026-08-10 | Closed **5.5** Alerts v1, **5.7** theme gaps #1–4, **6.2** first slice (server book); **5.6** hardening + checklist (owner phone sign-off open). |
 | 2026-08-10 | Opened **§3.8 FE performance program** (bundle/Vite/Nx + live isolation); full report `docs/FRONTEND_PERFORMANCE_ANALYSIS.md`. **Start immediately.** |
 | 2026-08-10 | **§4.5** expanded as owner-gated Sentry/error-product item (not this pass); **§4.6** hidden maps shipped. |
+| 2026-08-10 | **Closed §3.8** (phases A–D shipped); progress table + implementation order hygiene. |
