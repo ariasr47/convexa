@@ -283,13 +283,8 @@ export function whyThisRow(row: {
 
   if (row.dist_to_flip_pct != null && Number.isFinite(row.dist_to_flip_pct)) {
     const abs = Math.abs(row.dist_to_flip_pct);
-    const signed =
-      row.dist_to_flip_pct >= 0
-        ? `+${abs.toFixed(2)}%`
-        : `−${abs.toFixed(2)}%`;
-    drivers.push(
-      abs <= 1.5 ? `within ${abs.toFixed(2)}% of flip` : `${signed} from flip`,
-    );
+    const signed = row.dist_to_flip_pct >= 0 ? `+${abs.toFixed(2)}%` : `−${abs.toFixed(2)}%`;
+    drivers.push(abs <= 1.5 ? `within ${abs.toFixed(2)}% of flip` : `${signed} from flip`);
   }
 
   const vol = volRegimeLabel(row.vol_regime);

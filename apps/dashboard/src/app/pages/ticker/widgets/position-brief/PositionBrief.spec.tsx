@@ -2,19 +2,19 @@
  * PositionBrief — product spine #5. Risk-based: empty vs single vs multi vs faulted,
  * sim-only language, mark basis present with P/L, multi never picks one of N.
  */
+import {
+  FX_CALL_DEBIT_SPREAD,
+  FX_LONG_CALL,
+  mkLeg,
+  mkPosition,
+  viewOf,
+} from '@/features/trading/positions/fixtures';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  FX_CALL_DEBIT_SPREAD,
-  FX_LONG_CALL,
-  mkPosition,
-  mkLeg,
-  viewOf,
-} from '@/features/trading/positions/fixtures';
 import { PositionBrief } from './PositionBrief';
 import { BRIEF_COPY } from './copy';
 
@@ -38,12 +38,8 @@ describe('PositionBrief (product spine #5)', () => {
     const onOpenTrade = vi.fn();
     renderBrief({ onOpenTrade });
     expect(screen.getByTestId('position-brief')).toHaveAttribute('data-count', '0');
-    expect(screen.getByTestId('position-brief-empty')).toHaveTextContent(
-      BRIEF_COPY.empty('TSLA'),
-    );
-    expect(screen.getByTestId('position-brief-open-trade')).toHaveTextContent(
-      BRIEF_COPY.emptyCta,
-    );
+    expect(screen.getByTestId('position-brief-empty')).toHaveTextContent(BRIEF_COPY.empty('TSLA'));
+    expect(screen.getByTestId('position-brief-open-trade')).toHaveTextContent(BRIEF_COPY.emptyCta);
     expect(screen.getByTestId('position-brief-open-book')).toHaveAttribute('href', '/positions');
     expect(screen.getByTestId('position-brief').textContent).toMatch(/simulated/i);
     expect(screen.getByTestId('position-brief').textContent).not.toMatch(
@@ -87,9 +83,7 @@ describe('PositionBrief (product spine #5)', () => {
 
   it('multi open never picks one of N — count only + open book', () => {
     const a = viewOf(FX_LONG_CALL);
-    const b = viewOf(
-      mkPosition([mkLeg({ strike: 410, right: 'call' })], { id: 'other-pos' }),
-    );
+    const b = viewOf(mkPosition([mkLeg({ strike: 410, right: 'call' })], { id: 'other-pos' }));
     renderBrief({ openViews: [a, b] });
     expect(screen.getByTestId('position-brief')).toHaveAttribute('data-count', '2');
     expect(screen.getByTestId('position-brief-multi')).toHaveTextContent(
@@ -114,9 +108,7 @@ describe('PositionBrief (product spine #5)', () => {
   it('unavailable mark shows honest P/L unavailable — never a fabricated 0', () => {
     const view = viewOf(FX_LONG_CALL, { mark: null });
     renderBrief({ openViews: [view] });
-    expect(screen.getByTestId('position-brief-pl')).toHaveTextContent(
-      BRIEF_COPY.plUnavailable,
-    );
+    expect(screen.getByTestId('position-brief-pl')).toHaveTextContent(BRIEF_COPY.plUnavailable);
     expect(screen.getByTestId('position-brief-pl').textContent).not.toMatch(/\b0\b/);
   });
 });

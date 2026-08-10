@@ -33,10 +33,7 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function TermStructureCard({
-  termStructure,
-  structureAgeSeconds = null,
-}: Props) {
+export function TermStructureCard({ termStructure, structureAgeSeconds = null }: Props) {
   const theme = useTheme();
   const termSampled = termStructure ? sampleTermPoints(termStructure.points) : [];
   const unavailable = termStructure == null || termSampled.length === 0;
@@ -69,9 +66,7 @@ export function TermStructureCard({
   };
 
   const stateLabel =
-    unavailable || !termStructure || termStructure.points.length < 2
-      ? '—'
-      : termStructure.state;
+    unavailable || !termStructure || termStructure.points.length < 2 ? '—' : termStructure.state;
   // Spine #4: tenor basis + structure age on every render (not live).
   const subtitle = withStructureAge(`ATM IV by tenor · ${stateLabel}`, structureAgeSeconds);
 

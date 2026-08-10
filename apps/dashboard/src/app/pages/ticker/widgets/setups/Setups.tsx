@@ -24,12 +24,7 @@ const convictionTone = (c: string): 'emphasis' | 'info' | 'neutral' => {
 
 export function Setups({ setups, structureAgeSeconds = null }: Props) {
   return (
-    <Widget
-      id="setups"
-      title="Setups"
-      subtitle={setupsSubtitle(structureAgeSeconds)}
-      span={2}
-    >
+    <Widget id="setups" title="Setups" subtitle={setupsSubtitle(structureAgeSeconds)} span={2}>
       {setups?.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (

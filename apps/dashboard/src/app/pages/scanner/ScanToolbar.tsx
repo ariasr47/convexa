@@ -245,9 +245,7 @@ export function ScanToolbar({
             type="button"
             data-testid={`scan-filter-tier-${opt.value}`}
             aria-pressed={filters.tier === opt.value}
-            onClick={() =>
-              onFilters({ ...filters, tier: toggleScalar(filters.tier, opt.value) })
-            }
+            onClick={() => onFilters({ ...filters, tier: toggleScalar(filters.tier, opt.value) })}
             sx={chipSx(filters.tier === opt.value)}
           >
             {opt.label}

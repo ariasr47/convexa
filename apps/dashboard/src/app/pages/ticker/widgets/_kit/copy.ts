@@ -515,18 +515,14 @@ export function structureAsOfPhrase(ageSeconds: number | null | undefined): stri
  * Append structure age to a widget's basis subtitle. Does not invent age when missing — falls
  * back to an honest "structure snapshot" tag so the surface still names its basis.
  */
-export function withStructureAge(
-  basis: string,
-  ageSeconds: number | null | undefined,
-): string {
+export function withStructureAge(basis: string, ageSeconds: number | null | undefined): string {
   if (ageSeconds == null || !Number.isFinite(ageSeconds)) {
     return `${basis} · structure snapshot`;
   }
   return `${basis} · ${structureAsOfPhrase(ageSeconds)}`;
 }
 
-export const LIVE_TAPE_SUBTITLE_LIVE =
-  'Live stream · not the structure snapshot below';
+export const LIVE_TAPE_SUBTITLE_LIVE = 'Live stream · not the structure snapshot below';
 export const LIVE_TAPE_SUBTITLE_OFFLINE =
   'Stream offline · last known ticks · structure levels stay current';
 
@@ -545,9 +541,7 @@ export function gexProfileSubtitle(
   ageSeconds: number | null | undefined,
 ): string {
   const spot =
-    gexSpot != null && Number.isFinite(gexSpot)
-      ? `GEX spot $${gexSpot.toFixed(2)}`
-      : 'GEX spot —';
+    gexSpot != null && Number.isFinite(gexSpot) ? `GEX spot $${gexSpot.toFixed(2)}` : 'GEX spot —';
   return withStructureAge(`${spot} · ${expLabel} · snapshot (not live)`, ageSeconds);
 }
 

@@ -196,9 +196,7 @@ export function Scanner() {
             </Box>
           )}
         </Box>
-      ) : scan.phase === 'ready' &&
-        displayRows.length === 0 &&
-        filtersActive(scan.filters) ? (
+      ) : scan.phase === 'ready' && displayRows.length === 0 && filtersActive(scan.filters) ? (
         <Box data-testid="scan-empty-filter">
           <Typography sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
             {SCAN_COPY.emptyFilterTitle}

@@ -9,12 +9,7 @@
  * on a row that has never been computed.
  */
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@org/api';
-import {
-  isIndexMegacap,
-  SESSION_LABEL,
-  SCAN_COPY,
-  type MarketSessionPhase,
-} from './labels';
+import { isIndexMegacap, SCAN_COPY, SESSION_LABEL, type MarketSessionPhase } from './labels';
 
 /** Client-side desk filters. `null` on a dimension means "any". Never refetches. */
 export interface ScanFilters {
@@ -32,9 +27,7 @@ export const EMPTY_FILTERS: ScanFilters = {
 };
 
 export function filtersActive(f: ScanFilters): boolean {
-  return (
-    f.tier != null || f.volRegime != null || f.minScore != null || f.maxAbsDistFlip != null
-  );
+  return f.tier != null || f.volRegime != null || f.minScore != null || f.maxAbsDistFlip != null;
 }
 
 /**

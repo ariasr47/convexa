@@ -266,9 +266,9 @@ describe('desk filters — client-side only, nulls fail thresholds', () => {
     expect(filterRows(rows, { ...EMPTY_FILTERS, minScore: 50 }).map((r) => r.symbol)).toEqual([
       'AAA',
     ]);
-    expect(
-      filterRows(rows, { ...EMPTY_FILTERS, maxAbsDistFlip: 1 }).map((r) => r.symbol),
-    ).toEqual(['AAA']);
+    expect(filterRows(rows, { ...EMPTY_FILTERS, maxAbsDistFlip: 1 }).map((r) => r.symbol)).toEqual([
+      'AAA',
+    ]);
     expect(
       filterRows(rows, {
         tier: 'prime',
@@ -321,7 +321,12 @@ describe('structureAsOfRel', () => {
 describe('whyThisRow — closed drivers only, never "live"', () => {
   it('surfaces tier + flip proximity for a healthy prime row', () => {
     const text = whyThisRow(
-      row({ tier: 'prime', dist_to_flip_pct: 0.8, regime: 'negative_gamma', vol_regime: 'iv_rich' }),
+      row({
+        tier: 'prime',
+        dist_to_flip_pct: 0.8,
+        regime: 'negative_gamma',
+        vol_regime: 'iv_rich',
+      }),
     );
     expect(text).toMatch(/Prime tier/);
     expect(text).toMatch(/within 0\.80% of flip/);

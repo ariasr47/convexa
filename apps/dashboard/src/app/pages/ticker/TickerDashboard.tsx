@@ -303,9 +303,7 @@ export function TickerDashboard() {
   const openBookViews = useMemo(
     () =>
       pf.views.filter(
-        (v) =>
-          v.position.status === 'open' &&
-          v.ticker.toUpperCase() === ticker.toUpperCase(),
+        (v) => v.position.status === 'open' && v.ticker.toUpperCase() === ticker.toUpperCase(),
       ),
     [pf.views, ticker],
   );

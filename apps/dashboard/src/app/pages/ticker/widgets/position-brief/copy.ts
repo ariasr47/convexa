@@ -16,6 +16,5 @@ export const BRIEF_COPY = {
   plUnavailable: 'P/L unavailable this cycle',
   /** Store fault — never claim the book is empty when we cannot read it. */
   faulted: "Couldn't read the sim book this session — nothing was deleted.",
-  simulatedTip:
-    'A paper trade — no broker, no real money, no real order is ever placed.',
+  simulatedTip: 'A paper trade — no broker, no real money, no real order is ever placed.',
 } as const;

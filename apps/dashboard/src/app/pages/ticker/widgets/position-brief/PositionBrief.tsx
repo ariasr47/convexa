@@ -130,7 +130,10 @@ function EmptyBrief({
         gap: 1.25,
       }}
     >
-      <Typography component="p" sx={{ m: 0, fontSize: '0.88rem', color: 'text.secondary', flex: 1 }}>
+      <Typography
+        component="p"
+        sx={{ m: 0, fontSize: '0.88rem', color: 'text.secondary', flex: 1 }}
+      >
         {BRIEF_COPY.empty(symbol)}
       </Typography>
       {showCta && (
@@ -169,11 +172,7 @@ function SingleBrief({ view }: { view: PositionView }) {
   const plPct = view.pl_pct.kind === 'value' ? view.pl_pct.value : null;
   const dimmed = view.frozen || view.mark.basis === 'last_known';
   const plColor =
-    pl == null || !Number.isFinite(pl)
-      ? 'text.primary'
-      : pl >= 0
-        ? 'success.main'
-        : 'error.main';
+    pl == null || !Number.isFinite(pl) ? 'text.primary' : pl >= 0 ? 'success.main' : 'error.main';
 
   return (
     <Box

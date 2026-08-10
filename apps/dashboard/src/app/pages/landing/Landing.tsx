@@ -72,8 +72,8 @@ export function Landing() {
                 See the dealer positioning behind the price.
               </Typography>
               <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 620 }}>
-                Scan for structure, open a ticker for walls and the flip, then practice the plan on a{' '}
-                <Jargon term="simulated" gloss={SIMULATED_GLOSS} /> book. Grounded in live{' '}
+                Scan for structure, open a ticker for walls and the flip, then practice the plan on
+                a <Jargon term="simulated" gloss={SIMULATED_GLOSS} /> book. Grounded in live{' '}
                 <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} />, not vibes.
               </Typography>
               <Typography

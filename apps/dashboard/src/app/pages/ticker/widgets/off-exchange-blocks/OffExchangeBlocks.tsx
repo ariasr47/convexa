@@ -28,10 +28,7 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function OffExchangeBlocks({
-  offExchange,
-  structureAgeSeconds = null,
-}: Props) {
+export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: Props) {
   return (
     <Widget
       id="off-exchange-blocks"

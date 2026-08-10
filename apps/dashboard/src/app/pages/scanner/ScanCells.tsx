@@ -27,7 +27,14 @@ import {
   relAge,
   updatedText,
 } from './format';
-import { regimeLabel, SCAN_COPY, statusMeta, tierLabel, volRegimeLabel, whyThisRow } from './labels';
+import {
+  regimeLabel,
+  SCAN_COPY,
+  statusMeta,
+  tierLabel,
+  volRegimeLabel,
+  whyThisRow,
+} from './labels';
 
 /** Figures are mono + tabular by construction — numerals are the personality (skill rule 6). */
 export const MONO = {
