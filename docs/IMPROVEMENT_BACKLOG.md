@@ -208,9 +208,19 @@ React 19, RR7, typed client, lazy routes, Vitest risk suites, module boundaries,
       **Done when:** Single dedicated PR; no mixed scopes.  
       **Note:** 2026-08-10 — packages + imports → `@convexa/*` (no mixed scopes).
 
-- [ ] **4.5 Optional prod error reporting**  
-      **Done when:** Client error sink (e.g. Sentry) + API correlation id when multi-user justifies cost.  
-      **Note:** **Deferred — owner decision.** Sentry (and peers) are third-party error trackers: they capture uncaught exceptions/rejections with minified stacks, breadcrumbs, and optional user/session context, then symbol-group them for triage. Useful once many real users report “it broke” without a repro; cost, PII (emails, tickers in UI state), and CSP/`connect-src` must be accepted first. Hidden sourcemaps (§4.6) already let *you* decode stacks without a vendor.
+- [ ] **4.5 Prod client error reporting (Sentry or equivalent)** · **Later / owner-gated**  
+      **Priority:** Later — only after multi-user traffic or recurring unreproducible FE faults.  
+      **Not in this pass:** documented 2026-08-10; **do not implement** until owner green-lights vendor + PII policy.  
+      **What it is:** A hosted error product (Sentry is the usual default; peers: Bugsnag, Datadog RUM, Rollbar). An SDK hooks `window.onerror` / `unhandledrejection`, sends minified stacks + breadcrumbs + optional release/user context; the vendor dashboard groups issues. Private maps from **§4.6** are uploaded to the vendor for that release so stacks un-minify in their UI (maps stay out of public Pages `dist`).  
+      **Why wait:** Privacy (emails, tickers, book UI state), CSP `connect-src` allowlist, cost/noise, and a release-upload pipeline. Solo/small desk can use repro + `sourcemaps-private/` without a vendor.  
+      **Done when:**
+      1. Owner picks vendor (or self-host) and approves scrub rules (no passwords, no full book blobs, no AI keys).
+      2. FE SDK behind build-time flag / env (off locally unless explicitly enabled).
+      3. CSP / `_headers` updated only as needed; deploy notes updated.
+      4. Release identity (git SHA) on events; §4.6 hidden maps uploaded to the vendor in CI for that SHA.
+      5. Optional: API correlation id on 5xx joined into the client report when present.
+      6. Staging smoke: forced test error appears in vendor; no `.map` on public origin.  
+      **Note:** _
 
 - [x] **4.6 Optional hidden sourcemaps for prod debug**  
       **Done when:** Uploaded privately if debugging needs outweigh size.  
