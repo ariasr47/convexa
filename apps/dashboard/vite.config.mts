@@ -45,15 +45,17 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: './dist',
       emptyOutDir: true,
-      // Production: minified, no sourcemaps, hashed assets, size report.
-      // Development mode builds keep readable output + sourcemaps.
+      // Production: minified, **hidden** sourcemaps (files emitted, no sourceMappingURL in JS so
+      // browsers never fetch them). tools/archive-sourcemaps.mjs then moves *.map out of dist so
+      // CF Pages / Docker public roots never ship them (§4.6 private debug).
+      // Development mode builds keep linked sourcemaps.
       // Vite 8 uses Rolldown/oxc minify — do not set esbuild options (deprecated).
       // Prod perf claims: only after `nx build … --configuration=production` + `nx preview`
       // (or CF Pages). Never claim prod perf from `vite` HMR or development-mode builds.
       target: 'es2022',
       minify: isProd,
       cssMinify: isProd,
-      sourcemap: isProd ? false : true,
+      sourcemap: isProd ? 'hidden' : true,
       reportCompressedSize: isProd,
       // Soft Vite warning; hard gzip budgets live in tools/check-dashboard-bundle.mjs (§3.8).
       chunkSizeWarningLimit: 600,

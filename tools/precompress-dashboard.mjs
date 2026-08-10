@@ -38,12 +38,22 @@ const COMPRESSIBLE = new Set([
   '.json',
   '.txt',
   '.xml',
-  '.map',
   '.woff', // rare; woff2 is already compressed — skipped below
 ]);
 
-/** Already-encoded or useless to re-compress. */
-const SKIP_EXT = new Set(['.gz', '.br', '.woff2', '.png', '.jpg', '.jpeg', '.webp', '.ico', '.gif']);
+/** Already-encoded, private maps (archived), or binary — do not re-compress. */
+const SKIP_EXT = new Set([
+  '.gz',
+  '.br',
+  '.map', // private; moved by archive-sourcemaps.mjs before precompress
+  '.woff2',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
+  '.ico',
+  '.gif',
+]);
 
 const MIN_BYTES = 512; // don't bother with tiny files
 

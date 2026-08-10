@@ -5,6 +5,9 @@ dist
 tmp
 out-tsc
 
+# Private prod sourcemaps (emitted hidden, archived out of dist — never commit)
+apps/dashboard/sourcemaps-private/
+
 # Rust workspace
 /target/
 **/target/

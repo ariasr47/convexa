@@ -8,7 +8,7 @@
       "build": {
         "configurations": {
           "production": {
-            "command": "vite build --mode production && node ../../tools/precompress-dashboard.mjs"
+            "command": "vite build --mode production && node ../../tools/archive-sourcemaps.mjs && node ../../tools/precompress-dashboard.mjs"
           },
           "development": {
             "command": "vite build --mode development"

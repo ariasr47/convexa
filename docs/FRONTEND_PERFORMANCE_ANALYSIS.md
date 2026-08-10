@@ -495,3 +495,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | Precompress `.br`/`.gz` on prod build; Docker → `fholzer/nginx-brotli` with `brotli_static`/`gzip_static`. |
 | 2026-08-10 | **Phase C shipped:** liveTapeStore external SSE snapshot; memo structure widgets; deferred portfolio marks; GEX tooltip hoist. |
 | 2026-08-10 | **Phase D shipped:** TradeEntryDialog → tradeEntry/*; AiRec reasoning/personas modules; useTickerTradeFlows. |
+| 2026-08-10 | **§4.6 hidden sourcemaps** archived out of dist; Sentry (§4.5) left open for owner call. |

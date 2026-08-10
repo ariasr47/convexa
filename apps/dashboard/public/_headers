@@ -19,3 +19,8 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Sourcemaps must not be public (prod build archives them out of dist; this is defense-in-depth).
+/assets/*.map
+  Cache-Control: no-store
+  X-Robots-Tag: noindex

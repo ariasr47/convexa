@@ -210,11 +210,11 @@ React 19, RR7, typed client, lazy routes, Vitest risk suites, module boundaries,
 
 - [ ] **4.5 Optional prod error reporting**  
       **Done when:** Client error sink (e.g. Sentry) + API correlation id when multi-user justifies cost.  
-      **Note:** _
+      **Note:** **Deferred — owner decision.** Sentry (and peers) are third-party error trackers: they capture uncaught exceptions/rejections with minified stacks, breadcrumbs, and optional user/session context, then symbol-group them for triage. Useful once many real users report “it broke” without a repro; cost, PII (emails, tickers in UI state), and CSP/`connect-src` must be accepted first. Hidden sourcemaps (§4.6) already let *you* decode stacks without a vendor.
 
-- [ ] **4.6 Optional hidden sourcemaps for prod debug**  
+- [x] **4.6 Optional hidden sourcemaps for prod debug**  
       **Done when:** Uploaded privately if debugging needs outweigh size.  
-      **Note:** _
+      **Note:** 2026-08-10 — prod `sourcemap: 'hidden'`; `tools/archive-sourcemaps.mjs` moves maps to `apps/dashboard/sourcemaps-private/` (gitignored) before precompress/deploy; nginx 404 on `*.map`; docs in `docs/SOURCEMAPS.md`.
 
 ---
 
