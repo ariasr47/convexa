@@ -2,20 +2,20 @@
 # Convexa — LOCAL / DEV one-command full stack.
 #
 #   docker compose up --build
-#   -> open http://localhost:8080  (dashboard; /api/* proxied to api-rust)
+#   -> open http://localhost:8080  (dashboard; /api/* proxied to apps/api)
 #
-# Production backend is Railway **api-rust** (Python FastAPI is retired).
-# Local secrets: copy apps/api/.env.example → apps/api/.env (or a root .env)
-# and pass MASSIVE_API_KEY / AUTH_* / AI_KEY_ENCRYPTION_KEY. Never bake secrets
-# into image layers.
+# Backend is apps/api (Axum / Rust). Production: Railway service api-rust
+# (rename pending) at https://convexa-production.up.railway.app
+#
+# Secrets: apps/api/.env (gitignored). Never baked into image layers.
 # ============================================================================
 
 services:
   api:
     build:
       context: .
-      dockerfile: apps/api-rust/Dockerfile
-    image: convexa-api-rust
+      dockerfile: apps/api/Dockerfile
+    image: convexa-api
     env_file:
       - ./apps/api/.env
     environment:

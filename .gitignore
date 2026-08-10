@@ -91,3 +91,10 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# Archived Python backend — never re-add venvs
+archive/**/.venv/
+archive/**/__pycache__/
+archive/**/.pytest_cache/
+archive/**/data/
+

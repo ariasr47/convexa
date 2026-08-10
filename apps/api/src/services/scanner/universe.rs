@@ -80,7 +80,7 @@ pub fn load_universe(path: &Path) -> AppResult<UniverseConfig> {
 
 /// Resolve path: explicit env path, else checked-in Python universe.json under workspace.
 pub fn default_universe_path(workspace_root: &Path) -> PathBuf {
-    workspace_root.join("apps/api/src/scanner/config/universe.json")
+    workspace_root.join("apps/api/config/universe.json")
 }
 
 #[cfg(test)]

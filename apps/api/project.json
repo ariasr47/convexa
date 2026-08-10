@@ -2,37 +2,30 @@
   "name": "api",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "sourceRoot": "apps/api",
-  "tags": ["scope:backend", "type:app", "status:retired"],
+  "sourceRoot": "apps/api/src",
+  "tags": ["scope:backend", "type:app"],
   "targets": {
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node -e \"console.error('Python api is RETIRED — use: npm run serve:api  (api-rust)'); process.exit(1)\""
+        "command": "cargo run -p api-rust -- serve",
+        "cwd": "{workspaceRoot}"
       },
       "cache": false
     },
-    "serve-python-legacy": {
+    "build": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "apps/api",
-        "command": ".venv\\Scripts\\python.exe main.py"
-      },
-      "cache": false
-    },
-    "serve-worker-legacy": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "apps/api",
-        "command": ".venv\\Scripts\\python.exe worker.py"
+        "command": "cargo build -p api-rust --release",
+        "cwd": "{workspaceRoot}"
       },
       "cache": false
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "cwd": "apps/api",
-        "command": ".venv\\Scripts\\python.exe -m pytest"
+        "command": "cargo test -p api-rust -p quant-engine",
+        "cwd": "{workspaceRoot}"
       },
       "cache": false
     }

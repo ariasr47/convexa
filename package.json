@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "nx run-many -t serve -p api-rust,dashboard",
-    "serve:api": "nx serve api-rust",
+    "dev": "nx run-many -t serve -p api,dashboard",
+    "serve:api": "nx serve api",
     "serve:dashboard": "nx serve dashboard",
     "test": "nx run-many -t test",
     "lint": "nx run-many -t lint",

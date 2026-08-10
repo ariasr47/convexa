@@ -10,14 +10,12 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
 
 ## Layout
 
-- `apps/api-rust` — **production backend** (Axum / Tokio). `npm run serve:api` →
-  `cargo run -p api-rust -- serve` on :8000. Railway service `api-rust` + Postgres;
-  scanner is embedded (`SCAN_ENABLED`). Quant compute lives in `libs/quant-engine`.
-- `apps/api` — **Python FastAPI, RETIRED** in production (see `apps/api/RETIRED.md`).
-  Source kept for characterization fixtures + `universe.json` consumed by the Rust image.
-  `nx serve api` fails on purpose; use `nx run api:serve-python-legacy` only if needed.
+- `apps/api` — **production backend** (Axum / Tokio Rust). `npm run serve:api` →
+  `cargo run -p api-rust -- serve` on :8000 (crate name remains `api-rust`). Railway +
+  Postgres; scanner embedded (`SCAN_ENABLED`). Universe: `apps/api/config/universe.json`.
+  Quant compute: `libs/quant-engine`. Former Python tree: `archive/api-python/`.
 - `apps/dashboard` — React 19 + Vite + MUI frontend (`nx serve dashboard` → :4200, proxies
-  `/api` → :8000 api-rust). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
+  `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
 - `apps/dashboard-e2e` — Playwright e2e for the dashboard.
 - `libs/api` — `@org/api`, the shared TS API client (consumed as source).
 - `.claude/` — the delivery-orchestration system (ORCHESTRATOR, contracts, agents,

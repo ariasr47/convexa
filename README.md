@@ -57,8 +57,8 @@ docs/             Design notes
 ### Prerequisites
 
 - **Node.js** (LTS; developed with Node 24 via [nvm](https://github.com/coreybutler/nvm-windows) on Windows) + npm
-- **Python 3.11+** (on Windows, the `py` launcher)
-- A **Massive API key** for live market data (the backend needs one to fetch chains; see _Configuration_)
+- **Rust** (stable toolchain via [rustup](https://rustup.rs/)) for `apps/api`
+- A **Massive API key** for live market data (see _Configuration_)
 
 ### Install
 
@@ -66,12 +66,8 @@ docs/             Design notes
 # JS workspace
 npm install
 
-# Python backend (creates apps/api/.venv and installs deps)
-cd apps/api
-py -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements.txt   # Windows
-# .venv/bin/python -m pip install -r requirements.txt          # macOS/Linux
-cd ../..
+# Rust backend is a Cargo workspace member (libs/quant-engine + apps/api).
+# No Python venv required for the production path.
 ```
 
 ### Configuration
@@ -81,23 +77,21 @@ Create `apps/api/.env` (gitignored — never commit it):
 ```dotenv
 MASSIVE_API_KEY=your_key_here        # required for live data
 # Optional:
-ANTHROPIC_API_KEY=sk-ant-...         # enables in-app AI recommendations (absent => feature reports "no key")
-AUTH_SESSION_SIGNING_KEY=...         # set for sessions that survive a backend restart
-GOOGLE_CLIENT_ID=...                 # enables "Continue with Google" (absent => button shown disabled)
+ANTHROPIC_API_KEY=sk-ant-...         # enables in-app AI recommendations
+AUTH_SESSION_SIGNING_KEY=...         # sessions that survive a backend restart
+AI_KEY_ENCRYPTION_KEY=...            # encrypt stored BYO AI keys
+DATABASE_URL=postgres://...          # multi-instance durable stores (Docker builds enable postgres)
+GOOGLE_CLIENT_ID=...                 # enables "Continue with Google" when set
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=...
 ```
-
-The full set of tunables (cache TTL, freshness, gating thresholds, etc.) is documented in `.claude/PROJECT_CONTEXT.md` §7.
-
-> The user-accounts store defaults to **in-memory** (resets on restart) — a deliberate first cut. The storage seam is built so a persistent database is a contained swap.
 
 ### Run
 
 ```bash
 npm run dev            # serve backend (:8000) + frontend (:4200) together
 # or individually:
-npm run serve:api
+npm run serve:api      # cargo run -p api-rust -- serve
 npm run serve:dashboard
 ```
 

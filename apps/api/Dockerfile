@@ -1,103 +1,79 @@
 # syntax=docker/dockerfile:1
 # ============================================================================
-# Convexa backend (FastAPI / uvicorn) — production-shaped image.
+# Convexa api — production image (Axum / Tokio).
 #
-# Build context  : apps/api  (the backend is workspace-independent — it does NOT
-#                   import the JS/Nx workspace).
-#   docker build -f apps/api/Dockerfile -t convexa-api apps/api
+# Build from REPO ROOT (workspace Cargo.toml + libs/quant-engine):
+#   docker build -f apps/api/Dockerfile -t convexa-api .
 #
-# NO SECRETS ARE BAKED IN. All config + secrets are injected at RUNTIME via the
-# process environment (12-factor); a stray local .env / .venv / conf/token.txt is
-# kept out of the build context by apps/api/.dockerignore. load_dotenv() is a bare
-# read of ./.env relative to cwd — in the container no .env is present, so it is a
-# harmless no-op and the real values come from the injected environment.
+# Railway:
+#   Root Directory = (empty / repo root)
+#   Dockerfile path = apps/api/Dockerfile
 #
-# Runtime env vars (NAMES ONLY — see apps/api/.env.example; never set values here):
-#   MASSIVE_API_KEY, DATA_FEED, DATA_PROVIDER
-#   CACHE_TTL_SECONDS, STALE_AFTER_SECONDS, GATE_SCORE, FLOW_WINDOW_SECONDS,
-#   LIVE_THROTTLE_SECONDS, CHAIN_REFRESH_SECONDS, CHAIN_PREWARM_MAX_AGE_SECONDS,
-#   INCLUDE_DARK_POOL, DARKPOOL_LOOKBACK_SECONDS, BLOCK_MIN_SHARES,
-#   VOL_OI_UNUSUAL_THRESHOLD, TIER_WATCH_SCORE, TIER_ACTIONABLE_SCORE,
-#   TIER_PRIME_SCORE, OBSERVABILITY_ENABLED, METRICS_WINDOW_SIZE,
-#   METRICS_RECENT_TRACES
-#   ANTHROPIC_API_KEY, AI_REC_MODEL, AI_REC_COOLDOWN_SECONDS, AI_REC_DAILY_CAP,
-#   AI_REC_TIMEOUT_SECONDS, AI_REC_IN_APP_ENABLED, AI_REC_STUB
-#   ACCOUNT_STORE, AUTH_SESSION_SIGNING_KEY,
-#   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
-#   AI_KEY_ENCRYPTION_KEY, AI_REC_ADMIN_EMAILS, AI_REC_ADMIN_FREE_DAILY
-#   SCAN_STORE, SCAN_DATABASE_URL, SCAN_STORE_PATH
-#   SCANNER_EMBEDDED, SCAN_UNIVERSE_PATH, SCAN_FAST_INTERVAL_SECONDS,
-#   SCAN_STALE_AFTER_SECONDS, SCAN_MOVE_THRESHOLD_PCT, SCAN_SLOW_BATCH_SIZE,
-#   SCAN_PROMOTION_CAP
-#   SCAN_DEFAULT_VIEW_N, SCAN_WARM_MAX_AGE_SECONDS
+# NO SECRETS ARE BAKED IN. Inject at runtime (Railway Variables).
 #
-# STATELESS / restart-resettable: the auth/session/AI-key stores are in-memory
-# SQLite (reset on restart) and DATA_DIR=./data is ephemeral. The persistent
-# store is the NEXT feature (`persistent-db`) — documented in docker-compose.yml,
-# not solved here.
+# Required: MASSIVE_API_KEY, AUTH_SESSION_SIGNING_KEY, AI_KEY_ENCRYPTION_KEY
+# Multi-instance: DATABASE_URL=${{Postgres.DATABASE_URL}}  (this image enables postgres)
+# Optional: REDIS_URL, GOOGLE_*, ANTHROPIC_API_KEY, POSITIONS_PROVIDER=stub, …
 # ============================================================================
 
-# Owner-overridable; 3.12 ships manylinux wheels for numpy/scipy/argon2-cffi/
-# cryptography/pydantic, so no compiler/apt build toolchain is needed on -slim.
-ARG PYTHON_VERSION=3.12
-FROM python:${PYTHON_VERSION}-slim
+# ---- build ----
+# Cargo.lock pulls crates that need rustc ≥1.88 (e.g. home@0.5, icu_*@2.2).
+FROM rust:1-bookworm AS builder
+WORKDIR /src
 
-# uvicorn binds 0.0.0.0 inside the container; flush stdout for live logs.
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+COPY Cargo.toml Cargo.lock ./
+COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
+COPY apps/api/Cargo.toml apps/api/Cargo.toml
 
-WORKDIR /app
+# Dummy sources so the dependency graph resolves and cargo can cache crates.io.
+RUN mkdir -p libs/quant-engine/src libs/quant-engine/benches apps/api/src \
+    && printf 'pub fn _x(){}\n' > libs/quant-engine/src/lib.rs \
+    && printf 'fn main(){}\n' > libs/quant-engine/benches/gex_bench.rs \
+    && printf 'fn main(){}\n' > apps/api/src/main.rs \
+    && printf 'pub fn _x(){}\n' > apps/api/src/lib.rs
 
-# 1) Dependencies first (layer-cache: only re-runs when requirements.txt changes).
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN cargo build -p api-rust --release --features postgres \
+    && rm -rf apps/api/src libs/quant-engine/src \
+    && rm -f target/release/api-rust target/release/deps/api_rust* \
+           target/release/deps/libapi_rust* target/release/deps/quant_engine* \
+           target/release/deps/libquant_engine* \
+    && rm -rf target/release/.fingerprint/api-rust-* \
+              target/release/.fingerprint/quant-engine-* \
+              target/release/.fingerprint/libapi_rust* \
+              target/release/.fingerprint/libquant_engine*
 
-# 2) Application code + the assets the app reads at RUNTIME:
-#    - main.py                      : the FastAPI app (main:app)
-#    - src/                         : engine/signals/live/providers/auth/...
-#    - prompts/                     : personas.py opens prompts/strategy_prompt.md
-#                                     + prompts/reassessment_prompt.md (cwd=/app)
-#    - market_state_glossary.md     : ai_recommendation.py reads it at the app root
-#                                     (_REPO_ROOT = the app dir)
-#    Explicit COPYs (no `COPY . .`) so no .env/.venv/conf/data ever enters a layer
-#    even independently of .dockerignore.
-COPY main.py ./
-#    - worker.py                    : the Scanner sweep worker's entrypoint. The SAME image runs
-#                                     BOTH processes — the web service uses the CMD below, and a
-#                                     second service overrides the start command to `python worker.py`
-#                                     (ARCHITECTURE §3.1: same image, different start command).
-#                                     Without this COPY that second service dies instantly on
-#                                     "can't open file '/app/worker.py'". It imports main +
-#                                     src.scanner + src.scanstore, all of which are already copied.
-COPY worker.py ./
-COPY src ./src
-COPY prompts ./prompts
-COPY market_state_glossary.md ./
+COPY libs/quant-engine/src libs/quant-engine/src
+COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
+COPY apps/api/src apps/api/src
+COPY apps/api/static apps/api/static
+COPY apps/api/Cargo.toml apps/api/Cargo.toml
+RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs \
+    && cargo build -p api-rust --release --features postgres \
+    && test -x target/release/api-rust \
+    && strip target/release/api-rust
 
-# 3) Non-root runtime. DATA_DIR="data" is cwd-relative (./data == /app/data) and
-#    must be writable by the non-root user (the ephemeral per-ticker dumps).
-RUN useradd --create-home --uid 10001 appuser \
+# ---- runtime ----
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/data \
     && chown -R appuser:appuser /app
+
+WORKDIR /app
+COPY --from=builder /src/target/release/api-rust /app/api-rust
+COPY apps/api/config/universe.json /app/universe.json
+
+ENV RUST_LOG=info,api_rust=info \
+    HTTP_BIND=0.0.0.0:8000 \
+    SCAN_UNIVERSE_PATH=/app/universe.json \
+    AUTH_STORE_PATH=/app/data/auth.json \
+    IV_STORE_PATH=/app/data/iv_timeseries.json \
+    SCAN_STORE_PATH=/app/data/scan.json \
+    AUTH_COOKIE_SECURE=true \
+    POSITIONS_PROVIDER=stub
+
 USER appuser
-
 EXPOSE 8000
-
-# Liveness probe (HC-1 resolved): a Python socket connect to the runtime port. This
-# needs no curl/wget layer (Python is already present), is unauthenticated,
-# side-effect-free, and asserts uvicorn is accepting connections without coupling
-# health to any app endpoint or to OBSERVABILITY_ENABLED. No new endpoint is added.
-# The probe reads ${PORT:-8000} so it tracks the SAME port the CMD binds (Railway may
-# inject a different $PORT); locally / in compose $PORT is unset ⇒ 8000 (unchanged).
-# Shell form so ${PORT:-8000} expands (exec form does no shell substitution).
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import os,socket,sys; s=socket.create_connection(('127.0.0.1',int(os.environ.get('PORT','8000'))),3); s.close(); sys.exit(0)"
-
-# Production-shaped start: --host 0.0.0.0 (accept connections from the compose
-# network / host) and NO --reload (dev-only). Invoke the uvicorn console script
-# directly so the main.py __main__ reload block is bypassed; main:app resolves
-# because WORKDIR is the app root (same module layout as cwd=apps/api in dev).
-# Shell-form CMD so ${PORT:-8000} expands at runtime: Railway injects $PORT and routes
-# its public edge to it; locally / in compose $PORT is unset ⇒ binds 8000 (so compose +
-# nginx proxy_pass http://api:8000 + the TCP healthcheck stay valid). [R1, $PORT bind]
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["sh", "-c", "export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /app/api-rust serve"]

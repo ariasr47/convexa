@@ -33,7 +33,7 @@ Open progressive demo: http://127.0.0.1:8000/
 With serve running:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File apps/api-rust/scripts/smoke_dashboard_cutover.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/api/scripts/smoke_dashboard_cutover.ps1
 ```
 
 Expect **25/25 PASS** (health, session, scan universe shape, scan rows, personas, ticker bundle FE keys, contract, rec status/export, price, login, sim-trade gate).
@@ -101,4 +101,4 @@ Provider auto-detect: `sk-ant-`→Anthropic, `sk-`→OpenAI, `xai-`→xAI, `AIza
 - FE Settings soft-warns non-`sk-ant-` keys but still submits; backend accepts any provider
 - **Durable DB:** build `--features postgres` + `DATABASE_URL` for multi-instance auth/IV
   (see `docs/API_RUST_DEPLOY.md`). Default local remains JSON-on-disk.
-- **Docker/Railway:** `apps/api-rust/Dockerfile` (postgres feature on). Cutover steps in deploy doc.
+- **Docker/Railway:** `apps/api/Dockerfile` (postgres feature on). See `docs/API_RUST_DEPLOY.md`.

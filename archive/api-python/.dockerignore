@@ -1,0 +1,36 @@
+# Backend build context = apps/api. .dockerignore is NOT inherited from .gitignore —
+# it is authored here, and it is the structural guard for [no-secrets-in-image].
+# (The Dockerfile also uses explicit COPYs rather than `COPY . .`, so these are
+# defence-in-depth: a secret can enter NO layer.)
+
+# Secrets / credentials — NEVER into an image layer (HARD).
+.env
+.env.*
+*.key
+*.pem
+conf/token.txt
+conf/
+
+# Local Python virtualenv (huge + machine-specific; deps come from requirements.txt).
+.venv
+venv
+
+# Ephemeral runtime output (DATA_DIR; recreated writable in the image).
+data
+
+# Python caches / build noise.
+__pycache__
+**/__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# VCS / editor / docker meta.
+.git
+.gitignore
+.vscode
+.idea
+Dockerfile
+.dockerignore
+README.md

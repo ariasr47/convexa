@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "libs/quant-engine",
-    "apps/api-rust",
+    "apps/api",
 ]
 
 [workspace.package]

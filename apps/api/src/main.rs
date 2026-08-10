@@ -106,11 +106,11 @@ struct GoldenFixture {
 }
 
 fn load_dotenv() {
-    // Prefer apps/api/.env (existing monorepo key location), then cwd.
+    // Prefer apps/api/.env (crate root), then workspace root, then cwd.
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let candidates = [
-        manifest.join("../../apps/api/.env"),
         manifest.join(".env"),
+        manifest.join("../../.env"),
         PathBuf::from(".env"),
     ];
     for p in candidates {
@@ -159,7 +159,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 warm_enabled: false,
                 scan_enabled: false,
                 scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                    .join("../../apps/api/src/scanner/config/universe.json"),
+                    .join("../../apps/api/config/universe.json"),
                 scan_fast_interval_secs: 30,
                 scan_slow_batch_size: 4,
                 scan_promotion_cap: 2,

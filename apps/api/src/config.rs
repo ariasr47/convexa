@@ -160,7 +160,7 @@ impl Config {
         let scan_universe_path = env::var("SCAN_UNIVERSE_PATH")
             .map(PathBuf::from)
             .unwrap_or_else(|_| {
-                workspace_root.join("apps/api/src/scanner/config/universe.json")
+                workspace_root.join("apps/api/config/universe.json")
             });
         let scan_fast_interval_secs = env_u64("SCAN_FAST_INTERVAL_SECS", 30);
         let scan_slow_batch_size = env_u64("SCAN_SLOW_BATCH_SIZE", 4).max(1) as usize;
