@@ -31,6 +31,10 @@ export const SCAN_COPY = {
   loading: 'Loading scan…',
   emptyViewTitle: 'No tickers in your view.',
   emptyViewBody: 'Pick tickers to build your scan.',
+  /** Filters engaged but no row matches — never confusable with an empty saved view. */
+  emptyFilterTitle: 'No names match these filters.',
+  emptyFilterBody: 'Clear a chip or widen the thresholds — the full view is still loaded.',
+  clearFilters: 'Clear filters',
   /** Never a persistence claim for an anonymous visitor (UX §3.3). */
   signInToCustomize: 'Sign in to customize your view.',
   editView: 'Edit view',
@@ -47,10 +51,54 @@ export const SCAN_COPY = {
   sweepAbsent: "Sweep hasn't reported yet — showing the last known rows.",
   sweepBehind: (age: string) => `Sweep last ran ${age} ago — showing the last known rows.`,
   updated: (rel: string) => `Updated ${rel} ago`,
+  /** Structure age for the desk strip (distinct from the per-row "Updated …" line). */
+  structureAsOf: (rel: string) => `Structure as-of ${rel}`,
+  structureAsOfUnknown: 'Structure as-of —',
+  sessionAria: 'US equity session',
+  filterAria: 'Scan desk filters',
+  filterShowing: (shown: number, total: number) => `Showing ${shown} of ${total}`,
   sortAria: (col: string) => `Sort by ${col}`,
+  whyScoreAria: 'Why this score',
   /** index-first-defaults AC-3 — the zero-state lead-group header (SPEC §4: the one pinned label). */
   leadGroup: 'Indexes & megacaps',
 } as const;
+
+/** Desk session phases (US equities, America/New_York). Derived from the wall clock — not a stream. */
+export type MarketSessionPhase = 'rth' | 'pre' | 'after' | 'closed';
+
+/** Closed session labels for the badge. Never "live". */
+export const SESSION_LABEL: Record<MarketSessionPhase, string> = {
+  rth: 'RTH',
+  pre: 'Pre-market',
+  after: 'After-hours',
+  closed: 'Closed',
+};
+
+/** Filter chip options — wire enums for tier/vol; numeric thresholds for score/flip. */
+export const TIER_FILTER_OPTIONS = [
+  { value: 'prime', label: 'Prime' },
+  { value: 'actionable', label: 'Actionable' },
+  { value: 'watch', label: 'Watch' },
+  { value: 'dormant', label: 'Dormant' },
+] as const;
+
+export const VOL_FILTER_OPTIONS = [
+  { value: 'iv_rich', label: 'IV rich' },
+  { value: 'iv_cheap', label: 'IV cheap' },
+  { value: 'neutral', label: 'Neutral' },
+] as const;
+
+export const SCORE_FILTER_OPTIONS = [
+  { value: 70, label: 'Score ≥70' },
+  { value: 50, label: 'Score ≥50' },
+  { value: 30, label: 'Score ≥30' },
+] as const;
+
+export const FLIP_FILTER_OPTIONS = [
+  { value: 1, label: '|Flip| ≤1%' },
+  { value: 2, label: '|Flip| ≤2%' },
+  { value: 5, label: '|Flip| ≤5%' },
+] as const;
 
 /**
  * index-first-defaults AC-3 — the CLOSED lead-group membership for the scanner's zero-state (no
@@ -208,3 +256,51 @@ function closed(map: Record<string, string>, value: string | null | undefined): 
 export const tierLabel = (v: string | null | undefined) => closed(TIER_LABEL, v);
 export const regimeLabel = (v: string | null | undefined) => closed(REGIME_LABEL, v);
 export const volRegimeLabel = (v: string | null | undefined) => closed(VOL_REGIME_LABEL, v);
+
+/**
+ * "Why this row" — 1–2 plain-language score drivers from CLOSED wire fields only.
+ * Never re-derives score; never dumps raw enums; never claims a real-time feed.
+ * Used as the score-cell tooltip so the opaque number has a trust path without a backend
+ * score-driver payload.
+ */
+export function whyThisRow(row: {
+  status: string;
+  tier: string | null;
+  regime: string | null;
+  vol_regime: string | null;
+  score: number | null;
+  dist_to_flip_pct: number | null;
+}): string {
+  if (row.status === 'building') return 'Tracked, not yet scored — first compute pending.';
+  if (row.status === 'error') return 'Last compute failed for this symbol only.';
+
+  const drivers: string[] = [];
+
+  const tier = tierLabel(row.tier);
+  if (tier) drivers.push(`${tier} tier`);
+
+  if (row.dist_to_flip_pct != null && Number.isFinite(row.dist_to_flip_pct)) {
+    const abs = Math.abs(row.dist_to_flip_pct);
+    const signed =
+      row.dist_to_flip_pct >= 0
+        ? `+${abs.toFixed(2)}%`
+        : `−${abs.toFixed(2)}%`;
+    drivers.push(
+      abs <= 1.5 ? `within ${abs.toFixed(2)}% of flip` : `${signed} from flip`,
+    );
+  }
+
+  const vol = volRegimeLabel(row.vol_regime);
+  if (vol && row.vol_regime !== 'neutral') drivers.push(vol);
+
+  const regime = regimeLabel(row.regime);
+  if (regime) drivers.push(regime);
+
+  if (drivers.length === 0) {
+    if (row.score != null && Number.isFinite(row.score)) {
+      return `Score ${Math.round(row.score)} — open the ticker for the full structure read.`;
+    }
+    return 'Limited structure on this row — open the ticker for the full read.';
+  }
+  return drivers.slice(0, 2).join(' · ');
+}

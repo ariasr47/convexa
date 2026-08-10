@@ -6,6 +6,8 @@
  * TermStructureCard · FreshPositioning · OffExchangeBlocks · Setups). This file is the COMPOSITION +
  * data wiring only.
  *
+ * Product spine #3 — hierarchy, not equal weight: Structure → Tape & plan → Supporting context.
+ *
  * RE-SKIN + COMPONENTIZE, NOT a logic rewrite (FRONTEND_EXECUTION_CONTRACT hard rules): the bundle
  * poll (~60s), the page-scoped SSE subscription + payload-gap watchdog, the AI-rec hook, the
  * ghost-trade/portfolio/persona wiring, the skeleton-first load, the four-metric nullability, and the
@@ -60,7 +62,7 @@ import {
   streamTicker,
   TickerBundle,
 } from '@org/api';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
@@ -75,6 +77,7 @@ import {
   LiveTape,
   MarketContext,
   OffExchangeBlocks,
+  PositionBrief,
   Setups,
   TermStructureCard,
 } from './widgets';
@@ -96,6 +99,44 @@ function StatGridSkeleton() {
         <StatSkeleton key={i} />
       ))}
     </Box>
+  );
+}
+
+/**
+ * Board zone label — visual hierarchy only (product spine #3).
+ * Renders as `<p>`, never a heading: widget titles remain the only h2s on the page
+ * (`ticker-semantics.spec.tsx`). Full-row span so the two-column bento cannot sandwich
+ * a label beside a widget.
+ */
+function BoardZoneLabel({
+  zone,
+  first,
+  children,
+}: {
+  zone: 'structure' | 'plan' | 'context';
+  first?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Typography
+      component="p"
+      data-testid={`board-zone-${zone}`}
+      sx={{
+        gridColumn: '1 / -1',
+        m: 0,
+        mt: first ? 0 : 1,
+        pt: first ? 0 : 0.5,
+        fontSize: '0.7rem', // ≥11px type floor (0.7rem ≈ 11.2)
+        fontWeight: 700,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: 'text.secondary',
+        borderTop: first ? 'none' : '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {children}
+    </Typography>
   );
 }
 
@@ -252,6 +293,22 @@ export function TickerDashboard() {
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
+  // Product spine #4 — structure age/basis for widget subtitles (REST path only, never SSE).
+  const structureAgeSeconds = fresh?.data_age_seconds ?? null;
+  const expWindowLabel =
+    selected === null
+      ? 'all expirations'
+      : `${selected.length} expiration${selected.length === 1 ? '' : 's'}`;
+  // Product spine #5 — open sim book on THIS ticker for the position brief (between structure & plan).
+  const openBookViews = useMemo(
+    () =>
+      pf.views.filter(
+        (v) =>
+          v.position.status === 'open' &&
+          v.ticker.toUpperCase() === ticker.toUpperCase(),
+      ),
+    [pf.views, ticker],
+  );
 
   // Ghost-trade entry dialog + Prime banner.
   // Synchronous — `localStorage` is synchronous, so this is free, and it is what guarantees the
@@ -521,11 +578,14 @@ export function TickerDashboard() {
               loading={loading}
             />
 
-            {/* The widget BENTO board. One-selected-at-a-time selection is provided here (click-outside
-              clears — the provider's ClearOnOutside listener lives inside each selected Widget). The
-              grid is a two-column bento: full-width rows (Live tape · Dealer · GEX · Setups, span 2)
-              and paired cells (Term‖AI-rec, Fresh‖Off-exchange). Container queries drive each cell's
-              internals, so a widget looks right at any cell size. */}
+            {/* The widget BENTO board — product spine #3: NOT equal weight.
+                Reading order matches Scan → Ticker → Plan:
+                  1. Structure  — walls / flip / GEX (why this name)
+                  2. Tape & plan — live tape, AI read, sim orders (act → watch)
+                  3. Context    — supporting advisory reads (never score inputs)
+                Zone labels are non-headings (`<p>`) so widget titles stay the only h2s
+                (heading-semantics guard). One selection provider; two-column grid; container
+                queries still size each cell. Widgets mount AT REST (stage-3 §3.1-1). */}
             <WidgetSelectionProvider>
               <Box
                 data-testid="widget-bento"
@@ -542,12 +602,12 @@ export function TickerDashboard() {
                   alignItems: 'stretch',
                 }}
               >
-                {/* Widgets mount AT REST (redesign-stage-3 §3.1-1: the staggered reveal was retired —
-                  the hero curve-draw on `/` is THE one orchestrated moment). */}
-                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+                {/* ── 1. STRUCTURE (primary) ───────────────────────────────────────── */}
+                <BoardZoneLabel zone="structure" first>
+                  Structure
+                </BoardZoneLabel>
 
-                {/* STATIC positioning tiles — stay rendered on an SSE drop; each nullable its own empty. */}
+                {/* STATIC positioning — walls, GEX, opportunity. Stay rendered on SSE drop. */}
                 <DealerPositioning
                   m={m}
                   sig={sig}
@@ -557,27 +617,10 @@ export function TickerDashboard() {
                   tierWord={tm.word}
                   tierColor={tm.color}
                   opportunityScore={sig?.opportunity_score ?? 0}
+                  structureAgeSeconds={structureAgeSeconds}
                 />
 
-                {/* STATIC dealer-flow projection — directly after Dealer positioning, in the static region
-                  (NOT the LiveTape row). Bound to `m.dealer_flow_projection` only — no live/offline
-                  prop (`[live-vs-static-isolation]`). */}
-                <DealerFlowProjection dfp={m.dealer_flow_projection} />
-
-                {/* STATIC "Market context" (ai-context-pack) — directly after DealerFlowProjection (the
-                  AI-context family stays grouped), in the static region. Bound to
-                  `m.market_context ?? null` ONLY — no live/offline prop (`[live-vs-static-isolation]`);
-                  the optional key keeps a pre-feature bundle rendering the whole-pack unavailable state
-                  without throwing. */}
-                <MarketContext pack={m.market_context ?? null} />
-
-                {/* STATIC "IV rank" (iv-rank) — directly after Market context (the newest member of the
-                  static context-read family, reads after the market-context block), in the static
-                  region. Bound to `m.iv_rank ?? null` ONLY — no live/offline prop
-                  (`[live-vs-static-isolation]`); the optional key keeps a pre-feature bundle rendering
-                  the Unavailable state without throwing. `span={1}` — a compact single read (UX §8.3). */}
-                <IvRank read={m.iv_rank ?? null} />
-
+                {/* GEX strike profile — the product's structure centerpiece (full width). */}
                 {data?.strike_profile && (
                   <GexStrikeProfile
                     strikes={data.strike_profile.strikes}
@@ -586,11 +629,27 @@ export function TickerDashboard() {
                     putWall={m.put_wall}
                     gammaFlip={live?.gamma_flip ?? m.gamma_flip}
                     liveSpot={isLive && live ? live.mid : null}
+                    expLabel={expWindowLabel}
+                    structureAgeSeconds={structureAgeSeconds}
                   />
                 )}
 
-                {/* Paired cell: Term structure (left) + the independently-nullable AI-rec (right). */}
-                <TermStructureCard termStructure={m.term_structure} />
+                {/* Product spine #5 — position brief bridges structure → plan (your book on this name). */}
+                <PositionBrief
+                  ticker={ticker}
+                  openViews={openBookViews}
+                  storeFaulted={storeFaulted}
+                  entryBlocked={storeFaulted || tradeOpen}
+                  onOpenTrade={() => openEntry()}
+                />
+
+                {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}
+                <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
+
+                {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
+                <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+
+                {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
                 <AiRecPanel
                   ticker={ticker}
                   bundle={data}
@@ -605,9 +664,6 @@ export function TickerDashboard() {
                   onChangeReadPersona={setReadPersonaId}
                   fillHeight
                 />
-
-                {/* Simulated orders — directly after the AI-rec widget (act → watch reads as one
-                  motion, UX §4.4). */}
                 <OrdersWidget
                   ticker={ticker}
                   live={live}
@@ -615,16 +671,39 @@ export function TickerDashboard() {
                   streamOffline={streamOffline}
                 />
 
-                {/* Paired cell: Fresh positioning + Off-exchange blocks. Off-exchange is REST-only; with
-                  Dark pool off, Fresh positioning takes the full row. */}
+                {/* ── 3. SUPPORTING CONTEXT (tertiary — less visual claim) ──────────── */}
+                <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
+
+                {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
+                  (`[live-vs-static-isolation]`). */}
+                <DealerFlowProjection dfp={m.dealer_flow_projection} />
+
+                {/* STATIC market context pack — `m.market_context ?? null` only. */}
+                <MarketContext pack={m.market_context ?? null} />
+
+                {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). */}
+                <IvRank read={m.iv_rank ?? null} />
+                <TermStructureCard
+                  termStructure={m.term_structure}
+                  structureAgeSeconds={structureAgeSeconds}
+                />
+
+                {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
+                  Dark pool off, Fresh takes the full remaining row. */}
                 <FreshPositioning
                   chainVolOiRatio={m.chain_vol_oi_ratio}
                   volOiThreshold={volOiThreshold}
                   unusualStrikes={unusualStrikes}
+                  structureAgeSeconds={structureAgeSeconds}
                 />
-                {darkPool && <OffExchangeBlocks offExchange={data?.off_exchange} />}
+                {darkPool && (
+                  <OffExchangeBlocks
+                    offExchange={data?.off_exchange}
+                    structureAgeSeconds={structureAgeSeconds}
+                  />
+                )}
 
-                <Setups setups={sig?.setups} />
+                <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
 
                 {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
                   ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}

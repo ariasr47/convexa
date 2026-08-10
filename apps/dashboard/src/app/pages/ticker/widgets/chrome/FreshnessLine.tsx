@@ -1,8 +1,8 @@
 /**
- * FreshnessLine — a subtle, muted "Updated {age} ago" caption rendered near the Ticker header. It
- * reflects the **REST bundle's** age (the static path), NOT the live/SSE stream
- * (`[live-vs-static-isolation]`) — it is never wired to `live`/`streamOffline`. It builds trust in the
- * snapshot age between the ~60s polls.
+ * FreshnessLine — muted structure-age caption on the Ticker deck (product spine #4).
+ * Reflects the **REST bundle's** age (the static path), NOT the live/SSE stream
+ * (`[live-vs-static-isolation]`) — never wired to `live`/`streamOffline`. Copy names the
+ * **basis** ("Structure as-of …") so it cannot be read as a live tick age.
  *
  * The age live-counts: a 1s tick re-derives the age from `snapshotIso` so it climbs between polls, then
  * snaps back when a fresh bundle arrives (new `snapshotIso`). If `snapshotIso` is absent it falls back
@@ -14,7 +14,7 @@
  */
 import { Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { humanAge } from '../_kit/copy';
+import { structureAsOfPhrase } from '../_kit/copy';
 
 interface Props {
   /** ISO timestamp of the loaded snapshot — the live-count anchor (preferred). */
@@ -56,7 +56,7 @@ export function FreshnessLine({ snapshotIso, dataAgeSeconds, refreshing, inline 
       data-testid="freshness-line"
       sx={{ color: 'text.disabled', display: inline ? 'inline' : 'block', mb: inline ? 0 : 1 }}
     >
-      Updated {humanAge(ageSeconds)} ago
+      {structureAsOfPhrase(ageSeconds)}
       {refreshing && (
         <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}>
           {' · refreshing…'}

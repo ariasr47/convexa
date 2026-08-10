@@ -343,8 +343,9 @@ export function TickerHeader({
           </Typography>
 
           {/* META line — folds the SECONDARY last-trade readout (AC-LastTrade-4) with the relocated
-            REST-bundle freshness ("● Last trade $X · Updated Ns ago"). Both stay subordinate to the h1;
-            last-trade degrades WITH the live tiles on a drop, freshness reflects the static path. */}
+            REST-bundle freshness ("● Last trade $X · Structure as-of Ns"). Both stay subordinate to
+            the h1; last-trade degrades WITH the live tiles on a drop, freshness names STRUCTURE
+            (spine #4) and never the live stream. */}
           <Stack
             direction="row"
             data-testid="deck-meta"

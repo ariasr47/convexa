@@ -16,12 +16,15 @@ import {
   fmtSigned2,
   fmtSignedUsdCompact,
   fmtUsdCompact,
+  gexProfileSubtitle,
   humanAge,
   humanOpex,
   humanSessionDate,
   IVR_BAND_DISPLAY,
   ivrBandDisplay,
   ivrBasisLine,
+  LIVE_TAPE_SUBTITLE_LIVE,
+  LIVE_TAPE_SUBTITLE_OFFLINE,
   MC_BALANCE_DISPLAY,
   MC_COMPOSITION_DISPLAY,
   MC_CONCENTRATION_DISPLAY,
@@ -31,6 +34,8 @@ import {
   MC_STRENGTH_DISPLAY,
   mcComLine,
   mcDisplay,
+  structureAsOfPhrase,
+  withStructureAge,
 } from './copy';
 
 describe('fmtUsdCompact — numeric semantics', () => {
@@ -126,5 +131,37 @@ describe('humanAge — bucketing', () => {
     expect(humanAge(90)).toBe('1m');
     expect(humanAge(3_700)).toBe('1h 1m');
     expect(humanAge(242_779)).toBe('2d 19h');
+  });
+});
+
+describe('product spine #4 — structure age + basis phrases', () => {
+  it('structureAsOfPhrase names basis and age; never claims live', () => {
+    expect(structureAsOfPhrase(42)).toBe('Structure as-of 42s');
+    expect(structureAsOfPhrase(null)).toBe('Structure as-of unknown age');
+    expect(structureAsOfPhrase(Number.NaN)).toBe('Structure as-of unknown age');
+    expect(structureAsOfPhrase(42)).not.toMatch(/\blive\b/i);
+  });
+
+  it('withStructureAge appends age or an honest snapshot tag', () => {
+    expect(withStructureAge('ATM IV by tenor · contango', 90)).toBe(
+      'ATM IV by tenor · contango · Structure as-of 1m',
+    );
+    expect(withStructureAge('basis only', null)).toBe('basis only · structure snapshot');
+  });
+
+  it('gexProfileSubtitle carries spot basis, window, and age', () => {
+    const s = gexProfileSubtitle(250.5, 'all expirations', 30);
+    expect(s).toMatch(/GEX spot \$250\.50/);
+    expect(s).toMatch(/all expirations/);
+    expect(s).toMatch(/Structure as-of 30s/);
+    expect(s).toMatch(/not live/i);
+    expect(s).not.toMatch(/\blive stream\b/i);
+  });
+
+  it('live-tape subtitles name stream vs structure isolation', () => {
+    expect(LIVE_TAPE_SUBTITLE_LIVE).toMatch(/live stream/i);
+    expect(LIVE_TAPE_SUBTITLE_LIVE).toMatch(/structure/i);
+    expect(LIVE_TAPE_SUBTITLE_OFFLINE).toMatch(/structure/i);
+    expect(LIVE_TAPE_SUBTITLE_OFFLINE).toMatch(/offline/i);
   });
 });

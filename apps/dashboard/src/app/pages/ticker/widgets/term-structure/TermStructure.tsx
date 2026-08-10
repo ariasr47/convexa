@@ -10,7 +10,7 @@ import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import type { TermStructure } from '@org/api';
 import { Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
-import { sampleTermPoints, termTip } from '../_kit/copy';
+import { sampleTermPoints, termTip, withStructureAge } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;
 // Map an actual DTE to the nearest nominal tenor label (the Figma axis: 1w · 1m · 3m · 6m · 9m …).
@@ -29,9 +29,14 @@ const tenorLabel = (dte: number) =>
 
 interface Props {
   termStructure: TermStructure | null;
+  /** REST-bundle age (seconds) — product spine #4. */
+  structureAgeSeconds?: number | null;
 }
 
-export function TermStructureCard({ termStructure }: Props) {
+export function TermStructureCard({
+  termStructure,
+  structureAgeSeconds = null,
+}: Props) {
   const theme = useTheme();
   const termSampled = termStructure ? sampleTermPoints(termStructure.points) : [];
   const unavailable = termStructure == null || termSampled.length === 0;
@@ -63,7 +68,12 @@ export function TermStructureCard({ termStructure }: Props) {
     );
   };
 
-  const subtitle = `ATM IV by tenor · ${unavailable || termStructure.points.length < 2 ? '—' : termStructure.state}`;
+  const stateLabel =
+    unavailable || !termStructure || termStructure.points.length < 2
+      ? '—'
+      : termStructure.state;
+  // Spine #4: tenor basis + structure age on every render (not live).
+  const subtitle = withStructureAge(`ATM IV by tenor · ${stateLabel}`, structureAgeSeconds);
 
   return (
     <Widget

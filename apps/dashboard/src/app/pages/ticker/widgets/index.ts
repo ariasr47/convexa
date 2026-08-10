@@ -7,5 +7,6 @@ export * from './live-tape';
 export * from './market-context';
 export * from './off-exchange-blocks';
 export * from './opportunity-tier';
+export * from './position-brief';
 export * from './setups';
 export * from './term-structure';

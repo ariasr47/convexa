@@ -38,7 +38,15 @@ import {
   type SweepHeartbeat,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { sortRows, sweepBanner } from './format';
+import {
+  EMPTY_FILTERS,
+  filterRows,
+  sessionBadge,
+  sortRows,
+  structureAsOfRel,
+  sweepBanner,
+  type ScanFilters,
+} from './format';
 import { SCAN_COPY } from './labels';
 
 /** Matches the worker's FAST lane (~30s prices, D4) and the header's stated basis. */
@@ -61,8 +69,10 @@ export interface ScanApi {
   /** `loading` ⇒ the FIRST read is still in flight ⇒ the skeleton. Never re-entered after the first
    *  resolution: a later failed poll degrades, it does not re-skeleton. */
   phase: 'loading' | 'ready';
-  /** The rows in DISPLAY order (client-side sorted; never refetched to sort). */
+  /** The rows in DISPLAY order (client-side sorted + filtered; never refetched to sort/filter). */
   rows: ScanRow[];
+  /** Pre-filter count of the current view (for "Showing N of M"). */
+  totalRowCount: number;
   view: ScanView | null;
   sweep: SweepHeartbeat | null;
   degraded: boolean;
@@ -72,6 +82,13 @@ export interface ScanApi {
   density: ScanDensity;
   setSort: (sort: ScanViewSort) => void;
   setDensity: (density: ScanDensity) => void;
+  /** Client-side desk filters — never hit the network. */
+  filters: ScanFilters;
+  setFilters: (filters: ScanFilters) => void;
+  /** Clock-derived US equity session badge (not a stream claim). */
+  session: { phase: string; label: string };
+  /** Structure as-of relative age, or null when no honest stamp exists. */
+  structureAsOf: string | null;
   workerDown: boolean;
   workerDownText: string;
   isEmptyView: boolean;
@@ -93,6 +110,7 @@ export function useScan(): ScanApi {
   }));
   const [sortDraft, setSortDraft] = useState<ScanViewSort | null>(null);
   const [densityDraft, setDensityDraft] = useState<ScanDensity | null>(null);
+  const [filters, setFilters] = useState<ScanFilters>(EMPTY_FILTERS);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [nowS, setNowS] = useState(() => Date.now() / 1000);
   const gate = useGate();
@@ -153,8 +171,17 @@ export function useScan(): ScanApi {
   // --- derived during render, never in an effect --------------------------------------------------
   const sort = sortDraft ?? snapshot.view?.sort ?? DEFAULT_SORT;
   const density = densityDraft ?? snapshot.view?.density ?? 'compact';
-  const rows = useMemo(() => sortRows(snapshot.rows, sort), [snapshot.rows, sort]);
+  // Sort first (stable), then filter — filters never reorder; sort never re-derives.
+  const sortedRows = useMemo(() => sortRows(snapshot.rows, sort), [snapshot.rows, sort]);
+  const rows = useMemo(() => filterRows(sortedRows, filters), [sortedRows, filters]);
   const banner = useMemo(() => sweepBanner(snapshot.sweep, nowS), [snapshot.sweep, nowS]);
+  const session = useMemo(() => sessionBadge(nowS * 1000), [nowS]);
+  // Structure age is computed from the FULL sorted set (not the filtered subset) so a tight filter
+  // cannot hide that the sweep is still producing stamps.
+  const structureAsOf = useMemo(
+    () => structureAsOfRel(snapshot.sweep, sortedRows, nowS),
+    [snapshot.sweep, sortedRows, nowS],
+  );
 
   const saveView = useCallback(
     async (draft: ScanViewWrite): Promise<boolean> => {
@@ -186,6 +213,7 @@ export function useScan(): ScanApi {
   return {
     phase: snapshot.phase,
     rows,
+    totalRowCount: sortedRows.length,
     view: snapshot.view,
     sweep: snapshot.sweep,
     degraded: snapshot.degraded,
@@ -194,6 +222,10 @@ export function useScan(): ScanApi {
     density,
     setSort: setSortDraft,
     setDensity: setDensityDraft,
+    filters,
+    setFilters,
+    session,
+    structureAsOf,
     workerDown: banner.engaged,
     workerDownText: banner.text,
     isEmptyView: snapshot.phase === 'ready' && (snapshot.view?.symbols.length ?? 0) === 0,

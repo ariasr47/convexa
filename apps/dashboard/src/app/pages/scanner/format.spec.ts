@@ -11,11 +11,16 @@ import {
   dash,
   directionColor,
   EM_DASH,
+  EMPTY_FILTERS,
+  filterRows,
+  filtersActive,
   fmtPrice,
   fmtSignedPct,
+  marketSessionPhase,
   partitionLeadGroup,
   relAge,
   sortRows,
+  structureAsOfRel,
   sweepBanner,
   updatedText,
 } from './format';
@@ -27,6 +32,7 @@ import {
   tierLabel,
   UNAVAILABLE_STATUS_META,
   volRegimeLabel,
+  whyThisRow,
 } from './labels';
 
 const NOW = 1_800_000;
@@ -228,5 +234,105 @@ describe('sweepBanner', () => {
     expect(sweepBanner(hb({ updated_at: NOW - 400, sweep_last_completed: null }), NOW).text).toBe(
       "Sweep hasn't reported yet — showing the last known rows.",
     );
+  });
+});
+
+describe('desk filters — client-side only, nulls fail thresholds', () => {
+  const rows = [
+    row({ symbol: 'AAA', tier: 'prime', vol_regime: 'iv_rich', score: 90, dist_to_flip_pct: 0.5 }),
+    row({ symbol: 'BBB', tier: 'watch', vol_regime: 'iv_cheap', score: 40, dist_to_flip_pct: 4 }),
+    row({
+      symbol: 'CCC',
+      tier: 'actionable',
+      vol_regime: 'neutral',
+      score: null,
+      dist_to_flip_pct: 1.2,
+    }),
+  ];
+
+  it('empty filters are inactive and return the same array reference', () => {
+    expect(filtersActive(EMPTY_FILTERS)).toBe(false);
+    expect(filterRows(rows, EMPTY_FILTERS)).toBe(rows);
+  });
+
+  it('tier / vol / score / flip thresholds narrow independently and combine', () => {
+    expect(filterRows(rows, { ...EMPTY_FILTERS, tier: 'prime' }).map((r) => r.symbol)).toEqual([
+      'AAA',
+    ]);
+    expect(
+      filterRows(rows, { ...EMPTY_FILTERS, volRegime: 'iv_cheap' }).map((r) => r.symbol),
+    ).toEqual(['BBB']);
+    // Null score fails a minScore threshold — absent is not ≥50.
+    expect(filterRows(rows, { ...EMPTY_FILTERS, minScore: 50 }).map((r) => r.symbol)).toEqual([
+      'AAA',
+    ]);
+    expect(
+      filterRows(rows, { ...EMPTY_FILTERS, maxAbsDistFlip: 1 }).map((r) => r.symbol),
+    ).toEqual(['AAA']);
+    expect(
+      filterRows(rows, {
+        tier: 'prime',
+        volRegime: 'iv_rich',
+        minScore: 70,
+        maxAbsDistFlip: 1,
+      }).map((r) => r.symbol),
+    ).toEqual(['AAA']);
+  });
+});
+
+describe('marketSessionPhase — US equity clock (America/New_York)', () => {
+  // Fixed UTC instants. 2026-08-10 is a Monday; EDT = UTC-4.
+  it('classifies RTH / pre / after / closed (weekday + weekend)', () => {
+    // 14:00 UTC = 10:00 ET → RTH
+    expect(marketSessionPhase(Date.UTC(2026, 7, 10, 14, 0, 0))).toBe('rth');
+    // 12:00 UTC = 08:00 ET → pre
+    expect(marketSessionPhase(Date.UTC(2026, 7, 10, 12, 0, 0))).toBe('pre');
+    // 21:00 UTC = 17:00 ET → after
+    expect(marketSessionPhase(Date.UTC(2026, 7, 10, 21, 0, 0))).toBe('after');
+    // 02:00 UTC = 22:00 ET previous calendar day Sunday night → closed
+    expect(marketSessionPhase(Date.UTC(2026, 7, 11, 3, 0, 0))).toBe('closed');
+    // Saturday
+    expect(marketSessionPhase(Date.UTC(2026, 7, 8, 15, 0, 0))).toBe('closed');
+  });
+});
+
+describe('structureAsOfRel', () => {
+  it('prefers sweep_last_completed, falls back to newest non-building as_of, never invents', () => {
+    expect(
+      structureAsOfRel(
+        { updated_at: NOW, sweep_last_completed: NOW - 120, universe_size: 2 },
+        [row({ as_of: NOW - 10 })],
+        NOW,
+      ),
+    ).toBe('2m');
+    // No sweep stamp → newest non-building as_of. building rows are ignored.
+    expect(
+      structureAsOfRel(
+        null,
+        [row({ status: 'building', as_of: NOW - 3 }), row({ as_of: NOW - 125 })],
+        NOW,
+      ),
+    ).toBe('2m');
+    expect(structureAsOfRel(null, [row({ status: 'building', as_of: NOW - 3 })], NOW)).toBeNull();
+    expect(structureAsOfRel(null, [], NOW)).toBeNull();
+  });
+});
+
+describe('whyThisRow — closed drivers only, never "live"', () => {
+  it('surfaces tier + flip proximity for a healthy prime row', () => {
+    const text = whyThisRow(
+      row({ tier: 'prime', dist_to_flip_pct: 0.8, regime: 'negative_gamma', vol_regime: 'iv_rich' }),
+    );
+    expect(text).toMatch(/Prime tier/);
+    expect(text).toMatch(/within 0\.80% of flip/);
+    expect(text).not.toMatch(/\blive\b/i);
+    // Only 1–2 drivers.
+    expect(text.split(' · ')).toHaveLength(2);
+  });
+
+  it('building / error are honest and never claim a score', () => {
+    expect(whyThisRow(row({ status: 'building' }))).toMatch(/not yet scored/i);
+    expect(whyThisRow(row({ status: 'error' }))).toMatch(/failed/i);
+    expect(whyThisRow(row({ status: 'building' }))).not.toMatch(/\blive\b/i);
   });
 });

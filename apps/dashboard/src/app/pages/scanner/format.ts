@@ -9,7 +9,121 @@
  * on a row that has never been computed.
  */
 import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@org/api';
-import { isIndexMegacap, SCAN_COPY } from './labels';
+import {
+  isIndexMegacap,
+  SESSION_LABEL,
+  SCAN_COPY,
+  type MarketSessionPhase,
+} from './labels';
+
+/** Client-side desk filters. `null` on a dimension means "any". Never refetches. */
+export interface ScanFilters {
+  tier: string | null;
+  volRegime: string | null;
+  minScore: number | null;
+  maxAbsDistFlip: number | null;
+}
+
+export const EMPTY_FILTERS: ScanFilters = {
+  tier: null,
+  volRegime: null,
+  minScore: null,
+  maxAbsDistFlip: null,
+};
+
+export function filtersActive(f: ScanFilters): boolean {
+  return (
+    f.tier != null || f.volRegime != null || f.minScore != null || f.maxAbsDistFlip != null
+  );
+}
+
+/**
+ * Pure client-side filter over already-fetched rows. Nulls fail a numeric threshold (an absent
+ * score is not ≥70). Empty filters return the same array reference when nothing is active.
+ */
+export function filterRows(rows: ScanRow[], filters: ScanFilters): ScanRow[] {
+  if (!filtersActive(filters)) return rows;
+  return rows.filter((row) => {
+    if (filters.tier != null && row.tier !== filters.tier) return false;
+    if (filters.volRegime != null && row.vol_regime !== filters.volRegime) return false;
+    if (filters.minScore != null) {
+      if (row.score == null || !Number.isFinite(row.score) || row.score < filters.minScore) {
+        return false;
+      }
+    }
+    if (filters.maxAbsDistFlip != null) {
+      if (
+        row.dist_to_flip_pct == null ||
+        !Number.isFinite(row.dist_to_flip_pct) ||
+        Math.abs(row.dist_to_flip_pct) > filters.maxAbsDistFlip
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+/**
+ * US equity session phase from the wall clock in America/New_York.
+ * Pre 04:00–09:30 · RTH 09:30–16:00 · After 16:00–20:00 · else Closed (incl. weekends).
+ * Clock-derived, not a stream — the badge answers "is the tape open?", not "is structure live?".
+ */
+export function marketSessionPhase(nowMs: number): MarketSessionPhase {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(nowMs));
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+  const weekday = pick('weekday');
+  if (weekday === 'Sat' || weekday === 'Sun') return 'closed';
+
+  let hour = Number(pick('hour'));
+  const minute = Number(pick('minute'));
+  // Some runtimes still emit 24 for midnight under hourCycle h23.
+  if (hour === 24) hour = 0;
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return 'closed';
+  const mins = hour * 60 + minute;
+
+  if (mins >= 4 * 60 && mins < 9 * 60 + 30) return 'pre';
+  if (mins >= 9 * 60 + 30 && mins < 16 * 60) return 'rth';
+  if (mins >= 16 * 60 && mins < 20 * 60) return 'after';
+  return 'closed';
+}
+
+export function sessionBadge(nowMs: number): { phase: MarketSessionPhase; label: string } {
+  const phase = marketSessionPhase(nowMs);
+  return { phase, label: SESSION_LABEL[phase] };
+}
+
+/**
+ * Structure as-of age for the desk strip. Prefers the sweep's last completed pass; falls back to
+ * the newest non-building row `as_of`. Never invents a stamp when neither source exists.
+ */
+export function structureAsOfRel(
+  sweep: SweepHeartbeat | null,
+  rows: readonly Pick<ScanRow, 'status' | 'as_of'>[],
+  nowS: number,
+): string | null {
+  let epoch: number | null =
+    sweep?.sweep_last_completed != null && Number.isFinite(sweep.sweep_last_completed)
+      ? sweep.sweep_last_completed
+      : null;
+  if (epoch == null) {
+    for (const row of rows) {
+      if (row.status === 'building') continue;
+      if (Number.isFinite(row.as_of) && row.as_of > 0) {
+        epoch = epoch == null ? row.as_of : Math.max(epoch, row.as_of);
+      }
+    }
+  }
+  if (epoch == null) return null;
+  return relAge(nowS - epoch);
+}
 
 /** Honestly-missing. Every nullable numeric renders THIS, never `0`, never a fabricated value. */
 export const EM_DASH = '—';
@@ -136,3 +250,6 @@ export function sweepBanner(
     ? { engaged: true, text: SCAN_COPY.sweepBehind(coarseAge(nowS - sweep.sweep_last_completed)) }
     : { engaged: true, text: SCAN_COPY.sweepAbsent };
 }
+
+// Re-export for callers that already import from format.ts
+export type { MarketSessionPhase };

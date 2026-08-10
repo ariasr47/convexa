@@ -7,9 +7,12 @@ import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
 import type { Setup } from '@org/api';
+import { setupsSubtitle } from '../_kit/copy';
 
 interface Props {
   setups: Setup[] | undefined;
+  /** REST-bundle age (seconds) — product spine #4. */
+  structureAgeSeconds?: number | null;
 }
 
 // Stage-3 §5.3: HIGH binds the new brand-amber `emphasis` tone — a high-conviction setup is the
@@ -19,9 +22,14 @@ const convictionTone = (c: string): 'emphasis' | 'info' | 'neutral' => {
   return v === 'high' ? 'emphasis' : v === 'medium' ? 'info' : 'neutral';
 };
 
-export function Setups({ setups }: Props) {
+export function Setups({ setups, structureAgeSeconds = null }: Props) {
   return (
-    <Widget id="setups" title="Setups" span={2}>
+    <Widget
+      id="setups"
+      title="Setups"
+      subtitle={setupsSubtitle(structureAgeSeconds)}
+      span={2}
+    >
       {setups?.length ? (
         <Stack spacing={1.5}>
           {setups.map((s, i) => (

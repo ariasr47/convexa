@@ -8,7 +8,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import { Box, Stack, Typography } from '@mui/material';
 import type { StrikeRow } from '@org/api';
-import { fmtThresh, freshCaption, volOiTip } from '../_kit/copy';
+import { fmtThresh, freshCaption, volOiTip, withStructureAge } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -18,14 +18,21 @@ interface Props {
   unusualStrikes: StrikeRow[];
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
+  /** REST-bundle age (seconds) — product spine #4. */
+  structureAgeSeconds?: number | null;
 }
 
-export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrikes }: Props) {
+export function FreshPositioning({
+  chainVolOiRatio,
+  volOiThreshold,
+  unusualStrikes,
+  structureAgeSeconds = null,
+}: Props) {
   return (
     <Widget
       id="fresh-positioning"
       title="Fresh positioning (Vol/OI)"
-      subtitle={freshCaption(volOiThreshold)}
+      subtitle={withStructureAge(freshCaption(volOiThreshold), structureAgeSeconds)}
       info={volOiTip(volOiThreshold, unusualStrikes.length)}
     >
       <Box>

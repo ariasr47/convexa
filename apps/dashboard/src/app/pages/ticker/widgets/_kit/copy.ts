@@ -501,3 +501,57 @@ export function humanAge(seconds: number | null): string {
   if (h >= 1) return `${h}h ${m % 60}m`;
   return `${m}m`;
 }
+
+// ---- Product spine #4 — age + basis always visible on structure-bound surfaces ---------------
+// Structure = REST bundle / chain snapshot (never the SSE tape). Live tape is labelled separately.
+
+/** "Structure as-of 42s" — the shared phrase for deck freshness + widget subtitles. */
+export function structureAsOfPhrase(ageSeconds: number | null | undefined): string {
+  if (ageSeconds == null || !Number.isFinite(ageSeconds)) return 'Structure as-of unknown age';
+  return `Structure as-of ${humanAge(ageSeconds)}`;
+}
+
+/**
+ * Append structure age to a widget's basis subtitle. Does not invent age when missing — falls
+ * back to an honest "structure snapshot" tag so the surface still names its basis.
+ */
+export function withStructureAge(
+  basis: string,
+  ageSeconds: number | null | undefined,
+): string {
+  if (ageSeconds == null || !Number.isFinite(ageSeconds)) {
+    return `${basis} · structure snapshot`;
+  }
+  return `${basis} · ${structureAsOfPhrase(ageSeconds)}`;
+}
+
+export const LIVE_TAPE_SUBTITLE_LIVE =
+  'Live stream · not the structure snapshot below';
+export const LIVE_TAPE_SUBTITLE_OFFLINE =
+  'Stream offline · last known ticks · structure levels stay current';
+
+/** Dealer positioning static grid — snapshot honesty + age. */
+export function dealerPositioningSubtitle(ageSeconds: number | null | undefined): string {
+  return withStructureAge(
+    'Snapshot, never live — stay current on a stream drop; refresh with the data load',
+    ageSeconds,
+  );
+}
+
+/** GEX chart — spot basis + expiration window + age. */
+export function gexProfileSubtitle(
+  gexSpot: number | null | undefined,
+  expLabel: string,
+  ageSeconds: number | null | undefined,
+): string {
+  const spot =
+    gexSpot != null && Number.isFinite(gexSpot)
+      ? `GEX spot $${gexSpot.toFixed(2)}`
+      : 'GEX spot —';
+  return withStructureAge(`${spot} · ${expLabel} · snapshot (not live)`, ageSeconds);
+}
+
+/** Setups — rule-based, same structure snapshot. */
+export function setupsSubtitle(ageSeconds: number | null | undefined): string {
+  return withStructureAge('Rule-based · same structure snapshot', ageSeconds);
+}

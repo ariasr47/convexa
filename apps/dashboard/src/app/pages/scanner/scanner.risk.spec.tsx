@@ -311,6 +311,12 @@ describe('sort + density controls speak only the closed wire vocabulary', () => 
             onDensity={onDensity}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: true })}
+            session={{ phase: 'rth', label: 'RTH' }}
+            structureAsOf="42s"
+            filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
+            onFilters={() => undefined}
+            filteredCount={1}
+            totalCount={1}
           />
           <ScanTable
             rows={[makeRow()]}
@@ -351,6 +357,12 @@ describe('the toolbar never overclaims persistence', () => {
             onDensity={() => undefined}
             onEditView={() => undefined}
             gate={fakeGate({ allowed: false })}
+            session={{ phase: 'closed', label: 'Closed' }}
+            structureAsOf="3m"
+            filters={{ tier: null, volRegime: null, minScore: null, maxAbsDistFlip: null }}
+            onFilters={() => undefined}
+            filteredCount={1}
+            totalCount={1}
           />
         </MemoryRouter>
       </ThemeProvider>,
@@ -627,6 +639,100 @@ describe('zero-state lead group (index-first-defaults AC-3)', () => {
     await screen.findByTestId('scan-table');
     expect(screen.queryByTestId('scan-group-header')).toBeNull();
     expect(rowOrder()).toEqual(['GME', 'COIN']);
+  });
+});
+
+// =================================================================================================
+// 8c-kb. Product spine #6 — keyboard / hit-area polish on the scan desk
+// =================================================================================================
+describe('scanner keyboard & hit targets (spine #6)', () => {
+  it('sort headers are real buttons and row links are keyboard-reachable anchors', () => {
+    renderTable([makeRow({ symbol: 'SPY' }), makeRow({ symbol: 'QQQ' })]);
+    const sortScore = screen.getByTestId('scan-sort-score');
+    expect(sortScore.tagName.toLowerCase()).toBe('button');
+    expect(sortScore).toHaveAttribute('type', 'button');
+    // Real control, not a dead span — keyboard Enter activates buttons natively.
+    expect(sortScore.getAttribute('tabindex')).not.toBe('-1');
+
+    const links = screen.getAllByTestId('scan-row-link');
+    expect(links).toHaveLength(2);
+    for (const a of links) {
+      expect(a.tagName.toLowerCase()).toBe('a');
+      expect(a.getAttribute('href')).toMatch(/^\/ticker\//);
+    }
+  });
+
+  it('score cell is keyboard-focusable so the why-this-row tip is not hover-only', () => {
+    renderTable([makeRow()]);
+    const score = within(rowFor('SPY')).getByTestId('cell-score');
+    expect(score).toHaveAttribute('tabindex', '0');
+    expect(score).toHaveAttribute('aria-label', 'Why this score');
+  });
+});
+
+// =================================================================================================
+// 8c. Product spine #2 — Scanner as desk (session strip · filters · why-this-row)
+// =================================================================================================
+describe('scanner as desk', () => {
+  it('surfaces a session badge + structure as-of strip (never claims structure is live)', async () => {
+    installScanBackend({ symbols: ['SPY'] });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    const badge = screen.getByTestId('scan-session-badge');
+    expect(badge).toHaveAttribute('data-phase');
+    expect(['RTH', 'Pre-market', 'After-hours', 'Closed']).toContain(badge.textContent);
+    expect(screen.getByTestId('scan-structure-asof').textContent).toMatch(/Structure as-of/);
+    expect(screen.getByTestId('scan-session-strip').textContent).not.toMatch(
+      /structure is live|live structure/i,
+    );
+  });
+
+  it('client filters narrow the table without a refetch and clear restores all rows', async () => {
+    const user = userEvent.setup();
+    installScanBackend({
+      symbols: ['AAA', 'BBB'],
+      rows: [
+        makeRow({ symbol: 'AAA', tier: 'prime', score: 90, dist_to_flip_pct: 0.5 }),
+        makeRow({ symbol: 'BBB', tier: 'watch', score: 40, dist_to_flip_pct: 4 }),
+      ],
+    });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
+
+    await user.click(screen.getByTestId('scan-filter-tier-prime'));
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(1);
+    expect(rowFor('AAA')).toBeTruthy();
+    expect(screen.queryByTestId('scan-row') && rowFor('BBB')).toBeFalsy();
+    expect(screen.getByTestId('scan-filter-count')).toHaveTextContent('Showing 1 of 2');
+
+    await user.click(screen.getByTestId('scan-filter-clear'));
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(2);
+  });
+
+  it('score cell exposes a why-this-row tip built from closed fields (no live claim)', async () => {
+    const user = userEvent.setup();
+    installScanBackend({
+      symbols: ['SPY'],
+      rows: [
+        makeRow({
+          symbol: 'SPY',
+          tier: 'prime',
+          dist_to_flip_pct: 0.8,
+          regime: 'negative_gamma',
+          vol_regime: 'iv_rich',
+        }),
+      ],
+    });
+    renderPage();
+    await screen.findByTestId('scan-table');
+    const score = within(rowFor('SPY')).getByTestId('cell-score');
+    expect(score).toHaveAttribute('aria-label', 'Why this score');
+    await user.hover(score);
+    // MUI Tooltip portals the title; wait for the tip role.
+    const tip = await screen.findByRole('tooltip');
+    expect(tip.textContent).toMatch(/Prime tier/);
+    expect(tip.textContent).not.toMatch(/\blive\b/i);
   });
 });
 

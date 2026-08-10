@@ -9,7 +9,15 @@ import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
 import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
 import type { MarketState, OffExchange, Signals } from '@org/api';
-import { fmtUsdCompact, netDexTip, skewState, skewTip, termTip, volOiTip } from '../_kit/copy';
+import {
+  dealerPositioningSubtitle,
+  fmtUsdCompact,
+  netDexTip,
+  skewState,
+  skewTip,
+  termTip,
+  volOiTip,
+} from '../_kit/copy';
 import { StatTile } from '../_kit/StatTile';
 
 const GRID = {
@@ -28,6 +36,8 @@ interface Props {
   tierWord: string;
   tierColor: string;
   opportunityScore: number;
+  /** REST-bundle age (seconds) — product spine #4; never from the live stream. */
+  structureAgeSeconds?: number | null;
 }
 
 export function DealerPositioning({
@@ -38,12 +48,13 @@ export function DealerPositioning({
   tierWord,
   tierColor,
   opportunityScore,
+  structureAgeSeconds = null,
 }: Props) {
   return (
     <Widget
       id="dealer-positioning"
       title="Dealer positioning"
-      subtitle="Snapshot, never live — these stay current on a stream drop and refresh with the data load."
+      subtitle={dealerPositioningSubtitle(structureAgeSeconds)}
       span={2}
       bodyVariant="inset"
     >

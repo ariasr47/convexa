@@ -1,230 +1,115 @@
-# Handover — continue product spine #2 (Scanner as desk)
+# Handover — product spine progress
 
 **Date:** 2026-08-10  
-**Repo:** `ariasr47/convexa` · branch **`main`** (tip `36030d2`)  
+**Repo:** `ariasr47/convexa` · branch **`main`**  
 **For:** fresh Grok / agent session  
 
-This is self-contained. Prefer code + this file over chat history.
+Prefer code + this file over chat history.
 
 ---
 
-## 1. Mission for the next session
-
-**Implement product item #2: make `/scanner` feel like a desk tool** (not just a working poll table).
-
-From the product spine plan:
-
-| Upgrade | Why |
-|--------|-----|
-| Sort/filter that match the thesis (tier, dist-to-flip, score, vol regime) | Desks filter, not scroll |
-| **Why this row** tooltip (1–2 score drivers) | Trust > opaque score |
-| Session badge: RTH / pre / after / closed + as-of | Stops “is this live?” anxiety |
-| Diff vs last poll (score↑/↓, flip moved) — *nice if cheap* | Structure change > absolute level |
-| Click-through preserves sort/filters as query params — *nice* | Shareable “setup of the day” |
-
-**Spine context (already shipped #1):**  
-`Scan → Ticker → Plan → Track` · Nav order Scanner → Ticker → Positions → Blog · Landing primary CTA → Scanner · free path Ticker · RequireAuth walls explain unlocks.
-
----
-
-## 2. Production topology (do not reverse)
-
-| Layer | Where | Notes |
-|-------|--------|------|
-| SPA | **Cloudflare Pages** `https://convexa.pages.dev` | Git auto-deploys `main` (check run “Cloudflare Pages”) |
-| API | **Railway** `api-rust` | `https://convexa-production.up.railway.app` |
-| DB | Railway **Postgres** | Auth + IV use Postgres; **scan rows do not** (see §5) |
-| Redis | **Not provisioned** | `price_cache: "memory"` — intentional defer |
-
-Proxy: `functions/api/[[path]].ts` → `API_ORIGIN` (same-origin cookies + SSE).
-
----
-
-## 3. What just shipped (do not redo)
-
-| Commit | What |
-|--------|------|
-| `36030d2` | Product spine #1 (nav, landing CTAs, RequireAuth free path) |
-| `856a818` | CI green: Node 26 localStorage polyfill in `apps/dashboard/src/test-setup.ts` |
-| `2cb99db` | Scanner fast lane always on + cold-start slow pass outside market hours |
-| `8c3b855`+ | Python retired; Rust lives at **`apps/api`** (crate name still `api-rust`) |
-| `c852ab9` | CI: frontend job + Rust job; no Python pytest |
-
-**Working tree:** clean on `main` / `origin/main` at handover time.
-
----
-
-## 4. Scanner code map (start here)
-
-```
-apps/dashboard/src/app/pages/scanner/
-  Scanner.tsx          # page shell, skeleton, worker-down banner
-  ScanToolbar.tsx      # density / customize / header freshness copy
-  ScanTable.tsx        # desktop table
-  ScanCard.tsx         # mobile cards
-  ScanCells.tsx        # cell renderers
-  useScan.ts           # poll /api/scan, banner clock
-  useLivePrices.ts     # optional live price overlay (price only)
-  format.ts            # sortRows, sweepBanner, partitionLeadGroup
-  labels.ts            # SCAN_COPY, tier/status chips, closed lookups
-  ViewEditorDialog.tsx # gated view symbols write
-
-libs/api/src/lib/convexa.ts   # ScanRow, SweepHeartbeat, fetchScan types
-
-apps/api/src/           # Rust backend (crate api-rust)
-  routes/scan.rs
-  services/scanner/loop.rs    # two-speed loop; market hours + cold-start
-  services/scanner/store.rs   # JSON file store (NOT Postgres yet)
-  services/scanner/projection.rs
-  config/universe.json
-```
-
-**Auth:** `/scanner` is behind `RequireAuth` (private testing). Server still 403s `/api/scan*` signed-out.
-
-**Invariants (do not break):**
-
-- `[live-vs-static-isolation]` — page is **poll-based**; never call the structure “live”; live prices are a separate overlay with their own age  
-- `[no-real-order-path]` — row click → ticker only  
-- `[server-side-gate-enforcement]` — view save gated server-side  
-- Score/structure not re-derived on FE from scan rows alone  
-- Theme tokens only (no bare hex) — `hex-discipline` / type-floor specs  
-
----
-
-## 5. Important backend facts for scanner work
-
-### Market hours
-Slow structure defaults to **weekdays 04:00–20:00 ET** (`SCAN_MARKET_HOURS_ONLY`, default true).  
-Fast prices run **always** (after `2cb99db`).  
-Cold-start: slow lane keeps going until first **full universe pass** even outside hours.
-
-### Scan durability gap (not blocking #2 UI)
-`ScanStore` is **memory + JSON file** (`/app/data/scan.json`). Postgres has `scan_rows` / `scan_heartbeat` tables but **Rust does not write them yet**. One replica is fine; restarts re-sweep. Don’t block desk UX on this unless user asks.
-
-### Wire shape (`GET /api/scan`)
-```json
-{
-  "view": { "symbols": [...], "source", "authenticated", "sort", "density" },
-  "rows": [{ "symbol", "price", "chg_pct", "score", "tier", "regime", "vol_regime",
-             "flip", "dist_to_flip_pct", "call_wall", "put_wall", "dist_to_wall_pct",
-             "as_of", "status" }],
-  "sweep": { "updated_at", "sweep_last_completed", "universe_size" }
-}
-```
-
-FE banner: `sweepBanner()` in `format.ts` — engaged if heartbeat older than **180s** (`SWEEP_DOWN_AFTER_S`).
-
----
-
-## 6. Suggested implementation plan for #2
-
-Work **FE-first** under `pages/scanner/` unless a field is missing on the wire.
-
-### 2a — Session / as-of strip (header)
-- Surface market phase if available (ticker bundle has phase; scan may need derive from clock or a tiny API field).  
-- Make **structure as-of** vs **price as-of** obvious (you already have two-speed language — tighten UI).  
-- Files: `ScanToolbar.tsx`, `labels.ts` / `SCAN_COPY`, maybe `useScan.ts`.
-
-### 2b — Desk filters + sort
-- Client-side filter chips/dropdowns on the **current view rows** first (no API change): tier, vol_regime, score band, dist_to_flip thresholds.  
-- Sort already has keys in backend `SCAN_SORT_KEYS` — ensure toolbar + table use them consistently; prefer URL `?sort=&dir=` if easy.  
-- Files: `ScanToolbar.tsx`, `format.ts` `sortRows`, `useScan.ts`, `Scanner.tsx`.
-
-### 2c — “Why this row”
-- Without new backend: tooltip from **existing fields** (tier + regime + dist_to_flip + score band) — plain language, closed lookups like `labels.ts`.  
-- Optional later: backend score drivers (bigger; touches quant-engine).  
-- Files: `ScanCells.tsx`, `labels.ts`, specs.
-
-### 2d — Poll-to-poll deltas (optional in same PR if small)
-- Keep previous poll snapshot in `useScan`; show score/price delta chips.  
-- Clear on symbol-set change.
-
-### Verification
-```bash
-nvm use   # .nvmrc → 26.7.x
-npm run serve:api          # cargo run -p api-rust -- serve  (needs MASSIVE_API_KEY in apps/api/.env)
-npm run serve:dashboard
-
-# tests
-npx nx run @org/dashboard:test -- --run src/app/pages/scanner/
-npx nx run @org/dashboard:typecheck
-# CI: both Frontend + Backend jobs must stay green
-```
-
-**Never:** bare `nx format:write` (repo-wide). Use `npm run format` (scoped) or `--files`.
-
-**Windows:** `cargo build -p api-rust --features postgres` may fail locally (dlltool); Docker/Railway Linux is source of truth for postgres feature.
-
----
-
-## 7. Product spine remaining (after #2)
+## 1. Product spine status
 
 | # | Item | Status |
 |---|------|--------|
 | 1 | Clear product spine (landing/nav/auth walls) | **Done** `36030d2` |
-| 2 | Scanner as desk | **← you are here** |
-| 3 | Ticker hierarchy / less equal weight | Next |
-| 4 | Always label age and basis | Overlaps #2/#3 |
-| 5 | Structure brief between widgets | Later |
-| 6 | Design polish / keyboard | Later |
+| 2 | Scanner as desk | **Done** (local — session strip, desk filters, why-this-row) |
+| 3 | Ticker hierarchy / less equal weight | **Done** (local — Structure → Tape & plan → Supporting context) |
+| 4 | Always label age and basis | **Done** (local — Structure as-of + widget basis subtitles) |
+| 5 | Position brief between widgets | **Done** (local — Your book strip between Structure & plan) |
+| 6 | Design polish / keyboard | **Done** (local — skip link, scan hit targets, score focus) |
 | 7 | Trust/methodology surface | Later |
 
 **Quant moat (longer):** structure history, score explainability, Postgres scan store, portfolio reassess.
 
 ---
 
-## 8. Traps (this monorepo)
+## 2. What just shipped in-session (uncommitted unless committed after)
 
-1. **Vitest ≠ types** — run `typecheck` before claiming green.  
-2. **Node 26 localStorage** — polyfill in `test-setup.ts`; don’t remove.  
-3. **Scanner never says “live”** for structure; live prices are a separate overlay.  
-4. **Auth wall on /scanner** — e2e/local must sign in or mock session.  
-5. **Python is gone** from prod; path is `apps/api` Rust; archive under `archive/api-python/`.  
-6. **CI** = `.github/workflows/ci.yml` Frontend + Backend; “green” = both success.  
-7. **`.agents/`** = unused Nx skill mirror (gitignored). Real delivery kit = **`.claude/`**.  
+### Spine #2 — Scanner as desk
+- Session badge (RTH / Pre-market / After-hours / Closed) + structure as-of strip
+- Client filters: tier, vol regime, score ≥N, \|flip\| ≤N%
+- Score-cell “why this row” tooltip (closed wire fields)
+- Files: `apps/dashboard/src/app/pages/scanner/*`
+
+### Spine #3 — Ticker hierarchy
+- Bento reordered into three zones (not equal-weight cards):
+  1. **Structure** — Dealer positioning → GEX strike profile
+  2. **Tape & plan** — Live tape → AI rec ‖ Orders (act → watch)
+  3. **Supporting context** — flow projection, market context, IV rank ‖ term, fresh ‖ off-exchange, setups
+- Zone labels are `<p>` (never headings — keeps h1→h2 widget outline)
+- Spec: `apps/dashboard/src/app/pages/ticker/ticker-hierarchy.spec.tsx`
+
+### Spine #4 — Always label age and basis
+- Deck: `FreshnessLine` → **Structure as-of {age}** (not bare “Updated”)
+- Live tape subtitle names stream vs structure (`LIVE_TAPE_SUBTITLE_*`)
+- Structure widgets append age/basis via `withStructureAge` / helpers in `_kit/copy.ts`:
+  dealer positioning, GEX (spot + exp window), setups, term structure, fresh, off-exchange
+- IV rank / market context / DFP already self-describe (unchanged)
+- Specs: `ticker-age-basis.spec.tsx`, copy unit tests, FreshnessLine.spec
 
 ---
 
-## 9. Useful URLs
+### Spine #5 — Position brief between widgets
+- Strip `position-brief` between Structure and Tape & plan on ticker bento
+- States: empty (sim CTA) · single (structure + P/L + mark basis) · multi (count only) · store faulted
+- Sim-only; Open book → `/positions`; multi never picks one of N
+- Files: `widgets/position-brief/*`, wired in `TickerDashboard.tsx`
 
-| What | URL |
-|------|-----|
-| Prod SPA | https://convexa.pages.dev |
-| Prod API health | https://convexa-production.up.railway.app/api/health |
-| Prod scan | https://convexa-production.up.railway.app/api/scan |
-| Latest CI | https://github.com/ariasr47/convexa/actions |
-| Spine commit | `36030d2` |
-| Scanner loop fix | `2cb99db` |
+---
 
-Smoke scan (public API, no cookie):
+### Spine #6 — Design polish / keyboard
+- AppShell: **Skip to main content** first tab stop → `#main-content`
+- Scanner: larger sort/filter hit areas; symbol link fills cell; score `tabIndex={0}` for why-tip
+- Position brief: CTAs minHeight 44
+- Theme already owns global `:focus-visible` + coarse ≥44px (unchanged)
+
+---
+
+## 3. Suggested next session — spine #7
+
+**Trust / methodology surface** — where the product explains how structure/score is computed and where it fails (honest, not marketing).
 
 ```bash
-curl -sS https://convexa-production.up.railway.app/api/scan | head -c 400
+nvm use
+npm run serve:api
+npm run serve:dashboard
+npx nx run @org/dashboard:test -- --run src/app/pages/ticker/
+npx nx run @org/dashboard:test -- --run src/app/pages/scanner/
+npx nx run @org/dashboard:typecheck
 ```
+
+**Never:** bare `nx format:write`.
 
 ---
 
-## 10. First message to open the next session (paste)
+## 4. Invariants (do not break)
 
-```
-Continue from docs/RESUME_SCANNER_DESK.md on main.
-
-Implement product spine #2 — Scanner as desk:
-1) Session/as-of strip in ScanToolbar
-2) Client filters + sort for desk triage (tier, score, dist-to-flip, vol regime)
-3) "Why this row" tooltip from existing wire fields (closed lookups in labels.ts)
-
-Honor live-vs-static-isolation, no-real-order-path, theme tokens.
-Run scanner unit tests + typecheck. Do not bare nx format:write.
-```
+- `[live-vs-static-isolation]` — live tiles dim; structure never called “live”
+- `[no-real-order-path]` — row/card → ticker only; sim entry only
+- Theme tokens only (no bare hex)
+- Heading semantics: ticker = one h1 + widget h2s; zone labels are not headings
+- Vitest ≠ types — run typecheck before claiming green
 
 ---
 
-## 11. Out of scope for #2 (unless user pivots)
+## 5. Production topology
 
-- Redis  
-- Postgres ScanStore implementation  
-- Broker Webull real client  
-- Google OAuth keys  
-- Deleting `archive/api-python`  
-- Full score-driver backend from quant-engine  
+| Layer | Where |
+|-------|--------|
+| SPA | Cloudflare Pages `https://convexa.pages.dev` |
+| API | Railway `https://convexa-production.up.railway.app` |
+| DB | Railway Postgres (scan rows still JSON file store) |
+
+---
+
+## 6. First message for next session
+
+```
+Continue from docs/RESUME_SCANNER_DESK.md.
+
+Spine #2–#6 are done locally.
+Implement product spine #7 — trust/methodology surface.
+Honor honesty floor and model-read-carries-its-assumptions.
+Run tests + typecheck. Do not bare nx format:write.
+```

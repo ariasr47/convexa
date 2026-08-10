@@ -15,6 +15,7 @@ import {
   BLOCKS_TOOLTIP,
   humanAge,
   PROXIMITY_TOOLTIP,
+  withStructureAge,
 } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;
@@ -23,15 +24,23 @@ interface Props {
   offExchange: OffExchange | null | undefined;
   /** Fill the parent's height (for the side-by-side row) instead of the default top margin. */
   fillHeight?: boolean;
+  /** REST-bundle age (seconds) — product spine #4. */
+  structureAgeSeconds?: number | null;
 }
 
-export function OffExchangeBlocks({ offExchange }: Props) {
+export function OffExchangeBlocks({
+  offExchange,
+  structureAgeSeconds = null,
+}: Props) {
   return (
     <Widget
       id="off-exchange-blocks"
       title="Off-exchange blocks"
       info={BLOCKS_TOOLTIP}
-      subtitle="Largest recent off-exchange prints near spot. Context, not a signal — no side or direction."
+      subtitle={withStructureAge(
+        'Largest recent off-exchange prints near spot. Context, not a signal — no side or direction',
+        structureAgeSeconds,
+      )}
     >
       <Box>
         {!offExchange ? (

@@ -13,6 +13,7 @@ import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
 import type { LiveUpdate, MarketState } from '@org/api';
+import { LIVE_TAPE_SUBTITLE_LIVE, LIVE_TAPE_SUBTITLE_OFFLINE } from '../_kit/copy';
 import { StatTile } from '../_kit/StatTile';
 
 const GRID = {
@@ -45,6 +46,8 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
       id="live-tape"
       title="Live tape"
       live={active}
+      // Spine #4: name the basis (stream) and that structure is separate (`[live-vs-static-isolation]`).
+      subtitle={active ? LIVE_TAPE_SUBTITLE_LIVE : LIVE_TAPE_SUBTITLE_OFFLINE}
       info="Live-derived reads off the trade tape + quote stream. These pause on a stream drop; the levels below stay current."
       span={2}
       bodyVariant="inset"

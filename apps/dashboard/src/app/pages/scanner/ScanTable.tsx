@@ -75,15 +75,24 @@ const thSx = {
 /** The sticky Symbol column keeps identity on screen while the numerics scroll under it. */
 const stickyColSx = { position: 'sticky' as const, left: 0, bgcolor: 'background.paper' };
 
+/** Sort header control — keyboard-reachable button with a real hit area (spine #6).
+ *  Global `:focus-visible` ring applies; coarse pointers get the theme ≥44px floor. */
 const sortButtonSx = {
   background: 'none',
   border: 'none',
-  padding: 0,
   font: 'inherit',
   color: 'inherit',
   letterSpacing: 'inherit',
   textTransform: 'inherit' as const,
   cursor: 'pointer',
+  // Comfortable keyboard / pointer target without blowing dense header chrome.
+  minHeight: 32,
+  minWidth: 44,
+  px: 0.75,
+  py: 0.5,
+  mx: -0.75,
+  borderRadius: '4px',
+  textAlign: 'left' as const,
 };
 
 function ariaSortOf(column: ScanColumn, sort: ScanViewSort): 'ascending' | 'descending' | 'none' {
@@ -140,7 +149,21 @@ function cellContent(column: ScanColumn, row: ScanRow, nowS: number, flashActive
           component={RouterLink}
           to={`/ticker/${row.symbol}`}
           data-testid="scan-row-link"
-          sx={{ ...MONO, fontWeight: 600, color: 'text.primary', textDecoration: 'none' }}
+          // Spine #6: fill the cell so the real <a> is the keyboard + touch target (≥44 on coarse
+          // via theme floor). Row body click remains mouse convenience only.
+          sx={{
+            ...MONO,
+            fontWeight: 600,
+            color: 'text.primary',
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            minHeight: 32,
+            // Stretch hit area without changing dense desktop type.
+            py: 0.25,
+            borderRadius: '4px',
+            '@media (pointer: coarse)': { minHeight: 44 },
+          }}
         >
           {row.symbol}
         </Box>

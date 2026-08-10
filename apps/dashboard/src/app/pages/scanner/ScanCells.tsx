@@ -27,7 +27,7 @@ import {
   relAge,
   updatedText,
 } from './format';
-import { regimeLabel, statusMeta, tierLabel, volRegimeLabel } from './labels';
+import { regimeLabel, SCAN_COPY, statusMeta, tierLabel, volRegimeLabel, whyThisRow } from './labels';
 
 /** Figures are mono + tabular by construction — numerals are the personality (skill rule 6). */
 export const MONO = {
@@ -80,16 +80,32 @@ export function ChgCell({ row }: { row: ScanRow }) {
   );
 }
 
-/** Score — the headline rate. NEVER green/red, NEVER amber. */
+/** Score — the headline rate. NEVER green/red, NEVER amber.
+ *  Tooltip carries 1–2 plain-language drivers from closed wire fields ("why this row").
+ *  tabIndex=0 so keyboard users can focus and open the tip (spine #6). */
 export function ScoreCell({ row }: { row: ScanRow }) {
+  const why = whyThisRow(row);
   return (
-    <Typography
-      component="span"
-      data-testid="cell-score"
-      sx={{ ...MONO, fontSize: 'inherit', fontWeight: 600, color: 'text.primary' }}
-    >
-      {dash(row.score, fmtScore)}
-    </Typography>
+    <Tooltip arrow title={why} describeChild>
+      <Typography
+        component="span"
+        tabIndex={0}
+        data-testid="cell-score"
+        aria-label={SCAN_COPY.whyScoreAria}
+        sx={{
+          ...MONO,
+          fontSize: 'inherit',
+          fontWeight: 600,
+          color: 'text.primary',
+          cursor: 'help',
+          borderBottom: '1px dotted',
+          borderColor: 'divider',
+          borderRadius: '2px',
+        }}
+      >
+        {dash(row.score, fmtScore)}
+      </Typography>
+    </Tooltip>
   );
 }
 

@@ -495,7 +495,8 @@ describe('Ticker · wire-label authority (digested-labels-not-raw-dump)', () => 
     expect(within(mc).queryByText('Uptrend')).toBeNull();
 
     // Term-structure state: the wire state renders despite inverted IVs.
-    expect(screen.getByText('ATM IV by tenor · contango')).toBeInTheDocument();
+    // Subtitle may also carry structure age (spine #4) — match the label, not the full string.
+    expect(screen.getByText(/ATM IV by tenor · contango/)).toBeInTheDocument();
 
     // Gamma regime chip: the wire regime renders despite a positive net_gex.
     expect(screen.getByText('negative gamma')).toBeInTheDocument();

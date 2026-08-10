@@ -19,7 +19,7 @@ import { Jargon } from '@/shared/ui/Jargon';
 import { Alert, Box, Skeleton, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
-import { partitionLeadGroup } from './format';
+import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
 import { ScanTable, type ScanGroup } from './ScanTable';
@@ -147,6 +147,12 @@ export function Scanner() {
         onDensity={scan.setDensity}
         onEditView={() => setEditorOpen(true)}
         gate={scan.gate}
+        session={scan.session}
+        structureAsOf={scan.structureAsOf}
+        filters={scan.filters}
+        onFilters={scan.setFilters}
+        filteredCount={scan.rows.length}
+        totalCount={scan.totalRowCount}
       />
 
       {/* Worker-down: a TRUE warning ⇒ burnt orange + MUI's built-in warning icon, sitting OVER the
@@ -178,6 +184,26 @@ export function Scanner() {
               {SCAN_COPY.editView}
             </Box>
           )}
+        </Box>
+      ) : scan.phase === 'ready' &&
+        displayRows.length === 0 &&
+        filtersActive(scan.filters) ? (
+        <Box data-testid="scan-empty-filter">
+          <Typography sx={{ fontSize: '0.95rem', fontWeight: 600 }}>
+            {SCAN_COPY.emptyFilterTitle}
+          </Typography>
+          <Typography sx={{ fontSize: '0.86rem', color: 'text.secondary' }}>
+            {SCAN_COPY.emptyFilterBody}
+          </Typography>
+          <Box
+            component="button"
+            type="button"
+            data-testid="scan-empty-filter-clear"
+            onClick={() => scan.setFilters(EMPTY_FILTERS)}
+            sx={ctaSx}
+          >
+            {SCAN_COPY.clearFilters}
+          </Box>
         </Box>
       ) : isNarrow ? (
         <ScanCardList rows={displayRows} nowS={scan.nowS} flashActive={flashActive} />

@@ -29,19 +29,21 @@ describe('FreshnessLine (REST-bundle freshness caption)', () => {
     vi.useFakeTimers();
     const iso = new Date(Date.now() - 5_000).toISOString();
     renderFL({ snapshotIso: iso, dataAgeSeconds: 5 });
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 5s ago/);
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Structure as-of 5s/);
     act(() => {
       vi.advanceTimersByTime(10_000);
     });
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 15s ago/);
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Structure as-of 15s/);
   });
 
   it('falls back to the static dataAgeSeconds when the ISO anchor is missing or unparseable (never NaN/blank)', () => {
     const missing = renderFL({ snapshotIso: null, dataAgeSeconds: 90 });
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 1m ago/);
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Structure as-of 1m/);
     missing.unmount();
     renderFL({ snapshotIso: 'not-a-date', dataAgeSeconds: 90 });
-    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Updated 1m ago/);
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Structure as-of 1m/);
     expect(screen.getByTestId('freshness-line').textContent).not.toMatch(/NaN/);
+    // Basis is named — never a bare "Updated" that could be read as live.
+    expect(screen.getByTestId('freshness-line').textContent).toMatch(/Structure/);
   });
 });
