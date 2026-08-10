@@ -20,12 +20,14 @@ beforeEach(() => {
 
 describe('usePollingResource', () => {
   it('fetches on mount and exposes data', async () => {
-    const fetcher = vi.fn(async () => ({ n: 1 }));
+    const fetcher = vi.fn(async (signal: AbortSignal) => {
+      expect(signal).toBeInstanceOf(AbortSignal);
+      return { n: 1 };
+    });
     const { result } = renderHook(() => usePollingResource('SPY', fetcher, { intervalMs: 60_000 }));
     await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
     expect(result.current.error).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(fetcher.mock.calls[0][0]).toBeInstanceOf(AbortSignal);
   });
 
   it('aborts previous request when key changes', async () => {
