@@ -177,7 +177,7 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
       3. **C — Runtime isolation:** LiveStore (or equivalent) so SSE ticks do not re-render structure widgets; hoist GEX tooltip; optional `useDeferredValue` on marks.
       4. **D — Architecture follow-through:** TradeEntryDialog / AiRecPanel / TickerDashboard thinning; virtualize only if N≫50 measured; §4.5–4.6 when multi-user needs them.  
       **Non-goals:** WebGL, SSR/RSC rewrite, blanket `React.memo`, new chart library.  
-      **Note:** 2026-08-10 — **Phase A largely shipped:** CI `@convexa/*`; `ANALYZE` + `dist/stats.html`; `tools/check-dashboard-bundle.mjs` gzip budgets; `npm run analyze:dashboard` / `check:bundle`; CI bundle gate; chunk warning 600; AuthContext dynamic `bookSync`. Next: Phase B (SVG sparklines).
+      **Note:** 2026-08-10 — **Phase A shipped** (CI `@convexa/*`, ANALYZE, gzip budgets, Nx scripts). **Phase B shipped:** pure-SVG `PlSparkline` (no Recharts on positions); `positions-no-charts` budget invariant; landing idle + CTA hover prefetch + TopNav warm for ticker/scanner/positions; dropped forced `charts` manualChunk (Rolldown was co-locating React into it). Next: Phase C (LiveStore isolation).
 
 ---
 

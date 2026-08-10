@@ -486,3 +486,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | Initial comprehensive FE analysis (architecture, runtime, viz). |
 | 2026-08-10 | Expanded with production bundle engineering, advanced Vite, Nx targets/configs; marked active workstream §3.8. |
 | 2026-08-10 | **Phase A shipped:** CI rename, visualizer (`ANALYZE`), gzip budget gate, root/Nx scripts, tighter `chunkSizeWarningLimit`, dynamic `bookSync` import. |
+| 2026-08-10 | **Phase B shipped:** SVG sparklines; positions-no-charts gate; route prefetch; no forced charts manualChunk under Rolldown. |

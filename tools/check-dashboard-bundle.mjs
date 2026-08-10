@@ -17,12 +17,12 @@
  *   --json     print machine-readable summary
  *   --list     list every .js asset with gzip KB (no fail)
  */
-import { createGzip } from 'node:zlib';
-import { createReadStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { pipeline } from 'node:stream/promises';
 import { Writable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { fileURLToPath } from 'node:url';
+import { createGzip } from 'node:zlib';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assetsDir = path.join(root, 'apps', 'dashboard', 'dist', 'assets');
@@ -34,8 +34,8 @@ const assetsDir = path.join(root, 'apps', 'dashboard', 'dist', 'assets');
  * `vite build --mode production` (Rolldown manualChunks: react/mui/router/charts).
  *
  * Observed baseline (gzip KB, approx): index 13 · react 54 · mui 100 · charts 108 ·
- * router 14 · Ticker 34 · Positions 30 · Scanner 10. Caps leave ~30–50% headroom for
- * dep bumps; Phase B (SVG sparklines) should lower vendor-charts + route-positions.
+ * router 14 · Ticker 34 · Positions ~30 · Scanner 10. Caps leave headroom for dep bumps.
+ * Phase B: positions must NOT import the charts chunk (SVG sparklines).
  *
  * Matching is on the asset file name (`index-*.js`, `mui-*.js`, …).
  */
@@ -61,9 +61,14 @@ const BUDGETS = /** @type {Budget[]} */ ([
     match: (f) => /^router-.*\.js$/i.test(f),
   },
   {
+    // Auto-split recharts graph (no forced "charts" manualChunk — Rolldown co-location bug).
     name: 'vendor-charts',
     maxGzipKb: 150,
-    match: (f) => /^charts-.*\.js$/i.test(f) || /^LineChart-.*\.js$/i.test(f),
+    match: (f) =>
+      /^charts-.*\.js$/i.test(f) ||
+      /^LineChart-.*\.js$/i.test(f) ||
+      /^BarChart-.*\.js$/i.test(f) ||
+      /^recharts/i.test(f),
   },
   {
     name: 'vendor-misc',
@@ -71,8 +76,9 @@ const BUDGETS = /** @type {Budget[]} */ ([
     match: (f) => /^vendor-.*\.js$/i.test(f),
   },
   {
+    // Includes co-located recharts when GEX/term charts load with the ticker route.
     name: 'route-ticker',
-    maxGzipKb: 55,
+    maxGzipKb: 60,
     match: (f) => /TickerDashboard/i.test(f),
   },
   {
@@ -140,7 +146,9 @@ async function main() {
 
   if (listOnly || asJson) {
     if (asJson) {
-      console.log(JSON.stringify({ assets: measured, budgets: BUDGETS.map((b) => b.name) }, null, 2));
+      console.log(
+        JSON.stringify({ assets: measured, budgets: BUDGETS.map((b) => b.name) }, null, 2),
+      );
     } else {
       console.log('file\trawKB\tgzipKB');
       for (const m of measured) {
@@ -197,6 +205,20 @@ async function main() {
     }
   }
 
+  // Phase B invariant: Positions route must not pull the recharts graph (SVG sparklines).
+  const posFiles = measured.filter((m) => /PositionsPage/i.test(m.file));
+  for (const m of posFiles) {
+    const raw = readFileSync(path.join(assetsDir, m.file), 'utf8');
+    if (/from"\.\/(?:charts-|LineChart-|BarChart-)/.test(raw) || /recharts/.test(raw)) {
+      failures.push({
+        budget: 'positions-no-charts',
+        file: m.file,
+        gzipKb: m.gzipKb,
+        maxGzipKb: 0,
+      });
+    }
+  }
+
   if (!asJson) {
     console.log('[check-bundle] top assets (gzip KB):');
     for (const m of measured.slice(0, 12)) {
@@ -204,20 +226,26 @@ async function main() {
     }
     console.log('');
     if (failures.length === 0) {
-      console.log(`[check-bundle] OK — ${passes.length} checks within budget (${files.length} js assets)`);
+      console.log(
+        `[check-bundle] OK — ${passes.length} checks within budget (${files.length} js assets)`,
+      );
+      if (posFiles.length)
+        console.log('[check-bundle] OK — PositionsPage has no charts dependency');
     } else {
       console.error('[check-bundle] FAILED budgets:');
       for (const f of failures) {
-        console.error(
-          `  ${f.budget}: ${f.file} = ${f.gzipKb} KB gzip > ${f.maxGzipKb} KB cap`,
-        );
+        if (f.budget === 'positions-no-charts') {
+          console.error(`  positions-no-charts: ${f.file} still imports recharts/charts chunk`);
+        } else {
+          console.error(`  ${f.budget}: ${f.file} = ${f.gzipKb} KB gzip > ${f.maxGzipKb} KB cap`);
+        }
       }
-      console.error(
-        '\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard',
-      );
+      console.error('\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard');
     }
   } else if (!listOnly) {
-    console.log(JSON.stringify({ ok: failures.length === 0, failures, passes, assets: measured }, null, 2));
+    console.log(
+      JSON.stringify({ ok: failures.length === 0, failures, passes, assets: measured }, null, 2),
+    );
   }
 
   process.exit(failures.length === 0 ? 0 : 1);

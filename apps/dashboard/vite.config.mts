@@ -64,13 +64,43 @@ export default defineConfig(({ mode }) => {
         ? {
             output: {
               // Stable vendor splits for long-cache CDN deploys (Cloudflare Pages).
+              // Rolldown accepts function manualChunks only. Order matters: match React before
+              // any chart helper that might share a path fragment. Do NOT force d3/react-smooth
+              // into "charts" — that previously swallowed React into the charts chunk and made
+              // every route import charts just for useState.
               manualChunks(id) {
-                if (!id.includes('node_modules')) return;
-                if (id.includes('@mui') || id.includes('@emotion')) return 'mui';
-                if (id.includes('recharts') || id.includes('d3-')) return 'charts';
-                if (id.includes('react-router')) return 'router';
-                if (id.includes('react-dom') || id.includes('/react/')) return 'react';
-                return 'vendor';
+                const n = id.replace(/\\/g, '/');
+                if (!n.includes('/node_modules/')) return;
+
+                // Last real package segment after node_modules (skips `.pnpm` nests).
+                const segs = [...n.matchAll(/\/node_modules\/((?:@[^/]+\/)?[^/]+)/g)].map(
+                  (m) => m[1],
+                );
+                const pkg =
+                  [...segs].reverse().find((p) => p && p !== '.pnpm' && !p.startsWith('.')) ?? '';
+
+                if (
+                  pkg === 'react' ||
+                  pkg === 'react-dom' ||
+                  pkg === 'scheduler' ||
+                  pkg === 'react-is'
+                ) {
+                  return 'react';
+                }
+                if (
+                  pkg === 'react-router' ||
+                  pkg === 'react-router-dom' ||
+                  pkg === '@remix-run/router'
+                ) {
+                  return 'router';
+                }
+                if (pkg.startsWith('@mui/') || pkg.startsWith('@emotion/')) {
+                  return 'mui';
+                }
+                // Do NOT force-name a "charts" chunk under Rolldown: co-locating recharts with a
+                // mis-resolved react copy made every route import `charts-*.js` just for useState.
+                // recharts stays with its lazy importers (Ticker GEX/term, ops LatencyTrend).
+                return;
               },
             },
           }

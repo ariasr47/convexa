@@ -9,6 +9,11 @@
  * Honesty floor (`[no-real-order-path]`): no affordance presents an un-built capability as working.
  * Tokens only — no hex.
  */
+import {
+  prefetchScannerRoute,
+  prefetchTickerRoute,
+  scheduleLandingPrefetch,
+} from '@/shared/lib/prefetchRoutes';
 import { displayScale } from '@/shared/theme/tokens';
 import { ComingSoonCard, Jargon, ValueCard } from '@/shared/ui';
 import { Footer } from '@/shell/Footer';
@@ -19,7 +24,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import RadarIcon from '@mui/icons-material/Radar';
 import { Box, Button, Chip, Container, Snackbar, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { HeroCurve } from './HeroCurve';
 
@@ -38,6 +43,9 @@ export function Landing() {
   // The brokerage-connect waitlist affordance is non-navigating: a click acknowledges in place
   // (toast) and never enters a broker flow.
   const [toastOpen, setToastOpen] = useState(false);
+
+  // §3.8 Phase B — warm ticker/scanner chunks after first paint (idle), no network to API.
+  useEffect(() => scheduleLandingPrefetch(), []);
 
   return (
     <Box
@@ -95,6 +103,8 @@ export function Landing() {
                   variant="contained"
                   size="large"
                   data-testid="cta-primary"
+                  onMouseEnter={() => void prefetchScannerRoute()}
+                  onFocus={() => void prefetchScannerRoute()}
                 >
                   Open Scanner →
                 </Button>
@@ -104,6 +114,8 @@ export function Landing() {
                   variant="outlined"
                   size="large"
                   data-testid="cta-secondary"
+                  onMouseEnter={() => void prefetchTickerRoute()}
+                  onFocus={() => void prefetchTickerRoute()}
                 >
                   Open free Ticker →
                 </Button>

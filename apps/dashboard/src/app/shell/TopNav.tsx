@@ -14,6 +14,11 @@
  * the operator route is reachable only by typing the URL.
  */
 import { AccountControl } from '@/features/auth/AccountControl';
+import {
+  prefetchPositionsRoute,
+  prefetchScannerRoute,
+  prefetchTickerRoute,
+} from '@/shared/lib/prefetchRoutes';
 import { elevationFor } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -40,6 +45,12 @@ interface NavEntry {
   to: string;
   /** Predicate: is this entry active for the current path? */
   active: (path: string) => boolean;
+}
+
+function warmNav(to: string) {
+  if (to.startsWith('/ticker')) void prefetchTickerRoute();
+  else if (to.startsWith('/scanner')) void prefetchScannerRoute();
+  else if (to.startsWith('/positions')) void prefetchPositionsRoute();
 }
 
 // Product spine (where → why → track): Scanner first, then Ticker, Positions, Blog.
@@ -142,6 +153,8 @@ export function TopNav() {
                   to={e.to}
                   data-testid={`nav-${e.label.toLowerCase()}`}
                   aria-current={isActive ? 'page' : undefined}
+                  onMouseEnter={() => warmNav(e.to)}
+                  onFocus={() => warmNav(e.to)}
                   sx={{
                     textDecoration: 'none',
                     fontSize: '0.95rem',
@@ -219,6 +232,8 @@ export function TopNav() {
                 to={e.to}
                 data-testid={`nav-drawer-${e.label.toLowerCase()}`}
                 aria-current={isActive ? 'page' : undefined}
+                onMouseEnter={() => warmNav(e.to)}
+                onFocus={() => warmNav(e.to)}
                 onClick={() => setDrawerOpen(false)}
                 selected={isActive}
                 sx={{
