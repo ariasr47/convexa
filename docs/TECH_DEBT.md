@@ -1,5 +1,9 @@
 # Tech debt register — Convexa
 
+> **Living checklist (2026-08-10+):** site-wide UI/UX/quant/perf/ops findings with checkboxes →
+> [`docs/IMPROVEMENT_BACKLOG.md`](./IMPROVEMENT_BACKLOG.md). Check items off there as they ship; this
+> register remains the scored 2026-07-28 snapshot.
+
 > Audited 2026-07-28, against `main` @ `529d7b7`. Scored `(Impact + Risk) × (6 − Effort)`, each 1–5.
 >
 > **Evidence policy.** Items marked **[measured]** were verified in this repo during the audit — a

@@ -6,6 +6,9 @@
 
 Prefer code + this file over chat history.
 
+**Improvement checklist:** [`docs/IMPROVEMENT_BACKLOG.md`](./IMPROVEMENT_BACKLOG.md) — site-wide
+findings (prod, quant, perf, React, UX, design); check off as implemented.
+
 ---
 
 ## 1. Product spine status
