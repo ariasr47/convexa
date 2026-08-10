@@ -5,6 +5,10 @@
 
 ## Changelog
 
+- **2026-08-10** — **Gaps #1–#3 closed in code** (audit doc catch-up). `palette.secondary` is wired
+  (dark = steel, light = measured secondary) with explicit `contrastText`; light theme sets
+  `text.primary` to `inkText`; dark `shadows[]` uses the elevation ladder. Remaining: optional
+  typography fine-tuning (#5), divider/action token polish (#6–#7) only if drift appears.
 - **2026-07-12** — **Gap #4 (elevation) addressed via a named ladder.** Added
   `elevation` / `elevationFor(theme)` to `tokens.ts` — a small mode-aware box-shadow scale
   (`e1` resting panel · `e2` raised/hover/scrolled-nav · `e4` overlay), dark-tuned (ambient +
@@ -41,18 +45,18 @@ Per theme: `mode`; `primary`/`success`/`error`/`warning`/`info` (**`.main` only*
 
 ## Gaps (unset → MUI default or derived)
 
-| #   | Area                                                     | Status                                                                     | Impact down the line                                                                                                                                                                                                                                                            |
-| --- | -------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **`palette.secondary`**                                  | ❌ never set (both themes)                                                 | **Highest.** `color="secondary"` / `secondary.main` renders **MUI default purple** (`#9c27b0`), off-brand. `extras.accentViolet` exists but is not wired to `secondary`.                                                                                                        |
-| 2   | **`.light` / `.dark` / `.contrastText`** per color       | ⚠️ auto-derived (`augmentColor`; `tonalOffset 0.2`, `contrastThreshold 3`) | The `MuiButton` override exists _because_ dark `#4f9cff` auto-picks **black** contrastText (washed). Bright dark colors (`#4f9cff`/`#2ecc71`/`#29b6f6`) keep auto-choosing black text on filled surfaces; `.dark` (hover) is an algorithmic darken → recurring one-off patches. |
-| 3   | **`text.primary` (light theme)**                         | ❌ omitted (light sets only `secondary`+`disabled`)                        | Light primary text falls back to MUI default `rgba(0,0,0,0.87)`, not a token. Asymmetric with dark (which sets it) → silent divergence when tuning.                                                                                                                             |
-| 4   | **`shadows`** (25-level array)                           | ⚠️ MUI default                                                             | Default (black-based) shadows are nearly invisible on `#0e1117`. Currently sidestepped via `extras.panelRaised` (bg delta, not elevation). Menus/Dialogs/Popovers using real elevation look flat in dark.                                                                       |
-| 5   | **`typography` variants**                                | ⚠️ only `h1`, `h6`, `fontFamily`                                           | `h2–h5`, `body1/2`, `subtitle`, `button`, `caption`, `overline` use MUI's default Roboto scale (re-fonted to Inter). `caption` (disclaimers/footer) is default. Only 2 rungs of the ramp are wired.                                                                             |
-| 6   | **`divider`**                                            | ⚠️ MUI default                                                             | `<Divider>` (footer), card borders → `rgba(255,255,255,0.12)`, not a token.                                                                                                                                                                                                     |
-| 7   | **`action.*`** (hover/selected/focus/disabled)           | ⚠️ MUI default                                                             | `'action.hover'` (used ~9×) is MUI's default overlay, not designed.                                                                                                                                                                                                             |
-| 8   | **`grey`, `common`, `contrastThreshold`, `tonalOffset`** | ⚠️ default                                                                 | Feed the derivations in #2 + component internals.                                                                                                                                                                                                                               |
-| 9   | **`breakpoints`, `spacing`, `zIndex`, `transitions`**    | ⚠️ default                                                                 | Fine to leave — rarely need branding.                                                                                                                                                                                                                                           |
-| 10  | **`components.*`** (besides `MuiButton`)                 | ⚠️ default                                                                 | No global defaults for Paper/Card/TextField/Chip/etc.; each styled ad-hoc via `sx`.                                                                                                                                                                                             |
+| #   | Area                                                     | Status                                                               | Impact down the line                                                                                                                                                                                |
+| --- | -------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **`palette.secondary`**                                  | ✅ set (dark steel / light secondary)                                | Was the highest risk (MUI purple leak). Closed in tokens + theme.                                                                                                                                   |
+| 2   | **`.light` / `.dark` / `.contrastText`** per color       | ✅ primary/secondary set explicit contrastText; others still derived | Primary amber uses explicit ink/inkText contrast. Remaining success/error/info auto-derive is acceptable.                                                                                           |
+| 3   | **`text.primary` (light theme)**                         | ✅ `inkText`                                                         | Symmetric with dark.                                                                                                                                                                                |
+| 4   | **`shadows`** (25-level array)                           | ✅ dark ladder from elevation tokens                                 | Light still uses MUI defaults (readable on paper).                                                                                                                                                  |
+| 5   | **`typography` variants**                                | ⚠️ only `h1`, `h6`, `fontFamily`                                     | `h2–h5`, `body1/2`, `subtitle`, `button`, `caption`, `overline` use MUI's default Roboto scale (re-fonted to Inter). `caption` (disclaimers/footer) is default. Only 2 rungs of the ramp are wired. |
+| 6   | **`divider`**                                            | ⚠️ MUI default                                                       | `<Divider>` (footer), card borders → `rgba(255,255,255,0.12)`, not a token.                                                                                                                         |
+| 7   | **`action.*`** (hover/selected/focus/disabled)           | ⚠️ MUI default                                                       | `'action.hover'` (used ~9×) is MUI's default overlay, not designed.                                                                                                                                 |
+| 8   | **`grey`, `common`, `contrastThreshold`, `tonalOffset`** | ⚠️ default                                                           | Feed the derivations in #2 + component internals.                                                                                                                                                   |
+| 9   | **`breakpoints`, `spacing`, `zIndex`, `transitions`**    | ⚠️ default                                                           | Fine to leave — rarely need branding.                                                                                                                                                               |
+| 10  | **`components.*`** (besides `MuiButton`)                 | ⚠️ default                                                           | No global defaults for Paper/Card/TextField/Chip/etc.; each styled ad-hoc via `sx`.                                                                                                                 |
 
 ## Structural note — two parallel token systems
 
@@ -60,18 +64,15 @@ Per theme: `mode`; `primary`/`success`/`error`/`warning`/`info` (**`.main` only*
 string-addressable / not CSS-var-backed. Palette tokens and extras are maintained separately; e.g.
 `accentViolet` cannot be `color="secondary"` until promoted into the palette (see gap #1).
 
-## Recommended fixes (ranked; not yet applied)
+## Recommended fixes (ranked)
 
-1. **Wire `palette.secondary`** (dark + light) — to `accentViolet` or an explicit brand secondary.
-   Closes the surprise-purple gap; makes it a first-class token.
-2. **Set `contrastText` explicitly** on `primary` (and any filled color used on a colored bg).
-   Retires the per-component washed-text patches — design it once in the theme.
-3. **Add `text.primary` to the light theme** for dark/light symmetry.
-4. **Consider a dark `shadows` array** _if_ elevated surfaces start being used; otherwise the
-   `panelRaised` bg-delta workaround is fine.
+1. ~~**Wire `palette.secondary`**~~ — **done** (dark steel / light secondary).
+2. ~~**Set `contrastText` explicitly**~~ — **done** on primary/secondary.
+3. ~~**Add `text.primary` to the light theme**~~ — **done** (`inkText`).
+4. ~~**Dark `shadows` ladder**~~ — **done** via elevation tokens → dark `shadows[]`.
 5. **Typography ramp** (`h2–h5`, `caption`) — only if Figma specifies them and drift appears.
 
-Items 1–3 are small, high-value, and mode-symmetric.
+Items 1–4 closed 2026-08-10; #5 optional.
 
 ## Guardrails when acting on this
 

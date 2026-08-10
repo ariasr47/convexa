@@ -1296,6 +1296,40 @@ export async function removeAiKey(): Promise<AiKeyStatus> {
   return (await res.json()) as AiKeyStatus;
 }
 
+// ---- Durable book (multi-device positions blob) ------------------------------------------------
+
+export interface BookEnvelope {
+  schema_version: number;
+  updated_at: number;
+  blob: Record<string, unknown>;
+  source: string;
+}
+
+/** GET /api/book — signed-in server copy of positions v3 blob (empty when none). */
+export async function getBook(): Promise<BookEnvelope> {
+  const res = await fetch('/api/book', { credentials: 'same-origin' });
+  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
+  if (!res.ok) throw new ApiError(`Book get failed (${res.status})`, res.status);
+  return (await res.json()) as BookEnvelope;
+}
+
+/** PUT /api/book — push local blob; latest-wins by updated_at. */
+export async function putBook(body: {
+  schema_version?: number;
+  updated_at?: number;
+  blob: Record<string, unknown>;
+}): Promise<BookEnvelope> {
+  const res = await fetch('/api/book', {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
+  if (!res.ok) throw new ApiError(`Book put failed (${res.status})`, res.status);
+  return (await res.json()) as BookEnvelope;
+}
+
 /** Request a rec (in-app LLM call). ALWAYS 200 for produced/no_trade/unavailable/gated_off — the
  *  `status` field distinguishes them. A non-2xx / network fault throws `ApiError`; the rec hook
  *  catches it and renders the `unavailable` panel state (never thrown to the page). No key is sent. */

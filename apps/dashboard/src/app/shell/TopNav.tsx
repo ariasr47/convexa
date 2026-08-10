@@ -58,6 +58,11 @@ const NAV: NavEntry[] = [
     active: (p) => p === '/positions' || p.startsWith('/positions/'),
   },
   {
+    label: 'Alerts',
+    to: '/alerts',
+    active: (p) => p === '/alerts' || p.startsWith('/alerts/'),
+  },
+  {
     label: 'Blog',
     to: '/blog',
     active: (p) => p === '/blog' || p.startsWith('/blog/'),

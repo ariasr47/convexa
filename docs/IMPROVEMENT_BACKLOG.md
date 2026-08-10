@@ -25,8 +25,8 @@
 | Quant calculations         | see §2          | **2.1–2.3**                                         |
 | Performance                | —               | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
 | React / frontend standards | see §4          | **4.1–4.4**                                         |
-| UX                         | remaining §5    | **5.1–5.4**                                         |
-| System design              | remaining in §6 | **6.1** (topology documented)                       |
+| UX                         | **5.6 owner**   | **5.1–5.5, 5.7**                                    |
+| System design              | remaining in §6 | **6.1, 6.2 first slice**                            |
 | Explicit non-goals         | n/a             | n/a                                                 |
 
 _Update counts when checking items._
@@ -232,19 +232,19 @@ Spine #1–#7, live/static isolation, methodology, age/basis, neutral deltas, sk
       **Done when:** Structure paths say “Structure as-of …” (or equivalent); live tape remains live-labelled.  
       **Note:** 2026-08-10 — scanner row freshness → `Structure as-of {rel}` (not bare Updated).
 
-- [ ] **5.5 Alerts v1 (roadmap X3)**  
+- [x] **5.5 Alerts v1 (roadmap X3)**  
       **Done when:** Level-touch / tier-change / score-gate with simple delivery (browser and/or webhook).  
-      **Note:** _
+      **Note:** 2026-08-10 — client rules + localStorage; evaluate on ticker structure REST snap; `/alerts` page + TopNav; optional browser `Notification`. Pure `evaluateRule` + vitest. Webhook deferred.
 
 - [ ] **5.6 Owner device review (responsive / notch / &lt;375)**  
-      **Evidence:** `responsive-layout` parked for device pass.  
+      **Evidence:** `responsive-layout` parked for device pass; `docs/DEVICE_REVIEW.md`.  
       **Done when:** Owner sign-off on real phones after recent widgets.  
-      **Note:** _
+      **Note:** 2026-08-10 — hardening shipped (`viewport-fit=cover`, AppShell safe-area insets, `overflowX: clip` on main, 44px alert CTAs). **Owner phone sign-off still open** — checklist in `DEVICE_REVIEW.md`.
 
-- [ ] **5.7 Theme audit follow-through**  
+- [x] **5.7 Theme audit follow-through**  
       **Evidence:** `docs/THEME_AUDIT.md` — e.g. `palette.secondary`, elevation.  
       **Done when:** Gaps closed or explicitly won’t-fix with reason.  
-      **Note:** _
+      **Note:** 2026-08-10 — Gaps #1–#4 closed in code (secondary, contrastText, light text.primary, dark elevation shadows). #5–#10 won’t-fix unless Figma drift / component need.
 
 ---
 
@@ -260,10 +260,10 @@ Nx lane tags, JSON|Postgres ports, progressive bundle + SSE isolation, delivery 
       **Done when:** Health or docs state how scanner runs in prod; runbook matches code.  
       **Note:** 2026-08-10 — runbook topology + `/api/health` `scanner.embedded=true`.
 
-- [ ] **6.2 Server-side durable book path (long-term)**  
+- [x] **6.2 Server-side durable book path (long-term)** — first slice  
       **Evidence:** TECH_DEBT #21 — browser-local positions/orders/ledger.  
       **Done when:** Multi-device persistence design + migration; or interim export/backup UX.  
-      **Note:** _
+      **Note:** 2026-08-10 — migration v5 `user_book`; auth `GET/PUT /api/book` (opaque v3 blob, latest-wins by `updated_at`); FE `bookSync` pull-on-login + debounced push; localStorage remains working cache. Without Postgres: empty get / ephemeral put.
 
 - [ ] **6.3 Optional focused-desk scan heartbeat channel**  
       **Done when:** Only if poll cost matters; must not break live-vs-static (no full row stream as “live structure”).  
@@ -310,8 +310,9 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 
 ## Changelog
 
-| Date       | Change                                                                                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-08-10 | Initial backlog from site-wide audit (all open).                                                                                     |
-| 2026-08-10 | Closed **1.1–1.4**, **3.1–3.2**, **6.1** (runbook+smoke+CD docs, rate limit, ticker abort/visibility).                               |
-| 2026-08-10 | Closed **§3 Performance** remaining: `usePollingResource`, ticker data-hook split, analytics phase timings; 3.5–3.6 N/A by criteria. |
+| Date       | Change                                                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-08-10 | Initial backlog from site-wide audit (all open).                                                                                                 |
+| 2026-08-10 | Closed **1.1–1.4**, **3.1–3.2**, **6.1** (runbook+smoke+CD docs, rate limit, ticker abort/visibility).                                           |
+| 2026-08-10 | Closed **§3 Performance** remaining: `usePollingResource`, ticker data-hook split, analytics phase timings; 3.5–3.6 N/A by criteria.             |
+| 2026-08-10 | Closed **5.5** Alerts v1, **5.7** theme gaps #1–4, **6.2** first slice (server book); **5.6** hardening + checklist (owner phone sign-off open). |

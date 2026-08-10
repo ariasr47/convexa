@@ -17,7 +17,15 @@ import { TopNav } from './TopNav';
 
 export function AppShell() {
   return (
-    <Box data-testid="app-shell">
+    <Box
+      data-testid="app-shell"
+      sx={{
+        // Notch / home-indicator safe areas (device review 5.6).
+        pt: 'env(safe-area-inset-top)',
+        pl: 'env(safe-area-inset-left)',
+        pr: 'env(safe-area-inset-right)',
+      }}
+    >
       {/* Skip link — visually hidden until keyboard focus (spine #6). First tab stop. */}
       <Box
         component="a"
@@ -58,7 +66,18 @@ export function AppShell() {
       <TopNav />
       {/* The active in-shell page renders here, inside the app's ONE `<main>` landmark (Stage 0
           item 3). id anchors the skip link (spine #6). The bar above persists across page swaps. */}
-      <Box component="main" id="main-content" tabIndex={-1}>
+      <Box
+        component="main"
+        id="main-content"
+        tabIndex={-1}
+        sx={{
+          // Keep content clear of home indicator on notched phones.
+          pb: 'env(safe-area-inset-bottom)',
+          // Avoid horizontal overflow on narrow phones.
+          overflowX: 'clip',
+          minWidth: 0,
+        }}
+      >
         <Outlet />
       </Box>
     </Box>

@@ -1,6 +1,7 @@
 //! HTTP routes (Axum).
 
 mod auth;
+mod book;
 mod broker;
 mod contract;
 mod demo;
@@ -25,6 +26,8 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(health::health))
         .route("/api/health", get(health::health))
         .route("/api/_metrics", get(health::cache_metrics))
+        // Server-side durable book (signed-in multi-device positions blob)
+        .route("/api/book", get(book::get_book).put(book::put_book))
         // Path A — warm price
         .route("/api/price/{ticker}", get(price::get_price))
         .route("/api/prices", get(price::get_prices))

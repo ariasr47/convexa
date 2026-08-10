@@ -1,6 +1,7 @@
 /**
  * Client-local durable store for the positions portfolio — **`convexa.positions.v3`**, the ONE book
- * both pages read. Backed by localStorage, versioned, exportable. The server stores none of this.
+ * both pages read. Backed by localStorage (working cache), versioned, exportable. Signed-in clients
+ * also sync the opaque v3 blob via GET/PUT `/api/book` (`bookSync.ts`, latest-wins by touch time).
  *
  * ── THE CUTOVER (SPEC §2.6) ──────────────────────────────────────────────────────────────────────
  * v3 is reached by a **UNION**, not the shipped read-new-else-old chain:
@@ -305,11 +306,63 @@ function write(s: PersistShapeV3): boolean {
   memory = s;
   try {
     localStorage.setItem(V3_KEY, JSON.stringify(s));
+    localStorage.setItem(BOOK_TOUCH_KEY, String(Date.now() / 1000));
   } catch {
     /* quota/private mode — keep the in-memory copy this session */
   }
   notify();
+  // Best-effort multi-device push (signed-in only; no-op when offline/anonymous).
+  scheduleBookPush();
   return true;
+}
+
+/** Client clock of last local durable write (seconds). Used for multi-device latest-wins. */
+const BOOK_TOUCH_KEY = 'convexa.positions.touch_at';
+
+/** Opaque v3 blob for server sync (multi-device). */
+export function exportBookBlob(): PersistShapeV3 {
+  return read();
+}
+
+export function localBookTouchAt(): number {
+  try {
+    const t = Number(localStorage.getItem(BOOK_TOUCH_KEY) ?? '0');
+    return Number.isFinite(t) ? t : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Adopt a server blob when it is newer than the local touch (or local is empty).
+ * Does not re-arm the v3 migration — writes v3 directly.
+ */
+export function importBookBlobIfNewer(blob: unknown, serverUpdatedAt: number): boolean {
+  if (positionsFaulted()) return false;
+  if (blob == null || typeof blob !== 'object' || Array.isArray(blob)) return false;
+  const localTouch = localBookTouchAt();
+  const local = read();
+  const localEmpty = Object.keys(local.positions).length === 0;
+  if (!localEmpty && serverUpdatedAt < localTouch) return false;
+  const next = hydrateV3(blob as Partial<PersistShapeV3>);
+  memory = next;
+  try {
+    localStorage.setItem(V3_KEY, JSON.stringify(next));
+    if (serverUpdatedAt > 0) localStorage.setItem(BOOK_TOUCH_KEY, String(serverUpdatedAt));
+  } catch {
+    /* keep memory */
+  }
+  notify();
+  return true;
+}
+
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleBookPush() {
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    pushTimer = null;
+    void import('./bookSync').then((m) => m.pushLocalBook()).catch(() => undefined);
+  }, 800);
 }
 
 /** Is the durable store faulted? Reading forces hydration so the answer is always current. */

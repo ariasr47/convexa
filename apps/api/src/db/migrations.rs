@@ -143,6 +143,21 @@ CREATE TABLE IF NOT EXISTS ai_rec_daily (
 );
 "#,
     ),
+    (
+        5,
+        "user_book_blob",
+        r#"
+-- Server-side durable book (positions/orders v3 JSON blob per user).
+-- FE still keeps a local cache; signed-in clients sync via GET/PUT /api/book.
+CREATE TABLE IF NOT EXISTS user_book (
+    user_id        TEXT PRIMARY KEY,
+    schema_version INT NOT NULL DEFAULT 3,
+    blob_json      TEXT NOT NULL,
+    updated_at     DOUBLE PRECISION NOT NULL
+);
+CREATE INDEX IF NOT EXISTS user_book_updated_at_idx ON user_book (updated_at DESC);
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.

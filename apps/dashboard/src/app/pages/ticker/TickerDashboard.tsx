@@ -16,6 +16,7 @@
  * `[best-effort-isolated-or-null]`, `[additive-keeps-score-byte-identical]`, `[no-real-order-path]`,
  * `[operator-vs-trader-path-separation]`.
  */
+import { useAlerts } from '@/features/alerts/useAlerts';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { useGate } from '@/features/auth/useGate';
 import { PersonaCustomizeForm } from '@/features/personas/components';
@@ -232,6 +233,33 @@ export function TickerDashboard() {
   const m = data?.market_state ?? page.marketState;
   const fresh = data?.meta.freshness;
   const sig = data?.signals ?? page.signals;
+  // Alerts v1 — evaluate structure snap on each successful REST poll (not SSE).
+  const { evaluateSnap } = useAlerts();
+  useEffect(() => {
+    if (!data || !m) return;
+    evaluateSnap({
+      symbol: ticker,
+      price: m.price ?? null,
+      score: sig?.opportunity_score ?? null,
+      tier: sig?.opportunity_tier ?? null,
+      call_wall: m.call_wall ?? null,
+      put_wall: m.put_wall ?? null,
+      gamma_flip: m.gamma_flip ?? null,
+      as_of: fresh?.data_age_seconds != null ? Date.now() / 1000 : null,
+    });
+  }, [
+    data,
+    m,
+    sig?.opportunity_score,
+    sig?.opportunity_tier,
+    m?.price,
+    m?.call_wall,
+    m?.put_wall,
+    m?.gamma_flip,
+    ticker,
+    evaluateSnap,
+    fresh?.data_age_seconds,
+  ]);
 
   // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N (full-chain).
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;

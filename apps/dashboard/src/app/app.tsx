@@ -62,6 +62,9 @@ const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ defau
 const MethodologyPage = lazy(() =>
   import('@/pages/methodology/MethodologyPage').then((m) => ({ default: m.MethodologyPage })),
 );
+const AlertsPage = lazy(() =>
+  import('@/pages/alerts/AlertsPage').then((m) => ({ default: m.AlertsPage })),
+);
 const SettingsPage = lazy(() =>
   import('@/features/auth/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -143,6 +146,8 @@ export function AppRoutes() {
         <Route path="/blog" element={lazyRoute(<BlogPage />)} />
         {/* Methodology — product spine #7 trust surface (static; public). */}
         <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
+        {/* Alerts v1 — structure rules (level / tier / score); public, local durable. */}
+        <Route path="/alerts" element={lazyRoute(<AlertsPage />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
       </Route>

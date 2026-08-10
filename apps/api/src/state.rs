@@ -43,6 +43,9 @@ pub struct AppState {
     pub stock_hub: StockStreamHub,
     /// Per-IP rate limiter for expensive public routes (process-local).
     pub rate_limiter: Arc<RateLimiter>,
+    /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
+    #[cfg(feature = "postgres")]
+    pub pg: Option<crate::db::postgres::Pg>,
 }
 
 impl AppState {
@@ -181,6 +184,8 @@ impl AppState {
             iv_store,
             stock_hub,
             rate_limiter,
+            #[cfg(feature = "postgres")]
+            pg,
         })
     }
 }

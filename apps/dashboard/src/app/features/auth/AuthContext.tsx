@@ -15,6 +15,7 @@
  *  - **no secret ever stored** (AC-H1/H2): only the `SessionStatus` shape is held — no password,
  *    session id, signing key, or secret is ever in scope here.
  */
+import { pullServerBook } from '@/features/trading/positions/bookSync';
 import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 import {
   login as apiLogin,
@@ -131,6 +132,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (state.authenticated) seedTestPositionsIfNeeded(state.user?.email);
   }, [state.authenticated, state.user?.email]);
+
+  // Multi-device durable book: after sign-in, pull server blob if newer (best-effort).
+  useEffect(() => {
+    if (!state.authenticated) return;
+    void pullServerBook();
+  }, [state.authenticated, state.user?.id]);
 
   const signIn = useCallback(async (body: LoginRequest) => {
     const s = await apiLogin(body); // throws AuthError on failure (form maps the code)
