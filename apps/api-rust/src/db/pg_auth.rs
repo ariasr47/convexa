@@ -2,7 +2,7 @@
 
 use crate::db::postgres::Pg;
 use crate::error::{AppError, AppResult};
-use crate::services::auth::store::{
+use crate::services::auth::{
     CredentialRecord, SessionRecord, SettingsPatch, SettingsRecord, UserRecord,
 };
 use sqlx::Row;
@@ -18,22 +18,19 @@ impl PgAuthStore {
         Self { pg }
     }
 
-    fn block<F, T>(&self, f: F) -> AppResult<T>
+    fn block<T, Fut>(&self, f: impl FnOnce(Pg) -> Fut + Send) -> AppResult<T>
     where
-        F: FnOnce(&Pg) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<T>> + Send>>
-            + Send,
+        Fut: std::future::Future<Output = AppResult<T>> + Send,
         T: Send,
     {
-        // Sync facade for AuthService (called from async handlers).
         let handle = tokio::runtime::Handle::current();
         let pg = self.pg.clone();
-        tokio::task::block_in_place(|| handle.block_on(f(&pg)))
+        tokio::task::block_in_place(|| handle.block_on(f(pg)))
     }
 
     pub fn get_user_by_id(&self, user_id: &str) -> AppResult<Option<UserRecord>> {
         let uid = user_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT id, email, display_name, password_hash, google_sub,
                               created_at, last_login_at FROM users WHERE id = $1"#,
@@ -43,14 +40,12 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(row.map(map_user))
-            })
         })
     }
 
     pub fn get_user_by_email(&self, email: &str) -> AppResult<Option<UserRecord>> {
         let lower = email.trim().to_ascii_lowercase();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT id, email, display_name, password_hash, google_sub,
                               created_at, last_login_at FROM users WHERE email_lower = $1"#,
@@ -60,7 +55,6 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(row.map(map_user))
-            })
         })
     }
 
@@ -85,8 +79,7 @@ impl PgAuthStore {
             created_at: now,
             last_login_at: None,
         };
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let res = sqlx::query(
                     r#"INSERT INTO users (id, email, email_lower, display_name, password_hash,
                         google_sub, created_at, last_login_at)
@@ -105,15 +98,13 @@ impl PgAuthStore {
                     Err(e) if is_unique(&e) => Err(AppError::Other(anyhow::anyhow!("email_taken"))),
                     Err(e) => Err(pg_err(e)),
                 }
-            })
         })?;
         Ok(user)
     }
 
     pub fn mark_login(&self, user_id: &str, when: f64) -> AppResult<()> {
         let uid = user_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query("UPDATE users SET last_login_at = $1 WHERE id = $2")
                     .bind(when)
                     .bind(&uid)
@@ -121,14 +112,12 @@ impl PgAuthStore {
                     .await
                     .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 
     pub fn get_by_google_sub(&self, sub: &str) -> AppResult<Option<UserRecord>> {
         let s = sub.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT id, email, display_name, password_hash, google_sub,
                               created_at, last_login_at FROM users WHERE google_sub = $1"#,
@@ -138,15 +127,13 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(row.map(map_user))
-            })
         })
     }
 
     pub fn attach_google(&self, user_id: &str, google_sub: &str) -> AppResult<Option<UserRecord>> {
         let uid = user_id.to_string();
         let sub = google_sub.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query("UPDATE users SET google_sub = $1 WHERE id = $2")
                     .bind(&sub)
                     .bind(&uid)
@@ -162,7 +149,6 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(row.map(map_user))
-            })
         })
     }
 
@@ -187,8 +173,7 @@ impl PgAuthStore {
             created_at: now,
             last_login_at: None,
         };
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO users (id, email, email_lower, display_name, password_hash,
                         google_sub, created_at, last_login_at)
@@ -210,15 +195,13 @@ impl PgAuthStore {
                     }
                 })?;
                 Ok(())
-            })
         })?;
         Ok(user)
     }
 
     pub fn create_session(&self, s: &SessionRecord) -> AppResult<()> {
         let s = s.clone();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO sessions (id, user_id, created_at, expires_at,
                         absolute_expires_at, revoked)
@@ -234,14 +217,12 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 
     pub fn get_session(&self, session_id: &str) -> AppResult<Option<SessionRecord>> {
         let sid = session_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT id, user_id, created_at, expires_at, absolute_expires_at, revoked
                        FROM sessions WHERE id = $1"#,
@@ -258,14 +239,12 @@ impl PgAuthStore {
                     absolute_expires_at: r.get("absolute_expires_at"),
                     revoked: r.get("revoked"),
                 }))
-            })
         })
     }
 
     pub fn touch_session(&self, session_id: &str, new_expires_at: f64) -> AppResult<()> {
         let sid = session_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query("UPDATE sessions SET expires_at = $1 WHERE id = $2")
                     .bind(new_expires_at)
                     .bind(&sid)
@@ -273,28 +252,24 @@ impl PgAuthStore {
                     .await
                     .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 
     pub fn revoke_session(&self, session_id: &str) -> AppResult<()> {
         let sid = session_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query("UPDATE sessions SET revoked = TRUE WHERE id = $1")
                     .bind(&sid)
                     .execute(&pg.pool)
                     .await
                     .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 
     pub fn get_settings(&self, user_id: &str) -> AppResult<Option<SettingsRecord>> {
         let uid = user_id.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT user_id, active_persona_id, default_ticker, theme, scan_view
                        FROM user_settings WHERE user_id = $1"#,
@@ -310,7 +285,6 @@ impl PgAuthStore {
                     theme: r.get("theme"),
                     scan_view: r.get("scan_view"),
                 }))
-            })
         })
     }
 
@@ -326,8 +300,7 @@ impl PgAuthStore {
             scan_view: None,
         };
         let r = rec.clone();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO user_settings (user_id, active_persona_id, default_ticker, theme, scan_view)
                        VALUES ($1,NULL,NULL,'dark',NULL)
@@ -338,7 +311,6 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(())
-            })
         })?;
         Ok(rec)
     }
@@ -359,8 +331,7 @@ impl PgAuthStore {
             cur.scan_view = Some(v.clone());
         }
         let r = cur.clone();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO user_settings (user_id, active_persona_id, default_ticker, theme, scan_view)
                        VALUES ($1,$2,$3,$4,$5)
@@ -379,7 +350,6 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(())
-            })
         })?;
         Ok(cur)
     }
@@ -391,8 +361,7 @@ impl PgAuthStore {
     ) -> AppResult<Option<CredentialRecord>> {
         let uid = user_id.to_string();
         let k = kind.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let row = sqlx::query(
                     r#"SELECT user_id, kind, ciphertext, last4, provider, created_at, updated_at
                        FROM credentials WHERE user_id = $1 AND kind = $2"#,
@@ -411,7 +380,6 @@ impl PgAuthStore {
                     created_at: r.get("created_at"),
                     updated_at: r.get("updated_at"),
                 }))
-            })
         })
     }
 
@@ -429,8 +397,7 @@ impl PgAuthStore {
         let ct = ciphertext.to_string();
         let l4 = last4.to_string();
         let prov = provider.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO credentials (user_id, kind, ciphertext, last4, provider, created_at, updated_at)
                        VALUES ($1,$2,$3,$4,$5,$6,$6)
@@ -450,15 +417,13 @@ impl PgAuthStore {
                 .await
                 .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 
     pub fn delete_credential(&self, user_id: &str, kind: &str) -> AppResult<()> {
         let uid = user_id.to_string();
         let k = kind.to_string();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query("DELETE FROM credentials WHERE user_id = $1 AND kind = $2")
                     .bind(&uid)
                     .bind(&k)
@@ -466,7 +431,6 @@ impl PgAuthStore {
                     .await
                     .map_err(pg_err)?;
                 Ok(())
-            })
         })
     }
 }

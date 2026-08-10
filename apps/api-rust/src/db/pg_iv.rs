@@ -16,21 +16,19 @@ impl PgIvStore {
         Self { pg }
     }
 
-    fn block<F, T>(&self, f: F) -> AppResult<T>
+    fn block<T, Fut>(&self, f: impl FnOnce(Pg) -> Fut + Send) -> AppResult<T>
     where
-        F: FnOnce(&Pg) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<T>> + Send>>
-            + Send,
+        Fut: std::future::Future<Output = AppResult<T>> + Send,
         T: Send,
     {
         let handle = tokio::runtime::Handle::current();
         let pg = self.pg.clone();
-        tokio::task::block_in_place(|| handle.block_on(f(&pg)))
+        tokio::task::block_in_place(|| handle.block_on(f(pg)))
     }
 
     pub fn upsert_if_absent(&self, sample: &IvSample) -> AppResult<()> {
         let s = sample.clone();
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 sqlx::query(
                     r#"INSERT INTO iv_samples
                          (ticker, session_date, iv_value, iv_basis, basis_dte, captured_at)
@@ -50,15 +48,13 @@ impl PgIvStore {
                     AppError::Config(format!("postgres iv: {e}"))
                 })?;
                 Ok(())
-            })
         })
     }
 
     pub fn read_recent(&self, ticker: &str, limit: usize) -> AppResult<Vec<IvSample>> {
         let t = ticker.trim().to_ascii_uppercase();
         let lim = limit.max(1) as i64;
-        self.block(move |pg| {
-            Box::pin(async move {
+        self.block(move |pg| async move {
                 let rows = sqlx::query(
                     r#"SELECT ticker, session_date, iv_value, iv_basis, basis_dte, captured_at
                        FROM iv_samples WHERE ticker = $1
@@ -82,7 +78,6 @@ impl PgIvStore {
                     .collect();
                 out.reverse();
                 Ok(out)
-            })
         })
     }
 }

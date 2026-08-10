@@ -48,10 +48,11 @@ RUN cargo build -p api-rust --release --features postgres \
               target/release/.fingerprint/libapi_rust* \
               target/release/.fingerprint/libquant_engine*
 
-# Real sources
+# Real sources (include static/ for include_str! at compile time)
 COPY libs/quant-engine/src libs/quant-engine/src
 COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
 COPY apps/api-rust/src apps/api-rust/src
+COPY apps/api-rust/static apps/api-rust/static
 COPY apps/api-rust/Cargo.toml apps/api-rust/Cargo.toml
 # Force rebuild of our crates (not deps)
 RUN touch libs/quant-engine/src/lib.rs apps/api-rust/src/lib.rs apps/api-rust/src/main.rs \
