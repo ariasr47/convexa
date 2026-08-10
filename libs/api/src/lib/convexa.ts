@@ -333,6 +333,8 @@ export interface Signals {
   opportunity_tier: OpportunityTier;
   prime_prompt_eligible: boolean; // true only at prime AND actionable (gates the sim-entry prompt)
   dark_pool_confluence?: { off_exchange_price: number; coincides_with: string; level: number }[];
+  /** Additive score breakdown (same shape as ScanScoreDrivers) when the engine emits it. */
+  score_drivers?: ScanScoreDrivers | null;
 }
 
 /** Sibling of ai_eval, present only when the bundle request carries an open-position context
