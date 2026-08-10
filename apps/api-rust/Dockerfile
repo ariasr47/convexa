@@ -18,7 +18,9 @@
 # ============================================================================
 
 # ---- build ----
-FROM rust:1.85-bookworm AS builder
+# Cargo.lock pulls crates that need rustc ≥1.88 (e.g. home@0.5, icu_*@2.2).
+# Track stable bookworm so Railway builds do not lag behind crates.io mins.
+FROM rust:1-bookworm AS builder
 WORKDIR /src
 
 # Fail fast if the monorepo workspace is missing from build context
