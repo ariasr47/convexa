@@ -20,6 +20,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { StructureFieldCanvas } from './StructureFieldCanvas';
 import { StructureFieldWebGL } from './StructureFieldWebGL';
 import { buildDemoField, samplesFromStrikes, type StructureFieldModel } from './structureFieldDemo';
+// Note: Lab hub lives at /lab — this page is the shipped Structure Field deep-link.
 
 type Renderer = 'canvas2d' | 'webgl';
 
@@ -160,6 +161,9 @@ export function StructureFieldLab() {
             </Button>
             <Button variant="outlined" disabled={loading} onClick={() => void loadSpy()}>
               {loading ? 'Loading SPY…' : 'Use live SPY structure'}
+            </Button>
+            <Button component={RouterLink} to="/lab" variant="text">
+              All demos
             </Button>
             <Button component={RouterLink} to="/methodology" variant="text">
               Methodology

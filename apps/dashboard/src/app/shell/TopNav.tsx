@@ -78,7 +78,7 @@ const NAV: NavEntry[] = [
   },
   {
     label: 'Lab',
-    to: '/lab/structure-field',
+    to: '/lab',
     active: (p) => p === '/lab' || p.startsWith('/lab/'),
   },
   {

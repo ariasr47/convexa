@@ -205,6 +205,10 @@ describe('route table', () => {
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
     { path: '/methodology', ready: () => screen.findByTestId('methodology-page') },
     {
+      path: '/lab',
+      ready: () => screen.findByTestId('lab-index'),
+    },
+    {
       path: '/lab/structure-field',
       ready: () => screen.findByTestId('structure-field-lab'),
     },

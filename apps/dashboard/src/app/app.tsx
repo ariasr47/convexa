@@ -71,8 +71,21 @@ const SettingsPage = lazy(() =>
 const OperatorMetrics = lazy(() =>
   import('@/pages/operator-metrics/operator-metrics').then((m) => ({ default: m.OperatorMetrics })),
 );
+const LabIndex = lazy(() => import('@/pages/lab/LabIndex').then((m) => ({ default: m.LabIndex })));
 const StructureFieldLab = lazy(() =>
   import('@/pages/lab/StructureFieldLab').then((m) => ({ default: m.StructureFieldLab })),
+);
+const TapePulseLab = lazy(() =>
+  import('@/pages/lab/demos/TapePulseLab').then((m) => ({ default: m.TapePulseLab })),
+);
+const WallMagnetLab = lazy(() =>
+  import('@/pages/lab/demos/WallMagnetLab').then((m) => ({ default: m.WallMagnetLab })),
+);
+const TermHeatLab = lazy(() =>
+  import('@/pages/lab/demos/TermHeatLab').then((m) => ({ default: m.TermHeatLab })),
+);
+const FlowRibbonsLab = lazy(() =>
+  import('@/pages/lab/demos/FlowRibbonsLab').then((m) => ({ default: m.FlowRibbonsLab })),
 );
 
 /** Minimal page-chunk loading fill — theme tokens only (`[theme-token-discipline]`), centered,
@@ -151,8 +164,13 @@ export function AppRoutes() {
         <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
         {/* Alerts v1 — structure rules (level / tier / score); public, local durable. */}
         <Route path="/alerts" element={lazyRoute(<AlertsPage />)} />
-        {/* Lab — public Canvas dual-clock Structure Field demo (synthetic default; optional SPY REST). */}
+        {/* Lab — public instrument demos (ticker candidates + shipped Structure Field). */}
+        <Route path="/lab" element={lazyRoute(<LabIndex />)} />
         <Route path="/lab/structure-field" element={lazyRoute(<StructureFieldLab />)} />
+        <Route path="/lab/tape-pulse" element={lazyRoute(<TapePulseLab />)} />
+        <Route path="/lab/wall-magnet" element={lazyRoute(<WallMagnetLab />)} />
+        <Route path="/lab/term-heat" element={lazyRoute(<TermHeatLab />)} />
+        <Route path="/lab/flow-ribbons" element={lazyRoute(<FlowRibbonsLab />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
       </Route>

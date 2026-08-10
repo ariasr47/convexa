@@ -49,6 +49,8 @@ const EXEMPT: Record<string, string> = {
     'Canvas2D dual-clock Structure Field — brand token literals (cannot use MUI sx)',
   'shared/charts/structure-field/structureFieldShared.ts':
     'Shared Structure Field brand token literals for Canvas2D + WebGL instruments',
+  'pages/lab/demos/labTokens.ts':
+    'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the
