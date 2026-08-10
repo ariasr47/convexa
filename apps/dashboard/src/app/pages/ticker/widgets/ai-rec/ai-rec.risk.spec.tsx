@@ -273,6 +273,8 @@ function installBackend(cfg: BackendCfg = {}) {
         return state.personas === 'throw' ? json({ detail: 'down' }, 500) : json(state.personas);
       }
       if (url.includes('/api/contract/')) return json(null);
+      if (url.includes('/history'))
+        return json({ symbol: 'TSLA', samples: [], basis: 'test structure history' });
       throw new Error(`Unexpected fetch in ai-rec risk test: ${url}`);
     }),
   );

@@ -8,10 +8,10 @@ Health: `service=api-rust`, `durable_store=postgres`.
 
 ## Durable stores
 
-| Mode | When | Backends |
-|------|------|----------|
-| **JSON** (default local) | No `DATABASE_URL`, or binary built without `--features postgres` | `data/auth.json`, `data/iv_timeseries.json`, `data/scan.json` |
-| **Postgres** (multi-instance) | Binary built with `--features postgres` **and** `DATABASE_URL` set | Tables: `users`, `sessions`, `user_settings`, `credentials`, `iv_samples`, `scan_rows`, `scan_heartbeat` |
+| Mode                          | When                                                               | Backends                                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **JSON** (default local)      | No `DATABASE_URL`, or binary built without `--features postgres`   | `data/auth.json`, `data/iv_timeseries.json`, `data/scan.json`                                                                      |
+| **Postgres** (multi-instance) | Binary built with `--features postgres` **and** `DATABASE_URL` set | Tables: `users`, `sessions`, `user_settings`, `credentials`, `iv_samples`, `scan_rows`, `scan_heartbeat`, `scan_structure_history` |
 
 ```bash
 cargo build -p api-rust --release --features postgres

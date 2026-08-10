@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-10  
 **Repo:** `ariasr47/convexa` · branch **`main`**  
-**For:** fresh Grok / agent session  
+**For:** fresh Grok / agent session
 
 Prefer code + this file over chat history.
 
@@ -10,29 +10,31 @@ Prefer code + this file over chat history.
 
 ## 1. Product spine status
 
-| # | Item | Status |
-|---|------|--------|
-| 1 | Clear product spine (landing/nav/auth walls) | **Done** `36030d2` |
-| 2 | Scanner as desk | **Done** (local — session strip, desk filters, why-this-row) |
-| 3 | Ticker hierarchy / less equal weight | **Done** (local — Structure → Tape & plan → Supporting context) |
-| 4 | Always label age and basis | **Done** (local — Structure as-of + widget basis subtitles) |
-| 5 | Position brief between widgets | **Done** (local — Your book strip between Structure & plan) |
-| 6 | Design polish / keyboard | **Done** (local — skip link, scan hit targets, score focus) |
-| 7 | Trust/methodology surface | **Done** (local — `/methodology` + footer/scanner links) |
+| #   | Item                                         | Status                                                          |
+| --- | -------------------------------------------- | --------------------------------------------------------------- |
+| 1   | Clear product spine (landing/nav/auth walls) | **Done** `36030d2`                                              |
+| 2   | Scanner as desk                              | **Done** (local — session strip, desk filters, why-this-row)    |
+| 3   | Ticker hierarchy / less equal weight         | **Done** (local — Structure → Tape & plan → Supporting context) |
+| 4   | Always label age and basis                   | **Done** (local — Structure as-of + widget basis subtitles)     |
+| 5   | Position brief between widgets               | **Done** (local — Your book strip between Structure & plan)     |
+| 6   | Design polish / keyboard                     | **Done** (local — skip link, scan hit targets, score focus)     |
+| 7   | Trust/methodology surface                    | **Done** (local — `/methodology` + footer/scanner links)        |
 
-**Quant moat:** score drivers ✓ · Postgres ScanStore (this session) · structure history · vol-normalized GEX · portfolio reassess.
+**Quant moat:** score drivers ✓ · Postgres ScanStore ✓ · structure history ✓ · vol-normalized GEX · portfolio reassess.
 
 ---
 
 ## 2. What just shipped in-session (uncommitted unless committed after)
 
 ### Spine #2 — Scanner as desk
+
 - Session badge (RTH / Pre-market / After-hours / Closed) + structure as-of strip
 - Client filters: tier, vol regime, score ≥N, \|flip\| ≤N%
 - Score-cell “why this row” tooltip (closed wire fields)
 - Files: `apps/dashboard/src/app/pages/scanner/*`
 
 ### Spine #3 — Ticker hierarchy
+
 - Bento reordered into three zones (not equal-weight cards):
   1. **Structure** — Dealer positioning → GEX strike profile
   2. **Tape & plan** — Live tape → AI rec ‖ Orders (act → watch)
@@ -41,6 +43,7 @@ Prefer code + this file over chat history.
 - Spec: `apps/dashboard/src/app/pages/ticker/ticker-hierarchy.spec.tsx`
 
 ### Spine #4 — Always label age and basis
+
 - Deck: `FreshnessLine` → **Structure as-of {age}** (not bare “Updated”)
 - Live tape subtitle names stream vs structure (`LIVE_TAPE_SUBTITLE_*`)
 - Structure widgets append age/basis via `withStructureAge` / helpers in `_kit/copy.ts`:
@@ -51,6 +54,7 @@ Prefer code + this file over chat history.
 ---
 
 ### Spine #5 — Position brief between widgets
+
 - Strip `position-brief` between Structure and Tape & plan on ticker bento
 - States: empty (sim CTA) · single (structure + P/L + mark basis) · multi (count only) · store faulted
 - Sim-only; Open book → `/positions`; multi never picks one of N
@@ -59,6 +63,7 @@ Prefer code + this file over chat history.
 ---
 
 ### Spine #6 — Design polish / keyboard
+
 - AppShell: **Skip to main content** first tab stop → `#main-content`
 - Scanner: larger sort/filter hit areas; symbol link fills cell; score `tabIndex={0}` for why-tip
 - Position brief: CTAs minHeight 44
@@ -67,6 +72,7 @@ Prefer code + this file over chat history.
 ---
 
 ### Spine #7 — Trust / methodology surface
+
 - Public static page `/methodology` — how structure/score works, two-speed data, where it fails, no real orders
 - Footer “How Convexa works” + scanner cadence methodology link
 - Specs: `methodology.spec.tsx`; route walked in `app.risk.spec.tsx`
@@ -77,8 +83,8 @@ Prefer code + this file over chat history.
 
 Spine **#1–#7** are shipped (or in the working tree for #7). Longer tracks:
 
-- Quant moat: structure history, score drivers, Postgres scan store, portfolio reassess
-- Roadmap NEXT: broker-connect, vol-normalized GEX, alerts, ledger checkpoint
+- Quant moat: structure history ✓ · score drivers ✓ · Postgres scan store ✓ · portfolio reassess
+- Roadmap NEXT: vol-normalized GEX (X2), alerts (X3), ledger checkpoint (X4)
 
 ```bash
 nvm use
@@ -102,11 +108,11 @@ npx nx run @org/dashboard:typecheck
 
 ## 5. Production topology
 
-| Layer | Where |
-|-------|--------|
-| SPA | Cloudflare Pages `https://convexa.pages.dev` |
-| API | Railway `https://convexa-production.up.railway.app` |
-| DB | Railway Postgres (scan rows still JSON file store) |
+| Layer | Where                                               |
+| ----- | --------------------------------------------------- |
+| SPA   | Cloudflare Pages `https://convexa.pages.dev`        |
+| API   | Railway `https://convexa-production.up.railway.app` |
+| DB    | Railway Postgres (scan rows still JSON file store)  |
 
 ---
 

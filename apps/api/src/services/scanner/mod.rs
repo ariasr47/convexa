@@ -10,6 +10,8 @@ pub mod universe;
 
 pub use r#loop::{spawn, LoopConfig};
 pub use projection::TierBands;
-pub use store::{BundleBlob, ScanRow, ScanStore, SweepHeartbeat};
+pub use store::{
+    BundleBlob, ScanRow, ScanStore, StructureSample, SweepHeartbeat, STRUCTURE_HISTORY_DEFAULT_LIMIT,
+};
 pub use tiering::SweepConfig;
 pub use universe::{default_universe_path, load_universe, UniverseConfig};

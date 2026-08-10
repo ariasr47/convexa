@@ -833,6 +833,43 @@ export async function saveScanView(view: ScanViewWrite): Promise<ScanView> {
   return (await res.json()) as ScanView;
 }
 
+/** One slow-lane structure snapshot (not a live price tick). Chronological on the wire. */
+export interface StructureSample {
+  symbol: string;
+  as_of: number; // epoch seconds of the structure recompute
+  price: number | null;
+  score: number | null;
+  tier: string | null;
+  regime: string | null;
+  vol_regime: string | null;
+  flip: number | null;
+  dist_to_flip_pct: number | null;
+  call_wall: number | null;
+  put_wall: number | null;
+  dist_to_wall_pct: number | null;
+}
+
+/** `GET /api/scan/{symbol}/history` — durable structure path for the ticker Structure zone. */
+export interface StructureHistoryResponse {
+  symbol: string;
+  samples: StructureSample[];
+  /** Server basis string (slow-lane only, thinned, capped). */
+  basis: string;
+}
+
+/** GET /api/scan/{symbol}/history — anonymous-open structure history. Empty samples is honest
+ *  cold-start, not an error. Transport faults reject so the caller can keep last-known path. */
+export async function getStructureHistory(
+  symbol: string,
+  limit = 48,
+): Promise<StructureHistoryResponse> {
+  const sym = encodeURIComponent(symbol.trim().toUpperCase());
+  const q = limit > 0 ? `?limit=${Math.min(limit, 96)}` : '';
+  const res = await fetch(`/api/scan/${sym}/history${q}`, { credentials: 'same-origin' });
+  if (!res.ok) throw new ApiError(`Structure history failed (${res.status})`, res.status);
+  return (await res.json()) as StructureHistoryResponse;
+}
+
 /** Live payload pushed over SSE (mid/flow/live flip). Levels other than the flip come from
  *  the bundle; the UI measures price-vs-wall using `mid` + the bundle's walls. */
 export interface LiveUpdate {

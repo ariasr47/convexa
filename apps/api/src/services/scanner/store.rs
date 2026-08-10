@@ -1,4 +1,6 @@
-//! Durable scan row store (latest-wins). Score path never reads this as an input.
+//! Durable scan row store (latest-wins) + structure history ring buffer.
+//!
+//! Score path never reads this as an input.
 //!
 //! Backends:
 //! - **memory** / **JSON-on-disk** (default local/dev): single process, debounced flush.
@@ -6,6 +8,11 @@
 //!
 //! Disk writes (JSON) are **debounced** (~2s) so fast/slow lanes don't rewrite the whole
 //! file on every row upsert.
+//!
+//! ## Structure history
+//! Slow-lane structure recomputes append a compact sample (score / flip / walls / regimes).
+//! Fast-lane price-only ticks do **not** append. Samples are thinned (`MIN_INTERVAL`) and
+//! capped per symbol (`MAX_SAMPLES`) so the desk can show a session path after refresh.
 
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
@@ -16,6 +23,13 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
+
+/// Max structure samples retained per symbol (ring buffer).
+pub const STRUCTURE_HISTORY_MAX: usize = 96;
+/// Do not append if the last sample for the symbol is younger than this (seconds).
+pub const STRUCTURE_HISTORY_MIN_INTERVAL_SECS: f64 = 300.0;
+/// Default read limit for `/api/scan/{symbol}/history`.
+pub const STRUCTURE_HISTORY_DEFAULT_LIMIT: usize = 48;
 
 /// Additive score breakdown on the scan wire (quant-engine `ScoreDrivers`).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -50,6 +64,73 @@ pub struct ScanRow {
     pub score_drivers: Option<ScanScoreDrivers>,
 }
 
+/// One structure snapshot after a slow-lane recompute (not a live price tick).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StructureSample {
+    pub symbol: String,
+    pub as_of: f64,
+    pub price: Option<f64>,
+    pub score: Option<f64>,
+    pub tier: Option<String>,
+    pub regime: Option<String>,
+    pub vol_regime: Option<String>,
+    pub flip: Option<f64>,
+    pub dist_to_flip_pct: Option<f64>,
+    pub call_wall: Option<f64>,
+    pub put_wall: Option<f64>,
+    pub dist_to_wall_pct: Option<f64>,
+}
+
+impl StructureSample {
+    /// Build from a completed structure row. Returns `None` for building/error/price-only shells
+    /// that lack score and flip (nothing honest to chart).
+    pub fn from_row(row: &ScanRow) -> Option<Self> {
+        if row.status != "ok" {
+            return None;
+        }
+        if row.score.is_none() && row.flip.is_none() {
+            return None;
+        }
+        if !row.as_of.is_finite() || row.as_of <= 0.0 {
+            return None;
+        }
+        Some(Self {
+            symbol: row.symbol.to_ascii_uppercase(),
+            as_of: row.as_of,
+            price: row.price,
+            score: row.score,
+            tier: row.tier.clone(),
+            regime: row.regime.clone(),
+            vol_regime: row.vol_regime.clone(),
+            flip: row.flip,
+            dist_to_flip_pct: row.dist_to_flip_pct,
+            call_wall: row.call_wall,
+            put_wall: row.put_wall,
+            dist_to_wall_pct: row.dist_to_wall_pct,
+        })
+    }
+}
+
+/// Append decision for tests + both backends: honor min interval + ring cap.
+pub fn merge_structure_sample(
+    series: &mut Vec<StructureSample>,
+    sample: StructureSample,
+    min_interval: f64,
+    max_samples: usize,
+) -> bool {
+    if let Some(last) = series.last() {
+        if sample.as_of - last.as_of < min_interval {
+            return false;
+        }
+    }
+    series.push(sample);
+    if series.len() > max_samples {
+        let drop_n = series.len() - max_samples;
+        series.drain(0..drop_n);
+    }
+    true
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SweepHeartbeat {
     pub updated_at: f64,
@@ -69,6 +150,9 @@ struct DiskState {
     rows: HashMap<String, ScanRow>,
     heartbeat: Option<SweepHeartbeat>,
     bundles: HashMap<String, BundleBlob>,
+    /// Symbol → chronological structure samples (slow-lane only).
+    #[serde(default)]
+    history: HashMap<String, Vec<StructureSample>>,
 }
 
 /// Debounce interval for durable JSON flush.
@@ -216,6 +300,34 @@ impl ScanStore {
             Self::Json(s) => s.flush().await,
             #[cfg(feature = "postgres")]
             Self::Postgres(_) => {}
+        }
+    }
+
+    /// Append a structure sample if min-interval allows. Fast-lane callers must not call this.
+    pub async fn append_structure_sample(&self, sample: StructureSample) {
+        match self {
+            Self::Json(s) => s.append_structure_sample(sample).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                if let Err(e) = s.append_structure_sample(sample).await {
+                    warn!(error = %e, "scan store postgres append_structure_sample failed");
+                }
+            }
+        }
+    }
+
+    /// Chronological samples for `symbol`, most recent at most `limit` (ascending as_of).
+    pub async fn read_structure_history(&self, symbol: &str, limit: usize) -> Vec<StructureSample> {
+        match self {
+            Self::Json(s) => s.read_structure_history(symbol, limit).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.read_structure_history(symbol, limit).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres read_structure_history failed");
+                    Vec::new()
+                }
+            },
         }
     }
 }
@@ -400,6 +512,41 @@ impl JsonScanStore {
             .get(&symbol.to_ascii_uppercase())
             .cloned()
     }
+
+    pub async fn append_structure_sample(&self, mut sample: StructureSample) {
+        if !sample.as_of.is_finite() || sample.as_of <= 0.0 {
+            return;
+        }
+        sample.symbol = sample.symbol.to_ascii_uppercase();
+        if sample.symbol.is_empty() {
+            return;
+        }
+        let key = sample.symbol.clone();
+        let mut guard = self.inner.write().await;
+        let series = guard.history.entry(key).or_default();
+        if merge_structure_sample(
+            series,
+            sample,
+            STRUCTURE_HISTORY_MIN_INTERVAL_SECS,
+            STRUCTURE_HISTORY_MAX,
+        ) {
+            drop(guard);
+            self.mark_dirty();
+        }
+    }
+
+    pub async fn read_structure_history(&self, symbol: &str, limit: usize) -> Vec<StructureSample> {
+        let key = symbol.to_ascii_uppercase();
+        let guard = self.inner.read().await;
+        let Some(series) = guard.history.get(&key) else {
+            return Vec::new();
+        };
+        if limit == 0 || series.is_empty() {
+            return Vec::new();
+        }
+        let start = series.len().saturating_sub(limit);
+        series[start..].to_vec()
+    }
 }
 
 fn normalize_json_path(path: &Path) -> PathBuf {
@@ -482,5 +629,68 @@ mod tests {
         assert_eq!(rows[0].score, Some(55.0));
         assert_eq!(store2.read_heartbeat().await.unwrap().universe_size, 3);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn structure_sample_from_row_requires_ok_and_structure() {
+        let mut row = sample_row("SPY", 70.0);
+        assert!(StructureSample::from_row(&row).is_some());
+        row.status = "building".into();
+        assert!(StructureSample::from_row(&row).is_none());
+        row.status = "ok".into();
+        row.score = None;
+        row.flip = None;
+        assert!(StructureSample::from_row(&row).is_none());
+    }
+
+    #[test]
+    fn merge_respects_min_interval_and_ring_cap() {
+        let mut series = Vec::new();
+        let s = |t: f64, score: f64| StructureSample {
+            symbol: "SPY".into(),
+            as_of: t,
+            price: Some(100.0),
+            score: Some(score),
+            tier: None,
+            regime: None,
+            vol_regime: None,
+            flip: Some(99.0),
+            dist_to_flip_pct: Some(1.0),
+            call_wall: None,
+            put_wall: None,
+            dist_to_wall_pct: None,
+        };
+        assert!(merge_structure_sample(&mut series, s(1000.0, 50.0), 300.0, 3));
+        assert!(!merge_structure_sample(&mut series, s(1100.0, 51.0), 300.0, 3)); // < 300s
+        assert!(merge_structure_sample(&mut series, s(1400.0, 52.0), 300.0, 3));
+        assert!(merge_structure_sample(&mut series, s(1800.0, 53.0), 300.0, 3));
+        assert!(merge_structure_sample(&mut series, s(2200.0, 54.0), 300.0, 3));
+        assert_eq!(series.len(), 3);
+        assert_eq!(series[0].score, Some(52.0));
+        assert_eq!(series[2].score, Some(54.0));
+    }
+
+    #[tokio::test]
+    async fn structure_history_roundtrip_memory() {
+        let store = ScanStore::memory();
+        let row = sample_row("SPY", 80.0);
+        let sample = StructureSample::from_row(&row).unwrap();
+        store.append_structure_sample(sample.clone()).await;
+        // Too soon — ignored
+        let mut later = sample.clone();
+        later.as_of = sample.as_of + 10.0;
+        later.score = Some(81.0);
+        store.append_structure_sample(later).await;
+        let hist = store.read_structure_history("spy", 10).await;
+        assert_eq!(hist.len(), 1);
+        assert_eq!(hist[0].score, Some(80.0));
+        // Past min interval
+        let mut much_later = sample;
+        much_later.as_of += STRUCTURE_HISTORY_MIN_INTERVAL_SECS + 1.0;
+        much_later.score = Some(90.0);
+        store.append_structure_sample(much_later).await;
+        let hist = store.read_structure_history("SPY", 10).await;
+        assert_eq!(hist.len(), 2);
+        assert_eq!(hist[1].score, Some(90.0));
     }
 }

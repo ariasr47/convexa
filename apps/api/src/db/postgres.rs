@@ -134,4 +134,23 @@ CREATE TABLE IF NOT EXISTS scan_bundles (
     as_of        DOUBLE PRECISION NOT NULL,
     bundle_json  TEXT NOT NULL
 );
+
+-- Slow-lane structure samples (ring-pruned in app; index for range reads).
+CREATE TABLE IF NOT EXISTS scan_structure_history (
+    symbol           TEXT NOT NULL,
+    as_of            DOUBLE PRECISION NOT NULL,
+    price            DOUBLE PRECISION,
+    score            DOUBLE PRECISION,
+    tier             TEXT,
+    regime           TEXT,
+    vol_regime       TEXT,
+    flip             DOUBLE PRECISION,
+    dist_to_flip_pct DOUBLE PRECISION,
+    call_wall        DOUBLE PRECISION,
+    put_wall         DOUBLE PRECISION,
+    dist_to_wall_pct DOUBLE PRECISION,
+    PRIMARY KEY (symbol, as_of)
+);
+CREATE INDEX IF NOT EXISTS scan_structure_history_symbol_as_of_idx
+    ON scan_structure_history (symbol, as_of DESC);
 "#;

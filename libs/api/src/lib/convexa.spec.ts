@@ -15,6 +15,7 @@ import {
   getAiKeyStatus,
   getScan,
   getScanUniverse,
+  getStructureHistory,
   removeAiKey,
   requestRecommendation,
   saveScanView,
@@ -238,6 +239,35 @@ describe('scanner client', () => {
       vi.fn(async () => json({ symbols: ['SPY', 'QQQ'], universe_size: 2 })),
     );
     await expect(getScanUniverse()).resolves.toEqual({ symbols: ['SPY', 'QQQ'], universe_size: 2 });
+  });
+
+  it('getStructureHistory hits /api/scan/{symbol}/history with limit', async () => {
+    const body = {
+      symbol: 'SPY',
+      samples: [
+        {
+          symbol: 'SPY',
+          as_of: 1000,
+          price: 500,
+          score: 70,
+          tier: 'watch',
+          regime: null,
+          vol_regime: null,
+          flip: 495,
+          dist_to_flip_pct: 1,
+          call_wall: null,
+          put_wall: null,
+          dist_to_wall_pct: null,
+        },
+      ],
+      basis: 'Slow-lane only.',
+    };
+    const f = vi.fn(async () => json(body));
+    vi.stubGlobal('fetch', f);
+    await expect(getStructureHistory('spy', 48)).resolves.toEqual(body);
+    expect(f).toHaveBeenCalledWith('/api/scan/SPY/history?limit=48', {
+      credentials: 'same-origin',
+    });
   });
 
   it('saveScanView PUTs the body and returns the server-wins echo', async () => {

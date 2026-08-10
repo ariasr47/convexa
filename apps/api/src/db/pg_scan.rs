@@ -6,7 +6,10 @@
 
 use crate::db::postgres::Pg;
 use crate::error::{AppError, AppResult};
-use crate::services::scanner::store::{BundleBlob, ScanRow, ScanScoreDrivers, SweepHeartbeat};
+use crate::services::scanner::store::{
+    BundleBlob, ScanRow, ScanScoreDrivers, StructureSample, SweepHeartbeat,
+    STRUCTURE_HISTORY_MAX, STRUCTURE_HISTORY_MIN_INTERVAL_SECS,
+};
 use sqlx::Row;
 use tracing::warn;
 
@@ -278,5 +281,125 @@ impl PgScanStore {
             as_of: r.get("as_of"),
             bundle_json: r.get("bundle_json"),
         }))
+    }
+
+    pub async fn append_structure_sample(&self, mut sample: StructureSample) -> AppResult<()> {
+        if !sample.as_of.is_finite() || sample.as_of <= 0.0 {
+            return Ok(());
+        }
+        sample.symbol = sample.symbol.to_ascii_uppercase();
+        if sample.symbol.is_empty() {
+            return Ok(());
+        }
+
+        // Min-interval gate against the latest sample for this symbol.
+        let latest: Option<f64> = sqlx::query_scalar(
+            r#"SELECT as_of FROM scan_structure_history
+               WHERE symbol = $1 ORDER BY as_of DESC LIMIT 1"#,
+        )
+        .bind(&sample.symbol)
+        .fetch_optional(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("postgres structure history latest: {e}")))?;
+        if let Some(prev) = latest {
+            if sample.as_of - prev < STRUCTURE_HISTORY_MIN_INTERVAL_SECS {
+                return Ok(());
+            }
+        }
+
+        sqlx::query(
+            r#"INSERT INTO scan_structure_history (
+                 symbol, as_of, price, score, tier, regime, vol_regime,
+                 flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct
+               ) VALUES (
+                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
+               )
+               ON CONFLICT (symbol, as_of) DO NOTHING"#,
+        )
+        .bind(&sample.symbol)
+        .bind(sample.as_of)
+        .bind(sample.price)
+        .bind(sample.score)
+        .bind(&sample.tier)
+        .bind(&sample.regime)
+        .bind(&sample.vol_regime)
+        .bind(sample.flip)
+        .bind(sample.dist_to_flip_pct)
+        .bind(sample.call_wall)
+        .bind(sample.put_wall)
+        .bind(sample.dist_to_wall_pct)
+        .execute(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("postgres structure history insert: {e}")))?;
+
+        // Ring prune: drop oldest beyond MAX.
+        let max = STRUCTURE_HISTORY_MAX as i64;
+        sqlx::query(
+            r#"DELETE FROM scan_structure_history h
+               WHERE h.symbol = $1
+                 AND (
+                   SELECT COUNT(*) FROM scan_structure_history x WHERE x.symbol = $1
+                 ) > $2
+                 AND h.as_of < (
+                   SELECT as_of FROM scan_structure_history
+                   WHERE symbol = $1
+                   ORDER BY as_of DESC
+                   OFFSET ($2 - 1)
+                   LIMIT 1
+                 )"#,
+        )
+        .bind(&sample.symbol)
+        .bind(max)
+        .execute(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("postgres structure history prune: {e}")))?;
+
+        Ok(())
+    }
+
+    pub async fn read_structure_history(
+        &self,
+        symbol: &str,
+        limit: usize,
+    ) -> AppResult<Vec<StructureSample>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+        let sym = symbol.to_ascii_uppercase();
+        let lim = limit.min(STRUCTURE_HISTORY_MAX) as i64;
+        // Newest `limit` rows, then reverse to ascending for the wire.
+        let rows = sqlx::query(
+            r#"SELECT symbol, as_of, price, score, tier, regime, vol_regime,
+                      flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct
+               FROM scan_structure_history
+               WHERE symbol = $1
+               ORDER BY as_of DESC
+               LIMIT $2"#,
+        )
+        .bind(&sym)
+        .bind(lim)
+        .fetch_all(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("postgres structure history read: {e}")))?;
+
+        let mut out: Vec<StructureSample> = rows
+            .iter()
+            .map(|r| StructureSample {
+                symbol: r.get("symbol"),
+                as_of: r.get("as_of"),
+                price: r.get("price"),
+                score: r.get("score"),
+                tier: r.get("tier"),
+                regime: r.get("regime"),
+                vol_regime: r.get("vol_regime"),
+                flip: r.get("flip"),
+                dist_to_flip_pct: r.get("dist_to_flip_pct"),
+                call_wall: r.get("call_wall"),
+                put_wall: r.get("put_wall"),
+                dist_to_wall_pct: r.get("dist_to_wall_pct"),
+            })
+            .collect();
+        out.reverse();
+        Ok(out)
     }
 }

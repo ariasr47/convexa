@@ -101,6 +101,8 @@ beforeEach(() => {
           });
       }
     }
+    if (url.includes('/history'))
+      return json({ symbol: 'TSLA', samples: [], basis: 'test structure history' });
     throw new Error(`Unexpected fetch in single-name-caveat spec: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);

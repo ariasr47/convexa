@@ -3,9 +3,11 @@
 use crate::routes::auth::{cookie_opt, require_user};
 use crate::services::auth::AuthError;
 use crate::services::scanner::projection::project_building;
-use crate::services::scanner::store::ScanRow;
+use crate::services::scanner::store::{
+    ScanRow, StructureSample, STRUCTURE_HISTORY_DEFAULT_LIMIT, STRUCTURE_HISTORY_MAX,
+};
 use crate::state::AppState;
-use axum::extract::State;
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -189,6 +191,46 @@ pub async fn get_scan(State(state): State<AppState>, headers: HeaderMap) -> Json
     let rows = fill_rows(&state, &view.symbols).await;
     let sweep = state.scan.read_heartbeat().await;
     Json(ScanEnvelope { view, rows, sweep })
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HistoryQuery {
+    /// Max samples (default 48, hard-capped at store MAX).
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct StructureHistoryResponse {
+    pub symbol: String,
+    pub samples: Vec<StructureSample>,
+    /// Honest basis copy for the desk (FE may surface or ignore).
+    pub basis: &'static str,
+}
+
+const STRUCTURE_HISTORY_BASIS: &str = "Slow-lane structure recomputes only — not live price ticks. \
+Samples thinned to ≥5 minutes; last 96 kept per symbol. Snapshot path, never a forecast.";
+
+/// GET /api/scan/{symbol}/history — anonymous-open structure path for one ticker.
+pub async fn get_structure_history(
+    State(state): State<AppState>,
+    Path(symbol): Path<String>,
+    Query(q): Query<HistoryQuery>,
+) -> Json<StructureHistoryResponse> {
+    let symbol = symbol.trim().to_ascii_uppercase();
+    let limit = q
+        .limit
+        .unwrap_or(STRUCTURE_HISTORY_DEFAULT_LIMIT)
+        .clamp(1, STRUCTURE_HISTORY_MAX);
+    let samples = if symbol.is_empty() {
+        Vec::new()
+    } else {
+        state.scan.read_structure_history(&symbol, limit).await
+    };
+    Json(StructureHistoryResponse {
+        symbol,
+        samples,
+        basis: STRUCTURE_HISTORY_BASIS,
+    })
 }
 
 /// GET /api/scan/view

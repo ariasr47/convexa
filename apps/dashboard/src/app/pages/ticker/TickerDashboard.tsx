@@ -55,12 +55,14 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
+  getStructureHistory,
   getTicker,
   LiveUpdate,
   OptionRight,
   RecResponse,
   streamTicker,
   TickerBundle,
+  type StructureSample,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -79,12 +81,15 @@ import {
   OffExchangeBlocks,
   PositionBrief,
   Setups,
+  StructureHistory,
   TermStructureCard,
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
 import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
 
 const POLL_MS = 60_000; // matches the backend cache TTL
+/** Structure history is slow-lane thinned (≥5m); poll less often than the bundle. */
+const STRUCTURE_HISTORY_POLL_MS = 120_000;
 // A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
 // onmessage gap this long means the transport dropped — not a quiet session. Flips "Live offline".
 const STREAM_OFFLINE_MS = 15_000;
@@ -258,6 +263,46 @@ export function TickerDashboard() {
     const id = setInterval(load, POLL_MS);
     return () => clearInterval(id);
   }, [load]);
+
+  // Structure path (slow-lane samples) — independent of SSE; static surface.
+  const [structHist, setStructHist] = useState<{
+    samples: StructureSample[] | null;
+    basis: string | null;
+    loading: boolean;
+    error: string | null;
+  }>({ samples: null, basis: null, loading: true, error: null });
+
+  useEffect(() => {
+    let cancelled = false;
+    setStructHist({ samples: null, basis: null, loading: true, error: null });
+    const pull = () => {
+      getStructureHistory(ticker, 48)
+        .then((r) => {
+          if (cancelled) return;
+          setStructHist({
+            samples: r.samples,
+            basis: r.basis ?? null,
+            loading: false,
+            error: null,
+          });
+        })
+        .catch((e: Error) => {
+          if (cancelled) return;
+          setStructHist((prev) => ({
+            samples: prev.samples,
+            basis: prev.basis,
+            loading: false,
+            error: e?.message ?? 'Structure history unavailable',
+          }));
+        });
+    };
+    pull();
+    const id = setInterval(pull, STRUCTURE_HISTORY_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [ticker]);
 
   // Live SSE stream + payload-gap watchdog (stream-drop detection). The watchdog never touches the
   // static bundle. The next payload (EventSource auto-reconnects) clears offline.
@@ -616,6 +661,15 @@ export function TickerDashboard() {
                   tierColor={tm.color}
                   opportunityScore={sig?.opportunity_score ?? 0}
                   structureAgeSeconds={structureAgeSeconds}
+                />
+
+                {/* Structure path — durable slow-lane samples (session path after refresh). */}
+                <StructureHistory
+                  symbol={ticker}
+                  samples={structHist.samples}
+                  basis={structHist.basis}
+                  loading={structHist.loading}
+                  error={structHist.error}
                 />
 
                 {/* GEX strike profile — the product's structure centerpiece (full width). */}

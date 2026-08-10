@@ -265,6 +265,8 @@ beforeEach(() => {
     // `single-name-caveat.spec.tsx`).
     if (url.includes('/api/scan/universe'))
       return json({ symbols: ['SPY', 'QQQ', 'TSLA'], universe_size: 3 });
+    if (url.includes('/history'))
+      return json({ symbol: 'TSLA', samples: [], basis: 'test structure history' });
     throw new Error(`Unexpected fetch from Ticker page: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);

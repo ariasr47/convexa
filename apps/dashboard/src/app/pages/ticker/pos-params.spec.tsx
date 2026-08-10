@@ -83,6 +83,8 @@ beforeEach(() => {
     if (url.includes('/api/personas'))
       return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
+    if (url.includes('/history'))
+      return json({ symbol: 'TSLA', samples: [], basis: 'test structure history' });
     throw new Error(`Unexpected fetch from the Ticker page: ${url}`);
   });
   vi.stubGlobal('fetch', fetchMock);

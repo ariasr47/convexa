@@ -9,4 +9,5 @@ export * from './off-exchange-blocks';
 export * from './opportunity-tier';
 export * from './position-brief';
 export * from './setups';
+export * from './structure-history';
 export * from './term-structure';

@@ -397,7 +397,15 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
                     (project_error(&sym, prev.as_ref()), None, false)
                 }
             };
-            state.scan.upsert_row(row).await;
+            state.scan.upsert_row(row.clone()).await;
+            // Structure history: slow-lane only (price-only fast ticks never append).
+            if ok {
+                if let Some(sample) =
+                    crate::services::scanner::store::StructureSample::from_row(&row)
+                {
+                    state.scan.append_structure_sample(sample).await;
+                }
+            }
             SlowResult {
                 sym,
                 ok_price,

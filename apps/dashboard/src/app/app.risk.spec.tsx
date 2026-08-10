@@ -97,6 +97,8 @@ beforeEach(() => {
     if (url.includes('/api/contract/')) return json(null);
     // scanner: the /scanner route polls the scan read on mount (poll-based, no SSE).
     if (url.includes('/api/scan/universe')) return json({ symbols: ['SPY'], universe_size: 1 });
+    if (url.includes('/history'))
+      return json({ symbol: 'SPY', samples: [], basis: 'test structure history' });
     if (url.includes('/api/scan'))
       return json({
         view: {

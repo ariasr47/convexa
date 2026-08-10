@@ -110,6 +110,12 @@ beforeEach(() => {
           headers: { 'Content-Type': 'application/json' },
         });
       }
+      if (url.includes('/history')) {
+        return new Response(
+          JSON.stringify({ symbol: 'TSLA', samples: [], basis: 'test structure history' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     }),
   );

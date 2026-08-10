@@ -91,6 +91,10 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/scan/universe", get(scan::get_scan_universe))
         .route("/api/scan/all", get(scan::get_scan_all))
+        .route(
+            "/api/scan/{symbol}/history",
+            get(scan::get_structure_history),
+        )
         // SSE — prices MUST register before /api/stream/{ticker}
         .route("/api/stream/prices", get(stream::stream_prices))
         .route("/api/stream/{ticker}", get(stream::stream_ticker))
