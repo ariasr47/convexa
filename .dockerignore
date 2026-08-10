@@ -55,3 +55,8 @@ apps/api/data
 **/Dockerfile
 .dockerignore
 docker-compose*.yml
+
+# Rust workspace — root + nested crate build dirs (never ship into any image context)
+/target/
+**/target/
+libs/**/Cargo.lock

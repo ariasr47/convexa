@@ -1,0 +1,59 @@
+[package]
+name = "api-rust"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Convexa Rust backend — Axum service scaffold (Phase 2: Massive + price path)"
+
+[lib]
+name = "api_rust"
+path = "src/lib.rs"
+
+[[bin]]
+name = "api-rust"
+path = "src/main.rs"
+
+[dependencies]
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
+anyhow = "1"
+argon2 = "0.5.3"
+axum = { version = "0.8", features = ["macros"] }
+base64 = "0.23.1"
+chrono = { workspace = true, features = ["serde", "clock"] }
+chrono-tz = "0.10"
+clap = { version = "4", features = ["derive", "env"] }
+dotenvy = "0.15"
+futures-util = "0.3"
+hex = "0.4.3"
+hmac = "0.13.0"
+quant-engine = { workspace = true }
+rand = "0.8"
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+regex = "1.13.1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = "0.11.0"
+# Optional: enable with `--features postgres` (Docker/Railway). Pure Rust via rustls —
+# no libpq/openssl. Left optional so local windows-gnu hosts without dlltool still build.
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "json"], optional = true }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[features]
+default = []
+# Multi-instance durable stores (auth / iv / scan) on Postgres. Railway image enables this.
+postgres = ["dep:sqlx"]
+
+[lints.rust]
+unsafe_code = "forbid"

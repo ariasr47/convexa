@@ -5,6 +5,13 @@ dist
 tmp
 out-tsc
 
+# Rust workspace
+/target/
+**/target/
+# Nested crate lockfiles are unused under a workspace (root Cargo.lock is source of truth)
+libs/**/Cargo.lock
+# Keep workspace Cargo.lock committed (binary crates need reproducible builds)
+
 # dependencies
 node_modules
 

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0B0E11" />
+  <title>Convexa — Progressive ticker</title>
+  <style>
+    :root {
+      --ink: #0B0E11;
+      --panel: #12161C;
+      --panel-2: #1A1F27;
+      --steel: #8B95A5;
+      --text: #E8EDF4;
+      --muted: #6B7585;
+      --amber: #F2A93B;
+      --signal: #4B8BFF;
+      --line: #2A313C;
+      --positive: #3DDC97;
+      --negative: #F07178;
+      --focus: #F2A93B;
+      --radius: 10px;
+      --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --font-data: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+      --font-display: Archivo, "IBM Plex Sans", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--ink); color: var(--text); }
+    body {
+      font-family: var(--font-body);
+      line-height: 1.45;
+      padding: 20px 16px 48px;
+    }
+
+    .shell {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.15rem;
+      letter-spacing: 0.02em;
+    }
+    .brand span { color: var(--amber); }
+
+    .sub {
+      color: var(--steel);
+      font-size: 0.85rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button, .field {
+      font: inherit;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-height: 44px;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 0 14px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    button:hover { border-color: var(--steel); background: var(--panel-2); }
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    button.active {
+      border-color: var(--amber);
+      box-shadow: inset 0 0 0 1px var(--amber);
+      color: var(--amber);
+    }
+
+    .field {
+      display: flex;
+      align-items: stretch;
+      overflow: hidden;
+      padding: 0;
+      flex: 1 1 180px;
+      max-width: 280px;
+    }
+    .field input {
+      flex: 1;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-data);
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0 12px;
+      min-width: 0;
+    }
+    .field input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+    .field button {
+      border: 0;
+      border-left: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--panel-2);
+      color: var(--amber);
+      font-weight: 600;
+      padding: 0 16px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) {
+      .grid { grid-template-columns: 1.1fr 1fr; }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px 18px 18px;
+      min-height: 180px;
+    }
+
+    .card-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .label {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--steel);
+      font-weight: 600;
+    }
+    .badge {
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--steel);
+      font-family: var(--font-data);
+    }
+    .badge.live { color: var(--amber); border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); }
+    .badge.loading { color: var(--signal); }
+    .badge.err { color: var(--negative); }
+
+    .price {
+      font-family: var(--font-data);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(2.2rem, 6vw, 3rem);
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 4px 0 8px;
+    }
+    .price.pending { color: var(--muted); }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      color: var(--steel);
+      font-size: 0.85rem;
+      font-family: var(--font-data);
+      font-variant-numeric: tabular-nums;
+    }
+    .meta-row strong { color: var(--text); font-weight: 500; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 480px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+
+    .stat {
+      background: var(--panel-2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 72px;
+    }
+    .stat .k { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--steel); margin-bottom: 6px; }
+    .stat .v {
+      font-family: var(--font-data);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      color: var(--text);
+    }
+    .stat .v.pos { color: var(--positive); }
+    .stat .v.neg { color: var(--negative); }
+    .stat .v.amber { color: var(--amber); }
+
+    .skeleton {
+      display: block;
+      height: 1.15rem;
+      width: 70%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--panel-2) 25%, #242b36 50%, var(--panel-2) 75%);
+      background-size: 200% 100%;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .skeleton { animation: shimmer 1.2s ease-in-out infinite; }
+    }
+    @keyframes shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    .timeline {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius);
+      color: var(--steel);
+      font-size: 0.82rem;
+      font-family: var(--font-data);
+    }
+    .timeline code { color: var(--amber); }
+    .timeline .row { margin: 2px 0; }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    footer a { color: var(--steel); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <div class="brand">Convexa <span>progressive</span></div>
+        <div class="sub">Path A price first · Path B GEX follows · SSE dual-path demo</div>
+      </div>
+      <div class="sub" id="connStatus">Idle</div>
+    </header>
+
+    <div class="controls">
+      <div class="field">
+        <input id="symbolInput" type="text" maxlength="8" placeholder="Symbol" value="NVDA" autocomplete="off" spellcheck="false" />
+        <button type="button" id="goBtn">Load</button>
+      </div>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="priceLabel">
+        <div class="card-h">
+          <div class="label" id="priceLabel">Live price</div>
+          <div class="badge" id="priceBadge">waiting</div>
+        </div>
+        <div class="price pending" id="priceValue">—</div>
+        <div class="meta-row">
+          <span>Bid <strong id="bidValue">—</strong></span>
+          <span>Ask <strong id="askValue">—</strong></span>
+          <span>Src <strong id="priceSource">—</strong></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="gexLabel">
+        <div class="card-h">
+          <div class="label" id="gexLabel">GEX analytics</div>
+          <div class="badge loading" id="gexBadge">loading</div>
+        </div>
+        <div class="stats" id="gexStats">
+          <div class="stat"><div class="k">Net GEX</div><div class="v" id="netGex"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Score</div><div class="v amber" id="oppScore"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Regime</div><div class="v" id="regime"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Vol regime</div><div class="v" id="volRegime"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">IV/HV</div><div class="v" id="ivHv"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Gamma flip</div><div class="v" id="flip"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Call wall</div><div class="v" id="callWall"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Put wall</div><div class="v" id="putWall"><span class="skeleton"></span></div></div>
+          <div class="stat"><div class="k">Max pain</div><div class="v" id="maxPain"><span class="skeleton"></span></div></div>
+          <div class="stat" style="grid-column: 1 / -1"><div class="k">Top setup</div><div class="v" id="topSetup" style="font-size:0.9rem;font-family:var(--font-body);line-height:1.35"><span class="skeleton"></span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="timeline" id="timeline" aria-live="polite">
+      <div class="row">Ready. Pick a symbol — price paints first, GEX follows.</div>
+    </div>
+
+    <footer>
+      Served by <code>api-rust</code> ·
+      <a href="/health">/health</a> ·
+      <a href="/api/_metrics">/api/_metrics</a> ·
+      <a href="/api/scan">/api/scan</a> ·
+      SSE <code>/api/ticker/{symbol}/progressive</code>
+    </footer>
+  </div>
+
+  <script>
+    const PRESETS = ["SPY", "QQQ", "NVDA", "AAPL", "TSLA", "MSFT", "META", "AMZN"];
+    const el = (id) => document.getElementById(id);
+
+    const ui = {
+      input: el("symbolInput"),
+      go: el("goBtn"),
+      presets: el("presets"),
+      conn: el("connStatus"),
+      priceValue: el("priceValue"),
+      priceBadge: el("priceBadge"),
+      bid: el("bidValue"),
+      ask: el("askValue"),
+      priceSource: el("priceSource"),
+      gexBadge: el("gexBadge"),
+      netGex: el("netGex"),
+      oppScore: el("oppScore"),
+      regime: el("regime"),
+      volRegime: el("volRegime"),
+      ivHv: el("ivHv"),
+      flip: el("flip"),
+      callWall: el("callWall"),
+      putWall: el("putWall"),
+      maxPain: el("maxPain"),
+      topSetup: el("topSetup"),
+      timeline: el("timeline"),
+    };
+
+    let es = null;
+    let t0 = 0;
+    let active = "NVDA";
+
+    function fmtMoney(n) {
+      if (n == null || Number.isNaN(n)) return "—";
+      return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtCompact(n) {
+      if (n == null || Number.isNaN(n)) return "—";
+      const abs = Math.abs(n);
+      const sign = n < 0 ? "-" : "";
+      if (abs >= 1e9) return sign + (abs / 1e9).toFixed(2) + "B";
+      if (abs >= 1e6) return sign + (abs / 1e6).toFixed(2) + "M";
+      if (abs >= 1e3) return sign + (abs / 1e3).toFixed(1) + "K";
+      return sign + abs.toFixed(2);
+    }
+    function msSince() {
+      return Math.round(performance.now() - t0);
+    }
+    function logLine(msg) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<code>${msSince()}ms</code> · ${msg}`;
+      ui.timeline.prepend(row);
+      while (ui.timeline.children.length > 8) ui.timeline.removeChild(ui.timeline.lastChild);
+    }
+    function setBadge(node, text, cls) {
+      node.textContent = text;
+      node.className = "badge" + (cls ? " " + cls : "");
+    }
+    function setSkeleton(ids) {
+      ids.forEach((id) => {
+        const n = el(id);
+        n.className = "v";
+        n.innerHTML = '<span class="skeleton"></span>';
+      });
+    }
+    function setStat(id, text, cls) {
+      const n = el(id);
+      n.className = "v" + (cls ? " " + cls : "");
+      n.textContent = text;
+    }
+
+    function resetGexLoading() {
+      setBadge(ui.gexBadge, "loading", "loading");
+      setSkeleton(["netGex", "oppScore", "regime", "volRegime", "ivHv", "flip", "callWall", "putWall", "maxPain", "topSetup"]);
+    }
+
+    function resetPricePending() {
+      ui.priceValue.textContent = "—";
+      ui.priceValue.classList.add("pending");
+      setBadge(ui.priceBadge, "waiting");
+      ui.bid.textContent = "—";
+      ui.ask.textContent = "—";
+      ui.priceSource.textContent = "—";
+    }
+
+    function renderPrice(p, hint) {
+      if (!p) {
+        setBadge(ui.priceBadge, "unavailable", "err");
+        ui.priceValue.textContent = "—";
+        ui.priceValue.classList.add("pending");
+        return;
+      }
+      ui.priceValue.textContent = fmtMoney(p.price);
+      ui.priceValue.classList.remove("pending");
+      ui.bid.textContent = fmtMoney(p.bid);
+      ui.ask.textContent = fmtMoney(p.ask);
+      ui.priceSource.textContent = p.source || hint || "—";
+      setBadge(ui.priceBadge, "live", "live");
+    }
+
+    function renderAnalytics(analytics, source) {
+      if (!analytics || !analytics.gex) {
+        setBadge(ui.gexBadge, "unavailable", "err");
+        return;
+      }
+      const g = analytics.gex;
+      const sig = analytics.signals;
+      const net = g.net_gex;
+      setStat("netGex", fmtCompact(net), net > 0 ? "pos" : net < 0 ? "neg" : "");
+      const score = sig ? sig.opportunity_score : null;
+      setStat("oppScore", score != null ? String(score) : "—", "amber");
+      const regime = (sig && sig.regime) || g.regime || "—";
+      setStat("regime", String(regime).replace(/_/g, " "), "amber");
+      const vol = (sig && sig.vol_regime) || "—";
+      setStat("volRegime", String(vol).replace(/_/g, " "), vol === "iv_rich" || vol === "iv_cheap" ? "amber" : "");
+      const ivhv = analytics.iv_hv_ratio;
+      const hv = analytics.hv_30d;
+      if (ivhv != null) {
+        const hvBit = hv != null ? ` · HV ${Number(hv).toFixed(1)}%` : "";
+        setStat("ivHv", `${Number(ivhv).toFixed(2)}${hvBit}`, "amber");
+      } else {
+        setStat("ivHv", "—");
+      }
+      setStat("flip", fmtMoney(g.gamma_flip));
+      setStat("callWall", fmtMoney(g.call_wall));
+      setStat("putWall", fmtMoney(g.put_wall));
+      const mp = g.max_pain != null ? fmtMoney(g.max_pain) : "—";
+      const exp = g.max_pain_expiration ? ` · ${g.max_pain_expiration}` : "";
+      setStat("maxPain", mp + exp);
+      if (sig && sig.setups && sig.setups.length) {
+        const top = sig.setups[0];
+        setStat("topSetup", `${top.name} (${top.conviction}) — ${top.strategy}`);
+      } else {
+        setStat("topSetup", "—");
+      }
+      const src = source || "live";
+      setBadge(ui.gexBadge, src === "cache" ? "warm cache" : "live", "live");
+    }
+
+    function setActivePreset(sym) {
+      active = sym;
+      [...ui.presets.querySelectorAll("button")].forEach((b) => {
+        b.classList.toggle("active", b.dataset.sym === sym);
+      });
+      ui.input.value = sym;
+    }
+
+    function stopStream() {
+      if (es) {
+        es.close();
+        es = null;
+      }
+    }
+
+    function loadSymbol(raw) {
+      const sym = (raw || "").trim().toUpperCase();
+      if (!sym) return;
+      setActivePreset(sym);
+      stopStream();
+      t0 = performance.now();
+      resetPricePending();
+      resetGexLoading();
+      ui.conn.textContent = `Connecting ${sym}…`;
+      logLine(`open SSE <code>/api/ticker/${sym}/progressive</code>`);
+
+      es = new EventSource(`/api/ticker/${encodeURIComponent(sym)}/progressive`);
+
+      es.addEventListener("price", (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          renderPrice(data.price, data.latency_hint);
+          const src = (data.price && data.price.source) || data.latency_hint || "?";
+          logLine(`<strong>price</strong> arrived · source=${src}`);
+          ui.conn.textContent = `${sym} · price in`;
+        } catch (e) {
+          logLine(`price parse error: ${e.message}`);
+        }
+      });
+
+      es.addEventListener("analytics", (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          renderAnalytics(data.analytics, data.source);
+          const ng = data.analytics && data.analytics.gex ? data.analytics.gex.net_gex : null;
+          logLine(`<strong>analytics</strong> arrived · source=${data.source || "?"} · net_gex=${fmtCompact(ng)}`);
+          ui.conn.textContent = `${sym} · analytics in`;
+        } catch (e) {
+          logLine(`analytics parse error: ${e.message}`);
+        }
+      });
+
+      es.addEventListener("error", (ev) => {
+        // Named error event from server (not EventSource transport error)
+        if (ev.data) {
+          try {
+            const data = JSON.parse(ev.data);
+            setBadge(ui.gexBadge, "error", "err");
+            logLine(`<strong>error</strong> ${data.error || ev.data}`);
+          } catch (_) {
+            logLine(`error event`);
+          }
+        }
+      });
+
+      es.addEventListener("done", () => {
+        logLine(`<strong>done</strong>`);
+        ui.conn.textContent = `${sym} · complete`;
+        stopStream();
+      });
+
+      es.onerror = () => {
+        // Transport-level; EventSource may retry — we close to keep control.
+        if (es && es.readyState === EventSource.CLOSED) {
+          ui.conn.textContent = `${sym} · stream closed`;
+        } else {
+          ui.conn.textContent = `${sym} · stream error`;
+          logLine("SSE transport error (is api-rust running?)");
+          stopStream();
+          setBadge(ui.gexBadge, "error", "err");
+        }
+      };
+    }
+
+    // Build presets
+    PRESETS.forEach((sym) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = sym;
+      b.dataset.sym = sym;
+      b.addEventListener("click", () => loadSymbol(sym));
+      ui.presets.appendChild(b);
+    });
+
+    ui.go.addEventListener("click", () => loadSymbol(ui.input.value));
+    ui.input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadSymbol(ui.input.value);
+    });
+
+    // Auto-load a warm name on open
+    loadSymbol("NVDA");
+  </script>
+</body>
+</html>

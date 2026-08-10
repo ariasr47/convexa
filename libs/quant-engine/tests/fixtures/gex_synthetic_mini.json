@@ -1,0 +1,46 @@
+{
+  "_note": "Hand-built mini golden for harness smoke. Replace/augment with captures from Python QuantEngine.process_gex_profile (fixed as_of).",
+  "as_of": "2026-08-01T16:00:00Z",
+  "spot": 100.0,
+  "options": {
+    "min_days_to_expiry": null,
+    "max_days_to_expiry": null,
+    "dividend_yield": 0.0,
+    "risk_free_rate": 0.045
+  },
+  "parity": {
+    "mode": "exact",
+    "aggregate_abs": 0.0,
+    "flip_abs": 0.0,
+    "strike_abs": 0.0
+  },
+  "contracts": [
+    {
+      "strike_price": 105.0,
+      "contract_type": "call",
+      "open_interest": 1000,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.25,
+      "greeks": { "gamma": 0.02, "delta": 0.4 },
+      "volume": 50
+    },
+    {
+      "strike_price": 95.0,
+      "contract_type": "put",
+      "open_interest": 200,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.28,
+      "greeks": { "gamma": 0.01, "delta": -0.3 },
+      "volume": 20
+    }
+  ],
+  "expected": {
+    "net_gex": 180000.0,
+    "call_gex": 200000.0,
+    "put_gex": -20000.0,
+    "call_wall": 105.0,
+    "put_wall": 95.0,
+    "max_pain_expiration": "2026-08-21",
+    "regime": "positive"
+  }
+}

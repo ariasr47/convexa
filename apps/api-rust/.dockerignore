@@ -1,0 +1,5 @@
+target
+**/*.md
+**/tests
+**/*_test.rs
+.git

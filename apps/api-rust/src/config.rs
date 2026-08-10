@@ -1,0 +1,334 @@
+//! Process configuration from env / CLI.
+
+use crate::error::{AppError, AppResult};
+use std::collections::HashSet;
+use std::env;
+use std::path::PathBuf;
+use std::time::Duration;
+
+/// Default mega-liquid names: longer GEX TTL + included in the warm set unless overridden.
+const DEFAULT_LIQUID: &[&str] = &[
+    "SPY", "QQQ", "IWM", "DIA", "NVDA", "AAPL", "TSLA", "MSFT", "META", "AMZN",
+];
+
+/// Runtime config for the Rust backend.
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub massive_api_key: String,
+    /// `realtime` → socket.massive.com; anything else → delayed.massive.com
+    pub data_feed: DataFeed,
+    pub rest_base: String,
+    pub redis_url: Option<String>,
+    /// HTTP bind address for `serve` (default `0.0.0.0:8000`).
+    pub http_bind: String,
+    /// Default GEX cache TTL for non-liquid names (seconds).
+    pub gex_cache_ttl_secs: u64,
+    /// Longer GEX cache TTL for liquid / pre-warm symbols (seconds).
+    pub gex_cache_ttl_liquid_secs: u64,
+    /// Symbols kept warm by the background warmer.
+    pub warm_symbols: Vec<String>,
+    /// Symbols that get the liquid (longer) TTL. Superset of warm set by default.
+    pub liquid_symbols: HashSet<String>,
+    /// How often the warmer refreshes the warm set (seconds).
+    pub warm_interval_secs: u64,
+    /// Max concurrent chain fetches in the warmer.
+    pub warm_concurrency: usize,
+    /// When true (default), run warmer on `serve`.
+    pub warm_enabled: bool,
+    /// When true (default), run the two-speed scanner on `serve`.
+    pub scan_enabled: bool,
+    /// Path to universe.json (default: checked-in Python scanner config).
+    pub scan_universe_path: PathBuf,
+    /// Fast-lane poll interval (seconds).
+    pub scan_fast_interval_secs: u64,
+    /// Slow-lane batch size (= concurrency bound).
+    pub scan_slow_batch_size: usize,
+    /// Max promotion slots per slow cycle (anti-herd).
+    pub scan_promotion_cap: usize,
+    /// Structure freshness budget (seconds) before row → `stale`.
+    pub scan_stale_after_secs: u64,
+    /// When true (default), idle the sweep outside vendor-covered hours.
+    pub scan_market_hours_only: bool,
+    /// SQLite path for durable scan rows (default `data/scan.sqlite3`).
+    pub scan_store_path: PathBuf,
+    /// Optional Postgres URL for scan store (takes precedence when connect succeeds).
+    pub scan_database_url: Option<String>,
+    /// SQLite path for auth users/sessions/settings.
+    pub auth_store_path: PathBuf,
+    /// HMAC signing key for `gf_session` cookie.
+    pub auth_session_signing_key: String,
+    pub auth_cookie_secure: bool,
+    pub auth_cookie_samesite: String,
+    pub auth_session_idle_secs: u64,
+    pub auth_session_absolute_secs: u64,
+    /// When true, allow POST /api/auth/signup (default false — private testing lockdown).
+    pub auth_registration_open: bool,
+    /// Optional demo seed account (email:password) for local dev who-am-I prefill.
+    pub auth_demo_seed: Option<(String, String)>,
+    /// Include off-exchange/dark-pool context by default (Python `INCLUDE_DARK_POOL`).
+    pub include_dark_pool: bool,
+    /// Trade-tape lookback window for dark-pool summary (seconds).
+    pub darkpool_lookback_secs: u64,
+    /// Min shares for a single print to count as a "block".
+    pub block_min_shares: i64,
+    /// Durable IV time-series JSON path (Python IV_STORE_PATH / data/iv_timeseries).
+    pub iv_store_path: PathBuf,
+    /// Postgres URL for multi-instance durable stores (auth/iv/scan). Empty ⇒ JSON backends.
+    pub database_url: Option<String>,
+    /// Workspace root (for fixture paths).
+    pub workspace_root: PathBuf,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DataFeed {
+    Realtime,
+    Delayed,
+}
+
+impl DataFeed {
+    pub fn from_env_str(s: &str) -> Self {
+        if s.eq_ignore_ascii_case("realtime") {
+            Self::Realtime
+        } else {
+            Self::Delayed
+        }
+    }
+
+    pub fn ws_host(self) -> &'static str {
+        match self {
+            Self::Realtime => "socket.massive.com",
+            Self::Delayed => "delayed.massive.com",
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Realtime => "realtime",
+            Self::Delayed => "delayed",
+        }
+    }
+}
+
+impl Config {
+    /// Load from process env (call `dotenvy::dotenv()` first in main).
+    pub fn from_env() -> AppResult<Self> {
+        let massive_api_key = env::var("MASSIVE_API_KEY").map_err(|_| {
+            AppError::Config("MASSIVE_API_KEY is not set (check apps/api/.env)".into())
+        })?;
+        if massive_api_key.trim().is_empty() {
+            return Err(AppError::Config("MASSIVE_API_KEY is empty".into()));
+        }
+
+        let data_feed =
+            DataFeed::from_env_str(&env::var("DATA_FEED").unwrap_or_else(|_| "realtime".into()));
+        let rest_base =
+            env::var("MASSIVE_REST_BASE").unwrap_or_else(|_| "https://api.massive.com".into());
+        let redis_url = env::var("REDIS_URL").ok().filter(|s| !s.trim().is_empty());
+        let http_bind = env::var("HTTP_BIND").unwrap_or_else(|_| "0.0.0.0:8000".into());
+
+        // Base TTL for ad-hoc names; liquid/warm names use the longer tier.
+        let gex_cache_ttl_secs = env_u64("GEX_CACHE_TTL_SECS", 10);
+        let gex_cache_ttl_liquid_secs = env_u64("GEX_CACHE_TTL_LIQUID_SECS", 20).max(gex_cache_ttl_secs);
+
+        let warm_symbols = parse_symbol_list(
+            &env::var("WARM_SYMBOLS").unwrap_or_else(|_| DEFAULT_LIQUID.join(",")),
+        );
+        let mut liquid_symbols: HashSet<String> = parse_symbol_list(
+            &env::var("LIQUID_SYMBOLS").unwrap_or_else(|_| DEFAULT_LIQUID.join(",")),
+        )
+        .into_iter()
+        .collect();
+        // Warm set always gets liquid TTL.
+        for s in &warm_symbols {
+            liquid_symbols.insert(s.clone());
+        }
+
+        let warm_interval_secs = env_u64("WARM_INTERVAL_SECS", 25);
+        let warm_concurrency = env_u64("WARM_CONCURRENCY", 2).max(1) as usize;
+        let warm_enabled = env::var("WARM_ENABLED")
+            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+
+        let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()
+            .unwrap_or_else(|_| PathBuf::from("."));
+
+        let scan_enabled = env::var("SCAN_ENABLED")
+            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+        let scan_universe_path = env::var("SCAN_UNIVERSE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| {
+                workspace_root.join("apps/api/src/scanner/config/universe.json")
+            });
+        let scan_fast_interval_secs = env_u64("SCAN_FAST_INTERVAL_SECS", 30);
+        let scan_slow_batch_size = env_u64("SCAN_SLOW_BATCH_SIZE", 4).max(1) as usize;
+        let scan_promotion_cap = env_u64("SCAN_PROMOTION_CAP", 2).max(1) as usize;
+        let scan_stale_after_secs = env_u64("SCAN_STALE_AFTER_SECS", 180);
+        // Unset ⇒ gated (true), matching Python SCAN_MARKET_HOURS_ONLY.
+        let scan_market_hours_only = env::var("SCAN_MARKET_HOURS_ONLY")
+            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+
+        let scan_store_path = env::var("SCAN_STORE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| workspace_root.join("data/scan.sqlite3"));
+        // Prefer SCAN_DATABASE_URL, else DATABASE_URL when SCAN_STORE=postgres.
+        let scan_database_url = env::var("SCAN_DATABASE_URL")
+            .ok()
+            .filter(|s| !s.trim().is_empty())
+            .or_else(|| {
+                let mode = env::var("SCAN_STORE").unwrap_or_default();
+                if mode.eq_ignore_ascii_case("postgres") || mode.eq_ignore_ascii_case("pg") {
+                    env::var("DATABASE_URL").ok().filter(|s| !s.trim().is_empty())
+                } else {
+                    None
+                }
+            });
+
+        let auth_store_path = env::var("AUTH_STORE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| workspace_root.join("data/auth.sqlite3"));
+        let auth_session_signing_key = env::var("AUTH_SESSION_SIGNING_KEY").unwrap_or_else(|_| {
+            // Ephemeral per-process key when unset (cookies reset on restart).
+            use rand::RngCore;
+            let mut b = [0u8; 32];
+            rand::thread_rng().fill_bytes(&mut b);
+            hex::encode(b)
+        });
+        let auth_cookie_secure = env::var("AUTH_COOKIE_SECURE")
+            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+        let auth_cookie_samesite =
+            env::var("AUTH_COOKIE_SAMESITE").unwrap_or_else(|_| "lax".into());
+        let auth_session_idle_secs = env_u64("AUTH_SESSION_IDLE_SECONDS", 7 * 24 * 3600);
+        let auth_session_absolute_secs = env_u64("AUTH_SESSION_ABSOLUTE_SECONDS", 30 * 24 * 3600);
+        let auth_registration_open = env::var("AUTH_REGISTRATION_OPEN")
+            .map(|v| matches!(v.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+            .unwrap_or(false);
+        let auth_demo_seed = env::var("AUTH_DEMO_SEED").ok().and_then(|s| {
+            // format: email:password
+            let (e, p) = s.split_once(':')?;
+            let e = e.trim();
+            let p = p.trim();
+            if e.is_empty() || p.is_empty() {
+                None
+            } else {
+                Some((e.to_string(), p.to_string()))
+            }
+        });
+
+        // Python defaults: INCLUDE_DARK_POOL=true, DARKPOOL_LOOKBACK_SECONDS=3600, BLOCK_MIN_SHARES=5000.
+        let include_dark_pool = env::var("INCLUDE_DARK_POOL")
+            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+        // Default 1h (Python). Cap at 7d so after-hours/weekend smoke can still see last RTH tape.
+        let darkpool_lookback_secs = env_u64("DARKPOOL_LOOKBACK_SECONDS", 3600).clamp(60, 7 * 86_400);
+        let block_min_shares = env_u64("BLOCK_MIN_SHARES", 5000).clamp(1, 1_000_000) as i64;
+        let iv_store_path = env::var("IV_STORE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| workspace_root.join("data/iv_timeseries.json"));
+        let database_url = env::var("DATABASE_URL")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                env::var("SCAN_DATABASE_URL")
+                    .ok()
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            });
+
+        Ok(Self {
+            massive_api_key,
+            data_feed,
+            rest_base: rest_base.trim_end_matches('/').to_string(),
+            redis_url,
+            http_bind,
+            gex_cache_ttl_secs,
+            gex_cache_ttl_liquid_secs,
+            warm_symbols,
+            liquid_symbols,
+            warm_interval_secs,
+            warm_concurrency,
+            warm_enabled,
+            scan_enabled,
+            scan_universe_path,
+            scan_fast_interval_secs,
+            scan_slow_batch_size,
+            scan_promotion_cap,
+            scan_stale_after_secs,
+            scan_market_hours_only,
+            scan_store_path,
+            scan_database_url,
+            auth_store_path,
+            auth_session_signing_key,
+            auth_cookie_secure,
+            auth_cookie_samesite,
+            auth_session_idle_secs,
+            auth_session_absolute_secs,
+            auth_registration_open,
+            auth_demo_seed,
+            include_dark_pool,
+            darkpool_lookback_secs,
+            block_min_shares,
+            iv_store_path,
+            database_url,
+            workspace_root,
+        })
+    }
+
+    pub fn default_fixture_path(&self) -> PathBuf {
+        self.workspace_root
+            .join("libs/quant-engine/tests/fixtures/gex_SPY.json")
+    }
+
+    /// TTL for a ticker based on liquid/warm tiering.
+    pub fn gex_ttl_for(&self, ticker: &str) -> Duration {
+        let key = ticker.to_ascii_uppercase();
+        if self.liquid_symbols.contains(&key) {
+            Duration::from_secs(self.gex_cache_ttl_liquid_secs)
+        } else {
+            Duration::from_secs(self.gex_cache_ttl_secs)
+        }
+    }
+
+    pub fn is_liquid(&self, ticker: &str) -> bool {
+        self.liquid_symbols
+            .contains(&ticker.to_ascii_uppercase())
+    }
+}
+
+fn env_u64(key: &str, default: u64) -> u64 {
+    env::var(key)
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(default)
+}
+
+fn parse_symbol_list(raw: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+    for part in raw.split(&[',', ' ', ';'][..]) {
+        let s = part.trim().to_ascii_uppercase();
+        if s.is_empty() || s.len() > 12 {
+            continue;
+        }
+        if seen.insert(s.clone()) {
+            out.push(s);
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_symbols() {
+        let v = parse_symbol_list("spy, QQQ;nvda  aapl");
+        assert_eq!(v, vec!["SPY", "QQQ", "NVDA", "AAPL"]);
+    }
+}
