@@ -65,11 +65,11 @@ import {
   staleBornStrip,
   staleStrip,
 } from './copy';
-import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 import { deriveReasoning, Field, LevelsStrip, ReasoningSection } from './reasoning';
+import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
-export { useReadPersonas } from './useReadPersonas';
 export { deriveReasoning, leadAndRest, LevelsStrip, ReasoningSection } from './reasoning';
+export { useReadPersonas } from './useReadPersonas';
 
 const MONO = typographyTokens.monoFontFamily; // verdict labels render in Roboto Mono (Figma 149:598)
 

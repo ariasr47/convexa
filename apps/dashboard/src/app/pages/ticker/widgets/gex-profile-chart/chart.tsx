@@ -5,8 +5,8 @@
  * is REST-owned; live mid is the tape clock (from liveTapeStore via the wrapper).
  * Instant paint — no mount animation (single-motion-moment pin below).
  */
-import { StructureFieldCanvas } from '@/shared/charts/structure-field';
 import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
+import { StructureFieldCanvas } from '@/shared/charts/structure-field';
 import type { StrikeRow } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -103,8 +103,7 @@ export const GexProfileChart = memo(function GexProfileChart({
       structureAgeSeconds != null && Number.isFinite(structureAgeSeconds)
         ? Date.now() / 1000 - structureAgeSeconds
         : null;
-    const mid =
-      liveSpot != null && liveSpot > 0 && Number.isFinite(liveSpot) ? liveSpot : null;
+    const mid = liveSpot != null && liveSpot > 0 && Number.isFinite(liveSpot) ? liveSpot : null;
     return {
       symbol: symbol || 'GEX',
       samples: rowsToSamples(data),
@@ -117,23 +116,16 @@ export const GexProfileChart = memo(function GexProfileChart({
       live: Boolean(tapeLive && mid != null),
       source: 'rest',
     };
-  }, [
-    data,
-    spot,
-    callWall,
-    putWall,
-    gammaFlip,
-    liveSpot,
-    structureAgeSeconds,
-    symbol,
-    tapeLive,
-  ]);
+  }, [data, spot, callWall, putWall, gammaFlip, liveSpot, structureAgeSeconds, symbol, tapeLive]);
 
   if (!model) return null;
 
   return (
-    <Box data-testid="gex-structure-field" sx={{ width: '100%' }}>
-      <StructureFieldCanvas model={model} height={340} variant="ticker" />
+    <Box
+      data-testid="gex-structure-field"
+      sx={{ width: '100%', borderRadius: '0 0 11px 11px', overflow: 'hidden' }}
+    >
+      <StructureFieldCanvas model={model} height={300} variant="ticker" />
     </Box>
   );
 });

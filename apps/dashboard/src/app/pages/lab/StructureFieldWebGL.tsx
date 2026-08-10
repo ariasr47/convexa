@@ -10,17 +10,10 @@
  *
  * Brand literals via structureFieldShared (tokens.ts). Honors prefers-reduced-motion.
  */
+import type { StructureFieldModel } from '@/shared/charts/structure-field';
+import { SF, fmtM, gexAt, hexRgb, relAge, structureKey } from '@/shared/charts/structure-field';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef, useState } from 'react';
-import type { StructureFieldModel } from '@/shared/charts/structure-field';
-import {
-  SF,
-  fmtM,
-  gexAt,
-  hexRgb,
-  relAge,
-  structureKey,
-} from '@/shared/charts/structure-field';
 
 export interface StructureFieldWebGLProps {
   model: StructureFieldModel;
@@ -242,11 +235,7 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
   return sh;
 }
 
-function link(
-  gl: WebGL2RenderingContext,
-  vsSrc: string,
-  fsSrc: string,
-): WebGLProgram {
+function link(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string): WebGLProgram {
   const vs = compile(gl, gl.VERTEX_SHADER, vsSrc);
   const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
   const prog = gl.createProgram()!;
@@ -272,11 +261,7 @@ interface Particle {
   life: number;
 }
 
-export function StructureFieldWebGL({
-  model,
-  height = 520,
-  className,
-}: StructureFieldWebGLProps) {
+export function StructureFieldWebGL({ model, height = 520, className }: StructureFieldWebGLProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -431,8 +416,7 @@ export function StructureFieldWebGL({
 
     const xOf = (k: number, minK: number, maxK: number, plotW: number) =>
       pad.l + ((k - minK) / (maxK - minK || 1)) * plotW;
-    const yOf = (g: number, plotH: number) =>
-      pad.t + plotH / 2 - (g / maxAbs) * (plotH * 0.42);
+    const yOf = (g: number, plotH: number) => pad.t + plotH / 2 - (g / maxAbs) * (plotH * 0.42);
 
     /** Triangle strip ribbon along curve */
     const buildCurveRibbon = (
@@ -960,7 +944,15 @@ export function StructureFieldWebGL({
       gl.deleteBuffer(pointBuf);
       gl.deleteTexture(gexTex);
     };
-  }, [height, model.samples, model.spot, model.callWall, model.putWall, model.gammaFlip, model.symbol]);
+  }, [
+    height,
+    model.samples,
+    model.spot,
+    model.callWall,
+    model.putWall,
+    model.gammaFlip,
+    model.symbol,
+  ]);
 
   useEffect(() => {
     modelRef.current = model;

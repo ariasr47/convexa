@@ -47,9 +47,7 @@ export function buildDemoField(now = Date.now()): StructureFieldModel {
   };
 }
 
-export function samplesFromStrikes(
-  strikes: { strike: number; net_gex: number }[],
-): FieldSample[] {
+export function samplesFromStrikes(strikes: { strike: number; net_gex: number }[]): FieldSample[] {
   return strikes
     .filter((s) => Number.isFinite(s.strike) && Number.isFinite(s.net_gex))
     .map((s) => ({ strike: s.strike, netGex: s.net_gex }))

@@ -2,6 +2,7 @@
  * One leg's fields for the shared TradeEntryDialog.
  */
 import type { InstrumentKind, LegSide } from '@/features/trading/positions/leg';
+import type { OptionRight } from '@convexa/api';
 import {
   Box,
   Button,
@@ -13,7 +14,6 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import type { OptionRight } from '@convexa/api';
 import { FieldLabel } from './FieldLabel';
 import type { LegDraft } from './types';
 

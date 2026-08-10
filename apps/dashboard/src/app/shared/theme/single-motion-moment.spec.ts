@@ -96,7 +96,7 @@ describe('single-motion-moment — the app-wide keyframe inventory (mutation-gua
     expect(chart).not.toContain('animationDuration');
     expect(chart).not.toContain('isAnimationActive={true}');
     expect(chart).toContain('StructureFieldCanvas');
-    expect(chart).not.toContain('from \'recharts\'');
+    expect(chart).not.toContain("from 'recharts'");
     expect(chart).not.toContain('from "recharts"');
   });
 

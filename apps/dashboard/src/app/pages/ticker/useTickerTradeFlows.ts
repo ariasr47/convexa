@@ -2,12 +2,16 @@
  * Ticker page trade/entry/act dialog state (§3.8 Phase D).
  * Keeps TickerDashboard focused on composition; hosts still wire UI to these handlers.
  */
-import type { EntryPrefill, OrderEntrySubmit, OrderPlan } from '@/features/trading/TradeEntryDialog';
 import { useGate } from '@/features/auth/useGate';
 import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
 import { parseTriggerSeed } from '@/features/trading/orders/seed';
 import type { OrderProvenance } from '@/features/trading/orders/types';
 import { createOrder } from '@/features/trading/orders/useOrders';
+import type {
+  EntryPrefill,
+  OrderEntrySubmit,
+  OrderPlan,
+} from '@/features/trading/TradeEntryDialog';
 import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
 import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import type { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';

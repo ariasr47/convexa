@@ -79,6 +79,11 @@ interface Props {
   persona: ReturnType<typeof usePersona>;
   onOpenCustomize: () => void;
   loading: boolean;
+  /**
+   * Inside CommandDeck the outer paper already provides the panel — use a lighter strip
+   * (no second border box) so it doesn't read as panel-in-panel.
+   */
+  embedded?: boolean;
 }
 
 export function TickerToolbar({
@@ -93,6 +98,7 @@ export function TickerToolbar({
   persona,
   onOpenCustomize,
   loading,
+  embedded = false,
 }: Props) {
   return (
     <Box
@@ -102,15 +108,28 @@ export function TickerToolbar({
         alignItems: 'stretch',
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
         rowGap: 1.5,
-        // The panel reads as one recessed instrument: a faint well tint + hairline border + rounded,
-        // token-bound (color-mix off the palette + neutral rgba light/shadow — zero hex).
-        border: `1px solid ${t.palette.divider}`,
-        borderRadius: '12px',
-        bgcolor: `color-mix(in srgb, ${t.palette.background.paper} 55%, transparent)`,
-        boxShadow: t.palette.mode === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.04)' : 'none',
-        p: 0.75,
-        // Hairline seams BETWEEN segments (not before the first). On wrap (xs) the vertical seam is
-        // suppressed so a wrapped row doesn't show a dangling divider.
+        width: embedded ? '100%' : undefined,
+        // Standalone: recessed instrument panel. Embedded: hairline top + seams only (deck is the frame).
+        ...(embedded
+          ? {
+              border: 'none',
+              borderTop: `1px solid ${t.palette.divider}`,
+              borderRadius: 0,
+              bgcolor: 'transparent',
+              boxShadow: 'none',
+              pt: 1.5,
+              px: 0,
+              pb: 0,
+            }
+          : {
+              border: `1px solid ${t.palette.divider}`,
+              borderRadius: '12px',
+              bgcolor: `color-mix(in srgb, ${t.palette.background.paper} 55%, transparent)`,
+              boxShadow:
+                t.palette.mode === 'dark' ? 'inset 0 1px 0 rgba(255,255,255,0.04)' : 'none',
+              p: 0.75,
+            }),
+        // Hairline seams BETWEEN segments (not before the first).
         '& > * + *': {
           borderLeft: { xs: 'none', sm: `1px solid ${t.palette.divider}` },
         },

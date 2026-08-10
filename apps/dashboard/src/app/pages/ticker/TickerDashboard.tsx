@@ -52,7 +52,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
-import { WidgetSelectionProvider } from '@/shared/ui/Widget';
+import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
 import { useLiveTape } from './liveTapeStore';
 import { useTickerPageModel } from './useTickerPageModel';
 import { useTickerTradeFlows } from './useTickerTradeFlows';
@@ -101,6 +101,8 @@ function BoardZoneLabel({
   first?: boolean;
   children: ReactNode;
 }) {
+  // First zone sits under the deck — no top rule, quieter type so identity → structure is tight.
+  // Later zones keep a soft divider as section breaks.
   return (
     <Typography
       component="p"
@@ -108,13 +110,15 @@ function BoardZoneLabel({
       sx={{
         gridColumn: '1 / -1',
         m: 0,
-        mt: first ? 0 : 1,
-        pt: first ? 0 : 0.5,
+        mt: first ? 0 : zone === 'context' ? 0.5 : 1,
+        pt: first ? 0 : 0.75,
+        pb: first ? 0.25 : 0,
         fontSize: '0.7rem', // ≥11px type floor (0.7rem ≈ 11.2)
-        fontWeight: 700,
-        letterSpacing: '0.08em',
+        fontWeight: first ? 600 : 700,
+        letterSpacing: first ? '0.06em' : '0.08em',
         textTransform: 'uppercase',
         color: 'text.secondary',
+        opacity: first ? 0.8 : zone === 'context' ? 0.75 : 1,
         borderTop: first ? 'none' : '1px solid',
         borderColor: 'divider',
       }}
@@ -571,62 +575,67 @@ export function TickerDashboard() {
                 />
                 <OrdersWidget ticker={ticker} />
 
-                {/* ── 3. SUPPORTING CONTEXT (tertiary — less visual claim) ──────────── */}
+                {/* ── 3. SUPPORTING CONTEXT (tertiary — quieter Widget chrome) ──────── */}
                 <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>
 
-                {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
-                  (`[live-vs-static-isolation]`). */}
-                <DealerFlowProjection dfp={m.dealer_flow_projection} />
+                <WidgetChromeProvider value="quiet">
+                  {/* STATIC dealer-flow projection — bound to `m.dealer_flow_projection` only
+                    (`[live-vs-static-isolation]`). */}
+                  <DealerFlowProjection dfp={m.dealer_flow_projection} />
 
-                {/* STATIC market context pack — `m.market_context ?? null` only. */}
-                <MarketContext pack={m.market_context ?? null} />
+                  {/* STATIC market context pack — `m.market_context ?? null` only. */}
+                  <MarketContext pack={m.market_context ?? null} />
 
-                {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). */}
-                <IvRank read={m.iv_rank ?? null} />
-                <TermStructureCard
-                  termStructure={m.term_structure}
-                  structureAgeSeconds={structureAgeSeconds}
-                />
-
-                {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
-                  Dark pool off, Fresh takes the full remaining row. */}
-                <FreshPositioning
-                  chainVolOiRatio={m.chain_vol_oi_ratio}
-                  volOiThreshold={volOiThreshold}
-                  unusualStrikes={unusualStrikes}
-                  structureAgeSeconds={structureAgeSeconds}
-                />
-                {darkPool && (
-                  <OffExchangeBlocks
-                    offExchange={data?.off_exchange}
+                  {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). */}
+                  <IvRank read={m.iv_rank ?? null} />
+                  <TermStructureCard
+                    termStructure={m.term_structure}
                     structureAgeSeconds={structureAgeSeconds}
                   />
-                )}
 
-                <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+                  {/* Fresh positioning ‖ Off-exchange blocks. Off-exchange is REST-only; with
+                    Dark pool off, Fresh takes the full remaining row. */}
+                  <FreshPositioning
+                    chainVolOiRatio={m.chain_vol_oi_ratio}
+                    volOiThreshold={volOiThreshold}
+                    unusualStrikes={unusualStrikes}
+                    structureAgeSeconds={structureAgeSeconds}
+                  />
+                  {darkPool && (
+                    <OffExchangeBlocks
+                      offExchange={data?.off_exchange}
+                      structureAgeSeconds={structureAgeSeconds}
+                    />
+                  )}
 
-                {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). Reuses the hatched
-                  ComingSoonBox; cursor:not-allowed; tooltip. Never links or fake-adds anything. */}
-                <Tooltip arrow title="Add widget — coming soon">
-                  <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
-                    <ComingSoonBox
-                      data-testid="add-widget-slot"
-                      aria-disabled
-                      sx={{
-                        cursor: 'not-allowed',
-                        minHeight: 72,
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ color: 'text.disabled', fontWeight: 500 }}>
-                        + Add widget
-                      </Typography>
-                    </ComingSoonBox>
-                  </Box>
-                </Tooltip>
+                  <Setups setups={sig?.setups} structureAgeSeconds={structureAgeSeconds} />
+
+                  {/* Inert "+ Add widget" ghost slot — affordance-only (coming soon). */}
+                  <Tooltip arrow title="Add widget — coming soon">
+                    <Box sx={{ gridColumn: { xs: '1 / -1', md: 'span 2' } }}>
+                      <ComingSoonBox
+                        data-testid="add-widget-slot"
+                        aria-disabled
+                        sx={{
+                          cursor: 'not-allowed',
+                          minHeight: 64,
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: 0.85,
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{ color: 'text.disabled', fontWeight: 500 }}
+                        >
+                          + Add widget
+                        </Typography>
+                      </ComingSoonBox>
+                    </Box>
+                  </Tooltip>
+                </WidgetChromeProvider>
               </Box>
             </WidgetSelectionProvider>
           </Box>

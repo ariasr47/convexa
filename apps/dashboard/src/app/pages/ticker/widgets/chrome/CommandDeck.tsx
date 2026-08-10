@@ -259,6 +259,7 @@ export function CommandDeck(props: CommandDeckProps) {
             persona={persona}
             onOpenCustomize={onOpenCustomize}
             loading={loading}
+            embedded
           />
         </Stack>
       </Box>

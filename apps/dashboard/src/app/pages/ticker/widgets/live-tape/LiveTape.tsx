@@ -31,7 +31,12 @@ interface Props {
   streamOffline?: boolean;
 }
 
-export function LiveTape({ m, live: liveProp, isLive: isLiveProp, streamOffline: offlineProp }: Props) {
+export function LiveTape({
+  m,
+  live: liveProp,
+  isLive: isLiveProp,
+  streamOffline: offlineProp,
+}: Props) {
   const tape = useLiveTape();
   const live = liveProp !== undefined ? liveProp : tape.live;
   const isLive = isLiveProp !== undefined ? isLiveProp : tape.isLive;

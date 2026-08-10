@@ -5,16 +5,21 @@
  * Renderer toggle: Canvas2D (original) vs WebGL2 (comparison twin).
  */
 import { getTicker } from '@convexa/api';
-import { Box, Button, Chip, Container, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Chip,
+  Container,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { StructureFieldCanvas } from './StructureFieldCanvas';
 import { StructureFieldWebGL } from './StructureFieldWebGL';
-import {
-  buildDemoField,
-  samplesFromStrikes,
-  type StructureFieldModel,
-} from './structureFieldDemo';
+import { buildDemoField, samplesFromStrikes, type StructureFieldModel } from './structureFieldDemo';
 
 type Renderer = 'canvas2d' | 'webgl';
 
@@ -107,17 +112,25 @@ export function StructureFieldLab() {
               variant="filled"
             />
           </Stack>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}
+          >
             Structure Field
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.65 }}>
-            Dual-clock dealer-GEX instrument. Same model, two renderers — flip between Canvas2D
-            (CPU paint + offscreen structure buffer) and WebGL2 (GPU heat field + point particles)
-            to compare feel and cost. Walls, flip, and tape mid are the same data; only the paint
-            path changes.
+            Dual-clock dealer-GEX instrument. Same model, two renderers — flip between Canvas2D (CPU
+            paint + offscreen structure buffer) and WebGL2 (GPU heat field + point particles) to
+            compare feel and cost. Walls, flip, and tape mid are the same data; only the paint path
+            changes.
           </Typography>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ pt: 0.5, alignItems: { sm: 'center' } }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.25}
+            sx={{ pt: 0.5, alignItems: { sm: 'center' } }}
+          >
             <ToggleButtonGroup
               exclusive
               size="small"
@@ -204,8 +217,8 @@ export function StructureFieldLab() {
                   changes.
                 </li>
                 <li>
-                  <strong>CPU field physics</strong> — particles, warps, flip well, mid trail painted
-                  each frame in JS.
+                  <strong>CPU field physics</strong> — particles, warps, flip well, mid trail
+                  painted each frame in JS.
                 </li>
                 <li>
                   <strong>Richer probe UI</strong> — magnet disk + strength bar fully in the same

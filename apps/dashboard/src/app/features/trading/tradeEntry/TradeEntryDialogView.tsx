@@ -94,6 +94,10 @@ import { useEffect, useState } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { LegFields, multiplierFor } from './LegFields';
 import {
+  defaultGoodTil,
+  goodTilToExpiresAt,
+  newDraft,
+  todayIso,
   type EntryPrefill,
   type FillMode,
   type LegDraft,
@@ -102,10 +106,6 @@ import {
   type OrderPlan,
   type SubmitBase,
   type TradeEntrySubmit,
-  defaultGoodTil,
-  goodTilToExpiresAt,
-  newDraft,
-  todayIso,
 } from './types';
 
 interface Props {
@@ -993,4 +993,3 @@ export function TradeEntryDialog({
     </Dialog>
   );
 }
-

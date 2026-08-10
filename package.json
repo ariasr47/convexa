@@ -33,10 +33,7 @@
     "conformance:scanner": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/scanner.json --url",
     "conformance:auth": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/auth-gated.json --auth-signup --url"
   },
-  "workspaces": [
-    "apps/*",
-    "libs/*"
-  ],
+  "workspaces": ["apps/*", "libs/*"],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

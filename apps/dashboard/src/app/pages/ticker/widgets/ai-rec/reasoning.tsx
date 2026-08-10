@@ -10,7 +10,15 @@ import { COPY } from './copy';
 
 const MONO = typographyTokens.monoFontFamily;
 
-export function Field({ label, value, tip }: { label: string; value: React.ReactNode; tip?: string }) {
+export function Field({
+  label,
+  value,
+  tip,
+}: {
+  label: string;
+  value: React.ReactNode;
+  tip?: string;
+}) {
   return (
     <Box>
       <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>

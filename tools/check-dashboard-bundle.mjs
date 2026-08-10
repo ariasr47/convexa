@@ -252,21 +252,18 @@ async function main() {
       console.log(
         `[check-bundle] OK — ${passes.length} brotli checks within budget (${files.length} js assets)`,
       );
-      if (posFiles.length) console.log('[check-bundle] OK — PositionsPage has no charts dependency');
+      if (posFiles.length)
+        console.log('[check-bundle] OK — PositionsPage has no charts dependency');
     } else {
       console.error('[check-bundle] FAILED budgets (brotli KB):');
       for (const f of failures) {
         if (f.budget === 'positions-no-charts') {
           console.error(`  positions-no-charts: ${f.file} still imports recharts/charts chunk`);
         } else {
-          console.error(
-            `  ${f.budget}: ${f.file} = ${f.brotliKb} KB br > ${f.maxBrotliKb} KB cap`,
-          );
+          console.error(`  ${f.budget}: ${f.file} = ${f.brotliKb} KB br > ${f.maxBrotliKb} KB cap`);
         }
       }
-      console.error(
-        '\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard',
-      );
+      console.error('\nSee docs/FRONTEND_PERFORMANCE_ANALYSIS.md §3.8 / npm run analyze:dashboard');
     }
   } else if (!listOnly) {
     console.log(

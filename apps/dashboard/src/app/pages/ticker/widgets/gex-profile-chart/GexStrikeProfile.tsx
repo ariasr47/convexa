@@ -42,11 +42,7 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
 }: Props) {
   const tape = useLiveTape();
   const liveSpot =
-    liveSpotProp !== undefined
-      ? liveSpotProp
-      : tape.isLive && tape.live
-        ? tape.live.mid
-        : null;
+    liveSpotProp !== undefined ? liveSpotProp : tape.isLive && tape.live ? tape.live.mid : null;
   const tapeLive = liveSpotProp !== undefined ? liveSpotProp != null : tape.isLive && !!tape.live;
 
   // Mirror the chart's own windowing so the widget frame is omitted (not left empty) when there is
@@ -61,6 +57,7 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
       subtitle={gexProfileSubtitle(props.spot, expLabel, structureAgeSeconds)}
       info={GEX_INFO}
       span={2}
+      noBodyPad
       actions={<GexLegend />}
     >
       <GexProfileChart

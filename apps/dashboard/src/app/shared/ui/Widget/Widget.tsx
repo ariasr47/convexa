@@ -13,7 +13,8 @@
  *   - `container-type: inline-size` — the body styles by its own width (`@container`), so a widget
  *     looks right at any bento cell size (the seam for future resize).
  *   - `content-visibility: auto` + `contain-intrinsic-size` — off-screen render skipping.
- *   - `:has()` / `:focus-within` / `:hover` — parent-aware chrome reveals the toolbar + grip, no JS.
+ *   - Expand is hover/focus-revealed; coming-soon grip/`⋮` only when the widget is selected.
+ *   - `WidgetChromeProvider value="quiet"` softens context-band cards (no lift, lighter chrome).
  *   - A STATIC conic-gradient border marks the selected widget (redesign-stage-3 §3.1-6: the ring
  *     stays, the ambient 4s spin was retired — spectacle competing with the hero curve-draw).
  *   - View Transitions API (in `useExpand`) — the expand → focus overlay is a shared-element morph,
@@ -26,6 +27,7 @@
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { elevationFor } from '@/shared/theme/tokens';
+import { useWidgetChrome } from '@/shared/ui/Widget/WidgetChromeContext';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -111,6 +113,8 @@ export function Widget({
   bodyVariant = 'flush',
 }: WidgetProps) {
   const reduced = useReducedMotion();
+  const chrome = useWidgetChrome();
+  const quiet = chrome === 'quiet';
   // Body-wrapper chrome. 'inset' recesses the well (darker + inner shadow) so raised paper tiles pop.
   const bodyWrapperSx: SxProps<Theme> = (theme) => ({
     borderTop: '1px solid',
@@ -171,8 +175,8 @@ export function Widget({
         flexWrap: { xs: 'wrap', sm: 'nowrap' },
       }}
     >
-      {/* Drag grip — AFFORDANCE ONLY (coming soon). Hover-revealed, cursor:grab, but inert. */}
-      {!inOverlay && (
+      {/* Drag grip — AFFORDANCE ONLY. Visible only when selected (not on every hover). */}
+      {!inOverlay && !quiet && (
         <Tooltip arrow title="Rearrange (coming soon)">
           <Box
             component="span"
@@ -184,7 +188,8 @@ export function Widget({
               mt: 0.25,
               cursor: 'grab',
               color: 'text.disabled',
-              opacity: 0,
+              opacity: selected ? 0.55 : 0,
+              pointerEvents: selected ? 'auto' : 'none',
               transition: `opacity 160ms ease`,
               '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
             }}
@@ -201,7 +206,13 @@ export function Widget({
           <Typography
             variant="h6"
             component="h2"
-            sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            sx={{
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              ...(quiet ? { fontSize: '1rem', fontWeight: 600 } : null),
+            }}
           >
             {title}
           </Typography>
@@ -212,7 +223,10 @@ export function Widget({
           )}
         </Stack>
         {subtitle && (
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: 'text.secondary', mt: 0.25, ...(quiet ? { opacity: 0.85 } : null) }}
+          >
             {subtitle}
           </Typography>
         )}
@@ -263,10 +277,10 @@ export function Widget({
               </IconButton>
             </Tooltip>
           )}
-          {!inOverlay && (
+          {/* Configure affordance — only when selected (reduces board chrome noise). */}
+          {!inOverlay && selected && !quiet && (
             <Tooltip arrow title="Configure — coming soon">
-              {/* span so the tooltip works on the disabled button */}
-              <span>
+              <span className="widget__affordance">
                 <IconButton
                   size="small"
                   aria-label="Configure — coming soon"
@@ -313,33 +327,40 @@ export function Widget({
           borderColor: 'divider',
           borderRadius: '12px',
           // Resting depth matches Command Deck (`elevationFor.e1`) — one material language.
+          // Quiet (context band): same e1, no hover lift — tertiary claim.
           boxShadow: elevationFor(theme).e1,
+          opacity: quiet ? 0.96 : 1,
           overflow: 'clip',
-          // `outline: 'none'` strips the UA default so MOUSE click-to-select stays ringless; the
-          // `&:focus-visible` replacement below keeps KEYBOARD focus on the frame visible (Stage 0
-          // item 2 — the accounted exemption now carries its own in-component ring).
           outline: 'none',
           '&:focus-visible': {
             outline: `2px solid ${theme.palette.primary.main}`,
             outlineOffset: '2px',
           },
-          // Off-screen perf: skip rendering work for widgets not near the viewport.
           contentVisibility: 'auto',
           containIntrinsicSize: '480px 320px',
-          // Hover lift: token e2 (not MUI shadows[6]). Stage-3 §3.1-3: neutral border only —
-          // must not sprinkle amber across every widget (§4 census).
-          transition: `transform 220ms ${SPRING}, box-shadow 220ms ease, border-color 220ms ease`,
-          '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: elevationFor(theme).e2,
-            borderColor: theme.palette.text.disabled,
-          },
-          '@media (prefers-reduced-motion: reduce)': {
-            transition: 'box-shadow 220ms ease, border-color 220ms ease',
-            '&:hover': { transform: 'none' },
-          },
-          // :has() parent-aware chrome — reveal the grip + toolbar on hover / keyboard focus, no JS.
-          '&:hover .widget__grip, &:has(:focus-visible) .widget__grip': { opacity: 0.5 },
+          transition: quiet
+            ? 'border-color 220ms ease'
+            : `transform 220ms ${SPRING}, box-shadow 220ms ease, border-color 220ms ease`,
+          ...(quiet
+            ? {
+                '&:hover': {
+                  transform: 'none',
+                  boxShadow: elevationFor(theme).e1,
+                  borderColor: theme.palette.divider,
+                },
+              }
+            : {
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: elevationFor(theme).e2,
+                  borderColor: theme.palette.text.disabled,
+                },
+                '@media (prefers-reduced-motion: reduce)': {
+                  transition: 'box-shadow 220ms ease, border-color 220ms ease',
+                  '&:hover': { transform: 'none' },
+                },
+              }),
+          // Expand on hover/focus; grip is selected-only (inline opacity).
           '& .widget__grip:hover': { opacity: 1, color: 'text.secondary' },
           '&:hover .widget__toolbar, &:has(:focus-visible) .widget__toolbar': {
             opacity: 1,
@@ -368,29 +389,29 @@ export function Widget({
               pointerEvents: 'none',
             },
           }),
-          // Live accent — a subtle info top-left corner glow; pulses only when `live`.
-          ...(live && {
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: 3,
-              height: '38%',
-              borderTopLeftRadius: '12px',
-              background: 'linear-gradient(180deg, var(--mui-palette-info-main), transparent)',
-              pointerEvents: 'none',
-              '@media (prefers-reduced-motion: no-preference)': {
-                animation: 'widgetLivePulse 2.4s ease-in-out infinite',
+          // Live accent — thin info edge (deck owns connection chip; strip is secondary signal).
+          // Quieter pulse so it doesn't compete with the hero connection chip.
+          ...(live &&
+            !quiet && {
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 2,
+                height: '32%',
+                borderTopLeftRadius: '12px',
+                background: 'linear-gradient(180deg, var(--mui-palette-info-main), transparent)',
+                pointerEvents: 'none',
+                opacity: 0.75,
+                '@media (prefers-reduced-motion: no-preference)': {
+                  animation: 'widgetLivePulse 2.8s ease-in-out infinite',
+                },
               },
-            },
-          }),
-          // The KEPT data signal: the live-pulse keyframes (attached under no-preference only,
-          // via the `live` block above). Fires only while genuinely live — honesty machinery,
-          // exempt from the stage-3 motion consolidation BY DECISION (§3.1-5).
+            }),
           '@keyframes widgetLivePulse': {
-            '0%, 100%': { opacity: 0.4 },
-            '50%': { opacity: 1 },
+            '0%, 100%': { opacity: 0.55 },
+            '50%': { opacity: 0.95 },
           },
           // The View-Transition name so expand can morph this element ↔ the overlay.
           ...(supportsVT && !expanded && { viewTransitionName: vtNameRef.current }),

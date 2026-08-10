@@ -319,14 +319,7 @@ describe('operator-vs-trader path separation', () => {
 // =================================================================================================
 describe('mobile nav drawer', () => {
   // Spine + lab: Scanner → Ticker → Positions → Alerts → Lab → Blog
-  const DRAWER_ENTRIES = [
-    'scanner',
-    'ticker',
-    'positions',
-    'alerts',
-    'lab',
-    'blog',
-  ] as const;
+  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'alerts', 'lab', 'blog'] as const;
 
   it('carries EXACTLY the trader NAV entries, no /_ops link, aria-current on the active entry', async () => {
     const user = userEvent.setup();

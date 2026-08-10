@@ -154,9 +154,9 @@ export function StructureFieldCanvas({
   const reducedRef = useRef(reducedMotion);
   reducedRef.current = reducedMotion;
   const embedded = variant === 'ticker';
-  const pad = embedded
-    ? { l: 48, r: 14, t: 28, b: 36 }
-    : { l: 56, r: 20, t: 40, b: 48 };
+  // Ticker: calmer instrument (fewer particles, softer FX) so paper widgets aren't overpowered.
+  const calm = embedded;
+  const pad = embedded ? { l: 40, r: 12, t: 20, b: 28 } : { l: 56, r: 20, t: 40, b: 48 };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -223,7 +223,14 @@ export function StructureFieldCanvas({
       o.fillRect(0, 0, w, h);
 
       // Deep vignette
-      const vg = o.createRadialGradient(w * 0.5, h * 0.42, 20, w * 0.5, h * 0.48, Math.max(w, h) * 0.72);
+      const vg = o.createRadialGradient(
+        w * 0.5,
+        h * 0.42,
+        20,
+        w * 0.5,
+        h * 0.48,
+        Math.max(w, h) * 0.72,
+      );
       vg.addColorStop(0, PANEL);
       vg.addColorStop(0.55, '#101722');
       vg.addColorStop(1, INK);
@@ -311,9 +318,9 @@ export function StructureFieldCanvas({
       // Curve glow + core
       o.save();
       o.shadowColor = 'rgba(94,139,196,0.65)';
-      o.shadowBlur = 18;
+      o.shadowBlur = calm ? 8 : 18;
       o.strokeStyle = SIGNAL;
-      o.lineWidth = 2.6;
+      o.lineWidth = calm ? 2 : 2.6;
       o.lineJoin = 'round';
       strokeSmooth(o, pts);
       o.stroke();
@@ -349,9 +356,9 @@ export function StructureFieldCanvas({
         const x = xOf(m.gammaFlip);
         o.save();
         o.shadowColor = 'rgba(242,169,59,0.8)';
-        o.shadowBlur = 20;
+        o.shadowBlur = calm ? 10 : 20;
         o.strokeStyle = AMBER;
-        o.lineWidth = 2.75;
+        o.lineWidth = calm ? 2 : 2.75;
         o.beginPath();
         o.moveTo(x, pad.t);
         o.lineTo(x, pad.t + plotH);
@@ -416,7 +423,11 @@ export function StructureFieldCanvas({
       // --- Dynamic: flip gravity well breath ---
       {
         const x = xOf(m.gammaFlip);
-        const breath = reduce ? 0.35 : 0.28 + 0.22 * Math.sin(now / 900);
+        const breath = reduce
+          ? 0.35
+          : calm
+            ? 0.22 + 0.1 * Math.sin(now / 1100)
+            : 0.28 + 0.22 * Math.sin(now / 900);
         const band = plotW * 0.045;
         const well = ctx.createLinearGradient(x - band, 0, x + band, 0);
         well.addColorStop(0, 'rgba(242,169,59,0)');
@@ -439,10 +450,10 @@ export function StructureFieldCanvas({
 
       // --- Dynamic: warped field lines (force field) ---
       {
-        const lines = 7;
+        const lines = calm ? 5 : 7;
         for (let li = 0; li < lines; li++) {
           const baseY = pad.t + ((li + 0.5) / lines) * plotH;
-          const amp = (0.55 + 0.45 * Math.sin(now / 1400 + li)) * (reduce ? 0.35 : 1);
+          const amp = (0.55 + 0.45 * Math.sin(now / 1400 + li)) * (reduce ? 0.35 : calm ? 0.55 : 1);
           ctx.beginPath();
           const steps = 48;
           for (let si = 0; si <= steps; si++) {
@@ -456,9 +467,8 @@ export function StructureFieldCanvas({
             else ctx.lineTo(x, y);
           }
           const midG = gexAt(samples, strikeOf(0.5));
-          const a = 0.04 + 0.06 * Math.abs(midG) / maxAbs;
-          ctx.strokeStyle =
-            midG >= 0 ? `rgba(46,204,113,${a})` : `rgba(255,92,92,${a})`;
+          const a = 0.04 + (0.06 * Math.abs(midG)) / maxAbs;
+          ctx.strokeStyle = midG >= 0 ? `rgba(46,204,113,${a})` : `rgba(255,92,92,${a})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -466,8 +476,9 @@ export function StructureFieldCanvas({
 
       // --- Particles: gamma pressure flowing toward zero (hedging metaphor) ---
       if (!reduce) {
-        spawnAcc += dt * 28;
-        while (spawnAcc >= 1 && particles.length < 90) {
+        spawnAcc += dt * (calm ? 10 : 28);
+        const maxP = calm ? 36 : 90;
+        while (spawnAcc >= 1 && particles.length < maxP) {
           spawnAcc -= 1;
           // Bias spawn to high-|GEX| strikes
           let u = Math.random();
@@ -512,7 +523,9 @@ export function StructureFieldCanvas({
           const y = yCurve + (y0 - yCurve) * p.v;
           const alpha = Math.max(0, Math.min(1, p.life)) * (1 - p.v * 0.55);
           ctx.fillStyle =
-            p.sign > 0 ? `rgba(46,204,113,${0.15 + alpha * 0.65})` : `rgba(255,92,92,${0.15 + alpha * 0.65})`;
+            p.sign > 0
+              ? `rgba(46,204,113,${0.15 + alpha * 0.65})`
+              : `rgba(255,92,92,${0.15 + alpha * 0.65})`;
           ctx.beginPath();
           ctx.arc(x, y, p.size * (1 - p.v * 0.4), 0, Math.PI * 2);
           ctx.fill();
@@ -687,12 +700,12 @@ export function StructureFieldCanvas({
         ctx.fillText(pill, w - pad.r - pw + 0, 21);
       }
 
-      // Soft phosphor grain (static-ish via time hash — very subtle terminal feel)
-      if (!reduce) {
+      // Soft phosphor grain — lab only (ticker stays calmer)
+      if (!reduce && !calm) {
         ctx.globalAlpha = 0.03;
         for (let i = 0; i < 18; i++) {
-          const gx = pad.l + ((Math.sin(now * 0.001 + i * 12.1) * 0.5 + 0.5) * plotW);
-          const gy = pad.t + ((Math.cos(now * 0.0007 + i * 7.3) * 0.5 + 0.5) * plotH);
+          const gx = pad.l + (Math.sin(now * 0.001 + i * 12.1) * 0.5 + 0.5) * plotW;
+          const gy = pad.t + (Math.cos(now * 0.0007 + i * 7.3) * 0.5 + 0.5) * plotH;
           ctx.fillStyle = PHOSPHOR;
           ctx.fillRect(gx, gy, 1.2, 1.2);
         }
@@ -746,6 +759,7 @@ export function StructureFieldCanvas({
     height,
     variant,
     embedded,
+    calm,
     model.samples,
     model.spot,
     model.callWall,
@@ -767,9 +781,11 @@ export function StructureFieldCanvas({
           display: 'block',
           width: '100%',
           height,
-          borderRadius: 12,
-          border: '1px solid rgba(138,155,180,0.28)',
-          boxShadow: '0 0 0 1px rgba(11,15,23,0.6), 0 18px 48px -24px rgba(0,0,0,0.65)',
+          borderRadius: embedded ? 0 : 12,
+          border: embedded ? 'none' : '1px solid rgba(138,155,180,0.28)',
+          boxShadow: embedded
+            ? 'none'
+            : '0 0 0 1px rgba(11,15,23,0.6), 0 18px 48px -24px rgba(0,0,0,0.65)',
           cursor: 'crosshair',
           touchAction: 'none',
         }}

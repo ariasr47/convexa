@@ -1,3 +1,5 @@
+export { TradeEntryDialog } from './TradeEntryDialogView';
+export { defaultGoodTil, goodTilToExpiresAt, newDraft } from './types';
 export type {
   EntryPrefill,
   FillMode,
@@ -7,5 +9,3 @@ export type {
   OrderPlan,
   TradeEntrySubmit,
 } from './types';
-export { defaultGoodTil, goodTilToExpiresAt, newDraft } from './types';
-export { TradeEntryDialog } from './TradeEntryDialogView';

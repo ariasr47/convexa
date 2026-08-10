@@ -10,12 +10,7 @@
  */
 import { streamTicker } from '@convexa/api';
 import { useEffect } from 'react';
-import {
-  publishLiveTape,
-  resetLiveTape,
-  useLiveTape,
-  type LiveTapeApi,
-} from './liveTapeStore';
+import { publishLiveTape, resetLiveTape, useLiveTape, type LiveTapeApi } from './liveTapeStore';
 
 export const STREAM_OFFLINE_MS = 15_000;
 
@@ -59,10 +54,7 @@ export function useTickerStreamConnection(
  * Connection + subscription — for hosts that must re-render on ticks (portfolio, page glue).
  * Prefer `useTickerStreamConnection` + selective `useLiveTape()` for isolation.
  */
-export function useTickerStream(
-  ticker: string,
-  selected: string[] | null,
-): TickerStreamApi {
+export function useTickerStream(ticker: string, selected: string[] | null): TickerStreamApi {
   useTickerStreamConnection(ticker, selected);
   return useLiveTape();
 }

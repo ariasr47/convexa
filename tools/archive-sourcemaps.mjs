@@ -13,14 +13,7 @@
  *   copy apps/dashboard/sourcemaps-private/<stamp>/assets/*.map → dist/assets/
  *   then open DevTools and use "Add source map" if needed.
  */
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -67,16 +60,13 @@ function main() {
   const manifest = {
     archived_at: new Date().toISOString(),
     count: moved.length,
-    note:
-      'Hidden Vite sourcemaps — not linked from JS. Keep private; do not deploy to Pages/CDN.',
+    note: 'Hidden Vite sourcemaps — not linked from JS. Keep private; do not deploy to Pages/CDN.',
     files: moved,
   };
   writeFileSync(path.join(destRoot, 'MANIFEST.json'), JSON.stringify(manifest, null, 2));
   writeFileSync(path.join(archiveRoot, 'LATEST'), stamp + '\n');
 
-  console.log(
-    `[archive-sourcemaps] moved ${moved.length} maps → ${path.relative(root, destRoot)}`,
-  );
+  console.log(`[archive-sourcemaps] moved ${moved.length} maps → ${path.relative(root, destRoot)}`);
 }
 
 main();
