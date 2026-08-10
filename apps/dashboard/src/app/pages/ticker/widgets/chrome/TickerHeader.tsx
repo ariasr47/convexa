@@ -13,12 +13,16 @@
  * (`[live-vs-static-isolation]`). The last-trade readout (`data-testid="last-trade"`, its 4 states) is
  * preserved byte-for-byte.
  */
-import { Refused, TickerFaultedNotice } from '@/features/trading/positions/FaultedBanner';
+import {
+  Refused as FaultedRefused,
+  TickerFaultedNotice,
+} from '@/features/trading/positions/FaultedBanner';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { Refused } from '@/shared/ui/Refused';
+import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 
@@ -255,6 +259,9 @@ interface TickerHeaderProps {
    * treatment and its own one-line notice. `aria-disabled` + focusable, never HTML `disabled`.
    */
   storeFaulted?: boolean;
+  /** When false (signed out), show Refused instead of a live-looking sim CTA. */
+  tradeAllowed?: boolean;
+  onSignIn?: () => void;
   /** REST-bundle freshness — folded into the deck hero's meta line (relocated `FreshnessLine`). The
    *  freshness reflects the STATIC path only (never live/SSE) — `[live-vs-static-isolation]`. */
   freshness?: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
@@ -273,6 +280,8 @@ export function TickerHeader({
   selected,
   onOpenTrade,
   storeFaulted = false,
+  tradeAllowed = true,
+  onSignIn,
   freshness,
   singleNameCaveat = false,
 }: TickerHeaderProps) {
@@ -402,20 +411,31 @@ export function TickerHeader({
             }}
           >
             {storeFaulted && <TickerFaultedNotice />}
-            <Refused when={storeFaulted}>
-              <Button
-                variant="contained"
-                size="small"
-                onClick={onOpenTrade}
-                data-testid="open-sim-trade"
-                // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
-                // so its nowrap label can never force the viewport wider. Still THE one entry point
-                // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
-                sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
-              >
-                + Open simulated trade
-              </Button>
-            </Refused>
+            {!tradeAllowed ? (
+              <Box sx={{ mt: 0.5, maxWidth: 360 }}>
+                <Refused
+                  actionLabel="+ Open simulated trade"
+                  reason="Sign in to open a paper position. No real order is ever sent."
+                  onSignIn={onSignIn}
+                  testId="open-sim-trade-refused"
+                />
+              </Box>
+            ) : (
+              <FaultedRefused when={storeFaulted}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={onOpenTrade}
+                  data-testid="open-sim-trade"
+                  // At xs the CTA sits under the anchor on its own row (left-aligned, intrinsic width)
+                  // so its nowrap label can never force the viewport wider. Still THE one entry point
+                  // to the shared TradeEntryDialog (`[single-shared-sim-entry-dialog]`).
+                  sx={{ flexShrink: 0, whiteSpace: 'nowrap', mt: 0.5 }}
+                >
+                  + Open simulated trade
+                </Button>
+              </FaultedRefused>
+            )}
           </Stack>
         )}
       </Stack>

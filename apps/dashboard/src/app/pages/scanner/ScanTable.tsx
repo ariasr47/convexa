@@ -10,8 +10,8 @@
  * affordance anywhere on this surface.
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box } from '@mui/material';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
+import { Box } from '@mui/material';
 import { Fragment } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { PollDelta } from './format';

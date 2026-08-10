@@ -10,8 +10,8 @@
  *  - storage-unavailable is a contained, honest info note (never a 5xx / never an error red — AC-18).
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Alert, Box, Button, Divider, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { AuthError, getAiKeyStatus, removeAiKey, setAiKey, type AiKeyStatus } from '@convexa/api';
+import { Alert, Box, Button, Divider, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';

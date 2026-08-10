@@ -8,8 +8,8 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
-import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import type { OffExchange } from '@convexa/api';
+import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import {
   BLOCK_MIN_SHARES_DISPLAY,
   BLOCKS_TOOLTIP,

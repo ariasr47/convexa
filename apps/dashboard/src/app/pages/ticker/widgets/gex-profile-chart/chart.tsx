@@ -1,7 +1,7 @@
 import { typographyTokens } from '@/shared/theme/tokens';
+import type { StrikeRow } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import type { StrikeRow } from '@convexa/api';
 import { useMemo } from 'react';
 import {
   Bar,

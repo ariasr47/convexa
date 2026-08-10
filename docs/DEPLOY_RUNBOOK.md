@@ -14,11 +14,11 @@
 
 ## Topology (current)
 
-| Piece | Host | Process |
-|-------|------|---------|
-| SPA | Cloudflare Pages (`convexa.pages.dev`) | Static Vite build + Pages Function proxy `/api/*` |
-| API + scanner + warmer | Railway service **`api`** | **One** container: `api-rust serve` |
-| DB | Railway **Postgres** plugin | Shared by all replicas |
+| Piece                  | Host                                   | Process                                           |
+| ---------------------- | -------------------------------------- | ------------------------------------------------- |
+| SPA                    | Cloudflare Pages (`convexa.pages.dev`) | Static Vite build + Pages Function proxy `/api/*` |
+| API + scanner + warmer | Railway service **`api`**              | **One** container: `api-rust serve`               |
+| DB                     | Railway **Postgres** plugin            | Shared by all replicas                            |
 
 ```text
 Browser  →  https://convexa.pages.dev
@@ -56,43 +56,43 @@ the image.
 
    **Required**
 
-   | Variable | Notes |
-   |----------|--------|
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-   | `MASSIVE_API_KEY` | Vendor key |
+   | Variable                   | Notes                                                  |
+   | -------------------------- | ------------------------------------------------------ |
+   | `DATABASE_URL`             | `${{Postgres.DATABASE_URL}}`                           |
+   | `MASSIVE_API_KEY`          | Vendor key                                             |
    | `AUTH_SESSION_SIGNING_KEY` | Stable random; keep across deploys or all sessions die |
-   | `AI_KEY_ENCRYPTION_KEY` | Stable Fernet/key material; keep across deploys |
-   | `AUTH_COOKIE_SECURE` | `true` in prod |
-   | `AUTH_COOKIE_SAMESITE` | `lax` (Pages Function keeps cookie first-party) |
+   | `AI_KEY_ENCRYPTION_KEY`    | Stable Fernet/key material; keep across deploys        |
+   | `AUTH_COOKIE_SECURE`       | `true` in prod                                         |
+   | `AUTH_COOKIE_SAMESITE`     | `lax` (Pages Function keeps cookie first-party)        |
 
    **Security / capacity**
 
-   | Variable | Notes |
-   |----------|--------|
+   | Variable                    | Notes                                                                                                                                                |
+   | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
    | `PUBLIC_RATE_LIMIT_PER_MIN` | Default **120** if unset. Per-IP limit on expensive routes (`/api/ticker/*`, `/api/stream/*`, market slices, scan). **`0` = disabled** (local only). |
-   | `METRICS_SECRET_TOKEN` | If set, `GET /api/_metrics` requires `Authorization: Bearer …` or `X-Metrics-Token`. Pages edge already 404s this path. |
-   | `ALLOWED_ORIGINS` | Optional defence-in-depth; browser is same-origin via Pages Function |
+   | `METRICS_SECRET_TOKEN`      | If set, `GET /api/_metrics` requires `Authorization: Bearer …` or `X-Metrics-Token`. Pages edge already 404s this path.                              |
+   | `ALLOWED_ORIGINS`           | Optional defence-in-depth; browser is same-origin via Pages Function                                                                                 |
 
    **Scanner / warm (defaults are fine)**
 
-   | Variable | Notes |
-   |----------|--------|
-   | `SCAN_ENABLED` | Unset or `1` — scanner loop inside `serve` |
-   | `SCAN_MARKET_HOURS_ONLY` | Default on — idles slow lane outside coverage |
-   | `WARM_ENABLED` | Default on — pre-warm liquid names |
-   | `WARM_SYMBOLS` / `LIQUID_SYMBOLS` | Optional override lists |
-   | `SCAN_UNIVERSE_PATH` | Image default `/app/universe.json` |
+   | Variable                          | Notes                                         |
+   | --------------------------------- | --------------------------------------------- |
+   | `SCAN_ENABLED`                    | Unset or `1` — scanner loop inside `serve`    |
+   | `SCAN_MARKET_HOURS_ONLY`          | Default on — idles slow lane outside coverage |
+   | `WARM_ENABLED`                    | Default on — pre-warm liquid names            |
+   | `WARM_SYMBOLS` / `LIQUID_SYMBOLS` | Optional override lists                       |
+   | `SCAN_UNIVERSE_PATH`              | Image default `/app/universe.json`            |
 
    **Auth lockdown (private testing)**
 
-   | Variable | Notes |
-   |----------|--------|
-   | `AUTH_REGISTRATION_OPEN` | Leave unset/`false` in prod |
-   | Owner seed vars | Whatever your current seed path is (`OWNER_*` / `SEED_ACCOUNTS` — match live service) |
-   | `AI_REC_ADMIN_EMAILS` | Your login for shared-key allowance |
+   | Variable                 | Notes                                                                                 |
+   | ------------------------ | ------------------------------------------------------------------------------------- |
+   | `AUTH_REGISTRATION_OPEN` | Leave unset/`false` in prod                                                           |
+   | Owner seed vars          | Whatever your current seed path is (`OWNER_*` / `SEED_ACCOUNTS` — match live service) |
+   | `AI_REC_ADMIN_EMAILS`    | Your login for shared-key allowance                                                   |
 
 5. **Start command:** leave default image `CMD` (`api-rust serve` on `$PORT`). Do **not** set `python worker.py`.
-6. **Replicas:** **1 is the supported default.** Multi-replica requires Postgres (already) for scan/auth and accepts shared scan latest-wins. **AI-rec daily caps remain process-local** (`ai_meter` on `/api/health`) — N replicas ≈ N× cap until a shared meter ships. Do not run a second *Python* worker.
+6. **Replicas:** **1 is the supported default.** Multi-replica requires Postgres (already) for scan/auth and accepts shared scan latest-wins. **AI-rec daily caps remain process-local** (`ai_meter` on `/api/health`) — N replicas ≈ N× cap until a shared meter ships. Do not run a second _Python_ worker.
 
 7. **Deploy**, then smoke the **Railway URL** directly (Phase 3).
 
@@ -115,9 +115,9 @@ the image.
 
 ## Phase 2b — Continuous deploy (backend)
 
-| Surface | CD mechanism |
-|---------|----------------|
-| **Pages (SPA)** | Cloudflare ↔ GitHub: auto-build on `main` (enable in CF dashboard if not already) |
+| Surface             | CD mechanism                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| **Pages (SPA)**     | Cloudflare ↔ GitHub: auto-build on `main` (enable in CF dashboard if not already)          |
 | **Railway (`api`)** | Railway ↔ GitHub: auto-deploy on `main` (service settings → Source → wait for CI optional) |
 
 **Recommended:** Railway **“Wait for CI”** so a red `CI` workflow blocks deploy.
@@ -158,33 +158,33 @@ curl -sS "$API/api/scan/SPY/history?limit=5"
 # Expect: eventually 429 with a clear body
 ```
 
-| Check | Pass criteria |
-|-------|----------------|
-| A1 | `durable_store=postgres` in prod |
-| A3 | Bundle returns; no 5xx |
-| A4 | Not permanent empty after warm-up in RTH |
-| A5 | Endpoint exists (not 404) |
-| A6 | 429 when limit enabled |
+| Check | Pass criteria                            |
+| ----- | ---------------------------------------- |
+| A1    | `durable_store=postgres` in prod         |
+| A3    | Bundle returns; no 5xx                   |
+| A4    | Not permanent empty after warm-up in RTH |
+| A5    | Endpoint exists (not 404)                |
+| A6    | 429 when limit enabled                   |
 
 ### B. Via Pages (end-to-end)
 
-| # | Action | Pass |
-|---|--------|------|
-| B1 | Open `https://convexa.pages.dev` | SPA loads |
-| B2 | Ticker `/ticker/SPY` signed out | Bundle + live tiles (SSE through Function) |
-| B3 | Dealer grid shows **Vol-norm GEX** or honest unavailable | Not a blank error |
-| B4 | Structure path widget | Empty “building” or samples — not crash |
-| B5 | `/scanner` | Rows + structure freshness (not infinite skeleton) |
-| B6 | `/api/_metrics` from Pages | **Not** publicly useful without token (Function block or 401) |
-| B7 | Login + gated sim write | Works signed-in; 403 signed-out |
+| #   | Action                                                   | Pass                                                          |
+| --- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| B1  | Open `https://convexa.pages.dev`                         | SPA loads                                                     |
+| B2  | Ticker `/ticker/SPY` signed out                          | Bundle + live tiles (SSE through Function)                    |
+| B3  | Dealer grid shows **Vol-norm GEX** or honest unavailable | Not a blank error                                             |
+| B4  | Structure path widget                                    | Empty “building” or samples — not crash                       |
+| B5  | `/scanner`                                               | Rows + structure freshness (not infinite skeleton)            |
+| B6  | `/api/_metrics` from Pages                               | **Not** publicly useful without token (Function block or 401) |
+| B7  | Login + gated sim write                                  | Works signed-in; 403 signed-out                               |
 
 ### C. Scanner-specific
 
-| # | Pass |
-|---|------|
-| C1 | Railway logs show scanner loop / compute ok (not “scanner disabled”) |
-| C2 | `SCAN_ENABLED=0` is **not** set in prod unless intentional |
-| C3 | Outside RTH, idle is OK; after open, rows refresh |
+| #   | Pass                                                                 |
+| --- | -------------------------------------------------------------------- |
+| C1  | Railway logs show scanner loop / compute ok (not “scanner disabled”) |
+| C2  | `SCAN_ENABLED=0` is **not** set in prod unless intentional           |
+| C3  | Outside RTH, idle is OK; after open, rows refresh                    |
 
 ---
 

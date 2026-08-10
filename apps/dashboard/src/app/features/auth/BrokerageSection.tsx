@@ -17,7 +17,6 @@
  * integration suite.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Alert, Box, Button, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import {
   AuthError,
   deleteBrokerCredential,
@@ -25,6 +24,7 @@ import {
   putBrokerCredential,
   type BrokerCredentialHint,
 } from '@convexa/api';
+import { Alert, Box, Button, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';

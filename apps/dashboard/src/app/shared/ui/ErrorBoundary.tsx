@@ -30,7 +30,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
     // Keep console noise for operators; never ship PII.
-    console.error('[ErrorBoundary]', this.props.label ?? this.props.variant, error, info.componentStack);
+    console.error(
+      '[ErrorBoundary]',
+      this.props.label ?? this.props.variant,
+      error,
+      info.componentStack,
+    );
   }
 
   private reset = () => {
@@ -53,7 +58,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
     return (
       <Box
         role="alert"
-        data-testid={this.props.testId ?? (isWidget ? 'widget-error-boundary' : 'route-error-boundary')}
+        data-testid={
+          this.props.testId ?? (isWidget ? 'widget-error-boundary' : 'route-error-boundary')
+        }
         data-variant={variant}
         sx={{
           p: isWidget ? 2 : 4,
@@ -66,7 +73,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, State> {
           my: isWidget ? 0 : 4,
         }}
       >
-        <Typography component="h2" variant={isWidget ? 'subtitle2' : 'h6'} sx={{ m: 0, mb: 1, fontWeight: 700 }}>
+        <Typography
+          component="h2"
+          variant={isWidget ? 'subtitle2' : 'h6'}
+          sx={{ m: 0, mb: 1, fontWeight: 700 }}
+        >
           {title}
         </Typography>
         <Typography component="p" variant="body2" sx={{ m: 0, mb: 2, color: 'text.secondary' }}>

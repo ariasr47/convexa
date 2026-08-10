@@ -17,8 +17,8 @@
  * `orders/orders.risk.spec.tsx`. Mocks ONLY the network boundary (`fetch`).
  */
 import { theme } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type { TrackedContract } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

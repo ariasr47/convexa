@@ -8,9 +8,9 @@
  * `[live-vs-static-isolation]` · `[model-read-carries-its-assumptions]` · type floor ≥11px.
  */
 import { Widget } from '@/shared/ui/Widget';
+import type { StructureSample } from '@convexa/api';
 import { Box, Skeleton, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import type { StructureSample } from '@convexa/api';
 import { useMemo } from 'react';
 import { humanAge } from '../_kit';
 import { fmtPathDelta, sparkPoints, summarizePath } from './historyMath';

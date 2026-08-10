@@ -8,8 +8,8 @@
  * (9.60:1 dark) — mode-aware by construction (the "logo-like invariance" rationale died with
  * the gradient).
  */
-import type { SxProps, Theme } from '@mui/material/styles';
 import type { AuthUser } from '@convexa/api';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 /** The user's initial (display name first, else email), uppercased; a neutral dot when unknown. */
 export function avatarInitial(user: AuthUser | null | undefined): string {

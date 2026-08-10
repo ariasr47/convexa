@@ -1,7 +1,7 @@
 import { theme } from '@/shared/theme/theme';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
-import { ThemeProvider } from '@mui/material/styles';
 import type { StructureSample } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -37,7 +37,9 @@ function mount(ui: ReactElement) {
 describe('StructureHistory', () => {
   it('empty cold-start is honest (not an error)', () => {
     mount(<StructureHistory symbol="SPY" samples={[]} />);
-    expect(screen.getByTestId('structure-history-empty').textContent).toMatch(/Building history/i);
+    expect(screen.getByTestId('structure-history-empty').textContent).toMatch(
+      /Cold start|slow lane|structure recompute/i,
+    );
     expect(screen.queryByTestId('structure-history-error')).toBeNull();
   });
 

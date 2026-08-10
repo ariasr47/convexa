@@ -14,7 +14,9 @@
  */
 export { ComingSoonBox, type ComingSoonBoxProps } from './ComingSoonBox';
 export { ComingSoonBadge, ComingSoonCard, type ComingSoonCardProps } from './ComingSoonCard';
+export { ErrorBoundary, type ErrorBoundaryProps, type ErrorBoundaryVariant } from './ErrorBoundary';
 export { Jargon, type JargonProps } from './Jargon';
+export { Refused, type RefusedProps } from './Refused';
 export { TintChip } from './TintChip';
 export { ValueCard, type ValueCardProps } from './ValueCard';
 export * from './Widget';

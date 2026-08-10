@@ -13,8 +13,8 @@
  * MUI sx compiles to classes — assertions read the emotion class's injected CSS / className
  * identity, never `getAttribute('style')` (the testing gotcha).
  */
-import { ThemeProvider } from '@mui/material/styles';
 import type { OffExchange, Setup } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 

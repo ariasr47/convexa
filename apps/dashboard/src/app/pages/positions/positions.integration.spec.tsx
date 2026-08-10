@@ -12,9 +12,9 @@
  * that can measure honestly — jsdom reports every box as 0, so a copy here would pass vacuously and
  * be a second source of truth besides.
  */
+import type { StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

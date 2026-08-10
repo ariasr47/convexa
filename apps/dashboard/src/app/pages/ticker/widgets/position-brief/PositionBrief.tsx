@@ -17,6 +17,7 @@ import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { money, pct } from '@/features/trading/positions/labels';
 import type { PositionView } from '@/features/trading/positions/view';
 import { extrasFor } from '@/shared/theme/tokens';
+import { Refused } from '@/shared/ui/Refused';
 import { Box, Button, Tooltip, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { BRIEF_COPY } from './copy';
@@ -31,6 +32,9 @@ export interface PositionBriefProps {
   onOpenTrade?: () => void;
   /** When true, hide the empty CTA (e.g. store faulted already refused entry). */
   entryBlocked?: boolean;
+  /** When false (signed out), show Refused instead of a live-looking empty CTA. */
+  tradeAllowed?: boolean;
+  onSignIn?: () => void;
 }
 
 const stripSx = {
@@ -49,6 +53,8 @@ export function PositionBrief({
   storeFaulted = false,
   onOpenTrade,
   entryBlocked = false,
+  tradeAllowed = true,
+  onSignIn,
 }: PositionBriefProps) {
   const symbol = ticker.toUpperCase();
 
@@ -101,6 +107,8 @@ export function PositionBrief({
           symbol={symbol}
           onOpenTrade={onOpenTrade}
           showCta={!!onOpenTrade && !entryBlocked}
+          tradeAllowed={tradeAllowed}
+          onSignIn={onSignIn}
         />
       ) : openViews.length === 1 ? (
         <SingleBrief view={openViews[0]} />
@@ -115,10 +123,14 @@ function EmptyBrief({
   symbol,
   onOpenTrade,
   showCta,
+  tradeAllowed,
+  onSignIn,
 }: {
   symbol: string;
   onOpenTrade?: () => void;
   showCta: boolean;
+  tradeAllowed: boolean;
+  onSignIn?: () => void;
 }) {
   return (
     <Box
@@ -136,7 +148,7 @@ function EmptyBrief({
       >
         {BRIEF_COPY.empty(symbol)}
       </Typography>
-      {showCta && (
+      {showCta && tradeAllowed && (
         <Button
           size="small"
           variant="outlined"
@@ -146,6 +158,14 @@ function EmptyBrief({
         >
           {BRIEF_COPY.emptyCta}
         </Button>
+      )}
+      {showCta && !tradeAllowed && (
+        <Refused
+          actionLabel={BRIEF_COPY.emptyCta}
+          reason="Sign in to open a paper position. No real order is ever sent."
+          onSignIn={onSignIn}
+          testId="position-brief-refused"
+        />
       )}
       <BookLink />
     </Box>

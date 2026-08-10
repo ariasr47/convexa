@@ -20,6 +20,7 @@
 import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { extrasFor } from '@/shared/theme/tokens';
+import type { ThemePref } from '@convexa/api';
 import {
   Alert,
   Box,
@@ -38,7 +39,6 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import type { ThemePref } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AiKeySection } from './AiKeySection';

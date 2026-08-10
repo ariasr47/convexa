@@ -25,8 +25,6 @@
  * controllable `EventSource`) — NEVER a live backend. The strict fetch mock THROWS on any unexpected
  * call, so "no hidden endpoint" is enforced by construction.
  */
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
 import type {
   DealerFlowProjection,
   IvRankRead,
@@ -35,6 +33,8 @@ import type {
   TermStructure,
   TickerBundle,
 } from '@convexa/api';
+import CssBaseline from '@mui/material/CssBaseline';
+import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

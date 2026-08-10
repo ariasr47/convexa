@@ -7,6 +7,7 @@
  * ticker — no key, no other ticker, no identity, no order data.
  */
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
+import { fetchRecExport, RecExport } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -20,7 +21,6 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { fetchRecExport, RecExport } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { COPY, EXPORT_HEADER } from './copy';
 

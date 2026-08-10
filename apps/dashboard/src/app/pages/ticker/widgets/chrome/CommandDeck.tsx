@@ -25,8 +25,8 @@
  */
 import type { usePersona } from '@/features/personas/usePersona';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { Box, Stack, Typography } from '@mui/material';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
+import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
@@ -42,6 +42,9 @@ interface CommandDeckProps {
   onOpenTrade: () => void;
   /** The durable positions store is faulted — refuses this CTA (AC-69). */
   storeFaulted?: boolean;
+  /** Signed-out honesty: false → Refused UI instead of a live-looking sim CTA. */
+  tradeAllowed?: boolean;
+  onSignIn?: () => void;
   freshness: { snapshotIso: string | null; dataAgeSeconds: number | null; refreshing: boolean };
   /** index-first-defaults AC-4 — forwarded to the deck hero (`TickerHeader`): the single-name
    *  honesty caption. True ONLY for a confirmed non-universe symbol (AC-5). */
@@ -154,6 +157,8 @@ export function CommandDeck(props: CommandDeckProps) {
     selected,
     onOpenTrade,
     storeFaulted,
+    tradeAllowed = true,
+    onSignIn,
     freshness,
     singleNameCaveat,
     symbol,
@@ -246,6 +251,8 @@ export function CommandDeck(props: CommandDeckProps) {
             selected={selected}
             onOpenTrade={onOpenTrade}
             storeFaulted={storeFaulted}
+            tradeAllowed={tradeAllowed}
+            onSignIn={onSignIn}
             freshness={freshness}
             singleNameCaveat={singleNameCaveat}
           />

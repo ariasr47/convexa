@@ -11,8 +11,8 @@
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { Widget } from '@/shared/ui/Widget';
-import { Box, Button, Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material';
 import type { LiveUpdate } from '@convexa/api';
+import { Box, Button, Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OrderDetailDialog } from './OrderDetailDialog';

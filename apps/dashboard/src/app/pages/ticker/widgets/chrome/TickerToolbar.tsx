@@ -17,6 +17,7 @@
  */
 import { PersonaPicker } from '@/features/personas/components';
 import type { usePersona } from '@/features/personas/usePersona';
+import type { Expiration } from '@convexa/api';
 import {
   Box,
   Checkbox,
@@ -30,7 +31,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import type { Expiration } from '@convexa/api';
 import { type ReactNode } from 'react';
 import { dteLabel } from '../_kit/copy';
 

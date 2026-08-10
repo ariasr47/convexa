@@ -13,9 +13,9 @@
  * Mounts the REAL app subtree at `/ticker/:symbol`, mocking ONLY the network boundary (`fetch` +
  * a silent `EventSource`) — never a live backend. The strict mock THROWS on any unexpected call.
  */
+import type { TickerBundle } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { TickerBundle } from '@convexa/api';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

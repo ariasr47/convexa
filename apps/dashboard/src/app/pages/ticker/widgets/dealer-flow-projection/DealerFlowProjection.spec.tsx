@@ -12,8 +12,8 @@
  * copy, banned-language scans, offline-caption scans (page-level byte-identity covers live coupling).
  */
 import { theme } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { CHARM_EMPTY, DFP_WHOLE_EMPTY, VANNA_EMPTY } from '../_kit/copy';

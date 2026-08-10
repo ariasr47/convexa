@@ -4,6 +4,7 @@
  * never triggers a bundle fetch or any compute. Honest-presentation: no fabricated/zeroed number
  * as real (empty → `—`), `skipped` shown as skipped, low headroom is factual & non-alerting.
  */
+import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
@@ -27,7 +28,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
 import { useState } from 'react';
 import { LatencyTrend } from './LatencyTrend';
 import { useLatencyTrend } from './useLatencyTrend';

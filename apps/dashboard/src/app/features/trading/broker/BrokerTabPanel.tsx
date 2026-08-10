@@ -19,8 +19,8 @@
 import { useAuth } from '@/features/auth/AuthContext';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { useGate } from '@/features/auth/useGate';
-import { Alert, Box, Button, Skeleton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
+import { Alert, Box, Button, Skeleton, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { BrokerGroupHeader, BrokerGroupPanel, LoneLegClause } from './BrokerGroupHeader';

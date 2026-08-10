@@ -9,6 +9,13 @@
  * only draft state and closes only when the server echoed a save.
  */
 import {
+  getScanUniverse,
+  type ScanDensity,
+  type ScanView,
+  type ScanViewSort,
+  type ScanViewWrite,
+} from '@convexa/api';
+import {
   Box,
   Button,
   Dialog,
@@ -18,13 +25,6 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {
-  getScanUniverse,
-  type ScanDensity,
-  type ScanView,
-  type ScanViewSort,
-  type ScanViewWrite,
-} from '@convexa/api';
 import { useEffect, useMemo, useState } from 'react';
 import { MONO } from './ScanCells';
 import { SCAN_COPY } from './labels';

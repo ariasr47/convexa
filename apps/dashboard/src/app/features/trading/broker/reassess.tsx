@@ -12,6 +12,7 @@
  * NO Accept-into-store or any other write action. The sim reassessment Accept flow is untouched.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
+import type { BrokerBook, OptionRight } from '@convexa/api';
 import {
   Box,
   Button,
@@ -21,7 +22,6 @@ import {
   DialogTitle,
   Typography,
 } from '@mui/material';
-import type { BrokerBook, OptionRight } from '@convexa/api';
 import { useState } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';

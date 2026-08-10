@@ -29,8 +29,6 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type {
   AtrHorizon,
   AtrRead,
@@ -39,6 +37,8 @@ import type {
   MarketContextPack,
   TrendMomentumRead,
 } from '@convexa/api';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,

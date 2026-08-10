@@ -2,6 +2,7 @@
  * Persona UI — PersonaPicker (toolbar), PersonaCustomizeForm. All presentation-only: switching
  * persona never recomputes or fetches. Copy is verbatim from UX_BLUEPRINT.
  */
+import type { PersonaDefinition, PersonaRisk } from '@convexa/api';
 import {
   Alert,
   Box,
@@ -22,7 +23,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type { PersonaDefinition, PersonaRisk } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { CustomDraft, usePersona } from './usePersona';
 

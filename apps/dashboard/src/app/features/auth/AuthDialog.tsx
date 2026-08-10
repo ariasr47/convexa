@@ -12,6 +12,7 @@
  */
 import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
 import { extrasFor } from '@/shared/theme/tokens';
+import { AuthError } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -28,7 +29,6 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { AuthError } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';

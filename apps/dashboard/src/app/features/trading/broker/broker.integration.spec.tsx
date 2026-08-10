@@ -9,9 +9,9 @@
  * renders the honest unchanged-and-why note → Disconnect (confirm) → S1 again with NO residual
  * broker row text anywhere (AC-3 FE arm).
  */
+import type { BrokerBook } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { BrokerBook } from '@convexa/api';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

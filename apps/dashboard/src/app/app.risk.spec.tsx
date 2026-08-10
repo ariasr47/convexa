@@ -22,9 +22,9 @@
  * Mocks ONLY the network boundary (`fetch` + `EventSource`), never a live backend. The strict fetch
  * mock THROWS on any unexpected call.
  */
+import type { TickerBundle } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { TickerBundle } from '@convexa/api';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

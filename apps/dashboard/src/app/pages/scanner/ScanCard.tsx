@@ -7,8 +7,8 @@
  * action (`[no-real-order-path]`, AC-11). It reuses the SAME `ScanCells` atoms as the table, so a
  * datum can never be rendered two ways.
  */
-import { Box } from '@mui/material';
 import type { ScanRow } from '@convexa/api';
+import { Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { PollDelta } from './format';
 import {

@@ -10,9 +10,9 @@
  *     cross, at the limit price, via the EXISTING entry-resolver lifecycle (`positions/entry.ts` +
  *     `usePortfolio`) — `[live-vs-static-isolation]`: never off a frozen/offline mark.
  */
+import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

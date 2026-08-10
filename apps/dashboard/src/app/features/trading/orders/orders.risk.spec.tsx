@@ -29,9 +29,9 @@
  *
  * Mocks ONLY the network boundary (`fetch` via the @convexa/api client + the SSE `EventSource`).
  */
+import type { LiveUpdate, StrikeRow, TickerBundle } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, StrikeRow, TickerBundle } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

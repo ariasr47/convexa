@@ -12,8 +12,8 @@
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import type { GateApi } from '@/features/auth/useGate';
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box, Typography } from '@mui/material';
 import type { ScanDensity, ScanView } from '@convexa/api';
+import { Box, Typography } from '@mui/material';
 import { EMPTY_FILTERS, filtersActive, type ScanFilters } from './format';
 import {
   FLIP_FILTER_OPTIONS,

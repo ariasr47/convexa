@@ -17,7 +17,6 @@
  * (the page-level byte-identity walk catches any live coupling behaviorally).
  */
 import { theme } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type {
   AtrRead,
   FlowVsPositioningRead,
@@ -25,6 +24,7 @@ import type {
   MarketContextPack,
   TrendMomentumRead,
 } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import {

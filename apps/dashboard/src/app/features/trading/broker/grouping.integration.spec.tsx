@@ -5,8 +5,8 @@
  */
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 import type { BrokerBook, TickerBundle } from '@convexa/api';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

@@ -42,6 +42,7 @@ import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
 import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
+import { OptionRight, RecResponse } from '@convexa/api';
 import {
   Alert,
   Box,
@@ -54,7 +55,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { OptionRight, RecResponse } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -509,6 +509,8 @@ export function TickerDashboard() {
               // The faulted state follows the STORE, not the route (SPEC §2.9). Computed
               // synchronously on every render, so no frame paints an enabled CTA on a faulted book.
               storeFaulted={storeFaulted}
+              tradeAllowed={orderGate.allowed}
+              onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
               freshness={{
                 snapshotIso: fresh?.snapshot_iso ?? null,
                 dataAgeSeconds: fresh?.data_age_seconds ?? null,
@@ -557,17 +559,19 @@ export function TickerDashboard() {
                 </BoardZoneLabel>
 
                 {/* STATIC positioning — walls, GEX, opportunity. Stay rendered on SSE drop. */}
-                <DealerPositioning
-                  m={m}
-                  sig={sig}
-                  offExchange={data?.off_exchange}
-                  volOiThreshold={volOiThreshold}
-                  unusualCount={unusualStrikes.length}
-                  tierWord={tm.word}
-                  tierColor={tm.color}
-                  opportunityScore={sig?.opportunity_score ?? 0}
-                  structureAgeSeconds={structureAgeSeconds}
-                />
+                <ErrorBoundary variant="widget" label="Dealer positioning">
+                  <DealerPositioning
+                    m={m}
+                    sig={sig}
+                    offExchange={data?.off_exchange}
+                    volOiThreshold={volOiThreshold}
+                    unusualCount={unusualStrikes.length}
+                    tierWord={tm.word}
+                    tierColor={tm.color}
+                    opportunityScore={sig?.opportunity_score ?? 0}
+                    structureAgeSeconds={structureAgeSeconds}
+                  />
+                </ErrorBoundary>
 
                 {/* Structure path — durable slow-lane samples (session path after refresh). */}
                 <ErrorBoundary variant="widget" label="Structure path">
@@ -603,6 +607,8 @@ export function TickerDashboard() {
                   storeFaulted={storeFaulted}
                   entryBlocked={storeFaulted || tradeOpen}
                   onOpenTrade={() => openEntry()}
+                  tradeAllowed={orderGate.allowed}
+                  onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
                 />
 
                 {/* ── 2. TAPE & PLAN ───────────────────────────────────────────────── */}

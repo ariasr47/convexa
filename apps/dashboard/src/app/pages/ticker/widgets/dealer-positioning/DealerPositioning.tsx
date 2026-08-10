@@ -7,8 +7,8 @@
  */
 import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
 import { Widget } from '@/shared/ui/Widget';
-import { Box } from '@mui/material';
 import type { MarketState, OffExchange, Signals } from '@convexa/api';
+import { Box } from '@mui/material';
 import {
   dealerPositioningSubtitle,
   fmtUsdCompact,

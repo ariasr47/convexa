@@ -20,9 +20,9 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
+import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
-import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,

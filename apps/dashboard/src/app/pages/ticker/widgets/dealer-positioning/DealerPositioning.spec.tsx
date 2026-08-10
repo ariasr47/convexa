@@ -8,8 +8,8 @@
  * NOT asserted (visible + intentional → review): default tile values/labels, captions, tier colors.
  */
 import { theme } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState, OffExchange, Signals } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DealerPositioning } from './DealerPositioning';

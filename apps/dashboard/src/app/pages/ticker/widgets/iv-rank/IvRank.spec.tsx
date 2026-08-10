@@ -14,8 +14,8 @@
  * label wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
  */
 import { theme } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type { IvRankRead } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { IVR_WHOLE_EMPTY } from '../_kit/copy';

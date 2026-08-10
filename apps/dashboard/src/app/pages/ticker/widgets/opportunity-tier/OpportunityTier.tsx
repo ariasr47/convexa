@@ -4,11 +4,11 @@
  * narrows to the decision/mark vocabulary and holds no React widget. Tiers are server-emitted (signals.opportunity_tier); emphasis is non-directional
  * (info → warning, never green/red) — this is a read, not advice. The trade it offers is simulated.
  */
+import type { OpportunityTier } from '@convexa/api';
 import BoltIcon from '@mui/icons-material/Bolt';
 import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, Button, IconButton } from '@mui/material';
 import { alpha, Theme } from '@mui/material/styles';
-import type { OpportunityTier } from '@convexa/api';
 // The tier WORD map stays in the trading KERNEL: `outcomes/ledger.ts` reads the same closed lookup,
 // and `features/ -> pages/` would invert the downward-only dependency direction (SPEC §2.7).
 import { WORD } from '@/features/trading/model/tier';

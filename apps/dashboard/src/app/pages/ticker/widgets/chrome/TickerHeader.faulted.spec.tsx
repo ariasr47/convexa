@@ -13,8 +13,8 @@
  * rather than a colour literal. Both forms are checked, in both colour schemes.
  */
 import { themeForPref } from '@/shared/theme/theme';
-import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState } from '@convexa/api';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TickerHeader } from './TickerHeader';

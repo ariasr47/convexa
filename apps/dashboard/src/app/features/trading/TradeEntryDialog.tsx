@@ -76,6 +76,7 @@ import {
 import { STRUCTURE_LABELS, structureKindOf } from '@/features/trading/positions/structure';
 import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import { extrasFor } from '@/shared/theme/tokens';
+import { fetchTrackedContract, OptionRight } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -95,7 +96,6 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { fetchTrackedContract, OptionRight } from '@convexa/api';
 import { useEffect, useState, type ReactNode } from 'react';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */

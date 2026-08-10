@@ -15,8 +15,8 @@
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
-import { Box, Tooltip, Typography } from '@mui/material';
 import type { ScanRow } from '@convexa/api';
+import { Box, Tooltip, Typography } from '@mui/material';
 import {
   dash,
   directionColor,

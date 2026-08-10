@@ -22,6 +22,14 @@ import {
 } from '@/features/trading/orders/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
+import type {
+  PersonaDefinition,
+  RecResponse,
+  RecScenarioInfo,
+  RecStrategy,
+  TickerBundle,
+} from '@convexa/api';
+import { fetchPersonas } from '@convexa/api';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
@@ -38,14 +46,6 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type {
-  PersonaDefinition,
-  RecResponse,
-  RecScenarioInfo,
-  RecStrategy,
-  TickerBundle,
-} from '@convexa/api';
-import { fetchPersonas } from '@convexa/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

@@ -29,8 +29,8 @@ import { PortfolioPanel } from '@/features/trading/positions/PortfolioPanel';
 import { allPositions } from '@/features/trading/positions/store';
 import { usePortfolio } from '@/features/trading/positions/usePortfolio';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Typography } from '@mui/material';
 import { getTicker, LiveUpdate, streamTicker, TickerBundle } from '@convexa/api';
+import { Box, Typography } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
 const POLL_MS = 60_000; // matches the backend cache TTL (same cadence as the Ticker viewer)

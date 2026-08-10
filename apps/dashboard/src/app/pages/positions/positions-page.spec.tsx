@@ -16,9 +16,9 @@
  * behavior (row stays, cell degraded, never blanked/dropped, no throw); the wording delta is flagged
  * for a GATE-Z amendment rather than editing the forbidden internals.
  */
+import type { StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
