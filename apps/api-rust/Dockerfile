@@ -27,9 +27,11 @@ COPY Cargo.toml Cargo.lock ./
 COPY libs/quant-engine/Cargo.toml libs/quant-engine/Cargo.toml
 COPY apps/api-rust/Cargo.toml apps/api-rust/Cargo.toml
 
-# Dummy sources so the dependency graph resolves and cargo can cache crates.io
-RUN mkdir -p libs/quant-engine/src apps/api-rust/src \
+# Dummy sources so the dependency graph resolves and cargo can cache crates.io.
+# Manifests declare benches/tests paths — cargo rejects missing files at parse time.
+RUN mkdir -p libs/quant-engine/src libs/quant-engine/benches apps/api-rust/src \
     && printf 'pub fn _x(){}\n' > libs/quant-engine/src/lib.rs \
+    && printf 'fn main(){}\n' > libs/quant-engine/benches/gex_bench.rs \
     && printf 'fn main(){}\n' > apps/api-rust/src/main.rs \
     && printf 'pub fn _x(){}\n' > apps/api-rust/src/lib.rs
 
