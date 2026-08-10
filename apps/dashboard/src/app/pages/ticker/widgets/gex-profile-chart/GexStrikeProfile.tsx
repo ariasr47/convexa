@@ -1,13 +1,13 @@
 /**
- * GexStrikeProfile — the Ticker widget wrapping the Canvas2D Structure Field.
- * Live mid for the tape reference is read from liveTapeStore so the parent can pass only
- * REST structure props (§3.8 Phase C).
+ * GexStrikeProfile — Structure Field + embedded Structure path strip.
+ * Live mid from liveTapeStore; path is slow-lane session history (not live ticks).
  */
 import { Widget } from '@/shared/ui/Widget';
-import type { StrikeRow } from '@convexa/api';
+import type { StrikeRow, StructureSample } from '@convexa/api';
 import { memo } from 'react';
 import { useLiveTape } from '../../liveTapeStore';
 import { gexProfileSubtitle } from '../_kit/copy';
+import { StructurePathStrip } from '../structure-history/StructurePathStrip';
 import { GexLegend, GexProfileChart, windowedStrikes } from './chart';
 
 interface Props {
@@ -15,29 +15,33 @@ interface Props {
   spot: number;
   callWall: number;
   putWall: number;
-  /** Structure gamma flip (REST). Live flip is not used for the flip line — structure owns it. */
   gammaFlip: number;
-  /** Optional override; default = live mid from liveTapeStore when isLive. */
   liveSpot?: number | null;
-  /** Expiration window label (e.g. "all expirations" / "2 expirations"). */
   expLabel?: string;
-  /** REST-bundle age (seconds) — product spine #4. */
   structureAgeSeconds?: number | null;
-  /** Ticker symbol (field label). */
   symbol?: string;
+  /** Session structure path (slow lane) — embedded strip, not a peer card. */
+  pathSamples?: StructureSample[] | null;
+  pathLoading?: boolean;
+  pathError?: string | null;
+  pathBasis?: string | null;
 }
 
 const GEX_INFO =
   'Net dealer gamma by strike as a dual-clock Structure Field. Green = call-dominated ' +
   '(resistance above); red = put-dominated (support below). The amber flip and walls are ' +
-  'structure (REST as-of). The pulsing mid is tape when the stream is live. Probe a strike ' +
-  'for net GEX · DEX · Vol/OI.';
+  'structure (REST as-of). The pulsing mid is tape when the stream is live. The strip above ' +
+  'is session structure path (slow lane), never live ticks.';
 
 export const GexStrikeProfile = memo(function GexStrikeProfile({
   expLabel = 'selected window',
   structureAgeSeconds = null,
   liveSpot: liveSpotProp,
   symbol = '',
+  pathSamples = null,
+  pathLoading = false,
+  pathError = null,
+  pathBasis = null,
   ...props
 }: Props) {
   const tape = useLiveTape();
@@ -45,21 +49,25 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
     liveSpotProp !== undefined ? liveSpotProp : tape.isLive && tape.live ? tape.live.mid : null;
   const tapeLive = liveSpotProp !== undefined ? liveSpotProp != null : tape.isLive && !!tape.live;
 
-  // Mirror the chart's own windowing so the widget frame is omitted (not left empty) when there is
-  // nothing in-window — matching the chart's `return null`.
   if (!windowedStrikes(props.strikes, props.spot, props.callWall, props.putWall).length)
     return null;
   return (
     <Widget
       id="gex-strike-profile"
       title="GEX strike profile"
-      // Spine #4: GEX spot basis + expiration window + structure age (never "live").
       subtitle={gexProfileSubtitle(props.spot, expLabel, structureAgeSeconds)}
       info={GEX_INFO}
       span={2}
       noBodyPad
       actions={<GexLegend />}
     >
+      <StructurePathStrip
+        symbol={symbol || '—'}
+        samples={pathSamples}
+        loading={pathLoading}
+        error={pathError}
+        basis={pathBasis}
+      />
       <GexProfileChart
         {...props}
         liveSpot={liveSpot}

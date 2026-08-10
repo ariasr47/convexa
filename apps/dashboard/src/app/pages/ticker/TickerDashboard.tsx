@@ -67,11 +67,10 @@ import {
   OffExchangeBlocks,
   PositionBrief,
   Setups,
-  StructureHistory,
   TermStructureCard,
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
-import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
+import { CommandDeck, LastTradeReadout, TapePulseStrip, TickerToolbar } from './widgets/chrome';
 
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
@@ -467,6 +466,9 @@ export function TickerDashboard() {
               loading={loading}
             />
 
+            {/* Tape Pulse — thin dual-clock strip (structure mid vs live mid). Not a full bento cell. */}
+            <TapePulseStrip structureMid={m.gex_spot ?? m.price} />
+
             {/* The widget BENTO board — product spine #3: NOT equal weight.
                 Reading order matches Scan → Ticker → Plan:
                   1. Structure  — walls / flip / GEX (why this name)
@@ -512,18 +514,7 @@ export function TickerDashboard() {
                   />
                 </ErrorBoundary>
 
-                {/* Structure path — durable slow-lane samples (session path after refresh). */}
-                <ErrorBoundary variant="widget" label="Structure path">
-                  <StructureHistory
-                    symbol={ticker}
-                    samples={structHist.samples}
-                    basis={structHist.basis}
-                    loading={structHist.loading}
-                    error={structHist.error}
-                  />
-                </ErrorBoundary>
-
-                {/* GEX strike profile — the product's structure centerpiece (full width). */}
+                {/* GEX strike profile — structure centerpiece + embedded session path strip. */}
                 {data?.strike_profile && (
                   <ErrorBoundary variant="widget" label="GEX profile">
                     <GexStrikeProfile
@@ -535,6 +526,10 @@ export function TickerDashboard() {
                       expLabel={expWindowLabel}
                       structureAgeSeconds={structureAgeSeconds}
                       symbol={ticker}
+                      pathSamples={structHist.samples}
+                      pathLoading={structHist.loading}
+                      pathError={structHist.error}
+                      pathBasis={structHist.basis}
                     />
                   </ErrorBoundary>
                 )}

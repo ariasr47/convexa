@@ -51,6 +51,12 @@ const EXEMPT: Record<string, string> = {
     'Shared Structure Field brand token literals for Canvas2D + WebGL instruments',
   'pages/lab/demos/labTokens.ts':
     'Lab Canvas demos — brand token literals shared by ticker-candidate instruments',
+  'pages/ticker/widgets/chrome/TapePulseStrip.tsx':
+    'Tape Pulse strip Canvas2D — brand token literals (cannot use MUI sx)',
+  'pages/ticker/widgets/dealer-positioning/WallMagnetView.tsx':
+    'Wall Magnet Canvas2D — brand token literals (cannot use MUI sx)',
+  'pages/ticker/widgets/term-structure/TermHeatChart.tsx':
+    'Term Heat Canvas2D — brand token literals (cannot use MUI sx)',
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the

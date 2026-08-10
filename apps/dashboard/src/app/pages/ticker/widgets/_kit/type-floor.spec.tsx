@@ -66,8 +66,7 @@ const SOURCES = import.meta.glob(
  *  stale and must be removed). */
 const EXEMPT_CHART_TICKS = [
   // Canvas Structure Field uses ctx.font sizes ≥11; no Recharts tick fontSize:10 path anymore.
-  // Keep term-structure + operator-metrics chart-tick exemptions until those migrate.
-  'pages/ticker/widgets/term-structure/TermStructure.tsx',
+  // Operator-metrics chart ticks; term structure is now Term Heat canvas (no fontSize:10 ticks).
   'pages/operator-metrics/LatencyTrend.tsx',
 ];
 
