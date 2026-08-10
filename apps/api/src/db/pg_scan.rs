@@ -231,30 +231,26 @@ impl PgScanStore {
     }
 
     pub async fn read_rows(&self, symbols: Option<&[String]>) -> AppResult<Vec<ScanRow>> {
-        let rows = match symbols {
-            None => sqlx::query(
-                r#"SELECT symbol, price, chg_pct, score, tier, regime, vol_regime,
-                          flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
-                          as_of, status, score_drivers
-                   FROM scan_rows ORDER BY symbol"#,
-            )
-            .fetch_all(&self.pg.pool)
-            .await,
-            Some(syms) => {
-                let upper: Vec<String> = syms.iter().map(|s| s.to_ascii_uppercase()).collect();
-                sqlx::query(
-                    r#"SELECT symbol, price, chg_pct, score, tier, regime, vol_regime,
-                              flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
-                              as_of, status, score_drivers
-                       FROM scan_rows WHERE symbol = ANY($1) ORDER BY symbol"#,
-                )
-                .bind(&upper)
-                .fetch_all(&self.pg.pool)
-                .await
-            }
-        }
+        // Full-table read + in-process filter. Universe is small (~69); avoids sqlx
+        // TEXT[] / ANY($1) bind footguns that returned empty sets (API always "building").
+        let rows = sqlx::query(
+            r#"SELECT symbol, price, chg_pct, score, tier, regime, vol_regime,
+                      flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
+                      as_of, status, score_drivers
+               FROM scan_rows ORDER BY symbol"#,
+        )
+        .fetch_all(&self.pg.pool)
+        .await
         .map_err(|e| AppError::Config(format!("postgres scan read: {e}")))?;
-        Ok(rows.iter().map(Self::row_from_sql).collect())
+        let mut out: Vec<ScanRow> = rows.iter().map(Self::row_from_sql).collect();
+        if let Some(syms) = symbols {
+            let want: std::collections::HashSet<String> = syms
+                .iter()
+                .map(|s| s.to_ascii_uppercase())
+                .collect();
+            out.retain(|r| want.contains(&r.symbol));
+        }
+        Ok(out)
     }
 
     pub async fn get_row(&self, symbol: &str) -> AppResult<Option<ScanRow>> {

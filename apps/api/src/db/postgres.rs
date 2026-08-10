@@ -39,11 +39,62 @@ impl Pg {
     }
 
     pub async fn migrate(&self) -> AppResult<()> {
-        sqlx::query(SCHEMA)
-            .execute(&self.pool)
-            .await
-            .map_err(|e| AppError::Config(format!("postgres migrate: {e}")))?;
+        // sqlx extended-query protocol allows **one** statement per call. A single
+        // multi-statement execute fails entirely — which left prod without
+        // `score_drivers` / structure-history DDL after the first CREATE, so every
+        // scan_rows upsert (which binds score_drivers) failed while heartbeat still worked.
+        for (i, stmt) in split_sql_statements(SCHEMA).into_iter().enumerate() {
+            sqlx::query(&stmt)
+                .execute(&self.pool)
+                .await
+                .map_err(|e| {
+                    let preview: String = stmt.chars().take(96).collect();
+                    AppError::Config(format!("postgres migrate stmt#{i}: {e} | {preview}"))
+                })?;
+        }
         Ok(())
+    }
+}
+
+/// Split a SQL script into individual statements on `;`, skipping empty/comment-only chunks.
+/// Adequate for our DDL-only schema (no function bodies / dollar-quotes).
+fn split_sql_statements(script: &str) -> Vec<String> {
+    script
+        .split(';')
+        .filter_map(|chunk| {
+            let trimmed = chunk.trim();
+            if trimmed.is_empty() {
+                return None;
+            }
+            // Drop pure-comment chunks (lines starting with --).
+            let has_sql = trimmed.lines().any(|line| {
+                let l = line.trim();
+                !l.is_empty() && !l.starts_with("--")
+            });
+            if !has_sql {
+                return None;
+            }
+            Some(trimmed.to_string())
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_sql_statements;
+
+    #[test]
+    fn split_schema_yields_many_statements() {
+        let stmts = split_sql_statements(super::SCHEMA);
+        assert!(
+            stmts.len() >= 10,
+            "expected many DDL statements, got {}",
+            stmts.len()
+        );
+        assert!(stmts.iter().any(|s| s.contains("scan_rows")));
+        assert!(stmts.iter().any(|s| s.contains("score_drivers")));
+        assert!(stmts.iter().any(|s| s.contains("scan_structure_history")));
+        assert!(stmts.iter().any(|s| s.contains("scan_heartbeat")));
     }
 }
 
