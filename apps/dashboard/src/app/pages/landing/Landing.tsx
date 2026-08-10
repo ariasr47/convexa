@@ -1,19 +1,13 @@
 /**
- * Convexa landing page (`/`, full-bleed, OUTSIDE the shell — README §2, UX_BLUEPRINT §3).
- * A single dark marketing surface. STATIC — no fetch, no SSE, no store, no compute (rendering `/`
- * issues no network request). It renders NO trader nav shell.
+ * Convexa landing page (`/`, full-bleed under the shell).
+ * STATIC — no fetch, no SSE, no store, no compute (rendering `/` issues no network request).
+ *
+ * Product spine (where → why → plan → track):
+ *   primary CTA → Scanner · secondary → Ticker · value cards mirror that order ·
+ *   Positions as practice · AI as the read on a ticker · brokerage stays honest coming-soon.
  *
  * Honesty floor (`[no-real-order-path]`): no affordance presents an un-built capability as working.
- * The coming-soon boxes are visually inert (`ComingSoonBox` hatch). The brokerage-connect "Notify me"
- * control is a NON-navigating waitlist acknowledgement — it shows a toast and never enters a broker
- * flow and never dead-ends. Every value-prop / hero CTA navigates into a real in-shell route.
- *
- * Re-skin (convexa-redesign → redesign-stage-2): composes the shared `ui/` primitives — ValueCard
- * (the 3 "what works today" cards), ComingSoonBox (the coming-soon band) — plus the page-local
- * HeroCurve (THE signature moment; it replaced the old hero motif wallpaper + radial blob) and MUI
- * atoms. Tokens come from the theme (`primary.main`, `text.secondary`, `background.*`, `divider`)
- * — no hex. Sections 1–3 sit inside the page's single `<main>` landmark (Stage 0 §10.2 deferral,
- * landed at stage 2); the heading outline is h1 (hero) → h2 ("What works today") → h3 (card titles).
+ * Tokens only — no hex.
  */
 import { displayScale } from '@/shared/theme/tokens';
 import { ComingSoonCard, Jargon, ValueCard } from '@/shared/ui';
@@ -23,13 +17,13 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LockIcon from '@mui/icons-material/Lock';
 import RadarIcon from '@mui/icons-material/Radar';
-import { Box, Button, Chip, Container, Link, Snackbar, Stack, Typography } from '@mui/material';
+import { Box, Button, Chip, Container, Snackbar, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { HeroCurve } from './HeroCurve';
 
-// Jargon tooltip copy — verbatim, plain-language (README §2 / UX_BLUEPRINT honesty floor).
+// Jargon tooltip copy — plain-language (honesty floor).
 const DEALER_GAMMA_GLOSS =
   'How options dealers are positioned — it tells you where price tends to get pulled toward or pushed ' +
   'away from, and whether the market is likely to calm down or speed up.';
@@ -50,13 +44,9 @@ export function Landing() {
       data-testid="landing"
       sx={{ minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}
     >
-      {/* The page's single <main> landmark — sections 1–3; the Footer (<footer>) stays outside.
-          Landing renders outside the AppShell (which owns the in-shell <main>), so exactly one
-          <main> exists on this route. */}
       <Box component="main">
         {/* ===== 1. Hero ===== */}
         <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-          {/* THE moment (paint-only overlay; the hero box is sized by its content, never the SVG). */}
           <HeroCurve />
           <Container maxWidth="md" sx={{ position: 'relative', py: { xs: 8, md: 12 } }}>
             <Stack spacing={3} sx={{ alignItems: 'flex-start', maxWidth: 660 }}>
@@ -70,9 +60,6 @@ export function Landing() {
                   borderRadius: 999,
                 }}
               />
-              {/* Display scale lands (§6.4): the Stage-1 `displayScale` export on its intended
-                surface — 44–56px fluid clamp, Archivo 700 Expanded via the theme h1 variant.
-                COPY LOCKED (Stage 0 §4.3 — visuals only). */}
               <Typography
                 variant="h1"
                 sx={{
@@ -84,23 +71,32 @@ export function Landing() {
               >
                 See the dealer positioning behind the price.
               </Typography>
-              {/* Honest hero (redesign-stage-0 §4.3, `[no-real-order-path]`): sells ONLY today-working
-                value — no connect-your-positions / real-risk claim. The hatched "Connect a real
-                brokerage — Coming soon" card below stays the ONLY place the future capability appears. */}
               <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 620 }}>
-                Gamma walls, the flip, and live order flow for any ticker — plus an AI read on the
-                setup and a simulated portfolio to practice it. Grounded in live{' '}
+                Scan for structure, open a ticker for walls and the flip, then practice the plan on a{' '}
+                <Jargon term="simulated" gloss={SIMULATED_GLOSS} /> book. Grounded in live{' '}
                 <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} />, not vibes.
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                }}
+                data-testid="product-spine"
+              >
+                Scan → Ticker → Plan → Track
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 1 }}>
                 <Button
                   component={RouterLink}
-                  to="/ticker"
+                  to="/scanner"
                   variant="contained"
                   size="large"
                   data-testid="cta-primary"
                 >
-                  Open the Ticker viewer →
+                  Open Scanner →
                 </Button>
                 <Button
                   component={RouterLink}
@@ -109,16 +105,15 @@ export function Landing() {
                   size="large"
                   data-testid="cta-secondary"
                 >
-                  See a live example
+                  Open free Ticker →
                 </Button>
               </Stack>
             </Stack>
           </Container>
         </Box>
 
-        {/* ===== 2. What works today ===== */}
+        {/* ===== 2. What works today — spine order ===== */}
         <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
-          {/* Heading outline (§6.2): the section label IS the h2 — styling unchanged (overline). */}
           <Typography
             variant="overline"
             component="h2"
@@ -134,6 +129,21 @@ export function Landing() {
             }}
           >
             <ValueCard
+              icon={<RadarIcon />}
+              title="Scanner"
+              testId="vp-scanner"
+              ctaTestId="vp-scanner-cta"
+              to="/scanner"
+              ctaLabel="Open Scanner →"
+              body={
+                <>
+                  Ranked multi-ticker setups from live{' '}
+                  <Jargon term="dealer gamma" gloss={DEALER_GAMMA_GLOSS} /> structure — score, tier,
+                  walls, and distance to flip. Private testing: sign-in required.
+                </>
+              }
+            />
+            <ValueCard
               icon={<BarChartIcon />}
               title="Ticker / GEX analysis"
               testId="vp-ticker"
@@ -142,27 +152,27 @@ export function Landing() {
               ctaLabel="Analyze a ticker →"
               body={
                 <>
-                  <Jargon term="Dealer gamma" gloss={DEALER_GAMMA_GLOSS} /> walls, the gamma flip,
-                  live order flow, and volatility context for any ticker — the structure that says
-                  where price is pulled and whether the regime fades or trends.
+                  Walls, the gamma flip, live order flow, and volatility context for any ticker —
+                  free without an account. The structure that says where price is pulled.
                 </>
               }
             />
             <ValueCard
               icon={<AccountBalanceWalletIcon />}
-              title="Simulated positions portfolio"
+              title="Simulated positions"
               testId="vp-positions"
               ctaTestId="vp-positions-cta"
               to="/positions"
               ctaLabel="Open Positions →"
               body={
                 <>
-                  Track simulated positions with live P/L, fills, grouping, and saved views.
-                  Paper-only — every trade is <Jargon term="SIMULATED" gloss={SIMULATED_GLOSS} />,
-                  nothing touches a broker.
+                  Track simulated positions with live P/L and saved views after you read the setup.
+                  Paper-only — every trade is <Jargon term="SIMULATED" gloss={SIMULATED_GLOSS} />.
                 </>
               }
             />
+          </Box>
+          <Box sx={{ mt: 3, maxWidth: 720 }}>
             <ValueCard
               icon={<AutoAwesomeIcon />}
               title="AI recommendations"
@@ -181,69 +191,34 @@ export function Landing() {
           </Box>
         </Container>
 
-        {/* ===== 3. Honest coming-soon band (hatched, inert) ===== */}
+        {/* ===== 3. Honest coming-soon (broker only) ===== */}
         <Container maxWidth="lg" sx={{ pb: { xs: 4, md: 6 } }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
-              gap: 3,
-            }}
-          >
-            {/* Brokerage connect — the headline future capability. Non-navigating waitlist affordance. */}
-            <ComingSoonCard
-              testId="brokerage-block"
-              icon={<LockIcon />}
-              title="Connect a real brokerage"
-              body={
-                <>
-                  Connect your real brokerage positions — get the same AI reads on the risk
-                  you&apos;re actually carrying. <strong>Coming soon.</strong>
-                </>
-              }
-              action={
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={() => setToastOpen(true)}
-                  data-testid="waitlist-button"
-                >
-                  Notify me
-                </Button>
-              }
-            />
-
-            {/* Scanner — coming soon. Links to the honest in-shell placeholder (never "working"). */}
-            <ComingSoonCard
-              testId="scanner-block"
-              icon={<RadarIcon />}
-              title="Scanner"
-              body={
-                <>
-                  A multi-ticker scanner to surface the best setups across names.{' '}
-                  <strong>Coming soon.</strong>
-                </>
-              }
-              action={
-                <Link
-                  component={RouterLink}
-                  to="/scanner"
-                  underline="hover"
-                  data-testid="scanner-cta"
-                  sx={{ fontWeight: 600 }}
-                >
-                  Preview the scanner →
-                </Link>
-              }
-            />
-          </Box>
+          <ComingSoonCard
+            testId="brokerage-block"
+            icon={<LockIcon />}
+            title="Connect a real brokerage"
+            body={
+              <>
+                Connect your real brokerage positions — get the same AI reads on the risk
+                you&apos;re actually carrying. <strong>Coming soon.</strong>
+              </>
+            }
+            action={
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setToastOpen(true)}
+                data-testid="waitlist-button"
+              >
+                Notify me
+              </Button>
+            }
+          />
         </Container>
       </Box>
 
-      {/* ===== 4. Footer ===== */}
       <Footer />
 
-      {/* Non-navigating waitlist acknowledgement (toast). Never enters a broker flow. */}
       <Snackbar
         open={toastOpen}
         autoHideDuration={4000}

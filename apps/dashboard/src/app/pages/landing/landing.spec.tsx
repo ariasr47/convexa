@@ -145,11 +145,12 @@ describe('Landing · static (zero network)', () => {
 // 3. The funnel — CTAs route to the correct in-shell destinations
 // =================================================================================================
 describe('Landing · CTA routing', () => {
-  it('every CTA points at its destination route', () => {
+  it('every CTA points at its destination route (spine: scanner primary, ticker free path)', () => {
     renderLanding();
     const routes: Array<[testId: string, href: string]> = [
-      ['cta-primary', '/ticker'],
+      ['cta-primary', '/scanner'],
       ['cta-secondary', '/ticker'],
+      ['vp-scanner-cta', '/scanner'],
       ['vp-ticker-cta', '/ticker'],
       ['vp-positions-cta', '/positions'],
       ['vp-airec-cta', '/ticker'],
@@ -157,14 +158,12 @@ describe('Landing · CTA routing', () => {
     for (const [testId, href] of routes) {
       expect(screen.getByTestId(testId)).toHaveAttribute('href', href);
     }
-    // The scanner CTA lives inside the coming-soon band.
-    expect(within(screen.getByTestId('scanner-block')).getByTestId('scanner-cta')).toHaveAttribute(
-      'href',
-      '/scanner',
-    );
+    // Scanner is live (value card), not a hatched coming-soon block.
+    expect(screen.queryByTestId('scanner-block')).toBeNull();
+    expect(screen.getByTestId('brokerage-block')).toBeInTheDocument();
   });
 
-  it('the primary CTA actually resolves into the Ticker viewer (real router, end-to-end)', async () => {
+  it('the free-path secondary CTA resolves into the Ticker viewer (real router)', async () => {
     const user = userEvent.setup();
     // Entering the ticker route legitimately fetches the bundle — widen the mock (shared makeBundle
     // fixture) for the destination page so the real router can render it.
@@ -187,8 +186,16 @@ describe('Landing · CTA routing', () => {
     });
 
     renderApp('/');
-    await user.click(screen.getByTestId('cta-primary'));
-    // Navigation is proven by the Ticker VIEWER loading its bundle-driven "Call wall" tile.
+    await user.click(screen.getByTestId('cta-secondary'));
+    // Free path: Ticker VIEWER loads its bundle-driven "Call wall" tile without sign-in.
     expect(await screen.findByText('Call wall')).toBeInTheDocument();
+  });
+
+  it('the primary Scanner CTA hits the sign-in wall when signed out (honest lockdown)', async () => {
+    const user = userEvent.setup();
+    renderApp('/');
+    await user.click(screen.getByTestId('cta-primary'));
+    expect(await screen.findByTestId('require-auth-wall')).toBeInTheDocument();
+    expect(screen.getByTestId('require-auth-ticker')).toHaveAttribute('href', '/ticker');
   });
 });

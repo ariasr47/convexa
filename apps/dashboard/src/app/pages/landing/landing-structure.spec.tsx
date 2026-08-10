@@ -63,6 +63,7 @@ describe('§8-8 · landing landmark + heading order', () => {
     expect(mains[0].contains(footer)).toBe(false);
     // The hero + value cards + coming-soon band all live INSIDE it.
     expect(mains[0].contains(screen.getByTestId('hero-curve'))).toBe(true);
+    expect(mains[0].contains(screen.getByTestId('vp-scanner'))).toBe(true);
     expect(mains[0].contains(screen.getByTestId('vp-ticker'))).toBe(true);
     expect(mains[0].contains(screen.getByTestId('brokerage-block'))).toBe(true);
   });
@@ -86,11 +87,11 @@ describe('§8-8 · landing landmark + heading order', () => {
   it('card titles render as h3 (ValueCard AND ComingSoonCard, under the same outline)', () => {
     renderLanding();
     for (const testId of [
+      'vp-scanner',
       'vp-ticker',
       'vp-positions',
       'vp-airec',
       'brokerage-block',
-      'scanner-block',
     ]) {
       const card = screen.getByTestId(testId);
       expect(within(card).getByRole('heading', { level: 3 })).toBeInTheDocument();

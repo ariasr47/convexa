@@ -10,10 +10,9 @@
  * open/close per symbol) + `fetch`. NEVER a live backend.
  *
  * The journey walked (FRONTEND_EXECUTION_CONTRACT §3):
- *   land on `/` (no stream) → CTA into `/ticker` (feed opens, exactly one) → nav to `/positions`
- *   (the Ticker-page feed CLOSES — no leak) → back to `/ticker` (a FRESH feed reopens; never two
- *   concurrent for the symbol) → `/scanner` (feed closed; the placeholder issues no scan) → plus
- *   symbol change single-subscribes (old symbol's feed closed, exactly one for the new).
+ *   land on `/` (no stream) → free-path CTA into `/ticker` (feed opens, exactly one) → nav to
+ *   `/positions` (Ticker feed CLOSES) → back to `/ticker` (fresh feed) → `/scanner` (feed closed;
+ *   no per-row ticker stream) → symbol change single-subscribes.
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
@@ -179,9 +178,8 @@ describe('live-lifecycle (centerpiece flow)', () => {
     expect(screen.getByTestId('landing')).toBeInTheDocument();
     expect(esLog.length).toBe(0);
 
-    // --- CTA into /ticker → exactly ONE EventSource opens for the default (unset pref ⇒ SPY,
-    //     index-first-defaults AC-1) ---
-    await user.click(screen.getByTestId('cta-primary'));
+    // --- Free-path CTA into /ticker (primary is Scanner; secondary stays public) ---
+    await user.click(screen.getByTestId('cta-secondary'));
     await screen.findByText('Call wall');
     expect(openFor('SPY').length).toBe(1); // exactly one, open
 

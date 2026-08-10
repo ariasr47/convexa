@@ -301,7 +301,8 @@ describe('operator-vs-trader path separation', () => {
 //     behavior is the regression-prone part guarded here.)
 // =================================================================================================
 describe('mobile nav drawer', () => {
-  const DRAWER_ENTRIES = ['ticker', 'positions', 'scanner', 'blog'] as const;
+  // Spine order: Scanner → Ticker → Positions → Blog
+  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'blog'] as const;
 
   it('carries EXACTLY the 4 NAV entries, no /_ops link, aria-current on the active entry', async () => {
     const user = userEvent.setup();
