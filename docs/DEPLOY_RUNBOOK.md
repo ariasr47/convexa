@@ -167,14 +167,19 @@ single most likely misconfiguration in this whole runbook.
 
 ## Phase 2 — Frontend on Cloudflare Pages
 
-11. Pages → **Create project** → connect `ariasr47/convexa`.
-12. Build configuration: command `npx nx build @org/dashboard`, output `apps/dashboard/dist`, root dir
-    empty, framework preset **None**.
-13. Pages → Settings → Environment variables: `API_ORIGIN=https://<service>.up.railway.app`,
-    `NODE_VERSION=20`.
-14. Deploy. Note `https://<project>.pages.dev`.
-15. **Back-fill the CORS allowlist:** set Railway `ALLOWED_ORIGINS` to the actual `*.pages.dev` URL on the
-    **web** service, then redeploy it. (See the warning in step 4.)
+Full first-time walkthrough: **[CLOUDFLARE_PAGES_SETUP.md](./CLOUDFLARE_PAGES_SETUP.md)**.
+
+11. Pages → **Create project** → connect `ariasr47/convexa` (or your fork).
+12. Build configuration (repo root, framework **None**):
+    - Build command: `npx nx build @org/dashboard --configuration=production`
+    - Output: `apps/dashboard/dist`
+    - Root directory: **empty**
+13. Environment variables:
+    - `API_ORIGIN=https://convexa-production.up.railway.app` (no trailing slash)
+    - `NODE_VERSION=26.7.0` (match `.nvmrc`)
+14. Deploy. Note `https://convexa.pages.dev` (if project name is `convexa`).
+15. **Back-fill CORS on Railway api-rust:**  
+    `ALLOWED_ORIGINS=https://convexa.pages.dev` (plus custom domains if any).
 
 ---
 
