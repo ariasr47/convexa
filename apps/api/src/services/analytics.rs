@@ -258,7 +258,10 @@ async fn compute_analytics(
     let iv_rank = {
         let session_date = session_date_from_ns(market.timestamp)
             .or_else(|| Some(Utc::now().format("%Y-%m-%d").to_string()));
-        let atm_iv_pct = market.atm_iv * 100.0; // market stores decimal
+        // CM30 wants percent IV; chain stores decimal — convert via unit type.
+        let atm_iv_pct = IvDecimal::try_from_decimal(market.atm_iv)
+            .map(|v| v.as_percent())
+            .unwrap_or(0.0);
         let captured_at = Utc::now().timestamp() as f64;
         let current = session_date.as_ref().and_then(|sd| {
             derive_cm30_sample(
