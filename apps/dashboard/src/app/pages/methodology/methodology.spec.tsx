@@ -39,6 +39,7 @@ describe('MethodologyPage (product spine #7)', () => {
     renderPage();
     const text = screen.getByTestId('methodology-page').textContent ?? '';
     expect(text).toMatch(/walls|flip|GEX/i);
+    expect(text).toMatch(/vol-norm|ATM IV|vol regimes/i);
     expect(text).toMatch(/Structure as-of|two data speeds|structure.*poll|stream/i);
     expect(text).toMatch(/score|tier/i);
     expect(text).toMatch(/thin|single-name|unavailable|building/i);

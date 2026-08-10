@@ -22,6 +22,10 @@ export const METHOD_COPY = {
         'GEX and walls are computed at a GEX spot basis (often the cash/session close when the ' +
           'market is closed, live mid during regular hours for the engine’s phase rules). The ' +
           'ticker always labels that basis so a level is never confused with the live tape price.',
+        'Raw dollar GEX sizes exposure for a fixed 1% spot shock. Vol-norm GEX divides that ' +
+          'magnitude by ATM IV (or 30d HV if ATM IV is missing) so readings stay comparable when ' +
+          'vol is high or low. Independent evidence favors the vol-normalized magnitude; walls ' +
+          'and flip stay raw strike levels. Vol-norm GEX is not a scoring input.',
       ],
     },
     twoSpeed: {

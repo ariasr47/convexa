@@ -10,9 +10,11 @@
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState, OffExchange, Signals } from '@org/api';
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DealerPositioning } from './DealerPositioning';
+
+afterEach(() => cleanup());
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({
   ticker: 'TSLA',
@@ -54,6 +56,15 @@ const marketState = (over: Partial<MarketState> = {}): MarketState => ({
   iv_skew: null,
   term_structure: null,
   dealer_flow_projection: null,
+  vol_normalized_gex: {
+    net_gex: 6e9, // 1.2e9 / 0.20
+    call_gex: 1e10,
+    put_gex: -4e9,
+    total_gex: 6e9,
+    vol_used: 0.2,
+    vol_basis: 'atm_iv',
+    basis_note: 'Net GEX ÷ ATM IV (test).',
+  },
   ...over,
 });
 
@@ -112,5 +123,19 @@ describe('DealerPositioning · per-field null tolerance (static tile grid)', () 
     renderDP({}, null);
     expect(screen.queryByText('Off-exchange %')).toBeNull();
     expect(screen.getByText('$260')).toBeInTheDocument(); // the rest of the grid still renders
+  });
+
+  it('vol-norm GEX renders when present; degrades independently when null', () => {
+    renderDP();
+    expect(screen.getByText('Vol-norm GEX')).toBeInTheDocument();
+    // 6e9 → $6.0B (fmtUsdCompact)
+    expect(screen.getByText('$6.0B')).toBeInTheDocument();
+    cleanup();
+
+    renderDP({ vol_normalized_gex: null });
+    // Walls still intact; vol-norm is one more "unavailable" among others with defaults present.
+    expect(screen.getByText('$260')).toBeInTheDocument();
+    expect(screen.getByText('Vol-norm GEX')).toBeInTheDocument();
+    expect(screen.getAllByText('unavailable').length).toBeGreaterThanOrEqual(1);
   });
 });

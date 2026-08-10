@@ -214,6 +214,9 @@ pub struct AnalyticsSnapshot {
     /// IV rank/percentile (additive; always emit key as object|null on the wire).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub iv_rank: Option<quant_engine::IvRankRead>,
+    /// Vol-normalized GEX aggregates (O(1) post-process; never a scoring input).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vol_normalized_gex: Option<quant_engine::VolNormalizedGex>,
     /// Full chain for `GET /api/contract` (not sent on progressive wire).
     #[serde(skip)]
     pub contracts: Vec<Contract>,
@@ -453,6 +456,7 @@ mod tests {
             market_context: None,
             off_exchange: None,
             iv_rank: None,
+            vol_normalized_gex: None,
             contracts: Vec::new(),
             compute_ms: 1.0,
             cached_at: 0,

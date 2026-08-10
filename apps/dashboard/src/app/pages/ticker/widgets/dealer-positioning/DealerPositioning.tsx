@@ -75,7 +75,27 @@ export function DealerPositioning({
           label="Net GEX"
           value={fmtUsdCompact(m.net_gex)}
           accent={m.net_gex >= 0 ? 'up' : 'down'}
-          info="Total dealer gamma across the chain. Positive = dealers dampen moves (range-bound); negative = they amplify moves (trending)."
+          info="Raw dollar dealer gamma for a fixed 1% spot shock. Positive = dealers dampen moves (range-bound); negative = they amplify moves (trending). Prefer Vol-norm GEX for magnitude across vol regimes."
+        />
+        <StatTile
+          label="Vol-norm GEX"
+          value={
+            m.vol_normalized_gex == null
+              ? 'unavailable'
+              : fmtUsdCompact(m.vol_normalized_gex.net_gex)
+          }
+          accent={
+            m.vol_normalized_gex == null
+              ? 'neutral'
+              : m.vol_normalized_gex.net_gex >= 0
+                ? 'up'
+                : 'down'
+          }
+          info={
+            m.vol_normalized_gex == null
+              ? 'Vol-normalized GEX unavailable — needs ATM IV or 30d HV on this snapshot.'
+              : m.vol_normalized_gex.basis_note
+          }
         />
         <StatTile
           label="Net DEX"

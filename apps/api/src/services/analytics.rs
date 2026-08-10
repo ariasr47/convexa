@@ -7,7 +7,7 @@ use quant_engine::{
     analyze_off_exchange_default, calculate_historical_volatility_30d,
     calculate_vwap_bands_default, compute_iv_rank_read, compute_iv_structure,
     compute_market_context, derive_cm30_sample, generate_signals, iv_hv_ratio,
-    market_state_from_gex, off_exchange_signal_input, process_gex_profile,
+    market_state_from_gex, off_exchange_signal_input, process_gex_profile, vol_normalize_gex,
     session_date_from_ns, GexOptions, IV_RANK_WINDOW_CAP,
 };
 use std::time::Instant;
@@ -285,6 +285,16 @@ async fn compute_analytics(
         }
     };
 
+    // Vol-normalized GEX — O(1) over aggregates; never walks the chain; not a scoring input.
+    let vol_normalized_gex = vol_normalize_gex(
+        gex.net_gex,
+        gex.call_gex,
+        gex.put_gex,
+        gex.total_gex,
+        market.atm_iv,
+        hv_opt,
+    );
+
     let compute_ms = t0.elapsed().as_secs_f64() * 1000.0;
     let ttl_secs = state.config.gex_ttl_for(sym).as_secs();
 
@@ -307,6 +317,7 @@ async fn compute_analytics(
         market_context,
         off_exchange,
         iv_rank,
+        vol_normalized_gex,
         contracts: market.contracts,
         compute_ms,
         cached_at: Utc::now().timestamp(),

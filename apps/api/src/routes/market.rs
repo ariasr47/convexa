@@ -202,6 +202,8 @@ pub async fn build_bundle(
         // Additive packs — keys always present (object|null), never scoring inputs.
         "market_context": snap.market_context,
         "iv_rank": snap.iv_rank,
+        // Vol-normalized GEX (O(1) post-process on cache miss). Walls/flip stay raw.
+        "vol_normalized_gex": snap.vol_normalized_gex,
     });
 
     let strike_profile = json!({

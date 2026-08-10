@@ -293,6 +293,23 @@ export interface MarketState {
   // IV rank (iv-rank) — additive, independently nullable, STATIC. OPTIONAL key so pre-feature payloads
   // type-check; consumers read `m.iv_rank ?? null`. Never a scoring input.
   iv_rank?: IvRankRead | null;
+  // Vol-normalized GEX (vol-normalized-gex) — additive, independently nullable, STATIC. OPTIONAL key.
+  // Magnitude only (net/call/put/total ÷ ATM IV or HV). Walls/flip stay raw. Never a scoring input.
+  vol_normalized_gex?: VolNormalizedGex | null;
+}
+
+/** Vol-normalized dollar GEX aggregates. Sign matches raw net_gex; magnitude is / vol. */
+export interface VolNormalizedGex {
+  net_gex: number;
+  call_gex: number;
+  put_gex: number;
+  total_gex: number;
+  /** Decimal annualized vol actually used (e.g. 0.22). */
+  vol_used: number;
+  /** `atm_iv` preferred; `hv_30d` only when ATM IV is missing. */
+  vol_basis: 'atm_iv' | 'hv_30d';
+  /** Honest basis for the desk / methodology. */
+  basis_note: string;
 }
 
 export interface StrikeRow {

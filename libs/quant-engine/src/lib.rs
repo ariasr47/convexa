@@ -29,6 +29,7 @@ pub mod signals;
 pub mod simd;
 pub mod soa;
 pub mod types;
+pub mod vol_gex;
 pub mod vwap;
 
 pub use context_pack::{compute_market_context, DailyBar, MarketContextPack};
@@ -60,3 +61,4 @@ pub use types::{
     Contract, ContractType, DealerFlowCharm, DealerFlowProjection, DealerFlowVanna, GexOptions,
     GexResult, Greeks, ParityTolerances, RegimeTag, StrikeProfileRow,
 };
+pub use vol_gex::{resolve_vol_scalar, vol_normalize_gex, VolNormBasis, VolNormalizedGex};
