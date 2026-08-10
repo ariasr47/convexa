@@ -13,7 +13,7 @@
 | **P2**    | Valuable, not blocking edge                               |
 | **Later** | When scale, commercial, or ledger evidence requires it    |
 
-**Related:** `docs/TECH_DEBT.md` (scored register), `.claude/BACKLOG.md` (feature pool), `docs/ROADMAP_2026-08.md` (edge queue), `docs/RESUME_SCANNER_DESK.md` (session handoff).
+**Related:** `docs/TECH_DEBT.md` (scored register), `.claude/BACKLOG.md` (feature pool), `docs/ROADMAP_2026-08.md` (edge queue), `docs/RESUME_SCANNER_DESK.md` (session handoff), `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (FE deep dive + §3.8 workstream).
 
 ---
 
@@ -23,7 +23,7 @@
 | -------------------------- | --------------- | --------------------------------------------------- |
 | Production hardening       | **1.8 partial** | **1.1–1.7, 1.9**                                    |
 | Quant calculations         | see §2          | **2.1–2.3**                                         |
-| Performance                | —               | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
+| Performance                | **3.8 active**  | **3.1–3.7** (3.5–3.6 deferred by design)            |
 | React / frontend standards | see §4          | **4.1–4.4**                                         |
 | UX                         | **5.6 owner**   | **5.1–5.5, 5.7**                                    |
 | System design              | remaining in §6 | **6.1, 6.2 first slice**                            |
@@ -168,6 +168,17 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
       **Done when:** Vendor fan-out stays concurrent; `compute_ms` (or metrics) reviewed for p95 regressions.  
       **Note:** 2026-08-10 — Vendor path already `tokio::join!` (chain/daily/minutes/trades). CPU: GEX + IV structure now `spawn_blocking` + join; logs `vendor_ms` / `cpu_ms` / `total_ms` for p95.
 
+- [ ] **3.8 FE performance program — bundle engineering + live isolation** · **START IMMEDIATELY**  
+      **Evidence:** `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (2026-08-10). Runtime data plane is solid (3.1–3.3); production bundle maturity, Vite advanced config, Nx target matrix, live SSE re-render fan-out, and Recharts weight are the next ceiling.  
+      **Done when:** Phases A–C below shipped (or explicitly deferred with note); Phase D tracked as follow-ups.  
+      **Phases (execute in order; thin PRs):**
+      1. **A — Tooling & truth:** CI `@org/*` → `@convexa/*`; prod build visualizer (`ANALYZE`); gzip baseline + `check-bundle` gate; Nx targets `analyze` / `check-bundle`; document `preview` as the only path for prod-perf claims.
+      2. **B — Bundle weight:** SVG sparklines (drop Recharts from positions path); confirm charts chunk not forced by book route; hover/idle prefetch ticker chunk; tighten `chunkSizeWarningLimit` after budgets exist.
+      3. **C — Runtime isolation:** LiveStore (or equivalent) so SSE ticks do not re-render structure widgets; hoist GEX tooltip; optional `useDeferredValue` on marks.
+      4. **D — Architecture follow-through:** TradeEntryDialog / AiRecPanel / TickerDashboard thinning; virtualize only if N≫50 measured; §4.5–4.6 when multi-user needs them.  
+      **Non-goals:** WebGL, SSR/RSC rewrite, blanket `React.memo`, new chart library.  
+      **Note:** 2026-08-10 — **Phase A largely shipped:** CI `@convexa/*`; `ANALYZE` + `dist/stats.html`; `tools/check-dashboard-bundle.mjs` gzip budgets; `npm run analyze:dashboard` / `check:bundle`; CI bundle gate; chunk warning 600; AuthContext dynamic `bookSync`. Next: Phase B (SVG sparklines).
+
 ---
 
 ## 4. React / frontend industry standards
@@ -296,15 +307,11 @@ These were audited as **avoid** unless strategy changes:
 
 Use this as the default sequence when picking work (edge roadmap can interrupt):
 
-1. §1.1 Deploy runbook + §1.2 prod smoke
-2. §3.1 Ticker visibility pause + §3.2 AbortController
-3. §4.1 Error boundaries
-4. §1.4 Rate limits
-5. §1.3 CD on `main`
-6. §5.1 Signed-out refused CTAs
-7. §5.5 Alerts (X3) **or** ledger path toward §2.7 (X4)
-8. §4.4 Package rename (hygiene day)
-9. §2.5 / §2.8 only when chart or commercial needs force them
+1. **§3.8 FE performance program** (Phase A → B → C; **active now**) — see `docs/FRONTEND_PERFORMANCE_ANALYSIS.md`
+2. §5.6 owner device phone sign-off (hardening already shipped)
+3. §2.5 / §2.8 only when chart or commercial needs force them
+4. §4.5–4.6 / §6.3+ when multi-user or scale evidence requires them
+5. Remaining system-design items (§6.3–6.5) when edge roadmap is quiet
 
 ---
 
@@ -316,3 +323,4 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 | 2026-08-10 | Closed **1.1–1.4**, **3.1–3.2**, **6.1** (runbook+smoke+CD docs, rate limit, ticker abort/visibility).                                           |
 | 2026-08-10 | Closed **§3 Performance** remaining: `usePollingResource`, ticker data-hook split, analytics phase timings; 3.5–3.6 N/A by criteria.             |
 | 2026-08-10 | Closed **5.5** Alerts v1, **5.7** theme gaps #1–4, **6.2** first slice (server book); **5.6** hardening + checklist (owner phone sign-off open). |
+| 2026-08-10 | Opened **§3.8 FE performance program** (bundle/Vite/Nx + live isolation); full report `docs/FRONTEND_PERFORMANCE_ANALYSIS.md`. **Start immediately.** |

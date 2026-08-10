@@ -44,10 +44,14 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests (Vitest)
-        run: npx nx run-many -t test -p @org/dashboard,@org/api
+        run: npx nx run-many -t test -p @convexa/dashboard,@convexa/api
 
       - name: Production build (dashboard)
-        run: npx nx build @org/dashboard --configuration=production
+        run: npx nx build @convexa/dashboard --configuration=production
+
+      # §3.8 Phase A — gzip chunk budgets (see tools/check-dashboard-bundle.mjs).
+      - name: Bundle size gate
+        run: npm run check:bundle
 
       # Chromium only (matches playwright.config.ts). Separate from unit tests so the
       # browser does not contend with Vitest workers for CPU.

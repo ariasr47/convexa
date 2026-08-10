@@ -1,10 +1,28 @@
 /// <reference types='vitest' />
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
+import { visualizer } from 'rollup-plugin-visualizer';
+import type { PluginOption } from 'vite';
 import { defineConfig } from 'vite';
+
+/** Set ANALYZE=1 for a production build that writes dist/stats.html (treemap). */
+const analyze = process.env.ANALYZE === '1' || process.env.ANALYZE === 'true';
 
 export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
+
+  const plugins: PluginOption[] = [react()];
+  if (analyze) {
+    plugins.push(
+      visualizer({
+        filename: path.resolve(import.meta.dirname, 'dist/stats.html'),
+        template: 'treemap',
+        gzipSize: true,
+        brotliSize: true,
+        open: false,
+      }) as PluginOption,
+    );
+  }
 
   return {
     root: import.meta.dirname,
@@ -23,19 +41,22 @@ export default defineConfig(({ mode }) => {
       port: 4200,
       host: 'localhost',
     },
-    plugins: [react()],
+    plugins,
     build: {
       outDir: './dist',
       emptyOutDir: true,
       // Production: minified, no sourcemaps, hashed assets, size report.
       // Development mode builds keep readable output + sourcemaps.
       // Vite 8 uses Rolldown/oxc minify — do not set esbuild options (deprecated).
+      // Prod perf claims: only after `nx build … --configuration=production` + `nx preview`
+      // (or CF Pages). Never claim prod perf from `vite` HMR or development-mode builds.
       target: 'es2022',
       minify: isProd,
       cssMinify: isProd,
       sourcemap: isProd ? false : true,
       reportCompressedSize: isProd,
-      chunkSizeWarningLimit: 900,
+      // Soft Vite warning; hard gzip budgets live in tools/check-dashboard-bundle.mjs (§3.8).
+      chunkSizeWarningLimit: 600,
       commonjsOptions: {
         transformMixedEsModules: true,
       },

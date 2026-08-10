@@ -15,7 +15,6 @@
  *  - **no secret ever stored** (AC-H1/H2): only the `SessionStatus` shape is held — no password,
  *    session id, signing key, or secret is ever in scope here.
  */
-import { pullServerBook } from '@/features/trading/positions/bookSync';
 import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 import {
   login as apiLogin,
@@ -134,9 +133,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state.authenticated, state.user?.email]);
 
   // Multi-device durable book: after sign-in, pull server blob if newer (best-effort).
+  // Dynamic import so bookSync is not forced into the shell/auth chunk (Vite INEFFECTIVE_DYNAMIC_IMPORT).
   useEffect(() => {
     if (!state.authenticated) return;
-    void pullServerBook();
+    void import('@/features/trading/positions/bookSync')
+      .then((m) => m.pullServerBook())
+      .catch(() => undefined);
   }, [state.authenticated, state.user?.id]);
 
   const signIn = useCallback(async (body: LoginRequest) => {

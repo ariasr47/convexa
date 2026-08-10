@@ -16,6 +16,8 @@
     "build:prod": "npm run build",
     "build:dashboard": "nx build @convexa/dashboard --configuration=production",
     "build:api": "nx build api --configuration=production",
+    "analyze:dashboard": "node tools/analyze-dashboard.mjs",
+    "check:bundle": "node tools/check-dashboard-bundle.mjs",
     "typecheck": "nx run-many -t typecheck -p @convexa/dashboard,@convexa/api",
     "test": "nx run-many -t test -p @convexa/dashboard,@convexa/api,api",
     "lint": "nx run-many -t lint -p @convexa/dashboard,@convexa/api,dashboard-e2e",
@@ -24,12 +26,15 @@
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
     "worktree:link": "node tools/link-workspace.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run check:bundle",
     "conformance:public": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/public-surface.json --url",
     "conformance:scanner": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/scanner.json --url",
     "conformance:auth": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/auth-gated.json --auth-signup --url"
   },
-  "workspaces": ["apps/*", "libs/*"],
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -75,6 +80,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-packagejson": "^3.0.2",
+    "rollup-plugin-visualizer": "7.0.1",
     "tslib": "^2.8.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.65.0",

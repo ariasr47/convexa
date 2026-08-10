@@ -15,6 +15,12 @@
           }
         },
         "defaultConfiguration": "production"
+      },
+      "analyze": {
+        "command": "node tools/analyze-dashboard.mjs"
+      },
+      "check-bundle": {
+        "command": "node tools/check-dashboard-bundle.mjs"
       }
     }
   }
