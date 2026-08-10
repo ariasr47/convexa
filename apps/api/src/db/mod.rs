@@ -7,6 +7,8 @@
 //! shared Postgres plugin can serve both stacks during cutover if needed.
 
 #[cfg(feature = "postgres")]
+pub mod migrations;
+#[cfg(feature = "postgres")]
 pub mod pg_auth;
 #[cfg(feature = "postgres")]
 pub mod pg_iv;

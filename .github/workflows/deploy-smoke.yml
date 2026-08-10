@@ -40,7 +40,7 @@ jobs:
           echo "api=$ORIGIN" >> "$GITHUB_OUTPUT"
           echo "Using API origin: $ORIGIN"
 
-      - name: Health
+      - name: Health + scanner board
         if: steps.origin.outputs.skip != 'true'
         run: |
           set -euo pipefail
@@ -48,6 +48,23 @@ jobs:
           echo "$body" | tee /tmp/health.json
           echo "$body" | grep -q '"status":"ok"'
           echo "$body" | grep -q 'api-rust'
+          # Board must have durable scores after cold catch-up / RTH (empty desk regression).
+          python3 - <<'PY'
+          import json, sys
+          h = json.load(open("/tmp/health.json"))
+          board = (h.get("scanner") or {}).get("board") or {}
+          scored = board.get("scored")
+          rows = board.get("rows")
+          by = board.get("by_status") or {}
+          print(f"board rows={rows} scored={scored} by_status={by} history_samples={board.get('history_samples')}")
+          if scored is None:
+              # Older binary without board readout — soft fail with notice.
+              print("::notice::scanner.board.scored missing (pre-board health); skipping scored assert")
+              sys.exit(0)
+          if int(scored) < 1:
+              print("::error::scanner board has no scored rows (stuck building / write path broken)")
+              sys.exit(1)
+          PY
 
       - name: Ticker SPY (bundle)
         if: steps.origin.outputs.skip != 'true'
@@ -66,6 +83,17 @@ jobs:
             "${{ steps.origin.outputs.api }}/api/scan")
           test "$code" = "200"
           grep -q '"rows"' /tmp/scan.json
+          # At least one non-building row when the board is live.
+          python3 - <<'PY'
+          import json, sys
+          scan = json.load(open("/tmp/scan.json"))
+          rows = scan.get("rows") or []
+          okish = [r for r in rows if r.get("status") in ("ok", "stale") or r.get("score") is not None]
+          print(f"scan rows={len(rows)} okish={len(okish)}")
+          if rows and not okish:
+              print("::error::/api/scan rows present but all building/unscored")
+              sys.exit(1)
+          PY
 
       - name: Structure history endpoint
         if: steps.origin.outputs.skip != 'true'
@@ -76,6 +104,24 @@ jobs:
           test "$code" = "200"
           grep -q '"samples"' /tmp/hist.json
           grep -q '"basis"' /tmp/hist.json
+          python3 - <<'PY'
+          import json, sys
+          hist = json.load(open("/tmp/hist.json"))
+          n = len(hist.get("samples") or [])
+          print(f"SPY history samples={n}")
+          # Soft: history may lag first full pass by a few minutes after deploy.
+          # Hard-fail only when health says history_samples>0 but this path is empty.
+          try:
+              h = json.load(open("/tmp/health.json"))
+              total = ((h.get("scanner") or {}).get("board") or {}).get("history_samples")
+          except Exception:
+              total = None
+          if total is not None and int(total) > 0 and n == 0:
+              print("::error::health reports history samples but SPY history is empty")
+              sys.exit(1)
+          if n == 0:
+              print("::notice::SPY history empty (cold or first pass still running)")
+          PY
 
       - name: Pages SPA (optional)
         if: steps.origin.outputs.skip != 'true' && vars.SMOKE_PAGES_ORIGIN != ''

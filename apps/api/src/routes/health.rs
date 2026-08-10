@@ -23,6 +23,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
         }
     }
     let hb = state.scan.read_heartbeat().await;
+    let history_samples = state.scan.count_structure_samples().await;
     Json(json!({
         "status": "ok",
         "service": "api-rust",
@@ -40,6 +41,7 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
                 "by_status": by_status,
                 "priced": priced,
                 "scored": scored,
+                "history_samples": history_samples,
                 "sweep_last_completed": hb.as_ref().and_then(|h| h.sweep_last_completed),
                 "heartbeat_updated_at": hb.as_ref().map(|h| h.updated_at),
             },

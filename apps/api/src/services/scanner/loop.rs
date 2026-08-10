@@ -125,6 +125,27 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
             "scanner placeholders ensured (insert-if-absent only)"
         );
 
+        // Seed structure history from durable ok rows (covers the gap when the
+        // history table was missing while the board was already scored).
+        {
+            let existing = state_boot.scan.read_rows(None).await;
+            let mut backfilled = 0usize;
+            for row in existing {
+                if let Some(sample) =
+                    crate::services::scanner::store::StructureSample::from_row(&row)
+                {
+                    state_boot.scan.append_structure_sample(sample).await;
+                    backfilled += 1;
+                }
+            }
+            if backfilled > 0 {
+                info!(
+                    backfilled,
+                    "structure history backfill from durable ok rows"
+                );
+            }
+        }
+
         let mut sweep = SweepState::new(universe_boot.universe.clone());
         // Shared durable heartbeat: a restart must not treat a completed board as cold-start
         // forever, and must not write None over a peer's completed pass (merge is also in store).
@@ -437,10 +458,20 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
             state.scan.upsert_row(row.clone()).await;
             // Structure history: slow-lane only (price-only fast ticks never append).
             if ok {
-                if let Some(sample) =
-                    crate::services::scanner::store::StructureSample::from_row(&row)
-                {
-                    state.scan.append_structure_sample(sample).await;
+                match crate::services::scanner::store::StructureSample::from_row(&row) {
+                    Some(sample) => {
+                        state.scan.append_structure_sample(sample).await;
+                    }
+                    None => {
+                        warn!(
+                            ticker = %sym,
+                            status = %row.status,
+                            score = ?row.score,
+                            flip = ?row.flip,
+                            as_of = row.as_of,
+                            "scanner compute ok but structure sample skipped (from_row)"
+                        );
+                    }
                 }
             }
             SlowResult {

@@ -367,6 +367,21 @@ impl ScanStore {
             },
         }
     }
+
+    /// Total structure-history samples across symbols (health / smoke).
+    pub async fn count_structure_samples(&self) -> i64 {
+        match self {
+            Self::Json(s) => s.count_structure_samples().await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.count_structure_samples().await {
+                Ok(n) => n,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres count_structure_samples failed");
+                    -1
+                }
+            },
+        }
+    }
 }
 
 // ---- JSON / memory backend --------------------------------------------------------------------
@@ -621,6 +636,11 @@ impl JsonScanStore {
         }
         let start = series.len().saturating_sub(limit);
         series[start..].to_vec()
+    }
+
+    pub async fn count_structure_samples(&self) -> i64 {
+        let guard = self.inner.read().await;
+        guard.history.values().map(|v| v.len() as i64).sum()
     }
 }
 

@@ -21,9 +21,7 @@ beforeEach(() => {
 describe('usePollingResource', () => {
   it('fetches on mount and exposes data', async () => {
     const fetcher = vi.fn(async (_signal: AbortSignal) => ({ n: 1 }));
-    const { result } = renderHook(() =>
-      usePollingResource('SPY', fetcher, { intervalMs: 60_000 }),
-    );
+    const { result } = renderHook(() => usePollingResource('SPY', fetcher, { intervalMs: 60_000 }));
     await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
     expect(result.current.error).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(1);

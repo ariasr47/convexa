@@ -378,7 +378,7 @@ impl PgScanStore {
             }
         }
 
-        sqlx::query(
+        let inserted = sqlx::query(
             r#"INSERT INTO scan_structure_history (
                  symbol, as_of, price, score, tier, regime, vol_regime,
                  flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct
@@ -401,31 +401,68 @@ impl PgScanStore {
         .bind(sample.dist_to_wall_pct)
         .execute(&self.pg.pool)
         .await
-        .map_err(|e| AppError::Config(format!("postgres structure history insert: {e}")))?;
+        .map_err(|e| AppError::Config(format!("postgres structure history insert: {e}")))?
+        .rows_affected();
 
-        // Ring prune: drop oldest beyond MAX.
+        if inserted > 0 {
+            tracing::info!(
+                symbol = %sample.symbol,
+                as_of = sample.as_of,
+                score = ?sample.score,
+                "structure history sample appended"
+            );
+        }
+
+        // Ring prune: drop oldest beyond MAX. Best-effort — never fail the append
+        // (a bad prune SQL used to make the whole call look broken in logs).
         let max = STRUCTURE_HISTORY_MAX as i64;
-        sqlx::query(
-            r#"DELETE FROM scan_structure_history h
-               WHERE h.symbol = $1
-                 AND (
-                   SELECT COUNT(*) FROM scan_structure_history x WHERE x.symbol = $1
-                 ) > $2
-                 AND h.as_of < (
-                   SELECT as_of FROM scan_structure_history
-                   WHERE symbol = $1
-                   ORDER BY as_of DESC
-                   OFFSET ($2 - 1)
-                   LIMIT 1
-                 )"#,
+        let count: i64 = match sqlx::query_scalar(
+            r#"SELECT COUNT(*)::bigint FROM scan_structure_history WHERE symbol = $1"#,
         )
         .bind(&sample.symbol)
-        .bind(max)
-        .execute(&self.pg.pool)
+        .fetch_one(&self.pg.pool)
         .await
-        .map_err(|e| AppError::Config(format!("postgres structure history prune: {e}")))?;
+        {
+            Ok(c) => c,
+            Err(e) => {
+                warn!(error = %e, symbol = %sample.symbol, "structure history count failed");
+                return Ok(());
+            }
+        };
+        if count > max {
+            let to_drop = count - max;
+            if let Err(e) = sqlx::query(
+                r#"DELETE FROM scan_structure_history sh
+                   USING (
+                     SELECT symbol, as_of
+                     FROM scan_structure_history
+                     WHERE symbol = $1
+                     ORDER BY as_of ASC
+                     LIMIT $2
+                   ) old
+                   WHERE sh.symbol = old.symbol AND sh.as_of = old.as_of"#,
+            )
+            .bind(&sample.symbol)
+            .bind(to_drop)
+            .execute(&self.pg.pool)
+            .await
+            {
+                warn!(error = %e, symbol = %sample.symbol, "structure history prune failed");
+            }
+        }
 
         Ok(())
+    }
+
+    /// Total structure samples stored (all symbols) — operator health.
+    pub async fn count_structure_samples(&self) -> AppResult<i64> {
+        let n: i64 = sqlx::query_scalar(
+            r#"SELECT COUNT(*)::bigint FROM scan_structure_history"#,
+        )
+        .fetch_one(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("postgres structure history count: {e}")))?;
+        Ok(n)
     }
 
     pub async fn read_structure_history(

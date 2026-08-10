@@ -1,5 +1,6 @@
-//! Postgres pool + idempotent schema bootstrap (sqlx, rustls).
+//! Postgres pool + numbered schema migrations (sqlx, rustls).
 
+use crate::db::migrations;
 use crate::error::{AppError, AppResult};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
@@ -12,8 +13,8 @@ pub struct Pg {
 }
 
 impl Pg {
-    /// Connect + bootstrap schema. Does not crash the process on a dead DB at boot
-    /// if `lazy` — but we prefer fail-fast on Railway so misconfig is obvious.
+    /// Connect + apply numbered migrations. Does not crash the process on a dead DB at boot
+    /// if migrate fails — first op may succeed after DB comes up.
     pub async fn connect(database_url: &str) -> AppResult<Self> {
         let max = std::env::var("DATABASE_POOL_MAX")
             .ok()
@@ -31,7 +32,6 @@ impl Pg {
         let pg = Self { pool };
         if let Err(e) = pg.migrate().await {
             warn!(error = %e, "postgres schema migrate failed (will retry on use)");
-            // Still return pool — first op may succeed after DB comes up.
         } else {
             info!(max_connections = max, "postgres pool ready + schema ok");
         }
@@ -39,169 +39,6 @@ impl Pg {
     }
 
     pub async fn migrate(&self) -> AppResult<()> {
-        // sqlx extended-query protocol allows **one** statement per call. A single
-        // multi-statement execute fails entirely — which left prod without
-        // `score_drivers` / structure-history DDL after the first CREATE, so every
-        // scan_rows upsert (which binds score_drivers) failed while heartbeat still worked.
-        for (i, stmt) in split_sql_statements(SCHEMA).into_iter().enumerate() {
-            sqlx::query(&stmt)
-                .execute(&self.pool)
-                .await
-                .map_err(|e| {
-                    let preview: String = stmt.chars().take(96).collect();
-                    AppError::Config(format!("postgres migrate stmt#{i}: {e} | {preview}"))
-                })?;
-        }
-        Ok(())
+        migrations::apply(&self.pool).await
     }
 }
-
-/// Split a SQL script into individual statements on `;`, skipping empty/comment-only chunks.
-/// Adequate for our DDL-only schema (no function bodies / dollar-quotes).
-fn split_sql_statements(script: &str) -> Vec<String> {
-    script
-        .split(';')
-        .filter_map(|chunk| {
-            let trimmed = chunk.trim();
-            if trimmed.is_empty() {
-                return None;
-            }
-            // Drop pure-comment chunks (lines starting with --).
-            let has_sql = trimmed.lines().any(|line| {
-                let l = line.trim();
-                !l.is_empty() && !l.starts_with("--")
-            });
-            if !has_sql {
-                return None;
-            }
-            Some(trimmed.to_string())
-        })
-        .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::split_sql_statements;
-
-    #[test]
-    fn split_schema_yields_many_statements() {
-        let stmts = split_sql_statements(super::SCHEMA);
-        assert!(
-            stmts.len() >= 10,
-            "expected many DDL statements, got {}",
-            stmts.len()
-        );
-        assert!(stmts.iter().any(|s| s.contains("scan_rows")));
-        assert!(stmts.iter().any(|s| s.contains("score_drivers")));
-        assert!(stmts.iter().any(|s| s.contains("scan_structure_history")));
-        assert!(stmts.iter().any(|s| s.contains("scan_heartbeat")));
-    }
-}
-
-/// Idempotent multi-statement schema (Python-compatible table names).
-const SCHEMA: &str = r#"
-CREATE TABLE IF NOT EXISTS users (
-    id            TEXT PRIMARY KEY,
-    email         TEXT NOT NULL,
-    email_lower   TEXT NOT NULL UNIQUE,
-    display_name  TEXT,
-    password_hash TEXT,
-    google_sub    TEXT UNIQUE,
-    created_at    DOUBLE PRECISION NOT NULL,
-    last_login_at DOUBLE PRECISION
-);
-
-CREATE TABLE IF NOT EXISTS sessions (
-    id                  TEXT PRIMARY KEY,
-    user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at          DOUBLE PRECISION NOT NULL,
-    expires_at          DOUBLE PRECISION NOT NULL,
-    absolute_expires_at DOUBLE PRECISION NOT NULL,
-    revoked             BOOLEAN NOT NULL DEFAULT FALSE
-);
-CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
-
-CREATE TABLE IF NOT EXISTS user_settings (
-    user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    active_persona_id TEXT,
-    default_ticker    TEXT,
-    theme             TEXT NOT NULL DEFAULT 'dark',
-    scan_view         TEXT
-);
-
-CREATE TABLE IF NOT EXISTS credentials (
-    user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    kind        TEXT NOT NULL,
-    ciphertext  TEXT NOT NULL,
-    last4       TEXT NOT NULL,
-    provider    TEXT NOT NULL DEFAULT 'anthropic',
-    created_at  DOUBLE PRECISION NOT NULL,
-    updated_at  DOUBLE PRECISION NOT NULL,
-    PRIMARY KEY (user_id, kind)
-);
-
-CREATE TABLE IF NOT EXISTS iv_samples (
-    ticker       TEXT NOT NULL,
-    session_date TEXT NOT NULL,
-    iv_value     DOUBLE PRECISION NOT NULL,
-    iv_basis     TEXT NOT NULL,
-    basis_dte    DOUBLE PRECISION NOT NULL,
-    captured_at  DOUBLE PRECISION NOT NULL,
-    PRIMARY KEY (ticker, session_date)
-);
-CREATE INDEX IF NOT EXISTS iv_samples_ticker_date_idx
-    ON iv_samples (ticker, session_date DESC);
-
-CREATE TABLE IF NOT EXISTS scan_rows (
-    symbol           TEXT PRIMARY KEY,
-    price            DOUBLE PRECISION,
-    chg_pct          DOUBLE PRECISION,
-    score            DOUBLE PRECISION,
-    tier             TEXT,
-    regime           TEXT,
-    vol_regime       TEXT,
-    flip             DOUBLE PRECISION,
-    dist_to_flip_pct DOUBLE PRECISION,
-    call_wall        DOUBLE PRECISION,
-    put_wall         DOUBLE PRECISION,
-    dist_to_wall_pct DOUBLE PRECISION,
-    as_of            DOUBLE PRECISION NOT NULL,
-    status           TEXT NOT NULL,
-    score_drivers    TEXT
-);
-
--- Additive column for pre-existing DBs that created scan_rows without score_drivers.
-ALTER TABLE scan_rows ADD COLUMN IF NOT EXISTS score_drivers TEXT;
-
-CREATE TABLE IF NOT EXISTS scan_heartbeat (
-    id                    INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
-    updated_at            DOUBLE PRECISION NOT NULL,
-    sweep_last_completed  DOUBLE PRECISION,
-    universe_size         INT NOT NULL DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS scan_bundles (
-    symbol       TEXT PRIMARY KEY,
-    as_of        DOUBLE PRECISION NOT NULL,
-    bundle_json  TEXT NOT NULL
-);
-
--- Slow-lane structure samples (ring-pruned in app; index for range reads).
-CREATE TABLE IF NOT EXISTS scan_structure_history (
-    symbol           TEXT NOT NULL,
-    as_of            DOUBLE PRECISION NOT NULL,
-    price            DOUBLE PRECISION,
-    score            DOUBLE PRECISION,
-    tier             TEXT,
-    regime           TEXT,
-    vol_regime       TEXT,
-    flip             DOUBLE PRECISION,
-    dist_to_flip_pct DOUBLE PRECISION,
-    call_wall        DOUBLE PRECISION,
-    put_wall         DOUBLE PRECISION,
-    dist_to_wall_pct DOUBLE PRECISION,
-    PRIMARY KEY (symbol, as_of)
-);
-CREATE INDEX IF NOT EXISTS scan_structure_history_symbol_as_of_idx
-    ON scan_structure_history (symbol, as_of DESC);
-"#;

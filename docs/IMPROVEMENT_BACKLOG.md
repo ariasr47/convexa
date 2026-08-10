@@ -21,7 +21,7 @@
 
 | Area | Open | Done |
 |------|------|------|
-| Production hardening | remaining in §1 | **1.1, 1.2, 1.3, 1.4** |
+| Production hardening | remaining in §1 | **1.1–1.4, 1.7** |
 | Quant calculations | see §2 | 0 |
 | Performance | — | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
 | React / frontend standards | see §4 | 0 |
@@ -68,10 +68,10 @@ _Update counts when checking items._
   **Done when:** CF Pages (or Function) sets at least `X-Content-Type-Options`, HSTS, conservative CSP, frame policy.  
   **Note:** _
 
-- [ ] **1.7 Versioned Postgres schema migrations**  
+- [x] **1.7 Versioned Postgres schema migrations**  
   **Evidence:** Boot uses `CREATE IF NOT EXISTS` + ad-hoc `ALTER … IF NOT EXISTS` only.  
   **Done when:** Numbered migrations (sqlx or equivalent) applied once at boot; new tables (e.g. history) land via migration, not only bootstrap string growth.  
-  **Note:** _
+  **Note:** 2026-08-10 — `apps/api/src/db/migrations.rs` + `schema_migrations` table; one statement per call; v1 core / v2 scan store / v3 structure history.
 
 ### P2
 

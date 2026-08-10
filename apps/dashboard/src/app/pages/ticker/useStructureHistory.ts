@@ -4,9 +4,9 @@
  * Independent of the REST bundle poll and the live SSE stream
  * (`[live-vs-static-isolation]`). Abort + visibility via `usePollingResource`.
  */
+import { usePollingResource } from '@/shared/hooks/usePollingResource';
 import { getStructureHistory, type StructureSample } from '@org/api';
 import { useCallback } from 'react';
-import { usePollingResource } from '@/shared/hooks/usePollingResource';
 
 /** History is thinned ≥5m server-side; poll slower than the bundle. */
 export const STRUCTURE_HISTORY_POLL_MS = 120_000;

@@ -197,7 +197,11 @@ export function TickerDashboard() {
         }
       : null;
     setPositionQuery((prev) => {
-      if (prev?.expiration === next?.expiration && prev?.strike === next?.strike && prev?.right === next?.right) {
+      if (
+        prev?.expiration === next?.expiration &&
+        prev?.strike === next?.strike &&
+        prev?.right === next?.right
+      ) {
         return prev;
       }
       return next;
