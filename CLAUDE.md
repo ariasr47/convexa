@@ -10,19 +10,14 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
 
 ## Layout
 
-- `apps/api` — **Python** FastAPI backend (`nx serve api` → uvicorn :8000). Not an npm
-  workspace member; it has its own `.venv` (`cd apps/api && py -m venv .venv &&
-.venv/Scripts/python.exe -m pip install -r requirements.txt`). Nx project name `api`
-  (distinct from the TS lib `@org/api`). **Tests: `nx test api`** (pytest; dev deps in
-  `requirements-dev.txt`, deliberately NOT in the Docker-installed `requirements.txt`). The suite is
-  **characterization tests over the scoring path** — golden fixtures captured from real bundles pin
-  `generate_signals` / `state_fingerprint` / the gate, so `[additive-keeps-score-byte-identical]` is
-  checked on every push instead of re-proven by hand per feature. Re-baseline a DELIBERATE score
-  change with `tests/capture_fixtures.py` (needs a live API); the fixture diff is the before/after
-  that `[score-change-is-deliberate-and-measured]` requires. Everything else is still verified by
-  app-run + `.claude/tools/interface_conformance.mjs`.
+- `apps/api-rust` — **production backend** (Axum / Tokio). `npm run serve:api` →
+  `cargo run -p api-rust -- serve` on :8000. Railway service `api-rust` + Postgres;
+  scanner is embedded (`SCAN_ENABLED`). Quant compute lives in `libs/quant-engine`.
+- `apps/api` — **Python FastAPI, RETIRED** in production (see `apps/api/RETIRED.md`).
+  Source kept for characterization fixtures + `universe.json` consumed by the Rust image.
+  `nx serve api` fails on purpose; use `nx run api:serve-python-legacy` only if needed.
 - `apps/dashboard` — React 19 + Vite + MUI frontend (`nx serve dashboard` → :4200, proxies
-  `/api` → :8000). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
+  `/api` → :8000 api-rust). Tests: `nx test @org/dashboard` (Vitest + Testing Library).
 - `apps/dashboard-e2e` — Playwright e2e for the dashboard.
 - `libs/api` — `@org/api`, the shared TS API client (consumed as source).
 - `.claude/` — the delivery-orchestration system (ORCHESTRATOR, contracts, agents,

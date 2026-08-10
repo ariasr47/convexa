@@ -3,12 +3,16 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/api",
-  "tags": [
-    "scope:backend",
-    "type:app"
-  ],
+  "tags": ["scope:backend", "type:app", "status:retired"],
   "targets": {
     "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -e \"console.error('Python api is RETIRED — use: npm run serve:api  (api-rust)'); process.exit(1)\""
+      },
+      "cache": false
+    },
+    "serve-python-legacy": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/api",
@@ -16,25 +20,12 @@
       },
       "cache": false
     },
-    "serve-worker": {
+    "serve-worker-legacy": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/api",
         "command": ".venv\\Scripts\\python.exe worker.py"
       },
-      "cache": false
-    },
-    "conformance": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "node .claude\\tools\\interface_conformance.mjs --spec .claude\\tools\\conformance\\ai_recommendations.json --url http://127.0.0.1:8000"
-      },
-      "inputs": [
-        "{projectRoot}/main.py",
-        "{projectRoot}/src/**/*",
-        "{workspaceRoot}/.claude/tools/interface_conformance.mjs",
-        "{workspaceRoot}/.claude/tools/conformance/ai_recommendations.json"
-      ],
       "cache": false
     },
     "test": {

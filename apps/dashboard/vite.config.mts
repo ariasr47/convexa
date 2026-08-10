@@ -12,7 +12,7 @@ export default defineConfig(() => ({
   server: {
     port: 4200,
     host: 'localhost',
-    // Proxy API calls to the FastAPI backend so the browser stays same-origin (no CORS).
+    // Proxy API calls to api-rust (Axum) so the browser stays same-origin (no CORS).
     proxy: {
       '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },

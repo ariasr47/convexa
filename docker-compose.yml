@@ -2,77 +2,45 @@
 # Convexa — LOCAL / DEV one-command full stack.
 #
 #   docker compose up --build
-#   -> open http://localhost:8080  (the dashboard; /api/* is proxied to the api)
+#   -> open http://localhost:8080  (dashboard; /api/* proxied to api-rust)
 #
-# This compose file is for LOCAL development / self-hosting. It is NOT a
-# production deployment. For prod the changes are (all OUT OF SCOPE here, noted
-# for the reader): the static bundle goes to a CDN (or this image behind a real
-# ingress); secrets come from an orchestrator secret store (not a local .env);
-# a PERSISTENT datastore replaces the in-memory SQLite (the `persistent-db`
-# feature); rollout is healthcheck-gated; TLS terminates at an ingress.
-#
-# ----------------------------------------------------------------------------
-# NO SECRETS ARE BAKED INTO ANY IMAGE. The backend reads its config + secrets
-# from the RUNTIME environment, injected here via `env_file: ./apps/api/.env`
-# — the developer's LOCAL, GITIGNORED .env. That file is referenced at run time
-# and passed as process env; it is NEVER copied into an image layer (the
-# .dockerignore set excludes it from every build context). Copy
-# apps/api/.env.example -> apps/api/.env and fill in your values before `up`.
-# For CI / a host with no .env file, replace `env_file` with an `environment:`
-# block of `- VAR=${VAR}` passthroughs (NEVER literal secret values committed).
-#
-# ----------------------------------------------------------------------------
-# STATELESS / RESTART-RESETTABLE (documented, NOT solved here):
-# Both containers are stateless. The auth/session/AI-key stores are in-memory
-# SQLite (ACCOUNT_STORE=memory, :memory:) and reset on every `api` container
-# restart — ALL accounts, sessions, and stored per-user AI keys are LOST and
-# nothing is shared across replicas. The per-ticker data/ dumps are ephemeral
-# prototype output (no volume mounted by default — losing them is harmless).
-# If AUTH_SESSION_SIGNING_KEY / AI_KEY_ENCRYPTION_KEY are unset, the app uses an
-# ephemeral per-process key, so cookies + stored keys also invalidate on restart;
-# set STABLE values in .env if you need them to survive a restart.
-# THE REQUIRED SUCCESSOR FEATURE IS `persistent-db` — swap the in-memory SQLite
-# adapter for a persistent store. Until then, treat every container as fresh
-# state. This file documents the limitation; it does not fix it.
+# Production backend is Railway **api-rust** (Python FastAPI is retired).
+# Local secrets: copy apps/api/.env.example → apps/api/.env (or a root .env)
+# and pass MASSIVE_API_KEY / AUTH_* / AI_KEY_ENCRYPTION_KEY. Never bake secrets
+# into image layers.
 # ============================================================================
 
 services:
   api:
     build:
-      context: ./apps/api
-      dockerfile: Dockerfile
-    image: convexa-api
-    # Runtime secrets/config from the developer's local, gitignored .env. Never
-    # baked into the image. (Comment this out + use an `environment:` block of
-    # ${VAR} passthroughs on a host that has no .env file.)
+      context: .
+      dockerfile: apps/api-rust/Dockerfile
+    image: convexa-api-rust
     env_file:
       - ./apps/api/.env
+    environment:
+      HTTP_BIND: 0.0.0.0:8000
+      PORT: "8000"
+      AUTH_COOKIE_SECURE: "false"
+      POSITIONS_PROVIDER: stub
     ports:
-      # Optional/direct access for debug; the `web` proxy reaches `api` over the
-      # compose network regardless of this publish.
       - "8000:8000"
     healthcheck:
-      # Mirrors the Dockerfile probe (TCP connect to :8000); gates `web` startup.
       test:
         [
           "CMD",
-          "python",
+          "sh",
           "-c",
-          "import socket,sys; s=socket.create_connection(('127.0.0.1',8000),3); s.close(); sys.exit(0)",
+          "exec 3<>/dev/tcp/127.0.0.1/8000 || exit 1",
         ]
       interval: 30s
       timeout: 5s
       start_period: 20s
       retries: 3
     restart: unless-stopped
-    # NOTE: no volume for ./data by default — stateless is the documented property.
-    # A named volume (api-data:/app/data) would persist ONLY the ephemeral dumps;
-    # it is NOT the persistent-db fix and is intentionally omitted.
 
   web:
     build:
-      # Context = repo root (the dashboard build needs libs/api source + the Nx
-      # workspace — see apps/dashboard/Dockerfile).
       context: .
       dockerfile: apps/dashboard/Dockerfile
     image: convexa-web
@@ -80,11 +48,5 @@ services:
       - "8080:8080"
     depends_on:
       api:
-        # Start `web` only once `api` is healthy so the nginx /api proxy target
-        # is accepting connections.
         condition: service_healthy
     restart: unless-stopped
-
-# Both services join the default bridge network compose creates; nginx resolves
-# the backend by its service name `api` (proxy_pass http://api:8000). No host
-# networking.

@@ -1,6 +1,8 @@
 # api-rust — Postgres + Docker / Railway deploy
 
-This is the cutover path to retire the Python FastAPI service (`apps/api`) as the runtime backend.
+**Status (2026-08-10): Python is RETIRED in production.** Railway runs only
+`api-rust` + Postgres. Public URL: `https://convexa-production.up.railway.app`
+(`service=api-rust`, `durable_store=postgres`). See `apps/api/RETIRED.md`.
 
 ## Durable stores
 
@@ -79,16 +81,12 @@ git ls-files Cargo.toml Cargo.lock apps/api-rust/Dockerfile libs/quant-engine/sr
 
 **Scanner worker:** api-rust embeds the scanner when `SCAN_ENABLED=1` (default). A separate Python `scanner-worker` is **not** required for the Rust path.
 
-## Cutover / remove Python
+## Cutover (done)
 
-Order of operations:
-
-1. Deploy **api-rust** beside existing Python `api` (same Postgres optional but recommended for auth continuity only if you migrate rows — greenfield is fine).
-2. Point Pages / Vite proxy at api-rust; soak.
-3. Stop Python `api` + `scanner-worker` services.
-4. Delete or archive `apps/api` runtime (keep characterization fixtures under `apps/api/tests` if still useful for quant-engine).
-
-Do **not** delete Python until health + login + scanner + ticker + rec + broker stub are green on Railway for a full market session.
+1. ~~Deploy api-rust~~ → online with Postgres.
+2. ~~Point production domain~~ → `convexa-production.up.railway.app` serves api-rust (Pages `API_ORIGIN` unchanged).
+3. ~~Delete Python Railway services~~ → `api` + `scanner-worker` removed 2026-08-10.
+4. Source under `apps/api` kept for fixtures / universe JSON until deleted later.
 
 ## Local Windows note
 
