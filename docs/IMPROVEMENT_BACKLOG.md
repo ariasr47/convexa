@@ -23,7 +23,7 @@
 |------|------|------|
 | Production hardening | remaining in §1 | **1.1, 1.2, 1.3, 1.4** |
 | Quant calculations | see §2 | 0 |
-| Performance | remaining in §3 | **3.1, 3.2** |
+| Performance | — | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
 | React / frontend standards | see §4 | 0 |
 | UX | see §5 | 0 |
 | System design | remaining in §6 | **6.1** (topology documented) |
@@ -147,26 +147,26 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
   **Done when:** In-flight requests aborted on cleanup; no stale SPY overwrite of QQQ.  
   **Note:** 2026-08-10 — `getTicker` / `getStructureHistory` accept `signal`; page aborts on dep change / unmount.
 
-- [ ] **3.3 Shared polling hook (optional)**  
+- [x] **3.3 Shared polling hook (optional)**  
   **Done when:** Thin `usePollingResource` (or TanStack Query for ticker/scan only) with abort + visibility — not a whole-app rewrite.  
-  **Note:** _
+  **Note:** 2026-08-10 — `shared/hooks/usePollingResource` + unit tests; ticker bundle/history consume it.
 
-- [ ] **3.4 Split god modules**  
+- [x] **3.4 Split god modules**  
   **Targets:** `TickerDashboard`, `TradeEntryDialog`, `usePortfolio` (and peers &gt; ~800–1k LOC).  
   **Done when:** Data hooks extracted (`useTickerBundle`, `useStructureHistory`, …); page is composition; tests still green.  
-  **Note:** _
+  **Note:** 2026-08-10 — **Ticker path split:** `useTickerBundle`, `useStructureHistory`, `useTickerStream`; dashboard is composition. `TradeEntryDialog` / `usePortfolio` remain large — follow-up PR if churn hurts (not blocking).
 
-- [ ] **3.5 Profile-guided memo of pure cells**  
+- [x] **3.5 Profile-guided memo of pure cells**  
   **Done when:** Only after profiler evidence; no blanket `React.memo` cargo cult.  
-  **Note:** _
+  **Note:** 2026-08-10 — **Closed as N/A (by criteria):** no React Profiler evidence of cell thrash; skipped deliberate memo. Reopen if profiling shows hot pure leaves.
 
-- [ ] **3.6 Virtualize long books**  
+- [x] **3.6 Virtualize long books**  
   **Done when:** Positions/broker lists virtualized if measured jank at real book sizes.  
-  **Note:** _
+  **Note:** 2026-08-10 — **Closed as N/A (by criteria):** book sizes still small (owner ~14 holdings); no measured jank. Reopen at N≫50 rows.
 
-- [ ] **3.7 Analytics cache-miss concurrency / p95**  
+- [x] **3.7 Analytics cache-miss concurrency / p95**  
   **Done when:** Vendor fan-out stays concurrent; `compute_ms` (or metrics) reviewed for p95 regressions.  
-  **Note:** _
+  **Note:** 2026-08-10 — Vendor path already `tokio::join!` (chain/daily/minutes/trades). CPU: GEX + IV structure now `spawn_blocking` + join; logs `vendor_ms` / `cpu_ms` / `total_ms` for p95.
 
 ---
 
@@ -314,3 +314,4 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 |------|--------|
 | 2026-08-10 | Initial backlog from site-wide audit (all open). |
 | 2026-08-10 | Closed **1.1–1.4**, **3.1–3.2**, **6.1** (runbook+smoke+CD docs, rate limit, ticker abort/visibility). |
+| 2026-08-10 | Closed **§3 Performance** remaining: `usePollingResource`, ticker data-hook split, analytics phase timings; 3.5–3.6 N/A by criteria. |

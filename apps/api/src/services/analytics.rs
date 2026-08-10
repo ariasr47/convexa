@@ -150,6 +150,8 @@ async fn compute_analytics(
             }
         },
     );
+    let vendor_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
     let market = market_res?;
     let daily_bars = daily_res.unwrap_or_else(|e| {
         warn!(ticker = %sym, error = %e, "daily bars failed; HV/context degrade");
@@ -173,20 +175,32 @@ async fn compute_analytics(
         .with_as_of(as_of)
         .with_dte_window(min_dte, max_dte)
         .with_risk_free_rate(0.045);
-    let gex = process_gex_profile(&market.contracts, market.synchronized_spot, &opts);
 
-    // IV skew + term structure: full-chain, independent of DTE window / GEX.
-    // Computed once per cache miss and stored on the snapshot (warm hits skip recompute).
-    let (iv_skew, term_structure) = compute_iv_structure(
-        &market.contracts,
-        market.synchronized_spot,
-        market.atm_iv_expiration.as_deref(),
-        market.atm_iv_dte,
-        as_of,
+    // CPU phase: GEX profile + IV structure are independent of each other (same chain).
+    // VWAP only needs minute bars. Run GEX+IV on the blocking pool so the async runtime
+    // stays free for other tickers under concurrent cache misses (singleflight still
+    // coalesces per-symbol). Vendor I/O above is already tokio::join! parallel.
+    let t_cpu = Instant::now();
+    let spot = market.synchronized_spot;
+    let contracts = market.contracts.clone();
+    let atm_exp = market.atm_iv_expiration.clone();
+    let atm_dte = market.atm_iv_dte;
+    let (gex_res, iv_res, vwap) = tokio::join!(
+        tokio::task::spawn_blocking({
+            let contracts = contracts.clone();
+            let opts = opts.clone();
+            move || process_gex_profile(&contracts, spot, &opts)
+        }),
+        tokio::task::spawn_blocking({
+            let contracts = contracts.clone();
+            move || compute_iv_structure(&contracts, spot, atm_exp.as_deref(), atm_dte, as_of)
+        }),
+        async { calculate_vwap_bands_default(&minutes) },
     );
-
-    // Session VWAP ± σ (latest RTH session with enough bars). Stored on snapshot.
-    let vwap = calculate_vwap_bands_default(&minutes);
+    let gex = gex_res.map_err(|e| AppError::Config(format!("gex join: {e}")))?;
+    let (iv_skew, term_structure) =
+        iv_res.map_err(|e| AppError::Config(format!("iv structure join: {e}")))?;
+    let cpu_ms = t_cpu.elapsed().as_secs_f64() * 1000.0;
     if vwap.is_none() {
         warn!(
             ticker = %sym,
@@ -302,6 +316,15 @@ async fn compute_analytics(
 
     let compute_ms = t0.elapsed().as_secs_f64() * 1000.0;
     let ttl_secs = state.config.gex_ttl_for(sym).as_secs();
+    // Structured phase timings for p95 review (vendor I/O vs CPU) without extra metrics infra.
+    info!(
+        ticker = %sym,
+        vendor_ms = vendor_ms,
+        cpu_ms = cpu_ms,
+        total_ms = compute_ms,
+        contracts = market.contracts.len(),
+        "analytics compute phases"
+    );
 
     Ok(AnalyticsSnapshot {
         ticker: market.ticker.clone(),

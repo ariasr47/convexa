@@ -54,21 +54,15 @@ import {
   Typography,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import {
-  getStructureHistory,
-  getTicker,
-  LiveUpdate,
-  OptionRight,
-  RecResponse,
-  streamTicker,
-  TickerBundle,
-  type StructureSample,
-} from '@org/api';
+import { OptionRight, RecResponse } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
+import { useStructureHistory } from './useStructureHistory';
+import { useTickerBundle } from './useTickerBundle';
+import { useTickerStream } from './useTickerStream';
 import { useUniverseMembership } from './useUniverseMembership';
 import {
   DealerFlowProjection,
@@ -86,13 +80,6 @@ import {
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
 import { CommandDeck, LastTradeReadout, TickerToolbar } from './widgets/chrome';
-
-const POLL_MS = 60_000; // matches the backend cache TTL
-/** Structure history is slow-lane thinned (≥5m); poll less often than the bundle. */
-const STRUCTURE_HISTORY_POLL_MS = 120_000;
-// A healthy SSE session pushes a payload every ~1.5s even when the market isn't ticking, so an
-// onmessage gap this long means the transport dropped — not a quiet session. Flips "Live offline".
-const STREAM_OFFLINE_MS = 15_000;
 
 // The cold-load stat grid: the full tile structure as shimmer (AC-Skel-1).
 function StatGridSkeleton() {
@@ -150,45 +137,79 @@ export function TickerDashboard() {
   // (index-first-defaults AC-1: TSLA → SPY everywhere an unset fallback existed).
   const { ticker = 'SPY' } = useParams();
   const navigate = useNavigate();
-  const [data, setData] = useState<TickerBundle | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [symbol, setSymbol] = useState(ticker);
-  const [live, setLive] = useState<LiveUpdate | null>(null);
-  // Stream Offline: set when the SSE transport drops (no payload for > STREAM_OFFLINE_MS after having
-  // been live). Degrades ONLY the live-derived tiles + the connection chip; the static bundle is
-  // untouched. Clears on the next payload (auto-reconnect).
-  const [streamOffline, setStreamOffline] = useState(false);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
   // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
   const darkPool = true;
 
-  // "Live" only if a real tick arrived recently AND the transport isn't offline.
-  const isLive = (live?.live ?? false) && !streamOffline;
-  // ONE BOOK. The Ticker page reads the SAME portfolio hook the Positions page does — there is no
-  // separate ghost-trade concept any more, so a trader cannot produce two competing records of one
-  // trade (AC-72). The store's subscription seam propagates a close made on `/positions` to this
-  // page without a reload, and an open made here to `/positions` (AC-70/AC-71).
+  // Reset the filter to "all" whenever the ticker changes.
+  useEffect(() => {
+    setSelected(null);
+  }, [ticker]);
+
+  // Persona DTE pre-fill (one-shot, explicit-navigation only) — consumed by the bundle hook.
+  const [dtePrefill, setDtePrefill] = useState<{
+    min: number;
+    max: number;
+    persona: string;
+  } | null>(null);
+  const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
+  const takeDtePrefill = useCallback(() => {
+    const d = pendingPrefill.current;
+    pendingPrefill.current = null;
+    return d;
+  }, []);
+
+  // Stream independent of REST; portfolio needs bundle data for marks.
+  const { live, streamOffline, isLive } = useTickerStream(ticker, selected);
+
+  // Position-context query re-keys the bundle once open legs exist (same as pre-split behavior).
+  // Seeded null → first fetch without pos_*; updates after portfolio hydrates.
+  const [positionQuery, setPositionQuery] = useState<{
+    expiration: string;
+    strike: number;
+    right: OptionRight;
+  } | null>(null);
+
+  const {
+    data,
+    loading,
+    error,
+    refresh: load,
+  } = useTickerBundle({
+    ticker,
+    selected,
+    darkPool,
+    positionQuery,
+    takeDtePrefill,
+  });
+
+  // ONE BOOK — same portfolio hook as Positions (AC-72).
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
+  const evalSel = tickerEvalSubject(pf.positions, ticker);
+  useEffect(() => {
+    const next = evalSel.queryLeg
+      ? {
+          expiration: evalSel.queryLeg.expiration ?? '',
+          strike: evalSel.queryLeg.strike ?? 0,
+          right: (evalSel.queryLeg.right ?? 'call') as OptionRight,
+        }
+      : null;
+    setPositionQuery((prev) => {
+      if (prev?.expiration === next?.expiration && prev?.strike === next?.strike && prev?.right === next?.right) {
+        return prev;
+      }
+      return next;
+    });
+  }, [evalSel.queryLeg]);
+
+  const structHist = useStructureHistory(ticker);
+
   const persona = usePersona();
   // index-first-defaults AC-4/AC-5 — silent best-effort universe read; only a CONFIRMED nonmember
   // shows the single-name caveat ('unknown' never does — absent-is-not-none).
   const universeMembership = useUniverseMembership(ticker);
-
-  /**
-   * LEVEL 1 + LEVEL 2 position-context selection, in ONE named helper so the rule reads the way the
-   * ruling reads (SPEC §2.8). `pos_*` is derived from the selected leg and the fetch NEVER branches
-   * on leg count or on position count — suppression happens at the RENDER, below.
-   */
-  const evalSel = tickerEvalSubject(pf.positions, ticker);
-  const positionQuery = evalSel.queryLeg
-    ? {
-        expiration: evalSel.queryLeg.expiration ?? '',
-        strike: evalSel.queryLeg.strike ?? 0,
-        right: (evalSel.queryLeg.right ?? 'call') as OptionRight,
-      }
-    : undefined;
 
   // AI recommendation (independently-nullable sibling card).
   const { personas: readPersonas } = useReadPersonas(persona.personas);
@@ -211,163 +232,6 @@ export function TickerDashboard() {
     (personaId: string | null) => setExportDrawer({ open: true, personaId }),
     [],
   );
-
-  // Persona DTE pre-fill (one-shot, explicit-navigation only).
-  const [dtePrefill, setDtePrefill] = useState<{
-    min: number;
-    max: number;
-    persona: string;
-  } | null>(null);
-  const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
-
-  /** Abort in-flight bundle fetch when deps change or the page unmounts (perf §3.2). */
-  const bundleAbortRef = useRef<AbortController | null>(null);
-
-  const load = useCallback(
-    (opts?: { force?: boolean }) => {
-      if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
-      // Hidden tab: skip scheduled polls; force=true is Retry / visibility resume.
-      if (!opts?.force && typeof document !== 'undefined' && document.hidden) return;
-
-      bundleAbortRef.current?.abort();
-      const ac = new AbortController();
-      bundleAbortRef.current = ac;
-
-      const dte = pendingPrefill.current;
-      pendingPrefill.current = null; // consume one-shot
-      setLoading(true);
-      // THE REQUEST IS UNCONDITIONAL AND ITS SHAPE NEVER BRANCHES — not on leg count, not on position
-      // count (SPEC §2.8, AC-74/AC-77/AC-83). There is deliberately no position-count guard here.
-      getTicker(
-        ticker,
-        {
-          expirations: selected ?? undefined,
-          darkPool,
-          position: positionQuery,
-          minDte: dte?.min,
-          maxDte: dte?.max,
-        },
-        { signal: ac.signal },
-      )
-        .then((d) => {
-          if (ac.signal.aborted) return;
-          setData(d);
-          setError(null);
-        })
-        .catch((e: unknown) => {
-          if (ac.signal.aborted) return;
-          const err = e as { name?: string; message?: string };
-          if (err?.name === 'AbortError') return;
-          setError(err?.message ?? 'Failed to load ticker');
-        })
-        .finally(() => {
-          if (!ac.signal.aborted) setLoading(false);
-        });
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    },
-    [
-      ticker,
-      selected,
-      darkPool,
-      positionQuery?.expiration,
-      positionQuery?.strike,
-      positionQuery?.right,
-    ],
-  );
-
-  // Reset the filter to "all" whenever the ticker changes; clear data + any prior error.
-  useEffect(() => {
-    setSelected(null);
-    setData(null);
-    setError(null);
-  }, [ticker]);
-
-  // (Re)load on ticker/selection change, poll on cache cadence, pause when tab hidden.
-  useEffect(() => {
-    load({ force: true });
-    const id = setInterval(() => load(), POLL_MS);
-    const onVisibility = () => {
-      if (!document.hidden) load({ force: true });
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisibility);
-      bundleAbortRef.current?.abort();
-    };
-  }, [load]);
-
-  // Structure path (slow-lane samples) — independent of SSE; static surface.
-  const [structHist, setStructHist] = useState<{
-    samples: StructureSample[] | null;
-    basis: string | null;
-    loading: boolean;
-    error: string | null;
-  }>({ samples: null, basis: null, loading: true, error: null });
-
-  useEffect(() => {
-    let cancelled = false;
-    let ac = new AbortController();
-    setStructHist({ samples: null, basis: null, loading: true, error: null });
-    const pull = (force = false) => {
-      if (!force && typeof document !== 'undefined' && document.hidden) return;
-      ac.abort();
-      ac = new AbortController();
-      const signal = ac.signal;
-      getStructureHistory(ticker, 48, { signal })
-        .then((r) => {
-          if (cancelled || signal.aborted) return;
-          setStructHist({
-            samples: r.samples,
-            basis: r.basis ?? null,
-            loading: false,
-            error: null,
-          });
-        })
-        .catch((e: unknown) => {
-          if (cancelled || signal.aborted) return;
-          const err = e as { name?: string; message?: string };
-          if (err?.name === 'AbortError') return;
-          setStructHist((prev) => ({
-            samples: prev.samples,
-            basis: prev.basis,
-            loading: false,
-            error: err?.message ?? 'Structure history unavailable',
-          }));
-        });
-    };
-    pull(true);
-    const id = setInterval(() => pull(false), STRUCTURE_HISTORY_POLL_MS);
-    const onVisibility = () => {
-      if (!document.hidden) pull(true);
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => {
-      cancelled = true;
-      ac.abort();
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [ticker]);
-
-  // Live SSE stream + payload-gap watchdog (stream-drop detection). The watchdog never touches the
-  // static bundle. The next payload (EventSource auto-reconnects) clears offline.
-  useEffect(() => {
-    setLive(null);
-    setStreamOffline(false);
-    if (selected !== null && selected.length === 0) return;
-    let gapTimer: ReturnType<typeof setTimeout> | undefined;
-    const unsub = streamTicker(ticker, { expirations: selected ?? undefined }, (u) => {
-      setLive(u);
-      setStreamOffline(false);
-      if (gapTimer) clearTimeout(gapTimer);
-      gapTimer = setTimeout(() => setStreamOffline(true), STREAM_OFFLINE_MS);
-    });
-    return () => {
-      if (gapTimer) clearTimeout(gapTimer);
-      unsub();
-    };
-  }, [ticker, selected]);
 
   const theme = useTheme();
   const m = data?.market_state;
