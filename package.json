@@ -1,20 +1,42 @@
 {
   "name": "@org/source",
   "version": "0.0.0",
+  "private": true,
   "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
-    "dev": "nx run-many -t serve -p api,dashboard",
+    "dev": "nx run-many -t serve -p api,@org/dashboard",
     "serve:api": "nx serve api",
-    "serve:dashboard": "nx serve dashboard",
-    "test": "nx run-many -t test",
-    "lint": "nx run-many -t lint",
-    "format": "nx format:write",
-    "format:check": "nx format:check",
+    "serve:dashboard": "nx serve @org/dashboard",
+    "build": "nx run-many -t build -p api,@org/dashboard --configuration=production",
+    "build:dev": "nx run-many -t build -p api,@org/dashboard --configuration=development",
+    "build:prod": "npm run build",
+    "build:dashboard": "nx build @org/dashboard --configuration=production",
+    "build:api": "nx build api --configuration=production",
+    "typecheck": "nx run-many -t typecheck -p @org/dashboard,@org/api",
+    "test": "nx run-many -t test -p @org/dashboard,@org/api,api",
+    "lint": "nx run-many -t lint -p @org/dashboard,@org/api,dashboard-e2e",
+    "format": "prettier --write \"apps/dashboard/**/*.{ts,tsx,js,jsx,mjs,css,json,md}\" \"apps/dashboard-e2e/**/*.{ts,tsx,js,mjs,json}\" \"libs/**/*.{ts,tsx,js,mjs,json,md}\" \"tools/**/*.{js,mjs,ts}\" \"functions/**/*.{ts,js}\" \"*.{json,md,mjs,yml}\" --ignore-unknown",
+    "format:check": "prettier --check \"apps/dashboard/**/*.{ts,tsx,js,jsx,mjs,css,json,md}\" \"apps/dashboard-e2e/**/*.{ts,tsx,js,mjs,json}\" \"libs/**/*.{ts,tsx,js,mjs,json,md}\" \"tools/**/*.{js,mjs,ts}\" \"functions/**/*.{ts,js}\" \"*.{json,md,mjs,yml}\" --ignore-unknown",
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
-    "worktree:link": "node tools/link-workspace.mjs"
+    "worktree:link": "node tools/link-workspace.mjs",
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
-  "private": true,
+  "workspaces": ["apps/*", "libs/*"],
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.2.0",
+    "@mui/material": "^9.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "recharts": "^3.10.1"
+  },
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@babel/preset-react": "^7.29.7",
@@ -55,16 +77,5 @@
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0",
     "vitest": "~4.1.10"
-  },
-  "workspaces": ["apps/*", "libs/*"],
-  "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^9.2.0",
-    "@mui/material": "^9.2.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2",
-    "recharts": "^3.10.1"
   }
 }

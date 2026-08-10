@@ -3,6 +3,19 @@
   "version": "0.0.1",
   "private": true,
   "nx": {
-    "tags": ["scope:frontend", "type:app"]
+    "tags": ["scope:frontend", "type:app"],
+    "targets": {
+      "build": {
+        "configurations": {
+          "production": {
+            "command": "vite build --mode production"
+          },
+          "development": {
+            "command": "vite build --mode development"
+          }
+        },
+        "defaultConfiguration": "production"
+      }
+    }
   }
 }

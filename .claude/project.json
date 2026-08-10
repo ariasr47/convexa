@@ -5,13 +5,15 @@
     "dir": "apps/api",
     "serve_cmd": "npx nx serve api",
     "port": 8000,
-    "python": "apps/api/.venv/Scripts/python.exe"
+    "crate": "api-rust",
+    "build_cmd": "npx nx build api --configuration=production"
   },
   "frontend": {
     "dir": "apps/dashboard",
-    "serve_cmd": "npx nx serve dashboard",
+    "serve_cmd": "npx nx serve @org/dashboard",
     "port": 4200,
-    "test_cmd": "npx nx test dashboard"
+    "test_cmd": "npx nx test @org/dashboard",
+    "build_cmd": "npx nx build @org/dashboard --configuration=production"
   },
   "lane_purity": {
     "ARCHITECTURE_CONTRACT.md": [

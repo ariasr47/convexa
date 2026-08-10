@@ -1,4 +1,4 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # compiled output
 dist
@@ -8,9 +8,7 @@ out-tsc
 # Rust workspace
 /target/
 **/target/
-# Nested crate lockfiles are unused under a workspace (root Cargo.lock is source of truth)
 libs/**/Cargo.lock
-# Keep workspace Cargo.lock committed (binary crates need reproducible builds)
 
 # dependencies
 node_modules
@@ -47,54 +45,58 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Nx
 .nx/cache
 .nx/workspace-data
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 
-# Non-Claude AI-assistant scaffolding (Nx-generated). This repo uses Claude Code
-# (.claude/) + AGENTS.md; the per-assistant skill mirrors are unused — ignore so
-# `nx` regenerating them doesn't re-add them to the repo.
+# ---------------------------------------------------------------------------
+# AI assistant local scaffolding (NOT source of truth for this repo)
+#
+# Active in this monorepo:
+#   .claude/   — Claude Code delivery system (committed; worktrees/settings local)
+#   .codex/    — Codex CLI local config (not committed)
+#   Grok Build — uses user/global skills (~/.grok); no repo .agents required
+#
+# .agents/ is an Nx-generated *mirror* of skills for generic agents. We do not
+# use it — keep ignored so regenerations never re-enter git.
+# ---------------------------------------------------------------------------
+.agents/
 .gemini/
 .cursor/
 .codex/
 .opencode/
-.agents/
 
 .claude/worktrees
 .claude/settings.local.json
-.nx/polygraph
-.nx/self-healing
-.nx/migrate-runs
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
 
-# Python backend (apps/api) — mirrors apps/api/.gitignore for clarity
-apps/api/.venv/
+# Rust / API local secrets & runtime data
 apps/api/.env
 apps/api/.env.*
 !apps/api/.env.example
 apps/api/data/
-# Backend per-ticker persist dumps land in ./data when uvicorn is run from the repo root
-# (DATA_DIR is cwd-relative); ignore that too. Root-anchored so it can't catch a real source dir.
 /data/
-apps/api/conf/token.txt
+
+# Python leftovers (archived under archive/api-python)
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
-# Playwright (e2e migrated from Cypress 2026-07-28)
-test-results/
-playwright-report/
-blob-report/
-playwright/.cache/
-
-# Archived Python backend � never re-add venvs
 archive/**/.venv/
 archive/**/__pycache__/
 archive/**/.pytest_cache/
 archive/**/data/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

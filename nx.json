@@ -67,6 +67,9 @@
     }
   ],
   "analytics": false,
+  "tui": {
+    "enabled": false
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": ["^build"],

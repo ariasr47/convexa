@@ -57,17 +57,17 @@ docs/             Design notes
 ### Prerequisites
 
 - **Node.js** (LTS; developed with Node 24 via [nvm](https://github.com/coreybutler/nvm-windows) on Windows) + npm
-- **Rust** (stable toolchain via [rustup](https://rustup.rs/)) for `apps/api`
+- **Node.js ≥ 24** (recommended: **26.7** — see `.nvmrc`; `nvm use`)
+- **Rust** stable via [rustup](https://rustup.rs/) for `apps/api`
 - A **Massive API key** for live market data (see _Configuration_)
 
 ### Install
 
 ```bash
-# JS workspace
+nvm use          # reads .nvmrc → Node 26.7.x
 npm install
 
 # Rust backend is a Cargo workspace member (libs/quant-engine + apps/api).
-# No Python venv required for the production path.
 ```
 
 ### Configuration
@@ -97,14 +97,17 @@ npm run serve:dashboard
 
 Then open **http://localhost:4200**.
 
-### Test / lint / format
+### Test / lint / format / build
 
 ```bash
-npm test               # all projects
-npx nx test dashboard  # frontend unit/component/integration (Vitest)
+npm test                 # unit tests (dashboard, @org/api, cargo)
+npm run typecheck        # required — Vitest does not typecheck
 npm run lint
-npm run format         # or: npm run format:check
-npm run graph          # visualize the Nx project graph
+npm run format:check     # scoped Prettier (never bare nx format:write)
+npm run build            # production: Vite minify + cargo --release --features postgres
+npm run build:dev        # unoptimized local builds
+npm run ci               # lint → typecheck → test → build
+npm run graph
 ```
 
 ---

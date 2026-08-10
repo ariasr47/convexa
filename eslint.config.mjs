@@ -53,7 +53,7 @@ export default [
       // - apps (type:app) may only import libs; an e2e app may import the app under test + libs.
       // - libs (type:lib) may only import other libs.
       // - frontend may import frontend + the shared lib; the shared lib stays self-contained.
-      // The Python backend (apps/api, scope:backend) is not in the TS graph, so this rule never
+      // The Rust backend (apps/api, scope:backend) is not in the TS graph, so this rule never
       // links the two lanes — the separation is structural.
       '@nx/enforce-module-boundaries': [
         'error',

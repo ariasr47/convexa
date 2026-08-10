@@ -3,12 +3,16 @@
 
 # --- Governance / hand-maintained docs (not code — leave formatting alone) ---
 .claude/
+.agents/
+.codex/
+archive/
 
 # --- Build & compile output ---
 **/dist
 **/build
 **/out
 **/tmp
+**/target
 libs/*/dist
 apps/*/dist
 

@@ -19,6 +19,15 @@
         "command": "cargo build -p api-rust --release",
         "cwd": "{workspaceRoot}"
       },
+      "configurations": {
+        "development": {
+          "command": "cargo build -p api-rust"
+        },
+        "production": {
+          "command": "cargo build -p api-rust --release --features postgres"
+        }
+      },
+      "defaultConfiguration": "production",
       "cache": false
     },
     "test": {
