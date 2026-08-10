@@ -25,10 +25,11 @@ use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 /// Max structure samples retained per symbol (ring buffer).
-pub const STRUCTURE_HISTORY_MAX: usize = 96;
+/// ~2 RTH weeks at 5-minute thinning so nightly outcome join still has multi-day spine.
+pub const STRUCTURE_HISTORY_MAX: usize = 576;
 /// Do not append if the last sample for the symbol is younger than this (seconds).
 pub const STRUCTURE_HISTORY_MIN_INTERVAL_SECS: f64 = 300.0;
-/// Default read limit for `/api/scan/{symbol}/history`.
+/// Default read limit for `/api/scan/{symbol}/history` (desk path; research uses higher).
 pub const STRUCTURE_HISTORY_DEFAULT_LIMIT: usize = 48;
 
 /// Additive score breakdown on the scan wire (quant-engine `ScoreDrivers`).
@@ -65,6 +66,9 @@ pub struct ScanRow {
 }
 
 /// One structure snapshot after a slow-lane recompute (not a live price tick).
+///
+/// P0 capture spine: levels + score drivers + net GEX / IV-HV so research can join
+/// forward outcomes without re-fetching a full chain (Massive hist chains are hard).
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct StructureSample {
     pub symbol: String,
@@ -79,6 +83,21 @@ pub struct StructureSample {
     pub call_wall: Option<f64>,
     pub put_wall: Option<f64>,
     pub dist_to_wall_pct: Option<f64>,
+    /// Additive score breakdown when the engine emitted it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_drivers: Option<ScanScoreDrivers>,
+    /// Dollar net GEX at capture (research feature; not a desk wire requirement).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub net_gex: Option<f64>,
+    /// ATM IV (%) / HV (%) when both available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub iv_hv_ratio: Option<f64>,
+    /// ATM IV as **decimal** (0.22 = 22%) at capture.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub atm_iv: Option<f64>,
+    /// 30d HV as **percent annualized** (22.0 = 22%) at capture.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hv_30d: Option<f64>,
 }
 
 impl StructureSample {
@@ -107,7 +126,26 @@ impl StructureSample {
             call_wall: row.call_wall,
             put_wall: row.put_wall,
             dist_to_wall_pct: row.dist_to_wall_pct,
+            score_drivers: row.score_drivers.clone(),
+            net_gex: None,
+            iv_hv_ratio: None,
+            atm_iv: None,
+            hv_30d: None,
         })
+    }
+
+    /// Enrich with Path-B analytics fields available only at slow-lane recompute time.
+    pub fn with_analytics(mut self, snap: &crate::state::AnalyticsSnapshot) -> Self {
+        let net = snap.gex.net_gex;
+        if net.is_finite() {
+            self.net_gex = Some(net);
+        }
+        self.iv_hv_ratio = snap.iv_hv_ratio.filter(|r| r.is_finite());
+        if snap.atm_iv.is_finite() && snap.atm_iv > 0.0 {
+            self.atm_iv = Some(snap.atm_iv);
+        }
+        self.hv_30d = snap.hv_30d.filter(|h| h.is_finite() && *h > 0.0);
+        self
     }
 }
 
@@ -832,6 +870,22 @@ mod tests {
     }
 
     #[test]
+    fn structure_sample_carries_score_drivers() {
+        let mut row = sample_row("SPY", 70.0);
+        row.score_drivers = Some(ScanScoreDrivers {
+            proximity: 20,
+            vol: 15,
+            setups: 20,
+            transition: 10,
+            dark_pool: 5,
+            total: 70,
+        });
+        let s = StructureSample::from_row(&row).unwrap();
+        assert_eq!(s.score_drivers.as_ref().unwrap().total, 70);
+        assert_eq!(s.score_drivers.as_ref().unwrap().proximity, 20);
+    }
+
+    #[test]
     fn merge_respects_min_interval_and_ring_cap() {
         let mut series = Vec::new();
         let s = |t: f64, score: f64| StructureSample {
@@ -847,6 +901,11 @@ mod tests {
             call_wall: None,
             put_wall: None,
             dist_to_wall_pct: None,
+            score_drivers: None,
+            net_gex: None,
+            iv_hv_ratio: None,
+            atm_iv: None,
+            hv_30d: None,
         };
         assert!(merge_structure_sample(&mut series, s(1000.0, 50.0), 300.0, 3));
         assert!(!merge_structure_sample(&mut series, s(1100.0, 51.0), 300.0, 3)); // < 300s

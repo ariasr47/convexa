@@ -9,6 +9,7 @@ pub mod iv_store;
 pub mod llm;
 pub mod price_stream;
 pub mod recommendation;
+pub mod research;
 pub mod scanner;
 pub mod warmer;
 

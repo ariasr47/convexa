@@ -378,7 +378,9 @@
     function logLine(msg) {
       const row = document.createElement("div");
       row.className = "row";
-      row.innerHTML = `<code>${msSince()}ms</code> · ${msg}`;
+      // String concat only (no JS template literals) so shells/linters do not
+      // mis-parse dollar-brace forms as unterminated expansions.
+      row.innerHTML = "<code>" + msSince() + "ms</code> · " + msg;
       ui.timeline.prepend(row);
       while (ui.timeline.children.length > 8) ui.timeline.removeChild(ui.timeline.lastChild);
     }
@@ -446,8 +448,8 @@
       const ivhv = analytics.iv_hv_ratio;
       const hv = analytics.hv_30d;
       if (ivhv != null) {
-        const hvBit = hv != null ? ` · HV ${Number(hv).toFixed(1)}%` : "";
-        setStat("ivHv", `${Number(ivhv).toFixed(2)}${hvBit}`, "amber");
+        const hvBit = hv != null ? " · HV " + Number(hv).toFixed(1) + "%" : "";
+        setStat("ivHv", Number(ivhv).toFixed(2) + hvBit, "amber");
       } else {
         setStat("ivHv", "—");
       }
@@ -455,11 +457,14 @@
       setStat("callWall", fmtMoney(g.call_wall));
       setStat("putWall", fmtMoney(g.put_wall));
       const mp = g.max_pain != null ? fmtMoney(g.max_pain) : "—";
-      const exp = g.max_pain_expiration ? ` · ${g.max_pain_expiration}` : "";
+      const exp = g.max_pain_expiration ? " · " + g.max_pain_expiration : "";
       setStat("maxPain", mp + exp);
       if (sig && sig.setups && sig.setups.length) {
         const top = sig.setups[0];
-        setStat("topSetup", `${top.name} (${top.conviction}) — ${top.strategy}`);
+        setStat(
+          "topSetup",
+          top.name + " (" + top.conviction + ") — " + top.strategy
+        );
       } else {
         setStat("topSetup", "—");
       }
@@ -490,20 +495,20 @@
       t0 = performance.now();
       resetPricePending();
       resetGexLoading();
-      ui.conn.textContent = `Connecting ${sym}…`;
-      logLine(`open SSE <code>/api/ticker/${sym}/progressive</code>`);
+      ui.conn.textContent = "Connecting " + sym + "…";
+      logLine("open SSE <code>/api/ticker/" + sym + "/progressive</code>");
 
-      es = new EventSource(`/api/ticker/${encodeURIComponent(sym)}/progressive`);
+      es = new EventSource("/api/ticker/" + encodeURIComponent(sym) + "/progressive");
 
       es.addEventListener("price", (ev) => {
         try {
           const data = JSON.parse(ev.data);
           renderPrice(data.price, data.latency_hint);
           const src = (data.price && data.price.source) || data.latency_hint || "?";
-          logLine(`<strong>price</strong> arrived · source=${src}`);
-          ui.conn.textContent = `${sym} · price in`;
+          logLine("<strong>price</strong> arrived · source=" + src);
+          ui.conn.textContent = sym + " · price in";
         } catch (e) {
-          logLine(`price parse error: ${e.message}`);
+          logLine("price parse error: " + e.message);
         }
       });
 
@@ -512,10 +517,15 @@
           const data = JSON.parse(ev.data);
           renderAnalytics(data.analytics, data.source);
           const ng = data.analytics && data.analytics.gex ? data.analytics.gex.net_gex : null;
-          logLine(`<strong>analytics</strong> arrived · source=${data.source || "?"} · net_gex=${fmtCompact(ng)}`);
-          ui.conn.textContent = `${sym} · analytics in`;
+          logLine(
+            "<strong>analytics</strong> arrived · source=" +
+              (data.source || "?") +
+              " · net_gex=" +
+              fmtCompact(ng)
+          );
+          ui.conn.textContent = sym + " · analytics in";
         } catch (e) {
-          logLine(`analytics parse error: ${e.message}`);
+          logLine("analytics parse error: " + e.message);
         }
       });
 
@@ -525,25 +535,25 @@
           try {
             const data = JSON.parse(ev.data);
             setBadge(ui.gexBadge, "error", "err");
-            logLine(`<strong>error</strong> ${data.error || ev.data}`);
+            logLine("<strong>error</strong> " + (data.error || ev.data));
           } catch (_) {
-            logLine(`error event`);
+            logLine("error event");
           }
         }
       });
 
       es.addEventListener("done", () => {
-        logLine(`<strong>done</strong>`);
-        ui.conn.textContent = `${sym} · complete`;
+        logLine("<strong>done</strong>");
+        ui.conn.textContent = sym + " · complete";
         stopStream();
       });
 
       es.onerror = () => {
         // Transport-level; EventSource may retry — we close to keep control.
         if (es && es.readyState === EventSource.CLOSED) {
-          ui.conn.textContent = `${sym} · stream closed`;
+          ui.conn.textContent = sym + " · stream closed";
         } else {
-          ui.conn.textContent = `${sym} · stream error`;
+          ui.conn.textContent = sym + " · stream error";
           logLine("SSE transport error (is api-rust running?)");
           stopStream();
           setBadge(ui.gexBadge, "error", "err");

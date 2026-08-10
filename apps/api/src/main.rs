@@ -18,6 +18,9 @@
 //! # Open http://127.0.0.1:8000/  (progressive browser demo)
 //! # GET /api/price/SPY
 //! # GET /api/ticker/SPY/progressive  (SSE)
+//!
+//! # Research: join structure samples → daily forward outcomes (SPY/QQQ)
+//! cargo run -p api-rust -- join-outcomes --symbols SPY,QQQ
 //! ```
 
 use api_rust::config::Config;
@@ -75,6 +78,27 @@ enum Commands {
         /// Override bind address (default env HTTP_BIND or 0.0.0.0:8000).
         #[arg(long)]
         bind: Option<String>,
+    },
+    /// P0 research: join structure-history samples to forward daily outcomes (Massive aggs).
+    ///
+    /// Default symbols SPY,QQQ. Writes a JSON artifact under data/research/ and, when
+    /// Postgres is configured, upserts into `structure_outcomes`.
+    JoinOutcomes {
+        /// Comma-separated symbols (default SPY,QQQ).
+        #[arg(long, default_value = "SPY,QQQ")]
+        symbols: String,
+        /// Horizons as session counts with d suffix (default 1d,5d).
+        #[arg(long, default_value = "1d,5d")]
+        horizons: String,
+        /// Override scan store path (JSON). Ignored when DATABASE_URL + postgres feature.
+        #[arg(long)]
+        store: Option<PathBuf>,
+        /// Output JSON path (default data/research/outcomes_<utc>.json).
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Print full JSON to stdout instead of a short summary.
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -248,8 +272,146 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             }
             server::serve(cfg).await?;
         }
+        Commands::JoinOutcomes {
+            symbols,
+            horizons,
+            store,
+            out,
+            json,
+        } => {
+            cmd_join_outcomes(&symbols, &horizons, store, out, json).await?;
+        }
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// P0 research: structure sample → forward daily outcomes
+// ---------------------------------------------------------------------------
+
+async fn cmd_join_outcomes(
+    symbols: &str,
+    horizons: &str,
+    store_path: Option<PathBuf>,
+    out_path: Option<PathBuf>,
+    json: bool,
+) -> anyhow::Result<()> {
+    use api_rust::infrastructure::massive::MassiveRestClient;
+    use api_rust::services::research::{join_samples, StructureOutcome, LABEL_VERSION_V1};
+    use api_rust::services::scanner::store::STRUCTURE_HISTORY_MAX;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let cfg = Config::from_env()?;
+    let syms: Vec<String> = symbols
+        .split(',')
+        .map(|s| s.trim().to_ascii_uppercase())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if syms.is_empty() {
+        anyhow::bail!("no symbols");
+    }
+    let hz: Vec<&str> = horizons
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
+    if hz.is_empty() {
+        anyhow::bail!("no horizons");
+    }
+
+    let store = open_scan_store_for_cli(&cfg, store_path).await?;
+    let massive = MassiveRestClient::new(&cfg)?;
+    let joined_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs_f64())
+        .unwrap_or(0.0);
+
+    let mut all_outcomes: Vec<StructureOutcome> = Vec::new();
+    let mut sample_counts: Vec<(String, usize, usize)> = Vec::new();
+
+    for sym in &syms {
+        let samples = store
+            .read_structure_history(sym, STRUCTURE_HISTORY_MAX)
+            .await;
+        if samples.is_empty() {
+            eprintln!("{sym}: no structure samples — run the scanner first");
+            sample_counts.push((sym.clone(), 0, 0));
+            continue;
+        }
+        // Lookback covers longest horizon + sample span cushion.
+        let bars = massive.fetch_daily_bars(sym, 120).await?;
+        if bars.is_empty() {
+            eprintln!("{sym}: no daily bars from Massive");
+            sample_counts.push((sym.clone(), samples.len(), 0));
+            continue;
+        }
+        let outcomes = join_samples(&samples, &bars, &hz, joined_at, "massive_aggs_1d");
+        sample_counts.push((sym.clone(), samples.len(), outcomes.len()));
+        all_outcomes.extend(outcomes);
+    }
+
+    // Durable Postgres path when available.
+    #[cfg(feature = "postgres")]
+    {
+        use api_rust::services::scanner::store::ScanStore;
+        if let ScanStore::Postgres(ref pg) = store {
+            match pg.upsert_structure_outcomes(&all_outcomes).await {
+                Ok(n) => eprintln!("postgres structure_outcomes upserted ~{n} row-ops"),
+                Err(e) => eprintln!("postgres structure_outcomes upsert failed: {e}"),
+            }
+        }
+    }
+
+    let out = out_path.unwrap_or_else(|| {
+        let stamp = Utc::now().format("%Y%m%dT%H%M%SZ");
+        cfg.workspace_root
+            .join(format!("data/research/outcomes_{stamp}.json"))
+    });
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let artifact = serde_json::json!({
+        "joined_at": joined_at,
+        "label_version": LABEL_VERSION_V1,
+        "symbols": syms,
+        "horizons": hz,
+        "summary": sample_counts.iter().map(|(s, n_s, n_o)| {
+            serde_json::json!({ "symbol": s, "samples": n_s, "outcomes": n_o })
+        }).collect::<Vec<_>>(),
+        "outcomes": all_outcomes,
+    });
+    std::fs::write(&out, serde_json::to_string_pretty(&artifact)?)?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&artifact)?);
+    } else {
+        println!("join-outcomes complete");
+        for (s, n_s, n_o) in &sample_counts {
+            println!("  {s}: {n_s} samples → {n_o} outcomes");
+        }
+        println!("  total outcomes: {}", all_outcomes.len());
+        println!("  artifact: {}", out.display());
+    }
+    Ok(())
+}
+
+async fn open_scan_store_for_cli(
+    cfg: &Config,
+    store_path: Option<PathBuf>,
+) -> anyhow::Result<api_rust::services::scanner::store::ScanStore> {
+    use api_rust::services::scanner::store::ScanStore;
+
+    #[cfg(feature = "postgres")]
+    {
+        if let Some(url) = cfg.database_url.as_ref().filter(|u| !u.trim().is_empty()) {
+            let pg = api_rust::db::postgres::Pg::connect(url).await?;
+            pg.migrate().await?;
+            return Ok(ScanStore::open_postgres(pg));
+        }
+    }
+
+    let path = store_path.unwrap_or_else(|| cfg.scan_store_path.clone());
+    Ok(ScanStore::open(&path, None).await?)
 }
 
 // ---------------------------------------------------------------------------

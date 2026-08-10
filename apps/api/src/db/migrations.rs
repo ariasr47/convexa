@@ -158,6 +158,37 @@ CREATE TABLE IF NOT EXISTS user_book (
 CREATE INDEX IF NOT EXISTS user_book_updated_at_idx ON user_book (updated_at DESC);
 "#,
     ),
+    (
+        6,
+        "structure_capture_spine",
+        r#"
+-- P0 research capture: extend live structure samples with score drivers + vol/GEX
+-- features, and durable forward-outcome rows (not pruned with the sample ring).
+ALTER TABLE scan_structure_history ADD COLUMN IF NOT EXISTS score_drivers TEXT;
+ALTER TABLE scan_structure_history ADD COLUMN IF NOT EXISTS net_gex DOUBLE PRECISION;
+ALTER TABLE scan_structure_history ADD COLUMN IF NOT EXISTS iv_hv_ratio DOUBLE PRECISION;
+ALTER TABLE scan_structure_history ADD COLUMN IF NOT EXISTS atm_iv DOUBLE PRECISION;
+ALTER TABLE scan_structure_history ADD COLUMN IF NOT EXISTS hv_30d DOUBLE PRECISION;
+
+CREATE TABLE IF NOT EXISTS structure_outcomes (
+    symbol         TEXT NOT NULL,
+    as_of          DOUBLE PRECISION NOT NULL,
+    horizon        TEXT NOT NULL,
+    ret_simple     DOUBLE PRECISION,
+    ret_log        DOUBLE PRECISION,
+    abs_move       DOUBLE PRECISION,
+    hit_call_wall  BOOLEAN,
+    hit_put_wall   BOOLEAN,
+    crossed_flip   BOOLEAN,
+    label_version  TEXT NOT NULL,
+    bars_source    TEXT NOT NULL,
+    joined_at      DOUBLE PRECISION NOT NULL,
+    PRIMARY KEY (symbol, as_of, horizon)
+);
+CREATE INDEX IF NOT EXISTS structure_outcomes_symbol_as_of_idx
+    ON structure_outcomes (symbol, as_of DESC);
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.
@@ -272,5 +303,13 @@ mod tests {
             .iter()
             .any(|(_, n, b)| *n == "scan_structure_history"
                 && b.contains("scan_structure_history")));
+    }
+
+    #[test]
+    fn capture_spine_migration_present() {
+        assert!(MIGRATIONS.iter().any(|(_, n, b)| *n == "structure_capture_spine"
+            && b.contains("structure_outcomes")
+            && b.contains("score_drivers")
+            && b.contains("net_gex")));
     }
 }

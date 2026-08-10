@@ -870,6 +870,16 @@ export interface StructureSample {
   call_wall: number | null;
   put_wall: number | null;
   dist_to_wall_pct: number | null;
+  /** Additive score breakdown when the engine emitted it (research capture spine). */
+  score_drivers?: ScanScoreDrivers | null;
+  /** Dollar net GEX at capture (optional research field). */
+  net_gex?: number | null;
+  /** ATM IV (%) / HV (%) when both available. */
+  iv_hv_ratio?: number | null;
+  /** ATM IV as decimal (0.22 = 22%) at capture. */
+  atm_iv?: number | null;
+  /** 30d HV percent annualized at capture. */
+  hv_30d?: number | null;
 }
 
 /** `GET /api/scan/{symbol}/history` — durable structure path for the ticker Structure zone. */

@@ -208,7 +208,8 @@ pub struct StructureHistoryResponse {
 }
 
 const STRUCTURE_HISTORY_BASIS: &str = "Slow-lane structure recomputes only — not live price ticks. \
-Samples thinned to ≥5 minutes; last 96 kept per symbol. Snapshot path, never a forecast.";
+Samples thinned to ≥5 minutes; last 576 kept per symbol (research capture spine). \
+Snapshot path, never a forecast.";
 
 /// GET /api/scan/{symbol}/history — anonymous-open structure path for one ticker.
 pub async fn get_structure_history(

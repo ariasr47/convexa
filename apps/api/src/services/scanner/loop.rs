@@ -421,7 +421,11 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
             // Prefer warm gex_cache; singleflight miss → one shared compute.
             let result = analytics::load_or_compute(&state, &sym).await;
             let cnow = now_secs();
-            let (row, ok_price, ok): (ScanRow, Option<f64>, bool) = match result {
+            let (row, ok_price, snap_for_history): (
+                ScanRow,
+                Option<f64>,
+                Option<crate::state::AnalyticsSnapshot>,
+            ) = match result {
                 Ok(snap) => {
                     let anchor = if snap.display_spot > 0.0 {
                         Some(snap.display_spot)
@@ -447,20 +451,25 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
                         wall_ms = t0.elapsed().as_secs_f64() * 1000.0,
                         "scanner compute ok"
                     );
-                    (row, anchor, true)
+                    (row, anchor, Some(snap))
                 }
                 Err(e) => {
                     warn!(ticker = %sym, error = %e, "scanner compute failed");
                     let prev = state.scan.get_row(&sym).await;
-                    (project_error(&sym, prev.as_ref()), None, false)
+                    (project_error(&sym, prev.as_ref()), None, None)
                 }
             };
             state.scan.upsert_row(row.clone()).await;
+            let ok = snap_for_history.is_some();
             // Structure history: slow-lane only (price-only fast ticks never append).
-            if ok {
+            // Enrich with net_gex / IV-HV from the same analytics snap (research capture spine).
+            if let Some(snap) = snap_for_history {
                 match crate::services::scanner::store::StructureSample::from_row(&row) {
                     Some(sample) => {
-                        state.scan.append_structure_sample(sample).await;
+                        state
+                            .scan
+                            .append_structure_sample(sample.with_analytics(&snap))
+                            .await;
                     }
                     None => {
                         warn!(

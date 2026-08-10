@@ -378,12 +378,14 @@ impl PgScanStore {
             }
         }
 
+        let drivers = Self::drivers_json(&sample.score_drivers);
         let inserted = sqlx::query(
             r#"INSERT INTO scan_structure_history (
                  symbol, as_of, price, score, tier, regime, vol_regime,
-                 flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct
+                 flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
+                 score_drivers, net_gex, iv_hv_ratio, atm_iv, hv_30d
                ) VALUES (
-                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
+                 $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17
                )
                ON CONFLICT (symbol, as_of) DO NOTHING"#,
         )
@@ -399,6 +401,11 @@ impl PgScanStore {
         .bind(sample.call_wall)
         .bind(sample.put_wall)
         .bind(sample.dist_to_wall_pct)
+        .bind(&drivers)
+        .bind(sample.net_gex)
+        .bind(sample.iv_hv_ratio)
+        .bind(sample.atm_iv)
+        .bind(sample.hv_30d)
         .execute(&self.pg.pool)
         .await
         .map_err(|e| AppError::Config(format!("postgres structure history insert: {e}")))?
@@ -478,7 +485,8 @@ impl PgScanStore {
         // Newest `limit` rows, then reverse to ascending for the wire.
         let rows = sqlx::query(
             r#"SELECT symbol, as_of, price, score, tier, regime, vol_regime,
-                      flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct
+                      flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
+                      score_drivers, net_gex, iv_hv_ratio, atm_iv, hv_30d
                FROM scan_structure_history
                WHERE symbol = $1
                ORDER BY as_of DESC
@@ -505,9 +513,69 @@ impl PgScanStore {
                 call_wall: r.get("call_wall"),
                 put_wall: r.get("put_wall"),
                 dist_to_wall_pct: r.get("dist_to_wall_pct"),
+                score_drivers: Self::parse_drivers(r.try_get("score_drivers").ok().flatten()),
+                net_gex: r.try_get("net_gex").ok().flatten(),
+                iv_hv_ratio: r.try_get("iv_hv_ratio").ok().flatten(),
+                atm_iv: r.try_get("atm_iv").ok().flatten(),
+                hv_30d: r.try_get("hv_30d").ok().flatten(),
             })
             .collect();
         out.reverse();
         Ok(out)
+    }
+
+    /// Upsert forward-outcome rows (research join; durable, not ring-pruned).
+    pub async fn upsert_structure_outcomes(
+        &self,
+        rows: &[crate::services::research::StructureOutcome],
+    ) -> AppResult<usize> {
+        let mut n = 0usize;
+        for o in rows {
+            let res = sqlx::query(
+                r#"INSERT INTO structure_outcomes (
+                     symbol, as_of, horizon, ret_simple, ret_log, abs_move,
+                     hit_call_wall, hit_put_wall, crossed_flip,
+                     label_version, bars_source, joined_at
+                   ) VALUES (
+                     $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
+                   )
+                   ON CONFLICT (symbol, as_of, horizon) DO UPDATE SET
+                     ret_simple = EXCLUDED.ret_simple,
+                     ret_log = EXCLUDED.ret_log,
+                     abs_move = EXCLUDED.abs_move,
+                     hit_call_wall = EXCLUDED.hit_call_wall,
+                     hit_put_wall = EXCLUDED.hit_put_wall,
+                     crossed_flip = EXCLUDED.crossed_flip,
+                     label_version = EXCLUDED.label_version,
+                     bars_source = EXCLUDED.bars_source,
+                     joined_at = EXCLUDED.joined_at"#,
+            )
+            .bind(&o.symbol)
+            .bind(o.as_of)
+            .bind(&o.horizon)
+            .bind(o.ret_simple)
+            .bind(o.ret_log)
+            .bind(o.abs_move)
+            .bind(o.hit_call_wall)
+            .bind(o.hit_put_wall)
+            .bind(o.crossed_flip)
+            .bind(&o.label_version)
+            .bind(&o.bars_source)
+            .bind(o.joined_at)
+            .execute(&self.pg.pool)
+            .await
+            .map_err(|e| AppError::Config(format!("postgres structure_outcomes upsert: {e}")))?;
+            n += res.rows_affected() as usize;
+        }
+        Ok(n)
+    }
+
+    /// Count outcome rows for operator health / join CLI summary.
+    pub async fn count_structure_outcomes(&self) -> AppResult<i64> {
+        let n: i64 = sqlx::query_scalar(r#"SELECT COUNT(*)::bigint FROM structure_outcomes"#)
+            .fetch_one(&self.pg.pool)
+            .await
+            .map_err(|e| AppError::Config(format!("postgres structure_outcomes count: {e}")))?;
+        Ok(n)
     }
 }

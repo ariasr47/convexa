@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — Enterprise research &amp; backtesting blueprint</title>
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --steel: #8A9BB4;
+      --phosphor: #E9E4D6;
+      --amber: #F2A93B;
+      --signal: #5E8BC4;
+      --green: #2ecc71;
+      --red: #ff5c5c;
+      --line: rgba(138, 155, 180, 0.28);
+      --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html, body { margin: 0; background: var(--ink); color: var(--phosphor); font-family: var(--font); line-height: 1.55; }
+    body { padding: 28px 18px 80px; }
+    .shell { max-width: 1120px; margin: 0 auto; }
+    h1 { font-size: 1.85rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+    h2 { font-size: 1.28rem; color: var(--amber); margin: 40px 0 12px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    h3 { font-size: 1.05rem; color: var(--signal); margin: 24px 0 8px; }
+    h4 { font-size: 0.95rem; color: var(--phosphor); margin: 16px 0 6px; }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code, pre { font-family: var(--mono); font-size: 0.82rem; }
+    code { color: var(--amber); }
+    pre {
+      background: var(--raised); border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px 14px; overflow-x: auto; color: var(--phosphor); line-height: 1.45;
+    }
+    .sub { color: var(--steel); margin: 0 0 20px; max-width: 78ch; }
+    .toc {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 18px; margin: 0 0 28px;
+    }
+    .toc a { color: var(--signal); text-decoration: none; }
+    .toc a:hover { color: var(--amber); }
+    .toc ol { margin: 8px 0 0; padding-left: 1.3rem; }
+    .toc li { margin: 4px 0; }
+    .note { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 14px 0; }
+    .note strong { color: var(--amber); }
+    .warn { border-color: rgba(224, 122, 63, 0.5); }
+    .warn strong { color: #E07A3F; }
+    .ok { border-color: rgba(46, 204, 113, 0.35); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--raised); color: var(--phosphor); font-weight: 600; }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .diagram {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 18px 14px; margin: 16px 0 22px; overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .caption { font-size: 0.8rem; color: var(--steel); text-align: center; margin-top: 10px; }
+    .tag {
+      display: inline-block; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--amber); margin: 0 6px 8px 0;
+    }
+    ol.phases > li { margin-bottom: 14px; }
+    ul.tight li { margin-bottom: 5px; }
+    a { color: var(--signal); }
+    .grid2 { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 840px) { .grid2 { grid-template-columns: 1fr 1fr; } }
+    .grid3 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .grid3 { grid-template-columns: 1fr 1fr 1fr; } }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+    .card h3, .card h4 { margin-top: 0; }
+    .pill {
+      display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; padding: 2px 8px; border-radius: 6px; margin-right: 6px;
+    }
+    .pill-in { background: rgba(46,204,113,0.15); color: var(--green); }
+    .pill-out { background: rgba(255,92,92,0.12); color: var(--red); }
+    .pill-later { background: rgba(94,139,196,0.15); color: var(--signal); }
+    footer { margin-top: 48px; font-size: 0.8rem; color: var(--steel); border-top: 1px solid var(--line); padding-top: 14px; }
+    .meta { font-size: 0.85rem; color: var(--steel); margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <p>
+      <span class="tag">Enterprise</span>
+      <span class="tag">Research</span>
+      <span class="tag">Backtesting</span>
+      <span class="tag">Governance</span>
+    </p>
+    <h1>Convexa research &amp; backtesting blueprint</h1>
+    <p class="meta">
+      Version 2 · hardened architecture for dual-clock dealer structure ·
+      grounded in <code>api-rust</code>, <code>quant-engine</code>, scanner history, Path A/B progressive ticker ·
+      file: <code>docs/SYSTEM_DESIGN_AND_BACKTEST.html</code>
+    </p>
+    <p class="sub">
+      This document is the operating plan for becoming <strong>research-grade and market-competitive</strong>
+      on structure triage and advisory AI—not a day-trading signal factory. It hardens scope,
+      data models, pipelines, environments, progression, and what “edge” can realistically mean
+      for Convexa’s product (desk honesty, as-of structure, tape isolation).
+    </p>
+
+    <nav class="toc" aria-label="Table of contents">
+      <strong style="color:var(--phosphor)">Contents</strong>
+      <ol>
+        <li><a href="#s0">Executive thesis &amp; competitive edge</a></li>
+        <li><a href="#s1">Scope (in / out / later)</a></li>
+        <li><a href="#s2">Current production system</a></li>
+        <li><a href="#s3">Target research architecture</a></li>
+        <li><a href="#s4">Data models (schemas)</a></li>
+        <li><a href="#s5">Data pipeline &amp; proposed flows</a></li>
+        <li><a href="#s6">Score research loop</a></li>
+        <li><a href="#s7">AI recommendation research loop</a></li>
+        <li><a href="#s8">Outcomes, labels &amp; leakage control</a></li>
+        <li><a href="#s9">Environments DEV / TST / PROD</a></li>
+        <li><a href="#s10">Testing strategy (vs long e2e)</a></li>
+        <li><a href="#s11">Vendor strategy (Massive)</a></li>
+        <li><a href="#s12">Progression roadmap &amp; phases</a></li>
+        <li><a href="#s13">Improvement plan &amp; KPIs</a></li>
+        <li><a href="#s14">Governance, risk &amp; compliance posture</a></li>
+        <li><a href="#s15">What “enterprise grade” requires</a></li>
+      </ol>
+    </nav>
+
+    <!-- ============================================================ -->
+    <h2 id="s0">0. Executive thesis &amp; competitive edge</h2>
+    <p>
+      Most “options analytics” products either (a) show pretty chains with no decision discipline, or
+      (b) claim predictive alpha they cannot validate. Convexa’s edge is narrower and harder to copy:
+    </p>
+    <div class="grid2">
+      <div class="card">
+        <h4>Product edge (shipped DNA)</h4>
+        <ul class="tight">
+          <li><strong>Dual-clock honesty</strong> — structure as-of vs tape live, never merged into a lying “live GEX.”</li>
+          <li><strong>Dealer structure language</strong> — walls, flip, net GEX field, regime, setups with assumptions visible.</li>
+          <li><strong>Deterministic scorer</strong> — <code>generate_signals</code> pure, characterized, explainable drivers.</li>
+          <li><strong>AI as leaf</strong> — recommendations consume context; do not rewrite score/fingerprint.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Research edge (what to build)</h4>
+        <ul class="tight">
+          <li><strong>Point-in-time structure history</strong> of *your* features, not only vendor bars.</li>
+          <li><strong>Calibrated triage</strong> — score ranks “worth a look” better than competitors’ opaque heatmaps.</li>
+          <li><strong>Model bake-offs</strong> — AI that is schema-safe, fast enough, and structure-faithful under metrics.</li>
+          <li><strong>Regime-conditioned truth</strong> — report edge by γ/vol regime so marketing cannot wash results.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">
+      <strong>Competitive bar:</strong> enterprise desks care about <em>reproducibility, leakage control,
+      versioned features, audit trails, and promotion gates</em>—not a single backtest Sharpe on one bull year.
+      Your moat is a <strong>trustworthy structure desk with measured triage quality</strong>, not secret α claims.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s1">1. Scope</h2>
+    <table>
+      <thead><tr><th>Bucket</th><th>Items</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pill pill-in">In scope</span></td>
+          <td>
+            Capture &amp; store structure feature vectors at as_of; join forward underlying outcomes;
+            calibrate opportunity_score drivers; multi-model AI rec offline eval; replay batch CLI;
+            fixture MarketDataPort; DEV/TST/PROD config; research metrics dashboards (internal);
+            shadow logging of challenger scores/models.
+          </td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-out">Out of scope (v1)</span></td>
+          <td>
+            User-facing “guaranteed profit” backtests; live RL trading capital; automatic prod scorer swap;
+            full OPRA reconstruction of every chain since 2014 on day one; putting research charts on the default ticker board;
+            multi-year runs inside Playwright e2e.
+          </td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-later">Later</span></td>
+          <td>
+            Deep vendor historical options backfill; portfolio-level multi-name simulation; options P&amp;L path
+            (fills, spreads, greeks P&amp;L); online bandits; public research portal; third-party model marketplace.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <h4>Primary research questions (answer these or you are not market-competitive)</h4>
+    <ol>
+      <li>Does <strong>opportunity_score</strong> rank names/times where structure context is actually actionable better than chance / naive baselines?</li>
+      <li>Which <strong>score drivers</strong> carry signal by regime, and which are noise?</li>
+      <li>Given a frozen bundle, which <strong>LLM + prompt</strong> is best under quality × latency × cost × stability?</li>
+      <li>Does the system stay <strong>honest</strong> under replay (no live badge, no look-ahead)?</li>
+    </ol>
+
+    <!-- ============================================================ -->
+    <h2 id="s2">2. Current production system</h2>
+    <p>
+      Two deployables: <strong>api-rust</strong> (Axum, Railway) and <strong>@convexa/dashboard</strong>
+      (React/Vite, Cloudflare Pages). Compute: <code>libs/quant-engine</code>. Client: <code>@convexa/api</code>.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg" role="img">
+        <defs>
+          <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#8A9BB4"/>
+          </marker>
+          <style>
+            .box { fill:#1B2432; stroke:#8A9BB4; stroke-width:1.2; rx:8; }
+            .ext { fill:#131A24; stroke:#5E8BC4; stroke-width:1.2; rx:8; }
+            .store { fill:#1B2432; stroke:#F2A93B; stroke-width:1.2; rx:8; }
+            .fe { fill:#1B2432; stroke:#2ecc71; stroke-width:1.2; rx:8; }
+            .t { fill:#E9E4D6; font:600 12px "IBM Plex Sans",system-ui,sans-serif; }
+            .s { fill:#8A9BB4; font:500 10px "IBM Plex Sans",system-ui,sans-serif; }
+            .lbl { fill:#F2A93B; font:600 11px "IBM Plex Sans",system-ui,sans-serif; }
+            .e { stroke:#8A9BB4; stroke-width:1.3; fill:none; marker-end:url(#ar); }
+            .ef { stroke:#5E8BC4; stroke-width:1.5; fill:none; marker-end:url(#ar); }
+            .es { stroke:#F2A93B; stroke-width:1.5; fill:none; marker-end:url(#ar); stroke-dasharray:5 3; }
+          </style>
+        </defs>
+        <text x="30" y="24" class="lbl">EXTERNAL</text>
+        <rect x="20" y="34" width="150" height="48" class="ext"/>
+        <text x="34" y="56" class="t">Massive REST/WS</text>
+        <text x="34" y="72" class="s">chain · bars · tape</text>
+        <rect x="190" y="34" width="130" height="48" class="ext"/>
+        <text x="204" y="56" class="t">LLM providers</text>
+        <text x="204" y="72" class="s">AI rec leaf</text>
+
+        <text x="30" y="110" class="lbl">API-RUST</text>
+        <rect x="20" y="120" width="170" height="58" class="box"/>
+        <text x="34" y="142" class="t">Path A price</text>
+        <text x="34" y="158" class="s">Redis + stock snap</text>
+        <rect x="210" y="120" width="180" height="58" class="box"/>
+        <text x="224" y="142" class="t">Path B analytics</text>
+        <text x="224" y="158" class="s">chain → quant-engine</text>
+        <rect x="410" y="120" width="170" height="58" class="box"/>
+        <text x="424" y="142" class="t">Scanner loop</text>
+        <text x="424" y="158" class="s">fast + slow lanes</text>
+        <rect x="600" y="120" width="170" height="58" class="box"/>
+        <text x="614" y="142" class="t">HTTP / SSE</text>
+        <text x="614" y="158" class="s">ticker · scan · rec</text>
+        <rect x="790" y="120" width="160" height="58" class="box"/>
+        <text x="804" y="142" class="t">AI recommendation</text>
+        <text x="804" y="158" class="s">bundle consumer only</text>
+
+        <text x="30" y="210" class="lbl">STORES (today)</text>
+        <rect x="20" y="220" width="140" height="48" class="store"/>
+        <text x="34" y="242" class="t">Redis prices</text>
+        <text x="34" y="258" class="s">Path A</text>
+        <rect x="180" y="220" width="150" height="48" class="store"/>
+        <text x="194" y="242" class="t">GEX cache</text>
+        <text x="194" y="258" class="s">in-proc TTL</text>
+        <rect x="350" y="220" width="200" height="48" class="store"/>
+        <text x="364" y="242" class="t">Postgres / JSON</text>
+        <text x="364" y="258" class="s">auth · scan · structure history</text>
+        <rect x="570" y="220" width="160" height="48" class="store"/>
+        <text x="584" y="242" class="t">quant-engine</text>
+        <text x="584" y="258" class="s">pure compute</text>
+
+        <text x="30" y="300" class="lbl">DASHBOARD</text>
+        <rect x="20" y="310" width="180" height="52" class="fe"/>
+        <text x="34" y="332" class="t">REST poll structure</text>
+        <text x="34" y="348" class="s">~60s bundle</text>
+        <rect x="220" y="310" width="180" height="52" class="fe"/>
+        <text x="234" y="332" class="t">liveTapeStore</text>
+        <text x="234" y="348" class="s">SSE tape only</text>
+        <rect x="420" y="310" width="200" height="52" class="fe"/>
+        <text x="434" y="332" class="t">Structure Field + path</text>
+        <text x="434" y="348" class="s">as-of honest</text>
+        <rect x="640" y="310" width="180" height="52" class="fe"/>
+        <text x="654" y="332" class="t">AI rec panel</text>
+        <text x="654" y="348" class="s">gate + cooldown</text>
+
+        <text x="30" y="400" class="lbl">CLOCKS</text>
+        <rect x="20" y="410" width="440" height="56" class="store"/>
+        <text x="34" y="434" class="t">STRUCTURE — walls · flip · GEX · score · history</text>
+        <text x="34" y="452" class="s">slow as-of · never sold as live gamma</text>
+        <rect x="480" y="410" width="440" height="56" class="ext"/>
+        <text x="494" y="434" class="t">TAPE — mid · last · spread · Tape Pulse</text>
+        <text x="494" y="452" class="s">fast · dims on stream drop</text>
+
+        <text x="30" y="500" class="s">Solid blue ≈ Path A. Dashed amber ≈ Path B / structure. Green ≈ FE. Amber outline ≈ durable/compute stores.</text>
+        <text x="30" y="520" class="s">AI rec is a leaf: never writes opportunity_score or state_fingerprint.</text>
+
+        <path class="ef" d="M95 82 L95 120"/>
+        <path class="es" d="M250 82 L300 120"/>
+        <path class="e" d="M255 82 L495 120"/>
+        <path class="e" d="M255 58 L870 120"/>
+        <path class="ef" d="M105 178 L90 220"/>
+        <path class="es" d="M300 178 L255 220"/>
+        <path class="es" d="M495 178 L450 220"/>
+        <path class="e" d="M300 178 L650 220"/>
+        <path class="e" d="M685 178 L730 310"/>
+        <path class="ef" d="M110 268 L110 310"/>
+        <path class="es" d="M450 268 L500 310"/>
+      </svg>
+      <p class="caption">Figure 1 — Production architecture (dual-clock desk).</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s3">3. Target research architecture</h2>
+    <p>
+      Backtesting is a <strong>time-travel mode of the same pipeline</strong>: same quant-engine,
+      pluggable clock + market data port, append-only research store, offline consumers.
+    </p>
+    <div class="diagram">
+      <svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg" role="img">
+        <defs>
+          <marker id="ar2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#8A9BB4"/>
+          </marker>
+          <style>
+            .b { fill:#1B2432; stroke:#8A9BB4; stroke-width:1.2; rx:8; }
+            .ba { fill:#1B2432; stroke:#F2A93B; stroke-width:1.4; rx:8; }
+            .t { fill:#E9E4D6; font:600 12px "IBM Plex Sans",system-ui,sans-serif; }
+            .s { fill:#8A9BB4; font:500 10px "IBM Plex Sans",system-ui,sans-serif; }
+            .e { stroke:#8A9BB4; stroke-width:1.4; fill:none; marker-end:url(#ar2); }
+          </style>
+        </defs>
+        <rect x="20" y="30" width="140" height="58" class="ba"/>
+        <text x="34" y="54" class="t">Capture / history</text>
+        <text x="34" y="72" class="s">chains · bars · runs</text>
+        <rect x="190" y="30" width="150" height="58" class="b"/>
+        <text x="204" y="54" class="t">MarketDataPort</text>
+        <text x="204" y="72" class="s">live | replay | mock</text>
+        <rect x="370" y="30" width="130" height="58" class="ba"/>
+        <text x="384" y="54" class="t">SimClock</text>
+        <text x="384" y="72" class="s">as_of step</text>
+        <rect x="530" y="30" width="150" height="58" class="b"/>
+        <text x="544" y="54" class="t">quant-engine</text>
+        <text x="544" y="72" class="s">generate_signals</text>
+        <rect x="710" y="30" width="220" height="58" class="ba"/>
+        <text x="724" y="54" class="t">research_feature_row</text>
+        <text x="724" y="72" class="s">+ outcomes join</text>
+
+        <rect x="190" y="130" width="160" height="52" class="b"/>
+        <text x="204" y="154" class="t">Mock fixtures</text>
+        <text x="204" y="170" class="s">CI hermetic</text>
+        <rect x="380" y="130" width="160" height="52" class="b"/>
+        <text x="394" y="154" class="t">Live Massive</text>
+        <text x="394" y="170" class="s">prod Path B</text>
+        <rect x="570" y="130" width="180" height="52" class="b"/>
+        <text x="584" y="154" class="t">Historical replay</text>
+        <text x="584" y="170" class="s">as_of resolve</text>
+
+        <rect x="20" y="220" width="200" height="58" class="ba"/>
+        <text x="34" y="244" class="t">Score lab</text>
+        <text x="34" y="262" class="s">corr · weights · calib</text>
+        <rect x="250" y="220" width="200" height="58" class="ba"/>
+        <text x="264" y="244" class="t">AI model lab</text>
+        <text x="264" y="262" class="s">quality × latency × $</text>
+        <rect x="480" y="220" width="200" height="58" class="b"/>
+        <text x="494" y="244" class="t">Shadow / canary</text>
+        <text x="494" y="262" class="s">never silent swap</text>
+        <rect x="710" y="220" width="220" height="58" class="b"/>
+        <text x="724" y="244" class="t">Promotion gate</text>
+        <text x="724" y="262" class="s">metrics + review</text>
+
+        <path class="e" d="M160 59 L190 59"/>
+        <path class="e" d="M340 59 L370 59"/>
+        <path class="e" d="M500 59 L530 59"/>
+        <path class="e" d="M680 59 L710 59"/>
+        <path class="e" d="M265 88 L270 130"/>
+        <path class="e" d="M460 88 L460 130"/>
+        <path class="e" d="M600 88 L660 130"/>
+        <path class="e" d="M820 88 L120 220"/>
+        <path class="e" d="M820 88 L350 220"/>
+        <path class="e" d="M220 249 L250 249"/>
+        <path class="e" d="M450 249 L480 249"/>
+        <path class="e" d="M680 249 L710 249"/>
+      </svg>
+      <p class="caption">Figure 2 — Target research stack: ports, pure engine, dual labs, gated promotion.</p>
+    </div>
+
+    <h3>Control planes</h3>
+    <table>
+      <thead><tr><th>Plane</th><th>Owner</th><th>Mutates prod score?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Live trading desk</strong></td><td>api-rust + dashboard</td><td>Only via deliberate release of calibrated rules</td></tr>
+        <tr><td><strong>Capture plane</strong></td><td>scanner slow lane + optional chain blobs</td><td>No — append only</td></tr>
+        <tr><td><strong>Batch backtest</strong></td><td>CLI / worker</td><td>No — writes research tables</td></tr>
+        <tr><td><strong>Model lab</strong></td><td>offline jobs</td><td>No — until canary promotion</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <h2 id="s4">4. Data models (canonical schemas)</h2>
+    <p>Names illustrative; implement as Postgres tables (prod) + JSON fixtures (CI). All timestamps UTC epoch seconds unless noted.</p>
+
+    <h3>4.1 <code>research_run</code></h3>
+    <pre>research_run
+  run_id            uuid PK
+  kind              enum(backtest_score, backtest_ai, capture_live, correlation_report)
+  env               enum(dev, tst, prod_shadow)
+  code_git_sha      text
+  quant_engine_ver  text
+  config_json       jsonb          -- horizons, universe, model ids, gates
+  started_at        timestamptz
+  finished_at       timestamptz
+  status            enum(running, ok, failed)
+  notes             text</pre>
+
+    <h3>4.2 <code>market_snapshot_ref</code> (optional raw capture)</h3>
+    <pre>market_snapshot_ref
+  snapshot_id       uuid PK
+  symbol           text
+  as_of             bigint         -- structure clock
+  source            enum(live_capture, massive_hist, fixture)
+  chain_blob_uri    text null      -- object storage / large JSON
+  chain_sha256      text
+  gex_spot          double
+  display_spot      double
+  market_phase      text
+  contract_count    int
+  vendor_meta       jsonb</pre>
+
+    <h3>4.3 <code>structure_feature_row</code> (core — start here)</h3>
+    <pre>structure_feature_row
+  row_id            uuid PK
+  run_id            uuid null      -- null if live capture
+  symbol           text
+  as_of             bigint
+  engine_git_sha    text
+  -- levels / regime
+  price             double null
+  gex_spot          double null
+  net_gex           double null
+  call_wall         double null
+  put_wall          double null
+  gamma_flip        double null
+  dist_to_flip_pct  double null
+  dist_to_wall_pct  double null
+  regime            text null
+  vol_regime        text null
+  iv_hv_ratio       double null
+  atm_iv            double null
+  hv_30d            double null
+  -- score
+  opportunity_score int
+  score_proximity   int null       -- ScoreDrivers
+  score_vol         int null
+  score_setups      int null
+  score_transition  int null
+  score_dark_pool   int null
+  setups_json       jsonb          -- names, conviction
+  gate_ready        bool null
+  state_fingerprint text null
+  -- lineage
+  snapshot_id       uuid null
+  captured_at       timestamptz</pre>
+
+    <h3>4.4 <code>outcome_row</code></h3>
+    <pre>outcome_row
+  row_id            uuid PK  -- same as structure_feature_row or 1:1
+  symbol           text
+  as_of             bigint
+  horizon           text           -- e.g. 30m, 1d, rth_close
+  ret_simple        double null    -- (p_h - p0)/p0
+  ret_log           double null
+  abs_move          double null
+  hit_call_wall     bool null
+  hit_put_wall      bool null
+  crossed_flip      bool null
+  max_favorable     double null
+  max_adverse       double null
+  label_version     text           -- version of label definition
+  bars_source       text           -- massive_aggs etc.</pre>
+
+    <h3>4.5 <code>ai_rec_eval_row</code></h3>
+    <pre>ai_rec_eval_row
+  eval_id           uuid PK
+  run_id            uuid
+  symbol           text
+  as_of             bigint
+  feature_row_id    uuid
+  model_id          text           -- provider/model/version
+  prompt_version    text
+  persona_id        text null
+  latency_ms        int
+  input_tokens      int null
+  output_tokens     int null
+  cost_usd          double null
+  schema_ok         bool
+  parse_errors      text null
+  rec_json          jsonb          -- structured fields only
+  rubric_json       jsonb null     -- auto/human scores
+  outcome_aligned   bool null      -- filled after join
+  created_at        timestamptz</pre>
+
+    <h3>4.6 Identity &amp; versioning rules</h3>
+    <ul class="tight">
+      <li>Every research row carries <code>engine_git_sha</code> / <code>prompt_version</code> / <code>label_version</code>.</li>
+      <li>Re-running with a new engine produces <strong>new rows</strong>, never silent overwrite.</li>
+      <li><code>state_fingerprint</code> ties to live gate semantics for AI eligibility.</li>
+      <li>Live capture may share schema with <code>scan_structure_history</code> extended—or ETL into research tables nightly.</li>
+    </ul>
+
+    <!-- ============================================================ -->
+    <h2 id="s5">5. Data pipeline &amp; proposed flows</h2>
+
+    <h3>5.1 Live capture flow (start immediately)</h3>
+    <pre>Scanner slow-lane recompute (existing)
+    → project structure features
+    → INSERT structure_feature_row (or extend scan_structure_history)
+    → optional: async write chain_blob to object store
+    → never block trader latency path</pre>
+
+    <h3>5.2 Outcome join flow (nightly / after session)</h3>
+    <pre>For each structure_feature_row without outcomes:
+    fetch underlying bars from Massive aggs (cheap)
+    compute horizons → INSERT outcome_row
+    mark join_status</pre>
+
+    <h3>5.3 Batch backtest flow</h3>
+    <pre>backtest CLI:
+  load config (universe, from, to, step)
+  create research_run
+  for as_of in timeline:
+    snapshot = MarketDataPort.resolve(symbol, as_of)
+    signals  = quant_engine.generate_signals(...)
+    write structure_feature_row
+  join outcomes
+  emit report artifact (JSON/HTML/Parquet)</pre>
+
+    <h3>5.4 AI bake-off flow</h3>
+    <pre>select frozen feature_rows (or full export packs)
+  for model in candidates:
+    for row in set:
+      prompt = build_rec_prompts(export_pack)
+      rec = llm.complete(model)
+      write ai_rec_eval_row
+  join outcomes + rubric
+  rank models under constraints (p95 latency, cost)</pre>
+
+    <h3>5.5 Replay stream flow (product-adjacent, optional)</h3>
+    <pre>SSE /api/ticker/{sym}/replay?from&amp;to&amp;speed
+  emit clock, price, analytics, done
+  FE badge REPLAY (never LIVE)
+  structure widgets update on analytics only</pre>
+
+    <div class="diagram">
+      <svg viewBox="0 0 980 260" xmlns="http://www.w3.org/2000/svg" role="img">
+        <defs>
+          <marker id="ar3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#8A9BB4"/>
+          </marker>
+          <style>
+            .b { fill:#1B2432; stroke:#8A9BB4; stroke-width:1.2; rx:8; }
+            .ba { fill:#1B2432; stroke:#F2A93B; stroke-width:1.3; rx:8; }
+            .t { fill:#E9E4D6; font:600 11px "IBM Plex Sans",system-ui,sans-serif; }
+            .s { fill:#8A9BB4; font:500 10px "IBM Plex Sans",system-ui,sans-serif; }
+            .e { stroke:#8A9BB4; stroke-width:1.3; fill:none; marker-end:url(#ar3); }
+          </style>
+        </defs>
+        <rect x="20" y="40" width="130" height="50" class="b"/>
+        <text x="34" y="62" class="t">Capture</text>
+        <text x="34" y="78" class="s">live slow lane</text>
+        <rect x="180" y="40" width="140" height="50" class="ba"/>
+        <text x="194" y="62" class="t">Feature store</text>
+        <text x="194" y="78" class="s">structure rows</text>
+        <rect x="350" y="40" width="140" height="50" class="b"/>
+        <text x="364" y="62" class="t">Outcome join</text>
+        <text x="364" y="78" class="s">Massive bars</text>
+        <rect x="520" y="40" width="140" height="50" class="ba"/>
+        <text x="534" y="62" class="t">Score lab</text>
+        <text x="534" y="78" class="s">corr / weights</text>
+        <rect x="690" y="40" width="140" height="50" class="ba"/>
+        <text x="704" y="62" class="t">AI lab</text>
+        <text x="704" y="78" class="s">model bake-off</text>
+        <rect x="860" y="40" width="100" height="50" class="b"/>
+        <text x="874" y="62" class="t">Gate</text>
+        <text x="874" y="78" class="s">promote</text>
+
+        <rect x="180" y="140" width="200" height="50" class="b"/>
+        <text x="194" y="164" class="t">Fixtures</text>
+        <text x="194" y="180" class="s">CI / hermetic unit</text>
+        <rect x="420" y="140" width="200" height="50" class="b"/>
+        <text x="434" y="164" class="t">Batch backtest CLI</text>
+        <text x="434" y="180" class="s">not e2e</text>
+        <rect x="660" y="140" width="200" height="50" class="b"/>
+        <text x="674" y="164" class="t">Shadow logs</text>
+        <text x="674" y="180" class="s">prod-safe</text>
+
+        <path class="e" d="M150 65 L180 65"/>
+        <path class="e" d="M320 65 L350 65"/>
+        <path class="e" d="M490 65 L520 65"/>
+        <path class="e" d="M660 65 L690 65"/>
+        <path class="e" d="M830 65 L860 65"/>
+        <path class="e" d="M250 90 L280 140"/>
+        <path class="e" d="M590 90 L520 140"/>
+        <path class="e" d="M760 90 L760 140"/>
+      </svg>
+      <p class="caption">Figure 3 — End-to-end research data plane (capture → join → labs → gate).</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s6">6. Score research loop (do this first)</h2>
+    <p>
+      Live scorer is pure: <code>generate_signals</code> with drivers
+      proximity (0–40), vol (0–25), setups (0–25), transition (0/10), dark_pool (0–6) → capped total.
+      Backtesting fine-tunes <strong>whether that ranking is useful</strong> and how to reweight.
+    </p>
+    <ol class="phases">
+      <li><strong>Baseline</strong> — current score vs outcomes (AUC, precision@top decile, lift vs random).</li>
+      <li><strong>Component attribution</strong> — correlation / mutual information / SHAP-style leave-one-out by regime.</li>
+      <li><strong>Reweight search</strong> — constrained optimization of driver caps/weights on train window; freeze on validate window.</li>
+      <li><strong>Calibration</strong> — map score → empirical P(label); use for UI thresholds, not vanity 0–100.</li>
+      <li><strong>Gate tuning</strong> — DEFAULT_GATE_SCORE vs false “hot” rate for AI eligibility.</li>
+      <li><strong>Shadow</strong> — log candidate score next to prod; no user-visible swap until gate passes.</li>
+    </ol>
+    <div class="note ok">
+      <strong>Success for score:</strong> stable lift in top-tier precision across ≥2 market regimes and out-of-sample months—
+      not a single overfitting peak.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s7">7. AI recommendation research loop</h2>
+    <p>
+      AI remains a <strong>leaf</strong>: consumes frozen export pack; never writes score.
+      Bake-off is multi-objective.
+    </p>
+    <table>
+      <thead><tr><th>Axis</th><th>Metrics</th><th>Hard constraints (examples)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Quality</strong></td><td>outcome alignment, setup-consistency, refusal when gate fails</td><td>schema_ok ≥ 99%</td></tr>
+        <tr><td><strong>Reasoning fidelity</strong></td><td>uses walls/flip/score in text/fields; no invented strikes</td><td>hallucinated strike rate ≈ 0</td></tr>
+        <tr><td><strong>Speed</strong></td><td>p50 / p95 latency</td><td>p95 &lt; product SLO (e.g. 8–15s)</td></tr>
+        <tr><td><strong>Cost</strong></td><td>$/rec, tokens</td><td>budget per day / user</td></tr>
+        <tr><td><strong>Stability</strong></td><td>agreement across 3 runs @ temp 0</td><td>major field flip rate low</td></tr>
+      </tbody>
+    </table>
+    <h4>Model roles (enterprise pattern)</h4>
+    <ul class="tight">
+      <li><strong>Router (small/fast)</strong> — no-rec / weak / full-rec; skip spend when score &lt; gate.</li>
+      <li><strong>Primary rec (mid)</strong> — default in-app champion.</li>
+      <li><strong>Deep reasoner (large)</strong> — optional “think harder” or offline batch only.</li>
+    </ul>
+    <h4>Continual positive results (discipline, not magic)</h4>
+    <ul class="tight">
+      <li>Rolling 20-session re-rank; champion/challenger with holdout.</li>
+      <li>Shadow challenger logs in prod without UI swap.</li>
+      <li>If all LLMs lose to “score-only triage,” fix features/score—not just the model.</li>
+      <li>Report by regime; forbid single-regime victory laps.</li>
+    </ul>
+
+    <!-- ============================================================ -->
+    <h2 id="s8">8. Outcomes, labels &amp; leakage control</h2>
+    <table>
+      <thead><tr><th>Label family</th><th>Definition (examples)</th><th>Use</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Move</strong></td><td>signed/abs return to 30m, 1d, RTH close</td><td>general actionability</td></tr>
+        <tr><td><strong>Structure event</strong></td><td>touch/cross flip or wall within horizon</td><td>level quality</td></tr>
+        <tr><td><strong>Triage</strong></td><td>1 if top-quartile |return| or event; else 0</td><td>score ranking</td></tr>
+        <tr><td><strong>AI plan</strong></td><td>directionally consistent with realized move &amp; risk rules</td><td>rec quality</td></tr>
+      </tbody>
+    </table>
+    <div class="note warn">
+      <strong>Leakage killers (mandatory):</strong> features only from data ≤ as_of;
+      no future chain prints; corporate actions adjusted consistently; same session calendar;
+      train/validate/test split by <em>time</em> (and optionally by symbol groups), never random shuffle of minutes.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s9">9. Environments: DEV / TST / PROD</h2>
+    <table>
+      <thead><tr><th></th><th>DEV</th><th>TST</th><th>PROD</th></tr></thead>
+      <tbody>
+        <tr><td><strong>API</strong></td><td>local / Docker; JSON OK</td><td>staging Railway + PG</td><td>Railway + PG</td></tr>
+        <tr><td><strong>Dashboard</strong></td><td>Vite proxy</td><td>CF preview</td><td>CF production</td></tr>
+        <tr><td><strong>MARKET_DATA_MODE</strong></td><td>mock | live</td><td>replay | live</td><td>live (replay internal-only)</td></tr>
+        <tr><td><strong>Capture</strong></td><td>optional</td><td>on</td><td>on (async)</td></tr>
+        <tr><td><strong>AI meter</strong></td><td>loose</td><td>prod-like caps</td><td>strict caps + audit</td></tr>
+        <tr><td><strong>Backtest workers</strong></td><td>laptop</td><td>batch on staging data</td><td>scheduled research; read replicas</td></tr>
+        <tr><td><strong>Secrets</strong></td><td>.env</td><td>staging vault</td><td>prod vault; secure cookies</td></tr>
+      </tbody>
+    </table>
+    <p>Single binary, config-driven: <code>CONVEXA_ENV</code>, <code>MARKET_DATA_MODE</code>, feature flags for AI and capture.</p>
+
+    <!-- ============================================================ -->
+    <h2 id="s10">10. Testing strategy (where long runs live)</h2>
+    <table>
+      <thead><tr><th>Suite</th><th>Duration</th><th>Contains backtests?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Unit</strong> (quant-engine, historyMath)</td><td>seconds</td><td>fixture golden only</td></tr>
+        <tr><td><strong>Integration</strong> (API + mock port)</td><td>minutes</td><td>one-day synthetic replay OK</td></tr>
+        <tr><td><strong>E2E Playwright</strong></td><td>minutes</td><td><strong>No</strong> multi-session backtest</td></tr>
+        <tr><td><strong>Batch research job</strong></td><td>long-running</td><td><strong>Yes</strong> — CLI/worker/CI nightly</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Long-running research is a <strong>scheduled pipeline</strong> (or manual CLI), not
+      <code>playwright test</code> with a two-hour timeout. E2E only proves the desk still wires correctly.
+    </p>
+
+    <!-- ============================================================ -->
+    <h2 id="s11">11. Vendor strategy (Massive)</h2>
+    <table>
+      <thead><tr><th>Need</th><th>Massive ease</th><th>Convexa action</th></tr></thead>
+      <tbody>
+        <tr><td>Underlying bars (labels)</td><td>Easy (aggs — already used)</td><td>On-demand join</td></tr>
+        <tr><td>Live full options chain</td><td>Easy (v3 snapshot — already used)</td><td>Live Path B</td></tr>
+        <tr><td>Point-in-time full chain for GEX</td><td>Hard / plan-gated / reconstruct heavy</td><td><strong>Capture daily/slow-lane now</strong></td></tr>
+        <tr><td>Deep history before product existed</td><td>Possible with hist options products</td><td>Phase later; not v1 blocker</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>Rule:</strong> even with perfect vendor history later, capture <em>your</em> feature vectors
+      and engine version—competitive edge is measured on <em>your</em> structure language.
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="s12">12. Progression roadmap &amp; phases</h2>
+    <ol class="phases">
+      <li>
+        <strong>P0 — Capture spine (1–2 weeks)</strong> — <em>in progress (core landed)</em><br/>
+        Extend structure history with score drivers / net_gex / iv_hv; outcome join CLI
+        <code>join-outcomes</code> for SPY+QQQ; Postgres <code>structure_outcomes</code>.
+        See <code>docs/RESEARCH_CAPTURE_P0.md</code>. Optional chain blob + operator dashboards next.
+      </li>
+      <li>
+        <strong>P1 — Hermetic port (1–2 weeks)</strong><br/>
+        <code>MarketDataPort</code> + fixtures; characterization tests; no network in CI unit path.
+      </li>
+      <li>
+        <strong>P2 — Score lab (2–4 weeks)</strong><br/>
+        Correlation reports; reweight experiments; calibration; shadow candidate score.
+      </li>
+      <li>
+        <strong>P3 — Batch backtest CLI (2–3 weeks)</strong><br/>
+        Replay from capture; multi-symbol; artifact reports; time-based splits.
+      </li>
+      <li>
+        <strong>P4 — AI lab (2–4 weeks)</strong><br/>
+        Frozen export packs; multi-model harness; latency/cost; champion selection policy.
+      </li>
+      <li>
+        <strong>P5 — Shadow / canary (ongoing)</strong><br/>
+        Prod logs for challenger score/model; promotion checklist; rollback.
+      </li>
+      <li>
+        <strong>P6 — Optional product replay</strong><br/>
+        Internal REPLAY SSE + UI badge; not default trader path.
+      </li>
+      <li>
+        <strong>P7 — Advanced (only if P2–P5 boringly solid)</strong><br/>
+        Vendor hist chain backfill; options P&amp;L paths; offline RL/bandit on tiers.
+      </li>
+    </ol>
+
+    <!-- ============================================================ -->
+    <h2 id="s13">13. Improvement plan &amp; KPIs</h2>
+    <table>
+      <thead><tr><th>Domain</th><th>KPI</th><th>Target direction</th></tr></thead>
+      <tbody>
+        <tr><td>Capture</td><td>% sessions with complete feature rows</td><td>→ 99% liquid names</td></tr>
+        <tr><td>Score</td><td>Top-decile lift vs random on |ret| / events</td><td>stable OOS lift</td></tr>
+        <tr><td>Score</td><td>Calibration error (ECE)</td><td>↓</td></tr>
+        <tr><td>AI</td><td>schema_ok rate</td><td>→ 99%+</td></tr>
+        <tr><td>AI</td><td>p95 latency / cost per rec</td><td>within SLO</td></tr>
+        <tr><td>AI</td><td>outcome-aligned rate vs baseline template</td><td>↑ with guardrails</td></tr>
+        <tr><td>Honesty</td><td>live badge misuse incidents</td><td>0</td></tr>
+        <tr><td>Governance</td><td>% promotions with signed checklist</td><td>100%</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ============================================================ -->
+    <h2 id="s14">14. Governance, risk &amp; compliance posture</h2>
+    <ul class="tight">
+      <li><strong>No silent model swap</strong> — dual-run shadow, then canary %, then full.</li>
+      <li><strong>Audit</strong> — every prod-visible change to weights/prompts has run_id + git sha.</li>
+      <li><strong>Claims control</strong> — marketing language tied to measured KPIs; no “guaranteed edge.”</li>
+      <li><strong>PII / keys</strong> — BYO LLM keys stay encrypted; research exports scrub secrets.</li>
+      <li><strong>Advisory product</strong> — backtests support triage quality, not investment advice registration fantasy.</li>
+    </ul>
+
+    <!-- ============================================================ -->
+    <h2 id="s15">15. What you properly need for enterprise-grade backtesting</h2>
+    <div class="grid3">
+      <div class="card">
+        <h4>1. Point-in-time data</h4>
+        <p>Feature store with as_of, versioned engine, no overwrite. Capture beats wishful vendor history for v1.</p>
+      </div>
+      <div class="card">
+        <h4>2. Pure compute boundary</h4>
+        <p>quant-engine + signals free of wall-clock and vendor IO. Same binary live and research.</p>
+      </div>
+      <div class="card">
+        <h4>3. Pluggable IO</h4>
+        <p>MarketDataPort: live / replay / mock. SimClock for stepping.</p>
+      </div>
+      <div class="card">
+        <h4>4. Outcome science</h4>
+        <p>Versioned labels, multi-horizon, regime splits, leakage tests.</p>
+      </div>
+      <div class="card">
+        <h4>5. Dual research tracks</h4>
+        <p>Score lab first; AI lab second on frozen packs; never conflate.</p>
+      </div>
+      <div class="card">
+        <h4>6. Promotion engineering</h4>
+        <p>Shadow → canary → prod with KPIs and rollback—not notebook heroics.</p>
+      </div>
+      <div class="card">
+        <h4>7. Env isolation</h4>
+        <p>DEV/TST/PROD config, separate DBs, no prod writes from research workers.</p>
+      </div>
+      <div class="card">
+        <h4>8. Cost &amp; latency budgets</h4>
+        <p>AI and vendor spend capped; backtests track $ and wall time per run.</p>
+      </div>
+      <div class="card">
+        <h4>9. Product honesty</h4>
+        <p>REPLAY ≠ LIVE; structure as-of always; score not a secret black box.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Bottom line:</strong> To be market-competitive, systematically build a
+      <em>versioned structure feature store + outcome joins + score calibration + AI bake-off harness
+      + gated promotion</em>. That is enterprise backtesting for a dual-clock dealer desk.
+      Do not bury it inside long e2e tests; do not wait for perfect Massive chain history—capture now;
+      do not let LLMs rewrite opportunity_score until research proves they should (and product allows).
+    </div>
+
+    <footer>
+      Convexa monorepo · <code>docs/SYSTEM_DESIGN_AND_BACKTEST.html</code> v2 ·
+      Aligns with Path A/B progressive ticker, scanner slow lane, dual-clock FE,
+      pure <code>generate_signals</code>, AI rec leaf isolation.
+    </footer>
+  </div>
+</body>
+</html>
