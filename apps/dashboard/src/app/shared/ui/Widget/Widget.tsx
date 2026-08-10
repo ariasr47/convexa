@@ -25,6 +25,7 @@
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { elevationFor } from '@/shared/theme/tokens';
 import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -311,6 +312,8 @@ export function Widget({
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: '12px',
+          // Resting depth matches Command Deck (`elevationFor.e1`) — one material language.
+          boxShadow: elevationFor(theme).e1,
           overflow: 'clip',
           // `outline: 'none'` strips the UA default so MOUSE click-to-select stays ringless; the
           // `&:focus-visible` replacement below keeps KEYBOARD focus on the frame visible (Stage 0
@@ -323,14 +326,17 @@ export function Widget({
           // Off-screen perf: skip rendering work for widgets not near the viewport.
           contentVisibility: 'auto',
           containIntrinsicSize: '480px 320px',
-          // Hover lift (GPU-cheap: transform + shadow + a NEUTRAL border step). Stage-3 §3.1-3 tame:
-          // the amber border-tint went neutral (`text.disabled`, the StatTile idiom) — hover chrome
+          // Hover lift: token e2 (not MUI shadows[6]). Stage-3 §3.1-3: neutral border only —
           // must not sprinkle amber across every widget (§4 census).
           transition: `transform 220ms ${SPRING}, box-shadow 220ms ease, border-color 220ms ease`,
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: 6,
+            boxShadow: elevationFor(theme).e2,
             borderColor: theme.palette.text.disabled,
+          },
+          '@media (prefers-reduced-motion: reduce)': {
+            transition: 'box-shadow 220ms ease, border-color 220ms ease',
+            '&:hover': { transform: 'none' },
           },
           // :has() parent-aware chrome — reveal the grip + toolbar on hover / keyboard focus, no JS.
           '&:hover .widget__grip, &:has(:focus-visible) .widget__grip': { opacity: 0.5 },

@@ -475,7 +475,8 @@ export function TickerDashboard() {
               <Box
                 data-testid="widget-bento"
                 sx={{
-                  mt: 2,
+                  // Deck owns hand-off margin (e1 + mb); keep bento tight so Structure sits close.
+                  mt: 0.5,
                   display: 'grid',
                   // `minmax(0, 1fr)` at EVERY breakpoint: a bare `1fr` track is minmax(auto, 1fr),
                   // so one widget's min-content could force the track (and the page) wider than a

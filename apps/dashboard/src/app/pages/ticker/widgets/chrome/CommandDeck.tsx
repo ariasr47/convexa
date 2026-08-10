@@ -1,35 +1,30 @@
 /**
  * CommandDeck — the Ticker page's unified **command deck** (ticker-command-deck plan). It replaces the
  * three chrome-less top zones (`TickerToolbar` + `TickerHeader` + `FreshnessLine`) with ONE deliberate
- * chrome panel that anchors the widget board below it and flows into it. It is CHROME, not a widget —
- * no drag/expand/selection; it sits ABOVE the `WidgetSelectionProvider` board.
+ * chrome panel that anchors the widget board below it. It is CHROME, not a widget — no drag/expand/
+ * selection; it sits ABOVE the `WidgetSelectionProvider` board.
  *
  * Structure:
- *   1. Deck surface — a subtle top-lit panel: a NEUTRAL white-sheen → transparent gradient, a 1px
- *      `divider` hairline, 16px radius, a soft inset top highlight. (redesign-stage-3 §4.1: the
- *      former ambient amber washes went NEUTRAL — an even wash across full-width chrome is the
- *      definition of sprinkled; amber on this page belongs to the flip line + active states.)
- *   2. Hero identity row (tier 1) — the regime + single connection chip, the big `TICKER · $price`
- *      anchor + muted levels sub-line, the meta line (last-trade + relocated freshness), and the
- *      right-aligned `+ Open simulated trade` CTA. (Delegated to `TickerHeader`, now the deck hero.)
- *   3. Control strip (tier 2) — the segmented `TickerToolbar` (one instrument panel).
- *   4. Hand-off — a short downward NEUTRAL gradient below the deck so it leads into the first
- *      widget; the chrome↔board seam is gone.
- *   5. Sticky condensed bar — as the deck scrolls out, a slim pinned bar shows mark · ticker · $price ·
- *      connection chip · a compact Expirations/Persona, restoring context. Progressive +
- *      `prefers-reduced-motion`-aware (no motion → it simply pins, no transition).
+ *   1. Deck surface — paper + neutral top sheen + `elevationFor.e1` (same ladder as Widget frames).
+ *      12px radius (matches widgets). Stage-3 §4.1: no amber wash on full-width chrome.
+ *   2. Hero identity row (tier 1) — regime + connection chip, `TICKER · $price`, meta, CTA.
+ *   3. Control strip (tier 2) — segmented `TickerToolbar`.
+ *   4. Board hand-off — tight spacing only (no divider-fog gradient; elevation + gap carry the seam).
+ *   5. Sticky condensed bar — pins after scroll-out; same e1/e2 material language.
  *
- * `[live-vs-static-isolation]`: the sticky bar's price + connection chip derive from the SAME
- * `isLive`/`streamOffline`/`live` inputs as the hero (via `connectionChip`), so they freeze/dim on an
- * SSE drop and NEVER show a stale "live".
+ * `[live-vs-static-isolation]`: sticky price + connection chip share hero inputs via `connectionChip`.
  */
 import type { usePersona } from '@/features/personas/usePersona';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
+
+/** Shared with Widget frames — one elevation/radius language for deck ↔ board. */
+const DECK_RADIUS = '12px';
 
 interface CommandDeckProps {
   // Hero (TickerHeader) inputs.
@@ -98,19 +93,15 @@ function StickyCondensed({
         px: 2,
         py: 1,
         mb: 1,
-        borderRadius: '12px',
+        borderRadius: DECK_RADIUS,
         border: `1px solid ${t.palette.divider}`,
-        // Same deck material, denser. Stage-3 §4.1: the amber component of the wash dropped —
-        // plain paper; the NEUTRAL white sheen + shadow (mode-aware dark idioms) carry the chrome.
+        // Same material ladder as the full deck + widgets (e2 while pinned above content).
         backgroundColor: t.palette.background.paper,
         backgroundImage:
           t.palette.mode === 'dark'
             ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%)'
             : 'none',
-        boxShadow:
-          t.palette.mode === 'dark'
-            ? '0 2px 8px -4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)'
-            : '0 2px 8px -4px rgba(16,24,40,0.18)',
+        boxShadow: elevationFor(t).e2,
         backdropFilter: 'saturate(1.1) blur(6px)',
       })}
     >
@@ -219,24 +210,22 @@ export function CommandDeck(props: CommandDeckProps) {
         )}
       </Box>
 
-      {/* The deck surface — subtle top-lit chrome panel (NOT a widget frame). Token-only tints. */}
+      {/* Deck surface — same elevation ladder + radius as Widget frames (NOT a third shadow dialect). */}
       <Box
         data-testid="command-deck"
         sx={(t) => ({
           position: 'relative',
-          borderRadius: '16px',
+          borderRadius: DECK_RADIUS,
           border: `1px solid ${t.palette.divider}`,
-          // Stage-3 §4.1: the amber wash + amber top-light went NEUTRAL — plain paper with the
-          // mode-aware white sheen (the StatTile "lit" idiom); light mode needs no sheen.
+          // Stage-3 §4.1: neutral top sheen only (no amber wash). Light mode needs no sheen.
           backgroundColor: t.palette.background.paper,
           backgroundImage:
             t.palette.mode === 'dark'
               ? 'linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 42%)'
               : 'none',
-          boxShadow:
-            t.palette.mode === 'dark'
-              ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.3)'
-              : '0 1px 2px rgba(16,24,40,0.08)',
+          boxShadow: elevationFor(t).e1,
+          // Tight hand-off into the board: elevation + this margin only (no divider-fog gradient).
+          mb: 1.5,
           p: { xs: 2, sm: 2.5 },
         })}
       >
@@ -274,23 +263,8 @@ export function CommandDeck(props: CommandDeckProps) {
         </Stack>
       </Box>
 
-      {/* Hand-off — a short downward NEUTRAL gradient below the deck so the chrome leads visually
-          into the first widget; the seam between chrome and board disappears. Purely decorative.
-          Stage-3 §4.1: the amber tint dropped — the divider slot (already an alpha) fades out. */}
-      <Box
-        aria-hidden
-        data-testid="deck-handoff"
-        sx={(t) => ({
-          height: 24,
-          mt: -0.5,
-          mb: 1,
-          background: `linear-gradient(180deg, ${t.palette.divider}, transparent)`,
-          pointerEvents: 'none',
-        })}
-      />
-
       {/* Sentinel just below the deck — when it leaves the viewport the condensed bar reveals. */}
-      <Box ref={sentinelRef} aria-hidden sx={{ height: 1, mt: -1 }} />
+      <Box ref={sentinelRef} aria-hidden data-testid="deck-handoff" sx={{ height: 1 }} />
     </>
   );
 }
