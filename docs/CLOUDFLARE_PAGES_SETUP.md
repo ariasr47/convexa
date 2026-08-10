@@ -29,14 +29,16 @@ Browser  →  https://<project>.pages.dev
 | **Production branch** | `main` |
 | **Framework preset** | **None** |
 | **Root directory** | *(empty / repo root)* |
-| **Build command** | `npx nx build @convexa/dashboard --configuration=production` |
+| **Build command** | `npm run build:dashboard` |
 | **Build output directory** | `apps/dashboard/dist` |
+
+Prefer **`npm run build:dashboard`** over a raw `nx build @…/dashboard` string. The script lives in root `package.json` and always targets the current package name (`@convexa/dashboard`), so a future rename will not leave Pages stuck on a dead project id.
 
 4. **Environment variables** (Production + Preview if you want previews to hit prod API):
 
 | Name | Value |
 |------|--------|
-| `NODE_VERSION` | `26.7.0` (or `26` — must match a CF-supported Node; aligns with `.nvmrc`) |
+| `NODE_VERSION` | `26` (or `26.7.0` — **required**; package `engines` is `node >= 24`. CF default Node 20 fails engine checks and is EOL) |
 | `API_ORIGIN` | `https://convexa-production.up.railway.app` |
 
 `API_ORIGIN` has **no trailing slash**. It is not a secret; it is the public API URL.
@@ -118,9 +120,10 @@ Git-connected deploys (push to `main`) are usually enough; Wrangler is optional.
 | Symptom | Likely cause |
 |---------|----------------|
 | Build fails: Node / nx not found | Set `NODE_VERSION=26.7.0`; build from **repo root**, not `apps/dashboard` |
-| Build fails: cannot find project | Use exact name `@convexa/dashboard` (not `@org/dashboard`) and `npm ci` (Pages runs install automatically for Node) |
-| Site looks weeks old / old blog posts | **Failed or skipped deploys leave the last good build live.** In Pages → Deployments: open the latest `main` deploy log. Common fail: build command still `nx build @org/dashboard` after the package rename. Fix command to `npx nx build @convexa/dashboard --configuration=production`, then **Retry deployment** or push an empty commit to `main`. Hard-refresh (`Ctrl+Shift+R`) after green deploy. |
-| Two blog cards that were deleted in git | SPA index is client-rendered from the **deployed** JS. `main` only lists `how-we-read-dealer-structure`; if you still see AI-team + System Analysis cards, production is not on current `main`. |
+| **`Cannot find project '@org/dashboard'`** | **Stale Pages build command** (seen 2026-08-10). Dashboard still has `npx nx build @org/dashboard` after the package rename to `@convexa/*`. **Fix (dashboard, not git):** Pages → project → **Settings → Builds & deployments** → **Build configuration** → Build command = `npm run build:dashboard` → Save → **Deployments → ⋯ → Retry deployment** on latest `main`. |
+| Node 20 / `EBADENGINE` / EOL warning | Set env **`NODE_VERSION=26`** (Production). Repo requires Node ≥ 24 (see `.nvmrc` / `package.json` engines). |
+| Site looks weeks old / old blog posts | **Failed deploys leave the last good build live.** Fix the build command (row above), retry, then hard-refresh (`Ctrl+Shift+R`). |
+| Two blog cards that were deleted in git | SPA is client-rendered from the **deployed** JS. `main` only lists `how-we-read-dealer-structure`. Old AI-team cards ⇒ production is still on a pre-rename deploy. |
 | SPA loads, `/api/*` → 502 `API_ORIGIN is not configured` | Env var not set on **Production** environment, or not redeployed after add |
 | `/api/*` → 502 / connection errors | Wrong `API_ORIGIN`, Railway sleeping/down, or typo in URL |
 | Login works then immediately logged out | Cookie `Secure` over HTTP; use HTTPS Pages URL; check `AUTH_COOKIE_SECURE=true` on API |

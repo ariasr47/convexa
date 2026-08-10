@@ -102,7 +102,7 @@ the image.
 
 1. Pages project on `ariasr47/convexa` (or fork).
 2. Build (repo root, framework **None**):
-   - Build command: `npx nx build @convexa/dashboard --configuration=production`
+   - Build command: `npm run build:dashboard` (not `@org/dashboard` — that package name is gone)
    - Output directory: `apps/dashboard/dist`
    - Root directory: empty
 3. Env:
