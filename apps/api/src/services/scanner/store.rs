@@ -14,7 +14,18 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-/// One current scan row for a tracked symbol (Python `ScanRow.to_wire` keys).
+/// Additive score breakdown on the scan wire (quant-engine `ScoreDrivers`).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ScanScoreDrivers {
+    pub proximity: i32,
+    pub vol: i32,
+    pub setups: i32,
+    pub transition: i32,
+    pub dark_pool: i32,
+    pub total: i32,
+}
+
+/// One current scan row for a tracked symbol (Python `ScanRow.to_wire` keys + additive drivers).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanRow {
     pub symbol: String,
@@ -31,6 +42,9 @@ pub struct ScanRow {
     pub dist_to_wall_pct: Option<f64>,
     pub as_of: f64,
     pub status: String,
+    /// Optional score explainability (absent on building/price-only rows).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_drivers: Option<ScanScoreDrivers>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -298,6 +312,7 @@ mod tests {
                 dist_to_wall_pct: Some(-2.0),
                 as_of: 1.0,
                 status: "ok".into(),
+                score_drivers: None,
             })
             .await;
         let rows = store.read_rows(Some(&["SPY".into()])).await;
@@ -327,6 +342,7 @@ mod tests {
                 dist_to_wall_pct: None,
                 as_of: 9.0,
                 status: "ok".into(),
+                score_drivers: None,
             })
             .await;
         store

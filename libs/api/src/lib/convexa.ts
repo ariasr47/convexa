@@ -689,6 +689,16 @@ export type ScanStatus = 'ok' | 'stale' | 'error' | 'building';
 /** One scan row. EVERY numeric field is nullable (a partial/failed compute still yields an honest
  *  row) and renders as honestly-missing — never `0`, never a fabricated value. No raw series ever
  *  rides a row (`[digested-labels-not-raw-dump]`). */
+/** Additive score breakdown from quant-engine (optional on older payloads). */
+export interface ScanScoreDrivers {
+  proximity: number; // 0–40 nearest level
+  vol: number; // 0–25 |IV/HV−1|
+  setups: number; // 0–25 setup count
+  transition: number; // 0 or 10 near flip
+  dark_pool: number; // 0–6 confluence bonus
+  total: number; // equals score
+}
+
 export interface ScanRow {
   symbol: string; //                    canonical UPPER-case
   price: number | null; //              last poll price
@@ -707,6 +717,8 @@ export interface ScanRow {
    *  BEFORE rendering any "Updated …" text (INTERFACE §3.1, PINNED). */
   as_of: number;
   status: ScanStatus;
+  /** Optional score drivers — prefer over FE heuristics when present. */
+  score_drivers?: ScanScoreDrivers | null;
 }
 
 /** The closed sortable-key set the FE may offer (INTERFACE §2.3). Sorting is a CLIENT-SIDE re-order

@@ -82,6 +82,24 @@ pub struct DarkPoolMatch {
     pub level: f64,
 }
 
+/// Additive score breakdown (explainability). Sum of components (capped) == `opportunity_score`.
+/// Not present in Python goldens — FE/scan consumers only; characterization strips this key.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub struct ScoreDrivers {
+    /// 0–40: nearest wall/flip proximity.
+    pub proximity: i32,
+    /// 0–25: |IV/HV − 1| richness/cheapness.
+    pub vol: i32,
+    /// 0–25: setup count × 8.
+    pub setups: i32,
+    /// 0 or 10: within flip proximity band.
+    pub transition: i32,
+    /// 0–6: dark-pool confluence bonus.
+    pub dark_pool: i32,
+    /// Total after caps — equals `opportunity_score`.
+    pub total: i32,
+}
+
 /// Full signals output (matches Python `generate_signals` return, pre-tier keys).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Signals {
@@ -94,6 +112,9 @@ pub struct Signals {
     pub opportunity_score: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dark_pool_confluence: Option<Vec<DarkPoolMatch>>,
+    /// Additive explainability (not in Python wire goldens).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score_drivers: Option<ScoreDrivers>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -175,6 +196,7 @@ pub fn generate_signals(
         setups: Vec::new(),
         opportunity_score: 0,
         dark_pool_confluence: None,
+        score_drivers: Some(ScoreDrivers::default()),
     };
 
     // Python: `if not price or flip is None or net_gex is None`
@@ -433,22 +455,25 @@ pub fn generate_signals(
     }
 
     out.setups = setups;
-    let mut score = opportunity_score(&out.distances, ivhv, &out.setups, near_flip);
+    let mut drivers = opportunity_score_parts(&out.distances, ivhv, &out.setups, near_flip);
     let (dp_bonus, dp_matches) = dark_pool_confluence(state, off_exchange);
     if dp_bonus > 0 {
-        score = (score + dp_bonus).min(100);
+        drivers.dark_pool = dp_bonus;
+        drivers.total = (drivers.total + dp_bonus).min(100);
         out.dark_pool_confluence = Some(dp_matches);
     }
-    out.opportunity_score = score;
+    out.opportunity_score = drivers.total;
+    out.score_drivers = Some(drivers);
     out
 }
 
-fn opportunity_score(
+/// Score parts for explainability. `total` matches historical `opportunity_score` before DP bonus.
+fn opportunity_score_parts(
     dist: &Distances,
     ivhv: Option<f64>,
     setups: &[Setup],
     near_flip: bool,
-) -> i32 {
+) -> ScoreDrivers {
     let candidates: Vec<f64> = [dist.call_wall_pct, dist.put_wall_pct, dist.gamma_flip_pct]
         .into_iter()
         .flatten()
@@ -466,8 +491,16 @@ fn opportunity_score(
     let vol = ((ivhv_v - 1.0).abs() * 50.0).min(25.0);
     let setup = ((setups.len() as f64) * 8.0).min(25.0);
     let transition = if near_flip { 10.0 } else { 0.0 };
+    let total = (proximity + vol + setup + transition).min(100.0).round() as i32;
 
-    (proximity + vol + setup + transition).min(100.0).round() as i32
+    ScoreDrivers {
+        proximity: proximity.round() as i32,
+        vol: vol.round() as i32,
+        setups: setup.round() as i32,
+        transition: transition.round() as i32,
+        dark_pool: 0,
+        total,
+    }
 }
 
 fn dark_pool_confluence(

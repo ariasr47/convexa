@@ -335,6 +335,29 @@ describe('whyThisRow — closed drivers only, never "live"', () => {
     expect(text.split(' · ')).toHaveLength(2);
   });
 
+  it('prefers wire score_drivers over field heuristics when present', () => {
+    const text = whyThisRow(
+      row({
+        tier: 'prime',
+        dist_to_flip_pct: 0.8,
+        score_drivers: {
+          proximity: 28,
+          vol: 12,
+          setups: 8,
+          transition: 10,
+          dark_pool: 0,
+          total: 58,
+        },
+      }),
+    );
+    expect(text).toMatch(/near wall\/flip \(\+28\)/);
+    expect(text).toMatch(
+      /IV vs HV stretch \(\+12\)|flip transition \(\+10\)|active setups \(\+8\)/,
+    );
+    expect(text).not.toMatch(/Prime tier/);
+    expect(text).not.toMatch(/\blive\b/i);
+  });
+
   it('building / error are honest and never claim a score', () => {
     expect(whyThisRow(row({ status: 'building' }))).toMatch(/not yet scored/i);
     expect(whyThisRow(row({ status: 'error' }))).toMatch(/failed/i);

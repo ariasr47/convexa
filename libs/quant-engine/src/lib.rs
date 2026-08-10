@@ -52,7 +52,7 @@ pub use vwap::{
 };
 pub use signals::{
     compute_opportunity_tier, evaluate_gate, generate_signals, market_state_from_gex,
-    state_fingerprint, GateEval, MarketStateInput, OffExchangeInput, Signals, Setup,
+    state_fingerprint, GateEval, MarketStateInput, OffExchangeInput, ScoreDrivers, Signals, Setup,
     DEFAULT_GATE_SCORE,
 };
 pub use simd::gex_kernel_name;

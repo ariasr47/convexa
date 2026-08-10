@@ -260,10 +260,9 @@ export const regimeLabel = (v: string | null | undefined) => closed(REGIME_LABEL
 export const volRegimeLabel = (v: string | null | undefined) => closed(VOL_REGIME_LABEL, v);
 
 /**
- * "Why this row" — 1–2 plain-language score drivers from CLOSED wire fields only.
- * Never re-derives score; never dumps raw enums; never claims a real-time feed.
- * Used as the score-cell tooltip so the opaque number has a trust path without a backend
- * score-driver payload.
+ * "Why this row" — 1–2 plain-language score drivers.
+ * Prefers wire `score_drivers` (quant-engine breakdown) when present; otherwise closed field
+ * lookups. Never re-derives score math on the FE; never claims a real-time feed.
  */
 export function whyThisRow(row: {
   status: string;
@@ -272,9 +271,20 @@ export function whyThisRow(row: {
   vol_regime: string | null;
   score: number | null;
   dist_to_flip_pct: number | null;
+  score_drivers?: {
+    proximity: number;
+    vol: number;
+    setups: number;
+    transition: number;
+    dark_pool: number;
+    total: number;
+  } | null;
 }): string {
   if (row.status === 'building') return 'Tracked, not yet scored — first compute pending.';
   if (row.status === 'error') return 'Last compute failed for this symbol only.';
+
+  const fromWire = whyFromScoreDrivers(row.score_drivers);
+  if (fromWire) return fromWire;
 
   const drivers: string[] = [];
 
@@ -300,4 +310,35 @@ export function whyThisRow(row: {
     return 'Limited structure on this row — open the ticker for the full read.';
   }
   return drivers.slice(0, 2).join(' · ');
+}
+
+/** Top 1–2 non-zero components from the server breakdown, plain language. */
+function whyFromScoreDrivers(
+  d:
+    | {
+        proximity: number;
+        vol: number;
+        setups: number;
+        transition: number;
+        dark_pool: number;
+        total: number;
+      }
+    | null
+    | undefined,
+): string | null {
+  if (d == null) return null;
+  const parts: { pts: number; label: string }[] = [
+    { pts: d.proximity, label: 'near wall/flip' },
+    { pts: d.vol, label: 'IV vs HV stretch' },
+    { pts: d.setups, label: 'active setups' },
+    { pts: d.transition, label: 'flip transition' },
+    { pts: d.dark_pool, label: 'dark-pool confluence' },
+  ]
+    .filter((p) => p.pts > 0)
+    .sort((a, b) => b.pts - a.pts);
+  if (parts.length === 0) return null;
+  return parts
+    .slice(0, 2)
+    .map((p) => `${p.label} (+${p.pts})`)
+    .join(' · ');
 }

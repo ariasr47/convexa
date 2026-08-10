@@ -72,13 +72,25 @@ fn signals_byte_identical_to_python_fixtures() {
             &fx.inputs.market_state,
             fx.inputs.off_exchange.as_ref(),
         );
-        let actual_v = serde_json::to_value(&actual).unwrap();
+        let mut actual_v = serde_json::to_value(&actual).unwrap();
+        // Additive explainability field — not in Python goldens.
+        if let Some(obj) = actual_v.as_object_mut() {
+            obj.remove("score_drivers");
+        }
 
         assert_eq!(
             actual_v, expected,
             "{}: signals diverged from Python golden",
             fx.ticker
         );
+        // Drivers total must match the score (score-byte-identical + explainable).
+        if let Some(d) = &actual.score_drivers {
+            assert_eq!(
+                d.total, actual.opportunity_score,
+                "{}: score_drivers.total must equal opportunity_score",
+                fx.ticker
+            );
+        }
 
         let fp = state_fingerprint(&actual);
         assert_eq!(

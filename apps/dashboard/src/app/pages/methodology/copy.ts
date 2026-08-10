@@ -40,9 +40,10 @@ export const METHOD_COPY = {
         'Opportunity score and tier arrive pre-computed from the server. The frontend maps them ' +
           'through closed labels (Prime, Actionable, Watch, Dormant) and never re-derives the ' +
           'score from scan rows alone.',
-        'A “why this row” tip on the scanner is plain language from fields you already see ' +
-          '(tier, distance to flip, vol regime) — not a hidden driver dump. Full score ' +
-          'explainability from the quant engine is still a longer roadmap item.',
+        'The score is a capped sum of plain components: proximity to walls/flip (up to 40), ' +
+          '|IV/HV − 1| stretch (up to 25), active setups (up to 25), flip-transition bonus (10), ' +
+          'and optional dark-pool confluence (up to 6). The scanner “why this row” tip surfaces ' +
+          'the top components when the server sends score_drivers.',
       ],
     },
     fails: {

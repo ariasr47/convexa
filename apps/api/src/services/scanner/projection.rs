@@ -1,6 +1,6 @@
 //! Project analytics into a ScanRow — consume score/regime, never re-derive.
 
-use crate::services::scanner::store::ScanRow;
+use crate::services::scanner::store::{ScanRow, ScanScoreDrivers};
 use crate::state::AnalyticsSnapshot;
 use quant_engine::compute_opportunity_tier;
 
@@ -68,6 +68,7 @@ pub fn project_building(symbol: &str) -> ScanRow {
         dist_to_wall_pct: None,
         as_of: 0.0,
         status: "building".into(),
+        score_drivers: None,
     }
 }
 
@@ -122,6 +123,17 @@ pub fn project_from_analytics(
         None
     };
 
+    let score_drivers = sig.and_then(|s| {
+        s.score_drivers.as_ref().map(|d| ScanScoreDrivers {
+            proximity: d.proximity,
+            vol: d.vol,
+            setups: d.setups,
+            transition: d.transition,
+            dark_pool: d.dark_pool,
+            total: d.total,
+        })
+    });
+
     ScanRow {
         symbol: symbol.to_ascii_uppercase(),
         price: display_price,
@@ -137,6 +149,7 @@ pub fn project_from_analytics(
         dist_to_wall_pct: nearer_wall_dist(display_price, call_wall, put_wall),
         as_of: now,
         status: "ok".into(),
+        score_drivers,
     }
 }
 
