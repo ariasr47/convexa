@@ -1,3 +1,4 @@
+import { typographyTokens } from '@/shared/theme/tokens';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import type { StrikeRow } from '@org/api';
@@ -12,7 +13,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { typographyTokens } from '@/shared/theme/tokens';
 
 interface Props {
   strikes: StrikeRow[];

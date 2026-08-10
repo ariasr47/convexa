@@ -11,9 +11,9 @@
  * `tone: 'neutral'` is forced. Each flash carries an incrementing `id` so consumers can key/retrigger
  * the animation. Returns `null` when not flashing.
  */
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import type { Theme } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 export type FlashTone = 'up' | 'down' | 'neutral';
 export interface FlashState {

@@ -40,19 +40,25 @@ function listeners(port) {
           .split(/\r?\n/)
           .filter((l) => l.includes(`:${port} `) && /LISTENING/i.test(l))
           .map((l) => Number(l.trim().split(/\s+/).at(-1)))
-          .filter((pid) => Number.isFinite(pid) && pid > 0)
+          .filter((pid) => Number.isFinite(pid) && pid > 0),
       ),
     ];
   }
   const out = run(`lsof -ti tcp:${port} -sTCP:LISTEN`);
-  return [...new Set(out.split(/\s+/).map(Number).filter((pid) => pid > 0))];
+  return [
+    ...new Set(
+      out
+        .split(/\s+/)
+        .map(Number)
+        .filter((pid) => pid > 0),
+    ),
+  ];
 }
 
 let killed = 0;
 for (const port of ports) {
   for (const pid of listeners(port)) {
-    const cmd =
-      process.platform === 'win32' ? `taskkill /F /T /PID ${pid}` : `kill -9 ${pid}`;
+    const cmd = process.platform === 'win32' ? `taskkill /F /T /PID ${pid}` : `kill -9 ${pid}`;
     run(cmd);
     const gone = !listeners(port).includes(pid);
     console.log(`:${port}  pid ${pid}  ${gone ? 'killed' : 'STILL ALIVE (kill failed?)'}`);
@@ -60,6 +66,7 @@ for (const port of ports) {
   }
 }
 console.log(
-  killed === 0 ? `Nothing listening on ${ports.map((p) => `:${p}`).join(' ')} — all clear.`
-              : `Freed ${killed} listener(s).`
+  killed === 0
+    ? `Nothing listening on ${ports.map((p) => `:${p}`).join(' ')} — all clear.`
+    : `Freed ${killed} listener(s).`,
 );

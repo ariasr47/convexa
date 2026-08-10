@@ -1,6 +1,6 @@
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 
 describe('useReducedMotion', () => {
   afterEach(() => {

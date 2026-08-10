@@ -32,10 +32,11 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Widget } from '@/shared/ui/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import type { IvRankRead } from '@org/api';
-import { typographyTokens } from '@/shared/theme/tokens';
 import {
   IVR_ADVISORY,
   IVR_FLAT_NOTE,
@@ -56,7 +57,6 @@ import {
   ivrRankDescriptor,
   ivrTipBuilding,
 } from '../_kit/copy';
-import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

@@ -8,10 +8,10 @@
  * on a stream drop (`⏸ offline` + last-known); the durable row facts never dim, never blank.
  * Token-only styling; the Watching pulse is reduced-motion-guarded via the CSS media query.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
-import { typographyTokens } from '@/shared/theme/tokens';
 import {
   ACTION_CANCEL,
   ACTION_CONFIRM_CANCEL,

@@ -35,7 +35,10 @@ const RENDER_STATES: BrokerRenderState[] = [
   'S9_cold_skeleton',
 ];
 
-const resolve = (book: BrokerBook | null, over: Partial<Parameters<typeof resolveRenderState>[0]> = {}) =>
+const resolve = (
+  book: BrokerBook | null,
+  over: Partial<Parameters<typeof resolveRenderState>[0]> = {},
+) =>
   resolveRenderState({
     book,
     hintSet: null,
@@ -193,9 +196,17 @@ describe('resolveRenderState · named arms', () => {
 
   it('S8 keeps the wire-keyed snapshot flag: banner + last-known book iff state ∈ {ok, empty}', () => {
     const withBook = resolve(bookDegraded('credential_rejected'));
-    expect(withBook).toMatchObject({ state: 'S8_reauth', warn: 'credential_rejected', hasSnapshot: true });
+    expect(withBook).toMatchObject({
+      state: 'S8_reauth',
+      warn: 'credential_rejected',
+      hasSnapshot: true,
+    });
     const without = resolve(bookUnknown('credential_rejected'));
-    expect(without).toMatchObject({ state: 'S8_reauth', warn: 'credential_rejected', hasSnapshot: false });
+    expect(without).toMatchObject({
+      state: 'S8_reauth',
+      warn: 'credential_rejected',
+      hasSnapshot: false,
+    });
   });
 });
 
@@ -231,13 +242,15 @@ describe('resolveRenderState · the S6 stale modifier', () => {
     expect(Date.parse(AS_OF_AT_THRESHOLD)).toBe(FIXED_NOW_MS - STALE_AFTER_SECONDS * 1000);
     expect(resolve(BOOK_OK_AT_THRESHOLD).isStale).toBe(false);
     // …and one millisecond past it IS stale (time-varying, client-derived).
-    expect(resolveRenderState({
-      book: BOOK_OK_AT_THRESHOLD,
-      hintSet: null,
-      inFlight: false,
-      firstFetch: false,
-      nowMs: FIXED_NOW_MS + 1,
-    }).isStale).toBe(true);
+    expect(
+      resolveRenderState({
+        book: BOOK_OK_AT_THRESHOLD,
+        hintSet: null,
+        inFlight: false,
+        firstFetch: false,
+        nowMs: FIXED_NOW_MS + 1,
+      }).isStale,
+    ).toBe(true);
   });
 
   it('S6 is a MODIFIER, never a state: no member of the closed set names it', () => {

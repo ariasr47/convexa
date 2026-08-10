@@ -11,7 +11,7 @@
 import { cleanup, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { lightTheme, theme as darkTheme } from '@/shared/theme/theme';
+import { theme as darkTheme, lightTheme } from '@/shared/theme/theme';
 import { AuthProvider } from './AuthContext';
 import { __resetLocalPrefs, saveLocalTheme } from './localPrefs';
 import { AppThemeProvider } from './ThemeProvider';
@@ -64,9 +64,7 @@ describe('<meta name="theme-color"> follows the resolved mode', () => {
   it('dark pref → the DARK theme background token (never a literal drifting from the theme)', async () => {
     saveLocalTheme('dark');
     mount();
-    await waitFor(() =>
-      expect(metaContent()).toBe(darkTheme.palette.background.default),
-    );
+    await waitFor(() => expect(metaContent()).toBe(darkTheme.palette.background.default));
   });
 
   it('switching to light → the LIGHT theme background token', async () => {
@@ -78,9 +76,7 @@ describe('<meta name="theme-color"> follows the resolved mode', () => {
     __resetLocalPrefs();
     saveLocalTheme('light');
     mount();
-    await waitFor(() =>
-      expect(metaContent()).toBe(lightTheme.palette.background.default),
-    );
+    await waitFor(() => expect(metaContent()).toBe(lightTheme.palette.background.default));
   });
 
   it('`system` pref RESOLVING to light writes the light background (the resolution path is covered)', async () => {
@@ -99,8 +95,6 @@ describe('<meta name="theme-color"> follows the resolved mode', () => {
     );
     saveLocalTheme('system');
     mount();
-    await waitFor(() =>
-      expect(metaContent()).toBe(lightTheme.palette.background.default),
-    );
+    await waitFor(() => expect(metaContent()).toBe(lightTheme.palette.background.default));
   });
 });

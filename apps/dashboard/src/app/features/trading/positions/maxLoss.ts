@@ -15,8 +15,7 @@ import type { StructureKind } from './structure';
 export type MaxLossWithheldReason = 'unbounded' | 'multi_expiration' | 'unnamed_shape';
 
 export type MaxLossResult =
-  | { kind: 'figure'; dollars: number }
-  | { kind: 'withheld'; reason: MaxLossWithheldReason };
+  { kind: 'figure'; dollars: number } | { kind: 'withheld'; reason: MaxLossWithheldReason };
 
 /** The 15. Adding a member later costs ZERO schema and ZERO migration. */
 export const MAX_LOSS_ELIGIBLE: ReadonlySet<StructureKind> = new Set([

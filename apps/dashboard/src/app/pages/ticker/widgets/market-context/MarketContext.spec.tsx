@@ -16,6 +16,7 @@
  * advisory copy, digested-only structure (no table/chart), theme/hex scans, live-prop source scans
  * (the page-level byte-identity walk catches any live coupling behaviorally).
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type {
   AtrRead,
@@ -26,8 +27,6 @@ import type {
 } from '@org/api';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
-import { MarketContext } from './MarketContext';
 import {
   MC_ATR_EMPTY,
   MC_CELL_EMPTY,
@@ -41,6 +40,7 @@ import {
   MC_TREND_ROW_EMPTY,
   MC_WHOLE_EMPTY,
 } from '../_kit/copy';
+import { MarketContext } from './MarketContext';
 
 // ---- Fixtures. The wire `window`/`thresholds`/`flow_basis`/`method` descriptor strings carry a
 // sentinel so ANY accidental FE render of them fails (the FE has its own pinned copy).
@@ -247,7 +247,9 @@ describe('MarketContext · unknown wire enum (closed-lookup wiring)', () => {
         }),
       }),
     );
-    expect(within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('mc-trend')).getByText(MC_TREND_ROW_EMPTY),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/sideways/i)).toBeNull();
     expect(within(screen.getByTestId('mc-strength')).getByText('Strong')).toBeInTheDocument();
     r1.unmount();

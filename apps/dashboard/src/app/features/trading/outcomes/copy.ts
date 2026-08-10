@@ -92,12 +92,7 @@ export const TR_UNREADABLE_BODY =
 
 const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
 
-export const trCoverage = (
-  counted: number,
-  m: number,
-  open: number,
-  neverFilled: number,
-): string =>
+export const trCoverage = (counted: number, m: number, open: number, neverFilled: number): string =>
   `Counted ${counted} of ${m} recorded closed ${plural(m, 'position', 'positions')}. ` +
   `${open} still open — not yet counted. ` +
   `${neverFilled} ${plural(neverFilled, 'order', 'orders')} never filled.`;
@@ -278,8 +273,7 @@ export const trFamilyCoverage = (
 ): string => {
   const clauses: string[] = [];
   if (preCapture > 0) clauses.push(`${preCapture} predate capture`);
-  if (unavailableAtCapture > 0)
-    clauses.push(`${unavailableAtCapture} had none available at entry`);
+  if (unavailableAtCapture > 0) clauses.push(`${unavailableAtCapture} had none available at entry`);
   if (notAttributableByPath != null && notAttributableByPath > 0)
     clauses.push(
       `${notAttributableByPath} came in through a path that can't carry the rec identity`,
@@ -373,8 +367,7 @@ export const TR_IMPORT_CANCEL = 'Cancel';
 export const TR_IMPORT_CONFIRM = 'Import';
 
 export const TR_IMPORT_DONE_TITLE = 'Import complete';
-export const trImportAdded = (n: number): string =>
-  `${n} ${plural(n, 'record', 'records')} added.`;
+export const trImportAdded = (n: number): string => `${n} ${plural(n, 'record', 'records')} added.`;
 export const trImportSkipped = (n: number): string => `${n} already here — skipped.`;
 export const trImportConflict = (n: number): string =>
   `${n} collided with a different record — your existing record was kept.`;

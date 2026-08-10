@@ -4,6 +4,8 @@
  * compares against the rec's words — D3: edits at creation don't sever this) · LIFECYCLE timeline ·
  * "View position →" when filled (AC-31). Panel-raised skin, token-only, SIMULATED chip (AC-46).
  */
+import { SIMULATED_TIP } from '@/features/trading/positions/labels';
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -18,8 +20,6 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { SIMULATED_TIP } from '@/features/trading/positions/labels';
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import {
   ACTION_VIEW_POSITION,
   DETAIL_LIFECYCLE,

@@ -5,13 +5,9 @@
  * `actions` slot. Returns null (no throw) when no strikes fall in the spot window, so the widget never
  * renders an empty frame.
  */
-import type { StrikeRow } from '@org/api';
-import {
-  GexLegend,
-  GexProfileChart,
-  windowedStrikes,
-} from './chart';
 import { Widget } from '@/shared/ui/Widget';
+import type { StrikeRow } from '@org/api';
+import { GexLegend, GexProfileChart, windowedStrikes } from './chart';
 
 interface Props {
   strikes: StrikeRow[];

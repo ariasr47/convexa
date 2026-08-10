@@ -16,6 +16,7 @@
  * not-connected with no ghost book; that behavior is the server's, exercised by the broker
  * integration suite.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import { Alert, Box, Button, Snackbar, Stack, TextField, Typography } from '@mui/material';
 import {
   AuthError,
@@ -25,7 +26,6 @@ import {
   type BrokerCredentialHint,
 } from '@org/api';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';
 import { AUTH_COPY } from './copy';
@@ -179,7 +179,10 @@ export function BrokerageSection({ embedded = false }: { embedded?: boolean } = 
           >
             {C.savedLabel(hint?.last4 ?? null)}
           </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}>
+          <Typography
+            variant="caption"
+            sx={{ color: 'text.secondary', display: 'block', mt: 0.25 }}
+          >
             {C.savedSubLine}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 1 }}>

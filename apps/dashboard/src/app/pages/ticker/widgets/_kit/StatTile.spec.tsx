@@ -8,10 +8,10 @@
  *     "unavailable" copy).
  * NOT asserted (visible → review): label/value rendering, mono font, accent bar colors, ⓘ presence.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { StatSkeleton, StatTile } from './StatTile';
 
 function wrap(ui: React.ReactNode) {

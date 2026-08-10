@@ -16,13 +16,13 @@
  * mandatory `positions-disclosure` (D6d) + the in-context sign-in prompt + the server-gate wiring
  * are all preserved verbatim.
  */
-import { Alert, Box, Snackbar } from '@mui/material';
-import type { LiveUpdate, TickerBundle } from '@org/api';
-import { useState } from 'react';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
 import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
+import { Alert, Box, Snackbar } from '@mui/material';
+import type { LiveUpdate, TickerBundle } from '@org/api';
+import { useState } from 'react';
 import { PositionsPanel } from './PositionsPanel';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
 

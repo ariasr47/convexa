@@ -3,10 +3,10 @@
  * or the calm "no clean setup" info. Each card: setup name + a tinted conviction chip (HIGH amber /
  * MEDIUM blue / LOW grey) over the plain-language rationale. Static bundle read off `signals.setups`.
  */
-import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
-import type { Setup } from '@org/api';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
+import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
+import type { Setup } from '@org/api';
 
 interface Props {
   setups: Setup[] | undefined;

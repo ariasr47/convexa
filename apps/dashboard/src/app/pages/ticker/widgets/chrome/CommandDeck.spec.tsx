@@ -15,14 +15,14 @@
  * folding, symbol input behavior, persona picker contents, CTA wiring, loading spinner,
  * reduced-motion transition styling.
  */
+import { usePersona } from '@/features/personas/usePersona';
+import { __resetMemory } from '@/features/trading/positions/store';
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { LiveUpdate, MarketState, Signals } from '@org/api';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePersona } from '@/features/personas/usePersona';
-import { __resetMemory } from '@/features/trading/positions/store';
-import { theme } from '@/shared/theme/theme';
 import { CommandDeck } from './CommandDeck';
 import { connectionChip } from './TickerHeader';
 

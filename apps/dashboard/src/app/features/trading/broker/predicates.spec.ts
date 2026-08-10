@@ -41,9 +41,7 @@ describe('isStale — now − as_of > stale_after_seconds, server threshold only
   it('never fires without a served snapshot or without the server datum', () => {
     expect(isStale(bookUnknown('broker_unreachable'), FIXED_NOW_MS)).toBe(false);
     expect(isStale(null, FIXED_NOW_MS)).toBe(false);
-    expect(
-      isStale({ ...BOOK_OK_STALE, stale_after_seconds: undefined }, FIXED_NOW_MS),
-    ).toBe(false); // no FE-invented threshold, ever
+    expect(isStale({ ...BOOK_OK_STALE, stale_after_seconds: undefined }, FIXED_NOW_MS)).toBe(false); // no FE-invented threshold, ever
     expect(isStale({ ...BOOK_OK_STALE, as_of: 'garbled' }, FIXED_NOW_MS)).toBe(false);
   });
 
@@ -69,7 +67,9 @@ describe('isDegraded — last attempt failed while a snapshot serves', () => {
 
   it('false on ok outcome, absent outcome, or no snapshot', () => {
     expect(isDegraded(BOOK_OK_FRESH)).toBe(false);
-    expect(isDegraded({ ...BOOK_OK_FRESH, last_attempt_at: undefined, last_attempt_outcome: undefined })).toBe(false);
+    expect(
+      isDegraded({ ...BOOK_OK_FRESH, last_attempt_at: undefined, last_attempt_outcome: undefined }),
+    ).toBe(false);
     expect(isDegraded(bookUnknown('broker_unreachable'))).toBe(false);
     expect(isDegraded(null)).toBe(false);
   });

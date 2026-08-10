@@ -3,9 +3,9 @@
  * capture must never gate, block or alter the trade/position/order write, and it must never reach
  * the network. A regression would break a trade write for a readout's benefit.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TickerBundle } from '@org/api';
 import { __resetPersonas, saveActiveId } from '@/features/personas/store';
+import type { TickerBundle } from '@org/api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildEntryContextDigest, CAPTURE_EVENTS, entryContextFor } from './captureDigest';
 
 const bundle = (over: Record<string, unknown> = {}): TickerBundle =>
@@ -17,7 +17,13 @@ const bundle = (over: Record<string, unknown> = {}): TickerBundle =>
       regime: 'negative_gamma',
       vol_regime: 'iv_rich',
       setups: [
-        { name: 'pin_confluence', conviction: 'high', bias: 'up', strategy: 's', rationale: 'PROSE' },
+        {
+          name: 'pin_confluence',
+          conviction: 'high',
+          bias: 'up',
+          strategy: 's',
+          rationale: 'PROSE',
+        },
       ],
     },
     ai_eval: { state_fingerprint: 'fp-1' },
@@ -107,14 +113,26 @@ describe('capture is BEST-EFFORT and never blocks the write (§2/Q2, §4/A)', ()
 
 describe('where capture attaches (the 5 decision points)', () => {
   it('attaches at the decision-point events only — `alert` and the mechanical transitions carry none', () => {
-    expect([...CAPTURE_EVENTS]).toEqual(['open', 'accept', 'reject', 'order_placed', 'order_filled']);
+    expect([...CAPTURE_EVENTS]).toEqual([
+      'open',
+      'accept',
+      'reject',
+      'order_placed',
+      'order_filled',
+    ]);
     for (const event of CAPTURE_EVENTS) {
       expect(entryContextFor(event, { bundle: bundle(), aiRecFingerprint: null })).toHaveProperty(
         'entry_context',
       );
     }
     // `alert` is mechanical, not a decision; the rest are transitions reachable via the join.
-    for (const event of ['alert', 'close', 'order_triggered', 'order_cancelled', 'limit_placed'] as const) {
+    for (const event of [
+      'alert',
+      'close',
+      'order_triggered',
+      'order_cancelled',
+      'limit_placed',
+    ] as const) {
       expect(entryContextFor(event, { bundle: bundle(), aiRecFingerprint: null })).toEqual({});
     }
   });
@@ -123,7 +141,9 @@ describe('where capture attaches (the 5 decision points)', () => {
     // Present with a null field ⇒ capture ran; the source was genuinely unavailable that cycle.
     const attached = entryContextFor('open', { bundle: null, aiRecFingerprint: null });
     expect(attached).toHaveProperty('entry_context');
-    expect((attached as { entry_context: { persona_id: null } }).entry_context.persona_id).toBeNull();
+    expect(
+      (attached as { entry_context: { persona_id: null } }).entry_context.persona_id,
+    ).toBeNull();
     // Absent ⇒ the record predates capture. A record with no digest is NEVER backfilled.
     expect(entryContextFor('close', { bundle: null, aiRecFingerprint: null })).toEqual({});
   });

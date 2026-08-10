@@ -10,6 +10,7 @@
  * body/badge presence, dashed-border styling, ValueCard prop plumbing (the landing funnel spec pins
  * every real CTA's href), Jargon gloss copy, the ConvexityMotif SVG geometry.
  */
+import { theme } from '@/shared/theme/theme';
 import LockIcon from '@mui/icons-material/Lock';
 import { Button } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
@@ -17,7 +18,6 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { ComingSoonBox, ComingSoonCard } from './index';
 
 afterEach(() => cleanup());

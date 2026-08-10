@@ -52,9 +52,7 @@ describe('computeMark — ladder precedence', () => {
 
   it('overnight/closed + not live → the anchor FROZEN (no modeling, no fake ticks)', () => {
     for (const session of ['overnight', 'closed']) {
-      const r = computeMark(
-        inputs({ marketSession: session, isLive: false, liveUnderlying: 260 }),
-      );
+      const r = computeMark(inputs({ marketSession: session, isLive: false, liveUnderlying: 260 }));
       expect(r).toEqual({ mark: 5, basis: 'snapshot', frozen: true });
     }
   });

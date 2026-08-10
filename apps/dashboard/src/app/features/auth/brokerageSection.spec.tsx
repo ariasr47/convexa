@@ -22,11 +22,13 @@ const APP_SECRET = 'wb-app-secret-77secret';
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
-function install(opts: {
-  authenticated?: boolean;
-  hint?: { set: boolean; last4: string | null; storage_available: boolean };
-  putResponse?: { set: boolean; last4?: string | null; storage_available: boolean } | 422;
-} = {}) {
+function install(
+  opts: {
+    authenticated?: boolean;
+    hint?: { set: boolean; last4: string | null; storage_available: boolean };
+    putResponse?: { set: boolean; last4?: string | null; storage_available: boolean } | 422;
+  } = {},
+) {
   const json = (b: unknown, status = 200) =>
     new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
   let hint = opts.hint ?? { set: false, last4: null, storage_available: true };
@@ -97,9 +99,7 @@ describe('BrokerageSection', () => {
     await userEvent.click(screen.getByTestId('settings-brokerage-connect'));
 
     await screen.findByTestId('settings-brokerage-set');
-    expect(screen.getByTestId('settings-brokerage-masked')).toHaveTextContent(
-      C.savedLabel('0042'),
-    );
+    expect(screen.getByTestId('settings-brokerage-masked')).toHaveTextContent(C.savedLabel('0042'));
     // The write-only floor: neither half appears in the rendered document, in any element.
     expect(container.textContent).not.toContain(APP_KEY);
     expect(container.textContent).not.toContain(APP_SECRET);
@@ -189,8 +189,8 @@ describe('BrokerageSection', () => {
     install({ authenticated: false });
     renderSection();
     await screen.findByTestId('settings-brokerage-anonymous');
-    expect(
-      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/broker/')),
-    ).toHaveLength(0);
+    expect(fetchMock.mock.calls.filter((c) => String(c[0]).includes('/api/broker/'))).toHaveLength(
+      0,
+    );
   });
 });

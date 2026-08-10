@@ -7,9 +7,9 @@
  * The hatch colors are single-sourced from the tokens: `background.paper` (theme) alternates with
  * `extras.hatchAlt` (per the README, prototype-only extras fold into `sx`, NOT new theme keys).
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { Box, type BoxProps } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
-import { extrasFor } from '@/shared/theme/tokens';
 
 /**
  * The SINGLE hatch background (mode-aware). Shared by every "coming soon" surface — ComingSoonBox,

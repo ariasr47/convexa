@@ -13,13 +13,13 @@
  * NOT asserted (visible + intentional → review): headline/descriptor/basis/advisory wording, band
  * label wording (closure unit-tested in `../_kit/copy.spec.ts`), auth/chart/theme source scans.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { IvRankRead } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
-import { IvRank } from './IvRank';
 import { IVR_WHOLE_EMPTY } from '../_kit/copy';
+import { IvRank } from './IvRank';
 
 // The wire `*_descriptor`/`advisory_note` strings carry a sentinel so any accidental render is caught.
 const WIRE_DESC = 'WIRE-DESCRIPTOR-NEVER-RENDERED';
@@ -78,7 +78,7 @@ describe('IvRank · state machine honesty', () => {
     // Unavailable is a DIFFERENT body — the two honest-empty states never collapse into one.
     expect(() => renderIvr(null)).not.toThrow();
     expect(screen.getByTestId('ivr-whole-empty')).toHaveTextContent(IVR_WHOLE_EMPTY);
-    expect((screen.getByTestId('iv-rank').textContent ?? '')).not.toBe(buildingText);
+    expect(screen.getByTestId('iv-rank').textContent ?? '').not.toBe(buildingText);
     expect(screen.queryByTestId('ivr-rank-value')).toBeNull();
   });
 

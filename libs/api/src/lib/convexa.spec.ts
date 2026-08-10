@@ -225,12 +225,18 @@ describe('scanner client', () => {
   });
 
   it('getScan rejects with ApiError on a TRANSPORT fault (server-side it is always 200)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ detail: 'bad gateway' }, 502)));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ detail: 'bad gateway' }, 502)),
+    );
     await expect(getScan()).rejects.toBeInstanceOf(ApiError);
   });
 
   it('getScanUniverse returns the read-only universe envelope', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => json({ symbols: ['SPY', 'QQQ'], universe_size: 2 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => json({ symbols: ['SPY', 'QQQ'], universe_size: 2 })),
+    );
     await expect(getScanUniverse()).resolves.toEqual({ symbols: ['SPY', 'QQQ'], universe_size: 2 });
   });
 
@@ -238,7 +244,9 @@ describe('scanner client', () => {
     const saved: ScanView = { ...VIEW, source: 'account', authenticated: true, name: 'Morning' };
     const f = vi.fn(async () => json(saved));
     vi.stubGlobal('fetch', f);
-    await expect(saveScanView({ symbols: ['SPY', 'QQQ'], name: 'Morning' })).resolves.toEqual(saved);
+    await expect(saveScanView({ symbols: ['SPY', 'QQQ'], name: 'Morning' })).resolves.toEqual(
+      saved,
+    );
     const [url, init] = f.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/scan/view');
     expect(init.method).toBe('PUT');

@@ -12,11 +12,11 @@
  *   - `StatusCell` warning tones carry a ⚠ GLYPH in the label — hue never carries "warning" alone.
  * Every nullable value renders the em-dash, never `0`. All colour is a theme token; zero hex.
  */
-import { Box, Tooltip, Typography } from '@mui/material';
-import type { ScanRow } from '@org/api';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
+import { Box, Tooltip, Typography } from '@mui/material';
+import type { ScanRow } from '@org/api';
 import {
   dash,
   directionColor,

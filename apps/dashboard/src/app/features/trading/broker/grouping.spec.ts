@@ -96,7 +96,11 @@ function groupsWithResolvedMarks(book: BrokerBook) {
   for (const p of book.positions) {
     p.legs.forEach((l, i) => {
       const mark = l.broker_mark.state === 'supplied' ? (l.broker_mark.value ?? 0) : 0;
-      legMarks.set(brokerLegId(p.broker_position_id, i), { mark, basis: 'snapshot', frozen: false });
+      legMarks.set(brokerLegId(p.broker_position_id, i), {
+        mark,
+        basis: 'snapshot',
+        frozen: false,
+      });
     });
   }
   return groupBook(

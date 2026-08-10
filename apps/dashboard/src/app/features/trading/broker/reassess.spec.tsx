@@ -4,13 +4,13 @@
  * eval-subject selection, and the verdict/export surface offers NO accept or write affordance
  * (AC-19). The sim Accept flow's own specs are untouched elsewhere and stay green.
  */
+import type { MarkResult } from '@/features/trading/model/mark';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { MarkResult } from '@/features/trading/model/mark';
 import { brokerLegId, buildBrokerPositionView } from './brokerView';
-import { FIXED_NOW_MS, POS_EQUITY, POS_SPREAD, BOOK_OK_FRESH } from './fixtures';
+import { BOOK_OK_FRESH, FIXED_NOW_MS, POS_EQUITY, POS_SPREAD } from './fixtures';
 import { BrokerReassessAction, buildBrokerReassessment } from './reassess';
 
 const theme = createTheme();

@@ -20,13 +20,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { usePersona } from '@/features/personas/usePersona';
 import { StoreFaultBlock } from '@/features/trading/orders/OrdersWidget';
 import { theme } from '@/shared/theme/theme';
-import { CommandDeck } from './widgets/chrome/CommandDeck';
-import { usePersona } from '@/features/personas/usePersona';
 import { AiRecPanel } from './widgets/ai-rec/AiRecPanel';
-import type { AiRec } from './widgets/ai-rec/useAiRecommendation';
 import { BYO_KEY, COPY } from './widgets/ai-rec/copy';
+import type { AiRec } from './widgets/ai-rec/useAiRecommendation';
+import { CommandDeck } from './widgets/chrome/CommandDeck';
 
 // ---- shared fixtures -----------------------------------------------------------------------
 
@@ -169,7 +169,9 @@ describe('§5.6 · ai-rec transient states mount no heading (component="p")', ()
 
   it('unavailable — the transient title is a <p>', async () => {
     const { container } = renderPanel(
-      aiStub({ rec: rec({ status: 'unavailable', strategy: null, unavailable_reason: 'transport' }) }),
+      aiStub({
+        rec: rec({ status: 'unavailable', strategy: null, unavailable_reason: 'transport' }),
+      }),
     );
     expectHeadingFree(container, COPY.unavailable.title);
     await flushAuth();

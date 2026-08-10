@@ -7,11 +7,11 @@
  * has none. The anonymous prompt is standing, not a surprise on click, and it is the SAME prompt a
  * refused write re-raises. Nothing here writes: `onEditView`/`onDensity` are pure UI callbacks.
  */
-import { Box, Typography } from '@mui/material';
-import type { ScanDensity, ScanView } from '@org/api';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import type { GateApi } from '@/features/auth/useGate';
 import { extrasFor } from '@/shared/theme/tokens';
+import { Box, Typography } from '@mui/material';
+import type { ScanDensity, ScanView } from '@org/api';
 import { SCAN_COPY } from './labels';
 
 export interface ScanToolbarProps {

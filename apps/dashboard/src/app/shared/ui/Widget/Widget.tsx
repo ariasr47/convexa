@@ -24,6 +24,8 @@
  * shell owns is the `live` accent pulse — a DATA SIGNAL (`[live-vs-static-isolation]` made
  * visible), reduced-motion-gated, firing only while genuinely live.
  */
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
+import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -41,8 +43,6 @@ import {
 } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
-import { useWidgetSelection } from '@/shared/ui/Widget/WidgetSelectionContext';
 
 // A tactile spring-ish easing for the lift + toolbar (GPU-cheap; transform/opacity only).
 const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';

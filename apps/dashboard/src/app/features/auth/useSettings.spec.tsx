@@ -3,10 +3,10 @@
  * real AuthProvider + the mock network boundary. Covers server-wins, anonymous-client-local, and
  * per-account isolation (the FE never overwrites the server value from local state).
  */
+import { saveActiveId } from '@/features/personas/store';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { saveActiveId } from '@/features/personas/store';
 import { AuthProvider } from './AuthContext';
 import { __resetLocalPrefs, saveLocalTheme } from './localPrefs';
 import {

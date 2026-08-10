@@ -145,8 +145,7 @@ export function downloadArchive(now: Date = new Date()): { filename: string; emp
 export type DeclineReason = 'unreadable' | 'not_ours' | 'version' | 'store_unreadable';
 
 export type ParseResult =
-  | { ok: true; envelope: ArchiveEnvelope }
-  | { ok: false; reason: DeclineReason };
+  { ok: true; envelope: ArchiveEnvelope } | { ok: false; reason: DeclineReason };
 
 function asRecordMap<T>(v: unknown): Record<string, T> {
   return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, T>) : {};

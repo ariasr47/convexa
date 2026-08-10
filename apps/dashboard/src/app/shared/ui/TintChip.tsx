@@ -7,9 +7,9 @@
  * `textAmber` (via `extrasFor`, light-mode contrast gated §5.2) on a `primary`-alpha tint.
  * Structurally distinct from `warning` (burnt orange, reserved for TRUE warnings + icon).
  */
+import { extrasFor } from '@/shared/theme/tokens';
 import { Box } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { extrasFor } from '@/shared/theme/tokens';
 
 type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral' | 'emphasis';
 

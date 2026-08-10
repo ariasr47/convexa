@@ -4,7 +4,7 @@
  * consumer (app README: "populate on 2nd consumer"; `pages/` never imports a sibling page) — they
  * are re-exported here so every existing ticker-widget import path stays byte-unchanged.
  */
-export * from './StatTile';
-export * from './copy';
-export * from '@/shared/ui/TintChip';
 export * from '@/shared/hooks/useFlashOnChange';
+export * from '@/shared/ui/TintChip';
+export * from './copy';
+export * from './StatTile';

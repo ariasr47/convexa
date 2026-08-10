@@ -3,8 +3,11 @@
  * (corrupt ⇒ empty fallback + fault flag, the prior blob NEVER overwritten), the versioned key
  * `convexa.orders.v1`, and the export shape (`{ orders, decisions }` joining the order chain).
  */
+import {
+  __resetMemory as __resetPositionsMemory,
+  allDecisions,
+} from '@/features/trading/positions/store';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { __resetMemory as __resetPositionsMemory, allDecisions } from '@/features/trading/positions/store';
 import {
   ORDERS_KEY,
   __resetOrdersMemory,

@@ -22,7 +22,12 @@ import { FactText, STALE_SNAPSHOT_SX } from './BrokerPositionRow';
 import { UNAVAILABLE } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';
 import { GROUP_COPY } from './groupCopy';
-import { plWithheldLiteralOf, withheldCauseOf, withheldCountOf, type BrokerGroup } from './grouping';
+import {
+  plWithheldLiteralOf,
+  withheldCauseOf,
+  withheldCountOf,
+  type BrokerGroup,
+} from './grouping';
 
 /** The desktop grid — IDENTICAL to `BrokerPositionRow`'s, so every column lines up. */
 const ROW_GRID_TEMPLATE = 'minmax(220px, 1.6fr) minmax(120px, 1fr) minmax(110px, 1fr) auto';

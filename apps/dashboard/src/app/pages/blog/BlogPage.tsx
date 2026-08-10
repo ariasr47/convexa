@@ -8,8 +8,8 @@
  * served by the static host, not SPA routes; a RouterLink would try (and fail) to resolve them
  * client-side. Token-only styling (`[theme-token-discipline]`): zero hardcoded hex.
  */
-import { useEffect } from 'react';
 import { Box, Card, CardActionArea, Chip, Stack, Typography } from '@mui/material';
+import { useEffect } from 'react';
 
 interface BlogArticle {
   slug: string;

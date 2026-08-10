@@ -52,7 +52,9 @@ describe('§8-9 · a warning Alert never suppresses its icon', () => {
       warningAlertsWithoutIcon({ 'bad.tsx': `<Alert severity="warning" icon={false}>x</Alert>` }),
     ).toHaveLength(1);
     expect(
-      warningAlertsWithoutIcon({ 'bad2.tsx': `<Alert icon={false}\n  severity="warning"\n>x</Alert>` }),
+      warningAlertsWithoutIcon({
+        'bad2.tsx': `<Alert icon={false}\n  severity="warning"\n>x</Alert>`,
+      }),
     ).toHaveLength(1);
     expect(
       warningAlertsWithoutIcon({

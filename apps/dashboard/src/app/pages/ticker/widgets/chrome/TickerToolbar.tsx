@@ -15,6 +15,8 @@
  * the transient refresh spinner. The restyle is layout only. `data-testid="ticker-toolbar"` and every
  * accessible label are kept.
  */
+import { PersonaPicker } from '@/features/personas/components';
+import type { usePersona } from '@/features/personas/usePersona';
 import {
   Box,
   Checkbox,
@@ -30,8 +32,6 @@ import {
 } from '@mui/material';
 import type { Expiration } from '@org/api';
 import { type ReactNode } from 'react';
-import { PersonaPicker } from '@/features/personas/components';
-import type { usePersona } from '@/features/personas/usePersona';
 import { dteLabel } from '../_kit/copy';
 
 /** One segment of the instrument panel — an uppercase micro-label above its control. When `htmlFor`
@@ -130,7 +130,11 @@ export function TickerToolbar({
       </Segment>
 
       <Segment label="Expirations">
-        <FormControl size="small" sx={{ minWidth: 190, maxWidth: '100%' }} disabled={!allDates.length}>
+        <FormControl
+          size="small"
+          sx={{ minWidth: 190, maxWidth: '100%' }}
+          disabled={!allDates.length}
+        >
           <Select
             multiple
             displayEmpty

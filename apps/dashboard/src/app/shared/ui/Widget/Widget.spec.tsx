@@ -19,12 +19,12 @@
  * `⋮` coming-soon affordances, the live accent, exact colors. jsdom cannot layout
  * View Transitions/scroll timelines — those are asserted at the behavioral seam only.
  */
+import { theme } from '@/shared/theme/theme';
+import { Widget } from '@/shared/ui/Widget';
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '@/shared/theme/theme';
-import { Widget } from '@/shared/ui/Widget';
 // Source text of the shell (Vite `?raw`) — the stage-3 negative-space scan asserts on the CODE,
 // so a re-introduced stagger/spin fails even if a render happens not to exercise it.
 import widgetSource from '@/shared/ui/Widget/Widget?raw';

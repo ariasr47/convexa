@@ -8,6 +8,20 @@
  * invalidation FIRST, `no_trade` first-class (info, not red), honest "as of {snapshot}" + stale
  * wording, the export floor reachable from every state. SIMULATED everywhere.
  */
+import { AUTH_COPY } from '@/features/auth/copy';
+import { useGate } from '@/features/auth/useGate';
+import {
+  ACT_LABEL,
+  ACT_TOOLTIP,
+  RUN_SCENARIO,
+  SCENARIO_CAPTION,
+  SCENARIO_LABEL,
+  SCENARIO_NONE,
+  SCRIPTED_CHIP,
+  scriptedStrip,
+} from '@/features/trading/orders/copy';
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Widget } from '@/shared/ui/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
@@ -34,20 +48,6 @@ import type {
 import { fetchPersonas } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AUTH_COPY } from '@/features/auth/copy';
-import { useGate } from '@/features/auth/useGate';
-import {
-  ACT_LABEL,
-  ACT_TOOLTIP,
-  RUN_SCENARIO,
-  SCENARIO_CAPTION,
-  SCENARIO_LABEL,
-  SCENARIO_NONE,
-  SCRIPTED_CHIP,
-  scriptedStrip,
-} from '@/features/trading/orders/copy';
-import { Widget } from '@/shared/ui/Widget';
-import { typographyTokens } from '@/shared/theme/tokens';
 import {
   adminExhaustedTitle,
   asOfChip,

@@ -4,11 +4,11 @@
  * (`$strike · Vol/OI N× · N contracts`). Static bundle field; activity only, no side/direction;
  * catches strikes outside the chart window.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Widget } from '@/shared/ui/Widget';
 import { Box, Stack, Typography } from '@mui/material';
 import type { StrikeRow } from '@org/api';
-import { typographyTokens } from '@/shared/theme/tokens';
 import { fmtThresh, freshCaption, volOiTip } from '../_kit/copy';
-import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -20,11 +20,7 @@ interface Props {
   fillHeight?: boolean;
 }
 
-export function FreshPositioning({
-  chainVolOiRatio,
-  volOiThreshold,
-  unusualStrikes,
-}: Props) {
+export function FreshPositioning({ chainVolOiRatio, volOiThreshold, unusualStrikes }: Props) {
   return (
     <Widget
       id="fresh-positioning"

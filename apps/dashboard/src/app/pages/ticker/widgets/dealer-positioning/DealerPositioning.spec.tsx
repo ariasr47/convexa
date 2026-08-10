@@ -7,11 +7,11 @@
  *   2. an absent off_exchange section omits its tile entirely (never a fabricated 0%).
  * NOT asserted (visible + intentional → review): default tile values/labels, captions, tier colors.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { MarketState, OffExchange, Signals } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { DealerPositioning } from './DealerPositioning';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({

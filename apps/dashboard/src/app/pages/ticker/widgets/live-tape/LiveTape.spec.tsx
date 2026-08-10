@@ -9,11 +9,11 @@
  * NOT asserted (visible + intentional → review/page): default live figures, offline dim/caption,
  * labels/tooltips, VWAP formatting.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { LiveUpdate, MarketState } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { LiveTape } from './LiveTape';
 
 const marketState = (over: Partial<MarketState> = {}): MarketState => ({

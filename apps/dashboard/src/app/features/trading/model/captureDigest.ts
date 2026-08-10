@@ -13,8 +13,8 @@
  *     prose, no greeks, no ATR (it has no digested band yet), no bundle dump.
  *   - The IV-rank band is captured as the WIRE label; it is NEVER re-derived from `rank`.
  */
-import type { TickerBundle } from '@org/api';
 import { loadActiveId } from '@/features/personas/store';
+import type { TickerBundle } from '@org/api';
 import type { CapturedSetup, DecisionEvent, EntryContextDigest } from './types';
 
 /** The 5 DECISION-POINT events that carry a digest (§2/Q2). `alert` is mechanical, not a decision;

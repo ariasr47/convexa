@@ -14,9 +14,9 @@
  *  - No retro-fill: evaluation runs only on new live payloads; on (re)open it starts from the next
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
+import { computeMark } from '@/features/trading/model/mark';
 import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { computeMark } from '@/features/trading/model/mark';
 import { tickFromLive } from './engine';
 import { allOrders, getOrdersVersion, subscribeOrders } from './store';
 import type { SimOrder } from './types';

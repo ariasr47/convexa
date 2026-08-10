@@ -6,6 +6,7 @@
  * unavailable). Egress invariant: it shows ONLY {context, persona prompt, glossary} for the current
  * ticker — no key, no other ticker, no identity, no order data.
  */
+import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Alert,
@@ -21,7 +22,6 @@ import {
 import { alpha } from '@mui/material/styles';
 import { fetchRecExport, RecExport } from '@org/api';
 import { useEffect, useState } from 'react';
-import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { COPY, EXPORT_HEADER } from './copy';
 
 function sectionText(value: unknown): string {

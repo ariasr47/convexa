@@ -60,7 +60,8 @@ beforeEach(() => {
         cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-24T04:00:00Z' },
       });
     }
-    if (url.includes('/api/personas')) return json([{ id: 'default', name: 'Default (no persona)' }]);
+    if (url.includes('/api/personas'))
+      return json([{ id: 'default', name: 'Default (no persona)' }]);
     if (url.includes('/api/contract/')) return json(null);
     throw new Error(`Unexpected fetch from Ticker page: ${url}`);
   });
@@ -105,8 +106,6 @@ describe('Ticker · page-level invariants', () => {
     renderAt('/ticker/TSLA');
     await screen.findByText('Call wall');
     // Shared fixture: opportunity_score 42 — rendered verbatim, nothing FE-side feeds it.
-    expect(
-      within(screen.getByTestId('dealer-positioning')).getByText(/42 ·/),
-    ).toBeInTheDocument();
+    expect(within(screen.getByTestId('dealer-positioning')).getByText(/42 ·/)).toBeInTheDocument();
   });
 });

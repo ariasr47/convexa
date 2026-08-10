@@ -40,6 +40,11 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 
+# --- Large / golden fixtures (do not reformat) ---
+**/tests/fixtures/**
+apps/api/config/**
+libs/quant-engine/tests/fixtures/**
+
 # --- Env & local secrets (never format, never touch) ---
 .env
 .env.*

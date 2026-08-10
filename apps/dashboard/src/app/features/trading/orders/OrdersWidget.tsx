@@ -9,12 +9,12 @@
  * synchronous, so first paint is real data. Row-level eval states per §4.3; the widget frame
  * itself never dims. Status changes announce via an `aria-live="polite"` region (UX §8).
  */
+import { SIMULATED_TIP } from '@/features/trading/positions/labels';
+import { Widget } from '@/shared/ui/Widget';
 import { Box, Button, Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material';
 import type { LiveUpdate } from '@org/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SIMULATED_TIP } from '@/features/trading/positions/labels';
-import { Widget } from '@/shared/ui/Widget';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';
 import {
@@ -124,12 +124,7 @@ export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
   );
 
   return (
-    <Widget
-      id="orders"
-      title={WIDGET_TITLE(symbol)}
-      live={watchingAny}
-      actions={actions}
-    >
+    <Widget id="orders" title={WIDGET_TITLE(symbol)} live={watchingAny} actions={actions}>
       <Box component="span" aria-live="polite" sx={srOnly} data-testid="orders-announce">
         {announcement}
       </Box>

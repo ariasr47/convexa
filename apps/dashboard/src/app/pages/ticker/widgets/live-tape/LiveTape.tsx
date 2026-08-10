@@ -9,11 +9,11 @@
  * `offline` prop. Gamma flip (live) shows the static authoritative flip when not live, never a stale
  * live value.
  */
+import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
+import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
 import type { LiveUpdate, MarketState } from '@org/api';
 import { StatTile } from '../_kit/StatTile';
-import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
-import { Widget } from '@/shared/ui/Widget';
 
 const GRID = {
   display: 'grid',

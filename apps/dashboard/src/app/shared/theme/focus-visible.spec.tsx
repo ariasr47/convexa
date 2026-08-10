@@ -44,29 +44,34 @@ describe('authored :focus-visible ring — injected ONCE at the theme layer, bot
   it.each([
     ['dark', theme],
     ['light', lightTheme],
-  ])('%s mode: global ring + ButtonBase treatment bound to that mode’s textAmber token', (_mode, t) => {
-    render(
-      <ThemeProvider theme={t}>
-        <CssBaseline />
-        <span />
-      </ThemeProvider>,
-    );
-    const css = injectedCss();
-    // GATE Z B2 ruling (stage 3): the ring binds the mode's text-grade amber. Dark stays
-    // byte-identical to primary.main (gammaAmber); light is the ≥3.0-everywhere #8F5C0F.
-    const ring = `outline:2pxsolid${extrasFor(t).textAmber}`.replace(/\s+/g, '');
+  ])(
+    '%s mode: global ring + ButtonBase treatment bound to that mode’s textAmber token',
+    (_mode, t) => {
+      render(
+        <ThemeProvider theme={t}>
+          <CssBaseline />
+          <span />
+        </ThemeProvider>,
+      );
+      const css = injectedCss();
+      // GATE Z B2 ruling (stage 3): the ring binds the mode's text-grade amber. Dark stays
+      // byte-identical to primary.main (gammaAmber); light is the ≥3.0-everywhere #8F5C0F.
+      const ring = `outline:2pxsolid${extrasFor(t).textAmber}`.replace(/\s+/g, '');
 
-    // The one global rule (keyboard focus only — :focus-visible, not :focus).
-    expect(css).toContain(`*:focus-visible{${ring}`);
-    expect(css).toContain('outline-offset:2px');
-    // The matching MUI ButtonBase treatment (beats ButtonBase's own `outline: 0` reset).
-    expect(css).toMatch(/\.MuiButtonBase-root:focus-visible,\.MuiButtonBase-root\.Mui-focusVisible\{/);
+      // The one global rule (keyboard focus only — :focus-visible, not :focus).
+      expect(css).toContain(`*:focus-visible{${ring}`);
+      expect(css).toContain('outline-offset:2px');
+      // The matching MUI ButtonBase treatment (beats ButtonBase's own `outline: 0` reset).
+      expect(css).toMatch(
+        /\.MuiButtonBase-root:focus-visible,\.MuiButtonBase-root\.Mui-focusVisible\{/,
+      );
 
-    // Item 4 rider: the coarse-pointer ≥44px touch-target floor is injected by the same override.
-    expect(css).toContain('@media(pointer:coarse)');
-    expect(css).toContain('min-height:44px');
-    expect(css).toContain('min-width:44px');
-  });
+      // Item 4 rider: the coarse-pointer ≥44px touch-target floor is injected by the same override.
+      expect(css).toContain('@media(pointer:coarse)');
+      expect(css).toContain('min-height:44px');
+      expect(css).toContain('min-width:44px');
+    },
+  );
 });
 
 // ---- 2. Source-scan: no outline:'none' without an in-file :focus-visible replacement -------------
@@ -99,9 +104,7 @@ describe('source scan — outline:none only with an in-file :focus-visible repla
   });
 
   it('MUTATION GUARD: the scan actually fails on a violating source (a scan that can’t fail is worthless)', () => {
-    expect(
-      outlineViolations({ 'bad.tsx': `sx={{ outline: 'none' }}` }),
-    ).toEqual(['bad.tsx']);
+    expect(outlineViolations({ 'bad.tsx': `sx={{ outline: 'none' }}` })).toEqual(['bad.tsx']);
     expect(
       outlineViolations({
         'good.tsx': `sx={{ outline: 'none', '&:focus-visible': { outline: '2px solid' } }}`,

@@ -15,7 +15,7 @@ import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
-import { avatarInitial, AVATAR_SX } from './avatar';
+import { AVATAR_SX, avatarInitial } from './avatar';
 
 export function AccountControl() {
   const auth = useAuth();

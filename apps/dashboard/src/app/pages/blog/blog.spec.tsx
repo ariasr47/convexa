@@ -15,7 +15,7 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BlogPage, BLOG_ARTICLES } from './BlogPage';
+import { BLOG_ARTICLES, BlogPage } from './BlogPage';
 
 describe('BlogPage (/blog)', () => {
   const fetchSpy = vi.fn();

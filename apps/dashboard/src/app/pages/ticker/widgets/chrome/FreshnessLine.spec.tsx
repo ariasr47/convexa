@@ -6,10 +6,10 @@
  *   2. the honest fallback chain: no/invalid ISO anchor → the static `dataAgeSeconds`, never NaN/blank.
  * NOT asserted (visible → review): the "· refreshing…" affordance, exact copy, styling.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { FreshnessLine } from './FreshnessLine';
 
 function renderFL(props: Partial<React.ComponentProps<typeof FreshnessLine>> = {}) {

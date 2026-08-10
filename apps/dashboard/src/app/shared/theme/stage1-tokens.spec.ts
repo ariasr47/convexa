@@ -118,12 +118,7 @@ describe('§8-6 · the focus ring is BRAND amber on the dark canvas', () => {
 
   it('the injected dark ring renders 2px solid gammaAmber (ring ≡ brand, not just ≡ primary)', () => {
     render(
-      createElement(
-        ThemeProvider,
-        { theme },
-        createElement(CssBaseline),
-        createElement('span'),
-      ),
+      createElement(ThemeProvider, { theme }, createElement(CssBaseline), createElement('span')),
     );
     const css = Array.from(document.querySelectorAll('style'))
       .map((s) => s.textContent ?? '')

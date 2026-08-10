@@ -124,7 +124,9 @@ export function ScanCard({ row, nowS, flashActive }: ScanCardProps) {
           </Box>
           <LevelDistCell
             level={
-              row.dist_to_wall_pct != null && row.dist_to_wall_pct >= 0 ? row.call_wall : row.put_wall
+              row.dist_to_wall_pct != null && row.dist_to_wall_pct >= 0
+                ? row.call_wall
+                : row.put_wall
             }
             distPct={row.dist_to_wall_pct}
             testid="cell-dist-wall"

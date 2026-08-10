@@ -7,11 +7,11 @@
  * NOT asserted (visible + intentional → review): title/legend presence, bar colors, reference-line
  * styling, tooltip content.
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { StrikeRow } from '@org/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
 import { windowedStrikes } from './chart';
 import { GexStrikeProfile } from './GexStrikeProfile';
 

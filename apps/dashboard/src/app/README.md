@@ -7,39 +7,39 @@ only**: `features/` and `pages/` may import `shared/`; **pages never import sibl
 
 ## `pages/` — one folder per route
 
-| Route                | Folder                        | Notes                                             |
-| -------------------- | ----------------------------- | ------------------------------------------------- |
-| `/`                  | `pages/landing/`              | Landing splash.                                   |
-| `/ticker/:ticker`    | `pages/ticker/`               | The GEX viewer — a **widget bento** (see below).  |
-| `/positions`         | `pages/positions/`            | Route shell; the book/logic is `features/trading/positions/`. |
-| `/scanner`           | `pages/scanner/`              | Coming-soon stub.                                 |
-| `/settings`          | `features/auth/SettingsPage`  | Route shell lives with the auth domain (tightly coupled). |
-| `/_ops/metrics`      | `pages/operator-metrics/`     | Operator-only, off the trader shell.              |
+| Route             | Folder                       | Notes                                                         |
+| ----------------- | ---------------------------- | ------------------------------------------------------------- |
+| `/`               | `pages/landing/`             | Landing splash.                                               |
+| `/ticker/:ticker` | `pages/ticker/`              | The GEX viewer — a **widget bento** (see below).              |
+| `/positions`      | `pages/positions/`           | Route shell; the book/logic is `features/trading/positions/`. |
+| `/scanner`        | `pages/scanner/`             | Coming-soon stub.                                             |
+| `/settings`       | `features/auth/SettingsPage` | Route shell lives with the auth domain (tightly coupled).     |
+| `/_ops/metrics`   | `pages/operator-metrics/`    | Operator-only, off the trader shell.                          |
 
 ## `features/` — cross-cutting domains (each used by ≥1 page)
 
-| Domain                  | Holds                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| `features/trading/`     | The whole trading domain (sim now, live later): `TradeEntryDialog` (the ONE shared **SIMULATED** entry surface — see below) · `model/` (foundational trade/decision types + P&L engine + store) · `orders/` (sim-order engine) · `positions/` (portfolio book/logic). |
-| `features/auth/`        | Accounts — session context, sign-in dialog, `useGate`, settings.                  |
-| `features/personas/`    | Persona presets, customize form, durable store, the `PersonaPicker`.              |
+| Domain               | Holds                                                                                                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `features/trading/`  | The whole trading domain (sim now, live later): `TradeEntryDialog` (the ONE shared **SIMULATED** entry surface — see below) · `model/` (foundational trade/decision types + P&L engine + store) · `orders/` (sim-order engine) · `positions/` (portfolio book/logic). |
+| `features/auth/`     | Accounts — session context, sign-in dialog, `useGate`, settings.                                                                                                                                                                                                      |
+| `features/personas/` | Persona presets, customize form, durable store, the `PersonaPicker`.                                                                                                                                                                                                  |
 
-> **⚠ `TradeEntryDialog` is SIM-ONLY — do not extend it to real orders.** Every *simulated* entry flow
+> **⚠ `TradeEntryDialog` is SIM-ONLY — do not extend it to real orders.** Every _simulated_ entry flow
 > (ghost trade, positions, act-on-rec) shares this ONE dialog, and a new sim entry shape is an additive
 > **variant** of it, never a fork (invariant `[single-shared-sim-entry-dialog]`). But a **real-money /
 > broker** entry surface **MUST be a structurally separate component** — never a mode, prop, or variant
-> here. The pretend↔real boundary is the one place a fork is a *feature*, not a smell; keeping it hard is
-> what `[no-real-order-path]` is for. *(Narrowed 2026-07-16 — this line previously read "the ONE shared
-> sim/live entry surface," which pointed `broker-connect` at exactly the wrong design.)*
+> here. The pretend↔real boundary is the one place a fork is a _feature_, not a smell; keeping it hard is
+> what `[no-real-order-path]` is for. _(Narrowed 2026-07-16 — this line previously read "the ONE shared
+> sim/live entry surface," which pointed `broker-connect` at exactly the wrong design.)_
 
 ## `shared/` — the app kernel (import-downward-only; populate on 2nd consumer)
 
-| Folder             | Holds                                                                       |
-| ------------------ | --------------------------------------------------------------------------- |
-| `shared/theme/`    | `tokens.ts` + `theme.ts` — the design system (never hardcode a hex).        |
-| `shared/ui/`       | Presentational primitives + `Widget/` (the bento shell + selection context; used by ticker widgets, orders, ai-rec). |
-| `shared/hooks/`    | App-generic hooks (e.g. `useReducedMotion`).                                |
-| `shared/lib/`      | App-generic utilities — `durable/` (the migrate-on-read store helper).       |
+| Folder          | Holds                                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `shared/theme/` | `tokens.ts` + `theme.ts` — the design system (never hardcode a hex).                                                 |
+| `shared/ui/`    | Presentational primitives + `Widget/` (the bento shell + selection context; used by ticker widgets, orders, ai-rec). |
+| `shared/hooks/` | App-generic hooks (e.g. `useReducedMotion`).                                                                         |
+| `shared/lib/`   | App-generic utilities — `durable/` (the migrate-on-read store helper).                                               |
 
 ## `shell/` — the app layout frame
 

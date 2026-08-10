@@ -1,3 +1,5 @@
+# Convexa monorepo CI — dashboard (Vite/TS) + api (Rust) + Playwright e2e.
+# Stack: Node from .nvmrc, Cargo workspace (apps/api + libs/quant-engine).
 name: CI
 
 on:
@@ -10,8 +12,13 @@ permissions:
   actions: read
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  main:
+  frontend:
+    name: Frontend (lint · typecheck · test · build · e2e)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,50 +26,60 @@ jobs:
           filter: tree:0
           fetch-depth: 0
 
-      # Cache node_modules
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm"
+          node-version-file: .nvmrc
+          cache: npm
 
       - run: npm ci
 
-      # Playwright needs its browser binary; chromium only, matching the suite's projects.
-      # (The suite migrated from Cypress on 2026-07-28 — Cypress downloaded its binary via a
-      # postinstall hook, Playwright is explicit about it.)
-      - run: npx playwright install --with-deps chromium
+      # Scoped Prettier (package.json) — never bare `nx format:write` (repo-wide hazard).
+      - name: Format check
+        run: npm run format:check
 
-      - run: npx nx format:check --base="remotes/origin/main"
-      # This workspace is not connected to Nx Cloud, so the Cloud-only steps
-      # (start-ci-run, record, fix-ci, the atomized e2e-ci target) are omitted;
-      # plain "e2e" runs the Playwright suite in a single task instead. It keeps
-      # its own step so the dev server + browser never compete with the vitest
-      # workers for the runner's CPUs (that contention flaked the unit tests
-      # under Cypress, and the separation is still worth keeping).
-      # `api:test` is EXCLUDED here on purpose: like this repo's other api targets (serve,
-      # serve-worker, conformance) it invokes the Windows venv path `.venv\Scripts\python.exe`,
-      # which does not exist on a Linux runner. It runs in its own step below instead, so the
-      # backend suite is genuinely in CI rather than nominally in it.
-      - run: npx nx run-many -t lint test build typecheck --exclude=api
-      - run: npx nx run dashboard-e2e:e2e
+      - name: Lint
+        run: npm run lint
 
-      # Backend tests (apps/api/tests).
-      #
-      # This step used to install requirements-dev.txt ALONE, on the premise that the suite imported
-      # only `src.core.signals` and therefore needed nothing beyond pytest and the stdlib. That
-      # premise died with broker-connect: `test_broker_book_endpoints.py` and
-      # `test_broker_credential_endpoints.py` are ENDPOINT tests built on `fastapi.testclient`, and
-      # they also import `src.auth` / `src.broker.service`, which pull the real dependency tree.
-      # Collection failed with `ModuleNotFoundError: No module named 'fastapi'`, so the whole
-      # backend suite was skipped — the exact "nominally in CI rather than genuinely in it" failure
-      # the note above this step exists to prevent.
-      #
-      # So install the runtime pins too. This does NOT touch the production image: apps/api/
-      # Dockerfile installs requirements.txt only, and requirements-dev.txt (the test runner) stays
-      # out of it — that separation was always about the image surface, never about CI.
-      - uses: actions/setup-python@v5
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (Vitest)
+        run: npx nx run-many -t test -p @org/dashboard,@org/api
+
+      - name: Production build (dashboard)
+        run: npx nx build @org/dashboard --configuration=production
+
+      # Chromium only (matches playwright.config.ts). Separate from unit tests so the
+      # browser does not contend with Vitest workers for CPU.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (Playwright)
+        run: npx nx run dashboard-e2e:e2e
+        env:
+          CI: true
+
+  backend:
+    name: Backend (cargo test · release+postgres)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          python-version: "3.12"
-      - run: pip install -r apps/api/requirements.txt -r apps/api/requirements-dev.txt
-      - run: python -m pytest
-        working-directory: apps/api
+          filter: tree:0
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+
+      # Default features (JSON stores) — full unit/integration surface for api-rust + quant-engine.
+      - name: Cargo test
+        run: cargo test -p api-rust -p quant-engine
+
+      # Matches Railway/Docker production image (`--features postgres`).
+      - name: Cargo release build (postgres)
+        run: cargo build -p api-rust --release --features postgres

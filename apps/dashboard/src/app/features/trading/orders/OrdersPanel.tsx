@@ -6,6 +6,7 @@
  * AC-33 audit floor); empty + store-fault states (§4.6). Rows for tickers other than this page's
  * focused/streamed one show the §4.3 not-evaluated state — CORRECT and required, not a bug (D5).
  */
+import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import {
   Box,
   Button,
@@ -17,7 +18,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { SIMULATED_TIP } from '@/features/trading/positions/labels';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';
 import { StoreFaultBlock, useStatusAnnouncement } from './OrdersWidget';

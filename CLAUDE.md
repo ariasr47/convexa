@@ -32,15 +32,16 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
 
 ## Convenience scripts
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Serve api + dashboard |
-| `npm run build` / `build:prod` | Production builds (Vite minify + cargo `--release --features postgres`) |
-| `npm run build:dev` | Faster unoptimized local builds |
-| `npm run typecheck` | `tsc` (required — Vitest does not typecheck) |
-| `npm run lint` | ESLint on TS projects only |
-| `npm run format` / `format:check` | Prettier scoped to apps/libs/tools (never bare `nx format:write`) |
-| `npm run ci` | lint → typecheck → test → build |
+| Script                            | Purpose                                                                 |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `npm run dev`                     | Serve api + dashboard                                                   |
+| `npm run build` / `build:prod`    | Production builds (Vite minify + cargo `--release --features postgres`) |
+| `npm run build:dev`               | Faster unoptimized local builds                                         |
+| `npm run typecheck`               | `tsc` (required — Vitest does not typecheck)                            |
+| `npm run lint`                    | ESLint on TS projects only                                              |
+| `npm run format` / `format:check` | Prettier scoped to apps/libs/tools (never bare `nx format:write`)       |
+| `npm run ci`                      | lint → typecheck → test → build                                         |
+| GitHub Actions                    | `.github/workflows/ci.yml` — frontend job + Rust job (no Python)        |
 
 ## Traps (learned the hard way — read before running these)
 

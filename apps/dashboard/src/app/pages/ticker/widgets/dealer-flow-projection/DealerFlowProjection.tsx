@@ -18,10 +18,11 @@
  *   - `theme-token-discipline` — token-only via MUI theme (`text.disabled`/`text.secondary`/`divider`,
  *     mono via tokens), zero hardcoded hex; dark/light parity comes from the shared `Widget`/tile chrome.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Widget } from '@/shared/ui/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type { DealerFlowProjection as Dfp } from '@org/api';
-import { typographyTokens } from '@/shared/theme/tokens';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,
@@ -40,7 +41,6 @@ import {
   VANNA_LABEL,
   VANNA_NEGATION,
 } from '../_kit/copy';
-import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -99,7 +99,12 @@ function CharmSection({ charm }: { charm: NonNullable<Dfp['charm']> }) {
   return (
     <LimbCard testid="dfp-charm">
       <LimbLabel label={CHARM_LABEL} info={charmInfo(charm.opex_date)} />
-      <Typography variant="h6" component="p" sx={{ fontFamily: MONO }} data-testid="dfp-charm-drift">
+      <Typography
+        variant="h6"
+        component="p"
+        sx={{ fontFamily: MONO }}
+        data-testid="dfp-charm-drift"
+      >
         {fmtSignedUsdCompact(charm.projected_delta)} delta drift
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }} data-testid="dfp-charm-horizon">

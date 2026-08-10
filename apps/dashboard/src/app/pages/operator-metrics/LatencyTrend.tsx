@@ -4,6 +4,7 @@
  * (never stitched), stale-repeats are visually distinct, headroom unknown is "unknown" (never a
  * number), no thresholds / red zones. Controls re-derive from stored polls — no extra network call.
  */
+import { chartCategorical } from '@/shared/theme/tokens';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -33,7 +34,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { chartCategorical } from '@/shared/theme/tokens';
 import {
   Percentile,
   SINGLE_LINE_COLOR,

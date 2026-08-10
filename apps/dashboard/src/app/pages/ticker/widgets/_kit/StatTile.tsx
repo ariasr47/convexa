@@ -19,11 +19,11 @@
  *     the bar color (non-directional tier emphasis, e.g. the Opportunity tile).
  *   - `info` present → a whole-tile Tooltip (the ⓘ just signals one exists), unchanged.
  */
+import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
+import { typographyTokens } from '@/shared/theme/tokens';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Card, CardContent, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { typographyTokens } from '@/shared/theme/tokens';
-import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 
 /** The mono numeric stack (Figma `font-family/mono`), single-sourced from tokens — figures are mono. */
 const MONO = typographyTokens.monoFontFamily;

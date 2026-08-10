@@ -96,7 +96,9 @@ describe('[theme-token-discipline] · zero hardcoded hex outside shared/theme', 
       if (!entry)
         throw new Error(`${file} is exempted (“${why}”) but no longer exists — remove the entry`);
       const hasHex = (stripComments(entry[1]).match(HEX) ?? []).length > 0;
-      expect(hasHex, `${file} is exempted but carries no hex anymore — remove the entry`).toBe(true);
+      expect(hasHex, `${file} is exempted but carries no hex anymore — remove the entry`).toBe(
+        true,
+      );
     }
   });
 });

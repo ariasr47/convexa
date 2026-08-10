@@ -20,10 +20,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { theme } from '@/shared/theme/theme';
 import { extras, palette } from '@/shared/theme/tokens';
+import { TintChip } from '@/shared/ui/TintChip';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget/WidgetSelectionContext';
 import { OffExchangeBlocks } from '../off-exchange-blocks/OffExchangeBlocks';
 import { Setups } from '../setups/Setups';
-import { TintChip } from '@/shared/ui/TintChip';
 
 afterEach(() => cleanup());
 

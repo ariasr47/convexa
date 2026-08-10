@@ -3,8 +3,8 @@
  * Built-in presets live in code (read-only); the server stores none of this. Guarded so a storage
  * failure degrades to in-memory only and never throws into the UI.
  */
-import type { PersonaDefinition } from '@org/api';
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
+import type { PersonaDefinition } from '@org/api';
 
 const KEY = 'convexa.personas.v1';
 const LEGACY_KEY = 'gammaflow.personas.v1';

@@ -32,8 +32,14 @@ import { keyframes } from '@mui/material/styles';
 // curve UNDER the hero copy/CTAs, then the steep convex sweep exiting top-right through the
 // hero's empty right region — slope monotonically increasing across both (that IS convexity).
 const FROM: Pt = [0, 360];
-const SEG1: readonly [Pt, Pt] = [[350, 359.5], [700, 352]]; //     control on the baseline → tangent start
-const SEG2: readonly [Pt, Pt] = [[1015, 345.25], [1200, 25]]; //   control on SEG1's end tangent → smooth join
+const SEG1: readonly [Pt, Pt] = [
+  [350, 359.5],
+  [700, 352],
+]; //     control on the baseline → tangent start
+const SEG2: readonly [Pt, Pt] = [
+  [1015, 345.25],
+  [1200, 25],
+]; //   control on SEG1's end tangent → smooth join
 const CURVE_PATH = quadChainPath(FROM, SEG1, SEG2);
 /** Path length in user units, computed once at module load (deterministic). */
 const CURVE_LENGTH = Math.ceil(

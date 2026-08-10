@@ -14,9 +14,9 @@
  * SCORE-NEUTRAL (AC-F4): nothing here is ever wired into getTicker/streamTicker or the score path. A
  * pref change only changes which default a UI lands on.
  */
+import { loadActiveId, saveActiveId } from '@/features/personas/store';
 import type { ThemePref, UserSettings } from '@org/api';
 import { useCallback, useMemo, useState } from 'react';
-import { loadActiveId, saveActiveId } from '@/features/personas/store';
 import { useAuth } from './AuthContext';
 import { SETTINGS_DEFAULTS } from './copy';
 import {

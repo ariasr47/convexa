@@ -27,6 +27,8 @@
  *     `divider`, mono via tokens), zero hardcoded hex; dark/light parity from the shared chrome.
  *   - No auth gate — renders for anonymous visitors; no session/gate call anywhere in it.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
+import { Widget } from '@/shared/ui/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 import type {
@@ -37,7 +39,6 @@ import type {
   MarketContextPack,
   TrendMomentumRead,
 } from '@org/api';
-import { typographyTokens } from '@/shared/theme/tokens';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,
@@ -103,7 +104,6 @@ import {
   mcTiBasis,
   mcTrendLine,
 } from '../_kit/copy';
-import { Widget } from '@/shared/ui/Widget';
 
 const MONO = typographyTokens.monoFontFamily;
 

@@ -51,10 +51,18 @@ const stylesCss = readFileSync(resolve(DASHBOARD_ROOT, 'src', 'styles.css'), 'ut
 
 /** Pure checker (mutation-tested): external/CDN font-host references in a text. */
 function externalFontHosts(text: string): string[] {
-  const tells = ['fonts.googleapis', 'fonts.gstatic', 'use.typekit', 'fontawesome', 'cdn.jsdelivr', 'unpkg.com'];
+  const tells = [
+    'fonts.googleapis',
+    'fonts.gstatic',
+    'use.typekit',
+    'fontawesome',
+    'cdn.jsdelivr',
+    'unpkg.com',
+  ];
   const hits = tells.filter((t) => text.includes(t));
   // Any absolute http(s) URL inside a @font-face src or a font preload is also a violation.
-  const fontUrl = /(?:@font-face[^}]*src\s*:[^};]*url\(\s*['"]?(https?:\/\/[^'")]+))|(?:<link[^>]*as="font"[^>]*href="(https?:\/\/[^"]+))/gi;
+  const fontUrl =
+    /(?:@font-face[^}]*src\s*:[^};]*url\(\s*['"]?(https?:\/\/[^'")]+))|(?:<link[^>]*as="font"[^>]*href="(https?:\/\/[^"]+))/gi;
   for (const m of text.matchAll(fontUrl)) hits.push(m[1] ?? m[2]);
   return hits;
 }
@@ -75,7 +83,9 @@ describe('§8-3 · fonts self-hosted, same-origin only', () => {
 
   it('MUTATION GUARD: the external-host checker fails on a Google-Fonts fixture', () => {
     expect(
-      externalFontHosts(`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">`),
+      externalFontHosts(
+        `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">`,
+      ),
     ).toContain('fonts.googleapis');
     expect(
       externalFontHosts(`@font-face { src: url('https://evil.example/f.woff2') format('woff2'); }`),
@@ -84,9 +94,13 @@ describe('§8-3 · fonts self-hosted, same-origin only', () => {
   });
 
   it('MUTATION GUARD: the swap checker fails on a face without font-display: swap', () => {
-    expect(facesMissingSwap(`@font-face { font-family: 'X'; src: url('/f.woff2'); }`)).toHaveLength(1);
+    expect(facesMissingSwap(`@font-face { font-family: 'X'; src: url('/f.woff2'); }`)).toHaveLength(
+      1,
+    );
     expect(
-      facesMissingSwap(`@font-face { font-family: 'X'; font-display: swap; src: url('/f.woff2'); }`),
+      facesMissingSwap(
+        `@font-face { font-family: 'X'; font-display: swap; src: url('/f.woff2'); }`,
+      ),
     ).toEqual([]);
   });
 

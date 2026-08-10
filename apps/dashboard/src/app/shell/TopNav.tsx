@@ -13,6 +13,8 @@
  * Binding (AC-Inv-7 / `[operator-vs-trader-path-separation]`): NO link/button to `/_ops/metrics` —
  * the operator route is reachable only by typing the URL.
  */
+import { AccountControl } from '@/features/auth/AccountControl';
+import { elevationFor } from '@/shared/theme/tokens';
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
 import {
@@ -31,8 +33,6 @@ import {
 import { alpha } from '@mui/material/styles';
 import { useState } from 'react';
 import { NavLink, Link as RouterLink, useLocation } from 'react-router-dom';
-import { AccountControl } from '@/features/auth/AccountControl';
-import { elevationFor } from '@/shared/theme/tokens';
 import { ConvexaMark } from './ConvexaMark';
 
 interface NavEntry {

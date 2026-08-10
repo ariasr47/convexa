@@ -43,7 +43,9 @@ describe('§8-7 · blog generator output token-compliant', () => {
       expect(html, `${file}: body background = ink`).toContain(
         `background:${palette.dark.background.default}`,
       );
-      expect(html, `${file}: body color = phosphor`).toContain(`color:${palette.dark.text.primary}`);
+      expect(html, `${file}: body color = phosphor`).toContain(
+        `color:${palette.dark.text.primary}`,
+      );
       expect(html, `${file}: code/th surface = panel`).toContain(palette.dark.background.paper);
       expect(html, `${file}: links = signal`).toContain(`a { color:${palette.dark.info}`);
       expect(html, `${file}: blockquote rule = gammaAmber`).toContain(palette.dark.primary.main);

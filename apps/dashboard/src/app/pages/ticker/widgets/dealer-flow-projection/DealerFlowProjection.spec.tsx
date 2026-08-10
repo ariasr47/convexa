@@ -11,13 +11,13 @@
  * NOT asserted (visible + intentional → review): titles/subtitle/footer/negation wording, tooltip
  * copy, banned-language scans, offline-caption scans (page-level byte-identity covers live coupling).
  */
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { DealerFlowProjection as Dfp } from '@org/api';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { theme } from '@/shared/theme/theme';
-import { DealerFlowProjection } from './DealerFlowProjection';
 import { CHARM_EMPTY, DFP_WHOLE_EMPTY, VANNA_EMPTY } from '../_kit/copy';
+import { DealerFlowProjection } from './DealerFlowProjection';
 
 const charm = (over: Partial<NonNullable<Dfp['charm']>> = {}): NonNullable<Dfp['charm']> => ({
   projected_delta: 4_200_000,

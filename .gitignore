@@ -52,7 +52,11 @@ Thumbs.db
 .nx/self-healing
 .nx/migrate-runs
 .cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
+# Nx may regenerate GitHub agent skill stubs; we only keep workflows/
+.github/instructions/
+.github/skills/
+.github/agents/
+.github/prompts/
 
 # ---------------------------------------------------------------------------
 # AI assistant local scaffolding (NOT source of truth for this repo)

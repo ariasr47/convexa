@@ -41,7 +41,7 @@ describe('future copy stays defined-but-unwired (pending the alert surface)', ()
     const bag = labels as Record<string, unknown>;
     expect(typeof bag.POSITION_EVAL_LEG_QUALIFIER).toBe('function');
     expect(
-      (bag.POSITION_EVAL_LEG_QUALIFIER as (l: string, n: number) => string)('long call', 4)
+      (bag.POSITION_EVAL_LEG_QUALIFIER as (l: string, n: number) => string)('long call', 4),
     ).toContain('long call');
     for (const name of FUTURE_NAMES.filter((n) => n !== 'POSITION_EVAL_LEG_QUALIFIER')) {
       expect(typeof bag[name], `${name} must stay exported`).toBe('string');
@@ -61,7 +61,7 @@ describe('future copy stays defined-but-unwired (pending the alert surface)', ()
       offenders,
       'A FUTURE copy string gained a consumer. If the alert surface is landing deliberately, ' +
         'move its name out of FUTURE_NAMES here and out of the FUTURE banner in labels.ts; ' +
-        'otherwise unwire the consumer.'
+        'otherwise unwire the consumer.',
     ).toEqual([]);
   });
 

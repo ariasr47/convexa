@@ -7,14 +7,14 @@
  *      locally, even though the FE could "helpfully" cache it.
  * Mocks ONLY the network boundary (`fetch` + `EventSource`), never a live backend.
  */
+import { AuthProvider } from '@/features/auth/AuthContext';
+import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
+import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
 import type { ScanResponse } from '@org/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
-import { AuthProvider } from '@/features/auth/AuthContext';
-import { theme } from '@/shared/theme/theme';
 import { SCAN_POLL_MS, useScan } from './useScan';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -96,7 +96,10 @@ beforeEach(() => {
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const json = (b: unknown, status = 200) =>
-        new Response(JSON.stringify(b), { status, headers: { 'Content-Type': 'application/json' } });
+        new Response(JSON.stringify(b), {
+          status,
+          headers: { 'Content-Type': 'application/json' },
+        });
       if (url.includes('/api/auth/session'))
         return json({
           authenticated,
@@ -114,7 +117,8 @@ beforeEach(() => {
           savedName = 'Mine'; // the server persisted it — later reads must reflect that
           return json({ ...scanBody().view, source: 'account', name: 'Mine' });
         }
-        if (putStatus === 422) return json({ detail: "'ZZZZ' is not in the tracked universe." }, 422);
+        if (putStatus === 422)
+          return json({ detail: "'ZZZZ' is not in the tracked universe." }, 422);
         return json({ error: 'auth_required', message: 'sign in' }, 403);
       }
       if (url.includes('/api/scan')) {

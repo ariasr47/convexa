@@ -389,9 +389,10 @@ function bindsDisabled(value: string, scheme: 'dark' | 'light'): boolean {
 
 /** The brand amber the enabled CTA wears — the thing that must NOT survive the refusal. */
 function bindsPrimary(value: string, scheme: 'dark' | 'light'): boolean {
-  return ['--mui-palette-primary-main', themeForPref(scheme).palette.primary.main.toLowerCase()].some(
-    (t) => value.includes(t),
-  );
+  return [
+    '--mui-palette-primary-main',
+    themeForPref(scheme).palette.primary.main.toLowerCase(),
+  ].some((t) => value.includes(t));
 }
 
 describe('AC-63 · a refused control is VISIBLY refused, in both colour schemes', () => {
@@ -519,9 +520,7 @@ describe('AC-63 · a refused control is VISIBLY refused, in both colour schemes'
         </Refused>
       </>,
     );
-    expect(screen.getByTestId('passthrough').className).toBe(
-      screen.getByTestId('bare').className,
-    );
+    expect(screen.getByTestId('passthrough').className).toBe(screen.getByTestId('bare').className);
   });
 });
 

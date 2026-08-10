@@ -102,11 +102,15 @@ describe('type-floor source scan — no chip/label fontSize below 11px', () => {
   });
 
   it('MUTATION GUARD: the scan fails on sub-floor px AND rem sources', () => {
-    expect(floorViolations({ '/src/app/pages/x.tsx': 'sx={{ fontSize: 9, }}' }, [])).toHaveLength(1);
+    expect(floorViolations({ '/src/app/pages/x.tsx': 'sx={{ fontSize: 9, }}' }, [])).toHaveLength(
+      1,
+    );
     expect(
       floorViolations({ '/src/app/pages/x.tsx': "sx={{ fontSize: '0.62rem' }}" }, []),
     ).toHaveLength(1);
-    expect(floorViolations({ '/src/app/pages/x.tsx': 'sx={{ fontSize: 11 }}' }, [])).toHaveLength(0);
+    expect(floorViolations({ '/src/app/pages/x.tsx': 'sx={{ fontSize: 11 }}' }, [])).toHaveLength(
+      0,
+    );
   });
 
   it('no source carries a sub-11px fontSize outside the chart-tick exemptions', () => {

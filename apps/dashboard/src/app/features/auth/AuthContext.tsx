@@ -15,6 +15,7 @@
  *  - **no secret ever stored** (AC-H1/H2): only the `SessionStatus` shape is held — no password,
  *    session id, signing key, or secret is ever in scope here.
  */
+import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 import {
   login as apiLogin,
   logout as apiLogout,
@@ -37,7 +38,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { seedTestPositionsIfNeeded } from '@/features/trading/positions/testSeed';
 
 export interface AuthState {
   /** false until the first who-am-I resolves (drives the account-control loading placeholder ONLY). */

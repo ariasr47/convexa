@@ -9,8 +9,8 @@
  *  - limit  : rests `pending`; fills on a LIVE cross (mark ≤ limit) at the limit price (basis
  *             `limit_fill`). Cross is evaluated elsewhere (useResting…), never here at open time.
  */
-import type { OptionRight, TrackedContract } from '@org/api';
 import { bsPrice } from '@/features/trading/model/mark';
+import type { OptionRight, TrackedContract } from '@org/api';
 import type { EntryBasis } from './types';
 
 export interface ResolvedFill {
