@@ -64,7 +64,7 @@ describe('[banned-hexes] · the retired identity is unreachable', () => {
   it('the globs are not vacuous (sources + blog output actually loaded)', () => {
     expect(Object.keys(APP_SOURCES).length).toBeGreaterThan(40);
     expect(Object.keys(APP_SOURCES).some((k) => k.includes('/shared/theme/'))).toBe(true);
-    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(2);
+    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(1);
     expect(indexHtml.length).toBeGreaterThan(100);
   });
 

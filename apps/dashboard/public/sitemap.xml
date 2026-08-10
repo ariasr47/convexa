@@ -7,17 +7,17 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://convexa.pages.dev/methodology</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://convexa.pages.dev/blog</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://convexa.pages.dev/blog/building-a-team-of-ai-roles.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://convexa.pages.dev/blog/system-analysis.html</loc>
+    <loc>https://convexa.pages.dev/blog/how-we-read-dealer-structure.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

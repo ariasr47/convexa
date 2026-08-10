@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How We Read Dealer Structure</title>
+<meta name="description" content="Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, on what basis, and where the read is weak.">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Convexa">
+<meta property="og:title" content="How We Read Dealer Structure">
+<meta property="og:description" content="Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, on what basis, and where the read is weak.">
+<meta property="og:url" content="https://convexa.pages.dev/blog/how-we-read-dealer-structure.html">
+<meta property="og:image" content="https://convexa.pages.dev/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico">
+<style>
+  /* Curvature Terminal tokens (redesign-stage-1 §4.4) — values single-sourced from
+     apps/dashboard/src/app/shared/theme/tokens.ts (ink/panel/phosphor/steel/gammaAmber/signal);
+     the generator cannot import TypeScript, so the literals are carried here and PINNED by
+     shared/theme/blog-tokens.spec.ts (change tokens.ts -> the spec forces a regeneration).
+     Fonts: the app's self-hosted same-origin faces (/fonts/..., OFL 1.1) — never a CDN. */
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:400;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:600;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Sans'; font-style:normal; font-display:swap; font-weight:700;
+    src:url('/fonts/ibm-plex-sans/ibm-plex-sans-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family:'IBM Plex Mono'; font-style:normal; font-display:swap; font-weight:400;
+    src:url('/fonts/ibm-plex-mono/ibm-plex-mono-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family:'Archivo'; font-style:normal; font-display:swap; font-weight:100 900;
+    font-stretch:62% 125%;
+    src:url('/fonts/archivo/archivo-latin-standard-normal.woff2') format('woff2-variations'); }
+  :root { color-scheme: dark; }
+  body { margin:0; background:#0B0F17; color:#E9E4D6; font-size:15px;
+    font-family:'IBM Plex Sans',system-ui,'Segoe UI',Roboto,sans-serif;
+    line-height:1.65; -webkit-font-smoothing:antialiased; }
+  main { max-width:760px; margin:0 auto; padding:48px 22px 80px; }
+  h1, h2, h3 { font-family:'Archivo','IBM Plex Sans',system-ui,sans-serif;
+    font-stretch:112.5%; }
+  h1 { font-size:2.05rem; line-height:1.2; margin:0 0 .2em; letter-spacing:-.01em; }
+  h2 { font-size:1.4rem; margin:2.4em 0 .5em; letter-spacing:-.01em; }
+  h3 { font-size:1.15rem; margin:1.8em 0 .4em; }
+  p { margin:0 0 1.05em; }
+  ul, ol { margin:0 0 1.2em; padding-left:1.25em; }
+  li { margin:.4em 0; }
+  strong { font-weight:650; }
+  code { background:#131A24; border-radius:5px; padding:.08em .35em; font-size:.92em;
+    font-family:'IBM Plex Mono',Consolas,Menlo,monospace; }
+  a { color:#5E8BC4; }
+  blockquote { margin:1.4em 0; padding:.4em 0 .4em 1.1em; border-left:4px solid #F2A93B;
+    font-size:1.05rem; color:#8A9BB4; font-style:italic; }
+  hr { border:none; border-top:1px solid rgba(138,155,180,0.25); margin:2.4em 0; }
+  figure { margin:1.8em 0; }
+  figure svg { width:100%; height:auto; display:block; }
+  figcaption { margin-top:.5em; text-align:center; font-size:.82rem; color:#8A9BB4; }
+  table { border-collapse:collapse; margin:1.4em 0; width:100%; font-size:.95em; }
+  th, td { border:1px solid rgba(138,155,180,0.25); padding:.5em .7em; text-align:left;
+    vertical-align:top; }
+  th { background:#131A24; font-weight:650; }
+  .backlink { display:inline-block; margin-bottom:1.6em; font-size:.92rem; }
+  @media (max-width:560px) { h1 { font-size:1.7rem; } main { padding:32px 16px 60px; }
+    table { display:block; overflow-x:auto; } }
+</style>
+</head>
+<body>
+<main>
+<a class="backlink" href="/blog">&#8592; All posts</a>
+<h1>How We Read Dealer Structure</h1>
+<p><em>Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, on what basis, and where the read is weak.</em></p>
+<hr>
+<h2>Not a crystal ball</h2>
+<p>Convexa is an <strong>analysis desk</strong>, not a forecast machine. The numbers you see are a structured read of <strong>options dealer positioning</strong> from a chain snapshot: call and put walls, the gamma flip, net GEX across strikes, and a plain additive opportunity score.</p>
+<p>We do not invent direction on the frontend. Structure is computed on the server from the option chain. The browser maps labels and layouts — it does not re-score a scan row into a different truth.</p>
+<blockquote>Simulated trades are paper. A connected brokerage is read-only. Nothing here places, changes, or cancels a real order. This is not investment advice.</blockquote>
+<hr>
+<h2>The objects on the desk</h2>
+<p>Three levels matter most on liquid names:</p>
+<ol><li><strong>Call wall</strong> — the strike with the largest <strong>positive</strong> dealer gamma under our open-interest sign convention.</li><li><strong>Put wall</strong> — the strike with the largest <strong>negative</strong> dealer gamma under the same convention.</li><li><strong>Gamma flip</strong> — the zero-crossing of the <strong>analytic net-GEX curve</strong> across strikes: where hedging behavior flips from dampening to amplifying moves.</li></ol>
+<p>Walls and flip are related, not the same object. A skewed gamma profile can put walls far from the flip. Treat the flip as a regime boundary and the walls as concentrated gamma levels — not as a single “support/resistance” cartoon.</p>
+<figure><svg viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Call wall, put wall, and gamma flip on a net-GEX curve</title>
+  <desc>A schematic net-GEX curve across strikes: put wall on the left where dealer gamma is most negative, gamma flip where the curve crosses zero, call wall on the right where dealer gamma is most positive. Spot sits between walls. Caption emphasizes walls and flip are related but not the same object.</desc>
+  <style>
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:22px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .lab{fill:#8A9BB4;font-size:12px;font-weight:600}
+    .chip{fill:#E9E4D6;font-size:12px;font-weight:600}
+    .small{fill:#8A9BB4;font-size:11px}
+  </style>
+  <rect x="1" y="1" width="958" height="418" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text class="h1" x="36" y="42">Three levels, one curve</text>
+  <text class="sub" x="36" y="66">Analytic net dealer GEX across strikes (schematic — not a live chart).</text>
+
+  <rect x="48" y="96" width="864" height="250" rx="12" fill="#0B0F17" stroke="#8A9BB4" stroke-opacity="0.2"/>
+
+  <line x1="80" y1="220" x2="880" y2="220" stroke="#8A9BB4" stroke-opacity="0.35" stroke-dasharray="5 5"/>
+  <text class="small" x="80" y="212">net GEX = 0</text>
+
+  <text class="small" x="80" y="330">strikes →</text>
+  <text class="small" x="80" y="118">+ dealer γ</text>
+  <text class="small" x="80" y="318">− dealer γ</text>
+
+  <path d="M100,280 C180,300 220,290 280,268 C340,245 380,230 430,220 C480,210 520,175 580,150 C640,125 700,130 760,145 C820,160 850,180 870,195"
+        fill="none" stroke="#5E8BC4" stroke-width="2.5"/>
+
+  <!-- put wall — warningOrange (fault/negative pole, allowed) -->
+  <line x1="240" y1="120" x2="240" y2="300" stroke="#E07A3F" stroke-width="1.5" stroke-opacity="0.9"/>
+  <circle cx="240" cy="280" r="6" fill="#E07A3F"/>
+  <rect x="168" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#E07A3F" stroke-opacity="0.55"/>
+  <text class="chip" x="184" y="118" fill="#E07A3F">Put wall</text>
+  <text class="small" x="168" y="340">most negative dealer γ</text>
+
+  <!-- gamma flip — brand amber -->
+  <line x1="430" y1="120" x2="430" y2="300" stroke="#F2A93B" stroke-width="2"/>
+  <circle cx="430" cy="220" r="7" fill="#F2A93B"/>
+  <rect x="368" y="100" width="124" height="26" rx="6" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.55"/>
+  <text class="chip" x="384" y="118" fill="#F2A93B">Gamma flip</text>
+  <text class="small" x="368" y="340">zero-crossing (regime)</text>
+
+  <!-- call wall — signal (positive pole, allowed) -->
+  <line x1="700" y1="120" x2="700" y2="300" stroke="#5E8BC4" stroke-width="1.5" stroke-opacity="0.9"/>
+  <circle cx="700" cy="138" r="6" fill="#5E8BC4"/>
+  <rect x="628" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#5E8BC4" stroke-opacity="0.55"/>
+  <text class="chip" x="644" y="118" fill="#5E8BC4">Call wall</text>
+  <text class="small" x="628" y="340">most positive dealer γ</text>
+
+  <circle cx="500" cy="205" r="5" fill="#E9E4D6"/>
+  <text class="lab" x="510" y="200" fill="#E9E4D6">spot (GEX basis)</text>
+
+  <text class="sub" x="36" y="390">Walls pick extremes of dealer γ · flip is where the curve crosses zero · they can sit far apart when the profile is skewed.</text>
+</svg>
+<figcaption>Call wall, put wall, and gamma flip on a net-GEX curve</figcaption></figure>
+<h3>Dealer sign is a convention</h3>
+<p>Walls use the vendor’s per-contract gamma and a <strong>dealer-sign open-interest convention</strong> (calls short / puts long as the default dealer book). That is a <strong>snapshot convention</strong>, not measured inventory. Real desks can and do differ. When gamma or OI is missing, the tile says unavailable — we do not invent a wall.</p>
+<h3>GEX: raw dollars vs vol-normalized</h3>
+<p><strong>Raw GEX</strong> sizes exposure for a fixed <strong>1% spot shock</strong>. Useful for absolute magnitude of the book.</p>
+<p><strong>Vol-normalized GEX</strong> divides that magnitude by ATM IV (or 30d HV if ATM IV is missing) so readings stay comparable when vol is high or low. Independent evidence favors the vol-normalized magnitude as a cleaner structural read; <strong>walls and flip stay raw strike levels</strong>. Vol-norm GEX is <strong>not</strong> a scoring input today — it is advisory context on the ticker.</p>
+<hr>
+<h2>Spot basis: which price the structure sits on</h2>
+<p>GEX and walls are computed at a <strong>GEX spot basis</strong> — often the cash/session close when the market is closed, live mid during regular hours under the engine’s phase rules. The ticker always labels that basis so a structure level is never confused with the live tape price.</p>
+<p>If you compare a wall to the streaming last without reading the basis, you will invent a gap that is not there.</p>
+<hr>
+<h2>Two data speeds — do not mix them</h2>
+<figure><svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Two data speeds on the desk: live tape versus structure</title>
+  <desc>Left panel shows a fast live tape stream for prices. Right panel shows a slower structure poll for score, tier, walls, flip, and GEX, stamped with structure as-of. A warning that mixing the two invents false urgency.</desc>
+  <style>
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:22px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .pt{font-size:15px;font-weight:700}
+    .bul{fill:#8A9BB4;font-size:13px}
+    .small{fill:#8A9BB4;font-size:11px}
+    .chip{fill:#E9E4D6;font-size:12px;font-weight:600}
+  </style>
+  <rect x="1" y="1" width="958" height="398" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text class="h1" x="36" y="42">Two speeds — do not mix them</text>
+  <text class="sub" x="36" y="66">Same ticker, two clocks. Structure is never “live gamma.”</text>
+
+  <!-- left: live -->
+  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#5E8BC4" stroke-opacity="0.45"/>
+  <text class="pt" x="56" y="128" fill="#5E8BC4">Live tape</text>
+  <text class="small" x="56" y="148">stream when healthy</text>
+
+  <!-- pulse bars -->
+  <g>
+    <rect x="56" y="180" width="12" height="40" rx="3" fill="#5E8BC4" opacity="0.35"/>
+    <rect x="74" y="165" width="12" height="55" rx="3" fill="#5E8BC4" opacity="0.55"/>
+    <rect x="92" y="172" width="12" height="48" rx="3" fill="#5E8BC4" opacity="0.75"/>
+    <rect x="110" y="158" width="12" height="62" rx="3" fill="#5E8BC4"/>
+    <rect x="128" y="170" width="12" height="50" rx="3" fill="#5E8BC4" opacity="0.65"/>
+    <rect x="146" y="162" width="12" height="58" rx="3" fill="#5E8BC4" opacity="0.45"/>
+    <rect x="164" y="175" width="12" height="45" rx="3" fill="#5E8BC4" opacity="0.85"/>
+  </g>
+  <text class="chip" x="200" y="195">price · marks</text>
+  <g class="bul">
+    <text x="56" y="250">• can update every few seconds</text>
+    <text x="56" y="274">• dims and says offline if stream drops</text>
+    <text x="56" y="298">• never pretends to be structure</text>
+  </g>
+
+  <!-- right: structure -->
+  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.5"/>
+  <text class="pt" x="514" y="128" fill="#F2A93B">Structure</text>
+  <text class="small" x="514" y="148">slower poll · stamped as-of</text>
+
+  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.4"/>
+  <text class="chip" x="528" y="191" fill="#F2A93B">Structure as-of 2m ago</text>
+
+  <g class="bul">
+    <text x="514" y="236">• score · tier · flip · walls · GEX</text>
+    <text x="514" y="260">• setups · score drivers</text>
+    <text x="514" y="284">• stays readable when tape is offline</text>
+    <text x="514" y="308">• about every few minutes (sooner if hot)</text>
+  </g>
+
+  <text class="sub" x="36" y="376">Mixing a live last with an unstamped wall invents urgency. Read the basis and the as-of stamp.</text>
+</svg>
+<figcaption>Live tape versus structure poll</figcaption></figure>
+<p><strong>Live tape</strong> (prices, marks when the stream is healthy) can update from a stream.</p>
+<p><strong>Structure</strong> — score, tier, flip, walls, GEX, setups — refreshes on a slower poll (about every few minutes, sooner for names that just moved). The scanner and ticker say <strong>“Structure as-of …”</strong> for that path on purpose.</p>
+<p>When the live stream drops, live tiles dim and say offline. Structure tiles stay readable at their last snapshot. A quiet tape is not a blank desk. A structure poll is not “live gamma.”</p>
+<hr>
+<h2>Score and tier (what the number is)</h2>
+<p>Opportunity score and tier arrive <strong>pre-computed from the server</strong>. The frontend maps closed labels (Prime, Actionable, Watch, Dormant) and never re-derives the score from scan rows alone.</p>
+<p>The score is a <strong>capped sum of plain components</strong>:</p>
+<table><thead><tr><th>Component</th><th>Cap</th><th>What it rewards</th></tr></thead><tbody><tr><td>Proximity</td><td>40</td><td>Nearness to walls / flip</td></tr><tr><td>Vol stretch</td><td>25</td><td>\</td><td>IV/HV − 1\</td><td>richness or cheapness</td></tr><tr><td>Setups</td><td>25</td><td>Active structure setups</td></tr><tr><td>Flip transition</td><td>10</td><td>Within a flip proximity band</td></tr><tr><td>Dark-pool confluence</td><td>6</td><td>Optional off-exchange overlap</td></tr></tbody></table>
+<p>The scanner “why this row” tip surfaces the top components when the server sends <code>score_drivers</code>.</p>
+<h3>Honest scope</h3>
+<p>Today’s score does <strong>not</strong> consume vol-normalized GEX or the IV-rank band. Those packs are <strong>advisory context on the ticker only</strong>. Folding them into the score is a deliberate product change that needs a scored feature and ledger evidence — not a quiet UI tweak.</p>
+<hr>
+<h2>Where the read is weak</h2>
+<ul><li><strong>Liquid index and megacap names</strong> are the strong case. Thin single names can show structure that is noise; the ticker shows a single-name caveat outside the curated universe.</li><li><strong>Outside regular hours</strong>, structure still ages honestly, but spot basis and chain freshness matter more.</li><li><strong>Missing chain data</strong>, a failed symbol, or a building first pass shows as unavailable or building — never a fabricated zero.</li><li><strong>Vendor gamma can lag or gap</strong> on thin names. OI sign remains an assumption.</li><li><strong>Sim P/L</strong> uses a mark ladder (snapshot → modeled → theoretical → last known). Last known is frozen when the stream is offline; it is never framed as live.</li></ul>
+<hr>
+<h2>What Convexa never does</h2>
+<ul><li>No real order path — no place, change, or cancel at a broker.</li><li>No guarantee — structure is context for a plan, not a price forecast and not a trade command.</li><li>No silent score invention on the client — if the server did not send a score, the UI does not invent one from neighboring rows.</li></ul>
+<hr>
+<h2>Want the short in-product version?</h2>
+<p>The product page <a href="/methodology">How Convexa works</a> is the same spine, kept next to the desk. This post is the longer, public version of that honesty.</p>
+<p>Open the <a href="/scanner">Scanner</a> or free <a href="/ticker">Ticker</a> and read structure as-of the stamp — not as a live prophecy.</p>
+</main>
+</body>
+</html>

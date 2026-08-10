@@ -45,11 +45,8 @@ describe('BlogPage (/blog)', () => {
     }
   });
 
-  it('features exactly the two launch articles (a third is a deliberate edit, not drift)', () => {
-    expect(BLOG_ARTICLES.map((a) => a.slug)).toEqual([
-      'building-a-team-of-ai-roles',
-      'system-analysis',
-    ]);
+  it('features exactly the published methodology article (a second is a deliberate edit, not drift)', () => {
+    expect(BLOG_ARTICLES.map((a) => a.slug)).toEqual(['how-we-read-dealer-structure']);
   });
 
   it('does ZERO network work on mount (static index discipline)', () => {

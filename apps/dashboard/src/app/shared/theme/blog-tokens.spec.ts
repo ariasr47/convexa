@@ -33,7 +33,7 @@ const REPO_ROOT = repoRoot();
 
 describe('§8-7 · blog generator output token-compliant', () => {
   it('the glob is not vacuous', () => {
-    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(2);
+    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(1);
   });
 
   it('every page joins the terminal identity — body on ink, phosphor text, tokens present', () => {
@@ -103,7 +103,7 @@ describe('§8-7 · blog generator output token-compliant', () => {
 
   it('docs/blog and public/blog copies are byte-identical (the script is the sync step)', () => {
     const slugs = Object.keys(BLOG_PAGES).map((k) => k.replace('/public/blog/', ''));
-    expect(slugs.length).toBeGreaterThanOrEqual(2);
+    expect(slugs.length).toBeGreaterThanOrEqual(1);
     for (const slug of slugs) {
       const docsPath = resolve(REPO_ROOT, 'docs', 'blog', slug);
       const publicPath = resolve(REPO_ROOT, 'apps', 'dashboard', 'public', 'blog', slug);

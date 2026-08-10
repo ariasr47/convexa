@@ -1,0 +1,55 @@
+<svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Two data speeds on the desk: live tape versus structure</title>
+  <desc>Left panel shows a fast live tape stream for prices. Right panel shows a slower structure poll for score, tier, walls, flip, and GEX, stamped with structure as-of. A warning that mixing the two invents false urgency.</desc>
+  <style>
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:22px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .pt{font-size:15px;font-weight:700}
+    .bul{fill:#8A9BB4;font-size:13px}
+    .small{fill:#8A9BB4;font-size:11px}
+    .chip{fill:#E9E4D6;font-size:12px;font-weight:600}
+  </style>
+  <rect x="1" y="1" width="958" height="398" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text class="h1" x="36" y="42">Two speeds — do not mix them</text>
+  <text class="sub" x="36" y="66">Same ticker, two clocks. Structure is never “live gamma.”</text>
+
+  <!-- left: live -->
+  <rect x="36" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#5E8BC4" stroke-opacity="0.45"/>
+  <text class="pt" x="56" y="128" fill="#5E8BC4">Live tape</text>
+  <text class="small" x="56" y="148">stream when healthy</text>
+
+  <!-- pulse bars -->
+  <g>
+    <rect x="56" y="180" width="12" height="40" rx="3" fill="#5E8BC4" opacity="0.35"/>
+    <rect x="74" y="165" width="12" height="55" rx="3" fill="#5E8BC4" opacity="0.55"/>
+    <rect x="92" y="172" width="12" height="48" rx="3" fill="#5E8BC4" opacity="0.75"/>
+    <rect x="110" y="158" width="12" height="62" rx="3" fill="#5E8BC4"/>
+    <rect x="128" y="170" width="12" height="50" rx="3" fill="#5E8BC4" opacity="0.65"/>
+    <rect x="146" y="162" width="12" height="58" rx="3" fill="#5E8BC4" opacity="0.45"/>
+    <rect x="164" y="175" width="12" height="45" rx="3" fill="#5E8BC4" opacity="0.85"/>
+  </g>
+  <text class="chip" x="200" y="195">price · marks</text>
+  <g class="bul">
+    <text x="56" y="250">• can update every few seconds</text>
+    <text x="56" y="274">• dims and says offline if stream drops</text>
+    <text x="56" y="298">• never pretends to be structure</text>
+  </g>
+
+  <!-- right: structure -->
+  <rect x="494" y="96" width="430" height="250" rx="12" fill="#0B0F17" stroke="#F2A93B" stroke-opacity="0.5"/>
+  <text class="pt" x="514" y="128" fill="#F2A93B">Structure</text>
+  <text class="small" x="514" y="148">slower poll · stamped as-of</text>
+
+  <rect x="514" y="168" width="280" height="36" rx="8" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.4"/>
+  <text class="chip" x="528" y="191" fill="#F2A93B">Structure as-of 2m ago</text>
+
+  <g class="bul">
+    <text x="514" y="236">• score · tier · flip · walls · GEX</text>
+    <text x="514" y="260">• setups · score drivers</text>
+    <text x="514" y="284">• stays readable when tape is offline</text>
+    <text x="514" y="308">• about every few minutes (sooner if hot)</text>
+  </g>
+
+  <text class="sub" x="36" y="376">Mixing a live last with an unstamped wall invents urgency. Read the basis and the as-of stamp.</text>
+</svg>

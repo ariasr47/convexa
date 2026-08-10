@@ -1,0 +1,53 @@
+<svg viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Call wall, put wall, and gamma flip on a net-GEX curve</title>
+  <desc>A schematic net-GEX curve across strikes: put wall on the left where dealer gamma is most negative, gamma flip where the curve crosses zero, call wall on the right where dealer gamma is most positive. Spot sits between walls. Caption emphasizes walls and flip are related but not the same object.</desc>
+  <style>
+    text{font-family:'IBM Plex Sans',system-ui,sans-serif}
+    .h1{fill:#E9E4D6;font-size:22px;font-weight:700}
+    .sub{fill:#8A9BB4;font-size:13px}
+    .lab{fill:#8A9BB4;font-size:12px;font-weight:600}
+    .chip{fill:#E9E4D6;font-size:12px;font-weight:600}
+    .small{fill:#8A9BB4;font-size:11px}
+  </style>
+  <rect x="1" y="1" width="958" height="418" rx="16" fill="#131A24" stroke="#8A9BB4" stroke-opacity="0.25"/>
+  <text class="h1" x="36" y="42">Three levels, one curve</text>
+  <text class="sub" x="36" y="66">Analytic net dealer GEX across strikes (schematic — not a live chart).</text>
+
+  <rect x="48" y="96" width="864" height="250" rx="12" fill="#0B0F17" stroke="#8A9BB4" stroke-opacity="0.2"/>
+
+  <line x1="80" y1="220" x2="880" y2="220" stroke="#8A9BB4" stroke-opacity="0.35" stroke-dasharray="5 5"/>
+  <text class="small" x="80" y="212">net GEX = 0</text>
+
+  <text class="small" x="80" y="330">strikes →</text>
+  <text class="small" x="80" y="118">+ dealer γ</text>
+  <text class="small" x="80" y="318">− dealer γ</text>
+
+  <path d="M100,280 C180,300 220,290 280,268 C340,245 380,230 430,220 C480,210 520,175 580,150 C640,125 700,130 760,145 C820,160 850,180 870,195"
+        fill="none" stroke="#5E8BC4" stroke-width="2.5"/>
+
+  <!-- put wall — warningOrange (fault/negative pole, allowed) -->
+  <line x1="240" y1="120" x2="240" y2="300" stroke="#E07A3F" stroke-width="1.5" stroke-opacity="0.9"/>
+  <circle cx="240" cy="280" r="6" fill="#E07A3F"/>
+  <rect x="168" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#E07A3F" stroke-opacity="0.55"/>
+  <text class="chip" x="184" y="118" fill="#E07A3F">Put wall</text>
+  <text class="small" x="168" y="340">most negative dealer γ</text>
+
+  <!-- gamma flip — brand amber -->
+  <line x1="430" y1="120" x2="430" y2="300" stroke="#F2A93B" stroke-width="2"/>
+  <circle cx="430" cy="220" r="7" fill="#F2A93B"/>
+  <rect x="368" y="100" width="124" height="26" rx="6" fill="#1B2432" stroke="#F2A93B" stroke-opacity="0.55"/>
+  <text class="chip" x="384" y="118" fill="#F2A93B">Gamma flip</text>
+  <text class="small" x="368" y="340">zero-crossing (regime)</text>
+
+  <!-- call wall — signal (positive pole, allowed) -->
+  <line x1="700" y1="120" x2="700" y2="300" stroke="#5E8BC4" stroke-width="1.5" stroke-opacity="0.9"/>
+  <circle cx="700" cy="138" r="6" fill="#5E8BC4"/>
+  <rect x="628" y="100" width="144" height="26" rx="6" fill="#1B2432" stroke="#5E8BC4" stroke-opacity="0.55"/>
+  <text class="chip" x="644" y="118" fill="#5E8BC4">Call wall</text>
+  <text class="small" x="628" y="340">most positive dealer γ</text>
+
+  <circle cx="500" cy="205" r="5" fill="#E9E4D6"/>
+  <text class="lab" x="510" y="200" fill="#E9E4D6">spot (GEX basis)</text>
+
+  <text class="sub" x="36" y="390">Walls pick extremes of dealer γ · flip is where the curve crosses zero · they can sit far apart when the profile is skewed.</text>
+</svg>

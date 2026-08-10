@@ -21,20 +21,12 @@ interface BlogArticle {
 /** The featured articles. Order = display order. Slugs must match `docs/blog/build_html.py`. */
 export const BLOG_ARTICLES: BlogArticle[] = [
   {
-    slug: 'building-a-team-of-ai-roles',
-    title: "We Didn't Hire a Team. We Built One — Out of AI Sessions.",
+    slug: 'how-we-read-dealer-structure',
+    title: 'How We Read Dealer Structure',
     description:
-      'How Convexa ships software using a relay of role-playing AI sessions, a shared rulebook, ' +
-      'and a habit of squeezing every conversation down to just its decisions.',
-    tag: 'How we build',
-  },
-  {
-    slug: 'system-analysis',
-    title: 'System Analysis — the team-of-AI-roles as a solo-dev build tool',
-    description:
-      'The candid, living self-analysis behind the story: what the delivery system actually is, ' +
-      "what's load-bearing, where it fails, and what's next. Unvarnished — weaknesses included.",
-    tag: 'Deep dive',
+      'Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually computes, ' +
+      'on what basis, and where the read is weak.',
+    tag: 'Methodology',
   },
 ];
 
@@ -54,8 +46,8 @@ export function BlogPage() {
           Blog
         </Typography>
         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          How Convexa is built — a small studio of role-playing AI sessions, and the candid
-          engineering notes behind it.
+          How we read the options book — dealer structure, score honesty, and the two clocks on the
+          desk. Longer form of the in-app Methodology page.
         </Typography>
       </Stack>
 

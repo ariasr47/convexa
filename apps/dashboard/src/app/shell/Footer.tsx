@@ -39,7 +39,7 @@ export function Footer() {
               sx={{ color: 'text.secondary', width: 'fit-content' }}
               data-testid="footer-blog-link"
             >
-              Blog — how Convexa is built
+              Blog — how we read structure
             </Link>
           </Stack>
           <Typography

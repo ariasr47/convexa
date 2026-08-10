@@ -77,7 +77,7 @@ describe('§8-3 · fonts self-hosted, same-origin only', () => {
   it('globs/raws are not vacuous', () => {
     expect(indexHtml.length).toBeGreaterThan(100);
     expect(stylesCss).toContain('@font-face');
-    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(2);
+    expect(Object.keys(BLOG_PAGES).length).toBeGreaterThanOrEqual(1);
     expect(Object.keys(APP_SOURCES).length).toBeGreaterThan(40);
   });
 

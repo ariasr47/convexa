@@ -19,21 +19,12 @@ IMG = HERE / "img"
 
 ARTICLES = [
     {
-        "md": HERE / "building-a-team-of-ai-roles.md",
-        "slug": "building-a-team-of-ai-roles",
-        "title": "We Didn't Hire a Team. We Built One — Out of AI Sessions.",
+        "md": HERE / "how-we-read-dealer-structure.md",
+        "slug": "how-we-read-dealer-structure",
+        "title": "How We Read Dealer Structure",
         "description": (
-            "How Convexa ships software using a relay of role-playing AI sessions, a shared "
-            "rulebook, and a habit of squeezing every conversation down to just its decisions."
-        ),
-    },
-    {
-        "md": REPO / "docs" / "SYSTEM_ANALYSIS.md",
-        "slug": "system-analysis",
-        "title": "System Analysis — the team-of-AI-roles as a solo-dev build tool",
-        "description": (
-            "The candid, living self-analysis behind the AI-team blog post: what the delivery "
-            "system actually is, what's load-bearing, where it fails, and what's next."
+            "Walls, the gamma flip, GEX, score, and two data speeds — what Convexa actually "
+            "computes, on what basis, and where the read is weak."
         ),
     },
 ]
