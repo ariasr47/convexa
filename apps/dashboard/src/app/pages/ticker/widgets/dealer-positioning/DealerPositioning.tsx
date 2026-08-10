@@ -9,6 +9,7 @@ import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, OffExchange, Signals } from '@convexa/api';
 import { Box } from '@mui/material';
+import { memo } from 'react';
 import {
   dealerPositioningSubtitle,
   fmtUsdCompact,
@@ -40,7 +41,7 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function DealerPositioning({
+export const DealerPositioning = memo(function DealerPositioning({
   m,
   offExchange,
   volOiThreshold,
@@ -176,6 +177,6 @@ export function DealerPositioning({
       </Box>
     </Widget>
   );
-}
+});
 
 export default DealerPositioning;

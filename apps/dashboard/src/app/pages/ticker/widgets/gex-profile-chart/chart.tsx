@@ -2,7 +2,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import type { StrikeRow } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import {
   Bar,
   BarChart,
@@ -25,6 +25,44 @@ interface Props {
 
 const MONO = typographyTokens.monoFontFamily;
 const fmtM = (v: number) => `$${(v / 1e6).toFixed(1)}M`;
+
+/** Module-scope tooltip — stable identity so Recharts does not remount on every parent render. */
+function GexProfileTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: StrikeRow }[];
+}) {
+  const theme = useTheme();
+  if (!active || !payload?.length) return null;
+  const r = payload[0].payload;
+  return (
+    <Box
+      sx={{
+        background: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 1,
+        px: 1.25,
+        py: 0.75,
+      }}
+    >
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        Strike ${r.strike}
+      </Typography>
+      <Typography variant="body2">Net GEX (gamma): {fmtM(r.net_gex)}</Typography>
+      {r.net_dex != null && (
+        <Typography variant="body2">Net DEX (delta): {fmtM(r.net_dex)}</Typography>
+      )}
+      {r.vol_oi_ratio != null && (
+        <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>
+      )}
+      {r.volume != null && (
+        <Typography variant="body2">Volume: {r.volume.toLocaleString()} contracts</Typography>
+      )}
+    </Box>
+  );
+}
 
 /** The readable strike window around spot, always wide enough to include the walls it labels.
  *  Shared with the section wrapper so it can decide whether to render the widget at all. */
@@ -67,7 +105,14 @@ export function GexLegend() {
  * / gamma flip / live price are dashed reference lines. Wide + compact (uses horizontal space, short
  * height); each bar hovers a per-strike tooltip (GEX · DEX · Vol/OI · volume).
  */
-export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, liveSpot }: Props) {
+export const GexProfileChart = memo(function GexProfileChart({
+  strikes,
+  spot,
+  callWall,
+  putWall,
+  gammaFlip,
+  liveSpot,
+}: Props) {
   const theme = useTheme();
   const green = theme.palette.success.main;
   const red = theme.palette.error.main;
@@ -87,42 +132,6 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
     );
 
   const isWall = (k: number) => k === callWall || k === putWall;
-
-  const ProfileTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: { payload: StrikeRow }[];
-  }) => {
-    if (!active || !payload?.length) return null;
-    const r = payload[0].payload;
-    return (
-      <Box
-        sx={{
-          background: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 1,
-          px: 1.25,
-          py: 0.75,
-        }}
-      >
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Strike ${r.strike}
-        </Typography>
-        <Typography variant="body2">Net GEX (gamma): {fmtM(r.net_gex)}</Typography>
-        {r.net_dex != null && (
-          <Typography variant="body2">Net DEX (delta): {fmtM(r.net_dex)}</Typography>
-        )}
-        {r.vol_oi_ratio != null && (
-          <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>
-        )}
-        {r.volume != null && (
-          <Typography variant="body2">Volume: {r.volume.toLocaleString()} contracts</Typography>
-        )}
-      </Box>
-    );
-  };
 
   // De-collide the three reference-line labels: each gets a fixed vertical slot above the plot so
   // they stay legible even when two lines snap to the same/adjacent strike (higher slot = higher row).
@@ -161,7 +170,7 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
             tickLine={false}
             axisLine={false}
           />
-          <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<ProfileTooltip />} />
+          <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<GexProfileTooltip />} />
           <ReferenceLine y={0} stroke={theme.palette.divider} />
           {/* Stage-1 rebind (§3.3-1, color slots ONLY — orientation/frame/geometry LOCKED):
               spot = quiet structural anchor (steel), flip = THE amber line the brand owns,
@@ -205,6 +214,6 @@ export function GexProfileChart({ strikes, spot, callWall, putWall, gammaFlip, l
       </ResponsiveContainer>
     </Box>
   );
-}
+});
 
 export default GexProfileChart;

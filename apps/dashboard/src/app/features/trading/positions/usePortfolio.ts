@@ -28,7 +28,15 @@ import {
   TickerBundle,
   TrackedContract,
 } from '@convexa/api';
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { compositeLimitWouldFill, legContractKey, netLimitDollarsFor } from './composeMark';
 import { cloneConfig, configEqual, normalizeViewConfig } from './defaults';
 import { LIMIT_FILL_BASIS, resolveManualFill } from './entry';
@@ -147,6 +155,10 @@ export function usePortfolio(
   isLive: boolean,
   streamOffline: boolean,
 ) {
+  // Defer mark recompute under bursty SSE so UI chrome stays responsive (§3.8 Phase C).
+  const liveDeferred = useDeferredValue(live);
+  const isLiveDeferred = useDeferredValue(isLive);
+  const streamOfflineDeferred = useDeferredValue(streamOffline);
   const [positions, setPositions] = useState<SimPosition[]>(() => allPositions());
   const [historyVersion, setHistoryVersion] = useState(0);
   const [custom, setCustom] = useState<CustomizationState>(() => getCustomization());
@@ -170,7 +182,7 @@ export function usePortfolio(
   }, [storeVersion, refreshPositions]);
 
   const m = data?.market_state;
-  const session = live?.market_session ?? null;
+  const session = liveDeferred?.market_session ?? null;
   const tier = data?.signals.opportunity_tier ?? 'dormant';
   const servedAt = data?.meta.served_at;
 
@@ -241,7 +253,7 @@ export function usePortfolio(
     }
     return [...set];
   }, [simPositions]);
-  const spots = useTickerSpots(legTickers, data, live, focusedTicker);
+  const spots = useTickerSpots(legTickers, data, liveDeferred, focusedTicker);
 
   // ---- Per-LEG mark (computed each render; last-good mark kept for offline) --------------------
   // ONE resolver, shared verbatim with the broker book's `useBrokerMarks` (`model/legMark.ts`), so
@@ -254,14 +266,14 @@ export function usePortfolio(
         leg: l,
         spot: spots.spotOf(l.ticker),
         liveUnderlying: spots.liveUnderlyingOf(l.ticker),
-        isLive,
+        isLive: isLiveDeferred,
         marketSession: session,
-        streamOffline,
+        streamOffline: streamOfflineDeferred,
         lastMark: lastMarkRef.current.get(l.id) ?? null,
         tracked: key != null ? (contractLive[key]?.tracked ?? null) : null,
       });
     },
-    [contractLive, spots, isLive, session, streamOffline],
+    [contractLive, spots, isLiveDeferred, session, streamOfflineDeferred],
   );
 
   const legMarksById = useMemo(() => {
@@ -351,10 +363,10 @@ export function usePortfolio(
       const view = viewById.get(id);
       if (!view || view.position.status !== 'open' || view.pl_dollar == null) return null;
       const anchor = trends.sessionAnchor(id);
-      return anchor != null && !streamOffline ? view.pl_dollar - anchor : null;
+      return anchor != null && !streamOfflineDeferred ? view.pl_dollar - anchor : null;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [viewById, streamOffline, historyVersion],
+    [viewById, streamOfflineDeferred, historyVersion],
   );
 
   // ---- Keep last-good mark + feed the trend/session ring buffers (live-derived, ephemeral) ----
@@ -373,7 +385,7 @@ export function usePortfolio(
           if (res?.mark != null) lastMarkRef.current.set(legId, res.mark);
         }
         trends.record(p.id, view.pl_dollar);
-      } else if (streamOffline) {
+      } else if (streamOfflineDeferred) {
         trends.recordBreak(p.id); // gap = broken line (never 0/interpolated)
       }
     }
@@ -383,11 +395,11 @@ export function usePortfolio(
     // `spots` (R8) joins them so a FOREIGN ticker's spot landing also refreshes the last-known
     // cache — it is a `useMemo`'d value, so it cannot re-arm this effect from its own writes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractLive, spots, live?.mid, streamOffline]);
+  }, [contractLive, spots, liveDeferred?.mid, streamOfflineDeferred]);
 
   // ---- Resting-limit fill lifecycle (fills only on a LIVE cross at the limit price) -----------
   useEffect(() => {
-    if (streamOffline || !isLive) return; // no fills off a non-live mark
+    if (streamOfflineDeferred || !isLiveDeferred) return; // no fills off a non-live mark
     for (const view of views) {
       const sp = view.position;
       if (sp.status !== 'pending') continue;
@@ -405,7 +417,7 @@ export function usePortfolio(
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contractLive, spots, live?.mid, streamOffline, isLive]);
+  }, [contractLive, spots, liveDeferred?.mid, streamOfflineDeferred, isLiveDeferred]);
 
   // ---- Decision records ----------------------------------------------------------------------
   /**

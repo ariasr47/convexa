@@ -1,9 +1,13 @@
 /**
  * useTickerPageModel — container hook for the Ticker page data plane.
  *
- * Owns stream + REST bundle + structure history + universe membership + structure age.
+ * Owns stream **connection** (SSE lifecycle → liveTapeStore), REST bundle, structure history,
+ * universe membership, structure age. Live **payloads** are read via `useLiveTape()` in
+ * consumers that need ticks (§3.8 Phase C) — not re-exported here as React state, so the page
+ * model does not re-render the whole board on every tape update.
+ *
  * Does NOT own: portfolio book, AI rec, trade dialogs, persona state (host still owns those
- * because they couple to entry/gate UI). Board can stay presentational over this model.
+ * because they couple to entry/gate UI).
  */
 import { useMemo } from 'react';
 import { useStructureHistory } from './useStructureHistory';
@@ -13,7 +17,7 @@ import {
   type TickerBundleApi,
   type UseTickerBundleArgs,
 } from './useTickerBundle';
-import { useTickerStream } from './useTickerStream';
+import { useTickerStreamConnection } from './useTickerStream';
 import { useUniverseMembership } from './useUniverseMembership';
 
 export interface UseTickerPageModelArgs {
@@ -26,7 +30,6 @@ export interface UseTickerPageModelArgs {
 
 export interface TickerPageModel {
   ticker: string;
-  stream: ReturnType<typeof useTickerStream>;
   bundle: TickerBundleApi;
   history: ReturnType<typeof useStructureHistory>;
   universeMembership: ReturnType<typeof useUniverseMembership>;
@@ -43,7 +46,8 @@ export function useTickerPageModel({
   positionQuery = null,
   takeDtePrefill,
 }: UseTickerPageModelArgs): TickerPageModel {
-  const stream = useTickerStream(ticker, selected);
+  // SSE lifecycle only — ticks go to liveTapeStore; this hook does not re-render on payloads.
+  useTickerStreamConnection(ticker, selected);
   const bundle = useTickerBundle({
     ticker,
     selected,
@@ -61,7 +65,6 @@ export function useTickerPageModel({
 
   return {
     ticker,
-    stream,
     bundle,
     history,
     universeMembership,

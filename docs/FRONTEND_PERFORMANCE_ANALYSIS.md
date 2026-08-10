@@ -493,3 +493,4 @@ Next concrete move: Phase A (CI rename + visualizer + budget script) immediately
 | 2026-08-10 | **Phase B shipped:** SVG sparklines; positions-no-charts gate; route prefetch; no forced charts manualChunk under Rolldown. |
 | 2026-08-10 | Bundle gate **primary metric → brotli q11** (gzip comparative); nginx gzip enabled for Docker path. |
 | 2026-08-10 | Precompress `.br`/`.gz` on prod build; Docker → `fholzer/nginx-brotli` with `brotli_static`/`gzip_static`. |
+| 2026-08-10 | **Phase C shipped:** liveTapeStore external SSE snapshot; memo structure widgets; deferred portfolio marks; GEX tooltip hoist. |

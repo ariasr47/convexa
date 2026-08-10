@@ -62,6 +62,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
+import { useLiveTape } from './liveTapeStore';
 import { useTickerPageModel } from './useTickerPageModel';
 import {
   DealerFlowProjection,
@@ -168,7 +169,7 @@ export function TickerDashboard() {
     right: OptionRight;
   } | null>(null);
 
-  // Data plane container — stream + REST + history + membership (presentational board below).
+  // Data plane container — REST + history + membership; SSE lifecycle only (ticks → liveTapeStore).
   const page = useTickerPageModel({
     ticker,
     selected,
@@ -176,7 +177,9 @@ export function TickerDashboard() {
     positionQuery,
     takeDtePrefill,
   });
-  const { live, streamOffline, isLive } = page.stream;
+  // Live tape subscription — portfolio / orders / deck need ticks. Structure widgets are memoized
+  // on REST props so they skip re-render when only the tape changes (§3.8 Phase C).
+  const { live, streamOffline, isLive } = useLiveTape();
   const { data, loading, error, refresh: load } = page.bundle;
   const structHist = page.history;
   const universeMembership = page.universeMembership;
@@ -498,7 +501,7 @@ export function TickerDashboard() {
         <Box data-testid="cold-load">
           <Box sx={{ mb: 1 }}>
             <Skeleton variant="text" width={280} sx={{ fontSize: '3rem' }} />
-            <LastTradeReadout live={live} streamOffline={streamOffline} />
+            <LastTradeReadout />
           </Box>
           <StatGridSkeleton />
         </Box>
@@ -620,8 +623,7 @@ export function TickerDashboard() {
                       spot={m.gex_spot ?? m.price}
                       callWall={m.call_wall}
                       putWall={m.put_wall}
-                      gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-                      liveSpot={isLive && live ? live.mid : null}
+                      gammaFlip={m.gamma_flip}
                       expLabel={expWindowLabel}
                       structureAgeSeconds={structureAgeSeconds}
                     />
@@ -644,7 +646,7 @@ export function TickerDashboard() {
 
                 {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
                 <ErrorBoundary variant="widget" label="Live tape">
-                  <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+                  <LiveTape m={m} />
                 </ErrorBoundary>
 
                 {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
@@ -662,12 +664,7 @@ export function TickerDashboard() {
                   onChangeReadPersona={setReadPersonaId}
                   fillHeight
                 />
-                <OrdersWidget
-                  ticker={ticker}
-                  live={live}
-                  isLive={isLive}
-                  streamOffline={streamOffline}
-                />
+                <OrdersWidget ticker={ticker} />
 
                 {/* ── 3. SUPPORTING CONTEXT (tertiary — less visual claim) ──────────── */}
                 <BoardZoneLabel zone="context">Supporting context</BoardZoneLabel>

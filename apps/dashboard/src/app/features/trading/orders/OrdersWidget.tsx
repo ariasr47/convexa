@@ -10,6 +10,7 @@
  * itself never dims. Status changes announce via an `aria-live="polite"` region (UX §8).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
+import { useLiveTape } from '@/pages/ticker/liveTapeStore';
 import { Widget } from '@/shared/ui/Widget';
 import type { LiveUpdate } from '@convexa/api';
 import { Box, Button, Chip, Collapse, Stack, Tooltip, Typography } from '@mui/material';
@@ -80,13 +81,23 @@ const srOnly = {
 
 interface Props {
   ticker: string;
-  live: LiveUpdate | null;
-  isLive: boolean;
-  streamOffline: boolean;
+  /** Optional overrides — defaults to liveTapeStore when on the ticker page (§3.8). */
+  live?: LiveUpdate | null;
+  isLive?: boolean;
+  streamOffline?: boolean;
 }
 
-export function OrdersWidget({ ticker, live, isLive, streamOffline }: Props) {
+export function OrdersWidget({
+  ticker,
+  live: liveProp,
+  isLive: isLiveProp,
+  streamOffline: offlineProp,
+}: Props) {
   const navigate = useNavigate();
+  const tape = useLiveTape();
+  const live = liveProp !== undefined ? liveProp : tape.live;
+  const isLive = isLiveProp !== undefined ? isLiveProp : tape.isLive;
+  const streamOffline = offlineProp !== undefined ? offlineProp : tape.streamOffline;
   const { orders, faulted, cancel } = useOrders();
   const symbol = ticker.toUpperCase();
   const mine = orders.filter((o) => o.ticker === symbol);

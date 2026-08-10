@@ -13,6 +13,7 @@ import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { Widget } from '@/shared/ui/Widget';
 import type { LiveUpdate, MarketState } from '@convexa/api';
 import { Box } from '@mui/material';
+import { useLiveTape } from '../../liveTapeStore';
 import { LIVE_TAPE_SUBTITLE_LIVE, LIVE_TAPE_SUBTITLE_OFFLINE } from '../_kit/copy';
 import { StatTile } from '../_kit/StatTile';
 
@@ -24,12 +25,17 @@ const GRID = {
 
 interface Props {
   m: MarketState;
-  live: LiveUpdate | null;
-  isLive: boolean;
-  streamOffline: boolean;
+  /** Optional overrides — defaults to liveTapeStore (§3.8). */
+  live?: LiveUpdate | null;
+  isLive?: boolean;
+  streamOffline?: boolean;
 }
 
-export function LiveTape({ m, live, isLive, streamOffline }: Props) {
+export function LiveTape({ m, live: liveProp, isLive: isLiveProp, streamOffline: offlineProp }: Props) {
+  const tape = useLiveTape();
+  const live = liveProp !== undefined ? liveProp : tape.live;
+  const isLive = isLiveProp !== undefined ? isLiveProp : tape.isLive;
+  const streamOffline = offlineProp !== undefined ? offlineProp : tape.streamOffline;
   // Live value-flash on SSE updates — ONLY while genuinely live (frozen on an SSE drop, never a stale
   // flash) `[live-vs-static-isolation]`. VWAP is a static bundle field (no offline, no flash).
   const active = isLive && !streamOffline;

@@ -9,6 +9,7 @@ import { Widget } from '@/shared/ui/Widget';
 import type { TermStructure } from '@convexa/api';
 import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { memo } from 'react';
 import { Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
 import { sampleTermPoints, termTip, withStructureAge } from '../_kit/copy';
 
@@ -33,37 +34,42 @@ interface Props {
   structureAgeSeconds?: number | null;
 }
 
-export function TermStructureCard({ termStructure, structureAgeSeconds = null }: Props) {
+/** Module-scope tooltip — stable identity across parent re-renders. */
+function TermPointTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: { dte: number; expiration: string; atm_iv: number } }[];
+}) {
+  const theme = useTheme();
+  if (!active || !payload?.length) return null;
+  const p = payload[0].payload;
+  return (
+    <Box
+      sx={{
+        background: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 1,
+        px: 1.25,
+        py: 0.75,
+      }}
+    >
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        {p.dte}d · {p.expiration}
+      </Typography>
+      <Typography variant="body2">ATM IV {p.atm_iv.toFixed(1)}%</Typography>
+    </Box>
+  );
+}
+
+export const TermStructureCard = memo(function TermStructureCard({
+  termStructure,
+  structureAgeSeconds = null,
+}: Props) {
   const theme = useTheme();
   const termSampled = termStructure ? sampleTermPoints(termStructure.points) : [];
   const unavailable = termStructure == null || termSampled.length === 0;
-
-  const TermPointTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: { payload: { dte: number; expiration: string; atm_iv: number } }[];
-  }) => {
-    if (!active || !payload?.length) return null;
-    const p = payload[0].payload;
-    return (
-      <Box
-        sx={{
-          background: theme.palette.background.paper,
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 1,
-          px: 1.25,
-          py: 0.75,
-        }}
-      >
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {p.dte}d · {p.expiration}
-        </Typography>
-        <Typography variant="body2">ATM IV {p.atm_iv.toFixed(1)}%</Typography>
-      </Box>
-    );
-  };
 
   const stateLabel =
     unavailable || !termStructure || termStructure.points.length < 2 ? '—' : termStructure.state;
@@ -123,6 +129,6 @@ export function TermStructureCard({ termStructure, structureAgeSeconds = null }:
       </Box>
     </Widget>
   );
-}
+});
 
 export default TermStructureCard;

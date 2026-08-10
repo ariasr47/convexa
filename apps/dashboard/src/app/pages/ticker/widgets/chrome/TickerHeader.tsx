@@ -23,6 +23,7 @@ import { Refused } from '@/shared/ui/Refused';
 import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
+import { useLiveTape } from '../../liveTapeStore';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 
@@ -103,12 +104,17 @@ export function TintChip({
 // LIVE-DERIVED (rides SSE only). Cold → shimmer; default → `● Last trade $X`; live-empty → honest
 // empty; offline → `⏸ Last trade $X` dimmed. Never the headline; never freezes a stale value.
 export function LastTradeReadout({
-  live,
-  streamOffline,
+  live: liveProp,
+  streamOffline: offlineProp,
 }: {
-  live: LiveUpdate | null;
-  streamOffline: boolean;
-}) {
+  live?: LiveUpdate | null;
+  streamOffline?: boolean;
+} = {}) {
+  // Prefer liveTapeStore when props omitted (§3.8 Phase C).
+  // Lazy import avoided — store is light and ticker-only.
+  const tape = useLiveTape();
+  const live = liveProp !== undefined ? liveProp : tape.live;
+  const streamOffline = offlineProp !== undefined ? offlineProp : tape.streamOffline;
   // Flash the live last-trade on a genuine print (live only; frozen when offline / not live).
   const ltActive = (live?.live ?? false) && !streamOffline;
   const ltFlash = useFlashOnChange(ltActive ? (live?.last_trade ?? null) : null, {
