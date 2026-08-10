@@ -20,7 +20,7 @@ Prefer code + this file over chat history.
 | 6 | Design polish / keyboard | **Done** (local — skip link, scan hit targets, score focus) |
 | 7 | Trust/methodology surface | **Done** (local — `/methodology` + footer/scanner links) |
 
-**Quant moat:** score drivers on scan wire (in progress this session) · structure history · Postgres scan store · vol-normalized GEX · portfolio reassess.
+**Quant moat:** score drivers ✓ · Postgres ScanStore (this session) · structure history · vol-normalized GEX · portfolio reassess.
 
 ---
 

@@ -1,8 +1,11 @@
-//! Durable scan row store (latest-wins). Score path never reads this.
+//! Durable scan row store (latest-wins). Score path never reads this as an input.
 //!
-//! Backends: in-memory (tests) and JSON-on-disk durable store (default).
-//! Disk writes are **debounced** (~2s) so fast/slow lanes don't rewrite the
-//! whole file on every row upsert.
+//! Backends:
+//! - **memory** / **JSON-on-disk** (default local/dev): single process, debounced flush.
+//! - **Postgres** (`--features postgres` + `DATABASE_URL`): multi-instance Railway.
+//!
+//! Disk writes (JSON) are **debounced** (~2s) so fast/slow lanes don't rewrite the whole
+//! file on every row upsert.
 
 use crate::error::AppResult;
 use serde::{Deserialize, Serialize};
@@ -71,14 +74,162 @@ struct DiskState {
 /// Debounce interval for durable JSON flush.
 const FLUSH_INTERVAL: Duration = Duration::from_secs(2);
 
+/// Process-wide scan store — JSON (local) or Postgres (multi-instance).
 #[derive(Clone)]
-pub struct ScanStore {
+pub enum ScanStore {
+    Json(JsonScanStore),
+    #[cfg(feature = "postgres")]
+    Postgres(crate::db::pg_scan::PgScanStore),
+}
+
+impl ScanStore {
+    pub fn memory() -> Self {
+        Self::Json(JsonScanStore::memory())
+    }
+
+    /// Open durable JSON store at `sqlite_path` (extension rewritten to `.json`).
+    /// `postgres_url` is ignored here — prefer [`ScanStore::open_postgres`] when the pool exists.
+    pub async fn open(sqlite_path: &Path, postgres_url: Option<&str>) -> AppResult<Self> {
+        if postgres_url.is_some_and(|u| !u.trim().is_empty()) {
+            warn!(
+                "scan store: postgres URL passed to JSON open(); use ScanStore::open_postgres \
+                 after the pool is ready. Using file store."
+            );
+        }
+        Ok(Self::Json(JsonScanStore::open(sqlite_path).await?))
+    }
+
+    #[cfg(feature = "postgres")]
+    pub fn open_postgres(pg: crate::db::postgres::Pg) -> Self {
+        info!(backend = "postgres", "scan store: postgres (shared rows + heartbeat)");
+        Self::Postgres(crate::db::pg_scan::PgScanStore::new(pg))
+    }
+
+    pub async fn upsert_row(&self, row: ScanRow) {
+        match self {
+            Self::Json(s) => s.upsert_row(row).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                if let Err(e) = s.upsert_row(row).await {
+                    warn!(error = %e, "scan store postgres upsert_row failed");
+                }
+            }
+        }
+    }
+
+    pub async fn upsert_rows(&self, rows: impl IntoIterator<Item = ScanRow>) {
+        match self {
+            Self::Json(s) => s.upsert_rows(rows).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                let v: Vec<ScanRow> = rows.into_iter().collect();
+                if let Err(e) = s.upsert_rows(v).await {
+                    warn!(error = %e, "scan store postgres upsert_rows failed");
+                }
+            }
+        }
+    }
+
+    pub async fn read_rows(&self, symbols: Option<&[String]>) -> Vec<ScanRow> {
+        match self {
+            Self::Json(s) => s.read_rows(symbols).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.read_rows(symbols).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres read_rows failed");
+                    Vec::new()
+                }
+            },
+        }
+    }
+
+    pub async fn get_row(&self, symbol: &str) -> Option<ScanRow> {
+        match self {
+            Self::Json(s) => s.get_row(symbol).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.get_row(symbol).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres get_row failed");
+                    None
+                }
+            },
+        }
+    }
+
+    pub async fn write_heartbeat(&self, hb: SweepHeartbeat) {
+        match self {
+            Self::Json(s) => s.write_heartbeat(hb).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                if let Err(e) = s.write_heartbeat(hb).await {
+                    warn!(error = %e, "scan store postgres write_heartbeat failed");
+                }
+            }
+        }
+    }
+
+    pub async fn read_heartbeat(&self) -> Option<SweepHeartbeat> {
+        match self {
+            Self::Json(s) => s.read_heartbeat().await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.read_heartbeat().await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres read_heartbeat failed");
+                    None
+                }
+            },
+        }
+    }
+
+    pub async fn write_bundle_blob(&self, blob: BundleBlob) {
+        match self {
+            Self::Json(s) => s.write_bundle_blob(blob).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                if let Err(e) = s.write_bundle_blob(blob).await {
+                    warn!(error = %e, "scan store postgres write_bundle failed");
+                }
+            }
+        }
+    }
+
+    pub async fn read_bundle_blob(&self, symbol: &str) -> Option<BundleBlob> {
+        match self {
+            Self::Json(s) => s.read_bundle_blob(symbol).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.read_bundle_blob(symbol).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres read_bundle failed");
+                    None
+                }
+            },
+        }
+    }
+
+    /// Force a durable flush (JSON only; Postgres writes are immediate).
+    pub async fn flush(&self) {
+        match self {
+            Self::Json(s) => s.flush().await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(_) => {}
+        }
+    }
+}
+
+// ---- JSON / memory backend --------------------------------------------------------------------
+
+#[derive(Clone)]
+pub struct JsonScanStore {
     inner: Arc<RwLock<DiskState>>,
     path: Option<PathBuf>,
     dirty: Arc<AtomicBool>,
 }
 
-impl ScanStore {
+impl JsonScanStore {
     pub fn memory() -> Self {
         Self {
             inner: Arc::new(RwLock::new(DiskState::default())),
@@ -87,15 +238,7 @@ impl ScanStore {
         }
     }
 
-    /// Open durable store at `sqlite_path` (JSON file; extension rewritten to `.json`).
-    /// `postgres_url` is accepted for config compatibility (logged, not used yet).
-    pub async fn open(sqlite_path: &Path, postgres_url: Option<&str>) -> AppResult<Self> {
-        if postgres_url.is_some_and(|u| !u.trim().is_empty()) {
-            warn!(
-                "scan store: Postgres URL set but pure-Rust JSON backend is active \
-                 (no C toolchain for libsqlite/postgres on this host). Using file store."
-            );
-        }
+    pub async fn open(sqlite_path: &Path) -> AppResult<Self> {
         let path = normalize_json_path(sqlite_path);
         if let Some(parent) = path.parent() {
             if !parent.as_os_str().is_empty() {
@@ -145,7 +288,6 @@ impl ScanStore {
         }
     }
 
-    /// Force a durable flush (tests / graceful shutdown).
     pub async fn flush(&self) {
         if self.path.is_none() {
             return;
@@ -159,13 +301,11 @@ impl ScanStore {
             return;
         };
         let guard = self.inner.read().await;
-        // Compact JSON — pretty-print was a major cost on every flush.
         let ok = serde_json::to_string(&*guard);
         drop(guard);
         match ok {
             Ok(json) => {
                 let path = path.clone();
-                // Don't block the async runtime on disk I/O.
                 let result = tokio::task::spawn_blocking(move || {
                     let tmp = path.with_extension("json.tmp");
                     std::fs::write(&tmp, json)?;
@@ -199,7 +339,6 @@ impl ScanStore {
         self.mark_dirty();
     }
 
-    /// Batch upsert without intermediate dirty storms (still one dirty flag).
     pub async fn upsert_rows(&self, rows: impl IntoIterator<Item = ScanRow>) {
         let mut guard = self.inner.write().await;
         for mut row in rows {
@@ -293,28 +432,30 @@ mod tests {
         hex::encode(b)
     }
 
+    fn sample_row(sym: &str, score: f64) -> ScanRow {
+        ScanRow {
+            symbol: sym.into(),
+            price: Some(400.0),
+            chg_pct: Some(1.0),
+            score: Some(score),
+            tier: Some("watch".into()),
+            regime: Some("positive_gamma".into()),
+            vol_regime: Some("neutral".into()),
+            flip: Some(395.0),
+            dist_to_flip_pct: Some(1.0),
+            call_wall: Some(410.0),
+            put_wall: Some(390.0),
+            dist_to_wall_pct: Some(-2.0),
+            as_of: 9.0,
+            status: "ok".into(),
+            score_drivers: None,
+        }
+    }
+
     #[tokio::test]
     async fn memory_roundtrip() {
         let store = ScanStore::memory();
-        store
-            .upsert_row(ScanRow {
-                symbol: "spy".into(),
-                price: Some(500.0),
-                chg_pct: Some(1.0),
-                score: Some(80.0),
-                tier: Some("actionable".into()),
-                regime: Some("positive_gamma".into()),
-                vol_regime: Some("iv_rich".into()),
-                flip: Some(495.0),
-                dist_to_flip_pct: Some(1.0),
-                call_wall: Some(510.0),
-                put_wall: Some(490.0),
-                dist_to_wall_pct: Some(-2.0),
-                as_of: 1.0,
-                status: "ok".into(),
-                score_drivers: None,
-            })
-            .await;
+        store.upsert_row(sample_row("spy", 80.0)).await;
         let rows = store.read_rows(Some(&["SPY".into()])).await;
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].symbol, "SPY");
@@ -326,25 +467,7 @@ mod tests {
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("scan.json");
         let store = ScanStore::open(&path, None).await.unwrap();
-        store
-            .upsert_row(ScanRow {
-                symbol: "QQQ".into(),
-                price: Some(400.0),
-                chg_pct: None,
-                score: Some(55.0),
-                tier: Some("watch".into()),
-                regime: None,
-                vol_regime: Some("neutral".into()),
-                flip: None,
-                dist_to_flip_pct: None,
-                call_wall: None,
-                put_wall: None,
-                dist_to_wall_pct: None,
-                as_of: 9.0,
-                status: "ok".into(),
-                score_drivers: None,
-            })
-            .await;
+        store.upsert_row(sample_row("QQQ", 55.0)).await;
         store
             .write_heartbeat(SweepHeartbeat {
                 updated_at: 10.0,
@@ -352,7 +475,6 @@ mod tests {
                 universe_size: 3,
             })
             .await;
-        // Debounced — force flush before re-open.
         store.flush().await;
         let store2 = ScanStore::open(&path, None).await.unwrap();
         let rows = store2.read_rows(None).await;

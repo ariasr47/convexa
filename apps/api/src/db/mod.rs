@@ -11,6 +11,8 @@ pub mod pg_auth;
 #[cfg(feature = "postgres")]
 pub mod pg_iv;
 #[cfg(feature = "postgres")]
+pub mod pg_scan;
+#[cfg(feature = "postgres")]
 pub mod postgres;
 
 /// True when this build includes the Postgres client and `DATABASE_URL` is set.

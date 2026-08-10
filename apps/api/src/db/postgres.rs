@@ -115,13 +115,23 @@ CREATE TABLE IF NOT EXISTS scan_rows (
     put_wall         DOUBLE PRECISION,
     dist_to_wall_pct DOUBLE PRECISION,
     as_of            DOUBLE PRECISION NOT NULL,
-    status           TEXT NOT NULL
+    status           TEXT NOT NULL,
+    score_drivers    TEXT
 );
+
+-- Additive column for pre-existing DBs that created scan_rows without score_drivers.
+ALTER TABLE scan_rows ADD COLUMN IF NOT EXISTS score_drivers TEXT;
 
 CREATE TABLE IF NOT EXISTS scan_heartbeat (
     id                    INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
     updated_at            DOUBLE PRECISION NOT NULL,
     sweep_last_completed  DOUBLE PRECISION,
     universe_size         INT NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS scan_bundles (
+    symbol       TEXT PRIMARY KEY,
+    as_of        DOUBLE PRECISION NOT NULL,
+    bundle_json  TEXT NOT NULL
 );
 "#;

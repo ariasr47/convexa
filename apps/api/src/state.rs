@@ -48,11 +48,6 @@ impl AppState {
         let massive = MassiveRestClient::new(&config)?;
         let gex_cache = GexCache::new(config.clone());
         let gex_flight = GexFlight::new();
-        let scan = ScanStore::open(
-            &config.scan_store_path,
-            config.scan_database_url.as_deref(),
-        )
-        .await?;
         let universe = match load_universe(&config.scan_universe_path) {
             Ok(u) => Some(Arc::new(u)),
             Err(e) => {
@@ -62,7 +57,7 @@ impl AppState {
         };
 
         // Durable backends: Postgres when built with `--features postgres` + DATABASE_URL;
-        // otherwise JSON-on-disk (local/dev).
+        // otherwise JSON-on-disk (local/dev). Open the pool BEFORE scan so scan can share it.
         #[cfg(feature = "postgres")]
         let pg = if let Some(url) = config.database_url.as_deref() {
             match crate::db::postgres::Pg::connect(url).await {
@@ -88,6 +83,20 @@ impl AppState {
                 );
             }
         }
+
+        // Scan store: Postgres when the pool is up (multi-replica safe); else JSON file.
+        #[cfg(feature = "postgres")]
+        let scan = if let Some(ref p) = pg {
+            ScanStore::open_postgres(p.clone())
+        } else {
+            ScanStore::open(&config.scan_store_path, None).await?
+        };
+        #[cfg(not(feature = "postgres"))]
+        let scan = ScanStore::open(
+            &config.scan_store_path,
+            config.scan_database_url.as_deref(),
+        )
+        .await?;
 
         #[cfg(feature = "postgres")]
         let auth_store = if let Some(ref p) = pg {
