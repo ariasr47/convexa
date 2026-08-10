@@ -102,118 +102,155 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
         "scanner starting"
     );
 
-    // Seed building rows so /api/scan is never empty.
-    let state_seed = state.clone();
-    let u_seed = universe.universe.clone();
+    // Boot sequence in one task so placeholder seed cannot race slow-lane ok writes:
+    // 1) ensure missing symbols only (never clobber durable ok rows on redeploy)
+    // 2) hydrate sweep_last_completed from shared heartbeat
+    // 3) start fast + slow lanes
+    let state_boot = state;
+    let universe_boot = universe;
+    let cfg_boot = cfg;
     tokio::spawn(async move {
-        let rows: Vec<_> = u_seed
-            .into_iter()
-            .map(|s| crate::services::scanner::projection::project_building(&s))
+        let placeholders: Vec<_> = universe_boot
+            .universe
+            .iter()
+            .map(|s| crate::services::scanner::projection::project_building(s))
             .collect();
-        state_seed.scan.upsert_rows(rows).await;
-    });
+        let inserted = state_boot
+            .scan
+            .ensure_rows_if_absent(placeholders)
+            .await;
+        info!(
+            inserted,
+            universe = universe_boot.universe.len(),
+            "scanner placeholders ensured (insert-if-absent only)"
+        );
 
-    let st = Arc::new(tokio::sync::Mutex::new(SweepState::new(
-        universe.universe.clone(),
-    )));
-
-    // Fast lane — always on. Prior-close / delayed snapshots still update prices overnight
-    // so /scanner is not stuck on seed "building" rows, and heartbeat stays fresh for the FE
-    // (banner threshold SWEEP_DOWN_AFTER_S ≈ 180s; idle-only heartbeats every 300s false-alarmed).
-    {
-        let state = state.clone();
-        let st = Arc::clone(&st);
-        let cfg_fast = LoopConfig {
-            fast_interval: cfg.fast_interval,
-            stale_after: cfg.stale_after,
-            idle_interval: cfg.idle_interval,
-            sweep: cfg.sweep,
-            market_hours_only: cfg.market_hours_only,
-            bands: cfg.bands,
-        };
-        tokio::spawn(async move {
-            loop {
-                let universe = {
-                    let guard = st.lock().await;
-                    guard.universe.clone()
-                };
-                let snaps = match state.massive.fetch_stock_snapshots(&universe).await {
-                    Ok(m) => m,
-                    Err(e) => {
-                        warn!(error = %e, "scanner fast tick: snapshot poll failed");
-                        Default::default()
-                    }
-                };
-                {
-                    let mut guard = st.lock().await;
-                    apply_fast_tick(&state, &mut guard, &cfg_fast, snaps).await;
+        let mut sweep = SweepState::new(universe_boot.universe.clone());
+        // Shared durable heartbeat: a restart must not treat a completed board as cold-start
+        // forever, and must not write None over a peer's completed pass (merge is also in store).
+        // Only hydrate when the board actually has structure — a legacy seed-clobber can leave
+        // sweep_last_completed set while every row is still `building`.
+        if let Some(hb) = state_boot.scan.read_heartbeat().await {
+            if let Some(completed) = hb.sweep_last_completed {
+                let existing = state_boot.scan.read_rows(None).await;
+                let any_ready = existing.iter().any(|r| {
+                    r.status == "ok" || r.status == "stale" || r.score.is_some() || r.as_of > 0.0
+                });
+                if any_ready {
+                    sweep.sweep_last_completed = Some(completed);
+                    info!(
+                        sweep_last_completed = completed,
+                        "scanner hydrated sweep_last_completed from durable heartbeat"
+                    );
+                } else {
+                    info!(
+                        sweep_last_completed = completed,
+                        rows = existing.len(),
+                        "scanner ignoring durable completed — board still building; catch-up forced"
+                    );
                 }
-                tokio::time::sleep(cfg_fast.fast_interval).await;
             }
-        });
-    }
+        }
+        let st = Arc::new(tokio::sync::Mutex::new(sweep));
 
-    // Slow lane — structure / score compute. Gated to vendor-covered hours by default, but
-    // cold-starts (never completed a full pass) keep computing so a deploy outside 04:00–20:00 ET
-    // still fills the board once.
-    {
-        let state = state.clone();
-        let st = Arc::clone(&st);
-        let cfg_slow = cfg;
-        tokio::spawn(async move {
-            let mut logged_idle = false;
-            loop {
-                let hours_open = should_sweep(true);
-                let need_catchup = {
-                    let guard = st.lock().await;
-                    guard.sweep_last_completed.is_none()
-                };
-                if cfg_slow.market_hours_only && !hours_open && !need_catchup {
-                    if !logged_idle {
-                        info!(
-                            idle_secs = cfg_slow.idle_interval.as_secs(),
-                            "scanner slow: outside vendor coverage → idling (full pass already done)"
-                        );
-                        logged_idle = true;
+        // Fast lane — always on. Prior-close / delayed snapshots still update prices overnight
+        // so /scanner is not stuck on seed "building" rows, and heartbeat stays fresh for the FE
+        // (banner threshold SWEEP_DOWN_AFTER_S ≈ 180s; idle-only heartbeats every 300s false-alarmed).
+        {
+            let state = state_boot.clone();
+            let st = Arc::clone(&st);
+            let cfg_fast = LoopConfig {
+                fast_interval: cfg_boot.fast_interval,
+                stale_after: cfg_boot.stale_after,
+                idle_interval: cfg_boot.idle_interval,
+                sweep: cfg_boot.sweep,
+                market_hours_only: cfg_boot.market_hours_only,
+                bands: cfg_boot.bands,
+            };
+            tokio::spawn(async move {
+                loop {
+                    let universe = {
+                        let guard = st.lock().await;
+                        guard.universe.clone()
+                    };
+                    let snaps = match state.massive.fetch_stock_snapshots(&universe).await {
+                        Ok(m) => m,
+                        Err(e) => {
+                            warn!(error = %e, "scanner fast tick: snapshot poll failed");
+                            Default::default()
+                        }
+                    };
+                    {
+                        let mut guard = st.lock().await;
+                        apply_fast_tick(&state, &mut guard, &cfg_fast, snaps).await;
                     }
-                    tokio::time::sleep(cfg_slow.idle_interval).await;
-                    continue;
+                    tokio::time::sleep(cfg_fast.fast_interval).await;
                 }
-                if hours_open {
-                    logged_idle = false;
-                } else if need_catchup {
-                    info!("scanner slow: cold-start catch-up outside market hours");
-                }
+            });
+        }
 
-                // Plan under lock (cheap), then release before any analytics I/O.
-                let plan = {
-                    let mut guard = st.lock().await;
-                    plan_slow_batch(&mut guard, &cfg_slow)
-                };
+        // Slow lane — structure / score compute. Gated to vendor-covered hours by default, but
+        // cold-starts (never completed a full pass) keep computing so a deploy outside 04:00–20:00 ET
+        // still fills the board once.
+        {
+            let state = state_boot.clone();
+            let st = Arc::clone(&st);
+            let cfg_slow = cfg_boot;
+            tokio::spawn(async move {
+                let mut logged_idle = false;
+                loop {
+                    let hours_open = should_sweep(true);
+                    let need_catchup = {
+                        let guard = st.lock().await;
+                        guard.sweep_last_completed.is_none()
+                    };
+                    if cfg_slow.market_hours_only && !hours_open && !need_catchup {
+                        if !logged_idle {
+                            info!(
+                                idle_secs = cfg_slow.idle_interval.as_secs(),
+                                "scanner slow: outside vendor coverage → idling (full pass already done)"
+                            );
+                            logged_idle = true;
+                        }
+                        tokio::time::sleep(cfg_slow.idle_interval).await;
+                        continue;
+                    }
+                    if hours_open {
+                        logged_idle = false;
+                    } else if need_catchup {
+                        info!("scanner slow: cold-start catch-up outside market hours");
+                    }
 
-                let Some(plan) = plan else {
+                    // Plan under lock (cheap), then release before any analytics I/O.
+                    let plan = {
+                        let mut guard = st.lock().await;
+                        plan_slow_batch(&mut guard, &cfg_slow)
+                    };
+
+                    let Some(plan) = plan else {
+                        tokio::task::yield_now().await;
+                        continue;
+                    };
+
+                    info!(
+                        batch = ?plan.batch,
+                        promoted = ?plan.promoted,
+                        "scanner slow cycle"
+                    );
+
+                    let results = run_slow_batch(&state, &plan, &cfg_slow).await;
+
+                    // Apply sched updates under lock (no vendor I/O).
+                    {
+                        let mut guard = st.lock().await;
+                        apply_slow_results(&state, &mut guard, results, plan.universe_size).await;
+                    }
+
                     tokio::task::yield_now().await;
-                    continue;
-                };
-
-                info!(
-                    batch = ?plan.batch,
-                    promoted = ?plan.promoted,
-                    "scanner slow cycle"
-                );
-
-                let results = run_slow_batch(&state, &plan, &cfg_slow).await;
-
-                // Apply sched updates under lock (no vendor I/O).
-                {
-                    let mut guard = st.lock().await;
-                    apply_slow_results(&state, &mut guard, results, plan.universe_size).await;
                 }
-
-                tokio::task::yield_now().await;
-            }
-        });
-    }
+            });
+        }
+    });
 }
 
 fn now_secs() -> f64 {

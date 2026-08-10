@@ -56,6 +56,7 @@ impl PgScanStore {
         let mut row = row;
         row.symbol = row.symbol.to_ascii_uppercase();
         let drivers = Self::drivers_json(&row.score_drivers);
+        // Refuse building→downgrade of a real board row (seed race / fast-lane lost update).
         sqlx::query(
             r#"INSERT INTO scan_rows (
                  symbol, price, chg_pct, score, tier, regime, vol_regime,
@@ -78,7 +79,11 @@ impl PgScanStore {
                  dist_to_wall_pct = EXCLUDED.dist_to_wall_pct,
                  as_of = EXCLUDED.as_of,
                  status = EXCLUDED.status,
-                 score_drivers = EXCLUDED.score_drivers"#,
+                 score_drivers = EXCLUDED.score_drivers
+               WHERE NOT (
+                 EXCLUDED.status = 'building'
+                 AND scan_rows.status IS DISTINCT FROM 'building'
+               )"#,
         )
         .bind(&row.symbol)
         .bind(row.price)
@@ -139,7 +144,11 @@ impl PgScanStore {
                      dist_to_wall_pct = EXCLUDED.dist_to_wall_pct,
                      as_of = EXCLUDED.as_of,
                      status = EXCLUDED.status,
-                     score_drivers = EXCLUDED.score_drivers"#,
+                     score_drivers = EXCLUDED.score_drivers
+                   WHERE NOT (
+                     EXCLUDED.status = 'building'
+                     AND scan_rows.status IS DISTINCT FROM 'building'
+                   )"#,
             )
             .bind(&row.symbol)
             .bind(row.price)
@@ -164,6 +173,61 @@ impl PgScanStore {
             .await
             .map_err(|e| AppError::Config(format!("postgres scan commit: {e}")))?;
         Ok(())
+    }
+
+    /// Insert rows only when the symbol is missing. Never overwrites ok/error/stale.
+    /// Used for cold-start placeholders so a redeploy cannot clobber a completed board.
+    pub async fn ensure_rows_if_absent(&self, rows: Vec<ScanRow>) -> AppResult<usize> {
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let mut inserted = 0usize;
+        let mut tx = self
+            .pg
+            .pool
+            .begin()
+            .await
+            .map_err(|e| AppError::Config(format!("postgres scan ensure tx: {e}")))?;
+        for mut row in rows {
+            row.symbol = row.symbol.to_ascii_uppercase();
+            if row.symbol.is_empty() {
+                continue;
+            }
+            let drivers = Self::drivers_json(&row.score_drivers);
+            let res = sqlx::query(
+                r#"INSERT INTO scan_rows (
+                     symbol, price, chg_pct, score, tier, regime, vol_regime,
+                     flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
+                     as_of, status, score_drivers
+                   ) VALUES (
+                     $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15
+                   )
+                   ON CONFLICT (symbol) DO NOTHING"#,
+            )
+            .bind(&row.symbol)
+            .bind(row.price)
+            .bind(row.chg_pct)
+            .bind(row.score)
+            .bind(&row.tier)
+            .bind(&row.regime)
+            .bind(&row.vol_regime)
+            .bind(row.flip)
+            .bind(row.dist_to_flip_pct)
+            .bind(row.call_wall)
+            .bind(row.put_wall)
+            .bind(row.dist_to_wall_pct)
+            .bind(row.as_of)
+            .bind(&row.status)
+            .bind(drivers)
+            .execute(&mut *tx)
+            .await
+            .map_err(|e| AppError::Config(format!("postgres scan ensure: {e}")))?;
+            inserted += res.rows_affected() as usize;
+        }
+        tx.commit()
+            .await
+            .map_err(|e| AppError::Config(format!("postgres scan ensure commit: {e}")))?;
+        Ok(inserted)
     }
 
     pub async fn read_rows(&self, symbols: Option<&[String]>) -> AppResult<Vec<ScanRow>> {
@@ -210,12 +274,23 @@ impl PgScanStore {
 
     pub async fn write_heartbeat(&self, hb: SweepHeartbeat) -> AppResult<()> {
         let universe = hb.universe_size as i32;
+        // Never let a fresh replica's in-memory `None` wipe a peer's completed pass.
+        // When both sides have a timestamp, keep the later one.
         sqlx::query(
             r#"INSERT INTO scan_heartbeat (id, updated_at, sweep_last_completed, universe_size)
                VALUES (1, $1, $2, $3)
                ON CONFLICT (id) DO UPDATE SET
                  updated_at = EXCLUDED.updated_at,
-                 sweep_last_completed = EXCLUDED.sweep_last_completed,
+                 sweep_last_completed = CASE
+                   WHEN EXCLUDED.sweep_last_completed IS NULL
+                     THEN scan_heartbeat.sweep_last_completed
+                   WHEN scan_heartbeat.sweep_last_completed IS NULL
+                     THEN EXCLUDED.sweep_last_completed
+                   ELSE GREATEST(
+                     EXCLUDED.sweep_last_completed,
+                     scan_heartbeat.sweep_last_completed
+                   )
+                 END,
                  universe_size = EXCLUDED.universe_size"#,
         )
         .bind(hb.updated_at)

@@ -214,6 +214,27 @@ impl ScanStore {
         }
     }
 
+    /// Cold-start placeholders only: insert missing symbols, never overwrite existing rows.
+    ///
+    /// Critical for Postgres multi-instance / redeploy: a full `upsert` of `building` shells
+    /// was wiping durable ok/score rows every process start (and could race after a full pass).
+    pub async fn ensure_rows_if_absent(&self, rows: impl IntoIterator<Item = ScanRow>) -> usize {
+        match self {
+            Self::Json(s) => s.ensure_rows_if_absent(rows).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => {
+                let v: Vec<ScanRow> = rows.into_iter().collect();
+                match s.ensure_rows_if_absent(v).await {
+                    Ok(n) => n,
+                    Err(e) => {
+                        warn!(error = %e, "scan store postgres ensure_rows_if_absent failed");
+                        0
+                    }
+                }
+            }
+        }
+    }
+
     pub async fn read_rows(&self, symbols: Option<&[String]>) -> Vec<ScanRow> {
         match self {
             Self::Json(s) => s.read_rows(symbols).await,
@@ -251,6 +272,22 @@ impl ScanStore {
                     warn!(error = %e, "scan store postgres write_heartbeat failed");
                 }
             }
+        }
+    }
+
+    /// Merge heartbeat writes so a fresh instance cannot null out `sweep_last_completed`.
+    pub fn merge_heartbeat(prev: Option<&SweepHeartbeat>, new: SweepHeartbeat) -> SweepHeartbeat {
+        let prev_completed = prev.and_then(|p| p.sweep_last_completed);
+        let completed = match (new.sweep_last_completed, prev_completed) {
+            (Some(a), Some(b)) => Some(a.max(b)),
+            (Some(a), None) => Some(a),
+            (None, Some(b)) => Some(b),
+            (None, None) => None,
+        };
+        SweepHeartbeat {
+            updated_at: new.updated_at,
+            sweep_last_completed: completed,
+            universe_size: new.universe_size,
         }
     }
 
@@ -447,7 +484,15 @@ impl JsonScanStore {
         let key = row.symbol.to_ascii_uppercase();
         let mut row = row;
         row.symbol = key.clone();
-        self.inner.write().await.rows.insert(key, row);
+        let mut guard = self.inner.write().await;
+        if let Some(prev) = guard.rows.get(&key) {
+            if row.status == "building" && prev.status != "building" {
+                // Match Postgres guard: never downgrade a real board row to building.
+                return;
+            }
+        }
+        guard.rows.insert(key, row);
+        drop(guard);
         self.mark_dirty();
     }
 
@@ -456,10 +501,37 @@ impl JsonScanStore {
         for mut row in rows {
             let key = row.symbol.to_ascii_uppercase();
             row.symbol = key.clone();
+            if let Some(prev) = guard.rows.get(&key) {
+                if row.status == "building" && prev.status != "building" {
+                    continue;
+                }
+            }
             guard.rows.insert(key, row);
         }
         drop(guard);
         self.mark_dirty();
+    }
+
+    pub async fn ensure_rows_if_absent(&self, rows: impl IntoIterator<Item = ScanRow>) -> usize {
+        let mut guard = self.inner.write().await;
+        let mut inserted = 0usize;
+        for mut row in rows {
+            let key = row.symbol.to_ascii_uppercase();
+            if key.is_empty() {
+                continue;
+            }
+            if guard.rows.contains_key(&key) {
+                continue;
+            }
+            row.symbol = key.clone();
+            guard.rows.insert(key, row);
+            inserted += 1;
+        }
+        drop(guard);
+        if inserted > 0 {
+            self.mark_dirty();
+        }
+        inserted
     }
 
     pub async fn read_rows(&self, symbols: Option<&[String]>) -> Vec<ScanRow> {
@@ -485,7 +557,10 @@ impl JsonScanStore {
     }
 
     pub async fn write_heartbeat(&self, hb: SweepHeartbeat) {
-        self.inner.write().await.heartbeat = Some(hb);
+        let mut guard = self.inner.write().await;
+        let merged = ScanStore::merge_heartbeat(guard.heartbeat.as_ref(), hb);
+        guard.heartbeat = Some(merged);
+        drop(guard);
         self.mark_dirty();
     }
 
@@ -606,6 +681,99 @@ mod tests {
         let rows = store.read_rows(Some(&["SPY".into()])).await;
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].symbol, "SPY");
+    }
+
+    #[tokio::test]
+    async fn ensure_rows_if_absent_does_not_clobber_ok() {
+        let store = ScanStore::memory();
+        store.upsert_row(sample_row("SPY", 80.0)).await;
+
+        let mut building = sample_row("SPY", 0.0);
+        building.status = "building".into();
+        building.score = None;
+        building.price = None;
+        building.as_of = 0.0;
+        let mut qqq_building = building.clone();
+        qqq_building.symbol = "QQQ".into();
+
+        let inserted = store
+            .ensure_rows_if_absent(vec![building, qqq_building])
+            .await;
+        assert_eq!(inserted, 1, "only QQQ should insert");
+
+        let spy = store.get_row("SPY").await.unwrap();
+        assert_eq!(spy.status, "ok");
+        assert_eq!(spy.score, Some(80.0));
+        assert!(spy.price.is_some());
+
+        let qqq = store.get_row("QQQ").await.unwrap();
+        assert_eq!(qqq.status, "building");
+        assert_eq!(qqq.as_of, 0.0);
+    }
+
+    #[tokio::test]
+    async fn upsert_building_does_not_downgrade_ok() {
+        let store = ScanStore::memory();
+        store.upsert_row(sample_row("SPY", 80.0)).await;
+        let mut building = sample_row("SPY", 0.0);
+        building.status = "building".into();
+        building.score = None;
+        building.price = None;
+        building.as_of = 0.0;
+        store.upsert_row(building).await;
+        let spy = store.get_row("SPY").await.unwrap();
+        assert_eq!(spy.status, "ok");
+        assert_eq!(spy.score, Some(80.0));
+    }
+
+    #[tokio::test]
+    async fn heartbeat_merge_preserves_completed_when_writer_has_none() {
+        let store = ScanStore::memory();
+        store
+            .write_heartbeat(SweepHeartbeat {
+                updated_at: 10.0,
+                sweep_last_completed: Some(9.0),
+                universe_size: 69,
+            })
+            .await;
+        // Fresh replica: completed still None in-process.
+        store
+            .write_heartbeat(SweepHeartbeat {
+                updated_at: 20.0,
+                sweep_last_completed: None,
+                universe_size: 69,
+            })
+            .await;
+        let hb = store.read_heartbeat().await.unwrap();
+        assert_eq!(hb.updated_at, 20.0);
+        assert_eq!(hb.sweep_last_completed, Some(9.0));
+    }
+
+    #[test]
+    fn merge_heartbeat_takes_later_completed() {
+        let prev = SweepHeartbeat {
+            updated_at: 1.0,
+            sweep_last_completed: Some(100.0),
+            universe_size: 10,
+        };
+        let merged = ScanStore::merge_heartbeat(
+            Some(&prev),
+            SweepHeartbeat {
+                updated_at: 2.0,
+                sweep_last_completed: Some(50.0),
+                universe_size: 10,
+            },
+        );
+        assert_eq!(merged.sweep_last_completed, Some(100.0));
+        let merged2 = ScanStore::merge_heartbeat(
+            Some(&prev),
+            SweepHeartbeat {
+                updated_at: 3.0,
+                sweep_last_completed: Some(150.0),
+                universe_size: 10,
+            },
+        );
+        assert_eq!(merged2.sweep_last_completed, Some(150.0));
     }
 
     #[tokio::test]
