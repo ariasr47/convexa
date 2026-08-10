@@ -177,7 +177,7 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
       3. **C — Runtime isolation:** LiveStore (or equivalent) so SSE ticks do not re-render structure widgets; hoist GEX tooltip; optional `useDeferredValue` on marks.
       4. **D — Architecture follow-through:** TradeEntryDialog / AiRecPanel / TickerDashboard thinning; virtualize only if N≫50 measured; §4.5–4.6 when multi-user needs them.  
       **Non-goals:** WebGL, SSR/RSC rewrite, blanket `React.memo`, new chart library.  
-      **Note:** 2026-08-10 — **Phase A–C shipped.** A: CI `@convexa/*`, ANALYZE, brotli budgets, precompress `.br`/`.gz`, nginx brotli_static. B: SVG sparklines, positions-no-charts, route prefetch. C: `liveTapeStore` + `useTickerStreamConnection`; structure widgets memoized; GEX/term tooltips hoisted; `useDeferredValue` on portfolio marks; LiveTape/Orders/LastTrade/GEX live-line subscribe to store. Remaining Phase D: TradeEntryDialog / AiRecPanel splits when churn hurts.
+      **Note:** 2026-08-10 — **Phase A–D shipped.** A: brotli budgets + precompress + CF/nginx. B: SVG sparklines, positions-no-charts, prefetch. C: liveTapeStore + structure memo + deferred marks. D: TradeEntryDialog → `tradeEntry/*` (types, LegFields, view); AiRec → `useReadPersonas` + `reasoning.tsx`; Ticker → `useTickerTradeFlows`. God-module LOC: TradeEntry barrel 15 / view ~960 / legs 223; AiRec panel ~950 + reasoning 227; Ticker thinned via trade-flows hook.
 
 ---
 

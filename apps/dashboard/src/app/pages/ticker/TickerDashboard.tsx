@@ -18,32 +18,23 @@
  */
 import { useAlerts } from '@/features/alerts/useAlerts';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
-import { useGate } from '@/features/auth/useGate';
 import { PersonaCustomizeForm } from '@/features/personas/components';
 import { usePersona } from '@/features/personas/usePersona';
 import {
-  EntryPrefill,
-  OrderEntrySubmit,
-  OrderPlan,
   TradeEntryDialog,
-  TradeEntrySubmit,
+  type OrderEntrySubmit,
+  type TradeEntrySubmit,
 } from '@/features/trading/TradeEntryDialog';
 import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
-import { GATE_SIGN_IN } from '@/features/trading/orders/copy';
-import { parseTriggerSeed } from '@/features/trading/orders/seed';
-import type { OrderProvenance } from '@/features/trading/orders/types';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
-import { createOrder } from '@/features/trading/orders/useOrders';
 import { tickerEvalSubject } from '@/features/trading/positions/evalSubject';
 import { positionsFaulted } from '@/features/trading/positions/store';
 import { usePortfolio, type OpenPositionInput } from '@/features/trading/positions/usePortfolio';
 import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
-import { COPY } from '@/pages/ticker/widgets/ai-rec/copy';
-import { recToPrefill } from '@/pages/ticker/widgets/ai-rec/prefill';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
-import { OptionRight, RecResponse } from '@convexa/api';
+import { OptionRight } from '@convexa/api';
 import {
   Alert,
   Box,
@@ -64,6 +55,7 @@ import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
 import { useLiveTape } from './liveTapeStore';
 import { useTickerPageModel } from './useTickerPageModel';
+import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
   DealerFlowProjection,
   DealerPositioning,
@@ -288,133 +280,44 @@ export function TickerDashboard() {
     [pf.views, ticker],
   );
 
-  // Ghost-trade entry dialog + Prime banner.
   // Synchronous — `localStorage` is synchronous, so this is free, and it is what guarantees the
   // refusal is present on the FIRST paint rather than after an effect (AC-64).
   const storeFaulted = positionsFaulted();
-  const [entryOpen, setEntryOpen] = useState(false);
-  const [entryPrefill, setEntryPrefill] = useState<EntryPrefill | undefined>();
-  // outcome-ledger (AC-E18): the rec identity the CURRENT prefill came from. Threaded through the
-  // EXISTING prefill seam — the host remembers what it seeded and hands it to the `open` write. The
-  // shared `TradeEntryDialog` is untouched and unforked (`[single-shared-sim-entry-dialog]`), so the
-  // direct-Accept path carries the rec identity and `not_attributable_by_path` stays 0.
-  const [entryRecFingerprint, setEntryRecFingerprint] = useState<string | null>(null);
-  /** A refused open is SHOWN, never swallowed — including the faulted-store refusal (AC-61). */
-  const [entryError, setEntryError] = useState<string | null>(null);
-  const [showPrimeBanner, setShowPrimeBanner] = useState(false);
-  const prevTierRef = useRef<string | null>(null);
-  // "This ticker already has an open position" — derived from the ONE book. The Prime banner and the
-  // ghost dialog both keyed off `gt.trade`; they key off the portfolio now.
   const tradeOpen = evalSel.position != null;
-  useEffect(() => {
-    const t = sig?.opportunity_tier;
-    if (t === 'prime' && sig?.prime_prompt_eligible && prevTierRef.current !== 'prime')
-      setShowPrimeBanner(true);
-    if (t !== 'prime') setShowPrimeBanner(false);
-    prevTierRef.current = t ?? null;
-  }, [sig?.opportunity_tier, sig?.prime_prompt_eligible]);
-  const openEntry = (prefill?: EntryPrefill, recFingerprint: string | null = null) => {
-    setEntryPrefill(prefill);
-    setEntryRecFingerprint(recFingerprint); // a manual/Prime open clears it — never a stale claim
-    setEntryOpen(true);
-  };
-  // Accept an AI rec → pre-fill the SHIPPED ghost-trade entry dialog (every field editable). Nothing
-  // is tracked until the user confirms; no Accept path exists for a no_trade rec (panel omits it).
-  const onAcceptRec = (rec: RecResponse, personaName: string) => {
-    if (!rec.strategy) return;
-    const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
-    if (pf) openEntry(pf, rec.pinned_fingerprint ?? null);
-  };
 
-  // ---- ai-rec-backtest-orders: the Act flow (order variant of the SAME shared dialog) ----------
-  // The sim-order engine evaluates THIS ticker's orders off THIS page's existing stream (arch §5 —
-  // it opens no EventSource of its own and adds nothing to any request, AC-44).
+  // Sim-order engine evaluates THIS ticker's orders off THIS page's stream (arch §5 — no extra ES).
   useOrderEngine({ ticker, bundle: data, live, isLive, streamOffline });
-  const orderGate = useGate();
-  const [actState, setActState] = useState<{
-    open: boolean;
-    plan?: OrderPlan;
-    prefill?: EntryPrefill;
-    provenance?: OrderProvenance;
-  }>({ open: false });
-  const [orderError, setOrderError] = useState<string | null>(null);
-  // Act on a produced TRADE rec (real or scenario): seeds contract/qty/stop/target via the
-  // EXISTING recToPrefill rules (D3) + the D2 trigger seed; the verbatim entry_trigger text and
-  // the rec's pin travel as provenance. Signed-out ⇒ the standard gated-write prompt, no dialog.
-  const onActRec = (rec: RecResponse, personaName: string) => {
-    if (!rec.strategy || rec.strategy.decision !== 'trade') return;
-    if (!orderGate.allowed) {
-      orderGate.prompt(GATE_SIGN_IN);
-      return;
-    }
-    orderGate.clear();
-    const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
-    if (!pf) return;
-    const scenario = rec.scenario ?? null;
-    const provenance: OrderProvenance = {
-      source: scenario ? 'ai_scenario' : 'ai_rec',
-      rec_fingerprint: rec.pinned_fingerprint,
-      rec_as_of: rec.as_of,
-      persona: { id: rec.persona.id, name: rec.persona.name },
-      ...(scenario ? { scenario_id: scenario.id, scenario_name: scenario.name } : {}),
-      trigger_source_text: rec.strategy.entry_trigger ?? null,
-    };
-    const plan: OrderPlan = {
-      seededTrigger: parseTriggerSeed(rec.strategy.entry_trigger),
-      triggerSourceText: rec.strategy.entry_trigger ?? null,
-      provenance: {
-        source: scenario ? 'ai_scenario' : 'ai_rec',
-        personaName: rec.persona.name,
-        asOf: rec.as_of,
-        ...(scenario ? { scenarioName: scenario.name } : {}),
-      },
-      stale: aiRec.stale,
-      liveMid: isLive ? (live?.mid ?? null) : null,
-    };
-    setOrderError(null);
-    setActState({ open: true, plan, prefill: pf, provenance });
-  };
-  // Confirm = the gated, state-bearing write: the SERVER gate is awaited BEFORE the local orders
-  // store write ([server-side-gate-enforcement], AC-11). 403 ⇒ prompt + abort, ZERO order; 503 ⇒
-  // the shipped "couldn't reach sign-in" copy + abort. A faulted store ⇒ inline error, nothing
-  // partial (§4.6).
-  const onConfirmOrder = async (submit: OrderEntrySubmit) => {
-    const provenance = actState.provenance;
-    if (!provenance) return;
-    let ran = false;
-    await orderGate.guard(
-      GATE_SIGN_IN,
-      () => {
-        ran = true;
-        const res = createOrder(
-          {
-            ticker: submit.ticker,
-            expiration: submit.expiration,
-            strike: submit.strike,
-            right: submit.right,
-            qty: submit.qty,
-            trigger: submit.trigger,
-            limit_price: submit.limitPrice,
-            stop: submit.stop,
-            target: submit.target,
-            expires_at: submit.expiresAt,
-            provenance,
-          },
-          { spot: live?.mid ?? m?.price ?? 0, tier: sig?.opportunity_tier ?? '', bundle: data },
-        );
-        if (!res.ok) {
-          setOrderError(res.reason ?? null);
-          return;
-        }
-        setOrderError(null);
-        setActState({ open: false });
-      },
-      { serverGate: orderGate.simTradeGate },
-    );
-    // Gate rejected (403/503) ⇒ the flow ABORTS before anything is stored; re-initiate after
-    // sign-in (no auto-resume, D10).
-    if (!ran) setActState({ open: false });
-  };
+
+  // Entry / Prime / Act / order confirm — extracted (§3.8 Phase D).
+  const {
+    orderGate,
+    entryOpen,
+    setEntryOpen,
+    entryPrefill,
+    entryRecFingerprint,
+    entryError,
+    setEntryError,
+    showPrimeBanner,
+    setShowPrimeBanner,
+    openEntry,
+    onAcceptRec,
+    onActRec,
+    actState,
+    setActState,
+    orderError,
+    setOrderError,
+    onConfirmOrder,
+    GATE_SIGN_IN,
+  } = useTickerTradeFlows({
+    ticker,
+    data,
+    live,
+    isLive,
+    aiRec,
+    opportunityTier: sig?.opportunity_tier,
+    primeEligible: sig?.prime_prompt_eligible,
+    structurePrice: m?.price,
+  });
   const strikeList = Array.from(
     new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
   ).sort((a, b) => a - b);
