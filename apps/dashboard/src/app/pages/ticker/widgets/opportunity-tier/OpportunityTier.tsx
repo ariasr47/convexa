@@ -8,11 +8,12 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import CloseIcon from '@mui/icons-material/Close';
 import { Alert, Box, Button, IconButton } from '@mui/material';
 import { alpha, Theme } from '@mui/material/styles';
-import type { OpportunityTier } from '@org/api';
+import type { OpportunityTier } from '@convexa/api';
 // The tier WORD map stays in the trading KERNEL: `outcomes/ledger.ts` reads the same closed lookup,
 // and `features/ -> pages/` would invert the downward-only dependency direction (SPEC §2.7).
 import { WORD } from '@/features/trading/model/tier';
 import { extrasFor } from '@/shared/theme/tokens';
+import { Refused } from '@/shared/ui/Refused';
 
 /** Tier word + a non-directional emphasis color for the tile's left accent.
  *  Stage-1 rebind (§3.3-3): tier emphasis is an ACTIVE/brand state, not a warning —
@@ -37,12 +38,17 @@ export const OPPORTUNITY_TIER_INFO =
 export function PrimeBanner({
   onSimulate,
   onDismiss,
+  /** When false, show Refused instead of a live-looking Simulate CTA (signed-out honesty). */
+  allowed = true,
+  onSignIn,
 }: {
   onSimulate: () => void;
   onDismiss: () => void;
+  allowed?: boolean;
+  onSignIn?: () => void;
 }) {
   return (
-    <Box sx={{ mb: 2 }}>
+    <Box sx={{ mb: 2 }} data-testid="prime-banner">
       {/* Stage-1 rebind (§3.3-3): the Prime banner is a BRAND moment, not a warning — its
           coloring re-binds to amber via sx while the ⚡ icon stays. The `severity` prop remains
           for a11y role/structure only; every color it would paint is overridden. Stage-3 §4.2:
@@ -58,18 +64,41 @@ export function PrimeBanner({
           '& .MuiAlert-icon': { color: theme.palette.primary.main },
         })}
         action={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button color="inherit" size="small" variant="outlined" onClick={onSimulate}>
-              Simulate this trade →
-            </Button>
+          allowed ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                color="inherit"
+                size="small"
+                variant="outlined"
+                onClick={onSimulate}
+                data-testid="prime-banner-simulate"
+              >
+                Simulate this trade →
+              </Button>
+              <IconButton aria-label="dismiss" size="small" color="inherit" onClick={onDismiss}>
+                <CloseIcon fontSize="inherit" />
+              </IconButton>
+            </Box>
+          ) : (
             <IconButton aria-label="dismiss" size="small" color="inherit" onClick={onDismiss}>
               <CloseIcon fontSize="inherit" />
             </IconButton>
-          </Box>
+          )
         }
       >
         ⚡ Prime setup — the strongest edge Convexa sees right now.
       </Alert>
+      {!allowed ? (
+        <Box sx={{ mt: 1 }}>
+          <Refused
+            actionLabel="Simulate this trade"
+            reason="Sign in to open a paper position. No real order is ever sent."
+            onSignIn={onSignIn}
+            onDismiss={onDismiss}
+            testId="prime-banner-refused"
+          />
+        </Box>
+      ) : null}
     </Box>
   );
 }

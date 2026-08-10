@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Link this checkout's own workspace packages into its `node_modules/@org`.
+ * Link this checkout's own workspace packages into its `node_modules/@convexa`.
  *
  * The worktree gotcha (found 2026-08-04): a `.claude/worktrees/<name>` checkout gets an EMPTY
  * `node_modules/`. Node resolution then walks UP to the main repo's, which is what makes
- * worktrees cheap — react/vitest/tsc all resolve fine. But `node_modules/@org` lives up there
- * too, so `@org/api` resolves to the MAIN checkout's `libs/api`, not this one. Two bites:
+ * worktrees cheap — react/vitest/tsc all resolve fine. But `node_modules/@convexa` lives up there
+ * too, so `@convexa/api` resolves to the MAIN checkout's `libs/api`, not this one. Two bites:
  *
- *   1. Nx's project graph can't map the import back to THIS checkout's `@org/api` project, so
+ *   1. Nx's project graph can't map the import back to THIS checkout's `@convexa/api` project, so
  *      the `libs/api/tsconfig.lib.json` reference in `apps/dashboard/tsconfig.app.json` looks
  *      STALE. `nx sync` then offers to delete a reference that is correct in the main checkout,
  *      and every target dies on the out-of-sync gate first. `--skip-sync` silences the gate but
@@ -46,10 +46,10 @@ const packages = globs
     rel,
     name: JSON.parse(readFileSync(join(root, rel, 'package.json'), 'utf8')).name,
   }))
-  .filter((p) => p.name?.startsWith('@org/'));
+  .filter((p) => p.name?.startsWith('@convexa/'));
 
 if (!packages.length) {
-  console.error('No @org/* workspace packages found — is this the workspace root?');
+  console.error('No @convexa/* workspace packages found — is this the workspace root?');
   process.exit(1);
 }
 

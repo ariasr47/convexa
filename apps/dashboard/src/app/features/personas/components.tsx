@@ -22,7 +22,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type { PersonaDefinition, PersonaRisk } from '@org/api';
+import type { PersonaDefinition, PersonaRisk } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { CustomDraft, usePersona } from './usePersona';
 

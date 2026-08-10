@@ -91,9 +91,9 @@ export default [
   // broker/. That means an implementer CAN forget to add a fourth file here — which is why Layer 2's
   // file set is defined by EXCLUSION and its glob shaped so that forgetting is VISIBLE, not silent.
   // SUBSTITUTION RECORDED FOR GATE Q (SPEC §2.3 / PLAN F6 Step 2): the negation-glob allow-list
-  // form (`group: ['**', '!./brokerView', '!./predicates', '!@org/api']`) was tried FIRST and does
+  // form (`group: ['**', '!./brokerView', '!./predicates', '!@convexa/api']`) was tried FIRST and does
   // NOT bite correctly on this ESLint version — it flagged the allow-listed specifiers themselves
-  // (`@org/api`, `./brokerView`, `./predicates`) as restricted, which would make grouping.ts
+  // (`@convexa/api`, `./brokerView`, `./predicates`) as restricted, which would make grouping.ts
   // unbuildable. Per the documented fallback, this override uses the GUARANTEED three-specifier
   // deny-list instead — the same list used for the presentational modules below. This is a WEAKER
   // guarantee than a true allow-list (it only closes the three specifiers holding the four naming
@@ -125,7 +125,7 @@ export default [
                 '../positions/leg',
               ],
               message:
-                'grouping.ts may not import positions/{structure,view,leg} (SPEC §2.3): those three specifiers hold all four entry points to the naming machine. Use ./brokerView, ./predicates or @org/api types instead.',
+                'grouping.ts may not import positions/{structure,view,leg} (SPEC §2.3): those three specifiers hold all four entry points to the naming machine. Use ./brokerView, ./predicates or @convexa/api types instead.',
             },
           ],
         },

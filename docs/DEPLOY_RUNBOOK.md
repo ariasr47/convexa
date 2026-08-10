@@ -70,7 +70,7 @@ the image.
    | Variable | Notes |
    |----------|--------|
    | `PUBLIC_RATE_LIMIT_PER_MIN` | Default **120** if unset. Per-IP limit on expensive routes (`/api/ticker/*`, `/api/stream/*`, market slices, scan). **`0` = disabled** (local only). |
-   | `METRICS_SECRET_TOKEN` | If set, protect operator metrics as documented in code |
+   | `METRICS_SECRET_TOKEN` | If set, `GET /api/_metrics` requires `Authorization: Bearer …` or `X-Metrics-Token`. Pages edge already 404s this path. |
    | `ALLOWED_ORIGINS` | Optional defence-in-depth; browser is same-origin via Pages Function |
 
    **Scanner / warm (defaults are fine)**
@@ -92,7 +92,7 @@ the image.
    | `AI_REC_ADMIN_EMAILS` | Your login for shared-key allowance |
 
 5. **Start command:** leave default image `CMD` (`api-rust serve` on `$PORT`). Do **not** set `python worker.py`.
-6. **Replicas:** 1 is simplest. Multi-replica requires Postgres (already) and accepts shared scan latest-wins; do not run a second *Python* worker.
+6. **Replicas:** **1 is the supported default.** Multi-replica requires Postgres (already) for scan/auth and accepts shared scan latest-wins. **AI-rec daily caps remain process-local** (`ai_meter` on `/api/health`) — N replicas ≈ N× cap until a shared meter ships. Do not run a second *Python* worker.
 
 7. **Deploy**, then smoke the **Railway URL** directly (Phase 3).
 
@@ -102,7 +102,7 @@ the image.
 
 1. Pages project on `ariasr47/convexa` (or fork).
 2. Build (repo root, framework **None**):
-   - Build command: `npx nx build @org/dashboard --configuration=production`
+   - Build command: `npx nx build @convexa/dashboard --configuration=production`
    - Output directory: `apps/dashboard/dist`
    - Root directory: empty
 3. Env:

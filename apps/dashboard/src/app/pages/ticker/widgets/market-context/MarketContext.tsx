@@ -38,7 +38,7 @@ import type {
   GexProfileShapeRead,
   MarketContextPack,
   TrendMomentumRead,
-} from '@org/api';
+} from '@convexa/api';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,

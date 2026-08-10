@@ -10,10 +10,10 @@
   },
   "frontend": {
     "dir": "apps/dashboard",
-    "serve_cmd": "npx nx serve @org/dashboard",
+    "serve_cmd": "npx nx serve @convexa/dashboard",
     "port": 4200,
-    "test_cmd": "npx nx test @org/dashboard",
-    "build_cmd": "npx nx build @org/dashboard --configuration=production"
+    "test_cmd": "npx nx test @convexa/dashboard",
+    "build_cmd": "npx nx build @convexa/dashboard --configuration=production"
   },
   "lane_purity": {
     "ARCHITECTURE_CONTRACT.md": [

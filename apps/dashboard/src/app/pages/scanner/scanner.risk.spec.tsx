@@ -25,7 +25,7 @@ import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import type { GateApi } from '@/features/auth/useGate';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { ScanRow } from '@org/api';
+import type { ScanRow } from '@convexa/api';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -116,7 +116,7 @@ describe('the dense table renders the locked columns and never fabricates a valu
     expect(within(row).getByText('Prime')).toBeInTheDocument(); //   closed tier lookup
     expect(within(row).getByTestId('cell-regime')).toHaveTextContent('Pos γ');
     expect(within(row).getByTestId('cell-vol')).toHaveTextContent('IV rich');
-    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('Updated 42s ago');
+    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('Structure as-of 42s');
   });
 
   it('null numerics render the em-dash — never 0, never a fabricated value', () => {
@@ -186,7 +186,7 @@ describe('per-row honesty', () => {
     renderTable([makeRow({ symbol: 'STL', price: 55.5, as_of: NOW - 600, status: 'stale' })]);
     const row = rowFor('STL');
     expect(within(row).getByTestId('cell-price')).toHaveTextContent('55.50'); // frozen, not blanked
-    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('Updated 10m ago');
+    expect(within(row).getByTestId('cell-updated')).toHaveTextContent('Structure as-of 10m');
     expect(within(row).getByTestId('cell-status')).toHaveTextContent('⚠ Stale');
     expect(within(row).getByTestId('cell-status')).toHaveAttribute('data-tone', 'warning');
   });

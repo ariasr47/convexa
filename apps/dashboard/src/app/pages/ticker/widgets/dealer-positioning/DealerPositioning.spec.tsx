@@ -9,7 +9,7 @@
  */
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { MarketState, OffExchange, Signals } from '@org/api';
+import type { MarketState, OffExchange, Signals } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DealerPositioning } from './DealerPositioning';

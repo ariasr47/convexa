@@ -1,7 +1,7 @@
 /**
  * Typed-envelope fixtures — one per wire arm of the locked `BrokerBook` shape (INTERFACE_CONTRACT
  * §§2–4). These are what the S1–S9 component states build and test against; they are TYPED against
- * `@org/api`, so a contract drift fails the build, not the trader.
+ * `@convexa/api`, so a contract drift fails the build, not the trader.
  *
  * Time is FIXED (`FIXED_NOW_MS`) so staleness derivations are deterministic. Both the multi-leg
  * (grouping-identity) and flat (per-contract) payload arms exist because the envelope supports
@@ -16,7 +16,7 @@ import type {
   BrokerFailureCause,
   BrokerLeg,
   BrokerPosition,
-} from '@org/api';
+} from '@convexa/api';
 
 /** 2026-08-01T15:00:00Z — every derivation in the specs anchors here. */
 export const FIXED_NOW_MS = Date.parse('2026-08-01T15:00:00Z');

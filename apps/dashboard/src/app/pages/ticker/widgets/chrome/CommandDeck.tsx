@@ -26,7 +26,7 @@
 import type { usePersona } from '@/features/personas/usePersona';
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Box, Stack, Typography } from '@mui/material';
-import type { Expiration, LiveUpdate, MarketState, Signals } from '@org/api';
+import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { useEffect, useRef, useState } from 'react';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';

@@ -8,7 +8,7 @@
 import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
 import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
-import type { MarketState, OffExchange, Signals } from '@org/api';
+import type { MarketState, OffExchange, Signals } from '@convexa/api';
 import {
   dealerPositioningSubtitle,
   fmtUsdCompact,
@@ -71,12 +71,7 @@ export function DealerPositioning({
           accent="down"
           info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory."
         />
-        <StatTile
-          label="Net GEX"
-          value={fmtUsdCompact(m.net_gex)}
-          accent={m.net_gex >= 0 ? 'up' : 'down'}
-          info="Raw dollar dealer gamma for a fixed 1% spot shock. Positive = dealers dampen moves (range-bound); negative = they amplify moves (trending). Prefer Vol-norm GEX for magnitude across vol regimes."
-        />
+        {/* Hierarchy: vol-norm is the primary magnitude read; raw $ is the 1% shock secondary. */}
         <StatTile
           label="Vol-norm GEX"
           value={
@@ -93,9 +88,15 @@ export function DealerPositioning({
           }
           info={
             m.vol_normalized_gex == null
-              ? 'Vol-normalized GEX unavailable — needs ATM IV or 30d HV on this snapshot.'
-              : m.vol_normalized_gex.basis_note
+              ? 'Primary magnitude read — unavailable until ATM IV or 30d HV lands on this snapshot.'
+              : `Primary magnitude (vol-normalized). ${m.vol_normalized_gex.basis_note}`
           }
+        />
+        <StatTile
+          label="Raw GEX (1% shock)"
+          value={fmtUsdCompact(m.net_gex)}
+          accent={m.net_gex >= 0 ? 'up' : 'down'}
+          info="Secondary: raw dollar dealer gamma for a fixed 1% spot shock. Positive = dealers dampen moves; negative = they amplify. Prefer Vol-norm GEX above for cross-regime magnitude."
         />
         <StatTile
           label="Net DEX"

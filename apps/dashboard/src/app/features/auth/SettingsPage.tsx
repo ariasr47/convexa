@@ -38,7 +38,7 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import type { ThemePref } from '@org/api';
+import type { ThemePref } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AiKeySection } from './AiKeySection';

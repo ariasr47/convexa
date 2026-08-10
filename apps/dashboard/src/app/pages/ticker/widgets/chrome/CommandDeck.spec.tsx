@@ -19,7 +19,7 @@ import { usePersona } from '@/features/personas/usePersona';
 import { __resetMemory } from '@/features/trading/positions/store';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, MarketState, Signals } from '@org/api';
+import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

@@ -36,7 +36,7 @@ import {
   type ScanViewSort,
   type ScanViewWrite,
   type SweepHeartbeat,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { buildDeskParams, DEFAULT_DESK_SORT, deskParamsEqual, parseDeskParams } from './deskParams';

@@ -19,7 +19,7 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { themeForPref } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
+import type { LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';

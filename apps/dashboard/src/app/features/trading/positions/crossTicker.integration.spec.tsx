@@ -1,6 +1,6 @@
 /**
  * R8 — cross-ticker marks in the SIM book. Integration: the real `usePortfolio` over the real
- * durable store and the real projection; ONLY the network boundary (`@org/api`) is mocked.
+ * durable store and the real projection; ONLY the network boundary (`@convexa/api`) is mocked.
  *
  * THE BUG THIS PINS (confirmed and DOM-reproduced before the fix). With a two-ticker book and a
  * TSLA-focused bundle (`price: 250`, `live.mid: 252`), an AAPL 100sh @200 position rendered
@@ -12,7 +12,7 @@
  * The rule being pinned: a leg is priced off ITS OWN underlying, or it is WITHHELD. Never a
  * borrowed price, never a silent 0.
  */
-import type { LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
+import type { LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,8 +22,8 @@ import { usePortfolio } from './usePortfolio';
 
 const contractSpy = vi.fn<(t: string, q: Record<string, unknown>) => Promise<unknown>>();
 const tickerSpy = vi.fn<(t: string) => Promise<unknown>>();
-vi.mock('@org/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@org/api')>();
+vi.mock('@convexa/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@convexa/api')>();
   return {
     ...actual,
     fetchTrackedContract: (t: string, q: Record<string, unknown>) => contractSpy(t, q),

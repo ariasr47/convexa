@@ -2,7 +2,7 @@
  * Shareable desk state ↔ URL search params (product spine #2 nice-to-have).
  * Pure: no React, no fetch. Only closed sort keys and filter enums.
  */
-import type { ScanSortKey, ScanViewSort } from '@org/api';
+import type { ScanSortKey, ScanViewSort } from '@convexa/api';
 import { EMPTY_FILTERS, type ScanFilters } from './format';
 
 const SORT_KEYS = new Set<ScanSortKey>([

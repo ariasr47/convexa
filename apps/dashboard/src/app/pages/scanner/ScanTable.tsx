@@ -11,7 +11,7 @@
  */
 import { extrasFor } from '@/shared/theme/tokens';
 import { Box } from '@mui/material';
-import type { ScanDensity, ScanRow, ScanViewSort } from '@org/api';
+import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import { Fragment } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { PollDelta } from './format';

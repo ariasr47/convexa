@@ -4,7 +4,7 @@
  * Stream-drop watchdog flips `streamOffline` when no payload arrives within
  * STREAM_OFFLINE_MS. Static structure (REST bundle) is never touched here.
  */
-import { streamTicker, type LiveUpdate } from '@org/api';
+import { streamTicker, type LiveUpdate } from '@convexa/api';
 import { useEffect, useState } from 'react';
 
 export const STREAM_OFFLINE_MS = 15_000;

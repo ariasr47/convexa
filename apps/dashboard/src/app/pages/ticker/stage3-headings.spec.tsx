@@ -13,7 +13,7 @@
  * `TICKER · $…` form — lives in `ticker-semantics.spec.tsx`, extended this stage per §8-10.)
  */
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, MarketState, RecResponse, RecStrategy } from '@org/api';
+import type { LiveUpdate, MarketState, RecResponse, RecStrategy } from '@convexa/api';
 import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

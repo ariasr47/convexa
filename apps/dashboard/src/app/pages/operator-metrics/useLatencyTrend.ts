@@ -6,7 +6,7 @@
  * trader-route call. Series clears on unmount/reload (ephemeral, expected); the only save is Export.
  */
 import { chartCategorical } from '@/shared/theme/tokens';
-import { fetchMetrics, MetricsAggregate, MetricsScope } from '@org/api';
+import { fetchMetrics, MetricsAggregate, MetricsScope } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export type TrendMetric = 'stages' | 'total' | 'cache' | 'vendor_latency' | 'headroom';

@@ -23,7 +23,7 @@
  * `migrate.spec.ts` pins that hazard explicitly so nobody "helpfully" re-runs it.
  */
 import { decisionIdentity } from '@/features/trading/outcomes/sources';
-import type { OptionRight } from '@org/api';
+import type { OptionRight } from '@convexa/api';
 import { SIM_POSITION_SCHEMA_VERSION, type Leg, type SimPosition } from './leg';
 import type { DecisionRecord, EntryBasis, EntryMode, PositionStatus } from './types';
 

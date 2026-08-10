@@ -3,7 +3,7 @@
  * Every produced field becomes an editable seed; nothing is tracked until the user confirms the
  * shipped `TradeEntryDialog`. A `no_trade` rec has no entry to pre-fill (Accept is absent, AC5).
  */
-import type { OptionRight, RecStrategy } from '@org/api';
+import type { OptionRight, RecStrategy } from '@convexa/api';
 
 /** The extended ghost-trade prefill seam (was `{ expiration, strike, right }`). All fields editable.
  *  `provenance`/`sizingNote` mark an AI-sourced prefill so the dialog shows the source + sizing copy. */

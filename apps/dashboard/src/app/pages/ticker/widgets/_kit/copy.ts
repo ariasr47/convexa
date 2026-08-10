@@ -4,7 +4,7 @@
  * TickerHeader) share one source. **Behavior-preserving move only** — every string + numeric format is
  * byte-identical to the pre-refactor inline definitions (the ticker specs assert this copy).
  */
-import type { IvSkew, TermStructure } from '@org/api';
+import type { IvSkew, TermStructure } from '@convexa/api';
 
 // Fallback for the blocks empty-state copy when a (pre-amendment) bundle omits the threshold.
 export const BLOCK_MIN_SHARES_DISPLAY = 5000;

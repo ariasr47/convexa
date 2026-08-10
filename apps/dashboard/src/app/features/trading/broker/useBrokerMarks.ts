@@ -9,7 +9,7 @@
  * and fixing one alone would have broken the identity the copy existed to guarantee. The resolver
  * now lives in `model/legMark.ts` and both hooks call it.
  *
- * Isolation: consumes ONLY `@org/api` (`fetchTrackedContract`, `getTicker` via `useTickerSpots`)
+ * Isolation: consumes ONLY `@convexa/api` (`fetchTrackedContract`, `getTicker` via `useTickerSpots`)
  * and the model ladder. Never the positions store, never a durable key, never SSE directly (the
  * page's stream props arrive as arguments — broker data itself NEVER rides SSE).
  */
@@ -25,7 +25,7 @@ import {
   type OptionRight,
   type TickerBundle,
   type TrackedContract,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { brokerLegsOf } from './brokerView';
 

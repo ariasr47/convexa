@@ -2,7 +2,7 @@
  * Built-in persona presets (read-only). Names + framing copy are verbatim from UX_BLUEPRINT §B and
  * the §A1 disposition map. Default (no persona) is first-class and renders today's prompt verbatim.
  */
-import type { PersonaDefinition } from '@org/api';
+import type { PersonaDefinition } from '@convexa/api';
 
 export const PRESETS: PersonaDefinition[] = [
   {

@@ -95,7 +95,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { fetchTrackedContract, OptionRight } from '@org/api';
+import { fetchTrackedContract, OptionRight } from '@convexa/api';
 import { useEffect, useState, type ReactNode } from 'react';
 
 /** Fill mode — how the entry price is decided. Local dialog state only (no store / lifecycle). */

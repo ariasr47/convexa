@@ -24,7 +24,7 @@
  *
  * Pure module: no store access, no React, no fetch, no clock.
  */
-import type { OptionRight, TrackedContract } from '@org/api';
+import type { OptionRight, TrackedContract } from '@convexa/api';
 import { computeMark, type MarkResult } from './mark';
 
 /**

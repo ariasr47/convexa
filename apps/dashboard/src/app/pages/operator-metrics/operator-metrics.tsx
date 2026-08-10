@@ -27,7 +27,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { MetricsScope, RecentTrace, StageKind, StageName } from '@org/api';
+import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
 import { useState } from 'react';
 import { LatencyTrend } from './LatencyTrend';
 import { useLatencyTrend } from './useLatencyTrend';

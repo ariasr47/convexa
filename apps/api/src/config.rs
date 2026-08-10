@@ -77,6 +77,8 @@ pub struct Config {
     pub database_url: Option<String>,
     /// Per-IP requests/minute on expensive public routes. `0` = disabled.
     pub public_rate_limit_per_min: u32,
+    /// When set, `GET /api/_metrics` requires `Authorization: Bearer <token>` (or `X-Metrics-Token`).
+    pub metrics_secret_token: Option<String>,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
 }
@@ -245,6 +247,10 @@ impl Config {
         // Default 120/min per IP on vendor/compute routes. Unset in local is still limited;
         // set PUBLIC_RATE_LIMIT_PER_MIN=0 to disable for load tests.
         let public_rate_limit_per_min = env_u64("PUBLIC_RATE_LIMIT_PER_MIN", 120).min(u64::from(u32::MAX)) as u32;
+        let metrics_secret_token = env::var("METRICS_SECRET_TOKEN")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
 
         Ok(Self {
             massive_api_key,
@@ -282,6 +288,7 @@ impl Config {
             iv_store_path,
             database_url,
             public_rate_limit_per_min,
+            metrics_secret_token,
             workspace_root,
         })
     }

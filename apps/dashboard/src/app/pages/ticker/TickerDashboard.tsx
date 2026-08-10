@@ -54,16 +54,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { OptionRight, RecResponse } from '@org/api';
+import { OptionRight, RecResponse } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
+import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
-import { useStructureHistory } from './useStructureHistory';
-import { useTickerBundle } from './useTickerBundle';
-import { useTickerStream } from './useTickerStream';
-import { useUniverseMembership } from './useUniverseMembership';
+import { useTickerPageModel } from './useTickerPageModel';
 import {
   DealerFlowProjection,
   DealerPositioning,
@@ -161,9 +159,6 @@ export function TickerDashboard() {
     return d;
   }, []);
 
-  // Stream independent of REST; portfolio needs bundle data for marks.
-  const { live, streamOffline, isLive } = useTickerStream(ticker, selected);
-
   // Position-context query re-keys the bundle once open legs exist (same as pre-split behavior).
   // Seeded null → first fetch without pos_*; updates after portfolio hydrates.
   const [positionQuery, setPositionQuery] = useState<{
@@ -172,18 +167,19 @@ export function TickerDashboard() {
     right: OptionRight;
   } | null>(null);
 
-  const {
-    data,
-    loading,
-    error,
-    refresh: load,
-  } = useTickerBundle({
+  // Data plane container — stream + REST + history + membership (presentational board below).
+  const page = useTickerPageModel({
     ticker,
     selected,
     darkPool,
     positionQuery,
     takeDtePrefill,
   });
+  const { live, streamOffline, isLive } = page.stream;
+  const { data, loading, error, refresh: load } = page.bundle;
+  const structHist = page.history;
+  const universeMembership = page.universeMembership;
+  const structureAgeSeconds = page.structureAgeSeconds;
 
   // ONE BOOK — same portfolio hook as Positions (AC-72).
   const pf = usePortfolio(ticker, data, live, isLive, streamOffline);
@@ -208,12 +204,7 @@ export function TickerDashboard() {
     });
   }, [evalSel.queryLeg]);
 
-  const structHist = useStructureHistory(ticker);
-
   const persona = usePersona();
-  // index-first-defaults AC-4/AC-5 — silent best-effort universe read; only a CONFIRMED nonmember
-  // shows the single-name caveat ('unknown' never does — absent-is-not-none).
-  const universeMembership = useUniverseMembership(ticker);
 
   // AI recommendation (independently-nullable sibling card).
   const { personas: readPersonas } = useReadPersonas(persona.personas);
@@ -238,9 +229,9 @@ export function TickerDashboard() {
   );
 
   const theme = useTheme();
-  const m = data?.market_state;
+  const m = data?.market_state ?? page.marketState;
   const fresh = data?.meta.freshness;
-  const sig = data?.signals;
+  const sig = data?.signals ?? page.signals;
 
   // Vol/OI "Fresh positioning": strikes at/above the cutoff, ranked desc, short top-N (full-chain).
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
@@ -252,8 +243,7 @@ export function TickerDashboard() {
   const allDates = data?.expirations.map((e) => e.date) ?? [];
   const noneSelected = selected !== null && selected.length === 0;
   const checked = selected ?? allDates; // dates shown ticked in the menu
-  // Product spine #4 — structure age/basis for widget subtitles (REST path only, never SSE).
-  const structureAgeSeconds = fresh?.data_age_seconds ?? null;
+  // Product spine #4 — structure age/basis from page model (REST path only, never SSE).
   const expWindowLabel =
     selected === null
       ? 'all expirations'
@@ -497,8 +487,10 @@ export function TickerDashboard() {
           <Box>
             {showPrimeBanner && !tradeOpen && (
               <PrimeBanner
+                allowed={orderGate.allowed}
                 onSimulate={() => openEntry()}
                 onDismiss={() => setShowPrimeBanner(false)}
+                onSignIn={() => orderGate.signIn(GATE_SIGN_IN)}
               />
             )}
 
@@ -578,26 +570,30 @@ export function TickerDashboard() {
                 />
 
                 {/* Structure path — durable slow-lane samples (session path after refresh). */}
-                <StructureHistory
-                  symbol={ticker}
-                  samples={structHist.samples}
-                  basis={structHist.basis}
-                  loading={structHist.loading}
-                  error={structHist.error}
-                />
+                <ErrorBoundary variant="widget" label="Structure path">
+                  <StructureHistory
+                    symbol={ticker}
+                    samples={structHist.samples}
+                    basis={structHist.basis}
+                    loading={structHist.loading}
+                    error={structHist.error}
+                  />
+                </ErrorBoundary>
 
                 {/* GEX strike profile — the product's structure centerpiece (full width). */}
                 {data?.strike_profile && (
-                  <GexStrikeProfile
-                    strikes={data.strike_profile.strikes}
-                    spot={m.gex_spot ?? m.price}
-                    callWall={m.call_wall}
-                    putWall={m.put_wall}
-                    gammaFlip={live?.gamma_flip ?? m.gamma_flip}
-                    liveSpot={isLive && live ? live.mid : null}
-                    expLabel={expWindowLabel}
-                    structureAgeSeconds={structureAgeSeconds}
-                  />
+                  <ErrorBoundary variant="widget" label="GEX profile">
+                    <GexStrikeProfile
+                      strikes={data.strike_profile.strikes}
+                      spot={m.gex_spot ?? m.price}
+                      callWall={m.call_wall}
+                      putWall={m.put_wall}
+                      gammaFlip={live?.gamma_flip ?? m.gamma_flip}
+                      liveSpot={isLive && live ? live.mid : null}
+                      expLabel={expWindowLabel}
+                      structureAgeSeconds={structureAgeSeconds}
+                    />
+                  </ErrorBoundary>
                 )}
 
                 {/* Product spine #5 — position brief bridges structure → plan (your book on this name). */}
@@ -613,7 +609,9 @@ export function TickerDashboard() {
                 <BoardZoneLabel zone="plan">Tape & plan</BoardZoneLabel>
 
                 {/* LIVE-DERIVED tiles — dim on an SSE drop (span 2). */}
-                <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+                <ErrorBoundary variant="widget" label="Live tape">
+                  <LiveTape m={m} live={live} isLive={isLive} streamOffline={streamOffline} />
+                </ErrorBoundary>
 
                 {/* Act → watch as one motion (UX §4.4): AI-rec paired with sim orders. */}
                 <AiRecPanel

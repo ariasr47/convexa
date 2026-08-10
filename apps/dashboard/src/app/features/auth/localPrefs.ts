@@ -9,7 +9,7 @@
  * would break per-account isolation, AC-F2).
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import type { ThemePref } from '@org/api';
+import type { ThemePref } from '@convexa/api';
 import { SETTINGS_DEFAULTS } from './copy';
 
 const KEY = 'convexa.uiprefs.v1';

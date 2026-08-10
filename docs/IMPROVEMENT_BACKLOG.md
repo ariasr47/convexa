@@ -21,11 +21,11 @@
 
 | Area | Open | Done |
 |------|------|------|
-| Production hardening | remaining in §1 | **1.1–1.7** |
+| Production hardening | **1.8 partial** | **1.1–1.7, 1.9** |
 | Quant calculations | see §2 | **2.1–2.3** |
 | Performance | — | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
-| React / frontend standards | see §4 | 0 |
-| UX | see §5 | 0 |
+| React / frontend standards | see §4 | **4.1–4.4** |
+| UX | remaining §5 | **5.1–5.4** |
 | System design | remaining in §6 | **6.1** (topology documented) |
 | Explicit non-goals | n/a | n/a |
 
@@ -75,14 +75,14 @@ _Update counts when checking items._
 
 ### P2
 
-- [ ] **1.8 AI metering shared across replicas**  
+- [x] **1.8 AI metering shared across replicas**  
   **Evidence:** TECH_DEBT #17 — process-local counters.  
   **Done when:** Caps correct under multi-instance (Postgres/Redis) or single-instance documented as hard limit.  
-  **Note:** _
+  **Note:** 2026-08-10 — **Documented single-replica hard limit** (`ai_meter` on health + migration stub `ai_rec_daily` for future shared counters). Process-local cap remains correct for one `api` replica.
 
-- [ ] **1.9 Metrics / ops path verified on Rust**  
+- [x] **1.9 Metrics / ops path verified on Rust**  
   **Done when:** `/_ops` or metrics endpoint token-gated, blocked at Pages edge if required, runbook section current.  
-  **Note:** _
+  **Note:** 2026-08-10 — `METRICS_SECRET_TOKEN` gates `GET /api/_metrics`; Pages still 404s the path; health exposes `metrics_auth`.
 
 ---
 
@@ -178,24 +178,24 @@ React 19, RR7, typed client, lazy routes, Vitest risk suites, module boundaries,
 
 ### Improvements
 
-- [ ] **4.1 Route-level + widget-level ErrorBoundary**  
+- [x] **4.1 Route-level + widget-level ErrorBoundary**  
   **Evidence:** No `ErrorBoundary` / `errorElement` found.  
   **Done when:** Route failure and single-widget failure show honest degraded UI; rest of board survives.  
-  **Note:** _
+  **Note:** 2026-08-10 — `shared/ui/ErrorBoundary`; route wrap in `app.tsx`; widget wraps on ticker structure/GEX/tape.
 
-- [ ] **4.2 Inventory `exhaustive-deps` disables**  
+- [x] **4.2 Inventory `exhaustive-deps` disables**  
   **Evidence:** Multiple disables in `usePortfolio`, order engine, dialogs, etc.  
   **Done when:** Each disable has a one-line justification or is fixed; new disables are review blockers.  
-  **Note:** _
+  **Note:** 2026-08-10 — `docs/EXHAUSTIVE_DEPS.md` inventory with WHY per site.
 
-- [ ] **4.3 Container hook for ticker page model**  
+- [x] **4.3 Container hook for ticker page model**  
   **Done when:** `useTickerPageModel` (or similar) owns data/actions; board is presentational.  
-  **Note:** _
+  **Note:** 2026-08-10 — `useTickerPageModel` owns stream/bundle/history/membership/structure age.
 
-- [ ] **4.4 Rename `@org/*` → `@convexa/*`**  
+- [x] **4.4 Rename `@org/*` → `@convexa/*`**  
   **Evidence:** BACKLOG §B `rename-org-scope-to-convexa`.  
   **Done when:** Single dedicated PR; no mixed scopes.  
-  **Note:** _
+  **Note:** 2026-08-10 — packages + imports → `@convexa/*` (no mixed scopes).
 
 - [ ] **4.5 Optional prod error reporting**  
   **Done when:** Client error sink (e.g. Sentry) + API correlation id when multi-user justifies cost.  
@@ -215,22 +215,22 @@ Spine #1–#7, live/static isolation, methodology, age/basis, neutral deltas, sk
 
 ### Improvements
 
-- [ ] **5.1 Signed-out refused affordances**  
+- [x] **5.1 Signed-out refused affordances**  
   **Evidence:** BACKLOG `signed-out-refused-affordances` — sim CTA looks live, click no-op vs banner.  
   **Done when:** `Refused` primitive (or equivalent) on signed-out write CTAs; still focusable + reason.  
-  **Note:** _
+  **Note:** 2026-08-10 — `shared/ui/Refused` + Prime banner uses it when signed out.
 
-- [ ] **5.2 Vol-norm GEX hierarchy in dealer grid**  
+- [x] **5.2 Vol-norm GEX hierarchy in dealer grid**  
   **Done when:** Clear primary/secondary: vol-norm as main magnitude read; raw $ as “1% shock” secondary (tooltip or sublabel).  
-  **Note:** _
+  **Note:** 2026-08-10 — Vol-norm first; “Raw GEX (1% shock)” secondary label + tips.
 
-- [ ] **5.3 Structure path cold-start copy**  
+- [x] **5.3 Structure path cold-start copy**  
   **Done when:** Empty state explains slow-lane cadence and points to methodology without feeling broken.  
-  **Note:** _
+  **Note:** 2026-08-10 — cold-start copy on structure history empty state.
 
-- [ ] **5.4 Audit residual “Updated” on structure surfaces**  
+- [x] **5.4 Audit residual “Updated” on structure surfaces**  
   **Done when:** Structure paths say “Structure as-of …” (or equivalent); live tape remains live-labelled.  
-  **Note:** _
+  **Note:** 2026-08-10 — scanner row freshness → `Structure as-of {rel}` (not bare Updated).
 
 - [ ] **5.5 Alerts v1 (roadmap X3)**  
   **Done when:** Level-touch / tier-change / score-gate with simple delivery (browser and/or webhook).  

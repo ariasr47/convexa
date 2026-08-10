@@ -91,8 +91,8 @@ Spine **#1–#7** are shipped (or in the working tree for #7). Longer tracks:
 
 ```bash
 nvm use
-npx nx run @org/dashboard:test -- --run src/app/pages/methodology/
-npx nx run @org/dashboard:typecheck
+npx nx run @convexa/dashboard:test -- --run src/app/pages/methodology/
+npx nx run @convexa/dashboard:typecheck
 ```
 
 **Never:** bare `nx format:write`.

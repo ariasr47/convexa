@@ -9,7 +9,7 @@
  * Pure module: no React, no fetch, no clock — `nowMs` is an argument so every derivation is
  * deterministic under test.
  */
-import type { BrokerBook } from '@org/api';
+import type { BrokerBook } from '@convexa/api';
 
 /** A served snapshot exists in THIS response (`state ∈ {ok, empty}`). The S7/S8 "last-known book
  *  stays below" clause keys off THIS — the wire, never client memory (decisions.md I-3). */

@@ -10,7 +10,7 @@
 import { Widget } from '@/shared/ui/Widget';
 import { Box, Skeleton, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import type { StructureSample } from '@org/api';
+import type { StructureSample } from '@convexa/api';
 import { useMemo } from 'react';
 import { humanAge } from '../_kit';
 import { fmtPathDelta, sparkPoints, summarizePath } from './historyMath';
@@ -118,13 +118,23 @@ export function StructureHistory({
         ) : null}
 
         {!loading && !error && (samples == null || samples.length === 0) ? (
-          <Typography
-            component="p"
-            data-testid="structure-history-empty"
-            sx={{ m: 0, fontSize: '0.75rem', color: 'text.secondary' }}
-          >
-            Building history — samples land after each structure recompute (thinned to ≥5 min).
-          </Typography>
+          <Box data-testid="structure-history-empty" sx={{ display: 'grid', gap: 0.75 }}>
+            <Typography
+              component="p"
+              sx={{ m: 0, fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.5 }}
+            >
+              Cold start — this path is empty until the scanner slow lane finishes a structure
+              recompute for {symbol.toUpperCase()}. Samples are thinned to about five minutes and
+              are never live ticks.
+            </Typography>
+            <Typography
+              component="p"
+              sx={{ m: 0, fontSize: '0.75rem', color: 'text.disabled', lineHeight: 1.45 }}
+            >
+              Not broken: the board can score while history is still building. See Methodology for
+              two-speed data (structure vs tape).
+            </Typography>
+          </Box>
         ) : null}
 
         {samples && samples.length > 0 ? (

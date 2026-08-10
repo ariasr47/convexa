@@ -4,7 +4,7 @@
  * credential warnings win wherever they appear, and NO branch reads `positions.length` (AC-10 —
  * the highest-severity honesty line in the feature).
  */
-import type { BrokerAttemptOutcome, BrokerBook, BrokerReason } from '@org/api';
+import type { BrokerAttemptOutcome, BrokerBook, BrokerReason } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
   AS_OF_AT_THRESHOLD,

@@ -12,7 +12,7 @@ import type {
   HandoffSection,
   PersonaDefinition,
   PersonaRisk,
-} from '@org/api';
+} from '@convexa/api';
 
 // The verbatim trader-disposition phrase in today's prompt (A1 relocation target).
 const GREED = 'prone to greed and poor risk management';

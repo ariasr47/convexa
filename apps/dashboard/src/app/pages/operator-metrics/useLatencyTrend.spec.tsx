@@ -3,13 +3,13 @@
  * mount-effect tick twice) must not store two samples with one client_ts — recharts keys
  * axis ticks per data point by value+coordinate, so duplicate timestamps collide React keys.
  */
-import { fetchMetrics, MetricsAggregate, MetricsScope } from '@org/api';
+import { fetchMetrics, MetricsAggregate, MetricsScope } from '@convexa/api';
 import { act, renderHook } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useLatencyTrend } from './useLatencyTrend';
 
-vi.mock('@org/api', () => ({ fetchMetrics: vi.fn() }));
+vi.mock('@convexa/api', () => ({ fetchMetrics: vi.fn() }));
 
 const scopeData = (): MetricsScope => ({
   latency_total: { p50_ms: 10, p95_ms: 20, max_ms: 30, count: 5 },

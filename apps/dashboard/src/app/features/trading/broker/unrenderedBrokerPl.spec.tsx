@@ -10,7 +10,7 @@
  *
  * The ruling is reversible; what must not happen is it being reversed by accident.
  */
-import type { BrokerPosition } from '@org/api';
+import type { BrokerPosition } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BrokerGroupHeader, BrokerGroupPanel } from './BrokerGroupHeader';

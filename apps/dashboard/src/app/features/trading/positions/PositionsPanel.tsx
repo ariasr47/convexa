@@ -17,7 +17,7 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
 import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
 import { Box, Typography } from '@mui/material';
-import type { LiveUpdate, TickerBundle } from '@org/api';
+import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import { useMemo, useState } from 'react';
 import { CustomizationToolbar } from './CustomizationToolbar';
 import { PositionsView } from './PositionsView';

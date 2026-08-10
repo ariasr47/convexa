@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { fetchRecExport, RecExport } from '@org/api';
+import { fetchRecExport, RecExport } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { COPY, EXPORT_HEADER } from './copy';
 

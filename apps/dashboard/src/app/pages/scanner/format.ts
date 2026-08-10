@@ -5,10 +5,10 @@
  *
  * The sharp edge lives here: `updatedText` branches on `status === 'building'` BEFORE it reads
  * `as_of`. INTERFACE §3.1 PINS that a synthesized `building` row carries a non-null `as_of` that is
- * NOT a freshness claim, so rendering "Updated 3s ago" off it would be a fabricated freshness claim
+ * NOT a freshness claim, so rendering "Structure as-of 3s" off it would be a fabricated age claim
  * on a row that has never been computed.
  */
-import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@org/api';
+import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@convexa/api';
 import { isIndexMegacap, SCAN_COPY, SESSION_LABEL, type MarketSessionPhase } from './labels';
 
 /** Client-side desk filters. `null` on a dimension means "any". Never refetches. */

@@ -8,14 +8,14 @@
  *    (never blanked on a failed refresh — `[live-vs-static-isolation]`);
  *  - only the focused ticker ever has a live underlying mid.
  */
-import type { LiveUpdate, TickerBundle } from '@org/api';
+import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTickerSpots, type TickerSpots } from './useTickerSpots';
 
 const getSpy = vi.fn<(t: string) => Promise<unknown>>();
-vi.mock('@org/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@org/api')>();
+vi.mock('@convexa/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@convexa/api')>();
   return { ...actual, getTicker: (t: string) => getSpy(t) };
 });
 

@@ -58,5 +58,5 @@ and `ai-rec` (the AI-recommendation panel). Plus:
   `TickerToolbar`, `FreshnessLine`).
 
 A new widget is a drop-in: a new `widgets/<name>/` folder that imports the `Widget` shell
-(`@/shared/ui/Widget`), `@/shared/hooks`, `@/shared/theme`, and `@org/api`, then registers in
+(`@/shared/ui/Widget`), `@/shared/hooks`, `@/shared/theme`, and `@convexa/api`, then registers in
 `widgets/index.ts`.

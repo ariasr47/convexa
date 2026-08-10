@@ -4,7 +4,7 @@
  * incl. placement-already-met, `last_trade` never an input, trigger+fill collapse records both
  * facts, per-tick throw caught (hook level), clock expiry off-stream.
  */
-import type { LiveUpdate } from '@org/api';
+import type { LiveUpdate } from '@convexa/api';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EngineTick, evaluateOrder, isClockExpired, tickFromLive, triggerMet } from './engine';
 import { __resetOrdersMemory, getOrder } from './store';

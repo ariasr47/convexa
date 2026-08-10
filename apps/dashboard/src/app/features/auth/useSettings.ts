@@ -15,7 +15,7 @@
  * pref change only changes which default a UI lands on.
  */
 import { loadActiveId, saveActiveId } from '@/features/personas/store';
-import type { ThemePref, UserSettings } from '@org/api';
+import type { ThemePref, UserSettings } from '@convexa/api';
 import { useCallback, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { SETTINGS_DEFAULTS } from './copy';

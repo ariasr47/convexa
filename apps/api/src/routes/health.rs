@@ -50,6 +50,16 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
             "public_per_min": state.config.public_rate_limit_per_min,
             "enabled": state.config.public_rate_limit_per_min > 0,
         },
+        "ai_meter": {
+            "scope": crate::services::recommendation::meter_scope_label(),
+            "daily_cap": 50,
+            "note": "Process-local daily AI-rec cap; correct for a single api replica",
+        },
+        "metrics_auth": if state.config.metrics_secret_token.is_some() {
+            "required"
+        } else {
+            "open"
+        },
         "warm": {
             "enabled": state.config.warm_enabled,
             "symbols": state.config.warm_symbols,
@@ -61,7 +71,61 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
 }
 
 /// Operator readout for cache hit/miss (same payload nested under health).
-pub async fn cache_metrics(State(state): State<AppState>) -> Json<Value> {
+///
+/// When `METRICS_SECRET_TOKEN` is set, require `Authorization: Bearer <token>` or
+/// `X-Metrics-Token: <token>`. Pages edge already 404s `/api/_metrics`; this is
+/// defence-in-depth for the Railway origin.
+pub async fn cache_metrics(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+) -> axum::response::Response {
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
+
+    if let Some(expected) = state.config.metrics_secret_token.as_deref() {
+        let ok = metrics_token_ok(&headers, expected);
+        if !ok {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({
+                    "error": "metrics_unauthorized",
+                    "detail": "Set Authorization: Bearer <METRICS_SECRET_TOKEN> or X-Metrics-Token",
+                })),
+            )
+                .into_response();
+        }
+    }
     let metrics = state.gex_cache.metrics_snapshot().await;
-    Json(json!({ "gex_cache": metrics }))
+    let board = {
+        let scan_rows = state.scan.read_rows(None).await;
+        let history_samples = state.scan.count_structure_samples().await;
+        json!({
+            "scan_rows": scan_rows.len(),
+            "history_samples": history_samples,
+            "ai_meter_scope": crate::services::recommendation::meter_scope_label(),
+        })
+    };
+    Json(json!({
+        "gex_cache": metrics,
+        "operator": board,
+        "metrics_auth": if state.config.metrics_secret_token.is_some() { "required" } else { "open" },
+    }))
+    .into_response()
+}
+
+fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {
+    if let Some(v) = headers.get("x-metrics-token").and_then(|h| h.to_str().ok()) {
+        if v.trim() == expected {
+            return true;
+        }
+    }
+    if let Some(v) = headers.get(axum::http::header::AUTHORIZATION).and_then(|h| h.to_str().ok()) {
+        let v = v.trim();
+        if let Some(rest) = v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer ")) {
+            if rest.trim() == expected {
+                return true;
+            }
+        }
+    }
+    false
 }

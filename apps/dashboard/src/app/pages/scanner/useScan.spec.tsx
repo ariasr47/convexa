@@ -11,7 +11,7 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { ScanResponse } from '@org/api';
+import type { ScanResponse } from '@convexa/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';

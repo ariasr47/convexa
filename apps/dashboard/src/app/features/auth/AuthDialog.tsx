@@ -28,7 +28,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import { AuthError } from '@org/api';
+import { AuthError } from '@convexa/api';
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';

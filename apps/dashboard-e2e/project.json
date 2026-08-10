@@ -2,7 +2,7 @@
   "name": "dashboard-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "implicitDependencies": ["@org/dashboard"],
+  "implicitDependencies": ["@convexa/dashboard"],
   "tags": ["scope:frontend", "type:e2e"],
   "targets": {}
 }

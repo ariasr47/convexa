@@ -12,7 +12,7 @@
  * One fetch per page mount (the read is tiny and the page keeps its instance across in-page symbol
  * changes); membership re-derives per symbol from the resolved set.
  */
-import { getScanUniverse } from '@org/api';
+import { getScanUniverse } from '@convexa/api';
 import { useEffect, useState } from 'react';
 
 export type UniverseMembership = 'member' | 'nonmember' | 'unknown';

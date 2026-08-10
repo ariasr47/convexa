@@ -15,7 +15,7 @@
  */
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { IvRankRead } from '@org/api';
+import type { IvRankRead } from '@convexa/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { IVR_WHOLE_EMPTY } from '../_kit/copy';

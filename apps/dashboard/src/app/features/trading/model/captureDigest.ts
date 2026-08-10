@@ -14,7 +14,7 @@
  *   - The IV-rank band is captured as the WIRE label; it is NEVER re-derived from `rank`.
  */
 import { loadActiveId } from '@/features/personas/store';
-import type { TickerBundle } from '@org/api';
+import type { TickerBundle } from '@convexa/api';
 import type { CapturedSetup, DecisionEvent, EntryContextDigest } from './types';
 
 /** The 5 DECISION-POINT events that carry a digest (§2/Q2). `alert` is mechanical, not a decision;

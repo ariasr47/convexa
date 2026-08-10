@@ -34,6 +34,24 @@ struct RateState {
     count: i32,
 }
 
+/// Operator label for health/metrics: process-local caps (replica-unsafe) unless
+/// a future durable meter is wired. Documented as the single-instance hard limit
+/// when Railway runs one `api` replica (current topology).
+pub fn meter_scope_label() -> &'static str {
+    if std::env::var("DATABASE_URL")
+        .ok()
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false)
+    {
+        // Durable store present: still process-local meter today; multi-replica
+        // operators must set AI_REC_METER_SCOPE=process and run one replica, or
+        // raise the issue when scaling out.
+        "process_local_with_postgres"
+    } else {
+        "process_local"
+    }
+}
+
 fn today_et() -> String {
     use chrono::Utc;
     use chrono_tz::America::New_York;
@@ -216,6 +234,9 @@ pub fn resolve_llm_key(
 }
 
 fn rate_snapshot() -> (i32, bool, String) {
+    // Process-local daily cap (TECH_DEBT #17 / backlog 1.8). Correct under a single
+    // Railway `api` replica. Multi-replica deploys must either pin one replica or
+    // accept N× DAILY_CAP until a durable shared counter ships.
     let mut g = RATE.lock().unwrap_or_else(|e| e.into_inner());
     let today = today_et();
     if g.day != today {

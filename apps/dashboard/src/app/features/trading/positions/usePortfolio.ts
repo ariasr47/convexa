@@ -27,7 +27,7 @@ import {
   OptionRight,
   TickerBundle,
   TrackedContract,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { compositeLimitWouldFill, legContractKey, netLimitDollarsFor } from './composeMark';
 import { cloneConfig, configEqual, normalizeViewConfig } from './defaults';

@@ -19,7 +19,7 @@
  * ONCE keeps its last good spot across a later failed refresh — never blanked
  * (`[best-effort-isolated-or-null]`, `[live-vs-static-isolation]`).
  */
-import { getTicker, type LiveUpdate, type TickerBundle } from '@org/api';
+import { getTicker, type LiveUpdate, type TickerBundle } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export interface TickerSpots {

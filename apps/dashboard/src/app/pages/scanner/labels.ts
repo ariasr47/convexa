@@ -13,7 +13,7 @@
  * the fail-honest UNAVAILABLE meta (statuses) or to `null` (labels ⇒ render nothing) — never a guess,
  * never a raw enum dump.
  */
-import type { ScanSortKey, ScanStatus } from '@org/api';
+import type { ScanSortKey, ScanStatus } from '@convexa/api';
 
 export const SCAN_COPY = {
   heading: 'Scanner',
@@ -52,8 +52,9 @@ export const SCAN_COPY = {
   saveFailed: 'Could not save that view. Please try again.',
   sweepAbsent: "Sweep hasn't reported yet — showing the last known rows.",
   sweepBehind: (age: string) => `Sweep last ran ${age} ago — showing the last known rows.`,
-  updated: (rel: string) => `Updated ${rel} ago`,
-  /** Structure age for the desk strip (distinct from the per-row "Updated …" line). */
+  /** Per-row structure freshness — never "live" / never bare "Updated" (spine #4). */
+  updated: (rel: string) => `Structure as-of ${rel}`,
+  /** Structure age for the desk strip (same phrasing as the per-row line). */
   structureAsOf: (rel: string) => `Structure as-of ${rel}`,
   structureAsOfUnknown: 'Structure as-of —',
   sessionAria: 'US equity session',

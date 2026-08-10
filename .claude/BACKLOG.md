@@ -361,7 +361,7 @@ Owner handed the conductor five sequenced items (screenshots of broken light-mod
 5. **`scanner`** — **✓ SHIPPED + ARCHIVED (2026-07-26)** → `_archive/scanner/`. Full pipeline, both lanes,
    delivered as **4 sequenced phases each with its own execution contract + GATE Q** (P1 store `7269fa2` ·
    P2 worker `9d92fed` · P3 read API `eb478df` · P4 page `e094bd1`). **QA PASS all four (de-correlated
-   Sonnet) — 13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @org/dashboard` 645; e2e 15/15; conformance 2/2
+   Sonnet) — 13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @convexa/dashboard` 645; e2e 15/15; conformance 2/2
    live. **GATE S formally NARROWED "single-ticker, on-demand"** (request path stays single-ticker; the
    sweep is the bounded off-request-path worker) — descriptive narrowing, not a demotion. **No new ledger
    graduations** (all 8 touched keys already canon); `structural-over-prose-enforcement` → 2 instances,
@@ -635,7 +635,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Owner-directed maintenance, NOT a conductor pipeline feature** (no BRIEF / no contracts / no GATE Q —
   logged here for provenance because it moved canon-relevant structure). Three parts:
   (1) **Cypress replaces Playwright** (`e38328e`) — `@nx/cypress/plugin` in `nx.json` (same `e2e` target
-  name), `apps/dashboard-e2e/cypress.config.ts` auto-serves `@org/dashboard`, smoke ported to
+  name), `apps/dashboard-e2e/cypress.config.ts` auto-serves `@convexa/dashboard`, smoke ported to
   `src/e2e/app-loads.cy.ts`; Playwright deps/config removed. Component/integration testing stays Vitest.
   (2) **Dashboard folder restructure** (7 commits `e5ce5fb`→`b194bdc`) — `src/app/` reorganized by KIND into
   `pages/` · `features/` · `shared/` · `shell/` + folder-per-widget, `@/*` alias; `apps/dashboard/src/app/
@@ -673,7 +673,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 - **`containerize-apps`** — `✓ SHIPPED + ARCHIVED (2026-06-29)` → `_archive/containerize-apps/`. Step 1 of
   the infra/deploy program (GATE-M-style infra fast-path; PM/UX skipped). Authored 7 Docker artifacts:
   `apps/api/Dockerfile` (python:3.12-slim, non-root uid 10001, explicit COPYs, socket healthcheck, uvicorn
-  0.0.0.0 no-reload), `apps/dashboard/Dockerfile` (multi-stage: `nx build @org/dashboard` at repo-root
+  0.0.0.0 no-reload), `apps/dashboard/Dockerfile` (multi-stage: `nx build @convexa/dashboard` at repo-root
   context → unprivileged nginx serving `dist` + SSE-safe `/api` proxy), `nginx.conf`, root + `apps/api`
   `.dockerignore`, root `docker-compose.yml` (one-command local stack, runtime env_file, stateless documented),
   `apps/api/.env.example` (value-less; gitignore negation `!apps/api/.env.example` added to track it).
@@ -688,7 +688,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   default 3/day); regular users 0 → must BYO. 5 resolution states incl. `shared_key_unconfigured`. New
   `UserCredentialStore` + `src/auth/crypto.py`; per-request resolution at the `main.py` boundary; AI rec
   stays an isolated leaf (score byte-identical). QA PASS (Sonnet, de-correlated; AC-19 named-test gap caught
-  & fixed → re-run 26/26; security floor clean; dashboard 313/313 + `@org/api` 13/13). **GATE S graduated
+  & fixed → re-run 26/26; security floor clean; dashboard 313/313 + `@convexa/api` 13/13). **GATE S graduated
   `server-side-gate-enforcement`** (2 binding) into canon; new watch-list key `secret-encrypted-at-rest`.
   Realizes the deferred ai-rec BYO-key seam. `system-6` still deferred (credential custody → its eventual
   first client). Seams → OPEN_THREADS §7h.
@@ -699,7 +699,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `gammaflow.*`→`convexa.*` (reusable `resolveDurable` helper composing with the positions v1→v2 chain).
   **REVERSED the app-shell-landing "UI-only" decision** (updated in place, not a Promoted-canon demotion).
   Cosmetic to the engine — score/`state_fingerprint` byte-identical. QA PASS (Sonnet, de-correlated —
-  23/23 ACs; dashboard 283/283 + `@org/api` 7/7). New watch-list key `loss-free-durable-migration`. STAYS:
+  23/23 ACs; dashboard 283/283 + `@convexa/api` 7/7). New watch-list key `loss-free-durable-migration`. STAYS:
   `@org/*` scope, `DATA_DIR`, local folder, archived history. Seams → OPEN_THREADS §7g.
 - **`user-accounts`** — `✓ SHIPPED + ARCHIVED (2026-06-25)` → `_archive/user-accounts/`. Both lanes: the
   project's first stateful backend surface — email/username+password auth + server-side sessions + per-user
@@ -708,7 +708,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   no rebuild); **hybrid access** (anonymous browsing open; sim Positions WRITE actions + "ask AI" require a
   session, server-enforced). Additive — score/tier/`state_fingerprint` byte-identical. QA PASS (Sonnet,
   de-correlated; AC-E7 server-gate FAIL bounced+fixed → GATE Q re-run 30/30, conformance 2/2, `dashboard`
-  246/246 + `@org/api` 7/7). GATE S: narrowed the "stateless server" property to the trading path; new
+  246/246 + `@convexa/api` 7/7). GATE S: narrowed the "stateless server" property to the trading path; new
   watch-list key `server-side-gate-enforcement`. Seams → OPEN_THREADS §7f. **Unblocks Track B
   `broker-connect`** (the accounts prerequisite is now met; broker-connect stays gated on the Webull-access
   verification + the system-6 go-live trigger).
@@ -756,9 +756,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 - **`rename-org-scope-to-convexa` — package namespace still says `@org/*` after the Convexa rebrand** —
   <!-- atlas: theme=the-machine horizon=later -->
   `FILED 2026-08-10 (owner question during structure-history work)`. Workspace packages are still the
-  Nx scaffold defaults: `@org/source`, `@org/api`, `@org/dashboard`, `@org/dashboard-e2e`. Product is
-  Convexa; imports read `from '@org/api'`, scripts are `nx test @org/dashboard`, and
-  `tsconfig.base.json` still has `customConditions: ["@org/source"]`. **Not a runtime/user-facing
+  Nx scaffold defaults: `@convexa/source`, `@convexa/api`, `@convexa/dashboard`, `@convexa/dashboard-e2e`. Product is
+  Convexa; imports read `from '@convexa/api'`, scripts are `nx test @convexa/dashboard`, and
+  `tsconfig.base.json` still has `customConditions: ["@convexa/source"]`. **Not a runtime/user-facing
   defect** (private workspace packages, not published to npm) — pure naming debt that confuses every
   new session and every agent prompt.
   **History:** `rebrand-convexa` (2026-06-28) **explicitly left this out** as a non-goal
@@ -1009,11 +1009,11 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   probe: index data `NOT_AUTHORIZED`; a SPY/QQQ-ETF-proxy reshape is buildable in-tier if resurfaced).
   Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR (now shipped)
   unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).
-- **Fix the broken `@org/dashboard:typecheck` Nx target** — `✓ COMPLETED 2026-07-16 (hygiene batch)`.
+- **Fix the broken `@convexa/dashboard:typecheck` Nx target** — `✓ COMPLETED 2026-07-16 (hygiene batch)`.
   The "~960 errors" claim had gone **stale**: the `tsconfig.spec.json` fix (DOM lib + jest-dom types) was
   already applied by commit `8637435`, leaving exactly **ONE** error — a bad cast in
   `captureDigest.spec.ts:73` (`vi.spyOn(globalThis, 'fetch' as never)` collapsed the spy's type so
-  `.mockRestore()` wouldn't typecheck). Fixed (dropped the cast); **`npx nx run @org/dashboard:typecheck`
+  `.mockRestore()` wouldn't typecheck). Fixed (dropped the cast); **`npx nx run @convexa/dashboard:typecheck`
   is GREEN for the first time** and now belongs in the standing gate battery alongside
   `tsc -b tsconfig.app.json`. *(original entry: ~960 errors, jest-dom/DOM-lib gap — Seams →
   OPEN_THREADS §7p.)*
@@ -1415,7 +1415,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   it; FAIL → GATE Z to Backend) + GATE U·X (interface must embed the spec) + the §3 linter (WARNs if a
   locked interface lacks the block — system-3 ensures the spec EXISTS, system-1 ensures the live
   response MATCHES it). Tested vs the real `/api/_metrics` shape (pass / array-fanout / drift-fail).
-  *Value H · Effort M.* **Deferred:** static FE-type cross-check (`@org/api` TS vs the interface) — the
+  *Value H · Effort M.* **Deferred:** static FE-type cross-check (`@convexa/api` TS vs the interface) — the
   runtime path already proves BE-emits ⊇ interface; FE-consumes ⊆ interface is held by the FE binding +
   the linter's interface-binding check.
 - **system-2 · QA / Verify role (a 6th role, with teeth)** — `✓ LANDED (2026-06-23)`: new **GATE Q**

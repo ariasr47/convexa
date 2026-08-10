@@ -10,7 +10,7 @@
  *
  * Pure module: no store access, no React, no fetch.
  */
-import type { OptionRight } from '@org/api';
+import type { OptionRight } from '@convexa/api';
 import type { EntryBasis, EntryMode, PositionId, PositionStatus } from './types';
 
 export type LegId = string;

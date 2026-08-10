@@ -18,7 +18,7 @@ import {
   refreshBrokerBook,
   type BrokerBook,
   type BrokerFailureCause,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface RefreshOutcome {

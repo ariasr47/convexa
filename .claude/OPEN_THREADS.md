@@ -215,7 +215,7 @@ status (bundle/SSE intact), import-boundary AST-checked, egress/404. **Frontend*
 commits `42212f5` + `a2f6ae3`): `apps/dashboard/src/app/ai-rec/*` (`AiRecPanel`, `StateExportDrawer`,
 `useAiRecommendation`, `copy`, `prefill`) — the 12-state rec surface, gating/cap/availability UI from
 `/status`, **Accept** → the shipped `TradeEntryDialog` prefill seam (paper-sim, editable, mandatory
-confirm, `SIMULATED`), manual export floor; persona from canonical `GET /api/personas`; new `@org/api`
+confirm, `SIMULATED`), manual export floor; persona from canonical `GET /api/personas`; new `@convexa/api`
 fetchers. Tests: `ai-rec.spec.tsx` (T1–T18 + E1–E7, incl. E3) — `nx test dashboard` 26/26 green. **QA
 (GATE Q)**: verified by a fresh qa-verify on **Sonnet** (de-correlated) — 18/18 ACs, conformance 4/4,
 invariants clean; initial FAIL on the missing E3 named test (the AC↔test traceability rule catching a gap
@@ -308,8 +308,8 @@ byte-identical anonymous-vs-signed-in (score 24, fp `79373ef9194e`), import-boun
 import auth, 47 runtime assertions, security-floor log scan clean.
 **Frontend** (`apps/dashboard` + `libs/api`): `src/app/auth/` (AuthContext degrade-to-anonymous; login-by-email
 / signup; GoogleButton present-but-disabled-when-unconfigured; useGate **server-gate-before-write**; the
-3 light-pref Settings + ThemeProvider) + gating wired into Positions writes + the ai-rec ask-AI path; `@org/api`
-auth surface (incl. `simTradeGate`). `nx test dashboard` 246/246 + `@org/api` 7/7.
+3 light-pref Settings + ThemeProvider) + gating wired into Positions writes + the ai-rec ask-AI path; `@convexa/api`
+auth surface (incl. `simTradeGate`). `nx test dashboard` 246/246 + `@convexa/api` 7/7.
 **QA (GATE Q)** on Sonnet (de-correlated from the Opus builders): initial **FAIL on AC-E7** — the Positions
 sim-trade write gate was **FE-only** (never called the server endpoint) → **GATE Z bounce to Frontend** →
 FE wired `POST /api/positions/sim-trade/gate` into the write path (403 aborts the local write) → **GATE Q
@@ -344,8 +344,8 @@ migrate-on-read helper (read-new-else-old, promote-forward-once, never-delete, i
 into all 4 durable stores, flipping each key `gammaflow.*`→`convexa.*` and keeping the `gammaflow.*` literal
 ONLY as the migration source; the positions store keeps the 4-case brand×version chain (the legacy
 `gammaflow.ghost-trade.v1` still lands whole in `convexa.positions.v2`); `libs/api/src/lib/gammaflow.ts`→
-`convexa.ts` (consumed via `@org/api`, zero export churn); brand strings + `convexa-` download stems; stale
-brand-assertion tests reconciled. `nx test dashboard` 283/283 (+37), `@org/api` 7/7.
+`convexa.ts` (consumed via `@convexa/api`, zero export churn); brand strings + `convexa-` download stems; stale
+brand-assertion tests reconciled. `nx test dashboard` 283/283 (+37), `@convexa/api` 7/7.
 **Backend** (`apps/api`): cosmetic only — logger "Convexa", FastAPI title "Convexa Volatility API",
 ContextVar `convexa_request_trace`, comment/prompt/glossary prose; **no env/field/path/`DATA_DIR` renamed**
 (nothing orphaned); engine byte-identical; conformance 8/8.
@@ -375,8 +375,8 @@ allowlist; new dep `cryptography`. The AI rec stays a one-way leaf — score/tie
 byte-identical (24 / actionable / `79373ef9194e`) across all 6 conditions; conformance 2/2 + no regression;
 security-floor log scan clean.
 **Frontend** (`apps/dashboard` + `libs/api`): the 5-state AiRecPanel + the write-only "AI key" Settings section
-(masked, Replace/Remove, no reveal) + the `@org/api` credential fns/types. `nx test dashboard` 313/313,
-`@org/api` 13/13; egress proven (the raw key rides only the PUT body, never any response/DOM/console).
+(masked, Replace/Remove, no reveal) + the `@convexa/api` credential fns/types. `nx test dashboard` 313/313,
+`@convexa/api` 13/13; egress proven (the raw key rides only the PUT body, never any response/DOM/console).
 **QA (GATE Q)** on Sonnet (de-correlated): initial FAIL on **AC-19** (admin-removed-from-allowlist had no named
 test though the behavior worked — AC↔test traceability) → GATE Z bounce → FE added the test → **RE-RUN PASS
 26/26**.
@@ -394,7 +394,7 @@ static review; PM/UX skipped — no product surface, `NO_INTERFACE_CHANGE`). **7
 `apps/api/Dockerfile` (python:3.12-slim, WORKDIR /app, explicit COPYs of `main.py`/`src`/`prompts`/
 `market_state_glossary.md` — no `COPY . .`, non-root uid 10001, writable `/app/data`, Python-socket
 HEALTHCHECK on :8000, `uvicorn main:app --host 0.0.0.0` no-reload), `apps/dashboard/Dockerfile` (multi-stage:
-`node:20-alpine` → `npm ci` → `npx nx build @org/dashboard` at **repo-root context** because `@org/api` is
+`node:20-alpine` → `npm ci` → `npx nx build @convexa/dashboard` at **repo-root context** because `@convexa/api` is
 source-consumed → `nginxinc/nginx-unprivileged` serving `apps/dashboard/dist` with SPA fallback + SSE-safe
 `/api`→`api:8000` proxy), `apps/dashboard/nginx.conf`, root + `apps/api` `.dockerignore` (the structural
 `[no-secrets-in-image]` guard — exclude `.env*`/`.venv`/`conf/token.txt`/`node_modules`/`.git`/`dist`/`.nx`/
@@ -512,7 +512,7 @@ gained a Manual/Market/Limit fill-mode control). Plus an **app-wide contained-bu
 **Owner scope cut:** the full-page `/auth` route was DROPPED (the `AuthDialog` modal stays the auth surface).
 **`NO_BACKEND_CHANGE`** — `apps/api` diff vs main is EMPTY, so score/tier/`state_fingerprint` are
 byte-identical structurally. **QA (GATE Q)** on a fresh de-correlated qa-verify: **PASS** — nx test
-dashboard 425/425, `@org/api` 13/13, lint 0 errors, `tsc --noEmit` clean, **`nx build @org/dashboard`
+dashboard 425/425, `@convexa/api` 13/13, lint 0 errors, `tsc --noEmit` clean, **`nx build @convexa/dashboard`
 succeeded**, all invariants hold (no-real-order-path, live-vs-static, token discipline, no demo toggle).
 **Pre-QA fix:** a pre-existing build blocker TS17001 (duplicate `sx` in `SettingsPage.tsx:242`) was found +
 fixed (`5bd4358`) — Vitest doesn't typecheck, so only `tsc`/`nx build` caught it. Merged to `main` at GATE S.
@@ -621,9 +621,9 @@ the AI context-scalars pack + volume-profile/CVD + TI regime bundle (parked), ne
 
 ## 7p. Latent hygiene finding — the `:typecheck` Nx target (RESOLVED 2026-07-16 — hygiene batch)
 > **RESOLVED:** the "~960 errors" had gone stale (the spec-tsconfig fix landed in `8637435`); one
-> remaining `as never` cast was fixed 2026-07-16 and `npx nx run @org/dashboard:typecheck` is GREEN —
+> remaining `as never` cast was fixed 2026-07-16 and `npx nx run @convexa/dashboard:typecheck` is GREEN —
 > now part of the standing gate battery. Original finding retained below as provenance.
-Surfaced 2026-07-02 during dealer-flow-projection GATE Q. `npx nx run @org/dashboard:typecheck` fails
+Surfaced 2026-07-02 during dealer-flow-projection GATE Q. `npx nx run @convexa/dashboard:typecheck` fails
 project-wide with **~960 pre-existing errors** — a `tsconfig.spec.json` gap (missing `jest-dom` / DOM lib
 types: `RequestInfo`, `querySelector`, `toBeInTheDocument` unresolved in `*.spec.tsx`). Confirmed
 pre-existing + unrelated to this feature (an UNTOUCHED spec, e.g. `ai-rec/ai-rec.spec.tsx`, fails
@@ -660,7 +660,7 @@ token-only, zero hex. **Additive** — score/tier/`state_fingerprint` byte-ident
 gate (anonymous includes the pack). **QA (GATE Q)** fresh de-correlated **Sonnet**: **PASS 26/26** (0 FAIL /
 0 UNVERIFIABLE; conformance new standalone spec `ai_context_pack.json` + 8-spec no-regression sweep;
 byte-identity independently re-derived against the live feed; AC↔test traceability non-vacuous;
-`nx test dashboard` 658/658 + `@org/api` 13/13, `tsc -b` clean, `nx build` green).
+`nx test dashboard` 658/658 + `@convexa/api` 13/13, `tsc -b` clean, `nx build` green).
 **Lane-interruption note (methodology):** both executioner lanes were cut off by an API session limit
 **before self-reporting**; the conductor re-ran every gate and found **3 FE test-ONLY defects** the cut-off
 lanes never ran into (component code correct): (1) two structural source-scans used
@@ -668,7 +668,7 @@ lanes never ran into (component code correct): (1) two structural source-scans u
 (2) a `toHaveLength(20)` assertion vs the genuine **23** pinned enum values (7 label families, not 6);
 (3) an over-broad negative auth regex `/session/i` colliding with the feature's own copy ("today's
 **session** cumulative option volume") + `queryByText` throwing on multiple → narrowed to auth-CTA phrases.
-Also a **stale `libs/api/dist`** (pre-rebrand `gammaflow.d.ts`) caused false `@org/api` type errors under
+Also a **stale `libs/api/dist`** (pre-rebrand `gammaflow.d.ts`) caused false `@convexa/api` type errors under
 `tsc -p` — cleaned + regenerated (`tsc -b --force` is the reliable typecheck when the lib dist is stale).
 All fixed inline; QA then independently re-verified green. **Lesson:** a "completed" subagent notification
 that carries a session-limit banner instead of a build report is UNVERIFIED — re-run the gates.
@@ -718,7 +718,7 @@ iv_rank present/null/absent; nothing on SSE.
 standalone spec `iv_rank.json` PASS live+offline; byte-identity independently re-derived — incl. a forced
 whole-store outage via `IV_STORE=postgres`→unreachable-DB → 200 + `iv_rank:null`, `strike_profile` intact,
 boot survives; the degenerate-flat + computed states force-observed by seeding the disk store; AC↔test
-traceability non-vacuous; `nx test dashboard` 685/685 + `@org/api` 13/13, `tsc -b --force` clean, `nx build`
+traceability non-vacuous; `nx test dashboard` 685/685 + `@convexa/api` 13/13, `tsc -b --force` clean, `nx build`
 green). No FAIL → no GATE Z bounce.
 **GATE S:** **GRADUATED `[digested-labels-not-raw-dump]`** (2 binding: ai-context-pack + iv-rank) → Promoted
 canon (CONTEXT §5 + §9). `[model-read-carries-its-assumptions]` gained a 3rd instance; the three other touched
@@ -739,7 +739,7 @@ the deferred distance-to-level tiles.
 canon-relevant structure. `main` @ `b194bdc`. Presentation/tooling only — score/tier/`state_fingerprint`
 untouched; **674/674 tests green on `main`**.
 **Shipped:** (1) **Cypress replaces Playwright** (`e38328e`) — `@nx/cypress/plugin` in `nx.json` (same `e2e`
-target name), `cypress.config.ts` auto-serves `@org/dashboard`, smoke → `src/e2e/app-loads.cy.ts`; Playwright
+target name), `cypress.config.ts` auto-serves `@convexa/dashboard`, smoke → `src/e2e/app-loads.cy.ts`; Playwright
 removed. Component/integration stays Vitest. (2) **Folder restructure** (`e5ce5fb`→`b194bdc`, 7 commits) —
 `src/app/` by KIND: `pages/` · `features/` · `shared/` · `shell/`, folder-per-widget, `@/*`→`src/app/*` alias.
 (3) **Delivery-kit sync** — risk-based QA rule mirrored to `C:/Dev/delivery-kit` (kit_lint clean), **v0.3.2**
@@ -884,7 +884,7 @@ warm-click read-through — run as **4 sequenced phases, each its own execution 
 pattern applied to a both-lanes feature.
 **QA:** PASS on all four phases, every one a fresh **de-correlated Sonnet** — **13/13 PRODUCT ACs closed
 feature-wide, 0 FAIL, 0 UNVERIFIABLE.** Conformance 2/2 live against the standalone
-`.claude/tools/conformance/scanner.json`; `nx test @org/dashboard` **645**; e2e **15/15**; lint at the exact
+`.claude/tools/conformance/scanner.json`; `nx test @convexa/dashboard` **645**; e2e **15/15**; lint at the exact
 29-warning baseline.
 **GATE S — canon:** formally **NARROWED "single-ticker, on-demand"** (CONTEXT §5 + §9 below) — the request
 path stays single-ticker; multi-ticker compute is the bounded off-request-path worker. A **descriptive

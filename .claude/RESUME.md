@@ -143,7 +143,7 @@ lint 0/0 · typecheck 0.
 
 - **⚠ RUN CI'S LITERAL COMMAND BEFORE PUSHING:**
   `npx nx run-many -t lint test build typecheck --exclude=api`. A project-scoped
-  `nx lint @org/dashboard` **misses `.claude:lint` and the `build` target** — that gap is exactly
+  `nx lint @convexa/dashboard` **misses `.claude:lint` and the `build` target** — that gap is exactly
   how CI stayed red all morning while local runs looked green.
 - **⚠ `npm run ports:free` IS IPv4-ONLY.** It reports "all clear" while IPv6 orphans serve stale
   code (QA measured three live on `[::1]:4200/4300/4301`, one answering 200). Verify by hand:

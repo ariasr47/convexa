@@ -1,7 +1,7 @@
 /**
  * R8 — cross-ticker marks in the BROKER book. Integration over the real feature subtree
  * (`useBrokerMarks` → `buildBrokerPositionView` → `BrokerPositionRow`), with ONLY the network
- * boundary (`@org/api`) mocked. Asserts the RENDERED text, because the bug's whole danger was that
+ * boundary (`@convexa/api`) mocked. Asserts the RENDERED text, because the bug's whole danger was that
  * a fabricated figure renders in exactly the same shape as a real one.
  *
  * The owner's real book spans ten underlyings while the page holds ONE bundle and ONE stream, so
@@ -9,7 +9,7 @@
  * mirrors ("a broker leg and a sim leg with the same contract price identically") — they now share
  * `model/legMark.ts`, and this suite is the broker half of that pairing's proof.
  */
-import type { BrokerPosition, LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
+import type { BrokerPosition, LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BrokerPositionRow } from './BrokerPositionRow';
@@ -19,8 +19,8 @@ import { useBrokerMarks } from './useBrokerMarks';
 
 const contractSpy = vi.fn<(t: string, q: Record<string, unknown>) => Promise<unknown>>();
 const tickerSpy = vi.fn<(t: string) => Promise<unknown>>();
-vi.mock('@org/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@org/api')>();
+vi.mock('@convexa/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@convexa/api')>();
   return {
     ...actual,
     fetchTrackedContract: (t: string, q: Record<string, unknown>) => contractSpy(t, q),

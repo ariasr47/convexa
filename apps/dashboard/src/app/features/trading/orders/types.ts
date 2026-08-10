@@ -7,7 +7,7 @@
  * are NEVER an input to signals/score/tier/fingerprint (`[additive-keeps-score-byte-identical]`)
  * and never ride the wire (no order endpoints exist).
  */
-import type { OptionRight } from '@org/api';
+import type { OptionRight } from '@convexa/api';
 
 export const ORDERS_SCHEMA_VERSION = 1;
 

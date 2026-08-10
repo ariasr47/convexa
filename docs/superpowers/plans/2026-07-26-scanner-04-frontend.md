@@ -4,9 +4,9 @@
 
 **Goal:** Replace the `/scanner` coming-soon stub with the real surface — a dense, honest, terminal-grade triage table that **CONSUMES** P3's wire (`GET /api/scan` · `/api/scan/universe` · `/api/scan/view` · the server-gated `PUT /api/scan/view`) through four new `libs/api` fetchers, renders the **locked 11-column set** (score-desc default, compact density, sticky Symbol + header, nulls as `—`), collapses to **cards `<sm`**, expresses the **four honest states** (skeleton · empty view · worker-down banner over intact rows · per-row `ok`/`stale`/`error`/`building` via a **closed lookup**), and saves a per-account view through a **server-gated write** (`useGate` → the real 403 → sign-in prompt → nothing written locally). Closes the P3 QA report's **DEFERRED-TO-P4** items: AC-11 in full and the visual halves of AC-1 / AC-7 / AC-8 / AC-9 / AC-12.
 
-**Architecture:** FE-only phase — **the `apps/api` diff must be EMPTY** (the structural proof of `[additive-keeps-score-byte-identical]` for this phase). Three layers, dependency-direction downward only per `apps/dashboard/src/app/README.md`: (1) `libs/api` (`scope:shared`) gains the typed scanner fetchers + types, consumed via `@org/api`; (2) `shared/` gains **exactly two promotions on the 2nd-consumer rule** — `TintChip` → `shared/ui/`, `useFlashOnChange` → `shared/hooks/` — so `pages/scanner/` never imports `pages/ticker/` (**pages never import sibling pages**); (3) everything scanner-specific lives in `pages/scanner/` as small focused files (pure `format.ts`/`labels.ts` → `useScan.ts` data hook → `ScanCells`/`ScanTable`/`ScanCard` → `ScanToolbar`/`ViewEditorDialog` → `Scanner.tsx` shell). The page is **poll-based** (`SCAN_POLL_MS = 30_000`, one stable interval, auto-paused when the tab is hidden) — **no SSE, no per-row stream, never the word "live"**. The only motion is the sanctioned `useFlashOnChange` price flash, which reuses the already-allowlisted dynamic `flash-*` keyframe family — **no 6th keyframe family is introduced** (the app-wide inventory is set-equality pinned and adding one is build-breaking).
+**Architecture:** FE-only phase — **the `apps/api` diff must be EMPTY** (the structural proof of `[additive-keeps-score-byte-identical]` for this phase). Three layers, dependency-direction downward only per `apps/dashboard/src/app/README.md`: (1) `libs/api` (`scope:shared`) gains the typed scanner fetchers + types, consumed via `@convexa/api`; (2) `shared/` gains **exactly two promotions on the 2nd-consumer rule** — `TintChip` → `shared/ui/`, `useFlashOnChange` → `shared/hooks/` — so `pages/scanner/` never imports `pages/ticker/` (**pages never import sibling pages**); (3) everything scanner-specific lives in `pages/scanner/` as small focused files (pure `format.ts`/`labels.ts` → `useScan.ts` data hook → `ScanCells`/`ScanTable`/`ScanCard` → `ScanToolbar`/`ViewEditorDialog` → `Scanner.tsx` shell). The page is **poll-based** (`SCAN_POLL_MS = 30_000`, one stable interval, auto-paused when the tab is hidden) — **no SSE, no per-row stream, never the word "live"**. The only motion is the sanctioned `useFlashOnChange` price flash, which reuses the already-allowlisted dynamic `flash-*` keyframe family — **no 6th keyframe family is introduced** (the app-wide inventory is set-equality pinned and adding one is build-breaking).
 
-**Tech Stack:** React 19 + Vite + MUI 7 (`sx` + theme tokens only), `react-router-dom` (`RouterLink` / `useNavigate`), `@org/api` (the source-consumed shared client), Vitest + Testing Library (`nx test @org/dashboard`), Cypress (`nx e2e dashboard-e2e`, the 393px no-overflow route set). No new npm dependency.
+**Tech Stack:** React 19 + Vite + MUI 7 (`sx` + theme tokens only), `react-router-dom` (`RouterLink` / `useNavigate`), `@convexa/api` (the source-consumed shared client), Vitest + Testing Library (`nx test @convexa/dashboard`), Cypress (`nx e2e dashboard-e2e`, the 393px no-overflow route set). No new npm dependency.
 
 ## Global Constraints
 
@@ -26,7 +26,7 @@ Every task's requirements implicitly include these (copied verbatim in force fro
 - **FE structure map (`apps/dashboard/src/app/README.md`, binding).** Dependency direction is **downward only** (`pages/` + `features/` → `shared/`); **pages NEVER import sibling pages**; `shared/` is populated **on the 2nd consumer**; folder-per-widget. `@/*` aliases `src/app/*`.
 - **Wire fidelity.** Field names/types/presence come from `INTERFACE_CONTRACT.md` §2 verbatim (the FIXED P1 `ScanRow.to_wire()` / `SweepHeartbeat.to_wire()` keys). **No invented keys**, no renames; every numeric field is nullable and renders `—` (em-dash) when null — **never `0`**, never a fabricated value.
 - **Testing convention (risk-based, `.claude/agents/qa-verify.md` §4 as amended 2026-07-13).** **NOT one test per AC.** Test the invariants / negative space / silently-regressing behavior; verify visible+intentional things (copy, presence, ordering) by review. The set is enumerated in `UX_BLUEPRINT.md` §6 — **P4 implements exactly that set and does not re-scope it.**
-- **Testing gotchas (learned, verbatim).** MUI `sx` compiles to **classes** — **NEVER** assert `getAttribute('style')` (always empty; the vacuous-assertion trap). Use className identity or the injected `<style>` CSS text. `?raw` source scans **MUST be mutation-tested** (a scan that can't fail is worthless). `useMediaQuery` takes the **STRING** form (`theme.breakpoints.down('sm')`); jsdom has no `matchMedia` ⇒ `false` ⇒ desktop table, so narrow-layout tests stub `matchMedia` (the `positions-stage0.spec.tsx` idiom). The dashboard suite has **2 known timing-flaky specs** — a clean rerun is the tiebreaker. `npx nx lint @org/dashboard` carries **29 pre-existing warnings** (warnings ≠ errors; do not "fix" unrelated ones).
+- **Testing gotchas (learned, verbatim).** MUI `sx` compiles to **classes** — **NEVER** assert `getAttribute('style')` (always empty; the vacuous-assertion trap). Use className identity or the injected `<style>` CSS text. `?raw` source scans **MUST be mutation-tested** (a scan that can't fail is worthless). `useMediaQuery` takes the **STRING** form (`theme.breakpoints.down('sm')`); jsdom has no `matchMedia` ⇒ `false` ⇒ desktop table, so narrow-layout tests stub `matchMedia` (the `positions-stage0.spec.tsx` idiom). The dashboard suite has **2 known timing-flaky specs** — a clean rerun is the tiebreaker. `npx nx lint @convexa/dashboard` carries **29 pre-existing warnings** (warnings ≠ errors; do not "fix" unrelated ones).
 
 ## Open decisions (surface to the owner; do not block this plan)
 
@@ -35,7 +35,7 @@ Every task's requirements implicitly include these (copied verbatim in force fro
 3. **GATE-Z flag — `{X}` in "Sweep last ran {X} ago" has no source when `sweep_last_completed` is `null`.** A heartbeat can exist (`updated_at` present) with **no completed pass yet** (`sweep_last_completed: null`), and the FE then has no honest "last ran" epoch. This plan resolves it inside the two pinned copy variants: engagement is decided on `updated_at`, and the `{X}` variant is used **only** when `sweep_last_completed != null`; otherwise the "Sweep hasn't reported yet" variant renders (honest: no completed pass has been reported). **Owner: confirm.**
 4. **The two `shared/` promotions (RESOLVED here; recorded for transparency, not a GATE-Z).** `TintChip` and `useFlashOnChange` live in `pages/ticker/widgets/_kit/`. `/scanner` is their **2nd consumer**, and the README's rules — *"pages never import sibling pages"* + *"populate on 2nd consumer"* — make promotion to `shared/ui/` and `shared/hooks/` the only conforming move. Task 2 moves them, keeps `_kit/index.ts` re-exporting so every existing ticker import path is byte-unchanged, and re-points the two structural scans that pin their file paths (`single-motion-moment.spec.ts` `FLASH_HOME`, `stage3-amber.spec.ts` `TEXT_AMBER_CONSUMERS`). `StatTile` and `copy.ts` stay ticker-local (still one consumer).
 5. **`Widget` is deliberately NOT used for the scan table (RESOLVED here).** `DESIGN_SYSTEM.md` names `Widget` as the bento shell; `UX_BLUEPRINT` §0 specifies a **page-level dense table**, not a bento widget. `Widget` carries widget-selection context and a `widgetLivePulse` live-status treatment that this surface must not have (`[live-vs-static-isolation]` — no live semantics on the scan table). `StatTile`/`TintChip`/`useFlashOnChange` **are** used per the DESIGN_SYSTEM authority.
-6. **Project name.** The verification convention cites `nx test dashboard`; the actual Nx project is **`@org/dashboard`** (`npx nx show projects` → `["dashboard-e2e","@org/dashboard","@org/api","api",".claude"]`). Every command below uses the real name.
+6. **Project name.** The verification convention cites `nx test dashboard`; the actual Nx project is **`@convexa/dashboard`** (`npx nx show projects` → `["dashboard-e2e","@convexa/dashboard","@convexa/api","api",".claude"]`). Every command below uses the real name.
 
 ## File Structure
 
@@ -93,7 +93,7 @@ Each new file has one responsibility: `labels.ts` is copy + closed lookups (no l
 - Modify: `libs/api/src/lib/convexa.spec.ts` (append the scanner describe block)
 
 **Interfaces:**
-- Produces (Tasks 3–8 consume these via `@org/api`; `libs/api/src/index.ts` already does `export * from './lib/convexa'`):
+- Produces (Tasks 3–8 consume these via `@convexa/api`; `libs/api/src/index.ts` already does `export * from './lib/convexa'`):
   - `type ScanStatus = 'ok' | 'stale' | 'error' | 'building'`
   - `interface ScanRow` — the 14 FIXED P1 wire keys
   - `type ScanSortKey`, `interface ScanViewSort`, `type ScanDensity`, `interface ScanView`
@@ -377,14 +377,14 @@ import {
 
 Temporarily comment out the whole `export async function saveScanView` body's `return` line and replace it with `throw new Error('not implemented');`, then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/api
+cd C:/Dev/gammaflow-web && npx nx test @convexa/api
 ```
 Expected: FAIL — `saveScanView PUTs the body and returns the server-wins echo` reports `Error: not implemented`. **Restore** the real body.
 
 - [ ] **Step 4: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/api
+cd C:/Dev/gammaflow-web && npx nx test @convexa/api
 ```
 Expected:
 ```
@@ -525,7 +525,7 @@ import { TintChip } from '@/shared/ui/TintChip';
 - [ ] **Step 4: RED — the keyframe set-equality scan catches the move**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run shared/theme/single-motion-moment.spec.ts
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts
 ```
 Expected: FAIL —
 ```
@@ -552,19 +552,19 @@ const FLASH_HOME = '/src/app/shared/hooks/useFlashOnChange.ts';
 ```
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run shared/theme/single-motion-moment.spec.ts shared/theme/stage3-amber.spec.ts
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts shared/theme/stage3-amber.spec.ts
 ```
 Expected: `Test Files  2 passed (2)` — the keyframe inventory is still set-equal to `{liveDotPulse, widgetLivePulse, ordersWatchPulse}` + the `flash-*` family in its one (new) home.
 
 - [ ] **Step 6: Full suite + typecheck + lint — prove zero call-site churn**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard
 ```
 Expected: `Test Files  73 passed (73)` / `Tests  606 passed (606)` — **the baseline is unchanged**: nothing was added or removed, only relocated. (If a spec fails, re-run it alone once — two timing-flaky specs exist and a clean rerun is the tiebreaker.)
 
 ```bash
-cd C:/Dev/gammaflow-web && npx tsc -b apps/dashboard/tsconfig.app.json --force && npx nx run @org/dashboard:typecheck && npx nx lint @org/dashboard
+cd C:/Dev/gammaflow-web && npx tsc -b apps/dashboard/tsconfig.app.json --force && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard
 ```
 Expected: `tsc` prints nothing (exit 0); `typecheck` succeeds; `lint` reports **29 warnings, 0 errors** (the pre-existing count — no new warning may be introduced).
 
@@ -587,7 +587,7 @@ git commit -m "refactor(dashboard): promote TintChip -> shared/ui and useFlashOn
 - Create: `apps/dashboard/src/app/pages/scanner/format.spec.ts`
 
 **Interfaces:**
-- Consumes: `@org/api` types from Task 1 (`ScanRow`, `ScanStatus`, `ScanSortKey`, `ScanViewSort`, `SweepHeartbeat`).
+- Consumes: `@convexa/api` types from Task 1 (`ScanRow`, `ScanStatus`, `ScanSortKey`, `ScanViewSort`, `SweepHeartbeat`).
 - Produces (Tasks 4–8 consume):
   - `labels.ts`: `SCAN_COPY` (frozen copy bag) · `SCAN_COLUMNS: readonly ScanColumn[]` · `COLUMN_LABELS: Record<ScanColumn, string>` · `SORTABLE_COLUMNS: Partial<Record<ScanColumn, ScanSortKey>>` · `interface StatusMeta { label: string | null; tone: 'warning' | 'neutral' | null; tip: (rel: string) => string }` · `statusMeta(status: string): StatusMeta` · `UNAVAILABLE_STATUS_META` · `tierLabel(v)` / `regimeLabel(v)` / `volRegimeLabel(v)` → `string | null`
   - `format.ts`: `EM_DASH` · `relAge(s)` · `coarseAge(s)` · `dash(v, fmt)` · `fmtPrice` / `fmtScore` / `fmtSignedPct` · `updatedText(row, nowS): string | null` · `directionColor(chg): string` · `sortRows(rows, sort): ScanRow[]` · `SWEEP_DOWN_AFTER_S` · `sweepBanner(sweep, nowS): { engaged: boolean; text: string }`
@@ -612,7 +612,7 @@ Create `apps/dashboard/src/app/pages/scanner/labels.ts`:
  * the fail-honest UNAVAILABLE meta (statuses) or to `null` (labels ⇒ render nothing) — never a guess,
  * never a raw enum dump.
  */
-import type { ScanSortKey, ScanStatus } from '@org/api';
+import type { ScanSortKey, ScanStatus } from '@convexa/api';
 
 export const SCAN_COPY = {
   heading: 'Scanner',
@@ -772,7 +772,7 @@ Create `apps/dashboard/src/app/pages/scanner/format.ts`:
  * NOT a freshness claim, so rendering "Updated 3s ago" off it would be a fabricated freshness claim
  * on a row that has never been computed.
  */
-import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@org/api';
+import type { ScanRow, ScanSortKey, ScanViewSort, SweepHeartbeat } from '@convexa/api';
 import { SCAN_COPY } from './labels';
 
 /** Honestly-missing. Every nullable numeric renders THIS, never `0`, never a fabricated value. */
@@ -898,7 +898,7 @@ Create `apps/dashboard/src/app/pages/scanner/format.spec.ts`:
  * `building` row that grows a fabricated freshness claim, a sort that floats `null`s to the top, a
  * direction colour that leaks onto a rate. None of that is visible in a screenshot review.
  */
-import type { ScanRow, SweepHeartbeat } from '@org/api';
+import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
   coarseAge,
@@ -1089,7 +1089,7 @@ describe('sweepBanner', () => {
 
 In `format.ts`, temporarily move the `building` guard **after** the `as_of` guard (i.e. reorder the two `if` lines inside `updatedText` so `as_of` is read first and a fresh building row falls through), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/format.spec.ts
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
 ```
 Expected: FAIL —
 ```
@@ -1101,7 +1101,7 @@ That string is exactly the fabricated freshness claim the invariant forbids. **R
 - [ ] **Step 5: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/format.spec.ts
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
 ```
 Expected:
 ```
@@ -1127,7 +1127,7 @@ git commit -m "feat(scanner): FE closed status/tier/regime lookups + pinned copy
 - Create: `apps/dashboard/src/app/pages/scanner/useScan.spec.tsx`
 
 **Interfaces:**
-- Consumes: `@org/api` (`getScan`, `saveScanView`, `AuthError`, the Task-1 types); `@/features/auth/useGate` (`useGate`, `GateApi`); Task 3's `sortRows`/`sweepBanner`/`SCAN_COPY`.
+- Consumes: `@convexa/api` (`getScan`, `saveScanView`, `AuthError`, the Task-1 types); `@/features/auth/useGate` (`useGate`, `GateApi`); Task 3's `sortRows`/`sweepBanner`/`SCAN_COPY`.
 - Produces (Tasks 5–7 consume): `SCAN_POLL_MS = 30_000` · `SCAN_CLOCK_MS = 5_000` · `DEFAULT_SORT` · `interface ScanApi` · `useScan(): ScanApi`.
 
 - [ ] **Step 1: Write `useScan.ts`**
@@ -1168,7 +1168,7 @@ import {
   type ScanViewSort,
   type ScanViewWrite,
   type SweepHeartbeat,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGate, type GateApi } from '@/features/auth/useGate';
 import { sortRows, sweepBanner } from './format';
@@ -1353,7 +1353,7 @@ Create `apps/dashboard/src/app/pages/scanner/useScan.spec.tsx`:
  * Mocks ONLY the network boundary (`fetch` + `EventSource`), never a live backend.
  */
 import { ThemeProvider } from '@mui/material/styles';
-import type { ScanResponse } from '@org/api';
+import type { ScanResponse } from '@convexa/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1591,7 +1591,7 @@ describe('the server-gated view write', () => {
 
 In `useScan.ts`, temporarily replace the `await gate.guard(SCAN_COPY.signInToCustomize, async () => { … })` wrapper with a direct call to its body (i.e. run `saveScanView(draft)` without `guard`), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/useScan.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -1603,7 +1603,7 @@ i.e. an anonymous save reached the network. **Restore** the `gate.guard(...)` wr
 - [ ] **Step 4: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/useScan.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
 ```
 Expected:
 ```
@@ -1664,7 +1664,7 @@ Create `apps/dashboard/src/app/pages/scanner/ScanCells.tsx`:
  * Every nullable value renders the em-dash, never `0`. All colour is a theme token; zero hex.
  */
 import { Box, Tooltip, Typography } from '@mui/material';
-import type { ScanRow } from '@org/api';
+import type { ScanRow } from '@convexa/api';
 import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
@@ -1840,7 +1840,7 @@ Create `apps/dashboard/src/app/pages/scanner/ScanTable.tsx`:
  * order, trade, or broker affordance anywhere on this surface.
  */
 import { Box } from '@mui/material';
-import type { ScanDensity, ScanRow, ScanViewSort } from '@org/api';
+import type { ScanDensity, ScanRow, ScanViewSort } from '@convexa/api';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { extrasFor } from '@/shared/theme/tokens';
 import {
@@ -2101,7 +2101,7 @@ Create `apps/dashboard/src/app/pages/scanner/ScanCard.tsx`:
  * datum can never be rendered two ways.
  */
 import { Box } from '@mui/material';
-import type { ScanRow } from '@org/api';
+import type { ScanRow } from '@convexa/api';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   ChgCell,
@@ -2283,7 +2283,7 @@ Create `apps/dashboard/src/app/pages/scanner/scanner.risk.spec.tsx`:
  * className identity, never `getAttribute('style')`.
  */
 import { ThemeProvider } from '@mui/material/styles';
-import type { ScanRow } from '@org/api';
+import type { ScanRow } from '@convexa/api';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -2501,7 +2501,7 @@ describe('navigation only', () => {
 
 In `ScanCells.tsx`, temporarily change `LevelDistCell`'s distance `color: 'text.secondary'` to `color: directionColor(distPct)`, then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -2513,7 +2513,7 @@ That is exactly the proximity-chip regression class. **Restore** `color: 'text.s
 - [ ] **Step 6: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected:
 ```
@@ -2540,7 +2540,7 @@ git commit -m "feat(scanner): dense terminal table (locked columns, sticky symbo
 - Modify: `apps/dashboard/src/app/pages/scanner/scanner.risk.spec.tsx` (append the controls/editor batch)
 
 **Interfaces:**
-- Consumes: `@org/api` (`getScanUniverse`, the Task-1 types); `@/features/auth/SignInPrompt`; `@/features/auth/useGate` (`GateApi`); Task 3's `SCAN_COPY`.
+- Consumes: `@convexa/api` (`getScanUniverse`, the Task-1 types); `@/features/auth/SignInPrompt`; `@/features/auth/useGate` (`GateApi`); Task 3's `SCAN_COPY`.
 - Produces (Task 7 consumes):
   - `ScanToolbar.tsx`: `interface ScanToolbarProps { view; density; onDensity; onEditView; gate }` · `ScanToolbar(props)`
   - `ViewEditorDialog.tsx`: `interface ViewEditorDialogProps { open; onClose; view; sort; density; saveError; onSave: (draft: ScanViewWrite) => Promise<boolean> }` · `ViewEditorDialog(props)`
@@ -2560,7 +2560,7 @@ Create `apps/dashboard/src/app/pages/scanner/ScanToolbar.tsx`:
  * refused write re-raises. Nothing here writes: `onEditView`/`onDensity` are pure UI callbacks.
  */
 import { Box, Typography } from '@mui/material';
-import type { ScanDensity, ScanView } from '@org/api';
+import type { ScanDensity, ScanView } from '@convexa/api';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import type { GateApi } from '@/features/auth/useGate';
 import { extrasFor } from '@/shared/theme/tokens';
@@ -2714,7 +2714,7 @@ import {
   type ScanView,
   type ScanViewSort,
   type ScanViewWrite,
-} from '@org/api';
+} from '@convexa/api';
 import { useEffect, useMemo, useState } from 'react';
 import { MONO } from './ScanCells';
 import { SCAN_COPY } from './labels';
@@ -3159,7 +3159,7 @@ In `ViewEditorDialog.tsx`, temporarily add a second `TextField` above the name f
 ```
 then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -3171,7 +3171,7 @@ AssertionError: expected [ <input />, <input /> ] to have a length of 1 but got 
 - [ ] **Step 5: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected:
 ```
@@ -3697,7 +3697,7 @@ afterEach(() => {
 
 In `Scanner.tsx`, temporarily change the body branch to `scan.phase === 'loading' || scan.workerDown ? <ScanSkeleton /> : …` (i.e. the degrade swallows the table), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -3709,7 +3709,7 @@ That is the AC-6 failure mode: a worker death taking the page's content with it.
 - [ ] **Step 6: GREEN — the scanner suite, then the two collateral suites**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run pages/scanner
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner
 ```
 Expected:
 ```
@@ -3719,7 +3719,7 @@ Expected:
 (`format.spec.ts` 10 + `useScan.spec.tsx` 8 + `scanner.risk.spec.tsx` 21 — the 8 render-invariant cases from Task 5, the 5 control/editor cases from Task 6, and the 8 page-state + structural cases added here.)
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run app.risk.spec.tsx pages/positions/positions-page.spec.tsx shared/theme/stage3-amber.spec.ts
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run app.risk.spec.tsx pages/positions/positions-page.spec.tsx shared/theme/stage3-amber.spec.ts
 ```
 Expected: `Test Files  3 passed (3)` — the route walk resolves `/scanner` to `scanner-page`, the positions nav round-trip still finds it, and the amber census no longer references the retired stub.
 
@@ -3852,7 +3852,7 @@ If `/scanner` fails the overflow assertion, the cause is a card child that does 
 - [ ] **Step 4: The full unit suite — state the new totals**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard
 ```
 Expected:
 ```
@@ -3862,7 +3862,7 @@ Expected:
 Arithmetic from the pinned baseline (73 files / 606 tests): **+3 files** (`pages/scanner/format.spec.ts`, `pages/scanner/useScan.spec.tsx`, `pages/scanner/scanner.risk.spec.tsx`) **−1 file** (`pages/scanner/scanner.spec.tsx`, deleted) = **75**; **+39 tests** (10 + 8 + 21) **−2 tests** (the deleted stub suite) = **643**. The two `TintChip`/`useFlashOnChange` spec moves are relocations, so they change neither number. If a spec fails, re-run that file alone once — two timing-flaky specs exist and a clean rerun is the tiebreaker.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/api
+cd C:/Dev/gammaflow-web && npx nx test @convexa/api
 ```
 Expected: `Test Files  1 passed (1)` / `Tests  18 passed (18)`.
 
@@ -3874,14 +3874,14 @@ cd C:/Dev/gammaflow-web && npx tsc -b apps/dashboard/tsconfig.app.json --force
 Expected: no output, exit 0.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx run @org/dashboard:typecheck && npx nx lint @org/dashboard && npx nx lint @org/api
+cd C:/Dev/gammaflow-web && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard && npx nx lint @convexa/api
 ```
-Expected: typecheck succeeds; `@org/dashboard` lint reports **29 warnings, 0 errors** (the pre-existing count — a new warning means the new code introduced it and must be fixed); `@org/api` lint clean. The `@nx/enforce-module-boundaries` rule is satisfied by construction: `pages/scanner/` imports only `@/shared/*`, `@/features/auth/*` and `@org/api` (`scope:shared`, `type:lib`).
+Expected: typecheck succeeds; `@convexa/dashboard` lint reports **29 warnings, 0 errors** (the pre-existing count — a new warning means the new code introduced it and must be fixed); `@convexa/api` lint clean. The `@nx/enforce-module-boundaries` rule is satisfied by construction: `pages/scanner/` imports only `@/shared/*`, `@/features/auth/*` and `@convexa/api` (`scope:shared`, `type:lib`).
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx build @org/dashboard
+cd C:/Dev/gammaflow-web && npx nx build @convexa/dashboard
 ```
-Expected: `Successfully ran target build for project @org/dashboard`.
+Expected: `Successfully ran target build for project @convexa/dashboard`.
 
 - [ ] **Step 6: The FE-only structural proof + the invariant scans**
 
@@ -3894,12 +3894,12 @@ Expected: no `apps/api/` lines at all — `[additive-keeps-score-byte-identical]
 cd C:/Dev/gammaflow-web && rg -n "EventSource|streamTicker" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: poll-only surface (no stream primitive)"
 cd C:/Dev/gammaflow-web && rg -n "#[0-9a-fA-F]{3,8}\b" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: zero hardcoded hex in pages/scanner"
 cd C:/Dev/gammaflow-web && rg -n "@keyframes" apps/dashboard/src/app/pages/scanner || echo "CLEAN: the scanner declares no keyframe (the flash-* family is reused, inventory stays set-equal)"
-cd C:/Dev/gammaflow-web && rg -n "fetch\(|axios|XMLHttpRequest" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no raw network call in pages/scanner (all reads go through @org/api)"
+cd C:/Dev/gammaflow-web && rg -n "fetch\(|axios|XMLHttpRequest" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no raw network call in pages/scanner (all reads go through @convexa/api)"
 ```
 Expected: four `CLEAN: …` lines.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @org/dashboard -- --run shared/theme
+cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme
 ```
 Expected: `Test Files  10 passed (10)` — the whole design-enforcement family (hex discipline, banned hexes, stage-1/stage-3 tokens, the keyframe set-equality, focus-visible, fonts, warning-icon, brand assets, blog tokens) is green with the promotions and the new page in place.
 

@@ -34,7 +34,7 @@ import type {
   MarketContextPack,
   TermStructure,
   TickerBundle,
-} from '@org/api';
+} from '@convexa/api';
 import { act, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

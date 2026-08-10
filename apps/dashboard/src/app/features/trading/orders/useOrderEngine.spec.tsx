@@ -6,7 +6,7 @@
  *    isolation) — the healthy order still fills off the same live payload.
  * Mocks ONLY the network boundary (fetch) + spies the module seam the hook calls through.
  */
-import type { LiveUpdate, TickerBundle } from '@org/api';
+import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 

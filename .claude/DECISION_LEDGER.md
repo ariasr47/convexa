@@ -385,7 +385,7 @@ be exactly it.
 > standalone spec `iv_rank.json` PASS live [warmed URL] + offline [null-fault `--sample`]; byte-identity
 > independently re-derived three ways incl. a forced whole-store outage; the computed + degenerate-flat states
 > force-observed by seeding the disk store directly; AC↔test traceability non-vacuous; `nx test dashboard`
-> 685/685 [+27] + `@org/api` 13/13, `tsc -b --force` clean, `nx build` green). **No FAIL → no GATE Z bounce**
+> 685/685 [+27] + `@convexa/api` 13/13, `tsc -b --force` clean, `nx build` green). **No FAIL → no GATE Z bounce**
 > (both lanes' first-pass builds held under independent verification — a clean run, unlike the recent
 > lane-interruption ships). **New descriptive property:** the "trading/bundle path stays stateless" narrowing
 > now explicitly extends to a **market-data side-store** (the `chain_store` best-effort precedent made
@@ -408,7 +408,7 @@ be exactly it.
 > `live-vs-static-isolation`, `theme-token-discipline`) each gained an instance — no other graduation.
 > **QA (GATE Q)** fresh de-correlated **Sonnet**: **PASS 26/26** (0 FAIL / 0 UNVERIFIABLE; conformance new
 > standalone spec `ai_context_pack.json` + 8-spec no-regression sweep; byte-identity independently re-derived
-> against the live feed; AC↔test traceability non-vacuous; `nx test dashboard` 658/658 + `@org/api` 13/13,
+> against the live feed; AC↔test traceability non-vacuous; `nx test dashboard` 658/658 + `@convexa/api` 13/13,
 > `tsc -b` clean, `nx build` green). **Lane-interruption methodology note (system-10 kin):** BOTH executioner
 > lanes were cut off by an API session limit **before self-reporting** — the "completed" notifications
 > carried a session-limit banner, not a build report. The conductor treated them as UNVERIFIED and re-ran
@@ -418,10 +418,10 @@ be exactly it.
 > (7 label families, not 6); (3) an over-broad negative auth regex `/session/i` collided with the feature's
 > own copy ("today's **session** cumulative option volume") + `queryByText` throwing on a legitimate multiple
 > → narrowed to auth-CTA phrases + `queryAllByText`. Also a **stale `libs/api/dist`** (pre-rebrand
-> `gammaflow.d.ts`) produced FALSE `@org/api` type errors under `tsc -p tsconfig.app.json` — cleaned +
+> `gammaflow.d.ts`) produced FALSE `@convexa/api` type errors under `tsc -p tsconfig.app.json` — cleaned +
 > regenerated. **Lessons:** (a) a subagent "completed" whose result is a limit/quota banner is UNVERIFIED —
 > re-run the gates, never trust it; (b) `tsc -b --force` (build-mode, regenerates referenced lib decls) is
-> the reliable typecheck when `libs/api/dist` is stale — a bare `tsc -p tsconfig.app.json` resolves `@org/api`
+> the reliable typecheck when `libs/api/dist` is stale — a bare `tsc -p tsconfig.app.json` resolves `@convexa/api`
 > through the stale built `.d.ts`. **Latent finding logged (NOT this feature's regression):**
 > `off_exchange.blocks[].age_seconds` drifts ~1s between identical-input runs (a pre-existing WALL-CLOCK
 > display field, display-only + unscored → never touches score/tier/`state_fingerprint`); it only trips the
@@ -681,7 +681,7 @@ be exactly it.
 > `loss-free-durable-migration`. The three logged keys (`additive-keeps-score-byte-identical`,
 > `best-effort-isolated-or-null`, + the new migration key) — the two canon keys gained an instance, no new
 > graduation. QA (GATE Q) on Sonnet, de-correlated: **23/23 ACs PASS**, conformance unchanged, dashboard
-> 283/283 + @org/api 7/7. STAYS unrenamed (non-goals): `@org/*` scope, `DATA_DIR`, the local working
+> 283/283 + @convexa/api 7/7. STAYS unrenamed (non-goals): `@org/*` scope, `DATA_DIR`, the local working
 > folder, and archived-contract/ledger history (provenance).
 
 > Note (GATE S, user-accounts, 2026-06-25): the project's **first stateful backend surface + first
@@ -699,7 +699,7 @@ be exactly it.
 > state store outside that path." It was never a Promoted-canon key (no Demoted-table move). New watch-list
 > key `server-side-gate-enforcement` logged (the AC-E7 GATE Q catch). QA (GATE Q) on Sonnet, de-correlated:
 > initial FAIL on AC-E7 (FE-only gate) → bounced (GATE Z) → FE wired the server gate → **GATE Q RE-RUN
-> PASS** 30/30, conformance 2/2, `dashboard` 246/246 + `@org/api` 7/7.
+> PASS** 30/30, conformance 2/2, `dashboard` 246/246 + `@convexa/api` 7/7.
 
 > Note (GATE S, ticker-load-experience, 2026-06-25): perf + UX refinement of the ticker page (chain
 > pre-warm 7.8s→1.2s, fetch concurrency, request-coalescing, skeleton-first load, live last-trade). The

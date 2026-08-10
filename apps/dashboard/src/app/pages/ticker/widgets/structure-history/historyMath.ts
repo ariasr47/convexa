@@ -2,7 +2,7 @@
  * Pure helpers for structure history display — session path deltas and sparkline points.
  * Neutral only: never green/red on score or flip-dist rates.
  */
-import type { StructureSample } from '@org/api';
+import type { StructureSample } from '@convexa/api';
 
 export interface SessionPathSummary {
   n: number;

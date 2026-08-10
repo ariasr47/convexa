@@ -11,7 +11,7 @@
  *
  * Pure module: no React, no fetch, no clock (`nowMs` is an input).
  */
-import type { BrokerBook } from '@org/api';
+import type { BrokerBook } from '@convexa/api';
 import { hasServedSnapshot, isStale } from './predicates';
 
 export type BrokerRenderState =

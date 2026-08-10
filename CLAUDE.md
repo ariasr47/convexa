@@ -14,10 +14,10 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
   `cargo run -p api-rust -- serve` (:8000). Crate name `api-rust`. Universe:
   `apps/api/config/universe.json`. Quant: `libs/quant-engine`. Archived Python:
   `archive/api-python/`.
-- `apps/dashboard` (`@org/dashboard`) — React 19 + Vite + MUI (`npm run serve:dashboard`
-  → :4200, proxies `/api` → :8000). Tests: `nx test @org/dashboard`.
+- `apps/dashboard` (`@convexa/dashboard`) — React 19 + Vite + MUI (`npm run serve:dashboard`
+  → :4200, proxies `/api` → :8000). Tests: `nx test @convexa/dashboard`.
 - `apps/dashboard-e2e` — Playwright e2e.
-- `libs/api` (`@org/api`) — shared TS API client (consumed as source).
+- `libs/api` (`@convexa/api`) — shared TS API client (consumed as source).
 - `.claude/` — delivery orchestration (conductor, contracts, skills). **Committed.**
 - `.codex/` — Codex CLI local state. **Gitignored.**
 - Grok Build — global skills under `~/.grok`; do **not** use repo `.agents/` (Nx

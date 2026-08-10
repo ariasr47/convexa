@@ -1,4 +1,4 @@
-import type { StructureSample } from '@org/api';
+import type { StructureSample } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { fmtPathDelta, sparkPoints, summarizePath } from './historyMath';
 

@@ -1,7 +1,7 @@
 /**
  * Unit — entry/fill resolver + the resting-limit cross rule (AC-12..AC-16, AC-18, AC-20).
  */
-import type { TrackedContract } from '@org/api';
+import type { TrackedContract } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { limitWouldFill, resolveManualFill, resolveMarketFill } from './entry';
 

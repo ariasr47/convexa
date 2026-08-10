@@ -4,7 +4,7 @@
  * failure degrades to in-memory only and never throws into the UI.
  */
 import { resolveDurable } from '@/shared/lib/durable/resolveDurable';
-import type { PersonaDefinition } from '@org/api';
+import type { PersonaDefinition } from '@convexa/api';
 
 const KEY = 'convexa.personas.v1';
 const LEGACY_KEY = 'gammaflow.personas.v1';

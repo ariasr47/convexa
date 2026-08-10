@@ -56,7 +56,7 @@ export default defineConfig(({ mode }) => {
         : undefined,
     },
     test: {
-      name: '@org/dashboard',
+      name: '@convexa/dashboard',
       watch: false,
       globals: true,
       environment: 'jsdom',

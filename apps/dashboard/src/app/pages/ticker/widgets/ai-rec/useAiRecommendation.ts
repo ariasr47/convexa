@@ -22,7 +22,7 @@ import {
   RecStatus,
   requestRecommendation,
   TickerBundle,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface RecRequestOpts {

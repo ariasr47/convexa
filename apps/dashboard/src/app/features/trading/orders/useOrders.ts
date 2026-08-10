@@ -26,7 +26,7 @@ import {
   putPosition,
 } from '@/features/trading/positions/store';
 import { PORTFOLIO_SCHEMA_VERSION } from '@/features/trading/positions/types';
-import type { OptionRight, TickerBundle } from '@org/api';
+import type { OptionRight, TickerBundle } from '@convexa/api';
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { STORE_FAULT_TITLE } from './copy';
 import { EngineTick, evaluateOrder, isClockExpired, OrderTransition } from './engine';

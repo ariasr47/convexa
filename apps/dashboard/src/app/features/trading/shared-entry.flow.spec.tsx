@@ -1,7 +1,7 @@
 /**
  * Flow-integration — the sim-entry-unification contract's two NAMED tests, driven through the REAL
  * pages (the full <App/> route table, the real PortfolioPanel/usePortfolio/TickerDashboard subtrees),
- * mocking ONLY the network boundary (`fetch` via the @org/api client + the SSE `EventSource`). Never
+ * mocking ONLY the network boundary (`fetch` via the @convexa/api client + the SSE `EventSource`). Never
  * a live backend.
  *
  *  1. The Positions page and the Ticker page mount the SAME shared dialog component — both paths
@@ -12,7 +12,7 @@
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@org/api';
+import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

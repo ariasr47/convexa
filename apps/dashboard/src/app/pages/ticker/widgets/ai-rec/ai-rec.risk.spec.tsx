@@ -39,7 +39,7 @@ import {
   __resetMemory as __resetPositions,
   allPositions,
 } from '@/features/trading/positions/store';
-import type { RecResponse, RecStatus, RecStrategy, TickerBundle } from '@org/api';
+import type { RecResponse, RecStatus, RecStrategy, TickerBundle } from '@convexa/api';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';

@@ -3,7 +3,7 @@
  * the "Why" + "Re-engage when" lists, the collapsible "Analyst read", and the bundle-sourced
  * "Levels in play" strip. Renders the exported pieces in isolation (no App/network mount).
  */
-import type { RecStrategy, TickerBundle } from '@org/api';
+import type { RecStrategy, TickerBundle } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';

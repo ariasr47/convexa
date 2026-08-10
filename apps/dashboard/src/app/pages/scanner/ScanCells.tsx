@@ -16,7 +16,7 @@ import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange'
 import { typographyTokens } from '@/shared/theme/tokens';
 import { TintChip } from '@/shared/ui/TintChip';
 import { Box, Tooltip, Typography } from '@mui/material';
-import type { ScanRow } from '@org/api';
+import type { ScanRow } from '@convexa/api';
 import {
   dash,
   directionColor,
@@ -196,7 +196,7 @@ export function LevelDistCell({
   );
 }
 
-/** "Updated {rel} ago" — or the dash when there is no honest claim to make (`building`, or a
+/** "Structure as-of {rel}" — or the dash when there is no honest claim (`building`, or a
  *  non-positive `as_of`). `updatedText` branches on status BEFORE it reads `as_of`. */
 export function UpdatedCell({ row, nowS }: { row: ScanRow; nowS: number }) {
   const text = updatedText(row, nowS);

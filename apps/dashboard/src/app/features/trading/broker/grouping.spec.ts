@@ -3,7 +3,7 @@
  * Built over `BrokerPositionView[]` composed from the F1 fixtures — never a re-projection.
  */
 import type { MarkResult } from '@/features/trading/model/mark';
-import type { BrokerBook, BrokerPosition } from '@org/api';
+import type { BrokerBook, BrokerPosition } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { brokerLegId, buildBrokerPositionView } from './brokerView';
 import {

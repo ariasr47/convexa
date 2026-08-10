@@ -43,8 +43,8 @@ export default defineConfig({
 
   webServer: {
     command: process.env['CI']
-      ? `npx nx run @org/dashboard:serve-static --port=${PORT}`
-      : `npx nx run @org/dashboard:serve`,
+      ? `npx nx run @convexa/dashboard:serve-static --port=${PORT}`
+      : `npx nx run @convexa/dashboard:serve`,
     url: baseURL,
     reuseExistingServer: !process.env['CI'],
     cwd: workspaceRoot,

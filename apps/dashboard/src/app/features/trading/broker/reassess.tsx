@@ -21,7 +21,7 @@ import {
   DialogTitle,
   Typography,
 } from '@mui/material';
-import type { BrokerBook, OptionRight } from '@org/api';
+import type { BrokerBook, OptionRight } from '@convexa/api';
 import { useState } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';

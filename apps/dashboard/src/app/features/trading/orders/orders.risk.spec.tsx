@@ -27,11 +27,11 @@
  * row cell formatting, panel/widget layout and tab chrome, the scenario-harness UI, detail-dialog
  * contents, the Accept-flow chrome. The pure engine/seed/store matrices live in their unit specs.
  *
- * Mocks ONLY the network boundary (`fetch` via the @org/api client + the SSE `EventSource`).
+ * Mocks ONLY the network boundary (`fetch` via the @convexa/api client + the SSE `EventSource`).
  */
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
-import type { LiveUpdate, StrikeRow, TickerBundle } from '@org/api';
+import type { LiveUpdate, StrikeRow, TickerBundle } from '@convexa/api';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

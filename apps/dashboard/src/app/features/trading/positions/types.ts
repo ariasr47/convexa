@@ -9,7 +9,7 @@
  * Schema is versioned; v1 (single trade per ticker) migrates loss-free into v2 (flat positions map).
  */
 import type { DecisionRecord, MarkBasis } from '@/features/trading/model/types';
-import type { OptionRight } from '@org/api';
+import type { OptionRight } from '@convexa/api';
 import type { Leg, SimPosition } from './leg';
 import type { StructureKind } from './structure';
 

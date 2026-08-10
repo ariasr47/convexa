@@ -9,7 +9,7 @@
  * nobody has proven are one trade. Composition yields exactly the contract: a count and a net.
  *
  * IMPORT ALLOW-LIST, enforced by `eslint.config.mjs` (Layer 1) and by a source scan (Layer 2):
- * `./brokerView`, `./predicates`, and `@org/api` TYPES ONLY. Nothing from `positions/*` — all four
+ * `./brokerView`, `./predicates`, and `@convexa/api` TYPES ONLY. Nothing from `positions/*` — all four
  * entry points to the naming machine take a position record, so importing none of them closes all four
  * at once, including against the future. Two consequences fall out for free: no percentage is
  * computable here, and the epsilon/label/kind vocabulary is out of reach.
@@ -17,7 +17,7 @@
  * NO LEG ARRAY IS EVER MATERIALISED AT GROUP LEVEL as a projection input; the wire legs are read only
  * to COUNT and to gate.
  */
-import type { BrokerBook } from '@org/api';
+import type { BrokerBook } from '@convexa/api';
 import {
   NOT_PROVIDED,
   UNAVAILABLE,

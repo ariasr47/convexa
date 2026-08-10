@@ -18,7 +18,7 @@ import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import type { LiveUpdate, MarketState, Signals } from '@org/api';
+import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';
 import { FreshnessLine } from './FreshnessLine';
 

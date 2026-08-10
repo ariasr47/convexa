@@ -43,7 +43,7 @@ apps/
   dashboard/      React + Vite frontend (Convexa UI)                 → :4200 (proxies /api)
   dashboard-e2e/  Playwright end-to-end tests
 libs/
-  api/            @org/api — shared, typed API client (consumed as source)
+  api/            @convexa/api — shared, typed API client (consumed as source)
 .claude/          Delivery-orchestration system (contracts, role agents, tools)
 docs/             Design notes
 ```
@@ -100,7 +100,7 @@ Then open **http://localhost:4200**.
 ### Test / lint / format / build
 
 ```bash
-npm test                 # unit tests (dashboard, @org/api, cargo)
+npm test                 # unit tests (dashboard, @convexa/api, cargo)
 npm run typecheck        # required — Vitest does not typecheck
 npm run lint
 npm run format:check     # scoped Prettier (never bare nx format:write)

@@ -24,7 +24,7 @@ import {
   fetchBrokerCredential,
   putBrokerCredential,
   type BrokerCredentialHint,
-} from '@org/api';
+} from '@convexa/api';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';

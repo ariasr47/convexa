@@ -15,7 +15,7 @@
  *  G4 — with no multiplier, `Net entry` / `$ P/L` / `% P/L` are units claims we cannot make. They
  *       are withheld, never defaulted to ×1 or ×100 (the positions-legs lesson).
  */
-import type { BrokerPosition } from '@org/api';
+import type { BrokerPosition } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { BrokerPositionCard } from './BrokerPositionCard';

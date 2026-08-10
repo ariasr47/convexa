@@ -19,7 +19,7 @@
  *    write against durable status (unexpected current status ⇒ no-op — idempotent, AC-18).
  */
 import { limitWouldFill } from '@/features/trading/positions/entry';
-import type { LiveUpdate } from '@org/api';
+import type { LiveUpdate } from '@convexa/api';
 import type { OrderFillBasis, SimOrder, Trigger } from './types';
 
 /** One evaluation tick's inputs. `optionMark` MUST already be live-resolved by the caller (null

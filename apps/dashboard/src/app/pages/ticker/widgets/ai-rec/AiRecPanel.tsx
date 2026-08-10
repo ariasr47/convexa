@@ -44,8 +44,8 @@ import type {
   RecScenarioInfo,
   RecStrategy,
   TickerBundle,
-} from '@org/api';
-import { fetchPersonas } from '@org/api';
+} from '@convexa/api';
+import { fetchPersonas } from '@convexa/api';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {

@@ -11,7 +11,7 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Alert, Box, Button, Divider, Snackbar, Stack, TextField, Typography } from '@mui/material';
-import { AuthError, getAiKeyStatus, removeAiKey, setAiKey, type AiKeyStatus } from '@org/api';
+import { AuthError, getAiKeyStatus, removeAiKey, setAiKey, type AiKeyStatus } from '@convexa/api';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';

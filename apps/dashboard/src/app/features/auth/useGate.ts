@@ -12,7 +12,7 @@
  * The auth gate is OUTERMOST: this helper does NOT know about ai-rec's cooldown/cap/no_key — those
  * only run AFTER `allowed` is true, in the existing surfaces.
  */
-import { AuthError, simTradeGate } from '@org/api';
+import { AuthError, simTradeGate } from '@convexa/api';
 import { useCallback, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';

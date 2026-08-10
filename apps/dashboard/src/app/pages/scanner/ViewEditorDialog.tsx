@@ -24,7 +24,7 @@ import {
   type ScanView,
   type ScanViewSort,
   type ScanViewWrite,
-} from '@org/api';
+} from '@convexa/api';
 import { useEffect, useMemo, useState } from 'react';
 import { MONO } from './ScanCells';
 import { SCAN_COPY } from './labels';

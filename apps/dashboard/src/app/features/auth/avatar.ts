@@ -9,7 +9,7 @@
  * the gradient).
  */
 import type { SxProps, Theme } from '@mui/material/styles';
-import type { AuthUser } from '@org/api';
+import type { AuthUser } from '@convexa/api';
 
 /** The user's initial (display name first, else email), uppercased; a neutral dot when unknown. */
 export function avatarInitial(user: AuthUser | null | undefined): string {

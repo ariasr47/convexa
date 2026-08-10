@@ -448,6 +448,7 @@ mod tests {
             iv_store_path: PathBuf::from("data/iv_timeseries.json"),
             database_url: None,
             public_rate_limit_per_min: 0,
+            metrics_secret_token: None,
             workspace_root: PathBuf::from("."),
         }
     }

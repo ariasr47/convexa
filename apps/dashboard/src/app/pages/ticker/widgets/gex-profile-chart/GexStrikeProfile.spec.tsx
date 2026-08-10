@@ -9,7 +9,7 @@
  */
 import { theme } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import type { StrikeRow } from '@org/api';
+import type { StrikeRow } from '@convexa/api';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { windowedStrikes } from './chart';

@@ -36,7 +36,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
-import type { IvRankRead } from '@org/api';
+import type { IvRankRead } from '@convexa/api';
 import {
   IVR_ADVISORY,
   IVR_FLAT_NOTE,

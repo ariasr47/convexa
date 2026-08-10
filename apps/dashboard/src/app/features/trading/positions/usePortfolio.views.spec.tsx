@@ -9,10 +9,10 @@
  *   3. `live-vs-static-isolation` — an SSE drop leaves a last-known number PRESENT, never blanked;
  *   4. all-or-nothing withholding, and the excluded-but-COUNTED subtotal.
  *
- * Mocks ONLY the network boundary (`@org/api`'s `fetchTrackedContract`) — never the store, never the
+ * Mocks ONLY the network boundary (`@convexa/api`'s `fetchTrackedContract`) — never the store, never the
  * derivation, never a live backend.
  */
-import type { LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
+import type { LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { act, cleanup, render } from '@testing-library/react';
 import { useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,8 +25,8 @@ import { usePortfolio } from './usePortfolio';
 
 // The ONLY mocked boundary. `vi.mock` is hoisted, so the spy lives in a module-scope holder.
 const fetchSpy = vi.fn<(ticker: string, q: Record<string, unknown>) => Promise<unknown>>();
-vi.mock('@org/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@org/api')>();
+vi.mock('@convexa/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@convexa/api')>();
   return {
     ...actual,
     fetchTrackedContract: (ticker: string, q: Record<string, unknown>) => fetchSpy(ticker, q),

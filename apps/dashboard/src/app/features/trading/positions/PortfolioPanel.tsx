@@ -21,7 +21,7 @@ import { useGate } from '@/features/auth/useGate';
 import { EntryPrefill } from '@/features/trading/TradeEntryDialog';
 import { BrokerTabPanel } from '@/features/trading/broker/BrokerTabPanel';
 import { Alert, Box, Snackbar } from '@mui/material';
-import type { LiveUpdate, TickerBundle } from '@org/api';
+import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import { useState } from 'react';
 import { PositionsPanel } from './PositionsPanel';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';

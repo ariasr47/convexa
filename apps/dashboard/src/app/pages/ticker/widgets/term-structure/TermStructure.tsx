@@ -8,7 +8,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import type { TermStructure } from '@org/api';
+import type { TermStructure } from '@convexa/api';
 import { Line, LineChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from 'recharts';
 import { sampleTermPoints, termTip, withStructureAge } from '../_kit/copy';
 

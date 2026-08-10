@@ -44,7 +44,7 @@ import {
   NOT_RECORDED,
   type PositionView,
 } from '@/features/trading/positions/view';
-import type { BrokerBook, BrokerFact, BrokerLeg, BrokerPosition } from '@org/api';
+import type { BrokerBook, BrokerFact, BrokerLeg, BrokerPosition } from '@convexa/api';
 import { isStale } from './predicates';
 
 /**

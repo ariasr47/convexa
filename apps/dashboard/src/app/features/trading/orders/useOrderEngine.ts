@@ -15,7 +15,7 @@
  *    payload (AC-27). Clock expiry is swept on every tick too (the only off-stream transition).
  */
 import { computeMark } from '@/features/trading/model/mark';
-import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@org/api';
+import { fetchTrackedContract, LiveUpdate, TickerBundle, TrackedContract } from '@convexa/api';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { tickFromLive } from './engine';
 import { allOrders, getOrdersVersion, subscribeOrders } from './store';

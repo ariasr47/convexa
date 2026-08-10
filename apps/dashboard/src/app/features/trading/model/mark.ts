@@ -9,7 +9,7 @@
  *  - last_known   : stream offline — last computed mark, frozen + ⏸ (never framed as live).
  * Overnight/closed: freeze the anchor; no fake ticks.
  */
-import type { OptionRight, TrackedContract } from '@org/api';
+import type { OptionRight, TrackedContract } from '@convexa/api';
 import type { MarkBasis } from './types';
 
 // Operator-config (tunable) — kept in code in v1; documented as operator knobs.

@@ -4,7 +4,7 @@
  * the network. A regression would break a trade write for a readout's benefit.
  */
 import { __resetPersonas, saveActiveId } from '@/features/personas/store';
-import type { TickerBundle } from '@org/api';
+import type { TickerBundle } from '@convexa/api';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildEntryContextDigest, CAPTURE_EVENTS, entryContextFor } from './captureDigest';
 

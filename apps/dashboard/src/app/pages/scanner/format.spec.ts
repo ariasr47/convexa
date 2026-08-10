@@ -4,7 +4,7 @@
  * `building` row that grows a fabricated freshness claim, a sort that floats `null`s to the top, a
  * direction colour that leaks onto a rate. None of that is visible in a screenshot review.
  */
-import type { ScanRow, SweepHeartbeat } from '@org/api';
+import type { ScanRow, SweepHeartbeat } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
   coarseAge,
@@ -99,8 +99,10 @@ describe('updatedText — the pinned `building` as_of trap', () => {
   });
 
   it('ok/stale rows report their real age; a non-positive as_of makes no claim', () => {
-    expect(updatedText(row({ status: 'ok', as_of: NOW - 42 }), NOW)).toBe('Updated 42s ago');
-    expect(updatedText(row({ status: 'stale', as_of: NOW - 600 }), NOW)).toBe('Updated 10m ago');
+    expect(updatedText(row({ status: 'ok', as_of: NOW - 42 }), NOW)).toBe('Structure as-of 42s');
+    expect(updatedText(row({ status: 'stale', as_of: NOW - 600 }), NOW)).toBe(
+      'Structure as-of 10m',
+    );
     expect(updatedText(row({ status: 'error', as_of: 0 }), NOW)).toBeNull();
   });
 });

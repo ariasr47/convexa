@@ -12,7 +12,7 @@
 import { useFlashOnChange } from '@/shared/hooks/useFlashOnChange';
 import { Widget } from '@/shared/ui/Widget';
 import { Box } from '@mui/material';
-import type { LiveUpdate, MarketState } from '@org/api';
+import type { LiveUpdate, MarketState } from '@convexa/api';
 import { LIVE_TAPE_SUBTITLE_LIVE, LIVE_TAPE_SUBTITLE_OFFLINE } from '../_kit/copy';
 import { StatTile } from '../_kit/StatTile';
 

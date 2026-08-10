@@ -7,7 +7,7 @@
  * `setGoogle(bool)` flips the config flag, `failSession()` simulates a who-am-I transport fault, and
  * the auth-write handlers can be told to 409/422/401/503 to drive every error state.
  */
-import type { SessionStatus, StrikeRow, TickerBundle, UserSettings } from '@org/api';
+import type { SessionStatus, StrikeRow, TickerBundle, UserSettings } from '@convexa/api';
 import { vi } from 'vitest';
 
 /** byo-ai-key: how the rec POST resolves the key (the 5 observable states a–e). Each maps to the

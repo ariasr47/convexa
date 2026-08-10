@@ -7,7 +7,7 @@ import {
   typographyTokens,
 } from '@/shared/theme/tokens';
 import { createTheme, type Theme } from '@mui/material/styles';
-import type { ThemePref } from '@org/api';
+import type { ThemePref } from '@convexa/api';
 
 // The shared MUI typography variant map (redesign-stage-1 §4.3 — the proposal §3 scale).
 // Display voice = Archivo SemiExpanded via a REAL `font-stretch` (variable wdth axis, never a

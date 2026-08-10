@@ -4,7 +4,7 @@
  * ladder's PRECEDENCE (snapshot → modeled → theoretical → last_known → frozen) or in the P/L
  * arithmetic would be invisible in review — the UI would keep rendering plausible numbers.
  */
-import type { TrackedContract } from '@org/api';
+import type { TrackedContract } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { bsPrice, computeMark, pl, RISK_FREE_RATE, type MarkInputs } from './mark';
 

@@ -128,6 +128,21 @@ CREATE INDEX IF NOT EXISTS scan_structure_history_symbol_as_of_idx
     ON scan_structure_history (symbol, as_of DESC);
 "#,
     ),
+    (
+        4,
+        "ai_rec_metering",
+        r#"
+-- Shared AI-rec daily counters (multi-replica). Keyed by ET calendar day + identity
+-- ('shared' for process/shared-admin path, or user id for own-key metering).
+CREATE TABLE IF NOT EXISTS ai_rec_daily (
+    day_et     TEXT NOT NULL,
+    identity   TEXT NOT NULL,
+    count      INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (day_et, identity)
+);
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.

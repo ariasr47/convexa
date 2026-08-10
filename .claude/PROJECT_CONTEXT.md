@@ -194,7 +194,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   accept-rec writes call `POST /api/positions/sim-trade/gate`; D6d "stored in this browser, not tied to your
   account yet" disclosure) and `pages/ticker/widgets/ai-rec/AiRecPanel` (ask-AI **auth-outermost** — a
   logged-out call shows "sign in", never ai-rec cooldown/cap/no_key; manual export floor stays anonymous).
-- `libs/api/src/lib/convexa.ts` (renamed from `gammaflow.ts` at the rebrand; consumed via `@org/api`, so
+- `libs/api/src/lib/convexa.ts` (renamed from `gammaflow.ts` at the rebrand; consumed via `@convexa/api`, so
   zero export churn) — typed API client: `getTicker`, `streamTicker`,
   `fetchTrackedContract`, `fetchMetrics`; `Meta` tolerates optional `trace_id?`/`timings?`;
   `PersonaDefinition`/`Handoff` persona types; **auth surface** (`getSession`, `signup`, `login`, `logout`,
@@ -591,7 +591,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   byte-identical worker-absent vs worker-present (SPY `59`/`actionable`/`4df5c37bd833`). **v1 has NO AI**
   (AI-seeded views + batch recs are v2), no alerts, no universe admin UI, no SSE, no order path.
   **Formally narrowed the locked "single-ticker, on-demand" decision** (§5). QA PASS all four phases
-  (de-correlated Sonnet) — **13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @org/dashboard` 645; e2e 15/15;
+  (de-correlated Sonnet) — **13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @convexa/dashboard` 645; e2e 15/15;
   conformance 2/2 live via the standalone `.claude/tools/conformance/scanner.json`. See OPEN_THREADS §7v.
 - **Outcome ledger — the track record (`outcome-ledger`, FE-only, shipped 2026-07-16)** — the project's
   **first loop for TRADING wisdom** (it already had `DECISION_LEDGER.md` for BUILD wisdom). Harvests the
@@ -692,7 +692,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `NO_BACKEND_CHANGE`. Scoring path untouched. *(2026-06-24.)*
 - **Full Convexa rebrand (`rebrand-convexa`, FE+BE, cosmetic)** — completed the GammaFlow→Convexa rebrand
   from UI-only to the **whole codebase** (134 refs / 51 files): identifiers, the `libs/api` client file
-  (`gammaflow.ts`→`convexa.ts`, consumed via `@org/api` so zero export churn), backend logger/FastAPI
+  (`gammaflow.ts`→`convexa.ts`, consumed via `@convexa/api` so zero export churn), backend logger/FastAPI
   title/ContextVar, docs/README/CLAUDE.md, `project.json` `project_name`, and the GitHub repo
   (`gammaflow`→`convexa`). The 4 **durable localStorage keys** were migrated `gammaflow.*`→`convexa.*`
   **loss-free** via a reusable `resolveDurable(new,old)` migrate-on-read helper (read-new-else-old,
@@ -700,7 +700,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   chain. **STAYS unrenamed (non-goals):** the `@org/*` package scope, `DATA_DIR`, the local working folder,
   and archived-contract/ledger history (provenance). Reverses the app-shell-landing "UI-only" decision.
   Cosmetic to the engine — score/tier/`state_fingerprint` byte-identical, conformance unchanged. QA PASS
-  (Sonnet, de-correlated — 23/23 ACs, dashboard 283/283 + `@org/api` 7/7). *(2026-06-28.)*
+  (Sonnet, de-correlated — 23/23 ACs, dashboard 283/283 + `@convexa/api` 7/7). *(2026-06-28.)*
 - **Ticker-page load experience (both lanes, additive)** — the ticker viewer (`/ticker/:symbol`) loads fast
   and feels instant. **Backend:** new `src/core/chain_store.py`, a process-local, ticker-keyed, timestamped
   shared **chain-INPUT** store — `LiveSession._refresh_chain` (already re-fetching the full chain every
@@ -734,7 +734,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `state_fingerprint` byte-identical anonymous-vs-signed-in (score 24, fp `79373ef9194e`); no setting is a
   scoring input; `no-real-order-path` untouched (Positions stays `SIMULATED`). QA PASS (Sonnet,
   de-correlated; AC-E7 server-gate FAIL bounced+fixed, GATE Q re-run 30/30, conformance 2/2, `dashboard`
-  246/246 + `@org/api` 7/7). *(2026-06-25.)*
+  246/246 + `@convexa/api` 7/7). *(2026-06-25.)*
 - **Hybrid bring-your-own AI key (`byo-ai-key`, FE+BE)** — per-user Anthropic keys for the in-app AI rec.
   A signed-in user stores their own key (Settings "AI key" section, write-only — masked `····last4`, Replace/
   Remove, **no reveal**) and the rec calls Anthropic with **their** key (their cost, no shared cap). The
@@ -747,7 +747,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   decrypt-fail ⇒ treated as no usable key. Per-request resolution at the `main.py` boundary; the AI rec
   stays a one-way leaf — score/tier/`state_fingerprint` byte-identical across all 5 states (24 / actionable /
   `79373ef9194e`). New dep `cryptography`. QA PASS (Sonnet, de-correlated — AC-19 named-test gap caught &
-  fixed → re-run 26/26; security floor + byte-identity clean; dashboard 313/313 + `@org/api` 13/13).
+  fixed → re-run 26/26; security floor + byte-identity clean; dashboard 313/313 + `@convexa/api` 13/13).
   Realizes the deferred ai-rec BYO-key seam. *(2026-06-29.)*
 - **Backend observability** (operator-facing; trader path unchanged): the six bundle stages
   (`vendor_fetch` io_vendor, `engine_build`/`off_exchange` cpu_engine, `signals` cpu_signals,
@@ -980,7 +980,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   Postgres. Verified end-to-end (SPA 200; proxied `/api` returns real Postgres-backed backend JSON). Config: backend →
   **Railway** (builds `apps/api/Dockerfile`, root dir `apps/api`; CMD honors Railway's `$PORT`; managed
   Postgres plugin → `DATABASE_URL`; `ACCOUNT_STORE=postgres`). Frontend → **Cloudflare Pages** (build
-  `npx nx build @org/dashboard` → `apps/dashboard/dist`). Cross-origin `/api` is a **streaming Cloudflare
+  `npx nx build @convexa/dashboard` → `apps/dashboard/dist`). Cross-origin `/api` is a **streaming Cloudflare
   Pages Function** (`apps/dashboard/functions/api/[[path]].ts`) proxying `/api/*`→Railway (SSE-safe; reads
   the backend URL from the Pages env `API_ORIGIN`; 404-blocks `/api/_metrics` at the edge). **New prod env
   (owner-set in Railway, never committed):** `ALLOWED_ORIGINS` (the `*.pages.dev` origin), `METRICS_SECRET_TOKEN`
@@ -1004,7 +1004,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
   critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.mjs`).
 - One Nx monorepo: backend `apps/api`, frontend `apps/dashboard`, shared TS client `libs/api`
-  (`@org/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
+  (`@convexa/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
   `C:\Dev\GammaFlow` is history only.)
 
 ## 8. Downstream-AI contract

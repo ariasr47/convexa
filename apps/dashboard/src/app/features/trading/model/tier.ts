@@ -16,7 +16,7 @@
  * `features/ -> pages/` import and inverted the downward-only dependency direction that SPEC §2.7
  * binds. The widget moved; this six-line lookup stayed.
  */
-import type { OpportunityTier } from '@org/api';
+import type { OpportunityTier } from '@convexa/api';
 
 export const WORD: Record<OpportunityTier, string> = {
   dormant: 'Dormant',

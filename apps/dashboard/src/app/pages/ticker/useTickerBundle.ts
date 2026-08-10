@@ -9,7 +9,7 @@
  * `usePollingResource` (perf §3.1–3.3).
  */
 import { usePollingResource } from '@/shared/hooks/usePollingResource';
-import { getTicker, type OptionRight, type TickerBundle } from '@org/api';
+import { getTicker, type OptionRight, type TickerBundle } from '@convexa/api';
 import { useCallback, useMemo, useRef } from 'react';
 
 export const TICKER_BUNDLE_POLL_MS = 60_000;

@@ -27,7 +27,7 @@ import {
   type SessionStatus,
   type SignupRequest,
   type UserSettings,
-} from '@org/api';
+} from '@convexa/api';
 import {
   createContext,
   useCallback,

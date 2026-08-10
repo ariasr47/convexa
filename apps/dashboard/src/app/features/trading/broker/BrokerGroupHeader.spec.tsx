@@ -4,7 +4,7 @@
  * never hand-typed — so every assertion here is grounded in the real composition.
  */
 import type { MarkResult } from '@/features/trading/model/mark';
-import type { BrokerBook } from '@org/api';
+import type { BrokerBook } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';

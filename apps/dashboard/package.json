@@ -1,5 +1,5 @@
 {
-  "name": "@org/dashboard",
+  "name": "@convexa/dashboard",
   "version": "0.0.1",
   "private": true,
   "nx": {

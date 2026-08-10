@@ -4,7 +4,7 @@
  * synchronous, bundle-independent, and recomputed via useMemo — it triggers NO getTicker/streamTicker
  * and NO recompute of score/tier/gate/fingerprint.
  */
-import type { Handoff, PersonaDefinition, PersonaRisk } from '@org/api';
+import type { Handoff, PersonaDefinition, PersonaRisk } from '@convexa/api';
 import { useCallback, useMemo, useState } from 'react';
 import { GENERIC_RISK_CALIBRATION, PRESETS, presetById } from './presets';
 import {

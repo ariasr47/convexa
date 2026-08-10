@@ -2,7 +2,7 @@
  * Ghost-trade (paper/simulation) durable types. The trade record + decision history are
  * CLIENT-LOCAL and durable (survive reload + SSE drop). No real order is ever placed.
  */
-import type { OptionRight } from '@org/api';
+import type { OptionRight } from '@convexa/api';
 
 export const SCHEMA_VERSION = 1;
 

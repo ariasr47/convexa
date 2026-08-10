@@ -5,7 +5,7 @@
  * `[CF]` criteria in SPEC §3, and a `[CF]` row reported green off the captured arm is a GATE Q
  * failure. Asserted here over the RAW WIRE SHAPE, independent of any implementation.
  */
-import type { BrokerBook, BrokerLeg, BrokerPosition } from '@org/api';
+import type { BrokerBook, BrokerLeg, BrokerPosition } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
   BOOK_CAPTURED_COMPLETE,

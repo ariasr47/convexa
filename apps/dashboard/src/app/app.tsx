@@ -45,6 +45,7 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { useSettings } from '@/features/auth/useSettings';
 import { Landing } from '@/pages/landing/Landing';
 import { AppShell } from '@/shell/AppShell';
+import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { Box, CircularProgress } from '@mui/material';
 import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -81,9 +82,13 @@ function RouteFallback() {
   );
 }
 
-/** Per-route Suspense: the boundary lives on the route ELEMENT so a loading page never unmounts
- *  or blanks the persistent shell (AC-Nav-4). */
-const lazyRoute = (el: ReactElement) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
+/** Per-route Suspense + error boundary: loading fill never blanks the shell (AC-Nav-4);
+ *  a throw in one page does not unmount nav chrome. */
+const lazyRoute = (el: ReactElement) => (
+  <ErrorBoundary variant="route">
+    <Suspense fallback={<RouteFallback />}>{el}</Suspense>
+  </ErrorBoundary>
+);
 
 /**
  * Bare `/ticker` → the EFFECTIVE default ticker (index-first-defaults AC-1/AC-2). The stored

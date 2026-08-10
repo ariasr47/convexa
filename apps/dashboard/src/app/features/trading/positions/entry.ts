@@ -10,7 +10,7 @@
  *             `limit_fill`). Cross is evaluated elsewhere (useResting…), never here at open time.
  */
 import { bsPrice } from '@/features/trading/model/mark';
-import type { OptionRight, TrackedContract } from '@org/api';
+import type { OptionRight, TrackedContract } from '@convexa/api';
 import type { EntryBasis } from './types';
 
 export interface ResolvedFill {

@@ -6,7 +6,7 @@
  * renders an empty frame.
  */
 import { Widget } from '@/shared/ui/Widget';
-import type { StrikeRow } from '@org/api';
+import type { StrikeRow } from '@convexa/api';
 import { gexProfileSubtitle } from '../_kit/copy';
 import { GexLegend, GexProfileChart, windowedStrikes } from './chart';
 

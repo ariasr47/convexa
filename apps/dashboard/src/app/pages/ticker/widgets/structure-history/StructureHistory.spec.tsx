@@ -1,7 +1,7 @@
 import { theme } from '@/shared/theme/theme';
 import { WidgetSelectionProvider } from '@/shared/ui/Widget';
 import { ThemeProvider } from '@mui/material/styles';
-import type { StructureSample } from '@org/api';
+import type { StructureSample } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

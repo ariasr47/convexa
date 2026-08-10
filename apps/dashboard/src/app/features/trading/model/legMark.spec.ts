@@ -10,7 +10,7 @@
  *    price;
  *  - the stream-offline branch obeys the same rule (it was the second leak in the original bug).
  */
-import type { TrackedContract } from '@org/api';
+import type { TrackedContract } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import { resolveLegMark, type MarkableLeg } from './legMark';
 
