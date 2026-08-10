@@ -38,13 +38,20 @@ import {
   type SweepHeartbeat,
 } from '@org/api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { buildDeskParams, DEFAULT_DESK_SORT, deskParamsEqual, parseDeskParams } from './deskParams';
 import {
+  computePollDeltas,
   EMPTY_FILTERS,
   filterRows,
+  filtersActive,
   sessionBadge,
+  snapRows,
   sortRows,
   structureAsOfRel,
   sweepBanner,
+  type PollDelta,
+  type RowPollSnap,
   type ScanFilters,
 } from './format';
 import { SCAN_COPY } from './labels';
@@ -89,6 +96,8 @@ export interface ScanApi {
   session: { phase: string; label: string };
   /** Structure as-of relative age, or null when no honest stamp exists. */
   structureAsOf: string | null;
+  /** Poll-to-poll structure deltas by symbol (empty until a second successful poll). */
+  deltas: Map<string, PollDelta>;
   workerDown: boolean;
   workerDownText: string;
   isEmptyView: boolean;
@@ -101,6 +110,10 @@ export interface ScanApi {
 }
 
 export function useScan(): ScanApi {
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Seed desk state from the URL once (shareable setup). Later edits write back with replace.
+  const urlSeed = useMemo(() => parseDeskParams(searchParams), []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [snapshot, setSnapshot] = useState<Snapshot>(() => ({
     phase: 'loading',
     rows: [],
@@ -108,16 +121,31 @@ export function useScan(): ScanApi {
     sweep: null,
     degraded: false,
   }));
-  const [sortDraft, setSortDraft] = useState<ScanViewSort | null>(null);
+  const [sortDraft, setSortDraft] = useState<ScanViewSort | null>(urlSeed.sort);
   const [densityDraft, setDensityDraft] = useState<ScanDensity | null>(null);
-  const [filters, setFilters] = useState<ScanFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<ScanFilters>(
+    filtersActive(urlSeed.filters) ? urlSeed.filters : EMPTY_FILTERS,
+  );
   const [saveError, setSaveError] = useState<string | null>(null);
   const [nowS, setNowS] = useState(() => Date.now() / 1000);
+  const [deltas, setDeltas] = useState<Map<string, PollDelta>>(() => new Map());
+  const prevPollRef = useRef<Map<string, RowPollSnap> | null>(null);
+  const prevSymbolsKeyRef = useRef<string>('');
   const gate = useGate();
 
   const refresh = useCallback(async () => {
     try {
       const res = await getScan();
+      const symbolsKey = (res.view?.symbols ?? []).join('\0');
+      // Symbol-set change (view save / server default) clears deltas — not comparable.
+      if (symbolsKey !== prevSymbolsKeyRef.current) {
+        prevPollRef.current = null;
+        prevSymbolsKeyRef.current = symbolsKey;
+        setDeltas(new Map());
+      } else {
+        setDeltas(computePollDeltas(res.rows, prevPollRef.current));
+      }
+      prevPollRef.current = snapRows(res.rows);
       setSnapshot({
         phase: 'ready',
         rows: res.rows,
@@ -128,6 +156,7 @@ export function useScan(): ScanApi {
     } catch {
       // Best-effort: keep whatever we already showed. A transport fault must never blank the table
       // or surface an error screen — the honest states live in the rows + the banner.
+      // Do not advance prev poll — a failed poll is not a new structure stamp.
       setSnapshot((prev) => ({ ...prev, phase: 'ready', degraded: true }));
     }
   }, []);
@@ -183,6 +212,15 @@ export function useScan(): ScanApi {
     [snapshot.sweep, sortedRows, nowS],
   );
 
+  // Shareable desk URL — write sort/filters (omit defaults). replace so back-stack stays clean.
+  useEffect(() => {
+    const defaultSort = snapshot.view?.sort ?? DEFAULT_DESK_SORT;
+    const next = buildDeskParams(sort, filters, defaultSort);
+    if (!deskParamsEqual(next, searchParams)) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [sort, filters, snapshot.view?.sort, searchParams, setSearchParams]);
+
   const saveView = useCallback(
     async (draft: ScanViewWrite): Promise<boolean> => {
       setSaveError(null);
@@ -226,6 +264,7 @@ export function useScan(): ScanApi {
     setFilters,
     session,
     structureAsOf,
+    deltas,
     workerDown: banner.engaged,
     workerDownText: banner.text,
     isEmptyView: snapshot.phase === 'ready' && (snapshot.view?.symbols.length ?? 0) === 0,

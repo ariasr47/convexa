@@ -8,17 +8,20 @@ import type { ScanRow, SweepHeartbeat } from '@org/api';
 import { describe, expect, it } from 'vitest';
 import {
   coarseAge,
+  computePollDeltas,
   dash,
   directionColor,
   EM_DASH,
   EMPTY_FILTERS,
   filterRows,
   filtersActive,
+  fmtDelta,
   fmtPrice,
   fmtSignedPct,
   marketSessionPhase,
   partitionLeadGroup,
   relAge,
+  snapRows,
   sortRows,
   structureAsOfRel,
   sweepBanner,
@@ -362,5 +365,31 @@ describe('whyThisRow — closed drivers only, never "live"', () => {
     expect(whyThisRow(row({ status: 'building' }))).toMatch(/not yet scored/i);
     expect(whyThisRow(row({ status: 'error' }))).toMatch(/failed/i);
     expect(whyThisRow(row({ status: 'building' }))).not.toMatch(/\blive\b/i);
+  });
+});
+
+describe('poll-to-poll deltas — structure change only', () => {
+  it('first poll has no deltas; second poll diffs score and flip dist', () => {
+    const a = [
+      row({ symbol: 'AAA', score: 80, dist_to_flip_pct: 1.0 }),
+      row({ symbol: 'BBB', score: 50, dist_to_flip_pct: -2 }),
+    ];
+    expect(computePollDeltas(a, null).size).toBe(0);
+    const prev = snapRows(a);
+    const b = [
+      row({ symbol: 'AAA', score: 85, dist_to_flip_pct: 0.5 }),
+      row({ symbol: 'BBB', score: 50, dist_to_flip_pct: -2 }), // unchanged → no entry
+      row({ symbol: 'CCC', score: 10, dist_to_flip_pct: 3 }), // new symbol → no prior
+    ];
+    const d = computePollDeltas(b, prev);
+    expect(d.get('AAA')).toEqual({ scoreDelta: 5, flipDistDelta: -0.5 });
+    expect(d.has('BBB')).toBe(false);
+    expect(d.has('CCC')).toBe(false);
+  });
+
+  it('fmtDelta uses neutral arrows and never green/red tokens', () => {
+    expect(fmtDelta(3)).toBe('↑3');
+    expect(fmtDelta(-1.25, 1)).toBe('↓1.3');
+    expect(fmtDelta(0)).toBe('');
   });
 });

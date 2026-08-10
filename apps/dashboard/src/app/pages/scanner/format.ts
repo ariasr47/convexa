@@ -30,6 +30,80 @@ export function filtersActive(f: ScanFilters): boolean {
   return f.tier != null || f.volRegime != null || f.minScore != null || f.maxAbsDistFlip != null;
 }
 
+// ---- Poll-to-poll structure deltas (structure change > absolute level) -------------------------
+
+/** Prior-poll snapshot for one symbol (structure fields only — not live price). */
+export interface RowPollSnap {
+  score: number | null;
+  dist_to_flip_pct: number | null;
+}
+
+/** Per-symbol delta vs the previous successful poll. Null when no prior or missing value. */
+export interface PollDelta {
+  scoreDelta: number | null;
+  flipDistDelta: number | null;
+}
+
+export function snapRows(rows: readonly ScanRow[]): Map<string, RowPollSnap> {
+  const m = new Map<string, RowPollSnap>();
+  for (const r of rows) {
+    m.set(r.symbol, {
+      score: r.score,
+      dist_to_flip_pct: r.dist_to_flip_pct,
+    });
+  }
+  return m;
+}
+
+/**
+ * Diff current rows against the previous poll map. No prior ⇒ empty map (first paint has no chips).
+ * Pure: never mutates inputs.
+ */
+export function computePollDeltas(
+  rows: readonly ScanRow[],
+  prev: Map<string, RowPollSnap> | null,
+): Map<string, PollDelta> {
+  const out = new Map<string, PollDelta>();
+  if (prev == null || prev.size === 0) return out;
+  for (const r of rows) {
+    const p = prev.get(r.symbol);
+    if (!p) continue;
+    let scoreDelta: number | null = null;
+    if (
+      r.score != null &&
+      Number.isFinite(r.score) &&
+      p.score != null &&
+      Number.isFinite(p.score)
+    ) {
+      const d = r.score - p.score;
+      scoreDelta = d === 0 ? null : d;
+    }
+    let flipDistDelta: number | null = null;
+    if (
+      r.dist_to_flip_pct != null &&
+      Number.isFinite(r.dist_to_flip_pct) &&
+      p.dist_to_flip_pct != null &&
+      Number.isFinite(p.dist_to_flip_pct)
+    ) {
+      const d = r.dist_to_flip_pct - p.dist_to_flip_pct;
+      flipDistDelta = d === 0 ? null : d;
+    }
+    if (scoreDelta != null || flipDistDelta != null) {
+      out.set(r.symbol, { scoreDelta, flipDistDelta });
+    }
+  }
+  return out;
+}
+
+/** Compact delta label: ↑2 · ↓1.5 — neutral glyphs, real minus for negatives. */
+export function fmtDelta(n: number, digits = 0): string {
+  const abs = Math.abs(n);
+  const body = digits > 0 ? abs.toFixed(digits) : String(Math.round(abs));
+  if (n > 0) return `↑${body}`;
+  if (n < 0) return `↓${body}`;
+  return '';
+}
+
 /**
  * Pure client-side filter over already-fetched rows. Nulls fail a numeric threshold (an absent
  * score is not ≥70). Empty filters return the same array reference when nothing is active.

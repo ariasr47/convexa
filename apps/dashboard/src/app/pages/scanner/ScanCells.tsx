@@ -21,11 +21,13 @@ import {
   dash,
   directionColor,
   EM_DASH,
+  fmtDelta,
   fmtPrice,
   fmtScore,
   fmtSignedPct,
   relAge,
   updatedText,
+  type PollDelta,
 } from './format';
 import {
   regimeLabel,
@@ -89,30 +91,46 @@ export function ChgCell({ row }: { row: ScanRow }) {
 
 /** Score — the headline rate. NEVER green/red, NEVER amber.
  *  Tooltip carries 1–2 plain-language drivers from closed wire fields ("why this row").
+ *  Optional poll-to-poll delta is NEUTRAL (structure change, not P/L direction).
  *  tabIndex=0 so keyboard users can focus and open the tip (spine #6). */
-export function ScoreCell({ row }: { row: ScanRow }) {
+export function ScoreCell({ row, delta }: { row: ScanRow; delta?: PollDelta | null }) {
   const why = whyThisRow(row);
+  const d =
+    delta?.scoreDelta != null && Number.isFinite(delta.scoreDelta)
+      ? fmtDelta(delta.scoreDelta, 0)
+      : '';
   return (
-    <Tooltip arrow title={why} describeChild>
-      <Typography
-        component="span"
-        tabIndex={0}
-        data-testid="cell-score"
-        aria-label={SCAN_COPY.whyScoreAria}
-        sx={{
-          ...MONO,
-          fontSize: 'inherit',
-          fontWeight: 600,
-          color: 'text.primary',
-          cursor: 'help',
-          borderBottom: '1px dotted',
-          borderColor: 'divider',
-          borderRadius: '2px',
-        }}
-      >
-        {dash(row.score, fmtScore)}
-      </Typography>
-    </Tooltip>
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
+      <Tooltip arrow title={why} describeChild>
+        <Typography
+          component="span"
+          tabIndex={0}
+          data-testid="cell-score"
+          aria-label={SCAN_COPY.whyScoreAria}
+          sx={{
+            ...MONO,
+            fontSize: 'inherit',
+            fontWeight: 600,
+            color: 'text.primary',
+            cursor: 'help',
+            borderBottom: '1px dotted',
+            borderColor: 'divider',
+            borderRadius: '2px',
+          }}
+        >
+          {dash(row.score, fmtScore)}
+        </Typography>
+      </Tooltip>
+      {d ? (
+        <Typography
+          component="span"
+          data-testid="cell-score-delta"
+          sx={{ ...MONO, fontSize: '0.7rem', color: 'text.secondary' }}
+        >
+          {d}
+        </Typography>
+      ) : null}
+    </Box>
   );
 }
 
@@ -139,16 +157,20 @@ export const regimeTextOf = (row: ScanRow) => regimeLabel(row.regime);
 export const volTextOf = (row: ScanRow) => volRegimeLabel(row.vol_regime);
 
 /** A consumed level + its consumed signed distance. Both arrive pre-computed on the wire; the
- *  distance is a NO-SIDE datum and stays neutral. */
+ *  distance is a NO-SIDE datum and stays neutral. Optional poll delta is also neutral. */
 export function LevelDistCell({
   level,
   distPct,
   testid,
+  distDelta,
 }: {
   level: number | null;
   distPct: number | null;
   testid: string;
+  /** Change in dist% since last poll (structure only). */
+  distDelta?: number | null;
 }) {
+  const d = distDelta != null && Number.isFinite(distDelta) ? fmtDelta(distDelta, 1) : '';
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
       <Box component="span" sx={{ ...MONO, fontSize: 'inherit', color: 'text.primary' }}>
@@ -161,6 +183,15 @@ export function LevelDistCell({
       >
         {dash(distPct, fmtSignedPct)}
       </Box>
+      {d ? (
+        <Box
+          component="span"
+          data-testid={`${testid}-delta`}
+          sx={{ ...MONO, fontSize: '0.65rem', color: 'text.secondary' }}
+        >
+          {d}
+        </Box>
+      ) : null}
     </Box>
   );
 }

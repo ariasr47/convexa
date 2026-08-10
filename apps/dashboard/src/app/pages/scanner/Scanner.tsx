@@ -215,7 +215,12 @@ export function Scanner() {
           </Box>
         </Box>
       ) : isNarrow ? (
-        <ScanCardList rows={displayRows} nowS={scan.nowS} flashActive={flashActive} />
+        <ScanCardList
+          rows={displayRows}
+          nowS={scan.nowS}
+          flashActive={flashActive}
+          deltas={scan.deltas}
+        />
       ) : (
         <ScanTable
           rows={displayRows}
@@ -225,6 +230,7 @@ export function Scanner() {
           flashActive={flashActive}
           onSort={scan.setSort}
           groups={groups}
+          deltas={scan.deltas}
         />
       )}
 

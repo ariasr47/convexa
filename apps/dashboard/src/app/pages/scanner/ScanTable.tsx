@@ -14,6 +14,14 @@ import { Box } from '@mui/material';
 import type { ScanDensity, ScanRow, ScanViewSort } from '@org/api';
 import { Fragment } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import type { PollDelta } from './format';
+import {
+  COLUMN_LABELS,
+  SCAN_COLUMNS,
+  SCAN_COPY,
+  SORTABLE_COLUMNS,
+  type ScanColumn,
+} from './labels';
 import {
   ChgCell,
   LabelCell,
@@ -27,13 +35,6 @@ import {
   UpdatedCell,
   volTextOf,
 } from './ScanCells';
-import {
-  COLUMN_LABELS,
-  SCAN_COLUMNS,
-  SCAN_COPY,
-  SORTABLE_COLUMNS,
-  type ScanColumn,
-} from './labels';
 
 /** index-first-defaults AC-3 — one table section. `label: null` renders no header row (the
  *  remaining-universe tail); a labelled group gets the table's own header treatment. */
@@ -54,6 +55,8 @@ export interface ScanTableProps {
   /** Zero-state grouping (index-first-defaults AC-3). Absent ⇒ the flat `rows` render exactly as
    *  today — a SAVED view is never regrouped. When present, `rows` must equal the concatenation. */
   groups?: ScanGroup[];
+  /** Poll-to-poll structure deltas by symbol. */
+  deltas?: Map<string, PollDelta>;
 }
 
 const thSx = {
@@ -141,7 +144,13 @@ function HeaderCell({
   );
 }
 
-function cellContent(column: ScanColumn, row: ScanRow, nowS: number, flashActive: boolean) {
+function cellContent(
+  column: ScanColumn,
+  row: ScanRow,
+  nowS: number,
+  flashActive: boolean,
+  delta?: PollDelta | null,
+) {
   switch (column) {
     case 'symbol':
       return (
@@ -173,7 +182,7 @@ function cellContent(column: ScanColumn, row: ScanRow, nowS: number, flashActive
     case 'chg_pct':
       return <ChgCell row={row} />;
     case 'score':
-      return <ScoreCell row={row} />;
+      return <ScoreCell row={row} delta={delta} />;
     case 'tier':
       return <TierCell row={row} />;
     case 'regime':
@@ -182,7 +191,12 @@ function cellContent(column: ScanColumn, row: ScanRow, nowS: number, flashActive
       return <LabelCell testid="cell-vol" text={volTextOf(row)} />;
     case 'flip':
       return (
-        <LevelDistCell level={row.flip} distPct={row.dist_to_flip_pct} testid="cell-dist-flip" />
+        <LevelDistCell
+          level={row.flip}
+          distPct={row.dist_to_flip_pct}
+          testid="cell-dist-flip"
+          distDelta={delta?.flipDistDelta}
+        />
       );
     case 'walls':
       return (
@@ -209,12 +223,14 @@ function ScanTableRow({
   nowS,
   flashActive,
   onOpen,
+  delta,
 }: {
   row: ScanRow;
   density: ScanDensity;
   nowS: number;
   flashActive: boolean;
   onOpen: (symbol: string) => void;
+  delta?: PollDelta | null;
 }) {
   const tdSx = {
     padding: density === 'compact' ? '7px 10px' : '12px 10px',
@@ -244,7 +260,7 @@ function ScanTableRow({
           key={column}
           sx={column === 'symbol' ? { ...tdSx, ...stickyColSx } : tdSx}
         >
-          {cellContent(column, row, nowS, flashActive)}
+          {cellContent(column, row, nowS, flashActive, delta)}
         </Box>
       ))}
     </Box>
@@ -259,6 +275,7 @@ export function ScanTable({
   flashActive,
   onSort,
   groups,
+  deltas,
 }: ScanTableProps) {
   const navigate = useNavigate();
   // Ungrouped ⇒ ONE unlabeled section: the body renders identically to the pre-grouping table.
@@ -314,6 +331,7 @@ export function ScanTable({
                   density={density}
                   nowS={nowS}
                   flashActive={flashActive}
+                  delta={deltas?.get(row.symbol)}
                   onOpen={(symbol) => navigate(`/ticker/${symbol}`)}
                 />
               ))}

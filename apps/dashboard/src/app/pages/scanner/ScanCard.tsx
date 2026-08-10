@@ -10,6 +10,7 @@
 import { Box } from '@mui/material';
 import type { ScanRow } from '@org/api';
 import { Link as RouterLink } from 'react-router-dom';
+import type { PollDelta } from './format';
 import {
   ChgCell,
   LabelCell,
@@ -28,12 +29,13 @@ export interface ScanCardProps {
   row: ScanRow;
   nowS: number;
   flashActive: boolean;
+  delta?: PollDelta | null;
 }
 
 const factSx = { display: 'flex', flexDirection: 'column' as const, gap: '2px', minWidth: 0 };
 const factLabelSx = { fontSize: '0.6875rem', color: 'text.secondary' };
 
-export function ScanCard({ row, nowS, flashActive }: ScanCardProps) {
+export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
   return (
     <Box
       component={RouterLink}
@@ -86,7 +88,7 @@ export function ScanCard({ row, nowS, flashActive }: ScanCardProps) {
           Score
         </Box>
         <Box component="span" sx={{ fontSize: '1.05rem' }}>
-          <ScoreCell row={row} />
+          <ScoreCell row={row} delta={delta} />
         </Box>
       </Box>
 
@@ -116,7 +118,12 @@ export function ScanCard({ row, nowS, flashActive }: ScanCardProps) {
           <Box component="span" sx={factLabelSx}>
             Flip
           </Box>
-          <LevelDistCell level={row.flip} distPct={row.dist_to_flip_pct} testid="cell-dist-flip" />
+          <LevelDistCell
+            level={row.flip}
+            distPct={row.dist_to_flip_pct}
+            testid="cell-dist-flip"
+            distDelta={delta?.flipDistDelta}
+          />
         </Box>
         <Box sx={factSx}>
           <Box component="span" sx={factLabelSx}>
@@ -154,11 +161,18 @@ export function ScanCardList({
   rows,
   nowS,
   flashActive,
-}: { rows: ScanRow[] } & Omit<ScanCardProps, 'row'>) {
+  deltas,
+}: { rows: ScanRow[]; deltas?: Map<string, PollDelta> } & Omit<ScanCardProps, 'row' | 'delta'>) {
   return (
     <Box data-testid="scan-cards" sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
       {rows.map((row) => (
-        <ScanCard key={row.symbol} row={row} nowS={nowS} flashActive={flashActive} />
+        <ScanCard
+          key={row.symbol}
+          row={row}
+          nowS={nowS}
+          flashActive={flashActive}
+          delta={deltas?.get(row.symbol)}
+        />
       ))}
     </Box>
   );

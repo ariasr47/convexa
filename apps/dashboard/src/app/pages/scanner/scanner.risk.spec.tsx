@@ -643,6 +643,36 @@ describe('zero-state lead group (index-first-defaults AC-3)', () => {
 });
 
 // =================================================================================================
+// 8c-url. Shareable desk URL seeds filters from the address bar
+// =================================================================================================
+describe('scanner desk URL params', () => {
+  it('seeds tier filter from ?tier=prime and shows the chip pressed', async () => {
+    installScanBackend({
+      symbols: ['AAA', 'BBB'],
+      rows: [
+        makeRow({ symbol: 'AAA', tier: 'prime', score: 90 }),
+        makeRow({ symbol: 'BBB', tier: 'watch', score: 40 }),
+      ],
+    });
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter initialEntries={['/scanner?tier=prime']}>
+          <AuthProvider>
+            <AuthDialogProvider>
+              <Scanner />
+            </AuthDialogProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    await screen.findByTestId('scan-table');
+    expect(screen.getByTestId('scan-filter-tier-prime')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getAllByTestId('scan-row')).toHaveLength(1);
+    expect(rowFor('AAA')).toBeTruthy();
+  });
+});
+
+// =================================================================================================
 // 8c-kb. Product spine #6 — keyboard / hit-area polish on the scan desk
 // =================================================================================================
 describe('scanner keyboard & hit targets (spine #6)', () => {

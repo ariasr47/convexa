@@ -14,14 +14,17 @@ import { ThemeProvider } from '@mui/material/styles';
 import type { ScanResponse } from '@org/api';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SCAN_POLL_MS, useScan } from './useScan';
 
 const wrapper = ({ children }: { children: ReactNode }) => (
   <ThemeProvider theme={theme}>
-    <AuthProvider>
-      <AuthDialogProvider>{children}</AuthDialogProvider>
-    </AuthProvider>
+    <MemoryRouter>
+      <AuthProvider>
+        <AuthDialogProvider>{children}</AuthDialogProvider>
+      </AuthProvider>
+    </MemoryRouter>
   </ThemeProvider>
 );
 
