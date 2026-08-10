@@ -88,12 +88,16 @@ describe('single-motion-moment — the app-wide keyframe inventory (mutation-gua
     expect(filesWhere((src) => src.includes('widgetRise'))).toEqual([]);
   });
 
-  it('(c) the GEX chart renders instantly: isAnimationActive={false} pinned, no animationDuration', () => {
+  it('(c) the GEX chart renders instantly: Structure Field has no Recharts mount animation', () => {
     const chart = APP_SOURCES['/src/app/pages/ticker/widgets/gex-profile-chart/chart.tsx'];
     expect(chart, 'chart.tsx must exist at its locked path').toBeTruthy();
+    // Canvas Structure Field — pin documents the retired Recharts animation contract.
     expect(chart).toContain('isAnimationActive={false}');
     expect(chart).not.toContain('animationDuration');
     expect(chart).not.toContain('isAnimationActive={true}');
+    expect(chart).toContain('StructureFieldCanvas');
+    expect(chart).not.toContain('from \'recharts\'');
+    expect(chart).not.toContain('from "recharts"');
   });
 
   it('(d) the named @keyframes inventory is SET-EQUAL to the kept data-signal allowlist', () => {

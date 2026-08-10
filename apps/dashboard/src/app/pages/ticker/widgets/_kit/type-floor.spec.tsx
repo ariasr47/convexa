@@ -65,7 +65,8 @@ const SOURCES = import.meta.glob(
  *  recorded exemption, not a silent decision; each entry must STILL carry a sub-floor size or it is
  *  stale and must be removed). */
 const EXEMPT_CHART_TICKS = [
-  'pages/ticker/widgets/gex-profile-chart/chart.tsx',
+  // Canvas Structure Field uses ctx.font sizes ≥11; no Recharts tick fontSize:10 path anymore.
+  // Keep term-structure + operator-metrics chart-tick exemptions until those migrate.
   'pages/ticker/widgets/term-structure/TermStructure.tsx',
   'pages/operator-metrics/LatencyTrend.tsx',
 ];

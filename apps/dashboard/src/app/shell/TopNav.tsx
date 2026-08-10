@@ -17,6 +17,7 @@ import { AccountControl } from '@/features/auth/AccountControl';
 import {
   prefetchPositionsRoute,
   prefetchScannerRoute,
+  prefetchStructureFieldLabRoute,
   prefetchTickerRoute,
 } from '@/shared/lib/prefetchRoutes';
 import { elevationFor } from '@/shared/theme/tokens';
@@ -51,10 +52,12 @@ function warmNav(to: string) {
   if (to.startsWith('/ticker')) void prefetchTickerRoute();
   else if (to.startsWith('/scanner')) void prefetchScannerRoute();
   else if (to.startsWith('/positions')) void prefetchPositionsRoute();
+  else if (to.startsWith('/lab')) void prefetchStructureFieldLabRoute();
 }
 
-// Product spine (where → why → track): Scanner first, then Ticker, Positions, Blog.
-// Active-route rules: Scanner `/scanner*`; Ticker `/ticker*`; Positions `/positions*`; Blog `/blog*`.
+// Product spine (where → why → track): Scanner first, then Ticker, Positions, Alerts, Blog.
+// Lab is a public Canvas instrument demo (not product spine, but discoverable).
+// Active-route rules: Scanner `/scanner*`; Ticker `/ticker*`; Positions `/positions*`; etc.
 // Deliberately NO operator entry (`/_ops/metrics` is URL-only).
 const NAV: NavEntry[] = [
   {
@@ -72,6 +75,11 @@ const NAV: NavEntry[] = [
     label: 'Alerts',
     to: '/alerts',
     active: (p) => p === '/alerts' || p.startsWith('/alerts/'),
+  },
+  {
+    label: 'Lab',
+    to: '/lab/structure-field',
+    active: (p) => p === '/lab' || p.startsWith('/lab/'),
   },
   {
     label: 'Blog',

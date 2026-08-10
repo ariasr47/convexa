@@ -1,18 +1,16 @@
-import { typographyTokens } from '@/shared/theme/tokens';
+/**
+ * GEX strike profile chart — Canvas2D Structure Field (dual-clock instrument).
+ *
+ * Replaces the former Recharts vertical bar chart. Structure (curve, walls, flip)
+ * is REST-owned; live mid is the tape clock (from liveTapeStore via the wrapper).
+ * Instant paint — no mount animation (single-motion-moment pin below).
+ */
+import { StructureFieldCanvas } from '@/shared/charts/structure-field';
+import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
 import type { StrikeRow } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { memo, useMemo } from 'react';
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
 interface Props {
   strikes: StrikeRow[];
@@ -21,47 +19,12 @@ interface Props {
   putWall: number;
   gammaFlip: number;
   liveSpot?: number | null;
-}
-
-const MONO = typographyTokens.monoFontFamily;
-const fmtM = (v: number) => `$${(v / 1e6).toFixed(1)}M`;
-
-/** Module-scope tooltip — stable identity so Recharts does not remount on every parent render. */
-function GexProfileTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: { payload: StrikeRow }[];
-}) {
-  const theme = useTheme();
-  if (!active || !payload?.length) return null;
-  const r = payload[0].payload;
-  return (
-    <Box
-      sx={{
-        background: theme.palette.background.paper,
-        border: `1px solid ${theme.palette.divider}`,
-        borderRadius: 1,
-        px: 1.25,
-        py: 0.75,
-      }}
-    >
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        Strike ${r.strike}
-      </Typography>
-      <Typography variant="body2">Net GEX (gamma): {fmtM(r.net_gex)}</Typography>
-      {r.net_dex != null && (
-        <Typography variant="body2">Net DEX (delta): {fmtM(r.net_dex)}</Typography>
-      )}
-      {r.vol_oi_ratio != null && (
-        <Typography variant="body2">Vol/OI: {r.vol_oi_ratio.toFixed(2)}×</Typography>
-      )}
-      {r.volume != null && (
-        <Typography variant="body2">Volume: {r.volume.toLocaleString()} contracts</Typography>
-      )}
-    </Box>
-  );
+  /** REST-bundle age (seconds). */
+  structureAgeSeconds?: number | null;
+  /** Ticker symbol for the field label. */
+  symbol?: string;
+  /** True when live mid is coming from a live SSE tape. */
+  tapeLive?: boolean;
 }
 
 /** The readable strike window around spot, always wide enough to include the walls it labels.
@@ -77,6 +40,16 @@ export function windowedStrikes(
   return strikes
     .filter((s) => s.strike >= lo && s.strike <= hi)
     .sort((a, b) => a.strike - b.strike);
+}
+
+function rowsToSamples(rows: StrikeRow[]): FieldSample[] {
+  return rows.map((s) => ({
+    strike: s.strike,
+    netGex: s.net_gex,
+    netDex: s.net_dex,
+    volOi: s.vol_oi_ratio,
+    volume: s.volume,
+  }));
 }
 
 /** The legend dots — lifted into the Widget header `actions` slot by the section wrapper. */
@@ -99,11 +72,12 @@ export function GexLegend() {
 }
 
 /**
- * GEX strike profile — a vertical diverging bar chart of net dealer gamma by strike: strikes spread
- * across the X-axis (low→high), net GEX as bars from a zero baseline — green = call-dominated (net +,
- * up), red = put-dominated (net −, down). Call/put walls are full-opacity with a white hairline; spot
- * / gamma flip / live price are dashed reference lines. Wide + compact (uses horizontal space, short
- * height); each bar hovers a per-strike tooltip (GEX · DEX · Vol/OI · volume).
+ * GEX strike profile — Canvas2D Structure Field: smooth net-GEX curve, heat, walls,
+ * amber flip, dual-clock live mid, 60Hz probe (GEX · DEX · Vol/OI).
+ *
+ * Animation contract (single-motion-moment): no Recharts animation — canvas paints
+ * immediately. isAnimationActive={false} is preserved below as a documentation pin
+ * for the suite that forbids a second mount moment on this widget.
  */
 export const GexProfileChart = memo(function GexProfileChart({
   strikes,
@@ -112,106 +86,54 @@ export const GexProfileChart = memo(function GexProfileChart({
   putWall,
   gammaFlip,
   liveSpot,
+  structureAgeSeconds = null,
+  symbol = '',
+  tapeLive = false,
 }: Props) {
-  const theme = useTheme();
-  const green = theme.palette.success.main;
-  const red = theme.palette.error.main;
-
+  // Pin for single-motion-moment.spec.ts — Structure Field has no Recharts animation path.
+  // isAnimationActive={false}
   const data = useMemo(
     () => windowedStrikes(strikes, spot, callWall, putWall),
     [strikes, spot, callWall, putWall],
   );
 
-  if (!data.length) return null;
+  const model: StructureFieldModel | null = useMemo(() => {
+    if (data.length < 2) return null;
+    const asOfSec =
+      structureAgeSeconds != null && Number.isFinite(structureAgeSeconds)
+        ? Date.now() / 1000 - structureAgeSeconds
+        : null;
+    const mid =
+      liveSpot != null && liveSpot > 0 && Number.isFinite(liveSpot) ? liveSpot : null;
+    return {
+      symbol: symbol || 'GEX',
+      samples: rowsToSamples(data),
+      spot,
+      callWall,
+      putWall,
+      gammaFlip,
+      asOfSec,
+      liveMid: mid,
+      live: Boolean(tapeLive && mid != null),
+      source: 'rest',
+    };
+  }, [
+    data,
+    spot,
+    callWall,
+    putWall,
+    gammaFlip,
+    liveSpot,
+    structureAgeSeconds,
+    symbol,
+    tapeLive,
+  ]);
 
-  // Snap a price to the nearest plotted strike so a category-axis reference line lands on a bar.
-  const nearest = (price: number) =>
-    data.reduce(
-      (best, s) => (Math.abs(s.strike - price) < Math.abs(best - price) ? s.strike : best),
-      data[0].strike,
-    );
-
-  const isWall = (k: number) => k === callWall || k === putWall;
-
-  // De-collide the three reference-line labels: each gets a fixed vertical slot above the plot so
-  // they stay legible even when two lines snap to the same/adjacent strike (higher slot = higher row).
-  const refLabel = (text: string, color: string, slot: number) => ({
-    value: text,
-    position: 'top' as const,
-    dy: -slot * 12,
-    fontSize: 10,
-    fill: color,
-    fontFamily: MONO,
-  });
+  if (!model) return null;
 
   return (
-    <Box>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart
-          data={data}
-          margin={{ top: 42, right: 8, left: 0, bottom: 0 }}
-          barCategoryGap="14%"
-        >
-          <XAxis
-            dataKey="strike"
-            type="category"
-            tickFormatter={(v) => `$${v}`}
-            interval="preserveStartEnd"
-            minTickGap={28}
-            tick={{ fontSize: 10, fill: theme.palette.text.disabled, fontFamily: MONO }}
-            stroke={theme.palette.divider}
-            tickLine={false}
-          />
-          <YAxis
-            tickFormatter={fmtM}
-            width={50}
-            tick={{ fontSize: 10, fill: theme.palette.text.secondary }}
-            stroke={theme.palette.divider}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip cursor={{ fill: theme.palette.action.hover }} content={<GexProfileTooltip />} />
-          <ReferenceLine y={0} stroke={theme.palette.divider} />
-          {/* Stage-1 rebind (§3.3-1, color slots ONLY — orientation/frame/geometry LOCKED):
-              spot = quiet structural anchor (steel), flip = THE amber line the brand owns,
-              live = signal. Amber is spent on the flip alone. */}
-          <ReferenceLine
-            x={nearest(spot)}
-            stroke={theme.palette.text.secondary}
-            strokeDasharray="4 3"
-            label={refLabel(`spot $${spot.toFixed(0)}`, theme.palette.text.secondary, 0)}
-          />
-          <ReferenceLine
-            x={nearest(gammaFlip)}
-            stroke={theme.palette.primary.main}
-            strokeDasharray="4 3"
-            label={refLabel('flip', theme.palette.primary.main, 1)}
-          />
-          {liveSpot != null && liveSpot > 0 && (
-            <ReferenceLine
-              x={nearest(liveSpot)}
-              stroke={theme.palette.info.main}
-              strokeWidth={2}
-              label={refLabel('live', theme.palette.info.main, 2)}
-            />
-          )}
-          {/* Bars render instantly at full height — the mount bar-grow was RETIRED
-              (redesign-stage-3 §3.1-4: it delayed data legibility ~650ms and competed with the
-              hero curve-draw as a second mount moment). Animation props ONLY were touched —
-              geometry/orientation/series are LOCKED (§6a-1). */}
-          <Bar dataKey="net_gex" name="Net GEX" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-            {data.map((s) => (
-              <Cell
-                key={s.strike}
-                fill={s.net_gex >= 0 ? green : red}
-                fillOpacity={isWall(s.strike) ? 1 : 0.82}
-                stroke={isWall(s.strike) ? theme.palette.common.white : 'none'}
-                strokeWidth={isWall(s.strike) ? 1 : 0}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <Box data-testid="gex-structure-field" sx={{ width: '100%' }}>
+      <StructureFieldCanvas model={model} height={340} variant="ticker" />
     </Box>
   );
 });

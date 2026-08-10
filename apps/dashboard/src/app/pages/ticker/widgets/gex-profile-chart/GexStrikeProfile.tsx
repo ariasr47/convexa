@@ -1,7 +1,6 @@
 /**
- * GexStrikeProfile — the Ticker widget wrapping the net-GEX chart (`gex-profile-chart.tsx`). The chart
- * logic is UNCHANGED (vertical diverging bars); this component provides the uniform `<Widget>` frame.
- * Live mid for the "live" reference line is read from liveTapeStore so the parent can pass only
+ * GexStrikeProfile — the Ticker widget wrapping the Canvas2D Structure Field.
+ * Live mid for the tape reference is read from liveTapeStore so the parent can pass only
  * REST structure props (§3.8 Phase C).
  */
 import { Widget } from '@/shared/ui/Widget';
@@ -24,15 +23,21 @@ interface Props {
   expLabel?: string;
   /** REST-bundle age (seconds) — product spine #4. */
   structureAgeSeconds?: number | null;
+  /** Ticker symbol (field label). */
+  symbol?: string;
 }
 
 const GEX_INFO =
-  'Net dealer gamma at each strike. Green = call-dominated (resistance above price); red = put-dominated (support below). Dashed lines mark the spot, the gamma flip, and the live price.';
+  'Net dealer gamma by strike as a dual-clock Structure Field. Green = call-dominated ' +
+  '(resistance above); red = put-dominated (support below). The amber flip and walls are ' +
+  'structure (REST as-of). The pulsing mid is tape when the stream is live. Probe a strike ' +
+  'for net GEX · DEX · Vol/OI.';
 
 export const GexStrikeProfile = memo(function GexStrikeProfile({
   expLabel = 'selected window',
   structureAgeSeconds = null,
   liveSpot: liveSpotProp,
+  symbol = '',
   ...props
 }: Props) {
   const tape = useLiveTape();
@@ -42,6 +47,7 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
       : tape.isLive && tape.live
         ? tape.live.mid
         : null;
+  const tapeLive = liveSpotProp !== undefined ? liveSpotProp != null : tape.isLive && !!tape.live;
 
   // Mirror the chart's own windowing so the widget frame is omitted (not left empty) when there is
   // nothing in-window — matching the chart's `return null`.
@@ -57,7 +63,13 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
       span={2}
       actions={<GexLegend />}
     >
-      <GexProfileChart {...props} liveSpot={liveSpot} />
+      <GexProfileChart
+        {...props}
+        liveSpot={liveSpot}
+        structureAgeSeconds={structureAgeSeconds}
+        symbol={symbol}
+        tapeLive={tapeLive}
+      />
     </Widget>
   );
 });

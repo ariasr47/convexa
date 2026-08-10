@@ -23,6 +23,8 @@ const SOURCES = import.meta.glob(
     '/src/app/features/**/*.{ts,tsx}',
     '/src/app/shell/**/*.{ts,tsx}',
     '/src/app/shared/ui/**/*.{ts,tsx}',
+    // Canvas/WebGL instruments (Structure Field) — hex-scanned; brand literals need exemption.
+    '/src/app/shared/charts/**/*.{ts,tsx}',
     '!**/*.spec.{ts,tsx}', // specs may quote hex in fixtures/regexes; they render nothing
   ],
   { query: '?raw', import: 'default', eager: true },
@@ -40,6 +42,13 @@ const EXEMPT: Record<string, string> = {
   // theme-INVARIANT: the Google button looks identical in dark and light mode by design.
   'features/auth/GoogleButton.tsx':
     'Google brand mark + branded sign-in button spec (theme-invariant by design)',
+
+  // LEGITIMATE — Canvas2D Structure Field instrument (ticker + lab). Paint paths cannot consume
+  // MUI sx/theme; literals are brand tokens from tokens.ts (ink/panel/phosphor/steel/gammaAmber).
+  'shared/charts/structure-field/StructureFieldCanvas.tsx':
+    'Canvas2D dual-clock Structure Field — brand token literals (cannot use MUI sx)',
+  'shared/charts/structure-field/structureFieldShared.ts':
+    'Shared Structure Field brand token literals for Canvas2D + WebGL instruments',
 
   // (2026-07-16) The two operator-metrics TODO exemptions were RESOLVED the same day they were
   // logged: the chart palette + stale-dot grey moved into `shared/theme/tokens.ts` as the

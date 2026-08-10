@@ -529,6 +529,7 @@ export function TickerDashboard() {
                       gammaFlip={m.gamma_flip}
                       expLabel={expWindowLabel}
                       structureAgeSeconds={structureAgeSeconds}
+                      symbol={ticker}
                     />
                   </ErrorBoundary>
                 )}

@@ -204,6 +204,10 @@ describe('route table', () => {
     { path: '/scanner', ready: () => screen.findByTestId('scanner-page'), authed: true },
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
     { path: '/methodology', ready: () => screen.findByTestId('methodology-page') },
+    {
+      path: '/lab/structure-field',
+      ready: () => screen.findByTestId('structure-field-lab'),
+    },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];
 
@@ -314,10 +318,17 @@ describe('operator-vs-trader path separation', () => {
 //     behavior is the regression-prone part guarded here.)
 // =================================================================================================
 describe('mobile nav drawer', () => {
-  // Spine order: Scanner → Ticker → Positions → Blog
-  const DRAWER_ENTRIES = ['scanner', 'ticker', 'positions', 'blog'] as const;
+  // Spine + lab: Scanner → Ticker → Positions → Alerts → Lab → Blog
+  const DRAWER_ENTRIES = [
+    'scanner',
+    'ticker',
+    'positions',
+    'alerts',
+    'lab',
+    'blog',
+  ] as const;
 
-  it('carries EXACTLY the 4 NAV entries, no /_ops link, aria-current on the active entry', async () => {
+  it('carries EXACTLY the trader NAV entries, no /_ops link, aria-current on the active entry', async () => {
     const user = userEvent.setup();
     signedIn(); // gated by the owner lockdown
     renderAt('/positions');
@@ -329,7 +340,7 @@ describe('mobile nav drawer', () => {
     await user.click(screen.getByTestId('nav-menu-button'));
     const drawer = await screen.findByTestId('nav-drawer');
 
-    // Exactly the 4 trader entries — nothing more (an operator entry can never sneak in).
+    // Exactly the trader entries — nothing more (an operator entry can never sneak in).
     for (const e of DRAWER_ENTRIES) {
       expect(within(drawer).getByTestId(`nav-drawer-${e}`)).toBeInTheDocument();
     }

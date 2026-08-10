@@ -71,6 +71,9 @@ const SettingsPage = lazy(() =>
 const OperatorMetrics = lazy(() =>
   import('@/pages/operator-metrics/operator-metrics').then((m) => ({ default: m.OperatorMetrics })),
 );
+const StructureFieldLab = lazy(() =>
+  import('@/pages/lab/StructureFieldLab').then((m) => ({ default: m.StructureFieldLab })),
+);
 
 /** Minimal page-chunk loading fill — theme tokens only (`[theme-token-discipline]`), centered,
  *  quiet. Shown inside the shell's <Outlet/> region; the nav chrome stays interactive. */
@@ -148,6 +151,8 @@ export function AppRoutes() {
         <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
         {/* Alerts v1 — structure rules (level / tier / score); public, local durable. */}
         <Route path="/alerts" element={lazyRoute(<AlertsPage />)} />
+        {/* Lab — public Canvas dual-clock Structure Field demo (synthetic default; optional SPY REST). */}
+        <Route path="/lab/structure-field" element={lazyRoute(<StructureFieldLab />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
       </Route>
