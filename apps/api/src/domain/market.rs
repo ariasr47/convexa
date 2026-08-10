@@ -56,7 +56,8 @@ pub struct OptionsMarketState {
     pub current_spot: f64,
     /// Snapshot timestamp (nanoseconds since epoch when vendor provides it).
     pub timestamp: i64,
-    /// ATM IV as a **decimal** (0.486 == 48.6%).
+    /// ATM IV as a **decimal** (0.486 == 48.6%). Not wire percent.
+    /// Convert with `quant_engine::IvDecimal` / `atm_iv_to_wire_percent` at boundaries.
     pub atm_iv: f64,
     pub atm_iv_expiration: Option<String>,
     pub atm_iv_dte: Option<f64>,

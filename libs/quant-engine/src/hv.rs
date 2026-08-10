@@ -47,17 +47,29 @@ pub fn calculate_historical_volatility_30d(closing_prices: &[f64]) -> f64 {
     (annualized * 10_000.0).round() / 10_000.0
 }
 
-/// IV/HV ratio: ATM IV expressed as **percent** over HV percent.
+/// IV/HV ratio: ATM IV (as **percent**) over HV percent.
+///
+/// `atm_iv_decimal` is engine storage unit (0.22 = 22%); `hv_30d` is already percent
+/// (from [`calculate_historical_volatility_30d`]). Prefer constructing
+/// [`crate::IvDecimal`] at the call site when available.
 ///
 /// Python: `atm_iv_decimal * 100 / hv_30d`, rounded to 4 decimals when `hv_30d > 0`.
 pub fn iv_hv_ratio(atm_iv_decimal: f64, hv_30d: f64) -> f64 {
     if hv_30d <= 0.0 || !hv_30d.is_finite() {
         return 0.0;
     }
-    if !atm_iv_decimal.is_finite() || atm_iv_decimal < 0.0 {
-        return 0.0;
-    }
-    let ratio = (atm_iv_decimal * 100.0) / hv_30d;
+    // Prefer typed conversion so a percent-shaped f64 (e.g. 45.0) does not yield nonsense.
+    let iv_pct = match crate::IvDecimal::try_from_decimal(atm_iv_decimal) {
+        Some(iv) => iv.as_percent(),
+        None => {
+            // Backward-compat for tests that pass valid decimals only; reject footguns.
+            if !atm_iv_decimal.is_finite() || atm_iv_decimal < 0.0 || atm_iv_decimal > 5.0 {
+                return 0.0;
+            }
+            atm_iv_decimal * 100.0
+        }
+    };
+    let ratio = iv_pct / hv_30d;
     if !ratio.is_finite() {
         return 0.0;
     }

@@ -30,6 +30,7 @@ pub mod simd;
 pub mod soa;
 pub mod types;
 pub mod vol_gex;
+pub mod vol_units;
 pub mod vwap;
 
 pub use context_pack::{compute_market_context, DailyBar, MarketContextPack};
@@ -62,3 +63,4 @@ pub use types::{
     GexResult, Greeks, ParityTolerances, RegimeTag, StrikeProfileRow,
 };
 pub use vol_gex::{resolve_vol_scalar, vol_normalize_gex, VolNormBasis, VolNormalizedGex};
+pub use vol_units::{atm_iv_to_wire_percent, HvPercent, IvDecimal};

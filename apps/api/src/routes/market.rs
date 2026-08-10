@@ -183,7 +183,9 @@ pub async fn build_bundle(
         "vwap_lower_3": snap.vwap.map(|b| b.vwap_lower_3),
         "dte_min": min_dte,
         "dte_max": max_dte,
-        "atm_iv": snap.atm_iv * 100.0,
+        // Wire ATM IV is **percent** (22.0); snapshot storage is **decimal** (0.22).
+        // Always convert via typed helper — never bare `* 100` at a new call site.
+        "atm_iv": quant_engine::atm_iv_to_wire_percent(snap.atm_iv),
         "hv_30d": snap.hv_30d.unwrap_or(0.0),
         "iv_hv_ratio": snap.iv_hv_ratio.unwrap_or(0.0),
         "net_flow": null,

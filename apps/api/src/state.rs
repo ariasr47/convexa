@@ -182,10 +182,11 @@ pub struct AnalyticsSnapshot {
     pub gex_spot: f64,
     pub display_spot: f64,
     pub market_phase: MarketPhase,
+    /// ATM IV as **decimal** (0.22 = 22%). Convert with `atm_iv_to_wire_percent` for FE wire.
     pub atm_iv: f64,
     pub atm_iv_expiration: Option<String>,
     pub atm_iv_dte: Option<f64>,
-    /// 30-day historical vol (% annualized), when enough daily closes were available.
+    /// 30-day historical vol as **percent annualized** (22.0 = 22%), when enough closes exist.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hv_30d: Option<f64>,
     /// ATM IV (%) / HV (%). >1.10 = IV rich; <0.90 = IV cheap.

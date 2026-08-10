@@ -272,7 +272,13 @@ export interface MarketState {
   vwap_lower_3: number | null;
   dte_min: number | null;
   dte_max: number | null;
+  /**
+   * ATM IV as **percent** on the wire (22 = 22%). Engine storage is decimal (0.22);
+   * the API converts at the boundary via `atm_iv_to_wire_percent`. Never treat this as
+   * a fraction of 1 when comparing to HV% or feeding a re-implemented vol-norm.
+   */
   atm_iv: number;
+  /** 30d historical vol as **percent annualized** (same unit as wire `atm_iv`). */
   hv_30d: number;
   iv_hv_ratio: number;
   net_flow: number | null;
