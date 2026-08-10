@@ -118,7 +118,9 @@ Git-connected deploys (push to `main`) are usually enough; Wrangler is optional.
 | Symptom | Likely cause |
 |---------|----------------|
 | Build fails: Node / nx not found | Set `NODE_VERSION=26.7.0`; build from **repo root**, not `apps/dashboard` |
-| Build fails: cannot find project | Use exact name `@convexa/dashboard` and `npm ci` (Pages runs install automatically for Node) |
+| Build fails: cannot find project | Use exact name `@convexa/dashboard` (not `@org/dashboard`) and `npm ci` (Pages runs install automatically for Node) |
+| Site looks weeks old / old blog posts | **Failed or skipped deploys leave the last good build live.** In Pages → Deployments: open the latest `main` deploy log. Common fail: build command still `nx build @org/dashboard` after the package rename. Fix command to `npx nx build @convexa/dashboard --configuration=production`, then **Retry deployment** or push an empty commit to `main`. Hard-refresh (`Ctrl+Shift+R`) after green deploy. |
+| Two blog cards that were deleted in git | SPA index is client-rendered from the **deployed** JS. `main` only lists `how-we-read-dealer-structure`; if you still see AI-team + System Analysis cards, production is not on current `main`. |
 | SPA loads, `/api/*` → 502 `API_ORIGIN is not configured` | Env var not set on **Production** environment, or not redeployed after add |
 | `/api/*` → 502 / connection errors | Wrong `API_ORIGIN`, Railway sleeping/down, or typo in URL |
 | Login works then immediately logged out | Cookie `Secure` over HTTP; use HTTPS Pages URL; check `AUTH_COOKIE_SECURE=true` on API |
