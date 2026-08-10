@@ -83,6 +83,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     respHeaders.set(key, value);
   }
 
+  // Edge defence-in-depth (static SPA also gets these via public/_headers).
+  // Do not override Content-Type / Set-Cookie from upstream.
+  if (!respHeaders.has('X-Content-Type-Options')) {
+    respHeaders.set('X-Content-Type-Options', 'nosniff');
+  }
+  if (!respHeaders.has('X-Frame-Options')) {
+    respHeaders.set('X-Frame-Options', 'DENY');
+  }
+  if (!respHeaders.has('Referrer-Policy')) {
+    respHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  }
+  if (!respHeaders.has('Strict-Transport-Security')) {
+    respHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
   return new Response(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,

@@ -24,7 +24,10 @@
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
     "worktree:link": "node tools/link-workspace.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "conformance:public": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/public-surface.json --url",
+    "conformance:scanner": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/scanner.json --url",
+    "conformance:auth": "node .claude/tools/interface_conformance.mjs --spec .claude/tools/conformance/auth-gated.json --auth-signup --url"
   },
   "workspaces": ["apps/*", "libs/*"],
   "dependencies": {

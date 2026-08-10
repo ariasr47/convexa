@@ -63,13 +63,13 @@ export function DealerPositioning({
           label="Call wall"
           value={`$${m.call_wall}`}
           accent="up"
-          info="Strike with the most positive dealer gamma — tends to act as resistance (dealers sell into rallies here)."
+          info="Strike with the most positive dealer gamma (vendor gamma × dealer-sign OI). Tends to act as resistance. Not the same object as the analytic gamma flip — see Methodology."
         />
         <StatTile
           label="Put wall"
           value={`$${m.put_wall}`}
           accent="down"
-          info="Strike with the most negative dealer gamma — tends to act as support (dealers buy dips here)."
+          info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory."
         />
         <StatTile
           label="Net GEX"
@@ -168,7 +168,7 @@ export function DealerPositioning({
           accent="neutral"
           accentColor={tierColor}
           info={
-            '0–100 triage score for how actionable the setup is now (closeness to a key level + volatility extremity + confluence). Not a trade signal.' +
+            '0–100 triage score (proximity + IV/HV stretch + setups + flip transition + optional dark pool). Does not use vol-norm GEX or IV-rank — those stay advisory. Not a trade signal.' +
             OPPORTUNITY_TIER_INFO
           }
         />

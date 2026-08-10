@@ -10,6 +10,7 @@ import { Link as RouterLink } from 'react-router-dom';
 
 const SECTIONS = [
   METHOD_COPY.sections.structure,
+  METHOD_COPY.sections.gammaSources,
   METHOD_COPY.sections.twoSpeed,
   METHOD_COPY.sections.score,
   METHOD_COPY.sections.fails,

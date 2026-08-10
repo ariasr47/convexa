@@ -1,0 +1,55 @@
+{
+  "_comment": "Anonymous public surface for CI / post-deploy smoke. Environment-independent envelope shapes only — never assert live scores or prices (vendor/time dependent). Auth-gated endpoints live in auth-gated.json.",
+  "version": "1.0",
+  "feature": "public-surface",
+  "endpoints": [
+    {
+      "id": "health_ok",
+      "method": "GET",
+      "path": "/api/health",
+      "required": {
+        "status": "string",
+        "service": "string",
+        "durable_store": "string",
+        "scanner": "object",
+        "scanner.enabled": "boolean",
+        "scanner.universe_size": "number"
+      }
+    },
+    {
+      "id": "scan_default_view_envelope",
+      "method": "GET",
+      "path": "/api/scan",
+      "required": {
+        "view": "object",
+        "view.source": "string",
+        "view.symbols": "array",
+        "view.sort": "object",
+        "view.density": "string",
+        "rows": "array",
+        "sweep": "object|null"
+      }
+    },
+    {
+      "id": "scan_universe_list",
+      "method": "GET",
+      "path": "/api/scan/universe",
+      "required": {
+        "symbols": "array",
+        "universe_size": "number"
+      }
+    },
+    {
+      "id": "structure_history_envelope",
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "path_params": { "symbol": "SPY" },
+      "query": { "limit": 3 },
+      "required": {
+        "symbol": "string",
+        "samples": "array",
+        "basis": "string"
+      }
+    }
+  ]
+}

@@ -28,6 +28,22 @@ export const METHOD_COPY = {
           'and flip stay raw strike levels. Vol-norm GEX is not a scoring input.',
       ],
     },
+    gammaSources: {
+      h: 'Flip vs walls — different gamma bases',
+      body: [
+        'Call wall and put wall pick the strikes with the largest positive / negative dealer ' +
+          'gamma using the vendor’s per-contract gamma and a dealer-sign open-interest convention ' +
+          '(calls short / puts long as the default dealer book). That is a snapshot convention, ' +
+          'not a measured inventory — real desks can and do differ.',
+        'Gamma flip is not “the wall’s midpoint.” It is the zero-crossing of the analytic net-GEX ' +
+          'curve across strikes (where hedging flips from dampening to amplifying). Walls can ' +
+          'sit far from the flip when the gamma profile is skewed; treat them as related but not ' +
+          'the same object.',
+        'Limitations: vendor gamma can lag or gap on thin names; OI sign is an assumption; and ' +
+          'levels are only as good as the chain snapshot. When gamma or OI is missing, the tile ' +
+          'says unavailable — we do not invent a wall.',
+      ],
+    },
     twoSpeed: {
       h: 'Two data speeds — do not mix them',
       body: [
@@ -48,6 +64,10 @@ export const METHOD_COPY = {
           '|IV/HV − 1| stretch (up to 25), active setups (up to 25), flip-transition bonus (10), ' +
           'and optional dark-pool confluence (up to 6). The scanner “why this row” tip surfaces ' +
           'the top components when the server sends score_drivers.',
+        'Honest scope: today’s score does not consume vol-normalized GEX or the IV-rank band. ' +
+          'Those packs are advisory context on the ticker only. Folding them into the score is a ' +
+          'deliberate product change that needs a scored feature + ledger evidence — not a quiet ' +
+          'UI tweak.',
       ],
     },
     fails: {

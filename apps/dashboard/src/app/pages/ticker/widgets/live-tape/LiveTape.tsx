@@ -75,7 +75,7 @@ export function LiveTape({ m, live, isLive, streamOffline }: Props) {
           accent="neutral"
           offline={streamOffline}
           flash={flipFlash}
-          info="The price where dealer hedging switches from calming moves to amplifying them. Above it → steadier/range-bound; below it → more volatile/trending."
+          info="Analytic net-GEX zero-crossing (where hedging flips from dampening to amplifying) — not the same as call/put walls, which pick peak vendor-gamma strikes. Above it → steadier/range-bound; below it → more volatile/trending."
         />
         <StatTile
           label="VWAP"

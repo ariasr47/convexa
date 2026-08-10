@@ -21,8 +21,8 @@
 
 | Area | Open | Done |
 |------|------|------|
-| Production hardening | remaining in §1 | **1.1–1.4, 1.7** |
-| Quant calculations | see §2 | 0 |
+| Production hardening | remaining in §1 | **1.1–1.7** |
+| Quant calculations | see §2 | **2.1–2.3** |
 | Performance | — | **3.1–3.7** (see notes; 3.5–3.6 deferred by design) |
 | React / frontend standards | see §4 | 0 |
 | UX | see §5 | 0 |
@@ -58,15 +58,15 @@ _Update counts when checking items._
 
 ### P1
 
-- [ ] **1.5 Conformance suite in CI or nightly**  
+- [x] **1.5 Conformance suite in CI or nightly**  
   **Evidence:** TECH_DEBT #7 — wire contract not gated in CI.  
   **Done when:** Job runs conformance (auth cookie + gated surfaces) on schedule or post-deploy.  
-  **Note:** _
+  **Note:** 2026-08-10 — `.github/workflows/conformance.yml` (prod public + local auth-gated); specs `public-surface.json` + `scanner.json` + `auth-gated.json`.
 
-- [ ] **1.6 Security headers at edge**  
+- [x] **1.6 Security headers at edge**  
   **Evidence:** Cookie SameSite exists; no app-level CSP/HSTS/frame options found.  
   **Done when:** CF Pages (or Function) sets at least `X-Content-Type-Options`, HSTS, conservative CSP, frame policy.  
-  **Note:** _
+  **Note:** 2026-08-10 — `apps/dashboard/public/_headers` (CSP/HSTS/frame/nosniff) + API proxy hardening in `functions/api/[[path]].ts`.
 
 - [x] **1.7 Versioned Postgres schema migrations**  
   **Evidence:** Boot uses `CREATE IF NOT EXISTS` + ad-hoc `ALTER … IF NOT EXISTS` only.  
@@ -94,17 +94,17 @@ Keep: pure `quant-engine`, SIMD GEX + goldens, O(1) vol-norm GEX, `IvDecimal`/`H
 
 ### Improvements
 
-- [ ] **2.1 Methodology: score is pre–vol-norm / pre–IV-rank era**  
+- [x] **2.1 Methodology: score is pre–vol-norm / pre–IV-rank era**  
   **Done when:** `/methodology` (and/or score tip) states score does not consume vol-norm GEX or IV-rank band; change only via deliberate score feature + ledger evidence.  
-  **Note:** _
+  **Note:** 2026-08-10 — methodology score section + Opportunity tile tip.
 
-- [ ] **2.2 Methodology: vendor-gamma + OI sign convention**  
+- [x] **2.2 Methodology: vendor-gamma + OI sign convention**  
   **Done when:** Honest copy that levels use vendor gamma and dealer-sign OI convention; limitations called out (market-reality report).  
-  **Note:** _
+  **Note:** 2026-08-10 — “Flip vs walls” methodology section + wall tile tips.
 
-- [ ] **2.3 Methodology / UI: flip vs walls gamma sources**  
+- [x] **2.3 Methodology / UI: flip vs walls gamma sources**  
   **Done when:** Flip (analytic curve) vs walls (vendor gamma) called out as basis — e.g. flip tile tip or methodology line.  
-  **Note:** _
+  **Note:** 2026-08-10 — methodology section + LiveTape gamma-flip tip.
 
 - [ ] **2.4 Structure history research export (optional day buckets)**  
   **Done when:** Optional day-partitioned export or API for offline research (not required for desk path).  

@@ -35,13 +35,17 @@ describe('MethodologyPage (product spine #7)', () => {
     expect(container.querySelectorAll('h3, h4, h5, h6')).toHaveLength(0);
   });
 
-  it('covers the trust topics: structure, two speeds, score, failure modes, no real orders', () => {
+  it('covers the trust topics: structure, gamma bases, two speeds, score scope, failure modes', () => {
     renderPage();
     const text = screen.getByTestId('methodology-page').textContent ?? '';
     expect(text).toMatch(/walls|flip|GEX/i);
     expect(text).toMatch(/vol-norm|ATM IV|vol regimes/i);
+    expect(text).toMatch(/analytic|zero-crossing|vendor.*gamma|dealer-sign|open-interest/i);
     expect(text).toMatch(/Structure as-of|two data speeds|structure.*poll|stream/i);
     expect(text).toMatch(/score|tier/i);
+    expect(text).toMatch(
+      /does not consume vol-normalized|not consume vol-norm|IV-rank band|advisory context/i,
+    );
     expect(text).toMatch(/thin|single-name|unavailable|building/i);
     expect(text).toMatch(/never places|no real order|simulated/i);
     expect(screen.getByTestId('methodology-disclaimer').textContent).toMatch(

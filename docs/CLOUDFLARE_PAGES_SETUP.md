@@ -45,8 +45,9 @@ Browser  →  https://<project>.pages.dev
 
 The repo already includes:
 
-- `functions/api/[[path]].ts` — proxies `/api/*` (SSE-safe, blocks `/api/_metrics`)
+- `functions/api/[[path]].ts` — proxies `/api/*` (SSE-safe, blocks `/api/_metrics`; adds nosniff / frame / HSTS on the proxy response)
 - `apps/dashboard/public/_redirects` — SPA fallback so `/scanner`, `/ticker/...` work
+- `apps/dashboard/public/_headers` — CSP, HSTS, `X-Frame-Options: DENY`, nosniff (Cloudflare Pages static headers)
 
 ## Step 2 — Note your Pages URL
 

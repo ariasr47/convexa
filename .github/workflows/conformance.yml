@@ -1,0 +1,137 @@
+# Wire-contract conformance (system-1) against a live API.
+#
+# Two modes:
+#   1) prod-public  — post-merge / nightly against SMOKE_API_ORIGIN (anonymous specs only)
+#   2) local-auth   — boots api-rust in CI with registration open; runs auth-gated + public
+#
+# Repo variable: SMOKE_API_ORIGIN=https://convexa-production.up.railway.app
+name: Conformance
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # ~06:15 UTC daily (after US overnight batch noise settles)
+    - cron: '15 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conformance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prod-public:
+    name: Prod public surface
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Resolve API origin
+        id: origin
+        env:
+          SMOKE_API_ORIGIN: ${{ vars.SMOKE_API_ORIGIN }}
+        run: |
+          set -euo pipefail
+          ORIGIN="${SMOKE_API_ORIGIN:-}"
+          if [ -z "$ORIGIN" ]; then
+            echo "::notice title=Conformance skipped::Set repository variable SMOKE_API_ORIGIN"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ORIGIN="${ORIGIN%/}"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "api=$ORIGIN" >> "$GITHUB_OUTPUT"
+          echo "Using API origin: $ORIGIN"
+
+      - name: Public surface (health · scan · history)
+        if: steps.origin.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          node .claude/tools/interface_conformance.mjs \
+            --spec .claude/tools/conformance/public-surface.json \
+            --url "${{ steps.origin.outputs.api }}"
+
+      - name: Scanner envelope (legacy spec)
+        if: steps.origin.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          node .claude/tools/interface_conformance.mjs \
+            --spec .claude/tools/conformance/scanner.json \
+            --url "${{ steps.origin.outputs.api }}"
+
+  local-auth:
+    name: Local API + auth-gated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+
+      - name: Build api-rust
+        run: cargo build -p api-rust --release
+
+      - name: Serve api-rust (JSON stores, registration open)
+        env:
+          # Dummy vendor key — conformance specs here do not hit Massive.
+          MASSIVE_API_KEY: ci-conformance-dummy-key-not-for-live-vendor
+          AUTH_SESSION_SIGNING_KEY: ci-conformance-signing-key-32b!!
+          AI_KEY_ENCRYPTION_KEY: ci-conformance-ai-key-material-32b!
+          AUTH_REGISTRATION_OPEN: 'true'
+          AUTH_COOKIE_SECURE: 'false'
+          SCAN_ENABLED: '0'
+          WARM_ENABLED: '0'
+          PUBLIC_RATE_LIMIT_PER_MIN: '0'
+          HTTP_BIND: '127.0.0.1:18000'
+          RUST_LOG: warn,api_rust=info
+        run: |
+          set -euo pipefail
+          ./target/release/api-rust serve &
+          echo $! > /tmp/api-rust.pid
+          # Wait for health
+          for i in $(seq 1 60); do
+            if curl -fsS "http://127.0.0.1:18000/api/health" | grep -q '"status":"ok"'; then
+              echo "api ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "api failed to become ready"
+          exit 1
+
+      - name: Public surface (local)
+        run: |
+          set -euo pipefail
+          node .claude/tools/interface_conformance.mjs \
+            --spec .claude/tools/conformance/public-surface.json \
+            --url "http://127.0.0.1:18000"
+
+      - name: Auth-gated surface (signup bootstrap)
+        run: |
+          set -euo pipefail
+          node .claude/tools/interface_conformance.mjs \
+            --spec .claude/tools/conformance/auth-gated.json \
+            --url "http://127.0.0.1:18000" \
+            --auth-signup
+
+      - name: Stop api-rust
+        if: always()
+        run: |
+          if [ -f /tmp/api-rust.pid ]; then kill "$(cat /tmp/api-rust.pid)" || true; fi

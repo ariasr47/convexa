@@ -1,0 +1,21 @@
+# Cloudflare Pages security headers (static assets + SPA).
+# https://developers.cloudflare.com/pages/configuration/headers/
+#
+# Keep CSP conservative but workable: Vite-built SPA, same-origin /api proxy,
+# Google Fonts not used (self-hosted), no third-party analytics scripts required.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; worker-src 'self' blob:; upgrade-insecure-requests
+
+# Do not cache the SPA shell aggressively — deploys should show new assets promptly.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
