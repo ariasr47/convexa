@@ -31,4 +31,4 @@ In Chrome DevTools you can also **Add source map…** and point at a private fil
 ## What this is *not*
 
 - Not public source disclosure.
-- Not a substitute for a multi-user error product (see Sentry discussion in the backlog note / team chat). Without an error service, maps help **you** when you already have a minified stack from a report or repro.
+- Not a substitute for a multi-user error product. **§4.5** in `docs/IMPROVEMENT_BACKLOG.md` tracks optional Sentry (or peer): automatic collection of client exceptions with release-tagged stacks. Without that product, these maps help **you** decode a minified stack you already have (repro, console, user paste). Do not implement §4.5 until the owner accepts vendor, PII scrub, and CSP.

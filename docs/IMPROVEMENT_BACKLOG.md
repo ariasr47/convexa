@@ -24,7 +24,7 @@
 | Production hardening       | **1.8 partial** | **1.1–1.7, 1.9**                                    |
 | Quant calculations         | see §2          | **2.1–2.3**                                         |
 | Performance                | **3.8 active**  | **3.1–3.7** (3.5–3.6 deferred by design)            |
-| React / frontend standards | see §4          | **4.1–4.4**                                         |
+| React / frontend standards | **4.5 later**   | **4.1–4.4, 4.6**                                    |
 | UX                         | **5.6 owner**   | **5.1–5.5, 5.7**                                    |
 | System design              | remaining in §6 | **6.1, 6.2 first slice**                            |
 | Explicit non-goals         | n/a             | n/a                                                 |
@@ -307,11 +307,10 @@ These were audited as **avoid** unless strategy changes:
 
 Use this as the default sequence when picking work (edge roadmap can interrupt):
 
-1. **§3.8 FE performance program** (Phase A → B → C; **active now**) — see `docs/FRONTEND_PERFORMANCE_ANALYSIS.md`
-2. §5.6 owner device phone sign-off (hardening already shipped)
-3. §2.5 / §2.8 only when chart or commercial needs force them
-4. §4.5–4.6 / §6.3+ when multi-user or scale evidence requires them
-5. Remaining system-design items (§6.3–6.5) when edge roadmap is quiet
+1. §5.6 owner device phone sign-off (hardening already shipped)
+2. §2.5 / §2.8 only when chart or commercial needs force them
+3. §6.3+ system-design when edge roadmap is quiet
+4. **§4.5 Sentry (or peer)** only after multi-user / unreproducible FE faults — owner gate (maps already private via §4.6)
 
 ---
 
@@ -324,3 +323,4 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 | 2026-08-10 | Closed **§3 Performance** remaining: `usePollingResource`, ticker data-hook split, analytics phase timings; 3.5–3.6 N/A by criteria.             |
 | 2026-08-10 | Closed **5.5** Alerts v1, **5.7** theme gaps #1–4, **6.2** first slice (server book); **5.6** hardening + checklist (owner phone sign-off open). |
 | 2026-08-10 | Opened **§3.8 FE performance program** (bundle/Vite/Nx + live isolation); full report `docs/FRONTEND_PERFORMANCE_ANALYSIS.md`. **Start immediately.** |
+| 2026-08-10 | **§4.5** expanded as owner-gated Sentry/error-product item (not this pass); **§4.6** hidden maps shipped. |
