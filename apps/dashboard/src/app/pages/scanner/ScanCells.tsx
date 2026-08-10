@@ -187,7 +187,7 @@ export function LevelDistCell({
         <Box
           component="span"
           data-testid={`${testid}-delta`}
-          sx={{ ...MONO, fontSize: '0.65rem', color: 'text.secondary' }}
+          sx={{ ...MONO, fontSize: '0.6875rem', color: 'text.secondary' }}
         >
           {d}
         </Box>
