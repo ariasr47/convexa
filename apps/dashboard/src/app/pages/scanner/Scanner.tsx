@@ -16,9 +16,10 @@
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
 import { Jargon } from '@/shared/ui/Jargon';
-import { Alert, Box, Skeleton, Typography, useMediaQuery } from '@mui/material';
+import { Alert, Box, Link, Skeleton, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';
 import { SCAN_COPY } from './labels';
 import { ScanCardList } from './ScanCard';
@@ -138,6 +139,16 @@ export function Scanner() {
             term={live.offline ? SCAN_COPY.cadenceHeaderOffline : SCAN_COPY.cadenceHeader}
             gloss={SCAN_COPY.cadenceGloss}
           />
+          {' · '}
+          <Link
+            component={RouterLink}
+            to="/methodology"
+            data-testid="scan-methodology-link"
+            underline="hover"
+            sx={{ color: 'text.secondary', fontSize: 'inherit' }}
+          >
+            {SCAN_COPY.methodologyLink}
+          </Link>
         </Typography>
       </Box>
 

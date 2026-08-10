@@ -191,6 +191,7 @@ describe('route table', () => {
     { path: '/positions', ready: () => screen.findByTestId('portfolio-panel'), authed: true },
     { path: '/scanner', ready: () => screen.findByTestId('scanner-page'), authed: true },
     { path: '/blog', ready: () => screen.findByTestId('blog-page') },
+    { path: '/methodology', ready: () => screen.findByTestId('methodology-page') },
     { path: '/settings', ready: () => screen.findByTestId('settings-page') },
   ];
 

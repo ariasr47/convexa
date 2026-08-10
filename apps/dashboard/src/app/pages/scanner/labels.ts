@@ -18,7 +18,9 @@ import type { ScanSortKey, ScanStatus } from '@org/api';
 export const SCAN_COPY = {
   heading: 'Scanner',
   subhead:
-    'One dense read of the tracked universe — which ticker deserves the deep-dive right now.',
+    'One dense read of the tracked universe — which ticker deserves the deep-dive right now. ' +
+    'Structure is a snapshot; see methodology for how it is built.',
+  methodologyLink: 'How structure is computed',
   /** The two-speed basis, always above the table (UX §2.1). */
   cadenceHeader: 'Prices live · structure ~3 min · hot names sooner',
   cadenceGloss:

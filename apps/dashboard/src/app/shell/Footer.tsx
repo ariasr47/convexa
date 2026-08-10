@@ -20,16 +20,28 @@ export function Footer() {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Stack spacing={1}>
           <ConvexaMark size={16} fontSize="1rem" />
-          <Link
-            component={RouterLink}
-            to="/blog"
-            variant="caption"
-            underline="hover"
-            sx={{ color: 'text.secondary', width: 'fit-content' }}
-            data-testid="footer-blog-link"
-          >
-            Blog — how Convexa is built
-          </Link>
+          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
+            <Link
+              component={RouterLink}
+              to="/methodology"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-methodology-link"
+            >
+              How Convexa works
+            </Link>
+            <Link
+              component={RouterLink}
+              to="/blog"
+              variant="caption"
+              underline="hover"
+              sx={{ color: 'text.secondary', width: 'fit-content' }}
+              data-testid="footer-blog-link"
+            >
+              Blog — how Convexa is built
+            </Link>
+          </Stack>
           <Typography
             variant="caption"
             sx={{ color: 'text.secondary' }}

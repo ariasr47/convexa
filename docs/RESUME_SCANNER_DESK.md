@@ -18,7 +18,7 @@ Prefer code + this file over chat history.
 | 4 | Always label age and basis | **Done** (local — Structure as-of + widget basis subtitles) |
 | 5 | Position brief between widgets | **Done** (local — Your book strip between Structure & plan) |
 | 6 | Design polish / keyboard | **Done** (local — skip link, scan hit targets, score focus) |
-| 7 | Trust/methodology surface | Later |
+| 7 | Trust/methodology surface | **Done** (local — `/methodology` + footer/scanner links) |
 
 **Quant moat (longer):** structure history, score explainability, Postgres scan store, portfolio reassess.
 
@@ -66,16 +66,23 @@ Prefer code + this file over chat history.
 
 ---
 
-## 3. Suggested next session — spine #7
+### Spine #7 — Trust / methodology surface
+- Public static page `/methodology` — how structure/score works, two-speed data, where it fails, no real orders
+- Footer “How Convexa works” + scanner cadence methodology link
+- Specs: `methodology.spec.tsx`; route walked in `app.risk.spec.tsx`
 
-**Trust / methodology surface** — where the product explains how structure/score is computed and where it fails (honest, not marketing).
+---
+
+## 3. Product spine complete — next tracks
+
+Spine **#1–#7** are shipped (or in the working tree for #7). Longer tracks:
+
+- Quant moat: structure history, score drivers, Postgres scan store, portfolio reassess
+- Roadmap NEXT: broker-connect, vol-normalized GEX, alerts, ledger checkpoint
 
 ```bash
 nvm use
-npm run serve:api
-npm run serve:dashboard
-npx nx run @org/dashboard:test -- --run src/app/pages/ticker/
-npx nx run @org/dashboard:test -- --run src/app/pages/scanner/
+npx nx run @org/dashboard:test -- --run src/app/pages/methodology/
 npx nx run @org/dashboard:typecheck
 ```
 
@@ -108,8 +115,6 @@ npx nx run @org/dashboard:typecheck
 ```
 Continue from docs/RESUME_SCANNER_DESK.md.
 
-Spine #2–#6 are done locally.
-Implement product spine #7 — trust/methodology surface.
-Honor honesty floor and model-read-carries-its-assumptions.
-Run tests + typecheck. Do not bare nx format:write.
+Product spine #1–#7 is done. Pick quant moat or roadmap NEXT
+(broker-connect / vol-normalized GEX / alerts).
 ```

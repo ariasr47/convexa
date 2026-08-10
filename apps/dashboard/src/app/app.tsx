@@ -58,6 +58,9 @@ const PositionsPage = lazy(() =>
 );
 const Scanner = lazy(() => import('@/pages/scanner/Scanner').then((m) => ({ default: m.Scanner })));
 const BlogPage = lazy(() => import('@/pages/blog/BlogPage').then((m) => ({ default: m.BlogPage })));
+const MethodologyPage = lazy(() =>
+  import('@/pages/methodology/MethodologyPage').then((m) => ({ default: m.MethodologyPage })),
+);
 const SettingsPage = lazy(() =>
   import('@/features/auth/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -133,6 +136,8 @@ export function AppRoutes() {
         {/* Blog — static index (zero data work); each card is a full-document anchor to the
             standalone article HTML in `public/blog/` (static files win over the SPA fallback). */}
         <Route path="/blog" element={lazyRoute(<BlogPage />)} />
+        {/* Methodology — product spine #7 trust surface (static; public). */}
+        <Route path="/methodology" element={lazyRoute(<MethodologyPage />)} />
         {/* Settings — the 3 light prefs (account menu links here when signed in; viewable anonymously). */}
         <Route path="/settings" element={lazyRoute(<SettingsPage />)} />
       </Route>
