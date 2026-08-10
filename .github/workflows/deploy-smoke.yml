@@ -1,0 +1,75 @@
+# Post-merge prod smoke — read-only checks against live URLs (no deploy secrets required).
+# Enable by setting repo variable/secret SMOKE_API_ORIGIN (and optional SMOKE_PAGES_ORIGIN).
+# Railway/Pages CD: configure auto-deploy on main in each host dashboard (see docs/DEPLOY_RUNBOOK.md).
+name: Deploy smoke
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Prod smoke (health · ticker · scan)
+    runs-on: ubuntu-latest
+    # Skip when not configured. Set repo Variable SMOKE_API_ORIGIN (Settings → Variables).
+    if: ${{ vars.SMOKE_API_ORIGIN != '' }}
+    steps:
+      - name: Resolve API origin
+        id: origin
+        env:
+          ORIGIN: ${{ vars.SMOKE_API_ORIGIN }}
+        run: |
+          ORIGIN="${ORIGIN%/}"
+          echo "api=$ORIGIN" >> "$GITHUB_OUTPUT"
+          echo "Using API origin: $ORIGIN"
+
+      - name: Health
+        run: |
+          set -euo pipefail
+          body=$(curl -fsS "${{ steps.origin.outputs.api }}/api/health")
+          echo "$body" | tee /tmp/health.json
+          echo "$body" | grep -q '"status":"ok"'
+          echo "$body" | grep -q 'api-rust'
+
+      - name: Ticker SPY (bundle)
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/ticker.json -w "%{http_code}" \
+            "${{ steps.origin.outputs.api }}/api/ticker/SPY")
+          test "$code" = "200"
+          grep -q market_state /tmp/ticker.json
+
+      - name: Scan envelope
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/scan.json -w "%{http_code}" \
+            "${{ steps.origin.outputs.api }}/api/scan")
+          test "$code" = "200"
+          grep -q '"rows"' /tmp/scan.json
+
+      - name: Structure history endpoint
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -o /tmp/hist.json -w "%{http_code}" \
+            "${{ steps.origin.outputs.api }}/api/scan/SPY/history?limit=3")
+          test "$code" = "200"
+          grep -q '"samples"' /tmp/hist.json
+          grep -q '"basis"' /tmp/hist.json
+
+      - name: Pages SPA (optional)
+        if: ${{ vars.SMOKE_PAGES_ORIGIN != '' }}
+        env:
+          ORIGIN: ${{ vars.SMOKE_PAGES_ORIGIN }}
+        run: |
+          set -euo pipefail
+          ORIGIN="${ORIGIN%/}"
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$ORIGIN/")
+          test "$code" = "200"

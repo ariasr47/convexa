@@ -15,6 +15,7 @@ pub mod db;
 pub mod domain;
 pub mod error;
 pub mod infrastructure;
+pub mod middleware;
 pub mod routes;
 pub mod server;
 pub mod services;

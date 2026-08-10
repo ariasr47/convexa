@@ -42,8 +42,11 @@ docker run --rm -p 8000:8000 \
 2. Service may still be named `api-rust` on Railway (rename optional).
 3. Variables: `DATABASE_URL`, `MASSIVE_API_KEY`, `AUTH_SESSION_SIGNING_KEY`,
    `AI_KEY_ENCRYPTION_KEY`, `AUTH_COOKIE_SECURE=true`, `WARM_SYMBOLS`, …
+   Optional: `PUBLIC_RATE_LIMIT_PER_MIN` (default 120; `0` disables).
 4. Domain: `convexa-production.up.railway.app` (Pages `API_ORIGIN` unchanged).
-5. Smoke: `GET /api/health` → `status=ok`, `durable_store=postgres`.
+5. Smoke: full checklist in [`DEPLOY_RUNBOOK.md`](./DEPLOY_RUNBOOK.md) Phase 3 —
+   at minimum `GET /api/health` → `status=ok`, `durable_store=postgres`,
+   `scanner.enabled=true`.
 
 ## Local
 

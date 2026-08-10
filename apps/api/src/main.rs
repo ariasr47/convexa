@@ -181,6 +181,7 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .join("../../data/iv_timeseries.json"),
                 database_url: None,
+                public_rate_limit_per_min: 0,
                 workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
             });
             let path = path.unwrap_or_else(|| cfg.default_fixture_path());

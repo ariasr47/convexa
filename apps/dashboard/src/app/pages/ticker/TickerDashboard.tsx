@@ -220,35 +220,60 @@ export function TickerDashboard() {
   } | null>(null);
   const pendingPrefill = useRef<{ min: number; max: number } | null>(null);
 
-  const load = useCallback(() => {
-    if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
-    const dte = pendingPrefill.current;
-    pendingPrefill.current = null; // consume one-shot
-    setLoading(true);
-    // THE REQUEST IS UNCONDITIONAL AND ITS SHAPE NEVER BRANCHES — not on leg count, not on position
-    // count (SPEC §2.8, AC-74/AC-77/AC-83). There is deliberately no position-count guard here.
-    getTicker(ticker, {
-      expirations: selected ?? undefined,
+  /** Abort in-flight bundle fetch when deps change or the page unmounts (perf §3.2). */
+  const bundleAbortRef = useRef<AbortController | null>(null);
+
+  const load = useCallback(
+    (opts?: { force?: boolean }) => {
+      if (selected !== null && selected.length === 0) return; // nothing selected -> nothing to fetch
+      // Hidden tab: skip scheduled polls; force=true is Retry / visibility resume.
+      if (!opts?.force && typeof document !== 'undefined' && document.hidden) return;
+
+      bundleAbortRef.current?.abort();
+      const ac = new AbortController();
+      bundleAbortRef.current = ac;
+
+      const dte = pendingPrefill.current;
+      pendingPrefill.current = null; // consume one-shot
+      setLoading(true);
+      // THE REQUEST IS UNCONDITIONAL AND ITS SHAPE NEVER BRANCHES — not on leg count, not on position
+      // count (SPEC §2.8, AC-74/AC-77/AC-83). There is deliberately no position-count guard here.
+      getTicker(
+        ticker,
+        {
+          expirations: selected ?? undefined,
+          darkPool,
+          position: positionQuery,
+          minDte: dte?.min,
+          maxDte: dte?.max,
+        },
+        { signal: ac.signal },
+      )
+        .then((d) => {
+          if (ac.signal.aborted) return;
+          setData(d);
+          setError(null);
+        })
+        .catch((e: unknown) => {
+          if (ac.signal.aborted) return;
+          const err = e as { name?: string; message?: string };
+          if (err?.name === 'AbortError') return;
+          setError(err?.message ?? 'Failed to load ticker');
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setLoading(false);
+        });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [
+      ticker,
+      selected,
       darkPool,
-      position: positionQuery,
-      minDte: dte?.min,
-      maxDte: dte?.max,
-    })
-      .then((d) => {
-        setData(d);
-        setError(null);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    ticker,
-    selected,
-    darkPool,
-    positionQuery?.expiration,
-    positionQuery?.strike,
-    positionQuery?.right,
-  ]);
+      positionQuery?.expiration,
+      positionQuery?.strike,
+      positionQuery?.right,
+    ],
+  );
 
   // Reset the filter to "all" whenever the ticker changes; clear data + any prior error.
   useEffect(() => {
@@ -257,11 +282,19 @@ export function TickerDashboard() {
     setError(null);
   }, [ticker]);
 
-  // (Re)load on ticker/selection change, then poll on the cache cadence.
+  // (Re)load on ticker/selection change, poll on cache cadence, pause when tab hidden.
   useEffect(() => {
-    load();
-    const id = setInterval(load, POLL_MS);
-    return () => clearInterval(id);
+    load({ force: true });
+    const id = setInterval(() => load(), POLL_MS);
+    const onVisibility = () => {
+      if (!document.hidden) load({ force: true });
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+      bundleAbortRef.current?.abort();
+    };
   }, [load]);
 
   // Structure path (slow-lane samples) — independent of SSE; static surface.
@@ -274,11 +307,16 @@ export function TickerDashboard() {
 
   useEffect(() => {
     let cancelled = false;
+    let ac = new AbortController();
     setStructHist({ samples: null, basis: null, loading: true, error: null });
-    const pull = () => {
-      getStructureHistory(ticker, 48)
+    const pull = (force = false) => {
+      if (!force && typeof document !== 'undefined' && document.hidden) return;
+      ac.abort();
+      ac = new AbortController();
+      const signal = ac.signal;
+      getStructureHistory(ticker, 48, { signal })
         .then((r) => {
-          if (cancelled) return;
+          if (cancelled || signal.aborted) return;
           setStructHist({
             samples: r.samples,
             basis: r.basis ?? null,
@@ -286,21 +324,29 @@ export function TickerDashboard() {
             error: null,
           });
         })
-        .catch((e: Error) => {
-          if (cancelled) return;
+        .catch((e: unknown) => {
+          if (cancelled || signal.aborted) return;
+          const err = e as { name?: string; message?: string };
+          if (err?.name === 'AbortError') return;
           setStructHist((prev) => ({
             samples: prev.samples,
             basis: prev.basis,
             loading: false,
-            error: e?.message ?? 'Structure history unavailable',
+            error: err?.message ?? 'Structure history unavailable',
           }));
         });
     };
-    pull();
-    const id = setInterval(pull, STRUCTURE_HISTORY_POLL_MS);
+    pull(true);
+    const id = setInterval(() => pull(false), STRUCTURE_HISTORY_POLL_MS);
+    const onVisibility = () => {
+      if (!document.hidden) pull(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       cancelled = true;
+      ac.abort();
       clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [ticker]);
 
@@ -545,7 +591,7 @@ export function TickerDashboard() {
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={load}>
+            <Button color="inherit" size="small" onClick={() => load({ force: true })}>
               Retry
             </Button>
           }

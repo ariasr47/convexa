@@ -9,6 +9,7 @@ use crate::services::auth::{AuthConfig, AuthService, AuthStore};
 use crate::services::broker::{get_positions_provider, BrokerBookService};
 use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
+use crate::middleware::RateLimiter;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
 use crate::infrastructure::massive::StockStreamHub;
 use quant_engine::{Contract, GexResult, Signals};
@@ -40,6 +41,8 @@ pub struct AppState {
     pub iv_store: IvStore,
     /// Shared stocks WebSocket hub (Path A + multi-symbol SSE).
     pub stock_hub: StockStreamHub,
+    /// Per-IP rate limiter for expensive public routes (process-local).
+    pub rate_limiter: Arc<RateLimiter>,
 }
 
 impl AppState {
@@ -155,6 +158,16 @@ impl AppState {
             "auth: google_available (needs GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI)"
         );
 
+        let rate_limiter = Arc::new(RateLimiter::new(config.public_rate_limit_per_min));
+        if config.public_rate_limit_per_min > 0 {
+            info!(
+                limit = config.public_rate_limit_per_min,
+                "public rate limit: per-IP per minute on expensive routes"
+            );
+        } else {
+            info!("public rate limit: disabled (PUBLIC_RATE_LIMIT_PER_MIN=0)");
+        }
+
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -167,6 +180,7 @@ impl AppState {
             broker,
             iv_store,
             stock_hub,
+            rate_limiter,
         })
     }
 }
@@ -433,6 +447,7 @@ mod tests {
             block_min_shares: 5000,
             iv_store_path: PathBuf::from("data/iv_timeseries.json"),
             database_url: None,
+            public_rate_limit_per_min: 0,
             workspace_root: PathBuf::from("."),
         }
     }

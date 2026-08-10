@@ -885,10 +885,14 @@ export interface StructureHistoryResponse {
 export async function getStructureHistory(
   symbol: string,
   limit = 48,
+  fetchOpts: FetchOpts = {},
 ): Promise<StructureHistoryResponse> {
   const sym = encodeURIComponent(symbol.trim().toUpperCase());
   const q = limit > 0 ? `?limit=${Math.min(limit, 96)}` : '';
-  const res = await fetch(`/api/scan/${sym}/history${q}`, { credentials: 'same-origin' });
+  const res = await fetch(`/api/scan/${sym}/history${q}`, {
+    credentials: 'same-origin',
+    signal: fetchOpts.signal,
+  });
   if (!res.ok) throw new ApiError(`Structure history failed (${res.status})`, res.status);
   return (await res.json()) as StructureHistoryResponse;
 }
@@ -950,9 +954,15 @@ export function streamTicker(
 
 /** Full bundle for one ticker, optionally filtered by DTE window or explicit expirations. When
  *  `position` is supplied, the bundle additionally returns `position_eval` (else null). */
+export type FetchOpts = {
+  /** Abort in-flight work on ticker/route change (perf §3.2). */
+  signal?: AbortSignal;
+};
+
 export async function getTicker(
   symbol: string,
   { minDte, maxDte, expirations, darkPool, position }: TickerQuery = {},
+  fetchOpts: FetchOpts = {},
 ): Promise<TickerBundle> {
   const params = new URLSearchParams();
   if (minDte != null) params.set('min_dte', String(minDte));
@@ -966,12 +976,16 @@ export async function getTicker(
     if (position.plPct != null) params.set('pos_pl_pct', String(position.plPct));
   }
   const qs = params.toString();
-  const res = await fetch(`/api/ticker/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
+  const res = await fetch(`/api/ticker/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`, {
+    signal: fetchOpts.signal,
+  });
   if (!res.ok) {
     const detail =
       res.status === 404
         ? `No option-chain data for ${symbol.toUpperCase()}`
-        : `API error ${res.status}`;
+        : res.status === 429
+          ? `Rate limited (${res.status})`
+          : `API error ${res.status}`;
     throw new ApiError(detail, res.status);
   }
   return (await res.json()) as TickerBundle;

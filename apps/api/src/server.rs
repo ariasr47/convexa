@@ -2,10 +2,12 @@
 
 use crate::config::Config;
 use crate::error::AppResult;
+use crate::middleware::rate_limit_middleware;
 use crate::routes;
 use crate::services::scanner::{self, LoopConfig, SweepConfig};
 use crate::services::warmer;
 use crate::state::AppState;
+use axum::middleware;
 use std::net::SocketAddr;
 use std::time::Duration;
 use tower_http::cors::{Any, CorsLayer};
@@ -46,7 +48,12 @@ pub async fn serve(config: Config) -> AppResult<()> {
         info!("scanner disabled (SCAN_ENABLED=0)");
     }
 
+    let limiter = state.rate_limiter.clone();
     let app = routes::router(state)
+        .layer(middleware::from_fn_with_state(
+            limiter,
+            rate_limit_middleware,
+        ))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

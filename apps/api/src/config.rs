@@ -75,6 +75,8 @@ pub struct Config {
     pub iv_store_path: PathBuf,
     /// Postgres URL for multi-instance durable stores (auth/iv/scan). Empty ⇒ JSON backends.
     pub database_url: Option<String>,
+    /// Per-IP requests/minute on expensive public routes. `0` = disabled.
+    pub public_rate_limit_per_min: u32,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
 }
@@ -240,6 +242,10 @@ impl Config {
                     .filter(|s| !s.is_empty())
             });
 
+        // Default 120/min per IP on vendor/compute routes. Unset in local is still limited;
+        // set PUBLIC_RATE_LIMIT_PER_MIN=0 to disable for load tests.
+        let public_rate_limit_per_min = env_u64("PUBLIC_RATE_LIMIT_PER_MIN", 120).min(u64::from(u32::MAX)) as u32;
+
         Ok(Self {
             massive_api_key,
             data_feed,
@@ -275,6 +281,7 @@ impl Config {
             block_min_shares,
             iv_store_path,
             database_url,
+            public_rate_limit_per_min,
             workspace_root,
         })
     }

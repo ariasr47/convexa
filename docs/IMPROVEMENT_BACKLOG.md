@@ -21,12 +21,12 @@
 
 | Area | Open | Done |
 |------|------|------|
-| Production hardening | see §1 | 0 |
+| Production hardening | remaining in §1 | **1.1, 1.2, 1.3, 1.4** |
 | Quant calculations | see §2 | 0 |
-| Performance | see §3 | 0 |
+| Performance | remaining in §3 | **3.1, 3.2** |
 | React / frontend standards | see §4 | 0 |
 | UX | see §5 | 0 |
-| System design | see §6 | 0 |
+| System design | remaining in §6 | **6.1** (topology documented) |
 | Explicit non-goals | n/a | n/a |
 
 _Update counts when checking items._
@@ -37,24 +37,24 @@ _Update counts when checking items._
 
 ### P0
 
-- [ ] **1.1 Rewrite deploy runbook for Rust-only stack**  
+- [x] **1.1 Rewrite deploy runbook for Rust-only stack**  
   **Evidence:** `docs/DEPLOY_RUNBOOK.md` still references `python worker.py`, `COPY worker.py`, Python scanner. Prod is `api-rust` (`docs/API_RUST_DEPLOY.md`).  
   **Done when:** Runbook describes `api` + scanner role (in-process or second service), Docker/`cargo --features postgres`, Postgres tables including `scan_structure_history`, health checks (`durable_store=postgres`). Remove or clearly archive Python steps.  
-  **Note:** _
+  **Note:** `92c3f2a` follow-up 2026-08-10 — full rewrite; scanner **embedded in `serve`**; no Python worker.
 
-- [ ] **1.2 Prod smoke checklist after deploy**  
+- [x] **1.2 Prod smoke checklist after deploy**  
   **Done when:** Documented + owner-runnable checks: `GET /api/health`, scanner rows non-empty in RTH, structure history path for a warm symbol, `vol_normalized_gex` present or honest null, Pages → Railway proxy.  
-  **Note:** _
+  **Note:** 2026-08-10 — Phase 3 in `DEPLOY_RUNBOOK.md` + `.github/workflows/deploy-smoke.yml` (set `SMOKE_API_ORIGIN`).
 
-- [ ] **1.3 Continuous deploy (close CI→prod lag)**  
+- [x] **1.3 Continuous deploy (close CI→prod lag)**  
   **Evidence:** TECH_DEBT #5 — live site can lag `main` by weeks.  
   **Done when:** Cloudflare Pages + Railway auto-deploy on `main` (or documented manual gate with cadence), with post-deploy smoke.  
-  **Note:** _
+  **Note:** 2026-08-10 — documented in runbook Phase 2/2b (host dashboards: auto-deploy + wait for CI). Smoke workflow on `main`. Owner still enables CF/Railway GitHub hooks if not already.
 
-- [ ] **1.4 Rate limiting on public API / edge**  
+- [x] **1.4 Rate limiting on public API / edge**  
   **Evidence:** No `PUBLIC_RATE_LIMIT` / limiter in `apps/api` Rust (Python era had per-IP limits on ticker/SSE).  
   **Done when:** Limits on expensive anon paths (`/api/ticker`, SSE) and/or Pages Function; env documented in runbook.  
-  **Note:** _
+  **Note:** 2026-08-10 — `PUBLIC_RATE_LIMIT_PER_MIN` (default 120) middleware on expensive routes; health exposes limit.
 
 ### P1
 
@@ -137,15 +137,15 @@ GEX cache + singleflight + liquid TTL; two-speed scanner; structure history not 
 
 ### Improvements
 
-- [ ] **3.1 Ticker: pause poll when tab hidden + refresh on visible**  
+- [x] **3.1 Ticker: pause poll when tab hidden + refresh on visible**  
   **Evidence:** `useScan` has `visibilitychange`; `TickerDashboard` 60s poll does not.  
   **Done when:** Same pattern as scanner — no poll while `document.hidden`; refresh on focus.  
-  **Note:** _
+  **Note:** 2026-08-10 — `TickerDashboard` + structure history poll respect `document.hidden`; refresh on visible.
 
-- [ ] **3.2 Ticker / history: AbortController on symbol change**  
+- [x] **3.2 Ticker / history: AbortController on symbol change**  
   **Evidence:** No abort on `getTicker` / `getStructureHistory` when ticker changes.  
   **Done when:** In-flight requests aborted on cleanup; no stale SPY overwrite of QQQ.  
-  **Note:** _
+  **Note:** 2026-08-10 — `getTicker` / `getStructureHistory` accept `signal`; page aborts on dep change / unmount.
 
 - [ ] **3.3 Shared polling hook (optional)**  
   **Done when:** Thin `usePollingResource` (or TanStack Query for ticker/scan only) with abort + visibility — not a whole-app rewrite.  
@@ -256,9 +256,9 @@ Nx lane tags, JSON|Postgres ports, progressive bundle + SSE isolation, delivery 
 
 ### Improvements
 
-- [ ] **6.1 Document scanner topology (in-process vs dual service)**  
+- [x] **6.1 Document scanner topology (in-process vs dual service)**  
   **Done when:** Health or docs state how scanner runs in prod; runbook matches code.  
-  **Note:** _
+  **Note:** 2026-08-10 — runbook topology + `/api/health` `scanner.embedded=true`.
 
 - [ ] **6.2 Server-side durable book path (long-term)**  
   **Evidence:** TECH_DEBT #21 — browser-local positions/orders/ledger.  
@@ -313,3 +313,4 @@ Use this as the default sequence when picking work (edge roadmap can interrupt):
 | Date | Change |
 |------|--------|
 | 2026-08-10 | Initial backlog from site-wide audit (all open). |
+| 2026-08-10 | Closed **1.1–1.4**, **3.1–3.2**, **6.1** (runbook+smoke+CD docs, rate limit, ticker abort/visibility). |
