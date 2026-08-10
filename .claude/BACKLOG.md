@@ -753,6 +753,27 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`rename-org-scope-to-convexa` — package namespace still says `@org/*` after the Convexa rebrand** —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `FILED 2026-08-10 (owner question during structure-history work)`. Workspace packages are still the
+  Nx scaffold defaults: `@org/source`, `@org/api`, `@org/dashboard`, `@org/dashboard-e2e`. Product is
+  Convexa; imports read `from '@org/api'`, scripts are `nx test @org/dashboard`, and
+  `tsconfig.base.json` still has `customConditions: ["@org/source"]`. **Not a runtime/user-facing
+  defect** (private workspace packages, not published to npm) — pure naming debt that confuses every
+  new session and every agent prompt.
+  **History:** `rebrand-convexa` (2026-06-28) **explicitly left this out** as a non-goal
+  (`OPEN_THREADS` §7g: "STAYS unrenamed: `@org/*` scope, `DATA_DIR`, local working folder, archived
+  history"). That was correct then (rebrand blast radius was already large). Owner now wants it
+  queued so it is not forgotten.
+  **Proposed fix (one dedicated PR, no feature mix-in):** rename to `@convexa/*` in one pass —
+  root `@convexa/source`, `libs/api` → `@convexa/api`, dashboard → `@convexa/dashboard`,
+  e2e → `@convexa/dashboard-e2e`; update every import, `package.json` name, Nx project/script
+  reference, CI, Docker build targets, docs/ESLint notes, and `customConditions`. Do **not** mix
+  scopes mid-migration. Local folder `C:\Dev\gammaflow-web` and archived "GammaFlow" history stay
+  as-is (same non-goals as rebrand).
+  *Value L–M (maintainability / mental model) · Effort S–M (mechanical, wide blast radius; half-day
+  careful pass + typecheck + full CI).* Decision-impact cull **N/A** (build-system / brand-hygiene
+  class). **Do not promote over quant moat or X2–X4** — chore when the edge queue is quiet.
 - **`ports-free-is-ipv4-only` — the tool written to prevent the stale-server trap does not prevent it** —
   <!-- atlas: theme=the-machine horizon=now -->
   `SURFACED 2026-08-06 (broker-option-grouping GATE Q re-run, finding R-5; QA-measured, not inferred)`.
