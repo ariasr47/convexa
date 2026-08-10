@@ -1,11 +1,9 @@
-# Post-merge prod smoke — read-only checks against live URLs (no deploy secrets required).
+# Post-merge prod smoke — read-only checks against live URLs.
 #
-# Configure (repo Settings → Secrets and variables → Actions → Variables):
+# Repo variable (Settings → Secrets and variables → Actions → Variables):
 #   SMOKE_API_ORIGIN=https://convexa-production.up.railway.app
 #   SMOKE_PAGES_ORIGIN=https://convexa.pages.dev   (optional)
 #
-# Also accepted as Actions *secrets* with the same names (if set by mistake).
-# Railway/Pages CD: host dashboards auto-deploy on main (see docs/DEPLOY_RUNBOOK.md).
 name: Deploy smoke
 
 on:
@@ -28,14 +26,12 @@ jobs:
       - name: Resolve API origin
         id: origin
         env:
-          FROM_VAR: ${{ vars.SMOKE_API_ORIGIN }}
-          FROM_SECRET: ${{ secrets.SMOKE_API_ORIGIN }}
+          SMOKE_API_ORIGIN: ${{ vars.SMOKE_API_ORIGIN }}
         run: |
           set -euo pipefail
-          ORIGIN="${FROM_VAR:-}"
-          if [ -z "$ORIGIN" ]; then ORIGIN="${FROM_SECRET:-}"; fi
+          ORIGIN="${SMOKE_API_ORIGIN:-}"
           if [ -z "$ORIGIN" ]; then
-            echo "::notice title=Smoke skipped::Set repository variable SMOKE_API_ORIGIN under Settings → Secrets and variables → Actions → Variables"
+            echo "::notice title=Smoke skipped::Set repository variable SMOKE_API_ORIGIN (Actions → Variables)"
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -82,13 +78,11 @@ jobs:
           grep -q '"basis"' /tmp/hist.json
 
       - name: Pages SPA (optional)
-        if: ${{ steps.origin.outputs.skip != 'true' && (vars.SMOKE_PAGES_ORIGIN != '' || secrets.SMOKE_PAGES_ORIGIN != '') }}
+        if: steps.origin.outputs.skip != 'true' && vars.SMOKE_PAGES_ORIGIN != ''
         env:
-          FROM_VAR: ${{ vars.SMOKE_PAGES_ORIGIN }}
-          FROM_SECRET: ${{ secrets.SMOKE_PAGES_ORIGIN }}
+          SMOKE_PAGES_ORIGIN: ${{ vars.SMOKE_PAGES_ORIGIN }}
         run: |
           set -euo pipefail
-          ORIGIN="${FROM_VAR:-${FROM_SECRET:-}}"
-          ORIGIN="${ORIGIN%/}"
+          ORIGIN="${SMOKE_PAGES_ORIGIN%/}"
           code=$(curl -sS -o /dev/null -w "%{http_code}" "$ORIGIN/")
           test "$code" = "200"
