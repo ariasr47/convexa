@@ -24,6 +24,13 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
     }
     let hb = state.scan.read_heartbeat().await;
     let history_samples = state.scan.count_structure_samples().await;
+    let history_backend = state.scan.backend_label();
+    let history_top = state.scan.structure_history_symbol_counts(12).await;
+    let history_symbols = history_top.len();
+    let history_top_json: Vec<Value> = history_top
+        .into_iter()
+        .map(|(symbol, n)| json!({ "symbol": symbol, "n": n }))
+        .collect();
     Json(json!({
         "status": "ok",
         "service": "api-rust",
@@ -42,6 +49,9 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
                 "priced": priced,
                 "scored": scored,
                 "history_samples": history_samples,
+                "history_backend": history_backend,
+                "history_symbols": history_symbols,
+                "history_top": history_top_json,
                 "sweep_last_completed": hb.as_ref().and_then(|h| h.sweep_last_completed),
                 "heartbeat_updated_at": hb.as_ref().map(|h| h.updated_at),
             },

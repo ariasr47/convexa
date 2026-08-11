@@ -379,6 +379,9 @@ impl ScanStore {
     }
 
     /// Append a structure sample if min-interval allows. Fast-lane callers must not call this.
+    ///
+    /// JSON backend **flushes immediately** after a successful append so research capture
+    /// is not lost if the process dies before the debounce timer.
     pub async fn append_structure_sample(&self, sample: StructureSample) {
         match self {
             Self::Json(s) => s.append_structure_sample(sample).await,
@@ -399,7 +402,13 @@ impl ScanStore {
             Self::Postgres(s) => match s.read_structure_history(symbol, limit).await {
                 Ok(v) => v,
                 Err(e) => {
-                    warn!(error = %e, "scan store postgres read_structure_history failed");
+                    // Surface loudly — silent empty history masked a prod research-blocker
+                    // (count >> 0 while /history returned []).
+                    tracing::error!(
+                        error = %e,
+                        symbol = %symbol,
+                        "scan store postgres read_structure_history failed"
+                    );
                     Vec::new()
                 }
             },
@@ -418,6 +427,45 @@ impl ScanStore {
                     -1
                 }
             },
+        }
+    }
+
+    /// Samples stored for one symbol (case-insensitive on Postgres).
+    pub async fn count_structure_samples_for_symbol(&self, symbol: &str) -> i64 {
+        match self {
+            Self::Json(s) => s.count_structure_samples_for_symbol(symbol).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.count_structure_samples_for_symbol(symbol).await {
+                Ok(n) => n,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres count_structure_samples_for_symbol failed");
+                    -1
+                }
+            },
+        }
+    }
+
+    /// Top symbols by structure-history sample count (operator diagnostics).
+    pub async fn structure_history_symbol_counts(&self, limit: usize) -> Vec<(String, i64)> {
+        match self {
+            Self::Json(s) => s.structure_history_symbol_counts(limit).await,
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => match s.structure_history_symbol_counts(limit).await {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!(error = %e, "scan store postgres structure_history_symbol_counts failed");
+                    Vec::new()
+                }
+            },
+        }
+    }
+
+    /// Backend label for health / history wire (`json` | `postgres`).
+    pub fn backend_label(&self) -> &'static str {
+        match self {
+            Self::Json(_) => "json",
+            #[cfg(feature = "postgres")]
+            Self::Postgres(_) => "postgres",
         }
     }
 }
@@ -645,26 +693,29 @@ impl JsonScanStore {
         if !sample.as_of.is_finite() || sample.as_of <= 0.0 {
             return;
         }
-        sample.symbol = sample.symbol.to_ascii_uppercase();
+        sample.symbol = sample.symbol.trim().to_ascii_uppercase();
         if sample.symbol.is_empty() {
             return;
         }
         let key = sample.symbol.clone();
         let mut guard = self.inner.write().await;
         let series = guard.history.entry(key).or_default();
-        if merge_structure_sample(
+        let appended = merge_structure_sample(
             series,
             sample,
             STRUCTURE_HISTORY_MIN_INTERVAL_SECS,
             STRUCTURE_HISTORY_MAX,
-        ) {
-            drop(guard);
+        );
+        drop(guard);
+        if appended {
             self.mark_dirty();
+            // Durable research capture: persist immediately (not only on debounce).
+            self.flush().await;
         }
     }
 
     pub async fn read_structure_history(&self, symbol: &str, limit: usize) -> Vec<StructureSample> {
-        let key = symbol.to_ascii_uppercase();
+        let key = symbol.trim().to_ascii_uppercase();
         let guard = self.inner.read().await;
         let Some(series) = guard.history.get(&key) else {
             return Vec::new();
@@ -679,6 +730,26 @@ impl JsonScanStore {
     pub async fn count_structure_samples(&self) -> i64 {
         let guard = self.inner.read().await;
         guard.history.values().map(|v| v.len() as i64).sum()
+    }
+
+    pub async fn count_structure_samples_for_symbol(&self, symbol: &str) -> i64 {
+        let key = symbol.trim().to_ascii_uppercase();
+        let guard = self.inner.read().await;
+        guard.history.get(&key).map(|v| v.len() as i64).unwrap_or(0)
+    }
+
+    pub async fn structure_history_symbol_counts(&self, limit: usize) -> Vec<(String, i64)> {
+        let lim = limit.clamp(1, 200);
+        let guard = self.inner.read().await;
+        let mut pairs: Vec<(String, i64)> = guard
+            .history
+            .iter()
+            .map(|(k, v)| (k.clone(), v.len() as i64))
+            .filter(|(_, n)| *n > 0)
+            .collect();
+        pairs.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        pairs.truncate(lim);
+        pairs
     }
 }
 
@@ -939,5 +1010,29 @@ mod tests {
         let hist = store.read_structure_history("SPY", 10).await;
         assert_eq!(hist.len(), 2);
         assert_eq!(hist[1].score, Some(90.0));
+        assert_eq!(store.count_structure_samples_for_symbol("spy").await, 2);
+        assert_eq!(store.backend_label(), "json");
+        let top = store.structure_history_symbol_counts(5).await;
+        assert_eq!(top[0].0, "SPY");
+        assert_eq!(top[0].1, 2);
+    }
+
+    #[tokio::test]
+    async fn structure_history_persists_to_json_file() {
+        let dir = std::env::temp_dir().join(format!("scan_hist_{}", temp_id()));
+        let _ = std::fs::create_dir_all(&dir);
+        let path = dir.join("scan.sqlite3"); // rewritten to .json
+        let store = ScanStore::open(&path, None).await.expect("open");
+        let row = sample_row("QQQ", 55.0);
+        let sample = StructureSample::from_row(&row).unwrap();
+        store.append_structure_sample(sample).await;
+        // Re-open from disk — proves durable flush after append.
+        drop(store);
+        let store2 = ScanStore::open(&path, None).await.expect("reopen");
+        let hist = store2.read_structure_history("qqq", 10).await;
+        assert_eq!(hist.len(), 1);
+        assert_eq!(hist[0].score, Some(55.0));
+        assert!(hist[0].price.is_some());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

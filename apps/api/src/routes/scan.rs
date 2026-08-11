@@ -205,11 +205,15 @@ pub struct StructureHistoryResponse {
     pub samples: Vec<StructureSample>,
     /// Honest basis copy for the desk (FE may surface or ignore).
     pub basis: &'static str,
+    /// Total samples stored for this symbol (may exceed `samples.len()` when limited).
+    pub stored_count: i64,
+    /// Scan store backend that holds the diary (`json` | `postgres`).
+    pub backend: &'static str,
 }
 
 const STRUCTURE_HISTORY_BASIS: &str = "Slow-lane structure recomputes only — not live price ticks. \
 Samples thinned to ≥5 minutes; last 576 kept per symbol (research capture spine). \
-Snapshot path, never a forecast.";
+Snapshot path, never a forecast. Durable: JSON file (local) or Postgres (prod).";
 
 /// GET /api/scan/{symbol}/history — anonymous-open structure path for one ticker.
 pub async fn get_structure_history(
@@ -222,15 +226,29 @@ pub async fn get_structure_history(
         .limit
         .unwrap_or(STRUCTURE_HISTORY_DEFAULT_LIMIT)
         .clamp(1, STRUCTURE_HISTORY_MAX);
-    let samples = if symbol.is_empty() {
-        Vec::new()
+    let backend = state.scan.backend_label();
+    let (samples, stored_count) = if symbol.is_empty() {
+        (Vec::new(), 0)
     } else {
-        state.scan.read_structure_history(&symbol, limit).await
+        let stored_count = state.scan.count_structure_samples_for_symbol(&symbol).await;
+        let samples = state.scan.read_structure_history(&symbol, limit).await;
+        // Operator signal: count says diary exists but decode/read returned nothing.
+        if stored_count > 0 && samples.is_empty() {
+            tracing::error!(
+                %symbol,
+                stored_count,
+                backend,
+                "structure history stored_count>0 but samples empty — capture/read mismatch"
+            );
+        }
+        (samples, stored_count)
     };
     Json(StructureHistoryResponse {
         symbol,
         samples,
         basis: STRUCTURE_HISTORY_BASIS,
+        stored_count,
+        backend,
     })
 }
 

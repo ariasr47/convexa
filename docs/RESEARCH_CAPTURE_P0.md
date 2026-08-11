@@ -56,9 +56,24 @@ CI runs these without Massive.
 ## Operator checklist
 
 1. Scanner running → samples append on every slow-lane ok.  
-2. After ≥1 trading day of samples, run `join-outcomes` for SPY/QQQ.  
-3. Inspect artifact row counts; with Postgres, confirm `structure_outcomes` grows.  
-4. **Not** e2e product tests — this is research, not dashboard acceptance.
+2. **Verify durable diary** (not just board scores):
+   - `GET /api/health` → `scanner.board.history_samples` > 0,  
+     `history_backend` is `postgres` (prod) or `json` (local),  
+     `history_top` lists symbols with counts (e.g. SPY).  
+   - `GET /api/scan/SPY/history?limit=5` → `stored_count` > 0 **and** non-empty `samples`  
+     (if `stored_count` > 0 but `samples` empty, capture/read is broken — check API logs).  
+3. After ≥1 trading day of samples, run `join-outcomes` for SPY/QQQ.  
+4. Inspect artifact row counts; with Postgres, confirm `structure_outcomes` grows.  
+5. **Not** e2e product tests — this is research, not dashboard acceptance.
+
+### Durability contract
+
+| Backend | When | Persist |
+|---------|------|---------|
+| **JSON** (`data/scan.json`) | Local / no `DATABASE_URL` | Immediate flush after each structure append (not only debounced) |
+| **Postgres** (`scan_structure_history`) | `--features postgres` + `DATABASE_URL` | Row insert on append; symbols normalized upper(trim); migration 7 |
+
+Each sample carries: levels (flip/walls), score + drivers, net_gex, iv_hv_ratio, atm_iv, hv_30d.
 
 ## Explicitly out of P0
 

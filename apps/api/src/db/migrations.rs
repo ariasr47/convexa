@@ -189,6 +189,40 @@ CREATE INDEX IF NOT EXISTS structure_outcomes_symbol_as_of_idx
     ON structure_outcomes (symbol, as_of DESC);
 "#,
     ),
+    (
+        7,
+        "structure_history_symbol_normalize",
+        r#"
+-- Research capture durability: normalize symbols so history reads are case-stable.
+-- Drop mixed-case duplicates first (keep already-upper rows when as_of collides).
+DELETE FROM scan_structure_history a
+ USING scan_structure_history b
+ WHERE a.ctid <> b.ctid
+   AND upper(btrim(a.symbol)) = upper(btrim(b.symbol))
+   AND a.as_of = b.as_of
+   AND a.symbol IS DISTINCT FROM upper(btrim(a.symbol));
+
+UPDATE scan_structure_history
+   SET symbol = upper(btrim(symbol))
+ WHERE symbol IS DISTINCT FROM upper(btrim(symbol));
+
+DELETE FROM structure_outcomes a
+ USING structure_outcomes b
+ WHERE a.ctid <> b.ctid
+   AND upper(btrim(a.symbol)) = upper(btrim(b.symbol))
+   AND a.as_of = b.as_of
+   AND a.horizon = b.horizon
+   AND a.symbol IS DISTINCT FROM upper(btrim(a.symbol));
+
+UPDATE structure_outcomes
+   SET symbol = upper(btrim(symbol))
+ WHERE symbol IS DISTINCT FROM upper(btrim(symbol));
+
+-- Expression index for case-insensitive history lookups (matches read path).
+CREATE INDEX IF NOT EXISTS scan_structure_history_symbol_upper_as_of_idx
+    ON scan_structure_history (upper(btrim(symbol)), as_of DESC);
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.
@@ -311,5 +345,12 @@ mod tests {
             && b.contains("structure_outcomes")
             && b.contains("score_drivers")
             && b.contains("net_gex")));
+    }
+
+    #[test]
+    fn structure_history_normalize_migration_present() {
+        assert!(MIGRATIONS.iter().any(|(_, n, b)| *n
+            == "structure_history_symbol_normalize"
+            && b.contains("upper(btrim(symbol))")));
     }
 }

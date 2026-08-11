@@ -888,6 +888,10 @@ export interface StructureHistoryResponse {
   samples: StructureSample[];
   /** Server basis string (slow-lane only, thinned, capped). */
   basis: string;
+  /** Total samples stored for this symbol (may exceed samples.length when limited). */
+  stored_count?: number;
+  /** Scan store backend: `json` | `postgres`. */
+  backend?: string;
 }
 
 /** GET /api/scan/{symbol}/history — anonymous-open structure history. Empty samples is honest
