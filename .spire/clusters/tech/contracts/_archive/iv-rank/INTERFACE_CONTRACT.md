@@ -154,10 +154,10 @@ re-derive this; it trusts the wire token.
 
 ## 5. Conformance spec (system-1)
 
-**Canonical spec: the standalone file `.claude/tools/conformance/iv_rank.json`** (the recent
+**Canonical spec: the standalone file `.spire/clusters/tech/state/conformance/iv_rank.json`** (the recent
 convention — mirrors `ai_context_pack.json` / `dealer-flow-projection.json`, NOT an embedded endpoints
 block, NOT folded into another feature's spec). `interface_conformance.py` runs it via
-`--spec .claude/tools/conformance/iv_rank.json`.
+`--spec .spire/clusters/tech/state/conformance/iv_rank.json`.
 
 **What it asserts:** on `GET /api/ticker/{ticker}` (ticker `SPY`), the response carries
 `market_state.iv_rank` present as **`object|null`** (always-present key, best-effort-null), plus the
@@ -204,7 +204,7 @@ test matrix (UX_BLUEPRINT §5).
 `dark_pool=true` **cold** path can exceed the tool's 30s timeout. **Warm the URL first** within the 60s
 cache TTL (e.g. `curl http://127.0.0.1:8000/api/ticker/SPY?min_dte=7&max_dte=45&dark_pool=true`) then
 run the spec; OR validate offline with
-`--spec .claude/tools/conformance/iv_rank.json --sample <bundle.json> --endpoint "/api/ticker/{ticker}"`.
+`--spec .spire/clusters/tech/state/conformance/iv_rank.json --sample <bundle.json> --endpoint "/api/ticker/{ticker}"`.
 
 ---
 

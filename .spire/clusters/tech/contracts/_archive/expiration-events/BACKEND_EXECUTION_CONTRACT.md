@@ -12,7 +12,7 @@
 2. **Wire it at the existing attach site in `main.py`** — the same post-`generate_signals` block that
    already attaches `event_calendar`. The tenor curve must be **read** from the computed bundle; do
    **NOT** modify `compute_term_structure` or anything in `engine.py`.
-3. **Extend `.claude/tools/conformance/bundle_events.json`** to pin `expirations` presence + type
+3. **Extend `.spire/clusters/tech/state/conformance/bundle_events.json`** to pin `expirations` presence + type
    (array). Do not create a second spec file.
 4. **Extend the projection selftest** (`events_projection_selftest.py`) with fixture-driven cases —
    RED→GREEN, and the fixtures must include the two cases that cannot occur naturally: **`amc` on the
@@ -53,11 +53,11 @@ Fresh de-correlated `qa-verify` after the lane reports done (venv `apps/api/.ven
 
 ## 4. Lane rules
 
-- Writes under `apps/api/` + `.claude/tools/conformance/` only. Commit locally on `main`; **do not push**.
+- Writes under `apps/api/` + `.spire/clusters/tech/state/conformance/` only. Commit locally on `main`; **do not push**.
 - **Server-kill gotcha:** do **NOT** kill by image — other `python.exe` processes belong to the user (a
   video render, the Claude MCP extension). Find the port owner (`Get-NetTCPConnection -LocalPort 8000
   -State Listen`), read command lines (`Get-CimInstance Win32_Process`), kill only `main.py`/`worker.py`
   and their `multiprocessing.spawn` children (**child first**), then curl-confirm dead.
-- Another session is active in this repo: **do not touch** `.claude/contracts/redesign-*` or any
+- Another session is active in this repo: **do not touch** `.spire/clusters/tech/contracts/redesign-*` or any
   untracked `apps/dashboard/src/app/auth|landing`, `assets/fonts` paths.
 - If the interface proves wrong or under-specified, **STOP and report** (GATE Z) rather than inventing.

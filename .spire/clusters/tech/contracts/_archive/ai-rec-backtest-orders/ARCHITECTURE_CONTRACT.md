@@ -1,6 +1,6 @@
 # ai-rec-backtest-orders — ARCHITECTURE_CONTRACT
 
-> Architect → PM handoff (compressor #2 form). Self-contained against `.claude/PROJECT_CONTEXT.md`
+> Architect → PM handoff (compressor #2 form). Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md`
 > + `BRIEF.md`; no chat history assumed. Decisions, not deliberation. This locks the TECHNICAL
 > SHAPE only — UI layout, endpoint signatures, payload/JSON field names, and copy are the PM/UX
 > split's lane and are listed as open questions (§12).

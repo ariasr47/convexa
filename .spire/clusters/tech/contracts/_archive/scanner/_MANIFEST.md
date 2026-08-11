@@ -28,7 +28,7 @@ Contracts:
     conformance). P1/P2 versions superseded (shipped, in git history).
   - FRONTEND_EXECUTION_CONTRACT.md  NO_UI_CHANGE (P3 backend+wire only; the /scanner page + libs/api
     fetchers are P4, built against UX_BLUEPRINT + INTERFACE)
-Conformance:  P3 authors a standalone `.claude/tools/conformance/scanner.json` (flat schema:
+Conformance:  P3 authors a standalone `.spire/clusters/tech/state/conformance/scanner.json` (flat schema:
               path_params/query/body/required — the `iv_rank.json` precedent), REFERENCED from
               INTERFACE_CONTRACT. **system-12 handling (owner decision A, 2026-07-24):** scanner is
               unblocked by authoring the canonical standalone convention DIRECTLY (as iv-rank did) rather

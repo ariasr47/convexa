@@ -64,7 +64,7 @@ prevent.
 
 ## Conformance spec
 
-The runnable spec is the **standalone** `.claude/tools/conformance/bundle_events.json` — the canonical
+The runnable spec is the **standalone** `.spire/clusters/tech/state/conformance/bundle_events.json` — the canonical
 convention recorded by the owner's 2026-06-23 system-12 decision, and the shipped precedent
 (`iv_rank.json`, `scanner.json`). It asserts the **key is always present** on the ticker endpoint and
 that, when non-null, `state` is one of the three enum values. Because the value is legitimately `null`
@@ -79,7 +79,7 @@ system-12` for the tooling conflict this works around.
 
 ```json
 {
-  "$ref": ".claude/tools/conformance/bundle_events.json",
+  "$ref": ".spire/clusters/tech/state/conformance/bundle_events.json",
   "_note": "Pointer, not a copy. The canonical runnable spec is the standalone file; run it with --spec. This block satisfies contract_lint M7 without duplicating the spec (system-12: standalone is canonical)."
 }
 ```

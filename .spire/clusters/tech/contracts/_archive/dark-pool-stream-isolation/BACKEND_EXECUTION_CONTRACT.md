@@ -62,7 +62,7 @@ Honor these binding constraints (from GAMMAFLOW_CONTEXT + ARCHITECTURE_CONTRACT)
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed to reflect the merged code (re-read touched
       files; same section structure), and `market_state_glossary.md` updated with the
       `off_exchange.blocks[]` fields (draft in UX_BLUEPRINT.md → glossary addition).
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived (it's shipped), and
-      `.claude/OPEN_THREADS.md` updated for anything opened/closed. (Coordinate with frontend so
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived (it's shipped), and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated for anything opened/closed. (Coordinate with frontend so
       the folder is archived once both lanes land.)
 - [ ] Committed.

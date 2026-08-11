@@ -1,6 +1,6 @@
 # INTERFACE CONTRACT — positions-legs (FE↔BE truth)
 
-**Spec:** `.claude/contracts/positions-legs/SPEC.md`
+**Spec:** `.spire/clusters/tech/contracts/positions-legs/SPEC.md`
 **Posture:** **`NO_BACKEND_CHANGE`**
 
 > Written at GATE C by the council's R4 synthesis, alongside `SPEC.md`. Both build lanes bind to this
@@ -139,7 +139,7 @@ adds nothing to the wire:
 
 ```
 <project.json backend.python> .claude/tools/interface_conformance.py \
-  --contract .claude/contracts/positions-legs/INTERFACE_CONTRACT.md \
+  --contract .spire/clusters/tech/contracts/positions-legs/INTERFACE_CONTRACT.md \
   --url http://127.0.0.1:<project.json backend.port>
 ```
 

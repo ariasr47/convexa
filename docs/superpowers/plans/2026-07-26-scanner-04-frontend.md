@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-Every task's requirements implicitly include these (copied verbatim in force from `.claude/contracts/scanner/UX_BLUEPRINT.md` §0–§6, `INTERFACE_CONTRACT.md` §2–§4, `PRODUCT_CONTRACT.md` §4/§7, `docs/design/DESIGN_SYSTEM.md`, the `convexa-design` skill, and `apps/dashboard/src/app/README.md`):
+Every task's requirements implicitly include these (copied verbatim in force from `.spire/clusters/tech/contracts/scanner/UX_BLUEPRINT.md` §0–§6, `INTERFACE_CONTRACT.md` §2–§4, `PRODUCT_CONTRACT.md` §4/§7, `docs/design/DESIGN_SYSTEM.md`, the `convexa-design` skill, and `apps/dashboard/src/app/README.md`):
 
 - **`[theme-token-discipline]` (HARD).** Every color goes through the MUI theme / `shared/theme/tokens.ts`. **Zero hardcoded hex** in any new file — `hex-discipline.spec.ts` globs `pages/**`, `features/**`, `shell/**`, `shared/ui/**` and will fail the build on one. Mode-aware values resolve through **`extrasFor(theme)` inside an `sx`/styled callback** — bare `extras.` / `extrasLight.` dark-locks the surface and is flagged by `stage3-amber.spec.ts`'s mutation-guarded `bareExtras` checker. Dark/light parity is part of done.
 - **`[digested-labels-not-raw-dump]` (HARD).** `status` / `tier` / `regime` / `vol_regime` render through a **fixed closed lookup in `pages/scanner/labels.ts`** and are **never re-derived** from a scalar. An unknown value renders the **fail-honest unavailable** meta — never a guess, never a raw enum dump. No raw series ever rides a row.
@@ -377,14 +377,14 @@ import {
 
 Temporarily comment out the whole `export async function saveScanView` body's `return` line and replace it with `throw new Error('not implemented');`, then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/api
+cd C:/Dev/convexa && npx nx test @convexa/api
 ```
 Expected: FAIL — `saveScanView PUTs the body and returns the server-wins echo` reports `Error: not implemented`. **Restore** the real body.
 
 - [ ] **Step 4: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/api
+cd C:/Dev/convexa && npx nx test @convexa/api
 ```
 Expected:
 ```
@@ -396,7 +396,7 @@ Expected:
 - [ ] **Step 5: Prove the backend was not touched**
 
 ```bash
-cd C:/Dev/gammaflow-web && git status --porcelain apps/api/ && echo "APPS/API CLEAN: $(git diff --stat apps/api/ | wc -l) changed lines"
+cd C:/Dev/convexa && git status --porcelain apps/api/ && echo "APPS/API CLEAN: $(git diff --stat apps/api/ | wc -l) changed lines"
 ```
 Expected: no `apps/api/` paths listed, then `APPS/API CLEAN: 0 changed lines` — `[additive-keeps-score-byte-identical]`, FE-only phase.
 
@@ -428,7 +428,7 @@ git commit -m "feat(scanner): libs/api scanner fetchers + types (getScan/getScan
 - [ ] **Step 1: Move the four files (content unchanged)**
 
 ```bash
-cd C:/Dev/gammaflow-web
+cd C:/Dev/convexa
 git mv apps/dashboard/src/app/pages/ticker/widgets/_kit/TintChip.tsx           apps/dashboard/src/app/shared/ui/TintChip.tsx
 git mv apps/dashboard/src/app/pages/ticker/widgets/_kit/TintChip.spec.tsx      apps/dashboard/src/app/shared/ui/TintChip.spec.tsx
 git mv apps/dashboard/src/app/pages/ticker/widgets/_kit/useFlashOnChange.ts    apps/dashboard/src/app/shared/hooks/useFlashOnChange.ts
@@ -525,7 +525,7 @@ import { TintChip } from '@/shared/ui/TintChip';
 - [ ] **Step 4: RED — the keyframe set-equality scan catches the move**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts
 ```
 Expected: FAIL —
 ```
@@ -552,19 +552,19 @@ const FLASH_HOME = '/src/app/shared/hooks/useFlashOnChange.ts';
 ```
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts shared/theme/stage3-amber.spec.ts
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run shared/theme/single-motion-moment.spec.ts shared/theme/stage3-amber.spec.ts
 ```
 Expected: `Test Files  2 passed (2)` — the keyframe inventory is still set-equal to `{liveDotPulse, widgetLivePulse, ordersWatchPulse}` + the `flash-*` family in its one (new) home.
 
 - [ ] **Step 6: Full suite + typecheck + lint — prove zero call-site churn**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard
+cd C:/Dev/convexa && npx nx test @convexa/dashboard
 ```
 Expected: `Test Files  73 passed (73)` / `Tests  606 passed (606)` — **the baseline is unchanged**: nothing was added or removed, only relocated. (If a spec fails, re-run it alone once — two timing-flaky specs exist and a clean rerun is the tiebreaker.)
 
 ```bash
-cd C:/Dev/gammaflow-web && npx tsc -b apps/dashboard/tsconfig.app.json --force && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard
+cd C:/Dev/convexa && npx tsc -b apps/dashboard/tsconfig.app.json --force && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard
 ```
 Expected: `tsc` prints nothing (exit 0); `typecheck` succeeds; `lint` reports **29 warnings, 0 errors** (the pre-existing count — no new warning may be introduced).
 
@@ -1089,7 +1089,7 @@ describe('sweepBanner', () => {
 
 In `format.ts`, temporarily move the `building` guard **after** the `as_of` guard (i.e. reorder the two `if` lines inside `updatedText` so `as_of` is read first and a fresh building row falls through), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
 ```
 Expected: FAIL —
 ```
@@ -1101,7 +1101,7 @@ That string is exactly the fabricated freshness claim the invariant forbids. **R
 - [ ] **Step 5: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/format.spec.ts
 ```
 Expected:
 ```
@@ -1591,7 +1591,7 @@ describe('the server-gated view write', () => {
 
 In `useScan.ts`, temporarily replace the `await gate.guard(SCAN_COPY.signInToCustomize, async () => { … })` wrapper with a direct call to its body (i.e. run `saveScanView(draft)` without `guard`), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -1603,7 +1603,7 @@ i.e. an anonymous save reached the network. **Restore** the `gate.guard(...)` wr
 - [ ] **Step 4: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/useScan.spec.tsx
 ```
 Expected:
 ```
@@ -1614,7 +1614,7 @@ Expected:
 - [ ] **Step 5: Structural check — no stream on this surface**
 
 ```bash
-cd C:/Dev/gammaflow-web && rg -n "EventSource|streamTicker|EventSourcePolyfill" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no stream primitive in pages/scanner (poll-only)"
+cd C:/Dev/convexa && rg -n "EventSource|streamTicker|EventSourcePolyfill" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no stream primitive in pages/scanner (poll-only)"
 ```
 Expected: `CLEAN: no stream primitive in pages/scanner (poll-only)` (zero matches; the spec's `SilentEventSource` stub is excluded by the glob).
 
@@ -2501,7 +2501,7 @@ describe('navigation only', () => {
 
 In `ScanCells.tsx`, temporarily change `LevelDistCell`'s distance `color: 'text.secondary'` to `color: directionColor(distPct)`, then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -2513,7 +2513,7 @@ That is exactly the proximity-chip regression class. **Restore** `color: 'text.s
 - [ ] **Step 6: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected:
 ```
@@ -3159,7 +3159,7 @@ In `ViewEditorDialog.tsx`, temporarily add a second `TextField` above the name f
 ```
 then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -3171,7 +3171,7 @@ AssertionError: expected [ <input />, <input /> ] to have a length of 1 but got 
 - [ ] **Step 5: GREEN**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected:
 ```
@@ -3380,7 +3380,7 @@ export default Scanner;
 - [ ] **Step 2: Delete the stub's suite and drop its two amber-census entries**
 
 ```bash
-cd C:/Dev/gammaflow-web && git rm apps/dashboard/src/app/pages/scanner/scanner.spec.tsx
+cd C:/Dev/convexa && git rm apps/dashboard/src/app/pages/scanner/scanner.spec.tsx
 ```
 
 In `apps/dashboard/src/app/shared/theme/stage3-amber.spec.ts`, **delete** the scanner entry from `MOVE_TO_INFO_SITES` (both lists are asserted "live", so a stale entry fails the suite):
@@ -3453,18 +3453,18 @@ Add this note above `TEXT_AMBER_CONSUMERS` so the removal is self-documenting:
 Then replace all four `scanner-placeholder` occurrences in that file with `scanner-page` (lines 136, 214, 238 and the walk entry):
 
 ```bash
-cd C:/Dev/gammaflow-web && node -e "const f='apps/dashboard/src/app/app.risk.spec.tsx';const fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').split('scanner-placeholder').join('scanner-page'));console.log('app.risk.spec.tsx re-pointed')"
+cd C:/Dev/convexa && node -e "const f='apps/dashboard/src/app/app.risk.spec.tsx';const fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').split('scanner-placeholder').join('scanner-page'));console.log('app.risk.spec.tsx re-pointed')"
 ```
 
 `apps/dashboard/src/app/pages/positions/positions-page.spec.tsx` — add the **same two branches** immediately before its `if (url.includes('/api/auth/session'))` line, then:
 
 ```bash
-cd C:/Dev/gammaflow-web && node -e "const f='apps/dashboard/src/app/pages/positions/positions-page.spec.tsx';const fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').split('scanner-placeholder').join('scanner-page'));console.log('positions-page.spec.tsx re-pointed')"
+cd C:/Dev/convexa && node -e "const f='apps/dashboard/src/app/pages/positions/positions-page.spec.tsx';const fs=require('fs');fs.writeFileSync(f,fs.readFileSync(f,'utf8').split('scanner-placeholder').join('scanner-page'));console.log('positions-page.spec.tsx re-pointed')"
 ```
 
 Confirm nothing stale remains:
 ```bash
-cd C:/Dev/gammaflow-web && rg -n "scanner-placeholder|scanner-ticker-link" apps/dashboard apps/dashboard-e2e || echo "CLEAN: the coming-soon markers are fully retired (the e2e set lands in Task 8)"
+cd C:/Dev/convexa && rg -n "scanner-placeholder|scanner-ticker-link" apps/dashboard apps/dashboard-e2e || echo "CLEAN: the coming-soon markers are fully retired (the e2e set lands in Task 8)"
 ```
 Expected at this point: only `apps/dashboard-e2e/src/e2e/mobile-no-overflow.cy.ts` still matches (Task 8 handles it). Every `apps/dashboard/src` match must be gone.
 
@@ -3697,7 +3697,7 @@ afterEach(() => {
 
 In `Scanner.tsx`, temporarily change the body branch to `scan.phase === 'loading' || scan.workerDown ? <ScanSkeleton /> : …` (i.e. the degrade swallows the table), then run:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner/scanner.risk.spec.tsx
 ```
 Expected: FAIL —
 ```
@@ -3709,7 +3709,7 @@ That is the AC-6 failure mode: a worker death taking the page's content with it.
 - [ ] **Step 6: GREEN — the scanner suite, then the two collateral suites**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run pages/scanner
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run pages/scanner
 ```
 Expected:
 ```
@@ -3719,7 +3719,7 @@ Expected:
 (`format.spec.ts` 10 + `useScan.spec.tsx` 8 + `scanner.risk.spec.tsx` 21 — the 8 render-invariant cases from Task 5, the 5 control/editor cases from Task 6, and the 8 page-state + structural cases added here.)
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run app.risk.spec.tsx pages/positions/positions-page.spec.tsx shared/theme/stage3-amber.spec.ts
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run app.risk.spec.tsx pages/positions/positions-page.spec.tsx shared/theme/stage3-amber.spec.ts
 ```
 Expected: `Test Files  3 passed (3)` — the route walk resolves `/scanner` to `scanner-page`, the positions nav round-trip still finds it, and the amber census no longer references the retired stub.
 
@@ -3832,7 +3832,7 @@ Then add this case inside each scheme's `describe` block, immediately after the 
 - [ ] **Step 3: Run the e2e set (real browser, both schemes)**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx e2e dashboard-e2e
+cd C:/Dev/convexa && npx nx e2e dashboard-e2e
 ```
 Expected: all specs green, including
 ```
@@ -3852,7 +3852,7 @@ If `/scanner` fails the overflow assertion, the cause is a card child that does 
 - [ ] **Step 4: The full unit suite — state the new totals**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard
+cd C:/Dev/convexa && npx nx test @convexa/dashboard
 ```
 Expected:
 ```
@@ -3862,44 +3862,44 @@ Expected:
 Arithmetic from the pinned baseline (73 files / 606 tests): **+3 files** (`pages/scanner/format.spec.ts`, `pages/scanner/useScan.spec.tsx`, `pages/scanner/scanner.risk.spec.tsx`) **−1 file** (`pages/scanner/scanner.spec.tsx`, deleted) = **75**; **+39 tests** (10 + 8 + 21) **−2 tests** (the deleted stub suite) = **643**. The two `TintChip`/`useFlashOnChange` spec moves are relocations, so they change neither number. If a spec fails, re-run that file alone once — two timing-flaky specs exist and a clean rerun is the tiebreaker.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/api
+cd C:/Dev/convexa && npx nx test @convexa/api
 ```
 Expected: `Test Files  1 passed (1)` / `Tests  18 passed (18)`.
 
 - [ ] **Step 5: Typecheck, lint, build**
 
 ```bash
-cd C:/Dev/gammaflow-web && npx tsc -b apps/dashboard/tsconfig.app.json --force
+cd C:/Dev/convexa && npx tsc -b apps/dashboard/tsconfig.app.json --force
 ```
 Expected: no output, exit 0.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard && npx nx lint @convexa/api
+cd C:/Dev/convexa && npx nx run @convexa/dashboard:typecheck && npx nx lint @convexa/dashboard && npx nx lint @convexa/api
 ```
 Expected: typecheck succeeds; `@convexa/dashboard` lint reports **29 warnings, 0 errors** (the pre-existing count — a new warning means the new code introduced it and must be fixed); `@convexa/api` lint clean. The `@nx/enforce-module-boundaries` rule is satisfied by construction: `pages/scanner/` imports only `@/shared/*`, `@/features/auth/*` and `@convexa/api` (`scope:shared`, `type:lib`).
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx build @convexa/dashboard
+cd C:/Dev/convexa && npx nx build @convexa/dashboard
 ```
 Expected: `Successfully ran target build for project @convexa/dashboard`.
 
 - [ ] **Step 6: The FE-only structural proof + the invariant scans**
 
 ```bash
-cd C:/Dev/gammaflow-web && git diff --stat main -- apps/api/ ; echo "---" ; git status --porcelain apps/api/ ; echo "APPS/API UNTOUCHED (no output above = pass)"
+cd C:/Dev/convexa && git diff --stat main -- apps/api/ ; echo "---" ; git status --porcelain apps/api/ ; echo "APPS/API UNTOUCHED (no output above = pass)"
 ```
 Expected: no `apps/api/` lines at all — `[additive-keeps-score-byte-identical]` for an FE-only phase: the backend, the engine, and every score/tier/fingerprint are byte-identical because nothing in `apps/api/` changed.
 
 ```bash
-cd C:/Dev/gammaflow-web && rg -n "EventSource|streamTicker" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: poll-only surface (no stream primitive)"
-cd C:/Dev/gammaflow-web && rg -n "#[0-9a-fA-F]{3,8}\b" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: zero hardcoded hex in pages/scanner"
-cd C:/Dev/gammaflow-web && rg -n "@keyframes" apps/dashboard/src/app/pages/scanner || echo "CLEAN: the scanner declares no keyframe (the flash-* family is reused, inventory stays set-equal)"
-cd C:/Dev/gammaflow-web && rg -n "fetch\(|axios|XMLHttpRequest" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no raw network call in pages/scanner (all reads go through @convexa/api)"
+cd C:/Dev/convexa && rg -n "EventSource|streamTicker" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: poll-only surface (no stream primitive)"
+cd C:/Dev/convexa && rg -n "#[0-9a-fA-F]{3,8}\b" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: zero hardcoded hex in pages/scanner"
+cd C:/Dev/convexa && rg -n "@keyframes" apps/dashboard/src/app/pages/scanner || echo "CLEAN: the scanner declares no keyframe (the flash-* family is reused, inventory stays set-equal)"
+cd C:/Dev/convexa && rg -n "fetch\(|axios|XMLHttpRequest" apps/dashboard/src/app/pages/scanner --glob '!*.spec.*' || echo "CLEAN: no raw network call in pages/scanner (all reads go through @convexa/api)"
 ```
 Expected: four `CLEAN: …` lines.
 
 ```bash
-cd C:/Dev/gammaflow-web && npx nx test @convexa/dashboard -- --run shared/theme
+cd C:/Dev/convexa && npx nx test @convexa/dashboard -- --run shared/theme
 ```
 Expected: `Test Files  10 passed (10)` — the whole design-enforcement family (hex discipline, banned hexes, stage-1/stage-3 tokens, the keyframe set-equality, focus-visible, fonts, warning-icon, brand assets, blog tokens) is green with the promotions and the new page in place.
 
@@ -3909,9 +3909,9 @@ Boot both processes and walk the surface. This is the non-automated half; the au
 
 ```bash
 # terminal 1
-cd C:/Dev/gammaflow-web && npx nx serve api
+cd C:/Dev/convexa && npx nx serve api
 # terminal 2
-cd C:/Dev/gammaflow-web && npx nx serve dashboard    # http://localhost:4200/scanner
+cd C:/Dev/convexa && npx nx serve dashboard    # http://localhost:4200/scanner
 ```
 
 Confirm, in **both** color schemes (toggle via `/settings`):

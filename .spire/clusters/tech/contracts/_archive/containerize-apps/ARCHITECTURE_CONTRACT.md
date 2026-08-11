@@ -266,30 +266,30 @@ Two files, because the two builds have different contexts:
 
 > Paths absolute. New files only; no edits to existing files.
 
-1. **`C:\Dev\gammaflow-web\apps\api\Dockerfile`** — backend image. `ARG PYTHON_VERSION=3.12`; `FROM
+1. **`C:\Dev\convexa\apps\api\Dockerfile`** — backend image. `ARG PYTHON_VERSION=3.12`; `FROM
    python:${PYTHON_VERSION}-slim`; `WORKDIR /app`; copy `requirements.txt` → `pip install --no-cache-dir`;
    copy `main.py`, `src/`, and the runtime read assets (`prompts/`, `market_state_glossary.md`, and any
    other files `main.py`/`src/` open at runtime — grep before finalizing the copy list); create
    `/app/data` writable; create non-root `appuser` (uid 10001), `chown`; `USER appuser`;
    `EXPOSE 8000`; `HEALTHCHECK` (resolve HC-1, §4.1); `CMD ["uvicorn","main:app","--host","0.0.0.0",
    "--port","8000"]`. Header comment listing the runtime env vars (no values).
-2. **`C:\Dev\gammaflow-web\apps\api\.dockerignore`** — backend hygiene (§4.4 list).
-3. **`C:\Dev\gammaflow-web\apps\dashboard\Dockerfile`** — multi-stage FE image. Stage 1 `node:20-alpine`
+2. **`C:\Dev\convexa\apps\api\.dockerignore`** — backend hygiene (§4.4 list).
+3. **`C:\Dev\convexa\apps\dashboard\Dockerfile`** — multi-stage FE image. Stage 1 `node:20-alpine`
    builder: `WORKDIR /app`; copy workspace install inputs + `COPY . .` (context = repo root); `npm ci`;
    `npx nx build @org/dashboard`; output `apps/dashboard/dist`. Stage 2
    `nginxinc/nginx-unprivileged:1.27-alpine`: `COPY --from=builder /app/apps/dashboard/dist
    /usr/share/nginx/html`; `COPY apps/dashboard/nginx.conf /etc/nginx/conf.d/default.conf`; `EXPOSE 8080`;
    `HEALTHCHECK` (§4.2); runs non-root by default (don't switch to root at the end).
-4. **`C:\Dev\gammaflow-web\apps\dashboard\nginx.conf`** — SPA + API proxy. `listen 8080;`; root
+4. **`C:\Dev\convexa\apps\dashboard\nginx.conf`** — SPA + API proxy. `listen 8080;`; root
    `/usr/share/nginx/html`; `location / { try_files $uri /index.html; }`; `location /api { proxy_pass
    http://api:8000; proxy_buffering off; proxy_read_timeout 1h; proxy_set_header Host $host; }` (SSE-safe).
-5. **`C:\Dev\gammaflow-web\.dockerignore`** (repo root) — FE build hygiene (§4.4 list); MUST keep
+5. **`C:\Dev\convexa\.dockerignore`** (repo root) — FE build hygiene (§4.4 list); MUST keep
    `libs/`, `apps/dashboard/`, root `package.json`/lockfile/`nx.json`/`tsconfig.base.json`.
-6. **`C:\Dev\gammaflow-web\docker-compose.yml`** — `api` + `web` services (§4.3). `api`: `build` context
+6. **`C:\Dev\convexa\docker-compose.yml`** — `api` + `web` services (§4.3). `api`: `build` context
    `./apps/api`, `env_file: ./apps/api/.env`, port 8000, healthcheck. `web`: `build` context `.` +
    `dockerfile: apps/dashboard/Dockerfile`, port 8080, `depends_on api: service_healthy`. Shared default
    network. Comments marking it dev/local + the prod-delta + the stateless note.
-7. *(Optional, recommended)* **`C:\Dev\gammaflow-web\apps\api\.env.example`** — a **value-less** template
+7. *(Optional, recommended)* **`C:\Dev\convexa\apps\api\.env.example`** — a **value-less** template
    listing every env var name (from PROJECT_CONTEXT §7) with comments, committed as documentation so a
    fresh clone knows what to inject. Contains **no real values**. (If this risks being mistaken for a real
    `.env`, skip it and document in a comment block instead.)

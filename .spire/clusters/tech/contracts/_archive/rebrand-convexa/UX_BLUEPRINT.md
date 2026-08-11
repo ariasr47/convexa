@@ -77,11 +77,11 @@ Cosmetic stems only; not parsed on re-import. The `{date}`/`{ts}` suffix format 
 |---|---|
 | `README.md` (incl. line ~7 product-vs-engine split) | Product/codebase name → "Convexa"; **remove the old "Convexa product / GammaFlow engine" split**; generic method → unbranded |
 | `CLAUDE.md`, `AGENTS.md`, `docs/SYSTEM_ANALYSIS.md`, `docs/blog/*`, `apps/api/README.md` | Product references → "Convexa"; build-system/method narrative → unbranded "the kit"/"the method" (D1) |
-| `.claude/project.json` `project_name` | `"GammaFlow"` → `"Convexa"` (D2) |
+| `.spire/clusters/tech/project.json` `project_name` | `"GammaFlow"` → `"Convexa"` (D2) |
 | `_archive/**`, `DECISION_LEDGER.md` history | **UNTOUCHED** — provenance, not rewritten (D1/D5) |
 
 ### 2E. STAYS — do NOT rename (D5, ARCHITECTURE §1B)
-- Local working folder `C:\Dev\gammaflow-web`; the `@org/*` scope / `@org/api` alias / tags / import paths.
+- Local working folder `C:\Dev\convexa`; the `@org/*` scope / `@org/api` alias / tags / import paths.
 - `DATA_DIR = "data"` + every persisted-data path; env var names; interface field names; `state_fingerprint`.
 - The in-blob `schema_version` integers and the `.v1`/`.v2` key segments (brand-prefix rename only).
 

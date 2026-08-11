@@ -2,7 +2,7 @@
 
 > The single source of FE↔BE integration truth. Both execution contracts bind to THIS file.
 > Producer: Split Compressor (UX session exit). Consumers: Backend + Frontend + QA.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` + this feature's UX_BLUEPRINT / ARCHITECTURE /
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this feature's UX_BLUEPRINT / ARCHITECTURE /
 > PRODUCT contracts. No chat history.
 
 ## Endpoints touched
@@ -89,7 +89,7 @@ nullable**; the whole object is `null` only when BOTH limbs are unavailable OR t
 ```json
 {
   "feature": "dealer-flow-projection",
-  "spec_file": ".claude/tools/conformance/dealer-flow-projection.json",
+  "spec_file": ".spire/clusters/tech/state/conformance/dealer-flow-projection.json",
   "convention": "standalone (mirrors byo-ai-key / ai-rec-backtest-orders); NOT folded into ticker-load-experience.json",
   "machine_assertable": [
     "GET /api/ticker/{ticker} still returns the score/tier/gate/fingerprint FLOOR unchanged (the additive field must not perturb any scored output) — the [additive-keeps-score-byte-identical] wire face",
@@ -124,7 +124,7 @@ nullable**; the whole object is `null` only when BOTH limbs are unavailable OR t
 }
 ```
 
-> **Standalone spec file to author:** `.claude/tools/conformance/dealer-flow-projection.json` in the
+> **Standalone spec file to author:** `.spire/clusters/tech/state/conformance/dealer-flow-projection.json` in the
 > flat schema `interface_conformance.py` executes (`{method,path,path_params,query,body,required}`),
 > projecting the single `runnable_endpoints` entry above. It asserts ONLY the score/tier/gate/
 > fingerprint FLOOR + `market_state` presence — the additive field is optional/nullable and is NOT a

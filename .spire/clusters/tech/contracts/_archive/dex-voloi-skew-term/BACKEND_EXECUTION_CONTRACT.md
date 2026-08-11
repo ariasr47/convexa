@@ -83,6 +83,6 @@
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed to reflect merged code (re-read touched files; same
       section structure), and `market_state_glossary.md` updated with the new entries (draft in
       UX_BLUEPRINT.md → "Glossary additions"), including the reliability note.
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated for anything opened/closed (coordinate with frontend).
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated for anything opened/closed (coordinate with frontend).
 - [ ] Committed.

@@ -92,7 +92,7 @@
       `market_state_glossary.md` / operator docs updated with the stage vocabulary, I/O-vs-CPU tag,
       percentiles, headroom semantics, ephemeral-window caveat, trace-id flow, and the config flag/
       switch names + default window size (drafts in UX_BLUEPRINT.md → "Glossary / operator-doc").
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated (note deferred: OTel/Prom export, alert thresholds, persisted
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated (note deferred: OTel/Prom export, alert thresholds, persisted
       baselines, scanner). Coordinate with frontend.
 - [ ] Committed.

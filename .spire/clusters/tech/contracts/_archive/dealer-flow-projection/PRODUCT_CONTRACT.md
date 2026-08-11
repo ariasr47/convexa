@@ -1,7 +1,7 @@
 # PRODUCT CONTRACT — Dealer-Flow Projection
 
 > Producer: Product Manager (this session). Consumer: UX/Tech-Writer (next role).
-> Reader has ONLY `.claude/PROJECT_CONTEXT.md` + this file. No chat history.
+> Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this file. No chat history.
 > Input: the locked `ARCHITECTURE_CONTRACT.md` (the technical shape is GIVEN — the goal is DERIVED
 > from it, not re-scoped). Lane: user stories, feature scope (In / Out / Future), dashboard behavior,
 > acceptance criteria (each = a required behavioral test), and resolution of the Architect's 8 open

@@ -1,7 +1,7 @@
 # ARCHITECTURE CONTRACT — Dealer-Flow Projection
 
 > Producer: Architect. Consumer: PM (next role).
-> Reader has ONLY `.claude/PROJECT_CONTEXT.md` + this file. No chat history.
+> Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this file. No chat history.
 > Lane: data-structure CONTENT, data-flow, component boundaries, isolation/error rules, restated
 > binding constraints, non-goals, open questions. **NO UI/layout, NO endpoint signatures, NO
 > payload/JSON field NAMES, NO copy** — those are the PM → UX/interface-split lane (see §Open questions).

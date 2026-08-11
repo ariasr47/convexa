@@ -4,8 +4,8 @@
 > CONTENT, data-flow, module boundaries, isolation/error rules, non-goals, restated binding
 > constraints. **NO UI/layout, NO endpoint signatures, NO wire/payload field NAMES, NO copy, NO
 > product acceptance criteria.** Product/UX choices are deferred to the PM (§9). Grounded against the
-> repo (files in §10), not assumptions. Self-contained against `.claude/PROJECT_CONTEXT.md` +
-> `.claude/contracts/outcome-ledger/BRIEF.md` — assume no chat history.
+> repo (files in §10), not assumptions. Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` +
+> `.spire/clusters/tech/contracts/outcome-ledger/BRIEF.md` — assume no chat history.
 >
 > ⚠ **AMENDED at GATE Z ROUND 1 (2026-07-16)** in response to the PM's two bounced amendments
 > (`PRODUCT_CONTRACT.md` §8). **A1 ACCEPTED (substance accepted, shape adjusted further than
@@ -1295,10 +1295,10 @@ was ALREADY COMPUTED AND RECORDED by the app at close time; the ledger still nev
 - `apps/api/src/marketdata/ports.py` + `__init__.py` — the persistent market-data store precedent
   (ticker-keyed, non-user, non-secret, `IV_STORE` default `disk`, one-way leaf) — the basis for the
   §2/Q1 category-error argument.
-- `.claude/PROJECT_CONTEXT.md` §3 (math) + §5 (decisions + promoted invariants, incl. the three keys
-  promoted 2026-07-16), `.claude/OPEN_THREADS.md` (§7c/§7f/§7r seams; §9 Resolved — not reopened),
-  `.claude/contracts/outcome-ledger/BRIEF.md`.
-- **GATE Z round 1 additionally read:** `.claude/contracts/outcome-ledger/PRODUCT_CONTRACT.md` (§8 —
+- `.spire/clusters/tech/context/PROJECT_CONTEXT.md` §3 (math) + §5 (decisions + promoted invariants, incl. the three keys
+  promoted 2026-07-16), `.spire/clusters/tech/context/OPEN_THREADS.md` (§7c/§7f/§7r seams; §9 Resolved — not reopened),
+  `.spire/clusters/tech/contracts/outcome-ledger/BRIEF.md`.
+- **GATE Z round 1 additionally read:** `.spire/clusters/tech/contracts/outcome-ledger/PRODUCT_CONTRACT.md` (§8 —
   the bounced amendments; §4.9/§4.10/§4.11 — the three pins accepted; AC-17, AC-19, AC-E10, AC-E13,
   §9.8 — the claimed-unbuildable ACs).
 - **GATE Z ROUND 2 additionally read (the BUILT code — the amendment is judged against what shipped,
@@ -1307,11 +1307,11 @@ was ALREADY COMPUTED AND RECORDED by the app at close time; the ledger still nev
   defective `close`-only filter), `entryRecordFor` (**119–125**), the precedence loop (**350–400**),
   `basisReason` (**58–64**); `apps/dashboard/src/app/features/trading/outcomes/sources.ts` — the
   unioned/de-duped harvest, `decisionIdentity`, the per-source `ok` flags;
-  `.claude/contracts/outcome-ledger/_MANIFEST.md` (the pipeline state + every prior catch);
-  `.claude/contracts/outcome-ledger/PRODUCT_CONTRACT.md` §9.5/§9.6 (the `unresolved_join` reason is a
+  `.spire/clusters/tech/contracts/outcome-ledger/_MANIFEST.md` (the pipeline state + every prior catch);
+  `.spire/clusters/tech/contracts/outcome-ledger/PRODUCT_CONTRACT.md` §9.5/§9.6 (the `unresolved_join` reason is a
   **required, presented** row — it cannot become a dead branch silently);
-  `.claude/contracts/outcome-ledger/UX_BLUEPRINT.md` §5 (the shipped reason copy);
-  `.claude/contracts/outcome-ledger/FRONTEND_EXECUTION_CONTRACT.md` §7 (the 63-case matrix — the
+  `.spire/clusters/tech/contracts/outcome-ledger/UX_BLUEPRINT.md` §5 (the shipped reason copy);
+  `.spire/clusters/tech/contracts/outcome-ledger/FRONTEND_EXECUTION_CONTRACT.md` §7 (the 63-case matrix — the
   delta is named in §11.5).
 
 ---

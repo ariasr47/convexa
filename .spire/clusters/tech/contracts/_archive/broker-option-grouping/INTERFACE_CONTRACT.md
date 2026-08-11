@@ -29,7 +29,7 @@ response.)*
 | `GET` | `/api/broker/book` | The only data source for the grouped view. The FE groups `positions[]` by each option leg's `underlying`; the envelope's `state` / `as_of` / `stale_after_seconds` / `last_attempt_*` drive the unchanged shipped render states and the snapshot-staleness axis. | session cookie | no — shipped in `broker-connect` |
 | `POST` | `/api/broker/book/refresh` | Only as the target of the **existing** Refresh control. Grouping adds no call site and no new trigger; it only requires that a refresh returning the same book leaves expanded groups expanded (SPEC AC-25). | session cookie | no — shipped in `broker-connect` |
 
-**Authoritative field list:** `.claude/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md`,
+**Authoritative field list:** `.spire/clusters/tech/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md`,
 including its **Amendment 1** (option presence rules: Webull supplies no strike / expiry / right /
 `contract_multiplier`, so an option is an honest single-leg `partial` position and the ×100
 multiplier is reconstructed under four guards, else withheld). That file is the truth; this one
@@ -100,7 +100,7 @@ credentialed session.**
 
 ```json
 {
-  "comment": "NO_BACKEND_CHANGE. Re-pin of the fresh-session (no-credential) read arm of the endpoint this FE-only feature consumes. Authoritative field list: .claude/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md (+ Amendment 1). No field is added or changed by broker-option-grouping.",
+  "comment": "NO_BACKEND_CHANGE. Re-pin of the fresh-session (no-credential) read arm of the endpoint this FE-only feature consumes. Authoritative field list: .spire/clusters/tech/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md (+ Amendment 1). No field is added or changed by broker-option-grouping.",
   "endpoints": [
     {
       "method": "GET",

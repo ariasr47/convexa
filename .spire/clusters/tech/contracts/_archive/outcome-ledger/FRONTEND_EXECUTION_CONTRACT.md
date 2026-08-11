@@ -1,8 +1,8 @@
 # outcome-ledger — FRONTEND_EXECUTION_CONTRACT
 
-> **Binds to `.claude/contracts/outcome-ledger/INTERFACE_CONTRACT.md`** (verdict: `NO_BACKEND_CHANGE` —
+> **Binds to `.spire/clusters/tech/contracts/outcome-ledger/INTERFACE_CONTRACT.md`** (verdict: `NO_BACKEND_CHANGE` —
 > this feature consumes **no endpoint at all**; it derives from the durable client stores).
-> Self-contained against `.claude/PROJECT_CONTEXT.md` + `INTERFACE_CONTRACT.md` — assume no chat history.
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + `INTERFACE_CONTRACT.md` — assume no chat history.
 >
 > **Read in full before writing code:** `ARCHITECTURE_CONTRACT.md` **§3.4** (the data shape you render —
 > rewritten at GATE Z), **§5.1** (the four structural boundaries), **§6** (isolation/error rules), and

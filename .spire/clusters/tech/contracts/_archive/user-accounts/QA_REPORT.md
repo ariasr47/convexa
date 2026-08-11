@@ -11,7 +11,7 @@
 Command run (first boot, fresh in-memory store):
 ```
 apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py \
-  --spec .claude/tools/conformance/user-accounts.json --url http://127.0.0.1:8000
+  --spec .spire/clusters/tech/state/conformance/user-accounts.json --url http://127.0.0.1:8000
 ```
 
 **Result on first run (fresh backend):**

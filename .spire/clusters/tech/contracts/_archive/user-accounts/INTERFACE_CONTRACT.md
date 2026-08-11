@@ -2,7 +2,7 @@
 
 > The FE↔BE truth ONLY. Both lanes bind to THIS file. It fixes endpoints, methods, payload field
 > names/types/presence, the auth error-status semantics (ARCHITECTURE §7), and how the session-status read
-> reports identity + Google-availability. Reader has ONLY `.claude/PROJECT_CONTEXT.md` + this file.
+> reports identity + Google-availability. Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this file.
 > No UI detail (→ FRONTEND_EXECUTION_CONTRACT), no server internals (→ BACKEND_EXECUTION_CONTRACT).
 
 FEATURE = `user-accounts`. The auth surface is a **new HTTP-status-bearing class** (ARCHITECTURE §7),
@@ -164,13 +164,13 @@ fault must never produce a non-200 on `GET /api/ticker/*` or break the SSE strea
 ## 4. Conformance spec
 
 The runnable, canonical machine-checkable spec for this feature lives in the standalone file
-**`.claude/tools/conformance/user-accounts.json`** (the user-accounts standalone convention, mirroring
-`.claude/tools/conformance/ai_recommendations.json` + `api_metrics.json`; `interface_conformance.py`
+**`.spire/clusters/tech/state/conformance/user-accounts.json`** (the user-accounts standalone convention, mirroring
+`.spire/clusters/tech/state/conformance/ai_recommendations.json` + `api_metrics.json`; `interface_conformance.py`
 supports POST bodies). Run it at GATE Q:
 
 ```
 apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py \
-  --spec .claude/tools/conformance/user-accounts.json --url http://127.0.0.1:8000
+  --spec .spire/clusters/tech/state/conformance/user-accounts.json --url http://127.0.0.1:8000
 ```
 
 **Conformance targets (statically checkable, environment-INDEPENDENT in shape):**
@@ -192,8 +192,8 @@ The `## Conformance spec` heading above is the QA reference; the **runnable** sp
 
 ```json
 {
-  "_runnable_spec": ".claude/tools/conformance/user-accounts.json",
-  "note": "The canonical machine-runnable spec is the standalone file above (user-accounts standalone convention, system-1 + system-12). This block intentionally references it rather than restating it, so there is a single runnable source of truth. interface_conformance.py is invoked with --spec .claude/tools/conformance/user-accounts.json.",
+  "_runnable_spec": ".spire/clusters/tech/state/conformance/user-accounts.json",
+  "note": "The canonical machine-runnable spec is the standalone file above (user-accounts standalone convention, system-1 + system-12). This block intentionally references it rather than restating it, so there is a single runnable source of truth. interface_conformance.py is invoked with --spec .spire/clusters/tech/state/conformance/user-accounts.json.",
   "endpoints": [
     {
       "method": "GET",

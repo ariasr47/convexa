@@ -2,7 +2,7 @@
 Entry:        architect-first
 Stage:        GATE U·X exit (THE FAN-OUT) — UX locked, split written, locus PINNED FE-rendered;
               Backend ‖ Frontend lanes loaded (parallel)
-Repos:        both (prompt/contract files here; any presentation in C:\Dev\gammaflow-web)
+Repos:        both (prompt/contract files here; any presentation in C:\Dev\convexa)
 Brief:        BRIEF.md present
 Contracts:
   - ARCHITECTURE_CONTRACT.md   locked (A1 RESOLVED · ACCEPTED — CONTESTED cleared)

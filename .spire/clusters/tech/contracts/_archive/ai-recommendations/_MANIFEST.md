@@ -14,8 +14,8 @@ Contracts:
   - FRONTEND_EXECUTION_CONTRACT.md  locked
 Open amendments: GATE Z (conformance-spec convention) RESOLVED 2026-06-23 → standalone-file canonical
               (BACKLOG §E system-12); INTERFACE_CONTRACT §3 now references
-              `.claude/tools/conformance/ai_recommendations.json` (the runnable spec). Backend lane in lane.
-QA (GATE Q):  QA_REPORT PASS — initial FAIL (E3 missing) RESOLVED by gammaflow-web a2f6ae3 + targeted
+              `.spire/clusters/tech/state/conformance/ai_recommendations.json` (the runnable spec). Backend lane in lane.
+QA (GATE Q):  QA_REPORT PASS — initial FAIL (E3 missing) RESOLVED by convexa a2f6ae3 + targeted
               re-verify (nx test 26/26, E3 passing). 18/18 ACs PASS, conformance 4/4, invariants clean.
               Original verification by qa-verify on Sonnet (de-correlated).
 Canon note:   RELAXES promoted invariant `ai-external-no-llm` by owner decision (2026-06-23); pending

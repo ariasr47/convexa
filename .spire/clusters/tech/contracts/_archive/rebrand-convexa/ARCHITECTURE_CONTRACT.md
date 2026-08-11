@@ -60,7 +60,7 @@ Material findings that shape the decisions:
 | Backend app title | `title="GammaFlow Volatility API"` (`main.py:439`) | → "Convexa …" — exact title string is a PM/owner copy call (§6). |
 | Backend ContextVar name | `ContextVar("gammaflow_request_trace")` (`observability.py:49`) | → `"convexa_request_trace"`. Internal label only (not serialized in the trace payload). |
 | Comments / docstrings / prose | backend `*.py` comments, `prompts/*.md`, `market_state_glossary.md`, README, `apps/api/README.md`, dashboard inline comments | Product references → Convexa. The prompt/glossary prose uses "GammaFlow" as the system that produces the bundle — see the §6 copy question (product-name vs method-name). |
-| Project config | `.claude/project.json` `project_name` | `"GammaFlow"` → `"Convexa"`. |
+| Project config | `.spire/clusters/tech/project.json` `project_name` | `"GammaFlow"` → `"Convexa"`. |
 | Repo docs | `CLAUDE.md`, `README.md`, `docs/SYSTEM_ANALYSIS.md`, `docs/blog/*` | Product references → Convexa; the blog narrative's use of "GammaFlow" as the BUILD-SYSTEM/method name is a §6 copy call. |
 | Download filenames | `gammaflow-decision-history-*.json`, `gammaflow-latency-trend-*.json` | → `convexa-*`. Cosmetic; not parsed on re-import. |
 | GitHub repo | remote `gammaflow` | `gh repo rename convexa` + local remote-URL update. Timing/coordination is a §6 open question. |
@@ -71,9 +71,9 @@ Material findings that shape the decisions:
 - **The `@org/*` package scope.** It is not "gammaflow"; the npm scope, `tsconfig` path alias
   `@org/api`, project tags, and every `from '@org/api'` import are unchanged. (This is why the
   client-file rename is a one-line barrel edit, not a 50-file churn.)
-- **The local working folder `C:\Dev\gammaflow-web`.** Disruptive, local-only, cosmetic — a
+- **The local working folder `C:\Dev\convexa`.** Disruptive, local-only, cosmetic — a
   **non-goal**. Paths in docs that reference it stay as-is (or are a §6 copy call, not a rename).
-- **Archived contracts (`.claude/contracts/_archive/**`) and `DECISION_LEDGER.md`.** Historical
+- **Archived contracts (`.spire/clusters/tech/contracts/_archive/**`) and `DECISION_LEDGER.md`.** Historical
   "GammaFlow" is **provenance** — do not rewrite history. The grep scope for this feature
   EXCLUDES `_archive/`. The DECISION_LEDGER's existing GATE-S notes stay; this feature ADDS a new
   GATE-S note (§4), it does not edit the old ones.
@@ -273,14 +273,14 @@ PM scopes it as a deliverable, not so the Architect performs it.)
    `positions-page.spec.tsx` should assert post-rename depends on the §6.1 copy decision; PM to
    confirm the expected user-visible brand string for the tests.
 5. **Local-folder & external-reference scope confirmation.** Confirm the non-goal stands: the local
-   working folder `C:\Dev\gammaflow-web` and the `gammaflow-web` references in docs are NOT renamed
+   working folder `C:\Dev\convexa` and the `convexa` references in docs are NOT renamed
    (only the GitHub repo + product/code identifiers are). PM to confirm no external link depends on it.
 
 ---
 
 ## 7. EXPLICIT NON-GOALS
 
-- Renaming the local working folder `C:\Dev\gammaflow-web` (disruptive, local-only, cosmetic).
+- Renaming the local working folder `C:\Dev\convexa` (disruptive, local-only, cosmetic).
 - Renaming the `@org/*` package scope, the `@org/api` alias, project tags, or any import path.
 - Rewriting archived contracts (`_archive/**`) or DECISION_LEDGER history (provenance stays).
 - Any data version bump, schema change, or blob transform (this is a brand-prefix migration, the

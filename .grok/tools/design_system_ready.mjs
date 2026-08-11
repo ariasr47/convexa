@@ -171,7 +171,7 @@ export function main(argv = process.argv) {
   if (result.ready && result.mode === 'no-ui') {
     console.log('  OK for backend-only; do not invent a design system.');
   } else if (result.ready) {
-    console.log(`  OK to run `design/DESIGN_SYSTEM_METHOD.md` (living project design canon) (or design/DESIGN_SYSTEM_METHOD.md) in ${result.mode} mode.`);
+    console.log(`  OK to run design/DESIGN_SYSTEM_METHOD.md (living project design canon) (or design/DESIGN_SYSTEM_METHOD.md) in ${result.mode} mode.`);
   } else {
     console.log('  Fill project.json + PROJECT_CONTEXT §1–§2 (or set frontend: null), then re-run.');
   }

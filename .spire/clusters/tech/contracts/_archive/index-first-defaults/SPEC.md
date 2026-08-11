@@ -1,6 +1,6 @@
 # SPEC — index-first-defaults
 
-**Interface:** `.claude/contracts/index-first-defaults/INTERFACE_CONTRACT.md` (**NO_BACKEND_CHANGE** —
+**Interface:** `.spire/clusters/tech/contracts/index-first-defaults/INTERFACE_CONTRACT.md` (**NO_BACKEND_CHANGE** —
 this spec references it and must not contradict it).
 **Brief:** `BRIEF.md` · **Route:** GATE V fast-path (FE lane only) · **Rule-of-record for styling:**
 the `convexa-design` skill + `[theme-token-discipline]`.

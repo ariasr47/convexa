@@ -163,6 +163,6 @@ Observed and ruled for **this** product only:
 
 | Date | Change | Cause |
 |------|--------|-------|
-| 2026-08-10 | **Status SET via codify** — documented shipped Curvature Terminal into Spire seam; maturity `growing` | Field trial: living design-canon **codify** on real UI (`gammaflow-web` / Convexa). Preflight `design_system_ready` → `mode=codify`. No new brand Decision card — direction already product-approved 2026-07-22. |
+| 2026-08-10 | **Status SET via codify** — documented shipped Curvature Terminal into Spire seam; maturity `growing` | Field trial: living design-canon **codify** on real UI (`convexa` / Convexa). Preflight `design_system_ready` → `mode=codify`. No new brand Decision card — direction already product-approved 2026-07-22. |
 | 2026-08-10 | **Retired `convexa-design` skill** — sole rules authority is this file; residual skill rules folded into Components / patterns + enforcement table | Dual authority risk: skill claimed “where they conflict, this skill wins.” Owner: only DESIGN_SYSTEM wins. |
 | 2026-08-10 | **Prune dual-authority residue** — removed legacy `delivery-*` / bare council / `qa-verify` agents (claude+codex); removed `delivery-*` skills; removed `.claude/contracts` (copy under `.spire`); stubbed dual memory under `.claude/` to point at `.spire` | Install/migrate left old kit names + full dual trees; owner cleanup on `spire/design-canon-codify`. Receipt: `design-session/prune-2026-08-10.md`. |

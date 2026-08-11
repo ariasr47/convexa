@@ -22,7 +22,7 @@
 | 6 | `npx nx build @org/dashboard` | **PASS** | Build succeeded; only the pre-existing >500kB chunk-size advisory (known non-blocker, logged in OPEN_THREADS). |
 | 7 | `npx nx e2e dashboard-e2e` | **PASS** | **15/15** — `app-loads.cy.ts` (1) + `mobile-no-overflow.cy.ts` (14: 5 routes × 2 themes + the `/scanner` card-collapse proof + the nav-drawer check, ×2 themes). `/scanner` is in the 393px route set: `scan-cards` exists, `scan-table` does not, 3 `scan-card`s render, first card's `href="/ticker/SPY"`, no horizontal overflow in **both** dark and light. |
 | 8 | Empty `apps/api` diff | **PASS** | `git diff --stat eb478df..HEAD -- apps/api/` → **empty output**. Base commit confirmed correct: `eb478df` is P3's closing commit (`git log -1` shows it as `scanner P3: read API + gated view + warm-click — GATE U·X + GATE Q PASS`), one parent below the first P4 commit `062c8e0`. `[additive-keeps-score-byte-identical]` structural proof holds. |
-| 9 | Runtime conformance (system-1) | **PASS** | `interface_conformance.py --spec .claude/tools/conformance/scanner.json --url http://localhost:8000` → `PASS GET /api/scan (7 fields)`, `PASS GET /api/scan/universe (2 fields)`, 0 failures. |
+| 9 | Runtime conformance (system-1) | **PASS** | `interface_conformance.py --spec .spire/clusters/tech/state/conformance/scanner.json --url http://localhost:8000` → `PASS GET /api/scan (7 fields)`, `PASS GET /api/scan/universe (2 fields)`, 0 failures. |
 | 10 | Structural pins — updated not deleted | **PASS** | `single-motion-moment.spec.ts`: `FLASH_HOME = '/src/app/shared/hooks/useFlashOnChange.ts'` (re-pointed, passing in the full run). `stage3-amber.spec.ts`: `TEXT_AMBER_CONSUMERS` contains `/src/app/shared/ui/TintChip.tsx` (re-pointed, passing). `git diff --diff-filter=D --name-only eb478df..HEAD -- "*.spec.*"` → **exactly one** deletion: `apps/dashboard/src/app/pages/scanner/scanner.spec.tsx` (the retired coming-soon stub's suite, correctly retired with the stub it tested). Zero other spec deletions branch-wide — confirmed. |
 | 11 | The `building`-`as_of` trap — independently RED'd | **PASS** | See §2 below — both the unit guard (`format.spec.ts`) and the render guard (`scanner.risk.spec.tsx`) independently reproduced FAIL when I mutated `updatedText()` to read `as_of` before checking `status === 'building'`; both restored byte-identical (`git diff` clean) and re-confirmed GREEN. |
 | 12 | `[server-side-gate-enforcement]` — 403 writes nothing | **PASS** | `useScan.spec.tsx`: signed-out save → `saved=false`, `putCalls=0` (FE gate never reaches the network), `localStorage.length === 0`. Signed-in + stale-cookie 403 → `saved=false`, `putCalls=1` (server IS the boundary), view state untouched, `localStorage.length === 0` both cases. Scanner writes **zero** localStorage keys — asserted directly. |
@@ -132,7 +132,7 @@ is a corrected implementation detail with a stated, verifiable rationale.
 ## 6. Tree hygiene
 
 `git status --porcelain` at the **start** of this session showed 3 pre-existing items, unrelated to any QA
-mutation: `.claude/RESUME.md` (modified), `.claude/contracts/scanner/FRONTEND_EXECUTION_CONTRACT.md` +
+mutation: `.claude/RESUME.md` (modified), `.spire/clusters/tech/contracts/scanner/FRONTEND_EXECUTION_CONTRACT.md` +
 `UX_BLUEPRINT.md` (modified — these carry the conductor's in-place P4 rescoping + the "live"-wording
 amendment, apparently not yet committed by the builder session), and
 `docs/superpowers/plans/2026-07-26-scanner-04-frontend.md` (untracked — the build-authority plan file,

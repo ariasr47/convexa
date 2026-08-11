@@ -1,6 +1,6 @@
 # broker-option-grouping — spec
 
-**Source brief:** `.claude/contracts/broker-option-grouping/BRIEF.md` (read its **⚠ CORRECTED 2026-08-06** block — the original book-composition claim was factually wrong)
+**Source brief:** `.spire/clusters/tech/contracts/broker-option-grouping/BRIEF.md` (read its **⚠ CORRECTED 2026-08-06** block — the original book-composition claim was factually wrong)
 **Council:** R1 positions · R2 critiques · R3 resolutions · `council/decisions.md` (the reconcile record of authority)
 **Status:** draft — **revised at S2 (2026-08-06)**, **narrow fix pass at S2 pass 2 (2026-08-06)**
 
@@ -1155,7 +1155,7 @@ colour is token-bound); Inter is not the identity.
 
 ## 6. Interface — pointer
 
-**Interface:** `.claude/contracts/broker-option-grouping/INTERFACE_CONTRACT.md`
+**Interface:** `.spire/clusters/tech/contracts/broker-option-grouping/INTERFACE_CONTRACT.md`
 
 **Summary for readers of this spec:** this feature is **`NO_BACKEND_CHANGE`** — it consumes the
 existing `GET /api/broker/book` (and the existing `POST /api/broker/book/refresh` behind the shipped

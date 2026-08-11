@@ -64,7 +64,7 @@ A consumer that reads `expirations` without first branching on `state` is wrong.
 
 ## Conformance spec
 
-The runnable spec stays the standalone `.claude/tools/conformance/bundle_events.json` (extended by this
+The runnable spec stays the standalone `.spire/clusters/tech/state/conformance/bundle_events.json` (extended by this
 feature, not replaced) — the canonical convention per the owner's 2026-06-23 system-12 decision. Run it
 with `interface_conformance.py --spec …`. The block below is a **single-source POINTER, not a copy**,
 present only to satisfy kit v1.0.0 `contract_lint` M7 (which errors unless this section carries a
@@ -73,7 +73,7 @@ decision removed. See `BACKLOG.md §E system-12`.
 
 ```json
 {
-  "$ref": ".claude/tools/conformance/bundle_events.json",
+  "$ref": ".spire/clusters/tech/state/conformance/bundle_events.json",
   "_note": "Pointer, not a copy. Canonical runnable spec is the standalone file; run with --spec. Harness limitation carried over: interface_conformance TYPE_CHECKS has no enum matcher, so event_types tokens and the closed state vocabulary are verified off-harness by the mutation-tested selftest and live reads."
 }
 ```

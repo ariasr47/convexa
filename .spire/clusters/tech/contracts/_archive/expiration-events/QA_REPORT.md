@@ -27,11 +27,11 @@ and were torn down afterward (see "Server state left behind" at bottom).
 
 ## Conformance (system-1)
 
-`interface_conformance.py --spec .claude/tools/conformance/bundle_events.json --url http://127.0.0.1:8000`
+`interface_conformance.py --spec .spire/clusters/tech/state/conformance/bundle_events.json --url http://127.0.0.1:8000`
 → **GREEN**, all 3 endpoints (`/api/ticker/{ticker}` incl. the populated-NVDA shape case, `/api/market-data`),
 48 required fields total, 0 failures.
 
-Regression floor — ran every other conformance spec in `.claude/tools/conformance/` against the same
+Regression floor — ran every other conformance spec in `.spire/clusters/tech/state/conformance/` against the same
 live backend:
 
 | Spec | Result |
@@ -130,6 +130,6 @@ independent inspection. Routes to **GATE S**.
 - **Server left running:** the builder's original `:8000` instance (PID `50572`, `main.py`) is still
   running, exactly as found at the start of this QA pass — I did not touch it. No other server is left
   running by this QA session.
-- No writes were made outside this report. `.claude/contracts/redesign-*` and the untracked
+- No writes were made outside this report. `.spire/clusters/tech/contracts/redesign-*` and the untracked
   `apps/dashboard/src/app/auth|landing`, `apps/dashboard/src/assets/fonts` paths belonging to the other
   active session were not touched.

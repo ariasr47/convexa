@@ -76,7 +76,7 @@ byte-identical. All work is additive: the score/tier/gate/fingerprint path is un
 ## 5. Verification (no pytest suite — app-run + conformance + live-payload check)
 
 - Run `.claude/tools/interface_conformance.py` against the standalone spec
-  `.claude/tools/conformance/ticker-load-experience.json` (boot the backend, fetch SPY once first):
+  `.spire/clusters/tech/state/conformance/ticker-load-experience.json` (boot the backend, fetch SPY once first):
   asserts the bundle byte-identity floor + the `/api/_metrics` readout still parses (INTERFACE §6).
 - **SSE `last_trade` check (off the HTTP harness):** boot the backend, subscribe to
   `/api/stream/SPY`, and verify every payload carries the `last_trade` key with a `number|null` value,

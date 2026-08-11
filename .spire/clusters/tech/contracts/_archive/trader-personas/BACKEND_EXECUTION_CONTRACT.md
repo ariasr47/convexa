@@ -87,7 +87,7 @@
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed (re-read touched files; same section structure);
       `prompts/*.md` + `market_state_glossary.md` updated with the persona decomposition + A1 note +
       the persona/hand-off glossary entries (drafts in UX_BLUEPRINT.md → "Glossary / hand-off-doc").
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated (note deferred: multi-device sync, operator-shared library,
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated (note deferred: multi-device sync, operator-shared library,
       richer customization, per-persona acceptance analytics). Coordinate with frontend.
 - [ ] Committed.

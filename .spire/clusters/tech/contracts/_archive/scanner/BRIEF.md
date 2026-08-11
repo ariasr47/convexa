@@ -48,7 +48,7 @@ Phases (4):      **P1 ScanStore** (persistence leaf — Plan 1 written) · **P2 
                  — StatTile/TintChip[emphasis]/useFlashOnChange/Widget; joins the 393 no-overflow e2e).
                  Run sequenced (P1→P4), each its own execution contract + GATE Q, like the redesign stages.
 ⚠ system-12:     **BEFORE P3's GATE U·X**, reconcile the conformance-spec authoring docs (they still
-                 say "embed the ```json block"; the standalone `.claude/tools/conformance/{feature}.json`
+                 say "embed the ```json block"; the standalone `.spire/clusters/tech/state/conformance/{feature}.json`
                  convention is canonical — precedent `iv_rank.json`). Kit-managed framework files →
                  the fix flows back via the kit (BACKLOG §E), not an in-place edit. Skipping it repeats
                  the ai-recommendations GATE-Z bounce.

@@ -64,10 +64,9 @@ Thumbs.db
 # ---------------------------------------------------------------------------
 # AI assistant local scaffolding (NOT source of truth for this repo)
 #
-# Active in this monorepo:
-#   .claude/   — Claude Code delivery system (committed; worktrees/settings local)
-#   .codex/    — Codex CLI local config (not committed)
-#   Grok Build — uses user/global skills (~/.grok); no repo .agents required
+# Committed host adapters (Spire Tech):
+#   .claude/  .codex/  .grok/  — framework + host wiring
+# Product memory lives only under .spire/clusters/tech/
 #
 # .agents/ is an Nx-generated *mirror* of skills for generic agents. We do not
 # use it — keep ignored so regenerations never re-enter git.
@@ -75,7 +74,6 @@ Thumbs.db
 .agents/
 .gemini/
 .cursor/
-.codex/
 .opencode/
 
 .claude/worktrees

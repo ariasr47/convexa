@@ -41,14 +41,14 @@ Commit verified: `98ee24a` (working tree matches `HEAD` for every file this feat
 
 ## System-1 conformance (runtime)
 
-`apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .claude/tools/conformance/bundle_events.json --url http://127.0.0.1:8000`:
+`apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/bundle_events.json --url http://127.0.0.1:8000`:
 ```
 interface_conformance — 2 endpoint(s)
   PASS  GET /api/ticker/{ticker} — 23 required field(s) present + well-typed
   PASS  GET /api/market-data — 5 required field(s) present + well-typed
   0 endpoint failure(s).
 ```
-Regression floor — ran **every** other existing conformance spec in `.claude/tools/conformance/` against the same live backend (`ai_context_pack`, `ai_rec_backtest_orders`, `ai_recommendations`, `api_metrics`, `byo-ai-key`, `dealer-flow-projection`, `iv_rank`, `scanner`, `ticker-load-experience`, `user-accounts`) — **all GREEN, 0 failures**, confirming the additive field did not perturb any previously-shipped wire shape.
+Regression floor — ran **every** other existing conformance spec in `.spire/clusters/tech/state/conformance/` against the same live backend (`ai_context_pack`, `ai_rec_backtest_orders`, `ai_recommendations`, `api_metrics`, `byo-ai-key`, `dealer-flow-projection`, `iv_rank`, `scanner`, `ticker-load-experience`, `user-accounts`) — **all GREEN, 0 failures**, confirming the additive field did not perturb any previously-shipped wire shape.
 
 ## Selftests (independently re-run, not taken on the builder's word)
 
@@ -69,7 +69,7 @@ All 11 acceptance criteria PASS with direct observation; no invariant is broken;
 ## Housekeeping
 
 - RED mutation to `apps/api/src/scanner/events.py` reverted; `git diff` on that file is empty.
-- Full-repo `git status --porcelain` after this session matches the pre-session state exactly (only the conductor's pre-existing `.claude/BACKLOG.md` / `INTERFACE_CONTRACT.md` edits and unrelated untracked `redesign-*`/dashboard directories — none touched by me).
+- Full-repo `git status --porcelain` after this session matches the pre-session state exactly (only the conductor's pre-existing `.spire/clusters/tech/context/BACKLOG.md` / `INTERFACE_CONTRACT.md` edits and unrelated untracked `redesign-*`/dashboard directories — none touched by me).
 - Test fixtures (`corrupt_events.json`, `expired_events.json`, `upcoming_events.json`) were written to the session scratchpad only, never inside the repo.
 - Two temporary `uvicorn` instances I booted on `:8010` were killed at the end of each check; port 8010 is free.
 - The pre-existing primary backend on `:8000` (PID 50548, `main.py`) was **left running**, exactly as found — I did not start or stop it.

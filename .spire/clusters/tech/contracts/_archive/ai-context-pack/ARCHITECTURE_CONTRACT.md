@@ -1,6 +1,6 @@
 # ai-context-pack — ARCHITECTURE CONTRACT (compressed for PM)
 
-> Reader has ONLY `.claude/PROJECT_CONTEXT.md` + this contract. Decisions, not deliberation.
+> Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this contract. Decisions, not deliberation.
 > Architect lane: NO UI/layout, NO endpoint signatures, NO final wire/JSON field names, NO copy —
 > §9 lists those as PM/UX open questions. Field names below are ILLUSTRATIVE content descriptors.
 

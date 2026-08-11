@@ -1,17 +1,17 @@
 # iv-rank — BACKEND_EXECUTION_CONTRACT
 
 > GATE U·X deliverable. **Server work ONLY** (targets `apps/api`). References the
-> **INTERFACE_CONTRACT** (`.claude/contracts/iv-rank/INTERFACE_CONTRACT.md`) for what it EMITS. NO UI
+> **INTERFACE_CONTRACT** (`.spire/clusters/tech/contracts/iv-rank/INTERFACE_CONTRACT.md`) for what it EMITS. NO UI
 > detail. Independently buildable by a fresh executioner reading ONLY this file + the
 > INTERFACE_CONTRACT + PROJECT_CONTEXT.
 >
-> Bound interface: **`.claude/contracts/iv-rank/INTERFACE_CONTRACT.md`** — this lane EMITS
+> Bound interface: **`.spire/clusters/tech/contracts/iv-rank/INTERFACE_CONTRACT.md`** — this lane EMITS
 > `market_state.iv_rank` exactly as that contract's §2–§3 specify.
 >
-> Locked technical shape you implement (do NOT re-decide): `.claude/contracts/iv-rank/
+> Locked technical shape you implement (do NOT re-decide): `.spire/clusters/tech/contracts/iv-rank/
 > ARCHITECTURE_CONTRACT.md` — CM30 basis, write-through accumulation, the new persistent market-data
 > store/port, the 252-window, the after-scoring attach, the §3.1 sample record, the §3.2 read shape.
-> Product decisions D1–D8 are locked (`.claude/contracts/iv-rank/PRODUCT_CONTRACT.md`).
+> Product decisions D1–D8 are locked (`.spire/clusters/tech/contracts/iv-rank/PRODUCT_CONTRACT.md`).
 
 ---
 
@@ -179,8 +179,8 @@ context automatically (AC-2). Do NOT modify `serialize_context`.
 
 - **Backend boot / verify:** `nx serve api` → uvicorn :8000. No pytest suite — verified by app-run +
   `.claude/tools/interface_conformance.py`. `py` (not `python`); the app boots on a dummy key.
-- **Conformance:** run the standalone spec `.claude/tools/conformance/iv_rank.json` via
-  `interface_conformance.py --spec .claude/tools/conformance/iv_rank.json`. **RESUME gotcha:** the
+- **Conformance:** run the standalone spec `.spire/clusters/tech/state/conformance/iv_rank.json` via
+  `interface_conformance.py --spec .spire/clusters/tech/state/conformance/iv_rank.json`. **RESUME gotcha:** the
   `/api/ticker` `dark_pool=true` COLD path can exceed the tool's 30s timeout — **warm the URL first**
   within the 60s cache TTL (`curl http://127.0.0.1:8000/api/ticker/SPY?min_dte=7&max_dte=45&dark_pool=true`)
   then run the spec; OR validate offline with `--sample <bundle.json> --endpoint "/api/ticker/{ticker}"`.

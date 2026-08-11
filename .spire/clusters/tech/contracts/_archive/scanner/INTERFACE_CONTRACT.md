@@ -184,10 +184,10 @@ symbols **before** the vendor. Constraints that make it wire-invisible:
 
 ## 5. Conformance spec (system-1)
 
-**Canonical spec: the standalone file `.claude/tools/conformance/scanner.json`** (the current convention
+**Canonical spec: the standalone file `.spire/clusters/tech/state/conformance/scanner.json`** (the current convention
 — mirrors `iv_rank.json` / `user-accounts.json`; **NOT** a nested ```json block embedded here, which is
 the ai-recommendations GATE-Z trap). `interface_conformance.py` runs it via
-`--spec .claude/tools/conformance/scanner.json`.
+`--spec .spire/clusters/tech/state/conformance/scanner.json`.
 
 **What it asserts** — only the two **anonymous-open, cookieless-deterministic READS**, envelope-only:
 - `GET /api/scan` → `view` (object) + `view.source`/`view.density` (string) + `view.symbols` (array) +

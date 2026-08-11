@@ -1,6 +1,6 @@
 # ai-context-pack — PRODUCT CONTRACT (PM, compressed for the UX/Tech-Writer)
 
-> Reader has ONLY `.claude/PROJECT_CONTEXT.md` + `ARCHITECTURE_CONTRACT.md` + this contract.
+> Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + `ARCHITECTURE_CONTRACT.md` + this contract.
 > Decisions, not deliberation. PM lane: no code, no math, no endpoints, no wire names, no layout.
 > Every AC below is observable without reading code and is a REQUIRED behavioral test — the FE
 > execution contract's test matrix must cover each, and QA traces each at GATE Q.

@@ -3,7 +3,7 @@
 > Producer: UX/Tech-Writer (compressor #3). Consumer: Frontend executioner.
 > Lane: **UI work + the component states** in UX_BLUEPRINT.md. References INTERFACE_CONTRACT.md for what
 > it CONSUMES. Self-contained against GAMMAFLOW_CONTEXT.md + UX_BLUEPRINT.md + INTERFACE_CONTRACT.md.
-> Repo: `C:\Dev\gammaflow-web` (Nx, React 19 + Vite + MUI). Tests: Vitest + jsdom + Testing Library.
+> Repo: `C:\Dev\convexa` (Nx, React 19 + Vite + MUI). Tests: Vitest + jsdom + Testing Library.
 
 The FE does **not** decide the requirement set — the **Tests to write** matrix below (derived from the
 18 ACs × component states × promoted invariants) is the floor QA traces at GATE Q. Implement that set;

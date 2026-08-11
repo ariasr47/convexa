@@ -80,7 +80,7 @@ trace-id correlation flow).
 - [ ] Obligation 1 implemented + verified (trader view unchanged, meta tolerated). Obligation 2
       implemented to spec **if** built this phase; otherwise explicitly deferred in the handoff.
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed if the UI changed any described behavior/state.
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated. Coordinate with backend so the folder is archived once both
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated. Coordinate with backend so the folder is archived once both
       land.
 - [ ] Committed.

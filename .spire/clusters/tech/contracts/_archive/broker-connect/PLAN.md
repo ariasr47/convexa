@@ -34,8 +34,8 @@ Vite (`apps/dashboard`) · Vitest + Testing Library (`npx nx test @org/dashboard
 
 Every task's requirements implicitly include this section.
 
-**Contracts of record:** `.claude/contracts/broker-connect/SPEC.md` (LOCKED — the 23 ACs are the
-definition of done) and `.claude/contracts/broker-connect/INTERFACE_CONTRACT.md` (LOCKED — the
+**Contracts of record:** `.spire/clusters/tech/contracts/broker-connect/SPEC.md` (LOCKED — the 23 ACs are the
+definition of done) and `.spire/clusters/tech/contracts/broker-connect/INTERFACE_CONTRACT.md` (LOCKED — the
 FE↔BE wire truth). `council/decisions.md` is the rationale record; nothing in this plan may
 contradict it. **A needed change to the interface during build is a GATE Z amendment routed
 through the conductor — never a silent edit.**
@@ -101,7 +101,7 @@ real credentials to pass (`stub` provider + fixtures cover CI).
 
 ### Conformance spec
 
-Copied **verbatim** from `.claude/contracts/broker-connect/INTERFACE_CONTRACT.md` — both lanes
+Copied **verbatim** from `.spire/clusters/tech/contracts/broker-connect/INTERFACE_CONTRACT.md` — both lanes
 inherit this as the binding wire shape:
 
 ```json
@@ -152,7 +152,7 @@ Run it with:
 
 ```
 apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py \
-  --contract .claude/contracts/broker-connect/INTERFACE_CONTRACT.md \
+  --contract .spire/clusters/tech/contracts/broker-connect/INTERFACE_CONTRACT.md \
   --url http://127.0.0.1:8000 --auth-signup
 ```
 
@@ -229,7 +229,7 @@ F1 typed client ─> F2 state module ─┬─> F4 Broker tab UI ─> F6 reasses
 - Create: `apps/api/tests/capture_broker_fixtures.py` (standalone script, stdlib + Webull SDK only)
 - Create: `apps/api/tests/fixtures/broker/positions_raw.json`, `account_raw.json`,
   `error_bad_credential.json`, `rate_limit_headers.json` (sanitized — see steps)
-- Create: `.claude/contracts/broker-connect/CAPTURE_FINDINGS.md`
+- Create: `.spire/clusters/tech/contracts/broker-connect/CAPTURE_FINDINGS.md`
 
 **Interfaces:**
 - Consumes: nothing in-repo (runs before the adapter exists).
@@ -756,6 +756,6 @@ Constraints non-goals. Type consistency: `BrokerCredential`/`get_positions_provi
 what B5 consumes; `resolveRenderState`/`useBrokerBook` (F2) and `buildBrokerPositionView` (F3)
 are what F4 consumes; `NOT_PROVIDED` is defined once (F3) and consumed in F4/F7. Known
 deliberate deviations from the writing-plans default: plan lives at
-`.claude/contracts/broker-connect/PLAN.md` (pipeline convention, per the conductor's directive),
+`.spire/clusters/tech/contracts/broker-connect/PLAN.md` (pipeline convention, per the conductor's directive),
 and step granularity is task-level with binding signatures rather than line-level code — the
 lanes are contract-bound and the LOCKED SPEC/INTERFACE own the shapes this plan must not restate.

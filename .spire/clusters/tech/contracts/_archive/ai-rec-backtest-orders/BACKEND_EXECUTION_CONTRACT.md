@@ -118,5 +118,5 @@ anonymous-readable, otherwise unchanged.
 8. **Gating real (AC-43):** not-ready ticker + scenario, no override ⇒ the real gated refusal;
    with `override:true` ⇒ the scenario runs.
 9. **Conformance:** `interface_conformance.py` green on
-   `.claude/tools/conformance/ai_rec_backtest_orders.json` (default env) + the existing specs
+   `.spire/clusters/tech/state/conformance/ai_rec_backtest_orders.json` (default env) + the existing specs
    (additivity — nothing regressed).

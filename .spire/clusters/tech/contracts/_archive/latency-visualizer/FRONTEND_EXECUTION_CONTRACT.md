@@ -2,7 +2,7 @@
 
 > For the Frontend Executioner. Binds to GAMMAFLOW_CONTEXT.md + ARCHITECTURE_CONTRACT.md +
 > INTERFACE_CONTRACT.md + the UX_BLUEPRINT states/copy. UI work ONLY. Backend = `NO_BACKEND_CHANGE`.
-> Repo: `C:\Dev\gammaflow-web`. recharts already ships; the `MetricsAggregate` type + `fetchMetrics()`
+> Repo: `C:\Dev\convexa`. recharts already ships; the `MetricsAggregate` type + `fetchMetrics()`
 > already exist in `@org/api` — no new dependency, no API-client change required.
 
 ## Files / components to modify
@@ -109,7 +109,7 @@ stopped…`; auto: `Auto-paused while the tab was hidden.`) · **Exported** (`Ex
 - [ ] UI implemented to spec and verified (see Verification).
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` updated (the `/_ops/metrics` operator view now also trends the
       readout locally; still read-only, single `GET /api/_metrics`, ephemeral).
-- [ ] This feature's `.claude/contracts/latency-visualizer/` folder archived on ship; `OPEN_THREADS.md`
+- [ ] This feature's `.spire/clusters/tech/contracts/latency-visualizer/` folder archived on ship; `OPEN_THREADS.md`
       / `BACKLOG.md` updated (the §D observability "local visualization" slice is now shipped; export/
       alerting/persistence remain parked). `DECISION_LEDGER.md` row(s) captured at GATE S (e.g.
       `operator-vs-trader-path-separation`, `best-effort-isolated-or-null`).

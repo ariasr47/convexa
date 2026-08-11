@@ -124,7 +124,7 @@ shared path the per-admin allowance is an ADDITIONAL precondition (PRODUCT_CONTR
 ## Conformance spec
 
 Machine-checkable (system-1) shapes live in the STANDALONE runnable file
-**`.claude/tools/conformance/byo-ai-key.json`** (flat `{method,path,path_params,query,body,required}`
+**`.spire/clusters/tech/state/conformance/byo-ai-key.json`** (flat `{method,path,path_params,query,body,required}`
 schema `interface_conformance.py` executes — same standalone convention as
 `conformance/user-accounts.json` + `conformance/ai_recommendations.json`; system-12). This embedded
 block is the human-readable truth; the JSON is its runnable projection.

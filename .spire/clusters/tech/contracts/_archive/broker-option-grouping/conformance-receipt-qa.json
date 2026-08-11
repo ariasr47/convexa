@@ -2,7 +2,7 @@
   "tool": "interface_conformance",
   "verdict": "PASS",
   "mode": "live",
-  "source": ".claude/contracts/broker-option-grouping/INTERFACE_CONTRACT.md",
+  "source": ".spire/clusters/tech/contracts/broker-option-grouping/INTERFACE_CONTRACT.md",
   "base_url": "http://127.0.0.1:8000",
   "checked_at": "2026-08-06T21:05:46Z",
   "summary": {

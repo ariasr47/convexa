@@ -1,8 +1,8 @@
 # user-accounts — BACKEND_EXECUTION_CONTRACT
 
 > Server work ONLY. References `INTERFACE_CONTRACT.md` for what it must EMIT. NO UI detail. Reader has ONLY
-> `.claude/PROJECT_CONTEXT.md` + `INTERFACE_CONTRACT.md` + this file. Target: `apps/api`. Verified by
-> app-run + `.claude/tools/interface_conformance.py --spec .claude/tools/conformance/user-accounts.json`
+> `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + `INTERFACE_CONTRACT.md` + this file. Target: `apps/api`. Verified by
+> app-run + `.claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/user-accounts.json`
 > (no pytest suite — CLAUDE.md). Run: `npx nx serve api` (uvicorn :8000).
 
 FEATURE = `user-accounts`. This is the **first stateful backend surface + first credential store**. The
@@ -183,7 +183,7 @@ same port family.
 
 ## 11. Proof obligations recap (what "done" must demonstrate — for QA at GATE Q)
 
-- `interface_conformance.py --spec .claude/tools/conformance/user-accounts.json --url <backend>` PASSES
+- `interface_conformance.py --spec .spire/clusters/tech/state/conformance/user-accounts.json --url <backend>` PASSES
   (`GET /api/auth/session` anonymous shape + `POST /api/auth/signup` success shape on a fresh boot).
 - **Score byte-identity** anonymous vs signed-in (`opportunity_score`/`opportunity_tier`/`state_fingerprint`)
   + the **import-boundary AST check** that the scoring path never imports auth (AC-I1, AC-F4).

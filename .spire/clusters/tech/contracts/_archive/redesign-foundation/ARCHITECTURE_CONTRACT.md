@@ -1,9 +1,9 @@
 # redesign-foundation — ARCHITECTURE CONTRACT
 
 > Role: Delivery Architect (architect-first, GATE A·X; AMENDED at GATE Z · 2026-06-29). TECHNICAL
-> SHAPE ONLY of feature `redesign-foundation`. Self-contained against `.claude/PROJECT_CONTEXT.md`
-> (§2/§5/§7) + `.claude/contracts/redesign-foundation/BRIEF.md` + the canonical
-> `.claude/contracts/redesign-foundation/DESIGN_HANDOFF.md`. No chat-history dependency.
+> SHAPE ONLY of feature `redesign-foundation`. Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md`
+> (§2/§5/§7) + `.spire/clusters/tech/contracts/redesign-foundation/BRIEF.md` + the canonical
+> `.spire/clusters/tech/contracts/redesign-foundation/DESIGN_HANDOFF.md`. No chat-history dependency.
 >
 > This contract decides the *integration shape* of recreating the Convexa redesign in the tested MUI
 > app. It does NOT design UI/layout, copy, component code, endpoint signatures, payload/field names,

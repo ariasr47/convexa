@@ -6,9 +6,9 @@
 > mapping IS the required-tests matrix.** No server internals, no math, no final endpoint/payload
 > decisions beyond naming the fields the UI consumes.
 >
-> Binds to the LOCKED product face: `.claude/contracts/iv-rank/PRODUCT_CONTRACT.md` (D1–D8, the
+> Binds to the LOCKED product face: `.spire/clusters/tech/contracts/iv-rank/PRODUCT_CONTRACT.md` (D1–D8, the
 > three-state model, the ACs) and the technical shape at
-> `.claude/contracts/iv-rank/ARCHITECTURE_CONTRACT.md` (CM30 basis, 252-window, after-scoring attach,
+> `.spire/clusters/tech/contracts/iv-rank/ARCHITECTURE_CONTRACT.md` (CM30 basis, 252-window, after-scoring attach,
 > the §3.2 nested read). Does NOT re-scope product or invent behavior.
 >
 > Closest shipped precedents (voice, null copy, advisory footer, static-family shell, token

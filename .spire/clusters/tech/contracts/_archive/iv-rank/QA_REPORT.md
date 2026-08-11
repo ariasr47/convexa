@@ -67,7 +67,7 @@ Re-derived independently of the builder's self-report, via three separate proofs
 
 ```
 apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py \
-  --spec .claude/tools/conformance/iv_rank.json --url http://127.0.0.1:8000
+  --spec .spire/clusters/tech/state/conformance/iv_rank.json --url http://127.0.0.1:8000
 
 interface_conformance — 1 endpoint(s)
   PASS  GET /api/ticker/{ticker} — 9 required field(s) present + well-typed

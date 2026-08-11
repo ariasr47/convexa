@@ -22,7 +22,7 @@ Duration: 38.57s. Suite is GREEN.
 Backend booted: `cd apps/api && .venv/Scripts/python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000`
 SPY pre-warm fetch: `curl "http://127.0.0.1:8000/api/ticker/SPY?min_dte=7&max_dte=45&dark_pool=true"` — 115,878 bytes, HTTP 200.
 
-Conformance command: `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .claude/tools/conformance/ticker-load-experience.json --url http://127.0.0.1:8000`
+Conformance command: `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/ticker-load-experience.json --url http://127.0.0.1:8000`
 
 Result:
 ```

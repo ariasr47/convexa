@@ -1,6 +1,6 @@
 # broker-connect — spec
 
-**Source brief:** .claude/contracts/broker-connect/BRIEF.md
+**Source brief:** .spire/clusters/tech/contracts/broker-connect/BRIEF.md
 **Council:** R1 positions · R2 critiques · R3 resolutions · decisions.md   (under council/)
 **Status:** draft
 
@@ -351,7 +351,7 @@ is the Broker tab's payload only.
 
 ## 6. Interface — pointer
 
-**Interface:** `.claude/contracts/broker-connect/INTERFACE_CONTRACT.md`
+**Interface:** `.spire/clusters/tech/contracts/broker-connect/INTERFACE_CONTRACT.md`
 **Summary for readers of this spec:** five NEW endpoints, all signed-in + server-gated — three
 credential endpoints (`GET/PUT/DELETE /api/broker/credential`, the byo-ai-key write-only/masked
 shape) and two book endpoints (`GET /api/broker/book`, `POST /api/broker/book/refresh` with

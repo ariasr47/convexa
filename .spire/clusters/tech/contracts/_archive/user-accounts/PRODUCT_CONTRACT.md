@@ -1,6 +1,6 @@
 # user-accounts — PRODUCT_CONTRACT
 
-> PM → UX/Tech-Writer handoff. Reader has ONLY `.claude/PROJECT_CONTEXT.md` + the
+> PM → UX/Tech-Writer handoff. Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + the
 > `ARCHITECTURE_CONTRACT.md` in this folder + this file. Product layer ONLY — user stories, scope,
 > product behavior, acceptance criteria. **No code, math, endpoint signatures, payload/field names, or
 > UI layout** (those are UX/BE's call). Decisions, not deliberation.

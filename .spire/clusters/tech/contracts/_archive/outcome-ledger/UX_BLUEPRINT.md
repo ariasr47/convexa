@@ -2,7 +2,7 @@
 
 > GATE U·X deliverable. Targets the **Frontend executioner**. Concrete UI/interaction design + the exact
 > user-facing copy for the readout the `PRODUCT_CONTRACT` scoped and the `ARCHITECTURE_CONTRACT` shaped.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` + `.claude/contracts/outcome-ledger/
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + `.spire/clusters/tech/contracts/outcome-ledger/
 > PRODUCT_CONTRACT.md` + `ARCHITECTURE_CONTRACT.md` — assume no chat history.
 >
 > **Lane:** no server internals, no math, no endpoint/payload decisions. Product scope is **not** re-opened:

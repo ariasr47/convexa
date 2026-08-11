@@ -6,11 +6,11 @@
 
 **Architecture:** All on `apps/api`'s existing web surface; `main.py` is the sole orchestration boundary. Three anonymous-open reads + one server-gated write register **before** the `/{ticker}` catch-all alias. The per-account view rides the **existing `src/auth/` settings ports** (D1) — an additive nullable `scan_view` JSON field on `SettingsRecord`, written through the same `PUT /api/auth/settings` gate machinery (`_gate_or_response`). The warm-click seeds `main._cache` from the P2 `read_bundle_blob` **before** the vendor when a **tracked** symbol's canonical (unfiltered) bundle is requested and the blob is fresh — the `chain_store` pre-warm precedent extended across the process boundary. `compute_ticker` is **never edited and never re-forked**: a warm hit serves bytes a prior `compute_ticker` produced; a miss/stale falls straight through to the identical normal path.
 
-**Tech Stack:** Python 3.12, FastAPI (existing `main.app` + the existing auth router/service/ports), the P1 `scanstore` leaf (`get_store`, `read_rows`, `read_heartbeat`, `read_bundle_blob`), the P2 `src/scanner/universe.py` loader, stdlib `json`. FastAPI's bundled `TestClient` (httpx 0.28 present) drives the no-live-server selftests; the standalone `.claude/tools/conformance/scanner.json` (already authored by GATE U·X) drives the live conformance gate. No new pip dependency.
+**Tech Stack:** Python 3.12, FastAPI (existing `main.app` + the existing auth router/service/ports), the P1 `scanstore` leaf (`get_store`, `read_rows`, `read_heartbeat`, `read_bundle_blob`), the P2 `src/scanner/universe.py` loader, stdlib `json`. FastAPI's bundled `TestClient` (httpx 0.28 present) drives the no-live-server selftests; the standalone `.spire/clusters/tech/state/conformance/scanner.json` (already authored by GATE U·X) drives the live conformance gate. No new pip dependency.
 
 ## Global Constraints
 
-Every task's requirements implicitly include these (copied verbatim from `INTERFACE_CONTRACT.md` §1–§5, `BACKEND_EXECUTION_CONTRACT.md` §1–§4, `ARCHITECTURE_CONTRACT.md` §3.3/§3.4/§3.5/§5, and `.claude/tools/conformance/scanner.json`):
+Every task's requirements implicitly include these (copied verbatim from `INTERFACE_CONTRACT.md` §1–§5, `BACKEND_EXECUTION_CONTRACT.md` §1–§4, `ARCHITECTURE_CONTRACT.md` §3.3/§3.4/§3.5/§5, and `.spire/clusters/tech/state/conformance/scanner.json`):
 
 - **`[additive-keeps-score-byte-identical]` (HARD — the load-bearing boundary).** The warm-click **must not change the served bundle's bytes.** `compute_ticker` stays the **sole transform** — it is **not edited, not forked** (`engine.py`/`signals.py`/`live.py`/`darkpool.py`/`chain_store.py`/`compute_ticker` get **0 edits**); the read-through only changes **where the bundle came from** (a prior worker `compute_ticker`, JSON-round-tripped), exactly like `chain_store` changes where the chain INPUT came from. Score / tier / `state_fingerprint` / the entry gate stay **byte-identical** whether the blob was hit or the vendor was fetched, and whether the scanner exists or not (a miss falls through to the exact current code path). `scanstore/` stays a **one-way leaf**: `main.py` (web) is the only orchestration boundary that reads it — **no scoring module imports `scanstore/` or `src/scanner/`**. No scan row / view / heartbeat / blob is ever a scoring input.
 - **`[best-effort-isolated-or-null]`.** Every **READ** (`/api/scan`, `/api/scan/universe`, `/api/scan/view`) is best-effort **200 + status**: a store outage / read fault degrades content (stale rows if any, `sweep: null`, per-row `stale`/`error`, a `building`-filled view) but **never 5xx's for scan trouble**. A single failed symbol degrades **that row alone**. The scan reads are **not** an auth failure domain. **Auth carve-out — WRITES only:** `PUT /api/scan/view` is the one gated, state-bearing action and returns a **real 401/403** (repo precedent: **403** `auth_required` / **503** `auth_unavailable`) when signed-out. The warm-click **adds no new failure surface** to the ticker endpoint (any miss/stale/fault falls straight through).
@@ -53,7 +53,7 @@ apps/api/
   .env.example / Dockerfile    # +SCAN_DEFAULT_VIEW_N / SCAN_WARM_MAX_AGE_SECONDS doc block (names only)
 ```
 
-Each new module has one responsibility. The auth field is a minimal additive extension of the shipped settings path; the read API is a cohesive `main.py` section; the warm-click is a single guarded branch inside the existing miss path. `.claude/tools/conformance/scanner.json` is **already authored** (GATE U·X) — this plan **runs** it, it does not write it.
+Each new module has one responsibility. The auth field is a minimal additive extension of the shipped settings path; the read API is a cohesive `main.py` section; the warm-click is a single guarded branch inside the existing miss path. `.spire/clusters/tech/state/conformance/scanner.json` is **already authored** (GATE U·X) — this plan **runs** it, it does not write it.
 
 ---
 
@@ -1207,7 +1207,7 @@ cd apps/api && .venv/Scripts/python.exe warmclick_selftest.py
 ```
 Expected: `PASS: warm-click serves fresh tracked blobs byte-identically; stale/untracked/filtered MISS` (exit 0).
 ```bash
-cd C:/Dev/gammaflow-web && git diff --stat apps/api/src/core/ ; echo "---" ; git diff apps/api/main.py | grep -n "def compute_ticker" || echo "compute_ticker signature/body NOT in the diff (unchanged)"
+cd C:/Dev/convexa && git diff --stat apps/api/src/core/ ; echo "---" ; git diff apps/api/main.py | grep -n "def compute_ticker" || echo "compute_ticker signature/body NOT in the diff (unchanged)"
 ```
 Expected: `apps/api/src/core/` has **no** changed files, and `compute_ticker` does **not** appear in the `main.py` diff — the sole transform is untouched (`[additive-keeps-score-byte-identical]`).
 
@@ -1229,7 +1229,7 @@ git commit -m "feat(scanner): ticker warm-click read-through of the P2 bundle-bl
 - Modify: `apps/api/Dockerfile` (runtime-env header comment — names only)
 
 **Interfaces:**
-- Consumes: the shipped endpoints (Tasks 2–5) + `.claude/tools/conformance/scanner.json` (already authored by GATE U·X).
+- Consumes: the shipped endpoints (Tasks 2–5) + `.spire/clusters/tech/state/conformance/scanner.json` (already authored by GATE U·X).
 - Produces: the GATE-Q evidence (conformance PASS, curl gate, AST clean) + the env documentation.
 
 - [ ] **Step 1: Re-run every P3 selftest (full surface intact)**
@@ -1242,11 +1242,11 @@ Expected: five `PASS: …` lines, exit 0.
 - [ ] **Step 2: Leaf/boundary AST — no scoring module imports the scanner leaves (HARD)**
 
 ```bash
-cd C:/Dev/gammaflow-web && rg -n "scanstore|from src.scanner|import scanner" apps/api/src/core/engine.py apps/api/src/core/signals.py apps/api/src/core/live.py apps/api/src/core/darkpool.py apps/api/src/core/chain_store.py || echo "CLEAN: no scoring module imports scanstore/scanner"
+cd C:/Dev/convexa && rg -n "scanstore|from src.scanner|import scanner" apps/api/src/core/engine.py apps/api/src/core/signals.py apps/api/src/core/live.py apps/api/src/core/darkpool.py apps/api/src/core/chain_store.py || echo "CLEAN: no scoring module imports scanstore/scanner"
 ```
 Expected: `CLEAN: no scoring module imports scanstore/scanner` (zero matches). Confirm the only readers are `main.py` (web) + `worker.py` (producer):
 ```bash
-cd C:/Dev/gammaflow-web && rg -l "from src import scanstore|from src.scanner" apps/api/main.py apps/api/worker.py
+cd C:/Dev/convexa && rg -l "from src import scanstore|from src.scanner" apps/api/main.py apps/api/worker.py
 ```
 Expected: both files listed (they are the two allowed orchestration boundaries).
 
@@ -1254,7 +1254,7 @@ Expected: both files listed (they are the two allowed orchestration boundaries).
 
 Boot uvicorn on :8000 with a throwaway scan store (so no `data/` file is written) and cookie-insecure for the signed-in curl (optional). Prefer the nx target; fall back to the venv Python directly if node/nvm is not on PATH:
 ```bash
-cd C:/Dev/gammaflow-web && npx nx serve api
+cd C:/Dev/convexa && npx nx serve api
 # fallback (no node on PATH): cd apps/api && SCAN_STORE_PATH="$(python -c 'import tempfile,os;print(os.path.join(tempfile.mkdtemp(),"scan.sqlite3"))')" AUTH_COOKIE_SECURE=false .venv/Scripts/python.exe main.py
 ```
 Wait for `Uvicorn running on http://127.0.0.1:8000`. (Leave it running in a second terminal for Steps 4–6.)
@@ -1262,7 +1262,7 @@ Wait for `Uvicorn running on http://127.0.0.1:8000`. (Leave it running in a seco
 - [ ] **Step 4: Run the standalone conformance spec live (system-1 GREEN)**
 
 ```bash
-cd C:/Dev/gammaflow-web && apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .claude/tools/conformance/scanner.json --url http://127.0.0.1:8000
+cd C:/Dev/convexa && apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/scanner.json --url http://127.0.0.1:8000
 ```
 Expected:
 ```
@@ -1277,7 +1277,7 @@ interface_conformance — 2 endpoint(s)
 - [ ] **Step 5: Anonymous-open reads + the route-order not-swallowed check (curl gate)**
 
 ```bash
-cd C:/Dev/gammaflow-web
+cd C:/Dev/convexa
 curl -s -o /dev/null -w "scan=%{http_code}\n"          http://127.0.0.1:8000/api/scan
 curl -s -o /dev/null -w "universe=%{http_code}\n"      http://127.0.0.1:8000/api/scan/universe
 curl -s -o /dev/null -w "view=%{http_code}\n"          http://127.0.0.1:8000/api/scan/view
@@ -1288,7 +1288,7 @@ Expected: `scan=200`, `universe=200`, `view=200`, then `True` (the universe rout
 - [ ] **Step 6: The gated WRITE (the `[server-side-gate-enforcement]` catch — cookieless)**
 
 ```bash
-cd C:/Dev/gammaflow-web
+cd C:/Dev/convexa
 curl -s -o /dev/null -w "anon_put=%{http_code}\n" -X PUT http://127.0.0.1:8000/api/scan/view \
   -H "Content-Type: application/json" -d '{"symbols":["SPY"]}'
 curl -s -o /dev/null -w "bad_symbol_needs_auth=%{http_code}\n" -X PUT http://127.0.0.1:8000/api/scan/view \
@@ -1325,11 +1325,11 @@ git commit -m "chore(scanner): P3 conformance + gate/route-order/leaf-AST verifi
   1. **The scan read endpoints** → Task 2 (`GET /api/scan/universe`) + Task 3 (`GET /api/scan` with D2 default-view resolution + building-fill + the `ScanResponse` envelope; `GET /api/scan/view`). Anonymous-open, best-effort **always 200** (store faults wrapped → degraded 200, never 5xx). Registered before the `/{ticker}` catch-all (Task 2 placement + the Task-2 ordering assertion). ✓
   2. **The server-gated `PUT /api/scan/view`** → Task 4 (persisted as the `scan_view` field on `SettingsRecord` behind the existing auth-settings ports — Task 1; enforced server-side: 403/503 signed-out, 422 off-universe/bad sort/density, 200 echo; nothing persists signed-out even if the FE guard is bypassed — RED→GREEN Step 3). ✓
   3. **The ticker warm-click read-through** → Task 5 (the existing `_compute_entry` consults `read_bundle_blob` for **tracked** symbols on the **canonical** filter **before** the vendor; best-effort, freshness-gated, miss/stale → normal fetch; `compute_ticker` unchanged — Step 6 diff proof; served bytes byte-identical — the served-bytes integration check). ✓
-  4. **Conformance** → Task 6 (live `interface_conformance.py --spec .claude/tools/conformance/scanner.json` GREEN on both anonymous reads, envelope-only; `rows`=`[]` / `sweep`=`null` on a fresh boot both PASS). ✓
+  4. **Conformance** → Task 6 (live `interface_conformance.py --spec .spire/clusters/tech/state/conformance/scanner.json` GREEN on both anonymous reads, envelope-only; `rows`=`[]` / `sweep`=`null` on a fresh boot both PASS). ✓
 - **Invariants structurally preserved:** `[additive-keeps-score-byte-identical]` — warm-click serves a prior-`compute_ticker` bundle (never re-transforms); 0 edits to `engine.py`/`signals.py`/`live.py`/`darkpool.py`/`chain_store.py`/`compute_ticker` (Task 5 Step 6 + Task 6 Step 2 AST); `scanstore`/`scanner` read only in `main.py`/`worker.py`. `[best-effort-isolated-or-null]` — every read wrapped best-effort → degraded 200; auth carve-out on the PUT only (403/503). `[server-side-gate-enforcement]` — the PUT gate is outermost + server-side (RED→GREEN). `[live-vs-static-isolation]` — plain REST store reads, no SSE. `[model-read-carries-its-assumptions]`/`[digested-labels-not-raw-dump]` — per-row `as_of`+`status`, building-fill `as_of` not a freshness claim, closed enums, no raw series. `[no-secrets-in-image]` — only two non-secret env tunables added. `[loss-free-durable-migration]`-adjacent — the Postgres `scan_view` column uses idempotent `ADD COLUMN IF NOT EXISTS`.
 - **Placeholder scan:** no TBD/TODO; every step has runnable code + an exact command (cwd noted) + expected output. Four RED→GREEN disciplines (Task 1 to_wire guard, Task 3 building-fill, Task 4 the gate, Task 5 the freshness gate).
 - **Type consistency:** `ScanRow.to_wire()` / `SweepHeartbeat.to_wire()` P1 keys reused verbatim (never renamed); `ScanView`/`ScanResponse`/`UniverseResponse` match INTERFACE §2–§3; `SettingsRecord.scan_view` field + `get_scan_view`/`save_scan_view` names identical across ports/adapters/service/main; `SCAN_SORT_KEYS`/`SCAN_SORT_DIRS`/`SCAN_DENSITIES` match `SortKey`/`ViewSort`/`density` (INTERFACE §2.3); `_scan_warm_bundle` reads the P2 `BundleBlob.as_of`/`bundle_json`; `_gate_or_response`/`_resolve_auth`/`compute_opportunity_tier` called with their real signatures.
-- **Grounded in real code:** mirrors `apps/api/main.py::_acquire_vendor_inputs` (the `chain_store.get_fresh` pre-warm precedent the warm-click extends across the process boundary) + `_compute_entry`/`_serve`/`_wrap` (the cache-install + serve-time-tier-overlay path a warm bundle rides unchanged) + `_gate_or_response`/`_resolve_auth` (the sim-trade/ai-rec/`PUT /api/auth/settings` gate the view WRITE mirrors) + the `@app.get("/{ticker}")` catch-all at `main.py:1403` (the route-order anchor); `apps/api/src/auth/{ports,service,router,sqlite_store,postgres_store}.py` (the `SettingsRecord`/`UserSettingsStore.update` subset-write the `scan_view` field rides + the §3.7 schema-evolution seam); `apps/api/src/scanner/universe.py` (the P2 loader the cached `get_universe()` wraps); `apps/api/src/scanstore/ports.py` (`ScanRow`/`SweepHeartbeat`/`BundleBlob` + `read_rows`/`read_heartbeat`/`read_bundle_blob`); `.claude/tools/interface_conformance.py` + `.claude/tools/conformance/scanner.json`/`iv_rank.json` (the standalone-spec run precedent).
+- **Grounded in real code:** mirrors `apps/api/main.py::_acquire_vendor_inputs` (the `chain_store.get_fresh` pre-warm precedent the warm-click extends across the process boundary) + `_compute_entry`/`_serve`/`_wrap` (the cache-install + serve-time-tier-overlay path a warm bundle rides unchanged) + `_gate_or_response`/`_resolve_auth` (the sim-trade/ai-rec/`PUT /api/auth/settings` gate the view WRITE mirrors) + the `@app.get("/{ticker}")` catch-all at `main.py:1403` (the route-order anchor); `apps/api/src/auth/{ports,service,router,sqlite_store,postgres_store}.py` (the `SettingsRecord`/`UserSettingsStore.update` subset-write the `scan_view` field rides + the §3.7 schema-evolution seam); `apps/api/src/scanner/universe.py` (the P2 loader the cached `get_universe()` wraps); `apps/api/src/scanstore/ports.py` (`ScanRow`/`SweepHeartbeat`/`BundleBlob` + `read_rows`/`read_heartbeat`/`read_bundle_blob`); `.claude/tools/interface_conformance.py` + `.spire/clusters/tech/state/conformance/scanner.json`/`iv_rank.json` (the standalone-spec run precedent).
 
 ## The rest of Scanner v1 — Plan 4 (roadmap; write it when P3 lands)
 

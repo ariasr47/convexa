@@ -3,7 +3,7 @@
 > GATE B deliverable, targeted at the **UX/Tech-Writer**. Product layer ONLY: stories, scope,
 > product behavior, acceptance criteria, copy intent. **NO code, no math derivations, no data
 > structures, no endpoints, no payload/field names, no UI layout.** Self-contained against
-> `.claude/PROJECT_CONTEXT.md` + `.claude/contracts/outcome-ledger/ARCHITECTURE_CONTRACT.md` —
+> `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + `.spire/clusters/tech/contracts/outcome-ledger/ARCHITECTURE_CONTRACT.md` —
 > assume no chat history. The Architect ran first; its technical shape is **given** and is not
 > re-scoped here. Every §9 open question is resolved in §4, in order.
 >

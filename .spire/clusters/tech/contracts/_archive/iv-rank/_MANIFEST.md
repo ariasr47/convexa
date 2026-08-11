@@ -10,7 +10,7 @@ Contracts:
   - INTERFACE_CONTRACT.md      locked
   - BACKEND_EXECUTION_CONTRACT.md   locked (built: apps/api/src/marketdata/ + main.py + market_data.py)
   - FRONTEND_EXECUTION_CONTRACT.md  locked (built: IvRank widget + types)
-Conformance:  .claude/tools/conformance/iv_rank.json (standalone; market_state.iv_rank object|null on GET /api/ticker/{ticker}) — PASS live+offline
+Conformance:  .spire/clusters/tech/state/conformance/iv_rank.json (standalone; market_state.iv_rank object|null on GET /api/ticker/{ticker}) — PASS live+offline
 Open amendments: none (all product + architecture decisions implementable without a bounce)
 QA (GATE Q):  QA_REPORT PASS — 19/19 ACs, 0 FAIL, 0 UNVERIFIABLE (fresh de-correlated Sonnet)
 GATE S:       graduated `digested-labels-not-raw-dump` (2 binding); model-read → 3rd instance; first persistent market-data store

@@ -5,7 +5,7 @@
 > explicit non-goals. This contract designs **no UI/layout, no endpoint signatures, no
 > payload/JSON field names, no copy** — those are listed as Open Questions for the PM.
 >
-> Inputs: `.claude/contracts/positions-portfolio/BRIEF.md`, `PROJECT_CONTEXT.md` (§2/§3/§5/§6/§7),
+> Inputs: `.spire/clusters/tech/contracts/positions-portfolio/BRIEF.md`, `PROJECT_CONTEXT.md` (§2/§3/§5/§6/§7),
 > `OPEN_THREADS.md` §5 (the SHIPPED ghost-trade tracker we EVOLVE) + §9 (resolved — not reopened).
 > Grounded against the shipped code: `apps/dashboard/src/app/ghost-trade/{types,store,mark,
 > useGhostTrade,TradeEntryDialog,GhostTradePanel}.ts(x)`, `ai-rec/prefill.ts`,

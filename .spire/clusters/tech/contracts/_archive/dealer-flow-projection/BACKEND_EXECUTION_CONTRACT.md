@@ -1,7 +1,7 @@
 # BACKEND EXECUTION CONTRACT — Dealer-Flow Projection
 
 > Server work ONLY. Binds to `INTERFACE_CONTRACT.md` (what to EMIT). Contains NO UI detail.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` + this feature's ARCHITECTURE_CONTRACT +
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this feature's ARCHITECTURE_CONTRACT +
 > INTERFACE_CONTRACT. No chat history.
 
 ## Scope (what the backend builds)
@@ -123,7 +123,7 @@ names/types/units/null-rules from `INTERFACE_CONTRACT.md §"Payload addition"` �
 - **P-AC-14 (export presence):** `GET /api/recommendation/export/{ticker}` (and the in-app rec state
   export) contain `dealer_flow_projection` (via the wholesale `market_state` serialization), with no
   change to score/tier/gate/fingerprint.
-- **Conformance:** author `.claude/tools/conformance/dealer-flow-projection.json` (standalone; the flat
+- **Conformance:** author `.spire/clusters/tech/state/conformance/dealer-flow-projection.json` (standalone; the flat
   `interface_conformance.py` schema) projecting the INTERFACE `## Conformance spec` runnable endpoint —
   the score/tier/gate/fingerprint FLOOR + `market_state` presence ONLY. The additive field is
   optional/nullable and MUST NOT be a required path (a null cycle must PASS).
@@ -133,7 +133,7 @@ names/types/units/null-rules from `INTERFACE_CONTRACT.md §"Payload addition"` �
 - `apps/api/src/core/engine.py` (`process_gex_profile`) — the projection compute (in its own guarded
   block) + the deterministic-reduction fix for charm/vanna/volga.
 - `apps/api/market_state_glossary.md` — the glossary entry (UX_BLUEPRINT §6 copy).
-- `.claude/tools/conformance/dealer-flow-projection.json` — the standalone conformance spec.
+- `.spire/clusters/tech/state/conformance/dealer-flow-projection.json` — the standalone conformance spec.
 - **Untouched (binding):** `apps/api/src/core/signals.py`, the gate/score/tier/fingerprint,
   `ai_recommendation.serialize_context` (rides wholesale — no edit), the SSE path, the provider port,
   the GEX/DEX sums + flip.

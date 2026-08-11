@@ -85,7 +85,7 @@
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed (re-read touched files; same section structure);
       `market_state_glossary.md` + `prompts/` updated with the reassessment hand-off + new glossary
       entries.
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated (note the deferred seams: broker adapter, replay/clock,
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated (note the deferred seams: broker adapter, replay/clock,
       recorded-verdict reassessment, server-side store). Coordinate with frontend.
 - [ ] Committed.

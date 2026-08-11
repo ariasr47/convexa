@@ -1,6 +1,6 @@
 # user-accounts — ARCHITECTURE_CONTRACT
 
-> Architect → PM handoff. Reader has ONLY `.claude/PROJECT_CONTEXT.md` + this file. Compressed for the
+> Architect → PM handoff. Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this file. Compressed for the
 > PM: decisions, not deliberation. Technical shape ONLY — no UI/layout, no endpoint signatures, no
 > payload/JSON field names, no copy. Those are deferred as explicit **Open questions for the PM** (§9).
 > The Architect cannot run or edit code (Read/Grep/Glob/Write only).

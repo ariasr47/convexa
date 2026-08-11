@@ -55,7 +55,7 @@
 
 ## Interface conformance (system-1)
 
-Ran `.claude/tools/interface_conformance.py --spec .claude/tools/conformance/ai_context_pack.json --url http://127.0.0.1:8000` against the warmed live backend:
+Ran `.claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/ai_context_pack.json --url http://127.0.0.1:8000` against the warmed live backend:
 
 ```
 PASS  GET /api/ticker/{ticker} — 9 required field(s) present + well-typed

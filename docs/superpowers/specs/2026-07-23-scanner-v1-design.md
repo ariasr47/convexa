@@ -3,7 +3,7 @@
 > Product: Convexa. Brainstormed owner + conductor 2026-07-23; four design sections approved
 > in dialogue. This spec seeds the delivery pipeline (BRIEF update → GATE A·X) — the pipeline's
 > contracts are the build authority; this document records the validated design and its
-> decisions. Supersedes the AI-inclusive scope in `.claude/contracts/scanner/BRIEF.md` (v1 cut).
+> decisions. Supersedes the AI-inclusive scope in `.spire/clusters/tech/contracts/scanner/BRIEF.md` (v1 cut).
 
 ## 1. Purpose and shape
 
@@ -61,7 +61,7 @@ process boundaries). Clicking a scanner row lands on a warm Ticker page.
 - **`GET /api/scan`** — the one read. The requested view (or default view) as slim rows +
   sweep metadata (`sweep_last_completed`, heartbeat age, universe size). Anonymous-open,
   read-only, poll-friendly. Best-effort degraded responses (200 + status), never a 5xx for
-  scan trouble. **Ships a standalone conformance spec `.claude/tools/conformance/scanner.json`**
+  scan trouble. **Ships a standalone conformance spec `.spire/clusters/tech/state/conformance/scanner.json`**
   — the feature system-12's doc reconciliation lands on (reconcile the authoring docs BEFORE
   the design splits into build contracts).
 - **`GET/PUT /api/scan/view`** — the signed-in user's view (symbols ⊆ universe, order, name,

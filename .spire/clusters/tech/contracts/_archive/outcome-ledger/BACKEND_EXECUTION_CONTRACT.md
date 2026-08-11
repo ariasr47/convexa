@@ -1,7 +1,7 @@
 # outcome-ledger — BACKEND_EXECUTION_CONTRACT
 
-> Binds to `.claude/contracts/outcome-ledger/INTERFACE_CONTRACT.md`.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` — assume no chat history.
+> Binds to `.spire/clusters/tech/contracts/outcome-ledger/INTERFACE_CONTRACT.md`.
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` — assume no chat history.
 
 ---
 

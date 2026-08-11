@@ -13,7 +13,7 @@
 | **P2**    | Valuable, not blocking edge                               |
 | **Later** | When scale, commercial, or ledger evidence requires it    |
 
-**Related:** `docs/TECH_DEBT.md` (scored register), `.claude/BACKLOG.md` (feature pool), `docs/ROADMAP_2026-08.md` (edge queue), `docs/RESUME_SCANNER_DESK.md` (session handoff), `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (FE deep dive + §3.8 workstream).
+**Related:** `docs/TECH_DEBT.md` (scored register), `.spire/clusters/tech/context/BACKLOG.md` (feature pool), `docs/ROADMAP_2026-08.md` (edge queue), `docs/RESUME_SCANNER_DESK.md` (session handoff), `docs/FRONTEND_PERFORMANCE_ANALYSIS.md` (FE deep dive + §3.8 workstream).
 
 ---
 

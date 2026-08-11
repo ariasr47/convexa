@@ -183,7 +183,7 @@ allowance is an ADDITIONAL precondition (PRODUCT_CONTRACT §3).
 ## 9. Backend required-proofs (the BE half of the §7 matrix in UX_BLUEPRINT)
 Verified by app-run + `.claude/tools/interface_conformance.py` + targeted runtime assertions (NO pytest
 suite — repo convention):
-1. **Conformance** — run `.claude/tools/conformance/byo-ai-key.json` (status-shape + export-egress
+1. **Conformance** — run `.spire/clusters/tech/state/conformance/byo-ai-key.json` (status-shape + export-egress
    shapes) green; plus the existing `ai_recommendations.json`/`user-accounts.json` still green.
 2. **Five-state resolution (AC-1/2/3/4/5/6/24)** — drive each state via a signed-in session +
    (no key / own key / admin allowlist / shared-key configured-or-not / allowance left-or-0) and assert

@@ -114,7 +114,7 @@ npm run graph
 
 ## A note on how this is built
 
-This repo carries its own **delivery-orchestration system** under `.claude/` — a contract-driven pipeline (Architect → PM → UX → Backend ‖ Frontend → QA) with mechanical gate-checks, runtime interface-conformance, and a compounding decision ledger. It's how features are specced, built, and verified here. See [`CLAUDE.md`](CLAUDE.md) and [`.claude/PROJECT_CONTEXT.md`](.claude/PROJECT_CONTEXT.md) for the ground truth.
+This repo carries a **multi-host delivery system** (Spire Tech): shared product memory under [`.spire/clusters/tech/`](.spire/clusters/tech/) (context, contracts, design system, decision ledger), with host adapters in `.claude/`, `.codex/`, and `.grok/`. Pipeline: design council → plan → backend ‖ frontend → QA, with mechanical gate-checks and runtime interface-conformance. See [`Agents.md`](Agents.md), [`CLAUDE.md`](CLAUDE.md), and [`.spire/clusters/tech/context/PROJECT_CONTEXT.md`](.spire/clusters/tech/context/PROJECT_CONTEXT.md).
 
 ## License
 

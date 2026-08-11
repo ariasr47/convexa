@@ -18,7 +18,7 @@
    spec block is explicitly "reference only — existing endpoints; no new required field." The FE tests
    (mocking the network boundary at `fetch` + `EventSource`) are the designated verification path.
 5. Binding invariants checked by grep + code reading.
-6. Lane check: `git diff HEAD~1 HEAD -- apps/api/` = empty; only `.claude/contracts/positions-portfolio/_MANIFEST.md`,
+6. Lane check: `git diff HEAD~1 HEAD -- apps/api/` = empty; only `.spire/clusters/tech/contracts/positions-portfolio/_MANIFEST.md`,
    `apps/dashboard/src/app/app.tsx` (additive import + render of `PortfolioPanel`),
    `apps/dashboard/src/app/ghost-trade/types.ts` (additive union members), and the new
    `apps/dashboard/src/app/positions/` module were changed.

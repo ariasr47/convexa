@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/tools/path_guard.js",
+            "statusMessage": "path-guard: workspace fence (system-4b)"
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .codex/tools/path_guard.js --protocol codex",
+            "commandWindows": "node .codex/tools/path_guard.js --protocol codex",
+            "timeout": 30,
+            "statusMessage": "path-guard: workspace fence (system-4b)",
+            "spireOwner": "spire:tech/path-guard"
+          }
+        ]
+      }
+    ]
+  }
+}

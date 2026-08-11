@@ -93,4 +93,4 @@ unresolved.
 The **backend lane is also not yet implemented** (no `/api/contract` slice, `opportunity_tier`/
 `prime_prompt_eligible`, or `position_eval` in `C:\Dev\GammaFlow`). Even after 1–3 are pinned, the
 FE will verify against a controllable mock (per the dark-pool / dex lanes) until the backend lands;
-**archive `.claude/contracts/trade-tracker-sim/` only once both lanes ship.**
+**archive `.spire/clusters/tech/contracts/trade-tracker-sim/` only once both lanes ship.**

@@ -31,13 +31,13 @@ market closed / no live ticks" messaging + honest live-vs-stale handling (live s
 decision (Databento Blue Ocean, or Webull supplement).
 
 ## 3. Dark-pool block trades + stream isolation (SHIPPED + ARCHIVED — closed)
-Contracts archived at `.claude/contracts/_archive/dark-pool-stream-isolation/` (both lanes done).
+Contracts archived at `.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/` (both lanes done).
 **Backend (Session 4A) shipped:**
 `BlockPrint`/`OffExchange` TypedDicts in `src/providers/base.py`; `blocks[]` derived in the same
 off-exchange pass in `src/core/darkpool.py` (top-5 by notional, signed proximity, age, no `side`,
 no new fetch); `BLOCK_MIN_SHARES` env (5000 default) + best-effort try/except in `main.py`
 (`off_exchange = None` on any failure, bundle/SSE intact); `signals.py` untouched (blocks unscored).
-**Frontend (Session 4B) shipped** (repo `C:\Dev\gammaflow-web`): `BlockPrint` + `OffExchange.blocks`
+**Frontend (Session 4B) shipped** (repo `C:\Dev\convexa`): `BlockPrint` + `OffExchange.blocks`
 in `libs/api/src/lib/gammaflow.ts`; in `apps/dashboard/src/app/app.tsx` — the "Off-exchange blocks"
 section (Normal/Empty/Unavailable/Hidden states, neutral proximity chip, no side), a single
 `⚠ Live offline — reconnecting…` connection chip driven by a **payload-gap watchdog** (>15s; a
@@ -51,11 +51,11 @@ controllable mock backend behind the Vite proxy. Glossary + PROJECT_CONTEXT refr
 5000 display constant for a pre-amendment bundle. **Archived** under `_archive/` (per DoD).
 
 ## 4. DEX · Vol/OI · IV skew · Term structure (SHIPPED + ARCHIVED — closed)
-Contracts archived at `.claude/contracts/_archive/dex-voloi-skew-term/` (both lanes done). Four
+Contracts archived at `.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/` (both lanes done). Four
 always-on, **neutral, snapshot** positioning reads added to the cached bundle — **no toggle, no
 side/direction, no score/gate/setup wiring**, and **excluded from the live-offline treatment**
 (static fields, like Net GEX).
-**Frontend (repo `C:\Dev\gammaflow-web`, committed):** `MarketState`/`StrikeRow` extended in
+**Frontend (repo `C:\Dev\convexa`, committed):** `MarketState`/`StrikeRow` extended in
 `libs/api/src/lib/gammaflow.ts`; in `apps/dashboard/src/app/app.tsx` four neutral tiles (Net DEX
 `$X.XM`, Vol/OI `×`, IV skew `slope pts · fear|greed|balanced` derived from `slope`, Term structure
 `contango|backwardation|flat`, `—` when sparse), a **Term-structure mini-card** (ATM-IV-by-tenor,
@@ -75,7 +75,7 @@ surface all fields; `VOL_OI_UNUSUAL_THRESHOLD` env (1.0). `signals.py` untouched
 refreshed; contract archived.
 
 ## 5. Ghost-trade tracker / sim (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/trade-tracker-sim/`. The FE lane had **paused** pending three
+Contracts archived at `.spire/clusters/tech/contracts/_archive/trade-tracker-sim/`. The FE lane had **paused** pending three
 "Interface's to finalize" transports (bounce-back: `INTERFACE_AMENDMENTS_REQUESTED.md`). **The
 backend lane resolved all of them** with concrete, contract-compliant choices, now pinned in
 `INTERFACE_CONTRACT.md` → "Backend resolution amendment" (additive — breaks no prior FE assumption):
@@ -95,7 +95,7 @@ backend lane resolved all of them** with concrete, contract-compliant choices, n
 missing→404, tier bands, position_eval once-per-event, full isolation) + entry gate/`opportunity_score`/
 `state_fingerprint` byte-identical to pre-feature; **no order path, no LLM call** (grep-confirmed).
 Glossary + PROJECT_CONTEXT refreshed.
-**Frontend SHIPPED** (`C:\Dev\gammaflow-web`, committed): `apps/dashboard/src/app/ghost-trade/` —
+**Frontend SHIPPED** (`C:\Dev\convexa`, committed): `apps/dashboard/src/app/ghost-trade/` —
 client-local durable store (localStorage, versioned, exportable; survives reload + SSE drop); honest
 mark ladder (snapshot→modeled→theoretical→last-known→frozen) + P/L = (mark−entry)×100×qty;
 `useGhostTrade` (tracked-contract fetch via `fetchTrackedContract`, edge-detected alerts armed once
@@ -111,7 +111,7 @@ Deferred seams (specified, not built): broker `FillSource`/`PositionStore`, `Bun
 recorded-verdict reassessment, server-side trade store.
 
 ## 6. Backend observability (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/backend-observability/`. Operator-facing
+Contracts archived at `.spire/clusters/tech/contracts/_archive/backend-observability/`. Operator-facing
 bundle-pipeline instrumentation; **trader path + computed values + cache + SSE unchanged.**
 **Backend shipped** (`C:\Dev\GammaFlow`): new `src/core/observability.py` (span/timer ContextVar
 trace, process-local rolling `MetricsAggregate`, structured emitter; `engine/signals/darkpool`
@@ -128,7 +128,7 @@ roll-up, readout read-only (0 vendor fetches), OFF ⇒ byte-identical bundle, fo
 (operator section) + PROJECT_CONTEXT refreshed.
 **Finalized (were "Interface's call"):** verbose switch `?debug=1`; readout `GET /api/_metrics`; env
 flag names + window default — pinned in INTERFACE_CONTRACT (amendment note) + operator doc.
-**Frontend SHIPPED** (`C:\Dev\gammaflow-web`, committed): **Obligation 1** — `Meta` gains optional
+**Frontend SHIPPED** (`C:\Dev\convexa`, committed): **Obligation 1** — `Meta` gains optional
 `trace_id?` + `timings?` (StageName/StageKind/MetaTimings) so bundles parse cleanly; the **trader
 dashboard renders neither** (verified unchanged with trace_id/verbose-timings present, no leak, no
 console errors). **Obligation 2** — `fetchMetrics` (read-only `GET /api/_metrics`, side-effect-free)
@@ -158,7 +158,7 @@ self-heal→restart-break, headroom unknown, stale-repeat, off-gap, export). GAT
 persisted/cross-restart baselines, the multi-ticker scanner (baseline data supports it).
 
 ## 7. Trader personas (SHIPPED + ARCHIVED — both lanes done)
-Contracts in `.claude/contracts/trader-personas/` (A1 RESOLVED·ACCEPTED). Persona is a **read-only,
+Contracts in `.spire/clusters/tech/contracts/trader-personas/` (A1 RESOLVED·ACCEPTED). Persona is a **read-only,
 post-FREEZE prompt projection** — a non-input to scoring by construction. **Backend shipped**
 (`C:\Dev\GammaFlow`): `prompts/strategy_prompt.md` + `reassessment_prompt.md` decomposed (FIXED vs
 PERSONA, annotation appended; bodies byte-identical) with the **A1 move** (trader-disposition lifted
@@ -176,7 +176,7 @@ contract shipped no transport for the separate-repo FE); (2) **contract inconsis
 gives conservative the *softened* text, but the prose + BACKEND Verification require conservative to
 contain "prone to greed"; resolved by the **superset** clause (harsh phrase + verbatim map text).
 Flag for clean-up amendment if conservative was meant to be softened-only.
-**Frontend SHIPPED** (`C:\Dev\gammaflow-web`, committed `6dcdbe1`/`1233718`): `apps/dashboard/src/app/
+**Frontend SHIPPED** (`C:\Dev\convexa`, committed `6dcdbe1`/`1233718`): `apps/dashboard/src/app/
 personas/` — `PersonaDefinition`/`Handoff` types; a **FE-embedded faithful decomposed template**
 (canonical strategy/reassessment prompts; Default byte-identical incl. greed line; A1 disposition slot
 relocated) with `assembleHandoff` (pure + synchronous + default-prompt fallback); 7 presets (exact
@@ -201,7 +201,7 @@ the operator-editable canonical data. (Not blocking; behaviour is correct today.
 customization, per-persona acceptance analytics.
 
 ## 7b. In-app AI recommendations (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/ai-recommendations/`. GammaFlow's **first in-app LLM
+Contracts archived at `.spire/clusters/tech/contracts/_archive/ai-recommendations/`. GammaFlow's **first in-app LLM
 call** — a best-effort, isolated, gated, **advisory consumer** of already-computed state. **Demoted the
 `ai-external-no-llm` canon** (system-7, narrowed not erased — CONTEXT §8 + DECISION_LEDGER "Demoted").
 **Backend** (`C:\Dev\GammaFlow`, commit `eec3a3a`): new one-way-leaf `src/core/ai_recommendation.py`
@@ -211,7 +211,7 @@ recompute), `ai_eval`-derived gating + 60s cooldown + 50/day cap (env-configurab
 /api/recommendation/{ticker}` (best-effort, always-200 + `status`), `GET …/export/{ticker}` (no-LLM floor,
 404 if un-fetched), `GET …/status/{ticker}`. Server-side `ANTHROPIC_API_KEY` (never in browser, gitignored).
 Verified live: conformance 4/4, score/tier/`state_fingerprint` byte-identical, forced fault → 200 + clean
-status (bundle/SSE intact), import-boundary AST-checked, egress/404. **Frontend** (`C:\Dev\gammaflow-web`,
+status (bundle/SSE intact), import-boundary AST-checked, egress/404. **Frontend** (`C:\Dev\convexa`,
 commits `42212f5` + `a2f6ae3`): `apps/dashboard/src/app/ai-rec/*` (`AiRecPanel`, `StateExportDrawer`,
 `useAiRecommendation`, `copy`, `prefill`) — the 12-state rec surface, gating/cap/availability UI from
 `/status`, **Accept** → the shipped `TradeEntryDialog` prefill seam (paper-sim, editable, mandatory
@@ -220,7 +220,7 @@ fetchers. Tests: `ai-rec.spec.tsx` (T1–T18 + E1–E7, incl. E3) — `nx test d
 (GATE Q)**: verified by a fresh qa-verify on **Sonnet** (de-correlated) — 18/18 ACs, conformance 4/4,
 invariants clean; initial FAIL on the missing E3 named test (the AC↔test traceability rule catching a gap
 a green suite hid) RESOLVED + re-verified → **PASS**. **GATE Z**: the conformance-spec convention was
-reconciled to **standalone-file canonical** (`.claude/tools/conformance/ai_recommendations.json`;
+reconciled to **standalone-file canonical** (`.spire/clusters/tech/state/conformance/ai_recommendations.json`;
 `interface_conformance.py` gained POST-body support); the full doc/linter standardization is tracked as
 BACKLOG §E **system-12**.
 **Deferred seams (specified, not built** — *audited 2026-07-28; one has since shipped, marked inline*
@@ -231,7 +231,7 @@ the same surface); token streaming (whole-rec render shipped); AI-rec acceptance
 (leverages the ghost-trade decision history); a vendor/model swap behind the LLM seam.
 
 ## 7c. Positions portfolio (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/positions-portfolio/`. FE-only (`NO_BACKEND_CHANGE`)
+Contracts archived at `.spire/clusters/tech/contracts/_archive/positions-portfolio/`. FE-only (`NO_BACKEND_CHANGE`)
 multi-position evolution of the ghost-trade tracker. **Frontend shipped** (`apps/dashboard/src/app/
 positions/`): flat id-keyed durable collection (loss-free v1→v2 migration); central all-positions +
 per-ticker views; per-position P/L + Δ-since-entry + ephemeral session delta + a P/L **trend sparkline**
@@ -251,7 +251,7 @@ long-call/put~~ **→ BUILT: shipped as §7x `positions-legs` (2026-07-28) — t
 plus grouping on the Structure axis. Audited 2026-07-28.**
 
 ## 7d. Convexa multi-page shell + landing (SHIPPED + ARCHIVED — FE-only)
-Contracts archived at `.claude/contracts/_archive/app-shell-landing/`. Feature 1 of the **owner pivot**
+Contracts archived at `.spire/clusters/tech/contracts/_archive/app-shell-landing/`. Feature 1 of the **owner pivot**
 (positions-centric, brokerage-connected, multi-page — see BACKLOG "Last GATE I — OWNER PIVOT"). The
 **rebrand to "Convexa"** (UI wordmark only) + the IA restructure: single `BrowserRouter`/dark-MUI theme —
 `/` Convexa landing (dark-fintech splash, hero hook, convexity-curve motif, value cards, honest
@@ -270,7 +270,7 @@ program:** `scanner` (Track A, next — revisits the single-ticker decision, nee
 (Webull-direct read-only positions → the `no-real-order-path` narrowing + the Security/system-6 role).
 
 ## 7e. Ticker-page load experience (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/ticker-load-experience/`. Owner request 2026-06-25
+Contracts archived at `.spire/clusters/tech/contracts/_archive/ticker-load-experience/`. Owner request 2026-06-25
 (redirect off `scanner`): make `/ticker/:symbol` load fast + feel instant + show a trusted price. Measured
 first (live Massive feed): warm cache hit ~7ms but cold miss p50 3.5s (worst 9.6s), of which `vendor_fetch`
 ~87% and the SINGLE options-chain call ~75% (~54 serial paginated round-trips for SPY's 13k contracts).
@@ -294,7 +294,7 @@ finding logged (BACKLOG §B):** pre-existing ~9th-sig-digit float-ordering jitte
 `net_volga` (does NOT affect `opportunity_score`/score inputs/`state_fingerprint`; engine untouched here).
 
 ## 7f. User accounts — auth + sessions + per-user settings (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/user-accounts/`. Owner-directed 2026-06-25: the project's
+Contracts archived at `.spire/clusters/tech/contracts/_archive/user-accounts/`. Owner-directed 2026-06-25: the project's
 **first stateful backend surface + first credential store**. Advances the OWNER PIVOT (accounts are the
 prerequisite for Track B `broker-connect`).
 **Backend** (`apps/api`): new one-way-leaf `src/auth/` subpackage (`ports.py` 3 storage ports +
@@ -335,7 +335,7 @@ on the **go-live trigger** (real persistence / public exposure) — the deferred
 (system-6)** + first-class credential handling.
 
 ## 7g. Full Convexa rebrand (SHIPPED + ARCHIVED — both lanes + conductor doc sweep)
-Contracts archived at `.claude/contracts/_archive/rebrand-convexa/`. Owner-directed 2026-06-28: complete the
+Contracts archived at `.spire/clusters/tech/contracts/_archive/rebrand-convexa/`. Owner-directed 2026-06-28: complete the
 GammaFlow→Convexa rebrand — extend it from **UI-only to the whole codebase** (134 refs / 51 files).
 **REVERSES the app-shell-landing "Convexa = UI-only / don't rename code/keys" decision** (§7d; CONTEXT
 §1/§6) — a feature decision, updated in place, NOT a Promoted-canon demotion.
@@ -350,17 +350,19 @@ brand-assertion tests reconciled. `nx test dashboard` 283/283 (+37), `@convexa/a
 ContextVar `convexa_request_trace`, comment/prompt/glossary prose; **no env/field/path/`DATA_DIR` renamed**
 (nothing orphaned); engine byte-identical; conformance 8/8.
 **Conductor doc sweep** (outside both lane fences): root `README.md`, `CLAUDE.md`, `docs/SYSTEM_ANALYSIS.md`,
-`docs/blog/*` (+ rebuilt HTML), `.claude/project.json` `project_name`, and the CONTEXT §1 brand line.
+`docs/blog/*` (+ rebuilt HTML), `.spire/clusters/tech/project.json` `project_name`, and the CONTEXT §1 brand line.
 **QA (GATE Q)** on Sonnet (de-correlated): **23/23 ACs PASS**, conformance unchanged, both suites green;
 `[loss-free durable migration]` proven (carried-whole per store, the cross-brand v1→v2 chain, idempotency,
-never-delete/rollback-safe, corrupt→no-throw-no-wipe, absent→clean-new-user). **STAYS unrenamed (non-goals):**
-`@org/*` scope, `DATA_DIR`, the local working folder `C:\Dev\gammaflow-web`, archived/ledger history.
+never-delete/rollback-safe, corrupt→no-throw-no-wipe, absent→clean-new-user). **STAYS unrenamed (non-goals at ship time):**
+`DATA_DIR`, archived/ledger history, and (then) the local working folder name. **Later closed:** `@org/*` →
+`@convexa/*` package scope; local folder `C:\Dev\gammaflow-web` → `C:\Dev\convexa` (2026-08-10); GitHub
+repo already `ariasr47/convexa`.
 **GATE S:** GitHub repo renamed `gammaflow`→`convexa`; dev servers restarted on the renamed code. New
-watch-list key `loss-free-durable-migration`. **Deferred/known:** the stale `gammaflow-web` references in
-`apps/api/README.md` (pre-merge "separate repo" wording) — minor doc cleanup, not blocking.
+watch-list key `loss-free-durable-migration`. **Deferred/known at ship time:** stale path wording in
+`apps/api/README.md` — since cleaned; not blocking.
 
 ## 7h. Hybrid bring-your-own AI key (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/byo-ai-key/`. Owner-directed 2026-06-29: a **hybrid**
+Contracts archived at `.spire/clusters/tech/contracts/_archive/byo-ai-key/`. Owner-directed 2026-06-29: a **hybrid**
 per-user AI-key model realizing the deferred ai-rec BYO-key seam (§7b). Each signed-in user stores their own
 Anthropic key (encrypted); the AI rec calls with THEIR key (own-key-first, even for admins). The shared
 `ANTHROPIC_API_KEY` gives a free allowance ONLY to admin users (`AI_REC_ADMIN_EMAILS`; `AI_REC_ADMIN_FREE_DAILY`
@@ -388,7 +390,7 @@ runtime/FE tests not the sweep (a small build-system follow-up: teach the tool c
 `AI_KEY_ENCRYPTION_KEY` must be set to a stable value once a persistent store lands (else stored keys reset).
 
 ## 7i. Containerize the apps (SHIPPED + ARCHIVED — infra fast-path, author-only)
-Contracts archived at `.claude/contracts/_archive/containerize-apps/`. Owner-directed 2026-06-29, step 1 of
+Contracts archived at `.spire/clusters/tech/contracts/_archive/containerize-apps/`. Owner-directed 2026-06-29, step 1 of
 the infra/deploy program. **GATE-M-style infra fast-path** (architect → one infra build pass → conductor
 static review; PM/UX skipped — no product surface, `NO_INTERFACE_CHANGE`). **7 new files, no app-code change:**
 `apps/api/Dockerfile` (python:3.12-slim, WORKDIR /app, explicit COPYs of `main.py`/`src`/`prompts`/
@@ -416,7 +418,7 @@ is the required NEXT feature** (in-memory → managed Postgres behind the existi
 go-live (the adversarial review of the deploy/secret-handling artifacts lands there).
 
 ## 7j. Persistent datastore — in-memory → Postgres (SHIPPED + ARCHIVED — backend infra fast-path)
-Contracts archived at `.claude/contracts/_archive/persistent-db/`. Owner-directed 2026-06-29, step 2 of the
+Contracts archived at `.spire/clusters/tech/contracts/_archive/persistent-db/`. Owner-directed 2026-06-29, step 2 of the
 infra/deploy program. **GATE-M-style infra fast-path** (architect → backend build → conductor static review;
 PM/UX skipped, `NO_INTERFACE_CHANGE`/`NO_UI_CHANGE`). Adds a **persistent Postgres adapter behind the
 existing 4 auth ports** so accounts/sessions/settings/encrypted-AI-keys survive restarts + span replicas.
@@ -448,7 +450,7 @@ scope here. **Next:** `deploy` (Railway backend + Cloudflare Pages frontend; cro
 Security/red-team (system-6) at go-live.
 
 ## 7k. Deploy — Railway + Cloudflare Pages + system-6 go-live review (SHIPPED artifacts; live-deploy owner-applied)
-Contracts archived at `.claude/contracts/_archive/deploy/` (incl. `SECURITY_REVIEW.md`). Owner-directed
+Contracts archived at `.spire/clusters/tech/contracts/_archive/deploy/` (incl. `SECURITY_REVIEW.md`). Owner-directed
 2026-06-29, step 3 of the infra program. Backend → **Railway** (the `apps/api/Dockerfile` + managed Postgres
 → `DATABASE_URL`, `ACCOUNT_STORE=postgres`); frontend → **Cloudflare Pages**. Cross-origin `/api` = a
 **streaming Cloudflare Pages Function** (`apps/dashboard/functions/api/[[path]].ts`, reads `API_ORIGIN` env;
@@ -498,7 +500,7 @@ per-IP budget; an audit script in the commit walks every route and proves it.
 — which breaks the app for real users while it happens — not a metered invoice. Same fix, different why.
 
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
-Contracts archived at `.claude/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
+Contracts archived at `.spire/clusters/tech/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
 re-skin to the Figma dark-fintech design system, delivered as ~30 commits on the `convexa-redesign` branch
 (GATE-V-per-surface: implement-from-Figma). Surfaces: theme/token bridge (`theme.ts`/`tokens.ts` +
 `scripts/sync-figma-tokens.mjs`), Landing, global nav/shell + Footer, Settings + Auth modal (`AuthModal`
@@ -522,7 +524,7 @@ header, input ergonomics. **Known non-blocker:** a >500kB JS chunk-size build ad
 screen frames to dark mode (per `THEME_TOKENS.md`).
 
 ## 7m. Ticker UX-polish program + ai-rec structured display (SHIPPED + ARCHIVED — FE-only, catch-up QA)
-Contract archived at `.claude/contracts/_archive/ticker-microinteractions/` (the only folder; `ticker-widgets`
+Contract archived at `.spire/clusters/tech/contracts/_archive/ticker-microinteractions/` (the only folder; `ticker-widgets`
 + `ticker-command-deck` were GATE-V fast-paths with no folder of their own). A post-`convexa-redesign` **Ticker
 UX-polish program** — three stacked FE branches, developed as owner-approved GATE-V passes, fast-forwarded to
 `main` (the planned pre-merge consolidation QA was skipped), **plus** one post-merge external-pipeline commit.
@@ -590,11 +592,11 @@ hold/confirm qualifiers, non-price conditions, option-price triggers, OCO/bracke
 stop/target automation (plan data only today); recorded-state replay backtesting (BundleFeed/clock seam —
 the provider's determinism + the engine's purity were preserved FOR it); named backtest "run" entity;
 scenario-registry extension beyond the 9. **Next:** item 5 `scanner` (BRIEF at
-`.claude/contracts/scanner/BRIEF.md`; architect must re-justify the locked single-ticker decision with a
+`.spire/clusters/tech/contracts/scanner/BRIEF.md`; architect must re-justify the locked single-ticker decision with a
 perf design).
 
 ## 7o. Projected dealer flow (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/dealer-flow-projection/`. First item of the owner
+Contracts archived at `.spire/clusters/tech/contracts/_archive/dealer-flow-projection/`. First item of the owner
 "enrich the downstream-AI's inputs" GATE I (2026-07-02; BACKLOG "Last GATE I — 2026-07-02"). A
 forward-looking **dealer-hedging-flow projection** over the already-computed window-scoped net charm/vanna,
 surfaced as the additive nested nullable `market_state.dealer_flow_projection` (charm limb = net_charm·days-
@@ -634,7 +636,7 @@ nobody runs it. Logged to BACKLOG §B as a tooling-hygiene fix (wire `jest-dom`/
 `tsconfig.spec.json` so `:typecheck` is usable, then it can join the gate battery). Not blocking.
 
 ## 7q. AI context pack — "Market context" (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/ai-context-pack/`. **Second** item of the owner
+Contracts archived at `.spire/clusters/tech/contracts/_archive/ai-context-pack/`. **Second** item of the owner
 "enrich the downstream-AI's inputs" GATE I (owner pick 2026-07-06; BACKLOG "Last GATE I — 2026-07-06") —
 **bundles** the two parked scored items (AI context-scalars pack + TI regime bundle) into one feature.
 A bundle of four derived reads, all from data already in hand (no new vendor dependency), surfaced as
@@ -685,7 +687,7 @@ runs (a pre-existing WALL-CLOCK display field, **display-only + unscored** — n
 control. Candidate cleanup: derive block age from a per-request captured clock.
 
 ## 7r. IV Rank / IV Percentile (SHIPPED + ARCHIVED — both lanes done)
-Contracts archived at `.claude/contracts/_archive/iv-rank/`. **Third** item of the owner "enrich the
+Contracts archived at `.spire/clusters/tech/contracts/_archive/iv-rank/`. **Third** item of the owner "enrich the
 downstream-AI's inputs" GATE I (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after the
 market-backdrop index feed verified NOT_AUTHORIZED). Where a ticker's *current* IV sits within its *own
 recent history* → is option premium **rich or cheap** — surfaced as the additive nested nullable
@@ -875,7 +877,7 @@ states (default render clean — future pass) · the touch-floor live pixel spot
 emulation · chart-tick 10px exemption stands until the owner reads the floor otherwise.
 
 ## 7v. Scanner — the multi-ticker surface (SHIPPED + ARCHIVED — 4 phases, both lanes)
-Contracts archived at `.claude/contracts/_archive/scanner/`. Owner-directed 2026-07-01 (item 5), brainstormed
+Contracts archived at `.spire/clusters/tech/contracts/_archive/scanner/`. Owner-directed 2026-07-01 (item 5), brainstormed
 + owner-approved as a v1 design 2026-07-23, delivered 2026-07-24→26. **Displaced 7× since 2026-06-25 — never
 dropped.** The product's **breadth** surface; capability + phase detail in CONTEXT §6, not restated here.
 **Shape:** approach C — a 2nd-process sweep worker + a shared persistent `ScanStore` + a best-effort
@@ -884,7 +886,7 @@ warm-click read-through — run as **4 sequenced phases, each its own execution 
 pattern applied to a both-lanes feature.
 **QA:** PASS on all four phases, every one a fresh **de-correlated Sonnet** — **13/13 PRODUCT ACs closed
 feature-wide, 0 FAIL, 0 UNVERIFIABLE.** Conformance 2/2 live against the standalone
-`.claude/tools/conformance/scanner.json`; `nx test @convexa/dashboard` **645**; e2e **15/15**; lint at the exact
+`.spire/clusters/tech/state/conformance/scanner.json`; `nx test @convexa/dashboard` **645**; e2e **15/15**; lint at the exact
 29-warning baseline.
 **GATE S — canon:** formally **NARROWED "single-ticker, on-demand"** (CONTEXT §5 + §9 below) — the request
 path stays single-ticker; multi-ticker compute is the bounded off-request-path worker. A **descriptive
@@ -912,7 +914,7 @@ account; a dedicated gated store leaf becomes right then) · live-Postgres verif
 **Not deployed:** on `main`, but the live site won't show `/scanner` until the owner runs the deploy runbook.
 
 ## 7w. Event calendar on the bundle (SHIPPED + ARCHIVED — GATE M backend fast-path)
-Contracts archived at `.claude/contracts/_archive/bundle-events/`. Owner-directed 2026-07-27, straight off
+Contracts archived at `.spire/clusters/tech/contracts/_archive/bundle-events/`. Owner-directed 2026-07-27, straight off
 the `tradeable-rec-inputs` analysis. Capability detail in CONTEXT §6, not restated here.
 **Shape:** GATE M (no UI implication ⇒ PM/UX skipped). Config + loader shipped first
 (`events.json` + `events.py`, `725cf09`/`eac9118`), then the wire (`98ee24a`) + contracts/QA (`12a0d21`).
@@ -952,7 +954,7 @@ selftest + live three-state reads). QA judged that the accurate ceiling of the h
 also the kit v1.0.0 `contract_lint` regression in BACKLOG §E system-12.
 
 ## 7x. Multi-leg positions — one book (SHIPPED + ARCHIVED — FE-only, 5-phase build)
-Contracts archived at `.claude/contracts/_archive/positions-legs/`. Owner-directed 2026-07-27, sequenced
+Contracts archived at `.spire/clusters/tech/contracts/_archive/positions-legs/`. Owner-directed 2026-07-27, sequenced
 **ahead of the Webull importer deliberately** — the importer must not be built against a model that cannot
 represent what it imports. Capability detail in CONTEXT §6, not restated here.
 **Shape:** GATE I → the full **council** (18 conflicts: 10 settled by the voices, 4 owner-ruled, 1
@@ -1132,7 +1134,7 @@ literal *membership in a set*, so it could not fail. Re-verified by observation,
 Final: **QA PASS 49/50, 0 FAIL, 1 UNVERIFIABLE** (AC-1b is owner-only against the live book);
 conformance backend PASS · QA PASS, agreeing; dashboard **122 files / 1439 tests**, e2e **41**, api 272
 unchanged, lint 0/0, typecheck 0. Conformance spec promoted to
-`.claude/tools/conformance/broker-option-grouping.json`.
+`.spire/clusters/tech/state/conformance/broker-option-grouping.json`.
 **Deferred seams (named, not built):** R-1 the P/L cascade call zeroes the three net-axis buckets so the
 transient default lives in a call-site `??` — one rule, not a complete delegation · **R-2 a genuine spec
 tension** between AC-13's "same reason" arm and §2.6's permanence-first rule, which diverge on
@@ -1272,7 +1274,7 @@ the live site until N1 deploy runs** — `convexa.pages.dev` is still the 2026-0
   signal (off-exchange includes internalized retail; prints have no reliable side).
 
 ### Standing build invariants (promoted from the Decision Ledger 2026-06-22 — do NOT revisit)
-> Graduated by recurrence (`.claude/DECISION_LEDGER.md`); full prose single-sourced in
+> Graduated by recurrence (`.spire/clusters/tech/context/DECISION_LEDGER.md`); full prose single-sourced in
 > `PROJECT_CONTEXT.md` §5. Reopen only via GATE Z.
 - **`[best-effort-isolated-or-null]`** (5 features) — added computations fail to null/omitted, never an
   HTTP error; bundle + SSE intact.

@@ -8,9 +8,9 @@
 ## System-1 Conformance Result
 
 **Command:**
-`.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .claude/tools/conformance/ai_recommendations.json --url http://127.0.0.1:8001`
+`.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/ai_recommendations.json --url http://127.0.0.1:8001`
 
-The standalone spec at `.claude/tools/conformance/ai_recommendations.json` requires a `strategy` object with all sub-fields present on the POST response. This only holds when `status=="produced"`. Without `AI_REC_STUB=1` + `ANTHROPIC_API_KEY`, the backend returns `status:"unavailable"` with `strategy:null` (correct per the interface, but causes 15 false failures in the flat spec's unconditional `strategy.*` checks).
+The standalone spec at `.spire/clusters/tech/state/conformance/ai_recommendations.json` requires a `strategy` object with all sub-fields present on the POST response. This only holds when `status=="produced"`. Without `AI_REC_STUB=1` + `ANTHROPIC_API_KEY`, the backend returns `status:"unavailable"` with `strategy:null` (correct per the interface, but causes 15 false failures in the flat spec's unconditional `strategy.*` checks).
 
 **Run against stub backend (AI_REC_STUB=1 + dummy key, port 8001):** `4/4 PASS — 0 endpoint failure(s).`
 
@@ -150,7 +150,7 @@ All 18 product ACs pass. All binding invariants hold. However, the FRONTEND_EXEC
 
 ## GATE Q RE-RUN (E3 fix) — Orchestrator targeted re-verify, 2026-06-23
 
-The Frontend lane added the missing named test (gammaflow-web commit `a2f6ae3`, test-only — no feature code touched). Targeted re-verify by the Orchestrator (only a test was added; the de-correlated QA's 18-AC + conformance + invariant verification above is unchanged and still stands):
+The Frontend lane added the missing named test (convexa commit `a2f6ae3`, test-only — no feature code touched). Targeted re-verify by the Orchestrator (only a test was added; the de-correlated QA's 18-AC + conformance + invariant verification above is unchanged and still stands):
 - `ai-rec.spec.tsx` now **23 tests** including **`E3 score/fingerprint unchanged with and without a rec, and across persona override` — PASS** (2212 ms).
 - `npx nx test dashboard` — **26/26 green** (2 files).
 - Traceability now complete: every required matrix row (T1–T18 + E1–E7) maps to ≥1 named passing test.

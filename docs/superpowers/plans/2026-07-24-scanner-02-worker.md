@@ -1786,7 +1786,7 @@ Replace `apps/api/project.json` with (adds `serve-worker` alongside `serve`, mir
         "{projectRoot}/main.py",
         "{projectRoot}/src/**/*",
         "{workspaceRoot}/.claude/tools/interface_conformance.py",
-        "{workspaceRoot}/.claude/tools/conformance/ai_recommendations.json"
+        "{workspaceRoot}/.spire/clusters/tech/state/conformance/ai_recommendations.json"
       ],
       "cache": false
     }
@@ -1796,7 +1796,7 @@ Replace `apps/api/project.json` with (adds `serve-worker` alongside `serve`, mir
 
 Verify nx sees the target (read-only; do not start it):
 ```bash
-cd C:/Dev/gammaflow-web && npx nx show project api --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log('serve-worker' in JSON.parse(s).targets))"
+cd C:/Dev/convexa && npx nx show project api --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log('serve-worker' in JSON.parse(s).targets))"
 ```
 Expected: `true`. (If node/nvm is not on PATH in this shell, instead confirm via `git diff apps/api/project.json` that the `serve-worker` block is present and well-formed JSON — `python -c "import json;json.load(open('apps/api/project.json'))"` prints nothing on success.)
 
@@ -1853,5 +1853,5 @@ git commit -m "feat(scanner): sweep worker entrypoint + SCANNER_EMBEDDED seam + 
 
 ## The rest of Scanner v1 — Plans 3–4 (roadmap; write each when its predecessor lands)
 
-- **Plan 3 — Read API + conformance + warm-click + per-account view.** `GET /api/scan` (rows + heartbeat metadata, anonymous-open best-effort 200), `GET /api/scan/universe`, `GET/PUT /api/scan/view` (the per-account view on the existing `SettingsRecord` per D1, server-gated via the auth ports — real 401/403 on WRITES only); the standalone `.claude/tools/conformance/scanner.json` (after the **system-12** conformance-doc reconciliation — hard, precedes GATE U·X); the ticker endpoint's best-effort **warm-click read-through** of Plan 2's `read_bundle_blob` (freshness-gated, falls straight through to the vendor on a miss — the `chain_store` precedent extended across the process boundary). Routes register under `/api/` **before** any `/{ticker}` catch-all. Default view = D2 (owner list; top-20-by-score fallback, N=20). Consumes Plan 1 + Plan 2.
+- **Plan 3 — Read API + conformance + warm-click + per-account view.** `GET /api/scan` (rows + heartbeat metadata, anonymous-open best-effort 200), `GET /api/scan/universe`, `GET/PUT /api/scan/view` (the per-account view on the existing `SettingsRecord` per D1, server-gated via the auth ports — real 401/403 on WRITES only); the standalone `.spire/clusters/tech/state/conformance/scanner.json` (after the **system-12** conformance-doc reconciliation — hard, precedes GATE U·X); the ticker endpoint's best-effort **warm-click read-through** of Plan 2's `read_bundle_blob` (freshness-gated, falls straight through to the vendor on a miss — the `chain_store` precedent extended across the process boundary). Routes register under `/api/` **before** any `/{ticker}` catch-all. Default view = D2 (owner list; top-20-by-score fallback, N=20). Consumes Plan 1 + Plan 2.
 - **Plan 4 — Frontend `/scanner` page.** Swap the stub (`pages/scanner/Scanner.tsx`); the dense terminal table + view editor + the four states (skeleton / empty / worker-down banner / per-row degrade) + mobile card collapse + the `libs/api` fetchers. References `docs/design/DESIGN_SYSTEM.md` (StatTile / TintChip[emphasis for tier] / useFlashOnChange for the sanctioned price-cell flash / Widget); green/red for **price direction only**; `/scanner` joins the 393px no-overflow e2e set. Consumes Plan 3's API.

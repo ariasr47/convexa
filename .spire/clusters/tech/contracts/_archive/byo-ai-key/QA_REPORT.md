@@ -53,7 +53,7 @@
 
 ## Conformance (system-1)
 
-**Tool run:** `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .claude/tools/conformance/byo-ai-key.json --url http://127.0.0.1:8002`
+**Tool run:** `apps/api/.venv/Scripts/python.exe .claude/tools/interface_conformance.py --spec .spire/clusters/tech/state/conformance/byo-ai-key.json --url http://127.0.0.1:8002`
 
 Result: 2 FAILs — both `GET /api/recommendation/status/SPY` and `GET /api/recommendation/export/SPY` returned 404. This is the **pre-existing dummy-key limitation**: both endpoints call `_served_bundle_for_rec` which returns 404 when no cached bundle exists (a bundle requires a real vendor API key). The same limitation affects the existing `ai_recommendations.json` conformance spec (also 2 FAILs with the dummy key). The spec's `_comment` documents "Uses SPY (fetch once first: `curl http://127.0.0.1:8000/api/ticker/SPY`)" — a prerequisite that requires a real key.
 

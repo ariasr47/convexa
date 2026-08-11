@@ -207,5 +207,5 @@ set. Test-kind legend: U=unit, C=component, F=flow-integration.
 
 The interface delta, the BE/FE split, and the conformance reference are emitted in the three execution
 files (`INTERFACE_CONTRACT.md`, `BACKEND_EXECUTION_CONTRACT.md`, `FRONTEND_EXECUTION_CONTRACT.md`) +
-the standalone `.claude/tools/conformance/ticker-load-experience.json`. The single wire delta is the
+the standalone `.spire/clusters/tech/state/conformance/ticker-load-experience.json`. The single wire delta is the
 SSE `last_trade` field; the REST bundle is byte-identical.

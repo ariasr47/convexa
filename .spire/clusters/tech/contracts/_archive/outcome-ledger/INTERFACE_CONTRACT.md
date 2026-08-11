@@ -1,7 +1,7 @@
 # outcome-ledger — INTERFACE_CONTRACT
 
 > The FE↔BE integration truth for this feature. Both lanes bind to this file.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` — assume no chat history.
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` — assume no chat history.
 
 ---
 

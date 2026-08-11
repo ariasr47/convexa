@@ -2,7 +2,7 @@
 
 **Role:** QA / Verification (fresh, de-correlated session; no build-lane involvement).
 **Date:** 2026-08-06 · **Baseline commit:** `d53199e` · **Head:** `d85b5a0` (12 commits, unpushed).
-**Checklist:** `.claude/contracts/broker-option-grouping/SPEC.md` §3 (50 criteria), verbatim and in order.
+**Checklist:** `.spire/clusters/tech/contracts/broker-option-grouping/SPEC.md` §3 (50 criteria), verbatim and in order.
 
 > I fix nothing. Every FAIL below is a GATE Z bounce, recorded in the final section.
 
@@ -235,8 +235,8 @@ overlap on mobile lone cards, 33.0 × 13.8 px, feature-authored rather than pre-
 
 **Role:** QA / Verification (same fresh, de-correlated session discipline; I still fix nothing).
 **Date:** 2026-08-06 · **Baseline commit:** `d53199e` · **Head:** `d85b5a0` **plus an uncommitted
-working tree** (9 modified files: 6 under `broker/`, `eslint.config.mjs`, `.claude/BACKLOG.md`,
-`.claude/OPEN_THREADS.md`). Everything below was observed against that working tree.
+working tree** (9 modified files: 6 under `broker/`, `eslint.config.mjs`, `.spire/clusters/tech/context/BACKLOG.md`,
+`.spire/clusters/tech/context/OPEN_THREADS.md`). Everything below was observed against that working tree.
 **Trigger:** my prior verdict **FAIL — 48 PASS / 1 FAIL (AC-11) / 1 UNVERIFIABLE**; the Frontend lane
 returned a fix. Nothing in sections 0-4 above is deleted — it is the record of what was wrong.
 

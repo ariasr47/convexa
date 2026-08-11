@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Build the Convexa Feature Atlas — a self-contained, interactive HTML map of the product,
-GENERATED from the .claude/ canon files. Never hand-maintain atlas.html; regenerate with:
+GENERATED from the Spire Tech canon. Never hand-maintain atlas.html; regenerate with:
 
     py docs/atlas/build_atlas.py
 
 No dependencies (stdlib only). House precedent: docs/blog/build_html.py — "the script IS the
 sync step." Sources parsed (tolerantly — format variance must not crash the build):
 
-  .claude/OPEN_THREADS.md               shipped-feature sections (## 3 .. ## 7t)
-  .claude/contracts/_archive/*/_MANIFEST.md   per-feature pipeline manifests (Key: lines)
-  .claude/contracts/scanner/            the one LIVE (queued) feature — BRIEF + manifest
-  .claude/DECISION_LEDGER.md            promoted canon / watch list / demoted / append-only rows
-  .claude/BACKLOG.md                    roadmap items (+ invisible `<!-- atlas: ... -->` annotations)
+  .spire/clusters/tech/context/OPEN_THREADS.md
+  .spire/clusters/tech/contracts/_archive/*/_MANIFEST.md
+  .spire/clusters/tech/contracts/<live>/   any non-archive feature with BRIEF + manifest
+  .spire/clusters/tech/context/DECISION_LEDGER.md
+  .spire/clusters/tech/context/BACKLOG.md
 
 The generator FAILS LOUDLY (vacuity guards) rather than emit silently-empty sections.
 Output: docs/atlas/atlas.html (committed, zero external requests, works from file://).
@@ -28,12 +28,13 @@ from datetime import datetime, timezone
 
 HERE = pathlib.Path(__file__).parent
 REPO = HERE.parent.parent
-CLAUDE = REPO / ".claude"
-OPEN_THREADS = CLAUDE / "OPEN_THREADS.md"
-LEDGER = CLAUDE / "DECISION_LEDGER.md"
-BACKLOG = CLAUDE / "BACKLOG.md"
-ARCHIVE = CLAUDE / "contracts" / "_archive"
-SCANNER_DIR = CLAUDE / "contracts" / "scanner"
+TECH = REPO / ".spire" / "clusters" / "tech"
+CONTEXT = TECH / "context"
+OPEN_THREADS = CONTEXT / "OPEN_THREADS.md"
+LEDGER = CONTEXT / "DECISION_LEDGER.md"
+BACKLOG = CONTEXT / "BACKLOG.md"
+CONTRACTS = TECH / "contracts"
+ARCHIVE = CONTRACTS / "_archive"
 OUT = HERE / "atlas.html"
 
 # ---------------------------------------------------------------- helpers ----
@@ -277,11 +278,19 @@ for folder, fid in folder_owner.items():
 for f in features:
     f["manifests"].sort()
 
-# scanner — the one LIVE / queued feature
-scanner_manifest = parse_manifest(SCANNER_DIR / "_MANIFEST.md")
-scanner_brief = read(SCANNER_DIR / "BRIEF.md")
-goal_m = re.search(r"^Goal:\s*(.*(?:\n[ \t]+.*)*)", scanner_brief, re.M)
-scanner_summary = trunc(re.sub(r"\s+", " ", goal_m.group(1)) if goal_m else scanner_brief, 400)
+# live / queued features — any non-archive contract folder with a manifest
+live_dirs = sorted(
+    p for p in CONTRACTS.iterdir()
+    if p.is_dir() and p.name != "_archive" and (p / "_MANIFEST.md").exists()
+)
+live_features = []
+for d in live_dirs:
+    m = parse_manifest(d / "_MANIFEST.md")
+    brief_path = d / "BRIEF.md"
+    brief = read(brief_path) if brief_path.exists() else ""
+    goal_m = re.search(r"^Goal:\s*(.*(?:\n[ \t]+.*)*)", brief, re.M)
+    summary = trunc(re.sub(r"\s+", " ", goal_m.group(1)) if goal_m else (brief or m.get("Stage", d.name)), 400)
+    live_features.append({"name": d.name, "manifest": m, "summary": summary, "dir": d})
 
 # ledger
 promoted = [r for r in parse_table(ledger_text, "Promoted canon (key index → where the rule lives)") if len(r) >= 5]
@@ -329,8 +338,6 @@ if len(roadmap) < 15:
     fail(f"only {len(roadmap)} roadmap items parsed from BACKLOG (expected >= 15)")
 if not manifests:
     fail("zero archive manifests found")
-if not scanner_summary:
-    fail("scanner BRIEF produced no summary")
 
 # ------------------------------------------------------------ journey mapping ----
 # Presentation data — the journey column layout lives HERE (the generator is its single source).
@@ -431,14 +438,15 @@ def feature_card(f) -> str:
 </article>'''
 
 
-def scanner_card() -> str:
-    m = scanner_manifest
-    return f'''<article class="card f-card queued" id="f-scanner" data-status="queued">
-  <header><h3>scanner · the standing NEXT</h3><span class="chip queued">QUEUED — pre-pipeline</span></header>
-  <div class="meta">{inline(trunc(m.get("Stage", ""), 110))} · lanes: {inline(trunc(m.get("Repos", ""), 60))}</div>
-  <p>{inline(scanner_summary)}</p>
+def live_feature_card(lf) -> str:
+    m = lf["manifest"]
+    name = lf["name"]
+    return f'''<article class="card f-card queued" id="f-{html.escape(name)}" data-status="queued">
+  <header><h3>{inline(name)} · live pipeline</h3><span class="chip queued">QUEUED / IN FLIGHT</span></header>
+  <div class="meta">{inline(trunc(m.get("Stage", ""), 110))} · lanes: {inline(trunc(m.get("Lanes", ""), 60))}</div>
+  <p>{inline(lf["summary"])}</p>
   <div class="qa"><strong>Invariant watch:</strong> {inline(trunc(m.get("Invariant watch (from BRIEF)", ""), 320))}</div>
-  <div class="mani"><div class="mrow"><code>contracts/scanner</code> · {inline(trunc(m.get("Notes", ""), 180))}</div></div>
+  <div class="mani"><div class="mrow"><code>contracts/{html.escape(name)}</code> · {inline(trunc(m.get("Notes", ""), 180))}</div></div>
 </article>'''
 
 
@@ -457,7 +465,7 @@ platform_cells = "".join(
     for label, fid in PLATFORM)
 
 # catalog
-catalog_cards = scanner_card() + "".join(feature_card(f) for f in features)
+catalog_cards = "".join(live_feature_card(lf) for lf in live_features) + "".join(feature_card(f) for f in features)
 
 # invariants
 inv_cards = ""
@@ -499,7 +507,8 @@ done_html = "".join(
     f'<span class="chip done">§{r["section"]} · {inline(trunc(r["name"], 70))}</span>' for r in done)
 
 # freshness (source mtimes — NOT the current time; determinism)
-sources = [OPEN_THREADS, LEDGER, BACKLOG, SCANNER_DIR / "BRIEF.md", SCANNER_DIR / "_MANIFEST.md"] + \
+sources = [OPEN_THREADS, LEDGER, BACKLOG] + \
+          [p for lf in live_features for p in (lf["dir"] / "BRIEF.md", lf["dir"] / "_MANIFEST.md") if p.exists()] + \
           sorted(ARCHIVE.glob("*/_MANIFEST.md"))
 def mt(p):
     return datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
@@ -510,7 +519,7 @@ mtimes_rows = "".join(
     for p in sources)
 
 counts = {
-    "features": len(features), "queued": 1, "manifests": len(folder_owner),
+    "features": len(features), "queued": len(live_features), "manifests": len(folder_owner),
     "promoted": len(promoted), "watch": len(watch), "demoted": len(demoted),
     "roadmap": len(roadmap), "live": len(live), "done": len(done),
     "annotated": len(annotated),
@@ -593,7 +602,7 @@ PAGE = f'''<!DOCTYPE html>
 <body>
 <main>
 <h1>Convexa Feature Atlas</h1>
-<p class="gen">GENERATED from <code>.claude/</code> canon — do not edit; regenerate with
+<p class="gen">GENERATED from <code>.spire/clusters/tech/</code> canon — do not edit; regenerate with
 <code>py docs/atlas/build_atlas.py</code>. Freshness = newest source mtime: <strong>{freshness}</strong>.</p>
 <details><summary>Source files + mtimes</summary><table>{mtimes_rows}</table></details>
 
@@ -611,7 +620,7 @@ PAGE = f'''<!DOCTYPE html>
 </section>
 
 <section class="tab" id="tab-catalog">
-  <p class="counts">{counts["features"]} shipped feature sections + 1 queued (<code>scanner</code>) ·
+  <p class="counts">{counts["features"]} shipped feature sections + {counts["queued"]} live/queued ·
   {counts["manifests"]} archive manifests joined.</p>
   <div class="filters">
     <input id="q" type="search" placeholder="Filter features…" aria-label="Filter">
@@ -703,14 +712,15 @@ for t in ("tab-journey", "tab-catalog", "tab-invariants", "tab-roadmap"):
     if f'id="{t}"' not in emitted:
         fail(f"emitted HTML missing section {t}")
 fcards = emitted.count('class="card f-card')
-if fcards != len(features) + 1:
-    fail(f"catalog card count {fcards} != features({len(features)}) + 1 queued")
+expected_cards = len(features) + len(live_features)
+if fcards != expected_cards:
+    fail(f"catalog card count {fcards} != features({len(features)}) + live({len(live_features)})")
 if re.search(r'(?:href|src)="https?://', emitted):
     fail("emitted HTML contains an external http(s) reference")
 
 print(f"Wrote {OUT} ({OUT.stat().st_size // 1024} KB)")
 print("--- parse report ---")
-print(f"features (OPEN_THREADS 3..7t):  {counts['features']} shipped + 1 queued (scanner)")
+print(f"features (OPEN_THREADS 3..7t):  {counts['features']} shipped + {counts['queued']} live/queued")
 print(f"non-feature sections skipped:   {skipped_sections}")
 print(f"archive manifests found/joined: {len(manifests)}/{counts['manifests']}")
 unjoined = sorted(set(manifests) - set(folder_owner))

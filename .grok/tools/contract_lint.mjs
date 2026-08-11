@@ -303,7 +303,7 @@ export function lintFeature(folder, f) {
           : 'UNSET or missing Status: SET';
         f.err(`${name}/${SPEC_FILE}`,
           `UI-touching feature requires project design canon Status: SET `
-          + `(${DESIGN_SYSTEM_REL} is ${state}) — run `design/DESIGN_SYSTEM_METHOD.md` (living project design canon) or follow `
+          + `(${DESIGN_SYSTEM_REL} is ${state}) — run design/DESIGN_SYSTEM_METHOD.md (living project design canon) or follow `
           + 'design/DESIGN_SYSTEM_METHOD.md; put NO_UI_CHANGE in the SPEC body for backend-only features');
       }
     }

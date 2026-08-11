@@ -2,7 +2,7 @@
 Entry:        architect-first
 Stage:        GATE U·X exit (THE FAN-OUT, one-sided) — UX locked, split written; FRONTEND lane
               loaded; backend NO_BACKEND_CHANGE (consumes existing /api/_metrics unchanged).
-Repos:        frontend only (C:\Dev\gammaflow-web) — backend untouched (persistence deferred as a seam)
+Repos:        frontend only (C:\Dev\convexa) — backend untouched (persistence deferred as a seam)
 Brief:        BRIEF.md present
 Contracts:
   - ARCHITECTURE_CONTRACT.md   locked

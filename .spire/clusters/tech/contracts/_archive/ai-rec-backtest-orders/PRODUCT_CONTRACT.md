@@ -1,7 +1,7 @@
 # ai-rec-backtest-orders — PRODUCT_CONTRACT
 
 > PM → UX/Tech-Writer handoff (compressor #2 form). Self-contained against
-> `.claude/PROJECT_CONTEXT.md` + this feature's `ARCHITECTURE_CONTRACT.md` (the locked technical
+> `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this feature's `ARCHITECTURE_CONTRACT.md` (the locked technical
 > shape — respected, not re-scoped here). Decisions, not deliberation. Product layer only: no
 > code, no endpoints, no payload/field names, no UI layout. Every AC below is observable by a
 > person driving the app and is the REQUIRED behavioral test the executioners must cover and QA

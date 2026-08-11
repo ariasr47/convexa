@@ -37,7 +37,7 @@ the leaf-import boundary of §3 is untouched). No new process, no worker change.
    deserialized and served; a **miss/stale is a miss** → the **normal vendor fetch** (the existing path,
    unchanged). This is the `chain_store` pre-warm precedent extended across the process boundary (worker
    writes, web reads). **It changes only where the INPUT came from — never the served bundle's bytes.**
-4. **The standalone conformance spec** `.claude/tools/conformance/scanner.json` (already authored by this
+4. **The standalone conformance spec** `.spire/clusters/tech/state/conformance/scanner.json` (already authored by this
    GATE U·X; the interface REFERENCES it, does not embed it) — the GATE-Q runnable surface for the two
    anonymous-open reads.
 
@@ -88,7 +88,7 @@ keys**. The `ScanView`/`ScanResponse`/`UniverseResponse` envelopes are the inter
 Run by a fresh de-correlated `qa-verify` after the lane reports done (venv =
 `apps/api/.venv/Scripts/python.exe`, `cwd=apps/api`; boot `npx nx serve api` → uvicorn :8000):
 
-1. **Conformance (system-1) GREEN** — `interface_conformance.py --spec .claude/tools/conformance/scanner.json`
+1. **Conformance (system-1) GREEN** — `interface_conformance.py --spec .spire/clusters/tech/state/conformance/scanner.json`
    passes both anonymous-open reads (envelope-only; `rows` may be `[]`, `sweep` may be `null` on a fresh
    boot — both PASS). No ticker warm-up needed (store reads, not a cold vendor fetch).
 2. **Route order** — grep/confirm the four `/api/scan*` routes register **before** any `/{ticker}`
@@ -118,7 +118,7 @@ Run by a fresh de-correlated `qa-verify` after the lane reports done (venv =
 
 ## 5. Lane rules
 
-- Backend lane only; writes under `apps/api/` (+ the already-authored `.claude/tools/conformance/scanner.json`,
+- Backend lane only; writes under `apps/api/` (+ the already-authored `.spire/clusters/tech/state/conformance/scanner.json`,
   which is this GATE's, not the backend lane's, to re-touch). Touch **no** UI, **no** `libs/api`, **no**
   engine/signals/scoring code. The only shared-file edits are **additive**: the `main.py` route
   registration + the ticker read-through hook, and the **one settings-field extension** on the existing

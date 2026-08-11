@@ -1,7 +1,7 @@
 # expiration-events — pipeline manifest
 Entry:        GATE M (backend fast-path — PM/UX skipped, no UI implication per ORCHESTRATOR §3 Routine B)
 Stage:        GATE M opened 2026-07-27 — interface + spec + backend contracts locked; backend lane building
-Repos:        backend only (`apps/api`) + `.claude/tools/conformance/`
+Repos:        backend only (`apps/api`) + `.spire/clusters/tech/state/conformance/`
 Brief:        BRIEF.md present
 Contracts:
   - ARCHITECTURE_CONTRACT.md   n/a (GATE M — a derived additive array on an already-shipped block)
@@ -13,7 +13,7 @@ Contracts:
   - BACKEND_EXECUTION_CONTRACT.md   locked — extend the projection in the events leaf, read the tenor
     curve off the computed bundle, extend the existing conformance spec + selftest
   - FRONTEND_EXECUTION_CONTRACT.md  NO_UI_CHANGE
-Conformance:  extends the existing standalone `.claude/tools/conformance/bundle_events.json` (no second
+Conformance:  extends the existing standalone `.spire/clusters/tech/state/conformance/bundle_events.json` (no second
               spec file). Harness limit carried over: `interface_conformance` has **no enum matcher**, so
               `event_types` tokens are verified off-harness (selftest + live reads).
 Open amendments: none
@@ -29,6 +29,6 @@ Invariant watch (from BRIEF): additive-keeps-score-byte-identical (HARD — **th
               **absent-is-not-none** (the watch-list key from bundle-events, carried down a level)
 Notes:        Second half of BACKLOG §C `tradeable-rec-inputs` item 4; the half that actually changes tenor
               selection. Builds on `bundle-events` (shipped + archived 2026-07-27, OPEN_THREADS §7w).
-              Concurrent session active in this repo — `.claude/contracts/redesign-*` and the untracked
+              Concurrent session active in this repo — `.spire/clusters/tech/contracts/redesign-*` and the untracked
               `apps/dashboard/src/app/auth|landing` paths belong to it and are off-limits to this lane.
 Last gateway:  GATE M @ 2026-07-27

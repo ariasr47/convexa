@@ -55,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           node .claude/tools/interface_conformance.mjs \
-            --spec .claude/tools/conformance/public-surface.json \
+            --spec .spire/clusters/tech/state/conformance/public-surface.json \
             --url "${{ steps.origin.outputs.api }}"
 
       - name: Scanner envelope (legacy spec)
@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           node .claude/tools/interface_conformance.mjs \
-            --spec .claude/tools/conformance/scanner.json \
+            --spec .spire/clusters/tech/state/conformance/scanner.json \
             --url "${{ steps.origin.outputs.api }}"
 
   local-auth:
@@ -120,14 +120,14 @@ jobs:
         run: |
           set -euo pipefail
           node .claude/tools/interface_conformance.mjs \
-            --spec .claude/tools/conformance/public-surface.json \
+            --spec .spire/clusters/tech/state/conformance/public-surface.json \
             --url "http://127.0.0.1:18000"
 
       - name: Auth-gated surface (signup bootstrap)
         run: |
           set -euo pipefail
           node .claude/tools/interface_conformance.mjs \
-            --spec .claude/tools/conformance/auth-gated.json \
+            --spec .spire/clusters/tech/state/conformance/auth-gated.json \
             --url "http://127.0.0.1:18000" \
             --auth-signup
 

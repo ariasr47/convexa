@@ -1,6 +1,6 @@
 # positions-legs — spec
 
-**Source brief:** .claude/contracts/positions-legs/BRIEF.md
+**Source brief:** .spire/clusters/tech/contracts/positions-legs/BRIEF.md
 **Council:** R1 positions · R2 critiques · R3 reconciles · decisions.md   (under council/)
 **Status:** APPROVED 2026-07-28
 
@@ -1513,7 +1513,7 @@ a `debit` entry cell. MUI `sx` compiles to classes — assert **className identi
 
 ## 6. Interface — pointer
 
-**Interface:** `.claude/contracts/positions-legs/INTERFACE_CONTRACT.md`
+**Interface:** `.spire/clusters/tech/contracts/positions-legs/INTERFACE_CONTRACT.md`
 
 **Summary for readers of this spec:** this feature is **`NO_BACKEND_CHANGE`** — the `apps/api` diff
 is empty, no endpoint is added, no payload field is added or changed, and positions are never a

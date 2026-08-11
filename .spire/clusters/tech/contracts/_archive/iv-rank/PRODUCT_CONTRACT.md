@@ -5,7 +5,7 @@
 > restated as product-observable rules. NO code, no formulas, no endpoints, no wire field names, no
 > React, no pixel layout (those are UX/Interface at GATE U·X and Backend/Frontend downstream).
 >
-> Consumes the locked technical shape at `.claude/contracts/iv-rank/ARCHITECTURE_CONTRACT.md` — the
+> Consumes the locked technical shape at `.spire/clusters/tech/contracts/iv-rank/ARCHITECTURE_CONTRACT.md` — the
 > CM30 basis, write-through accumulation, the new persistent market-data store, the 252-session
 > window, and the rank/percentile math are SET and NOT reopened here. This contract decides the
 > product face: the words, the bands, the floor, the headline, the placement intent, and the honesty

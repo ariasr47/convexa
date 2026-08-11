@@ -152,7 +152,7 @@
   `interface_conformance.mjs` expects (verified against the tool's own doc comment and regex), and
   is a faithful re-pin of the archived `broker-connect` contract's own conformance block for the
   same no-credential arm (compared field-for-field against
-  `.claude/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md:178-230`) — not decorative.
+  `.spire/clusters/tech/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md:178-230`) — not decorative.
   Excluding `POST /api/broker/book/refresh` from the sweep while still listing it as a consumed
   endpoint is internally consistent (consumed-but-not-swept, for the stated rate-limit reason).
 - **The both-permanent-sub-causes copy line (§9 item 2).** Checked against the settled rule: one

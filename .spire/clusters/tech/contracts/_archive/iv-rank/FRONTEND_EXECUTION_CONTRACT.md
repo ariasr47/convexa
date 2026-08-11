@@ -4,11 +4,11 @@
 > **INTERFACE_CONTRACT** for what it CONSUMES. NO server internals, NO math derivation. Independently
 > buildable by a fresh executioner reading ONLY this file + the INTERFACE_CONTRACT + PROJECT_CONTEXT.
 >
-> Bound interface: **`.claude/contracts/iv-rank/INTERFACE_CONTRACT.md`** — this lane CONSUMES
+> Bound interface: **`.spire/clusters/tech/contracts/iv-rank/INTERFACE_CONTRACT.md`** — this lane CONSUMES
 > `market_state.iv_rank` (`m.iv_rank ?? null`) exactly as that contract's §2–§3 specify.
 >
 > Component states, copy, tooltips, the AC→state map, and the placement decision are in
-> **`.claude/contracts/iv-rank/UX_BLUEPRINT.md`** — implement that blueprint; do not re-scope it.
+> **`.spire/clusters/tech/contracts/iv-rank/UX_BLUEPRINT.md`** — implement that blueprint; do not re-scope it.
 >
 > Closest shipped precedents to mirror: `apps/dashboard/src/app/ticker/widgets/DealerFlowProjection.tsx`
 > (a small single-object static read — the structural template) and `.../MarketContext.tsx` (the

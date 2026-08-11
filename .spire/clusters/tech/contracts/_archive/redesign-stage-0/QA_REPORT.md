@@ -22,7 +22,7 @@ commits over `main` @ `ca92c3c`, HEAD `a881a82`), checked out as-is. No code/con
 |---|---|
 | `git diff main -- apps/api` | **Empty.** (0 lines) |
 | `git diff main -- libs/api` | **Empty.** (0 lines) |
-| Runtime conformance (`interface_conformance.py`) | **n/a — correctly absent.** No `INTERFACE_CONTRACT.md` exists for this feature (`.claude/contracts/redesign-stage-0/` has no such file — confirmed by listing); the contract header + `_MANIFEST.md` both declare `NO_BACKEND_CHANGE`/consumes-existing-endpoints-unchanged. Score/tier/`state_fingerprint` cannot move by construction (empty BE diff). |
+| Runtime conformance (`interface_conformance.py`) | **n/a — correctly absent.** No `INTERFACE_CONTRACT.md` exists for this feature (`.spire/clusters/tech/contracts/redesign-stage-0/` has no such file — confirmed by listing); the contract header + `_MANIFEST.md` both declare `NO_BACKEND_CHANGE`/consumes-existing-endpoints-unchanged. Score/tier/`state_fingerprint` cannot move by construction (empty BE diff). |
 
 **Verdict: PASS.** Both invariant riders hold.
 

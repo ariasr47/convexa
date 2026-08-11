@@ -1,6 +1,6 @@
 # INTERFACE CONTRACT — index-first-defaults (FE↔BE truth)
 
-**Spec:** `.claude/contracts/index-first-defaults/SPEC.md`
+**Spec:** `.spire/clusters/tech/contracts/index-first-defaults/SPEC.md`
 **Posture:** **`NO_BACKEND_CHANGE`**
 
 > Written at GATE V (FE-only fast-path) by the conductor. The frontend lane binds to this file.

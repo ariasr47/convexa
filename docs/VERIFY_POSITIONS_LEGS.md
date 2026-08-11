@@ -53,7 +53,7 @@ reading. Measured: the page text does not change by a single character across th
 
 If you click it and nothing appears to happen, **you are signed out** — use the **Sign in** button in
 that banner. This comes from the accounts feature, not from `positions-legs`, and it is queued as the
-next item (`.claude/BACKLOG.md` §A). It is the same class of problem this feature *fixed* for the
+next item (`.spire/clusters/tech/context/BACKLOG.md` §A). It is the same class of problem this feature *fixed* for the
 faulted state — a control that looks usable, accepts the click, then declines silently.
 
 ### 0.4 Know which page does what
@@ -188,7 +188,7 @@ These are quick and they are where sloppiness usually shows.
 
 - **The Ticker page has no "Add leg".** Deliberate. Multi-leg entry lives on `/positions`.
 - **`/positions` scrolls sideways at ~900px wide.** Pre-existing, present before this feature, measured
-  identical with and without it. Logged separately in `.claude/OPEN_THREADS.md` §8.
+  identical with and without it. Logged separately in `.spire/clusters/tech/context/OPEN_THREADS.md` §8.
 - **The Max loss column vanishes below 1280px.** Intended (Part C7/C8).
 - **A greyed refused button has faint text in light mode.** Reviewed and accepted — the *reason* lives
   in the full-strength banner and the tooltip, not the button label.
@@ -205,7 +205,7 @@ nothing writes over them.
 
 Reference material, if you want to go deeper:
 
-- `.claude/contracts/_archive/positions-legs/SPEC.md` — the design of record, 83 acceptance criteria
-- `.claude/contracts/_archive/positions-legs/QA_REPORT.md` — what automated verification checked, and
+- `.spire/clusters/tech/contracts/_archive/positions-legs/SPEC.md` — the design of record, 83 acceptance criteria
+- `.spire/clusters/tech/contracts/_archive/positions-legs/QA_REPORT.md` — what automated verification checked, and
   the two findings that failed first time round
-- `.claude/OPEN_THREADS.md` §7x — what shipped and what was deliberately deferred
+- `.spire/clusters/tech/context/OPEN_THREADS.md` §7x — what shipped and what was deliberately deferred

@@ -46,7 +46,7 @@ Owner said proceed → these are DECIDED.
   brand-string assertion) are **IN SCOPE**: the FE updates them to assert the single "Convexa" brand
   and leaves them green. A pre-existing brand red is the FE's to reconcile here — NOT a QA bounce on an
   unrelated issue. QA traces them as AC-B5.
-- **D5 — Local-folder & external-reference non-goal STANDS.** `C:\Dev\gammaflow-web` is NOT renamed;
+- **D5 — Local-folder & external-reference non-goal STANDS.** `C:\Dev\convexa` is NOT renamed;
   `@org/*` scope / `@org/api` alias / tags / import paths unchanged; `_archive/**` + ledger history
   unchanged. No external link is known to depend on the local-folder path.
 
@@ -95,7 +95,7 @@ project-config name) — all cosmetic, no interface/scoring change; docs/blog/RE
 D1; reconciling stale brand-assertion tests green (D4); the GATE-S repo rename (D3, conductor); the
 GATE-S canon update (§2, Orchestrator).
 
-**Out (non-goals):** renaming `C:\Dev\gammaflow-web` (D5); renaming the `@org/*` scope / alias / tags /
+**Out (non-goals):** renaming `C:\Dev\convexa` (D5); renaming the `@org/*` scope / alias / tags /
 import paths (D5); rewriting `_archive/**` or ledger history (D1/D5); any data-version bump / schema
 change / blob transform (brand-PREFIX rename only; in-blob shapes + `schema_version` integers
 untouched); deleting old `gammaflow.*` keys (kept as fallback); ANY behavioral/feature/scoring/

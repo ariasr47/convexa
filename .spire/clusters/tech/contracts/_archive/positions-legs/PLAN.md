@@ -16,7 +16,7 @@ Every task's requirements implicitly include this section.
 
 **Posture: `NO_BACKEND_CHANGE`.** `git diff` over `apps/api/` must be **EMPTY**. There is no backend track in this plan. If any task appears to need a backend field, that is a **GATE Z amendment** against `INTERFACE_CONTRACT.md` — stop and bounce to the conductor, do not add it.
 
-**Spec of record:** `.claude/contracts/positions-legs/SPEC.md` (`APPROVED 2026-07-28`, **83** acceptance criteria, §9 `None.`, `contract_lint` 0/0). Every task below references it by section and AC number and never restates the design. **Read the referenced spec sections before starting a task.** Where this plan and the spec appear to differ, the spec wins and the divergence is a bounce.
+**Spec of record:** `.spire/clusters/tech/contracts/positions-legs/SPEC.md` (`APPROVED 2026-07-28`, **83** acceptance criteria, §9 `None.`, `contract_lint` 0/0). Every task below references it by section and AC number and never restates the design. **Read the referenced spec sections before starting a task.** Where this plan and the spec appear to differ, the spec wins and the divergence is a bounce.
 
 **Nx project name is `@org/dashboard`, not `dashboard`.**
 - Full suite: `npx nx test @org/dashboard`
@@ -60,7 +60,7 @@ So the longest string this feature's copy can render fits, **barely**. A longer 
 
 ### Conformance spec
 
-Copied **verbatim** from `.claude/contracts/positions-legs/INTERFACE_CONTRACT.md`:
+Copied **verbatim** from `.spire/clusters/tech/contracts/positions-legs/INTERFACE_CONTRACT.md`:
 
 ```json
 {
@@ -96,7 +96,7 @@ Run it with:
 
 ```
 <project.json backend.python> .claude/tools/interface_conformance.py \
-  --contract .claude/contracts/positions-legs/INTERFACE_CONTRACT.md \
+  --contract .spire/clusters/tech/contracts/positions-legs/INTERFACE_CONTRACT.md \
   --url http://127.0.0.1:<project.json backend.port>
 ```
 
@@ -4035,7 +4035,7 @@ Start the backend, then run the command from **Global Constraints → Conformanc
 
 If no live snapshot is available, use the deterministic path:
 ```
-interface_conformance.py --contract .claude/contracts/positions-legs/INTERFACE_CONTRACT.md \
+interface_conformance.py --contract .spire/clusters/tech/contracts/positions-legs/INTERFACE_CONTRACT.md \
   --sample resp.json --endpoint /api/contract/{ticker}
 ```
 
@@ -4128,7 +4128,7 @@ Every spec section and every AC, against the task that carries it.
 
 ## Execution handoff
 
-Plan complete and saved to `.claude/contracts/positions-legs/PLAN.md`. Two execution options:
+Plan complete and saved to `.spire/clusters/tech/contracts/positions-legs/PLAN.md`. Two execution options:
 
 **1. Subagent-Driven (recommended)** — a fresh subagent per task, reviewed between tasks, fast iteration. Given that F18 is an atomic cutover of the whole trading domain, the between-task review is where the sequencing guarantee actually gets enforced.
 

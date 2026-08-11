@@ -114,7 +114,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   → `shared`); **pages NEVER import sibling pages** — that is the whole reason `features/` exists (a surface
   used by ≥2 pages moves to `features/`; a single-page consumer stays on that page); `shared/` is populated on
   the **2nd consumer**, never preemptively. Naming note: `features/` holds **domains** (nouns), not delivery
-  features — delivery features live in `.claude/contracts/`. Presentation-only refactor — score/tier/
+  features — delivery features live in `.spire/clusters/tech/contracts/`. Presentation-only refactor — score/tier/
   `state_fingerprint` untouched; **674/674 tests green on `main`**. **Every path in this §2 Frontend section
   is post-move** (reconciled 2026-07-16); paths are relative to `apps/dashboard/src/app/`.
 - `pages/ticker/widgets/gex-profile-chart/` (`chart.tsx` + `GexStrikeProfile.tsx`) — recharts **vertical
@@ -293,7 +293,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   anonymous-vs-signed-in; no setting is ever a scoring input.
 
 ### Standing build invariants (promoted from the Decision Ledger — apply to EVERY new feature)
-> Graduated via the recurrence rule in `.claude/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
+> Graduated via the recurrence rule in `.spire/clusters/tech/context/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
 > these by key in "Invariant watch"; each role restates the ones it touches. Reopen only via GATE Z.
 - **`[best-effort-isolated-or-null]`** — an optional or added computation is best-effort: any failure
   yields a **null/omitted field, never an HTTP error**, leaving `market_state`/`strike_profile` and the
@@ -592,7 +592,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   (AI-seeded views + batch recs are v2), no alerts, no universe admin UI, no SSE, no order path.
   **Formally narrowed the locked "single-ticker, on-demand" decision** (§5). QA PASS all four phases
   (de-correlated Sonnet) — **13/13 ACs, 0 FAIL, 0 UNVERIFIABLE**; `nx test @convexa/dashboard` 645; e2e 15/15;
-  conformance 2/2 live via the standalone `.claude/tools/conformance/scanner.json`. See OPEN_THREADS §7v.
+  conformance 2/2 live via the standalone `.spire/clusters/tech/state/conformance/scanner.json`. See OPEN_THREADS §7v.
 - **Outcome ledger — the track record (`outcome-ledger`, FE-only, shipped 2026-07-16)** — the project's
   **first loop for TRADING wisdom** (it already had `DECISION_LEDGER.md` for BUILD wisdom). Harvests the
   append-only `DecisionRecord[]` the app already writes and answers, honestly: **is the `opportunity_score`
@@ -1004,7 +1004,7 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
   critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.mjs`).
 - One Nx monorepo: backend `apps/api`, frontend `apps/dashboard`, shared TS client `libs/api`
-  (`@convexa/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
+  (`@convexa/api`), contracts `.spire/clusters/tech/contracts/`; no remote. (Was two repos pre-merge; the archived
   `C:\Dev\GammaFlow` is history only.)
 
 ## 8. Downstream-AI contract

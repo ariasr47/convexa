@@ -1,7 +1,7 @@
 # ai-rec-backtest-orders — UX_BLUEPRINT
 
 > UX/Tech-Writer → execution split (compressor #3 input). Self-contained against
-> `.claude/PROJECT_CONTEXT.md` + this feature's `ARCHITECTURE_CONTRACT.md` (locked shape) +
+> `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this feature's `ARCHITECTURE_CONTRACT.md` (locked shape) +
 > `PRODUCT_CONTRACT.md` (locked — 48 ACs, D1–D10). Component states + user-facing copy only:
 > no server internals, no math, no code. All wording below (incl. the six D8 disclosures) is
 > FINAL and binding on the executioners; `{braces}` are interpolation slots. The §9 map from

@@ -1,7 +1,7 @@
 # BACKEND EXECUTION CONTRACT — AI Context Pack ("Market context")
 
 > Server work ONLY. Binds to `INTERFACE_CONTRACT.md` (what to EMIT). Contains NO UI detail.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` + this feature's ARCHITECTURE_CONTRACT +
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + this feature's ARCHITECTURE_CONTRACT +
 > INTERFACE_CONTRACT. No chat history.
 
 ## Scope (what the backend builds)
@@ -137,7 +137,7 @@ precedent applies (try/except → null, never an HTTP error).
 - **P-9 (AC-26, operator span):** with observability enabled, a cold bundle build shows the new
   stage in `GET /api/_metrics`; a warm hit does not fabricate it; an instrumentation failure leaves
   the bundle 200 with identical values.
-- **Conformance:** run `.claude/tools/conformance/ai_context_pack.json` (authored with the interface;
+- **Conformance:** run `.spire/clusters/tech/state/conformance/ai_context_pack.json` (authored with the interface;
   asserts the score floor + `market_state` object + the always-present `market_context` key as
   `object|null` — a null value must PASS). Also re-run the standing spec sweep (no regression to the
   other specs).
@@ -164,7 +164,7 @@ unsigned-flow caveat / ATR method / advisory framing.
 - `apps/api/src/models/market_data.py` — the nested pack models + `market_context` on `MarketState`.
 - `apps/api/main.py` — orchestration call + attach after `generate_signals`; the `context_pack` span.
 - `apps/api/market_state_glossary.md` — the §9 glossary insertion.
-- `.claude/tools/conformance/ai_context_pack.json` — already authored with the interface (verify it
+- `.spire/clusters/tech/state/conformance/ai_context_pack.json` — already authored with the interface (verify it
   passes; do not weaken it).
 - **Untouched (binding):** `apps/api/src/core/signals.py`, `apps/api/src/core/engine.py`, the
   gate/score/tier/fingerprint, `ai_recommendation.serialize_context` (rides wholesale — no edit),

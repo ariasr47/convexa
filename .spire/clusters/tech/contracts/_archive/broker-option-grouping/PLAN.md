@@ -123,7 +123,7 @@ credentialed session.**
 
 ```json
 {
-  "comment": "NO_BACKEND_CHANGE. Re-pin of the fresh-session (no-credential) read arm of the endpoint this FE-only feature consumes. Authoritative field list: .claude/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md (+ Amendment 1). No field is added or changed by broker-option-grouping.",
+  "comment": "NO_BACKEND_CHANGE. Re-pin of the fresh-session (no-credential) read arm of the endpoint this FE-only feature consumes. Authoritative field list: .spire/clusters/tech/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md (+ Amendment 1). No field is added or changed by broker-option-grouping.",
   "endpoints": [
     {
       "method": "GET",
@@ -2237,7 +2237,7 @@ npx nx format:check --files=<the exact comma-separated list of files this featur
 - [ ] `npm run ports:free`, serve the API, then:
 
 ```
-node .claude/tools/interface_conformance.mjs --contract .claude/contracts/broker-option-grouping/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000 --auth-signup --report .claude/contracts/broker-option-grouping/conformance-receipt.json
+node .claude/tools/interface_conformance.mjs --contract .spire/clusters/tech/contracts/broker-option-grouping/INTERFACE_CONTRACT.md --url http://127.0.0.1:8000 --auth-signup --report .spire/clusters/tech/contracts/broker-option-grouping/conformance-receipt.json
 ```
 Expected: the single `GET /api/broker/book` endpoint PASSES on the
 `unknown` / `no_credential_stored` arm, exit `0`. **Never run this with `--auth-cookie` against a

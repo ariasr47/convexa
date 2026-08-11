@@ -4,7 +4,7 @@ Goal:            **Complete the GammaFlow → Convexa rebrand** — extend it fr
                  codebase. Rename the ~71 `gammaflow` references across `apps/api` (comments/docstrings/log
                  prefixes/app title/data-dir naming), `apps/dashboard`, `libs/api` (incl. the
                  `gammaflow.ts` client file + its exported identifiers), `docs`, and `CLAUDE.md`/`AGENTS.md`
-                 to **Convexa/convexa**, set `.claude/project.json` `project_name` to "Convexa", and rename
+                 to **Convexa/convexa**, set `.spire/clusters/tech/project.json` `project_name` to "Convexa", and rename
                  the **GitHub repo** `gammaflow → convexa`. The hard part: **migrate the 4 durable
                  localStorage keys** (`gammaflow.positions.v2`, `gammaflow.ghost-trade.v1`,
                  `gammaflow.personas.v1`, `gammaflow.uiprefs.v1`) to `convexa.*` **loss-free** — existing
@@ -48,7 +48,7 @@ Entry point:     architect-first — the pivotal calls are technical: the **rena
                  reusable versioned migrate-on-read helper vs per-store ad-hoc; how it composes with the
                  existing positions v1→v2 chain so a user on v1/v2 still lands whole), whether the backend is
                  `NO_BACKEND_CHANGE` at the interface (cosmetic-only), and explicit **non-goals** (the local
-                 working-folder `C:\Dev\gammaflow-web` is NOT renamed — disruptive, local-only, cosmetic;
+                 working-folder `C:\Dev\convexa` is NOT renamed — disruptive, local-only, cosmetic;
                  historical/provenance mentions of "GammaFlow" in archived contracts/ledger stay as record).
 
 Source:          Owner 2026-06-28 — after confirming the earlier rebrand was deliberately recorded as

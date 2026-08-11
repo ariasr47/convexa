@@ -1,6 +1,6 @@
 # user-accounts — UX_BLUEPRINT
 
-> UX/Tech-Writer design layer. Reader has ONLY `.claude/PROJECT_CONTEXT.md` + the
+> UX/Tech-Writer design layer. Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + the
 > `PRODUCT_CONTRACT.md` + `ARCHITECTURE_CONTRACT.md` in this folder + this file. This file translates the
 > 38 ACs + D1–D10 into concrete component states, where each datum surfaces, exact user-facing copy, and
 > the AC → component-state mapping (which IS the required-tests matrix). It names the fields the UI

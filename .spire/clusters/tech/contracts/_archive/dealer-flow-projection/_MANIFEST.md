@@ -18,7 +18,7 @@ Contracts:
   - ARCHITECTURE_CONTRACT.md   locked
   - PRODUCT_CONTRACT.md        locked (17 ACs incl. AC-10b; 8 architect Qs resolved; no amendments)
   - UX_BLUEPRINT.md            locked
-  - INTERFACE_CONTRACT.md      locked (conformance spec: .claude/tools/conformance/dealer-flow-projection.json — conductor-authored from the interface's embedded spec)
+  - INTERFACE_CONTRACT.md      locked (conformance spec: .spire/clusters/tech/state/conformance/dealer-flow-projection.json — conductor-authored from the interface's embedded spec)
   - BACKEND_EXECUTION_CONTRACT.md   locked (real BE change — engine projection + determinism fix + additive model field + glossary; NOT NO_BACKEND_CHANGE)
   - FRONTEND_EXECUTION_CONTRACT.md  locked (new static-family Widget after DealerPositioning + Tests-to-write matrix)
 Open amendments: none

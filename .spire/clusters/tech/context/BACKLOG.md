@@ -32,10 +32,10 @@
 
 ## Last GATE I — 2026-08-06 (queue-drain cull → `broker-option-grouping`; the owner pick held, one entry re-assessed DOWN)
 <!-- atlas: theme=trust-the-signal horizon=now -->
-Pipeline was **drained** (`.claude/contracts/` held only `_archive/`); ran the full harvest → cull
+Pipeline was **drained** (`.spire/clusters/tech/contracts/` held only `_archive/`); ran the full harvest → cull
 rather than rubber-stamping the queue. **Chosen → `broker-option-grouping`** (roadmap queue item 3,
 owner-chosen 2026-08-05 off the live broker verify). Brief at
-`.claude/contracts/broker-option-grouping/BRIEF.md` — it carries the full `Considered:` cull set;
+`.spire/clusters/tech/contracts/broker-option-grouping/BRIEF.md` — it carries the full `Considered:` cull set;
 not restated here. FE-only expected (empty `apps/api` diff); the seam is `brokerView.ts`, already a
 pure `BrokerBook → PositionView[]` projection, so grouping is a pure layer over its output.
 **The cull did not just confirm the queue — it changed two things:**
@@ -220,7 +220,7 @@ existing data** (`DecisionRecord.tier` is already recorded), while by-score/setu
 (the iv-rank shape). Effort **L** · entry = **architect-first**.
 **Displaces `scanner` a 6th time — deliberate + reversible:** scanner scales an unmeasured judgment across N
 tickers; this measures whether it is worth scaling. `scanner` keeps its BRIEF + manifest, stays queued, **not
-dropped**. Brief at `.claude/contracts/outcome-ledger/BRIEF.md`; routing to the Architect (GATE A·X).
+dropped**. Brief at `.spire/clusters/tech/contracts/outcome-ledger/BRIEF.md`; routing to the Architect (GATE A·X).
 
 ## Last GATE I — 2026-07-06 (b) (owner pick: iv-rank; market-backdrop parked blocked-on plan upgrade)
 **Chosen → `iv-rank` — ✓ SHIPPED + ARCHIVED (2026-07-07)** → `_archive/iv-rank/`. Full pipeline both lanes
@@ -247,7 +247,7 @@ null` (store outage / insufficient history → null/"building", never an HTTP er
 assumptions`** (now promoted — the rank carries its window / sample-size / IV-basis visibly),
 `digested-labels-not-raw-dump` (rich/cheap band = a digested label). First **persistent market-data** store
 (distinct from the auth state store) — architect states its relation to the "stateless trading path"
-narrowing. Entry = **architect-first**. Brief at `.claude/contracts/iv-rank/BRIEF.md`; routing to the
+narrowing. Entry = **architect-first**. Brief at `.spire/clusters/tech/contracts/iv-rank/BRIEF.md`; routing to the
 Architect (GATE A·X).
 
 **`market-backdrop` → PARKED, blocked-on a Massive plan upgrade (feasibility RESOLVED 2026-07-06).** The
@@ -285,7 +285,7 @@ decision, not a new vendor dependency). Effort **S–M** (bundled) · Value **M�
 **digested-labels-not-raw-dump** design rule (SMALL orthogonal set, labels not raw values, OUT of the
 score), `gamma-sourcing-split` NOT touched. ATR is also the enabler for the deferred distance-to-level
 tiles (§B Ticker UX quick wins — stays out of scope here, seam only). Entry = **architect-first**.
-Brief at `.claude/contracts/ai-context-pack/BRIEF.md`; routing to the Architect (GATE A·X).
+Brief at `.spire/clusters/tech/contracts/ai-context-pack/BRIEF.md`; routing to the Architect (GATE A·X).
 `iv-rank` / `market-backdrop` / `scanner` stay queued (displaced, not dropped).
 
 ## Last GATE I — 2026-07-02 (owner: enrich the downstream-AI's inputs — derived data, TIs)
@@ -336,7 +336,7 @@ BRIEF): `additive-keeps-score-byte-identical` (HARD — AI-context/display only)
 or-null`, `live-vs-static-isolation`; **`gamma-sourcing-split` NOT touched** (a new derived read over
 the analytic greeks we already run — does NOT reopen the walls/flip gamma source). Ties BACKLOG §B
 "Engine higher-order-greek determinism" (elevating net_charm/net_vanna is the pull to fix the float
-jitter). Entry = **architect-first**. Brief at `.claude/contracts/dealer-flow-projection/BRIEF.md`;
+jitter). Entry = **architect-first**. Brief at `.spire/clusters/tech/contracts/dealer-flow-projection/BRIEF.md`;
 routing to the Architect (GATE A·X). **Note:** `scanner` (the prior NEXT) is **displaced, not dropped**
 — queued behind this owner redirect, as it was behind the 2026-06-25 ticker-load redirect.
 
@@ -373,7 +373,7 @@ Owner handed the conductor five sequenced items (screenshots of broken light-mod
    watch:** revisits the locked "single-ticker, on-demand" decision — the architect must re-justify
    with a perf design (batch/throttle/cache; the ticker-load-experience chain-store + coalescing are
    the building blocks); AI batch respects the existing cooldown/cap + key-resolution.
-   Brief at `.claude/contracts/scanner/BRIEF.md`.
+   Brief at `.spire/clusters/tech/contracts/scanner/BRIEF.md`.
 
 ## Last GATE I — 2026-06-29 (infra program, step 2: persistent datastore)
 **Chosen → `persistent-db`** (step 2 of the infra/deploy program). Swap the in-memory SQLite auth stores
@@ -390,7 +390,7 @@ fails closed, trader/bundle path stays up, the best-effort carve-out, ciphertext
 `best-effort-isolated-or-null` (DB outage degrades auth, not the anonymous bundle/SSE), `secret-encrypted-at-
 rest` (ciphertext-only in the DB), `no-secrets-in-image` (`DATABASE_URL` via runtime env). No interface/UI/
 scoring change. **Recommended target: Postgres** (deploy-ready; SQLite-file is a single-instance dead-end).
-Brief at `.claude/contracts/persistent-db/BRIEF.md`; routing to the Architect (GATE A·X). **Then:** `deploy`
+Brief at `.spire/clusters/tech/contracts/persistent-db/BRIEF.md`; routing to the Architect (GATE A·X). **Then:** `deploy`
 → Security/red-team (system-6) at go-live.
 
 **HOST DECISION (owner, 2026-06-29) — scopes the `deploy` feature:** backend → **Railway** (container +
@@ -415,7 +415,7 @@ GATE-M-style infra fast-path** (skip PM/UX, no interface change). **Invariant wa
 change; **image-hygiene floor** (no secrets baked — `.dockerignore` excludes `.env`/`.venv`/`token.txt`/
 `node_modules`/`data/`; env at runtime; non-root). **Known follow-on:** in-memory state resets per container
 → the `persistent-db` swap is the NEXT feature; deploy + host-pick follow that. Brief at
-`.claude/contracts/containerize-apps/BRIEF.md`; routing to the Architect (GATE A·X).
+`.spire/clusters/tech/contracts/containerize-apps/BRIEF.md`; routing to the Architect (GATE A·X).
 **Program sequence:** `containerize-apps` → `persistent-db` (in-memory → managed Postgres behind the
 existing store ports; set a stable `AI_KEY_ENCRYPTION_KEY`) → `deploy` (host pick: backend on Railway/Fly,
 frontend on Cloudflare/Vercel, Postgres on Neon; CI/CD) → **activate Security/red-team (system-6)** at
@@ -437,7 +437,7 @@ watch:** `additive-keeps-score-byte-identical` (AI rec stays an isolated leaf), 
 **security floor** (user keys ENCRYPTED not hashed — recoverable; server-side encryption key; never
 logged/returned/in-browser; masked-reveal + rotate + delete), new `minimal-admin-not-RBAC`. **system-6
 (Security/red-team) DEFERRED** by owner (encrypt+hygiene now); re-fires at the persistent/multi-user/public
-trigger — BYO-key is its eventual first client. Brief at `.claude/contracts/byo-ai-key/BRIEF.md`; routing to
+trigger — BYO-key is its eventual first client. Brief at `.spire/clusters/tech/contracts/byo-ai-key/BRIEF.md`; routing to
 the Architect (GATE A·X).
 
 ## Last GATE I — 2026-06-28 (owner request: complete the Convexa rebrand)
@@ -454,7 +454,7 @@ cosmetic/no-interface-change). Effort **M** · entry = **architect-first** (rena
 migration seam, NO_BACKEND_CHANGE confirmation, non-goals — local working-folder NOT renamed; archived
 contracts/ledger keep historical "GammaFlow" as record). **Invariant watch:** `[loss-free durable
 migration]` (HARD — no saved data lost), `additive-keeps-score-byte-identical`, `best-effort-isolated-or-null`.
-Brief at `.claude/contracts/rebrand-convexa/BRIEF.md`; routing to the Architect (GATE A·X).
+Brief at `.spire/clusters/tech/contracts/rebrand-convexa/BRIEF.md`; routing to the Architect (GATE A·X).
 
 ## Last GATE I — 2026-06-25 (owner request: user accounts / login / sessions / settings)
 **Chosen → `user-accounts`** — owner-directed (not a queue-drain cull): add **email/username+password
@@ -479,7 +479,7 @@ not gate/perturb the anonymous trader path). **NEW note:** first stateful backen
 store → narrows the "stateless server" property to the *trading path*; likely a GATE S ledger note, not a
 GATE Z reversal. **Security:** red-team (**system-6**) DEFERRED by owner (in-memory = pre-live); re-activates
 on real persistence / public exposure — the hygiene floor above is mandatory regardless. Brief at
-`.claude/contracts/user-accounts/BRIEF.md`; routing to the Architect (GATE A·X). *(Note: `scanner` +
+`.spire/clusters/tech/contracts/user-accounts/BRIEF.md`; routing to the Architect (GATE A·X). *(Note: `scanner` +
 `gamma-unification` stay queued behind this owner redirect — not dropped.)*
 
 ## Last GATE I — 2026-06-25 (owner request: ticker-page load UX + latency; gamma question raised)
@@ -499,7 +499,7 @@ request-coalescing — `_serve` has no in-flight dedup], fetch-parallelization s
 display-only sibling of the mid). **Invariant watch:** `additive-keeps-score-byte-identical`,
 `best-effort-isolated-or-null`, `live-vs-static-isolation`; **`live-spot=NBBO-mid` HONORED** (last-trade is
 additive display — mid stays the levels anchor; carve-out, not a reversal); **`gamma-sourcing-split` NOT
-touched** (→ Track 2). Brief at `.claude/contracts/ticker-load-experience/BRIEF.md`; routing to the
+touched** (→ Track 2). Brief at `.spire/clusters/tech/contracts/ticker-load-experience/BRIEF.md`; routing to the
 Architect (GATE A·X).
 
 **New parked track → `gamma-unification` (measure-first; see §C below).** Owner asked: with the advanced
@@ -551,7 +551,7 @@ credential handling when **Track B** starts. Track A (no real account) does not 
   - `broker-connect`: Webull-direct, **read-only** real positions via the `PositionsProvider` port; lands
     in the shipped positions "Live" tab seam; triggers the `no-real-order-path` narrowing + system-6.
 
-Brief for the chosen first feature at `.claude/contracts/app-shell-landing/BRIEF.md`; routing to the
+Brief for the chosen first feature at `.spire/clusters/tech/contracts/app-shell-landing/BRIEF.md`; routing to the
 Architect (GATE A·X).
 
 ## Last GATE I — 2026-06-24 (owner request: positions portfolio)
@@ -566,7 +566,7 @@ hold/trim/exit position management). Feasibility pass (reuses mark/store/`TradeE
 /api/contract`; Live is a stub ⇒ no vendor dependency). Effort L · entry = architect-first. **Invariant
 watch:** `no-real-order-path` HONORED (Live is non-functional, no order path), `additive-keeps-score-
 byte-identical`, `best-effort-isolated-or-null`, `live-vs-static-isolation`. Brief at
-`.claude/contracts/positions-portfolio/BRIEF.md`; routing to the Architect (GATE A·X).
+`.spire/clusters/tech/contracts/positions-portfolio/BRIEF.md`; routing to the Architect (GATE A·X).
 
 ## Last GATE I — 2026-06-23 (owner request: in-app AI recommendations)
 **Chosen → `ai-recommendations`** — owner-directed (not a queue-drain cull): an in-app query to a
@@ -576,18 +576,18 @@ manual hand-off is retained + augmented by the same JSON export; on-demand with 
 **Reverses promoted canon `ai-external-no-llm` by explicit owner decision** (GammaFlow may now call an
 LLM via an isolated, gated, consumer-only path) → pending formal demotion at GATE S. Trading-decision
 cull: passes (improves the entry decision). Effort L · entry = architect-first. Brief at
-`.claude/contracts/ai-recommendations/BRIEF.md`; routed to the Architect (GATE A·X).
+`.spire/clusters/tech/contracts/ai-recommendations/BRIEF.md`; routed to the Architect (GATE A·X).
 
 ## Last GATE I — 2026-06-23 (pull: local latency visualization)
 **Chosen → `latency-visualizer`** — carve the *visualization* slice out of §D "Observability
 extensions," pulled by a concrete need (watch the already-measured bundle-stage latency locally +
-free, pre-live). Brief at `.claude/contracts/latency-visualizer/BRIEF.md`; entry = architect-first
+free, pre-live). Brief at `.spire/clusters/tech/contracts/latency-visualizer/BRIEF.md`; entry = architect-first
 (stateless-client vs persisted-history is the pivotal call). Trading-decision cull N/A (operator
 tooling — judged on operational value). The export/alerting/persistence rest of §D stays parked.
 
 ## Last GATE I — 2026-06-22 (pipeline had drained; 4 features archived)
 **Chosen → `trader-personas`** (the only candidate clearing both decision-impact + feasibility;
-Value H × Effort M). Brief at `.claude/contracts/trader-personas/BRIEF.md`; entry = architect-first.
+Value H × Effort M). Brief at `.spire/clusters/tech/contracts/trader-personas/BRIEF.md`; entry = architect-first.
 Cull verdicts (so the next discovery doesn't re-litigate):
 - **Parked, cleanliness/no observed friction:** flip-anchoring (user confirmed flip is fine),
   wall-distance guard (hasn't shown up live).
@@ -753,27 +753,14 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
-- **`rename-org-scope-to-convexa` — package namespace still says `@org/*` after the Convexa rebrand** —
-  <!-- atlas: theme=the-machine horizon=later -->
-  `FILED 2026-08-10 (owner question during structure-history work)`. Workspace packages are still the
-  Nx scaffold defaults: `@convexa/source`, `@convexa/api`, `@convexa/dashboard`, `@convexa/dashboard-e2e`. Product is
-  Convexa; imports read `from '@convexa/api'`, scripts are `nx test @convexa/dashboard`, and
-  `tsconfig.base.json` still has `customConditions: ["@convexa/source"]`. **Not a runtime/user-facing
-  defect** (private workspace packages, not published to npm) — pure naming debt that confuses every
-  new session and every agent prompt.
-  **History:** `rebrand-convexa` (2026-06-28) **explicitly left this out** as a non-goal
-  (`OPEN_THREADS` §7g: "STAYS unrenamed: `@org/*` scope, `DATA_DIR`, local working folder, archived
-  history"). That was correct then (rebrand blast radius was already large). Owner now wants it
-  queued so it is not forgotten.
-  **Proposed fix (one dedicated PR, no feature mix-in):** rename to `@convexa/*` in one pass —
-  root `@convexa/source`, `libs/api` → `@convexa/api`, dashboard → `@convexa/dashboard`,
-  e2e → `@convexa/dashboard-e2e`; update every import, `package.json` name, Nx project/script
-  reference, CI, Docker build targets, docs/ESLint notes, and `customConditions`. Do **not** mix
-  scopes mid-migration. Local folder `C:\Dev\gammaflow-web` and archived "GammaFlow" history stay
-  as-is (same non-goals as rebrand).
-  *Value L–M (maintainability / mental model) · Effort S–M (mechanical, wide blast radius; half-day
-  careful pass + typecheck + full CI).* Decision-impact cull **N/A** (build-system / brand-hygiene
-  class). **Do not promote over quant moat or X2–X4** — chore when the edge queue is quiet.
+- **`rename-org-scope-to-convexa` + local folder** — `✓ CLOSED (2026-08-10)` —
+  <!-- atlas: theme=the-machine horizon=done -->
+  Package scope is `@convexa/*` (`@convexa/source`, `@convexa/api`, `@convexa/dashboard`,
+  `@convexa/dashboard-e2e`); GitHub remote is `ariasr47/convexa`; local working folder is
+  `C:\Dev\convexa` (was `C:\Dev\gammaflow-web`); Spire registry project name/root updated to match.
+  **Still intentionally unrenamed:** `gammaflow.*` durable localStorage keys (loss-free migration),
+  archived "GammaFlow" brand history in ledgers/contracts, and kit `banned_tokens` that keep
+  framework files project-neutral.
 - **`ports-free-is-ipv4-only` — the tool written to prevent the stale-server trap does not prevent it** —
   <!-- atlas: theme=the-machine horizon=now -->
   `SURFACED 2026-08-06 (broker-option-grouping GATE Q re-run, finding R-5; QA-measured, not inferred)`.
@@ -1002,7 +989,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   downstream-AI-quality, the first-class harvest source. **2026-07-06: the AI context-scalars pack +
   the TI regime bundle → ✓ SHIPPED + ARCHIVED (bundled) as `ai-context-pack`** (owner pick; QA PASS
   26/26; see "Last GATE I — 2026-07-06" above + OPEN_THREADS §7q). **2026-07-06 (b): `iv-rank` CHOSEN →
-  in pipeline** (architect-first; BRIEF at `.claude/contracts/iv-rank/BRIEF.md`; see "Last GATE I —
+  in pipeline** (architect-first; BRIEF at `.spire/clusters/tech/contracts/iv-rank/BRIEF.md`; see "Last GATE I —
   2026-07-06 (b)" above). **2026-07-07: `iv-rank` ✓ SHIPPED + ARCHIVED** (QA PASS 19/19; graduated
   `digested-labels-not-raw-dump`; established the first persistent market-data store; see "Last GATE I —
   2026-07-06 (b)" above + OPEN_THREADS §7r). **`market-backdrop` PARKED — blocked-on a Massive plan upgrade** (feasibility
@@ -1142,7 +1129,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   compounding loop fires even on a tired/long session. *Value M · Effort S.* **Note:** the
   decision-impact cull (trading-decision test) is **N/A** here — judge it on loop-fidelity, not edge;
   the promotion *judgement* + prose still stay with the Orchestrator (the hook only counts). Follow-on
-  to the just-shipped Decision Ledger (`.claude/DECISION_LEDGER.md`; ORCHESTRATOR §3a).
+  to the just-shipped Decision Ledger (`.spire/clusters/tech/context/DECISION_LEDGER.md`; ORCHESTRATOR §3a).
 
 - **Engine higher-order-greek determinism** — `✓ RESOLVED 2026-07-02 (folded into dealer-flow-projection)`:
   the charm/vanna/volga aggregation moved from naive `+=` to `math.fsum` (order-independent), scoped away
@@ -1452,7 +1439,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   never blocked). Tested; fail-open on malformed input. **Scope honesty:** a session-global hook can't
   see WHICH role/subagent is active, so it enforces the **out-of-workspace** fence robustly but NOT
   per-role intra-lane rules (e.g. "the architect can't touch `src/`") — that residual stays on the
-  tool-allowlist (no `Edit`) + the role prompt. **Cross-repo fence + the gammaflow-web mirror are now
+  tool-allowlist (no `Edit`) + the role prompt. **Cross-repo fence + the convexa mirror are now
   N/A** — both lanes share one repo, so there is no second repo to fence against or mirror into.
   Lane separation between `apps/api` and `apps/dashboard` is instead reinforced mechanically by the
   ESLint `@nx/enforce-module-boundaries` rule on the project tags. *Value M · Effort S.*
@@ -1547,12 +1534,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 - **system-12 · system-1 standalone-spec standardization** — `DECIDED 2026-06-23 (standalone = canonical),
   <!-- atlas: theme=the-machine horizon=now -->
   partial`. The conformance spec drifted: docs say "embed a `## Conformance spec` ```json block in
-  INTERFACE_CONTRACT.md," but the shipped precedent (`.claude/tools/conformance/api_metrics.json`) and the
+  INTERFACE_CONTRACT.md," but the shipped precedent (`.spire/clusters/tech/state/conformance/api_metrics.json`) and the
   ONLY runnable form is a **standalone flat-schema file**. The UX (following the docs) embedded a rich
   nested block the tool can't run — heading `## 3. Conformance spec` breaks system-1's `##\s*Conformance
   spec` regex (yet system-3's linter accepted it: the two **disagree** on detection), and the nested
   enums/conditional/forbidden_fields schema isn't the tool's flat `{path_params,query,body,required}`.
-  **Owner decision (2026-06-23):** the runnable spec is a committed standalone `.claude/tools/conformance/
+  **Owner decision (2026-06-23):** the runnable spec is a committed standalone `.spire/clusters/tech/state/conformance/
   {feature}.json`; the interface's `## Conformance spec` section REFERENCES it (rich content stays as QA
   reference). **Done:** ai-recommendations interface points at its standalone spec; the backend added
   POST-body support to `interface_conformance.py` (additive, kept; `api_metrics.json` still passes).
@@ -1566,7 +1553,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   looser detection so they agree. *Value M · Effort S–M.* **Build-system class:** trading-decision cull
   N/A. Surfaced by the backend executioner at the ai-recommendations fan-out (GATE Z).
   **Precedent to copy:** `iv-rank` (the most recent both-lanes feature) shipped a standalone spec
-  `.claude/tools/conformance/iv_rank.json` — that IS the convention; the docs are what lag.
+  `.spire/clusters/tech/state/conformance/iv_rank.json` — that IS the convention; the docs are what lag.
   **⚠ REGRESSION 2026-07-27 — kit v1.0.0 INVERTED this, and it now breaks shipped features.** The kit
   sync (`5fcc65a`, made by another session) shipped a rewritten `contract_lint.py` whose **M7 is now an
   ERROR** unless `INTERFACE_CONTRACT.md` carries an **embedded** parseable fenced-JSON block under a
@@ -1588,7 +1575,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   marker appearing anywhere in the file's prose (so discussing the rule in prose can hijack detection),
   and it will not match a **numbered** heading like `## 4. Conformance spec`.
   **Real fix (kit-owned, flows via `KIT_BACKLOG`, do NOT edit `contract_lint.py` in place):** teach M7 to
-  accept a standalone `.claude/tools/conformance/{feature}.json` as satisfying the rule — ideally by
+  accept a standalone `.spire/clusters/tech/state/conformance/{feature}.json` as satisfying the rule — ideally by
   checking the referenced file EXISTS, which is the stronger gate this item originally asked for and
   which the current rule still does not provide.
 - **system-13 · Framework portability — the delivery-kit extraction** — `✓ LANDED (2026-06-24)`.
@@ -1596,7 +1583,7 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   role-launch docs) out of GammaFlow into a standalone, updatable **delivery-kit** (its own repo at
   `C:\Dev\delivery-kit`), with GammaFlow as **consumer #1**. The decoupling rule: **framework files are
   byte-identical across projects** — all per-project coupling moved into one project-owned seam,
-  `.claude/project.json` (backend/frontend dirs, ports, serve/test commands, interpreter, context
+  `.spire/clusters/tech/project.json` (backend/frontend dirs, ports, serve/test commands, interpreter, context
   filename, optional lane-purity), plus `PROJECT_CONTEXT.md` (renamed from the old context file). Tools
   read the seam programmatically; agents/commands read it at runtime; agents renamed `gammaflow-*` →
   `delivery-*`. `install.mjs` / `extract.mjs` forward + sync the framework as a **plain folder copy**

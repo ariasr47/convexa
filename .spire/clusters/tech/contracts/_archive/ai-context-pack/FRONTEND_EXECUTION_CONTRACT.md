@@ -2,7 +2,7 @@
 
 > UI work ONLY. Binds to `INTERFACE_CONTRACT.md` (what to CONSUME) + `UX_BLUEPRINT.md` (design +
 > copy). Contains NO server internals and NO math derivations. Self-contained against
-> `.claude/PROJECT_CONTEXT.md` + the interface contract. No chat history.
+> `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + the interface contract. No chat history.
 
 ## Scope (what the frontend builds)
 One new **static-read-family `Widget`** — "Market context" — on the Ticker bento board, directly

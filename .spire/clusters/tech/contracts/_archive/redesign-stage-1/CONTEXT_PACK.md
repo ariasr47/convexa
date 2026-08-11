@@ -92,7 +92,7 @@
   → `shared`); **pages NEVER import sibling pages** — that is the whole reason `features/` exists (a surface
   used by ≥2 pages moves to `features/`; a single-page consumer stays on that page); `shared/` is populated on
   the **2nd consumer**, never preemptively. Naming note: `features/` holds **domains** (nouns), not delivery
-  features — delivery features live in `.claude/contracts/`. Presentation-only refactor — score/tier/
+  features — delivery features live in `.spire/clusters/tech/contracts/`. Presentation-only refactor — score/tier/
   `state_fingerprint` untouched; **674/674 tests green on `main`**. **Every path in this §2 Frontend section
   is post-move** (reconciled 2026-07-16); paths are relative to `apps/dashboard/src/app/`.
 - `pages/ticker/widgets/gex-profile-chart/` (`chart.tsx` + `GexStrikeProfile.tsx`) — recharts **vertical
@@ -250,7 +250,7 @@
   anonymous-vs-signed-in; no setting is ever a scoring input.
 
 ### Standing build invariants (promoted from the Decision Ledger — apply to EVERY new feature)
-> Graduated via the recurrence rule in `.claude/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
+> Graduated via the recurrence rule in `.spire/clusters/tech/context/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
 > these by key in "Invariant watch"; each role restates the ones it touches. Reopen only via GATE Z.
 - **`[best-effort-isolated-or-null]`** — an optional or added computation is best-effort: any failure
   yields a **null/omitted field, never an HTTP error**, leaving `market_state`/`strike_profile` and the
@@ -450,6 +450,6 @@
   even if the suite is green). **E2E = Playwright** (`@nx/playwright`), adopted nearer go-live for the
   critical flow; optional before then (the BE↔FE seam is already verified by `interface_conformance.py`).
 - One Nx monorepo: backend `apps/api`, frontend `apps/dashboard`, shared TS client `libs/api`
-  (`@org/api`), contracts `.claude/contracts/`; no remote. (Was two repos pre-merge; the archived
+  (`@org/api`), contracts `.spire/clusters/tech/contracts/`; no remote. (Was two repos pre-merge; the archived
   `C:\Dev\GammaFlow` is history only.)
 

@@ -174,7 +174,7 @@ CORS defaulting to localhost in prod, `AUTH_COOKIE_SECURE` misconfiguration risk
 ceiling, public OpenAPI docs, broad CORS methods/headers, Google OAuth state cleanup. None was a
 go-live blocker; all become more relevant the moment the site gets real traffic. Related: the
 conformance runner ~~is **cookieless**~~ can now authenticate (`--auth-signup` bootstraps a throwaway
-session; `.claude/tools/conformance/auth-gated.json` is the standing auth-gated sweep).
+session; `.spire/clusters/tech/state/conformance/auth-gated.json` is the standing auth-gated sweep).
 
 **Dependencies [measured]** — npm drift is healthy, not rot: patch/minor across Nx 23.0→23.1,
 React 19.0→19.2.8, MUI 9.1.1→9.2.0, Vitest, Cypress, Prettier. One major waiting: `@babel/core` 7→8.

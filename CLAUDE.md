@@ -18,10 +18,13 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
   → :4200, proxies `/api` → :8000). Tests: `nx test @convexa/dashboard`.
 - `apps/dashboard-e2e` — Playwright e2e.
 - `libs/api` (`@convexa/api`) — shared TS API client (consumed as source).
-- `.claude/` — delivery orchestration (conductor, contracts, skills). **Committed.**
-- `.codex/` — Codex CLI local state. **Gitignored.**
-- Grok Build — global skills under `~/.grok`; do **not** use repo `.agents/` (Nx
-  skill-mirror; gitignored and unused here).
+- `.spire/clusters/tech/` — **shared product memory** (PROJECT_CONTEXT, BACKLOG,
+  contracts, DESIGN_SYSTEM, decision ledger, conformance suite). **Committed.**
+- `.claude/` — Claude host adapter (orchestrator, agents, skills, tools). **Committed.**
+  Not product memory — do not put context/contracts here.
+- `.codex/` — Codex host adapter. **Committed.**
+- `.grok/` — Grok host adapter. **Committed.**
+- Do **not** use repo `.agents/` (Nx skill-mirror; gitignored and unused here).
 
 ## Lane separation (enforced)
 
@@ -64,9 +67,10 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   key separator, so `git diff` rendered "Binary files differ" and its changes were **unreviewable**.
   Write the separator as the two-character escape (backslash then zero), never a literal NUL.
   **This trap landed three times in one session** — once in the source file, once in
-  `.claude/OPEN_THREADS.md` (which made the **canon** partially invisible to grep, silently
-  truncating `grep "^## "` two-thirds of the way through), and once _inside the sentence documenting
-  it_. **Verify with a byte scan, not by eye** — a NUL renders as nothing in a diff, an editor, or a
+  the planning canon (today `.spire/clusters/tech/context/OPEN_THREADS.md`; was under `.claude/`
+  pre-migrate) which made the **canon** partially invisible to grep, silently truncating
+  `grep "^## "` two-thirds of the way through, and once _inside the sentence documenting it_.
+  **Verify with a byte scan, not by eye** — a NUL renders as nothing in a diff, an editor, or a
   terminal:
   `python -c "import io;print(io.open('FILE','rb').read().count(bytes([0])))"`
 - **Orphaned dev servers hold ports and serve STALE code.** uvicorn's `multiprocessing` children

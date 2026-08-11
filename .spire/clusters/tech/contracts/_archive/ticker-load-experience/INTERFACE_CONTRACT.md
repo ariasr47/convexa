@@ -92,7 +92,7 @@ touches no trader-facing AC and changes no FE-consumed shape.
 ## 6. Conformance spec
 
 The runnable (system-1) conformance spec is the STANDALONE file
-**`.claude/tools/conformance/ticker-load-experience.json`** — the flat
+**`.spire/clusters/tech/state/conformance/ticker-load-experience.json`** — the flat
 `{method, path, path_params, query, body, required}` schema that `interface_conformance.py` executes
 (same precedent as `conformance/ai_recommendations.json` and `conformance/api_metrics.json`). Do NOT
 embed a rich nested block here; this section REFERENCES that file.
@@ -107,7 +107,7 @@ verified by the FE component/flow tests (FRONTEND_EXECUTION_CONTRACT §6) and th
 (BACKEND_EXECUTION_CONTRACT §5), since SSE is outside the runnable HTTP harness.
 
 ```text
-spec file: .claude/tools/conformance/ticker-load-experience.json
+spec file: .spire/clusters/tech/state/conformance/ticker-load-experience.json
 asserts:
   - GET /api/ticker/{ticker}  → bundle well-formed; market_state + signals.opportunity_score +
                                 signals.opportunity_tier + ai_eval.state_fingerprint present & typed

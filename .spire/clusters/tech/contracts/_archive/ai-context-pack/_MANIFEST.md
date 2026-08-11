@@ -7,7 +7,7 @@ Contracts:
   - ARCHITECTURE_CONTRACT.md        locked
   - PRODUCT_CONTRACT.md             locked
   - UX_BLUEPRINT.md                 locked
-  - INTERFACE_CONTRACT.md           locked  (standalone conformance spec: .claude/tools/conformance/ai_context_pack.json)
+  - INTERFACE_CONTRACT.md           locked  (standalone conformance spec: .spire/clusters/tech/state/conformance/ai_context_pack.json)
   - BACKEND_EXECUTION_CONTRACT.md   locked
   - FRONTEND_EXECUTION_CONTRACT.md  locked
 Open amendments: none

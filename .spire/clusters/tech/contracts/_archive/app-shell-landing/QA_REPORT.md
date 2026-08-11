@@ -5,7 +5,7 @@
 > Result: **171 tests PASSED / 0 FAILED / 14 test files** — suite is GREEN.
 > Interface conformance: NO_BACKEND_CHANGE posture — no new endpoint, no conformance spec emitted.
 >   The standing `interface_conformance.py` tool has nothing new to assert for this feature.
-> Lane check: `git diff HEAD~1 HEAD -- apps/api` → empty (zero diff). `.claude/contracts/_archive` → unmodified by this commit.
+> Lane check: `git diff HEAD~1 HEAD -- apps/api` → empty (zero diff). `.spire/clusters/tech/contracts/_archive` → unmodified by this commit.
 > Brand-is-UI-only: durable keys `gammaflow.positions.v2` (V2_KEY in store.ts:23) and `gammaflow.ghost-trade.v1` (STORAGE_KEY in ghost-trade/store.ts:9) are unchanged. No package, folder, or code identifier renamed.
 
 ---
@@ -69,7 +69,7 @@
 | `[live-vs-static-isolation]` — Ticker live-offline: live tiles dim, static bundle keeps rendering. Positions: last-known per UX_AMENDMENTS resolution. | **PASS** | AC-Inv-1 verified (live tiles `⏸ offline`, `Call wall` persists). PosLive-2/3/4 verified (row persists, cell degrades, page not errored). |
 | `[operator-vs-trader-path-separation]` — `/_ops/metrics` off the shell, NOT linked from nav. | **PASS** | AC-Inv-7 verified. No `_ops` href in any nav link. Operator route declared FIRST in route table. |
 | **Brand-is-UI-only** — No durable localStorage key, package, folder, or code identifier renamed; only visible wordmark is "Convexa". | **PASS** | `gammaflow.positions.v2` and `gammaflow.ghost-trade.v1` confirmed unchanged. `ConvexaMark` brand only in UI chrome (Landing + AppShell). AC-Inv-9 test explicitly verifies this. |
-| **Lane check** — `apps/api` and `.claude/contracts/_archive` unmodified. | **PASS** | `git diff HEAD~1 HEAD -- apps/api` → empty. `git diff HEAD~1 HEAD -- .claude/contracts/_archive` → empty. |
+| **Lane check** — `apps/api` and `.spire/clusters/tech/contracts/_archive` unmodified. | **PASS** | `git diff HEAD~1 HEAD -- apps/api` → empty. `git diff HEAD~1 HEAD -- .spire/clusters/tech/contracts/_archive` → empty. |
 | **UX_AMENDMENTS resolution** — AC-PosLive-2/3/4 verified by observable behavior (row persists, cell degraded, no blank/drop), NOT by literal §6 strings. | **PASS** | Tests assert observable behavior only: `position-row` present + durable facts present + `cell-unavailable` or no throw. Carve-out honored. |
 
 ---

@@ -27,7 +27,7 @@ Contracts:
   - BACKEND_EXECUTION_CONTRACT.md   n/a
   - FRONTEND_EXECUTION_CONTRACT.md  n/a
 Conformance:  n/a until GATE U·X — and only if the architect puts state server-side. **system-12 applies if
-              so:** the runnable convention is a standalone `.claude/tools/conformance/{feature}.json`
+              so:** the runnable convention is a standalone `.spire/clusters/tech/state/conformance/{feature}.json`
               (precedent `iv_rank.json`), NOT an embedded block. Reconcile the authoring docs first.
 Open amendments: **ARCHITECTURE_CONTRACT.md CONTESTED (owner: architect)** — 2 bounced at GATE P·X
               (2026-07-16). Both **additive to §3.4**; **neither reopens a pin** (the PM accepted all three

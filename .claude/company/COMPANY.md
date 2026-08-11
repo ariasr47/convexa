@@ -15,4 +15,4 @@ are trusted, and nothing outward-facing moves without the owner's explicit appro
 - Repo: https://github.com/ariasr47/convexa
 - Kit: https://github.com/ariasr47/delivery-kit
 - OS Console: http://127.0.0.1:4747 (run: node C:/Dev/delivery-kit/os.mjs)
-- Feature Atlas: C:/Dev/gammaflow-web/docs/atlas/atlas.html
+- Feature Atlas: C:/Dev/convexa/docs/atlas/atlas.html

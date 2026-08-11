@@ -1,7 +1,7 @@
 # user-accounts — FRONTEND_EXECUTION_CONTRACT
 
 > UI work + component states ONLY. References `INTERFACE_CONTRACT.md` for what it CONSUMES + `UX_BLUEPRINT.md`
-> for surfaces/copy/states. NO server internals. Reader has ONLY `.claude/PROJECT_CONTEXT.md` +
+> for surfaces/copy/states. NO server internals. Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` +
 > `INTERFACE_CONTRACT.md` + `UX_BLUEPRINT.md` + this file. Target: `apps/dashboard` (+ `libs/api`). Tests:
 > `npx nx test dashboard` (Vitest + jsdom + Testing Library + user-event), colocated `*.spec.tsx`.
 
@@ -129,4 +129,4 @@ Google-disabled no-crash + config-flip (T-G1/G2/G3), subsystem-failure ⇒ trade
 - The bundle/SSE path is provably unchanged (no new header/param; T-I2).
 - Anonymous browsing/persona/theme behave exactly as today (T-A1/A2/A3, T-F3).
 - Interface conformance (run by the BE/QA lane): `interface_conformance.py --spec
-  .claude/tools/conformance/user-accounts.json` PASS.
+  .spire/clusters/tech/state/conformance/user-accounts.json` PASS.

@@ -1,7 +1,7 @@
 # UX BLUEPRINT — Dealer-Flow Projection
 
 > Producer: UX/Tech-Writer. Consumers: Interface split → Backend + Frontend executioners + QA.
-> Reader has ONLY `.claude/PROJECT_CONTEXT.md` + the `PRODUCT_CONTRACT.md` + `ARCHITECTURE_CONTRACT.md`
+> Reader has ONLY `.spire/clusters/tech/context/PROJECT_CONTEXT.md` + the `PRODUCT_CONTRACT.md` + `ARCHITECTURE_CONTRACT.md`
 > for this feature. No chat history. This translates the locked product/architecture into concrete
 > UI/interaction design + user-facing copy. It sets NO server internals, NO math, NO final endpoint
 > decision (beyond NAMING the wire fields the UI consumes — the interface-split item the PM deferred to

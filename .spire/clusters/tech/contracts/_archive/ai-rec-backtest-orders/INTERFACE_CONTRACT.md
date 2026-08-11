@@ -97,7 +97,7 @@ refusal coupling (D1): default-off + end-to-end scripted marking is the safety b
 ## Conformance spec
 
 Machine-checkable (system-1) shapes live in the STANDALONE runnable file
-**`.claude/tools/conformance/ai_rec_backtest_orders.json`** (flat
+**`.spire/clusters/tech/state/conformance/ai_rec_backtest_orders.json`** (flat
 `{method,path,path_params,query,body,required}` schema `interface_conformance.py` executes —
 same standalone convention as `conformance/byo-ai-key.json`; system-12). This section is the
 human-readable truth; the JSON is its runnable projection.

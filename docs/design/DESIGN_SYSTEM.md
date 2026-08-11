@@ -9,7 +9,7 @@
 > |---|---|---|
 > | **Rules (sole)** | `.spire/clusters/tech/context/DESIGN_SYSTEM.md` | what you may/may not do |
 > | **Values** | `apps/dashboard/src/app/shared/theme/tokens.ts` | the exact hexes/type |
-> | **Decisions** | `.spire/clusters/tech/contracts/_archive/redesign-stage-{0..3}/` (migrated; was under `.claude/contracts/`) | why it is this way |
+> | **Decisions** | `.spire/clusters/tech/contracts/_archive/redesign-stage-{0..3}/` (migrated; was under `.spire/clusters/tech/contracts/`) | why it is this way |
 > | **Components** | *this file* | what exists + how to consume it |
 >
 > The former `.claude/skills/convexa-design` skill is **retired**. Do not reintroduce it.

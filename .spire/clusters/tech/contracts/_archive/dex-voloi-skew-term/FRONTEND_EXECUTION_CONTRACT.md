@@ -99,7 +99,7 @@ tooltips" verbatim.
 - [ ] UI implemented to spec and verified (see Verification).
 - [ ] `.claude/GAMMAFLOW_CONTEXT.md` refreshed if the UI changed the system's described behavior/state
       (re-read touched files; same section structure).
-- [ ] This feature's `.claude/contracts/<feature>/` folder archived once both lanes land, and
-      `.claude/OPEN_THREADS.md` updated (coordinate with backend so the folder is archived once both
+- [ ] This feature's `.spire/clusters/tech/contracts/<feature>/` folder archived once both lanes land, and
+      `.spire/clusters/tech/context/OPEN_THREADS.md` updated (coordinate with backend so the folder is archived once both
       land).
 - [ ] Committed.

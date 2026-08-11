@@ -12,7 +12,7 @@ Stage:        BOTH LANES ✅ DONE + CONDUCTOR GATES ✅ GREEN (2026-07-02) → a
               GATE Z ×2 (FE-flagged) ACCEPTED by conductor 2026-07-02: scenario_name added to arch §2
               provenance list; RecStatus.scenarios optional-typing resilience note on the interface.
               NOTE for GATE Q: conformance MUST be invoked with
-              --spec .claude/tools/conformance/ai_rec_backtest_orders.json (standalone-file
+              --spec .spire/clusters/tech/state/conformance/ai_rec_backtest_orders.json (standalone-file
               convention, like byo-ai-key) — the --contract form exits 2 by design.
 Repos:        both (backend scenario provider behind the LLMProvider seam · frontend orders store/engine/widget)
 Brief:        BRIEF.md present
@@ -20,7 +20,7 @@ Contracts:
   - ARCHITECTURE_CONTRACT.md   locked
   - PRODUCT_CONTRACT.md        locked
   - UX_BLUEPRINT.md            locked
-  - INTERFACE_CONTRACT.md      locked (conformance spec: .claude/tools/conformance/ai_rec_backtest_orders.json)
+  - INTERFACE_CONTRACT.md      locked (conformance spec: .spire/clusters/tech/state/conformance/ai_rec_backtest_orders.json)
   - BACKEND_EXECUTION_CONTRACT.md   locked
   - FRONTEND_EXECUTION_CONTRACT.md  locked
 Open amendments: none (2 FE-flagged items accepted + folded into ARCH/INTERFACE 2026-07-02)

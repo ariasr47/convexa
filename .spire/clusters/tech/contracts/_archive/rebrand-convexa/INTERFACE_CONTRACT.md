@@ -43,10 +43,10 @@ removed. (Listed so the FE/BE confirm zero drift, not because anything changes.)
 is nothing new to assert at the seam. The live backend must continue to satisfy the **EXISTING**
 conformance specs unchanged, post-rename:
 
-- `.claude/tools/conformance/user-accounts.json`
-- `.claude/tools/conformance/ai_recommendations.json`
-- `.claude/tools/conformance/api_metrics.json`
-- `.claude/tools/conformance/ticker-load-experience.json`
+- `.spire/clusters/tech/state/conformance/user-accounts.json`
+- `.spire/clusters/tech/state/conformance/ai_recommendations.json`
+- `.spire/clusters/tech/state/conformance/api_metrics.json`
+- `.spire/clusters/tech/state/conformance/ticker-load-experience.json`
 
 `interface_conformance.py` MUST PASS against these post-rename (AC-C2) — proving the response shape,
 envelope keys, and `meta.*` keys are unchanged and that no renamed backend identifier leaked into the
@@ -58,10 +58,10 @@ interface.
   "interface_change": false,
   "new_conformance_spec": false,
   "existing_specs_must_still_pass": [
-    ".claude/tools/conformance/user-accounts.json",
-    ".claude/tools/conformance/ai_recommendations.json",
-    ".claude/tools/conformance/api_metrics.json",
-    ".claude/tools/conformance/ticker-load-experience.json"
+    ".spire/clusters/tech/state/conformance/user-accounts.json",
+    ".spire/clusters/tech/state/conformance/ai_recommendations.json",
+    ".spire/clusters/tech/state/conformance/api_metrics.json",
+    ".spire/clusters/tech/state/conformance/ticker-load-experience.json"
   ],
   "byte_identical_invariants": [
     "opportunity_score",

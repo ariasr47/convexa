@@ -2,7 +2,7 @@
 Entry:        GATE M (backend fast-path — architect-style shape ruled by the conductor; PM/UX skipped,
               no UI implication per ORCHESTRATOR §3 Routine B)
 Stage:        GATE M opened 2026-07-27 — interface + backend contracts locked; backend lane building
-Repos:        backend only (`apps/api`) + `.claude/tools/conformance/`
+Repos:        backend only (`apps/api`) + `.spire/clusters/tech/state/conformance/`
 Brief:        BRIEF.md present
 Contracts:
   - ARCHITECTURE_CONTRACT.md   n/a (GATE M — the shape is a one-field additive attach following the
@@ -14,7 +14,7 @@ Contracts:
   - BACKEND_EXECUTION_CONTRACT.md   locked — projection helper in the events leaf, attach AFTER
     `generate_signals`, standalone conformance spec, runnable selftest, byte-identity GATE-Q surface
   - FRONTEND_EXECUTION_CONTRACT.md  NO_UI_CHANGE
-Conformance:  standalone `.claude/tools/conformance/bundle_events.json` (authored by the lane; the
+Conformance:  standalone `.spire/clusters/tech/state/conformance/bundle_events.json` (authored by the lane; the
               canonical convention — precedent `iv_rank.json` / `scanner.json`, NOT an embedded block)
 Open amendments: none
 QA (GATE Q):  pending — byte-identity (HARD) · the three states live (scheduled/none/**unknown**) ·

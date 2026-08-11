@@ -364,7 +364,7 @@ its own execution contract and GATE Q. Dependency edges are strict.
 |---|---|---|---|
 | **P1 — ScanStore** | The persistence leaf | — | `scanstore/` port + record + SQLite (default) + Postgres (parity-reviewed) + env factory + `_selftest`. **Already fully specified (Plan 1).** |
 | **P2 — Sweep worker + snapshot** | The producer | P1 | The 2nd-process entrypoint + nx `serve-worker` + embedded flag; the **net-new multi-ticker snapshot** method (port + Massive); the two-speed loop; **tiering/promotion pure logic (injected clock)**; heartbeat writes; the **bundle-blob** store method (§4.3). |
-| **P3 — Read API + conformance + warm-click + view** | The web surface | P1 + P2 | The scan/universe reads; the **server-gated per-account view** (auth-settings ports); the standalone `.claude/tools/conformance/scanner.json`; the ticker **warm-click read-through** of the P2 bundle-blob. Routes register under `/api/` **before** any `/{ticker}` catch-all. |
+| **P3 — Read API + conformance + warm-click + view** | The web surface | P1 + P2 | The scan/universe reads; the **server-gated per-account view** (auth-settings ports); the standalone `.spire/clusters/tech/state/conformance/scanner.json`; the ticker **warm-click read-through** of the P2 bundle-blob. Routes register under `/api/` **before** any `/{ticker}` catch-all. |
 | **P4 — Frontend `/scanner`** | The page | P3 | Swap the stub; the dense terminal table + view editor + the **four states** (skeleton / empty / worker-down banner / per-row degrade) + mobile card collapse; `libs/api` fetchers. References `docs/design/DESIGN_SYSTEM.md` (StatTile / TintChip[emphasis] / useFlashOnChange / Widget); joins the **393px no-overflow e2e** route set. |
 
 **Dependency edges:** P2 consumes P1's `ScanStore`. P3 consumes P1 + P2 (reads rows/heartbeat +
@@ -373,7 +373,7 @@ P2's bundle-blob write across the process boundary — P3 owns the read-through;
 
 **⚠ system-12 precedes P3's GATE U·X (hard).** BEFORE P3's design splits into build contracts,
 reconcile the conformance-spec **authoring docs** (they still say "embed the ```json block"; the
-**standalone `.claude/tools/conformance/{feature}.json`** convention is canonical — precedent
+**standalone `.spire/clusters/tech/state/conformance/{feature}.json`** convention is canonical — precedent
 `iv_rank.json`). These are **kit-managed framework files** → the fix flows back **via the kit
 (BACKLOG §E)**, not an in-place edit. Skipping this repeats the ai-recommendations GATE-Z bounce.
 
@@ -420,8 +420,8 @@ reconcile the conformance-spec **authoring docs** (they still say "embed the ```
 - `apps/api/main.py` — the web orchestration boundary (attach-after-scoring, the `/api/` route
   registration order, the auth gate wiring) the read API + warm-click mount onto.
 - `apps/api/src/auth/` — the auth-settings ports + server-side gate the per-account view rides.
-- `.claude/tools/conformance/iv_rank.json` — the standalone-conformance-spec precedent `scanner.json`
-  follows; `.claude/contracts/_archive/iv-rank/` — the persistent-market-data-store precedent
+- `.spire/clusters/tech/state/conformance/iv_rank.json` — the standalone-conformance-spec precedent `scanner.json`
+  follows; `.spire/clusters/tech/contracts/_archive/iv-rank/` — the persistent-market-data-store precedent
   (one-way leaf + parity-reviewed-not-live-verified Postgres).
 - `docs/design/DESIGN_SYSTEM.md` — the P4 component authority (StatTile / TintChip / useFlashOnChange
   / Widget).

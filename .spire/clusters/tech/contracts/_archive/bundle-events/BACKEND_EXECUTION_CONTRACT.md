@@ -14,8 +14,8 @@
 2. **Attach it in `main.py`** as `market_state.event_calendar`, **AFTER `generate_signals` returns** —
    the `iv_rank` / `market_context` attach-after-scoring precedent. Add the field to the `MarketState`
    Pydantic model as `Optional`, defaulting to `None`, so the key is always emitted.
-3. **The standalone conformance spec** `.claude/tools/conformance/bundle_events.json`, in the exact flat
-   shape of `.claude/tools/conformance/iv_rank.json` — assert the key's **presence + type** on the
+3. **The standalone conformance spec** `.spire/clusters/tech/state/conformance/bundle_events.json`, in the exact flat
+   shape of `.spire/clusters/tech/state/conformance/iv_rank.json` — assert the key's **presence + type** on the
    ticker endpoint (the value is legitimately `null`, so do not pin a populated payload).
 4. **A runnable selftest** for the projection (`apps/api` has no pytest — follow the `events_selftest.py`
    convention already in this leaf, assert-based, RED→GREEN).
@@ -53,14 +53,14 @@ Run by a fresh de-correlated `qa-verify` after the lane reports done (venv
    reads `unknown`.
 4. **Best-effort** — point `SCAN_EVENTS_PATH` at a missing/corrupt file ⇒ `event_calendar: null`,
    bundle **200**, `market_state`/`strike_profile` intact.
-5. **Conformance** — `interface_conformance.py --spec .claude/tools/conformance/bundle_events.json`
+5. **Conformance** — `interface_conformance.py --spec .spire/clusters/tech/state/conformance/bundle_events.json`
    GREEN against the running backend, plus the existing `iv_rank.json` sweep as a regression floor.
 6. **SSE untouched** — the live payload gains no field.
 7. **Upcoming-only** — no past-dated event appears; `days_until >= 0`.
 
 ## 4. Lane rules
 
-- Writes under `apps/api/` + `.claude/tools/conformance/` only. **No UI, no `libs/api`.**
+- Writes under `apps/api/` + `.spire/clusters/tech/state/conformance/` only. **No UI, no `libs/api`.**
 - Commit locally on `main`; **do not push** — the conductor pushes after GATE Q.
 - If the interface proves wrong or under-specified, **STOP and report** rather than inventing (GATE Z).
 - Note: the config currently has **4 deliberately-uncurated tickers** (TSLA, MU, CSCO, UNH) — they are

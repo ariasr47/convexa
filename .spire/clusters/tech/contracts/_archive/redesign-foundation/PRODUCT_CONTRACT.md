@@ -1,7 +1,7 @@
 # redesign-foundation — PRODUCT CONTRACT
 
 > Role: Delivery PM (PM-after-Architect, GATE P·X). PRODUCT LAYER ONLY of feature `redesign-foundation`.
-> Self-contained against `.claude/PROJECT_CONTEXT.md` (§5/§6/§7), `.claude/contracts/redesign-foundation/
+> Self-contained against `.spire/clusters/tech/context/PROJECT_CONTEXT.md` (§5/§6/§7), `.spire/clusters/tech/contracts/redesign-foundation/
 > BRIEF.md`, and the LOCKED `ARCHITECTURE_CONTRACT.md` (its §1–§7 boundary is respected and never
 > contradicted here). No chat-history dependency.
 >
