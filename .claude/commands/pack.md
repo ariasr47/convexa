@@ -9,7 +9,7 @@ from `project.json` → `context_file`.)
   which context sections LOAD (always-load invariant floor + the BRIEF's `Context tags:`) vs skip, and
   the line savings.
 - If I pass `--write`: run `node .claude/tools/gates.mjs context_for $ARGUMENTS --write`
-  — this materializes `.claude/contracts/$ARGUMENTS/_context-pack.md` and prints one line. That PATH is
+  — this materializes `.spire/clusters/tech/contracts/$ARGUMENTS/_context-pack.md` and prints one line. That PATH is
   what you hand a fresh role subagent instead of the whole canon; never relay the pack's contents.
 - If I pass `--print`: run `node .claude/tools/gates.mjs context_for $ARGUMENTS --print`
   and emit the assembled pack to this session, for inspecting the pack's contents yourself — not for

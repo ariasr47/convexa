@@ -139,7 +139,7 @@ agreed field list both sides build against").
 ---
 **Technical detail** *(skip freely)*
 GATE C closed (council R1–R4 + skeptic; 3 conflicts, 1 escalated) · wrote SPEC.md +
-INTERFACE_CONTRACT.md under .claude/contracts/checkout-redesign/ · contract_lint 0 · GATE PLAN done ·
+INTERFACE_CONTRACT.md under .spire/clusters/tech/contracts/checkout-redesign/ · contract_lint 0 · GATE PLAN done ·
 launch prompts §2/§3 dispatched as background subagents.
 ```
 

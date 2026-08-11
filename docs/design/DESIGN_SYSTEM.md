@@ -1,15 +1,18 @@
 # Convexa Design System — component reference
 
-> **Part 1: Identity & Signature** (generated from source 2026-07-23, post redesign-stage-3).
-> This is the **component layer** — what the shipped pieces are, their props/states/a11y, and how
-> to use them without breaking canon. It complements, never duplicates, the other three sources:
+> **Part 1: Identity & Signature** (generated from source 2026-07-23, post redesign-stage-3;
+> authority table updated 2026-08-10).
+> This is the **component catalog** — what the shipped pieces are, their props/states/a11y, and how
+> to use them without breaking canon. It complements, never overrides, the Spire design canon:
 >
 > | Layer | Lives in | Answers |
 > |---|---|---|
-> | **Rules** | `.claude/skills/convexa-design/SKILL.md` | what you may/may not do |
+> | **Rules (sole)** | `.spire/clusters/tech/context/DESIGN_SYSTEM.md` | what you may/may not do |
 > | **Values** | `apps/dashboard/src/app/shared/theme/tokens.ts` | the exact hexes/type |
-> | **Decisions** | `.claude/contracts/_archive/redesign-stage-{0..3}/` | why it is this way |
+> | **Decisions** | `.spire/clusters/tech/contracts/_archive/redesign-stage-{0..3}/` (migrated; was under `.claude/contracts/`) | why it is this way |
 > | **Components** | *this file* | what exists + how to consume it |
+>
+> The former `.claude/skills/convexa-design` skill is **retired**. Do not reintroduce it.
 >
 > Scope note (per the design-system "coverage over perfection" principle): this Part documents the
 > four **signature** pieces + the token **foundations** they rest on. The data primitives

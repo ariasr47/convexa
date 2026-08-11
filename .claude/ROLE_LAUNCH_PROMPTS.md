@@ -5,7 +5,8 @@ council lane (§1) runs three voices through blind positions, cross-critique, co
 and a fresh synthesis to produce `SPEC.md` + `INTERFACE_CONTRACT.md` — no per-role compressor hand-off;
 the round artifacts under `council/` ARE the trail. The two build lanes (§2/§3) each read the constant
 ground truth + those two artifacts, do only their lane's work, and ship code directly — no outbound
-contract, so no compressor either. QA (§4) reads the same two artifacts and writes only `QA_REPORT.md`.
+contract, so no compressor either. QA (§4) reads the same two artifacts and writes `QA_REPORT.md`, an
+independent `conformance-receipt-qa.json`, and a failure bounce when either verification track fails.
 
 Pipeline: **Discovery (GATE I, conductor-inline) → Design Council (GATE C) →
 {Backend ‖ Frontend Executioners} → QA/Verify (GATE Q) → Ship.** Discovery has no launch prompt
@@ -19,23 +20,23 @@ cover the Council plus the two executioners + QA.
 > **Context retrieval (system-5):** instead of re-reading all of `PROJECT_CONTEXT.md`, a session can
 > load the minimal pack — `node .claude/tools/gates.mjs context_for {FEATURE} --write`
 > (the always-load invariant floor §3+§5 + the sections the BRIEF's `Context tags:` select). This writes
-> `.claude/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
+> `.spire/clusters/tech/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
 > pack's contents — relaying it by value routes the whole pack through the caller's own context. Opt-in;
 > the whole file stays valid + single-source. Decouples per-session token cost from canon size.
 
-> **Lane-fenced subagents (system-4):** each role also has a tool-fenced subagent in `.claude/agents/`
-> (`delivery-architect` · `delivery-pm` · `delivery-ux` · `delivery-backend` · `delivery-frontend`
-> · `qa-verify`). A role spawned via the Agent tool is mechanically held to its lane — the three
-> council voices (architect/pm/ux) + QA have **no `Edit` and no `Bash`** (cannot modify or run code);
-> executioners get the build toolset. Tool-allowlists are the per-tool guard; the workspace write fence
-> (no writes outside the workspace root) is enforced by the `path_guard.js` PreToolUse hook
-> (system-4b, LANDED). Both lanes (`backend.dir`, `frontend.dir` — see `.claude/project.json`) live in
+> **Per-role subagents (system-4):** each role also has a subagent definition in `.claude/agents/`
+> (`spire-tech-architect` · `spire-tech-pm` · `spire-tech-ux` · `spire-tech-backend` · `spire-tech-frontend`
+> · `spire-tech-qa`). Per-agent tool allowlists mechanically enforce tool availability: the three council
+> voices (architect/pm/ux) have no `Edit` or `Bash`; QA receives `Bash` for runtime verification and
+> `Write` for verification artifacts while source repair remains instruction-held; executioners receive
+> the build toolset. The workspace write fence for structured write tools is enforced by the `path_guard.js` PreToolUse hook
+> (system-4b, LANDED). Both lanes (`backend.dir`, `frontend.dir` — see `.spire/clusters/tech/project.json`) live in
 > one repo, so each spawns as an in-repo Agent subagent.
 > Running each role still works as a manual session with the prompts below — the subagents just make the
-> lane enforceable when spawned.
+> tool availability enforceable when spawned; each role's path scope remains instruction-held.
 
 Placeholders to fill before pasting:
-- `{FEATURE}` = kebab folder name under `.claude/contracts/` (e.g. `user-auth-flow`).
+- `{FEATURE}` = kebab folder name under `.spire/clusters/tech/contracts/` (e.g. `user-auth-flow`).
 - `{GOAL}` = one short paragraph: what this feature must accomplish for the user/system.
 
 > Convention (per COMPRESSOR_PROMPTS.md): reference files, don't paste; assume **no chat history** —
@@ -62,7 +63,7 @@ handoffs.
 ---
 
 ## Running a role — the LITE path (system-9-lite · ADOPTED 2026-06-23)
-**Run each role as a FRESH spawn of its lane-fenced subagent, never a long-lived terminal.** Freshness
+**Run each role as a FRESH spawn of its own role subagent, never a long-lived terminal.** Freshness
 *is* the reliability: each session stays the pure function `output = role(ground_truth, inbound_contract)`
 — no accumulated context to drift, self-contradict, or smuggle a stale detail into a new decision (and
 no growing per-turn token cost). You (the human) still conduct — announce the transition, run the
@@ -73,13 +74,13 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
 
 | Gateway              | Spawn subagent        | Launch prompt | Writes                          |
 |----------------------|-----------------------|---------------|---------------------------------|
-| Council R1 (x3 parallel) | `delivery-architect` / `delivery-pm` / `delivery-ux` | §1 + `council/R1-position.md` | `council/R1-{role}.md` |
+| Council R1 (x3 parallel) | `spire-tech-architect` / `spire-tech-pm` / `spire-tech-ux` | §1 + `council/R1-position.md` | `council/R1-{role}.md` |
 | Council R2 (x3 parallel) | the same three, fresh | §1 + `council/R2-critique.md` | `council/R2-{role}.md` |
-| Council R4           | `council-synthesizer` (fresh) | `council/R4-synthesis.md` | `SPEC.md` + `INTERFACE_CONTRACT.md` |
-| Council S2           | `council-skeptic` (fresh; its file declares a different model) | `council/S2-skeptic.md` | `council/S2-findings.md` |
-| Backend (fan-out)    | `delivery-backend`   | §2            | server code (binds interface)   |
-| Frontend (fan-out)   | `delivery-frontend`  | §3            | UI code (binds interface)       |
-| QA / Verify (GATE Q) | `qa-verify`          | §4            | QA_REPORT.md                    |
+| Council R4           | `spire-tech-council-synthesizer` (fresh) | `council/R4-synthesis.md` | `SPEC.md` + `INTERFACE_CONTRACT.md` |
+| Council S2           | `spire-tech-council-skeptic` (fresh; its file declares a different model) | `council/S2-skeptic.md` | `council/S2-findings.md` |
+| Backend (fan-out)    | `spire-tech-backend`   | §2            | server code (binds interface)   |
+| Frontend (fan-out)   | `spire-tech-frontend`  | §3            | UI code (binds interface)       |
+| QA / Verify (GATE Q) | `spire-tech-qa`          | §4            | QA_REPORT.md                    |
 
 - **Discovery has no subagent:** GATE I (Discovery) runs **inline in the conductor**, not as a spawn —
   its output is a judgement, and it loads its planning surface at the gate (rationale:
@@ -89,12 +90,12 @@ context pack, let it write its one contract, then **discard it** (no reuse acros
 - **Lean context, not the whole canon:** give each spawn the pack —
   `node .claude/tools/gates.mjs context_for {FEATURE} --write` (always-load invariant floor
   + the BRIEF's `Context tags:`); it falls back to the floor if no tags. This writes
-  `.claude/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
+  `.spire/clusters/tech/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
   pack's contents — relaying it by value routes the whole pack through the conductor's own context, which
   is the longest-lived context in the system.
 - **You still run the gates between spawns:** `contract_lint.mjs` at every gateway; at GATE Q
-  `interface_conformance.mjs` + the `qa-verify` spawn. Lanes are tool-fenced (the subagents) + workspace
-  path-fenced (`path_guard.js`).
+  `interface_conformance.mjs` + the `spire-tech-qa` spawn. Lanes are tool-fenced (the subagents)
+  and workspace path-fenced (`path_guard.js`).
 - **Translate hand-backs into cards:** when a spawn returns, report it to the operator per
   `OPERATOR_REPORTS.md` — a Re-orientation card for background completions, a Problem card for
   failures; the subagent's raw report is footer material, never pasted above the fold.
@@ -118,9 +119,9 @@ needs to understand what is happening and where to intervene.
 | R1 Position | architect / pm / ux, in parallel | **nothing from the others** | `council/R1-{role}.md` |
 | R2 Critique | the same three, fresh instances | all three positions | `council/R2-{role}.md` (structured conflicts) |
 | R3 Reconcile | **the conductor** | everything | `council/decisions.md` |
-| R4 Synthesis | `council-synthesizer`, none of the three | everything | `SPEC.md` + `INTERFACE_CONTRACT.md` |
+| R4 Synthesis | `spire-tech-council-synthesizer`, none of the three | everything | `SPEC.md` + `INTERFACE_CONTRACT.md` |
 
-Then **S2**: `council-skeptic` attacks the spec, de-correlated by construction — its file declares a
+Then **S2**: `spire-tech-council-skeptic` attacks the spec, de-correlated by construction — its file declares a
 different model from the synthesizer's; Critical findings loop back to R4 (cap 2 passes).
 
 **R1 blindness is load-bearing.** It is what structurally replaces the independence the three separate
@@ -141,99 +142,58 @@ with a real FE-to-BE seam.
 ## 2. Backend Executioner
 ```text
 Read these files for full context, then implement the backend, acting as a backend engineer:
-- .claude/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .claude/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
-- .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
-- .claude/contracts/{FEATURE}/SPEC.md                          (§2 architecture + §7 testing strategy — your server work)
+- .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .claude/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
+- .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
+- .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§2 architecture + §7 testing strategy — your server work)
 
-Build only the server side. Emit exactly the fields/types/presence-and-error semantics the
-INTERFACE_CONTRACT specifies — that contract is binding; do not deviate from it unilaterally (if it
-is wrong, flag it, don't silently diverge). Honor every invariant carried in your context pack
-(_context-pack.md's domain/math invariants, best-effort isolation, and any promoted build invariants —
-the always-load floor guarantees these ship even on an untagged feature). Do not touch UI.
-
-Run the project the standard way and verify your output matches the INTERFACE_CONTRACT (shape,
-presence rules, and the failure/degradation semantics). Before reporting done, produce a conformance
-receipt — a REQUIRED deliverable, not a suggestion:
-`node .claude/tools/gates.mjs interface_conformance --contract
-.claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url <backend-base-url> --report
-.claude/contracts/{FEATURE}/conformance-receipt.json` (the server is already running, so this is one
-more command). A self-caught conformance FAIL now is one you fix in-lane instead of bouncing back from
-QA later. If the backend genuinely cannot be booted here, use the offline `--sample` mode instead — it
-records `UNVERIFIABLE`, which is honest, where claiming you verified is not. Name the receipt and its
-verdict in your done-report. If you discover the interface itself is wrong/incomplete, note it for a
-contract amendment rather than silently diverging or breaking the frontend's assumptions.
+Follow the lane boundaries, interface-binding rule, debugging/TDD method, and required conformance-
+receipt exit discipline in your agent definition. Apply them to the feature-specific inputs above;
+report the receipt path and verdict, and bounce an incorrect interface instead of diverging from it.
 ```
 
 ## 3. Frontend Executioner
 ```text
 Read these files for full context, then implement the frontend, acting as a frontend engineer:
-- .claude/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .claude/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
-- .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
-- .claude/contracts/{FEATURE}/SPEC.md                          (§4 — component states, copy, design direction; your UI work)
+- .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of the standing ground truth — the always-load invariant floor + this feature's tagged sections. Regenerate it now, unconditionally, even if it already exists: `node .claude/tools/gates.mjs context_for {FEATURE} --write`, then read the file it names — it can be stale, since GATE M/V skip the council round that writes it and `PROJECT_CONTEXT.md` can change after GATE C)
+- .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (the single source of integration truth)
+- .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (§4 — component states, copy, design direction; your UI work)
 
-Build only the client side. Consume exactly the fields the INTERFACE_CONTRACT defines — that
-contract is binding; do not assume fields it doesn't promise. Implement every component state and
-the exact degraded-state behavior from SPEC.md §4 (static content MUST persist
-on live-stream loss; only live fields show offline/stale; never blank on a failed refresh once content
-has loaded; auto-reconnect). Do not touch server internals or math.
-
-Automated tests are PART OF THE DELIVERABLE for every feature (standing rule). Use the project's
-configured component-test stack and run it via `project.json` → `frontend.test_cmd`; colocate the test
-files with the code. Three levels, the flow-integration one is the CENTERPIECE:
-- unit — pure logic (hook reducers/derivations, computed values, formatters), deterministic, no DOM;
-- component — render each component state from the contract (default/loading/stale/offline/empty/
-  error) + the key interactions, asserting observable output;
-- integration (CENTERPIECE) — drive the actual USER FLOW end-to-end through every edge case/variation:
-  mount the feature subtree, mock ONLY the network boundary (the typed API client, or fetch/the
-  streaming transport — NEVER a live backend), then walk the journey (e.g. a record moves through its
-  lifecycle -> a live event arrives -> the stream drops -> live fields go offline/stale while the static
-  content persists -> reconnect), plus cold-start-fail vs post-success-refresh-fail, not-found/empty,
-  per-field nulls. These are the manual mock checks done by hand, made re-runnable.
-Assert the contract's observable behaviors + the promoted invariants (live-vs-static isolation,
-best-effort degradation), not a coverage %. E2E: a real-browser flow tool is adopted nearer go-live for
-the critical path, optional before then. Run the configured test command (plus any shared-lib test
-command if you touched a shared client lib) and make it GREEN before reporting done — QA re-runs it at
-GATE Q.
-
-Design quality: build to the UX token plan ("Design tokens + signature") exactly, and run the
-.claude/DESIGN_RULES.md visual verification loop (§1.6) before reporting done — it is part of "done".
-
-Run the project the standard way (`project.json` → `frontend.serve_cmd`) and verify the live-loss /
-stale / cold-start states behave as specified against the acceptance criteria. A controllable mock at
-the network boundary lets you drive each degraded path manually too. Report what you changed and how
-you verified it — name the states you exercised AND include the test result. If a needed field is
-missing from the interface, flag it for a contract amendment — do not invent it.
+Follow the lane boundaries, interface-binding rule, required unit/component/flow-integration test
+floor, degraded-state behavior, and visual-verification exit discipline in your agent definition.
+Apply them to the feature-specific inputs above; report the states exercised and test result, and
+bounce a missing interface field instead of inventing it.
 ```
 
 ## 4. QA / Verify (GATE Q — runs after BOTH executioners, before ship)
 The teeth-having verification role (system-2). A **fresh session, NOT one of the builders** — it ends
 "builders mark their own homework." It confirms every acceptance criterion point-by-point, **fixes
-nothing**, and bounces any gap via GATE Z. Its agent file declares `model: opus` against the Sonnet
+nothing**, and bounces any gap via GATE Z. It runs on the provider's decide tier against execute-tier
 build lanes, so its blind spots are de-correlated from theirs by construction (system-6). Subagent:
-`.claude/agents/qa-verify.md`.
+`spire-tech-qa` (its agent file's name and format are the host's business, not this document's).
 ```text
 Read these files for full context, then act as a strict QA / Verification engineer (a FRESH session,
 deliberately NOT one of the builders — no one marks their own homework):
-- .claude/PROJECT_CONTEXT.md                                       (standing ground truth)
-- .claude/contracts/{FEATURE}/SPEC.md                               (§3 ACCEPTANCE CRITERIA — your checklist)
-- .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md                 (integration truth — what BE emits / FE consumes)
-- .claude/OPEN_THREADS.md §9 ONLY                                    (the "Resolved decisions — do NOT revisit" section: honor those promoted invariants. Read §9; do NOT read §1-§8 — they are open items and shipped history you do not verify against.)
+- .spire/clusters/tech/context/PROJECT_CONTEXT.md                                       (standing ground truth)
+- .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                               (§3 ACCEPTANCE CRITERIA — your checklist)
+- .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md                 (integration truth — what BE emits / FE consumes)
+- .spire/clusters/tech/context/OPEN_THREADS.md §9 ONLY                                    (the "Resolved decisions — do NOT revisit" section: honor those promoted invariants. Read §9; do NOT read §1-§8 — they are open items and shipped history you do not verify against.)
 
-Your job: confirm POINT BY POINT that every acceptance criterion in SPEC.md §3 actually holds
-against the real built/running feature. You VERIFY; you FIX NOTHING — no code edits, no contract edits,
-no "making the AC pass." Treat each builder's self-verification as UNVERIFIED until you observe it.
+Apply the verification-only boundary in your agent definition: observe every criterion point by
+point, treat builder claims as unverified evidence, and bounce failures rather than fixing them.
 
 Method:
 - Run the project the standard way (backend `project.json` → `backend.serve_cmd`; frontend
   `project.json` → `frontend.serve_cmd`) and OBSERVE. The ACs are written to be observable without
-  reading code — verify by observation first; read code only to explain a failure.
+  reading code — verify by observation first. Read code to explain an observed failure or to perform the
+  mandatory criteria-independent changed-code Critical sweep; code reading never substitutes for runtime
+  observation.
 - For EACH acceptance criterion, verbatim and in order, assign exactly one verdict:
   PASS (observed to hold — cite evidence) · FAIL (observed not to hold — expected vs actual + repro) ·
   UNVERIFIABLE (couldn't exercise it — say precisely why).
 - Verify INTERFACE_CONTRACT integration with the runtime conformance check (system-1): with the backend
   running, run `node .claude/tools/gates.mjs interface_conformance --contract
-  .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url <backend-base-url> --report
-  .claude/contracts/{FEATURE}/conformance-receipt-qa.json` — your own independent run, never trust the
+  .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md --url <backend-base-url> --report
+  .spire/clusters/tech/contracts/{FEATURE}/conformance-receipt-qa.json` — your own independent run, never trust the
   receipt the backend lane already wrote. Compare your `verdict` against the backend's
   `conformance-receipt.json` — yours is authoritative. Backend PASS against your FAIL is the serious
   case (drift, or the backend never ran it); a missing backend receipt is also a bounce. A conformance
@@ -248,11 +208,11 @@ Method:
   `review` is confirmed by inspection. A `test`-marked AC with no corresponding test is a FAIL even if the
   green suite passes — name the uncovered AC in the bounce.
 
-Write .claude/contracts/{FEATURE}/conformance-receipt-qa.json (produced by the tool above) and
-.claude/contracts/{FEATURE}/QA_REPORT.md: a table (AC verbatim · verdict · evidence), a summary
-(n PASS / n FAIL / n UNVERIFIABLE), and an explicit overall GATE Q verdict — PASS only if every AC is
-PASS and no invariant is broken, else FAIL. On any FAIL, ALSO append an "Amendments bounced to {owner}"
-section (failing AC · observed vs expected · owning lane Backend|Frontend).
+Write .spire/clusters/tech/contracts/{FEATURE}/conformance-receipt-qa.json (produced by the tool above) and
+.spire/clusters/tech/contracts/{FEATURE}/QA_REPORT.md: a table (AC verbatim · verdict · evidence), a summary
+(n PASS / n FAIL / n UNVERIFIABLE), then apply the overall GATE Q verdict rule from `spire-tech-qa`; do not
+restate or weaken it here. On any FAIL, ALSO append an "Amendments bounced to {owner}" section (failing
+AC · observed vs expected · owning lane Backend|Frontend).
 
 Stay in lane: QA_REPORT.md, conformance-receipt-qa.json, and the bounce on failure are your ONLY writes — no code, no contract
 edits, no fixes. Run no compressor; the Orchestrator routes on your verdict (PASS → GATE S; FAIL →
@@ -262,15 +222,15 @@ GATE Z, then GATE Q re-runs on the fix). Then stop.
 ## 5. Planner (GATE PLAN — after spec approval, before the lanes)
 The largest generative task that used to run inline in the conductor (~24K of context for work that
 needs zero conductor state — `SPEC.md` is required to stand alone). Spawn ONE fresh
-`delivery-planner` subagent; hand it only the three paths below. It writes `PLAN.md` and reports
+`spire-tech-planner` subagent; hand it only the three paths below. It writes `PLAN.md` and reports
 per the summary contract (§0).
 ```text
 Act as the delivery planner for {FEATURE}. Read these files, then produce the implementation plan:
-- .claude/contracts/{FEATURE}/SPEC.md                          (approved design — plan this, change nothing)
-- .claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (integration truth — copy its Conformance spec into the plan's Global Constraints verbatim)
-- .claude/contracts/{FEATURE}/_context-pack.md                 (your slice of ground truth; if absent: `node .claude/tools/gates.mjs context_for {FEATURE} --write`)
+- .spire/clusters/tech/contracts/{FEATURE}/SPEC.md                          (approved design — plan this, change nothing)
+- .spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md            (integration truth — copy its Conformance spec into the plan's Global Constraints verbatim)
+- .spire/clusters/tech/contracts/{FEATURE}/_context-pack.md                 (your slice of ground truth; if absent: `node .claude/tools/gates.mjs context_for {FEATURE} --write`)
 
-Invoke superpowers:writing-plans and write PLAN.md to .claude/contracts/{FEATURE}/PLAN.md with
+Follow .claude/plan/PLAN_METHOD.md and write PLAN.md to .spire/clusters/tech/contracts/{FEATURE}/PLAN.md with
 backend, frontend and verification tracks. If the spec cannot be planned as written, stop and
 report the contradiction — never plan around it.
 ```

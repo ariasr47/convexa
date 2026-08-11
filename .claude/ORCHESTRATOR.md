@@ -1,5 +1,16 @@
 # ORCHESTRATOR — Universal Session Orchestrator (standing reference)
 
+## Navigation
+
+- [Operating loop](#0-operating-loop-run-this-every-time-i-announce-a-transition)
+- [File topology](#1-file-topology-whats-constant-vs-variable)
+- [Project layout](#2-project-layout-route-writes-correctly--read-claudeprojectjson)
+- [Gateway catalog](#3-gateway-catalog): GATE I · C · PLAN · M · V · Z · R · Q · S
+- [Per-feature manifest and brief](#4-per-feature-manifest-_manifestmd--the-one-structural-addition)
+- [Status report](#5-status-report-after-every-gateway)
+- [Invariants](#6-invariants-i-never-break)
+- [Audience-aware communication](#7-communicate-for-every-audience-assume-mixed-technical-fluency)
+
 > Paste/reference this to make a session act as the **Delivery Conductor**. Its one job:
 > eliminate manual copy-paste between the pipeline's sessions — the three-voice **Design Council**
 > (`/council`, GATE C) and the **Backend**/**Frontend** executioners — by **auditing the files you
@@ -16,21 +27,21 @@
 ## 0. Operating loop (run this every time I announce a transition)
 1. **Identify the gateway** from my announcement (table in §3). If ambiguous, ask ONE crisp
    question (which gateway / which feature) — otherwise just act.
-2. **Resolve the feature** = kebab folder under `.claude/contracts/{FEATURE}/`. Create it if new.
+2. **Resolve the feature** = kebab folder under `.spire/clusters/tech/contracts/{FEATURE}/`. Create it if new.
 3. **Audit** the files I name + the gateway's default audit set (§3). Read the repo, not chat
    history — every contract must stand alone against `PROJECT_CONTEXT.md` + its inbound contract.
 4. **Compress** per the gateway's rule (reuse a compressor from `COMPRESSOR_PROMPTS.md`; strip
    deliberation, keep decisions) — **except GATE C**, which has no compress step: the council's own
    R3 reconcile + R4 synthesis produce `SPEC.md`/`INTERFACE_CONTRACT.md` directly (see §3 GATE C).
 5. **Write** the output contract(s) to the exact paths in §3 (correct repo — see §2).
-6. **Update** `.claude/contracts/{FEATURE}/_MANIFEST.md` (§4).
+6. **Update** `.spire/clusters/tech/contracts/{FEATURE}/_MANIFEST.md` (§4).
 7. **Gate-check (mechanical, system-3):** run
    `node .claude/tools/gates.mjs contract_lint {FEATURE}`. A non-zero exit (**ERROR** —
    a missing artifact, missing acceptance criteria, `SPEC.md` not referencing the interface, a
    missing/unparseable conformance block, a missing manifest/BRIEF field, or a promoted key missing from
    canon) **blocks the handoff**; fix the structural violation before routing. WARNINGs are advisory —
    judge them.
-8. **Capture** any *binding* decision the gateway locked into `.claude/DECISION_LEDGER.md` — one row
+8. **Capture** any *binding* decision the gateway locked into `.spire/clusters/tech/context/DECISION_LEDGER.md` — one row
    per decision (`key · feature · gate · statement · binding`). This is the compounding-memory intake
    (§3a); only log decisions a future feature could violate (same bar as the GATE I cull).
 9. **Report** to the user as an operator card (`OPERATOR_REPORTS.md`; §5 maps events → cards):
@@ -46,51 +57,57 @@ gateway you name.
 ## 1. File topology (what's constant vs variable)
 - **Constant (every session reads, I rarely write):** the project context file's **invariant floor
   only** (`node .claude/tools/gates.mjs context_for --print`, no feature — the always-load sections)
-  · `.claude/OPEN_THREADS.md` **§9 only** (the promoted invariants). The full planning surface —
+  · `.spire/clusters/tech/context/OPEN_THREADS.md` **§9 only** (the promoted invariants). The full planning surface —
   `BACKLOG.md`, `OPEN_THREADS.md` §1–§8, `DECISION_LEDGER.md`, the full context file — is
   **gate-loaded, not constant**: GATE I reads it when it runs (§3), and no other gate needs it whole.
-- **Session-resume overlay (read at boot if present):** `.claude/RESUME.md` — the conductor's own
-  "where we are right now + what's next" snapshot, written/refreshed at GATE R (§3). The `/conductor` boot
-  reads it LAST, after the canon, as an overlay (reconcile + flag divergence, never a replacement); a fresh
-  conductor I start after a context-threshold handoff continues from it. Optional + transient — refresh or
-  remove it once consumed so it never goes stale against the canon.
+- **Session-resume overlay (read at boot if present):** `.spire/clusters/tech/state/<branch-slug>/RESUME.md` — the
+  conductor's own "where we are right now + what's next" snapshot, written/refreshed at GATE R (§3),
+  **scoped to the branch** so parallel sessions cannot adopt each other's state. The slug comes from
+  `git branch --show-current`: every character outside `[A-Za-z0-9._-]` replaced by `-`; empty output
+  (exit 0) ⇒ detached HEAD ⇒ `detached-<sha7>` from `git rev-parse --short HEAD`; a non-zero exit ⇒
+  not a git repo ⇒ no scoped resume overlay. The `/conductor` boot
+  reads the scoped file LAST, after the canon, as an overlay (reconcile + flag divergence, never a
+  replacement) and surfaces the snapshot's own date. `.spire/clusters/tech/state/IN_FLIGHT.md`
+  (one row per active branch) is read alongside it: overlap with another branch's `touching` is named
+  at boot. Rows are written only at GATE R, so a thin or absent `IN_FLIGHT.md` is not evidence of no
+  overlap — it may just mean no session has reached GATE R yet.
 - **Standing references (I route to, don't duplicate):**
   `.claude/COMPRESSOR_PROMPTS.md` (#1 Universal · #2 Session-Transition · #4 Resume) ·
   `.claude/ROLE_LAUNCH_PROMPTS.md` (§0 Summary contract · §1 The Design Council · §2 Backend
   · §3 Frontend · §4 QA/Verify · §5 Planner) ·
-  `.claude/BACKLOG.md` (the standing idea pool + roadmap-discovery method — feeds GATE I) ·
-  `.claude/DECISION_LEDGER.md` (the compounding-memory ledger + promotion rule — captured every
+  `.spire/clusters/tech/context/BACKLOG.md` (the standing idea pool + roadmap-discovery method — feeds GATE I) ·
+  `.spire/clusters/tech/context/DECISION_LEDGER.md` (the compounding-memory ledger + promotion rule — captured every
   gateway, graduated at GATE S, fed forward into GATE I) ·
-  `.claude/agents/*` (per-role lane-fenced subagents — system-4) ·
+  `.claude/agents/*` (the per-role subagent definitions — lane-fenced, system-4) ·
   `.claude/tools/*` (`contract_lint.mjs` — system-3 gate-check; `interface_conformance.mjs` — system-1
   runtime conformance; `context_for.mjs` — system-5 context pack; `path_guard.js` — system-4b write fence) ·
   `.claude/commands/*` (slash commands: `/conductor` boot · `/council` {feature} the design council ·
-  `/status` pipeline state · `/gatecheck` {feature} mechanical gates · `/pack` {feature} context pack).
+  `/design-system` project design canon · `/status` pipeline state · `/gatecheck` {feature} mechanical gates · `/pack` {feature} context pack).
 - **Operating mode (system-9-lite, adopted):** run each role as a **fresh spawn** of its
-  `.claude/agents/delivery-*` subagent (+ a `context_for.mjs` pack), discarded after each handoff —
+  `.claude/agents/spire-tech-*` subagent (+ a `context_for.mjs` pack), discarded after each handoff —
   never a long-lived role session. The conductor stays manual (you); the role work is disposable +
   fresh. See `ROLE_LAUNCH_PROMPTS.md` "Running a role — the LITE path." **Exception:** GATE I
   (Discovery) has no subagent — the conductor runs it **inline** (rationale in §3 GATE I); every other
-  gateway spawns its lane-fenced subagent.
+  gateway spawns its own role subagent.
 - **Model routing (adopted 2026-08-03):** every `.claude/agents/*` file declares its own `model:`, so a
   role's model no longer follows whichever model the conductor happens to be running.
-  **Opus decides and judges; Sonnet executes** — the three council voices, the R4 synthesizer and QA
-  run Opus; the two build lanes run Sonnet. `council-skeptic` declares a *different* model from
-  `council-synthesizer` by construction, which is what makes S2 an independent check rather than a
-  second opinion from the same blind spots; `qa-verify` differs from both build lanes for the same
+  **The provider's decide tier decides and judges; its execute tier executes** — the three council voices, the R4 synthesizer and QA
+  run on the decide tier; the two build lanes run on the execute tier. `spire-tech-council-skeptic` declares a *different* provider-resolved tier from
+  `spire-tech-council-synthesizer` by construction, which is what makes S2 an independent check rather than a
+  second opinion from the same blind spots; `spire-tech-qa` differs from both build lanes for the same
   reason. A declared model is a **floor**: a role may be escalated upward for one feature, and is
   never routed downward at dispatch — a pipeline that can quietly buy less never fails visibly, it
   just produces slightly worse specs forever. **Escalation is my call, surfaced as a Decision card**
   (`OPERATOR_REPORTS.md` §3.3), and the sanctioned trigger is rework: a lane bouncing GATE Z twice on
-  the same feature. **`council-skeptic` is never escalated** — raising it to the synthesizer's model
+  the same feature. **`spire-tech-council-skeptic` is never escalated** — raising it to the synthesizer's model
   deletes the property it exists to provide. `kit_lint` fails any agent that declares no model at all.
-- **The conductor's own model — Opus, held for the whole feature.** The conductor is not a subagent, so
+- **The conductor's own model — the provider's decide tier, held for the whole feature.** The conductor is not a subagent, so
   no frontmatter reaches it: this one is a recommendation the kit cannot enforce. Three of its jobs are
   inline judgement — R3 reconcile, GATE I discovery, GATE S promotion — so by the rule above it decides,
-  and decides on Opus. **Do not switch model mid-feature to save tokens.** Switching invalidates the
+  and decides on the provider's decide tier. **Do not switch model mid-feature to save tokens.** Switching invalidates the
   prompt cache of the longest-lived context in the pipeline, several times over; a "cheap to coordinate,
   expensive to decide" split costs more than it saves. Per-role spend is visible in `/usage`.
-- **Variable (per feature — what I produce):** `.claude/contracts/{FEATURE}/` containing `BRIEF.md` (the
+- **Variable (per feature — what I produce):** `.spire/clusters/tech/contracts/{FEATURE}/` containing `BRIEF.md` (the
   chosen idea that seeds the pipeline — output of GATE I), **`SPEC.md`** (the council's synthesized
   design) and **`INTERFACE_CONTRACT.md`** (the FE-to-BE single source of truth; both build lanes bind to
   it), plus `_MANIFEST.md` (§4), the round artifacts under `council/`, and as needed `PLAN.md`,
@@ -102,18 +119,18 @@ Pipeline (canonical): **Discovery (GATE I, optional) → Council (GATE C) → Pl
 contract** (they ship code), so the next gateway after them is **QA/Verify (GATE Q)**, then
 **SHIP (GATE S)** — QA is a fresh session, never the builder verifying itself.
 
-## 2. Project layout (route writes correctly — read `.claude/project.json`)
-The per-project seam is `.claude/project.json`. It names the **backend** lane (`backend.dir` +
+## 2. Project layout (route writes correctly — read `.spire/clusters/tech/project.json`)
+The per-project seam is `.spire/clusters/tech/project.json`. It names the **backend** lane (`backend.dir` +
 `backend.serve_cmd`/`port`) and the **frontend** lane (`frontend.dir` +
 `frontend.serve_cmd`/`port`/`test_cmd`). Resolve every path/command/port from there — never hardcode a
 project's internal layout into a contract or a launch.
-- **All `.claude/` contracts** live in `.claude/contracts/{FEATURE}/` at the workspace root — the
+- **All Tech contracts** live in `.spire/clusters/tech/contracts/{FEATURE}/` at the workspace root — the
   single FE↔BE truth, shared by both lanes.
 - When auditing "what was built," read backend files under `backend.dir` and frontend files under
   `frontend.dir`. Single workspace; the `path_guard.js` fence covers everything under the repo root.
-- **Dispatch — both lanes are in-repo Agent subagents (report-back, no polling).** `path_guard.js`
-  covers both lanes under one root, so there is no cross-repo fence to route around. Spawn either role
-  (`delivery-backend`, `delivery-frontend`, …) as a **subagent via the Agent tool**: its final report
+- **Dispatch — both lanes are in-repo Agent subagents (report-back, no polling).** Both lanes work
+  under one root, so there is no cross-repo fence to route around. Spawn either role
+  (`spire-tech-backend`, `spire-tech-frontend`, …) as a **subagent via the Agent tool**: its final report
   returns to the conductor automatically (sync result; or `run_in_background` ⇒ a `<task-notification>`
   on completion), and the fence allows the writes. This is the system-9-lite path for **every** lane.
 
@@ -132,9 +149,27 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 > the next feature inherits. The generative judgement (is this decision binding? does the prose read
 > right?) stays in the gateway; the ledger makes recurrence mechanical instead of remembered.
 
+### Project design canon (onboarding + mature-by-amendment; not a feature gateway)
+
+- **Trigger (first SET / re-baseline):** "set the design system / design-system / codify brand /
+  greenfield visual direction."
+- **When:** first UI work, install onto an existing app without a SET canon, or human re-baseline.
+- **Do:** run `/design-system` (Claude/Grok) or follow `.claude/design/DESIGN_SYSTEM_METHOD.md` —
+  detect codify|propose|no-UI → Decision cards → fresh synthesizer writes
+  `.spire/clusters/tech/context/DESIGN_SYSTEM.md` → `spire-tech-council-skeptic` anti-slop pass.
+  Not a full R1–R4 feature council.
+- **Gate:** `contract_lint` **M9** — UI-touching specs (no `NO_UI_CHANGE` in the SPEC body) ERROR
+  while the canon is missing or `Status: UNSET`. Backend-only: put `NO_UI_CHANGE` in the SPEC body.
+- **After SET — mature, do not freeze:**
+  - **Wireframe accepted** → append Wireframe / source log + Amendments (tokens/components added);
+    contradiction with SET direction → Decision card, not silent overwrite.
+  - **R2 `product` conflict** needing a new pattern → human rules → append Amendments (same as other
+    product calls); UX/R4 do not invent a second system in SPEC §4.
+  - **Re-baseline** → full design-system process again; prior direction stays in Amendments history.
+
 ### GATE I — Discovery / roadmap (PRE-pipeline)  → Design Council (GATE C)
 > The only divergent gate — and the **one role the conductor runs INLINE itself**, not as a fresh
-> `delivery-*` subagent. This is a deliberate, reasoned exception to fresh-subagent-per-gateway
+> `spire-tech-*` subagent. This is a deliberate, reasoned exception to fresh-subagent-per-gateway
 > (system-9-lite), on three concrete grounds:
 > 1. **Its output is a judgement whose alternatives vanish in a summary.** Every other gate hands
 >    back an inspectable artifact (a spec, a plan, a verdict); Discovery hands back a CHOICE. A
@@ -146,7 +181,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 >    cannot use the system-5 sharded pack (`context_for.mjs` keys off the BRIEF's `Context tags:`). It
 >    needs the whole planning surface — loaded here, at the gate (below), not at boot.
 > 3. **No code to lane-fence from.** Its only outputs (`BACKLOG.md` + the chosen `BRIEF.md`) are the
->    conductor's own `.claude/` planning surface; the tool-fence that justifies the author subagents
+>    conductor's own `.spire/clusters/tech/` planning surface; the tool-fence that justifies the author subagents
 >    (can't `Edit` `src/`) buys nothing here.
 >
 > So GATE I's generative work — harvest → cull → score → cull-to-one — happens **in the conductor**; the
@@ -186,23 +221,24 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
      invariant it would touch.
   5. **Cull to ONE** next feature.
 - **Write:** update `BACKLOG.md` (the full prioritized pool — diverge) **and** create
-  `.claude/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a). The created
+  `.spire/clusters/tech/contracts/{FEATURE}/BRIEF.md` for the chosen one (converge — see §4a). The created
   `BRIEF.md` must fill `Considered:` with the full cull set, not only the winner.
 - **Route:** the chosen `BRIEF.md`'s `{GOAL}` opens **GATE C** — the Design Council.
 
 ### GATE C — Design council  → Plan (GATE PLAN)
 - **Trigger:** "design it / run the council / the brief is ready."
 - **Run with:** `/council {FEATURE}` — that command is the authority for rounds, prompts and dispatch.
-- **Audit:** the feature's context pack (`.claude/contracts/{FEATURE}/_context-pack.md`; regenerate via
+- **Audit:** the feature's context pack (`.spire/clusters/tech/contracts/{FEATURE}/_context-pack.md`; regenerate via
   `node .claude/tools/gates.mjs context_for {FEATURE} --write` if absent — by GATE C a `BRIEF.md`
   exists, so the pack is available; this is the same source the council voices already receive) +
-  `OPEN_THREADS.md` **§9 only**, the feature's `BRIEF.md`, `DESIGN_RULES.md`
-  (pointer, not restated), and the promoted canon.
+  `OPEN_THREADS.md` **§9 only**, the feature's `BRIEF.md`, project design canon
+  (`.spire/clusters/tech/context/DESIGN_SYSTEM.md` when present — adhere if `SET`), and the promoted
+  canon.
 - **Rounds:** R1 blind positions (architect / pm / ux in parallel) → R2 cross-critique (quoted
   conflicts, tagged `technical` or `product`) → **R3 reconcile — mine**: technical conflicts go back to
   the two voices involved for one exchange, product conflicts go to the user ONE at a time as Decision
-  cards → R4 synthesis by `council-synthesizer`, a fresh agent that is none of the three voices. Then
-  **S2**, an adversarial spec review by `council-skeptic`, whose file declares a different model from
+  cards → R4 synthesis by `spire-tech-council-synthesizer`, a fresh agent that is none of the three voices. Then
+  **S2**, an adversarial spec review by `spire-tech-council-skeptic`, whose file declares a different model from
   the synthesizer's; Critical findings loop back to R4 (cap 2 passes).
 - **Write:** `SPEC.md` + `INTERFACE_CONTRACT.md`, plus the round artifacts under `council/`.
   `INTERFACE_CONTRACT.md` MUST carry a machine-checkable `## Conformance spec` json block (or be
@@ -211,9 +247,9 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 
 ### GATE PLAN — Plan the approved spec  → Backend ‖ Frontend
 - **Trigger:** "the spec is approved / plan it."
-- **Do:** spawn ONE fresh `delivery-planner` subagent (`ROLE_LAUNCH_PROMPTS.md` §5) — never plan
+- **Do:** spawn ONE fresh `spire-tech-planner` subagent (`ROLE_LAUNCH_PROMPTS.md` §5) — never plan
   inline; the plan's generative work must not enter this session's persistent context. The planner
-  runs `superpowers:writing-plans` over `SPEC.md` and writes `PLAN.md`; its plan's **Global
+  follows `plan/PLAN_METHOD.md` over `SPEC.md` and writes `PLAN.md`; its plan's **Global
   Constraints must copy the conformance block verbatim** so both lanes inherit the same binding
   shape. **Revisions within this session continue the SAME planner agent** (§5's loop rule) — a
   fresh spawn per revision pays the cold-start 2–4× over.
@@ -238,12 +274,13 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 ### GATE V — Visual / Observability cleanup fast-path: UX → Frontend (skip math)   *(= your Routine C)*
 - **Trigger:** "visual fix / layout tweak / component fault / graceful-degradation wording — no
   math."
-- **Use when:** component states, layout, copy, or stream-degradation behavior change with **no
+- **Use when:** component states, layout, copy, or degraded-state behavior change with **no
   engine/endpoint change**.
 - **Audit:** `PROJECT_CONTEXT.md`'s invariant floor (`node .claude/tools/gates.mjs context_for --print`,
-  no feature — §5 carries the live-vs-static / degradation rules) or the feature's context pack if one
-  exists, `SPEC.md` §4, `DESIGN_RULES.md` (the design-quality canon — pointer, not restated), the named
-  frontend file(s) under `frontend.dir` (e.g. the main view/component you name).
+  no feature — §5 carries project-owned promoted invariants, including any live/static or degradation
+  rules the product has graduated) or the feature's context pack if one exists, `SPEC.md` §4, any
+  project design canon (`.spire/clusters/tech/context/DESIGN_SYSTEM.md` when present — adhere if `SET`),
+  and the named frontend file(s) under `frontend.dir` (e.g. the main view/component you name).
 - **Compress:** compile exact visual expectations, state changes, and component touchpoints.
 - **Write:** overwrite `SPEC.md` §4 (component states, copy, design direction — new design blueprint).
 - **Token-saving isolation:** backend untouched — flag `NO_BACKEND_CHANGE` in the manifest; do not
@@ -279,16 +316,27 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   at a natural, clean phase boundary in a long multi-lane build (e.g. about to fan out several lanes, or
   a GATE S just closed) worth checkpointing on its own merits regardless of context — pause at a **safe
   boundary** (between gateways, **never mid-build** — finish or cleanly checkpoint the in-flight
-  role/gate first), write/refresh `.claude/RESUME.md`, then **PROPOSE** that the user continue in a fresh
-  `/conductor` session — which reads `.claude/RESUME.md` at boot (§1) and resumes exactly here.
+  role/gate first), write/refresh `.spire/clusters/tech/state/<branch-slug>/RESUME.md`, then **PROPOSE** that the user
+  continue in a fresh `/conductor` session — which reads that scoped `RESUME.md` at boot (§1) and resumes
+  exactly here.
   **Propose, never force:** starting the fresh session is the user's; harness auto-summarization is a
   backstop, not a substitute for writing the snapshot. This closes a loop with the boot read: GATE R
   writes it → the next `/conductor` consumes it.
 - **Compress:** Compressor **#4** (Session-Resume).
-- **Write:** the session-level snapshot goes to `.claude/RESUME.md` (top level); a feature-scoped resume of
-  one in-flight build may instead go to `{FEATURE}/RESUME.md`. Contents: objective, done + files changed,
-  in-progress & exactly where it stopped, next concrete step, gotchas. Self-contained against
-  `PROJECT_CONTEXT.md`. Mark it dated so a future boot can tell a fresh overlay from a stale one.
+- **Write:** the session-level snapshot goes to `.spire/clusters/tech/state/<branch-slug>/RESUME.md` (slug rule
+  above); a feature-scoped resume of one in-flight build may instead go to `{FEATURE}/RESUME.md`.
+  Contents: objective, done + files changed, in-progress & exactly where it stopped, next concrete
+  step, gotchas. Self-contained against `PROJECT_CONTEXT.md`. Mark it dated so a future boot can tell
+  a fresh overlay from a stale one. **Budget: ≤150 lines.** This file is boot-class — its cost
+  multiplies against every restart GATE R itself proposes (at 22K boot + an 8K overlay, ten restarts
+  cost 300K), so it is the one artifact whose length is a standing tax rather than a one-time read.
+  `state/` is committed by default — branch-scoped paths never merge-conflict and the snapshot
+  travels across machines; gitignore `state/` to opt out.
+- **Also upsert this branch's row in `.spire/clusters/tech/state/IN_FLIGHT.md`** (create the file if absent):
+  `| <branch> | <areas/paths being touched> | <last gate> | <date> |` under the header
+  `| branch | touching | last gate | updated |`. One row per branch; edit only your own.
+  A branch abandoned without reaching GATE S leaves a stale row; `kit-doctor` notes it, and removing
+  it is a one-line manual edit.
 
 ### GATE Q — QA / Verify (post-executioners → Ship or Bounce)   *(system-2)*
 - **Trigger:** "both lanes built / QA it / verify the feature before ship."
@@ -296,10 +344,12 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
 - **Audit:** `SPEC.md` (§3 the acceptance criteria — the checklist), `INTERFACE_CONTRACT.md`, the
   shipped code in both lanes (`backend.dir` + `frontend.dir`), the BRIEF "Invariant watch" + the
   promoted canon (§5).
-- **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §4; subagent `.claude/agents/qa-verify.md`)
-  — a different session from the builders (no marking own homework; `qa-verify.md` declares a
+- **Role:** a FRESH QA/Verify session (`ROLE_LAUNCH_PROMPTS.md` §4; subagent `spire-tech-qa`)
+  — a different session from the builders (no marking own homework; `spire-tech-qa.md` declares a
   different model from both build lanes by design, system-6). Confirms every AC point-by-point,
   **fixes nothing**.
+  A Critical security, destructive-data or binding-invariant finding is a GATE Q FAIL even when the
+  SPEC omitted it; QA records both the defect and the criteria-gap amendment.
 - **Runtime conformance (system-1):** QA independently re-runs `interface_conformance.mjs` against the
   running backend — never trusts the receipt the backend lane already wrote — into its own
   `conformance-receipt-qa.json`, and compares the two `verdict` fields. QA's verdict is authoritative
@@ -307,7 +357,7 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   arrived after the backend's run, or the backend never ran it. A missing backend receipt is a skipped
   deliverable, also a bounce. `UNVERIFIABLE` (the backend could not be booted) is not a failure — it
   surfaces in QA's summary line so it stays visible. Integration is now **verified, not asserted**.
-  See `qa-verify.md`'s "Conformance" section for the exact invocation.
+  See `spire-tech-qa.md`'s "Conformance" section for the exact invocation.
 - **Write:** `QA_REPORT.md` (AC verbatim · verdict {PASS|FAIL|UNVERIFIABLE} · evidence + overall verdict)
   and `conformance-receipt-qa.json`. On any FAIL, the QA session also writes the GATE Z bounce
   ("Amendments bounced to {owner}").
@@ -321,12 +371,12 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   role's point-by-point pass, not a human checkbox.
 - **Promote the conformance spec (before archiving):** extract the JSON inside the feature's
   `## Conformance spec` fenced block from `INTERFACE_CONTRACT.md` and write it, unwrapped, as
-  `.claude/tools/conformance/{FEATURE}.json` — `interface_conformance.mjs --spec` expects raw JSON, not
+  `.spire/clusters/tech/state/conformance/{FEATURE}.json` — `interface_conformance.mjs --spec` expects raw JSON, not
   a markdown-fenced block. The contract is about
   to be archived; the standalone spec outlives it and stays runnable, so the directory accumulates a
   cross-feature regression suite as a by-product of shipping. Features marked `NO_BACKEND_CHANGE`
   have no block and promote nothing.
-- **Do:** move `.claude/contracts/{FEATURE}/` → `.claude/contracts/_archive/{FEATURE}/`; refresh
+- **Do:** move `.spire/clusters/tech/contracts/{FEATURE}/` → `.spire/clusters/tech/contracts/_archive/{FEATURE}/`; refresh
   `OPEN_THREADS.md` (flip the thread to SHIPPED + ARCHIVED) and `PROJECT_CONTEXT.md` (fold the
   new capability into §6 / conventions) **only if the feature is verified end-to-end**.
 - **Promote (compounding memory):** finalize the feature's `DECISION_LEDGER.md` rows, then **DETECT** —
@@ -335,6 +385,8 @@ Each gateway = an EXIT event. `{FEATURE}` is the kebab folder; `→` is who runs
   `PROJECT_CONTEXT.md` §5 + a locked pointer in `OPEN_THREADS.md` §9, add it to the ledger's
   "Promoted canon" index with provenance, and move `watch` keys to the ledger watch list. The
   graduation prose and the binding-or-not judgement stay yours — only the counting moved.
+- **Remove this branch's row from `.spire/clusters/tech/state/IN_FLIGHT.md`** (and its `state/<branch-slug>/` dir
+  if the session is done with the branch) — a shipped branch is no longer in flight.
 - **Guard:** confirm both lanes verified before archiving; never archive a half-shipped feature. Never
   promote a key that isn't **binding** (a future feature could violate it) — same bar as the GATE I cull.
 
@@ -435,18 +487,19 @@ referencing files rather than pasting them.
   `.claude/tools/interface_conformance.mjs` runs the live backend's response against the
   `## Conformance spec` embedded in `INTERFACE_CONTRACT.md` — proving the BE emits the fields the
   interface promises (= what the FE consumes). A conformance FAIL bounces to Backend (GATE Z).
-- **Lane enforcement via subagents (system-4 + 4b):** each role has a tool-fenced subagent in
-  `.claude/agents/` — contract authors (architect/pm/ux) + QA have no `Edit`/`Bash` (cannot modify or
-  run code); executioners get the build toolset. **system-4b** adds a `.claude/settings.json` PreToolUse
-  hook (`.claude/tools/path_guard.js`) that blocks any write outside the workspace root — the workspace
+- **Tool enforcement via subagents (system-4 + 4b):** each role has a tool-fenced subagent in
+  `.claude/agents/` — contract authors (architect/pm/ux) have no `Edit`/`Bash`; QA receives `Bash` for
+  runtime verification and `Write` for verification artifacts while source repair remains instruction-held;
+  executioners get the build toolset. **system-4b** adds a `.claude/settings.json` PreToolUse hook
+  (`path_guard.js`, where the host provides one) that blocks structured writes outside the workspace root — the workspace
   fence. (Lane separation between `backend.dir` and `frontend.dir` is reinforced mechanically by the
   project's module-boundary tooling where one is configured.) What's still trusted (not mechanized): the
   per-role *intra*-lane rule (e.g. an author Write-ing into source) — a session-global hook can't see the
-  active role, so that residual rests on the tool-allowlist + prompt.
+  active role, so that residual rests on the tool-allowlist + prompt; role-path scope is instruction-held.
 - **Ground-truth retrieval (system-5):** a session may load the minimal context pack via
   `node .claude/tools/gates.mjs context_for {FEATURE} --write` instead of re-reading all of
   `PROJECT_CONTEXT.md` (selected from the BRIEF's `Context tags:` + the section shard tags). This writes
-  `.claude/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
+  `.spire/clusters/tech/contracts/{FEATURE}/_context-pack.md` and prints one line; hand the spawn that PATH, never the
   pack's contents — relaying it by value routes the whole pack through the conductor's own context. The
   invariant-bearing sections (§3 math, §5 decisions/promoted invariants) are **`always`-load** — sharding
   cuts tokens by relevance but NEVER drops a binding rule a feature could violate. Decouples per-session
@@ -457,22 +510,24 @@ referencing files rather than pasting them.
   on the fix. (QA's agent file declares a different model from both build lanes by design — de-
   correlates blind spots, system-6.)
   **Verification is mandatory for every AC; an automated *test* is required only per the RISK-BASED rule
-  in `agents/qa-verify.md` §4 (amended 2026-07-13)** — test the invariants/negative-space + silently-
+  in `agents/spire-tech-qa.md` §4 (amended 2026-07-13)** — test the invariants/negative-space + silently-
   regressing behaviors; verify visible/intentional things (copy, presence) by review/QA, recorded as such.
   Not "one named test per AC."
-- **Session continuity (the resume loop):** the conductor reads `.claude/RESUME.md` at boot if present (an
-  overlay on the reconstructed canon — reconcile + flag divergence, never a replacement). On an EXPLICIT
-  signal that context is running high (a harness notice, a tool result, or what the user reports their own
-  UI shows — **never a number the conductor invents**) — or at a clean phase boundary worth checkpointing
-  on its own merits regardless of context — it proactively fires **GATE R** (write/refresh
-  `.claude/RESUME.md`) at a **safe boundary** (between gateways, never mid-build) and **PROPOSES**
-  continuing in a fresh `/conductor` session. Propose, never force; harness auto-summarization is a
-  backstop, not a substitute for the written snapshot. The conductor has no reliable introspective read on
+- **Session continuity (the resume loop):** the conductor reads `.spire/clusters/tech/state/<branch-slug>/RESUME.md`
+  at boot if present (an overlay on the reconstructed canon — reconcile + flag divergence, never a
+  replacement). On an EXPLICIT
+  signal that context is running high (a harness notice, a tool result, or what the user reports
+  their own UI shows — **never a number the conductor invents**) — or at a clean phase boundary
+  worth checkpointing on its own merits regardless of context — it proactively fires **GATE R**
+  (write/refresh `.spire/clusters/tech/state/<branch-slug>/RESUME.md`) at a **safe boundary** (between
+  gateways, never mid-build) and **PROPOSES** continuing in a fresh `/conductor` session.
+  Propose, never force; harness auto-summarization is a backstop, not a substitute for the
+  written snapshot. The conductor has no reliable introspective read on
   its own token count and never states a specific context percentage it hasn't just verified from an actual
   signal — a guessed number presented as measured is a real failure mode, not a harmless approximation. The
   two halves form one loop — GATE R writes it, the next boot consumes it.
 - Frontend writes target `frontend.dir`, backend writes target `backend.dir` (both from `project.json`);
-  contracts always live in `.claude/contracts/` at the workspace root.
+  contracts always live in `.spire/clusters/tech/contracts/` at the workspace root.
 - **Speak in operator cards (§7 → `OPERATOR_REPORTS.md`):** every user-facing report, signal, and
   question is a chip-led card — plain words above the fold, machinery in the terse technical
   footer, one question per message max. Governs what you SAY; the contracts and manifest you WRITE

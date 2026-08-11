@@ -3,7 +3,7 @@ description: Run the mechanical gates (contract linter + interface conformance) 
 argument-hint: <feature-folder>
 ---
 Run the mechanical gate-checks for feature `$ARGUMENTS` and report the results plainly. **Fix nothing**
-— this is a gate, not a repair. (Substitute the backend URL from `.claude/project.json`:
+— this is a gate, not a repair. (Substitute the backend URL from `.spire/clusters/tech/project.json`:
 `http://127.0.0.1:<backend.port>`.)
 
 1. Structural checks (missing artifact, missing acceptance criteria, `SPEC.md` not referencing the
@@ -11,7 +11,7 @@ Run the mechanical gate-checks for feature `$ARGUMENTS` and report the results p
    `node .claude/tools/gates.mjs contract_lint $ARGUMENTS`
 2. Then, if the backend is running and `INTERFACE_CONTRACT.md` carries a `## Conformance spec` block, run
    `node .claude/tools/gates.mjs interface_conformance --contract
-   .claude/contracts/$ARGUMENTS/INTERFACE_CONTRACT.md --url <backend-base-url>`.
+   .spire/clusters/tech/contracts/$ARGUMENTS/INTERFACE_CONTRACT.md --url <backend-base-url>`.
 
 Summarize: ERRORs (block the handoff — must fix before routing) vs WARNINGs (advisory, judge them). If
 conformance can't run (no server / no spec / NO_BACKEND_CHANGE), say so explicitly rather than skipping

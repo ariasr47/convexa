@@ -32,7 +32,8 @@
           {
             "type": "command",
             "command": "node .claude/tools/path_guard.js",
-            "statusMessage": "path-guard: workspace fence (system-4b)"
+            "statusMessage": "path-guard: workspace fence (system-4b)",
+            "spireOwner": "spire:tech/path-guard"
           }
         ]
       }

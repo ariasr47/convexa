@@ -2,18 +2,18 @@
 description: Run the design council on one feature — R1 positions, R2 critique, R3 reconcile, R4 synthesis, then an adversarial review.
 ---
 Run **GATE C — the design council** for the feature named in `$ARGUMENTS` (the kebab folder under
-`.claude/contracts/`). Read `.claude/project.json` first, then that feature's `BRIEF.md`. If no BRIEF
+`.spire/clusters/tech/contracts/`). Read `.spire/clusters/tech/project.json` first, then that feature's `BRIEF.md`. If no BRIEF
 exists, stop and say so — the council designs a chosen feature; choosing is GATE I's job.
 
 You are the **controller**, not a voice. You never write a position, a critique, or the spec yourself.
 Report to me throughout as operator cards per `.claude/OPERATOR_REPORTS.md`.
 
-Create `.claude/contracts/{FEATURE}/council/` for the round artifacts.
+Create `.spire/clusters/tech/contracts/{FEATURE}/council/` for the round artifacts.
 
-**R1 — positions (parallel, blind).** Spawn `delivery-architect`, `delivery-pm` and `delivery-ux`
+**R1 — positions (parallel, blind).** Spawn `spire-tech-architect`, `spire-tech-pm` and `spire-tech-ux`
 **in a single message** so they run concurrently. Give each: the BRIEF, the context pack
 (`node .claude/tools/gates.mjs context_for {FEATURE} --write` — this writes
-`.claude/contracts/{FEATURE}/_context-pack.md` and prints one line; hand each spawn that PATH, never
+`.spire/clusters/tech/contracts/{FEATURE}/_context-pack.md` and prints one line; hand each spawn that PATH, never
 the pack's contents. Relaying it by value routes the whole pack through the conductor's own context,
 which is the longest-lived context in the system), and the prompt in
 `.claude/council/R1-position.md` with its role substituted. **Do not show any voice another's output.**
@@ -43,16 +43,16 @@ the voices, not to your persistent context.
   (`OPERATOR_REPORTS.md` §3.3): the question in one sentence, then lettered options with a one-line
   consequence each and your recommendation marked. Never batch two questions into one message.
 - Record every outcome — agent-resolved and human-ruled — in
-  `.claude/contracts/{FEATURE}/council/decisions.md` with the conflict that prompted it.
+  `.spire/clusters/tech/contracts/{FEATURE}/council/decisions.md` with the conflict that prompted it.
 - **Loop cap: 2.** If R2 materially changed positions, run one more critique round, then decide and move
   on. An uncapped debate burns tokens without converging.
 
-**R4 — synthesis.** Spawn ONE fresh `council-synthesizer` — never one of the three voices — with
+**R4 — synthesis.** Spawn ONE fresh `spire-tech-council-synthesizer` — never one of the three voices — with
 `.claude/council/R4-synthesis.md`, all R1 + R2 artifacts, and `decisions.md`. It writes `SPEC.md` and
 `INTERFACE_CONTRACT.md`.
 
-**S2 — adversarial review.** Spawn one fresh `council-skeptic` with `.claude/council/S2-skeptic.md`.
-Its agent file declares a different model from `council-synthesizer`, so the de-correlation this round
+**S2 — adversarial review.** Spawn one fresh `spire-tech-council-skeptic` with `.claude/council/S2-skeptic.md`.
+Its agent file declares a different model from `spire-tech-council-synthesizer`, so the de-correlation this round
 depends on holds without you arranging it — never override it at dispatch. Any **Critical** finding
 loops back to R4 with the findings attached. Cap the loop at 2 passes, then surface what remains to me.
 

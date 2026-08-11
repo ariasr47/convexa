@@ -1,0 +1,26 @@
+{
+  "availability": "available",
+  "id": "spire:tech",
+  "launch_required": true,
+  "provider_requirements": {
+    "degradable": [
+      "P8",
+      "P9",
+      "P10"
+    ],
+    "required": [
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7"
+    ]
+  },
+  "rendered_artifacts": [
+    "ORCHESTRATOR.md"
+  ],
+  "schema_version": 1,
+  "state_root": ".spire/clusters/tech"
+}

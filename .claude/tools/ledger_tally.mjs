@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const LEDGER = path.join(ROOT, '.claude', 'DECISION_LEDGER.md');
+const LEDGER = path.join(ROOT, '.spire', 'clusters', 'tech', 'context', 'DECISION_LEDGER.md');
 
 function tableRows(text, heading) {
   // Rows of the pipe table under `heading`, up to the next ## heading. Skips the header row,
@@ -38,7 +38,7 @@ function tableRows(text, heading) {
 
 export function main() {
   if (!fs.existsSync(LEDGER)) {
-    console.log('ledger_tally — .claude/DECISION_LEDGER.md not found');
+    console.log('ledger_tally — .spire/clusters/tech/context/DECISION_LEDGER.md not found');
     return 2;
   }
   const text = fs.readFileSync(LEDGER, 'utf8');

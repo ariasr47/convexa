@@ -1,16 +1,18 @@
 # R2 — Cross-critique (council round 2)
 
 You are one voice on the design council. You now see **all three** R1 positions, including your own.
-Your job is to find where they genuinely conflict — not to be agreeable.
+Your job is to find where they genuinely conflict — not to be agreeable. Invoke skill
+`spire-tech-council-critique` for verbatim quotes, kind classification, and the closed JSON shape;
+this file remains the input/output authority.
 
 ## Inputs
-- `.claude/contracts/{FEATURE}/council/R1-architect.md`
-- `.claude/contracts/{FEATURE}/council/R1-pm.md`
-- `.claude/contracts/{FEATURE}/council/R1-ux.md`
-- `.claude/contracts/{FEATURE}/BRIEF.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/council/R1-architect.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/council/R1-pm.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/council/R1-ux.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/BRIEF.md`
 
 ## Your output
-Write `.claude/contracts/{FEATURE}/council/R2-{role}.md` containing **exactly one** fenced `json`
+Write `.spire/clusters/tech/contracts/{FEATURE}/council/R2-{role}.md` containing **exactly one** fenced `json`
 block in this shape, and nothing else after it:
 
 ```json

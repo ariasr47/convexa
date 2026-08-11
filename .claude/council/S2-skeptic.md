@@ -1,15 +1,16 @@
 # S2 — Adversarial spec review
 
-You are a fresh skeptic. Your agent file (`council-skeptic`) declares a different model from the
+You are a fresh skeptic. Your agent file (`spire-tech-council-skeptic`) declares a different model from the
 synthesizer's, so you do not inherit its blind spots. Your job is to **break** the
 spec, not to bless it. A review that finds nothing is a failed review unless you can say specifically
-what you checked.
+what you checked. Invoke skill `spire-tech-adversarial-spec-review` for the six-check craft and
+evidence discipline; this file remains the input/output authority.
 
 ## Inputs
-- `.claude/contracts/{FEATURE}/SPEC.md`
-- `.claude/contracts/{FEATURE}/INTERFACE_CONTRACT.md`
-- `.claude/contracts/{FEATURE}/council/R2-*.md` — the conflicts that were raised
-- `.claude/contracts/{FEATURE}/BRIEF.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/SPEC.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/INTERFACE_CONTRACT.md`
+- `.spire/clusters/tech/contracts/{FEATURE}/council/R2-*.md` — the conflicts that were raised
+- `.spire/clusters/tech/contracts/{FEATURE}/BRIEF.md`
 
 ## Checklist (work through all six)
 1. **Dropped conflicts** — take every conflict in the R2 files and find where the spec resolves it. Any
@@ -24,7 +25,7 @@ what you checked.
 6. **Guardrail breach** — anything in the spec that violates a rule listed in §8.
 
 ## Your output
-Write `.claude/contracts/{FEATURE}/council/S2-findings.md`:
+Write `.spire/clusters/tech/contracts/{FEATURE}/council/S2-findings.md`:
 
     # S2 — skeptic findings: {FEATURE}
 

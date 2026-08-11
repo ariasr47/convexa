@@ -1,7 +1,7 @@
 ---
 description: Report current pipeline state from the manifests + backlog (no full bootstrap).
 ---
-Read every `_MANIFEST.md` under `.claude/contracts/` (live, not `_archive/`), plus `.claude/BACKLOG.md`
+Read every `_MANIFEST.md` under `.spire/clusters/tech/contracts/` (live, not `_archive/`), plus `.spire/clusters/tech/context/BACKLOG.md`
 §A and the latest "Last GATE I" note. Answer as ONE Status card (`.claude/OPERATOR_REPORTS.md` §3.1):
 chip = 🔴 if anything blocks on the operator, 🟠 if anything is failed/bounced, 🟡 if building, ⚪ if
 drained/idle; body = the Done/Now/Next table across the live features; one `➡️ Next:` line naming the

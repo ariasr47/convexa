@@ -11,7 +11,8 @@
 // relevance. **Binding invariant: invariant-bearing sections are `always` — sharding never drops a rule
 // a feature could violate** (the math-constraint + key-decision/promoted-invariant sections are always-load).
 //
-// The context filename is read from `.claude/project.json` (`context_file`, default `PROJECT_CONTEXT.md`)
+// The context filename is read from `.spire/clusters/tech/project.json`
+// (`context_file`, default `context/PROJECT_CONTEXT.md`)
 // — the single per-project seam. With no config the tool falls back to that default, so it runs in a
 // bare project unchanged.
 //
@@ -31,36 +32,23 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { pyRepr, pyFixed0 } from './_pyfmt.mjs';
+import { projectConfig } from './_project.mjs';
 
 // Resolve repo root from this file's location (.claude/tools/context_for.mjs -> repo root).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CLAUDE = path.join(ROOT, '.claude');
-
-/** Read the project seam (.claude/project.json). Absent/malformed ⇒ {} (defaults apply). */
-function projectConfig() {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(path.join(CLAUDE, 'project.json'), 'utf8'));
-    // CPython only guards OSError/JSONDecodeError; a valid-but-non-object project.json (a bare
-    // array/string/number) then dies on `.get` with an AttributeError traceback. A gate should not
-    // traceback on malformed config, so a non-object reads as "no config" — same net effect as the
-    // empty dict CPython produces for the two cases it does guard. Recorded, not papered over.
-    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
+const STATE_ROOT = path.join(ROOT, '.spire', 'clusters', 'tech');
 
 const _CFG = projectConfig();
 const CONTEXT = path.join(
-  CLAUDE,
-  Object.hasOwn(_CFG, 'context_file') ? _CFG.context_file : 'PROJECT_CONTEXT.md',
+  STATE_ROOT,
+  Object.hasOwn(_CFG, 'context_file') ? _CFG.context_file : 'context/PROJECT_CONTEXT.md',
 );
-const CONTRACTS = path.join(CLAUDE, 'contracts');
+const CONTRACTS = path.join(STATE_ROOT, 'contracts');
 const ARCHIVE = path.join(CONTRACTS, '_archive');
 
 // §3.1: every regex is module-scope, compiled once.
 const SHARD_RE = /<!--\s*shard:\s*(.*?)\s*-->/;
-const TAGS_RE = /tags=([\w,-]+)/;
+const TAGS_RE = /tags=([\w,\-]+)/;
 // `^Context tags:\s*(.+)$` with re.M. `\s` spans newlines in BOTH engines and is greedy, so a bare
 // `Context tags:` line pulls the value off the FOLLOWING line — pinned by the corpus. (The brief
 // proposed `[ \t]*`, which would not match that shape at all; see the task-6 report.)
@@ -71,16 +59,12 @@ const SPLIT_TAGS_RE = /[,\s]+/;
 // colon further down. `[\s\S]*?` reproduces that; `[^\n]*?` does not (pinned by the corpus).
 // No `m` flag: Python's `\Z` is the absolute end of input, which is exactly JS `$` without `m`.
 const INVARIANT_WATCH_RE = /Invariant watch:([\s\S]*?)(?:\n[A-Z][a-z][\s\S]*?:|$)/;
-const WATCH_KEY_RE = /[`[]([a-z][a-z0-9-]{3,})[`\]]/g;
+const WATCH_KEY_RE = /[`\[]([a-z][a-z0-9-]{3,})[`\]]/g;
 // Python's Path.read_text() opens in universal-newline mode: \r\n and lone \r both become \n.
 const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // str.splitlines() breaks on far more than \n. The universal-newline read has already folded \r away
 // on the CLI path, but the CRLF/CR alternatives are kept so the exported parseSections() matches
 // str.splitlines() on raw text too — a strict superset that cannot fire on converted input.
-// DELIBERATE control characters: these are exactly what Python's str.splitlines() breaks on,
-// and dropping them would silently diverge this port from the .py behaviour it reproduces.
-// (The disable must be the LAST line before the regex to apply to it.)
-// eslint-disable-next-line no-control-regex
 const PY_LINEBREAK_RE = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/;
 // sorted() on str is codepoint order; §3.1 requires an explicit comparator on every .sort().
 const CODEPOINT_SORT = (a, b) => (a < b ? -1 : a > b ? 1 : 0);

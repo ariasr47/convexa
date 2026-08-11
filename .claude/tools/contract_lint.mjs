@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // contract_lint.mjs — mechanical gate-check for the delivery system (system-3).
 //
-// Validates the structure + lane purity of a feature's `.claude/contracts/{FEATURE}/` folder so a
+// Validates the structure + lane purity of a feature's `.spire/clusters/tech/contracts/{FEATURE}/` folder so a
 // malformed handoff cannot advance a gateway. It checks STRUCTURE, not code — code-level integration
 // is system-1 (interface-conformance) and semantic ACs are system-2 (QA/Verify). Pairs with the
 // Decision-Ledger crossing-detection hook (BACKLOG §B), which shares this script surface.
 //
-// Per-project coupling lives in `.claude/project.json` (the single seam): `context_file` (default
-// `PROJECT_CONTEXT.md`) names the ground-truth file. Absent config ⇒ the built-in defaults, so the tool
+// Per-project coupling lives in `.spire/clusters/tech/project.json` (the single seam): `context_file`
+// (default `context/PROJECT_CONTEXT.md`) names the ground-truth file. Absent config ⇒ the built-in defaults, so the tool
 // runs in a bare project unchanged.
 //
 // Usage:
@@ -22,34 +22,35 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { projectConfig } from './_project.mjs';
+import { councilConflictId } from './_council_conflict_id.mjs';
 
 // Resolve repo root from this file's location (.claude/tools/contract_lint.mjs -> repo root).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CLAUDE = path.join(ROOT, '.claude');
-const CONTRACTS = path.join(CLAUDE, 'contracts');
+const STATE_ROOT = path.join(ROOT, '.spire', 'clusters', 'tech');
+const CONTRACTS = path.join(STATE_ROOT, 'contracts');
 const ARCHIVE = path.join(CONTRACTS, '_archive');
 
-/** Read the project seam (.claude/project.json). Absent/malformed ⇒ {} (defaults apply). */
-function projectConfig() {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(path.join(CLAUDE, 'project.json'), 'utf8'));
-    // CPython only guards OSError/JSONDecodeError; a valid-but-non-object project.json (a bare
-    // array/string/number) then dies on `.get` with an AttributeError traceback. A gate should not
-    // traceback on malformed config, so a non-object reads as "no config" — same net effect as the
-    // empty dict CPython produces for the two cases it does guard. Recorded in spec §4.1, which
-    // names contract_lint explicitly as inheriting context_for's adjudication here.
-    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
 const _CFG = projectConfig();
-// `_CFG.get("context_file", "PROJECT_CONTEXT.md")` — a present-but-null value is passed through by
+// `_CFG.get("context_file", "context/PROJECT_CONTEXT.md")` — a present-but-null value is passed through by
 // `.get`, exactly as `Object.hasOwn` passes it through here.
-const CONTEXT_NAME = Object.hasOwn(_CFG, 'context_file') ? _CFG.context_file : 'PROJECT_CONTEXT.md';
-const CONTEXT = path.join(CLAUDE, CONTEXT_NAME);
-const LEDGER = path.join(CLAUDE, 'DECISION_LEDGER.md');
+const CONTEXT_NAME = Object.hasOwn(_CFG, 'context_file') ? _CFG.context_file : 'context/PROJECT_CONTEXT.md';
+const CONTEXT = path.join(STATE_ROOT, CONTEXT_NAME);
+const LEDGER = path.join(STATE_ROOT, 'context', 'DECISION_LEDGER.md');
+// Living project design canon (Phase 3). Optional seam key design_system_file; default matches scaffold.
+const DESIGN_SYSTEM_REL = Object.hasOwn(_CFG, 'design_system_file') && typeof _CFG.design_system_file === 'string'
+  && _CFG.design_system_file.trim() !== ''
+  ? _CFG.design_system_file.trim().replace(/\\/g, '/')
+  : 'context/DESIGN_SYSTEM.md';
+const DESIGN_SYSTEM = path.join(STATE_ROOT, ...DESIGN_SYSTEM_REL.split('/'));
+/** True when the project design canon is Status: SET (not UNSET / missing). */
+export function designSystemIsSet(text) {
+  if (typeof text !== 'string' || text.trim() === '') return false;
+  // Prefer an explicit Status line (scaffold uses **Status:** UNSET|SET …).
+  const line = text.match(/^\*{0,2}Status:\*{0,2}\s*(SET|UNSET)\b/im);
+  if (line) return line[1].toUpperCase() === 'SET';
+  return false;
+}
 
 const MANIFEST_KEYS = ['Stage', 'Repos', 'Brief', 'Contracts', 'Last gateway'];
 const BRIEF_FIELDS = ['Goal', 'Decision impact', 'Feasibility', 'Effort', 'Invariant watch', 'Source'];
@@ -66,6 +67,10 @@ const AC_HEADING_RE = /^##\s*\d*\.?\s*Acceptance criteria/im;
 // re.S makes both `.*?` dot-all; `[\s\S]*?` is the JS equivalent. re.I covers the fence too, so a
 // ```JSON fence matches on both sides.
 const CONFORMANCE_RE = /##\s*Conformance spec[\s\S]*?```json\s*([\s\S]*?)```/i;
+const COUNCIL_ROLES = Object.freeze(['architect', 'pm', 'ux']);
+const COUNCIL_FOLDING_RE = /<!--\s*spire:council-folding:v1\s*\r?\n([\s\S]*?)\r?\n-->/g;
+const COUNCIL_RESOLUTION_RE = /<!--\s*spire:council-resolution:v1\s+([a-f0-9]{64})\s+(folded|open)\s*-->/g;
+const R2_JSON_RE = /^```json\s*\r?\n([\s\S]*?)\r?\n```\s*$/;
 // re.S, no re.M: the lookahead has no `\Z` fallback in Python either, so a Promoted-canon section
 // that runs to EOF yields NO match in BOTH implementations. That is parity, not a bug — do not "fix" it.
 const PROMOTED_CANON_RE = /##\s*Promoted canon[\s\S]*?(?=\n##\s)/;
@@ -81,10 +86,6 @@ const CANON_KEY_RE = /^\|\s*`([a-z0-9-]+)`\s*\|/gm;
 const UNIVERSAL_NEWLINE_RE = /\r\n?/g;
 // str.splitlines() breaks on far more than \n. read() has already folded \r away, but the CRLF/CR
 // alternatives are kept so pySplitlines matches str.splitlines() on raw text too.
-// DELIBERATE control characters: these are exactly what Python's str.splitlines() breaks on,
-// and dropping them would silently diverge this port from the .py behaviour it reproduces.
-// (The disable must be the LAST line before the regex to apply to it.)
-// eslint-disable-next-line no-control-regex
 const PY_LINEBREAK_RE = /\r\n|[\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]/;
 // The .py sorts Path objects, not str; JS `<`/`>` on strings compare UTF-16 code units, not true
 // code points, so astral-plane names (outside the BMP) would diverge from Python's ordering. This
@@ -155,6 +156,66 @@ export function parseManifestStatuses(text) {
   return Object.fromEntries([...text.matchAll(STATUS_RE)].map((m) => [m[1], m[2]]));
 }
 
+export function validateCouncilFoldingReceipt(specBody, r2Bodies) {
+  if (typeof specBody !== 'string' || r2Bodies === null || typeof r2Bodies !== 'object' || Array.isArray(r2Bodies)) {
+    return { valid: false, error: 'receipt inputs are malformed' };
+  }
+  const matches = [...specBody.matchAll(COUNCIL_FOLDING_RE)];
+  if (matches.length !== 1) return { valid: false, error: `expected exactly one council folding receipt, found ${matches.length}` };
+  let receipt;
+  try { receipt = JSON.parse(matches[0][1]); } catch { return { valid: false, error: 'council folding receipt is not valid JSON' }; }
+  if (receipt === null || typeof receipt !== 'object' || Array.isArray(receipt) ||
+      Object.keys(receipt).sort().join(',') !== 'resolutions,schema_version' || receipt.schema_version !== 1 || !Array.isArray(receipt.resolutions)) {
+    return { valid: false, error: 'council folding receipt has an invalid schema' };
+  }
+
+  const expected = new Map();
+  for (const role of COUNCIL_ROLES) {
+    const source = `R2-${role}.md`;
+    const body = r2Bodies[source];
+    if (typeof body !== 'string') return { valid: false, error: `${source} is missing` };
+    const fenced = R2_JSON_RE.exec(body);
+    let critique;
+    try { critique = fenced ? JSON.parse(fenced[1]) : null; } catch { critique = null; }
+    if (critique === null || typeof critique !== 'object' || Array.isArray(critique) || !Array.isArray(critique.conflicts)) {
+      return { valid: false, error: `${source} has no valid conflicts array` };
+    }
+    critique.conflicts.forEach((_, index) => expected.set(`${source}\u0000${index}`, councilConflictId(source, index, body)));
+  }
+
+  const seen = new Set();
+  for (const resolution of receipt.resolutions) {
+    if (resolution === null || typeof resolution !== 'object' || Array.isArray(resolution) ||
+        Object.keys(resolution).sort().join(',') !== 'conflict_id,disposition,index,section,source' ||
+        !COUNCIL_ROLES.map((role) => `R2-${role}.md`).includes(resolution.source) ||
+        !Number.isInteger(resolution.index) || resolution.index < 0 ||
+        !/^[a-f0-9]{64}$/.test(resolution.conflict_id) ||
+        !['folded', 'open'].includes(resolution.disposition) || !/^§[1-9]$/.test(resolution.section) ||
+        (resolution.disposition === 'open') !== (resolution.section === '§9')) {
+      return { valid: false, error: 'council folding receipt contains an invalid resolution' };
+    }
+    const key = `${resolution.source}\u0000${resolution.index}`;
+    if (!expected.has(key)) return { valid: false, error: 'council folding receipt names an unknown conflict' };
+    if (seen.has(key)) return { valid: false, error: 'council folding receipt duplicates a conflict' };
+    if (resolution.conflict_id !== expected.get(key)) return { valid: false, error: 'council folding receipt conflict id does not match the current R2 bytes' };
+    const sectionNumber = resolution.section.slice(1);
+    const heading = new RegExp(`^##\\s*${sectionNumber}(?:\\.|\\s)`, 'm').exec(specBody);
+    if (!heading) return { valid: false, error: `council folding receipt section ${resolution.section} is missing` };
+    const afterHeading = heading.index + heading[0].length;
+    const nextHeading = /^##\s+/gm;
+    nextHeading.lastIndex = afterHeading;
+    const next = nextHeading.exec(specBody);
+    const sectionBody = specBody.slice(heading.index, next?.index ?? specBody.length);
+    const marker = `<!-- spire:council-resolution:v1 ${resolution.conflict_id} ${resolution.disposition} -->`;
+    if (!sectionBody.includes(marker)) return { valid: false, error: `council resolution marker is absent from ${resolution.section}` };
+    seen.add(key);
+  }
+  if (seen.size !== expected.size) return { valid: false, error: 'council folding receipt omits a conflict' };
+  const markers = [...specBody.matchAll(COUNCIL_RESOLUTION_RE)];
+  if (markers.length !== expected.size) return { valid: false, error: 'council resolution marker count does not match the R2 conflicts' };
+  return { valid: true, error: null };
+}
+
 export function lintFeature(folder, f) {
   const name = path.basename(folder);
   const manPath = path.join(folder, '_MANIFEST.md');
@@ -210,11 +271,41 @@ export function lintFeature(folder, f) {
         "no 'Acceptance criteria' section — GATE Q has no checklist to verify");
     }
 
-    // M3 — the spec must bind to the interface, the single FE-to-BE truth.
-    if (!specBody.includes(INTERFACE_FILE.replace(/\.md$/, ''))) {
+    // M3 — the load-bearing interface pointer belongs in SPEC §6. A filename elsewhere can be
+    // historical prose or a restatement and does not bind either build lane to the interface.
+    const section6 = new RegExp('^##\\s*6(?:\\.|\\s|$)[\\s\\S]*?(?=^##\\s)', 'm')
+      .exec(specBody + '\n## ')?.[0] ?? '';
+    if (!section6.includes(INTERFACE_FILE.replace(/\.md$/, ''))) {
       f.err(`${name}/${SPEC_FILE}`,
-        `spec does not reference ${INTERFACE_FILE} `
+        `spec section 6 does not reference ${INTERFACE_FILE} `
         + '(the single FE-to-BE truth must be named, never restated)');
+    }
+
+    const council = path.join(folder, 'council');
+    const r2Paths = Object.fromEntries(COUNCIL_ROLES.map((role) => {
+      const source = `R2-${role}.md`;
+      return [source, path.join(council, source)];
+    }));
+    if (Object.values(r2Paths).some((file) => fs.existsSync(file))) {
+      const receipt = validateCouncilFoldingReceipt(specBody,
+        Object.fromEntries(Object.entries(r2Paths).map(([source, file]) => [source, read(file)])));
+      if (!receipt.valid) f.err(`${name}/${SPEC_FILE}`, `invalid council folding receipt — ${receipt.error}`);
+    }
+
+    // M9 — UI-touching features require a project design canon with Status: SET.
+    // Bypass keys off the SPEC body (NO_UI_CHANGE), never the manifest alone — same honesty as M7.
+    // Absent file or Status: UNSET is an ERROR. Remedy: design-system onboarding process.
+    if (!specBody.includes('NO_UI_CHANGE')) {
+      const dsBody = read(DESIGN_SYSTEM);
+      if (!designSystemIsSet(dsBody)) {
+        const state = !fs.existsSync(DESIGN_SYSTEM)
+          ? 'missing'
+          : 'UNSET or missing Status: SET';
+        f.err(`${name}/${SPEC_FILE}`,
+          `UI-touching feature requires project design canon Status: SET `
+          + `(${DESIGN_SYSTEM_REL} is ${state}) — run /design-system or follow `
+          + 'design/DESIGN_SYSTEM_METHOD.md; put NO_UI_CHANGE in the SPEC body for backend-only features');
+      }
     }
   }
 

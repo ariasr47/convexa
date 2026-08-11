@@ -36,10 +36,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { pyRepr, pyJsonDumps } from './_pyfmt.mjs';
+import { councilConflictId } from './_council_conflict_id.mjs';
 
 // Resolve repo root from this file's location (.claude/tools/council_conflicts.mjs -> repo root).
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const CONTRACTS = path.join(ROOT, '.claude', 'contracts');
+const CONTRACTS = path.join(ROOT, '.spire', 'clusters', 'tech', 'contracts');
 
 const ROLES = ['architect', 'pm', 'ux'];
 const JSON_BLOCK_RE = /```json\s*([\s\S]*?)```/g;
@@ -220,7 +221,9 @@ export function merge(council, f) {
       f.err('council/', `R2-${role}.md is missing — the round is incomplete`);
       continue;
     }
-    const d = extractBlock(read(p), `R2-${role}.md`, f);
+    const sourceName = `R2-${role}.md`;
+    const body = read(p);
+    const d = extractBlock(body, sourceName, f);
     if (d === null) continue;
 
     let raisedBy = Object.hasOwn(d, 'role') ? d.role : role;
@@ -241,6 +244,7 @@ export function merge(council, f) {
         continue;
       }
       const entry = { ...c };
+      entry.conflict_id = councilConflictId(sourceName, i, body);
       entry.raised_by = raisedBy;
       // A voice quoting its OWN R1 is retracting a claim it can no longer defend now that it
       // has read the others — the round's most honest output, not a malformed conflict. It is

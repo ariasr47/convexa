@@ -1,0 +1,35 @@
+{
+  "clusters": [
+    {
+      "availability": "available",
+      "executable": true,
+      "id": "spire:tech",
+      "selector": "tech"
+    },
+    {
+      "availability": "planned",
+      "executable": false,
+      "id": "spire:marketing",
+      "selector": "marketing"
+    },
+    {
+      "availability": "planned",
+      "executable": false,
+      "id": "spire:business",
+      "selector": "business"
+    },
+    {
+      "availability": "planned",
+      "executable": false,
+      "id": "spire:admin",
+      "selector": "admin"
+    },
+    {
+      "availability": "planned",
+      "executable": false,
+      "id": "spire:hr",
+      "selector": "hr"
+    }
+  ],
+  "schema_version": 1
+}

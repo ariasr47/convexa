@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Codify branch file changes — gammaflow-web</title>
+<style>
+  :root {
+    --bg: #0B0F17;
+    --panel: #131A24;
+    --raised: #1B2432;
+    --text: #E9E4D6;
+    --muted: #8A9BB4;
+    --amber: #F2A93B;
+    --green: #2ecc71;
+    --red: #ff5c5c;
+    --blue: #5E8BC4;
+    --border: #2a3544;
+    --font: system-ui, "Segoe UI", sans-serif;
+    --mono: ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font); line-height: 1.5;
+  }
+  header {
+    padding: 2rem 1.5rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #131A24 0%, #0B0F17 100%);
+  }
+  header h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  header h1 span { color: var(--amber); }
+  .meta { color: var(--muted); font-size: 0.9rem; font-family: var(--mono); }
+  .meta strong { color: var(--text); font-weight: 600; }
+  main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0 2rem;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 0.9rem;
+    text-align: center;
+  }
+  .card .n {
+    font-family: var(--mono);
+    font-size: 1.85rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .card .l {
+    color: var(--muted); font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.35rem;
+  }
+  .card.created .n { color: var(--green); }
+  .card.modified .n { color: var(--amber); }
+  .card.deleted .n { color: var(--red); }
+  .card.moved .n { color: var(--blue); }
+  .card.spire .n { color: #76b7b2; }
+  section.block {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.35rem;
+    margin-bottom: 1.25rem;
+  }
+  section.block > h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+  }
+  .badge-create { background: rgba(46,204,113,0.15); color: var(--green); }
+  .badge-mod { background: rgba(242,169,59,0.15); color: var(--amber); }
+  .badge-del { background: rgba(255,92,92,0.15); color: var(--red); }
+  .badge-move { background: rgba(94,139,196,0.18); color: var(--blue); }
+  .badge-info { background: rgba(138,155,180,0.15); color: var(--muted); }
+  p.lead { color: var(--muted); margin: 0 0 1rem; font-size: 0.95rem; }
+  table.moves { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  table.moves th {
+    text-align: left; color: var(--muted); font-weight: 600;
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border);
+  }
+  table.moves td {
+    padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.moves tr:last-child td { border-bottom: none; }
+  table.moves .arrow { color: var(--amber); font-weight: 700; width: 2rem; text-align: center; }
+  table.moves .note { color: var(--muted); font-size: 0.85rem; }
+  code {
+    font-family: var(--mono); font-size: 0.82em;
+    background: var(--raised); padding: 0.1em 0.35em; border-radius: 3px;
+    word-break: break-all;
+  }
+  ul.file-list {
+    list-style: none; margin: 0; padding: 0;
+    max-height: 320px; overflow: auto;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg);
+  }
+  ul.file-list li {
+    padding: 0.35rem 0.65rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.84rem;
+  }
+  ul.file-list li:last-child { border-bottom: none; }
+  ul.file-list.compact li { display: flex; justify-content: space-between; gap: 1rem; }
+  .count { color: var(--muted); font-family: var(--mono); font-size: 0.8em; white-space: nowrap; }
+  .tag {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+    padding: 0.1rem 0.35rem; border-radius: 3px; margin-right: 0.35rem;
+  }
+  .tag-mod { background: rgba(242,169,59,0.2); color: var(--amber); }
+  section.sub { margin-top: 1rem; }
+  section.sub h3 {
+    margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600;
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .pill {
+    font-family: var(--mono); font-size: 0.75rem;
+    background: var(--raised); color: var(--muted);
+    padding: 0.15rem 0.45rem; border-radius: 999px;
+  }
+  details.all-files { margin-top: 0.5rem; }
+  details.all-files summary {
+    cursor: pointer; color: var(--amber); font-size: 0.85rem;
+    padding: 0.35rem 0;
+  }
+  .flags { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  @media (max-width: 640px) { .flags { grid-template-columns: 1fr; } }
+  .flag {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.65rem 0.75rem; font-size: 0.85rem;
+  }
+  .flag .k {
+    color: var(--muted); font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .flag .v { font-family: var(--mono); margin-top: 0.2rem; }
+  .flag .v.yes { color: var(--green); }
+  .flag .v.no { color: var(--red); }
+  footer {
+    text-align: center; color: var(--muted); font-size: 0.8rem;
+    padding: 2rem 1rem 3rem; font-family: var(--mono);
+  }
+  .toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .toc a {
+    color: var(--text); text-decoration: none;
+    background: var(--panel); border: 1px solid var(--border);
+    padding: 0.35rem 0.7rem; border-radius: 999px; font-size: 0.8rem;
+  }
+  .toc a:hover { border-color: var(--amber); color: var(--amber); }
+  .empty { color: var(--muted); font-style: italic; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 0.75rem;
+    margin: 0 0 1rem; font-size: 0.85rem; color: var(--muted);
+  }
+  .legend i {
+    display: inline-block; width: 0.7rem; height: 0.7rem;
+    border-radius: 2px; margin-right: 0.3rem; vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Codify branch · <span>file change map</span></h1>
+  <div class="meta">
+    repo <strong>gammaflow-web</strong> ·
+    branch <strong>spire/design-canon-codify</strong> ·
+    vs <strong>main</strong> (working tree, uncommitted) ·
+    generated <strong>2026-08-11T00:43:54.193Z</strong>
+  </div>
+</header>
+<main>
+  <nav class="toc">
+    <a href="#summary">Summary</a>
+    <a href="#moved">Moved / migrated</a>
+    <a href="#deleted">Deleted</a>
+    <a href="#modified">Replaced / modified</a>
+    <a href="#created">Created</a>
+    <a href="#highlight">Codify highlights</a>
+    <a href="#presence">Presence checks</a>
+  </nav>
+
+  <div class="legend">
+    <span><i style="background:var(--green)"></i> Created</span>
+    <span><i style="background:var(--amber)"></i> Modified / replaced</span>
+    <span><i style="background:var(--red)"></i> Deleted</span>
+    <span><i style="background:var(--blue)"></i> Logical move</span>
+  </div>
+
+  <div class="cards" id="summary">
+    <div class="card created"><div class="n">557</div><div class="l">Created (untracked)</div></div>
+    <div class="card modified"><div class="n">25</div><div class="l">Modified / replaced</div></div>
+    <div class="card deleted"><div class="n">1</div><div class="l">Deleted (git)</div></div>
+    <div class="card moved"><div class="n">3</div><div class="l">Logical moves</div></div>
+    <div class="card spire"><div class="n">348</div><div class="l">Files under .spire/</div></div>
+    <div class="card spire"><div class="n">117</div><div class="l">Files under .grok/</div></div>
+  </div>
+
+  <section class="block" id="moved">
+    <h2><span class="badge badge-move">Moved / migrated</span> Logical moves</h2>
+    <p class="lead">Git did not record these as renames. They are the intentional relocate/copy steps from codify prep (migrate + archive + install).</p>
+    <table class="moves">
+      <thead><tr><th>From</th><th></th><th>To</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="from"><code>.claude/kit.version</code></td><td class="arrow">→</td><td class="to"><code>.spire/clusters/tech/context/_legacy-receipts/kit.version</code></td><td class="note">Legacy install receipt archived so Spire 3.3.0 install could proceed</td></tr>
+<tr><td class="from"><code>.claude/PROJECT_CONTEXT.md, BACKLOG.md, DECISION_LEDGER.md, OPEN_THREADS.md, project.json</code></td><td class="arrow">→</td><td class="to"><code>.spire/clusters/tech/context/* + project.json</code></td><td class="note">migrate_from_legacy --apply (copy into neutral seam; originals kept under .claude)</td></tr>
+<tr><td class="from"><code>.claude/contracts/**</code></td><td class="arrow">→</td><td class="to"><code>.spire/clusters/tech/contracts/**</code></td><td class="note">Contract archives copied by migrate_from_legacy (338 paths in full migrate)</td></tr>
+      </tbody>
+    </table>
+    <p class="lead" style="margin-top:1rem;margin-bottom:0">
+      <code>migrate_from_legacy</code> <strong>copies</strong> into <code>.spire/</code>;
+      it does not delete legacy copies under <code>.claude/</code>
+      (except we explicitly archived <code>kit.version</code>).
+    </p>
+  </section>
+
+  <section class="block" id="deleted">
+    <h2><span class="badge badge-del">Deleted</span> Removed from tree (git D)</h2>
+    <p class="lead">Paths git sees as deleted on this working tree.</p>
+    <ul class="file-list"><li><code>.claude/kit.version</code></li></ul>
+    <p class="lead" style="margin-top:0.75rem;margin-bottom:0">
+      <code>.claude/kit.version</code> was <strong>moved</strong> to
+      <code>.spire/clusters/tech/context/_legacy-receipts/kit.version</code>
+      (not destroyed).
+    </p>
+  </section>
+
+  <section class="block" id="modified">
+    <h2><span class="badge badge-mod">Replaced</span> Modified existing files</h2>
+    <p class="lead">Spire 3.3.0 install <strong>overwrote</strong> framework bytes that already lived under <code>.claude/</code> (and updated root agent instructions). Product app code under <code>apps/</code> was <strong>not</strong> modified.</p>
+    <section class="sub"><h3>Replaced/updated framework prose under .claude/ <span class="pill">11</span></h3><ul class="file-list"><li><span class="tag tag-mod">M</span> <code>.claude/COMPRESSOR_PROMPTS.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/council/R1-position.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/council/R2-critique.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/council/R4-synthesis.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/council/S2-skeptic.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/council/SPEC_TEMPLATE.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/DESIGN_RULES.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/OPERATOR_REPORTS.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/ORCHESTRATOR.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/ROLE_LAUNCH_PROMPTS.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/settings.json</code></li></ul></section><section class="sub"><h3>Replaced/updated tools under .claude/tools/ <span class="pill">8</span></h3><ul class="file-list"><li><span class="tag tag-mod">M</span> <code>.claude/tools/_pyfmt.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/context_for.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/contract_lint.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/council_conflicts.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/gates.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/interface_conformance.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/ledger_tally.mjs</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/tools/path_guard.js</code></li></ul></section><section class="sub"><h3>Updated commands <span class="pill">5</span></h3><ul class="file-list"><li><span class="tag tag-mod">M</span> <code>.claude/commands/conductor.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/commands/council.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/commands/gatecheck.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/commands/pack.md</code></li>
+<li><span class="tag tag-mod">M</span> <code>.claude/commands/status.md</code></li></ul></section><section class="sub"><h3>Root AGENTS / CLAUDE <span class="pill">1</span></h3><ul class="file-list"><li><span class="tag tag-mod">M</span> <code>AGENTS.md</code></li></ul></section>
+  </section>
+
+  <section class="block" id="created">
+    <h2><span class="badge badge-create">Created</span> New paths (557)</h2>
+    <p class="lead">Everything git lists as untracked. Dominated by multi-provider install (<code>.spire</code>, <code>.grok</code>, new agents/skills) plus codify artifacts. Large groups are summarized; expand for full paths.</p>
+    <section class="sub"><h3>.spire/ — project state &amp; contracts (migrate + scaffold) <span class="pill">348</span></h3><ul class="file-list compact"><li><code>.spire/bin/spire/</code> <span class="count">1 file</span></li>
+<li><code>.spire/bin/spire.cmd/</code> <span class="count">1 file</span></li>
+<li><code>.spire/bin/spire.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.spire/catalog.json/</code> <span class="count">1 file</span></li>
+<li><code>.spire/clusters/tech/</code> <span class="count">342 files</span></li>
+<li><code>.spire/installation.json/</code> <span class="count">1 file</span></li>
+<li><code>.spire/version/</code> <span class="count">1 file</span></li></ul><details class="all-files"><summary>Show all 348 paths</summary><ul class="file-list"><li><code>.spire/bin/spire</code></li>
+<li><code>.spire/bin/spire.cmd</code></li>
+<li><code>.spire/bin/spire.mjs</code></li>
+<li><code>.spire/catalog.json</code></li>
+<li><code>.spire/clusters/tech/context/BACKLOG.md</code></li>
+<li><code>.spire/clusters/tech/context/DECISION_LEDGER.md</code></li>
+<li><code>.spire/clusters/tech/context/DESIGN_SYSTEM.md</code></li>
+<li><code>.spire/clusters/tech/context/OPEN_THREADS.md</code></li>
+<li><code>.spire/clusters/tech/context/PROJECT_CONTEXT.md</code></li>
+<li><code>.spire/clusters/tech/context/_legacy-receipts/kit.version</code></li>
+<li><code>.spire/clusters/tech/context/design-session/codify-2026-08-10.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-context-pack/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-rec-backtest-orders/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ai-recommendations/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/UX_AMENDMENTS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/app-shell-landing/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/backend-observability/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/CAPTURE_FINDINGS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/PLAN.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/RECONCILIATION_PLAN.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/SECURITY_REVIEW_BROKER.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/_context-pack.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R1-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R1-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R1-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R2-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R2-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R2-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R3-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/R3-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/S2-findings.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/conflicts.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-connect/council/decisions.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/PLAN.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/_context-pack.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/conformance-receipt-qa.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/conformance-receipt.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R1-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R1-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R1-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R2-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R2-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R2-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-architect-pm-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-architect-pm-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-architect-ux-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-architect-ux-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-pm-ux-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-pm-ux-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/R3-provenance-final-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/S2-findings.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/conflicts.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/decisions.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/r3-pair-architect-pm.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/r3-pair-architect-ux.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/r3-pair-pm-ux.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/r3-product.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/broker-option-grouping/council/r3-self-revisions.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/bundle-events/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/byo-ai-key/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/containerize-apps/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/containerize-apps/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/containerize-apps/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/FIGMA_COMPONENT_MAP.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/MUI_KIT_KEYS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/THEME_TOKENS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/convexa-redesign/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dark-pool-stream-isolation/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dealer-flow-projection/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/deploy/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/deploy/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/deploy/SECURITY_REVIEW.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/deploy/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/dex-voloi-skew-term/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/expiration-events/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/index-first-defaults/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/index-first-defaults/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/index-first-defaults/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/index-first-defaults/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/index-first-defaults/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/iv-rank/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/latency-visualizer/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/outcome-ledger/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/persistent-db/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/persistent-db/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/persistent-db/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/PLAN.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/SPEC.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R1-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R1-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R1-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R2-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R2-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R2-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R3-architect.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R3-pm.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R3-ux.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/R5-ux-copy.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/S2-findings.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/conflicts.json</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-legs/council/decisions.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/positions-portfolio/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/rebrand-convexa/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-auth/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/ARCHITECT_AMENDMENTS_REQUESTED.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/DESIGN_HANDOFF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/FRONTEND_AMENDMENTS_REQUESTED.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-foundation/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/CONTEXT_PACK.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/RENDER_PASS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/render-pass/s0-393-dark-offline-degrade.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/render-pass/s0-drawer-393-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/render-pass/s0-ticker-393-dark-offline.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-0/render-pass/s0-ticker-393-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/CONTEXT_PACK.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/RENDER_PASS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/render-pass/s1-blog-1440.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/render-pass/s1-blog-article-1440.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/render-pass/s1-ticker-1440-dark.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-1/render-pass/s1-ticker-1440-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/CONTEXT_PACK.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/RENDER_PASS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/render-pass/s2-landing-1440-dark.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/render-pass/s2-landing-1440-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/render-pass/s2-landing-393-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/render-pass/s2-positions-1440-dark-full.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-2/render-pass/s2-ticker-1440-dark.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/CONTEXT_PACK.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/RENDER_PASS.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/render-pass/s3-arcdivider-seam.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/render-pass/s3-blog-artwork-1440.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-stage-3/render-pass/s3-ticker-1440-light.jpeg</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-ticker/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-ticker/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-ticker/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-ticker/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/redesign-ticker/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/scanner/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/sim-entry-unification/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/sim-entry-unification/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-load-experience/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-microinteractions/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-microinteractions/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/ticker-microinteractions/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/INTERFACE_AMENDMENTS_REQUESTED.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trade-tracker-sim/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/ARCHITECTURE_AMENDMENTS_REQUESTED.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/trader-personas/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/ARCHITECTURE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/BACKEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/BRIEF.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/FRONTEND_EXECUTION_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/INTERFACE_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/PRODUCT_CONTRACT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/QA_REPORT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/UX_BLUEPRINT.md</code></li>
+<li><code>.spire/clusters/tech/contracts/_archive/user-accounts/_MANIFEST.md</code></li>
+<li><code>.spire/clusters/tech/descriptor.json</code></li>
+<li><code>.spire/clusters/tech/project.json</code></li>
+<li><code>.spire/installation.json</code></li>
+<li><code>.spire/version</code></li></ul></details></section><section class="sub"><h3>.grok/ — Grok provider install (3.3.0) <span class="pill">117</span></h3><ul class="file-list compact"><li><code>.grok/AGENTS.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-architect.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-backend.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-council-skeptic.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-council-synthesizer.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-frontend.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-planner.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-pm.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-qa.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/agents/spire-tech-ux.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/conductor.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/council.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/design-system.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/gatecheck.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/pack.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/commands/status.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/COMPRESSOR_PROMPTS.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/council/R1-position.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/council/R2-critique.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/council/R4-synthesis.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/council/S2-skeptic.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/council/SPEC_TEMPLATE.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/DESIGN_RULES.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/design/DESIGN_SYSTEM_METHOD.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/hooks/spire-path-guard.json/</code> <span class="count">1 file</span></li>
+<li><code>.grok/OPERATOR_REPORTS.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/ORCHESTRATOR.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/plan/PLAN_METHOD.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/ROLE_LAUNCH_PROMPTS.md/</code> <span class="count">1 file</span></li>
+<li><code>.grok/skills/spire-tech/</code> <span class="count">1 file</span></li>
+<li><code>.grok/skills/spire-tech-acceptance-criteria/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-adversarial-spec-review/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-code-review/</code> <span class="count">5 files</span></li>
+<li><code>.grok/skills/spire-tech-component-states/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-conformance-receipt/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-contract-consume/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-council-critique/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-debugging/</code> <span class="count">5 files</span></li>
+<li><code>.grok/skills/spire-tech-design-review/</code> <span class="count">5 files</span></li>
+<li><code>.grok/skills/spire-tech-flow-integration-tests/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/</code> <span class="count">6 files</span></li>
+<li><code>.grok/skills/spire-tech-independent-conformance/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-interface-conformance/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-invariant-honor/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-lane-refusal/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-mechanism-claims/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-microcopy-integrity/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-react-a11y/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-react-async-data/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-react-composition/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-react-performance/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-react-server-client/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-react-testing/</code> <span class="count">2 files</span></li>
+<li><code>.grok/skills/spire-tech-risk-based-verify/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-runtime-observation/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-tdd/</code> <span class="count">3 files</span></li>
+<li><code>.grok/skills/spire-tech-visual-evidence/</code> <span class="count">2 files</span></li>
+<li><code>.grok/tools/_council_conflict_id.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/_project.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/_pyfmt.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/_receipt.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/context_for.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/contract_lint.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/council_conflicts.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/design_system_ready.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/gates.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/interface_conformance.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/ledger_tally.mjs/</code> <span class="count">1 file</span></li>
+<li><code>.grok/tools/path_guard.js/</code> <span class="count">1 file</span></li></ul><details class="all-files"><summary>Show all 117 paths</summary><ul class="file-list"><li><code>.grok/AGENTS.md</code></li>
+<li><code>.grok/COMPRESSOR_PROMPTS.md</code></li>
+<li><code>.grok/DESIGN_RULES.md</code></li>
+<li><code>.grok/OPERATOR_REPORTS.md</code></li>
+<li><code>.grok/ORCHESTRATOR.md</code></li>
+<li><code>.grok/ROLE_LAUNCH_PROMPTS.md</code></li>
+<li><code>.grok/agents/spire-tech-architect.md</code></li>
+<li><code>.grok/agents/spire-tech-backend.md</code></li>
+<li><code>.grok/agents/spire-tech-council-skeptic.md</code></li>
+<li><code>.grok/agents/spire-tech-council-synthesizer.md</code></li>
+<li><code>.grok/agents/spire-tech-frontend.md</code></li>
+<li><code>.grok/agents/spire-tech-planner.md</code></li>
+<li><code>.grok/agents/spire-tech-pm.md</code></li>
+<li><code>.grok/agents/spire-tech-qa.md</code></li>
+<li><code>.grok/agents/spire-tech-ux.md</code></li>
+<li><code>.grok/commands/conductor.md</code></li>
+<li><code>.grok/commands/council.md</code></li>
+<li><code>.grok/commands/design-system.md</code></li>
+<li><code>.grok/commands/gatecheck.md</code></li>
+<li><code>.grok/commands/pack.md</code></li>
+<li><code>.grok/commands/status.md</code></li>
+<li><code>.grok/council/R1-position.md</code></li>
+<li><code>.grok/council/R2-critique.md</code></li>
+<li><code>.grok/council/R4-synthesis.md</code></li>
+<li><code>.grok/council/S2-skeptic.md</code></li>
+<li><code>.grok/council/SPEC_TEMPLATE.md</code></li>
+<li><code>.grok/design/DESIGN_SYSTEM_METHOD.md</code></li>
+<li><code>.grok/hooks/spire-path-guard.json</code></li>
+<li><code>.grok/plan/PLAN_METHOD.md</code></li>
+<li><code>.grok/skills/spire-tech-acceptance-criteria/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-acceptance-criteria/references/completion-evidence.md</code></li>
+<li><code>.grok/skills/spire-tech-acceptance-criteria/references/writing-criteria.md</code></li>
+<li><code>.grok/skills/spire-tech-adversarial-spec-review/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-adversarial-spec-review/references/six-check-discipline.md</code></li>
+<li><code>.grok/skills/spire-tech-code-review/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-code-review/references/correctness.md</code></li>
+<li><code>.grok/skills/spire-tech-code-review/references/maintainability.md</code></li>
+<li><code>.grok/skills/spire-tech-code-review/references/performance.md</code></li>
+<li><code>.grok/skills/spire-tech-code-review/references/security.md</code></li>
+<li><code>.grok/skills/spire-tech-component-states/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-component-states/references/ac-to-state-map.md</code></li>
+<li><code>.grok/skills/spire-tech-component-states/references/state-inventory.md</code></li>
+<li><code>.grok/skills/spire-tech-conformance-receipt/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-conformance-receipt/references/honest-unverifiable.md</code></li>
+<li><code>.grok/skills/spire-tech-contract-consume/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-contract-consume/references/missing-field.md</code></li>
+<li><code>.grok/skills/spire-tech-council-critique/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-council-critique/references/kind-and-retraction.md</code></li>
+<li><code>.grok/skills/spire-tech-debugging/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-debugging/references/boundary-diagnosis.md</code></li>
+<li><code>.grok/skills/spire-tech-debugging/references/defense-in-depth.md</code></li>
+<li><code>.grok/skills/spire-tech-debugging/references/flaky-and-timing-failures.md</code></li>
+<li><code>.grok/skills/spire-tech-debugging/references/root-cause-tracing.md</code></li>
+<li><code>.grok/skills/spire-tech-design-review/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-design-review/references/accessibility-and-interaction.md</code></li>
+<li><code>.grok/skills/spire-tech-design-review/references/design-system.md</code></li>
+<li><code>.grok/skills/spire-tech-design-review/references/usability-critique.md</code></li>
+<li><code>.grok/skills/spire-tech-design-review/references/ux-copy.md</code></li>
+<li><code>.grok/skills/spire-tech-flow-integration-tests/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-flow-integration-tests/references/journey-coverage.md</code></li>
+<li><code>.grok/skills/spire-tech-flow-integration-tests/references/mock-and-stability.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/references/async-and-bundles.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/references/client.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/references/composition.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/references/rendering.md</code></li>
+<li><code>.grok/skills/spire-tech-frontend-patterns/references/server.md</code></li>
+<li><code>.grok/skills/spire-tech-independent-conformance/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-independent-conformance/references/compare-and-bounce.md</code></li>
+<li><code>.grok/skills/spire-tech-interface-conformance/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-interface-conformance/references/authoring-rules.md</code></li>
+<li><code>.grok/skills/spire-tech-invariant-honor/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-invariant-honor/references/binding-set.md</code></li>
+<li><code>.grok/skills/spire-tech-lane-refusal/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-lane-refusal/references/refusal-shapes.md</code></li>
+<li><code>.grok/skills/spire-tech-mechanism-claims/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-mechanism-claims/references/claim-shapes.md</code></li>
+<li><code>.grok/skills/spire-tech-mechanism-claims/references/comparison-axes.md</code></li>
+<li><code>.grok/skills/spire-tech-microcopy-integrity/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-microcopy-integrity/references/integrity-failures.md</code></li>
+<li><code>.grok/skills/spire-tech-microcopy-integrity/references/state-copy.md</code></li>
+<li><code>.grok/skills/spire-tech-react-a11y/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-a11y/references/a11y-checklist.md</code></li>
+<li><code>.grok/skills/spire-tech-react-async-data/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-async-data/references/async-checklist.md</code></li>
+<li><code>.grok/skills/spire-tech-react-composition/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-composition/references/composition-depth.md</code></li>
+<li><code>.grok/skills/spire-tech-react-performance/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-performance/references/perf-tactics.md</code></li>
+<li><code>.grok/skills/spire-tech-react-server-client/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-server-client/references/boundary-rules.md</code></li>
+<li><code>.grok/skills/spire-tech-react-testing/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-react-testing/references/query-guidance.md</code></li>
+<li><code>.grok/skills/spire-tech-risk-based-verify/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-risk-based-verify/references/evidence-record.md</code></li>
+<li><code>.grok/skills/spire-tech-risk-based-verify/references/when-to-automate.md</code></li>
+<li><code>.grok/skills/spire-tech-runtime-observation/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-runtime-observation/references/boot-and-blockers.md</code></li>
+<li><code>.grok/skills/spire-tech-runtime-observation/references/evidence-tokens.md</code></li>
+<li><code>.grok/skills/spire-tech-tdd/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-tdd/references/exceptions-and-mutations.md</code></li>
+<li><code>.grok/skills/spire-tech-tdd/references/writing-good-tests.md</code></li>
+<li><code>.grok/skills/spire-tech-visual-evidence/SKILL.md</code></li>
+<li><code>.grok/skills/spire-tech-visual-evidence/references/evidence-record.md</code></li>
+<li><code>.grok/skills/spire-tech/SKILL.md</code></li>
+<li><code>.grok/tools/_council_conflict_id.mjs</code></li>
+<li><code>.grok/tools/_project.mjs</code></li>
+<li><code>.grok/tools/_pyfmt.mjs</code></li>
+<li><code>.grok/tools/_receipt.mjs</code></li>
+<li><code>.grok/tools/context_for.mjs</code></li>
+<li><code>.grok/tools/contract_lint.mjs</code></li>
+<li><code>.grok/tools/council_conflicts.mjs</code></li>
+<li><code>.grok/tools/design_system_ready.mjs</code></li>
+<li><code>.grok/tools/gates.mjs</code></li>
+<li><code>.grok/tools/interface_conformance.mjs</code></li>
+<li><code>.grok/tools/ledger_tally.mjs</code></li>
+<li><code>.grok/tools/path_guard.js</code></li></ul></details></section><section class="sub"><h3>.claude/skills/ — Spire Tech skills <span class="pill">75</span></h3><ul class="file-list compact"><li><code>.claude/skills/spire-tech-acceptance-criteria/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-adversarial-spec-review/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-code-review/</code> <span class="count">5 files</span></li>
+<li><code>.claude/skills/spire-tech-component-states/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-conformance-receipt/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-contract-consume/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-council-critique/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-debugging/</code> <span class="count">5 files</span></li>
+<li><code>.claude/skills/spire-tech-design-review/</code> <span class="count">5 files</span></li>
+<li><code>.claude/skills/spire-tech-flow-integration-tests/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/</code> <span class="count">6 files</span></li>
+<li><code>.claude/skills/spire-tech-independent-conformance/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-interface-conformance/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-invariant-honor/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-lane-refusal/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-mechanism-claims/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-microcopy-integrity/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-react-a11y/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-react-async-data/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-react-composition/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-react-performance/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-react-server-client/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-react-testing/</code> <span class="count">2 files</span></li>
+<li><code>.claude/skills/spire-tech-risk-based-verify/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-runtime-observation/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-tdd/</code> <span class="count">3 files</span></li>
+<li><code>.claude/skills/spire-tech-visual-evidence/</code> <span class="count">2 files</span></li></ul><details class="all-files"><summary>Show all 75 paths</summary><ul class="file-list"><li><code>.claude/skills/spire-tech-acceptance-criteria/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-acceptance-criteria/references/completion-evidence.md</code></li>
+<li><code>.claude/skills/spire-tech-acceptance-criteria/references/writing-criteria.md</code></li>
+<li><code>.claude/skills/spire-tech-adversarial-spec-review/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-adversarial-spec-review/references/six-check-discipline.md</code></li>
+<li><code>.claude/skills/spire-tech-code-review/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-code-review/references/correctness.md</code></li>
+<li><code>.claude/skills/spire-tech-code-review/references/maintainability.md</code></li>
+<li><code>.claude/skills/spire-tech-code-review/references/performance.md</code></li>
+<li><code>.claude/skills/spire-tech-code-review/references/security.md</code></li>
+<li><code>.claude/skills/spire-tech-component-states/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-component-states/references/ac-to-state-map.md</code></li>
+<li><code>.claude/skills/spire-tech-component-states/references/state-inventory.md</code></li>
+<li><code>.claude/skills/spire-tech-conformance-receipt/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-conformance-receipt/references/honest-unverifiable.md</code></li>
+<li><code>.claude/skills/spire-tech-contract-consume/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-contract-consume/references/missing-field.md</code></li>
+<li><code>.claude/skills/spire-tech-council-critique/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-council-critique/references/kind-and-retraction.md</code></li>
+<li><code>.claude/skills/spire-tech-debugging/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-debugging/references/boundary-diagnosis.md</code></li>
+<li><code>.claude/skills/spire-tech-debugging/references/defense-in-depth.md</code></li>
+<li><code>.claude/skills/spire-tech-debugging/references/flaky-and-timing-failures.md</code></li>
+<li><code>.claude/skills/spire-tech-debugging/references/root-cause-tracing.md</code></li>
+<li><code>.claude/skills/spire-tech-design-review/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-design-review/references/accessibility-and-interaction.md</code></li>
+<li><code>.claude/skills/spire-tech-design-review/references/design-system.md</code></li>
+<li><code>.claude/skills/spire-tech-design-review/references/usability-critique.md</code></li>
+<li><code>.claude/skills/spire-tech-design-review/references/ux-copy.md</code></li>
+<li><code>.claude/skills/spire-tech-flow-integration-tests/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-flow-integration-tests/references/journey-coverage.md</code></li>
+<li><code>.claude/skills/spire-tech-flow-integration-tests/references/mock-and-stability.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/references/async-and-bundles.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/references/client.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/references/composition.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/references/rendering.md</code></li>
+<li><code>.claude/skills/spire-tech-frontend-patterns/references/server.md</code></li>
+<li><code>.claude/skills/spire-tech-independent-conformance/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-independent-conformance/references/compare-and-bounce.md</code></li>
+<li><code>.claude/skills/spire-tech-interface-conformance/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-interface-conformance/references/authoring-rules.md</code></li>
+<li><code>.claude/skills/spire-tech-invariant-honor/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-invariant-honor/references/binding-set.md</code></li>
+<li><code>.claude/skills/spire-tech-lane-refusal/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-lane-refusal/references/refusal-shapes.md</code></li>
+<li><code>.claude/skills/spire-tech-mechanism-claims/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-mechanism-claims/references/claim-shapes.md</code></li>
+<li><code>.claude/skills/spire-tech-mechanism-claims/references/comparison-axes.md</code></li>
+<li><code>.claude/skills/spire-tech-microcopy-integrity/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-microcopy-integrity/references/integrity-failures.md</code></li>
+<li><code>.claude/skills/spire-tech-microcopy-integrity/references/state-copy.md</code></li>
+<li><code>.claude/skills/spire-tech-react-a11y/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-a11y/references/a11y-checklist.md</code></li>
+<li><code>.claude/skills/spire-tech-react-async-data/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-async-data/references/async-checklist.md</code></li>
+<li><code>.claude/skills/spire-tech-react-composition/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-composition/references/composition-depth.md</code></li>
+<li><code>.claude/skills/spire-tech-react-performance/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-performance/references/perf-tactics.md</code></li>
+<li><code>.claude/skills/spire-tech-react-server-client/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-server-client/references/boundary-rules.md</code></li>
+<li><code>.claude/skills/spire-tech-react-testing/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-react-testing/references/query-guidance.md</code></li>
+<li><code>.claude/skills/spire-tech-risk-based-verify/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-risk-based-verify/references/evidence-record.md</code></li>
+<li><code>.claude/skills/spire-tech-risk-based-verify/references/when-to-automate.md</code></li>
+<li><code>.claude/skills/spire-tech-runtime-observation/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-runtime-observation/references/boot-and-blockers.md</code></li>
+<li><code>.claude/skills/spire-tech-runtime-observation/references/evidence-tokens.md</code></li>
+<li><code>.claude/skills/spire-tech-tdd/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-tdd/references/exceptions-and-mutations.md</code></li>
+<li><code>.claude/skills/spire-tech-tdd/references/writing-good-tests.md</code></li>
+<li><code>.claude/skills/spire-tech-visual-evidence/SKILL.md</code></li>
+<li><code>.claude/skills/spire-tech-visual-evidence/references/evidence-record.md</code></li></ul></details></section><section class="sub"><h3>.claude/agents/ — Spire Tech roles <span class="pill">9</span></h3><ul class="file-list"><li><code>.claude/agents/spire-tech-architect.md</code></li>
+<li><code>.claude/agents/spire-tech-backend.md</code></li>
+<li><code>.claude/agents/spire-tech-council-skeptic.md</code></li>
+<li><code>.claude/agents/spire-tech-council-synthesizer.md</code></li>
+<li><code>.claude/agents/spire-tech-frontend.md</code></li>
+<li><code>.claude/agents/spire-tech-planner.md</code></li>
+<li><code>.claude/agents/spire-tech-pm.md</code></li>
+<li><code>.claude/agents/spire-tech-qa.md</code></li>
+<li><code>.claude/agents/spire-tech-ux.md</code></li></ul></section><section class="sub"><h3>.claude/tools/ — new gate tools <span class="pill">4</span></h3><ul class="file-list"><li><code>.claude/tools/_council_conflict_id.mjs</code></li>
+<li><code>.claude/tools/_project.mjs</code></li>
+<li><code>.claude/tools/_receipt.mjs</code></li>
+<li><code>.claude/tools/design_system_ready.mjs</code></li></ul></section><section class="sub"><h3>.claude/commands/ — new slash commands <span class="pill">2</span></h3><ul class="file-list"><li><code>.claude/commands/design-system.md</code></li>
+<li><code>.claude/commands/spire-tech.md</code></li></ul></section><section class="sub"><h3>.claude/design &amp; plan/ — method docs <span class="pill">2</span></h3><ul class="file-list"><li><code>.claude/design/DESIGN_SYSTEM_METHOD.md</code></li>
+<li><code>.claude/plan/PLAN_METHOD.md</code></li></ul></section>
+  </section>
+
+  <section class="block" id="highlight">
+    <h2><span class="badge badge-create">Highlight</span> Codify-authored (not install bulk)</h2>
+    <ul class="file-list">
+      <li><code>.spire/clusters/tech/context/DESIGN_SYSTEM.md</code> — SET Curvature Terminal</li>
+      <li><code>.spire/clusters/tech/context/design-session/codify-2026-08-10.md</code> — session receipt</li>
+      <li><code>.spire/clusters/tech/context/_legacy-receipts/kit.version</code> — archived 1.8.0 receipt</li>
+      <li><code>.spire/clusters/tech/project.json</code> — <code>context_file</code> fixed to <code>context/PROJECT_CONTEXT.md</code></li>
+      <li><code>docs/design/codify-branch-file-changes.html</code> — this report</li>
+    </ul>
+  </section>
+
+  <section class="block" id="presence">
+    <h2><span class="badge badge-info">Checks</span> Key path presence now</h2>
+    <div class="flags">
+      <div class="flag"><div class="k">Legacy .claude/kit.version</div><div class="v yes">gone (archived)</div></div>
+      <div class="flag"><div class="k">Archived kit.version under .spire</div><div class="v yes">present</div></div>
+      <div class="flag"><div class="k">Legacy .claude/PROJECT_CONTEXT.md</div><div class="v yes">still present (copy kept)</div></div>
+      <div class="flag"><div class="k">Spire DESIGN_SYSTEM.md (SET)</div><div class="v yes">present</div></div>
+      <div class="flag"><div class="k">Codify session note</div><div class="v yes">present</div></div>
+      <div class="flag"><div class="k">Git renames detected</div><div class="v">0</div></div>
+    </div>
+  </section>
+</main>
+<footer>
+  branch spire/design-canon-codify · not committed · open in any browser
+</footer>
+</body>
+</html>

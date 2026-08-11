@@ -1,0 +1,33 @@
+{
+  "project_name": "Convexa",
+  "context_file": "context/PROJECT_CONTEXT.md",
+  "backend": {
+    "dir": "apps/api",
+    "serve_cmd": "npx nx serve api",
+    "port": 8000,
+    "crate": "api-rust",
+    "build_cmd": "npx nx build api --configuration=production"
+  },
+  "frontend": {
+    "dir": "apps/dashboard",
+    "serve_cmd": "npx nx serve @convexa/dashboard",
+    "port": 4200,
+    "test_cmd": "npx nx test @convexa/dashboard",
+    "build_cmd": "npx nx build @convexa/dashboard --configuration=production"
+  },
+  "lane_purity": {
+    "ARCHITECTURE_CONTRACT.md": [
+      ["\\.tsx\\b", "UI component reference (.tsx) in an architecture contract"]
+    ],
+    "PRODUCT_CONTRACT.md": [
+      ["\\bdef \\w+\\(", "code (def ...) in a product contract"]
+    ],
+    "BACKEND_EXECUTION_CONTRACT.md": [
+      ["\\.tsx\\b", "UI file (.tsx) in the backend execution contract"],
+      ["\\buseState\\b|\\buseEffect\\b", "React hook in the backend execution contract"]
+    ],
+    "FRONTEND_EXECUTION_CONTRACT.md": [
+      ["\\bsignals\\.py\\b|\\bengine\\.py\\b|\\buvicorn\\b|\\bPydantic\\b", "server internal in the frontend execution contract"]
+    ]
+  }
+}
