@@ -163,19 +163,37 @@ struct GoldenFixture {
 
 fn load_dotenv() {
     // Prefer apps/api/.env (crate root), then workspace root, then cwd.
+    // Optional overlay: if APP_ENV (or CONVEXA_ENV) is already in the process
+    // environment, also load `.env.$APP_ENV` from the same directory as the base
+    // file (later file does not override vars already set — set APP_ENV in the
+    // shell/host, put shared defaults in .env, put env-specific keys in .env.dev).
+    // See docs/ENVIRONMENTS.md + apps/api/.env.example.
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let candidates = [
         manifest.join(".env"),
         manifest.join("../../.env"),
         PathBuf::from(".env"),
     ];
+    let mut loaded_dir: Option<PathBuf> = None;
     for p in candidates {
         if p.is_file() {
             let _ = dotenvy::from_path(&p);
+            loaded_dir = p.parent().map(|d| d.to_path_buf());
             break;
         }
     }
     let _ = dotenvy::dotenv();
+    let app_env = std::env::var("APP_ENV")
+        .or_else(|_| std::env::var("CONVEXA_ENV"))
+        .ok()
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| matches!(s.as_str(), "dev" | "test" | "prod" | "staging"));
+    if let (Some(dir), Some(env_name)) = (loaded_dir, app_env) {
+        let overlay = dir.join(format!(".env.{env_name}"));
+        if overlay.is_file() {
+            let _ = dotenvy::from_path(&overlay);
+        }
+    }
 }
 
 #[tokio::main]

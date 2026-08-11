@@ -51,9 +51,13 @@ docker run --rm -p 8000:8000 \
 ## Local
 
 ```bash
+cp apps/api/.env.example apps/api/.env   # once; fill MASSIVE_API_KEY etc.
 npm run serve:api   # cargo run -p api-rust -- serve
-# put secrets in apps/api/.env
 ```
+
+See [`ENVIRONMENTS.md`](./ENVIRONMENTS.md) for dev/test/prod, research CLIs
+(`join-outcomes` / `score-lab`), and multi-provider notes. Template of every
+supported var: [`apps/api/.env.example`](../apps/api/.env.example).
 
 ## Windows note
 
