@@ -151,7 +151,8 @@ describe('DealerPositioning · distance-to-spot secondary (SET-obedient display)
   });
 
   it('omits distance secondary when spot cannot be anchored', () => {
-    renderDP({ gex_spot: null, price: null });
+    // price is non-null on MarketState; omit it (undefined) so levelSpot has no mid fallback.
+    renderDP({ gex_spot: null, price: undefined });
     // Walls still render; no fabricated distance without an anchor.
     expect(screen.getByText('$260')).toBeInTheDocument();
     expect(screen.queryByTestId('stat-secondary')).toBeNull();
