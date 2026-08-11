@@ -64,7 +64,7 @@ const ATR_METHOD: &str = "simple mean of true range over the last n bars (not Wi
 
 // --------------------------------------------------------------------------- daily bar input
 /// One daily underlying bar (OHLC + ET session date).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DailyBar {
     pub close: Option<f64>,
     pub high: Option<f64>,

@@ -297,6 +297,7 @@ async fn cmd_join_outcomes(
     json: bool,
 ) -> anyhow::Result<()> {
     use api_rust::infrastructure::massive::MassiveRestClient;
+    use api_rust::services::market_data::MarketDataPort;
     use api_rust::services::research::{join_samples, StructureOutcome, LABEL_VERSION_V1};
     use api_rust::services::scanner::store::STRUCTURE_HISTORY_MAX;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -320,7 +321,8 @@ async fn cmd_join_outcomes(
     }
 
     let store = open_scan_store_for_cli(&cfg, store_path).await?;
-    let massive = MassiveRestClient::new(&cfg)?;
+    // P1: outcome join goes through MarketDataPort (live Massive today).
+    let market = MarketDataPort::live(MassiveRestClient::new(&cfg)?);
     let joined_at = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs_f64())
@@ -339,9 +341,9 @@ async fn cmd_join_outcomes(
             continue;
         }
         // Lookback covers longest horizon + sample span cushion.
-        let bars = massive.fetch_daily_bars(sym, 120).await?;
+        let bars = market.daily_bars(sym, 120).await?;
         if bars.is_empty() {
-            eprintln!("{sym}: no daily bars from Massive");
+            eprintln!("{sym}: no daily bars from market port");
             sample_counts.push((sym.clone(), samples.len(), 0));
             continue;
         }

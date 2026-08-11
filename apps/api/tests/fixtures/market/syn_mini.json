@@ -1,0 +1,75 @@
+{
+  "ticker": "SYN",
+  "as_of": "2026-08-01T20:00:00Z",
+  "synchronized_spot": 100.0,
+  "current_spot": 100.0,
+  "atm_iv": 0.25,
+  "atm_iv_expiration": "2026-08-21",
+  "atm_iv_dte": 20.0,
+  "market_phase": "rth",
+  "contracts": [
+    {
+      "strike_price": 105.0,
+      "contract_type": "call",
+      "open_interest": 1000,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.25,
+      "greeks": { "gamma": 0.02, "delta": 0.4 },
+      "volume": 50
+    },
+    {
+      "strike_price": 95.0,
+      "contract_type": "put",
+      "open_interest": 200,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.28,
+      "greeks": { "gamma": 0.01, "delta": -0.3 },
+      "volume": 20
+    },
+    {
+      "strike_price": 100.0,
+      "contract_type": "call",
+      "open_interest": 800,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.24,
+      "greeks": { "gamma": 0.03, "delta": 0.5 },
+      "volume": 40
+    },
+    {
+      "strike_price": 100.0,
+      "contract_type": "put",
+      "open_interest": 700,
+      "expiration_date": "2026-08-21",
+      "implied_volatility": 0.26,
+      "greeks": { "gamma": 0.03, "delta": -0.5 },
+      "volume": 35
+    }
+  ],
+  "daily_bars": [
+    { "session": "2026-07-01", "close": 98.0, "high": 99.0, "low": 97.0 },
+    { "session": "2026-07-02", "close": 98.5, "high": 99.5, "low": 97.5 },
+    { "session": "2026-07-03", "close": 99.0, "high": 100.0, "low": 98.0 },
+    { "session": "2026-07-07", "close": 99.2, "high": 100.1, "low": 98.5 },
+    { "session": "2026-07-08", "close": 99.5, "high": 100.2, "low": 99.0 },
+    { "session": "2026-07-09", "close": 99.8, "high": 100.5, "low": 99.2 },
+    { "session": "2026-07-10", "close": 100.0, "high": 100.8, "low": 99.5 },
+    { "session": "2026-07-11", "close": 100.2, "high": 101.0, "low": 99.8 },
+    { "session": "2026-07-14", "close": 100.1, "high": 100.9, "low": 99.7 },
+    { "session": "2026-07-15", "close": 100.3, "high": 101.0, "low": 99.9 },
+    { "session": "2026-07-16", "close": 100.0, "high": 100.5, "low": 99.5 },
+    { "session": "2026-07-17", "close": 99.8, "high": 100.4, "low": 99.2 },
+    { "session": "2026-07-18", "close": 99.9, "high": 100.6, "low": 99.4 },
+    { "session": "2026-07-21", "close": 100.1, "high": 100.7, "low": 99.6 },
+    { "session": "2026-07-22", "close": 100.4, "high": 101.0, "low": 100.0 },
+    { "session": "2026-07-23", "close": 100.2, "high": 100.8, "low": 99.8 },
+    { "session": "2026-07-24", "close": 100.0, "high": 100.5, "low": 99.5 },
+    { "session": "2026-07-25", "close": 99.7, "high": 100.3, "low": 99.2 },
+    { "session": "2026-07-28", "close": 99.9, "high": 100.4, "low": 99.4 },
+    { "session": "2026-07-29", "close": 100.1, "high": 100.6, "low": 99.7 },
+    { "session": "2026-07-30", "close": 100.3, "high": 100.9, "low": 99.9 },
+    { "session": "2026-07-31", "close": 100.5, "high": 101.1, "low": 100.1 },
+    { "session": "2026-08-01", "close": 100.0, "high": 100.8, "low": 99.5 }
+  ],
+  "minutes": [],
+  "trades": []
+}

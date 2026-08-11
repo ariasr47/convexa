@@ -62,7 +62,7 @@ CI runs these without Massive.
 
 ## Explicitly out of P0
 
-- MarketDataPort / hermetic hist chains  
+- MarketDataPort / hermetic hist chains → **see P1** [`RESEARCH_MARKET_DATA_P1.md`](./RESEARCH_MARKET_DATA_P1.md)  
 - Score reweight lab / AI bake-off  
 - Intraday (30m) horizons  
 - Object-store chain blobs  

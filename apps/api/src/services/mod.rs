@@ -7,6 +7,7 @@ pub mod chain;
 pub mod flight;
 pub mod iv_store;
 pub mod llm;
+pub mod market_data;
 pub mod price_stream;
 pub mod recommendation;
 pub mod research;

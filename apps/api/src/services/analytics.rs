@@ -125,6 +125,32 @@ async fn seed_price_if_empty(state: &AppState, snap: &AnalyticsSnapshot) {
     }
 }
 
+/// Knobs for Path-B compute once vendor inputs are resolved (live or fixture).
+#[derive(Debug, Clone)]
+pub struct AnalyticsComputeParams {
+    pub min_dte: Option<f64>,
+    pub max_dte: Option<f64>,
+    pub include_dark_pool: bool,
+    pub block_min_shares: i64,
+    /// Cache TTL stamped on the snapshot (desk only; research may use 0).
+    pub ttl_secs: u64,
+    /// When false, skip iv_rank write-through / read (hermetic unit path).
+    pub iv_rank_enabled: bool,
+}
+
+impl Default for AnalyticsComputeParams {
+    fn default() -> Self {
+        Self {
+            min_dte: None,
+            max_dte: None,
+            include_dark_pool: false,
+            block_min_shares: 5000,
+            ttl_secs: 0,
+            iv_rank_enabled: false,
+        }
+    }
+}
+
 async fn compute_analytics(
     state: &AppState,
     sym: &str,
@@ -134,8 +160,6 @@ async fn compute_analytics(
     let t0 = Instant::now();
     // Chain + daily + minute bars in parallel (Python `_acquire_vendor_inputs`).
     // Each is independently best-effort for HV / VWAP; only the chain is required.
-    // Chain + daily + minutes [+ trades when dark-pool on] in parallel.
-    // Trades are best-effort and only requested when INCLUDE_DARK_POOL is enabled.
     let want_dp = state.config.include_dark_pool;
     let lookback = state.config.darkpool_lookback_secs;
     let (market_res, daily_res, minutes_res, trades_res) = tokio::join!(
@@ -157,10 +181,6 @@ async fn compute_analytics(
         warn!(ticker = %sym, error = %e, "daily bars failed; HV/context degrade");
         Vec::new()
     });
-    let closes: Vec<f64> = daily_bars
-        .iter()
-        .filter_map(|b| b.close.filter(|c| *c > 0.0 && c.is_finite()))
-        .collect();
     let minutes = minutes_res.unwrap_or_else(|e| {
         warn!(ticker = %sym, error = %e, "intraday bars failed; VWAP degrades to null");
         Vec::new()
@@ -170,16 +190,66 @@ async fn compute_analytics(
         Vec::new()
     });
 
-    let as_of = Utc::now();
+    let vendor = crate::services::market_data::VendorBundle {
+        symbol: market.ticker.clone(),
+        as_of: Utc::now(),
+        market,
+        daily_bars,
+        minutes,
+        trades,
+        source: crate::services::market_data::MarketDataSourceKind::LiveMassive,
+    };
+    let params = AnalyticsComputeParams {
+        min_dte,
+        max_dte,
+        include_dark_pool: want_dp,
+        block_min_shares: state.config.block_min_shares,
+        ttl_secs: state.config.gex_ttl_for(sym).as_secs(),
+        iv_rank_enabled: true,
+    };
+    let mut snap =
+        compute_analytics_from_vendor(&vendor, &params, Some(&state.iv_store)).await?;
+    // Preserve vendor I/O timing in the live path log (CPU is inside compute).
+    info!(
+        ticker = %sym,
+        vendor_ms,
+        total_ms = snap.compute_ms,
+        contracts = snap.contract_count,
+        "analytics compute phases"
+    );
+    // Fold vendor wait into compute_ms so desk metrics stay wall-clock complete.
+    snap.compute_ms += vendor_ms;
+    Ok(snap)
+}
+
+/// Pure-ish Path B compute from a resolved [`VendorBundle`] — **no network**.
+///
+/// Used by live `compute_analytics` after Massive fetch, and by hermetic
+/// characterization / research via [`MarketDataPort`](crate::services::market_data::MarketDataPort).
+pub async fn compute_analytics_from_vendor(
+    vendor: &crate::services::market_data::VendorBundle,
+    params: &AnalyticsComputeParams,
+    iv_store: Option<&crate::services::iv_store::IvStore>,
+) -> Result<AnalyticsSnapshot, AppError> {
+    let t0 = Instant::now();
+    let market = &vendor.market;
+    let daily_bars = &vendor.daily_bars;
+    let minutes = &vendor.minutes;
+    let trades = &vendor.trades;
+    let sym = market.ticker.as_str();
+
+    let closes: Vec<f64> = daily_bars
+        .iter()
+        .filter_map(|b| b.close.filter(|c| *c > 0.0 && c.is_finite()))
+        .collect();
+
+    let as_of = vendor.as_of;
     let opts = GexOptions::default()
         .with_as_of(as_of)
-        .with_dte_window(min_dte, max_dte)
+        .with_dte_window(params.min_dte, params.max_dte)
         .with_risk_free_rate(0.045);
 
-    // CPU phase: GEX profile + IV structure are independent of each other (same chain).
-    // VWAP only needs minute bars. Run GEX+IV on the blocking pool so the async runtime
-    // stays free for other tickers under concurrent cache misses (singleflight still
-    // coalesces per-symbol). Vendor I/O above is already tokio::join! parallel.
+    // CPU phase: GEX + IV structure on blocking pool; VWAP is cheap.
     let t_cpu = Instant::now();
     let spot = market.synchronized_spot;
     let contracts = market.contracts.clone();
@@ -195,7 +265,7 @@ async fn compute_analytics(
             let contracts = contracts.clone();
             move || compute_iv_structure(&contracts, spot, atm_exp.as_deref(), atm_dte, as_of)
         }),
-        async { calculate_vwap_bands_default(&minutes) },
+        async { calculate_vwap_bands_default(minutes) },
     );
     let gex = gex_res.map_err(|e| AppError::Config(format!("gex join: {e}")))?;
     let (iv_skew, term_structure) =
@@ -209,7 +279,6 @@ async fn compute_analytics(
         );
     }
 
-    // Python: atm_iv (decimal) * 100 / hv_30d (% annualized).
     let hv_30d = calculate_historical_volatility_30d(&closes);
     let ratio = iv_hv_ratio(market.atm_iv, hv_30d);
     let iv_hv = if ratio > 0.0 { Some(ratio) } else { None };
@@ -242,14 +311,13 @@ async fn compute_analytics(
         vu2,
         vl2,
     );
-    // Off-exchange / dark-pool: best-effort, isolated. Influences score only via confluence
-    // bonus when present (Python generate_signals(state, off_exchange)).
-    let now_ns = Utc::now().timestamp_nanos_opt().unwrap_or(0);
-    let off_exchange = if want_dp && !trades.is_empty() {
+
+    let now_ns = as_of.timestamp_nanos_opt().unwrap_or(0);
+    let off_exchange = if params.include_dark_pool && !trades.is_empty() {
         analyze_off_exchange_default(
-            &trades,
+            trades,
             display_price,
-            state.config.block_min_shares,
+            params.block_min_shares,
             now_ns,
         )
     } else {
@@ -258,25 +326,21 @@ async fn compute_analytics(
     let ox_input = off_exchange.as_ref().map(off_exchange_signal_input);
     let signals = generate_signals(&ms_in, ox_input.as_ref());
 
-    // Market-context pack AFTER score (additive; never a scoring input).
     let market_context = compute_market_context(
-        &daily_bars,
+        daily_bars,
         &gex.strike_profile,
         market.synchronized_spot,
         gex.put_call_ratio,
         &market.contracts,
     );
 
-    // iv_rank: write-through today's CM30 sample, then read window (post-score, additive).
-    // Best-effort: any store fault → iv_rank null; never touches score/cache validity.
-    let iv_rank = {
+    let iv_rank = if params.iv_rank_enabled {
         let session_date = session_date_from_ns(market.timestamp)
-            .or_else(|| Some(Utc::now().format("%Y-%m-%d").to_string()));
-        // CM30 wants percent IV; chain stores decimal — convert via unit type.
+            .or_else(|| Some(as_of.format("%Y-%m-%d").to_string()));
         let atm_iv_pct = IvDecimal::try_from_decimal(market.atm_iv)
             .map(|v| v.as_percent())
             .unwrap_or(0.0);
-        let captured_at = Utc::now().timestamp() as f64;
+        let captured_at = as_of.timestamp() as f64;
         let current = session_date.as_ref().and_then(|sd| {
             derive_cm30_sample(
                 &market.ticker,
@@ -289,22 +353,26 @@ async fn compute_analytics(
                 captured_at,
             )
         });
-        if let Some(ref sample) = current {
-            if let Err(e) = state.iv_store.upsert_if_absent(sample) {
-                warn!(ticker = %sym, error = %e, "iv_rank write-through failed (bundle unaffected)");
+        if let Some(store) = iv_store {
+            if let Some(ref sample) = current {
+                if let Err(e) = store.upsert_if_absent(sample) {
+                    warn!(ticker = %sym, error = %e, "iv_rank write-through failed (bundle unaffected)");
+                }
             }
-        }
-        match state.iv_store.read_recent(sym, IV_RANK_WINDOW_CAP) {
-            Ok(hist) => compute_iv_rank_read(&hist, current.as_ref()),
-            Err(e) => {
-                warn!(ticker = %sym, error = %e, "iv_rank read failed");
-                None
+            match store.read_recent(sym, IV_RANK_WINDOW_CAP) {
+                Ok(hist) => compute_iv_rank_read(&hist, current.as_ref()),
+                Err(e) => {
+                    warn!(ticker = %sym, error = %e, "iv_rank read failed");
+                    None
+                }
             }
+        } else {
+            compute_iv_rank_read(&[], current.as_ref())
         }
+    } else {
+        None
     };
 
-    // Vol-normalized GEX — O(1) over aggregates; never walks the chain; not a scoring input.
-    // Unit types force decimal ATM IV / percent HV (rejects wire-style 45.0 as "decimal").
     let vol_normalized_gex = vol_normalize_gex(
         gex.net_gex,
         gex.call_gex,
@@ -315,15 +383,13 @@ async fn compute_analytics(
     );
 
     let compute_ms = t0.elapsed().as_secs_f64() * 1000.0;
-    let ttl_secs = state.config.gex_ttl_for(sym).as_secs();
-    // Structured phase timings for p95 review (vendor I/O vs CPU) without extra metrics infra.
     info!(
         ticker = %sym,
-        vendor_ms = vendor_ms,
-        cpu_ms = cpu_ms,
+        cpu_ms,
         total_ms = compute_ms,
         contracts = market.contracts.len(),
-        "analytics compute phases"
+        source = ?vendor.source,
+        "analytics compute from vendor bundle"
     );
 
     Ok(AnalyticsSnapshot {
@@ -346,9 +412,46 @@ async fn compute_analytics(
         off_exchange,
         iv_rank,
         vol_normalized_gex,
-        contracts: market.contracts,
+        contracts: market.contracts.clone(),
         compute_ms,
-        cached_at: Utc::now().timestamp(),
-        ttl_secs,
+        cached_at: as_of.timestamp(),
+        ttl_secs: params.ttl_secs,
     })
+}
+
+/// Hermetic Path B: resolve via [`MarketDataPort`] then compute (no network when fixture).
+pub async fn compute_from_port(
+    port: &crate::services::market_data::MarketDataPort,
+    symbol: &str,
+    as_of: Option<chrono::DateTime<Utc>>,
+    params: &AnalyticsComputeParams,
+    iv_store: Option<&crate::services::iv_store::IvStore>,
+) -> Result<AnalyticsSnapshot, AppError> {
+    let vendor = port.resolve(symbol, as_of).await?;
+    compute_analytics_from_vendor(&vendor, params, iv_store).await
+}
+
+#[cfg(test)]
+mod hermetic_tests {
+    use super::*;
+    use crate::services::market_data::{load_fixture_dir, MarketDataPort};
+    use std::path::PathBuf;
+
+    #[tokio::test]
+    async fn fixture_path_b_produces_structure_and_score_without_network() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
+        let port = MarketDataPort::fixture(load_fixture_dir(&dir).unwrap());
+        let params = AnalyticsComputeParams::default();
+        let snap = compute_from_port(&port, "SYN", None, &params, None)
+            .await
+            .expect("hermetic compute");
+        assert_eq!(snap.ticker, "SYN");
+        assert!(snap.gex_spot > 0.0);
+        assert!(snap.contract_count >= 2);
+        assert!(snap.gex.call_wall > 0.0 || snap.gex.put_wall > 0.0);
+        let sig = snap.signals.expect("signals");
+        // Opportunity score is defined; exact value is free to drift with engine.
+        assert!(sig.opportunity_score >= 0);
+        assert!(snap.compute_ms >= 0.0);
+    }
 }
