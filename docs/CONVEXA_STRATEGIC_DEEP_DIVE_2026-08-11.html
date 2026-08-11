@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Convexa — Strategic Deep Dive · 2026-08-11</title>
+<style>
+  :root {
+    --bg: #0f1218;
+    --surface: #171b24;
+    --surface2: #1e2430;
+    --ink: #e8e6e1;
+    --muted: #9aa3b2;
+    --line: #2a3140;
+    --amber: #e0a43a;
+    --amber-dim: #8a6520;
+    --good: #4ec98a;
+    --warn: #e0a43a;
+    --bad: #e07070;
+    --blue: #6aa8ff;
+    --mono: "Cascadia Code", "SF Mono", ui-monospace, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f3f1ec; --surface: #fff; --surface2: #f8f6f1; --ink: #1c1f26;
+      --muted: #5c6575; --line: #e0dcd3; --amber: #a86410; --amber-dim: #c9a05a;
+      --good: #1e7a4d; --warn: #a86410; --bad: #b3403f; --blue: #1a5fb4;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 16.5px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 36px 22px 100px; }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--amber); margin: 0 0 8px;
+  }
+  h1 {
+    font-size: clamp(1.75rem, 4.5vw, 2.6rem); line-height: 1.1;
+    letter-spacing: -.02em; margin: 0 0 12px; font-weight: 700;
+  }
+  h2 {
+    font-size: 1.35rem; margin: 0 0 8px; letter-spacing: -.01em;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px;
+  }
+  h3 { font-size: 1.05rem; margin: 1.4em 0 .5em; color: var(--ink); }
+  p { margin: .7em 0; max-width: 72ch; color: var(--ink); }
+  .lede { font-size: 1.1rem; color: var(--muted); max-width: 68ch; }
+  .meta {
+    font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 14px;
+  }
+  section {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 26px 28px; margin: 20px 0;
+  }
+  section.hero {
+    background: linear-gradient(145deg, var(--surface2), var(--surface));
+    border-color: var(--amber-dim);
+  }
+  .toc {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 8px;
+  }
+  .toc a {
+    font-family: var(--mono); font-size: 11.5px; padding: 6px 12px;
+    border: 1px solid var(--line); border-radius: 999px; color: var(--ink);
+    background: var(--surface2); text-decoration: none;
+  }
+  .toc a:hover { border-color: var(--amber); color: var(--amber); text-decoration: none; }
+  .grid2 {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px; margin: 14px 0;
+  }
+  .card {
+    background: var(--surface2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .card strong { display: block; margin-bottom: 4px; }
+  .card p { margin: 4px 0 0; font-size: 14.5px; color: var(--muted); max-width: none; }
+  .chip {
+    font-family: var(--mono); font-size: 11px; padding: 2px 8px;
+    border-radius: 4px; display: inline-block; white-space: nowrap;
+  }
+  .c-good { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .c-warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .c-bad { background: color-mix(in srgb, var(--bad) 18%, transparent); color: var(--bad); }
+  .c-blue { background: color-mix(in srgb, var(--blue) 18%, transparent); color: var(--blue); }
+  .c-mute { background: var(--surface2); color: var(--muted); border: 1px solid var(--line); }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tablewrap {
+    overflow-x: auto; margin: 12px 0; border: 1px solid var(--line); border-radius: 8px;
+  }
+  th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; text-align: left; color: var(--muted);
+    background: var(--surface2); padding: 10px 12px; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  ul, ol { padding-left: 1.25em; margin: .6em 0; }
+  li { margin: .45em 0; max-width: 78ch; }
+  .quote {
+    border-left: 3px solid var(--amber); padding: 4px 0 4px 14px;
+    color: var(--muted); font-style: italic; margin: 14px 0; max-width: 70ch;
+  }
+  .quote b { color: var(--ink); font-style: normal; }
+  .callout {
+    background: color-mix(in srgb, var(--amber) 10%, var(--surface2));
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin: 14px 0;
+  }
+  .num {
+    font-family: var(--mono); font-size: 1.6rem; font-weight: 600; color: var(--amber);
+    line-height: 1.2;
+  }
+  .num span { font-size: 12px; color: var(--muted); font-weight: 400; display: block; margin-top: 2px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .footer {
+    margin-top: 36px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  }
+  .rec { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; }
+  .rec .rank {
+    font-family: var(--mono); font-size: 13px; min-width: 2rem; height: 2rem;
+    border-radius: 8px; background: var(--surface2); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; color: var(--amber);
+  }
+  @media print {
+    body { background: #fff; color: #111; font-size: 12pt; }
+    section { break-inside: avoid; border-color: #ccc; background: #fff; }
+    .toc { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero" style="padding: 32px 28px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 8px;">
+  <p class="eyebrow">Owner briefing · 2026-08-11</p>
+  <h1>Convexa — strategic deep dive</h1>
+  <p class="lede">
+    Product direction, roadmap honesty, quant maturity, calculations, security,
+    scale, performance, system design, competitors, and ranked recommendations —
+    grounded in shipped code, the August roadmap, the market-reality research,
+    and the first live score-lab run.
+  </p>
+  <p class="meta">
+    Sources: ROADMAP_2026-08 · MARKET_REALITY_REPORT · PROJECT_CONTEXT · score_lab_1d ·
+    structure-history fix c5dd959 · TECH_DEBT / IMPROVEMENT_BACKLOG
+  </p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#exec">Executive</a>
+    <a href="#direction">Direction</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#quant">Quant grade</a>
+    <a href="#calc">Calculations</a>
+    <a href="#design">System design</a>
+    <a href="#sec">Security</a>
+    <a href="#scale">Scale &amp; perf</a>
+    <a href="#comp">Competitors</a>
+    <a href="#rec">Recommendations</a>
+  </nav>
+</header>
+
+<!-- ========== EXEC ========== -->
+<section id="exec">
+  <h2>1. Executive snapshot</h2>
+  <div class="quote">
+    <b>One sentence:</b> Convexa is a high-discipline personal trading instrument
+    with a real engineering moat and a still-unproven score edge — the bottleneck
+    is evidence + distribution, not more UI surface.
+  </div>
+
+  <div class="kpi-row" style="margin-top:18px">
+    <div class="card"><div class="num">Edge-first<span>owner frame, locked</span></div></div>
+    <div class="card"><div class="num">0.26<span>score lift@top10% (1d, thin slice)</span></div></div>
+    <div class="card"><div class="num">1.99<span>structure_event lift (same slice)</span></div></div>
+    <div class="card"><div class="num">74<span>SPY structure samples durable on prod</span></div></div>
+  </div>
+
+  <h3>What is true today (2026-08-11)</h3>
+  <ul>
+    <li><strong>Product thesis:</strong> longer-dated (~7–45 DTE) swing context from dealer gamma structure + vol + flow + optional AI explanation — not 0DTE scalping.</li>
+    <li><strong>Shipped core:</strong> Rust API + React dashboard, scanner, broker-connect path, sim positions, AI rec (BYO key), outcome ledger, structure-history capture, score-lab CLI.</li>
+    <li><strong>Research spine works:</strong> prod diary readable → join-outcomes → score-lab. First 1d report is <em>plumbing-proof + thin signal</em>, not a multi-week verdict.</li>
+    <li><strong>Business:</strong> market research says indie GEX niche is viable as lifestyle (~$1–5k MRR class), not venture; free floor kills undifferentiated analytics.</li>
+  </ul>
+
+  <div class="callout">
+    <strong>While waiting for multi-day score-lab A:</strong> deepen quant interpretation of the thin run;
+    advance <span class="chip c-blue">vol-normalized-gex (X2)</span>; keep trading through the app (ledger N);
+    do not reweight the live score from one day’s 147 pairs.
+  </div>
+</section>
+
+<!-- ========== DIRECTION ========== -->
+<section id="direction">
+  <h2>2. Product direction</h2>
+  <h3>Who it is for</h3>
+  <p>
+    <strong>You first</strong> — a solo operator/swing trader who lives in dark terminals,
+    distrusts overclaiming UIs, and wants dealer positioning context that is honest when
+    degraded. Secondary: a future founding cohort only after <em>your</em> ledger says the process helps.
+  </p>
+
+  <h3>Job to be done</h3>
+  <p>
+    Given dealer gamma structure on liquid names: <em>where is price attracted or repelled,
+    is the regime mean-reverting or trending, is there an actionable setup now, and what
+    did I decide last time?</em>
+  </p>
+
+  <h3>Positioning (honest wedge)</h3>
+  <div class="grid2">
+    <div class="card">
+      <strong>Own the wedge</strong>
+      <p>Live single-ticker read (price / flow / flip) + interpretation (setups, score, AI that <em>explains</em>) + decision ledger. Few rivals couple all three with engineering honesty.</p>
+    </div>
+    <div class="card">
+      <strong>Refuse the war</strong>
+      <p>0DTE per-second GEX, 3,500-ticker breadth, real order routing, free-broker AI toys. Different product, different bill, different ethics.</p>
+    </div>
+    <div class="card">
+      <strong>Brand system</strong>
+      <p>“The Curvature Terminal” — numerals as personality; degraded/sim states styled as truth, not footnotes. Design canon SET 2026-08-10.</p>
+    </div>
+    <div class="card">
+      <strong>Monetization posture</strong>
+      <p>Gated on ledger evidence + written data licensing. AI framed as explains, never “tells you what to trade.”</p>
+    </div>
+  </div>
+
+  <h3>Non-goals (binding)</h3>
+  <ul>
+    <li><span class="chip c-bad">no-real-order-path</span> — read positions OK; no live execution.</li>
+    <li>No silent score drift — <span class="chip c-warn">score-change-is-deliberate-and-measured</span>.</li>
+    <li>No second design system; tokens only via theme / <code>tokens.ts</code>.</li>
+  </ul>
+</section>
+
+<!-- ========== ROADMAP ========== -->
+<section id="roadmap">
+  <h2>3. Product roadmap (status vs August plan)</h2>
+  <p class="lede">Standing order: <code>docs/ROADMAP_2026-08.md</code> — edge-first, zero-sum.</p>
+
+  <h3>Now / Next — updated against reality</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Item</th><th>Plan status</th><th>Actual (Aug 11)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>N1</td><td>Deploy / keep prod on main</td>
+          <td><span class="chip c-warn">was lag risk</span></td>
+          <td><span class="chip c-good">main live</span> (incl. history fix)</td>
+        </tr>
+        <tr>
+          <td>N2</td><td>Trade through the app every trade</td>
+          <td><span class="chip c-mute">habit</span></td>
+          <td><span class="chip c-warn">owner discipline</span> — still the evidence clock</td>
+        </tr>
+        <tr>
+          <td>N3</td><td>Index-first defaults</td>
+          <td>planned</td>
+          <td><span class="chip c-good">shipped</span></td>
+        </tr>
+        <tr>
+          <td>N4</td><td>Public habit (X)</td>
+          <td><span class="chip c-mute">deferred by owner</span></td>
+          <td>still deferred — audience clock paused</td>
+        </tr>
+        <tr>
+          <td>X1</td><td>Broker-connect</td>
+          <td>SnapTrade planned</td>
+          <td><span class="chip c-good">shipped</span> (Webull-direct path; SnapTrade still a later multi-broker option)</td>
+        </tr>
+        <tr>
+          <td>X2</td><td>Vol-normalized GEX</td>
+          <td><span class="chip c-blue">next edge feature</span></td>
+          <td><span class="chip c-warn">not started</span> — best product bet while diary grows</td>
+        </tr>
+        <tr>
+          <td>X3</td><td>Alerts v1</td>
+          <td>after X2</td>
+          <td>queued</td>
+        </tr>
+        <tr>
+          <td>X4</td><td>Ledger checkpoint / deliberate score change</td>
+          <td>N≥20 closed</td>
+          <td>blocked on N2 habit + time</td>
+        </tr>
+        <tr>
+          <td>Research</td>
+          <td>Score-lab / structure diary</td>
+          <td>—</td>
+          <td><span class="chip c-good">pipeline live</span>; multi-week KPI still cooking</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Later gates (unchanged logic)</h3>
+  <ul>
+    <li><strong>Edge test (~day 90):</strong> ledger N≥30 with process ≥ baseline → keep investing; else fix signal (X2/X4) before surface.</li>
+    <li><strong>Business test (mo 4–6):</strong> distribution habit held + pulse of audience → L3/L4; else stay edge-only.</li>
+    <li><strong>Spend test:</strong> &gt;~$550/mo recurring needs revenue or measured edge improvement.</li>
+  </ul>
+</section>
+
+<!-- ========== QUANT ========== -->
+<section id="quant">
+  <h2>4. Quant grade — maturity model</h2>
+  <p>
+    Think of quant maturity as five rungs. Convexa is past “dashboard math” and into
+    “instrumented research,” not yet “validated edge product.”
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Rung</th><th>Meaning</th><th>Convexa</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. Compute</td>
+          <td>Greeks / GEX / flip / walls exist and are deterministic</td>
+          <td><span class="chip c-good">Done</span> quant-engine + goldens</td>
+        </tr>
+        <tr>
+          <td>2. Honest wire</td>
+          <td>Nulls, stale, live vs static, no overclaim</td>
+          <td><span class="chip c-good">Strong</span> promoted invariants</td>
+        </tr>
+        <tr>
+          <td>3. Capture</td>
+          <td>Feature vectors + labels durable over time</td>
+          <td><span class="chip c-good">Online</span> structure history + join-outcomes</td>
+        </tr>
+        <tr>
+          <td>4. Measure</td>
+          <td>Score ranking vs outcomes, multi-week, multi-name</td>
+          <td><span class="chip c-warn">Started</span> first 1d lab (thin)</td>
+        </tr>
+        <tr>
+          <td>5. Improve deliberately</td>
+          <td>Reweight / vol-norm under measured before/after</td>
+          <td><span class="chip c-mute">Not yet</span> — blocked on N and X2 design</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>First score-lab slice (2026-08-11) — interpret carefully</h3>
+  <p>
+    147 pairs (SPY+QQQ), structure samples from ~2026-08-10 17:15–23:58 UTC, horizon <strong>1d only</strong>.
+    This is a <em>short window</em>, not the multi-week bar in the score-lab doc.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Metric</th><th>Value</th><th>Read</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Pearson(score, abs_move)</td>
+          <td>−0.15</td>
+          <td>Weak inverse association with move size</td>
+        </tr>
+        <tr>
+          <td>large_abs_move AUC</td>
+          <td>0.49</td>
+          <td>≈ chance</td>
+        </tr>
+        <tr>
+          <td><strong>Lift @ top 10%</strong> (primary KPI)</td>
+          <td><strong>0.26</strong></td>
+          <td>Top scores under-picked large moves in this slice (want ≳1.1 over weeks)</td>
+        </tr>
+        <tr>
+          <td>structure_event AUC / lift</td>
+          <td>0.91 / 1.99</td>
+          <td>Wall/flip path hits align with labels — structure may be the better signal than composite score here</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <strong>Quant implication:</strong> do not demote the product; do not ship a reweight from this alone.
+    Hypotheses to test as N grows: (1) score constants are stale vs regimes; (2) proximity/vol weights
+    fight structure events; (3) vol-normalized GEX (X2) is the right structural upgrade before score surgery;
+    (4) index-first names only for KPI (already partially aligned).
+  </div>
+</section>
+
+<!-- ========== CALCULATIONS ========== -->
+<section id="calc">
+  <h2>5. Calculations (what the machine believes)</h2>
+  <h3>Two gamma sources (do not unify casually)</h3>
+  <ul>
+    <li><strong>Vendor gamma</strong> → strike profile, walls, net/call/put GEX at current spot.</li>
+    <li><strong>Analytic BS gamma</strong> → gamma flip on a spot ±20% grid (vendor has no grid).</li>
+  </ul>
+  <p>They can disagree by design (e.g. wall at 450 vs flip at 420).</p>
+
+  <h3>Core identities (standing)</h3>
+  <ul>
+    <li>Dollar GEX ≈ <code>gamma · OI · 100 · S² · 0.01</code> (calls +, puts −).</li>
+    <li>Walls = max/min net-GEX strikes; flip = nearest zero-crossing of net GEX on the analytic grid.</li>
+    <li>DEX, vol/OI, IV skew, term structure are additive context — not score inputs under additive canon.</li>
+    <li>Opportunity score / tier / fingerprint: entry gate for AI and UI triage — must stay byte-identical under additive features.</li>
+  </ul>
+
+  <h3>Known maturity gaps in the math product</h3>
+  <div class="grid2">
+    <div class="card">
+      <strong>Raw vs vol-normalized GEX</strong>
+      <p>External evidence (and roadmap X2): raw GEX often fails as a predictor; vol-normalized is the defensible form. Methodology note is part of shipping X2.</p>
+    </div>
+    <div class="card">
+      <strong>Score constants</strong>
+      <p>Hand-tuned bands (e.g. gate 50, tier cuts) never outcome-validated for years of enrichment features. Ledger + score-lab exist to end that freeze-by-accident.</p>
+    </div>
+    <div class="card">
+      <strong>Intraday staleness</strong>
+      <p>Market’s #1 churn complaint for peers: “day-old levels.” Your live flip/flow path is a relative strength; chain refresh cadence is still a product constraint.</p>
+    </div>
+    <div class="card">
+      <strong>Hist options replay</strong>
+      <p>Full PIT chain backtest is hard/expensive (plan-gated). Current path: capture live features + Massive daily labels — correct interim architecture.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== DESIGN ========== -->
+<section id="design">
+  <h2>6. System design</h2>
+  <h3>Runtime shape (as operated)</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Implementation</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>API</td>
+          <td>Axum / Tokio (<code>api-rust</code>) on Railway</td>
+          <td>Bundle, SSE, scan, auth, rec, broker read</td>
+        </tr>
+        <tr>
+          <td>Quant</td>
+          <td><code>libs/quant-engine</code></td>
+          <td>Pure math; goldens; SIMD GEX paths</td>
+        </tr>
+        <tr>
+          <td>FE</td>
+          <td>React 19 + Vite + MUI · Cloudflare Pages</td>
+          <td>Landing, ticker, positions, scanner, settings</td>
+        </tr>
+        <tr>
+          <td>Durable state</td>
+          <td>Postgres (prod) / JSON local</td>
+          <td>Auth, scan rows, <strong>structure history</strong>, IV samples</td>
+        </tr>
+        <tr>
+          <td>Vendor</td>
+          <td>Massive (Polygon-style)</td>
+          <td>Chains, aggs, WS quotes; personal-use plan today</td>
+        </tr>
+        <tr>
+          <td>Delivery OS</td>
+          <td>Spire Tech (multi-host)</td>
+          <td>Council → plan → lanes → QA; memory under <code>.spire/</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Design principles that actually constrain code</h3>
+  <ul>
+    <li><strong>Best-effort isolation:</strong> optional computations fail → null field, not 5xx on the trader path.</li>
+    <li><strong>Live vs static isolation:</strong> SSE drop dims live tiles; last bundle keeps rendering.</li>
+    <li><strong>Operator path separation:</strong> <code>/_ops/metrics</code> off trader chrome.</li>
+    <li><strong>Structural enforcement:</strong> prefer build-breaking guards over prose (module boundaries, scans, pins).</li>
+    <li><strong>Interface contract:</strong> FE↔BE single source; conformance receipts at ship.</li>
+  </ul>
+
+  <h3>Research subsystem (new maturity)</h3>
+  <p>
+    Slow-lane → <code>scan_structure_history</code> (score, drivers, walls, GEX, IV/HV) →
+    <code>join-outcomes</code> (Massive daily) → <code>score-lab</code>. This is how quant grade climbs from 3 → 4 → 5.
+  </p>
+</section>
+
+<!-- ========== SECURITY ========== -->
+<section id="sec">
+  <h2>7. Security</h2>
+  <div class="grid2">
+    <div class="card">
+      <strong>Standing posture</strong>
+      <p>No real order path; secrets encrypted at rest (BYO AI / broker tokens); server-side gates for state-bearing actions; metrics token on prod; public rate limit; registration fail-closed.</p>
+    </div>
+    <div class="card">
+      <strong>Broker surface</strong>
+      <p>First real-account connection already triggered system-6-style review. Read-only only. Credential storage is the sensitive core — keep attack surface minimal.</p>
+    </div>
+    <div class="card">
+      <strong>AI surface</strong>
+      <p>AI is advisory; gated; BYO key preferred; shared key limited to admin allowance. Never score input.</p>
+    </div>
+    <div class="card">
+      <strong>Open residual risks</strong>
+      <p>Process-local AI meters on multi-replica; browser-local durable stores for some FE history; data licensing landmine before any paying user (Massive personal-use vs redistribution).</p>
+    </div>
+  </div>
+  <p>
+    <strong>Before L4 (billing / strangers):</strong> written vendor licensing, ToS/disclaimers,
+    abuse economics, and a security pass on multi-tenant assumptions — not more GEX tiles.
+  </p>
+</section>
+
+<!-- ========== SCALE PERF ========== -->
+<section id="scale">
+  <h2>8. Scalability &amp; performance</h2>
+  <h3>What already scales for a solo edge product</h3>
+  <ul>
+    <li>Rust API + Postgres multi-instance path; Pages edge for FE.</li>
+    <li>Two-speed scanner (fast price / slow structure) + shared stock WS multiplexer.</li>
+    <li>GEX cache + warm set; rate limits on public vendor-cost routes.</li>
+    <li>FE route-level code splitting (major chunk work already done).</li>
+  </ul>
+
+  <h3>Hard ceilings (by design or vendor)</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Constraint</th><th>Implication</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Options chain cost / latency</td>
+          <td>Universe size and slow-batch are product decisions; 100-ticker vanity breaks freshness math without knobs.</td>
+        </tr>
+        <tr>
+          <td>Single-ticker request path</td>
+          <td>Multi-ticker only in bounded background worker — protect ticker p50.</td>
+        </tr>
+        <tr>
+          <td>OPRA / redistribution</td>
+          <td>Commercial multi-user real-time chains are a different cost regime (Databento path in L2).</td>
+        </tr>
+        <tr>
+          <td>AI caps</td>
+          <td>Process-local meters → per-replica until centralized.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Performance product truth</h3>
+  <p>
+    Users churn on <em>stale structure</em> more than on bundle milliseconds. Optimize perceived freshness
+    (honest stale flags, live flip, warm paths) before micro-optimizing chart paints.
+  </p>
+</section>
+
+<!-- ========== COMPETITORS ========== -->
+<section id="comp">
+  <h2>9. Competitors &amp; market</h2>
+  <p class="lede">
+    From <code>MARKET_REALITY_REPORT_2026-08-01.html</code> — snapshot pricing and sentiment; niche moves fast.
+  </p>
+
+  <h3>Direct GEX / dealer-positioning set</h3>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr><th>Product</th><th>~$ / mo</th><th>Angle</th><th>Weakness users cite</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="name">SpotGamma</td><td>89–299</td><td>Incumbent daily note + levels</td><td>Static pre-open levels, price, hindsight</td></tr>
+        <tr><td class="name">Unusual Whales</td><td>50–120</td><td>Breadth + flow + community</td><td>Greeks lag / firehose; no opinionated signal</td></tr>
+        <tr><td class="name">Volland</td><td>99–1000</td><td>Trade-level dealer inference</td><td>Pricey; methodology-heavy</td></tr>
+        <tr><td class="name">Gexbot</td><td>50–350</td><td>Per-second GEX, indie</td><td>Scalper/index; not swing workflow</td></tr>
+        <tr><td class="name">OptionsDepth</td><td>199–249</td><td>CBOE tagged data, SPX/VIX</td><td>Narrow universe; young</td></tr>
+        <tr><td class="name">Menthor Q</td><td>129–349</td><td>Models + education funnel</td><td>Harsh “lagging indicator” reviews</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Where Convexa is relatively strong / weak</h3>
+  <div class="grid2">
+    <div class="card">
+      <strong class="chip c-good">Strengths</strong>
+      <p>Live per-ticker feed · interpretation (setups + score) · decision ledger · engineering honesty (degraded states) · delivery discipline.</p>
+    </div>
+    <div class="card">
+      <strong class="chip c-warn">Gaps vs set</strong>
+      <p>Intraday GEX freshness vs Gexbot/OptionsDepth · dealer-direction methodology vs Volland · ticker breadth vs UW/SpotGamma · distribution = near zero.</p>
+    </div>
+  </div>
+
+  <div class="quote">
+    Market-report punchline: <b>your bottleneck is not the product</b> — free content flywheel +
+    freshness + public track record beat more features. Feature work is the comfortable procrastination.
+  </div>
+
+  <h3>Free floor</h3>
+  <p>
+    Broker apps give chains, greeks, IV rank, strategy builders, even AI thesis→strategy for free or cheap.
+    Paid moat remains: <strong>real-time flow, dealer positioning, cross-source synthesis with opinionated honesty</strong>.
+  </p>
+</section>
+
+<!-- ========== RECOMMENDATIONS ========== -->
+<section id="rec">
+  <h2>10. Best recommendations (ranked)</h2>
+  <p>Ordered for a 10–25 h/wk owner with edge-first frame. Each is actionable.</p>
+
+  <div class="rec">
+    <div class="rank">1</div>
+    <div>
+      <strong>Protect the evidence clocks</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Keep prod capturing structure history (done). Mirror every real trade in the app (N2).
+        Re-run join + score-lab weekly until large_abs_move lift is stable across weeks — not days.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">2</div>
+    <div>
+      <strong>Ship X2 — vol-normalized GEX + methodology note</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Highest roadmap leverage on signal quality while score-lab matures. Addresses external
+        “raw GEX doesn’t work” evidence and competitor staleness narrative.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">3</div>
+    <div>
+      <strong>Do not reweight live score from the thin 1d lab</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Treat structure_event strength as a research lead. Any score change needs
+        score-change-is-deliberate-and-measured + multi-week before/after.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">4</div>
+    <div>
+      <strong>Decide distribution consciously</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Either start the deferred X habit after personal quirks settle, or formally stay “private instrument”
+        for 90 days — but don’t pretend growth will appear from features alone.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">5</div>
+    <div>
+      <strong>Stand up a test environment before heavy hist research</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Separate Postgres + APP_ENV=test. Avoid laptop full-admin against prod for join jobs;
+        export samples via history API is fine interim.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">6</div>
+    <div>
+      <strong>Alerts (X3) after X2, not before</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Alerts amplify whatever signal you have. Amplifying an unmeasured score burns trust.
+      </p>
+    </div>
+  </div>
+  <div class="rec">
+    <div class="rank">7</div>
+    <div>
+      <strong>Commercial path only after licenses + N</strong>
+      <p style="margin:4px 0 0;color:var(--muted)">
+        Databento/OPRA evaluation (L2) and billing (L4) after edge test and written redistribution rights.
+        Personal-use Massive is fine for solo; it is not a multi-tenant business foundation.
+      </p>
+    </div>
+  </div>
+
+  <h3>90-day focus (suggested)</h3>
+  <ol>
+    <li>Weekly score-lab ritual (SPY/QQQ + maybe IWM) — log lift in a short note.</li>
+    <li>Design + ship vol-normalized GEX with public methodology page in-app or docs.</li>
+    <li>Ledger N from real mirrored trades — even small N beats none.</li>
+    <li>Optional: one distribution experiment <em>or</em> explicit private-only season.</li>
+  </ol>
+</section>
+
+<section>
+  <h2>Appendix — working definitions</h2>
+  <ul>
+    <li><strong>RTH</strong> — regular trading hours (~09:30–16:00 ET).</li>
+    <li><strong>Structure sample</strong> — slow-lane snapshot: score + drivers + walls/flip + GEX/IV features.</li>
+    <li><strong>Outcome</strong> — forward 1d/5d return path after a sample’s session day (Massive daily bars).</li>
+    <li><strong>Score-lab</strong> — measures ranking quality (actionability), not directional alpha.</li>
+    <li><strong>Edge-first</strong> — optimize your process; business is gated, not ignored.</li>
+  </ul>
+</section>
+
+<p class="footer">
+  Convexa strategic deep dive · 2026-08-11 · open this file in a browser · print-friendly ·
+  not investment advice · internal owner briefing
+</p>
+
+</div>
+</body>
+</html>
