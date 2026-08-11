@@ -35,7 +35,7 @@ export function TapePulseLab() {
     const trail: { t: number; mid: number }[] = [];
     const prints: { t: number; px: number; dir: 1 | -1 }[] = [];
     let lastPrintT = 0;
-    let base = 512.4;
+    const base = 512.4;
 
     const layout = () => {
       const w = Math.max(320, wrap.clientWidth);

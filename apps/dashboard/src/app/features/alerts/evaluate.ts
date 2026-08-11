@@ -106,7 +106,7 @@ export function evaluateRule(
   if (rule.kind === 'level_touch') {
     const price = snap.price;
     if (price != null && Number.isFinite(price) && mem.lastPrice != null) {
-      let thr: number | null =
+      const thr: number | null =
         rule.level === 'price' ? (rule.priceThreshold ?? null) : levelValue(snap, rule.level);
       if (thr != null && Number.isFinite(thr) && !mem.levelLatched) {
         const crossed =
