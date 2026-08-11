@@ -17,7 +17,7 @@ CREDENTIAL RULE (binding, identical to B1). The owner's App Key + App Secret com
 OWNER'S SHELL SESSION ENVIRONMENT for this one run:
 
     (PowerShell, run in the owner's own terminal, then CLOSE that terminal)
-    cd C:\\Dev\\gammaflow-web\\apps\\api
+    cd C:\\Dev\\convexa\\apps\\api
     $env:WEBULL_APP_KEY    = '<app key>'
     $env:WEBULL_APP_SECRET = '<app secret>'
     .venv\\Scripts\\python.exe tests\\probe_webull_instrument.py
@@ -112,7 +112,7 @@ _BAD_PARAM_CODE_HINTS = ("PARAM", "INVALID_ARG", "MISSING", "ILLEGAL", "VALIDATI
                          "BAD_REQUEST")
 
 OWNER_RUN_COMMAND = (
-    "cd C:\\Dev\\gammaflow-web\\apps\\api\n"
+    "cd C:\\Dev\\convexa\\apps\\api\n"
     "$env:WEBULL_APP_KEY    = '<app key>'\n"
     "$env:WEBULL_APP_SECRET = '<app secret>'\n"
     ".venv\\Scripts\\python.exe tests\\probe_webull_instrument.py\n"

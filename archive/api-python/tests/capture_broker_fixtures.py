@@ -10,7 +10,7 @@ CREDENTIAL RULE (binding, PLAN.md B1). The owner's App Key + App Secret come fro
 SHELL SESSION ENVIRONMENT for this one run:
 
     (PowerShell, run in the owner's own terminal, then CLOSE that terminal)
-    cd C:\\Dev\\gammaflow-web\\apps\\api
+    cd C:\\Dev\\convexa\\apps\\api
     $env:WEBULL_APP_KEY    = '<app key>'
     $env:WEBULL_APP_SECRET = '<app secret>'
     .venv\\Scripts\\python.exe tests\\capture_broker_fixtures.py
