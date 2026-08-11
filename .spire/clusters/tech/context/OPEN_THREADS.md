@@ -518,8 +518,9 @@ dashboard 425/425, `@convexa/api` 13/13, lint 0 errors, `tsc --noEmit` clean, **
 succeeded**, all invariants hold (no-real-order-path, live-vs-static, token discipline, no demo toggle).
 **Pre-QA fix:** a pre-existing build blocker TS17001 (duplicate `sx` in `SettingsPage.tsx:242`) was found +
 fixed (`5bd4358`) — Vitest doesn't typecheck, so only `tsc`/`nx build` caught it. Merged to `main` at GATE S.
-**Deferred (BACKLOG §B "Ticker UX quick wins"):** distance-to-level tiles, recent-ticker chips, sticky
-header, input ergonomics. **Known non-blocker:** a >500kB JS chunk-size build advisory (code-split later).
+**Deferred (BACKLOG §B "Ticker UX quick wins"):** ~~distance-to-level tiles~~ (**SHIPPED + ARCHIVED
+2026-08-11** as `distance-to-level-tiles`), recent-ticker chips, sticky header, input ergonomics.
+**Known non-blocker:** a >500kB JS chunk-size build advisory (code-split later).
 **Owner Figma follow-up (design file, not code):** publish the re-themed MUI kit → update the library → set
 screen frames to dark mode (per `THEME_TOKENS.md`).
 
@@ -560,9 +561,9 @@ where a later refactor silently regresses.
 **Deferred seams (named, not built):**
 - **Real widget functionality** — drag-reorder + resize + add/remove + per-widget config + persistence, hung on
   the `<Widget>` shell + `WidgetSelectionContext` seam (affordances exist; wire them). Owner-framed as the seam.
-- **Deferred Ticker UX quick wins** (BACKLOG §B): distance-to-level tiles (highest value), recent-ticker
-  quick-pick chips, sticky-header refinements, input ergonomics. (Big-number formatting + freshness line already
-  shipped in the redesign.)
+- **Deferred Ticker UX quick wins** (BACKLOG §B): ~~distance-to-level tiles~~ (**SHIPPED + ARCHIVED
+  2026-08-11**), recent-ticker quick-pick chips, sticky-header refinements, input ergonomics.
+  (Big-number formatting + freshness line already shipped in the redesign.)
 - **AI-rec "Accept" → tracked position — full build-out** (BACKLOG §B, raised 2026-07-01): Accept currently opens
   a pre-filled entry dialog; the full read→track loop (map rec structure/strikes/expiry/stop/target into a
   tracked `Position`, mandatory confirm, decision-record linkage, no_trade/absent-Accept rules) is its own
@@ -677,10 +678,10 @@ that carries a session-limit banner instead of a build report is UNVERIFIED — 
 **GATE S:** **GRADUATED `model-read-carries-its-assumptions`** (2 binding: dealer-flow-projection +
 ai-context-pack) → Promoted canon (CONTEXT §5 + §9). New watch-list key `digested-labels-not-raw-dump`
 (1 instance — the TI-label-not-raw-value design rule). The four already-canon keys each gained an instance.
-**Deferred seams (named, not built):** the **distance-to-level tiles** (BACKLOG §B Ticker UX quick wins —
-ATR now unblocks them; seam only) · Wilder-smoothed ATR / richer label families / a volatility-of-flow read ·
-volume-profile POC+CVD, `iv-rank`, `market-backdrop` still queued in the enrichment pool · surfacing the
-self-describing descriptor strings in the UI (today FE renders its own pinned copy). **Latent finding
+**Deferred seams (named, not built):** ~~distance-to-level tiles~~ (**SHIPPED + ARCHIVED 2026-08-11**) ·
+Wilder-smoothed ATR / richer label families / a volatility-of-flow read · volume-profile POC+CVD,
+`market-backdrop` still queued in the enrichment pool · surfacing the self-describing descriptor strings
+in the UI (today FE renders its own pinned copy). **Latent finding
 (logged, NOT this feature's regression):** `off_exchange.blocks[].age_seconds` drifts ~1s between identical
 runs (a pre-existing WALL-CLOCK display field, **display-only + unscored** — never touches score/tier/
 `state_fingerprint`); surfaced by the byte-identity proof's stronger-than-needed "entire-bundle-identical"
@@ -733,8 +734,8 @@ read/write around the stateless compute (the `chain_store` precedent made persis
 today — thinly-viewed tickers build history slowly); **per-tenor / per-strategy** IV rank (one CM30 read per
 ticker today); a **rank-of-the-rank trend/sparkline**; **cross-ticker IV-rank** / a scanner column (waits on
 the scanner surface); Postgres **live runtime-verify** (deferred like persistent-db — no local Postgres; the
-disk default is verified, Postgres is parity-reviewed behind the port). ATR (ai-context-pack) still unblocks
-the deferred distance-to-level tiles.
+disk default is verified, Postgres is parity-reviewed behind the port). ATR (ai-context-pack) unblocked
+distance-to-level tiles — those **SHIPPED + ARCHIVED 2026-08-11** (`distance-to-level-tiles`).
 
 ## 7s. Dashboard restructure + Cypress swap + kit sync (SHIPPED on `main` — owner-directed maintenance)
 **Not a conductor pipeline feature** — no BRIEF, no contracts, no GATE Q. Logged because it moved
@@ -1270,12 +1271,16 @@ the live site until N1 deploy runs** — `convexa.pages.dev` is still the 2026-0
   reopening it is a GATE-Z reversal. (Prose single-sourced in PROJECT_CONTEXT §5.)
 - **Gamma sourcing** — vendor gamma for walls/profile, analytic BS for the flip; the divergence
   is immaterial. Don't "fix" it via interpolation or borrow-rate calibration.
-- **Dark pool** — context only, capped confluence, toggleable; never a directional "smart money"
-  signal (off-exchange includes internalized retail; prints have no reliable side).
+- **`[dark-pool-context-only]`** (promoted 2026-08-11, 2 binding) — context only, capped confluence,
+  toggleable; never a directional "smart money" signal (off-exchange includes internalized retail;
+  prints have no reliable side). Block prints display-only/unscored; no-side chips must not render
+  success green. (Prose single-sourced in PROJECT_CONTEXT §5.)
 
 ### Standing build invariants (promoted from the Decision Ledger 2026-06-22 — do NOT revisit)
 > Graduated by recurrence (`.spire/clusters/tech/context/DECISION_LEDGER.md`); full prose single-sourced in
 > `PROJECT_CONTEXT.md` §5. Reopen only via GATE Z.
+- **`[dark-pool-context-only]`** (promoted 2026-08-11, 2 binding) — off-exchange is context only; block
+  prints display-only; no-side chips never success green.
 - **`[best-effort-isolated-or-null]`** (5 features) — added computations fail to null/omitted, never an
   HTTP error; bundle + SSE intact.
 - **`[additive-keeps-score-byte-identical]`** (4 features) — additive features keep gate /

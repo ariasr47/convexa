@@ -268,13 +268,16 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   Letting last-trade drive the anchor is a GATE-Z reversal.
 - **Honest live-vs-stale + session classifier** — never present a frozen price as "live";
   distinguishes overnight (uncovered) / closed / feed-lagging.
-- **Dark-pool = context only, capped, toggleable** — off-exchange volume includes internalized
-  retail and has no reliable side; small capped confluence bonus; omitted from bundle AND score
-  when `dark_pool=false`. **Block prints** (`blocks[]`, largest-notional off-exchange prints from
-  the same recent tape, no new fetch) are **display-only**: they do not feed `opportunity_score`
-  or `dark_pool_confluence`. The whole off-exchange computation is **best-effort + isolated** —
-  any failure yields `off_exchange = None` (object omitted, not an HTTP error), leaving
-  `market_state`/`strike_profile` and the SSE path untouched.
+- **`[dark-pool-context-only]`** (promoted 2026-08-11, 2 binding — mechanical tally at
+  `distance-to-level-tiles` GATE S; prose already long-standing) — dark-pool / off-exchange is
+  **context only, capped, toggleable**; never a directional "smart money" signal (prints include
+  internalized retail and have no reliable side). Small capped confluence bonus only; omitted from
+  bundle AND score when `dark_pool=false`. **Block prints** (`blocks[]`) are **display-only** — they
+  do not feed `opportunity_score` or `dark_pool_confluence`. Green/red stay reserved for signed
+  direction; a no-side off-exchange proximity chip must not render as success green. The whole
+  off-exchange computation is **best-effort + isolated** — any failure yields `off_exchange = None`
+  (object omitted, not an HTTP error), leaving `market_state`/`strike_profile` and the SSE path
+  untouched. *(dark-pool-stream-isolation; redesign-stage-3 latent green-on-no-side fix.)*
 - **Vectorized gamma flip** — ~330× faster than the scalar loop, identical output.
 - **Vendor-agnostic provider port** — so Massive↔another vendor is a contained swap.
 - **User accounts = a contained state store outside the trading path** (user-accounts, 2026-06-25). The
@@ -295,6 +298,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
 ### Standing build invariants (promoted from the Decision Ledger — apply to EVERY new feature)
 > Graduated via the recurrence rule in `.spire/clusters/tech/context/DECISION_LEDGER.md`. A new feature's `BRIEF.md` cites
 > these by key in "Invariant watch"; each role restates the ones it touches. Reopen only via GATE Z.
+- **`[dark-pool-context-only]`** (promoted 2026-08-11, 2 binding) — off-exchange is **context only**
+  (capped, toggleable, never directional smart-money); block prints display-only/unscored; no-side
+  chips must not render success green. *(dark-pool-stream-isolation; redesign-stage-3.)*
 - **`[best-effort-isolated-or-null]`** — an optional or added computation is best-effort: any failure
   yields a **null/omitted field, never an HTTP error**, leaving `market_state`/`strike_profile` and the
   SSE path intact. *(dark-pool, the four metrics, ghost-trade, observability, trader-personas — 5.)*
@@ -787,6 +793,13 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `#4f9cff` accent unchanged). `NO_BACKEND_CHANGE` — score/tier/`state_fingerprint` byte-identical; QA PASS
   (nx test 425/425, `nx build` green). The full-page `/auth` route was owner-dropped (modal stays). See
   OPEN_THREADS §7l.
+- **Distance-to-level tiles (`distance-to-level-tiles`, FE-only, shipped 2026-08-11 `74df555`)** —
+  Call wall / Put wall / Max pain / Gamma flip `StatTile`s show a secondary caption: signed $ gap · % ·
+  above/below (or `at spot`) from `gex_spot`/`price`. Pure client projection (`distanceToLevel` +
+  `levelSpot`); omitted when spot cannot be anchored (`[absent-is-not-none]`); theme `text.secondary` +
+  mono only — no success/error tint (`[theme-token-discipline]`). **`NO_BACKEND_CHANGE`** — empty
+  `apps/api` diff; score/tier/`state_fingerprint` untouched. GATE Q PASS 5/5 (feature-scoped 22/22).
+  Contract archived at `.spire/clusters/tech/contracts/_archive/distance-to-level-tiles/`.
 - **Ticker UX-polish program (FE-only, shipped 2026-07-01 → `main`)** — three stacked GATE-V passes on the
   Ticker page, plus one post-merge ai-rec commit, all now on `main`. **`ticker-microinteractions`:** tasteful
   live motion — value flash-on-tick (LiveTape + header, gated `isLive && !streamOffline`), pulsing live dot,

@@ -52,8 +52,8 @@ pure `BrokerBook → PositionView[]` projection, so grouping is a pure layer ove
    behind. The chore is done; §B corrected in place. What actually remains is the owner **device
    review** (notch safe-areas, fluid type, <375px polish) — a real parked item, not a risk.
 **Runner-up if a different shape is wanted:** `vol-normalized-gex` (X2 — strongest decision impact
-in the pool, heavier GATE-M math track, the roadmap's own next-in-line) or the §B
-**distance-to-spot level tiles** (best raw value/effort at H·S). Both stay queued, not dropped.
+in the pool, heavier GATE-M math track, the roadmap's own next-in-line). §B **distance-to-spot level
+tiles** **SHIPPED + ARCHIVED 2026-08-11** as `distance-to-level-tiles`.
 **Non-blocking, folded into the BRIEF rather than asked here:** §7z's UNRULED `Build reassessment`
 on `partial` option rows carrying `position: null` sits on exactly the rows this feature
 restructures → routed as a council R3 **product** conflict so the surface is touched once.
@@ -994,8 +994,8 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `digested-labels-not-raw-dump`; established the first persistent market-data store; see "Last GATE I —
   2026-07-06 (b)" above + OPEN_THREADS §7r). **`market-backdrop` PARKED — blocked-on a Massive plan upgrade** (feasibility
   probe: index data `NOT_AUTHORIZED`; a SPY/QQQ-ETF-proxy reshape is buildable in-tier if resurfaced).
-  Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR (now shipped)
-  unblocks the deferred distance-to-level tiles** (§B Ticker UX quick wins).
+  Remaining parked in the pool: volume-profile POC/CVD, news/sentiment (owner-future). **ATR unblocked
+  distance-to-level tiles — those SHIPPED + ARCHIVED 2026-08-11** as `distance-to-level-tiles`.
 - **Fix the broken `@convexa/dashboard:typecheck` Nx target** — `✓ COMPLETED 2026-07-16 (hygiene batch)`.
   The "~960 errors" claim had gone **stale**: the `tsconfig.spec.json` fix (DOM lib + jest-dom types) was
   already applied by commit `8637435`, leaving exactly **ONE** error — a bad cast in

@@ -3,6 +3,11 @@
 > Small FE-only Ticker UX: distance-to-spot secondary lines on key level tiles.
 > Promoted from BACKLOG §B "Ticker UX quick wins" (highest-value deferred item).
 
+**Interface:** `.spire/clusters/tech/contracts/distance-to-level-tiles/INTERFACE_CONTRACT.md`
+(**NO_BACKEND_CHANGE** — this spec references it and must not contradict it).
+**Brief:** `BRIEF.md` · **Route:** FE-only · **Design authority:** SET
+`DESIGN_SYSTEM.md` (The Curvature Terminal).
+
 ## 1. Intent
 
 Operators reading Call wall / Put wall / Max pain / Gamma flip must see **how far
@@ -35,6 +40,11 @@ existing theme slots / `tokens.ts` consumers (`StatTile` secondary caption).
 No second hex table. Retired product skill `convexa-design` must not be referenced
 as authority.
 
+**SET load-bearing proof (kit residual):** this change is the post-codify field proof
+that SET constrains a real consumer ship — §4 points only at SET; implementation
+introduces no brand constants or hex; structural suite (`hex-discipline`, theme
+specs) remains the red-build moat.
+
 ## 5. Seams
 
 | Surface | Change |
@@ -44,10 +54,13 @@ as authority.
 | `widgets/dealer-positioning/DealerPositioning.tsx` | Wire walls + max pain |
 | `widgets/live-tape/LiveTape.tsx` | Wire gamma flip |
 
-## 6. SET load-bearing proof (kit residual)
+## 6. Interface — pointer
 
-This change is the post-codify field proof that SET constrains a real consumer ship:
+**Interface:** `.spire/clusters/tech/contracts/distance-to-level-tiles/INTERFACE_CONTRACT.md`
 
-1. §4 points **only** at the SET `DESIGN_SYSTEM.md`.
-2. Implementation introduces **no** brand constants or hex in components.
-3. Structural suite (`hex-discipline`, theme specs) remains the red-build moat.
+**Summary for readers of this spec:** this feature is **`NO_BACKEND_CHANGE`** — the
+`apps/api` diff is empty, no endpoint or payload field is added or changed, and
+distance strings cannot reach score / tier / fingerprint
+(`additive-keeps-score-byte-identical`). The FE projects existing level + spot
+fields into captions only. `INTERFACE_CONTRACT.md` is the FE↔BE posture of record;
+this spec never restates a wire contract.
