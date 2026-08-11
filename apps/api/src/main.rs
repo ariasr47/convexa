@@ -21,6 +21,9 @@
 //!
 //! # Research: join structure samples → daily forward outcomes (SPY/QQQ)
 //! cargo run -p api-rust -- join-outcomes --symbols SPY,QQQ
+//!
+//! # Research: baseline score lab (needs outcomes artifact + samples)
+//! cargo run -p api-rust -- score-lab --outcomes data/research/outcomes_....json --horizon 1d
 //! ```
 
 use api_rust::config::Config;
@@ -96,6 +99,35 @@ enum Commands {
         /// Output JSON path (default data/research/outcomes_<utc>.json).
         #[arg(long)]
         out: Option<PathBuf>,
+        /// Print full JSON to stdout instead of a short summary.
+        #[arg(long)]
+        json: bool,
+    },
+    /// P2 research: baseline score lab report (score ranking vs joined outcomes).
+    ///
+    /// Needs a join-outcomes artifact plus structure samples (scan store or --samples JSON).
+    ScoreLab {
+        /// Path to join-outcomes JSON artifact (`outcomes` array).
+        #[arg(long)]
+        outcomes: PathBuf,
+        /// Horizon to evaluate (default 1d).
+        #[arg(long, default_value = "1d")]
+        horizon: String,
+        /// Override scan store for structure samples.
+        #[arg(long)]
+        store: Option<PathBuf>,
+        /// Optional samples JSON array of StructureSample (skips store load when set).
+        #[arg(long)]
+        samples: Option<PathBuf>,
+        /// Comma-separated symbols filter (default: all in outcomes).
+        #[arg(long)]
+        symbols: Option<String>,
+        /// Output report path (default data/research/score_lab_<horizon>_<utc>.json).
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Include leave-one-driver-out attribution block.
+        #[arg(long, default_value_t = true)]
+        driver_loo: bool,
         /// Print full JSON to stdout instead of a short summary.
         #[arg(long)]
         json: bool,
@@ -281,6 +313,28 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         } => {
             cmd_join_outcomes(&symbols, &horizons, store, out, json).await?;
         }
+        Commands::ScoreLab {
+            outcomes,
+            horizon,
+            store,
+            samples,
+            symbols,
+            out,
+            driver_loo,
+            json,
+        } => {
+            cmd_score_lab(
+                &outcomes,
+                &horizon,
+                store,
+                samples,
+                symbols.as_deref(),
+                out,
+                driver_loo,
+                json,
+            )
+            .await?;
+        }
     }
     Ok(())
 }
@@ -414,6 +468,188 @@ async fn open_scan_store_for_cli(
 
     let path = store_path.unwrap_or_else(|| cfg.scan_store_path.clone());
     Ok(ScanStore::open(&path, None).await?)
+}
+
+// ---------------------------------------------------------------------------
+// P2 research: score ranking vs joined outcomes
+// ---------------------------------------------------------------------------
+
+async fn cmd_score_lab(
+    outcomes_path: &PathBuf,
+    horizon: &str,
+    store_path: Option<PathBuf>,
+    samples_path: Option<PathBuf>,
+    symbols: Option<&str>,
+    out_path: Option<PathBuf>,
+    driver_loo: bool,
+    json: bool,
+) -> anyhow::Result<()> {
+    use api_rust::services::research::{
+        evaluate_baseline, leave_one_driver_out, pair_samples_outcomes, StructureOutcome,
+        SCORE_LAB_VERSION,
+    };
+    use api_rust::services::scanner::store::{StructureSample, STRUCTURE_HISTORY_MAX};
+
+    let cfg = Config::from_env().unwrap_or_else(|_| {
+        // Offline score-lab should work without MASSIVE_API_KEY.
+        Config {
+            massive_api_key: String::new(),
+            data_feed: api_rust::DataFeed::Delayed,
+            rest_base: "https://api.massive.com".into(),
+            redis_url: None,
+            http_bind: "0.0.0.0:8000".into(),
+            gex_cache_ttl_secs: 10,
+            gex_cache_ttl_liquid_secs: 20,
+            warm_symbols: vec![],
+            liquid_symbols: Default::default(),
+            warm_interval_secs: 25,
+            warm_concurrency: 2,
+            warm_enabled: false,
+            scan_enabled: false,
+            scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("config/universe.json"),
+            scan_fast_interval_secs: 30,
+            scan_slow_batch_size: 4,
+            scan_promotion_cap: 2,
+            scan_stale_after_secs: 180,
+            scan_market_hours_only: false,
+            scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+            scan_database_url: None,
+            auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+            auth_session_signing_key: "dev".into(),
+            auth_cookie_secure: false,
+            auth_cookie_samesite: "lax".into(),
+            auth_session_idle_secs: 3600,
+            auth_session_absolute_secs: 86400,
+            auth_registration_open: true,
+            auth_demo_seed: None,
+            include_dark_pool: true,
+            darkpool_lookback_secs: 3600,
+            block_min_shares: 5000,
+            iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../data/iv_timeseries.json"),
+            database_url: None,
+            public_rate_limit_per_min: 0,
+            metrics_secret_token: None,
+            workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+        }
+    });
+
+    let raw = std::fs::read_to_string(outcomes_path)?;
+    let v: serde_json::Value = serde_json::from_str(&raw)?;
+    let outcomes: Vec<StructureOutcome> = if let Some(arr) = v.get("outcomes") {
+        serde_json::from_value(arr.clone())?
+    } else if v.is_array() {
+        serde_json::from_value(v)?
+    } else {
+        anyhow::bail!("outcomes file must be a join-outcomes artifact or a JSON array");
+    };
+
+    let mut samples: Vec<StructureSample> = if let Some(p) = samples_path {
+        let sraw = std::fs::read_to_string(p)?;
+        let sv: serde_json::Value = serde_json::from_str(&sraw)?;
+        if let Some(arr) = sv.get("samples") {
+            serde_json::from_value(arr.clone())?
+        } else {
+            serde_json::from_value(sv)?
+        }
+    } else {
+        let store = open_scan_store_for_cli(&cfg, store_path).await?;
+        let mut syms: Vec<String> = outcomes
+            .iter()
+            .map(|o| o.symbol.to_ascii_uppercase())
+            .collect();
+        syms.sort();
+        syms.dedup();
+        let mut out = Vec::new();
+        for sym in syms {
+            out.extend(
+                store
+                    .read_structure_history(&sym, STRUCTURE_HISTORY_MAX)
+                    .await,
+            );
+        }
+        out
+    };
+
+    if let Some(filter) = symbols {
+        let allow: std::collections::HashSet<String> = filter
+            .split(',')
+            .map(|s| s.trim().to_ascii_uppercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+        if !allow.is_empty() {
+            samples.retain(|s| allow.contains(&s.symbol.to_ascii_uppercase()));
+        }
+    }
+
+    let rows = pair_samples_outcomes(&samples, &outcomes, horizon);
+    if rows.is_empty() {
+        anyhow::bail!(
+            "no paired rows for horizon={horizon} (samples={}, outcomes={}). \
+             Capture structure history and run join-outcomes first.",
+            samples.len(),
+            outcomes.len()
+        );
+    }
+
+    let report = evaluate_baseline(&rows, horizon);
+    let loo = if driver_loo {
+        Some(leave_one_driver_out(&rows))
+    } else {
+        None
+    };
+
+    let out = out_path.unwrap_or_else(|| {
+        let stamp = Utc::now().format("%Y%m%dT%H%M%SZ");
+        let hz = horizon.trim().to_ascii_lowercase();
+        cfg.workspace_root
+            .join(format!("data/research/score_lab_{hz}_{stamp}.json"))
+    });
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let artifact = serde_json::json!({
+        "version": SCORE_LAB_VERSION,
+        "horizon": horizon,
+        "n_samples_loaded": samples.len(),
+        "n_outcomes_loaded": outcomes.len(),
+        "n_paired": rows.len(),
+        "report": &report,
+        "leave_one_driver_out": &loo,
+    });
+    std::fs::write(&out, serde_json::to_string_pretty(&artifact)?)?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&artifact)?);
+    } else {
+        println!("score-lab complete  (version {SCORE_LAB_VERSION})");
+        println!("  horizon:     {horizon}");
+        println!("  paired rows: {}", rows.len());
+        if let Some(c) = report.score_vs_abs_move.pearson {
+            println!("  pearson(score, abs_move): {c:.3}");
+        }
+        for lab in &report.labels {
+            let lift = lab
+                .lift_top_decile
+                .map(|x| format!("{x:.2}"))
+                .unwrap_or_else(|| "n/a".into());
+            let auc = lab
+                .auc
+                .map(|x| format!("{x:.3}"))
+                .unwrap_or_else(|| "n/a".into());
+            println!(
+                "  {}: base={:.2} auc={auc} lift@top10%={lift}",
+                lab.label, lab.base_rate
+            );
+        }
+        for n in &report.notes {
+            println!("  note: {n}");
+        }
+        println!("  artifact: {}", out.display());
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
