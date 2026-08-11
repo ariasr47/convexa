@@ -8,10 +8,7 @@
  */
 
 /** Anchor for levels: prefer structure spot, fall back to mid/price. */
-export function levelSpot(m: {
-  gex_spot?: number | null;
-  price?: number | null;
-}): number | null {
+export function levelSpot(m: { gex_spot?: number | null; price?: number | null }): number | null {
   const s = m.gex_spot ?? m.price;
   return s == null || !Number.isFinite(s) ? null : s;
 }
