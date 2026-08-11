@@ -104,6 +104,11 @@ export interface StatTileProps {
   valueColor?: string;
   /** Live value-flash pulse (from `useFlashOnChange`) applied to the figure. Null → no flash. */
   flash?: FlashState | null;
+  /**
+   * Optional secondary caption under the figure (e.g. distance-to-spot). Theme `text.secondary`
+   * only — never a hardcoded hex; never success/error (green/red reserved for signed direction).
+   */
+  secondary?: string | null;
 }
 
 export function StatTile({
@@ -115,6 +120,7 @@ export function StatTile({
   accentColor,
   valueColor,
   flash,
+  secondary,
 }: StatTileProps) {
   const tile = (
     <TileCard accent={accent} accentColor={accentColor} offline={offline} variant="outlined">
@@ -146,6 +152,22 @@ export function StatTile({
         >
           {value}
         </Typography>
+        {secondary ? (
+          <Typography
+            variant="caption"
+            component="p"
+            data-testid="stat-secondary"
+            sx={{
+              fontFamily: MONO,
+              color: 'text.secondary',
+              mt: 0.25,
+              mb: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            {secondary}
+          </Typography>
+        ) : null}
       </CardContent>
     </TileCard>
   );

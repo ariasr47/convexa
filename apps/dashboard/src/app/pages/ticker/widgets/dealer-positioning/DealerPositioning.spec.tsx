@@ -139,3 +139,21 @@ describe('DealerPositioning · per-field null tolerance (static tile grid)', () 
     expect(screen.getAllByText('unavailable').length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('DealerPositioning · distance-to-spot secondary (SET-obedient display)', () => {
+  it('shows distance secondary on Call wall, Put wall, and Max pain from gex_spot', () => {
+    // call 260 / put 240 / max pain 250 · spot 250 → +$10 / −$10 / at spot
+    renderDP();
+    const seconds = screen.getAllByTestId('stat-secondary').map((el) => el.textContent);
+    expect(seconds).toEqual(
+      expect.arrayContaining(['+$10 · 4.0% above', '−$10 · 4.0% below', 'at spot']),
+    );
+  });
+
+  it('omits distance secondary when spot cannot be anchored', () => {
+    renderDP({ gex_spot: null, price: null });
+    // Walls still render; no fabricated distance without an anchor.
+    expect(screen.getByText('$260')).toBeInTheDocument();
+    expect(screen.queryByTestId('stat-secondary')).toBeNull();
+  });
+});

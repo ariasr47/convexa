@@ -92,6 +92,8 @@ describe('LiveTape · tape-local honesty', () => {
     expect(screen.getByText('Gamma flip')).toBeInTheDocument(); // static authority…
     expect(screen.queryByText('Gamma flip (live)')).toBeNull(); // …never claimed live
     expect(screen.getByText('$248')).toBeInTheDocument(); // the static flip value
+    // Distance secondary: flip 248 vs gex_spot 250 → −$2.0 · 0.8% below
+    expect(screen.getByTestId('stat-secondary')).toHaveTextContent('−$2.0 · 0.8% below');
   });
 
   it('per-field: a null spread reads em-dash while net flow renders; a negative net flow renders signed', () => {

@@ -36,4 +36,14 @@ describe('StatTile (shared atom)', () => {
     expect(sk.querySelector('[role="progressbar"]')).toBeNull();
     expect(screen.queryByText(/unavailable/i)).toBeNull();
   });
+
+  it('renders optional secondary caption only when provided (distance-to-spot seam)', () => {
+    const { unmount } = wrap(
+      <StatTile label="Call wall" value="$260" secondary="+$10 · 4.0% above" />,
+    );
+    expect(screen.getByTestId('stat-secondary')).toHaveTextContent('+$10 · 4.0% above');
+    unmount();
+    wrap(<StatTile label="Call wall" value="$260" />);
+    expect(screen.queryByTestId('stat-secondary')).toBeNull();
+  });
 });

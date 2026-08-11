@@ -15,6 +15,7 @@ import type { LiveUpdate, MarketState } from '@convexa/api';
 import { Box } from '@mui/material';
 import { useLiveTape } from '../../liveTapeStore';
 import { LIVE_TAPE_SUBTITLE_LIVE, LIVE_TAPE_SUBTITLE_OFFLINE } from '../_kit/copy';
+import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { StatTile } from '../_kit/StatTile';
 
 const GRID = {
@@ -52,6 +53,8 @@ export function LiveTape({
     tone: 'neutral',
   });
   const flipFlash = useFlashOnChange(isLive ? (live?.gamma_flip ?? null) : null, { active });
+  const flipValue = (isLive ? live?.gamma_flip : null) ?? m.gamma_flip;
+  const flipSecondary = distanceToLevel(flipValue, levelSpot(m));
   return (
     <Widget
       id="live-tape"
@@ -82,11 +85,12 @@ export function LiveTape({
         />
         <StatTile
           label={isLive ? 'Gamma flip (live)' : 'Gamma flip'}
-          value={`$${(isLive ? live?.gamma_flip : null) ?? m.gamma_flip}`}
+          value={`$${flipValue}`}
           accent="neutral"
           offline={streamOffline}
           flash={flipFlash}
-          info="Analytic net-GEX zero-crossing (where hedging flips from dampening to amplifying) — not the same as call/put walls, which pick peak vendor-gamma strikes. Above it → steadier/range-bound; below it → more volatile/trending."
+          secondary={flipSecondary}
+          info="Analytic net-GEX zero-crossing (where hedging flips from dampening to amplifying) — not the same as call/put walls, which pick peak vendor-gamma strikes. Above it → steadier/range-bound; below it → more volatile/trending. Secondary line is distance from gex_spot (or mid)."
         />
         <StatTile
           label="VWAP"

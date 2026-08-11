@@ -7,4 +7,5 @@
 export * from '@/shared/hooks/useFlashOnChange';
 export * from '@/shared/ui/TintChip';
 export * from './copy';
+export * from './distanceToLevel';
 export * from './StatTile';

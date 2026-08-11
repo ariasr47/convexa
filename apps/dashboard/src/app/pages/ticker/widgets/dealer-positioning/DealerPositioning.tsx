@@ -19,6 +19,7 @@ import {
   termTip,
   volOiTip,
 } from '../_kit/copy';
+import { distanceToLevel, levelSpot } from '../_kit/distanceToLevel';
 import { StatTile } from '../_kit/StatTile';
 import { WallMagnetView } from './WallMagnetView';
 
@@ -55,6 +56,8 @@ export const DealerPositioning = memo(function DealerPositioning({
   structureAgeSeconds = null,
 }: Props) {
   const [view, setView] = useState<ViewMode>('levels');
+  // Structure anchor for distance secondary lines (display-only; prefers gex_spot).
+  const spot = levelSpot(m);
 
   return (
     <Widget
@@ -98,13 +101,15 @@ export const DealerPositioning = memo(function DealerPositioning({
             label="Call wall"
             value={`$${m.call_wall}`}
             accent="up"
-            info="Strike with the most positive dealer gamma (vendor gamma × dealer-sign OI). Tends to act as resistance. Not the same object as the analytic gamma flip — see Methodology."
+            secondary={distanceToLevel(m.call_wall, spot)}
+            info="Strike with the most positive dealer gamma (vendor gamma × dealer-sign OI). Tends to act as resistance. Not the same object as the analytic gamma flip — see Methodology. Secondary line is distance from gex_spot (or mid)."
           />
           <StatTile
             label="Put wall"
             value={`$${m.put_wall}`}
             accent="down"
-            info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory."
+            secondary={distanceToLevel(m.put_wall, spot)}
+            info="Strike with the most negative dealer gamma (vendor gamma × dealer-sign OI). Tends to act as support. OI sign is a convention, not measured inventory. Secondary line is distance from gex_spot (or mid)."
           />
           <StatTile
             label="Vol-norm GEX"
@@ -142,7 +147,8 @@ export const DealerPositioning = memo(function DealerPositioning({
             label="Max pain"
             value={`$${m.max_pain ?? '—'}`}
             accent="neutral"
-            info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry."
+            secondary={distanceToLevel(m.max_pain, spot)}
+            info="Price at the nearest monthly expiration where the most option value expires worthless — a mild magnet into expiry. Secondary line is distance from gex_spot (or mid)."
           />
           <StatTile
             label="IV / HV"
