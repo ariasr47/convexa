@@ -88,6 +88,10 @@ pub mod constructed {
     const DAY: f64 = 86_400.0;
     const T0: f64 = 1_704_200_400.0; // 2024-01-02T17:00:00Z
 
+    /// Test-only fixture-row builder — the argument count mirrors `StructureSample`'s own field
+    /// count; a builder pattern would add indirection with no benefit for deterministic,
+    /// hand-authored test data.
+    #[allow(clippy::too_many_arguments)]
     fn row(
         symbol: &str,
         as_of: f64,
@@ -160,15 +164,16 @@ pub mod constructed {
                 let score = Some(30.0 + ((session * 12 + i) % 50) as f64);
                 let dist_flip = Some(-5.0 + ((session * 12 + i) % 10) as f64);
                 let dist_wall = Some(-3.0 + ((session * 12 + i) % 6) as f64);
-                let ret_simple = Some(if (session * 12 + i) % 3 == 0 {
-                    0.02f64
+                let ret_simple_val: f64 = if (session * 12 + i) % 3 == 0 {
+                    0.02
                 } else {
-                    -0.01f64
-                });
+                    -0.01
+                };
+                let ret_simple = Some(ret_simple_val);
                 let abs_move = if i == 0 {
                     None
                 } else {
-                    Some(ret_simple.unwrap().abs())
+                    Some(ret_simple_val.abs())
                 };
                 let hit_call = Some(i % 4 == 0);
                 let hit_put = Some(i % 5 == 0);

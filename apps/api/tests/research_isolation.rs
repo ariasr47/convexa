@@ -24,7 +24,7 @@ fn rust_files(dir: &Path) -> Vec<(String, String)> {
             } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
                 if let Ok(src) = fs::read_to_string(&path) {
                     let rel = path
-                        .strip_prefix(&dir)
+                        .strip_prefix(dir)
                         .unwrap_or(&path)
                         .to_string_lossy()
                         .replace('\\', "/");

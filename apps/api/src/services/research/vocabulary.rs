@@ -194,6 +194,11 @@ pub enum CalibrationSeries {
     Absent(MetricState),
 }
 
+// `Computed`'s ~376 bytes vs. the smallest variant's ~56 is the whole point of ruling C-2:
+// metrics live INSIDE the state so a thin carrier's missing numbers are unrepresentable. Boxing
+// `Metrics` would touch every construction site in comparison.rs/artifact.rs for a size this
+// enum's cell/record cardinality (dozens per run, never millions) makes immaterial.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum CellState {
     Computed {

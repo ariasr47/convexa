@@ -45,9 +45,10 @@ fn as_of_key(as_of: f64) -> u64 {
 ///   1. run-level `session_dates` / `evidence_class`  — over the PAIRED row set        (here / B12)
 ///   2. run-level `retention[]`                        — over one symbol's LOADED samples (B12a)
 ///   3. per-cell `n_sessions`                           — over one cell's eligible rows    (B9)
+///
 /// Never re-derive this. Two independent notions of "session" would let the evidence header and
-/// the per-cell figures disagree while both look right — the exact class of silent divergence this
-/// feature exists to prevent.
+/// the per-cell figures disagree while both look right — the exact class of silent divergence
+/// this feature exists to prevent.
 pub fn session_dates_of(as_ofs: impl Iterator<Item = f64>) -> BTreeSet<String> {
     as_ofs.filter_map(session_date_et).collect()
 }
