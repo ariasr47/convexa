@@ -502,10 +502,8 @@ async fn cmd_score_lab(
     driver_loo: bool,
     json: bool,
 ) -> anyhow::Result<()> {
-    use api_rust::services::research::{
-        evaluate_baseline, leave_one_driver_out, pair_samples_outcomes, StructureOutcome,
-        SCORE_LAB_VERSION,
-    };
+    use api_rust::services::research::run::{run_lab, strict_collect, LabInputs};
+    use api_rust::services::research::StructureOutcome;
     use api_rust::services::scanner::store::{StructureSample, STRUCTURE_HISTORY_MAX};
 
     let cfg = Config::from_env().unwrap_or_else(|_| {
@@ -553,7 +551,16 @@ async fn cmd_score_lab(
         }
     });
 
-    let raw = std::fs::read_to_string(outcomes_path)?;
+    // Step 1 — read the outcomes file. Failure names the path (AC-61); no artifact is written.
+    let raw = std::fs::read_to_string(outcomes_path).map_err(|e| {
+        anyhow::anyhow!(
+            "{}",
+            api_rust::services::research::run::LabError::InputUnreadable {
+                path: outcomes_path.display().to_string(),
+                source: e.to_string(),
+            }
+        )
+    })?;
     let v: serde_json::Value = serde_json::from_str(&raw)?;
     let outcomes: Vec<StructureOutcome> = if let Some(arr) = v.get("outcomes") {
         serde_json::from_value(arr.clone())?
@@ -563,61 +570,60 @@ async fn cmd_score_lab(
         anyhow::bail!("outcomes file must be a join-outcomes artifact or a JSON array");
     };
 
-    let mut samples: Vec<StructureSample> = if let Some(p) = samples_path {
-        let sraw = std::fs::read_to_string(p)?;
-        let sv: serde_json::Value = serde_json::from_str(&sraw)?;
-        if let Some(arr) = sv.get("samples") {
-            serde_json::from_value(arr.clone())?
+    // Step 2/3 — resolve the requested symbol set and load samples. `--samples` file path OR the
+    // store via `read_structure_history_strict` (NEVER `read_structure_history` — that is the
+    // serve path's fallback-bearing read; this is the offline, no-fallback lab path, SPEC §2.7).
+    let (samples, requested_symbols, sample_source): (Vec<StructureSample>, Vec<String>, &str) =
+        if let Some(p) = samples_path {
+            let sraw = std::fs::read_to_string(&p).map_err(|e| {
+                anyhow::anyhow!(
+                    "{}",
+                    api_rust::services::research::run::LabError::InputUnreadable {
+                        path: p.display().to_string(),
+                        source: e.to_string(),
+                    }
+                )
+            })?;
+            let sv: serde_json::Value = serde_json::from_str(&sraw)?;
+            let loaded: Vec<StructureSample> = if let Some(arr) = sv.get("samples") {
+                serde_json::from_value(arr.clone())?
+            } else {
+                serde_json::from_value(sv)?
+            };
+            let requested = resolve_requested_symbols(symbols, &loaded, &outcomes);
+            (loaded, requested, "file")
         } else {
-            serde_json::from_value(sv)?
-        }
-    } else {
-        let store = open_scan_store_for_cli(&cfg, store_path).await?;
-        let mut syms: Vec<String> = outcomes
-            .iter()
-            .map(|o| o.symbol.to_ascii_uppercase())
-            .collect();
-        syms.sort();
-        syms.dedup();
-        let mut out = Vec::new();
-        for sym in syms {
-            out.extend(
-                store
-                    .read_structure_history(&sym, STRUCTURE_HISTORY_MAX)
-                    .await,
-            );
-        }
-        out
+            eprintln!("score-lab: reading structure history from the store…");
+            let store = open_scan_store_for_cli(&cfg, store_path).await?;
+            let requested = resolve_requested_symbols(symbols, &[], &outcomes);
+            let mut reads: Vec<(String, Result<Vec<StructureSample>, String>)> = Vec::new();
+            for sym in &requested {
+                eprintln!("score-lab: loading {sym}…");
+                let read = store
+                    .read_structure_history_strict(sym, STRUCTURE_HISTORY_MAX)
+                    .await
+                    .map_err(|e| e.to_string());
+                reads.push((sym.clone(), read));
+            }
+            let loaded = strict_collect(reads)?;
+            (loaded, requested, "store")
+        };
+
+    let inputs = LabInputs {
+        samples,
+        outcomes,
+        horizon: horizon.to_string(),
+        requested_symbols,
+        sample_source: sample_source.to_string(),
+        outcomes_path: outcomes_path.display().to_string(),
+        driver_loo,
+        generated_at_utc: Utc::now().to_rfc3339(),
     };
 
-    if let Some(filter) = symbols {
-        let allow: std::collections::HashSet<String> = filter
-            .split(',')
-            .map(|s| s.trim().to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
-        if !allow.is_empty() {
-            samples.retain(|s| allow.contains(&s.symbol.to_ascii_uppercase()));
-        }
-    }
+    // Step 5 — the pure entrypoint. No artifact is written before this returns Ok.
+    let run = run_lab(inputs)?;
 
-    let rows = pair_samples_outcomes(&samples, &outcomes, horizon);
-    if rows.is_empty() {
-        anyhow::bail!(
-            "no paired rows for horizon={horizon} (samples={}, outcomes={}). \
-             Capture structure history and run join-outcomes first.",
-            samples.len(),
-            outcomes.len()
-        );
-    }
-
-    let report = evaluate_baseline(&rows, horizon);
-    let loo = if driver_loo {
-        Some(leave_one_driver_out(&rows))
-    } else {
-        None
-    };
-
+    // Step 6 — only NOW create_dir_all + write the artifact.
     let out = out_path.unwrap_or_else(|| {
         let stamp = Utc::now().format("%Y%m%dT%H%M%SZ");
         let hz = horizon.trim().to_ascii_lowercase();
@@ -627,47 +633,48 @@ async fn cmd_score_lab(
     if let Some(parent) = out.parent() {
         std::fs::create_dir_all(parent)?;
     }
+    std::fs::write(&out, serde_json::to_string_pretty(&run.artifact)?)?;
 
-    let artifact = serde_json::json!({
-        "version": SCORE_LAB_VERSION,
-        "horizon": horizon,
-        "n_samples_loaded": samples.len(),
-        "n_outcomes_loaded": outcomes.len(),
-        "n_paired": rows.len(),
-        "report": &report,
-        "leave_one_driver_out": &loo,
-    });
-    std::fs::write(&out, serde_json::to_string_pretty(&artifact)?)?;
-
+    // Step 7 — print console (or artifact JSON under --json) to stdout; progress stayed on stderr.
     if json {
-        println!("{}", serde_json::to_string_pretty(&artifact)?);
+        println!("{}", serde_json::to_string_pretty(&run.artifact)?);
     } else {
-        println!("score-lab complete  (version {SCORE_LAB_VERSION})");
-        println!("  horizon:     {horizon}");
-        println!("  paired rows: {}", rows.len());
-        if let Some(c) = report.score_vs_abs_move.pearson {
-            println!("  pearson(score, abs_move): {c:.3}");
-        }
-        for lab in &report.labels {
-            let lift = lab
-                .lift_top_decile
-                .map(|x| format!("{x:.2}"))
-                .unwrap_or_else(|| "n/a".into());
-            let auc = lab
-                .auc
-                .map(|x| format!("{x:.3}"))
-                .unwrap_or_else(|| "n/a".into());
-            println!(
-                "  {}: base={:.2} auc={auc} lift@top10%={lift}",
-                lab.label, lab.base_rate
-            );
-        }
-        for n in &report.notes {
-            println!("  note: {n}");
-        }
+        println!("{}", run.console);
         println!("  artifact: {}", out.display());
     }
     Ok(())
+}
+
+/// The REQUESTED symbol set that enumerates groups (SPEC §2.3/§2.8) — `--symbols` when given;
+/// absent, the distinct symbols of the loaded samples when samples are already in hand (the
+/// `--samples` path), else the distinct symbols of the outcomes file (the store-load path, where
+/// symbols must be known BEFORE the strict per-symbol read can run).
+fn resolve_requested_symbols(
+    symbols_flag: Option<&str>,
+    loaded_samples: &[api_rust::services::scanner::store::StructureSample],
+    outcomes: &[api_rust::services::research::StructureOutcome],
+) -> Vec<String> {
+    if let Some(filter) = symbols_flag {
+        let syms: Vec<String> = filter
+            .split(',')
+            .map(|s| s.trim().to_ascii_uppercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+        if !syms.is_empty() {
+            return syms;
+        }
+    }
+    if !loaded_samples.is_empty() {
+        let mut syms: Vec<String> =
+            loaded_samples.iter().map(|s| s.symbol.to_ascii_uppercase()).collect();
+        syms.sort();
+        syms.dedup();
+        return syms;
+    }
+    let mut syms: Vec<String> = outcomes.iter().map(|o| o.symbol.to_ascii_uppercase()).collect();
+    syms.sort();
+    syms.dedup();
+    syms
 }
 
 // ---------------------------------------------------------------------------
@@ -750,5 +757,50 @@ fn check_parity(got: &GexResult, expected: &serde_json::Value) -> anyhow::Result
         Ok(())
     } else {
         anyhow::bail!("parity failed: {}", errs.join("; "))
+    }
+}
+
+/// GATE PLAN B17 — the consumer-side half of B2's fork guard, at the actual call site.
+#[cfg(test)]
+mod score_lab_wiring_guard {
+    const MAIN_SRC: &str = include_str!("main.rs");
+
+    fn cmd_score_lab_body() -> &'static str {
+        let start = MAIN_SRC.find("async fn cmd_score_lab(").expect("cmd_score_lab not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest.find("\n/// The REQUESTED symbol set").unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn cmd_score_lab_uses_the_strict_read_never_the_serve_paths_fallback_read() {
+        let body = cmd_score_lab_body();
+        assert!(body.len() > 3_000, "cmd_score_lab body not sliced (len {})", body.len());
+        assert!(
+            body.contains("read_structure_history_strict("),
+            "cmd_score_lab must call the strict, no-fallback read (SPEC §2.7)"
+        );
+        assert!(
+            !body.contains("read_structure_history("),
+            "cmd_score_lab must NEVER call the shared fallback-bearing read \
+             (INTERFACE_CONTRACT.md: this is the predicted defect)"
+        );
+        assert!(
+            !body.contains("evaluate_baseline") && !body.contains("leave_one_driver_out"),
+            "cmd_score_lab must no longer call the retired oracle path — it survives ONLY as a \
+             test-only parity oracle in research::fixtures / research::score_lab tests"
+        );
+        assert!(body.contains("run_lab("), "cmd_score_lab must go through the single pure entrypoint");
+    }
+
+    #[test]
+    fn cmd_join_outcomes_is_unaffected_and_still_uses_the_shared_read() {
+        // The negative control: a DIFFERENT command (cmd_join_outcomes) legitimately still calls
+        // the shared fallback-bearing read — this scan is scoped to cmd_score_lab ONLY.
+        let start = MAIN_SRC.find("async fn cmd_join_outcomes(").expect("cmd_join_outcomes not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest.find("\nasync fn open_scan_store_for_cli").unwrap_or(rest.len());
+        let body = &rest[..end];
+        assert!(body.contains("read_structure_history("), "positive control failed to find its needle");
     }
 }
