@@ -6,6 +6,7 @@
 //! ten literals below (SPEC §2.4, §4).
 
 use crate::services::research::candidates::Ineligible;
+use serde::{Serialize, Serializer};
 use std::collections::BTreeMap;
 
 pub const ROW_FLOOR: usize = 30;
@@ -16,7 +17,10 @@ pub const SESSION_FLOOR: usize = 2;
 // ---------------------------------------------------------------------------------------------
 
 /// Machine-stable, orderable reason key for a carrier's `excluded_by_reason` map. Declared order
-/// (`derive(Ord)` field order) = render order.
+/// (`derive(Ord)` field order) = render order. `Serialize` is HAND-WRITTEN (below) — it must
+/// serialize as its `reason_json_key()` STRING, not as a tagged enum object, so a
+/// `BTreeMap<ReasonKey, usize>` serializes as a plain JSON object (serde_json requires string map
+/// keys).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ReasonKey {
     InputAbsent(&'static str),
@@ -37,6 +41,12 @@ impl From<Ineligible> for ReasonKey {
             Ineligible::DegenerateInput { field } => ReasonKey::DegenerateInput(field),
             Ineligible::LabelUndefined { label } => ReasonKey::LabelUndefined(label),
         }
+    }
+}
+
+impl Serialize for ReasonKey {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&reason_json_key(self))
     }
 }
 
@@ -78,7 +88,7 @@ pub fn reason_text(r: &ReasonKey) -> String {
 // L2 — carrier state
 // ---------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Power {
     Powered,
     UnderPowered { n_rows: usize, n_sessions: usize, row_floor: usize, session_floor: usize },
@@ -112,13 +122,13 @@ pub fn floors_text(row_floor: usize, session_floor: usize, n_rows: usize, n_sess
 }
 
 /// Metric-scope absence — literal 9 / literal 10.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum MetricState {
     UnderMinimum { stat: &'static str, needs: usize, unit: &'static str, have: usize, carrier_n: usize },
     UndefinedOnThisData { stat: &'static str, precondition: &'static str, failing_fact: String },
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum MetricValue {
     Value(f64),
     Absent(MetricState),
@@ -126,7 +136,7 @@ pub enum MetricValue {
 
 /// The statistics living inside a `Computed` carrier. Every scalar field is a `MetricValue`,
 /// never a bare `Option<f64>` — `Metrics` is total, so no blank is reachable inside `Computed`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Metrics {
     pub auc: MetricValue,
     pub precision_top_decile: MetricValue,
@@ -138,13 +148,13 @@ pub struct Metrics {
 }
 
 /// A candidate-scope record's correlation pair (no label; see B9/B10 §2.5(b) reachability note).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Correlations {
     pub pearson_vs_abs_move: MetricValue,
     pub pearson_vs_ret_simple: MetricValue,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct CalibrationBin {
     pub quantile_lo: f64,
     pub quantile_hi: f64,
@@ -153,13 +163,13 @@ pub struct CalibrationBin {
     pub n: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum CalibrationSeries {
     Bins(Vec<CalibrationBin>),
     Absent(MetricState),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum CellState {
     Computed { metrics: Metrics, power: Power },
     NoPairedOutcome { n_samples_in_group: usize, horizon: String, symbol: String },

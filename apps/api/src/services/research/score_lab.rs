@@ -13,8 +13,11 @@ use crate::services::research::StructureOutcome;
 use crate::services::scanner::store::{ScanScoreDrivers, StructureSample};
 use serde::{Deserialize, Serialize};
 
-/// Report schema version — bump when metric definitions change.
-pub const SCORE_LAB_VERSION: &str = "score_lab_v1-2026-04";
+/// Report schema version — bump when metric definitions change. Bumped to v2 for the comparative,
+/// per-symbol report (score-lab-signal-comparison, GATE PLAN B12): quintile calibration binning
+/// replaces the old equal-width rule, so `opportunity_score`'s calibration table changes shape
+/// relative to the pre-feature (v1) run — declared here, never silent (AC-71).
+pub const SCORE_LAB_VERSION: &str = "score_lab_v2-2026-08";
 
 /// One paired (feature sample, outcome) row used for ranking evaluation.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

@@ -541,7 +541,7 @@ pub fn build_cell(
     }
 }
 
-fn correlation_metric(pairs: &[(f64, f64)], outcome_name: &'static str, carrier_n: usize) -> MetricValue {
+pub(crate) fn correlation_metric(pairs: &[(f64, f64)], outcome_name: &'static str, carrier_n: usize) -> MetricValue {
     const NEEDS: usize = 3;
     if pairs.len() < NEEDS {
         return MetricValue::Absent(MetricState::UnderMinimum {
