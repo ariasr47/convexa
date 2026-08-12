@@ -19,7 +19,18 @@ pub(crate) fn pearson(pairs: &[(f64, f64)]) -> Option<f64> {
         dx += a * a;
         dy += b * b;
     }
-    if dx <= 0.0 || dy <= 0.0 {
+    // A zero-variance side must be detected ROBUSTLY, not by exact `<= 0.0`: summing many
+    // bit-identical floats and dividing back out can leave the mean off by a few ULPs, so `dx`/
+    // `dy` can land on a tiny NONZERO float even when every value is EXACTLY the same constant.
+    // An exact-zero guard then lets a near-zero-denominator division through as if it were a real
+    // correlation (GATE Z: this is why a literal-10 fixture with `ret_simple` pinned at `0.02`
+    // rendered a fabricated `Value(0.0)` instead of the constant-outcome literal — `0.42` happened
+    // to round-trip exactly through `f64` summation, `0.02` did not; a guard whose correctness
+    // depends on which decimal constant a caller picks is not a guard). Epsilon is this module's
+    // own "same value" tolerance (`comparison.rs`'s `const_of`/`all_equal` use `1e-12`), scaled by
+    // `n` so a larger row count — which sums more rounding error — cannot defeat it.
+    let eps = 1e-12 * n as f64;
+    if dx <= eps || dy <= eps {
         return None;
     }
     Some(num / (dx.sqrt() * dy.sqrt()))

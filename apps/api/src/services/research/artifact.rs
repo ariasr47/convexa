@@ -13,7 +13,8 @@ use crate::services::research::labels::{Label, LabelSet, LABELS};
 use crate::services::research::pairing::{LabRow, SymbolLoadStats};
 use crate::services::research::score_lab::SCORE_LAB_VERSION;
 use crate::services::research::vocabulary::{
-    render_no_eligible_rows, render_not_run, CellState, MetricState, MetricValue, ReasonKey,
+    render_no_eligible_rows, render_not_run, CalibrationSeries, CellState, Correlations,
+    MetricState, MetricValue, Metrics, ReasonKey,
 };
 use crate::services::scanner::store::{ScanScoreDrivers, STRUCTURE_HISTORY_MAX};
 use serde::Serialize;
@@ -27,6 +28,23 @@ const DRIVER_INPUT_FIELD: &str = "score_drivers";
 // Evidence class (SPEC §4) — a pure function of the run's own paired-row session dates. Facts
 // only, never a verdict.
 // ---------------------------------------------------------------------------------------------
+
+/// SPEC §4 block 5's heading (AC-14). A run over exactly one requested symbol has no cross-symbol
+/// pooling to speak of — pooled and per-symbol are the same rows — and the default multi-symbol
+/// heading (`"pooled above is not a summary of these"`) would say the opposite. §4's own
+/// must-not-happen for this state is "a 'pooled' table that is silently one symbol, implying
+/// cross-symbol generality"; this branch is what keeps it from being silent.
+pub fn per_symbol_heading(requested_symbols: &[String]) -> String {
+    if requested_symbols.len() == 1 {
+        let sym = requested_symbols[0].trim().to_ascii_uppercase();
+        format!(
+            "Per symbol \u{2014} single symbol requested: pooled above is that one symbol \
+             ({sym}) over these same rows, so pooled is not a cross-symbol summary"
+        )
+    } else {
+        "Per symbol \u{2014} pooled above is not a summary of these".to_string()
+    }
+}
 
 pub fn evidence_class(session_dates: &BTreeSet<String>) -> String {
     let d = session_dates.len();
@@ -95,7 +113,13 @@ fn family_str(f: Family) -> &'static str {
 }
 
 fn role_str(c: &Candidate) -> String {
-    match c.role {
+    role_value_str(c.role)
+}
+
+/// Same rendering as `role_str`, over a bare `Role` value — used by `record_to_json` (SPEC §2.8:
+/// a candidate-scope record echoes its own `role`, not only the top-level `candidates[]` registry).
+fn role_value_str(role: Role) -> String {
+    match role {
         Role::Primary => "primary".to_string(),
         Role::Control { for_candidate } => format!("control_for:{for_candidate}"),
     }
@@ -379,6 +403,26 @@ pub fn build_retention(
                 if sessions_covered == 1 { "" } else { "s" }
             );
 
+            // `Computed` here means only "not an absence carrier" — retention holds NO candidate
+            // and NO label (it counts loaded samples, never ranks anything), so every field of
+            // `Metrics` is genuinely undefined at this scope, not a chance-level value (GATE Q
+            // finding C1: a prior version hard-coded `auc: 0.5, lift: 1.0` here, so SPY's
+            // retention entry reported a fabricated AUC — exactly the "we do not know" rendered
+            // as "computed, no effect" that [absent-is-not-none] forbids). The actual displayed
+            // figures are `samples_per_session_observed` / `cap_holds_sessions_estimate` above and
+            // the `rendered` summary line below; `metrics` renders literal 10 on every field so a
+            // consumer reading `retention[].state.Computed.metrics` directly — the shape the
+            // future roll-up (SPEC §1 "Future") will read — cannot mistake it for a measurement.
+            let retention_metric_undefined = |stat: &'static str| {
+                MetricValue::Absent(MetricState::UndefinedOnThisData {
+                    stat,
+                    precondition: "a candidate ranked against a label",
+                    failing_fact: "retention entries carry no candidate and no label — they \
+                        count loaded samples only; see samples_per_session_observed / \
+                        cap_holds_sessions_estimate for this entry's real figures"
+                        .to_string(),
+                })
+            };
             Retention {
                 symbol,
                 samples_loaded: stats.samples_loaded,
@@ -388,27 +432,20 @@ pub fn build_retention(
                 cap_holds_sessions_estimate: MetricValue::Value(implied_span),
                 window_first,
                 window_last,
-                // `Computed` here means only "not an absence carrier" — retention has no ranking
-                // metric, so `metrics` is a structural placeholder never surfaced; the actual
-                // displayed figures are `samples_per_session_observed` / `cap_holds_sessions_estimate`
-                // above and the `rendered` summary line below.
                 state: CellState::Computed {
-                    metrics: crate::services::research::vocabulary::Metrics {
-                        auc: MetricValue::Value(0.5),
-                        precision_top_decile: MetricValue::Value(0.0),
-                        recall_top_decile: MetricValue::Value(0.0),
-                        lift_top_decile: MetricValue::Value(1.0),
+                    metrics: Metrics {
+                        auc: retention_metric_undefined("AUC"),
+                        precision_top_decile: retention_metric_undefined("precision@top decile"),
+                        recall_top_decile: retention_metric_undefined("recall@top decile"),
+                        lift_top_decile: retention_metric_undefined("lift@top decile"),
                         top_decile_n: 0,
                         n_positive_in_top: 0,
-                        calibration: crate::services::research::vocabulary::CalibrationSeries::Absent(
-                            MetricState::UnderMinimum {
-                                stat: "quintile calibration",
-                                needs: 5,
-                                unit: "usable rows",
-                                have: 0,
-                                carrier_n: stats.samples_loaded,
-                            },
-                        ),
+                        calibration: CalibrationSeries::Absent(MetricState::UndefinedOnThisData {
+                            stat: "quintile calibration",
+                            precondition: "a candidate ranked against a label",
+                            failing_fact: "retention entries carry no candidate and no label"
+                                .to_string(),
+                        }),
                     },
                     power: crate::services::research::vocabulary::Power::evaluate(
                         stats.samples_loaded,
@@ -445,6 +482,11 @@ pub struct Artifact {
     pub n_outcomes_loaded: usize,
     pub n_paired: usize,
     pub duplicate_keys_collapsed: usize,
+    /// AC-14: the heading render.rs prints ahead of the per-symbol block (SPEC §4 block 5).
+    /// Computed once here — never re-derived in render.rs (AC-21) — so the console and the
+    /// artifact can never disagree about whether this run's pooled block is, or is not, a
+    /// cross-symbol summary.
+    pub per_symbol_note: String,
     pub evidence_class: String,
     pub bar_text: &'static str,
     pub bar_evaluable_from_single_run: bool,
@@ -490,6 +532,9 @@ pub struct CellJson {
     pub label_definition: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label_threshold: Option<f64>,
+    /// AC-15 — true on every Pooled GEX-magnitude cell; the caveat text also rides inside
+    /// `rendered` itself, never only here or only a legend.
+    pub not_symbol_comparable: bool,
     pub rendered: String,
 }
 
@@ -503,6 +548,13 @@ pub struct RecordJson {
     pub n_eligible: usize,
     pub excluded_by_reason: BTreeMap<String, usize>,
     pub basis_mix: BTreeMap<String, usize>,
+    /// GATE Q C1: `correlations` (`pearson_vs_abs_move`/`pearson_vs_ret_simple`, both
+    /// `MetricValue`) are a candidate-scope record's OWN legitimate statistics (SPEC §2.8) — the
+    /// only ranking-shaped numbers this carrier can honestly hold, since it has no label. Dropped
+    /// from the JSON before this fix, surviving only as 2-decimal text inside `rendered`.
+    pub correlations: Correlations,
+    pub role: String,
+    pub basis: &'static str,
     pub rendered: String,
 }
 
@@ -541,6 +593,7 @@ pub fn cell_to_json(c: &Cell) -> CellJson {
         shared_keys: c.shared_keys.clone(),
         label_definition: c.label_definition,
         label_threshold: c.label_threshold,
+        not_symbol_comparable: c.not_symbol_comparable,
         rendered: c.rendered.clone(),
     }
 }
@@ -555,6 +608,9 @@ pub fn record_to_json(r: &CandidateScopeRecord) -> RecordJson {
         n_eligible: r.n_eligible,
         excluded_by_reason: reason_map_json(&r.excluded_by_reason),
         basis_mix: r.basis_mix.clone(),
+        correlations: r.correlations.clone(),
+        role: role_value_str(r.role),
+        basis: r.basis,
         rendered: r.rendered.clone(),
     }
 }
@@ -598,6 +654,7 @@ pub fn build_artifact(
         n_outcomes_loaded,
         n_paired,
         duplicate_keys_collapsed,
+        per_symbol_note: per_symbol_heading(requested_symbols),
         evidence_class: evidence_class_str,
         bar_text: BAR_TEXT,
         bar_evaluable_from_single_run: false,
@@ -804,14 +861,18 @@ mod tests {
         assert_eq!(spy_a.cap, STRUCTURE_HISTORY_MAX);
     }
 
-    /// No retention figure may be a literal in code or copy. The cap is exempt — it IS one.
+    /// No retention figure may be a literal in code, copy, or any emitted string. GATE Q (§0):
+    /// the prior version of this test scanned ONLY `include_str!("artifact.rs")` — one module's
+    /// own source text — which never touches `render.rs`, where the "Not evaluable here" copy
+    /// that INTERPOLATES these figures is actually assembled. A hardcoded span typed directly
+    /// into `render.rs` left that version green. This version (a) scans BOTH modules that can
+    /// carry the copy, (b) scans a REAL run's actual emitted console string — the surface an
+    /// operator pastes — and (c) proves the scan itself is not vacuous by poisoning a synthetic
+    /// source string AND a synthetic emitted string first and showing both are caught, per
+    /// `[structural-over-prose-enforcement]`'s "poison the thing it forbids" bar.
     #[test]
     fn no_retention_literal_appears_in_emitted_strings_or_source() {
-        const FULL_SRC: &str = include_str!("artifact.rs");
-        // Scan only the PRODUCTION half (before `#[cfg(test)]`) — the banned-literal needles this
-        // very test names would otherwise self-match inside the test module's own source text.
-        let production_src = FULL_SRC.split("#[cfg(test)]").next().unwrap_or(FULL_SRC);
-        for banned in [
+        const BANNED: [&str; 8] = [
             "about 7 sessions",
             "7 sessions per symbol",
             "about seven sessions",
@@ -820,17 +881,56 @@ mod tests {
             "168 samples",
             "3.4 days",
             "about 4 sessions",
+        ];
+        fn violation(haystack: &str) -> Option<&'static str> {
+            BANNED.into_iter().find(|b| haystack.contains(b))
+        }
+
+        // (c) Anti-vacuity FIRST: the scan must catch the thing it forbids, in BOTH a source-shaped
+        // string and an emitted-copy-shaped string, before it is trusted against real text.
+        assert_eq!(
+            violation("let not_evaluable = \"the diary keeps about 7 sessions per symbol\";"),
+            Some("about 7 sessions"),
+            "the scan failed to catch a poisoned SOURCE string — it is not enforcement"
+        );
+        assert_eq!(
+            violation("Not evaluable here: at this rate the cap holds about 4 sessions."),
+            Some("about 4 sessions"),
+            "the scan failed to catch a poisoned EMITTED string — it is not enforcement"
+        );
+
+        // (a) SOURCE scan — BOTH modules that can carry this copy, not only the one that owns the
+        // fields. Scan only the PRODUCTION half of each (before `#[cfg(test)]`) so the banned
+        // needles this very test names cannot self-match inside a test module's own source text.
+        for (name, full_src) in [
+            ("artifact.rs", include_str!("artifact.rs")),
+            ("render.rs", include_str!("render.rs")),
         ] {
-            assert!(
-                !production_src.contains(banned),
-                "artifact.rs contains the retention literal {banned:?}"
+            let production_src = full_src.split("#[cfg(test)]").next().unwrap_or(full_src);
+            assert_eq!(
+                violation(production_src),
+                None,
+                "{name} contains a retention literal"
             );
         }
         // Anti-vacuity: the cap comes from the imported constant, never a re-typed 576.
-        assert!(production_src.contains("STRUCTURE_HISTORY_MAX"));
+        let artifact_production = include_str!("artifact.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or("");
+        assert!(artifact_production.contains("STRUCTURE_HISTORY_MAX"));
         assert!(
-            !production_src.contains("576"),
+            !artifact_production.contains("576"),
             "the cap must come from STRUCTURE_HISTORY_MAX, not a typed 576"
+        );
+
+        // (b) EMITTED-STRING scan — a REAL run's actual console output, over the pinned fixture:
+        // the surface an operator reads and pastes, not merely the code that produces it.
+        let console = crate::services::research::render::render_console(&built_artifact());
+        assert_eq!(
+            violation(&console),
+            None,
+            "a real run's console contains a retention literal"
         );
     }
 
@@ -854,6 +954,56 @@ mod tests {
             "renders literal 3, not a zero or blank"
         );
         assert!(!dia.rendered.contains("0.0") && !dia.rendered.contains("n/a"));
+    }
+
+    /// AC-41 — when some loaded rows carry a driver breakdown and others don't, attribution is
+    /// computed on those that DO and reports the reduced count plus the excluded count. GATE Q:
+    /// the only prior driver-attribution test (`driver_attribution_runs_with_drivers`,
+    /// score_lab.rs) feeds 4-of-4 rows WITH drivers, so the mixed case was never exercised.
+    #[test]
+    fn build_driver_attribution_computes_on_rows_with_drivers_and_reports_the_excluded_count() {
+        use crate::services::research::fixtures::constructed::f_drivers_mixed;
+        use crate::services::research::pairing::pair_rows;
+
+        let (samples, outcomes, _syms) = f_drivers_mixed();
+        let pairing = pair_rows(&samples, &outcomes, "1d");
+        assert_eq!(pairing.rows.len(), 5, "precondition: 5 paired rows");
+        let with_drivers = pairing
+            .rows
+            .iter()
+            .filter(|r| r.score_drivers.is_some())
+            .count();
+        assert_eq!(
+            with_drivers, 3,
+            "precondition: exactly 3 of 5 rows carry drivers"
+        );
+
+        let attribution = build_driver_attribution(&pairing.rows, true);
+        assert_eq!(attribution.n_samples_loaded, 5);
+        assert_eq!(
+            attribution.n_with_drivers, 3,
+            "reduced count — 3, not 5 and not 0"
+        );
+        assert!(
+            !attribution.entries.is_empty(),
+            "computed on the rows that DO carry drivers"
+        );
+        assert!(
+            attribution
+                .rendered
+                .contains("computed on 3 of 5 loaded samples"),
+            "must name the reduced count: {}",
+            attribution.rendered
+        );
+        assert!(
+            attribution.rendered.contains("excluded 2"),
+            "must name the excluded count: {}",
+            attribution.rendered
+        );
+        // No driver row prints n = 0 (AC-39's guarantee also holds in the mixed case).
+        for e in &attribution.entries {
+            assert!(e.n > 0, "driver {} rendered n = 0", e.driver);
+        }
     }
 
     /// The single-definition guarantee, from the consumer side: a cell can never claim MORE
@@ -887,5 +1037,47 @@ mod tests {
         let art = artifact_over(&requested);
         let order: Vec<&str> = art.retention.iter().map(|r| r.symbol.as_str()).collect();
         assert_eq!(order, vec!["IWM", "SPY", "QQQ"]);
+    }
+
+    /// GATE Q finding C1 — a retention entry has NO candidate and NO label at all; it counts
+    /// loaded samples. It must never fabricate `auc: 0.5, lift: 1.0` (a prior version did exactly
+    /// this, so SPY's retention entry read as a real measurement). Every ranking-metric field must
+    /// render literal 10, naming the missing candidate/label as the failed precondition.
+    #[test]
+    fn retention_entry_never_fabricates_ranking_metrics() {
+        let art = built_artifact();
+        let spy = art
+            .retention
+            .iter()
+            .find(|r| r.symbol == "SPY")
+            .expect("SPY retention entry exists");
+        assert!(
+            spy.samples_loaded > 0,
+            "precondition: SPY has loaded samples"
+        );
+        let CellState::Computed { metrics, .. } = &spy.state else {
+            panic!("expected Computed, got {:?}", spy.state);
+        };
+        for (name, mv) in [
+            ("auc", &metrics.auc),
+            ("precision_top_decile", &metrics.precision_top_decile),
+            ("recall_top_decile", &metrics.recall_top_decile),
+            ("lift_top_decile", &metrics.lift_top_decile),
+        ] {
+            match mv {
+                MetricValue::Absent(MetricState::UndefinedOnThisData { .. }) => {}
+                other => {
+                    panic!("retention's {name} must be Absent(UndefinedOnThisData), got {other:?}")
+                }
+            }
+        }
+        assert!(matches!(
+            metrics.calibration,
+            CalibrationSeries::Absent(MetricState::UndefinedOnThisData { .. })
+        ));
+        // The JSON must contain no bare fabricated 0.5/1.0 auc/lift under this entry.
+        let json = serde_json::to_string(&spy).unwrap();
+        assert!(!json.contains("\"auc\":{\"Value\":0.5}"));
+        assert!(!json.contains("\"lift_top_decile\":{\"Value\":1.0}"));
     }
 }

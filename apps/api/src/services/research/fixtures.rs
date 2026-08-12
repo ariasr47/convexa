@@ -150,6 +150,41 @@ pub mod constructed {
         (sample, outcome)
     }
 
+    /// 5 loaded rows, 3 carry a driver breakdown (`score: Some`, so `score_drivers: Some`) and 2
+    /// don't (`score: None`, so `score_drivers: None`) — the MIXED case AC-41 requires and
+    /// `driver_attribution_runs_with_drivers` (score_lab.rs) never exercises (it feeds 4-of-4 rows
+    /// WITH drivers).
+    pub fn f_drivers_mixed() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for i in 0..5usize {
+            let as_of = T0 + i as f64 * 300.0;
+            let has_drivers = i < 3; // 3 WITH drivers, 2 WITHOUT
+            let (s, o) = row(
+                "SPY",
+                as_of,
+                if has_drivers {
+                    Some(40.0 + i as f64 * 5.0)
+                } else {
+                    None
+                },
+                Some(1.0e9 + i as f64 * 1.0e7),
+                Some(0.20),
+                Some(19.0),
+                Some(-2.0 + i as f64 * 0.5),
+                Some(-1.0 + i as f64 * 0.3),
+                Some(0.01 + i as f64 * 0.005),
+                Some(0.02 + i as f64 * 0.004),
+                Some(i % 2 == 0),
+                Some(false),
+                Some(false),
+            );
+            samples.push(s);
+            outcomes.push(o);
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+
     /// SPY: every row carries `net_gex` + `atm_iv` (zero GEX exclusions). QQQ: no row carries
     /// `net_gex` (all excluded). IWM: half carry `net_gex` with ONLY `hv_30d` (no `atm_iv`), half
     /// with neither. 3 symbols x 3 ET sessions x 12 rows/session. Some rows carry `abs_move: None`.

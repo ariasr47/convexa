@@ -4,7 +4,7 @@
 //! Pooled is NOT a special case — a group whose predicate is `|_| true` — so there is exactly one
 //! metrics code path and pooled cannot drift from per-symbol (SPEC §2.3).
 
-use crate::services::research::candidates::Candidate;
+use crate::services::research::candidates::{Candidate, Family};
 use crate::services::research::derivation::{shared_keys, DerivationKey as DK};
 use crate::services::research::labels::{Label, LabelSet};
 use crate::services::research::pairing::{session_dates_of, LabRow};
@@ -163,6 +163,11 @@ pub struct Cell {
     pub shared_keys: Vec<DK>,
     pub label_definition: &'static str,
     pub label_threshold: Option<f64>,
+    /// AC-15 — true on every Pooled cell for the GEX-magnitude family (`net_gex_vol_norm_abs`,
+    /// `net_gex_abs_raw`): net GEX magnitude scales with each symbol's own float/open interest, so
+    /// a pooled figure mixes populations that are not on a common scale. A field, not only prose,
+    /// wherever the figure appears — mirroring `definitionally_coupled`'s field+text shape.
+    pub not_symbol_comparable: bool,
     /// The exact console literal(s) for this carrier, newline-joined — header line plus every
     /// metric line, in the SAME order render.rs prints them (AC-21).
     pub rendered: String,
@@ -182,6 +187,11 @@ pub struct CandidateScopeRecord {
     pub correlations: Correlations,
     /// `{ "atm_iv": n, "hv_30d": n, "unavailable": n }` — a counts map, never a single word.
     pub basis_mix: BTreeMap<String, usize>,
+    /// Registry echo (SPEC §2.8: "role, basis expression") — carried onto the record itself so a
+    /// consumer reading `candidate_scope[]` alone (the artifact.rs `RecordJson` shape) never has
+    /// to cross-reference `candidates[]` to know what a record's own correlations are measuring.
+    pub role: crate::services::research::candidates::Role,
+    pub basis: &'static str,
     pub rendered: String,
 }
 
@@ -373,10 +383,18 @@ fn render_cell_block(
                     )
                 }
             };
-            let header = format!(
-                "n = {n_eligible} (excluded {excluded_n}: {}) · sessions = {n_sessions}{power_suffix}",
-                reasons.join(", ")
-            );
+            // AC-26/AC-11 wart: a zero-exclusion header must never render a dangling `: ` with
+            // nothing after it — that blank IS the collapse `[absent-is-not-none]` forbids, just
+            // at the header rather than a cell value. Omit the colon+list entirely when there is
+            // nothing to list.
+            let header = if excluded_n == 0 {
+                format!("n = {n_eligible} (excluded 0) · sessions = {n_sessions}{power_suffix}")
+            } else {
+                format!(
+                    "n = {n_eligible} (excluded {excluded_n}: {}) · sessions = {n_sessions}{power_suffix}",
+                    reasons.join(", ")
+                )
+            };
             let auc = format!(
                 "AUC          {}",
                 render_metric_value(&metrics.auc, 3, n_eligible, n_sessions, power)
@@ -400,8 +418,17 @@ fn render_cell_block(
                 render_metric_value(&metrics.recall_top_decile, 2, n_eligible, n_sessions, power)
             );
             let calib = match &metrics.calibration {
+                // AC-26/AC-37/AC-49: a value-bearing atom — "N quintile bins" IS a computed value
+                // — must carry the same counts + under-powered marker every other value-bearing
+                // line carries, and must end in `)` like every literal does. Before this fix it
+                // rendered bare ("Calibration  5 quintile bins"): no parenthetical, no counts, no
+                // marker — outside the ten-literal closed set and textually indistinguishable from
+                // an unmarked thin cell.
                 CalibrationSeries::Bins(bins) => {
-                    format!("Calibration  {} quintile bins", bins.len())
+                    format!(
+                        "Calibration  {} quintile bins (n={n_eligible}, sessions={n_sessions}{power_suffix})",
+                        bins.len()
+                    )
                 }
                 CalibrationSeries::Absent(s) => format!("Calibration  {}", render_metric_state(s)),
             };
@@ -580,6 +607,24 @@ pub fn build_cell(
         ));
     }
 
+    // AC-15 — every Pooled cell for the GEX-magnitude family carries the not-symbol-comparable
+    // caveat wherever its figure appears: net GEX scales with each symbol's own float/OI, so a
+    // pooled magnitude mixes populations that are not on a common scale; the per-symbol cells are
+    // the honest read. A field (below) AND text inside the cell's own rendered block — never only
+    // a legend.
+    //
+    // AC-37 (GATE Q bounce 2): this is an APPENDED line, exactly like the AC-55 coupling mark
+    // above — every rendered cell must end with its closing parenthesis, so this line must too.
+    // Follow the AC-55 precedent's shape rather than inventing a new one: close on a parenthetical
+    // naming the honest alternative, never a bare trailing sentence.
+    let not_symbol_comparable = *group == GroupKey::Pooled && cand.family == Family::GexMagnitude;
+    if not_symbol_comparable {
+        rendered.push_str(
+            "\nnot symbol-comparable: net GEX magnitude scales with each symbol's own float/OI \
+             (see the per-symbol cells for the honest read)",
+        );
+    }
+
     Cell {
         group: group.clone(),
         candidate: cand.key,
@@ -603,6 +648,7 @@ pub fn build_cell(
         shared_keys: shared,
         label_definition: label.definition,
         label_threshold: ls.thresholds[label.key],
+        not_symbol_comparable,
         rendered,
     }
 }
@@ -718,13 +764,29 @@ pub fn build_record(
             n: n_eligible,
         }
     } else {
-        // record-scope: no label, no `DegenerateLabel` arm.
+        // record-scope: no label, no `DegenerateLabel` arm. A candidate-scope record has NO
+        // label, so AUC/precision/recall/lift are not thin or approximate here — they are
+        // UNDEFINED AT THIS SCOPE, a fact that must survive to the consumer rather than being
+        // collapsed into a chance-level number ([absent-is-not-none]; GATE Q finding C1). Only
+        // `calibration` is real at record scope (it needs the candidate's own values, not a
+        // label), so it alone is genuinely computed; the other four render literal 10, naming the
+        // record's correlations as the label-free statistics that DO exist here.
+        let ranking_metric_undefined_here = |stat: &'static str| {
+            MetricValue::Absent(MetricState::UndefinedOnThisData {
+                stat,
+                precondition: "a label to rank against",
+                failing_fact: "candidate-scope records carry no label (SPEC §2.5(b)) — ranking \
+                    metrics exist only at cell scope; see this record's pearson correlations for \
+                    its label-free statistics"
+                    .to_string(),
+            })
+        };
         CellState::Computed {
             metrics: Metrics {
-                auc: MetricValue::Value(0.5),
-                precision_top_decile: MetricValue::Value(0.0),
-                recall_top_decile: MetricValue::Value(0.0),
-                lift_top_decile: MetricValue::Value(1.0),
+                auc: ranking_metric_undefined_here("AUC"),
+                precision_top_decile: ranking_metric_undefined_here("precision@top decile"),
+                recall_top_decile: ranking_metric_undefined_here("recall@top decile"),
+                lift_top_decile: ranking_metric_undefined_here("lift@top decile"),
                 top_decile_n: 0,
                 n_positive_in_top: 0,
                 calibration: compute_calibration(&values, n_eligible),
@@ -780,6 +842,8 @@ pub fn build_record(
         excluded_by_reason: disposed.excluded_by_reason,
         correlations,
         basis_mix,
+        role: cand.role,
+        basis: cand.basis,
         rendered,
     }
 }
@@ -871,6 +935,51 @@ mod tests {
         );
         assert_eq!(cell.n_eligible, 0);
         assert!(matches!(cell.state, CellState::NoEligibleRows { .. }));
+    }
+
+    /// GATE Q finding C1 — a candidate-scope record has no label, so AUC/precision/recall/lift
+    /// must never render a fabricated chance-level value (`0.5`/`0.0`/`0.0`/`1.0`) inside a
+    /// `Computed` record. They must render literal 10 (`undefined for this data`) naming the
+    /// missing label as the failed precondition; only `calibration` (which needs no label) is a
+    /// real computed value at this scope.
+    #[test]
+    fn candidate_scope_record_never_fabricates_ranking_metrics() {
+        let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
+        let record = build_record(&pairing.rows, &GroupKey::Pooled, cand, "1d", 221);
+
+        let CellState::Computed { metrics, .. } = &record.state else {
+            panic!("expected Computed, got {:?}", record.state);
+        };
+        for (name, mv) in [
+            ("auc", &metrics.auc),
+            ("precision_top_decile", &metrics.precision_top_decile),
+            ("recall_top_decile", &metrics.recall_top_decile),
+            ("lift_top_decile", &metrics.lift_top_decile),
+        ] {
+            match mv {
+                MetricValue::Absent(MetricState::UndefinedOnThisData { .. }) => {}
+                other => {
+                    panic!("record's {name} must be Absent(UndefinedOnThisData), got {other:?}")
+                }
+            }
+        }
+        // The record's OWN legitimate statistics — its correlations — must still be real.
+        assert!(matches!(
+            record.correlations.pearson_vs_abs_move,
+            MetricValue::Value(_)
+        ));
+        // Calibration needs no label, so it is genuinely computed here.
+        assert!(matches!(metrics.calibration, CalibrationSeries::Bins(_)));
+        // Registry echo lands on the record itself (SPEC §2.8).
+        assert_eq!(record.basis, cand.basis);
+        assert!(matches!(
+            record.role,
+            crate::services::research::candidates::Role::Primary
+        ));
     }
 
     #[test]
@@ -975,6 +1084,16 @@ mod identities {
             "TEST",
             &pairing.n_samples_by_symbol,
         )
+    }
+
+    fn build_records(
+        samples: &[StructureSample],
+        outcomes: &[crate::services::research::StructureOutcome],
+        requested: &[String],
+    ) -> Vec<CandidateScopeRecord> {
+        let pairing = pair_rows(samples, outcomes, "1d");
+        let groups = groups_for(requested);
+        build_all_records(&pairing.rows, &groups, "1d")
     }
 
     // ---- IDENTITY 2 — CLOSURE --------------------------------------------------------------
@@ -1213,6 +1332,64 @@ mod identities {
         }
     }
 
+    /// AC-37, GATE Q bounce 2: `vocabulary.rs:521` asserts "ends with `)`" only for the ten
+    /// literals in ISOLATION — never for a rendered CELL, which is exactly why the AC-15 fix
+    /// (an appended line with no parenthetical) landed green despite breaking this property at
+    /// cell scope. This is the cell-scope assertion that was missing: every cell's `rendered`
+    /// text, across the full declared grid (not a hand-picked subset), must end with its closing
+    /// parenthesis — including after an APPENDED caveat/mark line, not only after the base literal.
+    #[test]
+    fn every_cells_rendered_text_ends_with_its_closing_parenthesis_ac37() {
+        let cells = build(
+            &slice_0810_samples(),
+            &slice_0810_outcomes(),
+            &requested(&["SPY", "QQQ", "IWM", "DIA"]),
+        );
+        assert_eq!(cells.len(), 75, "must run over the full declared grid, not a subset");
+
+        let mut violations: Vec<String> = Vec::new();
+        for c in &cells {
+            if !c.rendered.trim_end().ends_with(')') {
+                violations.push(format!(
+                    "{:?} \u{d7} {} \u{d7} {}: {:?}",
+                    c.group, c.candidate, c.label, c.rendered
+                ));
+            }
+        }
+        assert!(
+            violations.is_empty(),
+            "{} of {} cells do not end with ')':\n{}",
+            violations.len(),
+            cells.len(),
+            violations.join("\n")
+        );
+
+        // The 6 pooled GEX-magnitude cells are the exact regression this criterion caught — an
+        // appended, unparenthesized caveat line — so pin them positively rather than only
+        // asserting the absence of a violation above.
+        let pooled_gex_cells: Vec<&Cell> = cells
+            .iter()
+            .filter(|c| c.not_symbol_comparable)
+            .collect();
+        assert_eq!(
+            pooled_gex_cells.len(),
+            6,
+            "expected exactly the pooled GEX-magnitude cells to carry the caveat"
+        );
+        for c in pooled_gex_cells {
+            assert!(
+                c.rendered.contains("not symbol-comparable"),
+                "cell missing the AC-15 caveat: {:?}",
+                c.rendered
+            );
+            assert!(
+                c.rendered.trim_end().ends_with(')'),
+                "AC-15 caveat line broke the cell's closing parenthesis: {:?}",
+                c.rendered
+            );
+        }
+    }
+
     // ---- The seven constructed fixtures also hold CLOSURE (universally quantified) -----------
 
     #[test]
@@ -1248,7 +1425,121 @@ mod identities {
                 c.candidate,
                 c.state
             );
+            // AC-75 second half: literal 6 covers the WHOLE cell — no metric-level literal (9 or
+            // 10) may appear anywhere inside it.
+            assert!(
+                !c.rendered.contains("not enough rows for this statistic"),
+                "literal 9 leaked into a DegenerateLabel cell for {}",
+                c.candidate
+            );
+            assert!(
+                !c.rendered.contains("undefined for this data"),
+                "literal 10 leaked into a DegenerateLabel cell for {}",
+                c.candidate
+            );
         }
+    }
+
+    /// AC-75 first half — a candidate-scope record's correlation line must render literal 10 when
+    /// the candidate's values vary but the continuous outcome is constant across the usable pairs.
+    /// `f_const_outcome` is built exactly for this (candidate `score` varies row to row; both
+    /// `abs_move` and `ret_simple` are pinned constants) — this is the fixture PLAN §7 required and
+    /// GATE Q found missing: literal 10 was rendered ZERO times in every real run.
+    #[test]
+    fn literal_10_fires_on_a_const_outcomes_record_correlation_line() {
+        let (samples, outcomes, syms) = f_const_outcome();
+        let records = build_records(&samples, &outcomes, &syms);
+        let record = records
+            .iter()
+            .find(|r| r.candidate == "opportunity_score" && r.group == GroupKey::Pooled)
+            .expect("pooled opportunity_score record exists");
+
+        assert!(
+            matches!(record.state, CellState::Computed { .. }),
+            "record must be Computed (candidate varies, has eligible rows) — got {:?}",
+            record.state
+        );
+        for (name, mv) in [
+            (
+                "pearson_vs_abs_move",
+                &record.correlations.pearson_vs_abs_move,
+            ),
+            (
+                "pearson_vs_ret_simple",
+                &record.correlations.pearson_vs_ret_simple,
+            ),
+        ] {
+            match mv {
+                MetricValue::Absent(MetricState::UndefinedOnThisData { precondition, .. }) => {
+                    assert_eq!(*precondition, "the outcome to vary");
+                }
+                other => panic!(
+                    "{name} must render literal 10 (UndefinedOnThisData) on a const outcome, \
+                     got {other:?}"
+                ),
+            }
+        }
+        assert!(
+            record.rendered.contains("undefined for this data"),
+            "record.rendered must carry literal 10's text: {:?}",
+            record.rendered
+        );
+    }
+
+    /// AC-33/AC-35 — literal 9 (`MetricState::UnderMinimum`) must be reachable at CELL scope, on
+    /// the quintile calibration series, inside an otherwise well-formed `Computed` cell (siblings
+    /// AUC/lift/precision/recall still render real values — AC-34). `f_thin`'s 3-row SPY scope
+    /// against `structure_event` is exactly this: `score` varies (40/50/60) and 1-of-3 rows is
+    /// positive, so the cell is `Computed`, but 3 usable rows is below quintile calibration's
+    /// floor of 5.
+    #[test]
+    fn literal_9_fires_on_a_three_row_cells_quintile_calibration() {
+        let (samples, outcomes, syms) = f_thin();
+        let cells = build(&samples, &outcomes, &syms);
+        let cell = cells
+            .iter()
+            .find(|c| {
+                c.candidate == "opportunity_score"
+                    && c.label == "structure_event"
+                    && c.group == GroupKey::Symbol("SPY".into())
+            })
+            .expect("SPY x structure_event cell exists");
+
+        let CellState::Computed { metrics, .. } = &cell.state else {
+            panic!(
+                "expected Computed for SPY x structure_event, got {:?}",
+                cell.state
+            );
+        };
+        match &metrics.calibration {
+            CalibrationSeries::Absent(MetricState::UnderMinimum {
+                stat,
+                needs,
+                have,
+                carrier_n,
+                ..
+            }) => {
+                assert_eq!(*stat, "quintile calibration");
+                assert_eq!(*needs, 5);
+                assert_eq!(*have, 3);
+                assert_eq!(*carrier_n, cell.n_eligible);
+            }
+            other => panic!("expected literal 9 (UnderMinimum) on calibration, got {other:?}"),
+        }
+        // AC-34 — the metric-level literal changes neither the carrier's state (still Computed)
+        // nor its siblings: AUC/lift/precision/recall must still render REAL values.
+        for (name, mv) in [
+            ("auc", &metrics.auc),
+            ("lift_top_decile", &metrics.lift_top_decile),
+            ("precision_top_decile", &metrics.precision_top_decile),
+            ("recall_top_decile", &metrics.recall_top_decile),
+        ] {
+            assert!(
+                matches!(mv, MetricValue::Value(_)),
+                "sibling metric {name} must still render a value beside literal 9, got {mv:?}"
+            );
+        }
+        assert!(cell.rendered.contains("not enough rows for this statistic"));
     }
 
     // ---- AC-30 — a candidate constant on every eligible row renders literal 5 -----------------

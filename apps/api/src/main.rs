@@ -123,8 +123,11 @@ enum Commands {
         /// Output report path (default data/research/score_lab_<horizon>_<utc>.json).
         #[arg(long)]
         out: Option<PathBuf>,
-        /// Include leave-one-driver-out attribution block.
-        #[arg(long, default_value_t = true)]
+        /// Include leave-one-driver-out attribution block (`--driver-loo <true|false>` — SPEC §2.8
+        /// requires a bool VALUE, not a valueless switch: `action = Set` is what makes
+        /// `--driver-loo false` parse instead of erroring "unexpected argument 'false'", which is
+        /// what a bare `#[arg(long)]` on a `bool` field compiles to under clap 4's flag inference.
+        #[arg(long, default_value_t = true, action = clap::ArgAction::Set)]
         driver_loo: bool,
         /// Print full JSON to stdout instead of a short summary.
         #[arg(long)]
@@ -833,6 +836,60 @@ mod score_lab_wiring_guard {
         assert!(
             body.contains("read_structure_history("),
             "positive control failed to find its needle"
+        );
+    }
+}
+
+/// GATE Z (AC-40) — `--driver-loo` must be a real BOOL VALUE flag (SPEC §2.8:
+/// `[--driver-loo <bool>]`), not a valueless switch. A bare `#[arg(long)]` on a `bool` field
+/// compiles under clap 4's derive to `ArgAction::SetTrue`, which CANNOT be set false — literal 8
+/// (`CellState::NotRun`) was unreachable from the shipped CLI as a result. Proven both ways: the
+/// flag parses `false`/`true` explicitly, AND the default (no flag at all) stays `true` so every
+/// existing invocation is unchanged.
+#[cfg(test)]
+mod driver_loo_flag_guard {
+    use super::{Cli, Commands};
+    use clap::Parser;
+
+    fn parse_driver_loo(extra: &[&str]) -> Result<bool, clap::Error> {
+        let mut argv = vec!["api-rust", "score-lab", "--outcomes", "x.json"];
+        argv.extend_from_slice(extra);
+        let cli = Cli::try_parse_from(argv)?;
+        match cli.cmd {
+            Commands::ScoreLab { driver_loo, .. } => Ok(driver_loo),
+            other => panic!("expected ScoreLab, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn driver_loo_false_parses_to_false() {
+        assert!(
+            !parse_driver_loo(&["--driver-loo", "false"]).expect("must parse"),
+            "--driver-loo false must be settable — literal 8 (NotRun) is unreachable otherwise"
+        );
+    }
+
+    #[test]
+    fn driver_loo_true_parses_to_true() {
+        assert!(parse_driver_loo(&["--driver-loo", "true"]).expect("must parse"));
+    }
+
+    #[test]
+    fn driver_loo_defaults_to_true_when_omitted() {
+        assert!(
+            parse_driver_loo(&[]).expect("must parse"),
+            "every existing invocation (no --driver-loo at all) must be unchanged"
+        );
+    }
+
+    #[test]
+    fn driver_loo_bare_switch_form_is_rejected() {
+        // Anti-vacuity, the OTHER direction: a bare `--driver-loo` with no value (the shape a
+        // `SetTrue` flag would accept) must NOT parse — proving this is genuinely a value flag,
+        // not a switch that happens to also accept a value.
+        assert!(
+            parse_driver_loo(&["--driver-loo"]).is_err(),
+            "--driver-loo with no value must be rejected once it is a real bool-value flag"
         );
     }
 }
