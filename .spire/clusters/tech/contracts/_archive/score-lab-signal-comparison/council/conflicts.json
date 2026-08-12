@@ -1,0 +1,265 @@
+{
+  "conflicts": [
+    {
+      "quote": "Re-running the retained 2026-08-11 paired slice reproduces the deep dive's published figures to their published precision: composite AUC 0.467 and lift@top10 0.17, structure-event AUC 0.932, SPY Pearson +0.51, QQQ Pearson \u22120.31, SPY lift 1.43, QQQ lift 0.56.",
+      "source": "pm",
+      "why": "The word \"retained\" is the problem, and it is a dated problem. The raw structure diary is a per-symbol ring buffer, not an archive: `STRUCTURE_HISTORY_MAX = 576` and `STRUCTURE_HISTORY_MIN_INTERVAL_SECS = 300.0` (`store.rs:29-31`), enforced in memory by `merge_structure_sample` (`store.rs:153-170`) and in Postgres by the ring prune at `pg_scan.rs:468-490`. The 2026-08-11 slice itself gives the arithmetic: 221 paired rows / 3 symbols over a 6h43m window is ~74 samples per symbol per session, so 576 holds ~7-8 sessions per symbol. The slice is retrievable TODAY (its samples are from 2026-08-10, one session back). It will be evicted roughly seven trading sessions from now, at which point an AC-C4 test that reads the live diary goes red on a calendar date rather than on a code change \u2014 the worst failure mode a regression test can have. Separately, AC-C4 asks for per-symbol Pearson figures: `pearson()` exists (`score_lab.rs:488`) and is already reported pooled, but my R1 \u00a77 cell content listed only AUC / precision / recall / lift / calibration and omitted correlation entirely. That omission is mine and I withdraw it \u2014 per-symbol Pearson is exactly the SPY +0.51 / QQQ \u22120.31 inversion the BRIEF names as the motivating hand-computed finding, so it must be a cell field, not a hand computation.",
+      "proposal": "Two changes, both cheap, both this week. (1) Freeze the slice now: commit the 2026-08-10/11 paired inputs (the `StructureSample` set and the `StructureOutcome` set, as fixture JSON under the test tree) before the ring evicts them, and write AC-C4 against that fixture. Restate AC-C4 as \"re-running the committed 2026-08-11 fixture slice reproduces...\" \u2014 a fixture test is deterministic, survives retention, and satisfies AC-C6 (two runs over identical inputs produce identical figures) at the same time. This converts PM's Open product decision #2 from a decision into a deadline. (2) Add `pearson_vs_abs_move` and `pearson_vs_ret_simple` to the per-cell content in my \u00a77 so every candidate \u00d7 group carries its correlation alongside its ranking metrics, and the per-symbol inversion is a field.",
+      "kind": "technical",
+      "conflict_id": "89dce98ea1243ee758462e3eafd081ab064be6b50c4d2695d796a808b4d9d627",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The standing verdict is **derived from the run's window/sample counts**, not a constant: a run below the session bar renders `BELOW BAR`/`DEGENERATE`, a run meeting it does not",
+      "source": "ux",
+      "why": "The clause \"a run meeting it does not\" describes a branch that no single run can reach, for a structural reason rather than a data-thinness reason. UX's own bar text is \"sustained across >= N sessions spanning >= M calendar weeks\". A single run's evidence is bounded by the ring buffer above: ~7-8 sessions per symbol maximum, which is under two calendar weeks even when completely full. So for any M >= 2 the `AT BAR` verdict is unreachable by construction, forever, from one run. PM's scope agrees and closes the other door: \"Cross-run aggregation, trend lines, or week-over-week roll-up inside the tool\" is Out, and the multi-week roll-up is Future-dated. A verdict vocabulary containing a state the code can never emit is a dead branch that UX-2 is written as a `test` against \u2014 the test can only ever assert the `BELOW BAR` half, so it does not test derivation at all, and the first person to read `BELOW BAR` forty weeks running concludes the block is the constant hedge UX-2 exists to prevent. This is not an argument against derivation; it is an argument that the quantity being derived must be one a run can know.",
+      "proposal": "Derive the standing from what one run genuinely knows, and make the unreachability explicit rather than latent. Concretely: (a) the run computes `sessions_counted` (distinct `session_date_et`, which `outcomes.rs:40` already carries) and `span_calendar_days` from first/last `as_of`, and the verdict is a pure function of those two against N and M; (b) for v1 the reachable vocabulary is `BELOW BAR` / `INSUFFICIENT \u2014 cannot evaluate` / `DEGENERATE \u2014 single session` / `DEGENERATE \u2014 single symbol`, and `AT BAR` is declared unreachable-from-one-run in the artifact itself \u2014 e.g. a `bar_evaluable_from_single_run: false` field with the retention ceiling (`STRUCTURE_HISTORY_MAX` in sessions) as its stated reason, so the reader learns the bar needs the cross-run roll-up PM future-dated; (c) UX-2's test then asserts the verdict *changes* across two fixtures (1 session vs 5 sessions -> `DEGENERATE \u2014 single session` vs `BELOW BAR`), which actually falsifies a hardcoded string. If the owner wants `AT BAR` reachable at all, that is a retention change (raising `STRUCTURE_HISTORY_MAX`) or the multi-week roll-up \u2014 both out of this feature's scope per my \u00a712.4, and neither is mine to decide.",
+      "kind": "technical",
+      "conflict_id": "20de414e9280c54dcab4cf3164e7df10559adae4ea83de98a28f13685d4b2960",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "For each candidate, the pooled sample count equals the sum of its per-symbol counts plus its counted exclusions \u2014 the arithmetic reconciles in the printed output.",
+      "source": "pm",
+      "why": "This identity is false under its natural reading and will be encoded as a failing or wrongly-passing test. Let P be the paired rows in the slice, P_s the paired rows for symbol s (so sum of P_s = P), and for a candidate c let used_s + excluded_s = P_s. Then pooled used U = sum of used_s and pooled excluded E = sum of excluded_s, and the true identities are U = sum(used_s) and U + E = P. \"Pooled count = sum of per-symbol counts PLUS exclusions\" double-counts E: it is only true if the left-hand side means the paired total P rather than the candidate's pooled n, which is not what \"its pooled sample count\" reads as. A test written from this sentence either passes only when E = 0 (i.e. never once a candidate has a real exclusion, which is the case AC-D3 exists for) or is quietly rewritten by whoever hits it. UX-7 has the neighbouring version of the same slip \u2014 \"used + excluded = paired rows\" is true only when the row's scope is the whole slice; for a per-symbol row the right-hand side is that symbol's paired rows, not the pooled total.",
+      "proposal": "Split it into the two identities that are separately true and separately checkable, both computed from the same `excluded_by_reason` map in my \u00a74: (1) COMPOSITION \u2014 for every candidate, the pooled used count equals the sum of its per-symbol used counts, and the pooled exclusion count equals the sum of the per-symbol exclusion counts, reason by reason; (2) CLOSURE \u2014 within any single scope (pooled, or one symbol), used + total excluded = that scope's paired row count. Stating them separately is what makes the arithmetic actually reconcile in print, and (1) is the stronger criterion because it is the one that catches a symbol silently dropped from the per-symbol section.",
+      "kind": "technical",
+      "conflict_id": "8e7d12f2ca02c613259ca9e01dbe5bb9a23cd4e7189619b473c6152b380c31a8",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Computed set exists but is below the reporting floor; the value is **withheld, not shown small**",
+      "source": "ux",
+      "why": "This directly contradicts PM, who requires the opposite for the same cell. PM's state table gives \"computed, under-powered\" as \"a value, with its n, marked as below the stated minimum\", whose forbidden rendering is \"a bare value\" \u2014 i.e. the value IS shown, just never bare. PM's Open product decision #1 makes it explicit: the floor is \"printed in the report, marked but never suppressed \u2014 a research tool must show thin numbers, it just must not show them bare\". UX withholds; PM shows-with-a-marker. Both cannot hold, and the difference is not cosmetic: it decides whether the number exists in the artifact at all, which is my lane. My own R1 \u00a77 sided with UX by making `InsufficientN { n, floor }` a `CellState` variant that carries no metric \u2014 I withdraw that shape regardless of how this is settled, because it destroys information at the data layer to serve a rendering preference, and it makes AC-C4/AC-C5 reproduction impossible for any thin cell. There is also a live instance: the 47-57 calibration bin UX cites is exactly the kind of cell whose value the deep dive quoted.",
+      "proposal": "Separate the data question from the rendering question, which lets the human settle only the part that is genuinely theirs. Data (mine, and I will build it either way): every cell that has >= 1 eligible row computes and CARRIES its metric values in the artifact, plus `n_eligible`, `floor_in_force`, and a boolean `under_powered` derived by the stated rule. Nothing is withheld from the file \u2014 a withheld artifact value cannot be reproduced, diffed week-over-week, or fed to the future roll-up. Rendering (UX's, and the thing the owner decides): whether the terminal/table shows `0.47 (n=4, below floor 30)` per PM or `too few (n=4, floor 30)` per UX. I have no stake in which literal prints; I have a hard stake in the artifact never being the place the number disappears. Note that if the owner picks UX's withholding for the console, UX-5's contrast test still works and PM's AC-G3 marker still prints \u2014 only the digits differ.",
+      "kind": "product",
+      "conflict_id": "99f4b332a3c1a2a39da6d96709590e6061067344e1b8999652195c1ad747dcac",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "For the same slice and horizon, the composite score's pooled figures match what the pre-feature lab reported for that slice \u2014 the weekly series is not silently rebased.",
+      "source": "pm",
+      "why": "\"Figures\" is unqualified, and one family of figures cannot match under my \u00a79. The shipped `calibration_curve` uses equal-width bins over [min, max] of the scalar. Equal-width is defensible for a bounded 0-100 score and is useless for `abs(net_gex)/vol_scalar`, which is heavy-tailed and spans orders of magnitude across symbols \u2014 it would put nearly every row in bin 1 and a single row in bin 5. My position is quantile (quintile) bins, one binning rule for every candidate, because a per-candidate binning rule makes the calibration column non-comparable across rows of the same table. That choice necessarily changes `opportunity_score`'s calibration table relative to the 2026-08-11 run: same rows, same labels, different bin edges, different per-bin counts. So AC-C5 as written is unmeetable, and the failure is silent in the direction that matters \u2014 someone will read \"pooled figures match\" as satisfied because the AUC matched, and the calibration change ships undeclared. The ranking metrics (base rate, AUC, precision@top10, lift@top10) DO match exactly, and my \u00a711 parity oracle asserts that against `evaluate_baseline` retained as a test-only oracle.",
+      "proposal": "Scope AC-C5 to the metrics that are definitionally stable, and let PM's own AC-P4 carry the rest: \"For the same slice and horizon, the composite score's pooled base rate, AUC, precision@top10 and lift@top10 match what the pre-feature lab reported for that slice. Calibration bin edges change with the new binning rule; the change is declared by a bump of the report version marker, and the pre-feature and post-feature values are both recorded in the parity test.\" This keeps PM's real requirement \u2014 the weekly series is not silently rebased \u2014 while making the one rebasing that does happen loud instead of undetectable. If PM would rather keep byte-identical calibration, the alternative is per-candidate binning rules, which I am arguing against on comparability grounds and would want the owner to see as the trade.",
+      "kind": "technical",
+      "conflict_id": "f5d058036b581b828383c0494ae244286f38af27244c1d54b4efe9009f888464",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Re-running the retained 2026-08-11 paired slice reproduces the deep dive's published figures to their published precision: composite AUC 0.467 and lift@top10 0.17, structure-event AUC 0.932, SPY Pearson +0.51, QQQ Pearson \u22120.31, SPY lift 1.43, QQQ lift 0.56.",
+      "source": "pm",
+      "why": "I am withdrawing my own AC-C4; three separate findings kill it. (1) The architect verified the raw diary is a ring buffer \u2014 `STRUCTURE_HISTORY_MAX = 576`, 300s thinning, Postgres pruned to the same cap, roughly seven sessions per symbol \u2014 so the word 'retained' is false: those rows will be evicted well before this feature is built. (2) Architect \u00a76 computes the `large_abs_move` threshold once per (horizon, slice) over the full paired set instead of per group, which moves the per-symbol base rates that the deep dive's hand-paired SPY 1.43 / QQQ 0.56 lifts were computed against \u2014 those two figures were never produced by a tool, so demanding a tool reproduce them to published precision is demanding it reproduce a hand computation of unknown scoping. (3) The two Pearson figures are not in the architect's \u00a77 cell content at all. An AC that cannot be met by the design it governs is not a strong AC, it is a build-time argument.",
+      "proposal": "Split AC-C4 into two smaller, meetable criteria. (a) Continuity: the 2026-08-11 paired slice is pinned NOW as a committed fixture (a samples file plus an outcomes file, read via the file input path, never the live diary), and a run over that fixture reports the pooled composite figures the pre-feature lab reported for it \u2014 AUC 0.467 and lift@top10 0.17 \u2014 asserted against the parity oracle. (b) Inversion: on that same fixture, the SPY and QQQ cells for the composite candidate report opposite-signed association with the continuous outcome, asserted as a sign-and-ordering claim rather than to two decimals \u2014 and only if a correlation field exists per cell (see asks). If the slice cannot be pinned before eviction, (a) falls back to a constructed fixture and the reproduction claim is gone; I would rather lose the claim than keep an AC nobody can run.",
+      "kind": "technical",
+      "conflict_id": "f3912c4232d6c81773929903579d1a32c2c6815ca82e8c233cf2ebfe8dbc6afd",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Any cell below the report's stated minimum sample count carries the under-powered marker, and the minimum in force is printed in the run.",
+      "source": "pm",
+      "why": "My own AC-G3 says too little in light of the architect's evidence-weight finding. A floor expressed only in samples certifies the 2026-08-11 slice \u2014 221 rows from one 7-hour window at a 5-minute cadence \u2014 as fully powered, because 221 clears any row floor I would set. The rows are massively autocorrelated; the true weight is one session. So the marker my no-mandate guards depend on would be absent on exactly the slice that motivated the guards. That is the failure mode I claim to design against, sitting in my own criterion.",
+      "proposal": "Restate AC-G3 with two floors, not one: every cell prints `n_rows` AND its distinct-session count, and carries the under-powered marker when it falls below EITHER the row floor or the session floor; a cell drawn from a single session carries the single-session marker regardless of row count. The numbers stay an owner decision, carried forward from my R1 open decisions \u2014 my recommendation is 30 rows per cell and a session floor of 2 for the marker (with the trust bar itself set much higher, see the UX-2 conflict).",
+      "kind": "technical",
+      "conflict_id": "89c6b6c72bcbf4ffed47ffe78fe57260ed01cd4e6d11c7e4788efc83f690b78d",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "v1 set \u2014 six candidates, three families, all derivable from captured fields:",
+      "source": "architect",
+      "why": "Five of the six I accept, including the one that was not in my scope list: `net_gex_abs_raw` is a genuine control, and without it a strong vol-norm row cannot be attributed to the normalization rather than to GEX magnitude \u2014 my own false-mandate risk argues for it, so I am not treating the BRIEF's three families as a scope fence. `net_gex_vol_norm_signed` is different in kind. It is not a control, it is a new directional hypothesis, and it is scored mostly against magnitude labels (`large_abs_move`, `structure_event`) where a signed candidate is near chance by construction. Its most likely output is an AUC near 0.50 that reads to the operator as 'vol-normalized GEX ranks at chance' while having tested something else entirely \u2014 a wrong-reading cell is worse than an absent one. It also adds twelve of the seventy-two cells on a report whose legibility collapse is one of my named risks, and the BRIEF's own invariant watch frames vol-norm GEX as a magnitude read.",
+      "proposal": "v1 is five candidates: `opportunity_score`, `net_gex_vol_norm_abs`, `net_gex_abs_raw` (control, paired eligibility as the architect specifies), `proximity_to_flip`, `proximity_to_nearer_wall`. If `net_gex_vol_norm_signed` stays, it is reported against the direction label only, where a signed scalar is a meaningful hypothesis, and is labelled a direction hypothesis rather than a magnitude read. Otherwise it is future-dated alongside `iv_hv_ratio` extremity. This is an owner call because it is a scope-versus-legibility trade on what the operator reads every week, not a feasibility question.",
+      "kind": "product",
+      "conflict_id": "d6474bc1b8acfcb60f754a815f0b89a2a45cfd96d95a689aa5fc55ca7234270c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Computed set exists but is below the reporting floor; the value is **withheld, not shown small**",
+      "source": "ux",
+      "why": "This contradicts my R1 state table directly, where the under-powered state is 'a value, with its n, marked as below the stated minimum' and must not be shown as a bare value \u2014 marked, never suppressed. Withholding trades one collapse for another: a withheld cell and an uncomputable cell both render as 'no number here', which is the `[absent-is-not-none]` failure at the other end of the same axis. On this evidence base most cells will be thin for months; a rule that suppresses thin values means the operator sees almost no numbers at all, cannot watch a figure move week over week, and loses the only thing a research tool is for. The danger of a thin number is that it is quoted bare, and the fix for that is the marker plus the session count, not deletion.",
+      "proposal": "`too few` shows the value AND the marker in one literal \u2014 e.g. `0.61 (n=4, below floor 30 \u2014 under-powered)` \u2014 so it is textually distinct from `no input (...)`, from an above-floor value, and from a blank, in a plain-text paste with no surrounding prose. If the owner prefers suppression, suppress only in the narrow stdout summary (which is width-constrained anyway) while the artifact always carries the value, and never the reverse. Owner's call: this is the visibility-versus-false-mandate trade at the centre of the feature.",
+      "kind": "product",
+      "conflict_id": "6da93e3f6f271298dff650101c8a09c2fc5f4dcd1707c824505c0051f311a158",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The literal `n/a` appears nowhere in the report or stdout; the only absence literals are the six in \u00a73",
+      "source": "ux",
+      "why": "The closure rule is right and I want it; the enumeration is incomplete, and a closed vocabulary that is short is worse than an open one because the missing states must then be rendered as a literal that means something else. Two states both the architect and I require have no literal in the six. First, no-variation / degenerate: every eligible value in the cell is identical, so ranking is mathematically undefined \u2014 my R1 state table calls this out as 'must not be shown as 0.5, or no effect', and the architect's `CellState` carries `Degenerate { reason }` for it (also the no-positives / no-negatives case that `man_whitney_auc` returns as `None` today). `undefined (base rate 0.00)` covers only the no-positives cause. Second, no paired outcome for this horizon in a per-symbol group, which my AC-S3 requires be reported rather than the symbol being dropped \u2014 that is not `no input`, because the input was carried; the label was not.",
+      "proposal": "Extend the closed set from six to eight, keeping the closure rule and UX-6's scan intact: add a no-variation literal that names the cause and the n (values identical, ranking undefined) and a no-paired-outcome literal that names the horizon and the sample count. Exact wording is UX's; I need only that the two states exist as their own literals and that AC-D4 and AC-S3 have something legal to render.",
+      "kind": "technical",
+      "conflict_id": "4457e51e1ccc29e29150a38922b27d6f32d688ff739c10cc50e90f1df1559bbc",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The standing verdict is **derived from the run's window/sample counts**, not a constant: a run below the session bar renders `BELOW BAR`/`DEGENERATE`, a run meeting it does not",
+      "source": "ux",
+      "why": "Derivation is right, and the anti-wallpaper argument behind it is right. But the bar UX prints in \u00a72 includes 'spanning >= M calendar weeks', and the architect's ring-cap arithmetic means one run's window can never exceed roughly seven sessions per symbol \u2014 under two calendar weeks \u2014 because the rows are evicted. So the clause 'a run meeting it does not' describes a branch that cannot be reached by construction, the verdict is a constant `BELOW BAR` forever, and UX-2 becomes the wallpaper it was written to prevent. The multi-week half of the bar is only evaluable across saved artifacts, which my scope explicitly future-dates and which is out of v1. I am not asking to raise retention here; I am asking that the output not print a bar it cannot ever measure as though it might.",
+      "proposal": "Split the bar in the standing block. The in-run verdict is derived only from what one run can measure \u2014 this slice's distinct-session count and its lift@top decile on `large_abs_move`. The multi-week half prints as an explicitly out-of-run condition with its own standing value (wording UX's, e.g. a 'cannot evaluate in one run \u2014 multi-week bar is cross-artifact' literal), so the operator reads an unmet-by-construction condition rather than a verdict. The numbers, which UX correctly says are mine and which my R1 left incomplete: reporting floor 30 rows per cell; in-run bar = lift@top decile >= 1.10 on `large_abs_move` with n_sessions >= 10; cross-artifact bar = that lift sustained across artifacts spanning >= 3 calendar weeks. I recommend these three numbers; the owner sets them, and the >= 10 sessions figure in particular is a judgment about how much autocorrelated evidence counts as evidence.",
+      "kind": "product",
+      "conflict_id": "8606fa508b1bee6f3dcce88c6aeece32942f808adf5ae4256661402d8d655146",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| UX-2 | The standing verdict is **derived from the run's window/sample counts**, not a constant: a run below the session bar renders `BELOW BAR`/`DEGENERATE`, a run meeting it does not | default, degenerate | **test** | Silently regresses to a hardcoded string under refactor; a constant hedge is the current failure |",
+      "source": "ux",
+      "why": "This is my own R1 criterion and PM is right to forbid it. PM's Out list rules out 'any adoption recommendation, \"winner\", \"best signal\", or per-run pass/fail against the runbook's multi-week bar', and AC-G4 scans the run's strings for exactly this. A standing verdict of `BELOW BAR` / `AT BAR` IS a per-run pass/fail against the multi-week bar, and the day it prints `AT BAR` the tool has issued the mandate `[score-change-is-deliberate-and-measured]` exists to prevent. My anti-wallpaper argument does not justify emitting a verdict the feature is forbidden to reach.",
+      "proposal": "Retract `BELOW BAR` / `AT BAR` from the standing vocabulary. Keep the standing block, keep it derived (so it does not become wallpaper), but derive the varying part from the architect's `evidence_class` \u2014 evidence-strength FACTS only: `SINGLE SESSION` \u00b7 `MULTI-SESSION (d=3)` \u00b7 `MULTI-WEEK (d=11)` \u00b7 `DEGENERATE \u2014 single symbol` \u00b7 `INSUFFICIENT \u2014 cannot evaluate`. The bar's own text may still be PRINTED verbatim beside the run's values (so the reader can do the comparison), but the tool never states the outcome of that comparison. UX-2 becomes: the standing line's evidence class is derived from `n_sessions` and the group set, never a constant, and contains no pass/fail token.",
+      "kind": "technical",
+      "conflict_id": "59d18fe2d1497f4c8bb076ccce8e3d593f9b61c5effe80c9365f146bdfab5b50",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "| Level geometry candidates | **Distance to flip (%)**, **Distance to wall (%)** | \"level signal\", \"geometry score\", \"proximity edge\" |",
+      "source": "ux",
+      "why": "My own approved-term row is wrong given the architect's verified finding that `dist_to_flip_pct` / `dist_to_wall_pct` are SIGNED and that the ranked scalar will be `-abs(signed value)`. A column headed 'Distance to flip (%)' over a folded absolute-value scalar renames what the value actually is \u2014 and the raw signed field ranks the FARTHEST rows at the top decile, so the same label would be false in two different directions depending on whether orientation was applied. My table also bans 'proximity', which is the only honest word for the oriented scalar.",
+      "proposal": "Replace the row with: approved term **Closeness to flip** / **Closeness to nearer wall**, rendered with its basis expression inline \u2014 `Closeness to flip (ranked on -|signed distance to flip, %|; higher = nearer)`. Un-ban 'proximity' (keep 'proximity edge' banned \u2014 'edge' is the adoption word, not 'proximity'). Every geometry row must print both the raw field name and the fold, because 'we ranked the absolute distance' and 'we ranked the signed distance' are different findings that render identically without it. Add an AC: no geometry row's label may use the word 'distance' unqualified by its sign treatment (Verify by: test \u2014 a scan, since a later width-saving edit re-introduces it silently).",
+      "kind": "technical",
+      "conflict_id": "12e776f113d8906ae8e70dfa0a625fe283cb2b3ec9ee56f02358074c4e54f5fa",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Every cell is in exactly one of these states, and they are visually and textually distinct:**",
+      "source": "pm",
+      "why": "Three closed vocabularies now exist over the same cells \u2014 PM's five states, my six absence literals, and the architect's `CellState` (4) plus `Ineligible` (4) \u2014 and they do not map one-to-one. Shipping two of them puts two different words on the same state, which is the precise failure `[absent-is-not-none]` exists to prevent. Concretely, PM's set is declared exhaustive but has no state for a metric that does not exist for the pair (calibration on a boolean candidate) or for a block that was requested off (`--driver-loo`), so those get forced into 'no sample carried this input', which is a false claim. Symmetrically my six literals have no state for PM's 'no paired outcome', which AC-S3 requires; and PM's single 'no variation' covers the candidate being constant while the architect's `Degenerate { reason }` also has to cover the label being constant (no positives / no negatives) \u2014 a different fact with a different remedy.",
+      "proposal": "Adopt ONE vocabulary at three layers, agreed here and stated once in the SPEC: architect's `Ineligible` (per-row, why a sample left a candidate) \u2192 `CellState` (per-cell) \u2192 one rendering literal per `CellState`, owned by me. The `CellState` set must be the union: `Computed` \u00b7 `Computed { under_powered: n, floor }` \u00b7 `NoEligibleRows { by_reason }` \u00b7 `NoPairedOutcome { n_samples }` \u00b7 `DegenerateCandidate { constant_value }` \u00b7 `DegenerateLabel { n_pos, n_neg }` \u00b7 `NotApplicable` \u00b7 `NotRun { flag }`. My six literals are re-issued as exactly one per variant, and UX-6's scan becomes: no string outside that literal set, and no `n/a`, blank, `null`, `NaN`, `-` or bare `0`, appears in any cell. If any lane adds a variant later it must add a literal in the same change.",
+      "kind": "technical",
+      "conflict_id": "5f86038146472799eee61408f25bca2c7529101bfa0fd23f2cb67ee635fc2c71",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every cell carries `n_eligible` **and** an `excluded_by_reason` map keyed by the enum variant.",
+      "source": "architect",
+      "why": "A map keyed by the extractor's `Ineligible` variants can only explain rows that REACHED an extractor. A group with zero paired rows \u2014 PM's AC-S3, 'a symbol present in the slice whose samples produced no paired outcomes' \u2014 never calls an extractor, so `excluded_by_reason` is an EMPTY map and the cell renders with a count of nothing and no reason. That is the 2026-08-11 `n = 0` failure returning through the mechanism built to prevent it, one level up. The same hole swallows 'this metric does not exist for this candidate/label pair' and 'this block was switched off', neither of which is a per-row exclusion at all.",
+      "proposal": "Make the cell's reason a group-level disposition, not a derivative of the row-level map: every cell carries `state: CellState` (the union in my previous conflict) as a first-class field that is REQUIRED even when `excluded_by_reason` is empty, plus `n_paired_in_group` so `n_eligible + sum(excluded_by_reason) = n_paired_in_group` reconciles and a zero-row group is distinguishable from a fully-excluded one. Add an architect-side invariant test: no cell may carry `n_eligible == 0` with an empty `excluded_by_reason` AND a state that does not name a group-level cause.",
+      "kind": "technical",
+      "conflict_id": "06800a8fec1e0e713998c0f385a454e5402982d83047acfe2847db3234ea7b13",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **AC-D5** | S4 | When no loaded sample carries a score-driver breakdown, the attribution section states that it was **not attempted** and gives the count of samples lacking it \u2014 it does not print rows of `n = 0`. | test |",
+      "source": "pm",
+      "why": "'Not attempted' asserts something the run did not do. Attribution WAS attempted; every sample lacked the input. Those are two different facts with two different remedies for the reader (turn the flag on vs. wait for post-2026-08-10 captures to accumulate), and collapsing them is the same class of error as the `n = 0` cell this AC exists to kill. PM's own AC-D1 uses the correct words ('no sample carried this input') for the identical situation, so the AC set is internally inconsistent \u2014 and this is the sentence that will land in SPEC \u00a73 and bind the copy.",
+      "proposal": "Restate AC-D5 as: the attribution section renders `no input (0 of N samples carried score_drivers)` \u2014 attempted, nothing eligible \u2014 and reserves `not run (--driver-loo off)` for the case where the block was switched off. Both counts named, neither word borrowed for the other. PM ceded exact wording to me (their Assumptions \u00a7UX/Tech-writer), so I read this as an inconsistency to fix rather than a scope fight \u2014 but it must be fixed before synthesis, because the AC text is the copy.",
+      "kind": "technical",
+      "conflict_id": "e738d99c04852f735222cdcbe53805f9785f5a826626888d3870ec96b1d77585",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "v1 set \u2014 six candidates, three families, all derivable from captured fields:",
+      "source": "architect",
+      "why": "PM's Scope names four ('the composite opportunity score \u00b7 vol-normalized GEX magnitude \u00b7 distance-to-flip \u00b7 distance-to-wall') and PM's AC-C1 requires that the printed set and the number of candidates reported EQUAL the named set \u2014 so four and six cannot both be right, and my \u00a74 declared ordering lists four. This is not only a count: six candidates \u00d7 3 labels \u00d7 (1 pooled + 3 symbols) is 72 cells against 48, and PM's named central risk is 'a matrix nobody reads'. My R1 risk 6 is the same fact from the copy side \u2014 four candidates \u00d7 three labels \u00d7 four metrics \u00d7 per-symbol already does not fit 80 columns without dropping the qualifiers that ARE the honesty. Two of the architect's extra three (`net_gex_vol_norm_signed`, `net_gex_abs_raw`) are internal controls whose value is real but whose readership is one paragraph of interpretation, not a weekly read.",
+      "proposal": "The human rules on the v1 set. My constraint either way: whatever is compared must be printed as the declared set (AC-C1), in declared order, never sorted by metric (UX-10). If six is chosen, the terminal summary must render the three GEX-family rows as one visually subordinate control block labelled 'controls \u2014 present so the vol-norm row can be attributed', with the full six carried in the artifact; I will not accept dropping the per-row qualifiers to make six fit a line. If four is chosen, the architect's attribution argument must be answered another way, because a vol-norm row with no raw control is a number the report cannot defend.",
+      "kind": "product",
+      "conflict_id": "e78d1f13b13e9a1c24507757dd73b98cb18c566a3f2b3f4fc834981992237b90",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **AC-C4** | S7 | Re-running the retained 2026-08-11 paired slice reproduces the deep dive's published figures to their published precision: composite AUC 0.467 and lift@top10 0.17, structure-event AUC 0.932, SPY Pearson +0.51, QQQ Pearson \u22120.31, SPY lift 1.43, QQQ lift 0.56. | test |",
+      "source": "pm",
+      "why": "The per-symbol half of that list is hand-derived \u2014 the deep dive's own table is labelled '(hand-paired)' \u2014 and this AC promotes hand-derived numbers to a test oracle, inverting the direction of vouching that the whole feature exists to establish. It also collides with the architect's \u00a76: 'the label threshold is computed exactly once per (horizon, slice), over the full paired row set, before any grouping', which means per-symbol lift is now measured against the POOLED median. If the hand computation used a per-symbol median (the natural way to do it by hand), SPY lift 1.43 / QQQ lift 0.56 are not reproducible by construction, the test fails, and the pressure will be to change the tool to match the hand number. Note the architect also states 'No one will ask for the 2026-08-11 artifact to remain byte-comparable to the new one.'",
+      "proposal": "Split the AC. Keep as `test` only the POOLED composite figures the architect's parity oracle actually covers (AUC 0.467, lift@top10 0.17) against `evaluate_baseline`. Demote the per-symbol and structure-event figures to a `review` criterion worded as a difference log, not an equality: the run's per-symbol cells are printed beside the published hand-paired figures with any divergence NAMED and attributed to the threshold-scoping change \u2014 a divergence is expected and is itself the finding. Every hand-derived figure quoted anywhere in the runbook or write-up carries the `hand-derived, unvouched:` prefix from my \u00a76, including inside this comparison.",
+      "kind": "technical",
+      "conflict_id": "fe8dbed572296c5d11facf93297987f25a70f66397260ecdd4b55cd406fcb648",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: is the \"fixed, named candidate set\" (composite score \u00b7 vol-normalized GEX magnitude \u00b7 distance-to-flip \u00b7 distance-to-wall) a scope FENCE at four, or a floor? My \u00a73 adds a fifth, `net_gex_abs_raw` \u2014 un-normalized |net GEX|, evaluated over the identical row set as the vol-norm candidate by requiring a resolvable vol scalar it does not use. Without it, a strong vol-normalized row cannot be attributed to the normalization rather than to GEX magnitude itself, and the artifact would let someone argue for vol-norm on evidence that never tested it (X2 \u00a7\"Suggested remaining work\" item 4 asks for exactly this A/B). It costs one registry entry and one more row per group per label. It also changes the count that AC-C1 checks and the declared order UX-10 fixes. Your call, not mine."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: given the ring buffer makes the multi-week bar unreachable from any single run (see my UX-2 conflict), is the intended future path your Future-dated \"Multi-week roll-up across saved artifacts\"? If yes, I want one scope answer now: should THIS feature's artifact be REQUIRED to carry the fields such a roll-up would need \u2014 stable candidate keys, the distinct-session set rather than just a count, the `large_abs_move` threshold VALUE in force for that run, and the report version \u2014 even though nothing consumes them yet? Carrying them costs nothing now and is unrecoverable later, because once a week's raw rows leave the ring the artifact is the only surviving record of that week. If the answer is no, say so and I will not design for it."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: what is the exact reporting floor number (your recommendation is 30 per cell) and is it per cell, per candidate, or per (candidate, group)? UX-2's standing bar needs N sessions and M calendar weeks as literal numbers too, and UX has explicitly declined to invent them (\"`N` and `M` are **PM's numbers, not mine**\"). All three are inputs to fields I emit \u2014 `floor_in_force`, `bar_text`, `standing_verdict` \u2014 and a missing number becomes a magic constant in code, which is where invariants go to die."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: does UX-11's \"per row\" mean per REPORT row (one candidate \u00d7 label \u00d7 group cell) or per underlying SAMPLE? A cell aggregates on the order of 150 samples whose vol basis was resolved independently per sample, so the only honest cell-level field is a mix \u2014 e.g. `{ atm_iv: 140, hv_30d: 12, unavailable: 69 }` \u2014 not a single basis name. If you need one basis word per printed row, tell me the rule you want for a mixed cell (majority? \"mixed\"?) and I will make it a derived field with a stated rule rather than let the renderer pick; if a counts triple is fine, we already agree and I will emit it as `basis_mix`."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: my \u00a74 `Ineligible` enum has four variants \u2014 `InputAbsent { field }`, `InputNonFinite { field }`, `VolScalarUnavailable`, `DegenerateInput { field }` \u2014 and your \u00a73 absence vocabulary has one literal, `no input (...)`, that would carry all four inside its parenthetical. Confirm that is your intent (four reasons, one literal shape, reason text inside the parens), because the collapse I am guarding against is the four becoming one word \"unavailable\" for width \u2014 that is the `[absent-is-not-none]` violation, and your terminal-width risk #6 is the exact pressure that would produce it."
+    },
+    {
+      "from": "pm",
+      "ask": "[architect] Does the \u00a77 cell shape carry a per-cell correlation coefficient of the oriented candidate against the continuous outcome? The enumerated cell fields list AUC, precision/recall/lift at the top decile and the calibration series, but no correlation. The BRIEF's second motivating finding is the per-symbol inversion SPY +0.51 vs QQQ -0.31, and it is a Pearson figure \u2014 without a correlation field the tool still cannot produce one of the two findings it was commissioned to produce, and my replacement for AC-C4 has nothing to assert."
+    },
+    {
+      "from": "pm",
+      "ask": "[architect] Can the 2026-08-11 paired slice be extracted to a committed fixture (samples plus outcomes) now, and is a checked-in fixture of that size acceptable in this repo? This is time-critical rather than merely desirable: at roughly 78 samples per session against `STRUCTURE_HISTORY_MAX = 576`, those rows leave the diary in about seven sessions, and every continuity criterion in my set depends on them existing somewhere that is not the ring buffer."
+    },
+    {
+      "from": "pm",
+      "ask": "[architect] After a Postgres round-trip, can a loaded sample distinguish 'this field was never carried' from 'carried, and its value is 0.0' for `net_gex`, `dist_to_flip_pct` and `dist_to_wall_pct`? Your `InputAbsent` versus `DegenerateInput` split and my AC-D1/AC-D2/AC-D4 both assume it, and `dist_to_flip_pct` is legitimately exactly 0.00 when price sits on the flip \u2014 so this is the one place where the distinction most likely dies at a boundary."
+    },
+    {
+      "from": "pm",
+      "ask": "[ux] If the multi-week half of the bar cannot be evaluated within a single run, does your closed standing vocabulary already cover that with `INSUFFICIENT \u2014 cannot evaluate`, or does it need a fifth value? I need the state to exist and to be distinguishable from `BELOW BAR` (which asserts we measured and fell short); the wording is yours."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: does an `InsufficientN` / under-powered cell still CARRY its computed `auc`, `lift` and n, or are the metric fields `None` in that state? PM's AC-G3 ('carries the under-powered marker') and my retraction both require the number and the marker to exist together in one cell so they can render as one atom; a state that replaces the value makes AC-G3 unbuildable."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: does the candidate registry declare each candidate's INPUT FIELD SET, so PM's AC-G5 definitional-coupling mark can be derived (candidate inputs \u2229 label inputs \u2260 \u2205) rather than hand-maintained as a list in copy? A hand-maintained coupling list is one candidate away from being wrong and silent \u2014 and the unmarked coupled cell is PM's named single most likely false mandate."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: is `evidence_class` per-cell or per-run? My standing block needs exactly one run-level evidence value printed before any number; if the field is per-cell, which cell governs the run-level line \u2014 the weakest, or is the run-level value computed separately from the full paired set?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: the minimum sample count behind AC-G3 is still 'Owner's call'. My under-powered literal prints the floor verbatim (`below floor N`) and the run prints 'minimum in force'. Give me N, or confirm the copy names it as provisional; I will not author that number (my R1 risk 8 stands \u2014 a bar number I invented is a defect)."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: given the architect's finding that the diary is a ring buffer retaining ~7 sessions per symbol, is the 'no paired outcome' per-symbol state (AC-S3) expected in normal weekly use, or is it the rare branch? It decides whether that literal gets terminal-summary space or artifact-only space under my width budget."
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 8,
+    "ux": 6
+  }
+}

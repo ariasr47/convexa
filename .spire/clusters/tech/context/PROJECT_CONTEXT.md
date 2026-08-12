@@ -928,6 +928,35 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   byte-identical (SPY served 83 / prime / `0e8884cc0a03`) with iv_rank present/null/absent. QA PASS (Sonnet,
   de-correlated — 19/19 ACs, conformance new standalone spec `iv_rank.json`, `nx test dashboard` 685/685).
   Third feature of the "enrich the downstream-AI's inputs" GATE I; graduated `[digested-labels-not-raw-dump]`.
+- **Score lab — comparative + per-symbol signal comparison (`score-lab-signal-comparison`, BE-only,
+  `NO_UI_CHANGE`, shipped 2026-08-12)** — the weekly research CLI now ranks **five candidate signals**
+  (`opportunity_score` · `net_gex_vol_norm_abs` · `net_gex_abs_raw` (control) · `proximity_to_flip` ·
+  `proximity_to_nearer_wall`) against **three labels**, **per symbol as well as pooled**, so the accumulating
+  diary answers *which* signal ranks magnitude rather than only whether the composite one does. Motivated by
+  the 2026-08-11 deep dive measuring `opportunity_score` at **AUC 0.467** (worse than chance) on its first
+  slice while the `structure_event` label scored 0.932 — a figure that is substantially **definitional
+  coupling**, since the score is largely built from proximity to walls and the flip and `structure_event`
+  means price reached a wall or crossed the flip. That coupling is now **detected and marked**, not left for
+  a reader to notice: from **declared transitive provenance over a closed `DerivationKey` enum**
+  (`derived_from` required + non-empty), never from field-name intersection. Lives in a new one-way leaf
+  `apps/api/src/services/research/` (pairing · candidates · labels · derivation · vocabulary · comparison ·
+  artifact · render · run · fixtures · scan_guards). **It MEASURES only** — no weight, constant, gate
+  threshold or fingerprint basis changes, and no lab result authorizes a score change on its own
+  (`score-change-is-deliberate-and-measured`); the scoring path diff is **empty**. The CLI loads through a
+  **strict read with no fallback** (hard error before any metric or artifact) while the trader-serving
+  `GET /api/scan/{symbol}/history` keeps its degrading fallback — one shared reader, two deliberately
+  different failure policies (`operator-vs-trader-path-separation`). Every not-a-number cause runs through
+  **one closed vocabulary at three layers** (`Ineligible` row → `CellState` cell → exactly one rendering
+  literal per key) plus a `MetricState` layer for metric-level absence inside a computed cell; a below-floor
+  value renders **with** its marker in one literal and is never suppressed, and metrics live **inside**
+  `Computed { metrics, power }` so a thin cell structurally cannot lack its numbers. Retention is
+  **derived from the run's own rows** — only the cap (`STRUCTURE_HISTORY_MAX = 576`) is a constant — and the
+  `Evidence:` block emits **facts only**, never a pass/fail verdict against the multi-week bar. Two diary
+  slices are **frozen as committed fixtures** (`slice_2026-08-10`, 221 rows, the pre-capture-spine slice the
+  deep dive measured; `slice_current`, 592 rows, fully populated), pinning the pre-feature oracle
+  **bit-exactly**. QA PASS 77/78 across three passes (1 UNVERIFIABLE: the degraded-analytics path is
+  Postgres-only). Prerequisite in practice for `[score-change-is-deliberate-and-measured]` — you cannot
+  improve a score you cannot measure.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

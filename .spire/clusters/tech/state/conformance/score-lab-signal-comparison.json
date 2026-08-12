@@ -1,0 +1,19 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history",
+      "path_params": { "symbol": "SPY" },
+      "query": { "limit": 5 },
+      "required": {
+        "symbol": "string",
+        "basis": "string",
+        "stored_count": "number",
+        "backend": "string",
+        "samples": "array",
+        "samples[].symbol": "string",
+        "samples[].as_of": "number"
+      }
+    }
+  ]
+}

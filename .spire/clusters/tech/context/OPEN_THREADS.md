@@ -1174,6 +1174,39 @@ owner's budget · `SIGNUPS_ENABLED=1` is required locally for the test suite and
 `interface_conformance.mjs --auth-signup`, documented in `.env.example` · **none of this protects
 the live site until N1 deploy runs** — `convexa.pages.dev` is still the 2026-06-29 build.
 
+## 7y. Score lab — comparative + per-symbol signal comparison (SHIPPED + ARCHIVED — backend-only, `NO_UI_CHANGE`)
+Contracts archived at `.spire/clusters/tech/contracts/_archive/score-lab-signal-comparison/`. Chosen at GATE I
+2026-08-11 because the 2026-08-01 roadmap queue was exhausted above X4 (itself blocked on owner habit N2).
+Capability detail in CONTEXT §6, not restated here.
+**Shape:** GATE I → full **council** (18 conflicts, 18/18 quotes machine-verified, 13 technical / 5 product,
+2 owner rulings; **S2 skeptic ×2**, 2 Critical fixed) → **GATE Z retention amendment** (a hardcoded "about 7
+sessions" figure inside emitted report copy) → GATE PLAN (B0–B21 + B12a, V1–V7) → **4 backend passes** →
+**3 GATE Q passes**. Final **QA PASS 77/78, 1 UNVERIFIABLE** (AC-62, Postgres-only path, no Postgres in this
+environment). 249 tests / exit 0 · `cargo check --features postgres` exit 0 · conformance PASS on QA's own
+server at all three passes, never the orphan · `apps/dashboard*` + `libs/api` diffs **empty**.
+**The two GATE Q bounces are the thread's whole lesson, and both were invisible to source review:**
+(a) **The artifact fabricated statistics.** `comparison.rs` hard-coded `auc 0.5 / lift 1.0 / precision 0 /
+recall 0` onto candidate-scope records and `retention[]` entries — carriers that have no label and so no
+such statistic — meaning the one permanent record of a week's research asserted a chance-level score about
+rows with nothing to score. `[absent-is-not-none]`, breached in the artifact while the source read fine.
+**Only reading the emitted bytes caught it.**
+(b) **A guard satisfied its required NAME without its required BEHAVIOUR.**
+`no_retention_literal_appears_in_emitted_strings_or_source` scanned `include_str!("artifact.rs")` — one
+module's own source — so a hardcoded span typed into `render.rs`, where the copy is actually assembled,
+left it green. QA then poison-proved all three new guards RED against product source and restored them
+byte-identically. A third instance of the same shape: `vocabulary.rs:521` asserted the ten rendering
+literals **in isolation**, so the AC-15 fix broke 6 of 75 cells' closing shape with nothing going red.
+Three ledger rows at GATE Q record these under `[absent-is-not-none]` + `[structural-over-prose-enforcement]`.
+**Escalation trigger fired and was declined** (two GATE Z bounces on one feature): the survivors were one
+absent sentence and one absent parenthesis, both located to the line, in a pass that had just fixed 19 of 21
+including the Critical and carried bit-exact parity across a `stats.rs` change. Recorded in the manifest so
+the judgement is auditable rather than silent.
+**Known-open (none blocks anything):** **B0b** — `slice_current/outcomes.json` was never produced (no
+`MASSIVE_API_KEY`), so V3b never ran and **no slice in the tree can yet produce a cell above both floors**;
+guards SKIP loudly and nothing was synthesised · `--symbols " SPY , SPY "` is not de-duplicated (numbers stay
+correct; predates this feature) · the **:8000 orphan (PID 58588, `taskkill /F` access-denied) rewrites
+`data/scan.json` several times a minute**, which will false-fail any naive before/after byte check.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

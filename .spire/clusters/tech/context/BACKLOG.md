@@ -30,6 +30,48 @@
 
 ---
 
+## Last GATE I — 2026-08-11 (b) (roadmap queue drained → `score-lab-signal-comparison`; two more stale alarms cleared)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Pipeline drained again (`contracts/` held only `_archive/`), and this time **the 2026-08-01 roadmap
+queue itself is exhausted**: X1/X3-adjacent items shipped, X2 + `alerts` are shipped-in-code, and
+**X4 (ledger checkpoint) is blocked** on N≥20 closed outcomes via owner habit N2 — deferred by the
+owner 2026-08-01. So this gate chose what comes AFTER the standing order rather than executing it.
+**Chosen → `score-lab-signal-comparison`.** Brief at
+`.spire/clusters/tech/contracts/score-lab-signal-comparison/BRIEF.md` (carries the full `Considered:`).
+Backend-only expected (research CLI + report; no UI, no trader route). Make the weekly score-lab
+**comparative and per-symbol by default** — rank vol-norm GEX and level geometry beside
+`opportunity_score` on the same KPI — so the accumulating diary answers *which* signal ranks
+magnitude, not just whether the composite one does.
+**Why it won:** the freshest evidence in the repo (`docs/research/SCORE_LAB_DEEP_DIVE_2026-08-11.md`,
+dated this day) measured the app's headline judgment as **worse than chance** at ranking large moves
+on its first slice (AUC 0.467, lift@top10 0.17, Pearson ≈ −0.02) while `structure_event` scored
+AUC 0.932 — and the two most decision-relevant findings in that document (the per-symbol inversion
+SPY +0.51 / QQQ −0.31, and the structure-event contrast) were produced **by hand for the write-up**,
+not by the tool. It is also the only survivor whose value **decays weekly**: the diary accumulates
+daily, and each week the lab runs non-comparatively answers a question already answered.
+**Queue honesty (code-verified this gate — do not re-open as greenfield):**
+1. **The deep dive's "autonomous follow-up (code)" is ALREADY SATISFIED.** It asks that the slow-lane
+   append copy `row.score_drivers` into structure history. That path is complete in current code —
+   `projection.rs:126` populates drivers from signals, `store.rs:129` (`from_row`) copies them,
+   `pg_scan.rs:426` persists them, and `store.rs:944` tests it — **all landed 2026-08-10 in
+   `13656ad`**, before the doc was written. The `n = 0` attribution cells are **older captures**, which
+   the doc itself hedged and which must not be repaired ("do not invent drivers for past null rows").
+   **Genuine residual is one S-sized piece:** nothing logs when an ok row yields null drivers, so a
+   live regression would look identical to a pre-fix row. Folded into the chosen feature.
+2. **The backlog's code references are STALE — the backend is Rust, not Python.** Many §B/§C entries
+   cite `main.py` / `signals.py` / `engine.py` / `live.py` / `interface_conformance.py`; `apps/api` is
+   **Axum/Tokio Rust** (crate `api-rust`) and the Python tree is retired under `archive/api-python/`
+   (`RETIRED.md`). Feasibility notes resting on those paths must be re-grounded before they are
+   trusted — this gate re-grounded only the chosen feature's.
+3. **`sources.ts` NUL bytes — CLEARED.** §8 flags literal NULs making the file binary to grep; byte
+   scan at this gate returns **0**. Stale; do not re-schedule.
+**Runner-up:** `tradeable-rec-inputs` Tier 1 (items 1+2+3) — the strongest **product** candidate,
+passes the cull emphatically, deferred on **sequencing not merit** (it enriches inputs to a headline
+judgment whose ranking value was just measured as unestablished). Pick it next.
+**Also flagged, not a pipeline feature:** the live site `convexa.pages.dev` is still the
+**2026-06-29 build**, so the 2026-08-06 private-testing lockdown (§7ac — signups closed, scan routes
+gated) **is not live**; sign-ups remain open in production. Owner habit N1 (deploy runbook).
+
 ## Last GATE I — 2026-08-11 (queue honesty after drain → `recent-ticker-chips`; X2/X3/split-log no longer greenfield)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Pipeline drained after `distance-to-level-tiles` SHIPPED + ARCHIVED + prod deploy. Owner chose
@@ -779,6 +821,28 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`score-lab-b0b-outcomes` — freeze `slice_current`'s outcomes** — `NEW 2026-08-12`
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  Carried out of `score-lab-signal-comparison` GATE S as **B0b, open**. `slice_current/outcomes.json` was
+  never produced — no `MASSIVE_API_KEY` in the build environment — so **V3b never ran** and **no slice in
+  the tree can yet produce a cell above both power floors**. The guards SKIP **loudly** rather than passing
+  vacuously and **nothing was synthesised**, which is why this blocks nothing. Value: it is the only way the
+  vol-normalized-GEX candidates get exercised against real outcomes at full power. **Never synthesise
+  outcomes** — if the key is unavailable, the item waits.
+- **`score-lab-symbols-dedup`** — `NEW 2026-08-12` — S —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `--symbols " SPY , SPY "` is not de-duplicated → 15 duplicate `(group,candidate,label)` keys and the SPY
+  block printed twice. **Every number stays correct** (pooled 74, not double-counted), so this is cosmetic,
+  and it **predates** the feature's fix passes. One `dedup()`. Found by QA at GATE Q pass 3.
+- **The :8000 orphan rewrites `data/scan.json`** — `NOTE 2026-08-12`, sits beside the existing
+  `ports:free` IPv4-only entry below —
+  <!-- atlas: theme=the-machine horizon=now -->
+  An orphaned `api-rust` (PID 58588, `taskkill /F` **access-denied**) holds :8000 and rewrites
+  `data/scan.json` **several times a minute** with nothing else running. Two separate QA passes had to work
+  around it — one by **renaming the locked binary** (Windows permits renaming a running exe →
+  `target/debug/api-rust-orphan-locked.exe`), then rebuilding and serving on its own port. **Any future pass
+  doing a naive before/after byte check on that file will get a false failure.** Real fix belongs with the
+  `ports:free` IPv6 gap.
 - **`rename-org-scope-to-convexa` + local folder** — `✓ CLOSED (2026-08-10)` —
   <!-- atlas: theme=the-machine horizon=done -->
   Package scope is `@convexa/*` (`@convexa/source`, `@convexa/api`, `@convexa/dashboard`,
@@ -1402,6 +1466,21 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   M.* Park until a concrete need pulls them. (`OPEN_THREADS` §7)
 
 ### E. Methodology / system-of-building improvements *(improve the AI-role system itself, not the trading product)*
+- **`contract_lint`'s `R2_JSON_RE` vs `R2-critique.md` disagree** — `NEW 2026-08-12`, **kit-owned** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  The regex is anchored to the **whole file** (no `m` flag), while `.claude/council/R2-critique.md` only
+  forbids content *after* the fenced block. So an `# R2 — …` title fails the gate; two of three voices hit
+  it at `score-lab-signal-comparison` GATE C. Stripping the titles then **invalidated the SPEC receipt's
+  `conflict_id` hashes** (they hash the R2 **bytes**), needing a second fix round. Either the regex gains
+  `m`/a leading-content allowance or the authoring doc forbids a title — one of the two, not both.
+  **Propose in the kit's own `KIT_BACKLOG.md` (`C:\Dev\delivery-kit`), not here; do NOT edit
+  `contract_lint.mjs` in place** — `kit_lint` aborts an extract on re-coupling. Retained here as this
+  project's instantiation + provenance, per the note below.
+- **PLAN.md's V5 isolation claim was overstated** — `NOTE 2026-08-12` —
+  <!-- atlas: theme=the-machine horizon=now -->
+  At `score-lab-signal-comparison`, V5 asserted the `loop.rs` isolation diff carried only the `warn!`; it
+  also carried **five cargo-fmt reflow hunks**. Documentation accuracy, not a code defect — but a
+  verification step that describes its own expected diff imprecisely is a step that can pass while lying.
 > Source: `docs/SYSTEM_ANALYSIS.md` (2026-06-23). The trading-decision cull is **N/A** for this class —
 > judge each on **correctness, throughput, or cost of the build system**, not trading edge (same
 > convention as the §B Decision-Ledger hook). Sibling already in the pool: the **Decision-Ledger
