@@ -8,12 +8,12 @@ use crate::services::research::candidates::{shared_derivation_note, Candidate, F
 use crate::services::research::comparison::{correlation_metric, Cell, CandidateScopeRecord};
 use crate::services::research::derivation::DerivationKey as DK;
 use crate::services::research::labels::{Label, LabelSet, LABELS};
-use crate::services::research::pairing::LabRow;
+use crate::services::research::pairing::{LabRow, SymbolLoadStats};
 use crate::services::research::score_lab::SCORE_LAB_VERSION;
 use crate::services::research::vocabulary::{
-    render_no_eligible_rows, render_not_run, CellState, MetricValue, ReasonKey,
+    render_no_eligible_rows, render_not_run, CellState, MetricState, MetricValue, ReasonKey,
 };
-use crate::services::scanner::store::ScanScoreDrivers;
+use crate::services::scanner::store::{ScanScoreDrivers, STRUCTURE_HISTORY_MAX};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -270,11 +270,120 @@ pub struct Retention {
     pub cap_holds_sessions_estimate: MetricValue,
     pub window_first: Option<String>,
     pub window_last: Option<String>,
+    /// The zero-denominator arm falls here (SPEC §5's new row): `NoEligibleRows` with the
+    /// `NoSamplesLoaded` reason, mirroring arm 3's shape at retention scope rather than inventing
+    /// a rule (arm 2/`NoPairedOutcome` is pairing-scoped and does not apply to a load-only carrier
+    /// — the same precedent arm 5/`DegenerateLabel` sets at candidate-scope-record scope, §2.4).
+    pub state: CellState,
+    /// The exact literal — literal 3 in the zero-samples arm, a derived summary otherwise. Never a
+    /// zero, never a blank, never an omitted symbol (AC-78).
     pub rendered: String,
 }
 
+fn utc_string(epoch_secs: f64) -> Option<String> {
+    use chrono::{TimeZone, Utc};
+    Utc.timestamp_opt(epoch_secs.floor() as i64, 0)
+        .single()
+        .map(|d| d.to_rfc3339())
+}
+
+/// One entry per REQUESTED symbol, in requested order — a requested symbol the diary returned
+/// nothing for still gets an entry with `samples_loaded: 0` (SPEC §5). Every figure but `cap` is
+/// derived from THIS run's own loaded rows; `cap` is the one stable constant, imported from
+/// `STRUCTURE_HISTORY_MAX`, never re-typed.
+pub fn build_retention(
+    loaded_by_symbol: &BTreeMap<String, SymbolLoadStats>,
+    requested_symbols: &[String],
+) -> Vec<Retention> {
+    let cap = STRUCTURE_HISTORY_MAX;
+    requested_symbols
+        .iter()
+        .map(|raw_sym| {
+            let symbol = raw_sym.trim().to_ascii_uppercase();
+            let stats = loaded_by_symbol.get(&symbol).cloned().unwrap_or_default();
+            let sessions_covered = stats.session_dates.len();
+            let window_first = stats.window_first.and_then(utc_string);
+            let window_last = stats.window_last.and_then(utc_string);
+
+            if stats.samples_loaded == 0 {
+                let mut by_reason: BTreeMap<ReasonKey, usize> = BTreeMap::new();
+                // Zero-denominator arm: the count is 0, not 1 — this symbol contributed nothing to
+                // check, so there is nothing to count either. Kept exactly as the plan documents:
+                // the trailing " 0" reads oddly but keeps literal 3's shape uncarved.
+                by_reason.insert(ReasonKey::NoSamplesLoaded, 0);
+                let rendered = render_no_eligible_rows("loaded samples", 0, &by_reason);
+                let absent = MetricValue::Absent(MetricState::UndefinedOnThisData {
+                    stat: "retention estimate",
+                    precondition: "a positive samples_loaded denominator",
+                    failing_fact: format!("{symbol} has 0 loaded samples in this run"),
+                });
+                return Retention {
+                    symbol,
+                    samples_loaded: 0,
+                    cap,
+                    sessions_covered,
+                    samples_per_session_observed: absent.clone(),
+                    cap_holds_sessions_estimate: absent,
+                    window_first,
+                    window_last,
+                    state: CellState::NoEligibleRows { by_reason },
+                    rendered,
+                };
+            }
+
+            let rate = stats.samples_loaded as f64 / sessions_covered.max(1) as f64;
+            let implied_span = cap as f64 / rate;
+            let rendered = format!(
+                "{} of {cap} held · {rate:.1}/session over {sessions_covered} session{} · cap holds ~{implied_span:.1} sessions",
+                stats.samples_loaded,
+                if sessions_covered == 1 { "" } else { "s" }
+            );
+
+            Retention {
+                symbol,
+                samples_loaded: stats.samples_loaded,
+                cap,
+                sessions_covered,
+                samples_per_session_observed: MetricValue::Value(rate),
+                cap_holds_sessions_estimate: MetricValue::Value(implied_span),
+                window_first,
+                window_last,
+                // `Computed` here means only "not an absence carrier" — retention has no ranking
+                // metric, so `metrics` is a structural placeholder never surfaced; the actual
+                // displayed figures are `samples_per_session_observed` / `cap_holds_sessions_estimate`
+                // above and the `rendered` summary line below.
+                state: CellState::Computed {
+                    metrics: crate::services::research::vocabulary::Metrics {
+                        auc: MetricValue::Value(0.5),
+                        precision_top_decile: MetricValue::Value(0.0),
+                        recall_top_decile: MetricValue::Value(0.0),
+                        lift_top_decile: MetricValue::Value(1.0),
+                        top_decile_n: 0,
+                        n_positive_in_top: 0,
+                        calibration: crate::services::research::vocabulary::CalibrationSeries::Absent(
+                            MetricState::UnderMinimum {
+                                stat: "quintile calibration",
+                                needs: 5,
+                                unit: "usable rows",
+                                have: 0,
+                                carrier_n: stats.samples_loaded,
+                            },
+                        ),
+                    },
+                    power: crate::services::research::vocabulary::Power::evaluate(
+                        stats.samples_loaded,
+                        sessions_covered,
+                    ),
+                },
+                rendered,
+            }
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------------------------
-// Top-level artifact. `retention` starts empty here and is populated by B12a (`run.rs` wires it).
+// Top-level artifact. `build_artifact`'s caller (`run.rs`, B16/B17) supplies `retention` via
+// `build_retention` over `Pairing::loaded_by_symbol`.
 // ---------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize)]
@@ -512,6 +621,10 @@ mod tests {
     }
 
     fn built_artifact() -> Artifact {
+        artifact_over(&["SPY".to_string(), "QQQ".to_string(), "IWM".to_string()])
+    }
+
+    fn artifact_over(requested: &[String]) -> Artifact {
         use crate::services::research::comparison::{build_all_records, build_grid, groups_for};
         use crate::services::research::fixtures::{slice_0810_outcomes, slice_0810_samples};
         use crate::services::research::labels::build_label_set;
@@ -521,16 +634,16 @@ mod tests {
         let outcomes = slice_0810_outcomes();
         let pairing = pair_rows(&samples, &outcomes, "1d");
         let ls = build_label_set(&pairing.rows);
-        let requested: Vec<String> = vec!["SPY".into(), "QQQ".into(), "IWM".into()];
-        let groups = groups_for(&requested);
+        let groups = groups_for(requested);
         let cells = build_grid(&pairing.rows, &ls, &groups, "1d", &evidence_class(&pairing.session_dates), &pairing.n_samples_by_symbol);
         let records = build_all_records(&pairing.rows, &groups, "1d");
         let driver_attribution = build_driver_attribution(&pairing.rows, true);
+        let retention = build_retention(&pairing.loaded_by_symbol, requested);
 
         build_artifact(
             "2026-08-12T00:00:00Z".to_string(),
             "1d",
-            &requested,
+            requested,
             "file",
             "tests/fixtures/research/slice_2026-08-10/outcomes.json",
             pairing.window_first,
@@ -544,7 +657,7 @@ mod tests {
             &cells,
             &records,
             driver_attribution,
-            vec![],
+            retention,
         )
     }
 
@@ -578,5 +691,111 @@ mod tests {
         for c in &art.cells {
             assert!(!c.rendered.is_empty());
         }
+    }
+
+    // ---- AC-78 — derived, not constant, retention ------------------------------------------
+
+    /// AC-78 arm 1+2: two fixtures with DIFFERENT capture rates must print DIFFERENT figures. The
+    /// fixture precondition (the rates really do differ) is asserted separately in B0
+    /// (`the_two_slices_have_materially_different_capture_rates`) so a false-fail here is legible.
+    #[test]
+    fn retention_figures_are_derived_not_constant() {
+        use crate::services::research::fixtures::{
+            slice_0810_outcomes, slice_0810_samples, slice_current_samples,
+        };
+        use crate::services::research::pairing::pair_rows;
+
+        let requested = vec!["SPY".to_string(), "QQQ".to_string(), "IWM".to_string()];
+
+        let pairing_a = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
+        let ret_a = build_retention(&pairing_a.loaded_by_symbol, &requested);
+
+        // slice_current has no outcomes committed yet in this environment (B0b open); retention
+        // is computed from LOADED SAMPLES only, so it needs no outcomes file at all.
+        let empty_outcomes: Vec<crate::services::research::StructureOutcome> = vec![];
+        let pairing_b = pair_rows(&slice_current_samples(), &empty_outcomes, "1d");
+        let ret_b = build_retention(&pairing_b.loaded_by_symbol, &requested);
+
+        let spy_a = ret_a.iter().find(|r| r.symbol == "SPY").unwrap();
+        let spy_b = ret_b.iter().find(|r| r.symbol == "SPY").unwrap();
+
+        assert_ne!(
+            spy_a.samples_per_session_observed, spy_b.samples_per_session_observed,
+            "observed rate regressed to a constant: {spy_a:?} vs {spy_b:?}"
+        );
+        assert_ne!(
+            spy_a.cap_holds_sessions_estimate, spy_b.cap_holds_sessions_estimate,
+            "implied span regressed to a constant: {spy_a:?} vs {spy_b:?}"
+        );
+        // The cap is the ONE thing that must be identical, because it IS a constant.
+        assert_eq!(spy_a.cap, spy_b.cap);
+        assert_eq!(spy_a.cap, STRUCTURE_HISTORY_MAX);
+    }
+
+    /// No retention figure may be a literal in code or copy. The cap is exempt — it IS one.
+    #[test]
+    fn no_retention_literal_appears_in_source() {
+        const FULL_SRC: &str = include_str!("artifact.rs");
+        // Scan only the PRODUCTION half (before `#[cfg(test)]`) — the banned-literal needles this
+        // very test names would otherwise self-match inside the test module's own source text.
+        let production_src = FULL_SRC.split("#[cfg(test)]").next().unwrap_or(FULL_SRC);
+        for banned in [
+            "about 7 sessions",
+            "7 sessions per symbol",
+            "about seven sessions",
+            "~74",
+            "78 samples",
+            "168 samples",
+            "3.4 days",
+            "about 4 sessions",
+        ] {
+            assert!(!production_src.contains(banned), "artifact.rs contains the retention literal {banned:?}");
+        }
+        // Anti-vacuity: the cap comes from the imported constant, never a re-typed 576.
+        assert!(production_src.contains("STRUCTURE_HISTORY_MAX"));
+        assert!(!production_src.contains("576"), "the cap must come from STRUCTURE_HISTORY_MAX, not a typed 576");
+    }
+
+    /// SPEC §5's new row: a requested symbol with zero loaded samples.
+    #[test]
+    fn a_requested_symbol_with_no_samples_still_gets_a_retention_entry() {
+        let art = artifact_over(&["SPY".to_string(), "QQQ".to_string(), "IWM".to_string(), "DIA".to_string()]);
+        let dia = art.retention.iter().find(|r| r.symbol == "DIA").expect("DIA is never omitted");
+        assert_eq!(dia.samples_loaded, 0);
+        assert!(dia.rendered.starts_with("no eligible rows ("), "renders literal 3, not a zero or blank");
+        assert!(!dia.rendered.contains("0.0") && !dia.rendered.contains("n/a"));
+    }
+
+    /// The single-definition guarantee, from the consumer side: a cell can never claim MORE
+    /// sessions than the symbol's own loaded samples cover.
+    #[test]
+    fn retention_sessions_agree_with_the_cell_level_session_counts() {
+        let art = built_artifact();
+        for r in &art.retention {
+            if r.samples_loaded == 0 {
+                continue;
+            }
+            let cell_sessions = art
+                .cells
+                .iter()
+                .filter(|c| c.group == format!("Symbol({})", r.symbol))
+                .map(|c| c.n_sessions)
+                .max()
+                .unwrap_or(0);
+            assert!(
+                cell_sessions <= r.sessions_covered,
+                "a cell cannot cover MORE sessions than the symbol's loaded samples do — {} vs {}",
+                cell_sessions,
+                r.sessions_covered
+            );
+        }
+    }
+
+    #[test]
+    fn retention_entries_are_in_requested_order() {
+        let requested = vec!["IWM".to_string(), "SPY".to_string(), "QQQ".to_string()];
+        let art = artifact_over(&requested);
+        let order: Vec<&str> = art.retention.iter().map(|r| r.symbol.as_str()).collect();
+        assert_eq!(order, vec!["IWM", "SPY", "QQQ"]);
     }
 }

@@ -61,6 +61,21 @@ pub struct Pairing {
     pub session_dates: BTreeSet<String>,
     pub window_first: Option<f64>,
     pub window_last: Option<f64>,
+    /// B12a — run-scope, per LOADED symbol (not paired rows): the retention[] input. Keyed by the
+    /// symbols actually present in the loaded sample set; a requested symbol absent here has
+    /// `samples_loaded: 0` (SPEC §5's new row — `artifact::build_retention` supplies that entry).
+    pub loaded_by_symbol: BTreeMap<String, SymbolLoadStats>,
+}
+
+/// Run-scope load stats for ONE symbol, computed from the LOADED sample set (the ring's own
+/// contents — the quantity the retention cap bounds), never from paired rows. `session_dates` goes
+/// through `session_dates_of` — the ONE definition (never a second call site for `session_date_et`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SymbolLoadStats {
+    pub samples_loaded: usize,
+    pub session_dates: BTreeSet<String>,
+    pub window_first: Option<f64>,
+    pub window_last: Option<f64>,
 }
 
 /// Mirrors `pair_samples_outcomes` exactly — same `as_of_key` millisecond bucket, same
@@ -73,12 +88,22 @@ pub fn pair_rows(samples: &[StructureSample], outcomes: &[StructureOutcome], hor
     let hz = horizon.trim().to_ascii_lowercase();
 
     let mut n_samples_by_symbol: BTreeMap<String, usize> = BTreeMap::new();
+    let mut loaded_by_symbol: BTreeMap<String, SymbolLoadStats> = BTreeMap::new();
     let mut index: std::collections::HashMap<(String, u64), &StructureSample> =
         std::collections::HashMap::new();
     let mut duplicate_keys_collapsed = 0usize;
     for s in samples {
         let sym = s.symbol.to_ascii_uppercase();
         *n_samples_by_symbol.entry(sym.clone()).or_default() += 1;
+
+        let stats = loaded_by_symbol.entry(sym.clone()).or_default();
+        stats.samples_loaded += 1;
+        if let Some(d) = session_dates_of(std::iter::once(s.as_of)).into_iter().next() {
+            stats.session_dates.insert(d);
+        }
+        stats.window_first = Some(stats.window_first.map_or(s.as_of, |w: f64| w.min(s.as_of)));
+        stats.window_last = Some(stats.window_last.map_or(s.as_of, |w: f64| w.max(s.as_of)));
+
         let key = (sym, as_of_key(s.as_of));
         if index.insert(key, s).is_some() {
             duplicate_keys_collapsed += 1;
@@ -132,6 +157,7 @@ pub fn pair_rows(samples: &[StructureSample], outcomes: &[StructureOutcome], hor
         session_dates,
         window_first,
         window_last,
+        loaded_by_symbol,
     }
 }
 
