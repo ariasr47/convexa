@@ -3,6 +3,7 @@
 //! Not part of the trader path. See `docs/SYSTEM_DESIGN_AND_BACKTEST.html` (P0–P2).
 
 pub mod candidates;
+pub mod comparison;
 pub mod derivation;
 #[cfg(test)]
 pub mod fixtures;

@@ -100,7 +100,7 @@ impl Power {
 
 /// `floors_text` — the marker's floor-naming clause: "below row floor R" · "below session floor S"
 /// · "below row floor R and session floor S".
-fn floors_text(row_floor: usize, session_floor: usize, n_rows: usize, n_sessions: usize) -> String {
+pub fn floors_text(row_floor: usize, session_floor: usize, n_rows: usize, n_sessions: usize) -> String {
     let under_row = n_rows < row_floor;
     let under_session = n_sessions < session_floor;
     match (under_row, under_session) {
