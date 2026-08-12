@@ -136,6 +136,9 @@ mod provenance_source_guard {
         for c in CANDIDATES {
             assert!(!c.derived_from.is_empty(), "candidate {} declares no provenance", c.key);
         }
+        for l in crate::services::research::labels::LABELS {
+            assert!(!l.derived_from.is_empty(), "label {} declares no provenance", l.key);
+        }
     }
 }
 

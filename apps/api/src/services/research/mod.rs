@@ -6,6 +6,7 @@ pub mod candidates;
 pub mod derivation;
 #[cfg(test)]
 pub mod fixtures;
+pub mod labels;
 pub mod outcomes;
 pub mod pairing;
 pub mod score_lab;
