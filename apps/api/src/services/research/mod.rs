@@ -2,6 +2,8 @@
 //!
 //! Not part of the trader path. See `docs/SYSTEM_DESIGN_AND_BACKTEST.html` (P0–P2).
 
+#[cfg(test)]
+pub mod fixtures;
 pub mod outcomes;
 pub mod score_lab;
 

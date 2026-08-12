@@ -1,0 +1,194 @@
+{
+  "horizon": "1d",
+  "leave_one_driver_out": [
+    {
+      "dropped": "proximity",
+      "n": 0,
+      "pearson_remainder_vs_abs": null
+    },
+    {
+      "dropped": "vol",
+      "n": 0,
+      "pearson_remainder_vs_abs": null
+    },
+    {
+      "dropped": "setups",
+      "n": 0,
+      "pearson_remainder_vs_abs": null
+    },
+    {
+      "dropped": "transition",
+      "n": 0,
+      "pearson_remainder_vs_abs": null
+    },
+    {
+      "dropped": "dark_pool",
+      "n": 0,
+      "pearson_remainder_vs_abs": null
+    }
+  ],
+  "n_outcomes_loaded": 221,
+  "n_paired": 221,
+  "n_samples_loaded": 221,
+  "report": {
+    "calibration": [
+      {
+        "bin_hi": 47.2,
+        "bin_lo": 37.0,
+        "large_move_rate": 0.45454545454545453,
+        "mean_score": 40.68181818181818,
+        "n": 22,
+        "structure_event_rate": 0.0
+      },
+      {
+        "bin_hi": 57.4,
+        "bin_lo": 47.2,
+        "large_move_rate": 0.25,
+        "mean_score": 48.75,
+        "n": 4,
+        "structure_event_rate": 0.0
+      },
+      {
+        "bin_hi": 67.6,
+        "bin_lo": 57.4,
+        "large_move_rate": 0.5565217391304348,
+        "mean_score": 62.14782608695652,
+        "n": 115,
+        "structure_event_rate": 0.3130434782608696
+      },
+      {
+        "bin_hi": 77.8,
+        "bin_lo": 67.6,
+        "large_move_rate": 0.66,
+        "mean_score": 71.36,
+        "n": 50,
+        "structure_event_rate": 0.98
+      },
+      {
+        "bin_hi": 88.0,
+        "bin_lo": 77.8,
+        "large_move_rate": 0.1,
+        "mean_score": 82.63333333333334,
+        "n": 30,
+        "structure_event_rate": 0.9666666666666667
+      }
+    ],
+    "drivers": [
+      {
+        "driver": "proximity",
+        "n": 0,
+        "pearson_vs_abs_move": null,
+        "pearson_vs_ret_simple": null
+      },
+      {
+        "driver": "vol",
+        "n": 0,
+        "pearson_vs_abs_move": null,
+        "pearson_vs_ret_simple": null
+      },
+      {
+        "driver": "setups",
+        "n": 0,
+        "pearson_vs_abs_move": null,
+        "pearson_vs_ret_simple": null
+      },
+      {
+        "driver": "transition",
+        "n": 0,
+        "pearson_vs_abs_move": null,
+        "pearson_vs_ret_simple": null
+      },
+      {
+        "driver": "dark_pool",
+        "n": 0,
+        "pearson_vs_abs_move": null,
+        "pearson_vs_ret_simple": null
+      }
+    ],
+    "horizon": "1d",
+    "labels": [
+      {
+        "auc": 0.46744471744471744,
+        "base_rate": 0.502262443438914,
+        "definition": "abs_move >= median(abs_move) in the evaluation set",
+        "label": "large_abs_move",
+        "lift_top_decile": 0.17312965139052094,
+        "n": 221,
+        "n_positive": 111,
+        "precision_top_decile": 0.08695652173913043,
+        "recall_top_decile": 0.018018018018018018,
+        "top_decile_n": 23
+      },
+      {
+        "auc": 0.5691303548446406,
+        "base_rate": 0.334841628959276,
+        "definition": "ret_simple > 0 (directional; score is ranking-not-direction)",
+        "label": "up_move",
+        "lift_top_decile": 0.12984723854289074,
+        "n": 221,
+        "n_positive": 74,
+        "precision_top_decile": 0.043478260869565216,
+        "recall_top_decile": 0.013513513513513514,
+        "top_decile_n": 23
+      },
+      {
+        "auc": 0.9318740777176586,
+        "base_rate": 0.5158371040723982,
+        "definition": "hit_call_wall OR hit_put_wall OR crossed_flip",
+        "label": "structure_event",
+        "lift_top_decile": 1.93859649122807,
+        "n": 221,
+        "n_positive": 114,
+        "precision_top_decile": 1.0,
+        "recall_top_decile": 0.20175438596491227,
+        "top_decile_n": 23
+      }
+    ],
+    "n_rows": 221,
+    "n_with_score": 221,
+    "notes": [
+      "Score is a ranking / actionability triage signal, not a directional forecast.",
+      "Top-decile lift on large_abs_move is the primary baseline KPI.",
+      "Directional up_move AUC near 0.5 is expected and not a failure of score.",
+      "report_version=score_lab_v1-2026-04"
+    ],
+    "score_vs_abs_move": {
+      "n": 221,
+      "pearson": -0.021586482599806937,
+      "spearman": 0.018932498101884028
+    },
+    "score_vs_ret_simple": {
+      "n": 221,
+      "pearson": 0.13703694247431422,
+      "spearman": 0.03703624847554674
+    },
+    "tiers": [
+      {
+        "mean_abs_move": 0.0035473083851872153,
+        "mean_ret_simple": -0.0005025773707928526,
+        "mean_score": 68.54237288135593,
+        "n": 177,
+        "structure_event_rate": 0.6440677966101694,
+        "tier": "actionable"
+      },
+      {
+        "mean_abs_move": 0.0022545662064399176,
+        "mean_ret_simple": -0.0022545662064399176,
+        "mean_score": 37.0,
+        "n": 4,
+        "structure_event_rate": 0.0,
+        "tier": "dormant"
+      },
+      {
+        "mean_abs_move": 0.003681411705556794,
+        "mean_ret_simple": -0.001531168601824839,
+        "mean_score": 50.1,
+        "n": 40,
+        "structure_event_rate": 0.0,
+        "tier": "watch"
+      }
+    ],
+    "version": "score_lab_v1-2026-04"
+  },
+  "version": "score_lab_v1-2026-04"
+}
