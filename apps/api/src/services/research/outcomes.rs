@@ -258,13 +258,7 @@ mod tests {
             bar("2024-01-08", 104.0, 105.5, 103.0), // hits call wall 105
             bar("2024-01-09", 106.0, 107.0, 104.0),
         ];
-        let joined = join_sample_outcomes(
-            &sample,
-            &bars,
-            &["1d", "5d"],
-            9_999.0,
-            "test_aggs",
-        );
+        let joined = join_sample_outcomes(&sample, &bars, &["1d", "5d"], 9_999.0, "test_aggs");
         assert_eq!(joined.len(), 2);
         let d1 = joined.iter().find(|o| o.horizon == "1d").unwrap();
         assert!((d1.ret_simple.unwrap() - 0.02).abs() < 1e-9);

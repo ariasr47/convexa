@@ -237,7 +237,10 @@ impl ScanStore {
 
     #[cfg(feature = "postgres")]
     pub fn open_postgres(pg: crate::db::postgres::Pg) -> Self {
-        info!(backend = "postgres", "scan store: postgres (shared rows + heartbeat)");
+        info!(
+            backend = "postgres",
+            "scan store: postgres (shared rows + heartbeat)"
+        );
         Self::Postgres(crate::db::pg_scan::PgScanStore::new(pg))
     }
 
@@ -1006,11 +1009,36 @@ mod tests {
             atm_iv: None,
             hv_30d: None,
         };
-        assert!(merge_structure_sample(&mut series, s(1000.0, 50.0), 300.0, 3));
-        assert!(!merge_structure_sample(&mut series, s(1100.0, 51.0), 300.0, 3)); // < 300s
-        assert!(merge_structure_sample(&mut series, s(1400.0, 52.0), 300.0, 3));
-        assert!(merge_structure_sample(&mut series, s(1800.0, 53.0), 300.0, 3));
-        assert!(merge_structure_sample(&mut series, s(2200.0, 54.0), 300.0, 3));
+        assert!(merge_structure_sample(
+            &mut series,
+            s(1000.0, 50.0),
+            300.0,
+            3
+        ));
+        assert!(!merge_structure_sample(
+            &mut series,
+            s(1100.0, 51.0),
+            300.0,
+            3
+        )); // < 300s
+        assert!(merge_structure_sample(
+            &mut series,
+            s(1400.0, 52.0),
+            300.0,
+            3
+        ));
+        assert!(merge_structure_sample(
+            &mut series,
+            s(1800.0, 53.0),
+            300.0,
+            3
+        ));
+        assert!(merge_structure_sample(
+            &mut series,
+            s(2200.0, 54.0),
+            300.0,
+            3
+        ));
         assert_eq!(series.len(), 3);
         assert_eq!(series[0].score, Some(52.0));
         assert_eq!(series[2].score, Some(54.0));

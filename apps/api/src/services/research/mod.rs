@@ -35,7 +35,9 @@ mod strict_read_fork_guard {
     const PG_SCAN_SRC: &str = include_str!("../../db/pg_scan.rs");
 
     fn body_of<'a>(src: &'a str, sig: &str) -> &'a str {
-        let start = src.find(sig).unwrap_or_else(|| panic!("fn not found: {sig}"));
+        let start = src
+            .find(sig)
+            .unwrap_or_else(|| panic!("fn not found: {sig}"));
         let rest = &src[start + sig.len()..];
         let end = rest
             .find("\n    pub async fn ")
@@ -50,8 +52,16 @@ mod strict_read_fork_guard {
         let strict = body_of(PG_SCAN_SRC, "pub async fn read_structure_history_strict(");
 
         // Anti-vacuity: both bodies were actually found and are non-trivial.
-        assert!(fallback.len() > 400, "fallback body not sliced (len {})", fallback.len());
-        assert!(strict.len() > 200, "strict body not sliced (len {})", strict.len());
+        assert!(
+            fallback.len() > 400,
+            "fallback body not sliced (len {})",
+            fallback.len()
+        );
+        assert!(
+            strict.len() > 200,
+            "strict body not sliced (len {})",
+            strict.len()
+        );
         // ...and `contains` discriminates (a needle that must NOT be there).
         assert!(!fallback.contains("read_structure_history_definitely_not_a_fn"));
 
@@ -61,7 +71,10 @@ mod strict_read_fork_guard {
             "GET /api/scan/{{symbol}}/history must keep its base-columns fallback \
              (INTERFACE_CONTRACT.md: making the shared read strict is the predicted defect)"
         );
-        assert!(fallback.contains("full={e}; base={e2}"), "fallback still reports both errors");
+        assert!(
+            fallback.contains("full={e}; base={e2}"),
+            "fallback still reports both errors"
+        );
 
         // ARM B — the LAB path has no fallback at all.
         assert!(
@@ -73,6 +86,9 @@ mod strict_read_fork_guard {
             1,
             "the strict read issues exactly one SELECT — a second query IS a fallback"
         );
-        assert!(strict.contains("STRICT"), "the strict read's error must be self-identifying");
+        assert!(
+            strict.contains("STRICT"),
+            "the strict read's error must be self-identifying"
+        );
     }
 }

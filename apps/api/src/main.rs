@@ -73,9 +73,7 @@ enum Commands {
         max_events: Option<u64>,
     },
     /// Read `price:{SYMBOL}` from the cache.
-    PriceGet {
-        symbol: String,
-    },
+    PriceGet { symbol: String },
     /// Start the Axum HTTP server (warm price + progressive ticker).
     Serve {
         /// Override bind address (default env HTTP_BIND or 0.0.0.0:8000).
@@ -239,9 +237,11 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 scan_promotion_cap: 2,
                 scan_stale_after_secs: 180,
                 scan_market_hours_only: false,
-                scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+                scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../data/scan.sqlite3"),
                 scan_database_url: None,
-                auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+                auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../data/auth.sqlite3"),
                 auth_session_signing_key: "dev".into(),
                 auth_cookie_secure: false,
                 auth_cookie_samesite: "lax".into(),
@@ -280,7 +280,10 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 println!("call_wall:        {}", gex.call_wall);
                 println!("put_wall:         {}", gex.put_wall);
                 println!("gamma_flip:       {}", gex.gamma_flip);
-                println!("max_pain:         {} @ {:?}", gex.max_pain, gex.max_pain_expiration);
+                println!(
+                    "max_pain:         {} @ {:?}",
+                    gex.max_pain, gex.max_pain_expiration
+                );
                 println!("regime:           {}", gex.regime.as_str());
                 println!("kernel:           {}", quant_engine::gex_kernel_name());
             }
@@ -529,9 +532,11 @@ async fn cmd_score_lab(
             scan_promotion_cap: 2,
             scan_stale_after_secs: 180,
             scan_market_hours_only: false,
-            scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+            scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../data/scan.sqlite3"),
             scan_database_url: None,
-            auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+            auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../data/auth.sqlite3"),
             auth_session_signing_key: "dev".into(),
             auth_cookie_secure: false,
             auth_cookie_samesite: "lax".into(),
@@ -665,13 +670,18 @@ fn resolve_requested_symbols(
         }
     }
     if !loaded_samples.is_empty() {
-        let mut syms: Vec<String> =
-            loaded_samples.iter().map(|s| s.symbol.to_ascii_uppercase()).collect();
+        let mut syms: Vec<String> = loaded_samples
+            .iter()
+            .map(|s| s.symbol.to_ascii_uppercase())
+            .collect();
         syms.sort();
         syms.dedup();
         return syms;
     }
-    let mut syms: Vec<String> = outcomes.iter().map(|o| o.symbol.to_ascii_uppercase()).collect();
+    let mut syms: Vec<String> = outcomes
+        .iter()
+        .map(|o| o.symbol.to_ascii_uppercase())
+        .collect();
     syms.sort();
     syms.dedup();
     syms
@@ -741,7 +751,11 @@ fn check_parity(got: &GexResult, expected: &serde_json::Value) -> anyhow::Result
         ("net_gex", got.net_gex, f64_field(expected, "net_gex")),
         ("call_gex", got.call_gex, f64_field(expected, "call_gex")),
         ("put_gex", got.put_gex, f64_field(expected, "put_gex")),
-        ("gamma_flip", got.gamma_flip, f64_field(expected, "gamma_flip")),
+        (
+            "gamma_flip",
+            got.gamma_flip,
+            f64_field(expected, "gamma_flip"),
+        ),
         ("call_wall", got.call_wall, f64_field(expected, "call_wall")),
         ("put_wall", got.put_wall, f64_field(expected, "put_wall")),
     ];
@@ -766,16 +780,24 @@ mod score_lab_wiring_guard {
     const MAIN_SRC: &str = include_str!("main.rs");
 
     fn cmd_score_lab_body() -> &'static str {
-        let start = MAIN_SRC.find("async fn cmd_score_lab(").expect("cmd_score_lab not found");
+        let start = MAIN_SRC
+            .find("async fn cmd_score_lab(")
+            .expect("cmd_score_lab not found");
         let rest = &MAIN_SRC[start..];
-        let end = rest.find("\n/// The REQUESTED symbol set").unwrap_or(rest.len());
+        let end = rest
+            .find("\n/// The REQUESTED symbol set")
+            .unwrap_or(rest.len());
         &rest[..end]
     }
 
     #[test]
     fn cmd_score_lab_uses_the_strict_read_never_the_serve_paths_fallback_read() {
         let body = cmd_score_lab_body();
-        assert!(body.len() > 3_000, "cmd_score_lab body not sliced (len {})", body.len());
+        assert!(
+            body.len() > 3_000,
+            "cmd_score_lab body not sliced (len {})",
+            body.len()
+        );
         assert!(
             body.contains("read_structure_history_strict("),
             "cmd_score_lab must call the strict, no-fallback read (SPEC §2.7)"
@@ -790,17 +812,27 @@ mod score_lab_wiring_guard {
             "cmd_score_lab must no longer call the retired oracle path — it survives ONLY as a \
              test-only parity oracle in research::fixtures / research::score_lab tests"
         );
-        assert!(body.contains("run_lab("), "cmd_score_lab must go through the single pure entrypoint");
+        assert!(
+            body.contains("run_lab("),
+            "cmd_score_lab must go through the single pure entrypoint"
+        );
     }
 
     #[test]
     fn cmd_join_outcomes_is_unaffected_and_still_uses_the_shared_read() {
         // The negative control: a DIFFERENT command (cmd_join_outcomes) legitimately still calls
         // the shared fallback-bearing read — this scan is scoped to cmd_score_lab ONLY.
-        let start = MAIN_SRC.find("async fn cmd_join_outcomes(").expect("cmd_join_outcomes not found");
+        let start = MAIN_SRC
+            .find("async fn cmd_join_outcomes(")
+            .expect("cmd_join_outcomes not found");
         let rest = &MAIN_SRC[start..];
-        let end = rest.find("\nasync fn open_scan_store_for_cli").unwrap_or(rest.len());
+        let end = rest
+            .find("\nasync fn open_scan_store_for_cli")
+            .unwrap_or(rest.len());
         let body = &rest[..end];
-        assert!(body.contains("read_structure_history("), "positive control failed to find its needle");
+        assert!(
+            body.contains("read_structure_history("),
+            "positive control failed to find its needle"
+        );
     }
 }

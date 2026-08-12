@@ -14,14 +14,20 @@ fn rust_files(dir: &Path) -> Vec<(String, String)> {
     let mut out = Vec::new();
     let mut stack = vec![dir.to_path_buf()];
     while let Some(d) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&d) else { continue };
+        let Ok(entries) = fs::read_dir(&d) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_dir() {
                 stack.push(path);
             } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
                 if let Ok(src) = fs::read_to_string(&path) {
-                    let rel = path.strip_prefix(&dir).unwrap_or(&path).to_string_lossy().replace('\\', "/");
+                    let rel = path
+                        .strip_prefix(&dir)
+                        .unwrap_or(&path)
+                        .to_string_lossy()
+                        .replace('\\', "/");
                     out.push((rel, src));
                 }
             }
@@ -51,13 +57,22 @@ fn one_way_boundary_nothing_under_scanner_analytics_routes_or_quant_engine_impor
     // Anti-vacuity: the scanned file list is non-empty and includes the three named files, so a
     // renamed file cannot silently shrink the scan.
     let names: Vec<&str> = scanned.iter().map(|(n, _)| n.as_str()).collect();
-    assert!(!scanned.is_empty(), "scan produced zero files — a path resolved wrong");
-    assert!(names.contains(&"loop.rs"), "scanner/loop.rs must be in the scanned set; got {names:?}");
+    assert!(
+        !scanned.is_empty(),
+        "scan produced zero files — a path resolved wrong"
+    );
+    assert!(
+        names.contains(&"loop.rs"),
+        "scanner/loop.rs must be in the scanned set; got {names:?}"
+    );
     assert!(
         names.contains(&"projection.rs"),
         "scanner/projection.rs must be in the scanned set; got {names:?}"
     );
-    assert!(names.contains(&"store.rs"), "scanner/store.rs must be in the scanned set; got {names:?}");
+    assert!(
+        names.contains(&"store.rs"),
+        "scanner/store.rs must be in the scanned set; got {names:?}"
+    );
 
     let mut violations = Vec::new();
     for (name, src) in &scanned {
@@ -77,9 +92,18 @@ fn no_http_client_on_the_score_lab_path() {
     let root = workspace_root();
     let research_dir = root.join("apps/api/src/services/research");
     let files = rust_files(&research_dir);
-    assert!(files.len() >= 10, "research/ scan too small (found {})", files.len());
+    assert!(
+        files.len() >= 10,
+        "research/ scan too small (found {})",
+        files.len()
+    );
 
-    let banned = ["reqwest", "MassiveRestClient", "MarketDataPort", "Client::new"];
+    let banned = [
+        "reqwest",
+        "MassiveRestClient",
+        "MarketDataPort",
+        "Client::new",
+    ];
     let mut violations = Vec::new();
     for (name, src) in &files {
         for needle in banned {
@@ -88,16 +112,26 @@ fn no_http_client_on_the_score_lab_path() {
             }
         }
     }
-    assert!(violations.is_empty(), "research/ references an HTTP client: {violations:?}");
+    assert!(
+        violations.is_empty(),
+        "research/ references an HTTP client: {violations:?}"
+    );
 
     // main.rs's cmd_score_lab body specifically.
     let main_src = fs::read_to_string(root.join("apps/api/src/main.rs")).unwrap();
-    let start = main_src.find("async fn cmd_score_lab(").expect("cmd_score_lab not found");
+    let start = main_src
+        .find("async fn cmd_score_lab(")
+        .expect("cmd_score_lab not found");
     let rest = &main_src[start..];
-    let end = rest.find("\n/// The REQUESTED symbol set").unwrap_or(rest.len());
+    let end = rest
+        .find("\n/// The REQUESTED symbol set")
+        .unwrap_or(rest.len());
     let body = &rest[..end];
     for needle in banned {
-        assert!(!body.contains(needle), "cmd_score_lab references an HTTP client: {needle}");
+        assert!(
+            !body.contains(needle),
+            "cmd_score_lab references an HTTP client: {needle}"
+        );
     }
 }
 
@@ -152,11 +186,16 @@ async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
 
     let hash_of = |p: &Path| -> String {
         let bytes = std::fs::read(p).unwrap();
-        Sha256::digest(&bytes).iter().map(|b| format!("{b:02x}")).collect::<String>()
+        Sha256::digest(&bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
     };
     let before = hash_of(&store_path);
 
-    let store = ScanStore::open(&store_path, None).await.expect("open store");
+    let store = ScanStore::open(&store_path, None)
+        .await
+        .expect("open store");
     // The lab's own read path — never the fallback-bearing read.
     let _ = store.read_structure_history_strict("SPY", 10).await;
     let _ = store.read_structure_history_strict("QQQ", 10).await; // symbol absent — still a read
@@ -165,7 +204,10 @@ async fn the_diary_is_byte_identical_before_and_after_a_lab_read() {
     // No debounced flush should have marked anything dirty from a read-only path.
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     let after = hash_of(&store_path);
-    assert_eq!(before, after, "the diary must be byte-identical before and after a lab read");
+    assert_eq!(
+        before, after,
+        "the diary must be byte-identical before and after a lab read"
+    );
 
     let _ = std::fs::remove_dir_all(&dir);
 }

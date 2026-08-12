@@ -8,16 +8,20 @@ use crate::services::scanner::store::StructureSample;
 use std::path::PathBuf;
 
 fn fixture_dir(slice: &str) -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/research").join(slice)
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/research")
+        .join(slice)
 }
 
 fn load_samples(slice: &str) -> Vec<StructureSample> {
-    let raw = std::fs::read_to_string(fixture_dir(slice).join("samples.json")).expect("samples.json");
+    let raw =
+        std::fs::read_to_string(fixture_dir(slice).join("samples.json")).expect("samples.json");
     serde_json::from_str(&raw).expect("samples.json decodes as Vec<StructureSample>")
 }
 
 fn load_outcomes(slice: &str) -> Vec<StructureOutcome> {
-    let raw = std::fs::read_to_string(fixture_dir(slice).join("outcomes.json")).expect("outcomes.json");
+    let raw =
+        std::fs::read_to_string(fixture_dir(slice).join("outcomes.json")).expect("outcomes.json");
     serde_json::from_str(&raw).expect("outcomes.json decodes as Vec<StructureOutcome>")
 }
 
@@ -156,8 +160,16 @@ pub mod constructed {
                 let score = Some(30.0 + ((session * 12 + i) % 50) as f64);
                 let dist_flip = Some(-5.0 + ((session * 12 + i) % 10) as f64);
                 let dist_wall = Some(-3.0 + ((session * 12 + i) % 6) as f64);
-                let ret_simple = Some(if (session * 12 + i) % 3 == 0 { 0.02f64 } else { -0.01f64 });
-                let abs_move = if i == 0 { None } else { Some(ret_simple.unwrap().abs()) };
+                let ret_simple = Some(if (session * 12 + i) % 3 == 0 {
+                    0.02f64
+                } else {
+                    -0.01f64
+                });
+                let abs_move = if i == 0 {
+                    None
+                } else {
+                    Some(ret_simple.unwrap().abs())
+                };
                 let hit_call = Some(i % 4 == 0);
                 let hit_put = Some(i % 5 == 0);
                 let crossed = Some(i % 7 == 0);
@@ -165,8 +177,19 @@ pub mod constructed {
                 // SPY — always net_gex + atm_iv.
                 let net_gex_spy = Some(1.0e9 + i as f64 * 1.0e7);
                 let (s, o) = row(
-                    "SPY", as_of, score, net_gex_spy, Some(0.22), Some(18.0), dist_flip, dist_wall,
-                    ret_simple, abs_move, hit_call, hit_put, crossed,
+                    "SPY",
+                    as_of,
+                    score,
+                    net_gex_spy,
+                    Some(0.22),
+                    Some(18.0),
+                    dist_flip,
+                    dist_wall,
+                    ret_simple,
+                    abs_move,
+                    hit_call,
+                    hit_put,
+                    crossed,
                 );
                 samples.push(s);
                 outcomes.push(o);
@@ -186,14 +209,29 @@ pub mod constructed {
                     (None, None, None)
                 };
                 let (s, o) = row(
-                    "IWM", as_of, score, net_gex_iwm, atm_iv_iwm, hv_iwm, dist_flip, dist_wall,
-                    ret_simple, abs_move, hit_call, hit_put, crossed,
+                    "IWM",
+                    as_of,
+                    score,
+                    net_gex_iwm,
+                    atm_iv_iwm,
+                    hv_iwm,
+                    dist_flip,
+                    dist_wall,
+                    ret_simple,
+                    abs_move,
+                    hit_call,
+                    hit_put,
+                    crossed,
                 );
                 samples.push(s);
                 outcomes.push(o);
             }
         }
-        (samples, outcomes, vec!["SPY".into(), "QQQ".into(), "IWM".into()])
+        (
+            samples,
+            outcomes,
+            vec!["SPY".into(), "QQQ".into(), "IWM".into()],
+        )
     }
 
     /// One symbol scope where `structure_event` is false on EVERY row.
@@ -321,7 +359,11 @@ pub mod constructed {
                     Some(20.0),
                     Some(-6.0 + ((session * 15 + i) % 12) as f64),
                     Some(-4.0 + ((session * 15 + i) % 8) as f64),
-                    Some(if (session * 15 + i) % 3 == 0 { 0.03 } else { -0.015 }),
+                    Some(if (session * 15 + i) % 3 == 0 {
+                        0.03
+                    } else {
+                        -0.015
+                    }),
                     Some(0.01 + ((session * 15 + i) % 5) as f64 * 0.01),
                     Some((session * 15 + i) % 6 == 0),
                     Some((session * 15 + i) % 7 == 0),
@@ -343,7 +385,11 @@ pub mod constructed {
             for i in 0..30usize {
                 let idx = session * 30 + i;
                 let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
-                let ret_simple = if idx < 2 { Some(0.01 + idx as f64 * 0.02) } else { None };
+                let ret_simple = if idx < 2 {
+                    Some(0.01 + idx as f64 * 0.02)
+                } else {
+                    None
+                };
                 let (s, o) = row(
                     "SPY",
                     as_of,
@@ -464,20 +510,45 @@ mod tests {
     fn slice_0810_carries_no_drivers_and_no_analytics() {
         for s in slice_0810_samples() {
             assert!(s.score.is_some(), "{} carries a score", s.symbol);
-            assert!(s.dist_to_flip_pct.is_some(), "{} carries dist_to_flip_pct", s.symbol);
-            assert!(s.dist_to_wall_pct.is_some(), "{} carries dist_to_wall_pct", s.symbol);
-            assert!(s.score_drivers.is_none(), "pre-spine: score_drivers stay null (never repaired)");
-            assert!(s.net_gex.is_none(), "pre-spine: net_gex was never captured on this slice");
-            assert!(s.atm_iv.is_none(), "pre-spine: atm_iv was never captured on this slice");
-            assert!(s.hv_30d.is_none(), "pre-spine: hv_30d was never captured on this slice");
-            assert!(s.iv_hv_ratio.is_none(), "pre-spine: iv_hv_ratio was never captured");
+            assert!(
+                s.dist_to_flip_pct.is_some(),
+                "{} carries dist_to_flip_pct",
+                s.symbol
+            );
+            assert!(
+                s.dist_to_wall_pct.is_some(),
+                "{} carries dist_to_wall_pct",
+                s.symbol
+            );
+            assert!(
+                s.score_drivers.is_none(),
+                "pre-spine: score_drivers stay null (never repaired)"
+            );
+            assert!(
+                s.net_gex.is_none(),
+                "pre-spine: net_gex was never captured on this slice"
+            );
+            assert!(
+                s.atm_iv.is_none(),
+                "pre-spine: atm_iv was never captured on this slice"
+            );
+            assert!(
+                s.hv_30d.is_none(),
+                "pre-spine: hv_30d was never captured on this slice"
+            );
+            assert!(
+                s.iv_hv_ratio.is_none(),
+                "pre-spine: iv_hv_ratio was never captured"
+            );
         }
     }
 
     #[test]
     fn slice_0810_is_one_et_session() {
-        let dates: BTreeSet<String> =
-            slice_0810_samples().iter().filter_map(|s| session_date_et(s.as_of)).collect();
+        let dates: BTreeSet<String> = slice_0810_samples()
+            .iter()
+            .filter_map(|s| session_date_et(s.as_of))
+            .collect();
         assert_eq!(
             dates,
             BTreeSet::from(["2026-08-10".to_string()]),
@@ -494,14 +565,27 @@ mod tests {
         assert_eq!(rows.len(), pre_feature::N_PAIRED);
         let report = evaluate_baseline(&rows, "1d");
 
-        let large = report.labels.iter().find(|l| l.label == "large_abs_move").unwrap();
+        let large = report
+            .labels
+            .iter()
+            .find(|l| l.label == "large_abs_move")
+            .unwrap();
         assert_eq!(large.n, 221);
         assert_eq!(large.n_positive, pre_feature::LARGE_ABS_MOVE_N_POSITIVE);
         assert_eq!(large.base_rate, pre_feature::LARGE_ABS_MOVE_BASE_RATE);
         assert_eq!(large.auc, Some(pre_feature::LARGE_ABS_MOVE_AUC));
-        assert_eq!(large.precision_top_decile, Some(pre_feature::LARGE_ABS_MOVE_PRECISION_TOP));
-        assert_eq!(large.recall_top_decile, Some(pre_feature::LARGE_ABS_MOVE_RECALL_TOP));
-        assert_eq!(large.lift_top_decile, Some(pre_feature::LARGE_ABS_MOVE_LIFT_TOP));
+        assert_eq!(
+            large.precision_top_decile,
+            Some(pre_feature::LARGE_ABS_MOVE_PRECISION_TOP)
+        );
+        assert_eq!(
+            large.recall_top_decile,
+            Some(pre_feature::LARGE_ABS_MOVE_RECALL_TOP)
+        );
+        assert_eq!(
+            large.lift_top_decile,
+            Some(pre_feature::LARGE_ABS_MOVE_LIFT_TOP)
+        );
         assert_eq!(large.top_decile_n, pre_feature::TOP_DECILE_N);
 
         let up = report.labels.iter().find(|l| l.label == "up_move").unwrap();
@@ -509,16 +593,32 @@ mod tests {
         assert_eq!(up.base_rate, pre_feature::UP_MOVE_BASE_RATE);
         assert_eq!(up.lift_top_decile, Some(pre_feature::UP_MOVE_LIFT_TOP));
 
-        let se = report.labels.iter().find(|l| l.label == "structure_event").unwrap();
+        let se = report
+            .labels
+            .iter()
+            .find(|l| l.label == "structure_event")
+            .unwrap();
         assert_eq!(se.auc, Some(pre_feature::STRUCTURE_EVENT_AUC));
         assert_eq!(se.base_rate, pre_feature::STRUCTURE_EVENT_BASE_RATE);
-        assert_eq!(se.precision_top_decile, Some(pre_feature::STRUCTURE_EVENT_PRECISION_TOP));
-        assert_eq!(se.lift_top_decile, Some(pre_feature::STRUCTURE_EVENT_LIFT_TOP));
+        assert_eq!(
+            se.precision_top_decile,
+            Some(pre_feature::STRUCTURE_EVENT_PRECISION_TOP)
+        );
+        assert_eq!(
+            se.lift_top_decile,
+            Some(pre_feature::STRUCTURE_EVENT_LIFT_TOP)
+        );
 
-        assert_eq!(report.score_vs_abs_move.pearson, Some(pre_feature::PEARSON_SCORE_VS_ABS_MOVE));
+        assert_eq!(
+            report.score_vs_abs_move.pearson,
+            Some(pre_feature::PEARSON_SCORE_VS_ABS_MOVE)
+        );
 
         // Driver attribution was void on this slice (0/221 rows carried drivers). AC-39's live case.
-        assert!(report.drivers.iter().all(|d| d.n == 0), "no row carried score_drivers");
+        assert!(
+            report.drivers.iter().all(|d| d.n == 0),
+            "no row carried score_drivers"
+        );
     }
 
     // ---- SLICE B -----------------------------------------------------------------------------
@@ -529,20 +629,42 @@ mod tests {
     #[test]
     fn slice_current_is_fully_populated_and_multi_session() {
         let samples = slice_current_samples();
-        assert!(samples.len() > 400, "slice B is thin: {} rows", samples.len());
+        assert!(
+            samples.len() > 400,
+            "slice B is thin: {} rows",
+            samples.len()
+        );
         assert_eq!(per_symbol(&samples).len(), 3, "SPY, QQQ, IWM");
 
         let with_gex = samples.iter().filter(|s| s.net_gex.is_some()).count();
         let with_iv = samples.iter().filter(|s| s.atm_iv.is_some()).count();
         let with_drivers = samples.iter().filter(|s| s.score_drivers.is_some()).count();
         // NON-ZERO and NON-TOTAL is the property IDENTITY 3 needs to stop being vacuous.
-        assert!(with_gex > 0, "no row carries net_gex — the GEX candidates cannot be exercised");
-        assert!(with_gex < samples.len(), "EVERY row carries net_gex — no real exclusions to count");
-        assert!(with_iv > 0, "no row carries atm_iv — basis_mix would be degenerate");
-        assert!(with_drivers > 0, "the capture spine (13656ad) is populating drivers — assert it");
+        assert!(
+            with_gex > 0,
+            "no row carries net_gex — the GEX candidates cannot be exercised"
+        );
+        assert!(
+            with_gex < samples.len(),
+            "EVERY row carries net_gex — no real exclusions to count"
+        );
+        assert!(
+            with_iv > 0,
+            "no row carries atm_iv — basis_mix would be degenerate"
+        );
+        assert!(
+            with_drivers > 0,
+            "the capture spine (13656ad) is populating drivers — assert it"
+        );
 
-        let dates: BTreeSet<String> = samples.iter().filter_map(|s| session_date_et(s.as_of)).collect();
-        assert!(dates.len() >= 2, "slice B must span >= 2 ET sessions (AC-44 arm 2, AC-52)");
+        let dates: BTreeSet<String> = samples
+            .iter()
+            .filter_map(|s| session_date_et(s.as_of))
+            .collect();
+        assert!(
+            dates.len() >= 2,
+            "slice B must span >= 2 ET sessions (AC-44 arm 2, AC-52)"
+        );
     }
 
     /// AC-78's fixture PRECONDITION, asserted separately from the AC itself (B12a) so a false-fail
@@ -551,10 +673,14 @@ mod tests {
     #[test]
     fn the_two_slices_have_materially_different_capture_rates() {
         let rate = |samples: &[StructureSample]| -> f64 {
-            let spy: Vec<&StructureSample> =
-                samples.iter().filter(|s| s.symbol.eq_ignore_ascii_case("SPY")).collect();
-            let sessions: BTreeSet<String> =
-                spy.iter().filter_map(|s| session_date_et(s.as_of)).collect();
+            let spy: Vec<&StructureSample> = samples
+                .iter()
+                .filter(|s| s.symbol.eq_ignore_ascii_case("SPY"))
+                .collect();
+            let sessions: BTreeSet<String> = spy
+                .iter()
+                .filter_map(|s| session_date_et(s.as_of))
+                .collect();
             spy.len() as f64 / sessions.len().max(1) as f64
         };
         let a = rate(&slice_0810_samples());
@@ -576,6 +702,9 @@ mod tests {
             return;
         };
         let rows = pair_samples_outcomes(&slice_current_samples(), &outcomes, "1d");
-        assert!(!rows.is_empty(), "slice B outcomes exist but pair nothing — key mismatch");
+        assert!(
+            !rows.is_empty(),
+            "slice B outcomes exist but pair nothing — key mismatch"
+        );
     }
 }

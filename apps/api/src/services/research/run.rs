@@ -34,23 +34,45 @@ impl NoPairCause {
 /// Three DISTINGUISHABLE named causes with counts (AC-59/60/61/62), not a single `bail!`.
 #[derive(Debug)]
 pub enum LabError {
-    NoPairedRows { n_samples: usize, n_outcomes: usize, horizon: String, cause: NoPairCause },
-    HorizonHasNoOutcomes { horizon: String, horizons_present: Vec<String> },
-    InputUnreadable { path: String, source: String },
-    AnalyticsReadFailed { symbol: String, source: String },
+    NoPairedRows {
+        n_samples: usize,
+        n_outcomes: usize,
+        horizon: String,
+        cause: NoPairCause,
+    },
+    HorizonHasNoOutcomes {
+        horizon: String,
+        horizons_present: Vec<String>,
+    },
+    InputUnreadable {
+        path: String,
+        source: String,
+    },
+    AnalyticsReadFailed {
+        symbol: String,
+        source: String,
+    },
 }
 
 impl fmt::Display for LabError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LabError::NoPairedRows { n_samples, n_outcomes, horizon, cause } => write!(
+            LabError::NoPairedRows {
+                n_samples,
+                n_outcomes,
+                horizon,
+                cause,
+            } => write!(
                 f,
                 "No paired rows for horizon={horizon} ({}). Samples loaded: {n_samples}. Outcomes \
                  loaded: {n_outcomes}. Run join-outcomes first: cargo run -p api-rust -- \
                  join-outcomes --symbols SPY,QQQ,IWM",
                 cause.as_str()
             ),
-            LabError::HorizonHasNoOutcomes { horizon, horizons_present } => write!(
+            LabError::HorizonHasNoOutcomes {
+                horizon,
+                horizons_present,
+            } => write!(
                 f,
                 "No outcomes were labelled for horizon={horizon}. Horizons present in this \
                  outcomes file: [{}]",
@@ -140,7 +162,14 @@ pub fn run_lab(inputs: LabInputs) -> Result<LabRun, LabError> {
     let ls = build_label_set(&pairing.rows);
     let groups = groups_for(&inputs.requested_symbols);
     let ev_class = evidence_class(&pairing.session_dates);
-    let cells = build_grid(&pairing.rows, &ls, &groups, &hz, &ev_class, &pairing.n_samples_by_symbol);
+    let cells = build_grid(
+        &pairing.rows,
+        &ls,
+        &groups,
+        &hz,
+        &ev_class,
+        &pairing.n_samples_by_symbol,
+    );
     let records = build_all_records(&pairing.rows, &groups, &hz);
     let driver_attribution = build_driver_attribution(&pairing.rows, inputs.driver_loo);
     let retention = build_retention(&pairing.loaded_by_symbol, &inputs.requested_symbols);
@@ -200,7 +229,12 @@ mod tests {
         inputs.outcomes = vec![];
         let err = run_lab(inputs).unwrap_err();
         match err {
-            LabError::NoPairedRows { cause, n_samples, n_outcomes, .. } => {
+            LabError::NoPairedRows {
+                cause,
+                n_samples,
+                n_outcomes,
+                ..
+            } => {
                 assert_eq!(cause, NoPairCause::NoSamplesLoaded);
                 assert_eq!(n_samples, 0);
                 assert_eq!(n_outcomes, 0);
@@ -227,7 +261,10 @@ mod tests {
         let err = run_lab(inputs).unwrap_err();
         assert!(matches!(
             err,
-            LabError::NoPairedRows { cause: NoPairCause::NoOutcomesLoaded, .. }
+            LabError::NoPairedRows {
+                cause: NoPairCause::NoOutcomesLoaded,
+                ..
+            }
         ));
     }
 
@@ -242,7 +279,10 @@ mod tests {
         let err = run_lab(inputs).unwrap_err();
         assert!(matches!(
             err,
-            LabError::NoPairedRows { cause: NoPairCause::NoOverlapAtHorizon, .. }
+            LabError::NoPairedRows {
+                cause: NoPairCause::NoOverlapAtHorizon,
+                ..
+            }
         ));
     }
 
@@ -252,7 +292,10 @@ mod tests {
         inputs.horizon = "5d".to_string(); // outcomes are all "1d"
         let err = run_lab(inputs).unwrap_err();
         match err {
-            LabError::HorizonHasNoOutcomes { horizon, horizons_present } => {
+            LabError::HorizonHasNoOutcomes {
+                horizon,
+                horizons_present,
+            } => {
                 assert_eq!(horizon, "5d");
                 assert_eq!(horizons_present, vec!["1d".to_string()]);
             }

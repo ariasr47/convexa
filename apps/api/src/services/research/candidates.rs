@@ -10,20 +10,28 @@ use quant_engine::{resolve_vol_scalar, HvPercent, IvDecimal};
 /// parenthetical, each with its own count (vocabulary.rs).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Ineligible {
-    InputAbsent { field: &'static str },
+    InputAbsent {
+        field: &'static str,
+    },
     /// Reachable ONLY for `score` and the two geometry fields. `store.rs:138-149` writes `None`
     /// for a non-finite `net_gex`/`atm_iv`/`hv_30d`, so "carried but invalid" is indistinguishable
     /// from "never carried" for those four — see the wording rule in `vocabulary.rs` (AC-28).
-    InputNonFinite { field: &'static str },
+    InputNonFinite {
+        field: &'static str,
+    },
     VolScalarUnavailable,
     /// Defensive guard on the divide. `IvDecimal`/`HvPercent` make a non-positive scalar
     /// unreachable today; the variant is kept, DECLARED unreachable-in-v1 here, and exercised
     /// directly by a unit test so it is a tested branch rather than a dead one.
-    DegenerateInput { field: &'static str },
+    DegenerateInput {
+        field: &'static str,
+    },
     /// The row carried the input, not the outcome. `binary_label` returns `Option<bool>` and the
     /// shipped `score_lab.rs` filter_maps the `None`s away SILENTLY today — without this variant
     /// the CLOSURE identity is false for every label with missing outcome flags.
-    LabelUndefined { label: &'static str },
+    LabelUndefined {
+        label: &'static str,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -75,7 +83,9 @@ fn vol_scalar(r: &LabRow) -> Result<(f64, quant_engine::VolNormBasis), Ineligibl
 /// declared as such, and exercised directly by a unit test.
 pub(crate) fn vol_scalar_guard(v: f64) -> Result<(), Ineligible> {
     if !v.is_finite() || v <= 0.0 {
-        return Err(Ineligible::DegenerateInput { field: "vol_scalar" });
+        return Err(Ineligible::DegenerateInput {
+            field: "vol_scalar",
+        });
     }
     Ok(())
 }
@@ -91,7 +101,9 @@ fn extract_opportunity_score(r: &LabRow) -> Result<f64, Ineligible> {
 /// Check order inside the two GEX extractors is LOAD-BEARING: `net_gex` first, then the vol
 /// scalar, identically in both, so their reason maps are equal reason by reason (IDENTITY 3).
 fn extract_net_gex_vol_norm_abs(r: &LabRow) -> Result<f64, Ineligible> {
-    let g = r.net_gex.ok_or(Ineligible::InputAbsent { field: "net_gex" })?;
+    let g = r
+        .net_gex
+        .ok_or(Ineligible::InputAbsent { field: "net_gex" })?;
     if !g.is_finite() {
         return Err(Ineligible::InputNonFinite { field: "net_gex" });
     }
@@ -100,7 +112,9 @@ fn extract_net_gex_vol_norm_abs(r: &LabRow) -> Result<f64, Ineligible> {
 }
 
 fn extract_net_gex_abs_raw(r: &LabRow) -> Result<f64, Ineligible> {
-    let g = r.net_gex.ok_or(Ineligible::InputAbsent { field: "net_gex" })?;
+    let g = r
+        .net_gex
+        .ok_or(Ineligible::InputAbsent { field: "net_gex" })?;
     if !g.is_finite() {
         return Err(Ineligible::InputNonFinite { field: "net_gex" });
     }
@@ -112,17 +126,25 @@ fn extract_net_gex_abs_raw(r: &LabRow) -> Result<f64, Ineligible> {
 }
 
 fn extract_proximity_to_flip(r: &LabRow) -> Result<f64, Ineligible> {
-    let d = r.dist_to_flip_pct.ok_or(Ineligible::InputAbsent { field: "dist_to_flip_pct" })?;
+    let d = r.dist_to_flip_pct.ok_or(Ineligible::InputAbsent {
+        field: "dist_to_flip_pct",
+    })?;
     if !d.is_finite() {
-        return Err(Ineligible::InputNonFinite { field: "dist_to_flip_pct" });
+        return Err(Ineligible::InputNonFinite {
+            field: "dist_to_flip_pct",
+        });
     }
     Ok(-d.abs())
 }
 
 fn extract_proximity_to_nearer_wall(r: &LabRow) -> Result<f64, Ineligible> {
-    let d = r.dist_to_wall_pct.ok_or(Ineligible::InputAbsent { field: "dist_to_wall_pct" })?;
+    let d = r.dist_to_wall_pct.ok_or(Ineligible::InputAbsent {
+        field: "dist_to_wall_pct",
+    })?;
     if !d.is_finite() {
-        return Err(Ineligible::InputNonFinite { field: "dist_to_wall_pct" });
+        return Err(Ineligible::InputNonFinite {
+            field: "dist_to_wall_pct",
+        });
     }
     Ok(-d.abs())
 }
@@ -181,7 +203,9 @@ pub const CANDIDATES: &[Candidate] = &[
                 row set is identical to the vol-normalized candidate's)",
         inputs: &["net_gex", "atm_iv", "hv_30d"],
         derived_from: &[DK::NetGex],
-        role: Role::Control { for_candidate: "net_gex_vol_norm_abs" },
+        role: Role::Control {
+            for_candidate: "net_gex_vol_norm_abs",
+        },
         extract: extract_net_gex_abs_raw,
     },
     Candidate {
@@ -193,7 +217,8 @@ pub const CANDIDATES: &[Candidate] = &[
             negated_abs: true,
             direction: "nearer the flip ranks first",
         },
-        basis: "-abs(dist_to_flip_pct) (signed distance to flip, %; folded to absolute then negated)",
+        basis:
+            "-abs(dist_to_flip_pct) (signed distance to flip, %; folded to absolute then negated)",
         inputs: &["dist_to_flip_pct"],
         derived_from: &[DK::Flip],
         role: Role::Primary,
@@ -251,7 +276,11 @@ pub fn shared_derivation_note(c: &Candidate) -> Option<String> {
     }
     all_keys.sort();
     let key_names: Vec<&'static str> = all_keys.iter().map(|k| k.human()).collect();
-    Some(format!("shares derivation with: {} ({})", names.join(", "), key_names.join(", ")))
+    Some(format!(
+        "shares derivation with: {} ({})",
+        names.join(", "),
+        key_names.join(", ")
+    ))
 }
 
 #[cfg(test)]
@@ -280,18 +309,26 @@ mod tests {
     #[test]
     fn every_entry_declares_nonempty_provenance_and_inputs() {
         for c in CANDIDATES {
-            assert!(!c.derived_from.is_empty(), "{} has empty derived_from", c.key);
+            assert!(
+                !c.derived_from.is_empty(),
+                "{} has empty derived_from",
+                c.key
+            );
             assert!(!c.inputs.is_empty(), "{} has empty inputs", c.key);
         }
     }
 
     #[test]
     fn exactly_one_control_and_it_names_an_existing_candidate() {
-        let controls: Vec<&Candidate> =
-            CANDIDATES.iter().filter(|c| matches!(c.role, Role::Control { .. })).collect();
+        let controls: Vec<&Candidate> = CANDIDATES
+            .iter()
+            .filter(|c| matches!(c.role, Role::Control { .. }))
+            .collect();
         assert_eq!(controls.len(), 1);
         assert_eq!(controls[0].key, "net_gex_abs_raw");
-        let Role::Control { for_candidate } = controls[0].role else { unreachable!() };
+        let Role::Control { for_candidate } = controls[0].role else {
+            unreachable!()
+        };
         assert!(CANDIDATES.iter().any(|c| c.key == for_candidate));
     }
 
@@ -299,7 +336,11 @@ mod tests {
     fn geometry_entries_negate_abs_and_basis_names_raw_field() {
         for c in CANDIDATES {
             if c.family == Family::LevelGeometry {
-                assert!(c.orientation.negated_abs, "{} must negate-abs its raw field", c.key);
+                assert!(
+                    c.orientation.negated_abs,
+                    "{} must negate-abs its raw field",
+                    c.key
+                );
             }
             assert!(
                 c.basis.contains(c.orientation.raw_field),
@@ -314,7 +355,10 @@ mod tests {
     fn net_gex_vol_norm_signed_appears_nowhere_in_the_registry() {
         for c in CANDIDATES {
             for s in [c.key, c.display, c.basis, c.orientation.direction] {
-                assert!(!s.contains("net_gex_vol_norm_signed"), "AC-3 violated by {s:?}");
+                assert!(
+                    !s.contains("net_gex_vol_norm_signed"),
+                    "AC-3 violated by {s:?}"
+                );
             }
             for i in c.inputs {
                 assert!(!i.contains("net_gex_vol_norm_signed"));
@@ -324,32 +368,63 @@ mod tests {
 
     #[test]
     fn shares_derivation_with_is_exactly_the_declared_pairs() {
-        let composite = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
-        let partners: BTreeSet<&str> =
-            shares_derivation_with(composite).iter().map(|(k, _)| *k).collect();
+        let composite = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
+        let partners: BTreeSet<&str> = shares_derivation_with(composite)
+            .iter()
+            .map(|(k, _)| *k)
+            .collect();
         assert_eq!(
             partners,
             BTreeSet::from(["proximity_to_flip", "proximity_to_nearer_wall"]),
             "composite must share derivation with exactly the two geometry candidates"
         );
 
-        let flip = CANDIDATES.iter().find(|c| c.key == "proximity_to_flip").unwrap();
+        let flip = CANDIDATES
+            .iter()
+            .find(|c| c.key == "proximity_to_flip")
+            .unwrap();
         let flip_shared = shares_derivation_with(flip);
         assert_eq!(flip_shared, vec![("opportunity_score", vec![DK::Flip])]);
 
-        let wall = CANDIDATES.iter().find(|c| c.key == "proximity_to_nearer_wall").unwrap();
+        let wall = CANDIDATES
+            .iter()
+            .find(|c| c.key == "proximity_to_nearer_wall")
+            .unwrap();
         let wall_shared = shares_derivation_with(wall);
-        assert_eq!(wall_shared, vec![("opportunity_score", vec![DK::CallWall, DK::PutWall])]);
+        assert_eq!(
+            wall_shared,
+            vec![("opportunity_score", vec![DK::CallWall, DK::PutWall])]
+        );
 
-        let vol_norm = CANDIDATES.iter().find(|c| c.key == "net_gex_vol_norm_abs").unwrap();
-        assert_eq!(shares_derivation_with(vol_norm), vec![("net_gex_abs_raw", vec![DK::NetGex])]);
-        let raw = CANDIDATES.iter().find(|c| c.key == "net_gex_abs_raw").unwrap();
-        assert_eq!(shares_derivation_with(raw), vec![("net_gex_vol_norm_abs", vec![DK::NetGex])]);
+        let vol_norm = CANDIDATES
+            .iter()
+            .find(|c| c.key == "net_gex_vol_norm_abs")
+            .unwrap();
+        assert_eq!(
+            shares_derivation_with(vol_norm),
+            vec![("net_gex_abs_raw", vec![DK::NetGex])]
+        );
+        let raw = CANDIDATES
+            .iter()
+            .find(|c| c.key == "net_gex_abs_raw")
+            .unwrap();
+        assert_eq!(
+            shares_derivation_with(raw),
+            vec![("net_gex_vol_norm_abs", vec![DK::NetGex])]
+        );
     }
 
     #[test]
     fn vol_scalar_guard_rejects_nonpositive_accepts_positive() {
-        assert_eq!(vol_scalar_guard(0.0), Err(Ineligible::DegenerateInput { field: "vol_scalar" }));
+        assert_eq!(
+            vol_scalar_guard(0.0),
+            Err(Ineligible::DegenerateInput {
+                field: "vol_scalar"
+            })
+        );
         assert_eq!(vol_scalar_guard(0.22), Ok(()));
     }
 
@@ -406,7 +481,10 @@ mod coupling_pin {
     use crate::services::research::labels::LABELS;
     use std::collections::BTreeSet;
 
-    fn fired_set(cands: &[Candidate], labels: &[(&'static str, &'static [DK])]) -> BTreeSet<(&'static str, &'static str)> {
+    fn fired_set(
+        cands: &[Candidate],
+        labels: &[(&'static str, &'static [DK])],
+    ) -> BTreeSet<(&'static str, &'static str)> {
         let mut fired = BTreeSet::new();
         for c in cands {
             for (lkey, ldf) in labels {
@@ -451,18 +529,35 @@ mod coupling_pin {
         let narrowed: &'static [DK] = &[DK::Score];
         let labels = real_labels();
         let fired = fired_set(
-            &[Candidate { derived_from: narrowed, ..clone_candidate("opportunity_score") }],
+            &[Candidate {
+                derived_from: narrowed,
+                ..clone_candidate("opportunity_score")
+            }],
             &labels,
         );
-        assert!(fired.is_empty(), "narrowing the composite to [Score] must drop the coupled pair");
+        assert!(
+            fired.is_empty(),
+            "narrowing the composite to [Score] must drop the coupled pair"
+        );
     }
 
     #[test]
     fn emptying_structure_events_derived_from_empties_the_set() {
-        let labels: Vec<(&'static str, &'static [DK])> =
-            real_labels().into_iter().map(|(k, df)| if k == "structure_event" { (k, &[][..]) } else { (k, df) }).collect();
+        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
+            .into_iter()
+            .map(|(k, df)| {
+                if k == "structure_event" {
+                    (k, &[][..])
+                } else {
+                    (k, df)
+                }
+            })
+            .collect();
         let fired = fired_set(CANDIDATES, &labels);
-        assert!(fired.is_empty(), "emptying structure_event's derived_from must empty the coupled set");
+        assert!(
+            fired.is_empty(),
+            "emptying structure_event's derived_from must empty the coupled set"
+        );
     }
 
     #[test]
@@ -470,13 +565,23 @@ mod coupling_pin {
         let widened: &'static [DK] = &[DK::ForwardPricePath, DK::Flip];
         let labels: Vec<(&'static str, &'static [DK])> = real_labels()
             .into_iter()
-            .map(|(k, df)| if k == "large_abs_move" { (k, widened) } else { (k, df) })
+            .map(|(k, df)| {
+                if k == "large_abs_move" {
+                    (k, widened)
+                } else {
+                    (k, df)
+                }
+            })
             .collect();
         let fired = fired_set(CANDIDATES, &labels);
         // proximity_to_flip and opportunity_score both derive from Flip.
         assert!(fired.contains(&("proximity_to_flip", "large_abs_move")));
         assert!(fired.contains(&("opportunity_score", "large_abs_move")));
-        assert_eq!(fired.len(), 3 + 2, "the pin's 3 base pairs plus the 2 newly-coupled pairs");
+        assert_eq!(
+            fired.len(),
+            3 + 2,
+            "the pin's 3 base pairs plus the 2 newly-coupled pairs"
+        );
     }
 
     #[test]
@@ -491,7 +596,10 @@ mod coupling_pin {
             .iter()
             .map(|c| {
                 if c.key == "net_gex_abs_raw" {
-                    Candidate { derived_from: widened_cand, ..clone_candidate(c.key) }
+                    Candidate {
+                        derived_from: widened_cand,
+                        ..clone_candidate(c.key)
+                    }
                 } else {
                     clone_candidate(c.key)
                 }
@@ -499,12 +607,22 @@ mod coupling_pin {
             .collect();
         let labels: Vec<(&'static str, &'static [DK])> = real_labels()
             .into_iter()
-            .map(|(k, df)| if k == "up_move" { (k, widened_label) } else { (k, df) })
+            .map(|(k, df)| {
+                if k == "up_move" {
+                    (k, widened_label)
+                } else {
+                    (k, df)
+                }
+            })
             .collect();
         let fired = fired_set(&cands, &labels);
         assert!(fired.contains(&("net_gex_abs_raw", "up_move")));
         assert!(fired.contains(&("opportunity_score", "up_move")));
-        assert_eq!(fired.len(), 3 + 2, "the pin's 3 base pairs plus both newly-coupled pairs");
+        assert_eq!(
+            fired.len(),
+            3 + 2,
+            "the pin's 3 base pairs plus both newly-coupled pairs"
+        );
     }
 
     /// Local, non-`Copy`-avoiding clone of a registry row by key (Candidate has no `Clone` derive

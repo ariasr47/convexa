@@ -12,20 +12,45 @@ use crate::services::research::labels::build_label_set;
 use crate::services::research::pairing::pair_rows;
 use crate::services::research::render::render_console;
 use crate::services::research::vocabulary::CellState;
-use crate::services::scanner::store::StructureSample;
 use crate::services::research::StructureOutcome;
+use crate::services::scanner::store::StructureSample;
 
-const RETIRED: [&str; 5] =
-    ["too few (", "undefined (base rate", " — not applicable", "no input (", "not attempted"];
+const RETIRED: [&str; 5] = [
+    "too few (",
+    "undefined (base rate",
+    " — not applicable",
+    "no input (",
+    "not attempted",
+];
 
 const ADOPTION_VERDICT: [&str; 15] = [
-    "better", "best", "winning", "winner", "recommended", "promising", "ready", "top signal",
-    "validated", "backtested", "proved", "accurate", "predictive", "works", "edge",
+    "better",
+    "best",
+    "winning",
+    "winner",
+    "recommended",
+    "promising",
+    "ready",
+    "top signal",
+    "validated",
+    "backtested",
+    "proved",
+    "accurate",
+    "predictive",
+    "works",
+    "edge",
 ];
 const RELATION_CLAIMS: [&str; 3] = ["independent", "unrelated", "orthogonal"];
 
-const BAR_VERDICTS: [&str; 7] =
-    ["AT BAR", "BELOW BAR", "PASS", "FAIL", "MEETS", "above the bar", "below the bar"];
+const BAR_VERDICTS: [&str; 7] = [
+    "AT BAR",
+    "BELOW BAR",
+    "PASS",
+    "FAIL",
+    "MEETS",
+    "above the bar",
+    "below the bar",
+];
 
 const RETENTION_LITERALS: [&str; 8] = [
     "about 7 sessions",
@@ -95,7 +120,10 @@ fn violations(corpus: &[String]) -> Vec<(String, &'static str)> {
             for tok in line.split_whitespace() {
                 let bare = tok.trim_end_matches([',', ':', ';']);
                 if bare == "0" || bare == "0.00" {
-                    out.push((s.clone(), "bare zero token with no qualifier anywhere on its line"));
+                    out.push((
+                        s.clone(),
+                        "bare zero token with no qualifier anywhere on its line",
+                    ));
                 }
             }
         }
@@ -103,12 +131,23 @@ fn violations(corpus: &[String]) -> Vec<(String, &'static str)> {
     out
 }
 
-fn build(samples: &[StructureSample], outcomes: &[StructureOutcome], requested: &[String]) -> Artifact {
+fn build(
+    samples: &[StructureSample],
+    outcomes: &[StructureOutcome],
+    requested: &[String],
+) -> Artifact {
     let pairing = pair_rows(samples, outcomes, "1d");
     let ls = build_label_set(&pairing.rows);
     let groups = groups_for(requested);
     let ev = evidence_class(&pairing.session_dates);
-    let cells = build_grid(&pairing.rows, &ls, &groups, "1d", &ev, &pairing.n_samples_by_symbol);
+    let cells = build_grid(
+        &pairing.rows,
+        &ls,
+        &groups,
+        "1d",
+        &ev,
+        &pairing.n_samples_by_symbol,
+    );
     let records = build_all_records(&pairing.rows, &groups, "1d");
     let driver_attribution = build_driver_attribution(&pairing.rows, true);
     let retention = build_retention(&pairing.loaded_by_symbol, requested);
@@ -156,35 +195,62 @@ fn corpus_of(art: &Artifact) -> Vec<String> {
 #[test]
 fn scanner_bites_on_a_synthetic_dirty_string() {
     let dirty = vec!["score is 0.42 (n/a)".to_string()];
-    assert!(!violations(&dirty).is_empty(), "the scanner failed to catch a synthetic n/a");
+    assert!(
+        !violations(&dirty).is_empty(),
+        "the scanner failed to catch a synthetic n/a"
+    );
 
     let dirty2 = vec!["this signal keeps about 7 sessions of history".to_string()];
-    assert!(!violations(&dirty2).is_empty(), "the scanner failed to catch a retention literal");
+    assert!(
+        !violations(&dirty2).is_empty(),
+        "the scanner failed to catch a retention literal"
+    );
 
     let dirty3 = vec!["opportunity_score is the best candidate".to_string()];
-    assert!(!violations(&dirty3).is_empty(), "the scanner failed to catch adoption language");
+    assert!(
+        !violations(&dirty3).is_empty(),
+        "the scanner failed to catch adoption language"
+    );
 
     let dirty4 = vec!["the value is 0.00".to_string()];
-    assert!(!violations(&dirty4).is_empty(), "the scanner failed to catch a bare unqualified zero");
+    assert!(
+        !violations(&dirty4).is_empty(),
+        "the scanner failed to catch a bare unqualified zero"
+    );
 
     let clean = vec!["AUC 0.47 (n=147, sessions=4)".to_string()];
-    assert!(violations(&clean).is_empty(), "a clean literal must not false-positive");
+    assert!(
+        violations(&clean).is_empty(),
+        "a clean literal must not false-positive"
+    );
 
     // A LEGITIMATE computed zero, fully qualified, must NOT false-positive.
     let clean_zero = vec!["Precision@10 0.00 (n=147, sessions=4)".to_string()];
-    assert!(violations(&clean_zero).is_empty(), "a qualified real zero must not false-positive: {:?}", violations(&clean_zero));
+    assert!(
+        violations(&clean_zero).is_empty(),
+        "a qualified real zero must not false-positive: {:?}",
+        violations(&clean_zero)
+    );
 }
 
 #[test]
 fn slice_0810_totality_fixture_is_clean() {
     use crate::services::research::fixtures::{slice_0810_outcomes, slice_0810_samples};
-    let requested = vec!["SPY".to_string(), "QQQ".to_string(), "IWM".to_string(), "DIA".to_string()];
+    let requested = vec![
+        "SPY".to_string(),
+        "QQQ".to_string(),
+        "IWM".to_string(),
+        "DIA".to_string(),
+    ];
     let art = build(&slice_0810_samples(), &slice_0810_outcomes(), &requested);
 
     let corpus = corpus_of(&art);
     // anti-vacuity: the scanned corpus is non-empty and exceeds a floor.
     let console_len: usize = corpus.first().map(|s| s.len()).unwrap_or(0);
-    assert!(console_len > 4_000, "console too short to be a real scan target (len {console_len})");
+    assert!(
+        console_len > 4_000,
+        "console too short to be a real scan target (len {console_len})"
+    );
     assert_eq!(art.cells.len(), 75);
 
     let v = violations(&corpus);
@@ -192,7 +258,11 @@ fn slice_0810_totality_fixture_is_clean() {
 
     // AC-38 — NotApplicable must not fire in any run or fixture.
     for c in &art.cells {
-        assert!(!matches!(c.state, CellState::NotApplicable { .. }), "AC-38 violated: {:?}", c.group);
+        assert!(
+            !matches!(c.state, CellState::NotApplicable { .. }),
+            "AC-38 violated: {:?}",
+            c.group
+        );
     }
 }
 

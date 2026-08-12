@@ -90,7 +90,10 @@ fn binary_value(row: &LabRow, rule: LabelRule, threshold: Option<f64>) -> Option
 /// as the shipped `binary_label`, so pooled parity is bit-exact — this also removes today's
 /// O(n^2 log n) re-sort per row per bin.
 pub fn build_label_set(rows: &[LabRow]) -> LabelSet {
-    let mut sorted_abs: Vec<f64> = rows.iter().filter_map(|r| r.abs_move.filter(|x| x.is_finite())).collect();
+    let mut sorted_abs: Vec<f64> = rows
+        .iter()
+        .filter_map(|r| r.abs_move.filter(|x| x.is_finite()))
+        .collect();
     sorted_abs.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let median_abs_move = percentile_sorted(&sorted_abs, 0.5);
 
@@ -103,8 +106,10 @@ pub fn build_label_set(rows: &[LabRow]) -> LabelSet {
             _ => None,
         };
         thresholds.insert(label.key, threshold);
-        let vals: Vec<Option<bool>> =
-            rows.iter().map(|r| binary_value(r, label.rule, threshold)).collect();
+        let vals: Vec<Option<bool>> = rows
+            .iter()
+            .map(|r| binary_value(r, label.rule, threshold))
+            .collect();
         values.insert(label.key, vals);
     }
 
@@ -123,7 +128,11 @@ mod tests {
         let keys: Vec<&str> = LABELS.iter().map(|l| l.key).collect();
         assert_eq!(keys, vec!["large_abs_move", "up_move", "structure_event"]);
         for l in LABELS {
-            assert!(!l.derived_from.is_empty(), "{} declares no provenance", l.key);
+            assert!(
+                !l.derived_from.is_empty(),
+                "{} declares no provenance",
+                l.key
+            );
         }
         assert!(LABELS[0].primary);
         assert!(!LABELS[1].primary && !LABELS[2].primary);
@@ -146,8 +155,12 @@ mod tests {
         let pooled = build_label_set(&pairing.rows);
         let pooled_threshold = pooled.thresholds["large_abs_move"].unwrap();
 
-        let spy_rows: Vec<LabRow> =
-            pairing.rows.iter().filter(|r| r.symbol == "SPY").cloned().collect();
+        let spy_rows: Vec<LabRow> = pairing
+            .rows
+            .iter()
+            .filter(|r| r.symbol == "SPY")
+            .cloned()
+            .collect();
         // Filtering the ALREADY-BUILT pooled set to SPY still carries the pooled threshold.
         let spy_from_pooled = pooled.thresholds["large_abs_move"];
         assert_eq!(spy_from_pooled, Some(pooled_threshold));

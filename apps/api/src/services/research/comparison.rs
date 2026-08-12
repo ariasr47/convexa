@@ -54,7 +54,12 @@ pub fn groups_for(requested_symbols: &[String]) -> Vec<GroupKey> {
 pub fn n_paired_by_group(all_rows: &[LabRow], groups: &[GroupKey]) -> BTreeMap<String, usize> {
     groups
         .iter()
-        .map(|g| (g.key(), all_rows.iter().filter(|r| g.matches(&r.symbol)).count()))
+        .map(|g| {
+            (
+                g.key(),
+                all_rows.iter().filter(|r| g.matches(&r.symbol)).count(),
+            )
+        })
         .collect()
 }
 
@@ -204,7 +209,10 @@ fn disposition_candidate(all_rows: &[LabRow], group: &GroupKey, cand: &Candidate
             Err(e) => *excluded_by_reason.entry(ReasonKey::from(e)).or_default() += 1,
         }
     }
-    Disposed { eligible, excluded_by_reason }
+    Disposed {
+        eligible,
+        excluded_by_reason,
+    }
 }
 
 /// Candidate eligibility AND label-defined — a row must pass both to enter a cell.
@@ -301,10 +309,14 @@ pub fn threshold_text_for(label: &Label, ls: &LabelSet) -> String {
     match label.key {
         "large_abs_move" => match ls.thresholds["large_abs_move"] {
             Some(t) => format!("large_abs_move >= {:.2}%", t * 100.0),
-            None => "large_abs_move (threshold undefined: no abs_move data in this slice)".to_string(),
+            None => {
+                "large_abs_move (threshold undefined: no abs_move data in this slice)".to_string()
+            }
         },
         "up_move" => "up_move (ret_simple > 0)".to_string(),
-        "structure_event" => "structure_event (hit_call_wall OR hit_put_wall OR crossed_flip)".to_string(),
+        "structure_event" => {
+            "structure_event (hit_call_wall OR hit_put_wall OR crossed_flip)".to_string()
+        }
         other => other.to_string(),
     }
 }
@@ -323,7 +335,11 @@ fn render_cell_block(
     horizon: &str,
 ) -> String {
     match state {
-        CellState::NoPairedOutcome { n_samples_in_group, horizon: h, symbol } => {
+        CellState::NoPairedOutcome {
+            n_samples_in_group,
+            horizon: h,
+            symbol,
+        } => {
             let _ = horizon;
             render_no_paired_outcome(*n_samples_in_group, symbol, h)
         }
@@ -339,12 +355,22 @@ fn render_cell_block(
         CellState::NotRun { flag, .. } => render_not_run(flag, n_samples_in_group),
         CellState::Computed { metrics, power } => {
             let excluded_n: usize = excluded_by_reason.values().sum();
-            let reasons: Vec<String> =
-                excluded_by_reason.iter().map(|(r, k)| format!("{} {k}", reason_text(r))).collect();
+            let reasons: Vec<String> = excluded_by_reason
+                .iter()
+                .map(|(r, k)| format!("{} {k}", reason_text(r)))
+                .collect();
             let power_suffix = match power {
                 Power::Powered => String::new(),
-                Power::UnderPowered { n_rows, n_sessions: ns, row_floor, session_floor } => {
-                    format!(" — under-powered: {}", floors_text(*row_floor, *session_floor, *n_rows, *ns))
+                Power::UnderPowered {
+                    n_rows,
+                    n_sessions: ns,
+                    row_floor,
+                    session_floor,
+                } => {
+                    format!(
+                        " — under-powered: {}",
+                        floors_text(*row_floor, *session_floor, *n_rows, *ns)
+                    )
                 }
             };
             let header = format!(
@@ -361,14 +387,22 @@ fn render_cell_block(
             );
             let prec = format!(
                 "Precision@10 {}",
-                render_metric_value(&metrics.precision_top_decile, 2, n_eligible, n_sessions, power)
+                render_metric_value(
+                    &metrics.precision_top_decile,
+                    2,
+                    n_eligible,
+                    n_sessions,
+                    power
+                )
             );
             let rec = format!(
                 "Recall@10    {}",
                 render_metric_value(&metrics.recall_top_decile, 2, n_eligible, n_sessions, power)
             );
             let calib = match &metrics.calibration {
-                CalibrationSeries::Bins(bins) => format!("Calibration  {} quintile bins", bins.len()),
+                CalibrationSeries::Bins(bins) => {
+                    format!("Calibration  {} quintile bins", bins.len())
+                }
                 CalibrationSeries::Absent(s) => format!("Calibration  {}", render_metric_state(s)),
             };
             [header, auc, lift, prec, rec, calib].join("\n")
@@ -384,9 +418,11 @@ fn render_record_block(
     correlations: &Correlations,
 ) -> String {
     match state {
-        CellState::NoPairedOutcome { n_samples_in_group, horizon, symbol } => {
-            render_no_paired_outcome(*n_samples_in_group, symbol, horizon)
-        }
+        CellState::NoPairedOutcome {
+            n_samples_in_group,
+            horizon,
+            symbol,
+        } => render_no_paired_outcome(*n_samples_in_group, symbol, horizon),
         CellState::NoEligibleRows { by_reason } => {
             let _ = excluded_by_reason;
             render_no_eligible_rows("paired rows", n_paired_in_group, by_reason)
@@ -407,8 +443,14 @@ fn render_record_block(
                     MetricValue::Absent(s) => render_metric_state(s),
                 }
             };
-            let abs_line = format!("Pearson vs abs_move   {}", plain(&correlations.pearson_vs_abs_move));
-            let ret_line = format!("Pearson vs ret_simple {}", plain(&correlations.pearson_vs_ret_simple));
+            let abs_line = format!(
+                "Pearson vs abs_move   {}",
+                plain(&correlations.pearson_vs_abs_move)
+            );
+            let ret_line = format!(
+                "Pearson vs ret_simple {}",
+                plain(&correlations.pearson_vs_ret_simple)
+            );
             [abs_line, ret_line].join("\n")
         }
     }
@@ -432,10 +474,18 @@ fn compute_metrics(values: &[f64], labels: &[bool]) -> Metrics {
     };
     let (_, _) = metric_from_option(None, 0);
     Metrics {
-        auc: auc.map(MetricValue::Value).unwrap_or(MetricValue::Value(0.5)),
-        precision_top_decile: prec.map(MetricValue::Value).unwrap_or(MetricValue::Value(0.0)),
-        recall_top_decile: rec.map(MetricValue::Value).unwrap_or(MetricValue::Value(0.0)),
-        lift_top_decile: lift.map(MetricValue::Value).unwrap_or(MetricValue::Value(1.0)),
+        auc: auc
+            .map(MetricValue::Value)
+            .unwrap_or(MetricValue::Value(0.5)),
+        precision_top_decile: prec
+            .map(MetricValue::Value)
+            .unwrap_or(MetricValue::Value(0.0)),
+        recall_top_decile: rec
+            .map(MetricValue::Value)
+            .unwrap_or(MetricValue::Value(0.0)),
+        lift_top_decile: lift
+            .map(MetricValue::Value)
+            .unwrap_or(MetricValue::Value(1.0)),
         top_decile_n: top_n,
         n_positive_in_top,
         calibration: compute_calibration(values, values.len()),
@@ -465,7 +515,11 @@ pub fn build_cell(
     let n_sessions = session_dates_of(as_ofs.iter().copied()).len();
     let n_positive = labels.iter().filter(|b| **b).count();
     let n_neg = n_eligible - n_positive;
-    let base_rate = if n_eligible > 0 { n_positive as f64 / n_eligible as f64 } else { 0.0 };
+    let base_rate = if n_eligible > 0 {
+        n_positive as f64 / n_eligible as f64
+    } else {
+        0.0
+    };
 
     let shared = shared_keys(cand.derived_from, label.derived_from);
 
@@ -479,11 +533,19 @@ pub fn build_cell(
             },
         }
     } else if n_eligible == 0 {
-        CellState::NoEligibleRows { by_reason: disposed.excluded_by_reason.clone() }
+        CellState::NoEligibleRows {
+            by_reason: disposed.excluded_by_reason.clone(),
+        }
     } else if all_equal(&values) {
-        CellState::DegenerateCandidate { value: values[0], n: n_eligible }
+        CellState::DegenerateCandidate {
+            value: values[0],
+            n: n_eligible,
+        }
     } else if n_positive == 0 || n_positive == n_eligible {
-        CellState::DegenerateLabel { n_pos: n_positive, n_neg }
+        CellState::DegenerateLabel {
+            n_pos: n_positive,
+            n_neg,
+        }
     } else {
         CellState::Computed {
             metrics: compute_metrics(&values, &labels),
@@ -545,7 +607,11 @@ pub fn build_cell(
     }
 }
 
-pub(crate) fn correlation_metric(pairs: &[(f64, f64)], outcome_name: &'static str, carrier_n: usize) -> MetricValue {
+pub(crate) fn correlation_metric(
+    pairs: &[(f64, f64)],
+    outcome_name: &'static str,
+    carrier_n: usize,
+) -> MetricValue {
     const NEEDS: usize = 3;
     if pairs.len() < NEEDS {
         return MetricValue::Absent(MetricState::UnderMinimum {
@@ -643,9 +709,14 @@ pub fn build_record(
             },
         }
     } else if n_eligible == 0 {
-        CellState::NoEligibleRows { by_reason: disposed.excluded_by_reason.clone() }
+        CellState::NoEligibleRows {
+            by_reason: disposed.excluded_by_reason.clone(),
+        }
     } else if all_equal(&values) {
-        CellState::DegenerateCandidate { value: values[0], n: n_eligible }
+        CellState::DegenerateCandidate {
+            value: values[0],
+            n: n_eligible,
+        }
     } else {
         // record-scope: no label, no `DegenerateLabel` arm.
         CellState::Computed {
@@ -668,12 +739,22 @@ pub fn build_record(
     let abs_pairs: Vec<(f64, f64)> = disposed
         .eligible
         .iter()
-        .filter_map(|(i, v, _)| all_rows[*i].abs_move.filter(|x| x.is_finite()).map(|a| (*v, a)))
+        .filter_map(|(i, v, _)| {
+            all_rows[*i]
+                .abs_move
+                .filter(|x| x.is_finite())
+                .map(|a| (*v, a))
+        })
         .collect();
     let ret_pairs: Vec<(f64, f64)> = disposed
         .eligible
         .iter()
-        .filter_map(|(i, v, _)| all_rows[*i].ret_simple.filter(|x| x.is_finite()).map(|a| (*v, a)))
+        .filter_map(|(i, v, _)| {
+            all_rows[*i]
+                .ret_simple
+                .filter(|x| x.is_finite())
+                .map(|a| (*v, a))
+        })
         .collect();
 
     let correlations = Correlations {
@@ -715,7 +796,10 @@ mod tests {
     fn pooled_composite_large_abs_move_reproduces_pre_feature_constants() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
         let label = LABELS.iter().find(|l| l.key == "large_abs_move").unwrap();
 
         let cell = build_cell(
@@ -735,7 +819,9 @@ mod tests {
         let CellState::Computed { metrics, .. } = &cell.state else {
             panic!("expected Computed, got {:?}", cell.state);
         };
-        let MetricValue::Value(auc) = metrics.auc else { panic!("auc absent") };
+        let MetricValue::Value(auc) = metrics.auc else {
+            panic!("auc absent")
+        };
         assert!((auc - 0.467_444_717_444_717_44).abs() < 1e-9);
     }
 
@@ -743,7 +829,10 @@ mod tests {
     fn structure_event_cell_is_definitionally_coupled_for_composite() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
         let label = LABELS.iter().find(|l| l.key == "structure_event").unwrap();
         let cell = build_cell(
             &pairing.rows,
@@ -764,7 +853,10 @@ mod tests {
     fn net_gex_candidates_are_all_no_eligible_rows_on_slice_0810() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES.iter().find(|c| c.key == "net_gex_vol_norm_abs").unwrap();
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "net_gex_vol_norm_abs")
+            .unwrap();
         let label = LABELS.iter().find(|l| l.key == "large_abs_move").unwrap();
         let cell = build_cell(
             &pairing.rows,
@@ -785,7 +877,10 @@ mod tests {
     fn dia_zero_paired_rows_renders_no_paired_outcome() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
         let label = LABELS.iter().find(|l| l.key == "large_abs_move").unwrap();
         let cell = build_cell(
             &pairing.rows,
@@ -807,7 +902,10 @@ mod tests {
     fn coupled_cells_rendered_text_carries_the_mark_and_shared_keys() {
         let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
         let ls = build_label_set(&pairing.rows);
-        let cand = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let cand = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
         let label = LABELS.iter().find(|l| l.key == "structure_event").unwrap();
         let coupled = build_cell(
             &pairing.rows,
@@ -820,7 +918,9 @@ mod tests {
             221,
             "SINGLE SESSION (d=1)",
         );
-        assert!(coupled.rendered.contains("definitionally coupled with structure_event"));
+        assert!(coupled
+            .rendered
+            .contains("definitionally coupled with structure_event"));
         assert!(coupled.rendered.contains("flip"));
         assert!(coupled.rendered.contains("call wall"));
         assert!(coupled.rendered.contains("put wall"));
@@ -867,7 +967,14 @@ mod identities {
         let pairing = pair_rows(samples, outcomes, "1d");
         let ls = build_label_set(&pairing.rows);
         let groups = groups_for(requested);
-        build_grid(&pairing.rows, &ls, &groups, "1d", "TEST", &pairing.n_samples_by_symbol)
+        build_grid(
+            &pairing.rows,
+            &ls,
+            &groups,
+            "1d",
+            "TEST",
+            &pairing.n_samples_by_symbol,
+        )
     }
 
     // ---- IDENTITY 2 — CLOSURE --------------------------------------------------------------
@@ -887,7 +994,11 @@ mod identities {
         // P(Pooled) == sum_s P(Symbol(s))
         let pooled_p: usize = cells
             .iter()
-            .filter(|c| c.group == GroupKey::Pooled && c.candidate == "opportunity_score" && c.label == "large_abs_move")
+            .filter(|c| {
+                c.group == GroupKey::Pooled
+                    && c.candidate == "opportunity_score"
+                    && c.label == "large_abs_move"
+            })
             .map(|c| c.n_paired_in_group)
             .sum();
         let symbol_p: usize = cells
@@ -899,7 +1010,10 @@ mod identities {
             })
             .map(|c| c.n_paired_in_group)
             .sum();
-        assert_eq!(pooled_p, symbol_p, "P(Pooled) must equal sum_s P(Symbol(s))");
+        assert_eq!(
+            pooled_p, symbol_p,
+            "P(Pooled) must equal sum_s P(Symbol(s))"
+        );
     }
 
     // ---- IDENTITY 1 — COMPOSITION ------------------------------------------------------------
@@ -910,9 +1024,14 @@ mod identities {
             by_key.entry((c.candidate, c.label)).or_default().push(c);
         }
         for group_cells in by_key.values() {
-            let pooled = group_cells.iter().find(|c| c.group == GroupKey::Pooled).unwrap();
-            let symbol_cells: Vec<&&Cell> =
-                group_cells.iter().filter(|c| matches!(c.group, GroupKey::Symbol(_))).collect();
+            let pooled = group_cells
+                .iter()
+                .find(|c| c.group == GroupKey::Pooled)
+                .unwrap();
+            let symbol_cells: Vec<&&Cell> = group_cells
+                .iter()
+                .filter(|c| matches!(c.group, GroupKey::Symbol(_)))
+                .collect();
             let sum_eligible: usize = symbol_cells.iter().map(|c| c.n_eligible).sum();
             assert_eq!(
                 pooled.n_eligible, sum_eligible,
@@ -925,8 +1044,10 @@ mod identities {
             }
             for r in all_reasons {
                 let pooled_r = *pooled.excluded_by_reason.get(&r).unwrap_or(&0);
-                let sum_r: usize =
-                    symbol_cells.iter().map(|c| *c.excluded_by_reason.get(&r).unwrap_or(&0)).sum();
+                let sum_r: usize = symbol_cells
+                    .iter()
+                    .map(|c| *c.excluded_by_reason.get(&r).unwrap_or(&0))
+                    .sum();
                 assert_eq!(
                     pooled_r, sum_r,
                     "COMPOSITION (reason {r:?}) failed for ({}, {})",
@@ -944,7 +1065,10 @@ mod identities {
             .iter()
             .filter(|c| c.group == GroupKey::Pooled)
             .any(|c| c.excluded_by_reason.values().sum::<usize>() > 0);
-        assert!(has_real_exclusion, "COMPOSITION non-vacuity: no pooled cell has any real exclusion");
+        assert!(
+            has_real_exclusion,
+            "COMPOSITION non-vacuity: no pooled cell has any real exclusion"
+        );
     }
 
     // ---- IDENTITY 3 — PAIRED ELIGIBILITY -----------------------------------------------------
@@ -960,8 +1084,13 @@ mod identities {
             }
         }
         for (key, r) in &raw {
-            let n = norm.get(key).unwrap_or_else(|| panic!("no vol-norm cell for {key:?}"));
-            assert_eq!(r.n_eligible, n.n_eligible, "IDENTITY 3 U mismatch at {key:?}");
+            let n = norm
+                .get(key)
+                .unwrap_or_else(|| panic!("no vol-norm cell for {key:?}"));
+            assert_eq!(
+                r.n_eligible, n.n_eligible,
+                "IDENTITY 3 U mismatch at {key:?}"
+            );
             assert_eq!(
                 r.excluded_by_reason, n.excluded_by_reason,
                 "IDENTITY 3 reason map mismatch at {key:?}"
@@ -985,7 +1114,11 @@ mod identities {
 
     #[test]
     fn identities_hold_on_slice_0810() {
-        let cells = build(&slice_0810_samples(), &slice_0810_outcomes(), &requested(&["SPY", "QQQ", "IWM"]));
+        let cells = build(
+            &slice_0810_samples(),
+            &slice_0810_outcomes(),
+            &requested(&["SPY", "QQQ", "IWM"]),
+        );
         assert_closure(&cells);
         assert_composition(&cells);
         assert_identity3(&cells);
@@ -1009,7 +1142,11 @@ mod identities {
             eprintln!("SKIP: slice_current/outcomes.json absent — B0b not yet landed.");
             return;
         };
-        let cells = build(&slice_current_samples(), &outcomes, &requested(&["SPY", "QQQ", "IWM"]));
+        let cells = build(
+            &slice_current_samples(),
+            &outcomes,
+            &requested(&["SPY", "QQQ", "IWM"]),
+        );
         assert_closure(&cells);
         assert_identity3(&cells);
         assert_identity3_is_not_vacuous(&cells);
@@ -1019,19 +1156,41 @@ mod identities {
 
     #[test]
     fn totality_over_the_declared_cross_product_including_a_zero_paired_symbol() {
-        let cells = build(&slice_0810_samples(), &slice_0810_outcomes(), &requested(&["SPY", "QQQ", "IWM", "DIA"]));
-        assert_eq!(cells.len(), 75, "5 candidates x 3 labels x 5 groups (Pooled + 4 symbols)");
+        let cells = build(
+            &slice_0810_samples(),
+            &slice_0810_outcomes(),
+            &requested(&["SPY", "QQQ", "IWM", "DIA"]),
+        );
+        assert_eq!(
+            cells.len(),
+            75,
+            "5 candidates x 3 labels x 5 groups (Pooled + 4 symbols)"
+        );
 
         let mut keys: BTreeSet<(String, &str, &str)> = BTreeSet::new();
         for c in &cells {
             keys.insert((c.group.key(), c.candidate, c.label));
         }
-        assert_eq!(keys.len(), 75, "no duplicate/missing (group, candidate, label) key");
+        assert_eq!(
+            keys.len(),
+            75,
+            "no duplicate/missing (group, candidate, label) key"
+        );
 
-        let dia_cells: Vec<&Cell> = cells.iter().filter(|c| c.group == GroupKey::Symbol("DIA".into())).collect();
-        assert_eq!(dia_cells.len(), 15, "5 candidates x 3 labels for the zero-paired symbol");
+        let dia_cells: Vec<&Cell> = cells
+            .iter()
+            .filter(|c| c.group == GroupKey::Symbol("DIA".into()))
+            .collect();
+        assert_eq!(
+            dia_cells.len(),
+            15,
+            "5 candidates x 3 labels for the zero-paired symbol"
+        );
         for c in dia_cells {
-            assert!(matches!(c.state, CellState::NoPairedOutcome { .. }), "DIA cells must carry literal 4");
+            assert!(
+                matches!(c.state, CellState::NoPairedOutcome { .. }),
+                "DIA cells must carry literal 4"
+            );
         }
 
         // AC-32: no cell with n_eligible == 0 and an empty reason map, where the state names no
@@ -1042,7 +1201,11 @@ mod identities {
                 match &c.state {
                     CellState::NoPairedOutcome { .. } => {} // group-level cause named
                     CellState::NoEligibleRows { by_reason } => {
-                        assert!(!by_reason.is_empty(), "NoEligibleRows with an EMPTY reason map at {:?}", c.group)
+                        assert!(
+                            !by_reason.is_empty(),
+                            "NoEligibleRows with an EMPTY reason map at {:?}",
+                            c.group
+                        )
                     }
                     other => panic!("n_eligible == 0 with state {other:?} names no cause"),
                 }
@@ -1073,8 +1236,10 @@ mod identities {
     fn f_no_positives_renders_degenerate_label_for_every_candidate_on_structure_event() {
         let (samples, outcomes, syms) = f_no_positives();
         let cells = build(&samples, &outcomes, &syms);
-        let se_cells: Vec<&Cell> =
-            cells.iter().filter(|c| c.label == "structure_event" && c.group == GroupKey::Pooled).collect();
+        let se_cells: Vec<&Cell> = cells
+            .iter()
+            .filter(|c| c.label == "structure_event" && c.group == GroupKey::Pooled)
+            .collect();
         assert_eq!(se_cells.len(), 5, "one cell per candidate");
         for c in se_cells {
             assert!(
@@ -1092,8 +1257,10 @@ mod identities {
     fn f_const_candidate_renders_degenerate_candidate_for_the_composite() {
         let (samples, outcomes, syms) = f_const_candidate();
         let cells = build(&samples, &outcomes, &syms);
-        let composite_cells: Vec<&Cell> =
-            cells.iter().filter(|c| c.candidate == "opportunity_score" && c.group == GroupKey::Pooled).collect();
+        let composite_cells: Vec<&Cell> = cells
+            .iter()
+            .filter(|c| c.candidate == "opportunity_score" && c.group == GroupKey::Pooled)
+            .collect();
         for c in composite_cells {
             assert!(
                 matches!(c.state, CellState::DegenerateCandidate { .. }),
@@ -1112,17 +1279,29 @@ mod identities {
         let auc_of = |cand: &str| -> f64 {
             let c = cells
                 .iter()
-                .find(|c| c.candidate == cand && c.label == "large_abs_move" && c.group == GroupKey::Pooled)
+                .find(|c| {
+                    c.candidate == cand
+                        && c.label == "large_abs_move"
+                        && c.group == GroupKey::Pooled
+                })
                 .unwrap();
             let CellState::Computed { metrics, .. } = &c.state else {
                 panic!("{cand} expected Computed, got {:?}", c.state)
             };
-            let MetricValue::Value(auc) = metrics.auc else { panic!("{cand} auc absent") };
+            let MetricValue::Value(auc) = metrics.auc else {
+                panic!("{cand} auc absent")
+            };
             auc
         };
         let flip_auc = auc_of("proximity_to_flip");
         let wall_auc = auc_of("proximity_to_nearer_wall");
-        assert!(flip_auc > 0.95, "proximity_to_flip should rank ~perfectly, got {flip_auc}");
-        assert!(wall_auc < 0.05, "proximity_to_nearer_wall should rank ~inversely, got {wall_auc}");
+        assert!(
+            flip_auc > 0.95,
+            "proximity_to_flip should rank ~perfectly, got {flip_auc}"
+        );
+        assert!(
+            wall_auc < 0.05,
+            "proximity_to_nearer_wall should rank ~inversely, got {wall_auc}"
+        );
     }
 }

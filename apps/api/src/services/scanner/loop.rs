@@ -11,7 +11,7 @@ use crate::services::scanner::projection::{
     project_error, project_from_analytics, project_price_only, refresh_status, TierBands,
 };
 use crate::services::scanner::store::{ScanRow, SweepHeartbeat};
-use crate::services::scanner::tiering::{plan_cycle, pct_move, SweepConfig, SymbolSched};
+use crate::services::scanner::tiering::{pct_move, plan_cycle, SweepConfig, SymbolSched};
 use crate::services::scanner::universe::UniverseConfig;
 use crate::state::AppState;
 use std::collections::{HashMap, HashSet};
@@ -115,10 +115,7 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
             .iter()
             .map(|s| crate::services::scanner::projection::project_building(s))
             .collect();
-        let inserted = state_boot
-            .scan
-            .ensure_rows_if_absent(placeholders)
-            .await;
+        let inserted = state_boot.scan.ensure_rows_if_absent(placeholders).await;
         info!(
             inserted,
             universe = universe_boot.universe.len(),
@@ -317,14 +314,7 @@ async fn apply_fast_tick(
                     }
                 }
             }
-            let row = project_price_only(
-                &sym,
-                prev.as_ref(),
-                price,
-                chg,
-                now,
-                cfg.stale_after,
-            );
+            let row = project_price_only(&sym, prev.as_ref(), price, chg, now, cfg.stale_after);
             if let Some(p) = price {
                 if p > 0.0 {
                     let live = crate::domain::LivePrice {
@@ -385,10 +375,7 @@ fn plan_slow_batch(st: &mut SweepState, cfg: &LoopConfig) -> Option<SlowPlan> {
     for sym in &plan.batch {
         price_hints.insert(
             sym.clone(),
-            st.prices
-                .get(sym)
-                .copied()
-                .unwrap_or((None, None)),
+            st.prices.get(sym).copied().unwrap_or((None, None)),
         );
     }
 
@@ -410,11 +397,7 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
         let permit = sem.clone().acquire_owned().await.expect("sem");
         let state = state.clone();
         let bands = cfg.bands;
-        let (price, chg) = plan
-            .price_hints
-            .get(&sym)
-            .copied()
-            .unwrap_or((None, None));
+        let (price, chg) = plan.price_hints.get(&sym).copied().unwrap_or((None, None));
         handles.push(tokio::spawn(async move {
             let _permit = permit;
             let t0 = std::time::Instant::now();

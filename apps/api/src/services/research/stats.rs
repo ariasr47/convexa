@@ -39,7 +39,11 @@ pub(crate) fn spearman(pairs: &[(f64, f64)]) -> Option<f64> {
 pub(crate) fn ranks(mut vals: Vec<f64>) -> Vec<f64> {
     let n = vals.len();
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by(|&i, &j| vals[i].partial_cmp(&vals[j]).unwrap_or(std::cmp::Ordering::Equal));
+    order.sort_by(|&i, &j| {
+        vals[i]
+            .partial_cmp(&vals[j])
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     let mut out = vec![0.0; n];
     let mut i = 0;
     while i < n {
@@ -96,7 +100,9 @@ pub(crate) fn man_whitney_auc(labeled: &[(f64, bool)]) -> Option<f64> {
 }
 
 /// Top ~10% by score: precision and recall for positives.
-pub(crate) fn top_decile_precision_recall(labeled: &[(f64, bool)]) -> (Option<f64>, Option<f64>, usize) {
+pub(crate) fn top_decile_precision_recall(
+    labeled: &[(f64, bool)],
+) -> (Option<f64>, Option<f64>, usize) {
     let n = labeled.len();
     if n == 0 {
         return (None, None, 0);

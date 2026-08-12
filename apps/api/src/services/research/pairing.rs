@@ -84,7 +84,11 @@ pub struct SymbolLoadStats {
 ///
 /// **Row order is the outcomes-iteration order.** Sorting here silently breaks the bit-exact
 /// parity B0 pinned (floating-point summation-order sensitivity) — do NOT add a sort.
-pub fn pair_rows(samples: &[StructureSample], outcomes: &[StructureOutcome], horizon: &str) -> Pairing {
+pub fn pair_rows(
+    samples: &[StructureSample],
+    outcomes: &[StructureOutcome],
+    horizon: &str,
+) -> Pairing {
     let hz = horizon.trim().to_ascii_lowercase();
 
     let mut n_samples_by_symbol: BTreeMap<String, usize> = BTreeMap::new();
@@ -98,7 +102,10 @@ pub fn pair_rows(samples: &[StructureSample], outcomes: &[StructureOutcome], hor
 
         let stats = loaded_by_symbol.entry(sym.clone()).or_default();
         stats.samples_loaded += 1;
-        if let Some(d) = session_dates_of(std::iter::once(s.as_of)).into_iter().next() {
+        if let Some(d) = session_dates_of(std::iter::once(s.as_of))
+            .into_iter()
+            .next()
+        {
             stats.session_dates.insert(d);
         }
         stats.window_first = Some(stats.window_first.map_or(s.as_of, |w: f64| w.min(s.as_of)));
@@ -123,7 +130,9 @@ pub fn pair_rows(samples: &[StructureSample], outcomes: &[StructureOutcome], hor
         let Some(s) = index.get(&key) else {
             continue;
         };
-        let session_date = session_dates_of(std::iter::once(s.as_of)).into_iter().next();
+        let session_date = session_dates_of(std::iter::once(s.as_of))
+            .into_iter()
+            .next();
         if let Some(d) = &session_date {
             session_dates.insert(d.clone());
         }
@@ -185,7 +194,10 @@ mod tests {
             .iter()
             .map(|r| (r.symbol.clone(), as_of_key(r.as_of)))
             .collect();
-        assert_eq!(got, want, "row sequence must match the shipped oracle's order exactly");
+        assert_eq!(
+            got, want,
+            "row sequence must match the shipped oracle's order exactly"
+        );
 
         assert_eq!(pairing.duplicate_keys_collapsed, 0);
         assert_eq!(
@@ -196,7 +208,10 @@ mod tests {
                 ("SPY".to_string(), 74),
             ])
         );
-        assert_eq!(pairing.session_dates, BTreeSet::from(["2026-08-10".to_string()]));
+        assert_eq!(
+            pairing.session_dates,
+            BTreeSet::from(["2026-08-10".to_string()])
+        );
     }
 
     #[test]
@@ -218,12 +233,23 @@ mod tests {
         outcomes.push(extra_outcome);
 
         let shipped = pair_samples_outcomes(&samples, &outcomes, "1d");
-        let scoreless_dropped = !shipped.iter().any(|r| (r.as_of - 9_999_999_999.0).abs() < 1e-6);
-        assert!(scoreless_dropped, "pair_samples_outcomes must drop the score-less row");
+        let scoreless_dropped = !shipped
+            .iter()
+            .any(|r| (r.as_of - 9_999_999_999.0).abs() < 1e-6);
+        assert!(
+            scoreless_dropped,
+            "pair_samples_outcomes must drop the score-less row"
+        );
 
         let pairing = pair_rows(&samples, &outcomes, "1d");
-        let kept = pairing.rows.iter().find(|r| (r.as_of - 9_999_999_999.0).abs() < 1e-6);
-        assert!(kept.is_some(), "pair_rows must KEEP the score-less row — this is the behaviour change");
+        let kept = pairing
+            .rows
+            .iter()
+            .find(|r| (r.as_of - 9_999_999_999.0).abs() < 1e-6);
+        assert!(
+            kept.is_some(),
+            "pair_rows must KEEP the score-less row — this is the behaviour change"
+        );
         assert_eq!(kept.unwrap().score, None);
         assert_eq!(kept.unwrap().dist_to_flip_pct, Some(0.42));
     }
@@ -237,7 +263,11 @@ mod tests {
         let from_rows: BTreeSet<String> = session_dates_of(pairing.rows.iter().map(|r| r.as_of));
         assert_eq!(from_rows, pairing.session_dates);
         assert_eq!(
-            pairing.rows.iter().filter_map(|r| r.session_date.clone()).collect::<BTreeSet<_>>(),
+            pairing
+                .rows
+                .iter()
+                .filter_map(|r| r.session_date.clone())
+                .collect::<BTreeSet<_>>(),
             pairing.session_dates,
             "per-row session_date must agree with the run-level session_dates set"
         );

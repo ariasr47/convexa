@@ -57,7 +57,10 @@ impl DerivationKey {
 /// Ordered intersection of two declared provenance sets. Order follows `ALL`, so the rendered
 /// mark is deterministic run to run (AC-6).
 pub fn shared_keys(a: &[DerivationKey], b: &[DerivationKey]) -> Vec<DerivationKey> {
-    DerivationKey::ALL.into_iter().filter(|k| a.contains(k) && b.contains(k)).collect()
+    DerivationKey::ALL
+        .into_iter()
+        .filter(|k| a.contains(k) && b.contains(k))
+        .collect()
 }
 
 #[cfg(test)]
@@ -73,9 +76,16 @@ mod provenance_source_guard {
     /// completeness bar is "trace every contributor to the emitted value", not "read the
     /// obviously-named function".
     fn score_region() -> &'static str {
-        let start = SIGNALS_SRC.find("pub fn generate_signals(").expect("generate_signals");
-        let end = SIGNALS_SRC.find("pub fn state_fingerprint(").expect("state_fingerprint");
-        assert!(end > start, "signals.rs function order changed — re-derive this region");
+        let start = SIGNALS_SRC
+            .find("pub fn generate_signals(")
+            .expect("generate_signals");
+        let end = SIGNALS_SRC
+            .find("pub fn state_fingerprint(")
+            .expect("state_fingerprint");
+        assert!(
+            end > start,
+            "signals.rs function order changed — re-derive this region"
+        );
         &SIGNALS_SRC[start..end]
     }
 
@@ -95,7 +105,11 @@ mod provenance_source_guard {
         let region = score_region();
 
         // ---- anti-vacuity ------------------------------------------------------------------
-        assert!(region.len() > 8_000, "region not sliced (len {})", region.len());
+        assert!(
+            region.len() > 8_000,
+            "region not sliced (len {})",
+            region.len()
+        );
         assert!(
             region.contains("out.opportunity_score = drivers.total;"),
             "the region must contain the assignment that produces the emitted score"
@@ -109,7 +123,10 @@ mod provenance_source_guard {
             "negative control: `contains` rejects a needle that is NOT present"
         );
 
-        let composite = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let composite = CANDIDATES
+            .iter()
+            .find(|c| c.key == "opportunity_score")
+            .unwrap();
 
         // ---- SET EQUALITY, both directions --------------------------------------------------
         // Under-declaring (the S2 defect) and over-declaring both go red.
@@ -134,10 +151,18 @@ mod provenance_source_guard {
     #[test]
     fn no_registry_entry_has_an_empty_derived_from() {
         for c in CANDIDATES {
-            assert!(!c.derived_from.is_empty(), "candidate {} declares no provenance", c.key);
+            assert!(
+                !c.derived_from.is_empty(),
+                "candidate {} declares no provenance",
+                c.key
+            );
         }
         for l in crate::services::research::labels::LABELS {
-            assert!(!l.derived_from.is_empty(), "label {} declares no provenance", l.key);
+            assert!(
+                !l.derived_from.is_empty(),
+                "label {} declares no provenance",
+                l.key
+            );
         }
     }
 }
@@ -163,8 +188,16 @@ mod tests {
 
     #[test]
     fn shared_keys_is_order_stable_and_commutative_in_content() {
-        let a = [DerivationKey::CallWall, DerivationKey::Flip, DerivationKey::Score];
-        let b = [DerivationKey::Flip, DerivationKey::CallWall, DerivationKey::PutWall];
+        let a = [
+            DerivationKey::CallWall,
+            DerivationKey::Flip,
+            DerivationKey::Score,
+        ];
+        let b = [
+            DerivationKey::Flip,
+            DerivationKey::CallWall,
+            DerivationKey::PutWall,
+        ];
 
         let ab = shared_keys(&a, &b);
         let ba = shared_keys(&b, &a);
@@ -173,7 +206,10 @@ mod tests {
         let ab_set: BTreeSet<_> = ab.iter().copied().collect();
         let ba_set: BTreeSet<_> = ba.iter().copied().collect();
         assert_eq!(ab_set, ba_set);
-        assert_eq!(ab_set, BTreeSet::from([DerivationKey::CallWall, DerivationKey::Flip]));
+        assert_eq!(
+            ab_set,
+            BTreeSet::from([DerivationKey::CallWall, DerivationKey::Flip])
+        );
 
         // ...and order follows DerivationKey::ALL regardless of input argument order.
         assert_eq!(ab, vec![DerivationKey::Flip, DerivationKey::CallWall]);

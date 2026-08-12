@@ -4,8 +4,10 @@
 //! cells for QQQ"), and a flat vector makes cell count, cell absence and cell comparison trivially
 //! checkable. Every map is a `BTreeMap`, every set a `BTreeSet` — determinism (AC-6) depends on it.
 
-use crate::services::research::candidates::{shared_derivation_note, Candidate, Family, Role, CANDIDATES};
-use crate::services::research::comparison::{correlation_metric, Cell, CandidateScopeRecord};
+use crate::services::research::candidates::{
+    shared_derivation_note, Candidate, Family, Role, CANDIDATES,
+};
+use crate::services::research::comparison::{correlation_metric, CandidateScopeRecord, Cell};
 use crate::services::research::derivation::DerivationKey as DK;
 use crate::services::research::labels::{Label, LabelSet, LABELS};
 use crate::services::research::pairing::{LabRow, SymbolLoadStats};
@@ -53,7 +55,8 @@ fn calendar_span_days(session_dates: &BTreeSet<String>) -> i64 {
 pub const BAR_TEXT: &str =
     "large_abs_move lift @ top decile >= 1.10, sustained across >= 10 sessions spanning >= 3 calendar weeks";
 
-pub const AUTHORIZES_TEXT: &str = "nothing. No weight, constant, gate threshold or fingerprint basis \
+pub const AUTHORIZES_TEXT: &str =
+    "nothing. No weight, constant, gate threshold or fingerprint basis \
 changes on the strength of this run.  [score-change-is-deliberate-and-measured]";
 
 // ---------------------------------------------------------------------------------------------
@@ -164,7 +167,10 @@ fn driver_value(d: &ScanScoreDrivers, name: &str) -> Option<i32> {
 const DRIVER_NAMES: [&str; 5] = ["proximity", "vol", "setups", "transition", "dark_pool"];
 
 /// AC-39/40/41/42. `driver_loo_flag_on` mirrors the CLI's existing `--driver-loo` flag.
-pub fn build_driver_attribution(all_rows: &[LabRow], driver_loo_flag_on: bool) -> DriverAttribution {
+pub fn build_driver_attribution(
+    all_rows: &[LabRow],
+    driver_loo_flag_on: bool,
+) -> DriverAttribution {
     let n_samples_loaded = all_rows.len();
     if !driver_loo_flag_on {
         return DriverAttribution {
@@ -176,7 +182,10 @@ pub fn build_driver_attribution(all_rows: &[LabRow], driver_loo_flag_on: bool) -
         };
     }
 
-    let with_drivers: Vec<&LabRow> = all_rows.iter().filter(|r| r.score_drivers.is_some()).collect();
+    let with_drivers: Vec<&LabRow> = all_rows
+        .iter()
+        .filter(|r| r.score_drivers.is_some())
+        .collect();
     let n_with_drivers = with_drivers.len();
 
     if n_with_drivers == 0 {
@@ -231,7 +240,13 @@ pub fn build_driver_attribution(all_rows: &[LabRow], driver_loo_flag_on: bool) -
         )
     };
 
-    DriverAttribution { flag_on: true, n_samples_loaded, n_with_drivers, rendered, entries }
+    DriverAttribution {
+        flag_on: true,
+        n_samples_loaded,
+        n_with_drivers,
+        rendered,
+        entries,
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -240,19 +255,40 @@ pub fn build_driver_attribution(all_rows: &[LabRow], driver_loo_flag_on: bool) -
 
 pub fn literal_legend() -> BTreeMap<&'static str, &'static str> {
     BTreeMap::from([
-        ("1_computed_above_floor", "a computed value with its row and session counts"),
+        (
+            "1_computed_above_floor",
+            "a computed value with its row and session counts",
+        ),
         (
             "2_computed_under_powered",
             "a computed value, marked, below the row floor and/or session floor",
         ),
-        ("3_no_eligible_rows", "every row checked was ineligible for this candidate; reasons counted"),
-        ("4_no_paired_outcome", "the group has no paired rows at this horizon"),
-        ("5_degenerate_candidate", "the candidate's eligible values are all identical; ranking undefined"),
-        ("6_degenerate_label", "the label has no positives or no negatives in this scope; ranking undefined"),
+        (
+            "3_no_eligible_rows",
+            "every row checked was ineligible for this candidate; reasons counted",
+        ),
+        (
+            "4_no_paired_outcome",
+            "the group has no paired rows at this horizon",
+        ),
+        (
+            "5_degenerate_candidate",
+            "the candidate's eligible values are all identical; ranking undefined",
+        ),
+        (
+            "6_degenerate_label",
+            "the label has no positives or no negatives in this scope; ranking undefined",
+        ),
         ("7_not_applicable", "reserved — not reachable in v1"),
         ("8_not_run", "the block was switched off by its flag"),
-        ("9_under_minimum", "a metric's own usable count is below its minimum"),
-        ("10_undefined_on_this_data", "a metric's precondition failed on this data"),
+        (
+            "9_under_minimum",
+            "a metric's own usable count is below its minimum",
+        ),
+        (
+            "10_undefined_on_this_data",
+            "a metric's precondition failed on this data",
+        ),
     ])
 }
 
@@ -471,7 +507,14 @@ pub struct RecordJson {
 }
 
 fn reason_map_json(m: &BTreeMap<ReasonKey, usize>) -> BTreeMap<String, usize> {
-    m.iter().map(|(r, n)| (crate::services::research::vocabulary::reason_json_key(r), *n)).collect()
+    m.iter()
+        .map(|(r, n)| {
+            (
+                crate::services::research::vocabulary::reason_json_key(r),
+                *n,
+            )
+        })
+        .collect()
 }
 
 pub fn cell_to_json(c: &Cell) -> CellJson {
@@ -598,7 +641,10 @@ mod tests {
     fn evidence_class_multi_week_at_or_above_fourteen_calendar_days() {
         let d = BTreeSet::from(["2026-08-01".to_string(), "2026-08-20".to_string()]);
         let s = evidence_class(&d);
-        assert!(s.starts_with("MULTI-WEEK (d=2, span 20 calendar days)"), "{s}");
+        assert!(
+            s.starts_with("MULTI-WEEK (d=2, span 20 calendar days)"),
+            "{s}"
+        );
     }
 
     #[test]
@@ -614,7 +660,15 @@ mod tests {
 
     #[test]
     fn no_output_contains_banned_verdict_tokens() {
-        for banned in ["AT BAR", "BELOW BAR", "PASS", "FAIL", "MEETS", "above the bar", "below the bar"] {
+        for banned in [
+            "AT BAR",
+            "BELOW BAR",
+            "PASS",
+            "FAIL",
+            "MEETS",
+            "above the bar",
+            "below the bar",
+        ] {
             assert!(!BAR_TEXT.contains(banned));
             assert!(!AUTHORIZES_TEXT.contains(banned));
         }
@@ -642,7 +696,14 @@ mod tests {
         let pairing = pair_rows(&samples, &outcomes, "1d");
         let ls = build_label_set(&pairing.rows);
         let groups = groups_for(requested);
-        let cells = build_grid(&pairing.rows, &ls, &groups, "1d", &evidence_class(&pairing.session_dates), &pairing.n_samples_by_symbol);
+        let cells = build_grid(
+            &pairing.rows,
+            &ls,
+            &groups,
+            "1d",
+            &evidence_class(&pairing.session_dates),
+            &pairing.n_samples_by_symbol,
+        );
         let records = build_all_records(&pairing.rows, &groups, "1d");
         let driver_attribution = build_driver_attribution(&pairing.rows, true);
         let retention = build_retention(&pairing.loaded_by_symbol, requested);
@@ -688,7 +749,11 @@ mod tests {
     #[test]
     fn cells_total_60_for_three_requested_symbols() {
         let art = built_artifact();
-        assert_eq!(art.cells.len(), 60, "5 candidates x 3 labels x 4 groups (Pooled + 3 symbols)");
+        assert_eq!(
+            art.cells.len(),
+            60,
+            "5 candidates x 3 labels x 4 groups (Pooled + 3 symbols)"
+        );
         assert_eq!(art.candidate_scope.len(), 20, "5 candidates x 4 groups");
     }
 
@@ -756,20 +821,38 @@ mod tests {
             "3.4 days",
             "about 4 sessions",
         ] {
-            assert!(!production_src.contains(banned), "artifact.rs contains the retention literal {banned:?}");
+            assert!(
+                !production_src.contains(banned),
+                "artifact.rs contains the retention literal {banned:?}"
+            );
         }
         // Anti-vacuity: the cap comes from the imported constant, never a re-typed 576.
         assert!(production_src.contains("STRUCTURE_HISTORY_MAX"));
-        assert!(!production_src.contains("576"), "the cap must come from STRUCTURE_HISTORY_MAX, not a typed 576");
+        assert!(
+            !production_src.contains("576"),
+            "the cap must come from STRUCTURE_HISTORY_MAX, not a typed 576"
+        );
     }
 
     /// SPEC §5's new row: a requested symbol with zero loaded samples.
     #[test]
     fn a_requested_symbol_with_no_samples_still_gets_a_retention_entry() {
-        let art = artifact_over(&["SPY".to_string(), "QQQ".to_string(), "IWM".to_string(), "DIA".to_string()]);
-        let dia = art.retention.iter().find(|r| r.symbol == "DIA").expect("DIA is never omitted");
+        let art = artifact_over(&[
+            "SPY".to_string(),
+            "QQQ".to_string(),
+            "IWM".to_string(),
+            "DIA".to_string(),
+        ]);
+        let dia = art
+            .retention
+            .iter()
+            .find(|r| r.symbol == "DIA")
+            .expect("DIA is never omitted");
         assert_eq!(dia.samples_loaded, 0);
-        assert!(dia.rendered.starts_with("no eligible rows ("), "renders literal 3, not a zero or blank");
+        assert!(
+            dia.rendered.starts_with("no eligible rows ("),
+            "renders literal 3, not a zero or blank"
+        );
         assert!(!dia.rendered.contains("0.0") && !dia.rendered.contains("n/a"));
     }
 

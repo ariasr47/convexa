@@ -346,9 +346,7 @@ fn tier_slices(rows: &[ScoreLabRow]) -> Vec<TierSlice> {
             };
             let events: Vec<bool> = rs
                 .iter()
-                .filter_map(|r| {
-                    Some(r.hit_call_wall? || r.hit_put_wall? || r.crossed_flip?)
-                })
+                .filter_map(|r| Some(r.hit_call_wall? || r.hit_put_wall? || r.crossed_flip?))
                 .collect();
             let structure_event_rate = if events.is_empty() {
                 None
@@ -506,11 +504,7 @@ pub fn leave_one_driver_out(rows: &[ScoreLabRow]) -> Vec<LeaveOneOutDriver> {
                 .iter()
                 .filter_map(|r| {
                     let d = r.score_drivers.as_ref()?;
-                    let rem = d.proximity
-                        + d.vol
-                        + d.setups
-                        + d.transition
-                        + d.dark_pool
+                    let rem = d.proximity + d.vol + d.setups + d.transition + d.dark_pool
                         - driver_value(d, dropped).unwrap_or(0);
                     let y = r.abs_move.filter(|v| v.is_finite())?;
                     Some((rem as f64, y))
@@ -530,7 +524,12 @@ mod tests {
     use super::*;
     use crate::services::scanner::store::ScanScoreDrivers;
 
-    fn sample(sym: &str, as_of: f64, score: f64, drivers: Option<ScanScoreDrivers>) -> StructureSample {
+    fn sample(
+        sym: &str,
+        as_of: f64,
+        score: f64,
+        drivers: Option<ScanScoreDrivers>,
+    ) -> StructureSample {
         StructureSample {
             symbol: sym.into(),
             as_of,

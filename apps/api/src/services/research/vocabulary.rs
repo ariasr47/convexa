@@ -91,13 +91,23 @@ pub fn reason_text(r: &ReasonKey) -> String {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum Power {
     Powered,
-    UnderPowered { n_rows: usize, n_sessions: usize, row_floor: usize, session_floor: usize },
+    UnderPowered {
+        n_rows: usize,
+        n_sessions: usize,
+        row_floor: usize,
+        session_floor: usize,
+    },
 }
 
 impl Power {
     pub fn evaluate(n_rows: usize, n_sessions: usize) -> Power {
         if n_rows < ROW_FLOOR || n_sessions < SESSION_FLOOR {
-            Power::UnderPowered { n_rows, n_sessions, row_floor: ROW_FLOOR, session_floor: SESSION_FLOOR }
+            Power::UnderPowered {
+                n_rows,
+                n_sessions,
+                row_floor: ROW_FLOOR,
+                session_floor: SESSION_FLOOR,
+            }
         } else {
             Power::Powered
         }
@@ -110,7 +120,12 @@ impl Power {
 
 /// `floors_text` — the marker's floor-naming clause: "below row floor R" · "below session floor S"
 /// · "below row floor R and session floor S".
-pub fn floors_text(row_floor: usize, session_floor: usize, n_rows: usize, n_sessions: usize) -> String {
+pub fn floors_text(
+    row_floor: usize,
+    session_floor: usize,
+    n_rows: usize,
+    n_sessions: usize,
+) -> String {
     let under_row = n_rows < row_floor;
     let under_session = n_sessions < session_floor;
     match (under_row, under_session) {
@@ -124,8 +139,18 @@ pub fn floors_text(row_floor: usize, session_floor: usize, n_rows: usize, n_sess
 /// Metric-scope absence — literal 9 / literal 10.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum MetricState {
-    UnderMinimum { stat: &'static str, needs: usize, unit: &'static str, have: usize, carrier_n: usize },
-    UndefinedOnThisData { stat: &'static str, precondition: &'static str, failing_fact: String },
+    UnderMinimum {
+        stat: &'static str,
+        needs: usize,
+        unit: &'static str,
+        have: usize,
+        carrier_n: usize,
+    },
+    UndefinedOnThisData {
+        stat: &'static str,
+        precondition: &'static str,
+        failing_fact: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -171,15 +196,36 @@ pub enum CalibrationSeries {
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub enum CellState {
-    Computed { metrics: Metrics, power: Power },
-    NoPairedOutcome { n_samples_in_group: usize, horizon: String, symbol: String },
+    Computed {
+        metrics: Metrics,
+        power: Power,
+    },
+    NoPairedOutcome {
+        n_samples_in_group: usize,
+        horizon: String,
+        symbol: String,
+    },
     /// non-empty by construction — see `comparison::disposition`'s single construction site.
-    NoEligibleRows { by_reason: BTreeMap<ReasonKey, usize> },
-    DegenerateCandidate { value: f64, n: usize },
-    DegenerateLabel { n_pos: usize, n_neg: usize },
+    NoEligibleRows {
+        by_reason: BTreeMap<ReasonKey, usize>,
+    },
+    DegenerateCandidate {
+        value: f64,
+        n: usize,
+    },
+    DegenerateLabel {
+        n_pos: usize,
+        n_neg: usize,
+    },
     /// RESERVED — not reachable in v1. No arm of `comparison::precedence` emits this.
-    NotApplicable { metric: &'static str, reason: &'static str },
-    NotRun { block: &'static str, flag: &'static str },
+    NotApplicable {
+        metric: &'static str,
+        reason: &'static str,
+    },
+    NotRun {
+        block: &'static str,
+        flag: &'static str,
+    },
 }
 
 impl CellState {
@@ -198,11 +244,22 @@ impl CellState {
 /// A value-bearing atom (literal 1 or 2) — the shape shared by every metric line: `AUC`, `Lift@10`,
 /// and the cell/record header value. `decimals` is 3 for AUC, 2 for everything else (a printed
 /// instance, not a rule the identity proof depends on).
-pub fn render_value_atom(value: f64, decimals: usize, n: usize, sessions: usize, power: &Power) -> String {
+pub fn render_value_atom(
+    value: f64,
+    decimals: usize,
+    n: usize,
+    sessions: usize,
+    power: &Power,
+) -> String {
     let v = format!("{value:.decimals$}");
     match power {
         Power::Powered => format!("{v} (n={n}, sessions={sessions})"),
-        Power::UnderPowered { n_rows, n_sessions, row_floor, session_floor } => {
+        Power::UnderPowered {
+            n_rows,
+            n_sessions,
+            row_floor,
+            session_floor,
+        } => {
             let floors = floors_text(*row_floor, *session_floor, *n_rows, *n_sessions);
             format!("{v} (n={n}, sessions={sessions} — under-powered: {floors})")
         }
@@ -210,10 +267,19 @@ pub fn render_value_atom(value: f64, decimals: usize, n: usize, sessions: usize,
 }
 
 /// Literal 3.
-pub fn render_no_eligible_rows(paired_noun: &str, paired: usize, by_reason: &BTreeMap<ReasonKey, usize>) -> String {
-    let reasons: Vec<String> =
-        by_reason.iter().map(|(r, k)| format!("{} {k}", reason_text(r))).collect();
-    format!("no eligible rows (0 of {paired} {paired_noun}: {})", reasons.join(", "))
+pub fn render_no_eligible_rows(
+    paired_noun: &str,
+    paired: usize,
+    by_reason: &BTreeMap<ReasonKey, usize>,
+) -> String {
+    let reasons: Vec<String> = by_reason
+        .iter()
+        .map(|(r, k)| format!("{} {k}", reason_text(r)))
+        .collect();
+    format!(
+        "no eligible rows (0 of {paired} {paired_noun}: {})",
+        reasons.join(", ")
+    )
 }
 
 /// Literal 4.
@@ -223,11 +289,18 @@ pub fn render_no_paired_outcome(n_samples: usize, symbol: &str, horizon: &str) -
 
 /// Literal 5.
 pub fn render_degenerate_candidate(n: usize, value: f64) -> String {
-    format!("no variation in the candidate ({n} eligible rows, all = {value:.2}; ranking undefined)")
+    format!(
+        "no variation in the candidate ({n} eligible rows, all = {value:.2}; ranking undefined)"
+    )
 }
 
 /// Literal 6.
-pub fn render_degenerate_label(n: usize, n_pos: usize, n_neg: usize, threshold_text: &str) -> String {
+pub fn render_degenerate_label(
+    n: usize,
+    n_pos: usize,
+    n_neg: usize,
+    threshold_text: &str,
+) -> String {
     format!(
         "no variation in the label ({n} rows, {n_pos} positive / {n_neg} negative at {threshold_text}; ranking undefined)"
     )
@@ -245,7 +318,13 @@ pub fn render_not_run(flag: &str, n_samples: usize) -> String {
 }
 
 /// Literal 9.
-pub fn render_under_minimum(stat: &str, needs: usize, unit: &str, have: usize, carrier_n: usize) -> String {
+pub fn render_under_minimum(
+    stat: &str,
+    needs: usize,
+    unit: &str,
+    have: usize,
+    carrier_n: usize,
+) -> String {
     format!("not enough rows for this statistic ({stat} needs {needs} {unit}; {have} of {carrier_n} eligible rows)")
 }
 
@@ -256,16 +335,28 @@ pub fn render_undefined_on_this_data(stat: &str, precondition: &str, failing_fac
 
 pub fn render_metric_state(m: &MetricState) -> String {
     match m {
-        MetricState::UnderMinimum { stat, needs, unit, have, carrier_n } => {
-            render_under_minimum(stat, *needs, unit, *have, *carrier_n)
-        }
-        MetricState::UndefinedOnThisData { stat, precondition, failing_fact } => {
-            render_undefined_on_this_data(stat, precondition, failing_fact)
-        }
+        MetricState::UnderMinimum {
+            stat,
+            needs,
+            unit,
+            have,
+            carrier_n,
+        } => render_under_minimum(stat, *needs, unit, *have, *carrier_n),
+        MetricState::UndefinedOnThisData {
+            stat,
+            precondition,
+            failing_fact,
+        } => render_undefined_on_this_data(stat, precondition, failing_fact),
     }
 }
 
-pub fn render_metric_value(v: &MetricValue, decimals: usize, n: usize, sessions: usize, power: &Power) -> String {
+pub fn render_metric_value(
+    v: &MetricValue,
+    decimals: usize,
+    n: usize,
+    sessions: usize,
+    power: &Power,
+) -> String {
     match v {
         MetricValue::Value(x) => render_value_atom(*x, decimals, n, sessions, power),
         MetricValue::Absent(s) => render_metric_state(s),
@@ -290,7 +381,12 @@ mod tests {
                 2,
                 4,
                 1,
-                &Power::UnderPowered { n_rows: 4, n_sessions: 1, row_floor: 30, session_floor: 2 },
+                &Power::UnderPowered {
+                    n_rows: 4,
+                    n_sessions: 1,
+                    row_floor: 30,
+                    session_floor: 2,
+                },
             ),
             // 3
             render_no_eligible_rows("paired rows", 221, &reasons),
@@ -323,7 +419,11 @@ mod tests {
     #[test]
     fn twelve_strings_and_a_blank_are_pairwise_distinct() {
         let c = corpus();
-        assert_eq!(c.len(), 12, "10 literals + a bare value + a blank — a shrinking corpus stops proving anything");
+        assert_eq!(
+            c.len(),
+            12,
+            "10 literals + a bare value + a blank — a shrinking corpus stops proving anything"
+        );
         for (i, a) in c.iter().enumerate() {
             for (j, b) in c.iter().enumerate() {
                 if i != j {
@@ -338,10 +438,16 @@ mod tests {
         let c = corpus();
         for (i, s) in c.iter().enumerate() {
             if i < 2 {
-                assert!(s.chars().next().unwrap().is_ascii_digit(), "literal {i} must start with a digit: {s}");
+                assert!(
+                    s.chars().next().unwrap().is_ascii_digit(),
+                    "literal {i} must start with a digit: {s}"
+                );
             } else if i < 10 {
                 assert!(
-                    s.chars().next().map(|c| c.is_ascii_lowercase()).unwrap_or(false),
+                    s.chars()
+                        .next()
+                        .map(|c| c.is_ascii_lowercase())
+                        .unwrap_or(false),
                     "literal {i} must start lowercase (no number here): {s}"
                 );
             }
@@ -354,9 +460,15 @@ mod tests {
         for (i, s) in c.iter().enumerate() {
             let has_marker = s.contains("— under-powered:");
             if i == 1 {
-                assert!(has_marker, "literal 2 (the marked value) must carry the marker");
+                assert!(
+                    has_marker,
+                    "literal 2 (the marked value) must carry the marker"
+                );
             } else {
-                assert!(!has_marker, "literal {i} must NOT carry the under-powered marker: {s}");
+                assert!(
+                    !has_marker,
+                    "literal {i} must NOT carry the under-powered marker: {s}"
+                );
             }
         }
     }
@@ -365,7 +477,10 @@ mod tests {
     fn no_absence_literal_begins_with_a_numeral() {
         let c = corpus();
         for s in &c[2..10] {
-            assert!(!s.chars().next().unwrap().is_ascii_digit(), "absence literal begins with a digit: {s}");
+            assert!(
+                !s.chars().next().unwrap().is_ascii_digit(),
+                "absence literal begins with a digit: {s}"
+            );
         }
     }
 
@@ -378,7 +493,10 @@ mod tests {
                 continue;
             }
             assert!(!s.is_empty(), "literal {i} is empty");
-            assert!(!s.chars().next().unwrap().is_whitespace(), "literal {i} starts with whitespace: {s}");
+            assert!(
+                !s.chars().next().unwrap().is_whitespace(),
+                "literal {i} starts with whitespace: {s}"
+            );
         }
     }
 
@@ -402,7 +520,10 @@ mod tests {
                     '(' => depth += 1,
                     ')' => {
                         depth -= 1;
-                        assert!(depth >= 0, "literal {i} closes a paren it never opened: {s}");
+                        assert!(
+                            depth >= 0,
+                            "literal {i} closes a paren it never opened: {s}"
+                        );
                     }
                     _ => {}
                 }
@@ -421,8 +542,13 @@ mod tests {
     #[test]
     fn retired_strings_do_not_reappear_in_any_rendered_literal() {
         let c = corpus();
-        let banned =
-            ["too few (", "undefined (base rate", " — not applicable", "no input (", "not attempted"];
+        let banned = [
+            "too few (",
+            "undefined (base rate",
+            " — not applicable",
+            "no input (",
+            "not attempted",
+        ];
         for s in &c {
             for b in banned {
                 assert!(!s.contains(b), "retired string {b:?} reappeared in {s:?}");

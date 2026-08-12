@@ -20,7 +20,11 @@ pub fn render_evidence_header(art: &Artifact) -> String {
         _ => "no window (zero paired rows)".to_string(),
     };
 
-    let spy_retention = art.retention.iter().find(|r| r.symbol == "SPY").or_else(|| art.retention.first());
+    let spy_retention = art
+        .retention
+        .iter()
+        .find(|r| r.symbol == "SPY")
+        .or_else(|| art.retention.first());
     let not_evaluable = match spy_retention {
         Some(r) if r.samples_loaded > 0 => format!(
             "the multi-week half needs more history than the raw diary holds. The diary is a \
@@ -39,9 +43,16 @@ pub fn render_evidence_header(art: &Artifact) -> String {
 
     let mut lines = vec![
         "RESEARCH READ \u{2014} NOT A PRODUCT RULING".to_string(),
-        format!("  Evidence:   {} \u{b7} symbols: {symbols}", art.evidence_class),
-        format!("  This run:   {window} \u{b7} {} paired rows \u{b7} horizon {}", art.n_paired, art.horizon),
-        "  Bar (runbook text, printed beside the run's values; this run does not evaluate it):".to_string(),
+        format!(
+            "  Evidence:   {} \u{b7} symbols: {symbols}",
+            art.evidence_class
+        ),
+        format!(
+            "  This run:   {window} \u{b7} {} paired rows \u{b7} horizon {}",
+            art.n_paired, art.horizon
+        ),
+        "  Bar (runbook text, printed beside the run's values; this run does not evaluate it):"
+            .to_string(),
         format!("              {BAR_TEXT}"),
         format!("  Not evaluable here: {not_evaluable}"),
         format!("  Authorizes: {}", art.authorizes),
@@ -51,7 +62,10 @@ pub fn render_evidence_header(art: &Artifact) -> String {
     // AC-64 — when the newest paired sample predates the run beyond one session, name both dates.
     if let Some(days_before) = stale_diary_days(art) {
         if days_before > STALE_DIARY_THRESHOLD_DAYS {
-            let last_dt = art.window_utc_last.and_then(epoch_to_date_string).unwrap_or_default();
+            let last_dt = art
+                .window_utc_last
+                .and_then(epoch_to_date_string)
+                .unwrap_or_default();
             lines.push(format!(
                 "  Newest sample {last_dt} ({days_before:.0} days before this run) \u{2014} this read \
                  describes an older diary, not today"
@@ -64,7 +78,9 @@ pub fn render_evidence_header(art: &Artifact) -> String {
 
 fn epoch_to_date_string(epoch_secs: f64) -> Option<String> {
     use chrono::{TimeZone, Utc};
-    Utc.timestamp_opt(epoch_secs.floor() as i64, 0).single().map(|d| d.format("%Y-%m-%d").to_string())
+    Utc.timestamp_opt(epoch_secs.floor() as i64, 0)
+        .single()
+        .map(|d| d.format("%Y-%m-%d").to_string())
 }
 
 /// Days between the newest paired sample and `generated_at_utc`, or `None` when either is
@@ -89,20 +105,24 @@ pub fn render_provenance_line(art: &Artifact) -> String {
 /// Block 3 — slice description: requested symbols, paired rows, window, sessions covered, both
 /// floors, label definitions verbatim with their threshold values.
 pub fn render_slice_description(art: &Artifact) -> String {
-    let mut lines = vec![
-        format!(
-            "requested_symbols=[{}] \u{b7} n_paired={} \u{b7} sessions_covered={} \u{b7} \
+    let mut lines = vec![format!(
+        "requested_symbols=[{}] \u{b7} n_paired={} \u{b7} sessions_covered={} \u{b7} \
              row_floor={} \u{b7} session_floor={}",
-            art.requested_symbols.join(","),
-            art.n_paired,
-            art.session_dates.len(),
-            art.row_floor_in_force,
-            art.session_floor_in_force
-        ),
-    ];
+        art.requested_symbols.join(","),
+        art.n_paired,
+        art.session_dates.len(),
+        art.row_floor_in_force,
+        art.session_floor_in_force
+    )];
     for l in &art.labels {
-        let threshold = l.threshold.map(|t| format!("{t:.4}")).unwrap_or_else(|| "no numeric threshold (rule-based label)".to_string());
-        lines.push(format!("  label {}: {} (threshold={threshold})", l.key, l.definition));
+        let threshold = l
+            .threshold
+            .map(|t| format!("{t:.4}"))
+            .unwrap_or_else(|| "no numeric threshold (rule-based label)".to_string());
+        lines.push(format!(
+            "  label {}: {} (threshold={threshold})",
+            l.key, l.definition
+        ));
     }
     lines.join("\n")
 }
@@ -126,21 +146,36 @@ pub fn render_candidate_blocks(art: &Artifact) -> String {
     for (i, cand) in CANDIDATES.iter().enumerate() {
         out.push(render_candidate_label(i + 1, cand.key));
         for label in &art.labels {
-            let primary_tag = if label.key == art.labels.iter().find(|l| true_is_primary(l.key)).map(|l| l.key).unwrap_or("") {
+            let primary_tag = if label.key
+                == art
+                    .labels
+                    .iter()
+                    .find(|l| true_is_primary(l.key))
+                    .map(|l| l.key)
+                    .unwrap_or("")
+            {
                 ""
             } else {
                 " [secondary]"
             };
-            let pooled = art.cells.iter().find(|c| c.candidate == cand.key && c.label == label.key && c.group == "Pooled");
+            let pooled = art
+                .cells
+                .iter()
+                .find(|c| c.candidate == cand.key && c.label == label.key && c.group == "Pooled");
             if let Some(cell) = pooled {
-                out.push(format!("  {} \u{b7} {}{primary_tag}\n{}", cand.display, label.key, cell.rendered));
+                out.push(format!(
+                    "  {} \u{b7} {}{primary_tag}\n{}",
+                    cand.display, label.key, cell.rendered
+                ));
             }
         }
         out.push("  Per symbol \u{2014} pooled above is not a summary of these".to_string());
         for sym in &art.requested_symbols {
             let group_key = format!("Symbol({})", sym.trim().to_ascii_uppercase());
             for label in &art.labels {
-                if let Some(cell) = art.cells.iter().find(|c| c.candidate == cand.key && c.label == label.key && c.group == group_key) {
+                if let Some(cell) = art.cells.iter().find(|c| {
+                    c.candidate == cand.key && c.label == label.key && c.group == group_key
+                }) {
                     out.push(format!("    {sym} \u{b7} {}\n{}", label.key, cell.rendered));
                 }
             }
@@ -150,7 +185,9 @@ pub fn render_candidate_blocks(art: &Artifact) -> String {
 }
 
 fn true_is_primary(key: &str) -> bool {
-    crate::services::research::labels::LABELS.iter().any(|l| l.key == key && l.primary)
+    crate::services::research::labels::LABELS
+        .iter()
+        .any(|l| l.key == key && l.primary)
 }
 
 /// Block 7 — calibration, per candidate x pooled group, thin bins marked never withheld.
@@ -159,8 +196,15 @@ pub fn render_calibration_block(art: &Artifact) -> String {
     for cand in CANDIDATES {
         // Any pooled cell for this candidate carries the calibration series inline via its
         // `rendered` text (the "Calibration  ..." line already produced by comparison.rs).
-        if let Some(cell) = art.cells.iter().find(|c| c.candidate == cand.key && c.group == "Pooled") {
-            let calib_line = cell.rendered.lines().find(|l| l.trim_start().starts_with("Calibration"));
+        if let Some(cell) = art
+            .cells
+            .iter()
+            .find(|c| c.candidate == cand.key && c.group == "Pooled")
+        {
+            let calib_line = cell
+                .rendered
+                .lines()
+                .find(|l| l.trim_start().starts_with("Calibration"));
             if let Some(line) = calib_line {
                 out.push(format!("  {} {}", cand.display, line.trim()));
             }
@@ -171,7 +215,10 @@ pub fn render_calibration_block(art: &Artifact) -> String {
 
 /// Block 8 — driver attribution, in the same closed vocabulary (AC-39/40/41/42).
 pub fn render_driver_attribution_block(art: &Artifact) -> String {
-    let mut out = vec![format!("Driver attribution: {}", art.driver_attribution.rendered)];
+    let mut out = vec![format!(
+        "Driver attribution: {}",
+        art.driver_attribution.rendered
+    )];
     for e in &art.driver_attribution.entries {
         out.push(format!(
             "  {} \u{b7} pearson_vs_abs_move={:?} \u{b7} pearson_vs_ret_simple={:?} \u{b7} n={}",
@@ -209,7 +256,9 @@ pub fn render_console(art: &Artifact) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::research::artifact::{build_artifact, build_driver_attribution, build_retention};
+    use crate::services::research::artifact::{
+        build_artifact, build_driver_attribution, build_retention,
+    };
     use crate::services::research::comparison::{build_all_records, build_grid, groups_for};
     use crate::services::research::fixtures::{slice_0810_outcomes, slice_0810_samples};
     use crate::services::research::labels::build_label_set;
@@ -223,7 +272,14 @@ mod tests {
         let requested: Vec<String> = vec!["SPY".into(), "QQQ".into(), "IWM".into()];
         let groups = groups_for(&requested);
         let evidence = crate::services::research::artifact::evidence_class(&pairing.session_dates);
-        let cells = build_grid(&pairing.rows, &ls, &groups, "1d", &evidence, &pairing.n_samples_by_symbol);
+        let cells = build_grid(
+            &pairing.rows,
+            &ls,
+            &groups,
+            "1d",
+            &evidence,
+            &pairing.n_samples_by_symbol,
+        );
         let records = build_all_records(&pairing.rows, &groups, "1d");
         let driver_attribution = build_driver_attribution(&pairing.rows, true);
         let retention = build_retention(&pairing.loaded_by_symbol, &requested);
@@ -254,7 +310,10 @@ mod tests {
         let console = render_console(&a);
         assert!(console.starts_with("RESEARCH READ"));
         for banned in ["AT BAR", "BELOW BAR", "PASS", "FAIL", "MEETS"] {
-            assert!(!console.contains(banned), "console contains banned token {banned:?}");
+            assert!(
+                !console.contains(banned),
+                "console contains banned token {banned:?}"
+            );
         }
         assert!(console.contains("Ranking a candidate signal here is not adopting it."));
     }
@@ -263,8 +322,13 @@ mod tests {
     fn evidence_one_liner_repeats_at_the_end() {
         let a = art();
         let console = render_console(&a);
-        assert!(console.trim_end().ends_with(&format!("authorizes: {}", a.authorizes)));
-        assert!(console.matches("Evidence:").count() >= 2, "the evidence fact must appear in header AND the repeated one-liner");
+        assert!(console
+            .trim_end()
+            .ends_with(&format!("authorizes: {}", a.authorizes)));
+        assert!(
+            console.matches("Evidence:").count() >= 2,
+            "the evidence fact must appear in header AND the repeated one-liner"
+        );
     }
 
     #[test]
@@ -273,8 +337,14 @@ mod tests {
         let blocks = render_candidate_blocks(&a);
         let mut last_idx = 0;
         for (i, cand) in CANDIDATES.iter().enumerate() {
-            let pos = blocks.find(&format!("{}  {}", i + 1, cand.display)).expect("candidate label present");
-            assert!(pos >= last_idx || i == 0, "candidate {} out of declared order", cand.key);
+            let pos = blocks
+                .find(&format!("{}  {}", i + 1, cand.display))
+                .expect("candidate label present");
+            assert!(
+                pos >= last_idx || i == 0,
+                "candidate {} out of declared order",
+                cand.key
+            );
             last_idx = pos;
         }
     }
@@ -284,7 +354,10 @@ mod tests {
         let a = art();
         let blocks = render_candidate_blocks(&a);
         for sym in &a.requested_symbols {
-            assert!(blocks.contains(&format!("{sym} \u{b7}")), "missing per-symbol block for {sym}");
+            assert!(
+                blocks.contains(&format!("{sym} \u{b7}")),
+                "missing per-symbol block for {sym}"
+            );
         }
     }
 
@@ -294,7 +367,10 @@ mod tests {
         // Newest paired sample is on 2026-08-10; generate "now" far in the future.
         a.generated_at_utc = "2026-09-01T00:00:00Z".to_string();
         let header = render_evidence_header(&a);
-        assert!(header.contains("this read describes an older diary, not today"), "{header}");
+        assert!(
+            header.contains("this read describes an older diary, not today"),
+            "{header}"
+        );
 
         a.generated_at_utc = "2026-08-10T20:00:00Z".to_string();
         let header2 = render_evidence_header(&a);
