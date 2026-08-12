@@ -379,6 +379,7 @@ fn render_cell_block(
 fn render_record_block(
     state: &CellState,
     n_paired_in_group: usize,
+    n_eligible: usize,
     excluded_by_reason: &BTreeMap<ReasonKey, usize>,
     correlations: &Correlations,
 ) -> String {
@@ -397,9 +398,12 @@ fn render_record_block(
         CellState::NotApplicable { metric, reason } => render_not_applicable(metric, reason),
         CellState::NotRun { flag, .. } => render_not_run(flag, n_paired_in_group),
         CellState::Computed { .. } => {
+            // Every value atom carries its carrier's own n= qualifier (AC-16) — a bare "{v:.2}"
+            // with nothing after it is indistinguishable from the C-2 bare-zero defect when the
+            // correlation happens to round to 0.00.
             let plain = |mv: &MetricValue| -> String {
                 match mv {
-                    MetricValue::Value(v) => format!("{v:.2}"),
+                    MetricValue::Value(v) => format!("{v:.2} (n={n_eligible})"),
                     MetricValue::Absent(s) => render_metric_state(s),
                 }
             };
@@ -680,6 +684,7 @@ pub fn build_record(
     let rendered = render_record_block(
         &state,
         n_paired_in_group,
+        n_eligible,
         &disposed.excluded_by_reason,
         &correlations,
     );

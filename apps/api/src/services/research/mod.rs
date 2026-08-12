@@ -13,6 +13,8 @@ pub mod outcomes;
 pub mod pairing;
 pub mod render;
 pub mod run;
+#[cfg(test)]
+pub mod scan_guards;
 pub mod score_lab;
 pub(crate) mod stats;
 pub mod vocabulary;

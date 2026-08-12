@@ -101,7 +101,7 @@ pub fn render_slice_description(art: &Artifact) -> String {
         ),
     ];
     for l in &art.labels {
-        let threshold = l.threshold.map(|t| format!("{t:.4}")).unwrap_or_else(|| "n/a-on-this-slice".to_string());
+        let threshold = l.threshold.map(|t| format!("{t:.4}")).unwrap_or_else(|| "no numeric threshold (rule-based label)".to_string());
         lines.push(format!("  label {}: {} (threshold={threshold})", l.key, l.definition));
     }
     lines.join("\n")
