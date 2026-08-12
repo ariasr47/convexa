@@ -6,5 +6,4 @@ has reached GATE R yet.
 
 | branch | touching | last gate | updated |
 |---|---|---|---|
-
-*(No branch in flight. `main`'s row was removed at `score-lab-signal-comparison` GATE S, 2026-08-12.)*
+| main | — (no feature in flight; between GATE S and GATE I) | GATE R | 2026-08-12 |
