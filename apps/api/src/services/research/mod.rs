@@ -12,6 +12,7 @@ pub mod labels;
 pub mod outcomes;
 pub mod pairing;
 pub mod render;
+pub mod run;
 pub mod score_lab;
 pub(crate) mod stats;
 pub mod vocabulary;
