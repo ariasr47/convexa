@@ -11,6 +11,7 @@ pub mod outcomes;
 pub mod pairing;
 pub mod score_lab;
 pub(crate) mod stats;
+pub mod vocabulary;
 
 pub use outcomes::{
     join_sample_outcomes, join_samples, session_date_et, StructureOutcome, LABEL_VERSION_V1,
