@@ -64,6 +64,7 @@ changes on the strength of this run.  [score-change-is-deliberate-and-measured]"
 pub struct LabelEcho {
     pub key: &'static str,
     pub definition: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub threshold: Option<f64>,
     pub derived_from: Vec<DK>,
 }
@@ -77,6 +78,7 @@ pub struct CandidateEcho {
     pub direction: &'static str,
     pub inputs: Vec<&'static str>,
     pub derived_from: Vec<DK>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub shares_derivation_with: Option<String>,
     pub role: String,
 }
@@ -268,7 +270,9 @@ pub struct Retention {
     pub sessions_covered: usize,
     pub samples_per_session_observed: MetricValue,
     pub cap_holds_sessions_estimate: MetricValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub window_first: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub window_last: Option<String>,
     /// The zero-denominator arm falls here (SPEC §5's new row): `NoEligibleRows` with the
     /// `NoSamplesLoaded` reason, mirroring arm 3's shape at retention scope rather than inventing
@@ -396,7 +400,9 @@ pub struct Artifact {
     pub requested_symbols: Vec<String>,
     pub sample_source: String,
     pub outcomes_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub window_utc_first: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub window_utc_last: Option<f64>,
     pub session_dates: BTreeSet<String>,
     pub n_samples_loaded: usize,
@@ -446,6 +452,7 @@ pub struct CellJson {
     pub definitionally_coupled: bool,
     pub shared_keys: Vec<DK>,
     pub label_definition: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub label_threshold: Option<f64>,
     pub rendered: String,
 }
