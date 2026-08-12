@@ -493,7 +493,7 @@ pub fn build_cell(
     ) && n_eligible > 0;
 
     let threshold_text = threshold_text_for(label, ls);
-    let rendered = render_cell_block(
+    let mut rendered = render_cell_block(
         &state,
         n_paired_in_group,
         n_samples_in_group,
@@ -503,6 +503,16 @@ pub fn build_cell(
         &threshold_text,
         horizon,
     );
+    // AC-55 — the coupling mark rides INSIDE the cell's own text, wherever its figure appears
+    // (every state, not only Computed), naming the shared keys. Never a legend.
+    if !shared.is_empty() {
+        let key_names: Vec<&str> = shared.iter().map(|k| k.human()).collect();
+        rendered.push_str(&format!(
+            "\ndefinitionally coupled with {} (shared: {})",
+            label.key,
+            key_names.join(", ")
+        ));
+    }
 
     Cell {
         group: group.clone(),
@@ -784,6 +794,45 @@ mod tests {
             "SINGLE SESSION (d=1)",
         );
         assert!(matches!(cell.state, CellState::NoPairedOutcome { .. }));
+    }
+
+    /// AC-55 — the coupling mark rides INSIDE the cell's own rendered text, naming the shared
+    /// keys, never in a legend.
+    #[test]
+    fn coupled_cells_rendered_text_carries_the_mark_and_shared_keys() {
+        let pairing = pair_rows(&slice_0810_samples(), &slice_0810_outcomes(), "1d");
+        let ls = build_label_set(&pairing.rows);
+        let cand = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+        let label = LABELS.iter().find(|l| l.key == "structure_event").unwrap();
+        let coupled = build_cell(
+            &pairing.rows,
+            &ls,
+            &GroupKey::Pooled,
+            cand,
+            label,
+            "1d",
+            pairing.rows.len(),
+            221,
+            "SINGLE SESSION (d=1)",
+        );
+        assert!(coupled.rendered.contains("definitionally coupled with structure_event"));
+        assert!(coupled.rendered.contains("flip"));
+        assert!(coupled.rendered.contains("call wall"));
+        assert!(coupled.rendered.contains("put wall"));
+
+        let uncoupled_label = LABELS.iter().find(|l| l.key == "large_abs_move").unwrap();
+        let uncoupled = build_cell(
+            &pairing.rows,
+            &ls,
+            &GroupKey::Pooled,
+            cand,
+            uncoupled_label,
+            "1d",
+            pairing.rows.len(),
+            221,
+            "SINGLE SESSION (d=1)",
+        );
+        assert!(!uncoupled.rendered.contains("definitionally coupled"));
     }
 }
 

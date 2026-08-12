@@ -229,6 +229,31 @@ pub fn shares_derivation_with(c: &Candidate) -> Vec<(&'static str, Vec<DK>)> {
         .collect()
 }
 
+/// AC-77 — the shared-derivation note, rendered once per candidate's own label (never per cell,
+/// never a legend). Distinct from `definitionally_coupled` (candidate x LABEL) and never replaces
+/// it. `None` when the candidate shares no determinant with any other candidate.
+pub fn shared_derivation_note(c: &Candidate) -> Option<String> {
+    let partners = shares_derivation_with(c);
+    if partners.is_empty() {
+        return None;
+    }
+    let names: Vec<&'static str> = partners
+        .iter()
+        .map(|(key, _)| CANDIDATES.iter().find(|o| o.key == *key).unwrap().display)
+        .collect();
+    let mut all_keys: Vec<DK> = Vec::new();
+    for (_, ks) in &partners {
+        for k in ks {
+            if !all_keys.contains(k) {
+                all_keys.push(*k);
+            }
+        }
+    }
+    all_keys.sort();
+    let key_names: Vec<&'static str> = all_keys.iter().map(|k| k.human()).collect();
+    Some(format!("shares derivation with: {} ({})", names.join(", "), key_names.join(", ")))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -326,5 +351,176 @@ mod tests {
     fn vol_scalar_guard_rejects_nonpositive_accepts_positive() {
         assert_eq!(vol_scalar_guard(0.0), Err(Ineligible::DegenerateInput { field: "vol_scalar" }));
         assert_eq!(vol_scalar_guard(0.22), Ok(()));
+    }
+
+    #[test]
+    fn shared_derivation_note_present_on_all_five_with_expected_partners() {
+        for c in CANDIDATES {
+            let note = shared_derivation_note(c);
+            match c.key {
+                "opportunity_score" => {
+                    let n = note.expect("composite must carry a note");
+                    assert!(n.contains("Closeness to flip"));
+                    assert!(n.contains("Closeness to nearer wall"));
+                }
+                "proximity_to_flip" => {
+                    let n = note.expect("flip must carry a note");
+                    assert!(n.contains("Composite opportunity score"));
+                    assert!(n.contains("flip"));
+                }
+                "proximity_to_nearer_wall" => {
+                    let n = note.expect("wall must carry a note");
+                    assert!(n.contains("Composite opportunity score"));
+                    assert!(n.contains("call wall"));
+                    assert!(n.contains("put wall"));
+                }
+                "net_gex_vol_norm_abs" => {
+                    let n = note.expect("vol-norm must carry a note");
+                    assert!(n.contains("Raw GEX magnitude"));
+                    assert!(n.contains("net GEX"));
+                }
+                "net_gex_abs_raw" => {
+                    let n = note.expect("raw control must carry a note");
+                    assert!(n.contains("Vol-normalized GEX magnitude"));
+                }
+                other => panic!("unexpected candidate key {other}"),
+            }
+        }
+    }
+
+    #[test]
+    fn every_note_starts_with_the_fixed_prefix() {
+        for c in CANDIDATES {
+            if let Some(n) = shared_derivation_note(c) {
+                assert!(n.starts_with("shares derivation with:"));
+            }
+        }
+    }
+}
+
+/// AC-76 — the coupled set over the declared grid is set-equality pinned. Narrowing or emptying
+/// any registry `derived_from` must fail here rather than silently unmarking a cell.
+#[cfg(test)]
+mod coupling_pin {
+    use super::*;
+    use crate::services::research::labels::LABELS;
+    use std::collections::BTreeSet;
+
+    fn fired_set(cands: &[Candidate], labels: &[(&'static str, &'static [DK])]) -> BTreeSet<(&'static str, &'static str)> {
+        let mut fired = BTreeSet::new();
+        for c in cands {
+            for (lkey, ldf) in labels {
+                if !shared_keys(c.derived_from, ldf).is_empty() {
+                    fired.insert((c.key, *lkey));
+                }
+            }
+        }
+        fired
+    }
+
+    fn real_labels() -> Vec<(&'static str, &'static [DK])> {
+        LABELS.iter().map(|l| (l.key, l.derived_from)).collect()
+    }
+
+    #[test]
+    fn coupled_set_over_the_declared_grid_equals_the_pinned_v1_set() {
+        let labels = real_labels();
+        let fired = fired_set(CANDIDATES, &labels);
+        assert_eq!(
+            fired,
+            BTreeSet::from([
+                ("opportunity_score", "structure_event"),
+                ("proximity_to_flip", "structure_event"),
+                ("proximity_to_nearer_wall", "structure_event"),
+            ]),
+            "Emptying or NARROWING any registry derived_from must fail here rather than silently \
+             unmark a cell. The composite x structure_event pair IS the deep dive's 0.932 row."
+        );
+        assert!(
+            fired.iter().all(|(_, l)| *l == "structure_event"),
+            "no candidate couples with large_abs_move or up_move — ForwardPricePath alone is \
+             shared with no snapshot-time read"
+        );
+        assert_eq!(fired.len(), 3);
+    }
+
+    /// Mutation guards proving the pin actually bites — over LOCAL COPIES of the registry rows,
+    /// never mutating the `const` CANDIDATES/LABELS themselves.
+    #[test]
+    fn narrowing_the_composite_to_score_only_drops_the_pair() {
+        let narrowed: &'static [DK] = &[DK::Score];
+        let labels = real_labels();
+        let fired = fired_set(
+            &[Candidate { derived_from: narrowed, ..clone_candidate("opportunity_score") }],
+            &labels,
+        );
+        assert!(fired.is_empty(), "narrowing the composite to [Score] must drop the coupled pair");
+    }
+
+    #[test]
+    fn emptying_structure_events_derived_from_empties_the_set() {
+        let labels: Vec<(&'static str, &'static [DK])> =
+            real_labels().into_iter().map(|(k, df)| if k == "structure_event" { (k, &[][..]) } else { (k, df) }).collect();
+        let fired = fired_set(CANDIDATES, &labels);
+        assert!(fired.is_empty(), "emptying structure_event's derived_from must empty the coupled set");
+    }
+
+    #[test]
+    fn adding_flip_to_large_abs_move_adds_two_pairs() {
+        let widened: &'static [DK] = &[DK::ForwardPricePath, DK::Flip];
+        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
+            .into_iter()
+            .map(|(k, df)| if k == "large_abs_move" { (k, widened) } else { (k, df) })
+            .collect();
+        let fired = fired_set(CANDIDATES, &labels);
+        // proximity_to_flip and opportunity_score both derive from Flip.
+        assert!(fired.contains(&("proximity_to_flip", "large_abs_move")));
+        assert!(fired.contains(&("opportunity_score", "large_abs_move")));
+        assert_eq!(fired.len(), 3 + 2, "the pin's 3 base pairs plus the 2 newly-coupled pairs");
+    }
+
+    #[test]
+    fn an_unrelated_shared_key_on_both_sides_adds_a_pair() {
+        // Give net_gex_abs_raw and up_move a shared, otherwise-unrelated key (PeakGex). The
+        // composite ALSO derives from PeakGex (it already covers 8 of 11 enum members), so this
+        // widening ripples onto (opportunity_score, up_move) too — expected, not a test bug: it
+        // demonstrates the pin reacts to ANY new intersection, not just the one directly touched.
+        let widened_cand: &'static [DK] = &[DK::NetGex, DK::PeakGex];
+        let widened_label: &'static [DK] = &[DK::ForwardPricePath, DK::PeakGex];
+        let cands: Vec<Candidate> = CANDIDATES
+            .iter()
+            .map(|c| {
+                if c.key == "net_gex_abs_raw" {
+                    Candidate { derived_from: widened_cand, ..clone_candidate(c.key) }
+                } else {
+                    clone_candidate(c.key)
+                }
+            })
+            .collect();
+        let labels: Vec<(&'static str, &'static [DK])> = real_labels()
+            .into_iter()
+            .map(|(k, df)| if k == "up_move" { (k, widened_label) } else { (k, df) })
+            .collect();
+        let fired = fired_set(&cands, &labels);
+        assert!(fired.contains(&("net_gex_abs_raw", "up_move")));
+        assert!(fired.contains(&("opportunity_score", "up_move")));
+        assert_eq!(fired.len(), 3 + 2, "the pin's 3 base pairs plus both newly-coupled pairs");
+    }
+
+    /// Local, non-`Copy`-avoiding clone of a registry row by key (Candidate has no `Clone` derive
+    /// because `fn` pointers + `&'static` slices are already `Copy`-cheap to reconstruct here).
+    fn clone_candidate(key: &'static str) -> Candidate {
+        let c = CANDIDATES.iter().find(|c| c.key == key).unwrap();
+        Candidate {
+            key: c.key,
+            display: c.display,
+            family: c.family,
+            orientation: c.orientation,
+            basis: c.basis,
+            inputs: c.inputs,
+            derived_from: c.derived_from,
+            role: c.role,
+            extract: c.extract,
+        }
     }
 }
