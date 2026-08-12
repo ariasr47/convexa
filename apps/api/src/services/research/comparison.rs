@@ -50,6 +50,89 @@ pub fn groups_for(requested_symbols: &[String]) -> Vec<GroupKey> {
     out
 }
 
+/// `n_paired_in_group` for every declared group — `Pooled` is the sum, never a re-filter.
+pub fn n_paired_by_group(all_rows: &[LabRow], groups: &[GroupKey]) -> BTreeMap<String, usize> {
+    groups
+        .iter()
+        .map(|g| (g.key(), all_rows.iter().filter(|r| g.matches(&r.symbol)).count()))
+        .collect()
+}
+
+/// `n_samples_in_group` for every declared group, from the loaded (pre-pairing) per-symbol
+/// counts. `Pooled` sums every loaded symbol, not only the requested ones — the diary's own
+/// population, independent of which symbols happen to have paired an outcome.
+pub fn n_samples_by_group(
+    n_samples_by_symbol: &BTreeMap<String, usize>,
+    groups: &[GroupKey],
+) -> BTreeMap<String, usize> {
+    groups
+        .iter()
+        .map(|g| {
+            let n = match g {
+                GroupKey::Pooled => n_samples_by_symbol.values().sum(),
+                GroupKey::Symbol(s) => n_samples_by_symbol.get(s).copied().unwrap_or(0),
+            };
+            (g.key(), n)
+        })
+        .collect()
+}
+
+/// The TOTAL grid — `groups × CANDIDATES × LABELS`, in declared order, with no filtering step
+/// anywhere that can remove a coordinate (SPEC §2.3). The single production entrypoint B12/`run.rs`
+/// call; B10's identity tests call it directly, ahead of the artifact shape existing.
+pub fn build_grid(
+    all_rows: &[LabRow],
+    ls: &LabelSet,
+    groups: &[GroupKey],
+    horizon: &str,
+    evidence_class: &str,
+    n_samples_by_symbol: &BTreeMap<String, usize>,
+) -> Vec<Cell> {
+    use crate::services::research::candidates::CANDIDATES;
+    use crate::services::research::labels::LABELS;
+
+    let paired = n_paired_by_group(all_rows, groups);
+    let samples = n_samples_by_group(n_samples_by_symbol, groups);
+
+    let mut cells = Vec::with_capacity(groups.len() * CANDIDATES.len() * LABELS.len());
+    for g in groups {
+        for cand in CANDIDATES {
+            for label in LABELS {
+                cells.push(build_cell(
+                    all_rows,
+                    ls,
+                    g,
+                    cand,
+                    label,
+                    horizon,
+                    paired[&g.key()],
+                    samples[&g.key()],
+                    evidence_class,
+                ));
+            }
+        }
+    }
+    cells
+}
+
+/// The candidate-scope records for every declared group — `groups × CANDIDATES`.
+pub fn build_all_records(
+    all_rows: &[LabRow],
+    groups: &[GroupKey],
+    horizon: &str,
+) -> Vec<CandidateScopeRecord> {
+    use crate::services::research::candidates::CANDIDATES;
+
+    let paired = n_paired_by_group(all_rows, groups);
+    let mut out = Vec::with_capacity(groups.len() * CANDIDATES.len());
+    for g in groups {
+        for cand in CANDIDATES {
+            out.push(build_record(all_rows, g, cand, horizon, paired[&g.key()]));
+        }
+    }
+    out
+}
+
 /// One (group, candidate, label) cell.
 #[derive(Debug, Clone)]
 pub struct Cell {
@@ -701,5 +784,291 @@ mod tests {
             "SINGLE SESSION (d=1)",
         );
         assert!(matches!(cell.state, CellState::NoPairedOutcome { .. }));
+    }
+}
+
+/// The three identities (SPEC §2.6), as property-style assertions over the full grid of every
+/// fixture, with no carve-out — plus the non-vacuity guards that prove the identities can
+/// actually fail (B10).
+#[cfg(test)]
+mod identities {
+    use super::*;
+    use crate::services::research::fixtures::constructed::{
+        f_const_candidate, f_const_outcome, f_mixed, f_no_positives, f_perfect_and_inverse,
+        f_sparse_pearson, f_thin,
+    };
+    use crate::services::research::fixtures::{
+        slice_0810_outcomes, slice_0810_samples, slice_current_outcomes, slice_current_samples,
+    };
+    use crate::services::research::labels::build_label_set;
+    use crate::services::research::pairing::pair_rows;
+    use crate::services::scanner::store::StructureSample;
+    use std::collections::BTreeSet;
+
+    fn build(
+        samples: &[StructureSample],
+        outcomes: &[crate::services::research::StructureOutcome],
+        requested: &[String],
+    ) -> Vec<Cell> {
+        let pairing = pair_rows(samples, outcomes, "1d");
+        let ls = build_label_set(&pairing.rows);
+        let groups = groups_for(requested);
+        build_grid(&pairing.rows, &ls, &groups, "1d", "TEST", &pairing.n_samples_by_symbol)
+    }
+
+    // ---- IDENTITY 2 — CLOSURE --------------------------------------------------------------
+
+    fn assert_closure(cells: &[Cell]) {
+        for c in cells {
+            let excluded: usize = c.excluded_by_reason.values().sum();
+            assert_eq!(
+                c.n_eligible + excluded,
+                c.n_paired_in_group,
+                "CLOSURE failed at ({:?}, {}, {})",
+                c.group,
+                c.candidate,
+                c.label
+            );
+        }
+        // P(Pooled) == sum_s P(Symbol(s))
+        let pooled_p: usize = cells
+            .iter()
+            .filter(|c| c.group == GroupKey::Pooled && c.candidate == "opportunity_score" && c.label == "large_abs_move")
+            .map(|c| c.n_paired_in_group)
+            .sum();
+        let symbol_p: usize = cells
+            .iter()
+            .filter(|c| {
+                matches!(c.group, GroupKey::Symbol(_))
+                    && c.candidate == "opportunity_score"
+                    && c.label == "large_abs_move"
+            })
+            .map(|c| c.n_paired_in_group)
+            .sum();
+        assert_eq!(pooled_p, symbol_p, "P(Pooled) must equal sum_s P(Symbol(s))");
+    }
+
+    // ---- IDENTITY 1 — COMPOSITION ------------------------------------------------------------
+
+    fn assert_composition(cells: &[Cell]) {
+        let mut by_key: BTreeMap<(&str, &str), Vec<&Cell>> = BTreeMap::new();
+        for c in cells {
+            by_key.entry((c.candidate, c.label)).or_default().push(c);
+        }
+        for group_cells in by_key.values() {
+            let pooled = group_cells.iter().find(|c| c.group == GroupKey::Pooled).unwrap();
+            let symbol_cells: Vec<&&Cell> =
+                group_cells.iter().filter(|c| matches!(c.group, GroupKey::Symbol(_))).collect();
+            let sum_eligible: usize = symbol_cells.iter().map(|c| c.n_eligible).sum();
+            assert_eq!(
+                pooled.n_eligible, sum_eligible,
+                "COMPOSITION (used) failed for ({}, {})",
+                pooled.candidate, pooled.label
+            );
+            let mut all_reasons: BTreeSet<ReasonKey> = BTreeSet::new();
+            for c in group_cells {
+                all_reasons.extend(c.excluded_by_reason.keys().cloned());
+            }
+            for r in all_reasons {
+                let pooled_r = *pooled.excluded_by_reason.get(&r).unwrap_or(&0);
+                let sum_r: usize =
+                    symbol_cells.iter().map(|c| *c.excluded_by_reason.get(&r).unwrap_or(&0)).sum();
+                assert_eq!(
+                    pooled_r, sum_r,
+                    "COMPOSITION (reason {r:?}) failed for ({}, {})",
+                    pooled.candidate, pooled.label
+                );
+            }
+        }
+    }
+
+    /// The FALSE form that must stay out: "pooled = sum(per-symbol) + exclusions" — double-counts
+    /// E and is true only when E == 0. Assert at least one reason has pooled E(r) > 0 so this test
+    /// cannot be satisfied by the false form going unnoticed.
+    fn assert_composition_is_not_vacuous(cells: &[Cell]) {
+        let has_real_exclusion = cells
+            .iter()
+            .filter(|c| c.group == GroupKey::Pooled)
+            .any(|c| c.excluded_by_reason.values().sum::<usize>() > 0);
+        assert!(has_real_exclusion, "COMPOSITION non-vacuity: no pooled cell has any real exclusion");
+    }
+
+    // ---- IDENTITY 3 — PAIRED ELIGIBILITY -----------------------------------------------------
+
+    fn assert_identity3(cells: &[Cell]) {
+        let mut raw: BTreeMap<(String, &str), &Cell> = BTreeMap::new();
+        let mut norm: BTreeMap<(String, &str), &Cell> = BTreeMap::new();
+        for c in cells {
+            if c.candidate == "net_gex_abs_raw" {
+                raw.insert((c.group.key(), c.label), c);
+            } else if c.candidate == "net_gex_vol_norm_abs" {
+                norm.insert((c.group.key(), c.label), c);
+            }
+        }
+        for (key, r) in &raw {
+            let n = norm.get(key).unwrap_or_else(|| panic!("no vol-norm cell for {key:?}"));
+            assert_eq!(r.n_eligible, n.n_eligible, "IDENTITY 3 U mismatch at {key:?}");
+            assert_eq!(
+                r.excluded_by_reason, n.excluded_by_reason,
+                "IDENTITY 3 reason map mismatch at {key:?}"
+            );
+        }
+    }
+
+    fn assert_identity3_is_not_vacuous(cells: &[Cell]) {
+        let has_real = cells.iter().any(|c| {
+            c.candidate == "net_gex_abs_raw" && c.n_eligible > 0 && !c.excluded_by_reason.is_empty()
+        });
+        assert!(
+            has_real,
+            "IDENTITY 3 non-vacuity: net_gex_abs_raw never has BOTH eligible rows and real exclusions"
+        );
+    }
+
+    fn requested(syms: &[&str]) -> Vec<String> {
+        syms.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn identities_hold_on_slice_0810() {
+        let cells = build(&slice_0810_samples(), &slice_0810_outcomes(), &requested(&["SPY", "QQQ", "IWM"]));
+        assert_closure(&cells);
+        assert_composition(&cells);
+        assert_identity3(&cells);
+    }
+
+    #[test]
+    fn identities_hold_on_f_mixed() {
+        let (samples, outcomes, syms) = f_mixed();
+        let cells = build(&samples, &outcomes, &requested(&["SPY", "QQQ", "IWM"]));
+        assert_eq!(syms, requested(&["SPY", "QQQ", "IWM"]));
+        assert_closure(&cells);
+        assert_composition(&cells);
+        assert_identity3(&cells);
+        assert_composition_is_not_vacuous(&cells);
+        assert_identity3_is_not_vacuous(&cells);
+    }
+
+    #[test]
+    fn identity3_is_not_vacuous_on_real_slice_current_data() {
+        let Some(outcomes) = slice_current_outcomes() else {
+            eprintln!("SKIP: slice_current/outcomes.json absent — B0b not yet landed.");
+            return;
+        };
+        let cells = build(&slice_current_samples(), &outcomes, &requested(&["SPY", "QQQ", "IWM"]));
+        assert_closure(&cells);
+        assert_identity3(&cells);
+        assert_identity3_is_not_vacuous(&cells);
+    }
+
+    // ---- Totality (AC-8) + the empty-map invariant (AC-32) ----------------------------------
+
+    #[test]
+    fn totality_over_the_declared_cross_product_including_a_zero_paired_symbol() {
+        let cells = build(&slice_0810_samples(), &slice_0810_outcomes(), &requested(&["SPY", "QQQ", "IWM", "DIA"]));
+        assert_eq!(cells.len(), 75, "5 candidates x 3 labels x 5 groups (Pooled + 4 symbols)");
+
+        let mut keys: BTreeSet<(String, &str, &str)> = BTreeSet::new();
+        for c in &cells {
+            keys.insert((c.group.key(), c.candidate, c.label));
+        }
+        assert_eq!(keys.len(), 75, "no duplicate/missing (group, candidate, label) key");
+
+        let dia_cells: Vec<&Cell> = cells.iter().filter(|c| c.group == GroupKey::Symbol("DIA".into())).collect();
+        assert_eq!(dia_cells.len(), 15, "5 candidates x 3 labels for the zero-paired symbol");
+        for c in dia_cells {
+            assert!(matches!(c.state, CellState::NoPairedOutcome { .. }), "DIA cells must carry literal 4");
+        }
+
+        // AC-32: no cell with n_eligible == 0 and an empty reason map, where the state names no
+        // group-level cause. Structurally guaranteed by the single construction site — asserted
+        // here so a future refactor that breaks it fails loudly.
+        for c in &cells {
+            if c.n_eligible == 0 {
+                match &c.state {
+                    CellState::NoPairedOutcome { .. } => {} // group-level cause named
+                    CellState::NoEligibleRows { by_reason } => {
+                        assert!(!by_reason.is_empty(), "NoEligibleRows with an EMPTY reason map at {:?}", c.group)
+                    }
+                    other => panic!("n_eligible == 0 with state {other:?} names no cause"),
+                }
+            }
+        }
+    }
+
+    // ---- The seven constructed fixtures also hold CLOSURE (universally quantified) -----------
+
+    #[test]
+    fn closure_holds_on_every_constructed_fixture() {
+        for (samples, outcomes, syms) in [
+            f_no_positives(),
+            f_const_outcome(),
+            f_const_candidate(),
+            f_thin(),
+            f_sparse_pearson(),
+            f_perfect_and_inverse(),
+        ] {
+            let cells = build(&samples, &outcomes, &syms);
+            assert_closure(&cells);
+        }
+    }
+
+    // ---- AC-31 — a scope with no positives renders literal 6 for every candidate -------------
+
+    #[test]
+    fn f_no_positives_renders_degenerate_label_for_every_candidate_on_structure_event() {
+        let (samples, outcomes, syms) = f_no_positives();
+        let cells = build(&samples, &outcomes, &syms);
+        let se_cells: Vec<&Cell> =
+            cells.iter().filter(|c| c.label == "structure_event" && c.group == GroupKey::Pooled).collect();
+        assert_eq!(se_cells.len(), 5, "one cell per candidate");
+        for c in se_cells {
+            assert!(
+                matches!(c.state, CellState::DegenerateLabel { n_pos: 0, .. }),
+                "expected DegenerateLabel with 0 positives for {}, got {:?}",
+                c.candidate,
+                c.state
+            );
+        }
+    }
+
+    // ---- AC-30 — a candidate constant on every eligible row renders literal 5 -----------------
+
+    #[test]
+    fn f_const_candidate_renders_degenerate_candidate_for_the_composite() {
+        let (samples, outcomes, syms) = f_const_candidate();
+        let cells = build(&samples, &outcomes, &syms);
+        let composite_cells: Vec<&Cell> =
+            cells.iter().filter(|c| c.candidate == "opportunity_score" && c.group == GroupKey::Pooled).collect();
+        for c in composite_cells {
+            assert!(
+                matches!(c.state, CellState::DegenerateCandidate { .. }),
+                "expected DegenerateCandidate for opportunity_score, got {:?}",
+                c.state
+            );
+        }
+    }
+
+    // ---- AC-5 — perfect / inverse / unrelated candidates land at the expected extremes --------
+
+    #[test]
+    fn f_perfect_and_inverse_places_candidates_at_expected_extremes() {
+        let (samples, outcomes, syms) = f_perfect_and_inverse();
+        let cells = build(&samples, &outcomes, &syms);
+        let auc_of = |cand: &str| -> f64 {
+            let c = cells
+                .iter()
+                .find(|c| c.candidate == cand && c.label == "large_abs_move" && c.group == GroupKey::Pooled)
+                .unwrap();
+            let CellState::Computed { metrics, .. } = &c.state else {
+                panic!("{cand} expected Computed, got {:?}", c.state)
+            };
+            let MetricValue::Value(auc) = metrics.auc else { panic!("{cand} auc absent") };
+            auc
+        };
+        let flip_auc = auc_of("proximity_to_flip");
+        let wall_auc = auc_of("proximity_to_nearer_wall");
+        assert!(flip_auc > 0.95, "proximity_to_flip should rank ~perfectly, got {flip_auc}");
+        assert!(wall_auc < 0.05, "proximity_to_nearer_wall should rank ~inversely, got {wall_auc}");
     }
 }

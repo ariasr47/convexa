@@ -73,6 +73,343 @@ pub mod pre_feature {
     ];
 }
 
+/// Seven constructed, deterministic (no RNG, no clock) fixtures — each carries something the two
+/// real slices cannot (B10). Returns `(samples, outcomes, requested_symbols)`.
+pub mod constructed {
+    use super::*;
+    use crate::services::scanner::store::ScanScoreDrivers;
+
+    /// One UTC day, in seconds, as a session-spacing unit — noon UTC lands mid-session ET on every
+    /// weekday-shaped offset we use here; only relative spacing matters for these fixtures.
+    const DAY: f64 = 86_400.0;
+    const T0: f64 = 1_704_200_400.0; // 2024-01-02T17:00:00Z
+
+    fn row(
+        symbol: &str,
+        as_of: f64,
+        score: Option<f64>,
+        net_gex: Option<f64>,
+        atm_iv: Option<f64>,
+        hv_30d: Option<f64>,
+        dist_flip: Option<f64>,
+        dist_wall: Option<f64>,
+        ret_simple: Option<f64>,
+        abs_move: Option<f64>,
+        hit_call: Option<bool>,
+        hit_put: Option<bool>,
+        crossed: Option<bool>,
+    ) -> (StructureSample, StructureOutcome) {
+        let sample = StructureSample {
+            symbol: symbol.to_string(),
+            as_of,
+            price: Some(100.0),
+            score,
+            tier: score.map(|_| "watch".to_string()),
+            regime: Some("positive_gamma".to_string()),
+            vol_regime: Some("neutral".to_string()),
+            flip: Some(100.0),
+            dist_to_flip_pct: dist_flip,
+            call_wall: Some(105.0),
+            put_wall: Some(95.0),
+            dist_to_wall_pct: dist_wall,
+            score_drivers: score.map(|s| ScanScoreDrivers {
+                proximity: (s / 4.0) as i32,
+                vol: 10,
+                setups: 10,
+                transition: 0,
+                dark_pool: 0,
+                total: s as i32,
+            }),
+            net_gex,
+            iv_hv_ratio: None,
+            atm_iv,
+            hv_30d,
+        };
+        let outcome = StructureOutcome {
+            symbol: symbol.to_string(),
+            as_of,
+            horizon: "1d".to_string(),
+            ret_simple,
+            ret_log: ret_simple.map(|r| (1.0 + r).ln()),
+            abs_move,
+            hit_call_wall: hit_call,
+            hit_put_wall: hit_put,
+            crossed_flip: crossed,
+            label_version: "fixture".to_string(),
+            bars_source: "fixture".to_string(),
+            joined_at: 1.0,
+        };
+        (sample, outcome)
+    }
+
+    /// SPY: every row carries `net_gex` + `atm_iv` (zero GEX exclusions). QQQ: no row carries
+    /// `net_gex` (all excluded). IWM: half carry `net_gex` with ONLY `hv_30d` (no `atm_iv`), half
+    /// with neither. 3 symbols x 3 ET sessions x 12 rows/session. Some rows carry `abs_move: None`.
+    /// Carries: AC-10's asymmetric-symbol condition, AC-19's HV-fallback arm, IDENTITY 3 +
+    /// COMPOSITION non-vacuously.
+    pub fn f_mixed() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..3usize {
+            for i in 0..12usize {
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let score = Some(30.0 + ((session * 12 + i) % 50) as f64);
+                let dist_flip = Some(-5.0 + ((session * 12 + i) % 10) as f64);
+                let dist_wall = Some(-3.0 + ((session * 12 + i) % 6) as f64);
+                let ret_simple = Some(if (session * 12 + i) % 3 == 0 { 0.02f64 } else { -0.01f64 });
+                let abs_move = if i == 0 { None } else { Some(ret_simple.unwrap().abs()) };
+                let hit_call = Some(i % 4 == 0);
+                let hit_put = Some(i % 5 == 0);
+                let crossed = Some(i % 7 == 0);
+
+                // SPY — always net_gex + atm_iv.
+                let net_gex_spy = Some(1.0e9 + i as f64 * 1.0e7);
+                let (s, o) = row(
+                    "SPY", as_of, score, net_gex_spy, Some(0.22), Some(18.0), dist_flip, dist_wall,
+                    ret_simple, abs_move, hit_call, hit_put, crossed,
+                );
+                samples.push(s);
+                outcomes.push(o);
+
+                // QQQ — never net_gex.
+                let (s, o) = row(
+                    "QQQ", as_of, score, None, None, None, dist_flip, dist_wall, ret_simple,
+                    abs_move, hit_call, hit_put, crossed,
+                );
+                samples.push(s);
+                outcomes.push(o);
+
+                // IWM — half hv_30d-only, half neither.
+                let (net_gex_iwm, atm_iv_iwm, hv_iwm) = if i % 2 == 0 {
+                    (Some(5.0e8 + i as f64 * 1.0e6), None, Some(22.0))
+                } else {
+                    (None, None, None)
+                };
+                let (s, o) = row(
+                    "IWM", as_of, score, net_gex_iwm, atm_iv_iwm, hv_iwm, dist_flip, dist_wall,
+                    ret_simple, abs_move, hit_call, hit_put, crossed,
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into(), "QQQ".into(), "IWM".into()])
+    }
+
+    /// One symbol scope where `structure_event` is false on EVERY row.
+    pub fn f_no_positives() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..2usize {
+            for i in 0..16usize {
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let (s, o) = row(
+                    "SPY",
+                    as_of,
+                    Some(20.0 + i as f64),
+                    Some(1.0e9 + i as f64 * 1.0e6),
+                    Some(0.20),
+                    Some(19.0),
+                    Some(-2.0 + i as f64 * 0.1),
+                    Some(-1.0 + i as f64 * 0.05),
+                    Some(0.01),
+                    Some(0.01),
+                    Some(false),
+                    Some(false),
+                    Some(false),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+
+    /// Candidate values vary; `abs_move` is IDENTICAL on every usable pair (literal 10 on a
+    /// candidate-scope record's correlation line — AC-75 first half).
+    pub fn f_const_outcome() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..2usize {
+            for i in 0..16usize {
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let (s, o) = row(
+                    "SPY",
+                    as_of,
+                    Some(20.0 + i as f64 * 3.0),
+                    Some(1.0e9 + i as f64 * 5.0e7),
+                    Some(0.20),
+                    Some(19.0),
+                    Some(-5.0 + i as f64 * 0.5),
+                    Some(-3.0 + i as f64 * 0.3),
+                    Some(0.02),
+                    Some(0.42), // constant abs_move for every row
+                    Some(i % 3 == 0),
+                    Some(i % 4 == 0),
+                    Some(i % 5 == 0),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+
+    /// One candidate (`score`) IDENTICAL on every eligible row (literal 5 — AC-30).
+    pub fn f_const_candidate() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..2usize {
+            for i in 0..16usize {
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let (s, o) = row(
+                    "SPY",
+                    as_of,
+                    Some(55.0), // constant score
+                    Some(1.0e9 + i as f64 * 5.0e7),
+                    Some(0.20),
+                    Some(19.0),
+                    Some(-5.0 + i as f64 * 0.5),
+                    Some(-3.0 + i as f64 * 0.3),
+                    Some(if i % 2 == 0 { 0.03 } else { -0.02 }),
+                    Some(0.02 + i as f64 * 0.001),
+                    Some(i % 3 == 0),
+                    Some(i % 4 == 0),
+                    Some(i % 5 == 0),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+
+    /// A 3-row cell for one symbol (SPY) PLUS a >30-row, >=2-session cell for another (QQQ) — AC-49
+    /// (marker present) and AC-52 (marker absent) in one run; literal 9 on the quintile series.
+    pub fn f_thin() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for i in 0..3usize {
+            let as_of = T0 + i as f64 * 300.0;
+            let (s, o) = row(
+                "SPY",
+                as_of,
+                Some(40.0 + i as f64 * 10.0),
+                Some(1.0e9),
+                Some(0.20),
+                Some(19.0),
+                Some(-2.0 + i as f64),
+                Some(-1.0 + i as f64 * 0.5),
+                Some(0.01),
+                Some(0.02),
+                Some(i == 0),
+                Some(false),
+                Some(false),
+            );
+            samples.push(s);
+            outcomes.push(o);
+        }
+        for session in 0..3usize {
+            for i in 0..15usize {
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let (s, o) = row(
+                    "QQQ",
+                    as_of,
+                    Some(20.0 + ((session * 15 + i) % 60) as f64),
+                    Some(1.0e9 + i as f64 * 1.0e7),
+                    Some(0.21),
+                    Some(20.0),
+                    Some(-6.0 + ((session * 15 + i) % 12) as f64),
+                    Some(-4.0 + ((session * 15 + i) % 8) as f64),
+                    Some(if (session * 15 + i) % 3 == 0 { 0.03 } else { -0.015 }),
+                    Some(0.01 + ((session * 15 + i) % 5) as f64 * 0.01),
+                    Some((session * 15 + i) % 6 == 0),
+                    Some((session * 15 + i) % 7 == 0),
+                    Some((session * 15 + i) % 9 == 0),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into(), "QQQ".into()])
+    }
+
+    /// ~150 eligible rows, only 2 with a finite `ret_simple` (AC-35 — the statistic's own n != the
+    /// carrier's `n=`).
+    pub fn f_sparse_pearson() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..5usize {
+            for i in 0..30usize {
+                let idx = session * 30 + i;
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                let ret_simple = if idx < 2 { Some(0.01 + idx as f64 * 0.02) } else { None };
+                let (s, o) = row(
+                    "SPY",
+                    as_of,
+                    Some(20.0 + (idx % 70) as f64),
+                    Some(1.0e9 + idx as f64 * 1.0e6),
+                    Some(0.20),
+                    Some(18.0),
+                    Some(-6.0 + (idx % 12) as f64),
+                    Some(-4.0 + (idx % 8) as f64),
+                    ret_simple,
+                    Some(0.01 + (idx % 9) as f64 * 0.01),
+                    Some(idx % 6 == 0),
+                    Some(idx % 7 == 0),
+                    Some(idx % 8 == 0),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+
+    /// One candidate (`proximity_to_flip`, via `dist_to_flip_pct`) ranks `large_abs_move` PERFECTLY;
+    /// one (`proximity_to_nearer_wall`) ranks it exactly INVERSELY; the composite `score` is
+    /// unrelated to the label (AC-5).
+    pub fn f_perfect_and_inverse() -> (Vec<StructureSample>, Vec<StructureOutcome>, Vec<String>) {
+        let mut samples = Vec::new();
+        let mut outcomes = Vec::new();
+        for session in 0..3usize {
+            for i in 0..14usize {
+                let idx = session * 14 + i;
+                let as_of = T0 + session as f64 * DAY + i as f64 * 300.0;
+                // abs_move increases monotonically with i within [0, 13] so the label's pooled
+                // median sits mid-set; large_abs_move ~ (i >= 7).
+                let abs_move = 0.001 + i as f64 * 0.01;
+                // proximity_to_flip is -abs(dist_to_flip_pct): make dist_to_flip_pct shrink as i
+                // grows, so proximity RISES with i, tracking abs_move exactly (perfect rank).
+                let dist_flip = Some(20.0 - i as f64 * 1.4);
+                // proximity_to_nearer_wall must rank INVERSELY: make dist_to_wall_pct GROW as i
+                // grows, so -abs(dist_to_wall_pct) FALLS as i grows (opposite of abs_move).
+                let dist_wall = Some(0.1 + i as f64 * 1.4);
+                // score unrelated to the label — alternate high/low independent of i.
+                let score = Some(if idx % 2 == 0 { 20.0 } else { 80.0 });
+                let (s, o) = row(
+                    "SPY",
+                    as_of,
+                    score,
+                    Some(1.0e9),
+                    Some(0.20),
+                    Some(18.0),
+                    dist_flip,
+                    dist_wall,
+                    Some(abs_move),
+                    Some(abs_move),
+                    Some(false),
+                    Some(false),
+                    Some(false),
+                );
+                samples.push(s);
+                outcomes.push(o);
+            }
+        }
+        (samples, outcomes, vec!["SPY".into()])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
