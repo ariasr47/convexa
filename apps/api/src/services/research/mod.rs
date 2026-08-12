@@ -6,6 +6,7 @@ pub mod derivation;
 #[cfg(test)]
 pub mod fixtures;
 pub mod outcomes;
+pub mod pairing;
 pub mod score_lab;
 pub(crate) mod stats;
 
