@@ -1,0 +1,891 @@
+<title>What the score lab now measures</title>
+
+<style>
+  /* ─── tokens: light ─────────────────────────────────────────────── */
+  :root {
+    --ground:      #EAEDEE;
+    --panel:       #F7F9F9;
+    --panel-2:     #FDFEFE;
+    --ink:         #13181A;
+    --ink-2:       #3C464B;
+    --muted:       #5B666C;
+    --rule:        #C8CFD2;
+    --rule-soft:   #DBE1E3;
+    --accent:      #00879B;
+    --accent-ink:  #005C6B;
+    --accent-wash: rgba(0, 135, 155, 0.10);
+    --defect:      #9E4A3C;
+    --defect-wash: rgba(158, 74, 60, 0.10);
+    --shadow:      0 1px 2px rgba(19, 24, 26, .05), 0 8px 24px -12px rgba(19, 24, 26, .16);
+    --hatch:       rgba(91, 102, 108, .38);
+    --hatch-light: rgba(255, 255, 255, .55);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:      #0F1315;
+      --panel:       #161B1E;
+      --panel-2:     #1B2124;
+      --ink:         #E4E9EA;
+      --ink-2:       #BFC8CB;
+      --muted:       #8A959A;
+      --rule:        #283034;
+      --rule-soft:   #202729;
+      --accent:      #279CAD;
+      --accent-ink:  #63C4D3;
+      --accent-wash: rgba(39, 156, 173, 0.14);
+      --defect:      #C87B5C;
+      --defect-wash: rgba(200, 123, 92, 0.14);
+      --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -16px rgba(0, 0, 0, .8);
+      --hatch:       rgba(138, 149, 154, .40);
+      --hatch-light: rgba(15, 19, 21, .55);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0F1315;
+    --panel:       #161B1E;
+    --panel-2:     #1B2124;
+    --ink:         #E4E9EA;
+    --ink-2:       #BFC8CB;
+    --muted:       #8A959A;
+    --rule:        #283034;
+    --rule-soft:   #202729;
+    --accent:      #279CAD;
+    --accent-ink:  #63C4D3;
+    --accent-wash: rgba(39, 156, 173, 0.14);
+    --defect:      #C87B5C;
+    --defect-wash: rgba(200, 123, 92, 0.14);
+    --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -16px rgba(0, 0, 0, .8);
+    --hatch:       rgba(138, 149, 154, .40);
+    --hatch-light: rgba(15, 19, 21, .55);
+  }
+  :root[data-theme="light"] {
+    --ground:      #EAEDEE;
+    --panel:       #F7F9F9;
+    --panel-2:     #FDFEFE;
+    --ink:         #13181A;
+    --ink-2:       #3C464B;
+    --muted:       #5B666C;
+    --rule:        #C8CFD2;
+    --rule-soft:   #DBE1E3;
+    --accent:      #00879B;
+    --accent-ink:  #005C6B;
+    --accent-wash: rgba(0, 135, 155, 0.10);
+    --defect:      #9E4A3C;
+    --defect-wash: rgba(158, 74, 60, 0.10);
+    --shadow:      0 1px 2px rgba(19, 24, 26, .05), 0 8px 24px -12px rgba(19, 24, 26, .16);
+    --hatch:       rgba(91, 102, 108, .38);
+    --hatch-light: rgba(255, 255, 255, .55);
+  }
+
+  /* ─── faces ─────────────────────────────────────────────────────── */
+  :root {
+    --display: "Iowan Old Style", "Charter", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --body:    "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --data:    Consolas, "Cascadia Mono", "SF Mono", ui-monospace, "Roboto Mono", "DejaVu Sans Mono", monospace;
+  }
+
+  /* ─── page ──────────────────────────────────────────────────────── */
+  .lab {
+    background-color: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 0 6rem;
+    background-image:
+      linear-gradient(to right,  var(--rule-soft) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--rule-soft) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .wrap { max-width: 61rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  .sheet { display: grid; grid-template-columns: 1fr; gap: 0 2.5rem; }
+  @media (min-width: 62rem) {
+    .sheet { grid-template-columns: 9.5rem minmax(0, 1fr); }
+    .sheet > .note { grid-column: 1; text-align: right; }
+    .sheet > .col  { grid-column: 2; }
+  }
+  .col { min-width: 0; max-width: 40rem; }
+  .col.wide { max-width: none; }
+
+  .note {
+    font-family: var(--data);
+    font-size: .72rem;
+    line-height: 1.5;
+    color: var(--muted);
+    letter-spacing: .01em;
+    padding-top: .5rem;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 61.99rem) {
+    .note:not(:empty) {
+      border-left: 2px solid var(--rule);
+      padding: .35rem 0 .35rem .75rem;
+      margin-bottom: .75rem;
+    }
+  }
+
+  /* ─── type ──────────────────────────────────────────────────────── */
+  h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.05rem, 5.2vw, 3.1rem); line-height: 1.06; letter-spacing: -.018em; }
+  h2 { font-size: clamp(1.42rem, 3vw, 1.82rem); line-height: 1.18; letter-spacing: -.012em; }
+  h3 { font-size: 1.07rem; line-height: 1.3; letter-spacing: -.005em; }
+  p  { margin: 0; }
+  .col > * + * { margin-top: 1.1rem; }
+  strong { font-weight: 650; color: var(--ink); }
+  code, .mono { font-family: var(--data); font-size: .875em; font-variant-numeric: tabular-nums; }
+  code { background: var(--accent-wash); color: var(--accent-ink); padding: .08em .34em; border-radius: 2px; }
+
+  .eyebrow {
+    font-family: var(--data);
+    font-size: .705rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .lede { font-size: 1.15rem; line-height: 1.55; color: var(--ink-2); }
+
+  /* ─── masthead ──────────────────────────────────────────────────── */
+  .masthead { padding: 4.5rem 0 2.25rem; }
+  .masthead h1 { margin-top: .9rem; }
+  .masthead .lede { margin-top: 1.35rem; max-width: 34rem; }
+
+  .stamp {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 1.75rem;
+    margin-top: 2.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--data);
+    font-size: .76rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .stamp b { color: var(--ink); font-weight: 600; }
+
+  section { padding-top: 3.75rem; }
+
+  /* ─── panels ────────────────────────────────────────────────────── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem 1.5rem 1.35rem;
+    margin-top: 1.75rem;
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .35rem 1rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: .8rem;
+    margin-bottom: 1.25rem;
+  }
+  .panel-head .k { font-family: var(--data); font-size: .72rem; color: var(--muted); letter-spacing: .05em; }
+  .panel-foot {
+    margin-top: 1.15rem;
+    padding-top: .8rem;
+    border-top: 1px solid var(--rule-soft);
+    font-size: .84rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  .panel-foot strong, .panel-foot b { color: var(--ink-2); }
+  .scroller { overflow-x: auto; }
+
+  /* ─── plot: AUC bars ────────────────────────────────────────────── */
+  .plot { display: grid; gap: .95rem; }
+  .barrow {
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 9.5rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+  }
+  .lab-y {
+    font-family: var(--data);
+    font-size: .76rem;
+    color: var(--ink-2);
+    text-align: right;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+  }
+  .lab-y span { color: var(--muted); }
+  .track {
+    position: relative;
+    height: 30px;
+    background: var(--panel-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    margin-right: 5.5rem;
+  }
+  .chance { position: absolute; top: -6px; bottom: -6px; left: 50%; width: 1px; background: var(--muted); opacity: .8; }
+  .bar {
+    position: absolute;
+    top: 4px; bottom: 4px; left: 0;
+    background-color: var(--accent);
+    border-radius: 0 4px 4px 0;
+    transform-origin: left center;
+  }
+  .bar.coupled {
+    background-image: repeating-linear-gradient(135deg, var(--hatch-light) 0 3px, transparent 3px 7px);
+  }
+  .bar-val {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    left: calc(100% + .55rem);
+    font-family: var(--data);
+    font-size: .82rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .axis { display: flex; justify-content: space-between; font-family: var(--data); font-size: .7rem; color: var(--muted); margin-top: .3rem; margin-right: 5.5rem; }
+  .chance-key { display: inline-flex; align-items: center; gap: .45rem; }
+  .chance-key i { display: block; width: 1px; height: 12px; background: var(--muted); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bar { animation: grow .75s cubic-bezier(.2,.7,.3,1) both; }
+    .barrow:nth-child(1) .bar { animation-delay: .05s; }
+    .barrow:nth-child(2) .bar { animation-delay: .16s; }
+    .barrow:nth-child(3) .bar { animation-delay: .27s; }
+    @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  }
+
+  /* ─── matrix ────────────────────────────────────────────────────── */
+  .matrix {
+    display: grid;
+    grid-template-columns: minmax(11rem, 14rem) repeat(3, minmax(8.5rem, 1fr));
+    gap: 2px;
+    min-width: 39rem;
+  }
+  .mcell {
+    background: var(--panel-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    padding: .6rem .7rem;
+    font-family: var(--data);
+    font-size: .73rem;
+    line-height: 1.35;
+    color: var(--ink-2);
+    min-height: 3.4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .15rem;
+    overflow-wrap: anywhere;
+  }
+  .mcell.head {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: .7rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    min-height: 0;
+    padding-bottom: .3rem;
+    justify-content: flex-end;
+  }
+  .mcell.rowhead {
+    background: none;
+    border: none;
+    border-right: 1px solid var(--rule);
+    border-radius: 0;
+    color: var(--ink);
+    align-items: flex-start;
+    padding-right: .9rem;
+  }
+  .mcell.rowhead .sub { color: var(--muted); font-size: .67rem; letter-spacing: .03em; }
+  .mcell .tick { color: var(--accent); font-size: 1rem; line-height: 1; }
+  .mcell.mark {
+    background-image: repeating-linear-gradient(135deg, var(--hatch) 0 1.5px, transparent 1.5px 7px);
+    border-color: var(--rule);
+  }
+  .mcell.mark .flag { color: var(--ink); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; font-size: .68rem; }
+  .mcell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ─── state cards ───────────────────────────────────────────────── */
+  .states { display: grid; gap: .75rem; }
+  @media (min-width: 40rem) { .states { grid-template-columns: 1fr 1fr; } }
+  .state {
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    background: var(--panel-2);
+    padding: .85rem .95rem;
+  }
+  .state .out {
+    font-family: var(--data);
+    font-size: .77rem;
+    color: var(--ink);
+    display: block;
+    margin-bottom: .45rem;
+    overflow-wrap: anywhere;
+  }
+  .state .why { font-size: .84rem; line-height: 1.5; color: var(--muted); }
+  .state .why strong { color: var(--ink-2); }
+  .state.hatched { background-image: repeating-linear-gradient(135deg, var(--hatch) 0 1.5px, transparent 1.5px 7px); }
+
+  /* ─── wall ──────────────────────────────────────────────────────── */
+  .wall { display: grid; gap: 1rem; grid-template-columns: 1fr; align-items: stretch; }
+  @media (min-width: 44rem) { .wall { grid-template-columns: 1fr auto 1fr; } }
+  .box { border: 1px solid var(--rule); border-radius: 2px; background: var(--panel-2); padding: 1rem 1.1rem; }
+  .box h4 {
+    margin: 0 0 .4rem;
+    font-family: var(--data);
+    font-size: .71rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .box p { font-size: .88rem; line-height: 1.5; color: var(--ink-2); }
+  .barrier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    font-family: var(--data);
+    font-size: .67rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .barrier .stroke {
+    background-image: repeating-linear-gradient(to bottom, var(--rule) 0 6px, transparent 6px 12px);
+    width: 3px; flex: 1; min-height: 2.5rem; border-radius: 2px;
+  }
+  @media (max-width: 43.99rem) {
+    .barrier { flex-direction: row; }
+    .barrier .stroke {
+      width: auto; height: 3px; min-height: 0; flex: 1;
+      background-image: repeating-linear-gradient(to right, var(--rule) 0 6px, transparent 6px 12px);
+    }
+  }
+
+  /* ─── runs ──────────────────────────────────────────────────────── */
+  .runs { display: grid; }
+  .run {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: .35rem 1.1rem;
+    padding: .9rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: start;
+  }
+  .run:last-child { border-bottom: none; }
+  .run .who {
+    font-family: var(--data);
+    font-size: .71rem;
+    letter-spacing: .05em;
+    color: var(--muted);
+    text-transform: uppercase;
+    padding-top: .16rem;
+  }
+  .run .what { font-size: .92rem; line-height: 1.55; color: var(--ink-2); }
+  .run .what b { color: var(--ink); font-weight: 650; }
+  .tag {
+    display: inline-block;
+    font-family: var(--data);
+    font-size: .65rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .1rem .42rem;
+    border-radius: 2px;
+    margin-right: .4rem;
+    white-space: nowrap;
+  }
+  .tag.stop { background: var(--defect-wash); color: var(--defect); border: 1px solid var(--defect); }
+  .tag.ok   { background: var(--accent-wash); color: var(--accent-ink); border: 1px solid var(--accent); }
+
+  /* ─── figures ───────────────────────────────────────────────────── */
+  .figs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: 1px;
+    background: var(--rule-soft);
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 1.35rem;
+  }
+  .fig { background: var(--panel-2); padding: 1rem 1.05rem; }
+  .fig .n {
+    font-family: var(--display);
+    font-size: 1.8rem;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .fig .l {
+    font-family: var(--data);
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: .45rem;
+    display: block;
+    line-height: 1.4;
+  }
+
+  /* ─── open ──────────────────────────────────────────────────────── */
+  .open { margin: 0; padding: 0; display: grid; gap: .95rem; }
+  .open li {
+    list-style: none;
+    padding-left: 1.5rem;
+    position: relative;
+    font-size: .93rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .open li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: .58em;
+    width: .5rem; height: .5rem;
+    border: 1px solid var(--muted);
+    border-radius: 1px;
+  }
+
+  hr.rule { border: none; border-top: 1px solid var(--rule); margin: 3.5rem 0 0; }
+  .closer { font-family: var(--display); font-size: 1.2rem; line-height: 1.5; color: var(--ink); max-width: 32rem; }
+</style>
+
+<div class="lab">
+
+  <!-- ══ MASTHEAD ══════════════════════════════════════════════════ -->
+  <header class="masthead">
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">shipped<br />2026-08-12<br /><br />backend only<br />no screen<br />changes</div>
+        <div class="col">
+          <p class="eyebrow">Convexa · weekly score lab</p>
+          <h1>You had one number grading itself. Now five compete.</h1>
+          <p class="lede">
+            The lab that reads your trading diary used to answer one question: did the app's headline score
+            do well this week? It now asks a better one — <strong>which signal actually ranks what
+            matters</strong> — and it tells you when a flattering answer is really the score marking its
+            own homework.
+          </p>
+          <div class="stamp">
+            <span><b>77 of 78</b> checks passed</span>
+            <span><b>249</b> tests green</span>
+            <span><b>0</b> changes to your score</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ 1. THE MEASUREMENT ════════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">source<br />deep dive<br />2026-08-11<br /><br />221 diary<br />rows</div>
+        <div class="col">
+          <p class="eyebrow">Why this was built</p>
+          <h2>One score, three questions, wildly different answers</h2>
+          <p>
+            Last week's research run graded your <code>opportunity_score</code> against three different
+            definitions of "something happened." Same score, same rows. The answers disagreed so badly
+            that the run raised more doubt than it settled.
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="note"></div>
+        <div class="col wide">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>How well the headline score ranked each outcome</h3>
+              <span class="k">0.5 = coin flip · 1.0 = perfect ordering</span>
+            </div>
+
+            <div class="plot">
+              <div class="barrow">
+                <span class="lab-y">large_abs_move<br /><span>the primary goal</span></span>
+                <div class="track" title="0.467 — below the 0.5 chance line">
+                  <span class="chance" aria-hidden="true"></span>
+                  <span class="bar" style="width:46.7%"></span>
+                  <span class="bar-val">0.467</span>
+                </div>
+              </div>
+              <div class="barrow">
+                <span class="lab-y">up_move<br /><span>direction</span></span>
+                <div class="track" title="0.569 — barely above chance">
+                  <span class="chance" aria-hidden="true"></span>
+                  <span class="bar" style="width:56.9%"></span>
+                  <span class="bar-val">0.569</span>
+                </div>
+              </div>
+              <div class="barrow">
+                <span class="lab-y">structure_event<br /><span>price hit a level</span></span>
+                <div class="track" title="0.932 — but the score and this outcome are built from the same levels">
+                  <span class="chance" aria-hidden="true"></span>
+                  <span class="bar coupled" style="width:93.2%"></span>
+                  <span class="bar-val">0.932 · coupled</span>
+                </div>
+              </div>
+              <div class="barrow">
+                <span class="lab-y"></span>
+                <div class="axis">
+                  <span>0.0</span>
+                  <span class="chance-key"><i aria-hidden="true"></i> 0.5 chance</span>
+                  <span>1.0</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="panel-foot">
+              Read it plainly: at ranking <strong>big moves</strong> — the thing you actually want to catch —
+              the score performed <strong>slightly worse than flipping a coin</strong>. Direction was a
+              shrug. The one triumphant number is the one you can trust least, and the hatching is why.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 2. THE COUPLING ═══════════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">signals.rs<br />:477 :493<br /><br />the score's<br />own inputs</div>
+        <div class="col">
+          <p class="eyebrow">The trap</p>
+          <h2>0.932 wasn't skill. It was a circle.</h2>
+          <p>
+            Up to half of your score's points come from <strong>how close price is to the call wall, the
+            put wall, and the gamma flip</strong>. And <code>structure_event</code> means:
+            <strong>price reached a wall, or crossed the flip.</strong>
+          </p>
+          <p>
+            So the score was being congratulated for predicting the thing it is largely built out of.
+            That isn't a forecast — it's a definition wearing a forecast's clothes. Before, a reader had to
+            notice this. Now the tool says it, on the cell, every run.
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="note"></div>
+        <div class="col wide">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Five candidates × three outcomes — and the three cells that mark themselves</h3>
+              <span class="k">hover a cell · repeated pooled and per symbol</span>
+            </div>
+
+            <div class="scroller">
+              <div class="matrix">
+                <div class="mcell head"></div>
+                <div class="mcell head">large_abs_move</div>
+                <div class="mcell head">up_move</div>
+                <div class="mcell head">structure_event</div>
+
+                <div class="mcell rowhead">opportunity_score<span class="sub">your headline composite</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell mark" tabindex="0" title="Coupled — the score is built in large part from wall and flip proximity, the same levels this outcome is defined by.">
+                  <span class="flag">coupled</span><span>shares walls + flip</span>
+                </div>
+
+                <div class="mcell rowhead">net_gex_vol_norm_abs<span class="sub">vol-normalized gamma</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+
+                <div class="mcell rowhead">net_gex_abs_raw<span class="sub">the control</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+
+                <div class="mcell rowhead">proximity_to_flip<span class="sub">distance to the flip</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell mark" tabindex="0" title="Coupled — distance-to-flip scored against price-crossed-the-flip.">
+                  <span class="flag">coupled</span><span>shares the flip</span>
+                </div>
+
+                <div class="mcell rowhead">proximity_to_nearer_wall<span class="sub">distance to the wall</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell" tabindex="0" title="Independent — scored normally."><span class="tick" aria-hidden="true">•</span></div>
+                <div class="mcell mark" tabindex="0" title="Coupled — distance-to-wall scored against price-reached-the-wall.">
+                  <span class="flag">coupled</span><span>shares the walls</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="panel-foot">
+              The mark isn't a guess or a hand-kept list. Every candidate and every outcome must
+              <strong>declare what it is built from</strong>, and the tool intersects those declarations.
+              Leave a declaration out and the build fails — it cannot quietly un-mark a cell. A default run
+              over three symbols produces <strong>60 cells</strong>: this grid once pooled, then once per symbol.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 3. ABSENCE ════════════════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">standing rule<br /><br />"absent is<br />not none"</div>
+        <div class="col">
+          <p class="eyebrow">The part that took three tries</p>
+          <h2>Every blank tells you which kind of blank it is</h2>
+          <p>
+            "No number here" has at least four different meanings, and confusing them is how research files
+            start lying. A cell with too few samples is not the same as a cell that <strong>cannot</strong>
+            have a number at all. So each state gets its own words — and none of them is a bare dash.
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="note"></div>
+        <div class="col wide">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>What a cell says when it can't give a clean answer</h3>
+              <span class="k">hatched = no number can exist</span>
+            </div>
+
+            <div class="states">
+              <div class="state">
+                <span class="out">0.61 · thin (n=12, floor 30)</span>
+                <span class="why">
+                  Below the sample floor. <strong>The value still shows, with its warning attached</strong> —
+                  hiding it would turn "shaky" into "impossible," which is a different lie.
+                </span>
+              </div>
+              <div class="state hatched">
+                <span class="out">undefined on this data</span>
+                <span class="why">
+                  There is no outcome to score against, so no accuracy figure can exist. It names the
+                  <strong>missing precondition</strong> instead of printing a placeholder.
+                </span>
+              </div>
+              <div class="state hatched">
+                <span class="out">not evaluable here</span>
+                <span class="why">
+                  The combination doesn't apply at this scope. Not an error, not an empty result — simply
+                  outside what this cell can be asked.
+                </span>
+              </div>
+              <div class="state">
+                <span class="out">not symbol-comparable (see the per-symbol cells)</span>
+                <span class="why">
+                  Gamma magnitude scales with each symbol's own float. Pooling them makes a number that
+                  <strong>looks fine and means nothing</strong>, so the cell says so in its place.
+                </span>
+              </div>
+            </div>
+
+            <p class="panel-foot">
+              The failure this prevents is concrete. The first build wrote <strong>a 50/50 accuracy score
+              onto rows that had nothing to be accurate about</strong> — in the one file meant to be the
+              permanent record of a week's research. It read perfectly fine in the source code. Only opening
+              the file the tool actually produced caught it.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 4. THE WALL ═══════════════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">proven by<br />an empty diff<br />on the<br />scoring path</div>
+        <div class="col">
+          <p class="eyebrow">What it deliberately cannot do</p>
+          <h2>The lab measures. It never edits.</h2>
+          <p>
+            A measuring tool that can quietly move the thing it measures is worthless. So the lab has no
+            route to your score at all — not a weight, not a threshold, not the entry gate.
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="note"></div>
+        <div class="col wide">
+          <div class="panel">
+            <div class="wall">
+              <div class="box">
+                <h4>The lab · reads only</h4>
+                <p>
+                  Loads your saved diary, pairs each snapshot with what price did next, ranks five
+                  candidates against three outcomes, writes a report and a data file.
+                </p>
+              </div>
+              <div class="barrier">
+                <span class="stroke" aria-hidden="true"></span>
+                <span>no path</span>
+                <span class="stroke" aria-hidden="true"></span>
+              </div>
+              <div class="box">
+                <h4>Your score · untouched</h4>
+                <p>
+                  Weights, constants, the entry gate and the fingerprint are byte-for-byte what they were.
+                  No lab result can authorize a change to them on its own.
+                </p>
+              </div>
+            </div>
+            <p class="panel-foot">
+              Changing the score stays a separate, deliberate decision that has to state its reasoning and
+              record a before-and-after on real tickers. This tool is the <strong>prerequisite</strong> for
+              that — you can't improve a score you can't measure.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 5. HOW IT WAS CHECKED ═════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">4 build passes<br />3 check passes<br />29 commits</div>
+        <div class="col">
+          <p class="eyebrow">How it got here</p>
+          <h2>The two worst bugs were invisible in the code</h2>
+          <p>
+            Every build was checked by a separate reviewer that fixes nothing and only reports. It sent the
+            work back twice. Both times the defect was something reading the source would never reveal.
+          </p>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="note"></div>
+        <div class="col wide">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Build and check, alternating</h3>
+              <span class="k">the checker never fixes · the builder never grades</span>
+            </div>
+
+            <div class="runs">
+              <div class="run">
+                <span class="who">Build 1</span>
+                <span class="what">
+                  Froze two snapshots of the diary <b>before they aged out</b>. The buffer holds about
+                  3½ days at the current rate, and the rows this whole investigation rests on were next to go.
+                </span>
+              </div>
+              <div class="run">
+                <span class="who">Build 2</span>
+                <span class="what">The comparison engine, the report, the safeguards — 18 tasks.</span>
+              </div>
+              <div class="run">
+                <span class="who">Check 1</span>
+                <span class="what">
+                  <span class="tag stop">sent back</span>
+                  <b>The report file invented statistics.</b> Rows with nothing to score carried a
+                  chance-level accuracy number anyway. The source looked correct; the file it produced did not.
+                </span>
+              </div>
+              <div class="run">
+                <span class="who">Build 3</span>
+                <span class="what">Fixed 19 of 21 findings, including that one.</span>
+              </div>
+              <div class="run">
+                <span class="who">Check 2</span>
+                <span class="what">
+                  <span class="tag stop">sent back</span>
+                  <b>A safeguard had the right name and the wrong reach.</b> The test guarding against a
+                  hardcoded figure inspected one file — not the file where that text is actually written. It
+                  would have stayed green through the exact mistake it existed to catch.
+                </span>
+              </div>
+              <div class="run">
+                <span class="who">Build 4</span>
+                <span class="what">Both remaining gaps closed, each with the test coverage that was missing.</span>
+              </div>
+              <div class="run">
+                <span class="who">Check 3</span>
+                <span class="what">
+                  <span class="tag ok">passed</span>
+                  All 78 criteria re-checked, not only the repaired ones. The checker
+                  <b>deliberately broke each new safeguard to confirm it fails when it should</b>, then put
+                  the code back exactly as it was.
+                </span>
+              </div>
+            </div>
+
+            <div class="figs">
+              <div class="fig"><span class="n">77</span><span class="l">criteria passed</span></div>
+              <div class="fig"><span class="n">1</span><span class="l">untestable here</span></div>
+              <div class="fig"><span class="n">0</span><span class="l">failed</span></div>
+              <div class="fig"><span class="n">249</span><span class="l">tests green</span></div>
+            </div>
+
+            <p class="panel-foot">
+              The one untestable item needs a Postgres database this machine doesn't have. It is
+              type-checked but never exercised, and it is <strong>recorded as unverified rather than counted
+              as a pass</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 6. OPEN ═══════════════════════════════════════════════════ -->
+  <section>
+    <div class="wrap">
+      <div class="sheet">
+        <div class="note">logged to<br />the backlog<br /><br />none blocking</div>
+        <div class="col">
+          <p class="eyebrow">Honest gaps</p>
+          <h2>What isn't finished</h2>
+          <ul class="open">
+            <li>
+              <strong>The newer snapshot has no outcomes yet.</strong> Producing them needs a data-vendor key
+              this machine doesn't have, so the strongest test of the gamma candidates hasn't run. The
+              affected checks <strong>skip loudly</strong> rather than passing quietly — and nothing was
+              invented to fill the gap.
+            </li>
+            <li>
+              <strong>Asking for the same symbol twice prints it twice.</strong> Every number stays correct;
+              it's cosmetic, and it predates this work. One line to fix.
+            </li>
+            <li>
+              <strong>A stray leftover process keeps rewriting a data file</strong> and can't be killed on
+              this machine. It cost two review passes real time, so it's written down before it costs a third.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <hr class="rule" />
+
+      <div class="sheet">
+        <div class="note">the point</div>
+        <div class="col">
+          <p class="closer">
+            Your score has never been validated against an actual outcome, and until now there was no
+            instrument honest enough to try. Now there is — including the part that tells you when a
+            good-looking result is really a mirror.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
