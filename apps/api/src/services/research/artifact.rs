@@ -734,7 +734,7 @@ mod tests {
 
     /// No retention figure may be a literal in code or copy. The cap is exempt — it IS one.
     #[test]
-    fn no_retention_literal_appears_in_source() {
+    fn no_retention_literal_appears_in_emitted_strings_or_source() {
         const FULL_SRC: &str = include_str!("artifact.rs");
         // Scan only the PRODUCTION half (before `#[cfg(test)]`) — the banned-literal needles this
         // very test names would otherwise self-match inside the test module's own source text.
