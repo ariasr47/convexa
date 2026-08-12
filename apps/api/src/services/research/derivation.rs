@@ -61,6 +61,85 @@ pub fn shared_keys(a: &[DerivationKey], b: &[DerivationKey]) -> Vec<DerivationKe
 }
 
 #[cfg(test)]
+mod provenance_source_guard {
+    use super::DerivationKey as DK;
+    use crate::services::research::candidates::CANDIDATES;
+
+    const SIGNALS_SRC: &str = include_str!("../../../../../libs/quant-engine/src/signals.rs");
+
+    /// Everything that contributes to the emitted `opportunity_score` lives in ONE contiguous
+    /// region: `generate_signals` through `state_fingerprint`. Slicing the region rather than a
+    /// single function is the lesson of the two missed keys (`PeakGex`, `OffExchange`): the
+    /// completeness bar is "trace every contributor to the emitted value", not "read the
+    /// obviously-named function".
+    fn score_region() -> &'static str {
+        let start = SIGNALS_SRC.find("pub fn generate_signals(").expect("generate_signals");
+        let end = SIGNALS_SRC.find("pub fn state_fingerprint(").expect("state_fingerprint");
+        assert!(end > start, "signals.rs function order changed — re-derive this region");
+        &SIGNALS_SRC[start..end]
+    }
+
+    /// identifier in the region  ->  the key it obliges us to declare.
+    const CONTRIBUTORS: &[(&str, DK)] = &[
+        ("dist.call_wall_pct", DK::CallWall),
+        ("dist.put_wall_pct", DK::PutWall),
+        ("dist.gamma_flip_pct", DK::Flip),
+        ("state.peak_gex_strike", DK::PeakGex),
+        ("dark_pool_confluence(", DK::OffExchange),
+        ("ivhv", DK::IvHvRatio),
+        ("setups.len()", DK::Setups),
+    ];
+
+    #[test]
+    fn opportunity_score_derived_from_equals_what_signals_rs_actually_reads() {
+        let region = score_region();
+
+        // ---- anti-vacuity ------------------------------------------------------------------
+        assert!(region.len() > 8_000, "region not sliced (len {})", region.len());
+        assert!(
+            region.contains("out.opportunity_score = drivers.total;"),
+            "the region must contain the assignment that produces the emitted score"
+        );
+        assert!(
+            region.contains("dist.call_wall_pct"),
+            "positive control: `contains` finds a needle that IS present"
+        );
+        assert!(
+            !region.contains("dist.max_pain_pct"),
+            "negative control: `contains` rejects a needle that is NOT present"
+        );
+
+        let composite = CANDIDATES.iter().find(|c| c.key == "opportunity_score").unwrap();
+
+        // ---- SET EQUALITY, both directions --------------------------------------------------
+        // Under-declaring (the S2 defect) and over-declaring both go red.
+        let mut expected: Vec<DK> = vec![DK::Score];
+        for (needle, key) in CONTRIBUTORS {
+            if region.contains(needle) && !expected.contains(key) {
+                expected.push(*key);
+            }
+        }
+        expected.sort();
+        let mut declared: Vec<DK> = composite.derived_from.to_vec();
+        declared.sort();
+        assert_eq!(
+            declared, expected,
+            "opportunity_score.derived_from must equal what signals.rs actually reads. \
+             If signals.rs gained a determinant, add its key here AND to the registry; \
+             if it lost one, narrow BOTH. Never narrow the registry alone."
+        );
+    }
+
+    /// Every registry entry, both registries, declares a non-empty provenance set.
+    #[test]
+    fn no_registry_entry_has_an_empty_derived_from() {
+        for c in CANDIDATES {
+            assert!(!c.derived_from.is_empty(), "candidate {} declares no provenance", c.key);
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::BTreeSet;
