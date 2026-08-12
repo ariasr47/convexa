@@ -415,6 +415,20 @@ impl ScanStore {
         }
     }
 
+    /// Strict research read — errors propagate. Never call this from a route handler.
+    pub async fn read_structure_history_strict(
+        &self,
+        symbol: &str,
+        limit: usize,
+    ) -> AppResult<Vec<StructureSample>> {
+        match self {
+            // The JSON backend has no partial-schema path, so strict == normal here.
+            Self::Json(s) => Ok(s.read_structure_history(symbol, limit).await),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.read_structure_history_strict(symbol, limit).await,
+        }
+    }
+
     /// Total structure-history samples across symbols (health / smoke).
     pub async fn count_structure_samples(&self) -> i64 {
         match self {

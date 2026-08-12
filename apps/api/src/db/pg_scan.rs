@@ -648,6 +648,64 @@ impl PgScanStore {
         Ok(out)
     }
 
+    /// Strict analytics read for the RESEARCH LAB ONLY — no fallback, ever.
+    ///
+    /// `read_structure_history`'s base-columns retry is per symbol and fires on ANY SQL error, so
+    /// SPY can return analytics-rich while QQQ returns analytics-blind — poisoning the cross-symbol
+    /// comparison this lab exists to produce, with the only trace a server log while the artifact is
+    /// permanent. The lab is offline, CLI and re-runnable: it refuses to run instead.
+    ///
+    /// `GET /api/scan/{symbol}/history` keeps its fallback and MUST NOT be pointed at this fn
+    /// (INTERFACE_CONTRACT.md — the conformance block is the machine check).
+    pub async fn read_structure_history_strict(
+        &self,
+        symbol: &str,
+        limit: usize,
+    ) -> AppResult<Vec<StructureSample>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+        let sym = symbol.trim().to_ascii_uppercase();
+        if sym.is_empty() {
+            return Ok(Vec::new());
+        }
+        let lim = limit.min(STRUCTURE_HISTORY_MAX) as i64;
+        let rows = sqlx::query(
+            r#"SELECT symbol, as_of, price, score, tier, regime, vol_regime,
+                      flip, dist_to_flip_pct, call_wall, put_wall, dist_to_wall_pct,
+                      score_drivers, net_gex, iv_hv_ratio, atm_iv, hv_30d
+               FROM scan_structure_history
+               WHERE upper(btrim(symbol)) = $1
+               ORDER BY as_of DESC
+               LIMIT $2"#,
+        )
+        .bind(&sym)
+        .bind(lim)
+        .fetch_all(&self.pg.pool)
+        .await
+        .map_err(|e| {
+            AppError::Config(format!(
+                "STRICT analytics read failed for {sym}: {e}. The research lab does not fall back \
+                 to base columns — a partial read would record a FALSE absence in a permanent artifact."
+            ))
+        })?;
+
+        let mut out: Vec<StructureSample> = Vec::with_capacity(rows.len());
+        for r in &rows {
+            match Self::structure_sample_from_sql(r) {
+                Some(s) => out.push(s),
+                None => {
+                    return Err(AppError::Config(format!(
+                        "STRICT analytics read for {sym}: a row failed to decode; refusing to \
+                     silently drop it from a research slice."
+                    )))
+                }
+            }
+        }
+        out.reverse();
+        Ok(out)
+    }
+
     /// Upsert forward-outcome rows (research join; durable, not ring-pruned).
     pub async fn upsert_structure_outcomes(
         &self,
