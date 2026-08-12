@@ -24,8 +24,13 @@ use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-/// Max structure samples retained per symbol (ring buffer).
-/// ~2 RTH weeks at 5-minute thinning so nightly outcome join still has multi-day spine.
+/// Max structure samples retained per symbol (ring buffer), oldest evicted first. The span this
+/// cap implies depends on the CAPTURE RATE, which varies (measured 2026-08-12: 168/symbol/day,
+/// not the ~74/session an earlier estimate assumed) — state the cap and the eviction mechanism
+/// here, not a span. The score-lab CLI's `retention[]` block derives the observed rate and implied
+/// span PER RUN from the diary's own rows (`research::artifact::build_retention`); this comment
+/// intentionally does not repeat that figure (GATE PLAN B19 — SPEC §2.10 rejects a hardcoded
+/// retention figure in copy, and a code comment is copy).
 pub const STRUCTURE_HISTORY_MAX: usize = 576;
 /// Do not append if the last sample for the symbol is younger than this (seconds).
 pub const STRUCTURE_HISTORY_MIN_INTERVAL_SECS: f64 = 300.0;
@@ -63,6 +68,15 @@ pub struct ScanRow {
     /// Optional score explainability (absent on building/price-only rows).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub score_drivers: Option<ScanScoreDrivers>,
+}
+
+/// GATE PLAN B19 — the score-driver capture residual: an `ok` row carrying a score but no
+/// `score_drivers` is a LIVE capture regression, not a pre-`13656ad` (2026-08-10) row (those
+/// predate the capture spine and are expected to be empty). Pure predicate so the log-emission
+/// decision is a tested branch, not embedded control flow. Log-only — callers must not use this
+/// to change what gets appended.
+pub fn should_warn_missing_drivers(row: &ScanRow) -> bool {
+    row.status == "ok" && row.score.is_some() && row.score_drivers.is_none()
 }
 
 /// One structure snapshot after a slow-lane recompute (not a live price tick).
@@ -1048,5 +1062,43 @@ mod tests {
         assert_eq!(hist[0].score, Some(55.0));
         assert!(hist[0].price.is_some());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // ---- GATE PLAN B19: should_warn_missing_drivers (AC-42) -----------------------------------
+
+    #[test]
+    fn ok_row_with_score_and_no_drivers_should_warn() {
+        let row = sample_row("SPY", 60.0); // status "ok", score_drivers: None
+        assert!(should_warn_missing_drivers(&row));
+    }
+
+    #[test]
+    fn ok_row_with_score_and_drivers_should_not_warn() {
+        let mut row = sample_row("SPY", 60.0);
+        row.score_drivers = Some(ScanScoreDrivers {
+            proximity: 10,
+            vol: 10,
+            setups: 10,
+            transition: 0,
+            dark_pool: 0,
+            total: 30,
+        });
+        assert!(!should_warn_missing_drivers(&row));
+    }
+
+    #[test]
+    fn non_ok_status_never_warns_even_with_score_and_no_drivers() {
+        let mut row = sample_row("SPY", 60.0);
+        row.status = "error".into();
+        assert!(!should_warn_missing_drivers(&row));
+        row.status = "building".into();
+        assert!(!should_warn_missing_drivers(&row));
+    }
+
+    #[test]
+    fn ok_row_with_no_score_never_warns() {
+        let mut row = sample_row("SPY", 60.0);
+        row.score = None;
+        assert!(!should_warn_missing_drivers(&row));
     }
 }

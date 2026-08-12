@@ -466,6 +466,18 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
             if let Some(snap) = snap_for_history {
                 match crate::services::scanner::store::StructureSample::from_row(&row) {
                     Some(sample) => {
+                        // GATE PLAN B19 — log only, changes nothing appended. The capture spine
+                        // itself is correct (13656ad, 2026-08-10; 12,256/12,477 rows populated) —
+                        // this distinguishes a LIVE regression from a pre-spine row going forward.
+                        if crate::services::scanner::store::should_warn_missing_drivers(&row) {
+                            warn!(
+                                ticker = %sym,
+                                as_of = row.as_of,
+                                score = ?row.score,
+                                "scanner ok row carried a score but no score_drivers — a live \
+                                 capture regression, not a pre-13656ad row"
+                            );
+                        }
                         state
                             .scan
                             .append_structure_sample(sample.with_analytics(&snap))
