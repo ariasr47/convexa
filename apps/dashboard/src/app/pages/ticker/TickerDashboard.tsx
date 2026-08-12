@@ -54,6 +54,8 @@ import { ComingSoonBox } from '@/shared/ui/ComingSoonBox';
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary';
 import { WidgetChromeProvider, WidgetSelectionProvider } from '@/shared/ui/Widget';
 import { useLiveTape } from './liveTapeStore';
+import { selectTickerSymbol } from './recentTickers/selectTickerSymbol';
+import { recordVisit } from './recentTickers/store';
 import { useTickerPageModel } from './useTickerPageModel';
 import { useTickerTradeFlows } from './useTickerTradeFlows';
 import {
@@ -133,6 +135,13 @@ export function TickerDashboard() {
   const { ticker = 'SPY' } = useParams();
   const navigate = useNavigate();
   const [symbol, setSymbol] = useState(ticker);
+  // Keep input + durable recents aligned with the route param (chip / submit / deep link).
+  // While the trader types an uncommitted symbol, `ticker` is unchanged so this does not stomp.
+  useEffect(() => {
+    const s = (ticker ?? 'SPY').toUpperCase();
+    setSymbol(s);
+    recordVisit(s);
+  }, [ticker]);
   // Expiration filter: null = all (no filter), [] = none selected, else an explicit subset.
   const [selected, setSelected] = useState<string[] | null>(null);
   // Dark-pool (off-exchange) context: fixed ON (the toolbar toggle was removed to match the Figma).
@@ -348,6 +357,14 @@ export function TickerDashboard() {
     navigate(`/ticker/${symbol}`);
   };
 
+  const onSelectQuickSymbol = useCallback(
+    (s: string) => {
+      if (dtePrefill) pendingPrefill.current = { min: dtePrefill.min, max: dtePrefill.max };
+      selectTickerSymbol({ symbol: s, navigate, setSymbol });
+    },
+    [dtePrefill, navigate],
+  );
+
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Whenever the full deck is NOT shown (cold-load / cold-start error / none-selected) the deck
@@ -464,6 +481,8 @@ export function TickerDashboard() {
               persona={persona}
               onOpenCustomize={() => setCustomizeOpen(true)}
               loading={loading}
+              routeSymbol={ticker}
+              onSelectQuickSymbol={onSelectQuickSymbol}
             />
 
             {/* Tape Pulse — thin dual-clock strip (structure mid vs live mid). Not a full bento cell. */}

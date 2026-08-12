@@ -132,6 +132,8 @@ function Harness(props: Partial<DeckProps>) {
     persona,
     onOpenCustomize: vi.fn(),
     loading: false,
+    routeSymbol: 'TSLA',
+    onSelectQuickSymbol: vi.fn(),
     ...props,
   };
   return <CommandDeck {...base} />;
@@ -277,5 +279,27 @@ describe('CommandDeck — Expirations tri-state wire semantics (null = all · su
     await user.click(screen.getByLabelText('Expirations'));
     await user.click(screen.getByText('2026-06-26'));
     expect(onNone).toHaveBeenLastCalledWith([]);
+  });
+});
+
+// ============================================================================================
+describe('CommandDeck — Quick symbols row (recent-ticker-chips)', () => {
+  it('renders quick-symbols BELOW the toolbar inside command-deck (AC-1)', () => {
+    installIntersectionObserver();
+    renderDeck({ symbol: 'TSLA' });
+    const deck = screen.getByTestId('command-deck');
+    const quick = within(deck).getByTestId('quick-symbols');
+    const toolbar = within(deck).getByTestId('ticker-toolbar');
+    // DOM order: toolbar then quick
+    expect(toolbar.compareDocumentPosition(quick) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('sticky condensed bar has NO quick chips (AC-7)', () => {
+    installIntersectionObserver();
+    renderDeck({ live: liveUpdate({ live: true, mid: 416.5 }), isLive: true });
+    setDeckVisible(false);
+    const sticky = screen.getByTestId('deck-sticky');
+    expect(within(sticky).queryByTestId('quick-symbols')).toBeNull();
+    expect(within(sticky).queryByText('QUICK')).toBeNull();
   });
 });

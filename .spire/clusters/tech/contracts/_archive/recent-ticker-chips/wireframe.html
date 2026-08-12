@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wireframe — recent-ticker-chips (approval)</title>
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --paper: #12161f;
+        --paper2: #161b26;
+        --div: #2a3140;
+        --text: #e8ecf4;
+        --muted: #9aa3b5;
+        --accent: #c9821a;
+        --focus: #f2a93b;
+        --chip: #1a2030;
+        --chip-border: #3a4458;
+        --sel: #243044;
+        --sel-border: #c9821a;
+        --ok: #3d9a6a;
+        --mono: 'IBM Plex Mono', 'Roboto Mono', ui-monospace, monospace;
+        --sans: Archivo, system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.4;
+      }
+      .page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 20px 64px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 0 0 6px;
+        letter-spacing: 0.02em;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0 0 20px;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-bottom: 12px;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        margin: 0 0 20px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .legend span i {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: -2px;
+      }
+      .leg-new {
+        background: rgba(201, 130, 26, 0.25);
+        border: 1px solid var(--accent);
+      }
+      .leg-old {
+        background: var(--paper2);
+        border: 1px solid var(--div);
+      }
+      .leg-sel {
+        background: var(--sel);
+        border: 1px solid var(--sel-border);
+      }
+
+      /* App chrome mock */
+      .shell {
+        border: 1px solid var(--div);
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .topnav {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--div);
+        background: var(--paper);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .topnav .brand {
+        color: var(--text);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+      .topnav .active {
+        color: var(--text);
+        border-bottom: 2px solid var(--accent);
+        padding-bottom: 2px;
+      }
+      .main {
+        padding: 16px;
+      }
+
+      .deck {
+        border: 1px solid var(--div);
+        border-radius: 12px;
+        background: var(--paper);
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 42%);
+        padding: 18px 18px 14px;
+        margin-bottom: 12px;
+      }
+      .hero {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--div);
+      }
+      .hero .mark {
+        font-size: 1.35rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .hero .price {
+        font-family: var(--mono);
+        font-size: 1.35rem;
+        margin-left: 10px;
+      }
+      .chip-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--div);
+        color: var(--muted);
+      }
+      .chip-status .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ok);
+      }
+      .cta {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: none;
+        background: #1d6fe0;
+        color: #fff;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1.1fr 1.2fr 1fr;
+        gap: 12px;
+        padding-top: 4px;
+      }
+      @media (max-width: 640px) {
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+      }
+      .seg label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .field {
+        width: 100%;
+        background: var(--paper2);
+        border: 1px solid var(--div);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 14px;
+        padding: 9px 10px;
+      }
+
+      /* NEW */
+      .quick {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--accent);
+        background: rgba(201, 130, 26, 0.06);
+        border-radius: 0 0 8px 8px;
+        margin-left: -6px;
+        margin-right: -6px;
+        padding-left: 6px;
+        padding-right: 6px;
+        padding-bottom: 4px;
+      }
+      .quick > label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .callout {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .chip {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        padding: 6px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--chip-border);
+        background: var(--chip);
+        color: var(--text);
+        cursor: default;
+      }
+      .chip.pin {
+        border-style: solid;
+      }
+      .chip.recent {
+        border-style: dashed;
+        opacity: 0.95;
+      }
+      .chip.selected {
+        background: var(--sel);
+        border-color: var(--sel-border);
+        box-shadow: 0 0 0 1px rgba(201, 130, 26, 0.35);
+      }
+      .sep {
+        width: 1px;
+        height: 18px;
+        background: var(--div);
+        margin: 0 2px;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        opacity: 0.55;
+      }
+      @media (max-width: 640px) {
+        .board {
+          grid-template-columns: 1fr;
+        }
+      }
+      .widget {
+        border: 1px solid var(--div);
+        border-radius: 12px;
+        background: var(--paper);
+        min-height: 72px;
+        padding: 12px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .widget strong {
+        display: block;
+        color: var(--text);
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 28px;
+      }
+      @media (max-width: 720px) {
+        .panels {
+          grid-template-columns: 1fr;
+        }
+      }
+      .panel {
+        border: 1px solid var(--div);
+        border-radius: 10px;
+        padding: 14px;
+        background: var(--paper);
+      }
+      .panel h2 {
+        font-size: 0.85rem;
+        margin: 0 0 10px;
+        font-weight: 600;
+      }
+      .panel ul {
+        margin: 0;
+        padding-left: 1.1rem;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .panel li {
+        margin-bottom: 6px;
+      }
+      .panel code {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text);
+      }
+      footer.note {
+        margin-top: 24px;
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--div);
+        padding-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="badge">Wireframe · owner approval · not final UI</div>
+      <h1>recent-ticker-chips — Command deck control strip</h1>
+      <p class="sub">
+        Only the amber-dashed block is <strong>new</strong>. Hero, toolbar fields, sticky bar, and widgets are
+        existing chrome (dimmed board below).
+      </p>
+
+      <div class="legend">
+        <span><i class="leg-old"></i> Existing UI (unchanged)</span>
+        <span><i class="leg-new"></i> New UI (this feature)</span>
+        <span><i class="leg-sel"></i> Selected = current route symbol</span>
+      </div>
+
+      <div class="shell">
+        <div class="topnav">
+          <span class="brand">CONVEXA</span>
+          <span class="active">Ticker</span>
+          <span>Positions</span>
+          <span>Scanner</span>
+          <span>Alerts</span>
+        </div>
+        <div class="main">
+          <div class="deck" aria-label="Command deck mock">
+            <!-- EXISTING hero -->
+            <div class="hero">
+              <div>
+                <div>
+                  <span class="mark">TSLA</span>
+                  <span class="price">$250.50</span>
+                </div>
+                <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap">
+                  <span class="chip-status"><span class="dot"></span> Live</span>
+                  <span class="chip-status">Actionable</span>
+                </div>
+              </div>
+              <button class="cta" type="button">Open simulated…</button>
+            </div>
+
+            <!-- EXISTING toolbar -->
+            <div class="toolbar">
+              <div class="seg">
+                <label>Ticker</label>
+                <input class="field" value="TSLA" readonly />
+              </div>
+              <div class="seg">
+                <label>Expirations</label>
+                <input class="field" value="All expirations" readonly />
+              </div>
+              <div class="seg">
+                <label>Persona</label>
+                <input class="field" value="Default" readonly />
+              </div>
+            </div>
+
+            <!-- NEW -->
+            <div class="quick" data-testid="wire-quick-symbols">
+              <div class="callout">← New: quick symbols row</div>
+              <label>Quick</label>
+              <div class="chips">
+                <span class="chip pin" title="Pinned liquid">SPY</span>
+                <span class="chip pin">QQQ</span>
+                <span class="chip pin">NVDA</span>
+                <span class="sep" aria-hidden="true"></span>
+                <span class="chip recent selected" title="Recent · current">TSLA</span>
+                <span class="chip recent">AAPL</span>
+                <span class="chip recent">META</span>
+                <span class="chip recent">IWM</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="board" aria-hidden="true">
+            <div class="widget"><strong>Live tape</strong>unchanged widgets…</div>
+            <div class="widget"><strong>Dealer positioning</strong>incl. distance secondary lines</div>
+            <div class="widget"><strong>GEX profile</strong>…</div>
+            <div class="widget"><strong>Market context</strong>…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel">
+          <h2>Created</h2>
+          <ul>
+            <li>Micro-label <code>QUICK</code> (copy finalizable in design)</li>
+            <li>Chip row: liquid pins + recents separator</li>
+            <li>Selected style for current symbol</li>
+            <li>Durable recents list (local; not shown as UI chrome)</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h2>Not changed</h2>
+          <ul>
+            <li>TopNav, hero, sticky condensed bar</li>
+            <li>Ticker / Expirations / Persona fields</li>
+            <li>All data widgets and API payloads</li>
+            <li>No green/red on chips (not P/L direction)</li>
+          </ul>
+        </div>
+      </div>
+
+      <footer class="note">
+        File:
+        <code>.spire/clusters/tech/contracts/recent-ticker-chips/wireframe.html</code>
+        · Spec prose:
+        <code>WIREFRAME.md</code>
+        · Approve / approve-with-changes / reject in chat before the design session.
+      </footer>
+    </div>
+  </body>
+</html>

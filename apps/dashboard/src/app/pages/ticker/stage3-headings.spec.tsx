@@ -274,6 +274,8 @@ function DeckHarness() {
       persona={persona}
       onOpenCustomize={vi.fn()}
       loading={false}
+      routeSymbol="TSLA"
+      onSelectQuickSymbol={() => {}}
     />
   );
 }

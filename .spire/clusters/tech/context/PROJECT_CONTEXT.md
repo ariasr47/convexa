@@ -793,6 +793,12 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   `#4f9cff` accent unchanged). `NO_BACKEND_CHANGE` — score/tier/`state_fingerprint` byte-identical; QA PASS
   (nx test 425/425, `nx build` green). The full-page `/auth` route was owner-dropped (modal stays). See
   OPEN_THREADS §7l.
+- **Recent ticker chips (`recent-ticker-chips`, FE-only, shipped 2026-08-11)** — Command Deck **QUICK**
+  row under Ticker / Expirations / Persona: closed pins **SPY · QQQ · NVDA** + durable client-local
+  recents (`convexa.recent-tickers.v1`, ≤8 MRU); click navigates `/ticker/{SYMBOL}`; current route
+  symbol selected (theme tokens only). Empty/corrupt recents still show pins (`[absent-is-not-none]`).
+  Sticky bar / TopNav / widgets / API untouched. **`NO_BACKEND_CHANGE`**. GATE Q PASS 8/8 (30 feature
+  tests). Contract archived at `.spire/clusters/tech/contracts/_archive/recent-ticker-chips/`.
 - **Distance-to-level tiles (`distance-to-level-tiles`, FE-only, shipped 2026-08-11 `74df555`)** —
   Call wall / Put wall / Max pain / Gamma flip `StatTile`s show a secondary caption: signed $ gap · % ·
   above/below (or `at spot`) from `gex_spot`/`price`. Pure client projection (`distanceToLevel` +

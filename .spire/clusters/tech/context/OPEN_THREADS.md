@@ -519,7 +519,8 @@ succeeded**, all invariants hold (no-real-order-path, live-vs-static, token disc
 **Pre-QA fix:** a pre-existing build blocker TS17001 (duplicate `sx` in `SettingsPage.tsx:242`) was found +
 fixed (`5bd4358`) — Vitest doesn't typecheck, so only `tsc`/`nx build` caught it. Merged to `main` at GATE S.
 **Deferred (BACKLOG §B "Ticker UX quick wins"):** ~~distance-to-level tiles~~ (**SHIPPED + ARCHIVED
-2026-08-11** as `distance-to-level-tiles`), recent-ticker chips, sticky header, input ergonomics.
+2026-08-11**), ~~recent-ticker chips~~ (**SHIPPED + ARCHIVED 2026-08-11** as `recent-ticker-chips`),
+sticky header, input ergonomics.
 **Known non-blocker:** a >500kB JS chunk-size build advisory (code-split later).
 **Owner Figma follow-up (design file, not code):** publish the re-themed MUI kit → update the library → set
 screen frames to dark mode (per `THEME_TOKENS.md`).
@@ -562,7 +563,8 @@ where a later refactor silently regresses.
 - **Real widget functionality** — drag-reorder + resize + add/remove + per-widget config + persistence, hung on
   the `<Widget>` shell + `WidgetSelectionContext` seam (affordances exist; wire them). Owner-framed as the seam.
 - **Deferred Ticker UX quick wins** (BACKLOG §B): ~~distance-to-level tiles~~ (**SHIPPED + ARCHIVED
-  2026-08-11**), recent-ticker quick-pick chips, sticky-header refinements, input ergonomics.
+  2026-08-11**), ~~recent-ticker chips~~ (**SHIPPED + ARCHIVED 2026-08-11**), sticky-header
+  refinements, input ergonomics.
   (Big-number formatting + freshness line already shipped in the redesign.)
 - **AI-rec "Accept" → tracked position — full build-out** (BACKLOG §B, raised 2026-07-01): Accept currently opens
   a pre-filled entry dialog; the full read→track loop (map rec structure/strikes/expiry/stop/target into a

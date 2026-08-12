@@ -20,6 +20,7 @@ import { elevationFor } from '@/shared/theme/tokens';
 import type { Expiration, LiveUpdate, MarketState, Signals } from '@convexa/api';
 import { Box, Stack, Typography } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
+import { QuickSymbols } from './QuickSymbols';
 import { TintChip as StatusChip, TickerHeader, connectionChip } from './TickerHeader';
 import { TickerToolbar } from './TickerToolbar';
 
@@ -55,6 +56,13 @@ interface CommandDeckProps {
   persona: ReturnType<typeof usePersona>;
   onOpenCustomize: () => void;
   loading: boolean;
+  /**
+   * Route ticker (URL param) — drives Quick chip selected state (AC-4).
+   * Distinct from `symbol` (the uncommitted input field).
+   */
+  routeSymbol: string;
+  /** Chip click — parent navigates + syncs input (same path as submit). */
+  onSelectQuickSymbol: (symbol: string) => void;
 }
 
 /** The slim condensed bar shown once the deck has scrolled out of view — restores mark · ticker ·
@@ -162,6 +170,8 @@ export function CommandDeck(props: CommandDeckProps) {
     persona,
     onOpenCustomize,
     loading,
+    routeSymbol,
+    onSelectQuickSymbol,
   } = props;
 
   const reduced = useReducedMotion();
@@ -261,6 +271,9 @@ export function CommandDeck(props: CommandDeckProps) {
             loading={loading}
             embedded
           />
+
+          {/* Tier 3 — Quick symbols row (pins + durable recents). Not on sticky bar. */}
+          <QuickSymbols currentSymbol={routeSymbol} onSelect={onSelectQuickSymbol} />
         </Stack>
       </Box>
 

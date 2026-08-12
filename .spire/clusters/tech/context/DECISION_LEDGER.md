@@ -367,6 +367,9 @@ be exactly it.
 | `theme-token-discipline` | distance-to-level-tiles | S | secondary caption uses theme text.secondary + mono only; no hex; no success/error tint on distance | yes |
 | `additive-keeps-score-byte-identical` | distance-to-level-tiles | S | NO_BACKEND_CHANGE; pure client distance string; empty apps/api on 74df555 | yes |
 | `absent-is-not-none` | distance-to-level-tiles | S | missing gex_spot+price omits secondary — never fabricates at-spot or a gap | yes |
+| `theme-token-discipline` | recent-ticker-chips | S | QUICK chips theme tokens only; selected via primary/divider; no hex; no success/error tint | yes |
+| `additive-keeps-score-byte-identical` | recent-ticker-chips | S | NO_BACKEND_CHANGE; nav chrome only; empty apps/api | yes |
+| `absent-is-not-none` | recent-ticker-chips | S | empty/corrupt recents still show closed pins — never blank Quick row | yes |
 
 > Note (GATE S, iv-rank, 2026-07-07): the THIRD item of the owner "enrich the downstream-AI's inputs" GATE I
 > (owner pick 2026-07-06 (b); the 2026-07-02 runner-up, chosen after market-backdrop's index feed verified

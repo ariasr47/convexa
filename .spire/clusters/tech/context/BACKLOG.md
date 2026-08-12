@@ -30,6 +30,29 @@
 
 ---
 
+## Last GATE I — 2026-08-11 (queue honesty after drain → `recent-ticker-chips`; X2/X3/split-log no longer greenfield)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained after `distance-to-level-tiles` SHIPPED + ARCHIVED + prod deploy. Owner chose
+track **A** (next product feature). Full harvest against standing queue + code reality (not the
+stale roadmap labels alone).
+**Chosen → `recent-ticker-chips`.** Brief at
+`.spire/clusters/tech/contracts/recent-ticker-chips/BRIEF.md` (carries full `Considered:`). FE-only
+expected (`NO_BACKEND_CHANGE`). Highest remaining Ticker UX quick win after distance-to-level tiles.
+**Queue honesty (code-verified this gate — do not re-open as greenfield):**
+1. **`vol-normalized-gex` (X2) — already in production code.** `libs/quant-engine` vol_gex + Path B
+   analytics + `MarketState.vol_normalized_gex?` + DealerPositioning “Vol-norm GEX” tile +
+   methodology copy. Status note: `docs/research/X2_VOL_NORMALIZED_GEX_STATUS.md`. Residual =
+   score-lab coupling / hist A/B research — **not** a rebuild. Mark X2 **shipped in code** in the
+   standing queue; thin Spire archive optional later.
+2. **`alerts` (X3) — already in production code.** `/alerts` route + TopNav, client durable rules,
+   pure evaluate + vitest, ticker evaluate-on-snap, optional browser Notification. Webhook delivery
+   remains deferred optional. IMPROVEMENT_BACKLOG 5.5 checked 2026-08-10.
+3. **`split-decision-log` — RESOLVED** at positions v3 cutover: ghost `appendDecision` / write path
+   deleted; `model/store` is read-only harvest; single positions decision log. BACKLOG §B entry is
+   **stale alarm** — leave for cleanup, do not re-schedule as emergency.
+**Runner-up:** sticky condensed header (still deferred Ticker UX). **Blocked:** ledger checkpoint
+X4 on N≥20 closed outcomes (habit N2). **Not chosen:** re-implementing X2/X3.
+
 ## Last GATE I — 2026-08-06 (queue-drain cull → `broker-option-grouping`; the owner pick held, one entry re-assessed DOWN)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Pipeline was **drained** (`.spire/clusters/tech/contracts/` held only `_archive/`); ran the full harvest → cull
@@ -113,12 +136,15 @@ judge); commercialization (L3/L4) is **gated on ledger evidence + licensing-in-w
    probe: `/trade/instrument` is LIVE but echoes — a parameter/entitlement question for Webull).
    **Invariant watch:** `absent-is-not-none` (a group is a count + a net, never an unearned label) ·
    `model-read-carries-its-assumptions` · `theme-token-discipline`. FE-only expected.
-4. **`vol-normalized-gex` (X2)** — GATE-M-shaped: vol-normalize the GEX read (+ intraday recompute where
-   data allows) + a public-ready methodology note. Evidence: raw GEX showed no predictive power in the
-   independent backtest; vol-normalized did.
-5. **`alerts` v1 (X3)** — level-touch / tier-change / score-gate, simple delivery.
+4. **`vol-normalized-gex` (X2) — ✓ SHIPPED IN CODE** (verified GATE I 2026-08-11; see
+   `docs/research/X2_VOL_NORMALIZED_GEX_STATUS.md`). Math + wire + UI + methodology present; residual
+   research/score-lab coupling only.
+5. **`alerts` v1 (X3) — ✓ SHIPPED IN CODE** (IMPROVEMENT_BACKLOG 5.5, 2026-08-10; re-verified GATE I
+   2026-08-11). In-app rules + browser Notification; webhook optional later.
 6. **Ledger checkpoint (X4)** at N≥20 closed outcomes → first deliberate score change only if justified,
-   under `[score-change-is-deliberate-and-measured]`.
+   under `[score-change-is-deliberate-and-measured]`. **Still the next edge-program gate once N is real.**
+7. **`recent-ticker-chips` — ✓ SHIPPED + ARCHIVED 2026-08-11** → `_archive/recent-ticker-chips/`
+   (GATE V + PLAN + FE; QA PASS 8/8; `NO_BACKEND_CHANGE`).
 **Owner habits (not pipeline features, tracked in the roadmap):** N1 deploy (runbook, `ALLOWED_ORIGINS`) ·
 N2 mirror every real trade · N4 daily public read on X — **DEFERRED by owner 2026-08-01 until personal
 testing shakes out the quirks** (business-path gates slide with it; edge test unaffected).
@@ -1061,13 +1087,10 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   <!-- atlas: theme=trust-the-signal horizon=now -->
   FE-only, display-only usability touches on the Ticker page. **Big-number formatting + a freshness indicator
   were BUILT this session** (GATE V on `convexa-redesign`); the owner deferred the rest here:
-  - **Distance-to-spot on the key levels** *(highest value)* — Call wall / Put wall / Gamma flip / Max pain each
-    show how far price is from them (`+$13 · 3.1% above`), turning each level into an instant "how close am I"
-    read. Derive from `gex_spot`/`price` + the strike (display-only; `additive-keeps-score-byte-identical`).
-    Likely a `StatTile` secondary-line affordance. *Value H · Effort S.*
-  - **Recent / quick-pick ticker chips** — a row of recent (or common: SPY/QQQ/NVDA) symbols under the ticker
-    input for one-click switching instead of retyping. Durable recents = a small localStorage list (reuse the
-    `resolveDurable` pattern). *Value M · Effort S.*
+  - **Distance-to-spot on the key levels** — ✓ **SHIPPED + ARCHIVED 2026-08-11** as
+    `distance-to-level-tiles` (QA PASS 5/5; prod on `main`).
+  - **Recent / quick-pick ticker chips** — ✓ **SHIPPED + ARCHIVED 2026-08-11** as
+    `recent-ticker-chips` (QA PASS 8/8; pins SPY/QQQ/NVDA + durable recents under Command Deck).
   - **Sticky condensed header on scroll** — pin a slim ticker + price + live-status bar once the user scrolls
     into the chart/tables, so the anchor context isn't lost on a long page. *Value M · Effort S–M.*
   - **Ticker input ergonomics** — auto-uppercase, Enter-to-load (already wired via `onSubmitSymbol`?), focus
