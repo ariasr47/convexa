@@ -69,6 +69,17 @@ function makeBundle(): TickerBundle {
       iv_skew: null,
       term_structure: null,
       dealer_flow_projection: null,
+      straddle_move: {
+        state: 'not_computed',
+        as_of: null,
+        session_basis: null,
+        anchor_spot: null,
+        anchor_basis: 'gex_spot',
+        anchor_label: 'gex_spot',
+        primary_expiration: null,
+        wide_quote_threshold_pct: 15,
+        tenors: [],
+      },
     },
     signals: {
       ticker: 'TSLA',

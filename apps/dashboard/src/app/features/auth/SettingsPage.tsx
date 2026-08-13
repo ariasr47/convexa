@@ -46,7 +46,8 @@ import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
 import { AVATAR_SX, avatarInitial } from './avatar';
 import { BrokerageSection } from './BrokerageSection';
-import { AUTH_COPY, SETTINGS_DEFAULTS } from './copy';
+import { AUTH_COPY, RISK_INPUTS_COPY, SETTINGS_DEFAULTS } from './copy';
+import { RiskInputsSection } from './RiskInputsSection';
 import { useSettings } from './useSettings';
 
 const C = AUTH_COPY.settings;
@@ -219,17 +220,10 @@ export function SettingsPage() {
           )}
         </PanelCard>
 
-        {/* ===== 2. AI key panel (re-skin only; all logic + testids + the security floor preserved) ===== */}
-        <PanelCard heading={C.aiKey.heading} testId="settings-ai-key-panel">
-          <AiKeySection embedded />
-        </PanelCard>
-
-        {/* ===== 2b. Brokerage panel (broker-connect — the byo-ai-key shape; #brokerage anchor) ===== */}
-        <PanelCard heading={C.brokerage.heading} testId="settings-brokerage-panel">
-          <BrokerageSection embedded />
-        </PanelCard>
-
-        {/* ===== 3. Preferences panel — appearance only (score-neutral) ===== */}
+        {/* ===== 2. Preferences panel — appearance only (score-neutral) =====
+            Panel order (tradeable-rec-inputs, PLAN.md reconciliation): Account → Preferences →
+            Risk inputs → AI key → Brokerage. A trader input (Risk inputs) must not be grouped with
+            credentials (AI key / Brokerage) — Preferences moves above AI key to make room for it. */}
         <PanelCard heading={C.preferencesHeading} testId="settings-preferences-panel">
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
             {C.themeHelper}
@@ -353,6 +347,21 @@ export function SettingsPage() {
               {C.saveError}
             </Alert>
           )}
+        </PanelCard>
+
+        {/* ===== 3. Risk inputs panel (tradeable-rec-inputs) — a trader input, not a credential ===== */}
+        <PanelCard heading={RISK_INPUTS_COPY.heading} testId="settings-risk-inputs-panel">
+          <RiskInputsSection />
+        </PanelCard>
+
+        {/* ===== 4. AI key panel (re-skin only; all logic + testids + the security floor preserved) ===== */}
+        <PanelCard heading={C.aiKey.heading} testId="settings-ai-key-panel">
+          <AiKeySection embedded />
+        </PanelCard>
+
+        {/* ===== 5. Brokerage panel (broker-connect — the byo-ai-key shape; #brokerage anchor) ===== */}
+        <PanelCard heading={C.brokerage.heading} testId="settings-brokerage-panel">
+          <BrokerageSection embedded />
         </PanelCard>
 
         {/* The standing disclaimer — ONE shared source with the site footer, so the two copies

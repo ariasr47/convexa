@@ -56,6 +56,17 @@ const marketState = (over: Partial<MarketState> = {}): MarketState => ({
   iv_skew: null,
   term_structure: null,
   dealer_flow_projection: null,
+  straddle_move: {
+    state: 'not_computed',
+    as_of: null,
+    session_basis: null,
+    anchor_spot: null,
+    anchor_basis: 'gex_spot',
+    anchor_label: 'gex_spot',
+    primary_expiration: null,
+    wide_quote_threshold_pct: 15,
+    tenors: [],
+  },
   vol_normalized_gex: {
     net_gex: 6e9, // 1.2e9 / 0.20
     call_gex: 1e10,

@@ -58,6 +58,13 @@ export interface CaptureInput {
    * identity at all", which is a different (and, in this app, no longer occurring) fact.
    */
   aiRecFingerprint: string | null;
+  /**
+   * tradeable-rec-inputs (AC-82): whether a risk block was present AT ENTRY — `true`/`false` when
+   * known this cycle, `null` when genuinely unreadable (anonymous / a faulted settings read). The
+   * PRESENCE FLAG ONLY — never an account-size value (AC-29a). Callers already read this off the
+   * settings surface already in hand; this function performs no fetch of its own.
+   */
+  riskBlockPresent: boolean | null;
 }
 
 /**
@@ -85,6 +92,8 @@ export function buildEntryContextDigest(input: CaptureInput): EntryContextDigest
     vol_regime: best(() => bundle?.signals?.vol_regime),
     state_fingerprint: best(() => bundle?.ai_eval?.state_fingerprint),
     ai_rec_fingerprint: input.aiRecFingerprint,
+    // tradeable-rec-inputs (AC-82): the presence flag ONLY — never an account-size value.
+    risk_block_present: best(() => input.riskBlockPresent),
   };
 }
 

@@ -116,13 +116,30 @@ impl ResolvedLlmKey {
     }
 }
 
+/// The rec-input blocks the assembler inserted (`services/recommendation.rs` builds this).
+/// `market_state` here is ALREADY a pruned clone — `straddle_move.tenors` restricted to the
+/// tenors actually present in `candidates` (via `quant_engine::restrict_move_to_tenors`), so the
+/// model is never shown a tenor whose contracts it was not sent.
+pub struct RecPromptContext<'a> {
+    pub market_state: Value,
+    pub signals: Option<&'a Value>,
+    pub ai_eval: Option<&'a Value>,
+    /// The §1 candidate envelope, `budget: "prompt"`, `sent_to_model: true`.
+    pub candidates: Value,
+    /// The as-sent risk block (§4 shape) or `{state:"not_set", ...}`.
+    pub risk_inputs: Value,
+    /// The client digest, labelled `simulated`.
+    pub open_positions: Value,
+}
+
 /// System + user prompt for a market-state recommendation.
-pub fn build_rec_prompts(ticker: &str, bundle: &Value, persona_name: &str) -> (String, String) {
+pub fn build_rec_prompts(ticker: &str, ctx: &RecPromptContext<'_>, persona_name: &str) -> (String, String) {
     let system = format!(
         "You are a risk-first options strategist for Convexa. Persona: {persona_name}. \
          Respond ONLY with a single JSON object (no markdown) matching this schema:\n\
          {{\"decision\":\"trade\"|\"no_trade\",\"bias\":\"long\"|\"short\"|\"neutral\"|\"volatility\",\
          \"structure\":string|null,\"strikes\":number[],\"expiration\":string|null,\
+         \"right\":\"call\"|\"put\"|null,\
          \"entry_trigger\":string|null,\"invalidation_level\":number|null,\
          \"max_risk\":string|null,\"position_size\":string|null,\
          \"exit_plan\":{{\"target\":number|null,\"stop\":number|null}},\
@@ -130,13 +147,22 @@ pub fn build_rec_prompts(ticker: &str, bundle: &Value, persona_name: &str) -> (S
          \"summary\":string|null,\"key_points\":string[],\"reengage_when\":string[],\
          \"rationale\":string}}\n\
          Cite concrete levels from the context (walls, gamma flip, magnets, IV/HV). \
-         Prefer defined-risk. Saying no_trade is valid and preferred when edge is unclear."
+         Prefer defined-risk. Saying no_trade is valid and preferred when edge is unclear. \
+         When you name a single contract, state `right` as call or put. If the structure has more \
+         than one leg, leave `right` null — do not guess. \
+         Size within the owner's stated risk block when one is present; if it is absent, say so \
+         rather than inventing a figure. The candidate contracts listed are the only ones Convexa \
+         sent you."
     );
     let context = json!({
         "ticker": ticker,
-        "market_state": bundle.get("market_state"),
-        "signals": bundle.get("signals"),
-        "ai_eval": bundle.get("ai_eval"),
+        "market_state": ctx.market_state,
+        "signals": ctx.signals,
+        "ai_eval": ctx.ai_eval,
+        "candidate_contracts": ctx.candidates,
+        "risk_inputs": ctx.risk_inputs,
+        "open_positions": ctx.open_positions,
+        "open_positions_note": "SIMULATED positions from the owner's browser only. Broker positions are not counted.",
         "strike_profile_note": "strike_profile omitted from prompt if large; use walls/flip from market_state",
     });
     let user = format!(
@@ -369,12 +395,21 @@ fn parse_strategy_json(text: &str) -> Result<Value, &'static str> {
         "long" | "short" | "neutral" | "volatility" => bias,
         _ => "neutral",
     };
+    // Deliberately UNLIKE `bias` (which defaults to "neutral"): an unrecognised or absent `right`
+    // stays ABSENT. A defaulted right is exactly the confidently-wrong match this exists to
+    // prevent (INTERFACE_CONTRACT §5, `strategy.right`).
+    let right = match v.get("right").and_then(|r| r.as_str()) {
+        Some("call") => Value::String("call".into()),
+        Some("put") => Value::String("put".into()),
+        _ => Value::Null,
+    };
     Ok(json!({
         "decision": decision,
         "bias": bias,
         "structure": v.get("structure").cloned().unwrap_or(Value::Null),
         "strikes": v.get("strikes").cloned().unwrap_or(json!([])),
         "expiration": v.get("expiration").cloned().unwrap_or(Value::Null),
+        "right": right,
         "entry_trigger": v.get("entry_trigger").cloned().unwrap_or(Value::Null),
         "invalidation_level": v.get("invalidation_level").cloned().unwrap_or(Value::Null),
         "max_risk": v.get("max_risk").cloned().unwrap_or(Value::Null),
@@ -412,5 +447,167 @@ mod tests {
         let raw = "```json\n{\"decision\":\"no_trade\",\"bias\":\"neutral\",\"rationale\":\"wait\"}\n```";
         let v = parse_strategy_json(raw).unwrap();
         assert_eq!(v["decision"], "no_trade");
+    }
+
+    #[test]
+    fn a_call_right_is_projected() {
+        let raw = r#"{"decision":"trade","right":"call","rationale":"x"}"#;
+        assert_eq!(parse_strategy_json(raw).unwrap()["right"], "call");
+    }
+
+    #[test]
+    fn a_put_right_is_projected() {
+        let raw = r#"{"decision":"trade","right":"put","rationale":"x"}"#;
+        assert_eq!(parse_strategy_json(raw).unwrap()["right"], "put");
+    }
+
+    #[test]
+    fn an_unrecognised_right_stays_absent_and_never_defaults() {
+        let raw = r#"{"decision":"trade","right":"straddle","rationale":"x"}"#;
+        assert!(parse_strategy_json(raw).unwrap()["right"].is_null());
+    }
+
+    #[test]
+    fn an_absent_right_stays_absent_contrast_with_bias_default() {
+        let raw = r#"{"decision":"trade","rationale":"x"}"#;
+        let v = parse_strategy_json(raw).unwrap();
+        assert!(v["right"].is_null());
+        // Contrast: `bias` DOES default (to "neutral") — `right` deliberately does not.
+        assert_eq!(v["bias"], "neutral");
+    }
+
+    // --- B15: prompt assembly ---
+
+    fn quoted(strike: f64, side: quant_engine::ContractType, exp: &str) -> quant_engine::Contract {
+        quant_engine::Contract {
+            strike_price: strike,
+            contract_type: side,
+            open_interest: 100.0,
+            expiration_date: exp.into(),
+            implied_volatility: 0.3,
+            greeks: Some(quant_engine::Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            volume: Some(10.0),
+            bid: Some(1.0),
+            ask: Some(1.2),
+        }
+    }
+
+    fn as_of() -> chrono::DateTime<chrono::Utc> {
+        use chrono::TimeZone;
+        chrono::Utc.with_ymd_and_hms(2026, 8, 12, 20, 0, 0).unwrap()
+    }
+
+    fn user_context_json(user: &str) -> Value {
+        let (_, json_part) = user.split_once(":\n").expect("prompt carries a JSON body");
+        serde_json::from_str(json_part).expect("prompt body is valid JSON")
+    }
+
+    #[test]
+    fn the_prompt_block_never_exceeds_twenty_records() {
+        let mut chain = Vec::new();
+        for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
+            for i in 0..30 {
+                chain.push(quoted(100.0 + i as f64 * 0.1, quant_engine::ContractType::Call, exp));
+                chain.push(quoted(100.0 + i as f64 * 0.1, quant_engine::ContractType::Put, exp));
+            }
+        }
+        let set = quant_engine::CandidateSet::build(
+            &chain, 100.0, as_of(), quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+        );
+        let candidates = crate::services::rec_inputs::candidate_envelope("SPY", &set, Some(1.0));
+        let ctx = RecPromptContext {
+            market_state: json!({}),
+            signals: None,
+            ai_eval: None,
+            candidates,
+            risk_inputs: json!({"state": "not_set"}),
+            open_positions: json!({"source": "simulated", "state": "none_open"}),
+        };
+        let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
+        let v = user_context_json(&user);
+        let n = v["candidate_contracts"]["contracts"].as_array().unwrap().len();
+        assert!(n <= 20, "prompt block carried {n} records, budget caps at 20");
+    }
+
+    #[test]
+    fn the_forwarded_move_is_restricted_to_the_candidate_tenors() {
+        let mut chain = Vec::new();
+        for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
+            chain.push(quoted(100.0, quant_engine::ContractType::Call, exp));
+            chain.push(quoted(100.0, quant_engine::ContractType::Put, exp));
+        }
+        let mv = quant_engine::compute_straddle_move(&chain, 100.0, as_of(), quant_engine::DteWindow::default(), &quant_engine::SnapshotMeta::default());
+        assert_eq!(mv.tenors.len(), 3);
+        // Prompt budget caps tenors at 2 — narrower than the move's 3.
+        let set = quant_engine::CandidateSet::build(
+            &chain, 100.0, as_of(), quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+        );
+        let pruned = quant_engine::restrict_move_to_tenors(&mv, set.included_expirations());
+        assert!(pruned.tenors.len() <= 2);
+        assert!(quant_engine::assert_tenor_subset(&pruned, set.included_expirations()).is_ok());
+
+        let ctx = RecPromptContext {
+            market_state: json!({ "straddle_move": pruned }),
+            signals: None,
+            ai_eval: None,
+            candidates: crate::services::rec_inputs::candidate_envelope("SPY", &set, None),
+            risk_inputs: json!({"state": "not_set"}),
+            open_positions: json!({"source": "simulated", "state": "none_open"}),
+        };
+        let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
+        let v = user_context_json(&user);
+        let forwarded_tenors = v["market_state"]["straddle_move"]["tenors"].as_array().unwrap();
+        assert!(forwarded_tenors.len() <= 2);
+        let candidate_exps: Vec<String> = v["candidate_contracts"]["included"]["expirations"]
+            .as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
+        for t in forwarded_tenors {
+            let exp = t["expiration"].as_str().unwrap();
+            assert!(candidate_exps.iter().any(|e| e == exp), "{exp} forwarded but not in candidate set");
+        }
+    }
+
+    #[test]
+    fn widening_the_restriction_makes_the_subset_assertion_fail() {
+        // A single-expiration candidate chain — the candidate set's included tenor set is narrow.
+        let narrow_chain = vec![
+            quoted(100.0, quant_engine::ContractType::Call, "2026-08-21"),
+            quoted(100.0, quant_engine::ContractType::Put, "2026-08-21"),
+        ];
+        let narrow_set = quant_engine::CandidateSet::build(
+            &narrow_chain, 100.0, as_of(), quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+        );
+
+        // A three-tenor move computed off a WIDER chain (as if the restriction were wrongly
+        // widened to the move's own tenors instead of the actual candidate set).
+        let mut wide_chain = Vec::new();
+        for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
+            wide_chain.push(quoted(100.0, quant_engine::ContractType::Call, exp));
+            wide_chain.push(quoted(100.0, quant_engine::ContractType::Put, exp));
+        }
+        let mv = quant_engine::compute_straddle_move(&wide_chain, 100.0, as_of(), quant_engine::DteWindow::default(), &quant_engine::SnapshotMeta::default());
+        assert_eq!(mv.tenors.len(), 3);
+
+        // Poison: assert against the NARROW set's included tenors (the correct bound). The
+        // unrestricted 3-tenor move must fail the subset check.
+        assert!(quant_engine::assert_tenor_subset(&mv, narrow_set.included_expirations()).is_err());
+    }
+
+    #[test]
+    fn the_positions_digest_rides_the_prompt_labelled_simulated() {
+        let ctx = RecPromptContext {
+            market_state: json!({}),
+            signals: None,
+            ai_eval: None,
+            candidates: json!({"state": "ok"}),
+            risk_inputs: json!({"state": "not_set"}),
+            open_positions: json!({"source": "simulated", "state": "none_open", "this_underlying": null, "portfolio": null}),
+        };
+        let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
+        let v = user_context_json(&user);
+        assert_eq!(v["open_positions"]["source"], "simulated");
+        assert_eq!(v["open_positions"]["state"], "none_open");
     }
 }

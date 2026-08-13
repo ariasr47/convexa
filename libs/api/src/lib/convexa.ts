@@ -302,6 +302,10 @@ export interface MarketState {
   // Vol-normalized GEX (vol-normalized-gex) — additive, independently nullable, STATIC. OPTIONAL key.
   // Magnitude only (net/call/put/total ÷ ATM IV or HV). Walls/flip stay raw. Never a scoring input.
   vol_normalized_gex?: VolNormalizedGex | null;
+  // Straddle-implied move (tradeable-rec-inputs) — additive, STATIC, ALWAYS an object (never a bare
+  // null — the backend's constructor is total). Not optional: a post-feature backend always emits
+  // it. Never a scoring input.
+  straddle_move: StraddleMove;
 }
 
 /** Vol-normalized dollar GEX aggregates. Sign matches raw net_gex; magnitude is / vol. */
@@ -316,6 +320,162 @@ export interface VolNormalizedGex {
   vol_basis: 'atm_iv' | 'hv_30d';
   /** Honest basis for the desk / methodology. */
   basis_note: string;
+}
+
+// ---- Straddle-implied move (tradeable-rec-inputs INTERFACE_CONTRACT §2) ------------------------
+// Additive `market_state` member, attached AFTER `generate_signals`. Always an object (never a bare
+// null) carrying a closed `state`; the FE renders every state/basis/anchor by closed lookup on the
+// wire token and never re-derives one from a scalar or a null (`[digested-labels-not-raw-dump]`,
+// `[absent-is-not-none]`). STATIC — never a scoring input, never on SSE.
+export type StraddleMoveState = 'ok' | 'no_quote' | 'not_computed' | 'no_expiration_in_window';
+export type MoveBasis = 'atm_straddle_mid' | 'iv_derived_estimate';
+/** One inhabitant today — the levels anchor (`gex_spot`), never the live display price. */
+export type MoveAnchorBasis = 'gex_spot';
+
+export interface StraddleTenor {
+  expiration: string;
+  dte: number;
+  strike_used: number;
+  strike_distance_pct: number;
+  straddle_price: number;
+  move_dollars: number;
+  /** Percent OF `anchor_spot` — never of the live display price. */
+  move_pct: number;
+  basis: MoveBasis;
+  quote_spread_pct_of_mid: number | null;
+  wide_quotes: boolean;
+}
+
+export interface StraddleMove {
+  state: StraddleMoveState;
+  as_of: string | null;
+  session_basis: string | null;
+  anchor_spot: number | null;
+  anchor_basis: MoveAnchorBasis;
+  /** The words the basis line renders for the anchor — rendered VERBATIM by the client. */
+  anchor_label: string;
+  /** The tenor the UI renders by default; selected server-side by the same rule that selects the
+   *  candidate tenors. The client never picks by array order or by comparing DTEs. */
+  primary_expiration: string | null;
+  wide_quote_threshold_pct: number;
+  /** <= 3, ascending by DTE. Sparse tenors are omitted, never emitted null. */
+  tenors: StraddleTenor[];
+}
+
+// ---- Candidate contract set (tradeable-rec-inputs INTERFACE_CONTRACT §1) -----------------------
+// `GET /api/candidates/{ticker}` — the dedicated deliberate pull, and the shape reused verbatim by
+// `sent.candidates` (in-app rec) and `context.candidates` (export). Never on the bundle, never on
+// SSE, never on a passive page load (AC-1). STATIC (chain-snapshot derived).
+export type CandidateSetState = 'ok' | 'none_in_band' | 'unavailable';
+export type CandidateBudget = 'handoff' | 'prompt';
+export type QuotePresence = 'quoted' | 'no_two_sided_quote';
+export type IvState = 'priced' | 'unpriced';
+export type SpreadBand = 'tight' | 'moderate' | 'wide' | 'unknown';
+
+export interface CandidateGreeks {
+  delta: number | null;
+  gamma: number | null;
+  theta: number | null;
+  vega: number | null;
+}
+
+/** One candidate contract. A no-quote contract is INCLUDED carrying `quote_presence`, never
+ *  dropped (AC-11). `iv`/greeks are `null` iff `iv_state === 'unpriced'`; `0.0` never ships as an
+ *  IV or a greek (the vendor's unpriced sentinel, AC-12). */
+export interface CandidateContract {
+  expiration: string;
+  dte: number;
+  strike: number;
+  right: OptionRight;
+  /** Signed distance from `anchor_spot`, percent. */
+  distance_pct: number;
+  quote_presence: QuotePresence;
+  bid: number | null;
+  ask: number | null;
+  mid: number | null;
+  spread_abs: number | null;
+  spread_pct_of_mid: number | null;
+  open_interest: number;
+  volume: number;
+  iv_state: IvState;
+  iv: number | null;
+  greeks: CandidateGreeks;
+}
+
+export interface CandidateCaps {
+  tenors: number;
+  rights: number;
+  strikes_per_tenor_right: number;
+  max_records: number;
+  max_bytes: number;
+}
+
+export interface CandidateIncluded {
+  contracts: number;
+  expirations: string[];
+  expiration_count: number;
+}
+
+/** Five closed reasons, fixed evaluation order, each contract counted EXACTLY once. */
+export interface CandidateOmittedByReason {
+  outside_window: number;
+  outside_band: number;
+  no_interest: number;
+  expiration_cap: number;
+  strike_cap: number;
+}
+
+export interface CandidateOmitted {
+  total: number;
+  expirations_omitted_by_cap: number;
+  by_reason: CandidateOmittedByReason;
+}
+
+export interface CandidateLiquidity {
+  quoted: number;
+  no_two_sided_quote: number;
+  atm_relative_spread_band: SpreadBand;
+  wide_quotes: boolean;
+  wide_quote_threshold_pct: number;
+}
+
+export interface CandidateSetEnvelope {
+  ticker: string;
+  state: CandidateSetState;
+  as_of: string | null;
+  snapshot_age_seconds: number | null;
+  session_basis: string | null;
+  /** Set-level only, one member in v1 (rule 2 — no per-quote freshness/session label exists). */
+  quote_age: 'unknown';
+  anchor_spot: number | null;
+  anchor_basis: MoveAnchorBasis;
+  /** Payload-stated constant (15.0), never a caller-tunable query knob. */
+  band_pct: number;
+  budget: CandidateBudget;
+  /** `false` on the dedicated read; `true` on `sent.candidates` (the in-app prompt). */
+  sent_to_model: boolean;
+  caps: CandidateCaps;
+  included: CandidateIncluded;
+  omitted: CandidateOmitted;
+  liquidity: CandidateLiquidity;
+  contracts: CandidateContract[];
+}
+
+/** GET /api/candidates/{ticker} — the deliberate pull. Anonymous-ok, STATIC, never a vendor request
+ *  on any path. `404` only when the ticker has no chain at all; everything else is `200` with a
+ *  stated `state` (empty band / all dropped / assembly failed) — never invented by the FE. */
+export async function getCandidates(
+  symbol: string,
+  opts: { minDte?: number; maxDte?: number; budget?: CandidateBudget } = {},
+): Promise<CandidateSetEnvelope> {
+  const params = new URLSearchParams();
+  if (opts.minDte != null) params.set('min_dte', String(opts.minDte));
+  if (opts.maxDte != null) params.set('max_dte', String(opts.maxDte));
+  if (opts.budget) params.set('budget', opts.budget);
+  const qs = params.toString();
+  const res = await fetch(`/api/candidates/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
+  if (!res.ok) throw new ApiError(`Candidates unavailable (${res.status})`, res.status);
+  return (await res.json()) as CandidateSetEnvelope;
 }
 
 export interface StrikeRow {
@@ -532,12 +692,56 @@ export class ApiError extends Error {
 /** One of `"dark"`/`"light"`/`"system"` — the only valid theme values (INTERFACE §2.1). */
 export type ThemePref = 'dark' | 'light' | 'system';
 
+// ---- Risk inputs (tradeable-rec-inputs INTERFACE_CONTRACT §4) ----------------------------------
+// Owner-entered, per-user, server-side; lives on the existing settings record. `0` is a LEGAL entry
+// (never an encoding of "unset" — `Option<T>` everywhere on the wire); a zero ENTRY is refused by
+// validation (AC-36). The effective dollar cap is derived exactly once, server-side — the client
+// performs NO arithmetic on the owner's entered values.
+export type CapUnit = 'usd' | 'percent';
+export interface PerTradeCap {
+  value: number;
+  unit: CapUnit;
+}
+export type EffectiveDollarCapState = 'derived' | 'not_derivable' | 'not_set';
+export type NotDerivableReason = 'percent_without_account_size';
+export interface EffectiveDollarCap {
+  state: EffectiveDollarCapState;
+  /** Derived exactly once, server-side. Never computed client-side. */
+  value: number | null;
+  not_derivable_reason: NotDerivableReason | null;
+  /** What the figure was derived from — so the UI can label it *derived from your inputs*, never
+   *  *validated* / *checked* / *enforced*. */
+  derived_from: { account_size: number | null; cap_value: number | null; cap_unit: CapUnit | null };
+}
+export type RiskInputsState = 'set' | 'not_set';
+export interface RiskInputs {
+  state: RiskInputsState;
+  /** `null` = not set. `0` is a legal entry, never an encoding of unset. */
+  account_size: number | null;
+  per_trade_cap: PerTradeCap | null;
+  /** Always an object, never null. */
+  effective_dollar_cap: EffectiveDollarCap;
+  storage_available: boolean;
+  updated_at: number | null;
+}
+
+/** The owner-entered PATCH shape for `PUT /api/auth/settings` — each fact independently clearable
+ *  (send `null` to clear). Distinct from the read shape `RiskInputs`: the effective cap / storage
+ *  flag / timestamp are server-derived and never sent by the client. */
+export interface RiskInputsPatch {
+  account_size?: number | null;
+  per_trade_cap?: PerTradeCap | null;
+}
+
 /** The 3 light, presentation-only prefs (D7). NEVER read by signals/engine/scoring/fingerprint
  *  (AC-F4) — they only change which default a UI lands on. */
 export interface UserSettings {
   active_persona_id: string | null; // null ⇒ app default (Default persona)
   default_ticker: string | null; // null ⇒ app default (TSLA)
   theme: ThemePref;
+  // Risk inputs (tradeable-rec-inputs) — OPTIONAL key so an older backend degrades to `not_set`,
+  // never a throw (mirrors `RecStatus.scenarios` at the ai-rec-backtest-orders precedent).
+  risk_inputs?: RiskInputs;
 }
 
 /** Authenticated identity (never the raw email as id; `id` is opaque + stable). */
@@ -664,9 +868,18 @@ export async function logout(): Promise<void> {
   }
 }
 
+/** The write-side patch shape: the 3 light prefs plus the optional risk-inputs patch (a different
+ *  shape from the read-side `UserSettings.risk_inputs`, since the effective cap/storage flag/
+ *  timestamp are server-derived and never sent). */
+export interface UserSettingsPatch extends Partial<Omit<UserSettings, 'risk_inputs'>> {
+  risk_inputs?: RiskInputsPatch;
+}
+
 /** PUT /api/auth/settings — signed-in ⇒ echoes the full saved bag (server-wins, D7). Anonymous ⇒
- *  401 `auth_required` (anonymous prefs stay client-local). 422 `validation` on a bad theme. */
-export async function saveSettings(patch: Partial<UserSettings>): Promise<UserSettings> {
+ *  401 `auth_required` (anonymous prefs stay client-local). 422 `validation` on a bad theme or a
+ *  refused risk-input entry (dollar cap exceeding account size, percent outside (0,100], non-numeric
+ *  or non-positive — the server refusal is authoritative; nothing is stored on a refusal). */
+export async function saveSettings(patch: UserSettingsPatch): Promise<UserSettings> {
   const res = await fetch('/api/auth/settings', {
     method: 'PUT',
     headers: JSON_HEADERS,
@@ -1161,6 +1374,36 @@ export type RecBias = 'long' | 'short' | 'neutral' | 'volatility';
 export type RecConfidence = 'low' | 'medium' | 'high';
 export type RecGateState = 'available' | 'no_fresh_edge' | 'cooling_down';
 
+// ---- Open-positions digest (tradeable-rec-inputs INTERFACE_CONTRACT §5) ------------------------
+// CLIENT-supplied, bounded, NEVER persisted server-side. `source` is a one-inhabitant closed enum —
+// an unlabelled digest is unconstructable — so a future broker source is an additive variant, not a
+// shape change. `state` is the reconciled three-member vocabulary: `none_open` (checked, empty) ·
+// `not_sent` (old client / disabled / faulted-to-absent) · `unavailable` (the store faulted).
+export type OpenPositionsSource = 'simulated';
+export type OpenPositionsState = 'none_open' | 'not_sent' | 'unavailable';
+export type MaxLossState = 'known' | 'ineligible';
+export interface OpenPositionsMaxLoss {
+  state: MaxLossState;
+  value: number | null;
+  reason: string | null;
+}
+export interface OpenPositionsThisUnderlying {
+  direction: string;
+  leg_count: number;
+  nearest_expiry_dte: number;
+  max_loss: OpenPositionsMaxLoss;
+}
+export interface OpenPositionsPortfolio {
+  open_count: number;
+  capital_at_risk: number | null;
+}
+export interface OpenPositionsDigest {
+  source: OpenPositionsSource;
+  state: OpenPositionsState;
+  this_underlying: OpenPositionsThisUnderlying | null;
+  portfolio: OpenPositionsPortfolio | null;
+}
+
 /** POST body for a rec request. Carries NO bundle payload and NO key — only identifiers + the
  *  gating context already on the page (INTERFACE §1.1). */
 export interface RecRequest {
@@ -1174,6 +1417,9 @@ export interface RecRequest {
   // selector. Absent/null ⇒ the shipped real path byte-for-byte (AC-45). Only ever non-null when
   // the operator picked a scenario from a server-advertised catalog (RecStatus.scenarios).
   scenario_id?: string | null;
+  // tradeable-rec-inputs (INTERFACE §5, additive/optional): the client-supplied, bounded,
+  // NEVER-persisted-server-side open-positions digest.
+  open_positions?: OpenPositionsDigest;
 }
 
 /** ai-rec-backtest-orders (INTERFACE §1.3/§2): one catalog entry / the provenance identity of a
@@ -1199,6 +1445,10 @@ export interface RecStrategy {
   exit_plan: { target: number | null; stop: number | null };
   time_horizon: string | null;
   confidence: RecConfidence | null;
+  // tradeable-rec-inputs (additive, optional — an older backend/local fallback omits it). Members
+  // `call` / `put` / absent. NO DEFAULT: unlike the shipped `bias` coercion, an unrecognised or
+  // absent right stays absent (never guessed) — see `cited_contract`.
+  right?: OptionRight | null;
   // Structured reasoning (additive/optional — a rec may omit them; the FE degrades gracefully).
   summary?: string | null; // one-line verdict lead the reader scans first
   key_points?: string[]; // short scannable bullets, each citing a specific level
@@ -1241,18 +1491,129 @@ export interface RecResponse {
   // scenario-driven response (produced, scenario no_trade, AND fault scenarios); null/absent on
   // every real read. The FE keys the "SCRIPTED SCENARIO" marking off this field ONLY (D8-4).
   scenario?: RecScenarioInfo | null;
+  // ---- tradeable-rec-inputs (additive; INTERFACE_CONTRACT §5) — present iff `status === 'produced'`
+  // on a post-feature backend. Optional so an older backend degrades gracefully (never a throw): the
+  // FE renders every one of these fields by closed lookup on the wire token, never by inspecting a
+  // null, and performs NO arithmetic (the cap verdict + effective cap are computed once server-side
+  // and pinned — never recomputed client-side).
+  sent?: RecSent;
+  cap_check?: CapCheck;
+  field_reasons?: FieldReasons;
+  cited_contract?: CitedContract;
+}
+
+// ---- tradeable-rec-inputs response types (INTERFACE_CONTRACT §5) -------------------------------
+
+/** Five members, evaluated in ONE fixed order server-side, first match wins — the frontend never
+ *  re-derives this order. `not_applicable` (the rec states `no_trade`) resolves FIRST: the UI
+ *  renders NO cap surface at all in that state — no comparison, no caveat, no `not set` literal. */
+export type CapVerdict = 'not_applicable' | 'no_cap' | 'not_checkable' | 'within' | 'above';
+
+export interface CapCheck {
+  verdict: CapVerdict;
+  /** Still carried when the verdict is `not_applicable`, so the drawer can show what would have
+   *  been used. */
+  effective_dollar_cap: number | null;
+  cap_not_derivable_reason: NotDerivableReason | null;
+  /** The output of the ONE server-side `max_risk` parse. */
+  parsed_risk_dollars: number | null;
+  /** The model's raw prose, so copy can attribute each half: Convexa performed the comparison, on a
+   *  figure the AI asserted. */
+  model_max_risk_text: string | null;
+}
+
+/** The declared dependency this field was missing, in FIXED priority order. `position_size` is the
+ *  only field with two dependencies (risk block, then candidate quotes); when both are absent the
+ *  token is `risk_block` (the input the owner can fix), deterministically. */
+export type MissingInput = 'risk_block' | 'candidate_quotes' | 'straddle_move';
+
+/** `null` when the field has a value; else the closed reason. Computed SERVER-SIDE from which
+ *  blocks the assembler inserted — the model is never asked why it left a field blank. */
+export interface FieldReason {
+  reason: 'not_given' | 'unavailable';
+  missing_input: MissingInput | null;
+}
+
+export interface FieldReasons {
+  max_risk: FieldReason | null;
+  position_size: FieldReason | null;
+  exit_target: FieldReason | null;
+  exit_stop: FieldReason | null;
+}
+
+/** A cited contract exists only when the parsed rec yields EXACTLY ONE `(expiration, strike, right)`
+ *  triple. `right_undetermined` is its own state — the strike/expiration WERE sent, so it must
+ *  never render the `off_set` literal (that would assert a falsehood). */
+export type CitedContractState = 'cited' | 'right_undetermined' | 'off_set' | 'none';
+
+export interface CitedContract {
+  state: CitedContractState;
+  /** The matching §1 candidate record; present only for `cited`. */
+  contract: CandidateContract | null;
+  /** Both legs for `right_undetermined`, when the pair is available; otherwise empty. */
+  legs: CandidateContract[];
+}
+
+/** The as-sent echo (§1.1 in-app rec). Pinned to the envelope alongside `pinned_fingerprint` — no
+ *  consumer ever recomputes any of it. */
+export interface RecSent {
+  budget: 'prompt';
+  /** The §1 envelope as actually sent, `sent_to_model: true`. */
+  candidates: CandidateSetEnvelope;
+  /** The tenors actually forwarded. Invariant: subset of the expirations in `sent.candidates`. */
+  straddle_move_tenors: string[];
+  /** The as-sent risk block (§4 shape) — the authoritative source for the drawer's *as sent with
+   *  this recommendation* label. */
+  risk_inputs: RiskInputs;
+  /** Change detector for the superseded-inputs strip; compared against the currently stored block. */
+  risk_inputs_digest: string;
+  open_positions: OpenPositionsDigest;
+}
+
+/** `context.risk_inputs` on the export — the read-side shape, minus the storage/timestamp fields the
+ *  export has no use for. Anonymous callers ALWAYS see `state: 'not_set'` — present, never omitted. */
+export type ExportRiskInputs = Pick<
+  RiskInputs,
+  'state' | 'account_size' | 'per_trade_cap' | 'effective_dollar_cap'
+>;
+
+/** `context.open_positions` on the export. A GET carries no client digest, so `state` is always
+ *  `not_sent` here — distinct from the in-app rec's richer three-member digest. */
+export interface ExportOpenPositions {
+  source: OpenPositionsSource;
+  state: OpenPositionsState;
+}
+
+/** The serialization of the cached bundle plus this feature's additive sections. Indexable so a
+ *  passthrough field (e.g. `market_state`) still reads without a throw. */
+export interface RecExportContext {
+  market_state?: { straddle_move?: StraddleMove } & Record<string, unknown>;
+  candidates: CandidateSetEnvelope;
+  risk_inputs: ExportRiskInputs;
+  open_positions: ExportOpenPositions;
+  [key: string]: unknown;
+}
+
+/** One egress-disclosure row. A category with `sent: false` renders an explicit `Not sent` line,
+ *  never an omitted section (AC-92). */
+export interface EgressCategory {
+  key: 'context' | 'candidates' | 'risk_inputs' | 'open_positions' | 'persona_prompt' | 'glossary';
+  sent: boolean;
 }
 
 /** The structured export that feeds BOTH the in-app call and the manual hand-off (INTERFACE §1.2).
  *  Triggers NO LLM call, costs nothing, available even when in-app AI is unavailable. Egress
- *  invariant: ONLY {context, persona_prompt, glossary} (+ identifiers + egress_note). */
+ *  invariant: the enumeration follows what actually shipped — see `egress_categories`. */
 export interface RecExport {
   ticker: string;
   as_of: string | null;
-  context: unknown; // serialization of the cached bundle (null stays null, no recompute)
+  context: RecExportContext; // serialization of the cached bundle (null stays null, no recompute)
   persona_prompt: string; // assembled persona prompt (server-side, canonical-sourced)
   glossary: string; // field-level reference
-  egress_note: string; // "Complete list of what leaves the machine…"
+  egress_note: string; // server-composed from `egress_categories` (AC-90)
+  // tradeable-rec-inputs (additive/optional — an older backend omits it; the FE falls back to the
+  // shipped fixed egress copy rather than throwing).
+  egress_categories?: EgressCategory[];
 }
 
 /** Gating + cap + availability without requesting a rec (INTERFACE §1.3). Side-effect-free, 200. */

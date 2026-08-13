@@ -54,15 +54,32 @@ pub struct SettingsWire {
     pub active_persona_id: Option<String>,
     pub default_ticker: Option<String>,
     pub theme: String,
+    /// tradeable-rec-inputs B9: always present for a resolved session (INTERFACE §4).
+    pub risk_inputs: super::risk::RiskInputsWire,
 }
 
-impl From<&SettingsRecord> for SettingsWire {
-    fn from(s: &SettingsRecord) -> Self {
+impl SettingsWire {
+    fn from_record(s: &SettingsRecord, storage_available: bool) -> Self {
         Self {
             active_persona_id: s.active_persona_id.clone(),
             default_ticker: s.default_ticker.clone(),
             theme: s.theme.clone(),
+            risk_inputs: super::risk::risk_inputs_wire(
+                s.risk_account_size,
+                s.risk_cap_value,
+                s.risk_cap_unit.as_deref(),
+                s.risk_updated_at,
+                storage_available,
+            ),
         }
+    }
+}
+
+impl From<&SettingsRecord> for SettingsWire {
+    fn from(s: &SettingsRecord) -> Self {
+        // `storage_available` mirrors the store's health; a successful read off either adapter
+        // means storage IS available (a JSON adapter with a writable path, or a live PG pool).
+        Self::from_record(s, true)
     }
 }
 
@@ -406,6 +423,17 @@ impl AuthService {
             if !matches!(theme.as_str(), "dark" | "light" | "system") {
                 return Err(validation("theme must be dark, light, or system."));
             }
+        }
+        // Server-side refusals are authoritative (`[server-side-gate-enforcement]`): validated
+        // BEFORE `update_settings`, against the account size AS IT WILL BE after this patch.
+        let stored_account = self
+            .store
+            .get_settings(&user.id)
+            .ok()
+            .flatten()
+            .and_then(|s| s.risk_account_size);
+        if let Err(msg) = super::risk::validate(patch.risk_account_size, patch.per_trade_cap.clone(), stored_account) {
+            return Err(validation(msg));
         }
         self.store
             .update_settings(&user.id, &patch)

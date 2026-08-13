@@ -178,6 +178,146 @@ const scan = {
   },
 };
 
+/**
+ * tradeable-rec-inputs — a produced TRADE rec, deliberately OVER the cap (the longest cap-annotation
+ * line) with a cited contract (the longest fact line) and a full risk block (the provenance chip),
+ * so the 393px measurement below actually exercises this feature's densest new content.
+ */
+const producedRecFixture = {
+  status: 'produced',
+  persona: { id: null, name: 'Default (no persona)' },
+  as_of: '2026-06-23T14:00:00Z',
+  pinned_fingerprint: 'fp-e2e',
+  stale_born: false,
+  strategy: {
+    decision: 'trade',
+    bias: 'long',
+    structure: 'long call',
+    strikes: [260],
+    expiration: '2026-07-18',
+    entry_trigger: 'break and hold above the 260 call wall',
+    invalidation_level: 242,
+    max_risk: '$900 (roughly 1.5% of a $60,000 account, per the stated risk tolerance)',
+    position_size: '2 contracts',
+    exit_plan: { target: 12.5, stop: 6 },
+    time_horizon: '5-10 trading days',
+    confidence: 'medium',
+    rationale: 'magnet at 255, flip at 248; IV/HV cheap.',
+    right: 'call',
+  },
+  unavailable_reason: null,
+  gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+  cap: { over_limit: false, remaining_today: 49, resets_at: '2026-06-24T04:00:00Z' },
+  key_source: 'own_key',
+  sent: {
+    budget: 'prompt',
+    candidates: {
+      ticker: 'TSLA',
+      state: 'ok',
+      as_of: '2026-06-23T14:00:00Z',
+      snapshot_age_seconds: 30,
+      session_basis: 'after_close',
+      quote_age: 'unknown',
+      anchor_spot: 250,
+      anchor_basis: 'gex_spot',
+      band_pct: 15,
+      budget: 'prompt',
+      sent_to_model: true,
+      caps: { tenors: 2, rights: 2, strikes_per_tenor_right: 5, max_records: 20, max_bytes: 8000 },
+      included: { contracts: 4, expirations: ['2026-07-18'], expiration_count: 1 },
+      omitted: {
+        total: 3,
+        expirations_omitted_by_cap: 0,
+        by_reason: {
+          outside_window: 0,
+          outside_band: 3,
+          no_interest: 0,
+          expiration_cap: 0,
+          strike_cap: 0,
+        },
+      },
+      liquidity: {
+        quoted: 4,
+        no_two_sided_quote: 0,
+        atm_relative_spread_band: 'moderate',
+        wide_quotes: false,
+        wide_quote_threshold_pct: 15,
+      },
+      contracts: [
+        {
+          expiration: '2026-07-18',
+          dte: 25,
+          strike: 260,
+          right: 'call',
+          distance_pct: 4,
+          quote_presence: 'quoted',
+          bid: 4.8,
+          ask: 5.2,
+          mid: 5,
+          spread_abs: 0.4,
+          spread_pct_of_mid: 8,
+          open_interest: 500,
+          volume: 120,
+          iv_state: 'priced',
+          iv: 0.32,
+          greeks: { delta: 0.5, gamma: 0.02, theta: -0.05, vega: 0.12 },
+        },
+      ],
+    },
+    straddle_move_tenors: ['2026-07-18'],
+    risk_inputs: {
+      state: 'set',
+      account_size: 60000,
+      per_trade_cap: { value: 1.5, unit: 'percent' },
+      effective_dollar_cap: {
+        state: 'derived',
+        value: 900,
+        not_derivable_reason: null,
+        derived_from: { account_size: 60000, cap_value: 1.5, cap_unit: 'percent' },
+      },
+      storage_available: true,
+      updated_at: 1_700_000_000_000,
+    },
+    risk_inputs_digest: 'set:60000:1.5percent',
+    open_positions: {
+      source: 'simulated',
+      state: 'none_open',
+      this_underlying: null,
+      portfolio: null,
+    },
+  },
+  cap_check: {
+    verdict: 'above',
+    effective_dollar_cap: 900,
+    cap_not_derivable_reason: null,
+    parsed_risk_dollars: 950,
+    model_max_risk_text: '$950 (a hair over the stated 1.5% cap)',
+  },
+  field_reasons: { max_risk: null, position_size: null, exit_target: null, exit_stop: null },
+  cited_contract: {
+    state: 'cited',
+    contract: {
+      expiration: '2026-07-18',
+      dte: 25,
+      strike: 260,
+      right: 'call',
+      distance_pct: 4,
+      quote_presence: 'quoted',
+      bid: 4.8,
+      ask: 5.2,
+      mid: 5,
+      spread_abs: 0.4,
+      spread_pct_of_mid: 8,
+      open_interest: 500,
+      volume: 120,
+      iv_state: 'priced',
+      iv: 0.32,
+      greeks: { delta: 0.5, gamma: 0.02, theta: -0.05, vega: 0.12 },
+    },
+    legs: [],
+  },
+};
+
 /** Route → a marker proving the destination page actually rendered before we measure. */
 const ROUTES: Array<{ path: string; ready: (page: Page) => Promise<void> }> = [
   { path: '/', ready: async (p) => void (await expect(p.getByTestId('landing')).toBeAttached()) },
@@ -355,6 +495,12 @@ async function stubNetwork(page: Page) {
         },
       });
     }
+    // tradeable-rec-inputs — a produced rec with the richest new content (over-cap annotation, a
+    // cited contract with a long fact line, the provenance chip) so the 393px check is not vacuous
+    // for the surfaces this feature added.
+    if (path.startsWith('/api/recommendation/') && route.request().method() === 'POST') {
+      return route.fulfill({ json: producedRecFixture });
+    }
     if (path.startsWith('/api/personas')) {
       return route.fulfill({ json: [{ id: 'default', name: 'Default (no persona)' }] });
     }
@@ -396,6 +542,30 @@ for (const scheme of ['dark', 'light'] as const) {
         await assertNoHorizontalOverflow(page);
       });
     }
+
+    test('tradeable-rec-inputs — a produced, OVER-CAP rec with a cited contract fits at 393px', async ({
+      page,
+    }) => {
+      await seed(page, { scheme });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByText('Call wall').first()).toBeAttached();
+      await page.getByRole('button', { name: 'Get AI recommendation' }).click();
+      // VACUITY GUARD — the densest new content really did render before measuring.
+      await expect(page.getByTestId('cap-annotation')).toBeAttached();
+      await expect(page.getByTestId('ai-rec-provenance-chip')).toBeAttached();
+      await expect(page.getByTestId('cited-contract-line')).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('tradeable-rec-inputs — the Settings Risk inputs panel fits at 393px', async ({
+      page,
+    }) => {
+      await seed(page, { scheme });
+      await page.goto('/settings');
+      await expect(page.getByTestId('settings-page')).toBeAttached();
+      await expect(page.getByTestId('settings-risk-inputs-panel')).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
 
     test('/scanner collapses the dense table to cards below sm (no clipped columns at 393px)', async ({
       page,

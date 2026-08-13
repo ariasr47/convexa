@@ -183,7 +183,7 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
     expect((screen.getByLabelText('Manual price') as HTMLInputElement).value).toBe('7.5');
   });
 
-  it('every prefill field lands in the confirm payload (the AI-seeding seam)', async () => {
+  it('every prefill field lands in the confirm payload — EXCEPT qty (the AI-seeding seam)', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
     installFetch(contract);
@@ -193,7 +193,6 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
         expiration: '2026-07-17',
         strike: 250,
         right: 'put',
-        qty: 2,
         stop: 6,
         target: 12.5,
       },
@@ -211,9 +210,52 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
       expiration: '2026-07-17',
       strike: 250,
       right: 'put',
-      qty: 2,
       multiplier: 100,
     });
+  });
+
+  it('AC-79 (ship-blocking) — the quantity field opens at the dialog default of 1, in every case; there is no `qty` on `EntryPrefill` to seed it from', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    installFetch(contract);
+    renderDialog({
+      onConfirm,
+      prefill: { expiration: '2026-07-17', strike: 250, right: 'put', stop: 6, target: 12.5 },
+    });
+    expect((screen.getByLabelText(/Quantity/) as HTMLInputElement).value).toBe('1');
+    await user.click(screen.getByRole('button', { name: 'Market' }));
+    await screen.findByText('snapshot mid');
+    await user.click(screen.getByRole('button', { name: 'Open simulated position' }));
+    const submit = onConfirm.mock.calls[0][0] as TradeEntrySubmit;
+    expect(submit.legs[0]).toMatchObject({ qty: 1 });
+  });
+
+  it('AC-79/80/81 — the rec size text renders verbatim beside the field, never fed into the quantity input', async () => {
+    installFetch(contract);
+    renderDialog({
+      prefill: {
+        expiration: '2026-07-17',
+        strike: 250,
+        right: 'put',
+        sizeText: '2 contracts',
+      },
+    });
+    expect((screen.getByLabelText(/Quantity/) as HTMLInputElement).value).toBe('1');
+    expect(screen.getByTestId('entry-ai-size-text')).toHaveTextContent('2 contracts');
+  });
+
+  it('AC-80 — a rec with no size at all shows `size not suggested`, distinct from `not set`', async () => {
+    installFetch(contract);
+    renderDialog({
+      prefill: {
+        expiration: '2026-07-17',
+        strike: 250,
+        right: 'put',
+        sizeText: 'size not suggested',
+      },
+    });
+    expect(screen.getByTestId('entry-ai-size-text')).toHaveTextContent('size not suggested');
+    expect(screen.getByTestId('entry-ai-size-text')).not.toHaveTextContent(/\bnot set\b/);
   });
 });
 
@@ -240,7 +282,7 @@ function renderOrderVariant(orderPlan: OrderPlan, onConfirmOrder = vi.fn()) {
   renderDialog({
     expirations: ['2099-12-19'],
     strikes: [245, 250, 255],
-    prefill: { expiration: '2099-12-19', strike: 250, right: 'call', qty: 2, stop: 3, target: 9 },
+    prefill: { expiration: '2099-12-19', strike: 250, right: 'call', stop: 3, target: 9 },
     orderPlan,
     onConfirmOrder,
   });
@@ -264,7 +306,7 @@ describe('TradeEntryDialog · order variant', () => {
       expiration: '2099-12-19',
       strike: 250,
       right: 'call',
-      qty: 2,
+      qty: 1,
       stop: 3,
       target: 9,
       trigger: { kind: 'underlying_above', level: 252 },

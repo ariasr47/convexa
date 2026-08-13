@@ -133,6 +133,18 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// §7 pre-commit measurement (tradeable-rec-inputs B18/V7): quote-fill + raw-row key dump —
+    /// whole chain, the ±15%-band ∩ active-window cut, and the 64-record handoff candidate set.
+    /// Counts vendor-null separately from filtered-zero (the zero-bid trap). Writes
+    /// `data/research/quote_fill_<utc>.json`.
+    QuoteFill {
+        /// Comma-separated symbols, e.g. SPY,GME
+        #[arg(long)]
+        tickers: String,
+        /// Print full JSON to stdout instead of a short summary.
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[derive(Debug, Deserialize)]
@@ -289,6 +301,65 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 );
                 println!("regime:           {}", gex.regime.as_str());
                 println!("kernel:           {}", quant_engine::gex_kernel_name());
+            }
+        }
+        Commands::QuoteFill { tickers, json } => {
+            let cfg = Config::from_env()?;
+            let client = api_rust::infrastructure::massive::MassiveRestClient::new(&cfg)?;
+            let syms: Vec<String> = tickers
+                .split(',')
+                .map(|s| s.trim().to_ascii_uppercase())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if syms.is_empty() {
+                anyhow::bail!("no tickers");
+            }
+            let mut report = serde_json::Map::new();
+            for sym in &syms {
+                let whole = client.fetch_chain_quote_fill(sym).await?;
+                let market = client.fetch_options_market_state(sym).await?;
+                let as_of = chrono::Utc::now();
+                // Candidate-set restriction reuses `CandidateSet::build` — never a re-implemented
+                // band filter — so the "restricted" counts are byte-identical to what would ship.
+                let set = quant_engine::CandidateSet::build(
+                    &market.contracts,
+                    market.synchronized_spot,
+                    as_of,
+                    quant_engine::DteWindow::default(),
+                    quant_engine::CandidateBudget::Handoff,
+                    false,
+                    &quant_engine::SnapshotMeta {
+                        as_of_iso: Some(as_of.to_rfc3339()),
+                        session_basis: Some(market.market_phase.as_str().to_string()),
+                    },
+                );
+                let set_v = serde_json::to_value(&set)?;
+                report.insert(
+                    sym.clone(),
+                    serde_json::json!({
+                        "whole_chain": whole,
+                        "band_window_and_candidate_set": {
+                            "included_contracts": set_v.pointer("/included/contracts"),
+                            "omitted_total": set_v.pointer("/omitted/total"),
+                            "liquidity_quoted": set_v.pointer("/liquidity/quoted"),
+                            "liquidity_no_two_sided_quote": set_v.pointer("/liquidity/no_two_sided_quote"),
+                            "state": set_v.pointer("/state"),
+                        },
+                    }),
+                );
+            }
+            let out = serde_json::Value::Object(report);
+            let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/research");
+            std::fs::create_dir_all(&dir)?;
+            let path = dir.join(format!("quote_fill_{}.json", chrono::Utc::now().format("%Y%m%dT%H%M%SZ")));
+            std::fs::write(&path, serde_json::to_string_pretty(&out)?)?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&out)?);
+            } else {
+                println!("wrote {}", path.display());
+                for sym in &syms {
+                    println!("{sym}: {}", out.get(sym).cloned().unwrap_or_default());
+                }
             }
         }
         Commands::StreamPrices {

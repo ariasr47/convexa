@@ -39,13 +39,19 @@ import {
   __resetMemory as __resetPositions,
   allPositions,
 } from '@/features/trading/positions/store';
-import type { RecResponse, RecStatus, RecStrategy, TickerBundle } from '@convexa/api';
+import type { RecResponse, RecStatus, RecStrategy, RiskInputs, TickerBundle } from '@convexa/api';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPY, EXPORT_HEADER } from './copy';
-import { biasToRight, parseQty, recToPrefill } from './prefill';
+import { COPY, EXPORT_HEADER, RISK_FIELD_COPY } from './copy';
+import {
+  noTradeRec as fixtureNoTradeRec,
+  tradeRecEqualToCap,
+  tradeRecNoRiskBlock,
+  tradeRecOverCap,
+} from './fixtures';
+import { biasToRight, recToPrefill } from './prefill';
 
 // ---- INTERFACE-shaped fixtures (pinned to the shared bundle: fp-A / 2026-06-26T14:00:00Z) ------
 const FP_A = 'fp-A';
@@ -147,6 +153,10 @@ interface BackendCfg {
     storage_available?: boolean;
     put?: 'ok' | 'transport';
   };
+  /** tradeable-rec-inputs AC-64 — the CURRENTLY stored risk block, echoed on the who-am-I settings
+   *  read, so a test can diverge it from a produced rec's `sent.risk_inputs` and observe the
+   *  superseded-inputs strip. Omitted ⇒ no `risk_inputs` key at all (matches the shipped shape). */
+  riskInputs?: RiskInputs;
 }
 
 function installBackend(cfg: BackendCfg = {}) {
@@ -162,6 +172,7 @@ function installBackend(cfg: BackendCfg = {}) {
       storage_available: cfg.aiKey?.storage_available ?? true,
       put: cfg.aiKey?.put ?? ('ok' as 'ok' | 'transport'),
     },
+    riskInputs: cfg.riskInputs,
   };
   const calls = { ticker: 0, status: 0, rec: 0, export: 0, personas: 0, aiKeyPut: 0 };
   const recPostBodies: string[] = [];
@@ -207,7 +218,12 @@ function installBackend(cfg: BackendCfg = {}) {
                   auth_methods: ['password'],
                 },
                 google_available: false,
-                settings: { active_persona_id: null, default_ticker: null, theme: 'dark' },
+                settings: {
+                  active_persona_id: null,
+                  default_ticker: null,
+                  theme: 'dark',
+                  ...(state.riskInputs ? { risk_inputs: state.riskInputs } : {}),
+                },
               }
             : { authenticated: false, user: null, google_available: false, settings: null },
         );
@@ -718,17 +734,19 @@ describe('ai-rec · advice behind Accept', () => {
 // Unit — the Accept→prefill handoff object (the dialog's INTERNALS have their own risk spec;
 // what this widget owns is the exact mapping it hands over).
 describe('ai-rec · recToPrefill (the handoff object)', () => {
-  it('maps a produced trade rec to the exact editable seed', () => {
-    expect(recToPrefill(tradeStrategy(), 'Income Keeper', 'sizing note')).toEqual({
+  it('maps a produced trade rec to the exact editable seed — with NO qty field (AC-79, ship-blocking)', () => {
+    const pf = recToPrefill(tradeStrategy(), 'Income Keeper', 'sizing note');
+    expect(pf).toEqual({
       expiration: '2026-07-18',
       strike: 260,
       right: 'call',
-      qty: 2,
       stop: 6,
       target: 12.5,
       provenance: 'Pre-filled from AI read · Income Keeper',
       sizingNote: 'sizing note',
+      sizeText: '2 contracts',
     });
+    expect(Object.prototype.hasOwnProperty.call(pf, 'qty')).toBe(false);
   });
 
   it('hands over NOTHING for a no_trade rec', () => {
@@ -737,13 +755,24 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
     ).toBeNull();
   });
 
-  it('derives the right from structure first, bias as fallback; qty parses defensively', () => {
+  it('derives the right from structure first, bias as fallback', () => {
     expect(biasToRight({ structure: 'put credit spread', bias: 'long' })).toBe('put');
     expect(biasToRight({ structure: null, bias: 'short' })).toBe('put');
     expect(biasToRight({ structure: null, bias: 'neutral' })).toBe('call');
-    expect(parseQty('2 contracts')).toBe(2);
-    expect(parseQty(null)).toBe(1);
-    expect(parseQty('a few')).toBe(1);
+  });
+
+  it('AC-80 — a rec with no size text at all yields `size not suggested`, distinct from `not set`', () => {
+    const pf = recToPrefill(tradeStrategy({ position_size: null }), 'Default (no persona)', 's');
+    expect(pf?.sizeText).toBe('size not suggested');
+  });
+
+  it('AC-81 — a size string naming no whole number of contracts is carried verbatim', () => {
+    const pf = recToPrefill(
+      tradeStrategy({ position_size: 'small (rule-based local rec; not LLM)' }),
+      'Default (no persona)',
+      's',
+    );
+    expect(pf?.sizeText).toBe('small (rule-based local rec; not LLM)');
   });
 });
 
@@ -823,5 +852,172 @@ describe('byo key · write-only (Settings)', () => {
     renderSettings();
     expect(await screen.findByTestId('settings-ai-key-anonymous')).toBeInTheDocument();
     expect(screen.queryByTestId('settings-ai-key-input')).toBeNull();
+  });
+});
+
+// =================================================================================================
+// 7. tradeable-rec-inputs — the four fields, the cap surface, the provenance chip (F7)
+// =================================================================================================
+describe('tradeable-rec-inputs · the cap surface never appears on no_trade (AC-58a, ship-blocking)', () => {
+  it('renders NO cap-annotation DOM node at all on a no_trade card — with a cap set AND with none', async () => {
+    installBackend({ rec: fixtureNoTradeRec() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(COPY.noTrade.title);
+    expect(within(panel()).queryByTestId('cap-annotation')).toBeNull();
+
+    // ...and again with no effective cap at all — still nothing renders.
+    installBackend({
+      rec: {
+        ...fixtureNoTradeRec(),
+        cap_check: {
+          verdict: 'not_applicable',
+          effective_dollar_cap: null,
+          cap_not_derivable_reason: null,
+          parsed_risk_dollars: null,
+          model_max_risk_text: null,
+        },
+      },
+    });
+    cleanup();
+    const user2 = renderApp();
+    await settle();
+    await ask(user2);
+    await within(panel()).findByText(COPY.noTrade.title);
+    expect(within(panel()).queryByTestId('cap-annotation')).toBeNull();
+  });
+
+  it('AC-69/70 (GATE Q correction) — the four-field row RENDERS on a no_trade verdict, `—` shown on all four with the not-applicable tip; never `not set` or `unavailable`', async () => {
+    installBackend({ rec: fixtureNoTradeRec() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(COPY.noTrade.title);
+    // POSITIVE — the row is present (this is the guard that was vacuous: it must assert the row
+    // EXISTS and shows `—`, not merely that the OTHER two literals are absent from an empty card).
+    const row = within(panel()).getByTestId('no-trade-four-field-row');
+    expect(within(row).getByText(COPY.risk.maxRisk)).toBeInTheDocument();
+    expect(within(row).getByText('Suggested size')).toBeInTheDocument();
+    expect(within(row).getByText('Target')).toBeInTheDocument();
+    expect(within(row).getByText('Stop')).toBeInTheDocument();
+    expect(within(row).getAllByText(RISK_FIELD_COPY.dash.text)).toHaveLength(4);
+    // NEGATIVE — never `not set` or `unavailable` on a no_trade card.
+    expect(within(panel()).queryByText(RISK_FIELD_COPY.notSet.text)).toBeNull();
+    expect(within(panel()).queryByText(RISK_FIELD_COPY.unavailable.text)).toBeNull();
+  });
+});
+
+describe('tradeable-rec-inputs · an over-cap rec stays actionable (AC-59/60)', () => {
+  it('renders the warning cap annotation and Accept stays enabled', async () => {
+    installBackend({ rec: tradeRecOverCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(`Trade · ${tradeRecOverCap().strategy!.bias}`);
+    const annotation = await within(panel()).findByTestId('cap-annotation');
+    expect(annotation).toHaveAttribute('data-verdict', 'above');
+    expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeEnabled();
+  });
+
+  it('a figure exactly equal to the cap renders `within` (AC-63)', async () => {
+    installBackend({ rec: tradeRecEqualToCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    const annotation = await within(panel()).findByTestId('cap-annotation');
+    expect(annotation).toHaveAttribute('data-verdict', 'within');
+  });
+});
+
+describe('tradeable-rec-inputs · an empty risk block renders `not set` with the action (AC-71)', () => {
+  it('max_risk and position_size render `not set` with a `Set your risk inputs` action', async () => {
+    installBackend({ rec: tradeRecNoRiskBlock() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(`Trade · ${tradeRecNoRiskBlock().strategy!.bias}`);
+    expect(within(panel()).getAllByText(RISK_FIELD_COPY.notSet.text).length).toBeGreaterThan(0);
+    expect(within(panel()).getAllByTestId('risk-field-set-risk-inputs').length).toBeGreaterThan(0);
+  });
+});
+
+describe('tradeable-rec-inputs · the provenance chip renders the entered values verbatim (AC-61)', () => {
+  it('shows the account size and cap exactly as sent, with no client-side arithmetic', async () => {
+    installBackend({ rec: tradeRecEqualToCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    const chip = await within(panel()).findByTestId('ai-rec-provenance-chip');
+    expect(chip).toHaveTextContent('50,000');
+    expect(chip).toHaveTextContent('1');
+  });
+});
+
+// =================================================================================================
+// GATE Q correction — AC-3 / AC-8 / AC-62 / AC-64 (bounced back with production consumers missing)
+// =================================================================================================
+
+describe('tradeable-rec-inputs · AC-8 — the candidate set as-of + session basis render, un-hovered', () => {
+  it('the strip carries a freshness line naming the as-of and whether it is live-session or prior-close', async () => {
+    installBackend({ rec: tradeRecEqualToCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    const line = await within(panel()).findByTestId('numbers-said-freshness');
+    expect(line).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(line).toHaveTextContent(/prior close|live session/);
+  });
+
+  it('the cited-contract line interpolates the real as-of — never the bare "from the chain snapshot" literal', async () => {
+    installBackend({ rec: tradeRecEqualToCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    const cited = await within(panel()).findByTestId('cited-contract-line');
+    expect(cited).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
+    expect(cited.textContent ?? '').not.toContain('from the chain snapshot');
+  });
+});
+
+describe('tradeable-rec-inputs · AC-62 — the max-risk tip attributes the figure to the AI', () => {
+  it('carries a tooltip on Max risk when it holds a value', async () => {
+    installBackend({ rec: tradeRecEqualToCap() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(COPY.risk.maxRisk);
+    // The tip renders via the shared `Field` info-icon affordance beside the label.
+    const maxRiskLabel = within(panel()).getByText(COPY.risk.maxRisk);
+    const infoIcon = maxRiskLabel.parentElement?.querySelector('svg');
+    expect(infoIcon).toBeTruthy();
+  });
+});
+
+describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on a changed risk block', () => {
+  it('renders the shipped stale-strip treatment (info, not warning+icon) with Get a fresh recommendation, when the CURRENTLY stored block differs from what was sent', async () => {
+    const sentRiskInputs = tradeRecEqualToCap().sent!.risk_inputs;
+    installBackend({
+      rec: tradeRecEqualToCap(),
+      // The owner edited the risk block AFTER this rec was produced.
+      riskInputs: { ...sentRiskInputs, account_size: 75000 },
+    });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(`Trade · ${tradeRecEqualToCap().strategy!.bias}`);
+    const strip = await within(panel()).findByTestId('ai-rec-superseded-strip');
+    expect(strip).toHaveTextContent('changed after this read');
+    expect(within(strip).getByRole('button', { name: COPY.action.freshRec })).toBeInTheDocument();
+  });
+
+  it('renders nothing when the currently stored block still matches what was sent', async () => {
+    const sentRiskInputs = tradeRecEqualToCap().sent!.risk_inputs;
+    installBackend({ rec: tradeRecEqualToCap(), riskInputs: sentRiskInputs });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(`Trade · ${tradeRecEqualToCap().strategy!.bias}`);
+    expect(within(panel()).queryByTestId('ai-rec-superseded-strip')).toBeNull();
   });
 });

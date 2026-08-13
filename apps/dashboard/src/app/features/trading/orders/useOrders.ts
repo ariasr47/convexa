@@ -99,6 +99,9 @@ function orderDecision(
     ...entryContextFor(event, {
       bundle: ctx.bundle ?? null,
       aiRecFingerprint: recIdentityOf(order),
+      // tradeable-rec-inputs (AC-82): the order lifecycle has no risk-inputs read of its own here —
+      // `null` (genuinely unresolved this cycle), never a fabricated `false`.
+      riskBlockPresent: null,
     }),
     ...extra,
   } as DecisionRecord;
@@ -300,6 +303,7 @@ export function applyOrderTransition(
     ...entryContextFor('open', {
       bundle: ctx.bundle ?? null,
       aiRecFingerprint: recIdentityOf(filled),
+      riskBlockPresent: null,
     }),
   } as DecisionRecord);
   __notifyOrdersChanged();

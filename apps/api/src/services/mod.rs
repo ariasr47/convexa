@@ -10,6 +10,7 @@ pub mod llm;
 pub mod market_data;
 pub mod price_stream;
 pub mod recommendation;
+pub mod rec_inputs;
 pub mod research;
 pub mod scanner;
 pub mod warmer;

@@ -3,6 +3,7 @@
 mod auth;
 mod book;
 mod broker;
+mod candidates;
 mod contract;
 mod demo;
 mod health;
@@ -42,6 +43,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/signals", get(market::get_signals))
         .route("/api/strike-profile", get(market::get_strike_profile))
         .route("/api/contract/{ticker}", get(contract::get_tracked_contract))
+        .route("/api/candidates/{ticker}", get(candidates::get_candidates))
         .route("/api/personas", get(market::get_personas))
         // Auth
         .route("/api/auth/session", get(auth::session_status))

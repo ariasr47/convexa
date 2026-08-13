@@ -28,6 +28,7 @@ export const digest = (over: Partial<EntryContextDigest> = {}): EntryContextDige
   vol_regime: 'iv_rich',
   state_fingerprint: 'fp-1',
   ai_rec_fingerprint: null,
+  risk_block_present: null,
   ...over,
 });
 

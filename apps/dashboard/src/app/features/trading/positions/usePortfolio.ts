@@ -121,6 +121,12 @@ export interface OpenPositionInput {
    * Absent / null on a manual open — never a stale claim.
    */
   aiRecFingerprint?: string | null;
+  /**
+   * tradeable-rec-inputs (AC-82): whether a risk block was present AT ENTRY — the presence flag
+   * ONLY, never an account-size value (AC-29a). Absent/null when the host could not resolve it this
+   * cycle (anonymous / a faulted settings read) — never a fabricated `false`.
+   */
+  riskBlockPresent?: boolean | null;
 }
 
 /** Refusals `openPosition` can return. Each is SHOWN to the trader; none is ever swallowed. */
@@ -445,6 +451,7 @@ export function usePortfolio(
       basis: string,
       plv: { dollar: number | null; pct: number | null },
       aiRecFingerprint: string | null = null,
+      riskBlockPresent: boolean | null = null,
     ) => {
       const head = p.legs.find((l) => l.kind === 'option') ?? p.legs[0];
       const rec: DecisionRecord = {
@@ -462,7 +469,11 @@ export function usePortfolio(
         schema_version: GT_SCHEMA,
         // outcome-ledger capture: best-effort, decision-point events only, from the bundle already
         // in hand. Never gates or alters the position write.
-        ...entryContextFor(partial.event_type, { bundle: data, aiRecFingerprint }),
+        ...entryContextFor(partial.event_type, {
+          bundle: data,
+          aiRecFingerprint,
+          riskBlockPresent,
+        }),
         ...partial,
       } as DecisionRecord;
       appendDecision(rec);
@@ -555,6 +566,7 @@ export function usePortfolio(
         head.entry_basis,
         plAtUniformMark(p, head.entry_price),
         input.aiRecFingerprint ?? null,
+        input.riskBlockPresent ?? null,
       );
       return { ok: true, position: p };
     },

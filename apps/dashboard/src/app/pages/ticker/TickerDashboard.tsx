@@ -17,6 +17,7 @@
  * `[operator-vs-trader-path-separation]`.
  */
 import { useAlerts } from '@/features/alerts/useAlerts';
+import { useAuth } from '@/features/auth/AuthContext';
 import { SignInPrompt } from '@/features/auth/SignInPrompt';
 import { PersonaCustomizeForm } from '@/features/personas/components';
 import { usePersona } from '@/features/personas/usePersona';
@@ -27,10 +28,12 @@ import {
 } from '@/features/trading/TradeEntryDialog';
 import { OrdersWidget } from '@/features/trading/orders/OrdersWidget';
 import { useOrderEngine } from '@/features/trading/orders/useOrderEngine';
+import { buildOpenPositionsDigest } from '@/features/trading/positions/digest';
 import { tickerEvalSubject } from '@/features/trading/positions/evalSubject';
-import { positionsFaulted } from '@/features/trading/positions/store';
+import { allPositions, positionsFaulted } from '@/features/trading/positions/store';
 import { usePortfolio, type OpenPositionInput } from '@/features/trading/positions/usePortfolio';
 import { AiRecPanel, useReadPersonas } from '@/pages/ticker/widgets/ai-rec/AiRecPanel';
+import { CapAnnotation } from '@/pages/ticker/widgets/ai-rec/CapAnnotation';
 import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDrawer';
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
@@ -69,6 +72,7 @@ import {
   OffExchangeBlocks,
   PositionBrief,
   Setups,
+  StraddleMove,
   TermStructureCard,
 } from './widgets';
 import { humanAge, StatSkeleton } from './widgets/_kit';
@@ -134,6 +138,13 @@ export function TickerDashboard() {
   // (index-first-defaults AC-1: TSLA → SPY everywhere an unset fallback existed).
   const { ticker = 'SPY' } = useParams();
   const navigate = useNavigate();
+  // tradeable-rec-inputs (AC-82): read-only, for the entry-time risk-block-presence flag captured
+  // onto the decision record. `null` (never a fabricated `false`) when unresolved (anonymous / a
+  // faulted settings read) — the SAME source the Settings panel and the rec panel already read.
+  const auth = useAuth();
+  const riskBlockPresent = auth.settings?.risk_inputs
+    ? auth.settings.risk_inputs.state === 'set'
+    : null;
   const [symbol, setSymbol] = useState(ticker);
   // Keep input + durable recents aligned with the route param (chip / submit / deep link).
   // While the trader types an uncommitted symbol, `ticker` is unchanged so this does not stomp.
@@ -226,6 +237,10 @@ export function TickerDashboard() {
     dteMin: data?.market_state.dte_min ?? null,
     dteMax: data?.market_state.dte_max ?? null,
     darkPool,
+    // tradeable-rec-inputs (F10): read the durable store FRESH at request time (never a stale
+    // render-time snapshot) — a faulted store resolves to `unavailable`, never `none_open`.
+    openPositions: () =>
+      buildOpenPositionsDigest({ ticker, positions: allPositions(), faulted: positionsFaulted() }),
   });
   const [exportDrawer, setExportDrawer] = useState<{ open: boolean; personaId: string | null }>({
     open: false,
@@ -600,8 +615,11 @@ export function TickerDashboard() {
                   {/* STATIC market context pack — `m.market_context ?? null` only. */}
                   <MarketContext pack={m.market_context ?? null} />
 
-                  {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). */}
+                  {/* Compact pair: IV rank ‖ term structure (both advisory, span 1). Straddle-implied
+                      move (tradeable-rec-inputs) lands immediately after IV rank — no twelfth bento
+                      widget for one scalar; it is a compact widget in the existing quiet zone. */}
                   <IvRank read={m.iv_rank ?? null} />
+                  <StraddleMove move={m.straddle_move} />
                   <TermStructureCard
                     termStructure={m.term_structure}
                     structureAgeSeconds={structureAgeSeconds}
@@ -669,6 +687,11 @@ export function TickerDashboard() {
         strikes={strikeList}
         spot={m?.price ?? 0}
         prefill={entryPrefill}
+        capAnnotation={
+          entryRecFingerprint && aiRec.rec?.pinned_fingerprint === entryRecFingerprint ? (
+            <CapAnnotation capCheck={aiRec.rec.cap_check} />
+          ) : undefined
+        }
         onClose={() => setEntryOpen(false)}
         onConfirm={(s: TradeEntrySubmit) => {
           // MANUAL and LIMIT both open immediately at the typed price here — this page has no
@@ -684,6 +707,7 @@ export function TickerDashboard() {
             stop: s.stop,
             target: s.target,
             aiRecFingerprint: entryRecFingerprint,
+            riskBlockPresent,
           };
           const res = pf.openPosition(input);
           setEntryError(!res.ok && res.reason ? res.reason : null);
@@ -741,6 +765,9 @@ export function TickerDashboard() {
         ticker={ticker}
         personaId={exportDrawer.personaId}
         onClose={() => setExportDrawer((s) => ({ ...s, open: false }))}
+        hasRecOnScreen={aiRec.rec != null && aiRec.rec.status === 'produced'}
+        asSentCandidates={aiRec.rec?.sent?.candidates ?? undefined}
+        asSentRiskInputs={aiRec.rec?.sent?.risk_inputs ?? undefined}
       />
     </Container>
   );

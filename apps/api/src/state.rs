@@ -237,6 +237,10 @@ pub struct AnalyticsSnapshot {
     /// Vol-normalized GEX aggregates (O(1) post-process; never a scoring input).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub vol_normalized_gex: Option<quant_engine::VolNormalizedGex>,
+    /// Straddle-implied move (additive, post-score, never a scoring input). Always an object with a
+    /// closed `state` when present; `None` only for snapshots written before this feature.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub straddle_move: Option<quant_engine::StraddleMove>,
     /// Full chain for `GET /api/contract` (not sent on progressive wire).
     #[serde(skip)]
     pub contracts: Vec<Contract>,
@@ -479,6 +483,7 @@ mod tests {
             off_exchange: None,
             iv_rank: None,
             vol_normalized_gex: None,
+            straddle_move: None,
             contracts: Vec::new(),
             compute_ms: 1.0,
             cached_at: 0,

@@ -1,21 +1,30 @@
 /**
- * Map a produced TRADE rec → the ghost-trade entry pre-fill (UX_BLUEPRINT §5, PM Decision 4).
- * Every produced field becomes an editable seed; nothing is tracked until the user confirms the
- * shipped `TradeEntryDialog`. A `no_trade` rec has no entry to pre-fill (Accept is absent, AC5).
+ * Map a produced TRADE rec → the ghost-trade entry pre-fill (UX_BLUEPRINT §5, PM Decision 4;
+ * tradeable-rec-inputs AC-79/80/81). Every produced field becomes an editable seed; nothing is
+ * tracked until the user confirms the shipped `TradeEntryDialog`. A `no_trade` rec has no entry to
+ * pre-fill (Accept is absent, AC5).
+ *
+ * AC-79 (ship-blocking): the quantity field is NEVER seeded from the model — it always opens at the
+ * dialog's own default. `position_size` is **never parsed** by any lane, ever: `parseQty` is DELETED
+ * (it is not merely unused — its deletion is the enforceable subject of a source scan, F12/AC-29a's
+ * sibling discipline). The rec's size text is displayed VERBATIM beside the quantity field via
+ * `sizeText`, quoted and attributed to the AI — never fed into the field itself.
  */
 import type { OptionRight, RecStrategy } from '@convexa/api';
+import { SIZE_NOT_SUGGESTED } from './copy';
 
 /** The extended ghost-trade prefill seam (was `{ expiration, strike, right }`). All fields editable.
- *  `provenance`/`sizingNote` mark an AI-sourced prefill so the dialog shows the source + sizing copy. */
+ *  `provenance`/`sizingNote` mark an AI-sourced prefill so the dialog shows the source + sizing copy.
+ *  `sizeText` is the rec's size PROSE, rendered verbatim beside the quantity field — never into it. */
 export interface AiPrefill {
   expiration: string;
   strike: number;
   right: OptionRight;
-  qty?: number;
   stop?: number | null;
   target?: number | null;
   provenance?: string; // `Pre-filled from AI read · {persona}`
   sizingNote?: string; // accept.sizing copy
+  sizeText: string; // the rec's own words, or `size not suggested` (AC-80)
 }
 
 /** Single-leg long ghost trade carries one `right`: derive it from structure first (the concrete
@@ -26,15 +35,6 @@ export function biasToRight(strategy: Pick<RecStrategy, 'structure' | 'bias'>): 
   if (s.includes('call')) return 'call';
   if (strategy.bias === 'short') return 'put';
   return 'call';
-}
-
-/** Parse the first positive integer out of `position_size` (a free-text suggestion, e.g.
- *  "2 contracts"); returns 1 when no count is present (a safe, editable default). */
-export function parseQty(positionSize: string | null | undefined): number {
-  if (!positionSize) return 1;
-  const m = positionSize.match(/\d+/);
-  const n = m ? parseInt(m[0], 10) : NaN;
-  return Number.isFinite(n) && n >= 1 ? n : 1;
 }
 
 /** Build the editable entry pre-fill from a produced trade rec. Returns null for a non-trade rec
@@ -50,10 +50,13 @@ export function recToPrefill(
     expiration: strategy.expiration ?? '',
     strike: strategy.strikes.length ? strategy.strikes[0] : 0,
     right: biasToRight(strategy),
-    qty: parseQty(strategy.position_size),
     stop: strategy.exit_plan?.stop ?? null,
     target: strategy.exit_plan?.target ?? null,
     provenance: `Pre-filled from AI read · ${personaName}`,
     sizingNote: sizingCopy,
+    sizeText:
+      strategy.position_size && strategy.position_size.trim()
+        ? strategy.position_size
+        : SIZE_NOT_SUGGESTED,
   };
 }

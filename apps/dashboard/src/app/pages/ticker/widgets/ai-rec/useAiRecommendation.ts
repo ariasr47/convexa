@@ -15,6 +15,7 @@
 import {
   AuthError,
   fetchRecStatus,
+  OpenPositionsDigest,
   RecCap,
   RecGate,
   RecResponse,
@@ -47,6 +48,10 @@ interface AiRecOpts {
   dteMin: number | null;
   dteMax: number | null;
   darkPool: boolean;
+  /** tradeable-rec-inputs (INTERFACE §5): the bounded, client-supplied, NEVER-persisted-server-side
+   *  open-positions digest — read fresh at request time (never stale-cached) via a supplier so a
+   *  React-state-timing edge can never send last-render's snapshot. */
+  openPositions?: () => OpenPositionsDigest | undefined;
 }
 
 const DEFAULT_GATE: RecGate = { state: 'available', cooldown_remaining_seconds: 0, reasons: [] };
@@ -134,6 +139,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       lastReq.current = { ...reqOpts, personaId, personaName };
       setLoading(true);
       try {
+        const openPositions = o.openPositions?.();
         const res = await requestRecommendation(ticker, {
           persona_id: personaId,
           snapshot_fingerprint: bundle.ai_eval.state_fingerprint,
@@ -145,6 +151,9 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
           // operator actually selected a scenario — absent otherwise (the shipped path stays
           // byte-for-byte, AC-45).
           ...(reqOpts.scenarioId ? { scenario_id: reqOpts.scenarioId } : {}),
+          // tradeable-rec-inputs (INTERFACE §5): absent when the host supplied nothing (AC-39
+          // `not_sent`) — never fabricated as `none_open`.
+          ...(openPositions ? { open_positions: openPositions } : {}),
         });
         setRec(res);
         applyGating(res.gate, res.cap);

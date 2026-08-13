@@ -13,7 +13,14 @@
  * ⚠ Uses the Vite `?raw` idiom. `fileURLToPath(new URL(...))` THROWS in this Vitest environment —
  * the project has hit that before (the ai-context-pack lane). Do not "fix" it back.
  */
-import { describe, expect, it } from 'vitest';
+import { entryContextFor } from '@/features/trading/model/captureDigest';
+import {
+  __resetMemory as __resetPositionsMemory,
+  allDecisions,
+  appendDecision,
+} from '@/features/trading/positions/store';
+import type { TickerBundle } from '@convexa/api';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as copyModule from './copy';
 import * as ledgerModule from './ledger';
 import { EXCLUSION_PRECEDENCE, FAMILY_ORDER } from './types';
@@ -320,5 +327,103 @@ describe('AC-6 / AC-14 / AC-E17 — the negative space in the surface', () => {
     for (const [name, source] of OUTCOMES_SOURCES) {
       expect(source, name).not.toMatch(/testSeed|seedPortfolio/);
     }
+  });
+});
+
+// =================================================================================================
+// tradeable-rec-inputs AC-29a (ship-blocking) — the account-size exclusion, TWO ARMS.
+//
+// The risk block's account size is the owner's most personal figure. `entry_context` carries only
+// `risk_block_present: boolean | null` — the PRESENCE flag — never the dollar value; this is a
+// TYPE-LEVEL guarantee (`EntryContextDigest` has no account-size field to assign one into), and the
+// two arms below make that guarantee ENFORCEABLE rather than merely true today.
+// =================================================================================================
+
+describe('AC-29a arm 1 (behavioural) — the ledger export contains no account-size value', () => {
+  const bundle = (): TickerBundle =>
+    ({
+      market_state: { price: 250 },
+      signals: { opportunity_score: 50, opportunity_tier: 'watch' },
+      ai_eval: { state_fingerprint: 'fp-risk' },
+    }) as unknown as TickerBundle;
+
+  beforeEach(() => {
+    localStorage.clear();
+    __resetPositionsMemory();
+  });
+  afterEach(() => {
+    localStorage.clear();
+    __resetPositionsMemory();
+  });
+
+  it('a rec produced under a risk block → captured at entry → appended → the ledger export JSON carries no account-size value anywhere', () => {
+    // "Produced under a risk block" is represented exactly as the REAL capture call sites represent
+    // it (`usePortfolio.recordDecision`, `useOrders.ts` x2): a PRESENCE boolean, never the figure —
+    // the owner's account size (e.g. $583,219) is never even IN SCOPE of this function to leak.
+    const digestAttachment = entryContextFor('open', {
+      bundle: bundle(),
+      aiRecFingerprint: 'fp-risk-rec',
+      riskBlockPresent: true,
+    });
+    const rec = {
+      id: 'dec-1',
+      event_type: 'open',
+      clock_time: '2026-08-12T14:00:00Z',
+      trade_id: 'pos-1',
+      contract: { ticker: 'TSLA', expiration: '2026-08-21', strike: 250, right: 'call', qty: 1 },
+      mark_price: 5,
+      mark_basis: 'snapshot',
+      underlying_spot: 250,
+      pl_dollar: 0,
+      pl_pct: 0,
+      tier: 'watch',
+      position_fingerprint: 'fp-risk',
+      schema_version: 3,
+      ...digestAttachment,
+    };
+    expect(appendDecision(rec as never)).toBe(true);
+
+    // "closed into the outcome ledger" — the record is readable off the SAME append-only log a close
+    // event would add to; the export is the log's serialized form (`allDecisions` "feeds the orders
+    // Export JSON — a read, never a write", `positions/store.ts`).
+    const exported = JSON.stringify(allDecisions());
+    expect(exported).toContain('risk_block_present'); // the presence flag DID ride the record
+    expect(exported).not.toMatch(/account_size|accountSize|risk_account_size/i);
+  });
+});
+
+describe('AC-29a arm 2 (source scan) — no production module writes an account-size value into a ledger or decision record', () => {
+  /** The identifiers this arm forbids as OBJECT KEYS anywhere in production `features/trading/**`
+   *  source. Deliberately WIDE (the whole tree, never narrowed to `outcomes/`) — the enforceable
+   *  subject is `features/trading/**`, per PLAN.md's correction of SPEC §2.6's prose. */
+  const ACCOUNT_SIZE_KEY = /\b(account_size|accountSize|risk_account_size)\s*:/;
+
+  const PRODUCTION_TRADING_SOURCES: [string, string][] = Object.entries(TRADING_SOURCES)
+    .filter(([path]) => !/\.spec\.|\/fixtures\.ts$/.test(path))
+    .map(([path, src]) => [path.replace(/^\.\.\//, ''), code(src)]);
+
+  it('no production module in features/trading/** writes an account-size KEY into any object literal', () => {
+    const offenders = PRODUCTION_TRADING_SOURCES.filter(([, src]) =>
+      ACCOUNT_SIZE_KEY.test(src),
+    ).map(([path]) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  it('the guard BITES — a poisoned literal is detected (anti-vacuity: a scan that cannot fail guards nothing)', () => {
+    expect(ACCOUNT_SIZE_KEY.test('const rec = { account_size: 50000, ...x };')).toBe(true);
+    expect(ACCOUNT_SIZE_KEY.test('const rec = { accountSize: entered, ...x };')).toBe(true);
+    expect(ACCOUNT_SIZE_KEY.test('const rec = { risk_account_size: v, ...x };')).toBe(true);
+    // ...and it reads CODE, not prose: a comment naming the forbidden key must not trip it (the
+    // `code()` strip already removes comments before this regex ever sees the source).
+    expect(ACCOUNT_SIZE_KEY.test(code('// never write account_size: here'))).toBe(false);
+    // `risk_block_present` (the ALLOWED presence flag) must never be mistaken for the forbidden key.
+    expect(ACCOUNT_SIZE_KEY.test('const d = { risk_block_present: true };')).toBe(false);
+  });
+
+  it('captureDigest.ts — the file F11 routes the flag into — is covered by this scan (not narrowed away)', () => {
+    const names = PRODUCTION_TRADING_SOURCES.map(([path]) => path);
+    expect(names.some((p) => p.endsWith('model/captureDigest.ts'))).toBe(true);
+    expect(names.some((p) => p.endsWith('model/types.ts'))).toBe(true);
+    expect(names.some((p) => p.endsWith('positions/usePortfolio.ts'))).toBe(true);
   });
 });

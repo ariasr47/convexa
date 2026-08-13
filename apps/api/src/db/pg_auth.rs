@@ -271,7 +271,8 @@ impl PgAuthStore {
         let uid = user_id.to_string();
         self.block(move |pg| async move {
                 let row = sqlx::query(
-                    r#"SELECT user_id, active_persona_id, default_ticker, theme, scan_view
+                    r#"SELECT user_id, active_persona_id, default_ticker, theme, scan_view,
+                              risk_account_size, risk_cap_value, risk_cap_unit, risk_updated_at
                        FROM user_settings WHERE user_id = $1"#,
                 )
                 .bind(&uid)
@@ -284,6 +285,10 @@ impl PgAuthStore {
                     default_ticker: r.get("default_ticker"),
                     theme: r.get("theme"),
                     scan_view: r.get("scan_view"),
+                    risk_account_size: r.get("risk_account_size"),
+                    risk_cap_value: r.get("risk_cap_value"),
+                    risk_cap_unit: r.get("risk_cap_unit"),
+                    risk_updated_at: r.get("risk_updated_at"),
                 }))
         })
     }
@@ -298,6 +303,10 @@ impl PgAuthStore {
             default_ticker: None,
             theme: "dark".into(),
             scan_view: None,
+            risk_account_size: None,
+            risk_cap_value: None,
+            risk_cap_unit: None,
+            risk_updated_at: None,
         };
         let r = rec.clone();
         self.block(move |pg| async move {
@@ -330,22 +339,48 @@ impl PgAuthStore {
         if let Some(ref v) = patch.scan_view {
             cur.scan_view = Some(v.clone());
         }
+        if let Some(v) = patch.risk_account_size {
+            cur.risk_account_size = v;
+            cur.risk_updated_at = Some(now_secs());
+        }
+        if let Some(v) = patch.per_trade_cap.clone() {
+            match v {
+                Some((value, unit)) => {
+                    cur.risk_cap_value = Some(value);
+                    cur.risk_cap_unit = Some(unit);
+                }
+                None => {
+                    cur.risk_cap_value = None;
+                    cur.risk_cap_unit = None;
+                }
+            }
+            cur.risk_updated_at = Some(now_secs());
+        }
         let r = cur.clone();
         self.block(move |pg| async move {
                 sqlx::query(
-                    r#"INSERT INTO user_settings (user_id, active_persona_id, default_ticker, theme, scan_view)
-                       VALUES ($1,$2,$3,$4,$5)
+                    r#"INSERT INTO user_settings (user_id, active_persona_id, default_ticker, theme, scan_view,
+                        risk_account_size, risk_cap_value, risk_cap_unit, risk_updated_at)
+                       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
                        ON CONFLICT (user_id) DO UPDATE SET
                          active_persona_id = EXCLUDED.active_persona_id,
                          default_ticker = EXCLUDED.default_ticker,
                          theme = EXCLUDED.theme,
-                         scan_view = EXCLUDED.scan_view"#,
+                         scan_view = EXCLUDED.scan_view,
+                         risk_account_size = EXCLUDED.risk_account_size,
+                         risk_cap_value = EXCLUDED.risk_cap_value,
+                         risk_cap_unit = EXCLUDED.risk_cap_unit,
+                         risk_updated_at = EXCLUDED.risk_updated_at"#,
                 )
                 .bind(&r.user_id)
                 .bind(&r.active_persona_id)
                 .bind(&r.default_ticker)
                 .bind(&r.theme)
                 .bind(&r.scan_view)
+                .bind(r.risk_account_size)
+                .bind(r.risk_cap_value)
+                .bind(&r.risk_cap_unit)
+                .bind(r.risk_updated_at)
                 .execute(&pg.pool)
                 .await
                 .map_err(pg_err)?;

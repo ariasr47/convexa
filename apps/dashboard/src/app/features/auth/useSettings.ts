@@ -15,7 +15,7 @@
  * pref change only changes which default a UI lands on.
  */
 import { loadActiveId, saveActiveId } from '@/features/personas/store';
-import type { ThemePref, UserSettings } from '@convexa/api';
+import type { RiskInputs, RiskInputsPatch, ThemePref, UserSettings } from '@convexa/api';
 import { useCallback, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { SETTINGS_DEFAULTS } from './copy';
@@ -46,6 +46,10 @@ export interface SettingsApi {
   setDefaultTicker: (t: string | null) => Promise<void>;
   setTheme: (t: ThemePref) => Promise<void>;
   clearSaveError: () => void;
+  // tradeable-rec-inputs — the risk block is SERVER-ONLY (no anonymous client-local fallback; an
+  // anonymous caller always reads `null` and every write is refused server-side, AC-24/AC-30).
+  riskInputs: RiskInputs | null;
+  setRiskInputs: (patch: RiskInputsPatch) => Promise<void>;
 }
 
 export function useSettings(): SettingsApi {
@@ -76,7 +80,7 @@ export function useSettings(): SettingsApi {
   }, [serverBacked, auth.settings, localTick]);
 
   const writeServer = useCallback(
-    async (patch: Partial<UserSettings>) => {
+    async (patch: Partial<Omit<UserSettings, 'risk_inputs'>>) => {
       try {
         await auth.updateSettings(patch);
         setSaveError(null);
@@ -125,6 +129,24 @@ export function useSettings(): SettingsApi {
 
   const clearSaveError = useCallback(() => setSaveError(null), []);
 
+  // tradeable-rec-inputs — SERVER-ONLY, no client-local fallback (§2.4(a): "an anonymous client-side
+  // risk block" is explicitly rejected). `writeServer` clears its own error on success/throws on
+  // failure, mirroring the 3 light prefs; a caller-side `try` distinguishes the outcome for callers
+  // that need to keep typed values on a failed save (AC-32).
+  const riskInputs = auth.authenticated ? (auth.settings?.risk_inputs ?? null) : null;
+  const setRiskInputs = useCallback(
+    async (patch: RiskInputsPatch) => {
+      try {
+        await auth.updateSettings({ risk_inputs: patch });
+        setSaveError(null);
+      } catch {
+        setSaveError('save_failed');
+        throw new Error('save_failed');
+      }
+    },
+    [auth],
+  );
+
   return {
     effective,
     serverBacked,
@@ -133,5 +155,7 @@ export function useSettings(): SettingsApi {
     setDefaultTicker,
     setTheme,
     clearSaveError,
+    riskInputs,
+    setRiskInputs,
   };
 }

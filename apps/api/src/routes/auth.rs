@@ -10,6 +10,7 @@ use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
 pub struct SignupBody {
@@ -24,11 +25,26 @@ pub struct LoginBody {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct SettingsBody {
-    pub active_persona_id: Option<String>,
-    pub default_ticker: Option<String>,
-    pub theme: Option<String>,
+/// Double-optional over the wire: KEY ABSENT ⇒ outer `None` (no change); KEY PRESENT AS `null` ⇒
+/// `Some(None)` (clear); KEY PRESENT with a value ⇒ `Some(Some(value))` (set). `0` is a legal
+/// entered `account_size`, never coerced to "unset" — the double-`Option` type is what makes that
+/// distinction possible (AC-36).
+fn double_optional_f64(body: &Value, key: &str) -> Option<Option<f64>> {
+    body.get(key).map(|v| v.as_f64())
+}
+
+/// `per_trade_cap` — `{ value: number, unit: "usd" | "percent" }` object, or `null` to clear.
+/// A present-but-malformed object (missing `value`/`unit`) is treated as "field not present"
+/// (no change) rather than silently clearing — the server-side `validate` refusal path in
+/// `risk.rs` is reserved for well-typed-but-out-of-range entries, not shape errors.
+fn double_optional_cap(body: &Value) -> Option<Option<(f64, String)>> {
+    let v = body.get("per_trade_cap")?;
+    if v.is_null() {
+        return Some(None);
+    }
+    let value = v.get("value").and_then(|x| x.as_f64())?;
+    let unit = v.get("unit").and_then(|x| x.as_str())?.to_string();
+    Some(Some((value, unit)))
 }
 
 #[derive(Debug, Deserialize)]
@@ -142,11 +158,12 @@ pub async fn get_settings(State(state): State<AppState>, headers: HeaderMap) -> 
     }
 }
 
-/// PUT /api/auth/settings
+/// PUT /api/auth/settings — accepts raw JSON so `account_size`/`per_trade_cap` can distinguish
+/// "absent" (no change) from "present as null" (clear) — a shape a typed `Option<T>` cannot carry.
 pub async fn put_settings(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Json(body): Json<SettingsBody>,
+    Json(body): Json<Value>,
 ) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
@@ -154,10 +171,12 @@ pub async fn put_settings(
         return auth_err(settings_auth_required());
     };
     let patch = SettingsPatch {
-        active_persona_id: body.active_persona_id,
-        default_ticker: body.default_ticker,
-        theme: body.theme,
+        active_persona_id: body.get("active_persona_id").and_then(|v| v.as_str()).map(String::from),
+        default_ticker: body.get("default_ticker").and_then(|v| v.as_str()).map(String::from),
+        theme: body.get("theme").and_then(|v| v.as_str()).map(String::from),
         scan_view: None,
+        risk_account_size: double_optional_f64(&body, "account_size"),
+        per_trade_cap: double_optional_cap(&body),
     };
     match auth(&state).write_settings(&user, patch) {
         Ok(s) => (StatusCode::OK, Json(s)).into_response(),

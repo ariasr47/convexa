@@ -77,6 +77,15 @@ export interface EntryContextDigest {
    *     absent case exists for records imported from a browser whose capture predates the threading.
    */
   ai_rec_fingerprint?: string | null;
+  /**
+   * tradeable-rec-inputs (AC-82): whether a risk block was PRESENT (server `risk_inputs.state ===
+   * 'set'`) at the moment this entry was captured. Independently nullable like every other digest
+   * field: `true`/`false` when the resolution is known this cycle, `null` when it genuinely could
+   * not be read (anonymous, or the settings read faulted) — never a fabricated `false`. This value
+   * is NEVER an account-size figure and NEVER derived from one — it is the presence flag only
+   * (AC-29a: no account-size value may ever reach a ledger or decision record).
+   */
+  risk_block_present: boolean | null;
 }
 
 /** Append-only, versioned, exportable (for a future back-test of AI-assisted edge). */

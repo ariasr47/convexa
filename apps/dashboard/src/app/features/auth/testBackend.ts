@@ -7,7 +7,18 @@
  * `setGoogle(bool)` flips the config flag, `failSession()` simulates a who-am-I transport fault, and
  * the auth-write handlers can be told to 409/422/401/503 to drive every error state.
  */
-import type { SessionStatus, StrikeRow, TickerBundle, UserSettings } from '@convexa/api';
+import type {
+  CandidateBudget,
+  CandidateContract,
+  CandidateSetEnvelope,
+  CapCheck,
+  OptionRight,
+  RiskInputs,
+  SessionStatus,
+  StrikeRow,
+  TickerBundle,
+  UserSettings,
+} from '@convexa/api';
 import { vi } from 'vitest';
 
 /** byo-ai-key: how the rec POST resolves the key (the 5 observable states a–e). Each maps to the
@@ -42,6 +53,12 @@ export interface AuthBackendState {
   remainingFreeUses: number; // the count the NEXT produced_shared rec returns (post-decrement)
   freeUsesTotal: number; // the per-admin allowance
   aiKey: AiKeyBackendState;
+  // tradeable-rec-inputs — the per-user risk block (server-side, `GET`/`PUT /api/auth/settings`),
+  // the candidate-set fixture (`GET /api/candidates/{ticker}`, `sent.candidates`,
+  // `context.candidates`), and the cap-check outcome the rec POST's produced-trade branch carries.
+  riskInputs: RiskInputs;
+  candidates: CandidateSetEnvelope;
+  capCheck: CapCheck;
 }
 
 export interface AuthBackend {
@@ -58,10 +75,14 @@ export interface AuthBackend {
     aiKeyGet: number;
     aiKeyPut: number;
     aiKeyDelete: number;
+    candidatesGet: number;
   };
   /** Capture the URLs/inits the bundle path was called with (for the no-new-header/param assertion). */
   tickerCalls: { url: string; init?: RequestInit }[];
   recPostInits: RequestInit[];
+  /** Every rec POST body, parsed-friendly (JSON string) — so a test can assert the open-positions
+   *  digest that was actually sent (F10), distinct from `recPostInits` (the raw fetch init). */
+  recPostBodies: string[];
   /** Capture EVERY ai-key PUT body (egress assertion: the raw key rides ONLY here, browser→server). */
   aiKeyPutBodies: string[];
   /** Capture EVERY response body the FE ever received from a key-flow endpoint (egress: no raw key). */
@@ -81,6 +102,12 @@ export interface AuthBackend {
   setRecKey(state: RecKeyState, opts?: { remaining?: number; total?: number }): void;
   /** byo-ai-key — set the stored masked-key read (drives the Settings Empty/Set/storage state). */
   setAiKeyStored(s: Partial<AiKeyBackendState>): void;
+  /** tradeable-rec-inputs — preset the stored risk block (merges into the current one). */
+  setRiskInputs(patch: Partial<RiskInputs>): void;
+  /** tradeable-rec-inputs — preset the produced-trade rec's cap-check outcome. */
+  setCapCheck(patch: Partial<CapCheck>): void;
+  /** tradeable-rec-inputs — preset the candidate-set fixture (merges into the current one). */
+  setCandidates(patch: Partial<CandidateSetEnvelope>): void;
 }
 
 export function anonSession(googleAvailable = false): SessionStatus {
@@ -105,6 +132,155 @@ export function userSession(
     settings,
   };
 }
+
+// ---- tradeable-rec-inputs fixtures (the NETWORK BOUNDARY only) ---------------------------------
+
+/** Mirrors the ONE server-side derivation (INTERFACE_CONTRACT §4) — the mock never lets the client
+ *  compute this; it exists here only so a PUT round-trip in the mock returns an honest derived
+ *  figure, exactly like the real server would. */
+function deriveEffectiveDollarCap(
+  accountSize: number | null,
+  cap: RiskInputs['per_trade_cap'],
+): RiskInputs['effective_dollar_cap'] {
+  const derivedFrom = {
+    account_size: accountSize,
+    cap_value: cap?.value ?? null,
+    cap_unit: cap?.unit ?? null,
+  };
+  if (!cap)
+    return { state: 'not_set', value: null, not_derivable_reason: null, derived_from: derivedFrom };
+  if (cap.unit === 'usd')
+    return {
+      state: 'derived',
+      value: cap.value,
+      not_derivable_reason: null,
+      derived_from: derivedFrom,
+    };
+  // percent
+  if (accountSize == null)
+    return {
+      state: 'not_derivable',
+      value: null,
+      not_derivable_reason: 'percent_without_account_size',
+      derived_from: derivedFrom,
+    };
+  return {
+    state: 'derived',
+    value: Math.round(((accountSize * cap.value) / 100) * 100) / 100,
+    not_derivable_reason: null,
+    derived_from: derivedFrom,
+  };
+}
+
+export function defaultRiskInputs(): RiskInputs {
+  return {
+    state: 'not_set',
+    account_size: null,
+    per_trade_cap: null,
+    effective_dollar_cap: deriveEffectiveDollarCap(null, null),
+    storage_available: true,
+    updated_at: null,
+  };
+}
+
+/** A bounded, ranked candidate fixture — the §1 envelope shape, reused verbatim by the dedicated
+ *  read, `sent.candidates` and `context.candidates` (one computation, many renderings, per contract). */
+export function makeCandidatesFixture(
+  ticker = 'TSLA',
+  budget: CandidateBudget = 'handoff',
+): CandidateSetEnvelope {
+  const caps =
+    budget === 'handoff'
+      ? { tenors: 4, rights: 2, strikes_per_tenor_right: 8, max_records: 64, max_bytes: 24_000 }
+      : { tenors: 2, rights: 2, strikes_per_tenor_right: 5, max_records: 20, max_bytes: 8_000 };
+  const contract = (strike: number, right: OptionRight, quoted = true): CandidateContract => ({
+    expiration: '2026-07-18',
+    dte: 25,
+    strike,
+    right,
+    distance_pct: Math.round(((strike - 250) / 250) * 10_000) / 100,
+    quote_presence: quoted ? 'quoted' : 'no_two_sided_quote',
+    bid: quoted ? 4.8 : null,
+    ask: quoted ? 5.2 : null,
+    mid: quoted ? 5.0 : null,
+    spread_abs: quoted ? 0.4 : null,
+    spread_pct_of_mid: quoted ? 8 : null,
+    open_interest: 500,
+    volume: 120,
+    iv_state: 'priced',
+    iv: 0.32,
+    greeks: { delta: right === 'call' ? 0.5 : -0.5, gamma: 0.02, theta: -0.05, vega: 0.12 },
+  });
+  return {
+    ticker,
+    state: 'ok',
+    as_of: '2026-06-26T14:00:00Z',
+    snapshot_age_seconds: 30,
+    session_basis: 'after_close',
+    quote_age: 'unknown',
+    anchor_spot: 250,
+    anchor_basis: 'gex_spot',
+    band_pct: 15,
+    budget,
+    sent_to_model: budget === 'prompt',
+    caps,
+    included: { contracts: 2, expirations: ['2026-07-18'], expiration_count: 1 },
+    omitted: {
+      total: 0,
+      expirations_omitted_by_cap: 0,
+      by_reason: {
+        outside_window: 0,
+        outside_band: 0,
+        no_interest: 0,
+        expiration_cap: 0,
+        strike_cap: 0,
+      },
+    },
+    liquidity: {
+      quoted: 2,
+      no_two_sided_quote: 0,
+      atm_relative_spread_band: 'moderate',
+      wide_quotes: false,
+      wide_quote_threshold_pct: 15,
+    },
+    contracts: [contract(250, 'call'), contract(250, 'put')],
+  };
+}
+
+export function defaultCapCheck(): CapCheck {
+  return {
+    verdict: 'within',
+    effective_dollar_cap: 500,
+    cap_not_derivable_reason: null,
+    parsed_risk_dollars: 300,
+    model_max_risk_text: '$300',
+  };
+}
+
+const defaultStraddleMove = {
+  state: 'ok' as const,
+  as_of: '2026-06-26T14:00:00Z',
+  session_basis: 'after_close' as const,
+  anchor_spot: 250,
+  anchor_basis: 'gex_spot' as const,
+  anchor_label: 'gex_spot',
+  primary_expiration: '2026-07-18',
+  wide_quote_threshold_pct: 15,
+  tenors: [
+    {
+      expiration: '2026-07-18',
+      dte: 25,
+      strike_used: 250,
+      strike_distance_pct: 0,
+      straddle_price: 10,
+      move_dollars: 10,
+      move_pct: 4,
+      basis: 'atm_straddle_mid' as const,
+      quote_spread_pct_of_mid: 8,
+      wide_quotes: false,
+    },
+  ],
+};
 
 function strike(s: number): StrikeRow {
   return {
@@ -166,6 +342,7 @@ export function makeBundle(): TickerBundle {
       iv_skew: null,
       term_structure: null,
       dealer_flow_projection: null,
+      straddle_move: defaultStraddleMove,
     },
     signals: {
       ticker: 'TSLA',
@@ -233,6 +410,9 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     remainingFreeUses: initial.remainingFreeUses ?? 3,
     freeUsesTotal: initial.freeUsesTotal ?? 3,
     aiKey: initial.aiKey ?? { set: false, last4: null, storage_available: true, put: 'ok' },
+    riskInputs: initial.riskInputs ?? defaultRiskInputs(),
+    candidates: initial.candidates ?? makeCandidatesFixture(),
+    capCheck: initial.capCheck ?? defaultCapCheck(),
   };
   const calls = {
     session: 0,
@@ -246,9 +426,11 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     aiKeyGet: 0,
     aiKeyPut: 0,
     aiKeyDelete: 0,
+    candidatesGet: 0,
   };
   const tickerCalls: { url: string; init?: RequestInit }[] = [];
   const recPostInits: RequestInit[] = [];
+  const recPostBodies: string[] = [];
   const aiKeyPutBodies: string[] = [];
   const keyFlowResponses: string[] = [];
 
@@ -280,6 +462,15 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
       if (url.includes('/api/auth/session')) {
         calls.session++;
         if (state.sessionFails) return json({ error: 'auth_unavailable' }, 503);
+        // tradeable-rec-inputs: the risk block always rides the settings a signed-in who-am-I
+        // carries — `state.riskInputs` is the single per-user source of truth so a preset via
+        // `setRiskInputs` is visible on the very next read (no separate GET endpoint in this tree).
+        if (state.session.settings) {
+          return json({
+            ...state.session,
+            settings: { ...state.session.settings, risk_inputs: state.riskInputs },
+          });
+        }
         return json(state.session);
       }
       // ---- signup -------------------------------------------------------------------------------
@@ -348,12 +539,63 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           return authErr('auth_unavailable', 'auth down', 503);
         if (state.settingsWrite === 'validation') return authErr('validation', 'bad theme', 422);
         const patch = init?.body ? JSON.parse(String(init.body)) : {};
+        // ---- tradeable-rec-inputs: the owner-entered risk-inputs patch — server-side refusals are
+        // authoritative (INTERFACE_CONTRACT §4); nothing is stored on a refusal.
+        if ('risk_inputs' in patch) {
+          const rp = (patch.risk_inputs ?? {}) as {
+            account_size?: number | null;
+            per_trade_cap?: RiskInputs['per_trade_cap'];
+          };
+          const nextAccountSize =
+            'account_size' in rp ? (rp.account_size ?? null) : state.riskInputs.account_size;
+          if (rp.account_size !== undefined && rp.account_size !== null) {
+            if (!Number.isFinite(rp.account_size) || rp.account_size <= 0)
+              return authErr('validation', 'Enter a number greater than zero.', 422);
+          }
+          if (rp.per_trade_cap !== undefined && rp.per_trade_cap !== null) {
+            const cap = rp.per_trade_cap;
+            if (!Number.isFinite(cap.value) || cap.value <= 0)
+              return authErr('validation', 'Enter a number greater than zero.', 422);
+            if (cap.unit === 'percent' && (cap.value <= 0 || cap.value > 100))
+              return authErr('validation', 'Enter a percentage between 0 and 100.', 422);
+            if (cap.unit === 'usd' && nextAccountSize != null && cap.value > nextAccountSize)
+              return authErr(
+                'validation',
+                "Your per-trade cap can't exceed your account size.",
+                422,
+              );
+          }
+          if (state.riskInputs.storage_available === false) {
+            // Storage-unavailable: a contained, honest 200 that claims nothing as saved (mirrors
+            // the byo-ai-key precedent) — nothing is stored.
+            const cur = state.session.settings ?? {
+              active_persona_id: null,
+              default_ticker: null,
+              theme: 'dark' as const,
+            };
+            const next: UserSettings = { ...cur, ...patch, risk_inputs: state.riskInputs };
+            state.session = { ...state.session, settings: next };
+            return json(next);
+          }
+          const accountSize =
+            'account_size' in rp ? (rp.account_size ?? null) : state.riskInputs.account_size;
+          const perTradeCap =
+            'per_trade_cap' in rp ? (rp.per_trade_cap ?? null) : state.riskInputs.per_trade_cap;
+          state.riskInputs = {
+            ...state.riskInputs,
+            account_size: accountSize,
+            per_trade_cap: perTradeCap,
+            state: accountSize != null || perTradeCap != null ? 'set' : 'not_set',
+            effective_dollar_cap: deriveEffectiveDollarCap(accountSize, perTradeCap),
+            updated_at: Date.now(),
+          };
+        }
         const cur = state.session.settings ?? {
           active_persona_id: null,
           default_ticker: null,
           theme: 'dark' as const,
         };
-        const next: UserSettings = { ...cur, ...patch };
+        const next: UserSettings = { ...cur, ...patch, risk_inputs: state.riskInputs };
         state.session = { ...state.session, settings: next };
         return json(next);
       }
@@ -419,6 +661,11 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
         tickerCalls.push({ url, init });
         return json(makeBundle());
       }
+      // ---- tradeable-rec-inputs: the dedicated candidate-set pull (anonymous-ok, STATIC) ---------
+      if (url.includes('/api/candidates/')) {
+        calls.candidatesGet++;
+        return json(state.candidates);
+      }
       // ---- ai-rec status / export / personas / contract (anonymous-usable floors) ---------------
       if (url.includes('/api/recommendation/status/')) {
         // byo-ai-key: an admin shared-key path pre-renders its count; regular users carry no counter.
@@ -433,20 +680,52 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
         });
       }
       if (url.includes('/api/recommendation/export/')) {
-        // The export floor egress shape — context + persona prompt + glossary + egress_note ONLY.
+        // The export floor — context (incl. candidates/risk_inputs/open_positions) + persona prompt
+        // + glossary + the amended egress note/categories (AC-90/AC-97). Anonymous ALWAYS sees
+        // `risk_inputs.state: 'not_set'` — present, never omitted.
+        const anonymousRisk = !state.session.authenticated;
+        const exportRisk = anonymousRisk
+          ? defaultRiskInputs()
+          : { ...state.riskInputs, storage_available: undefined, updated_at: undefined };
         return keyJson({
           ticker: 'TSLA',
           as_of: '2026-06-26T14:00:00Z',
-          context: { gamma_flip: 248 },
+          context: {
+            gamma_flip: 248,
+            market_state: { straddle_move: defaultStraddleMove },
+            candidates: state.candidates,
+            risk_inputs: {
+              state: exportRisk.state,
+              account_size: exportRisk.account_size,
+              per_trade_cap: exportRisk.per_trade_cap,
+              effective_dollar_cap: exportRisk.effective_dollar_cap,
+            },
+            open_positions: { source: 'simulated', state: 'not_sent' },
+          },
           persona_prompt: 'prompt',
           glossary: 'glossary',
           egress_note:
-            'No other ticker, no account or identity, no broker/order data, and no API key ever leave.',
+            'This is the complete, reviewable list of what leaves the machine for TSLA, on demand: ' +
+            'the computed snapshot, the candidate contracts, your risk inputs, your open simulated ' +
+            "positions, your persona's prompt, and the field glossary. No other ticker, no name, " +
+            'email or login, no broker credentials, and no API key ever leave. Nothing is ever ' +
+            'placed as an order.',
+          egress_categories: [
+            { key: 'context', sent: true },
+            { key: 'candidates', sent: true },
+            { key: 'risk_inputs', sent: true },
+            { key: 'open_positions', sent: true },
+            { key: 'persona_prompt', sent: true },
+            { key: 'glossary', sent: true },
+          ],
         });
       }
       if (url.includes('/api/recommendation/') && method === 'POST') {
         calls.recPost++;
         recPostInits.push(init ?? {});
+        const bodyStr = String(init?.body ?? '{}');
+        recPostBodies.push(bodyStr);
+        const reqBody = init?.body ? (JSON.parse(bodyStr) as { open_positions?: unknown }) : {};
         // The ai-rec invoke gains the auth gate as its OUTERMOST precondition (D6f).
         if (state.gatedAction === 'auth_required')
           return authErr('auth_required', 'Sign in to do this.', 403);
@@ -476,6 +755,37 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           time_horizon: '5d',
           confidence: 'medium',
           rationale: 'edge',
+          right: 'call' as const,
+        };
+        const promptCandidates = {
+          ...state.candidates,
+          budget: 'prompt' as const,
+          sent_to_model: true,
+        };
+        const openPositions = (reqBody.open_positions as
+          { source: string; state: string } | undefined) ?? {
+          source: 'simulated',
+          state: 'not_sent',
+        };
+        const sent = {
+          budget: 'prompt' as const,
+          candidates: promptCandidates,
+          straddle_move_tenors: [defaultStraddleMove.primary_expiration],
+          risk_inputs: state.riskInputs,
+          risk_inputs_digest: `${state.riskInputs.state}:${state.riskInputs.account_size ?? 'null'}:${state.riskInputs.per_trade_cap?.value ?? 'null'}${state.riskInputs.per_trade_cap?.unit ?? ''}`,
+          open_positions: openPositions,
+        };
+        const fieldReasons = {
+          max_risk: null,
+          position_size: null,
+          exit_target: null,
+          exit_stop: null,
+        };
+        const citedContract = {
+          state: 'cited' as const,
+          contract:
+            state.candidates.contracts.find((c) => c.strike === 260 && c.right === 'call') ?? null,
+          legs: [],
         };
 
         // byo-ai-key — the 5 observable wire shapes (INTERFACE_CONTRACT §3).
@@ -486,6 +796,10 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
             strategy,
             unavailable_reason: null,
             key_source: 'own_key',
+            sent,
+            cap_check: state.capCheck,
+            field_reasons: fieldReasons,
+            cited_contract: citedContract,
           });
         }
         if (state.recKey === 'produced_shared') {
@@ -499,6 +813,10 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
             key_source: 'shared_admin',
             remaining_free_uses: state.remainingFreeUses,
             free_uses_total: state.freeUsesTotal,
+            sent,
+            cap_check: state.capCheck,
+            field_reasons: fieldReasons,
+            cited_contract: citedContract,
           });
         }
         if (state.recKey === 'no_key') {
@@ -543,6 +861,7 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     calls,
     tickerCalls,
     recPostInits,
+    recPostBodies,
     aiKeyPutBodies,
     keyFlowResponses,
     setSession(s) {
@@ -578,6 +897,15 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     },
     setAiKeyStored(s) {
       state.aiKey = { ...state.aiKey, ...s };
+    },
+    setRiskInputs(patch) {
+      state.riskInputs = { ...state.riskInputs, ...patch };
+    },
+    setCapCheck(patch) {
+      state.capCheck = { ...state.capCheck, ...patch };
+    },
+    setCandidates(patch) {
+      state.candidates = { ...state.candidates, ...patch };
     },
   };
   return backend;

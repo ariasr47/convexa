@@ -382,6 +382,19 @@ pub async fn compute_analytics_from_vendor(
         hv_opt.and_then(HvPercent::try_from_percent),
     );
 
+    // Straddle-implied move (tradeable-rec-inputs B4): additive, post-GEX, never a scoring input.
+    // `session_basis` is the SNAPSHOT's phase (never `now`'s) — INTERFACE_CONTRACT rule 5.
+    let straddle_move = Some(quant_engine::compute_straddle_move(
+        &market.contracts,
+        market.synchronized_spot,
+        as_of,
+        quant_engine::DteWindow { min: params.min_dte, max: params.max_dte },
+        &quant_engine::SnapshotMeta {
+            as_of_iso: Some(as_of.to_rfc3339()),
+            session_basis: Some(market.market_phase.as_str().to_string()),
+        },
+    ));
+
     let compute_ms = t0.elapsed().as_secs_f64() * 1000.0;
     info!(
         ticker = %sym,
@@ -412,6 +425,7 @@ pub async fn compute_analytics_from_vendor(
         off_exchange,
         iv_rank,
         vol_normalized_gex,
+        straddle_move,
         contracts: market.contracts.clone(),
         compute_ms,
         cached_at: as_of.timestamp(),
@@ -453,5 +467,23 @@ mod hermetic_tests {
         // Opportunity score is defined; exact value is free to drift with engine.
         assert!(sig.opportunity_score >= 0);
         assert!(snap.compute_ms >= 0.0);
+    }
+
+    #[tokio::test]
+    async fn fixture_path_b_attaches_a_straddle_move_object_with_a_state() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/market");
+        let port = MarketDataPort::fixture(load_fixture_dir(&dir).unwrap());
+        let params = AnalyticsComputeParams::default();
+        let snap = compute_from_port(&port, "SYN", None, &params, None)
+            .await
+            .expect("hermetic compute");
+        // Totality assertion, not an `Ok`-only one: the fixture chain is thin, so any of the four
+        // closed states is an acceptable outcome — what must never happen is `None`.
+        assert!(snap.straddle_move.is_some());
+        use quant_engine::StraddleMoveState as S;
+        assert!(matches!(
+            snap.straddle_move.unwrap().state,
+            S::Ok | S::NoQuote | S::NotComputed | S::NoExpirationInWindow
+        ));
     }
 }

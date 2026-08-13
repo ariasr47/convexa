@@ -16,6 +16,7 @@
 //! - I/O, Redis, HTTP, auth
 //! - Scanner loops / Massive networking (api-rust)
 
+pub mod candidates;
 pub mod context_pack;
 pub mod darkpool;
 pub mod gamma_flip;
@@ -28,6 +29,7 @@ pub mod max_pain;
 pub mod signals;
 pub mod simd;
 pub mod soa;
+pub mod straddle_move;
 pub mod types;
 pub mod vol_gex;
 pub mod vol_units;
@@ -58,9 +60,19 @@ pub use signals::{
     DEFAULT_GATE_SCORE,
 };
 pub use simd::gex_kernel_name;
+pub use straddle_move::{
+    assert_tenor_subset, compute_straddle_move, restrict_move_to_tenors, select_tenors,
+    AnchorBasis, MoveBasis, StraddleMove, StraddleMoveState, StraddleTenor, ANCHOR_LABEL,
+    MOVE_DTE_FLOOR, MOVE_MAX_TENORS, WIDE_QUOTE_THRESHOLD_PCT,
+};
 pub use types::{
-    Contract, ContractType, DealerFlowCharm, DealerFlowProjection, DealerFlowVanna, GexOptions,
-    GexResult, Greeks, ParityTolerances, RegimeTag, StrikeProfileRow,
+    Contract, ContractType, DealerFlowCharm, DealerFlowProjection, DealerFlowVanna, DteWindow,
+    GexOptions, GexResult, Greeks, ParityTolerances, RegimeTag, SnapshotMeta, StrikeProfileRow,
+};
+pub use candidates::{
+    CandidateBudget, CandidateCaps, CandidateContract, CandidateGreeks, CandidateLiquidity,
+    CandidateSet, CandidateSetState, DropLedger, IncludedBlock, IvState, OmittedBlock,
+    QuotePresence, SpreadBand, BAND_PCT, SPREAD_TIGHT_PCT,
 };
 pub use vol_gex::{resolve_vol_scalar, vol_normalize_gex, VolNormBasis, VolNormalizedGex};
 pub use vol_units::{atm_iv_to_wire_percent, HvPercent, IvDecimal};

@@ -27,6 +27,7 @@ import {
   type SessionStatus,
   type SignupRequest,
   type UserSettings,
+  type UserSettingsPatch,
 } from '@convexa/api';
 import {
   createContext,
@@ -66,7 +67,7 @@ export interface AuthApi extends AuthState {
   signOut: () => Promise<void>;
   /** Persist a settings patch (server-wins). Throws on failure so the caller can revert. No-op +
    *  throw when anonymous would be wrong here — callers only invoke this when signed in. */
-  updateSettings: (patch: Partial<UserSettings>) => Promise<UserSettings>;
+  updateSettings: (patch: UserSettingsPatch) => Promise<UserSettings>;
 }
 
 const ANON: AuthState = {
@@ -158,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refresh(); // re-read who-am-I ⇒ anonymous
   }, [refresh]);
 
-  const updateSettings = useCallback(async (patch: Partial<UserSettings>) => {
+  const updateSettings = useCallback(async (patch: UserSettingsPatch) => {
     const saved = await apiSave(patch); // throws on failure → caller reverts
     setState((prev) => (prev.authenticated ? { ...prev, settings: saved } : prev));
     return saved;

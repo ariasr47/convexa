@@ -124,6 +124,17 @@ function makeBundle(): TickerBundle {
       iv_skew: null,
       term_structure: null,
       dealer_flow_projection: null,
+      straddle_move: {
+        state: 'not_computed',
+        as_of: null,
+        session_basis: null,
+        anchor_spot: null,
+        anchor_basis: 'gex_spot',
+        anchor_label: 'gex_spot',
+        primary_expiration: null,
+        wide_quote_threshold_pct: 15,
+        tenors: [],
+      },
     },
     signals: {
       ticker: 'TSLA',
@@ -418,7 +429,12 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       const o = allOrders()[0];
       expect(o.status).toBe('waiting');
       expect(o.trigger).toEqual({ kind: 'underlying_above', level: 252 });
-      expect(o.qty).toBe(2); // "2 contracts" parsed by the EXISTING Accept seeding rules
+      // tradeable-rec-inputs AC-79 (ship-blocking, sanctioned behavior): the quantity field is NEVER
+      // seeded from the model's size text — it always opens at the dialog's own default of 1, even
+      // though the rec's `position_size` here reads "2 contracts". `prefill.ts::parseQty` is DELETED
+      // by design; this assertion was previously `toBe(2)` (a pre-feature artifact of the deleted
+      // parser) and is corrected here to assert the new rule on purpose, not by accident.
+      expect(o.qty).toBe(1);
       expect(o.stop).toBe(3);
       expect(o.target).toBe(9);
       // Rec provenance pinned on the order itself.
@@ -447,7 +463,9 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       expect(filled.position_id).toBe(pos.id);
       expect(pos.legs[0].entry_basis).toBe('trigger_fill');
       expect(pos.legs[0].entry_price).toBeCloseTo(6.545, 3);
-      expect(pos.legs[0].qty).toBe(2);
+      // Carried through from the SAME order's qty (AC-79: dialog default 1, never seeded from the
+      // rec's size text — see the correction at `:437`).
+      expect(pos.legs[0].qty).toBe(1);
       expect(pos.stop).toBe(3);
       expect(pos.target).toBe(9);
 

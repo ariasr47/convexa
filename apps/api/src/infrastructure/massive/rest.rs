@@ -9,7 +9,7 @@ use chrono_tz::America::New_York;
 use quant_engine::{
     session_key, Contract, ContractType, DailyBar, Greeks, IntradayBar, TradePrint,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, warn};
 
@@ -197,6 +197,64 @@ impl MassiveRestClient {
             snapshot_ts,
             pages,
         })
+    }
+
+    /// §7.1 measurement (tradeable-rec-inputs B18) — counts off the RAW vendor rows, BEFORE
+    /// `normalize_contract`'s `bid`/`ask` `> 0.0` filter (rest.rs `normalize_contract`, INTERFACE
+    /// rule 3): vendor-null (`last_quote` absent or both sides absent) is counted separately from
+    /// filtered-zero (a legitimate zero bid/ask, indistinguishable from absent post-filter) —
+    /// otherwise the filter biases the result toward "no quote". Never called from any serving
+    /// path; measurement-only, driven by the `quote-fill` CLI subcommand.
+    pub async fn fetch_chain_quote_fill(&self, ticker: &str) -> AppResult<QuoteFillCounts> {
+        let ticker = ticker.trim().to_ascii_uppercase();
+        let mut counts = QuoteFillCounts::default();
+        for contract_type in ["call", "put"] {
+            let mut url = format!(
+                "{}/v3/snapshot/options/{}?limit=250&contract_type={}&apiKey={}",
+                self.base,
+                urlencoding_simple(&ticker),
+                urlencoding_simple(contract_type),
+                urlencoding_simple(&self.api_key)
+            );
+            loop {
+                let body: Value = self.get_json(&url).await?;
+                let results = body.get("results").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+                for row in &results {
+                    counts.rows += 1;
+                    let lq = row.get("last_quote");
+                    let bid = lq.and_then(|q| q.get("bid").or_else(|| q.get("p"))).and_then(|v| v.as_f64());
+                    let ask = lq.and_then(|q| q.get("ask").or_else(|| q.get("P"))).and_then(|v| v.as_f64());
+                    match (bid, ask) {
+                        (None, None) => counts.vendor_null += 1,
+                        (Some(b), Some(a)) if b > 0.0 && a > 0.0 => counts.both_sides += 1,
+                        (Some(b), Some(a)) if b <= 0.0 && a <= 0.0 => counts.filtered_zero += 1,
+                        _ => counts.one_side += 1,
+                    }
+                    if counts.sample_row_keys.is_empty() {
+                        if let Some(obj) = row.as_object() {
+                            let mut keys: Vec<String> = obj.keys().cloned().collect();
+                            if let Some(lq_obj) = lq.and_then(|q| q.as_object()) {
+                                keys.extend(lq_obj.keys().map(|k| format!("last_quote.{k}")));
+                            }
+                            counts.sample_row_keys = keys;
+                        }
+                    }
+                }
+                let next_url = body.get("next_url").and_then(|v| v.as_str()).map(|s| s.to_string());
+                match next_url {
+                    Some(next) if !next.is_empty() => {
+                        url = if next.contains("apiKey=") {
+                            next
+                        } else {
+                            let sep = if next.contains('?') { '&' } else { '?' };
+                            format!("{next}{sep}apiKey={}", urlencoding_simple(&self.api_key))
+                        };
+                    }
+                    _ => break,
+                }
+            }
+        }
+        Ok(counts)
     }
 
     /// Stock snapshot day/prev_day closes for phase-aware spot.
@@ -608,6 +666,21 @@ impl MassiveRestClient {
         }
         Ok(resp.json().await?)
     }
+}
+
+/// §7.1/§7.2 pre-commit measurement (tradeable-rec-inputs B18). Counts taken off the RAW vendor
+/// rows so a legitimate zero quote (`filtered_zero`) is distinguishable from vendor silence
+/// (`vendor_null`) — the zero-bid trap this exists to avoid conflating.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct QuoteFillCounts {
+    pub rows: usize,
+    pub both_sides: usize,
+    pub one_side: usize,
+    pub vendor_null: usize,
+    pub filtered_zero: usize,
+    /// §7.2 — the key set of ONE raw row (+ its `last_quote` sub-object, prefixed
+    /// `last_quote.`), so a per-quote timestamp field can be confirmed present or ruled out.
+    pub sample_row_keys: Vec<String>,
 }
 
 /// Lightweight stock snapshot for instant Path A price (not options).

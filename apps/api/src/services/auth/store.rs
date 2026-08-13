@@ -48,6 +48,17 @@ pub struct SettingsRecord {
     pub default_ticker: Option<String>,
     pub theme: String,
     pub scan_view: Option<String>,
+    /// tradeable-rec-inputs B8: the owner's risk-input record. `#[serde(default)]` on all four is
+    /// the whole disk-JSON forward-migration — a record written before this feature reads forward.
+    #[serde(default)]
+    pub risk_account_size: Option<f64>,
+    #[serde(default)]
+    pub risk_cap_value: Option<f64>,
+    /// "usd" | "percent". Stored WITH its value — never two independent truths.
+    #[serde(default)]
+    pub risk_cap_unit: Option<String>,
+    #[serde(default)]
+    pub risk_updated_at: Option<f64>,
 }
 
 /// Encrypted BYO AI credential (kind = "ai"). Never expose ciphertext on the wire.
@@ -286,6 +297,10 @@ impl JsonAuthStore {
             default_ticker: None,
             theme: "dark".into(),
             scan_view: None,
+            risk_account_size: None,
+            risk_cap_value: None,
+            risk_cap_unit: None,
+            risk_updated_at: None,
         };
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
         g.settings.insert(user_id.into(), rec.clone());
@@ -371,6 +386,23 @@ impl JsonAuthStore {
         if let Some(ref v) = patch.scan_view {
             cur.scan_view = Some(v.clone());
         }
+        if let Some(v) = patch.risk_account_size {
+            cur.risk_account_size = v; // Some(x) sets, None clears
+            cur.risk_updated_at = Some(now_secs());
+        }
+        if let Some(v) = patch.per_trade_cap.clone() {
+            match v {
+                Some((value, unit)) => {
+                    cur.risk_cap_value = Some(value);
+                    cur.risk_cap_unit = Some(unit);
+                }
+                None => {
+                    cur.risk_cap_value = None;
+                    cur.risk_cap_unit = None;
+                }
+            }
+            cur.risk_updated_at = Some(now_secs());
+        }
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
         g.settings.insert(user_id.into(), cur.clone());
         self.persist_locked(&g);
@@ -384,6 +416,11 @@ pub struct SettingsPatch {
     pub default_ticker: Option<String>,
     pub theme: Option<String>,
     pub scan_view: Option<String>,
+    /// Outer `Option` = "field present in the request"; inner `Option<f64>` = "clear it" (`None`)
+    /// vs "set it" (`Some`). `0` is a legal entered value, never a sentinel for unset.
+    pub risk_account_size: Option<Option<f64>>,
+    /// `(value, unit)` where `unit` is `"usd" | "percent"`. Outer `Option` = present-in-request.
+    pub per_trade_cap: Option<Option<(f64, String)>>,
 }
 
 fn normalize_json_path(path: &Path) -> PathBuf {
@@ -620,5 +657,71 @@ mod tests {
         assert_eq!(rec.provider, "openai");
         store.delete_credential(&u.id, "ai").unwrap();
         assert!(store.get_credential(&u.id, "ai").unwrap().is_none());
+    }
+
+    #[test]
+    fn an_old_settings_record_without_risk_fields_reads_forward_unchanged() {
+        // A record shape written before this feature: no risk_* keys at all.
+        let json = r#"{
+            "users": {}, "by_email": {}, "sessions": {},
+            "settings": { "u1": { "user_id": "u1", "active_persona_id": null,
+                "default_ticker": "SPY", "theme": "dark", "scan_view": null } }
+        }"#;
+        let dir = std::env::temp_dir().join(format!("auth_store_test_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("old_settings.json");
+        std::fs::write(&path, json).unwrap();
+
+        let store = JsonAuthStore::open_sqlite(&path).unwrap();
+        let s = store.get_settings("u1").unwrap().unwrap();
+        assert_eq!(s.default_ticker.as_deref(), Some("SPY"));
+        assert!(s.risk_account_size.is_none());
+        assert!(s.risk_cap_value.is_none());
+        assert!(s.risk_cap_unit.is_none());
+        assert!(s.risk_updated_at.is_none());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_corrupt_settings_blob_degrades_to_defaults_without_overwriting_the_original() {
+        let dir = std::env::temp_dir().join(format!("auth_store_test_corrupt_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("corrupt.json");
+        let malformed = b"{ not valid json at all";
+        std::fs::write(&path, malformed).unwrap();
+
+        let store = JsonAuthStore::open_sqlite(&path).unwrap();
+        // Degrades to defaults: no settings for an unknown user, no panic.
+        assert!(store.get_settings("nobody").unwrap().is_none());
+
+        // The ORIGINAL bytes on disk are untouched — a read-only open must not overwrite a
+        // corrupt file just because it failed to parse.
+        let bytes_after = std::fs::read(&path).unwrap();
+        assert_eq!(bytes_after.as_slice(), malformed);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn zero_is_storable_as_a_value_and_absent_is_a_distinct_state() {
+        let store = AuthStore::open_memory().unwrap();
+        let u = store.create_user("risk@ex.com", Some("h"), None).unwrap();
+
+        // Absent: never set.
+        let s0 = store.get_settings(&u.id).unwrap();
+        assert!(s0.is_none() || s0.unwrap().risk_account_size.is_none());
+
+        // Zero IS a legal stored value — never coerced to "unset".
+        let s1 = store
+            .update_settings(&u.id, &SettingsPatch { risk_account_size: Some(Some(0.0)), ..Default::default() })
+            .unwrap();
+        assert_eq!(s1.risk_account_size, Some(0.0));
+
+        // Clearing (inner None) is a DIFFERENT, distinct state from "set to zero".
+        let s2 = store
+            .update_settings(&u.id, &SettingsPatch { risk_account_size: Some(None), ..Default::default() })
+            .unwrap();
+        assert_eq!(s2.risk_account_size, None);
     }
 }

@@ -90,7 +90,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { LegFields, multiplierFor } from './LegFields';
 import {
@@ -136,6 +136,14 @@ interface Props {
   onConfirmOrder?: (submit: OrderEntrySubmit) => void;
   /** Inline error surfaced by the host on a refused order write (the §4.6 faulted-store title). */
   orderError?: string | null;
+  /**
+   * tradeable-rec-inputs (SPEC §4): the cap-check annotation, ALREADY RENDERED by the host from the
+   * pinned `cap_check` verdict — this dialog performs NO cap computation of its own (the shared
+   * `TradeEntryDialog` receives the verdict + numbers as props and never recomputes them, so two
+   * computations of one verdict can never disagree). Absent on a manual/Prime entry with no rec, and
+   * on a `no_trade` verdict the host passes nothing (the four-field `—` already said so once).
+   */
+  capAnnotation?: ReactNode;
   onClose: () => void;
   onConfirm: (submit: TradeEntrySubmit) => void;
 }
@@ -152,6 +160,7 @@ export function TradeEntryDialog({
   orderPlan,
   onConfirmOrder,
   orderError,
+  capAnnotation,
   onClose,
   onConfirm,
 }: Props) {
@@ -204,7 +213,9 @@ export function TradeEntryDialog({
         expiration: exp,
         strike: prefill?.strike ?? nearest,
         right: prefill?.right ?? 'call',
-        qty: prefill?.qty && prefill.qty >= 1 ? prefill.qty : 1,
+        // tradeable-rec-inputs (AC-79, ship-blocking): the quantity field is NEVER seeded from the
+        // model — it always opens at the dialog's own default of 1, in every case.
+        qty: 1,
       }),
     ]);
     setStop(prefill?.stop ?? '');
@@ -826,6 +837,18 @@ export function TradeEntryDialog({
             </Typography>
           )}
 
+          {/* tradeable-rec-inputs (AC-79/80/81): the rec's size text, displayed VERBATIM beside the
+              quantity field and never fed into it — the field above always opened at the dialog's
+              own default. `size not suggested` is a distinct literal from `not set` (SPEC §4). */}
+          {prefill?.sizeText && (
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary' }}
+              data-testid="entry-ai-size-text"
+            >
+              {`AI-suggested size: “${prefill.sizeText}”`}
+            </Typography>
+          )}
           {prefill?.sizingNote && (
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {prefill.sizingNote}
@@ -963,6 +986,10 @@ export function TradeEntryDialog({
               <Typography variant="subtitle2">{orderError}</Typography>
             </Alert>
           )}
+
+          {/* tradeable-rec-inputs — the cap-check annotation carried through to the confirm step,
+              already rendered by the host; this dialog performs no cap computation of its own. */}
+          {capAnnotation && <Box data-testid="entry-cap-annotation">{capAnnotation}</Box>}
 
           {/* Disclaimer — shipped verbatim, or the mandatory D8-1 SIMULATED disclosure in the order
               variant (always visible above the confirm, §3.1-9). */}

@@ -119,6 +119,32 @@ impl Contract {
 }
 
 // ---------------------------------------------------------------------------
+// Rec-input selector shared types (tradeable-rec-inputs)
+// ---------------------------------------------------------------------------
+
+/// Active DTE window for the rec-input selectors. `None` on a bound = unbounded.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct DteWindow {
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+}
+
+impl DteWindow {
+    pub fn contains(&self, dte: f64) -> bool {
+        self.min.map(|m| dte >= m).unwrap_or(true) && self.max.map(|m| dte <= m).unwrap_or(true)
+    }
+}
+
+/// Set-level snapshot facts the pure selectors carry through but never derive.
+/// `session_basis` is `MarketPhase::classify(SNAPSHOT as_of)` — classified by the caller, of the
+/// SNAPSHOT, never of `now`, and never re-derived per contract.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SnapshotMeta {
+    pub as_of_iso: Option<String>,
+    pub session_basis: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
 // Process options / filters
 // ---------------------------------------------------------------------------
 

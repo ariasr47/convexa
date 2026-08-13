@@ -38,7 +38,11 @@ beforeEach(() => {
 describe('what is captured (§2/Q2)', () => {
   it('captures the small orthogonal label set from the bundle already in hand + the persona store', () => {
     saveActiveId('scalper-1');
-    const d = buildEntryContextDigest({ bundle: bundle(), aiRecFingerprint: 'fp-rec' });
+    const d = buildEntryContextDigest({
+      bundle: bundle(),
+      aiRecFingerprint: 'fp-rec',
+      riskBlockPresent: true,
+    });
     expect(d).toEqual({
       opportunity_score: 71,
       setups: [{ name: 'pin_confluence', conviction: 'high' }],
@@ -48,11 +52,26 @@ describe('what is captured (§2/Q2)', () => {
       vol_regime: 'iv_rich',
       state_fingerprint: 'fp-1',
       ai_rec_fingerprint: 'fp-rec',
+      risk_block_present: true,
     });
   });
 
+  it('tradeable-rec-inputs AC-82 — captures the presence flag ONLY, never an account-size value', () => {
+    const d = buildEntryContextDigest({
+      bundle: bundle(),
+      aiRecFingerprint: null,
+      riskBlockPresent: false,
+    });
+    expect(d.risk_block_present).toBe(false);
+    expect(JSON.stringify(d)).not.toMatch(/account_size|accountSize/i);
+  });
+
   it('`[digested-labels-not-raw-dump]` — labels only: no setup prose, no raw series, no greeks, no bundle dump', () => {
-    const d = buildEntryContextDigest({ bundle: bundle(), aiRecFingerprint: null });
+    const d = buildEntryContextDigest({
+      bundle: bundle(),
+      aiRecFingerprint: null,
+      riskBlockPresent: null,
+    });
     expect(JSON.stringify(d)).not.toContain('PROSE');
     expect(d.setups?.[0]).toEqual({ name: 'pin_confluence', conviction: 'high' });
     // The IV band is the WIRE label — never re-derived from `rank`. A wire band that disagrees with
@@ -60,6 +79,7 @@ describe('what is captured (§2/Q2)', () => {
     const odd = buildEntryContextDigest({
       bundle: bundle({ market_state: { price: 1, iv_rank: { band: 'premium_cheap', rank: 82 } } }),
       aiRecFingerprint: null,
+      riskBlockPresent: null,
     });
     expect(odd.iv_rank_band).toBe('premium_cheap');
   });
@@ -69,6 +89,7 @@ describe('what is captured (§2/Q2)', () => {
     const d = buildEntryContextDigest({
       bundle: bundle({ signals: { ...bundle().signals, setups: many } }),
       aiRecFingerprint: null,
+      riskBlockPresent: null,
     });
     expect(d.setups).toHaveLength(5);
   });
@@ -77,7 +98,11 @@ describe('what is captured (§2/Q2)', () => {
 describe('capture is BEST-EFFORT and never blocks the write (§2/Q2, §4/A)', () => {
   it('an absent bundle ⇒ every bundle-sourced field is null — never a throw, and never a fetch', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const d = buildEntryContextDigest({ bundle: null, aiRecFingerprint: null });
+    const d = buildEntryContextDigest({
+      bundle: null,
+      aiRecFingerprint: null,
+      riskBlockPresent: null,
+    });
     expect(d.opportunity_score).toBeNull();
     expect(d.setups).toBeNull();
     expect(d.iv_rank_band).toBeNull();
@@ -95,7 +120,11 @@ describe('capture is BEST-EFFORT and never blocks the write (§2/Q2, §4/A)', ()
       { market_state: { iv_rank: null } },
     ]) {
       expect(() =>
-        buildEntryContextDigest({ bundle: b as unknown as TickerBundle, aiRecFingerprint: null }),
+        buildEntryContextDigest({
+          bundle: b as unknown as TickerBundle,
+          aiRecFingerprint: null,
+          riskBlockPresent: null,
+        }),
       ).not.toThrow();
     }
   });
@@ -104,7 +133,11 @@ describe('capture is BEST-EFFORT and never blocks the write (§2/Q2, §4/A)', ()
     const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('storage unavailable');
     });
-    const d = buildEntryContextDigest({ bundle: bundle(), aiRecFingerprint: null });
+    const d = buildEntryContextDigest({
+      bundle: bundle(),
+      aiRecFingerprint: null,
+      riskBlockPresent: null,
+    });
     expect(d.persona_id).toBeNull();
     expect(d.opportunity_score).toBe(71); // the rest of the digest is unharmed
     getItem.mockRestore();
@@ -121,9 +154,13 @@ describe('where capture attaches (the 5 decision points)', () => {
       'order_filled',
     ]);
     for (const event of CAPTURE_EVENTS) {
-      expect(entryContextFor(event, { bundle: bundle(), aiRecFingerprint: null })).toHaveProperty(
-        'entry_context',
-      );
+      expect(
+        entryContextFor(event, {
+          bundle: bundle(),
+          aiRecFingerprint: null,
+          riskBlockPresent: null,
+        }),
+      ).toHaveProperty('entry_context');
     }
     // `alert` is mechanical, not a decision; the rest are transitions reachable via the join.
     for (const event of [
@@ -133,25 +170,41 @@ describe('where capture attaches (the 5 decision points)', () => {
       'order_cancelled',
       'limit_placed',
     ] as const) {
-      expect(entryContextFor(event, { bundle: bundle(), aiRecFingerprint: null })).toEqual({});
+      expect(
+        entryContextFor(event, {
+          bundle: bundle(),
+          aiRecFingerprint: null,
+          riskBlockPresent: null,
+        }),
+      ).toEqual({});
     }
   });
 
   it('the digest object`s PRESENCE is the epoch marker: present-with-null ≠ absent', () => {
     // Present with a null field ⇒ capture ran; the source was genuinely unavailable that cycle.
-    const attached = entryContextFor('open', { bundle: null, aiRecFingerprint: null });
+    const attached = entryContextFor('open', {
+      bundle: null,
+      aiRecFingerprint: null,
+      riskBlockPresent: null,
+    });
     expect(attached).toHaveProperty('entry_context');
     expect(
       (attached as { entry_context: { persona_id: null } }).entry_context.persona_id,
     ).toBeNull();
     // Absent ⇒ the record predates capture. A record with no digest is NEVER backfilled.
-    expect(entryContextFor('close', { bundle: null, aiRecFingerprint: null })).toEqual({});
+    expect(
+      entryContextFor('close', { bundle: null, aiRecFingerprint: null, riskBlockPresent: null }),
+    ).toEqual({});
   });
 
   it('the rec-identity KEY is always present on records this app writes (null ⇒ no rec was involved)', () => {
     // The absent-key case means "this path cannot carry the identity" — a different fact, reserved
     // for records imported from a browser whose capture predates the threading.
-    const d = buildEntryContextDigest({ bundle: bundle(), aiRecFingerprint: null });
+    const d = buildEntryContextDigest({
+      bundle: bundle(),
+      aiRecFingerprint: null,
+      riskBlockPresent: null,
+    });
     expect(Object.prototype.hasOwnProperty.call(d, 'ai_rec_fingerprint')).toBe(true);
     expect(d.ai_rec_fingerprint).toBeNull();
   });

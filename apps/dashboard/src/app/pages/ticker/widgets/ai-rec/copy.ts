@@ -167,6 +167,71 @@ export const retryInCooldown = (remaining: number) => `Retry available in ${rema
 export const retryWhenReset = (when: string) =>
   `Retry available when the daily limit resets ${when}`;
 
+// ---- tradeable-rec-inputs (SPEC §4; verbatim) --------------------------------------------------
+// The four-field closed literal set, the cap annotation, the cited-contract line, the provenance
+// chip, and the `What the numbers said` strip. Every string here is rendered by CLOSED LOOKUP on a
+// wire token — never re-derived from a null or a scalar (`literals.ts` is the lookup; this module is
+// only the vocabulary).
+
+/** `not set` is the SINGLE literal for the owner-supplied-nothing state on every surface. Distinct
+ *  from `size not suggested` (the risk block IS present; the model returned no size). */
+export const NOT_SET = 'not set';
+export const SIZE_NOT_SUGGESTED = 'size not suggested';
+
+export const RISK_FIELD_COPY = {
+  dash: { text: '—', tip: 'No entry, so there is nothing to size.' },
+  notSet: {
+    text: NOT_SET,
+    tip: "Convexa didn't send a risk figure, so the AI had nothing to size against.",
+    action: 'Set your risk inputs',
+  },
+  unavailable: {
+    text: 'unavailable',
+    tip: 'An input this needed was missing this cycle. Your other reads are unaffected.',
+  },
+  notGiven: {
+    text: 'not given',
+    tip: "The AI produced a trade read but didn't fill this in. Nothing failed — it declined to answer.",
+  },
+  sizeNotSuggested: { text: SIZE_NOT_SUGGESTED },
+} as const;
+
+export const PROVENANCE_CHIP_TIP =
+  "The AI was given these figures. This number is the AI's, not Convexa's arithmetic — check it " +
+  'against your own before you act.';
+export const provenanceChip = (accountSize: number, capText: string) =>
+  `Sized against your inputs · Account $${accountSize.toLocaleString()} · ${capText}`;
+
+export const CAP_COULD_NOT_CHECK = "Couldn't check against your cap.";
+export const MAX_RISK_TIP = "This is the AI's figure — Convexa did not compute it.";
+
+export const SUPERSEDED_STRIP =
+  'Your risk inputs changed after this read. The sizing below is based on the earlier values.';
+export const SUPERSEDED_STRIP_DRAWER =
+  'Your risk inputs changed after this read. The values below are the ones sent.';
+
+export const UNDETERMINED_RIGHT_BOTH_LEGS = "The read doesn't say call or put — both legs shown.";
+export const UNDETERMINED_RIGHT_NO_QUOTE = "The read doesn't say call or put — no quote shown.";
+export const UNDETERMINED_RIGHT_TIP =
+  'Convexa only draws a quote when it can match the exact contract — strike, expiration and call/put.';
+export const OFF_SET_LITERAL = 'Not in the candidate set Convexa sent';
+export const NO_TWO_SIDED_QUOTE_LITERAL = 'no two-sided quote in this snapshot';
+
+export const DRAWER_RISK_AS_SENT = 'Your risk inputs (as sent with this recommendation)';
+export const DRAWER_RISK_AS_NEXT = 'Your risk inputs (what the next request will send)';
+export const DRAWER_NOT_SENT = "Not sent — you haven't set this.";
+export const NONE_OMITTED = 'none omitted';
+
+export const NUMBERS_SAID_EMPTY = 'No candidates in band this cycle.';
+export const NUMBERS_SAID_UNAVAILABLE = 'Candidate set unavailable this cycle.';
+
+/** The amended export egress note (server-composed; this fallback asserts the same thing — AC-90). */
+export const EXPORT_EGRESS_FALLBACK = (ticker: string) =>
+  `This is the complete, reviewable list of what leaves the machine for ${ticker}, on demand: the ` +
+  'computed snapshot, the candidate contracts, your risk inputs, your open simulated positions, ' +
+  "your persona's prompt, and the field glossary. No other ticker, no name, email or login, no " +
+  'broker credentials, and no API key ever leave. Nothing is ever placed as an order.';
+
 /** Friendly local time for a cap `resets_at` ISO instant; falls back to the raw value. */
 export function friendlyResetTime(iso: string | null | undefined): string {
   if (!iso) return 'soon';

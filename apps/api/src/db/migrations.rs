@@ -223,6 +223,16 @@ CREATE INDEX IF NOT EXISTS scan_structure_history_symbol_upper_as_of_idx
     ON scan_structure_history (upper(btrim(symbol)), as_of DESC);
 "#,
     ),
+    (
+        8,
+        "user_settings_risk_block",
+        r#"
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_account_size DOUBLE PRECISION;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_cap_value     DOUBLE PRECISION;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_cap_unit      TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_updated_at    DOUBLE PRECISION;
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.

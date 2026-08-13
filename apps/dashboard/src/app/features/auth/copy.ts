@@ -173,6 +173,42 @@ export const AUTH_COPY = {
   },
 } as const;
 
+// ---- tradeable-rec-inputs — Settings `Risk inputs` panel (SPEC §4; verbatim) -------------------
+// Copy is design material, not filler. The egress sentence is FIRST, above BOTH fields, never a
+// tooltip — that ordering is itself an acceptance criterion (AC-16, U-1/U-1b).
+export const RISK_INPUTS_COPY = {
+  heading: 'Risk inputs',
+  // Section helper — visible above BOTH inputs, egress sentence first.
+  helper:
+    'These figures are sent to your AI provider with each recommendation request. Convexa never ' +
+    'checks them against a broker, never enforces them, and never uses them to score anything.',
+  viewWhatsSent: "View what's sent",
+  openPositionsIncluded: 'Open positions included: your simulated positions in this browser.',
+  accountSizeLabel: 'Account size',
+  accountSizeHelper:
+    'The account value you want sizing based on. You type it; Convexa never checks it against a ' +
+    'broker.',
+  maxRiskLabel: 'Max risk per trade',
+  maxRiskHelper:
+    "The most you're willing to lose on one trade. The AI is told this figure and asked to size " +
+    'within it. Nothing in Convexa enforces it.',
+  unitUsd: '$',
+  unitPercent: '%',
+  saved: 'Saved to your account.',
+  notSetConsequence:
+    'Not set — AI recommendations will show "not set" where a risk figure would go.',
+  saveError: "Couldn't save that setting. Please try again.",
+  errorGreaterThanZero: 'Enter a number greater than zero.',
+  errorPercentRange: 'Enter a percentage between 0 and 100.',
+  errorCapExceedsAccount: "Your per-trade cap can't exceed your account size.",
+  storageUnavailable:
+    "Risk inputs can't be saved on this deployment right now. Nothing was stored.",
+  anonymous:
+    "Sign in to save your risk inputs — they're stored with your account, never in this browser.",
+  /** The field-scoped not-derivable-reason literal (never `$0`, never blank, never a cap verdict). */
+  accountSizeNotSetReason: 'Account size: not set',
+} as const;
+
 /** `Key set ···· {last4}` masked display for a stored AI key (UX_BLUEPRINT §5). The last-4 hint is
  *  the ONLY credential datum the FE ever receives — the full key is never shown again (AC-7/10). */
 export const maskedKeyLabel = (last4: string | null) => `Key set ···· ${last4 ?? '????'}`;

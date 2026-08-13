@@ -206,6 +206,9 @@ pub async fn build_bundle(
         "iv_rank": snap.iv_rank,
         // Vol-normalized GEX (O(1) post-process on cache miss). Walls/flip stay raw.
         "vol_normalized_gex": snap.vol_normalized_gex,
+        // Straddle-implied move — additive, attached AFTER `generate_signals`, an object|never
+        // bare-null (INTERFACE_CONTRACT §2). Never a scoring input — score_identity.rs pins this.
+        "straddle_move": snap.straddle_move,
     });
 
     let strike_profile = json!({

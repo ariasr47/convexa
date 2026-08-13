@@ -9,11 +9,20 @@
 //! LLM calls use `services::llm` (Anthropic / OpenAI-compatible / Gemini).
 
 use crate::routes::market::build_bundle;
+use crate::services::analytics::load_analytics;
 use crate::services::llm::{
-    build_rec_prompts, complete_strategy, LlmProvider, ResolvedLlmKey,
+    build_rec_prompts, complete_strategy, LlmProvider, RecPromptContext, ResolvedLlmKey,
 };
+use crate::services::rec_inputs::cap_check::cap_verdict;
+use crate::services::rec_inputs::cited::resolve_cited;
+use crate::services::rec_inputs::digest::parse_digest;
+use crate::services::rec_inputs::field_reasons::{field_reason, FieldReason, InputPresence, RecField};
+use crate::services::rec_inputs::max_risk::{parse_max_risk_dollars, ParsedRisk};
 use crate::state::AppState;
-use quant_engine::DEFAULT_GATE_SCORE;
+use quant_engine::{
+    restrict_move_to_tenors, CandidateBudget, CandidateSet, ContractType, DteWindow,
+    SnapshotMeta, StraddleMove, StraddleMoveState, DEFAULT_GATE_SCORE,
+};
 use serde_json::{json, Value};
 use std::sync::Mutex;
 use std::time::Instant;
@@ -350,31 +359,151 @@ pub fn status_payload(ai_eval: Option<&Value>, resolved: &ResolvedLlmKey) -> Val
     })
 }
 
-/// GET export — no LLM.
-pub fn build_export(ticker: &str, bundle: &Value, persona_id: Option<&str>) -> Value {
+/// `context.risk_inputs`'s anonymous / failed-read fallback — present, never omitted (INTERFACE
+/// §3: "Anonymous always `not_set`").
+pub fn not_set_risk_inputs() -> Value {
+    json!({
+        "state": "not_set",
+        "account_size": null,
+        "per_trade_cap": null,
+        "effective_dollar_cap": {
+            "state": "not_set",
+            "value": null,
+            "not_derivable_reason": null,
+            "derived_from": { "account_size": null, "cap_value": null, "cap_unit": null },
+        },
+        "storage_available": true,
+        "updated_at": null,
+    })
+}
+
+/// GET export — no LLM. `candidates` (the §1 handoff envelope) and `risk_inputs` (the §4 shape)
+/// are pre-assembled by the caller (`routes/recommendation.rs`, which resolves the session
+/// optionally) so this stays a pure, synchronously-testable function.
+pub fn build_export(ticker: &str, bundle: &Value, persona_id: Option<&str>, candidates: Value, risk_inputs: Value) -> Value {
     let as_of = bundle
         .pointer("/meta/freshness/snapshot_iso")
         .or_else(|| bundle.pointer("/meta/as_of"))
         .cloned()
         .unwrap_or(Value::Null);
+    // A GET export carries no client digest, so this path always emits `not_sent`.
+    let open_positions = json!({
+        "source": "simulated",
+        "state": "not_sent",
+        "this_underlying": null,
+        "portfolio": null,
+    });
+    let risk_sent = risk_inputs.get("state").and_then(|v| v.as_str()) == Some("set");
     let context = json!({
         "market_state": bundle.get("market_state"),
         "signals": bundle.get("signals"),
         "strike_profile": bundle.get("strike_profile"),
         "ai_eval": bundle.get("ai_eval"),
         "meta": bundle.get("meta"),
+        "candidates": candidates,
+        "risk_inputs": risk_inputs,
+        "open_positions": open_positions,
     });
+    // ONE composition: the note is BUILT FROM the categories, never hand-written beside them
+    // (AC-90 — a hand-written note is how the claim goes false).
+    let categories: [(&str, bool, &str); 6] = [
+        ("context", true, "context"),
+        ("candidates", true, "candidate contracts"),
+        ("risk_inputs", risk_sent, "your risk inputs"),
+        ("open_positions", false, "open positions"),
+        ("persona_prompt", true, "the persona prompt"),
+        ("glossary", true, "the glossary"),
+    ];
+    let egress_categories: Vec<Value> =
+        categories.iter().map(|(k, sent, _)| json!({ "key": k, "sent": sent })).collect();
+    let sent_labels: Vec<&str> = categories.iter().filter(|(_, sent, _)| *sent).map(|(_, _, l)| *l).collect();
+    let egress_note = format!(
+        "Complete list of what leaves the machine for {ticker}: {}.",
+        sent_labels.join(", ")
+    );
     json!({
         "ticker": ticker,
         "as_of": as_of,
         "context": context,
         "persona_prompt": assemble_persona_prompt(persona_id),
         "glossary": "See market_state_glossary.md for field definitions (walls, flip, IV/HV, scores).",
-        "egress_note": format!(
-            "Complete list of what leaves the machine for {ticker}: context + persona prompt + glossary. \
-             No key, no other ticker, no identity, no order data."
-        ),
+        "egress_note": egress_note,
+        "egress_categories": egress_categories,
     })
+}
+
+/// The `cap_check` / `field_reasons` / `cited_contract` triple — computed ONCE per `base()` call
+/// from whatever `strategy` is (a real parsed rec, or `Value::Null` on an early-return branch, in
+/// which case every field reads as absent and the cap check reads `not_applicable`).
+fn envelope_extras(
+    strategy: &Value,
+    set: &CandidateSet,
+    effective_cap: Option<f64>,
+    cap_not_derivable_reason: Option<&str>,
+    risk_block_present: bool,
+    pruned_move: Option<&StraddleMove>,
+) -> (Value, Value, Value) {
+    let states_entry = strategy.get("decision").and_then(|v| v.as_str()) == Some("trade");
+    let max_risk_text = strategy.get("max_risk").and_then(|v| v.as_str());
+    let parsed = parse_max_risk_dollars(max_risk_text);
+    let verdict = cap_verdict(states_entry, effective_cap, parsed);
+    let parsed_dollars = match parsed {
+        ParsedRisk::Dollars(v) => Some(v),
+        ParsedRisk::NotParseable => None,
+    };
+
+    let candidate_quotes_present = set.has_quoted_contract();
+    let straddle_move_present = pruned_move
+        .map(|m| m.state == StraddleMoveState::Ok && !m.tenors.is_empty())
+        .unwrap_or(false);
+    let presence = InputPresence {
+        risk_block: risk_block_present,
+        candidate_quotes: candidate_quotes_present,
+        straddle_move: straddle_move_present,
+    };
+
+    let present = |v: Option<&Value>| v.map(|x| !x.is_null()).unwrap_or(false);
+    let fr = |field: RecField, is_present: bool| -> Value {
+        match field_reason(field, is_present, presence) {
+            Some(r) => serde_json::to_value(FieldReason { reason: r.reason, missing_input: r.missing_input })
+                .unwrap_or(Value::Null),
+            None => Value::Null,
+        }
+    };
+    let field_reasons = json!({
+        "max_risk": fr(RecField::MaxRisk, present(strategy.get("max_risk"))),
+        "position_size": fr(RecField::PositionSize, present(strategy.get("position_size"))),
+        "exit_target": fr(RecField::ExitTarget, present(strategy.pointer("/exit_plan/target"))),
+        "exit_stop": fr(RecField::ExitStop, present(strategy.pointer("/exit_plan/stop"))),
+    });
+
+    let strikes: Vec<f64> = strategy
+        .get("strikes")
+        .and_then(|v| v.as_array())
+        .map(|a| a.iter().filter_map(|x| x.as_f64()).collect())
+        .unwrap_or_default();
+    let expiration = strategy.get("expiration").and_then(|v| v.as_str());
+    let right = strategy.get("right").and_then(|v| v.as_str()).and_then(|s| match s {
+        "call" => Some(ContractType::Call),
+        "put" => Some(ContractType::Put),
+        _ => None,
+    });
+    let outcome = resolve_cited(set, &strikes, expiration, right);
+    let cited_contract = json!({
+        "state": outcome.state,
+        "contract": outcome.contract,
+        "legs": outcome.legs,
+    });
+
+    let cap_check = json!({
+        "verdict": verdict,
+        "effective_dollar_cap": effective_cap,
+        "cap_not_derivable_reason": cap_not_derivable_reason,
+        "parsed_risk_dollars": parsed_dollars,
+        "model_max_risk_text": max_risk_text,
+    });
+
+    (cap_check, field_reasons, cited_contract)
 }
 
 /// POST rec — auth already checked; pass resolved user for key resolution.
@@ -385,16 +514,9 @@ pub async fn generate_recommendation(
     user: &crate::services::auth::UserRecord,
 ) -> Value {
     let resolved = resolve_llm_key(state, Some(user));
-    let bundle = match build_bundle(
-        state,
-        ticker,
-        body.dte_min.map(|x| x as f64),
-        body.dte_max.map(|x| x as f64),
-        false,
-        body.dark_pool,
-    )
-    .await
-    {
+    let min_dte = body.dte_min.map(|x| x as f64);
+    let max_dte = body.dte_max.map(|x| x as f64);
+    let bundle = match build_bundle(state, ticker, min_dte, max_dte, false, body.dark_pool).await {
         Ok(b) => b,
         Err(e) => {
             warn!(error = %e, "rec: bundle unavailable");
@@ -429,7 +551,78 @@ pub async fn generate_recommendation(
         .to_string();
     let key_source = resolved.key_source;
 
+    // --- B15/B16: candidate block (prompt budget), pruned move, risk block, positions digest —
+    // assembled ONCE, used both in the prompt (when the model is actually called) and echoed back
+    // on the response envelope (`sent.*`) regardless of outcome.
+    let (snap_opt, _) = load_analytics(state, ticker, None, None, false)
+        .await
+        .unwrap_or((None, String::new()));
+    let empty_meta = SnapshotMeta::default();
+    let candidate_set = match &snap_opt {
+        Some(snap) => CandidateSet::build(
+            &snap.contracts,
+            snap.gex_spot,
+            chrono::Utc::now(),
+            DteWindow { min: min_dte, max: max_dte },
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta {
+                as_of_iso: chrono::DateTime::from_timestamp(snap.cached_at, 0).map(|d| d.to_rfc3339()),
+                session_basis: Some(snap.market_phase.as_str().to_string()),
+            },
+        ),
+        None => CandidateSet::unavailable(CandidateBudget::Prompt, true, &empty_meta, None),
+    };
+    let sent_candidates = crate::services::rec_inputs::candidate_envelope(ticker, &candidate_set, None);
+
+    // Pruned market_state: the FULL straddle_move already on the bundle, restricted to the tenors
+    // actually present in the candidate block — ONE restriction function, never a local filter.
+    let raw_move: Option<StraddleMove> =
+        bundle.pointer("/market_state/straddle_move").and_then(|v| serde_json::from_value(v.clone()).ok());
+    let pruned_move = raw_move.as_ref().map(|mv| restrict_move_to_tenors(mv, candidate_set.included_expirations()));
+    let sent_tenors: Vec<String> = pruned_move
+        .as_ref()
+        .map(|mv| mv.tenors.iter().map(|t| t.expiration.clone()).collect())
+        .unwrap_or_default();
+    let mut pruned_market_state = bundle.get("market_state").cloned().unwrap_or(json!({}));
+    if let Some(mv) = &pruned_move {
+        if let Some(o) = pruned_market_state.as_object_mut() {
+            o.insert("straddle_move".into(), serde_json::to_value(mv).unwrap_or(Value::Null));
+        }
+    }
+
+    // Risk inputs — the as-sent block (§4 shape). A settings-read failure degrades to
+    // {state:"not_set"} with a warn! — the rec never fails on a settings read (SPEC §5).
+    let risk_wire = state.auth.get_settings(user).ok().map(|s| s.risk_inputs);
+    if risk_wire.is_none() {
+        warn!(user_id = %user.id, "rec: risk-inputs read failed; degrading to not_set");
+    }
+    let sent_risk_inputs = risk_wire
+        .map(|r| serde_json::to_value(r).unwrap_or_else(|_| not_set_risk_inputs()))
+        .unwrap_or_else(not_set_risk_inputs);
+    let risk_block_present = sent_risk_inputs.get("state").and_then(|v| v.as_str()) == Some("set");
+    let account_size = sent_risk_inputs.get("account_size").and_then(|v| v.as_f64());
+    let cap_value = sent_risk_inputs.pointer("/per_trade_cap/value").and_then(|v| v.as_f64());
+    let cap_unit = sent_risk_inputs.pointer("/per_trade_cap/unit").and_then(|v| v.as_str());
+    let sent_digest = crate::services::rec_inputs::digest::risk_inputs_digest(account_size, cap_value, cap_unit);
+    let effective_cap = sent_risk_inputs.pointer("/effective_dollar_cap/value").and_then(|v| v.as_f64());
+    let cap_not_derivable_reason = sent_risk_inputs
+        .pointer("/effective_dollar_cap/not_derivable_reason")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    // Open positions digest — the client-supplied artifact. NEVER persisted server-side.
+    let sent_positions = parse_digest(body.open_positions.as_ref());
+
     let base = |status: &str, strategy: Value, reason: Option<&str>| {
+        let (cap_check, field_reasons, cited_contract) = envelope_extras(
+            &strategy,
+            &candidate_set,
+            effective_cap,
+            cap_not_derivable_reason.as_deref(),
+            risk_block_present,
+            pruned_move.as_ref(),
+        );
         json!({
             "status": status,
             "persona": persona,
@@ -444,6 +637,17 @@ pub async fn generate_recommendation(
             "remaining_free_uses": null,
             "free_uses_total": null,
             "scenario": null,
+            "sent": {
+                "budget": "prompt",
+                "candidates": sent_candidates,
+                "straddle_move_tenors": sent_tenors,
+                "risk_inputs": sent_risk_inputs,
+                "risk_inputs_digest": sent_digest,
+                "open_positions": sent_positions,
+            },
+            "cap_check": cap_check,
+            "field_reasons": field_reasons,
+            "cited_contract": cited_contract,
         })
     };
 
@@ -473,7 +677,15 @@ pub async fn generate_recommendation(
     let strategy = if local_only {
         local_strategy_from_bundle(&bundle)
     } else {
-        let (system, user_prompt) = build_rec_prompts(ticker, &bundle, &pname);
+        let ctx = RecPromptContext {
+            market_state: pruned_market_state,
+            signals: bundle.get("signals"),
+            ai_eval: bundle.get("ai_eval"),
+            candidates: sent_candidates.clone(),
+            risk_inputs: sent_risk_inputs.clone(),
+            open_positions: sent_positions.clone(),
+        };
+        let (system, user_prompt) = build_rec_prompts(ticker, &ctx, &pname);
         match complete_strategy(&resolved, &system, &user_prompt).await {
             Ok(s) => s,
             Err(reason) => {
@@ -589,6 +801,10 @@ pub struct RecRequestBody {
     #[serde(default, rename = "override")]
     pub override_flag: bool,
     pub scenario_id: Option<String>,
+    /// The client-supplied open-positions digest (SPEC §2.6). Raw `Value` so a malformed digest
+    /// can never 422 the rec — `rec_inputs::digest::parse_digest` is total.
+    #[serde(default)]
+    pub open_positions: Option<Value>,
 }
 
 fn default_true() -> bool {
@@ -634,18 +850,73 @@ mod tests {
         assert_eq!(s["scenarios"]["enabled"], false);
     }
 
-    #[test]
-    fn export_shape() {
-        let bundle = json!({
-            "market_state": {"ticker": "SPY"},
+    fn stub_bundle() -> Value {
+        json!({
+            "market_state": {"ticker": "SPY", "straddle_move": {"state": "ok"}},
             "signals": {"opportunity_score": 70},
             "strike_profile": {},
             "ai_eval": {"ready": true},
             "meta": {}
-        });
-        let e = build_export("SPY", &bundle, Some("income_keeper"));
+        })
+    }
+
+    fn stub_candidates() -> Value {
+        json!({ "state": "ok", "budget": "handoff", "sent_to_model": false, "included": {"contracts": 3, "expiration_count": 1} })
+    }
+
+    #[test]
+    fn export_shape() {
+        let bundle = stub_bundle();
+        let e = build_export("SPY", &bundle, Some("income_keeper"), stub_candidates(), not_set_risk_inputs());
         assert_eq!(e["ticker"], "SPY");
         assert!(e["persona_prompt"].as_str().unwrap().contains("Income Keeper"));
         assert!(e["context"]["signals"].is_object());
+    }
+
+    #[test]
+    fn an_anonymous_export_reports_risk_inputs_not_set_with_the_section_present() {
+        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        assert_eq!(e["context"]["risk_inputs"]["state"], "not_set");
+        assert!(e["context"]["risk_inputs"].is_object());
+    }
+
+    #[test]
+    fn the_egress_note_is_composed_from_the_categories_and_no_longer_claims_no_account_or_identity() {
+        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        let note = e["egress_note"].as_str().unwrap();
+        assert!(!note.to_ascii_lowercase().contains("no account or identity"));
+        for cat in e["egress_categories"].as_array().unwrap() {
+            if cat["sent"] == true {
+                let key = cat["key"].as_str().unwrap();
+                // Every SENT category's human label must actually appear in the composed note.
+                let present = match key {
+                    "context" => note.contains("context"),
+                    "candidates" => note.contains("candidate contracts"),
+                    "risk_inputs" => note.contains("your risk inputs"),
+                    "persona_prompt" => note.contains("the persona prompt"),
+                    "glossary" => note.contains("the glossary"),
+                    _ => true,
+                };
+                assert!(present, "note missing sent category {key}: {note}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_category_that_was_not_sent_is_present_with_sent_false() {
+        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        let cats = e["egress_categories"].as_array().unwrap();
+        let op = cats.iter().find(|c| c["key"] == "open_positions").unwrap();
+        assert_eq!(op["sent"], false);
+        // risk_inputs is present (not omitted) even though not_set means it was not sent.
+        let ri = cats.iter().find(|c| c["key"] == "risk_inputs").unwrap();
+        assert_eq!(ri["sent"], false);
+    }
+
+    #[test]
+    fn the_export_candidate_block_uses_the_handoff_budget_and_sent_to_model_false() {
+        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        assert_eq!(e["context"]["candidates"]["budget"], "handoff");
+        assert_eq!(e["context"]["candidates"]["sent_to_model"], false);
     }
 }

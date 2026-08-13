@@ -14,18 +14,22 @@ export type FillMode = 'manual' | 'market' | 'limit';
 export type MarketFillBasis = 'snapshot' | 'theoretical';
 
 /** The entry pre-fill seam. Originally `{ expiration, strike, right }`; extended (FE-execution lane,
- *  UX_BLUEPRINT §5) to also seed qty/stop/target from an AI rec. Every seeded field stays editable.
- *  `provenance`/`sizingNote` are set only for an AI-sourced prefill (render the source chip + sizing
- *  copy); a manual/Prime prefill leaves them undefined. */
+ *  UX_BLUEPRINT §5) to also seed stop/target from an AI rec. Every seeded field stays editable.
+ *  `provenance`/`sizingNote`/`sizeText` are set only for an AI-sourced prefill (render the source
+ *  chip + sizing copy); a manual/Prime prefill leaves them undefined.
+ *
+ *  DELIBERATELY NO `qty` (tradeable-rec-inputs AC-79, ship-blocking): the quantity field is NEVER
+ *  seeded from the model — it always opens at the dialog's own default. `sizeText` carries the rec's
+ *  size prose for DISPLAY beside the field, never into it. */
 export interface EntryPrefill {
   expiration: string;
   strike: number;
   right: OptionRight;
-  qty?: number;
   stop?: number | null;
   target?: number | null;
   provenance?: string;
   sizingNote?: string;
+  sizeText?: string;
 }
 
 /** Common facts every confirm carries (the underlying + the risk plan). */

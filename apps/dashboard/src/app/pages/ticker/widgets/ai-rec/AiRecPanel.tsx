@@ -10,6 +10,7 @@
  */
 import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
+import { useSettings } from '@/features/auth/useSettings';
 import {
   ACT_LABEL,
   ACT_TOOLTIP,
@@ -46,6 +47,8 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CapAnnotation } from './CapAnnotation';
+import { CitedContractLine } from './CitedContractLine';
 import {
   adminExhaustedTitle,
   asOfChip,
@@ -58,13 +61,19 @@ import {
   FREE_USES_TOTAL_FALLBACK,
   freeUsesChip,
   friendlyResetTime,
+  MAX_RISK_TIP,
   OWN_KEY_CHIP,
   personaChip,
   retryInCooldown,
   retryWhenReset,
+  RISK_FIELD_COPY,
   staleBornStrip,
   staleStrip,
+  SUPERSEDED_STRIP,
 } from './copy';
+import { fieldLiteral, riskInputsSuperseded, type FieldLiteral } from './literals';
+import { NumbersSaidStrip } from './NumbersSaidStrip';
+import { ProvenanceChip } from './ProvenanceChip';
 import { deriveReasoning, Field, LevelsStrip, ReasoningSection } from './reasoning';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
@@ -735,11 +744,58 @@ function Provenance({ rec }: { rec: RecResponse }) {
           <Chip size="small" variant="outlined" data-testid="ai-rec-own-key" label={OWN_KEY_CHIP} />
         </Tooltip>
       )}
+      {/* Provenance chip (SPEC §4) — the owner's entered values verbatim; no client arithmetic. */}
+      <ProvenanceChip riskInputs={rec.sent?.risk_inputs} />
     </Stack>
   );
 }
 
 const fmtNum = (n: number | null | undefined) => (n == null ? '—' : String(n));
+
+/** A `Field` driven by the closed `FieldLiteral` set (AC-69/70/71/72). `not_set` carries the
+ *  `Set your risk inputs` action, which navigates to the Settings panel. */
+function RiskField({
+  label,
+  literal,
+  valueTip,
+}: {
+  label: string;
+  literal: FieldLiteral;
+  /** AC-62: a tip shown ONLY when the field carries a real value (e.g. the max-risk attribution). */
+  valueTip?: string;
+}) {
+  const navigate = useNavigate();
+  if (literal.kind === 'value') return <Field label={label} value={literal.text} tip={valueTip} />;
+  const cfg =
+    literal.kind === 'dash'
+      ? RISK_FIELD_COPY.dash
+      : literal.kind === 'not_set'
+        ? RISK_FIELD_COPY.notSet
+        : literal.kind === 'not_given'
+          ? RISK_FIELD_COPY.notGiven
+          : RISK_FIELD_COPY.unavailable;
+  return (
+    <Field
+      label={label}
+      tip={cfg.tip}
+      value={
+        <>
+          {cfg.text}
+          {literal.kind === 'not_set' && (
+            <Button
+              size="small"
+              onClick={() => navigate('/settings#risk-inputs')}
+              sx={{ ml: 0.5, p: 0, minWidth: 0, textTransform: 'none', fontSize: 12 }}
+              data-testid="risk-field-set-risk-inputs"
+            >
+              {RISK_FIELD_COPY.notSet.action}
+            </Button>
+          )}
+        </>
+      }
+    />
+  );
+}
 
 // ---- The rendered rec (produced + no_trade) --------------------------------------------------
 function RecResult({
@@ -770,6 +826,11 @@ function RecResult({
   const dteMin = bundle?.market_state.dte_min;
   const dteMax = bundle?.market_state.dte_max;
   const heroLead = deriveReasoning(s).lead;
+  // AC-64 — the superseded-inputs detector: the pinned as-sent block's signature compared against
+  // the CURRENTLY stored block (SPEC §2.4(a)); `useSettings().riskInputs` is `null` when unresolved
+  // (anonymous / still loading), so an unknown current block never claims supersession.
+  const currentRiskInputs = useSettings().riskInputs;
+  const superseded = riskInputsSuperseded(rec.sent?.risk_inputs, currentRiskInputs);
 
   return (
     <Box>
@@ -812,9 +873,36 @@ function RecResult({
         </Box>
       )}
 
+      {/* Superseded-inputs (AC-64) — the shipped STALE-STRIP treatment (info, never warning.*+icon):
+          the risk block changed after this rec was produced. Fires only when BOTH the as-sent block
+          and the currently-stored block are known and their signatures differ. */}
+      {superseded && (
+        <Box sx={{ mb: 1 }}>
+          <Alert
+            severity="info"
+            sx={{ py: 0 }}
+            data-testid="ai-rec-superseded-strip"
+            action={
+              <Button color="inherit" size="small" disabled={freshDisabled} onClick={onFresh}>
+                {COPY.action.freshRec}
+              </Button>
+            }
+          >
+            {SUPERSEDED_STRIP}
+          </Alert>
+        </Box>
+      )}
+
       <Provenance rec={rec} />
 
       <LevelsStrip bundle={bundle} />
+
+      {/* `What the numbers said` — on EVERY verdict including no_trade (AC-66, ship-blocking). */}
+      <NumbersSaidStrip
+        candidates={rec.sent?.candidates}
+        move={bundle?.market_state.straddle_move}
+        citedExpiration={s.expiration}
+      />
 
       {isNoTrade ? (
         <Box>
@@ -843,6 +931,42 @@ function RecResult({
               </Typography>
             )}
           </Box>
+          {/* AC-69/70 — `no_trade` is a RESULT, not an empty card: the four fields still render, each
+              through the SAME `fieldLiteral` closed lookup the trade branch uses. `decision ===
+              'no_trade'` short-circuits every one of them to the `dash` member (`—` + `No entry, so
+              there is nothing to size.`) — this is the card's only not-applicable statement, and the
+              cap surface still renders NOTHING here (AC-58a; no `CapAnnotation` is mounted). */}
+          <Stack
+            direction="row"
+            spacing={4}
+            sx={{ flexWrap: 'wrap', rowGap: 1, mb: 1.5 }}
+            data-testid="no-trade-four-field-row"
+          >
+            <RiskField
+              label={COPY.risk.maxRisk}
+              literal={fieldLiteral({ decision: s.decision, value: s.max_risk, reason: null })}
+            />
+            <RiskField
+              label="Suggested size"
+              literal={fieldLiteral({ decision: s.decision, value: s.position_size, reason: null })}
+            />
+            <RiskField
+              label="Target"
+              literal={fieldLiteral({
+                decision: s.decision,
+                value: s.exit_plan?.target,
+                reason: null,
+              })}
+            />
+            <RiskField
+              label="Stop"
+              literal={fieldLiteral({
+                decision: s.decision,
+                value: s.exit_plan?.stop,
+                reason: null,
+              })}
+            />
+          </Stack>
           <ReasoningSection strategy={s} suppressLead />
           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
             {COPY.noTrade.caption}
@@ -871,7 +995,9 @@ function RecResult({
             )}
           </Box>
           {/* 2. RISK FIRST (foremost). Upgraded-tile chrome: rounded surface + error-tinted LEFT
-              accent bar (risk = the most-important field), clipped to the radius. */}
+              accent bar (risk = the most-important field), clipped to the radius. All four risk-input
+              fields render through `fieldLiteral` — a closed lookup on the wire token, never a null
+              test (AC-69/70/71/72). */}
           <Box
             sx={{
               position: 'relative',
@@ -892,10 +1018,14 @@ function RecResult({
             }}
           >
             <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-              <Field
+              <RiskField
                 label={COPY.risk.maxRisk}
-                value={s.max_risk ?? '—'}
-                tip="The most this plan puts at risk. Judge this before anything else."
+                literal={fieldLiteral({
+                  decision: s.decision,
+                  value: s.max_risk,
+                  reason: rec.field_reasons?.max_risk,
+                })}
+                valueTip={MAX_RISK_TIP}
               />
               <Field
                 label={COPY.risk.invalidation}
@@ -903,6 +1033,11 @@ function RecResult({
                 tip="The level that says the idea is wrong. If price reaches it, the thesis is invalidated."
               />
             </Stack>
+            {/* The cap surface — an entry-stating verdict ONLY. `not_applicable` (no_trade) never
+                reaches this branch at all (AC-58a). */}
+            <Box sx={{ mt: 1 }}>
+              <CapAnnotation capCheck={rec.cap_check} />
+            </Box>
           </Box>
           {/* 3. Plan. */}
           <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
@@ -927,14 +1062,41 @@ function RecResult({
             />
             <Field label="Entry trigger" value={s.entry_trigger ?? '—'} />
           </Stack>
+          {/* The cited-contract fact line — a real quote for the named contract, or an honest literal
+              saying why it's absent (AC-73–77). */}
+          <CitedContractLine
+            cited={rec.cited_contract}
+            asOf={rec.sent?.candidates?.as_of ?? null}
+          />
           {/* 4. Exit. */}
           <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-            <Field label="Target" value={fmtNum(s.exit_plan?.target)} />
-            <Field label="Stop" value={fmtNum(s.exit_plan?.stop)} />
+            <RiskField
+              label="Target"
+              literal={fieldLiteral({
+                decision: s.decision,
+                value: s.exit_plan?.target,
+                reason: rec.field_reasons?.exit_target,
+              })}
+            />
+            <RiskField
+              label="Stop"
+              literal={fieldLiteral({
+                decision: s.decision,
+                value: s.exit_plan?.stop,
+                reason: rec.field_reasons?.exit_stop,
+              })}
+            />
           </Stack>
           {/* 5. Sizing. */}
           <Box>
-            <Field label="Suggested size" value={s.position_size ?? '—'} />
+            <RiskField
+              label="Suggested size"
+              literal={fieldLiteral({
+                decision: s.decision,
+                value: s.position_size,
+                reason: rec.field_reasons?.position_size,
+              })}
+            />
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               A suggestion. Your size is your risk decision — you'll be able to change it on Accept.
             </Typography>

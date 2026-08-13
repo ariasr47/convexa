@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tradeable-rec-inputs — what ships, and how it was built</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #1c2330; --line: #2b3444;
+    --text: #dbe2ea; --muted: #8b98a9; --head: #f0f4f8;
+    --accent: #4da3ff; --good: #3fb97c; --warn: #e0a93e; --bad: #e06a5a;
+    --chip: #223046; --mono: "Cascadia Code", Consolas, "SF Mono", monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f8fa; --panel: #ffffff; --panel2: #eef2f7; --line: #d6dde6;
+      --text: #24313f; --muted: #5b6b7d; --head: #101820;
+      --accent: #1d6fe0; --chip: #e3ecf7;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 "Segoe UI", Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 22px 80px; }
+  h1 { color: var(--head); font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; }
+  h2 { color: var(--head); font-size: 1.25rem; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--line); }
+  h3 { color: var(--head); font-size: 1.02rem; margin: 22px 0 6px; }
+  p { margin: 10px 0; }
+  .sub { color: var(--muted); font-size: .95rem; }
+  .kicker { color: var(--accent); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .75rem; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin: 14px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; color: var(--head); font-size: 1.35rem; }
+  .stat span { color: var(--muted); font-size: .85rem; }
+  code, .mono { font-family: var(--mono); font-size: .86em; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
+  .chip { display: inline-block; background: var(--chip); color: var(--accent); border-radius: 999px; padding: 1px 10px; font-size: .78rem; font-weight: 600; margin-right: 6px; }
+  .chip.good { color: var(--good); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
+  .tablebox { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+  .flow .step { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .85rem; }
+  .flow .step b { color: var(--head); display: block; font-size: .82rem; }
+  .flow .arrow { color: var(--muted); }
+  ul { margin: 8px 0 8px 2px; padding-left: 20px; }
+  li { margin: 6px 0; }
+  .good-t { color: var(--good); font-weight: 600; }
+  .warn-t { color: var(--warn); font-weight: 600; }
+  .bad-t { color: var(--bad); font-weight: 600; }
+  .callout { border-left: 3px solid var(--accent); background: var(--panel2); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 14px 0; }
+  .callout.warn { border-left-color: var(--warn); }
+  .small { font-size: .88rem; }
+  .divider-note { color: var(--muted); font-size: .85rem; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Convexa · ship review · 2026-08-13</div>
+  <h1>tradeable-rec-inputs<br><span class="sub" style="font-size:1.05rem; font-weight:400;">Giving the AI recommendation the inputs it never had — so its numbers are real, auditable, and honest about what they aren't.</span></h1>
+
+  <div class="grid">
+    <div class="stat"><b>100 / 100</b><span>acceptance criteria verified (13 ship-blocking)</span></div>
+    <div class="stat"><b>0</b><span>new vendor API calls added</span></div>
+    <div class="stat"><b>2×</b><span>independent integration passes (builder + checker agree, 4/4 endpoints)</span></div>
+    <div class="stat"><b>byte-identical</b><span>opportunity score, tier &amp; fingerprint — proved three separate times</span></div>
+  </div>
+
+  <h2>1 · The problem this solves</h2>
+  <p>Convexa's in-app AI recommendation has an output schema that demands concrete answers: <code>max_risk</code>, <code>position_size</code>, <code>exit_plan.target</code>, <code>exit_plan.stop</code>. But the data bundle it read from contained <b>nothing that could fill them with a real number</b> — no candidate option prices, no account size, no expected move. A downstream analysis of real TSLA/NVDA sessions put it plainly: <i>"that's not a tuning problem, it's a missing-input problem."</i></p>
+  <p>So the AI either answered in vague prose ("small position, defined risk") or left the fields empty, and every one of those blanks rendered as the same anonymous dash. You couldn't tell <i>"not applicable"</i> from <i>"the model didn't say"</i> from <i>"an input was missing."</i></p>
+  <div class="callout">
+    <b>The binding rule carried through the whole feature:</b> better inputs should mostly make <b>"no trade" better-argued</b> — not convert it into trades. If adding data suddenly made everything a trade, something would be wrong. This framing came from the original analysis and survived as a testable design constraint.
+  </div>
+
+  <h2>2 · What ships — the four pieces</h2>
+
+  <h3>2a · Candidate option quotes &amp; greeks <span class="chip">new endpoint</span></h3>
+  <p>The chain snapshot Convexa already fetches (and was throwing away at serialization) carries per-contract bid/ask, open interest, and greeks. A new dedicated read — <code>GET /api/candidates/{ticker}</code> — exposes a <b>bounded, type-capped</b> slice of it: strikes around the anchor, two expiration tenors in the AI prompt, hard caps enforced by types rather than discipline.</p>
+  <ul>
+    <li><b>Never on the main bundle.</b> A standing project rule says AI-bound data must be small, digested sets — a ±15% strike band across expirations would have been the "raw dump" that rule forbids. The dedicated endpoint is the compromise the design debate settled on.</li>
+    <li><b>Honest about omissions.</b> The payload states how many contracts were included and how many expirations/strikes were dropped and why — a capped set must never read as an exhaustive one. Verified live: <span class="mono">60 contracts across 4 expirations · 29 expirations omitted by the cap · 719 strikes dropped</span>.</li>
+    <li><b>No new vendor spend.</b> Zero additional API calls — verified in code, and guarded by a pinned test after a real trap was found: the analytics loader silently bypasses its warm cache when a date filter is active, which would have added one vendor fetch per pull. The route was written around it and a test keeps it that way.</li>
+  </ul>
+
+  <h3>2b · Straddle-implied move <span class="chip">new read</span></h3>
+  <p>From the at-the-money straddle price, Convexa now computes the market's implied move for the relevant expiration. It is deliberately <b>not called "expected move"</b> — a straddle price is a price, not a probability — and the label carries its full basis visibly, never tooltip-only:</p>
+  <p class="mono small">From the {EXPIRATION} ATM straddle · {N} DTE · mid quotes · % of the {anchor} spot ${value}</p>
+  <p>Up to three tenors ride the wire so the AI can price the expiration it actually recommends; the UI renders exactly one (the nearest), with the rest reachable in the export drawer. The prompt only ever receives a move for expirations it also holds contracts for — otherwise the AI would cite contracts it was never shown, firing the fabrication guard by design.</p>
+
+  <h3>2c · Your risk block <span class="chip">new setting</span></h3>
+  <p>A new Settings section — account size and a per-trade cap (entered in dollars <i>or</i> percent). This is the most personal data in the app, so its handling got the strictest treatment of the feature:</p>
+  <ul>
+    <li><b>The egress disclosure sits <i>above</i> the fields</b>, visible before your first save: these figures are sent to your AI provider with each recommendation request. Its presence and DOM position are test-enforced, and a new standing rule was born here: <i>when a feature widens what leaves the machine, every shipped egress promise must be amended in the same feature</i> — a stale privacy claim is a ship blocker, not polish.</li>
+    <li><b>The effective dollar cap is derived exactly once, server-side</b> (percent × account when both exist). The UI renders received numbers verbatim and never does arithmetic on what you typed.</li>
+    <li><b>Never a scoring input.</b> No setting touches the opportunity score, tier, gate, or fingerprint — the byte-identity proof covers it.</li>
+    <li><b>Never in the trade diary.</b> Your account size is excluded from every persisted client artifact — enforced by a scan over the whole trading feature tree, poison-proved (blank the guard's target and the build goes red).</li>
+  </ul>
+
+  <h3>2d · The cap check <span class="chip">new audit</span></h3>
+  <p>When the AI asserts a dollar risk figure, Convexa now <b>says out loud whether it fits your cap</b> — the moment a dollar amount appears next to the word "risk," you'll believe it, so someone has to audit it. The check:</p>
+  <ul>
+    <li><b>States, never blocks.</b> Within / above renders as a calm annotation (it also persists into the simulated-entry confirm step). Nothing is ever disabled or refused.</li>
+    <li><b>Closed five-state vocabulary</b>, evaluated in a pinned order: <code>not_applicable → no_cap → not_checkable → within → above</code>. The first state matters most: a "no trade" verdict asserts no risk figure, so its card shows <b>no cap surface at all</b> — no noise, no "couldn't check" caveat. (This exact composition was the one critical hole the adversarial reviewer found; it's now impossible by construction and pinned by a regression fixture.)</li>
+    <li><b>One parse, one place.</b> The AI's <code>max_risk</code> prose is parsed once, server-side, solely for this check. And its <code>position_size</code> prose is <b>never parsed by anyone</b> — the numeric pre-fill idea was cut on purpose (see §4).</li>
+  </ul>
+
+  <h3>2e · Two honesty surfaces that tie it together</h3>
+  <ul>
+    <li><b>The "What the numbers said" line</b> — on <i>every</i> verdict, including "no trade": how many candidates across how many expirations, the spread-quality band, a wide-quotes flag, and the candidate freshness (<span class="mono">as of {time} · prior close / live session</span>). This was your explicit ruling during the design session — the alternative was a "no trade" card that showed the least on exactly the verdict the feature most wanted to improve.</li>
+    <li><b>Closed not-a-number literals</b> on the four sizing fields — <code>—</code> (not applicable), <code>not set</code> (you never entered a risk block), <code>unavailable</code> (an input failed this cycle), <code>not given</code> (the model left it blank). One word per state, everywhere, rendered by lookup — never re-derived, never a bare dash that could mean anything.</li>
+  </ul>
+
+  <h2>3 · What the before/after run actually showed</h2>
+  <p>The ship-blocking evidence: the same five tickers through the <b>real</b> AI, once on the pre-feature build (a genuine pre-feature binary, checked out and served separately — not a simulation) and once on this build, with a real $25,000 / $500-cap risk block. Both arms live, your key, market data real.</p>
+  <div class="tablebox"><table>
+    <tr><th>Ticker</th><th>Before</th><th>After</th><th>Result</th></tr>
+    <tr><td>SPY</td><td>trade (vol/straddle idea)</td><td>trade — long put, sized to the $500 cap</td><td class="good-t">HOLD, sharper</td></tr>
+    <tr><td>QQQ</td><td>trade (bear call spread)</td><td><b>no trade</b> — target already reached, negative EV</td><td class="warn-t">FLIP → no trade</td></tr>
+    <tr><td>IWM</td><td>trade</td><td>trade — refined put spread</td><td class="good-t">HOLD, sharper</td></tr>
+    <tr><td>NVDA</td><td>trade</td><td>trade — refined put spread</td><td class="good-t">HOLD, sharper</td></tr>
+    <tr><td>AAPL</td><td>trade (condor)</td><td>trade — same condor, refined strikes</td><td class="good-t">HOLD, sharper</td></tr>
+  </table></div>
+  <ul>
+    <li><b>0 of 5</b> flipped from "no trade" into a trade — the failure mode the brief warned about did not happen.</li>
+    <li><b>1 of 5</b> flipped the <i>defensible</i> direction: out of a trade, with a stated reason.</li>
+    <li>The qualitative shift (a characterization, not a measurement): "after" recs cite specific strikes and real quoted mids and size explicitly against your cap; "before" recs spoke in generic percentage-of-book language.</li>
+  </ul>
+  <p class="divider-note">Recorded honestly in the artifact: the verdict sample is market-hours-only — you reviewed it and accepted that narrowing by explicit ruling (dated in the record). The first attempt at this comparison is also preserved in the artifact: it ran before any AI key existed, refused to fake results, and reported that instead.</p>
+
+  <h2>4 · What deliberately did NOT ship</h2>
+  <ul>
+    <li><b>No numeric pre-fill from the AI.</b> The model's suggested size is prose (<span class="mono">"small, 1–2 contracts"</span>) — parsing that into a quantity field would put an invented number into the one dialog that creates a position. Cut in the design debate; the entry dialog keeps its own default of 1, and the old parser was deleted outright.</li>
+    <li><b>No broker book in the AI context.</b> Your real Webull positions stay out of v1 — the architect itself withdrew the idea after pricing what it cost: it would falsify the shipped "no broker/order data ever leaves" promise, and Webull supplies no option detail, so it couldn't answer the sizing question anyway. Future-dated behind a week of daily use, as its own feature.</li>
+    <li><b>No chain table, screener, or strike browser.</b> The candidate set surfaces in exactly three digested places (cited-contract line, export drawer, the one summary line) — never as rows to scroll.</li>
+    <li><b>No score changes.</b> The opportunity score, tier, gate, and fingerprint are untouched — proved byte-identical three separate times (the backend's pinned test, its poison-proof, and the checker's independent re-run on both data branches).</li>
+  </ul>
+
+  <h2>5 · How it was built — the pipeline story</h2>
+  <div class="flow">
+    <div class="step"><b>Discovery</b>picked &amp; re-justified</div><span class="arrow">→</span>
+    <div class="step"><b>Design council</b>3 blind voices</div><span class="arrow">→</span>
+    <div class="step"><b>Adversarial review</b>fail → fix → pass</div><span class="arrow">→</span>
+    <div class="step"><b>Plan</b>31 build + 12 verify tasks</div><span class="arrow">→</span>
+    <div class="step"><b>2 parallel builds</b>fenced lanes</div><span class="arrow">→</span>
+    <div class="step"><b>Independent QA</b>93 → bounce → 100</div>
+  </div>
+
+  <h3>The design was fought over, on purpose</h3>
+  <ul>
+    <li>Three specialist voices (architecture, product, UX) wrote positions <b>blind</b> to each other, then cross-examined: <b>22 genuine conflicts</b>, every one anchored to a verbatim quote (machine-verified — paraphrased disagreements get rejected).</li>
+    <li>Notably, <b>4 conflicts dissolved by voices withdrawing their own claims</b> when confronted — including the architect killing its own broker-book idea. Nine more were settled in one capped exchange, all by acceptance. One genuine product call came to you (the "no trade" summary line — you ruled it in).</li>
+    <li>The spec then faced a <b>skeptic on a different model</b> whose job is to break it. It did: three individually-correct rules composed into a "couldn't check your cap" warning on every "no trade" card. Fixed structurally, re-attacked, passed. Its follow-up finding became a ship-blocking test.</li>
+  </ul>
+
+  <h3>The verification had teeth</h3>
+  <ul>
+    <li>The checker (a different model from both builders) verified all 100 criteria <b>by observation against the running app</b>, not by reading code or trusting builder reports. First pass: <b>7 failures</b> — six UI surfaces that were wired to the server but never rendered, and the missing before/after evidence.</li>
+    <li>It also caught a subtle misreport: a test failure the UI builder had labeled "pre-existing flake" was proven <b>deterministic and feature-caused</b> (it passed on a clean checkout). The builder corrected the record.</li>
+    <li>Every new guard was <b>poison-proved</b>: break the thing the guard protects, watch the build go red, restore byte-identically. A guard that can't demonstrate it bites doesn't count — a lesson this project learned the hard way on the previous feature.</li>
+    <li>Integration was proved twice, independently: the builder's conformance run and the checker's own both passed 4/4 endpoints against live servers — never against the known-stale port.</li>
+  </ul>
+
+  <h2>6 · The numbers</h2>
+  <div class="grid">
+    <div class="stat"><b>~104 net</b><span>new passing frontend tests (1,535 → 1,639), zero regressions</span></div>
+    <div class="stat"><b>326</b><span>backend tests green (api 230 + engine 96), plus the separate Postgres compile check</span></div>
+    <div class="stat"><b>38</b><span>real-browser e2e checks incl. new 393-px mobile cases, dark + light</span></div>
+    <div class="stat"><b>51</b><span>source files changed across both fenced lanes (frontend never touched the server, and vice versa)</span></div>
+  </div>
+
+  <h2>7 · Honest ledger — what's still open</h2>
+  <ul>
+    <li><span class="warn-t">Evening measurement deferred:</span> the quote-fill reading (how many contracts carry usable quotes after hours) still wants one 8–11&nbsp;PM&nbsp;ET run; the harness is built and the plan pre-committed responses to each outcome.</li>
+    <li><span class="warn-t">Prompt-wording note:</span> in 4 of 4 after-arm trade verdicts the model's <code>max_risk</code> prose named two dollar figures in one sentence, so the cap check correctly said "couldn't check." Not a bug — the parser refuses ambiguity by design — but a future prompt tweak could ask the model for one unambiguous figure.</li>
+    <li><span class="warn-t">Rotate your AI key when convenient:</span> during diagnosis, one shell command briefly echoed the raw key into a local tool log (never into any file, commit, or deliverable — independently swept and confirmed clean). Rotation is cheap insurance.</li>
+    <li><span class="warn-t">Production is still stale:</span> unrelated to this feature — the live site serves the June 29 build, so the sign-ups lockdown isn't live. That's the standing deploy runbook item, flagged at five gates now.</li>
+  </ul>
+
+  <h2>8 · What shipping does</h2>
+  <p>On your "ship": the work is committed and pushed, the feature folder is archived with its full design/verification trail (every debate, ruling, and receipt stays on disk), the machine-checkable integration spec joins the standing regression suite, and the standing rulebook absorbs what this feature taught — including the new rule that egress promises must track what actually leaves your machine.</p>
+
+</div>
+</body>
+</html>
