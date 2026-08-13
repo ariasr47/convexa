@@ -1234,6 +1234,10 @@ the conductor's uncommitted planning-surface edits (BACKLOG/LEDGER/RESUME/IN_FLI
 conductor context at GATE S; CLAUDE.md + §E trap entries added); one shell one-liner briefly echoed the
 raw AI key into a local tool log during diagnosis (never committed; key-material sweep clean; owner
 advised to rotate).
+**LIVE IN PRODUCTION 2026-08-13, same hour as the push** — CI/CD (owner-built via Grok CLI; the
+conductor's "prod is stale / push ≠ deploy" belief was itself stale and corrected this day) deployed it
+automatically: `/api/candidates/SPY` 200 on `convexa.pages.dev`, feature literals in the served
+`TickerDashboard` chunk, `deploy-smoke.yml` green, prod conformance leg green.
 **Deferred seams (specified, not built):** V7 evening quote-fill measurement (harness built,
 20:00–23:00 ET window; plan's pre-committed response ladder stands) · after-hours before/after verdict
 sample (declined by ruling, re-openable) · prompt-wording note: the model's `max_risk` prose often names
@@ -1253,16 +1257,21 @@ owner-verified daily use, its own feature, structurally separate copy set).
   redesign Stage 1 (owner ruling 2026-07-22). **Left open:** re-walk `docs/THEME_AUDIT.md` against the
   shipped theme and retire the document, or record what genuinely remains — it is currently the only
   reason this bullet still exists. Ties `[theme-token-discipline]`.
-- **~~CI/CD not wired~~ → CORRECTED 2026-07-28: CI *is* wired; only conformance-in-CI and CD are missing.**
-  `.github/workflows/ci.yml` has existed since **2026-07-22** and runs, on every push to `main` and every
-  PR: `nx format:check --base=remotes/origin/main`, then `nx run-many -t lint test build typecheck` across
-  all projects, then `dashboard-e2e:e2e` as its own step (deliberately separate so the dev server + browser
-  don't contend with the vitest workers — that contention flaked the unit tests). **It runs `typecheck`**,
-  so the `nx typecheck` failure that failed GATE Q on `positions-legs` would have been caught on push too.
-  **What is genuinely still missing:** (a) the **conformance sweep** (`interface_conformance.py`) is NOT in
-  CI — it runs only inside gates; (b) **CD** — push still ≠ deploy, and `convexa.pages.dev` is applied by
-  hand from `docs/DEPLOY_RUNBOOK.md`. The old wording under-described the safety net, which invites someone
-  to rebuild what already exists. See `docs/TECH_DEBT.md` #4/#5/#7.
+- **~~CI/CD not wired~~ → SUPERSEDED 2026-08-13: FULL CI/CD EXISTS — push = deploy. Verified against
+  reality after the owner challenged the stale claim** (live probes + workflow files + `gh run list`),
+  which had survived TWO prior "verified" notes. Three workflows: `ci.yml` (frontend
+  lint·typecheck·test·build·e2e + backend cargo test·release+postgres), `conformance.yml` (a **prod
+  public-surface sweep** — the conformance-in-CI gap below is CLOSED — plus a local auth-gated leg),
+  `deploy-smoke.yml`. **CD is real:** Railway auto-deploys the backend from GitHub pushes and Cloudflare
+  Pages builds the frontend from git — the `tradeable-rec-inputs` push (`47a8961`) was serving live on
+  `convexa.pages.dev` within the hour, front AND back (probed: `/api/candidates/SPY` 200; the served
+  `TickerDashboard` chunk carries the feature's literals). Built by the owner in Grok CLI sessions
+  (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Genuinely open (both
+  red BEFORE the 08-13 push, verified):** (a) the CI frontend job is standing-red — lint warnings policy
+  (mostly `pages/lab/StructureField*` + one `useAlerts.ts` directive) plus the 5 accepted pre-existing
+  red spec files fail it; (b) the conformance **local auth-gated leg** exits 2 (config class) at its
+  signup bootstrap. See BACKLOG §B `ci-standing-red`. The 2026-07-28 wording below is history:
+  *(a) conformance sweep not in CI; (b) push ≠ deploy, applied by hand — both now false.*
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
 - **~~`/positions` overflows horizontally at the `md` boundary~~ → ✅ FIXED 2026-07-28 (`bb821d6`).**

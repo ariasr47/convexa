@@ -36,8 +36,11 @@ GATE I (Discovery) on "go". Pre-registered from the 2026-08-13 ship, re-test rat
    conductor's planning-surface edits this feature (rewritten from context; CLAUDE.md trap added).
 4. **Owner should rotate the AI key** — one shell one-liner echoed it into a local tool log during
    V10 diagnosis (never committed; sweep clean). Advised, owner's call.
-5. **N1 (deploy) still outstanding — 5 consecutive gate flags.** `convexa.pages.dev` serves the
-   2026-06-29 build; the signups-closed lockdown is NOT live. Owner habit; will not fix itself.
+5. **N1 RETIRED 2026-08-13 — the deploy claim was STALE and the owner was right.** Full CI/CD exists
+   (owner-built via Grok CLI): push = deploy (Railway auto-deploy + CF Pages git builds +
+   `deploy-smoke.yml`). `tradeable-rec-inputs` was LIVE in prod within the hour of its push (probed
+   front + back). Standing-red CI (pre-existing, not ours): see BACKLOG §B `ci-standing-red`.
+   **Lesson: a standing flag repeated across gates is a claim to RE-PROBE, not a fact to inherit.**
 6. Dashboard suite baseline: 1639 passing + 5 accepted pre-existing red files (`readonly.spec.tsx`,
    `positions.risk.spec.tsx` network-pattern, `grouping.integration.spec.tsx`, `stage3-amber.spec.ts`,
    `orders.risk.spec.tsx` tail network sweep). A 6th red = new regression.

@@ -59,9 +59,7 @@ describe('the section helper — egress disclosure precedes BOTH fields (AC-16, 
     const account = screen.getByTestId('risk-inputs-account-size');
     const cap = screen.getByTestId('risk-inputs-cap-value');
     // DOM order: helper node compares "before" both field nodes.
-    // eslint-disable-next-line no-bitwise
     expect(helper.compareDocumentPosition(account) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // eslint-disable-next-line no-bitwise
     expect(helper.compareDocumentPosition(cap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 

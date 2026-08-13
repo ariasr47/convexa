@@ -51,9 +51,13 @@ stated reason — better-argued, not more trades.
    `_archive/index-first-defaults/_MANIFEST.md`, QA PASS 6/6). The 2026-08-12 RESUME overlay inherited
    the stale label from `docs/ROADMAP_2026-08.md`; it was removed from this cull set. Correct the
    roadmap doc's label when next touched.
-2. **N1 (deploy) still outstanding — 5th consecutive gate flag.** `convexa.pages.dev` still serves the
-   2026-06-29 build; the 2026-08-06 signups-closed lockdown is NOT live. Owner habit, not a pipeline
-   item; it will not fix itself.
+2. ~~**N1 (deploy) still outstanding — 5th consecutive gate flag.**~~ **WRONG — RETIRED 2026-08-13.**
+   The owner challenged this and was right: full CI/CD exists (built in Grok CLI sessions) and
+   **push = deploy** — Railway auto-deploys the backend, Cloudflare Pages builds the frontend from git.
+   Verified by live probes: this very feature was serving on `convexa.pages.dev` within the hour of its
+   push, front and back. The "June 29 build / applied by hand" claim had survived multiple "verified"
+   RESUME notes — a stale-canon lesson: **a standing flag repeated across gates is a claim to re-probe,
+   not a fact to inherit.** See OPEN_THREADS §8's superseded CI/CD bullet for the full correction.
 **Runner-up:** `score-lab-b0b-outcomes` — S-sized, unlocks V3b + the lab's full-power cells; needs
 `MASSIVE_API_KEY` at run time; fits a quick backend fast-path whenever the owner wants it.
 **Also close:** `ai-rec-grounding` — Value H, and now strictly MORE valuable post-ship (the rec
@@ -863,6 +867,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `--symbols " SPY , SPY "` is not de-duplicated → 15 duplicate `(group,candidate,label)` keys and the SPY
   block printed twice. **Every number stays correct** (pooled 74, not double-counted), so this is cosmetic,
   and it **predates** the feature's fix passes. One `dedup()`. Found by QA at GATE Q pass 3.
+- **`ci-standing-red` — the CI frontend job + conformance local leg are standing-red (pre-existing,
+  NOT from tradeable-rec-inputs)** — `NEW 2026-08-13, gh-run-verified` —
+  <!-- atlas: theme=the-machine horizon=now -->
+  Both were red on the pre-feature push too (backend job green both times). (a) `ci.yml` Frontend job:
+  `@convexa/dashboard:lint` fails under the warnings policy — `pages/lab/StructureField{Lab,WebGL}.tsx`
+  (exhaustive-deps + non-null assertions) and a `useAlerts.ts:26` unused directive — and the test step
+  carries the 5 accepted pre-existing red spec files (see §7ad baseline). (b) `conformance.yml` "Local
+  API + auth-gated" leg exits **2 (config class)** at its signup-bootstrap step — the prod
+  public-surface leg PASSES. Value M–H (a standing-red CI trains everyone to ignore it — the classic
+  alarm-fatigue failure) · Effort S–M. The 2 unused directives our feature added to
+  `riskInputs.spec.tsx` were fixed same-day (post-ship cleanup commit).
 - **The :8000 orphan rewrites `data/scan.json`** — `NOTE 2026-08-12`, sits beside the existing
   `ports:free` IPv4-only entry below —
   <!-- atlas: theme=the-machine horizon=now -->
