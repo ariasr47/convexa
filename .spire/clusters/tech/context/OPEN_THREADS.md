@@ -1207,6 +1207,42 @@ guards SKIP loudly and nothing was synthesised · `--symbols " SPY , SPY "` is n
 correct; predates this feature) · the **:8000 orphan (PID 58588, `taskkill /F` access-denied) rewrites
 `data/scan.json` several times a minute**, which will false-fail any naive before/after byte check.
 
+## 7ad. Tradeable rec inputs — real numbers for the AI rec (SHIPPED + ARCHIVED 2026-08-13 — both lanes)
+Contracts archived at `.spire/clusters/tech/contracts/_archive/tradeable-rec-inputs/`. Chosen at GATE I
+2026-08-12 (the prior gate's runner-up; the sequencing deferral was re-tested and overturned — the score
+lab measures the composite score, these inputs feed the AI REC, a different judgment). Capability detail
+in CONTEXT §6, not restated here.
+**Shape:** GATE I → full council (22 conflicts, 22/22 quotes machine-verified, 4 self-revisions dissolved
+4 of 5 product conflicts, 1 owner ruling [the digested no_trade liquidity line], R3 one-exchange all-ACCEPT)
+→ S2 skeptic ×2 (pass 1 FAIL: 1 Critical — three individually-correct rules composed into a "couldn't
+check your cap" caveat on every no_trade card; fixed via the 5-member verdict vocabulary with
+`not_applicable` FIRST, made unreachable by construction + regression fixture; pass 2 PASS + one
+post-PASS Important closed as ship-blocking AC-29a) → GATE PLAN (B1–B18 · F1–F13 · V0–V11) → both lanes
+parallel → GATE Q ×3 (93/7 → FE fix pass + V10 → 99/1 → owner ruling → **100/100 PASS**, 13/13
+ship-blocking).
+**The GATE Q bounce's lessons (both now ledger rows):** six FE surfaces were wired to the wire but never
+rendered (built ≠ shown — only observation caught it), and a "flaky pre-existing" test claim was proven
+deterministic + feature-caused against a clean HEAD worktree. A guard asserting only negatives passed
+over a fully EMPTY no_trade card — rewritten to assert the POSITIVE at rendered scope, poison-proved.
+**V10 (the ship-blocking before/after):** first attempt refused to synthesize under no-LLM-key and
+recorded the unavailability as a finding (attempt preserved in the artifact); after the owner set a key,
+both arms ran REAL (before-arm = a pre-feature worktree binary on :8011) — 0/5 no_trade→trade, 1/5
+trade→no_trade (QQQ, stated reason), 4/5 holds with visibly sharper sizing. Owner ruling 2026-08-13
+(recorded in the artifact header): RTH-only verdict sample accepted; after-hours re-run declined.
+**Operational scars worth remembering:** a lane's mid-build `git stash`/selective-restore/drop DESTROYED
+the conductor's uncommitted planning-surface edits (BACKLOG/LEDGER/RESUME/IN_FLIGHT — rewritten from
+conductor context at GATE S; CLAUDE.md + §E trap entries added); one shell one-liner briefly echoed the
+raw AI key into a local tool log during diagnosis (never committed; key-material sweep clean; owner
+advised to rotate).
+**Deferred seams (specified, not built):** V7 evening quote-fill measurement (harness built,
+20:00–23:00 ET window; plan's pre-committed response ladder stands) · after-hours before/after verdict
+sample (declined by ruling, re-openable) · prompt-wording note: the model's `max_risk` prose often names
+two dollar figures in one sentence → `cap_check: not_checkable` by the parser's by-design ambiguity rule
+(a future prompt tweak, never a parser loosening) · typed machine-readable size field (future-dated,
+barred from riding the right-token change) · per-quote age (blocked on a vendor timestamp field —
+pre-commit check procedure recorded) · broker-book positions source (future-dated behind a week of
+owner-verified daily use, its own feature, structurally separate copy set).
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

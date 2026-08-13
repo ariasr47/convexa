@@ -77,3 +77,13 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   outlive a killed parent (three orphans on :8000 once fed a verification pass last session's build);
   Vite lingers on :4200/:4300. When a port is busy — or before any run-the-app verification —
   `npm run ports:free` (kills listener trees on 8000/4200/4300; extra ports as args).
+- **NEVER `git stash` while any other session/lane may hold uncommitted work.** Stash captures the
+  WHOLE working tree; a selective restore (`git checkout stash@{0} -- <my files>`) followed by
+  `stash drop` silently destroys everyone else's uncommitted edits. This happened 2026-08-13: a build
+  lane's stash/restore/drop cycle destroyed the conductor's uncommitted planning-surface files
+  (BACKLOG/DECISION_LEDGER/RESUME/IN_FLIGHT), rewritten from memory at GATE S. Use targeted
+  `git checkout -- <file>` or a separate worktree instead.
+- **Stale `tsc --build` outputs produce misleading type errors.** `apps/dashboard/dist/*.d.ts` /
+  `*.tsbuildinfo` can go stale relative to source under project references, yielding phantom
+  TS2353/TS6305 errors. Fix: delete `dist`/`out-tsc`/`*.tsbuildinfo` and rebuild `tsconfig.app.json`
+  before `tsconfig.spec.json` (found 2026-08-13, tradeable-rec-inputs FE lane).

@@ -30,6 +30,35 @@
 
 ---
 
+## Last GATE I — 2026-08-12 (runner-up promoted; sequencing deferral re-tested and overturned → `tradeable-rec-inputs`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/`). The prior gate pre-registered its runner-up —
+*"`tradeable-rec-inputs` Tier 1 (items 1+2+3) … deferred on **sequencing not merit**. Pick it next."*
+— and the RESUME overlay directed this gate to **re-test that sequencing rather than inherit it**.
+Re-tested and **OVERTURNED**. **Chosen → `tradeable-rec-inputs` (Tier 1: items 1+2+3).**
+**✓ SHIPPED + ARCHIVED 2026-08-13** → `_archive/tradeable-rec-inputs/` (full pipeline both lanes;
+QA PASS 100/100 after one GATE Z bounce cycle; see OPEN_THREADS §7ad).
+**Why the deferral no longer held:** the stated objection — "enriches inputs to a headline judgment
+whose ranking value was just measured as unestablished" — conflated the composite `opportunity_score`
+(what the score lab measures) with the **AI recommendation** (what Tier 1 feeds — a different
+judgment, measured by the outcome ledger, not the lab). The lab's own question needs weeks of diary
+accumulation regardless (B0b open), so holding the strongest product candidate behind it idled
+product progress for nothing. Both source caveats carried as binding framing and were **borne out at
+ship**: the real before/after run produced 0/5 no_trade→trade flips and 1/5 trade→no_trade with a
+stated reason — better-argued, not more trades.
+**Queue honesty (disk-verified this gate — do not re-derive):**
+1. **N3 `index-first-defaults` is NOT "Not started" — it SHIPPED + ARCHIVED 2026-08-01** (verified:
+   `_archive/index-first-defaults/_MANIFEST.md`, QA PASS 6/6). The 2026-08-12 RESUME overlay inherited
+   the stale label from `docs/ROADMAP_2026-08.md`; it was removed from this cull set. Correct the
+   roadmap doc's label when next touched.
+2. **N1 (deploy) still outstanding — 5th consecutive gate flag.** `convexa.pages.dev` still serves the
+   2026-06-29 build; the 2026-08-06 signups-closed lockdown is NOT live. Owner habit, not a pipeline
+   item; it will not fix itself.
+**Runner-up:** `score-lab-b0b-outcomes` — S-sized, unlocks V3b + the lab's full-power cells; needs
+`MASSIVE_API_KEY` at run time; fits a quick backend fast-path whenever the owner wants it.
+**Also close:** `ai-rec-grounding` — Value H, and now strictly MORE valuable post-ship (the rec
+asserts more numbers to trace); natural successor.
+
 ## Last GATE I — 2026-08-11 (b) (roadmap queue drained → `score-lab-signal-comparison`; two more stale alarms cleared)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 Pipeline drained again (`contracts/` held only `_archive/`), and this time **the 2026-08-01 roadmap
@@ -1299,7 +1328,10 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   <!-- atlas: theme=trust-the-signal horizon=next -->
   `LOGGED 2026-07-27 (owner-supplied downstream-AI analysis + conductor viability triage)`. **Source:** a
   downstream AI session that consumed real bundles (TSLA/NVDA) and reported back what it could not answer.
-  **NOT yet GATE-I'd** — this is the pool entry; individual items graduate to features via the normal cull.
+  **Tier 1 (items 1+2+3) → ✓ SHIPPED + ARCHIVED 2026-08-13** as `tradeable-rec-inputs` (chosen at GATE I
+  2026-08-12; OPEN_THREADS §7ad). Items 5 (liquidity hard filter), typed machine-readable size, per-quote
+  age, and the broker-book source were explicitly future-dated at that ship; the rest of the program
+  stays pooled here and graduates via the normal cull.
   **The core finding (accepted as correct):** the rec output schema demands `max_risk`, `position_size`,
   `exit_plan.target`, `exit_plan.stop`, and **the bundle contains nothing that can fill them with a real
   number** — no candidate option prices, no account size, no expected move. *"That's not a tuning problem,
@@ -1466,7 +1498,24 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   M.* Park until a concrete need pulls them. (`OPEN_THREADS` §7)
 
 ### E. Methodology / system-of-building improvements *(improve the AI-role system itself, not the trading product)*
-- **`contract_lint`'s `R2_JSON_RE` vs `R2-critique.md` disagree** — `NEW 2026-08-12`, **kit-owned** —
+- **`contract_lint` M3/M8 deadlock a GATE-I folder** — `NEW 2026-08-12`, **kit-owned** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  A fresh feature folder at GATE I legitimately holds only `BRIEF.md` + `_MANIFEST.md`; M3/M8 (kit
+  v1.0.0) ERROR on the missing `SPEC.md`/`INTERFACE_CONTRACT.md` — the artifacts **GATE C itself
+  produces** — so the lint can never pass on the route INTO the council. Observed at
+  `tradeable-rec-inputs` GATE I (2 ERRORs, BRIEF/manifest checks clean; judged non-blocking, recorded).
+  Kit fix: stage-aware severity — a manifest whose `Stage:` is GATE I downgrades M3/M8 to warn.
+  Propose in `KIT_BACKLOG.md`; do NOT edit `contract_lint.mjs` in place.
+- **⚠ `git stash` while lanes run DESTROYS sibling uncommitted work** — `NEW 2026-08-13`, earned the
+  hard way at `tradeable-rec-inputs` —
+  <!-- atlas: theme=the-machine horizon=now -->
+  A build lane hit a stash/pop conflict mid-build, recovered its OWN files via
+  `git checkout stash@{0} -- <its files>`, and dropped the stash — which silently destroyed the
+  conductor's uncommitted planning-surface edits riding in the same working tree (BACKLOG /
+  DECISION_LEDGER / RESUME / IN_FLIGHT — all rewritten from conductor context at GATE S; contracts
+  folder survived as untracked). Rule: **no `git stash` in this repo while any other lane or the
+  conductor may hold uncommitted work**; prefer targeted `git checkout -- <file>` or a worktree.
+  CLAUDE.md trap entry added at the same ship.
   <!-- atlas: theme=the-machine horizon=now -->
   The regex is anchored to the **whole file** (no `m` flag), while `.claude/council/R2-critique.md` only
   forbids content *after* the fenced block. So an `# R2 — …` title fails the gate; two of three voices hit

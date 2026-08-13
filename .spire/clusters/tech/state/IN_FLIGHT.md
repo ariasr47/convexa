@@ -6,4 +6,4 @@ has reached GATE R yet.
 
 | branch | touching | last gate | updated |
 |---|---|---|---|
-| main | — (no feature in flight; between GATE S and GATE I) | GATE R | 2026-08-12 |
+| main | — (no feature in flight; between GATE S and GATE I) | GATE S | 2026-08-13 |

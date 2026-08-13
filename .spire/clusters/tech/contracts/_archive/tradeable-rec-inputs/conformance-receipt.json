@@ -1,0 +1,44 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/tradeable-rec-inputs/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8010",
+  "auth": "cookie",
+  "checked_at": "2026-08-13T01:56:10Z",
+  "summary": {
+    "pass": 4,
+    "fail": 0,
+    "total": 4
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 23,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/candidates/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 50,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 19,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/settings",
+      "verdict": "PASS",
+      "required_checked": 12,
+      "failures": []
+    }
+  ]
+}

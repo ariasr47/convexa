@@ -1,0 +1,309 @@
+{
+  "conflicts": [
+    {
+      "quote": "Every candidate quote carries the snapshot's as-of and whether it is a live-session or prior-close quote.",
+      "source": "pm",
+      "why": "The per-quote half is not derivable from the pipeline that exists. `Contract` (libs/quant-engine/src/types.rs:70-89) carries only `bid: Option<f64>` and `ask: Option<f64>`; the Massive chain mapper's `RawLastQuote` (apps/api/src/infrastructure/massive/rest.rs:737-747) deserializes only bid/ask/p/P and reads no timestamp off the vendor row at all. So the serving path knows the SNAPSHOT's as_of and the SNAPSHOT's session, and knows nothing about when any individual contract's NBBO was struck. Deriving the per-quote basis from the snapshot as_of would be a fabrication of exactly the class `[absent-is-not-none]` exists to stop: an illiquid contract last quoted three sessions ago would be labelled live-session because the snapshot happened to be taken at 10:30. That failure is loudest in the evening-usage case PM's own R3 says may be the majority case.",
+      "proposal": "Split the claim into what the data supports. (a) Set-level: one as_of and one session classification for the whole candidate set, carried once, which is honest and free today. (b) Per-contract: keep the closed presence state I owe anyway (quoted-in-this-snapshot vs no-NBBO-in-this-snapshot) and add a THIRD state, quote-age-unknown, as the default. Upgrading (b) to a real per-quote age requires deserializing a vendor quote timestamp we currently discard; whether Massive populates one on chain-snapshot rows is unverified, so make that a falsifiable pre-commit check (inspect one live SPY chain row) rather than an AC written as if the field were already there.",
+      "kind": "technical",
+      "conflict_id": "90073ec39f8ff5d1358eca708ff5e2b61287fd49bf4f6c1df0a7b5c249ce56eb",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given a narrower active DTE/expiration window, the candidate set for the same ticker contains strictly fewer expirations than under a wider window.",
+      "source": "pm",
+      "why": "It contradicts PM's own AC-8 on the ticker the feature will be demoed on. With an expiration cap of 4 (PM's proposed default), SPY inside a 7-45 DTE window has roughly 20 in-window expirations and inside a 7-21 DTE window roughly 8 \u2014 both far above the cap, so both candidate sets contain exactly 4 expirations. The AC then fails red while the system is behaving exactly as specified. Strict reduction only holds on a ticker whose in-window expiration count is already below the cap, which is the single-name case, not the index case.",
+      "proposal": "Two ACs instead of one. (i) An invariant that always holds and is the one worth protecting: every expiration in the candidate set lies inside the active window, and narrowing the window never adds an expiration to the set (subset / monotone non-increasing). (ii) The strict-reduction assertion scoped explicitly to a fixture whose in-window expiration count is below the cap. Both are testable; only the second is currently falsifiable as written.",
+      "kind": "technical",
+      "conflict_id": "16511e5bc2aa39b00e1d13cd8d3be8f22d7fb6a1f94fc103290ffcda2a81c30b",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given a rec whose risk figure is an unambiguous dollar amount and a cap that is set, the app states whether the figure is within or above the cap, showing both numbers.",
+      "source": "pm",
+      "why": "It assumes a dollar-denominated cap exists to show. UX's shape stores the cap with an explicit unit that may be a percent, and UX \u00a74b forbids the client from deriving the dollar equivalent: 'The FE performs no multiplication on the entered values.' If the owner entered 1%, then 'showing both numbers' is only satisfiable by computing 1% x account size \u2014 which is either client arithmetic UX has refused, or a derived value no lane has specified anywhere. There is also a third case neither AC covers: a percent cap entered with NO account size, where the dollar cap is not derivable at all and must not silently become zero.",
+      "proposal": "Derive the effective dollar cap exactly once, server-side, at the same place the risk block is read for prompt assembly, and ship it as its own field with a closed state when it is not derivable (percent-with-no-equity, nothing entered). The client then renders two numbers it received rather than two numbers it computed, which satisfies AC-28 and leaves U-17 intact. This is the same one-authoritative-representation rule I applied to the record itself, moved to the wire.",
+      "kind": "technical",
+      "conflict_id": "7ab2bb4fd7f5d498d0328da747e2a7b56ad368891405b75956929727ae93d33d",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Loop closure**: the rec's suggested size flows into the existing simulated entry pre-fill, and the decision record additively captures whether a risk block was present at entry.",
+      "source": "pm",
+      "why": "`position_size` is not a number and never has been. The model's output contract at apps/api/src/services/llm.rs:127 declares max_risk and position_size as string|null, and the local rule-based fallback emits literal prose (apps/api/src/services/recommendation.rs:570 returns position_size as the string 'small (rule-based local rec; not LLM)'). 'Flows into the entry pre-fill' therefore means parsing free-form model prose into a contract quantity. AC-37 covers only the null case; the dangerous case is a non-null unparseable one \u2014 small, 1-2 contracts, 1R \u2014 where any parse invents a quantity the model never stated and prints it into the one dialog that creates a position. It would also put that parse on the FE, where it can drift silently from whatever the cap check parses server-side.",
+      "proposal": "Either (a) the pre-fill reads a STRUCTURED size the response carries as a typed number, which means adding a machine-readable size field to the rec schema and is a prompt-contract change larger than my own stated non-goal of no prompt rewrite beyond inserting the named blocks; or (b) v1 drops the numeric pre-fill, renders position_size as the prose it is, and AC-37's trigger widens from 'suggests no size' to 'suggests no PARSEABLE size' with the size-not-suggested note. If any parse ships, it must be ONE shared function with a closed output vocabulary used by both the pre-fill and the cap check, never two heuristics.",
+      "kind": "technical",
+      "conflict_id": "54314ed90b9802c7e2fac751ad1ee87a1efd169a1e51693b14686073117a2632",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**The rec identifies its recommended contract in a machine-comparable form (strike + expiration + right), not only in prose**, so the FE can match it against the candidate set rather than string-matching the analyst text.",
+      "source": "ux",
+      "why": "Two of the three fields exist; the third does not. The rec schema (apps/api/src/services/llm.rs:124-131) carries strikes as a number array and expiration as string|null, but the call/put right appears nowhere as a token \u2014 it is only inferable from the free-text `structure` field and the `bias` enum, and `structure` is string|null prose. So U-20's match against the candidate set can align a cited $640 strike with the PUT row when the rec meant the CALL, and the cited-contract fact line \u2014 which UX correctly calls the highest-value fabrication guard in the feature \u2014 would then print a real quote for the wrong contract. That is worse than the em-dash it replaces, because it is confidently wrong.",
+      "proposal": "Match on the full identity or refuse to match. Either add an explicit right token to the rec schema (a prompt/schema change that must be costed, and that gives the same benefit to the cap check), or make the match key strike + expiration ONLY and require the fact line to render both legs when the right is undetermined, or fall back to UX's off-set literal. A partial-key match that silently picks one right must be structurally impossible \u2014 the match function should take a key type that cannot be constructed without a right.",
+      "kind": "technical",
+      "conflict_id": "b3fb59df24b90ea686bb718de6e1587b3628400902f71f0e66776a52b0595228",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given a no-trade verdict, the candidate liquidity picture and the expected move for the ticker are still displayed.",
+      "source": "pm",
+      "why": "On a no_trade verdict there is no cited contract \u2014 the no_trade branch emits expiration: null and no strikes (apps/api/src/services/recommendation.rs:529-534) \u2014 and UX \u00a76 restricts candidates to exactly two surfaces, the cited-contract fact line and the export drawer, with 'v1 ships no trader-facing option-chain table, grid, or browser.' So on the verdict this feature most wants to improve, the only candidate-bearing surface has nothing to render, and 'the candidate liquidity picture' names a datum that no lane has defined as content. Read literally the AC is satisfiable only by a chain table, which is the line PM's own R1 holds hardest.",
+      "proposal": "Define the no_trade liquidity read as a DIGESTED, set-level summary computed server-side from the candidate set and carried as a handful of scalars and closed labels \u2014 how many candidates carried a quote versus none, a relative-spread band label for the nearest-to-anchor contracts, and the drop-count-with-reason I already require \u2014 never per-contract rows. That satisfies AC-32, keeps `[digested-labels-not-raw-dump]` intact, and gives UX one strip to render inside the existing What the numbers said fact strip.",
+      "kind": "technical",
+      "conflict_id": "ff3e6c92ebf684b20d6810026ef8945e42c845e6d7b6bd5e54d86f69832a344f",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**No enforcement.** Convexa never blocks, warns on, or refuses an entry that exceeds the cap.",
+      "source": "ux",
+      "why": "It is head-on with PM's R5 for the same surface: 'Over-cap is a warning that persists into the confirm step of the simulated entry. It does not disable the action.' plus AC-31, which makes the confirm-step warning an observable ship row. UX says the app never warns on an over-cap entry; PM requires the warning to be present at the confirm step. Both agree it never BLOCKS, so the disagreement is purely about whether the app speaks. It has a data-flow consequence in my lane: PM's version requires the effective cap and the parsed rec risk figure to reach the shared `TradeEntryDialog` as props, opening a new path from the rec panel into the one sim entry dialog; UX's version requires that path not to exist.",
+      "proposal": "The owner picks one: (a) the cap comparison is a readout beside the rec only, and the entry dialog learns nothing about caps; or (b) it is a non-blocking annotation that also renders at the sim-entry confirm. If (b), the comparison must be computed once (see the derived-dollar-cap conflict above) and passed down as a rendered result, never recomputed inside the dialog \u2014 two computations of one verdict will disagree the first time the parse changes.",
+      "kind": "product",
+      "conflict_id": "7f314ca008e6543f26b0ce1e83713569dc248d283e143e01ed68ce1251e1abf1",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "So: A is primary, C rides alongside **labelled by source**, and neither is ever persisted server-side (persisting a client-supplied digest would create a shadow book nobody reconciles).",
+      "source": "architect",
+      "why": "Self-revision \u2014 I withdraw the 'C rides alongside' half. PM excludes the broker book from v1 with a named re-entry trigger, and UX priced a cost I did not: the shipped egress sentence promises that no broker/order data leaves the machine, so routing the broker book into the AI context falsifies a live claim in the one surface whose entire purpose is being true. My own \u00a72.3(b) already established the broker book is `partial` for options (Webull supplies no strike/expiry/right), so source C cannot answer 'exposure in THIS underlying' anyway \u2014 I was buying an egress-copy amendment and a second source label with an input that does not work for this instrument class. The rest of the sentence stands: A is primary and nothing is persisted server-side.",
+      "proposal": "v1 carries source A only \u2014 the client-supplied simulated digest. Keep the source label on the wire as a closed enum with exactly ONE inhabitant today, so PM's future-dated broker-book feature is an additive variant rather than a shape change, and so a consumer can never read an unlabelled digest as authoritative.",
+      "kind": "technical",
+      "conflict_id": "f1259f15e95ad46cd2b061e4f16dceff9102837bf4364c66a78d50d3d0429327",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "So: A is primary, C rides alongside **labelled by source**, and neither is ever persisted",
+      "source": "architect",
+      "why": "My R1 puts the broker book explicitly OUT with a named trigger \u2014 broker-book exposure as sizing context is future-dated behind one full week of owner-verified daily use, as its own feature. Riding alongside puts it back into v1 through a different door. Three things break. (a) The same paragraph concedes the instrument problem: Webull supplies no option contract detail, so an option position arrives partial and exposure-in-this-underlying cannot be computed from it with any honesty \u2014 a sizing input that cannot answer the question it was added to answer is not additive value, it is a second not-a-number family the owner has to learn. (b) It changes what leaves the machine: UX \u00a75 states that routing the broker book would newly falsify the shipped no broker/order data promise, and it makes my AC-21 (the surface counts only simulated positions and names that limitation) false as written. (c) It doubles the degraded-state count of item 2 at the moment the feature is already carrying three, because each of the three acquires a per-source partial variant. Whether a real-but-partial book is worth that is a value call about the owner's own money, not a feasibility question \u2014 and my R1 Risk 10 pre-committed to routing it here rather than absorbing it quietly.",
+      "proposal": "v1 counts the client-local simulated book only and labels it simulated on every surface including the AI context (AC-21), with the broker source future-dated behind its stated trigger. The architect's three-state closed vocabulary stays exactly as written \u2014 broker not connected remains a legal, honest state even when no broker source is read, because it tells the trader why the picture is simulated-only. If the owner wants C in v1, it arrives as its own scope line carrying its own partial state, its own egress-note enumeration, its own before/after burden inside AC-33, and rewrites of both my AC-21 and UX \u00a75's copy. I want that as a decision, not as a rider.",
+      "kind": "product",
+      "conflict_id": "5a6006c462db03f35eb1db56698c0dc1539596234ea428b3549327cc0ff2a3ba",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Convexa never blocks, warns on, or refuses an entry that exceeds the cap.",
+      "source": "ux",
+      "why": "This deletes user story S5 and four criteria (AC-28 through AC-31) \u2014 the audit half of the feature. My central R1 call is that the moment a dollar figure appears beside the word risk the owner will believe it, and the cheapest failure this feature can ship is an authoritative-looking number nobody audited. UX's own \u00a74b tip already asks the trader to do the comparison by hand (check it against your own before you act) while the app holds both figures and declines to state the relation between them. Note that AC-31 already concedes two of this sentence's three verbs: the entry flow opens, the over-cap note rides the confirm step, the action is not disabled, nothing is refused \u2014 and my R5 says the same thing from the other side, that the cap check annotates and never blocks. So the disagreement is not enforcement versus non-enforcement. It is whether Convexa is allowed to say out loud that 900 is larger than 400 on the one screen where being wrong costs the owner real money.",
+      "proposal": "Keep never blocks and never refuses verbatim \u2014 AC-31 asserts both. Replace warns on with a stated, non-blocking comparison: with a parseable dollar risk figure and a cap set, the surface shows both numbers and names which is larger (AC-28); with a figure that cannot be read unambiguously it says it could not check, never a pass by default (AC-29); with no cap set it shows no verdict at all and names the cap as not set (AC-30). The treatment is entirely UX's call, and their own distinction likely applies \u2014 this is a truth marker rather than a warning, so the stale-strip family rather than warning.* plus icon may well be right. If the owner rules the comparison out, S5 and AC-28..AC-31 leave scope as a named cut and my Risk 2 (fabricated precision) ships unmitigated. That is a legitimate trade; it should be made on purpose.",
+      "kind": "product",
+      "conflict_id": "6232972a62c830f14013823ae476812f3500f2efe496c3015359e37138a28a7a",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**The FE performs no multiplication on the entered values.** It renders exactly what the trader typed.",
+      "source": "ux",
+      "why": "I accept the rule for the provenance chip and for anything printed beside an AI string \u2014 the misreading it prevents is real. It cannot stand as a global rule, because UX's own U-3 permits the cap to be entered as a percent, and a percent cap cannot be compared to a dollar risk figure without exactly one multiplication. Under U-3 plus this rule, an owner who enters 1% per trade can never be told anything about a rec that states 900 dollars, and AC-28 is unimplementable for that owner rather than for that rec. The two positions also disagree about where the number lives: architect \u00a72.3(a) already derives it server-side \u2014 the effective dollar cap is derived as the min of the two whenever both inputs exist \u2014 which satisfies UX's rule as literally written, because the FE performs no multiplication when the server already did. That placement is settleable between the two lanes without the owner.",
+      "proposal": "Derive the effective dollar cap server-side (architect's min of fraction-of-equity and optional absolute ceiling), carry it with its unit and with the inputs it was derived from, and have the FE render (a) the entered values verbatim in the provenance chip, UX's rule intact and no client arithmetic, and (b) the derived figure only where it is labelled as derived from your inputs \u2014 never as a validated, checked, or enforced number. When either input is absent the derived figure carries the not-entered state rather than a zero (AC-16). This keeps U-17 exactly as UX wrote it and makes AC-28 implementable for a percent cap.",
+      "kind": "technical",
+      "conflict_id": "0e325aa0552e122a06ff5e3b8f260f423b0e121b16c46ffee7e739ee4ce85263",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The **prompt** budget is tighter: \u2264 **1 tenor \u00d7 2 rights \u00d7 6 strikes = 12 records**",
+      "source": "architect",
+      "why": "This is inconsistent with the architect's own expected-move ruling three sections earlier, which argues for up to 3 tenors because a rec that names an expiration needs the move for that expiration. Under a 1-tenor candidate block the model is handed the straddle move for up to three expirations and contracts for exactly one. The predictable output is a rec naming a strike in an expiration it was never sent contracts for \u2014 which fires UX's `Not in the candidate set Convexa sent` literal (\u00a74d) and my AC-2 as a matter of routine design rather than as evidence the model fabricated something. That converts this feature's highest-value fabrication guard into noise the owner learns to ignore, which is worse than not having it. It also leaves a single-tenor, six-strike window that may contain no candidate on the side the model wants, and it makes my AC-4 unobservable at the rec surface (see my self-revision below).",
+      "proposal": "Match the two blocks in the prompt. Either candidates carry at least 2 tenors \u2014 the nearest in-window plus the tenor bracketing the far end of the active window \u2014 or the expected-move block sent to the model narrows to the tenors it has contracts for, so the model is never given a move for an expiration it cannot price. Either way, the counts actually sent are stated on the payload and enumerated in the export drawer (UX \u00a75 already asks for N contracts across M expirations), so the owner can see what the model was given. Settle it against a measurement rather than an estimate \u2014 architect's own R4 says the current prompt has never been measured. If the measured budget genuinely cannot carry two tenors, this escalates to the owner as a scope call: one expiration covered deeply versus two covered thinly.",
+      "kind": "technical",
+      "conflict_id": "3f64a61d809e5b1144f5b6c65636998d8b62a543b59bbc42d573b2ec9634789f",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The candidate set therefore surfaces in exactly two places",
+      "source": "ux",
+      "why": "The BRIEF's named observable is that no_trade verdicts argue from liquidity and expected-move facts, and my AC-32 requires both to be present on a no-trade verdict. Neither of the two places fires there. The cited-contract fact line (\u00a74d) is conditional on the rec naming a contract, and a no_trade rec names none; the export drawer is a deliberate second click behind View what's sent. UX's own \u00a74e fact strip carries a contract's spread only when a candidate was cited. So on exactly the verdict this feature exists to improve, the trader gains one new fact (the straddle-implied move) and loses the other, and the BRIEF's binding framing \u2014 better inputs should make no_trade better-argued \u2014 is half-delivered. I am not asking for the chain table: my own scope puts a full chain browser, a strike screener, and per-contract sorting or filtering UI explicitly OUT, and I hold UX \u00a76.",
+      "proposal": "A third surface that is digested rather than tabular: one line inside the existing `What the numbers said` strip, rendered on every verdict including no_trade, carrying aggregate facts about the set the model was actually sent \u2014 how many candidates across how many expirations, the ATM spread as a percentage of mid, and the wide-quotes marker when it fires (R4). No per-contract rows, no strike axis, no sorting, no expansion. That is a digested label rather than a dump, and it is the same data the export drawer already enumerates. If the owner prefers the two-surface rule, AC-32 narrows to expected-move-only and the loss gets recorded as a decision instead of happening quietly.",
+      "kind": "product",
+      "conflict_id": "c134ba40fb367ac00f8eca10acc9ec51acbc5b2160998d4bc517c2ec4434725b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| AC-4 | Given a narrower active DTE/expiration window, the candidate set for the same ticker contains strictly fewer expirations than under a wider window. | test |",
+      "source": "pm",
+      "why": "I withdraw AC-4. It is not observable against the design the architect describes: with a cap of at most 4 tenors nearest the anchor inside the caller's window, a wide window and a narrow window that both contain 4 or more expirations return the same count, so strictly fewer is not a property of the system. A test written to it would either fail or be pinned to a hand-picked thin ticker \u2014 a vacuous test dressed as a bound, which is the exact failure my own Risk 4 warns about. The criterion also encoded my R1 belief that band plus window is the bound, which the architect correctly kills.",
+      "proposal": "Replace AC-4 with two criteria that stay observable under a cap. (a) No expiration outside the active DTE/expiration window ever appears in the candidate set, at any window setting. (b) When the window contains more expirations than the cap, the surface names how many expirations were included and that others were omitted by the cap \u2014 this is AC-8, which stands, extended to name strikes dropped and the reason as well as expirations, per the architect's dropped-count requirement. The strictly-fewer comparison goes away entirely.",
+      "kind": "technical",
+      "conflict_id": "6b77b44f891147b191ff2ba6f22f9d1cc9c365ab8de7ab1c94ad1c7d3b3ab8b0",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "The account value you want sizing based on. You type it; Convexa never checks it against a broker.",
+      "source": "ux",
+      "why": "AC-10 is ship-blocking in my set and it is specifically about ordering: the entry surface states, visible before the first save, that these figures are included in the context sent to the AI provider with each rec request. This helper sits under the field for the most personal number in the app and discloses only that Convexa does not verify it \u2014 it says nothing about the number leaving the machine. The section helper above it says the figures are used only as context for AI recommendations, which a reader can reasonably take as internal use; the egress fact is stated plainly only in the Max risk per trade helper and in the export drawer, which is a different surface behind a click. My Risk 5 is exactly this shape: if the disclosure lands after the field rather than before it, the owner types a real account balance before learning it leaves the machine. UX \u00a75 treats a stale egress claim as the highest-severity item in their own lane; this is the same claim one surface earlier.",
+      "proposal": "Put the egress fact in the section helper that already sits above both fields \u2014 that these figures are sent to your AI provider with each recommendation request \u2014 and leave both field helpers as written. Wording is UX's; I need the fact present above the first input and the View what's sent path reachable from the panel so the claim is checkable rather than merely asserted. AC-10 is satisfied by the section helper carrying it; it does not require the account-size helper to carry it twice.",
+      "kind": "technical",
+      "conflict_id": "56b47beb884caf75c2a2c245c9e005f1bd1dc3e5af8748b6efb3932d46b6e146",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| C. Server reads the broker book | Typed, server-side, real | **Additive when present, never the sole source** |",
+      "source": "architect",
+      "why": "PM puts real broker positions OUT of v1 ('v1 counts the simulated book only, and says so'), and every word I wrote sits on that ruling. If broker-sourced exposure rides alongside the simulated digest, three shipped or proposed strings become false at once: the export drawer's live promise that no broker/order data ever leaves, my Settings disclosure line 'Open positions included: your simulated positions in this browser.', and PM's AC-21 simulated label. It also replaces the three-state matrix I designed (none open / not sent / store faulted) with a per-source matrix nobody has specified, and the architect's own text says a Webull option position arrives `partial` \u2014 a knowingly incomplete number is the worst thing to place beside a dollar risk figure. Two lanes disagree on scope, so there is no single honest wording I can write.",
+      "proposal": "v1 sends the simulated book only, per PM's OUT list, and the architect's option C is future-dated behind PM's stated trigger (one week of owner-verified daily use, as its own feature). If the owner wants C in v1 anyway, then it is a different copy set, not an additive one: every exposure figure carries a source token rendered by closed lookup, the broker path gets its own `partial` literal, the egress note enumerates broker positions explicitly, and the positions state matrix is respecified \u2014 decided before wording, not after.",
+      "kind": "product",
+      "conflict_id": "e053ee0a1ae3a0bd27698e5a980387cbdcb6d321c34db60c25ae716ba934fe9e",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Up to 3 tenors, not 1.**",
+      "source": "architect",
+      "why": "PM scoped one reading (the nearest in-window expiration) and my \u00a73 designed one headline, one basis line, five states. Three tenors is not the same card with more rows: each tenor carries its own null cause, so the surface needs partial states (tenor 1 quoted, tenor 2 no-quote, tenor 3 no strike resolvable) that no lane has specified, and three \u00b1 figures with no ranking makes the reader decide which one is the answer. It also collides with my placement ruling \u2014 the ticker board is at eleven widgets and I refused a twelfth for one scalar; a three-row per-expiry readout is a table, and a table needs a placement decision I did not make.",
+      "proposal": "Carry up to 3 tenors on the wire for the model \u2014 the architect's reason (a rec that names an expiry needs that expiry's move) is right and costs the trader nothing. Render exactly one by default: the nearest in-window tenor, matching PM's AC-22, with the additional tenors reachable in the export drawer and named in the tooltip. If the UI must display more than one, that is a new component with a per-tenor state matrix and its own placement call, and it should be scoped as such rather than inherited from a payload shape.",
+      "kind": "technical",
+      "conflict_id": "5e7c21d3edfabd6f42aefe8892af6bd402f3447ef417005fd8a58f96b3fdb098",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A per-trade risk cap larger than the account size is refused with a message; it is not silently accepted.",
+      "source": "pm",
+      "why": "Three lanes describe three different cap records and this AC only parses against one of them. PM assumes a single dollar cap comparable to account size; my U-3 stores one value with an explicit unit ($ or %); the architect stores a fraction of equity plus an optional absolute dollar ceiling with the effective cap derived as the min of the two. Against a fraction the rule is unstatable \u2014 a fraction can never be larger than the account size \u2014 so as written it silently forces the dollar-only model. The architect's model additionally puts a number on screen that the trader never typed, which is precisely what my \u00a74b refuses unless it arrives on the wire already derived and labelled.",
+      "proposal": "Settle the record shape before the copy is written. My preference for v1: one cap stored as {value, unit}, with local refusals 'enter a number greater than zero' and 'enter a percentage between 0 and 100', and AC-12 restated as 'a cap entered in dollars that exceeds the account size is refused'. If the min-of-two model wins, the form needs a third control plus a labelled derived readout ('Effective cap $X \u2014 the lower of your two limits') computed server-side and rendered verbatim, and AC-12 must be rewritten against that derived dollar cap.",
+      "kind": "technical",
+      "conflict_id": "3458de7fd48baa4f9ca15897987077ad1b9579315bb9003ee7c10959358dfb56",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Given a signed-in owner who never entered a risk block, a rec still produces; its risk figures carry no account-derived dollar amount, and the surface names the absence as *not entered* rather than showing a dash.",
+      "source": "pm",
+      "why": "PM's literal for this state is *not entered*; my \u00a74a and \u00a72 codified `not set` for the identical state; PM's AC-37 then introduces a third adjacent phrase, *size not suggested*. One state with two names ships as two literals, which is the em-dash problem this feature exists to fix, one layer up \u2014 and this literal is a canonical-vocabulary addition (`positions-legs` codified four members), so it gets recorded once, not twice. The AC table is where the wording becomes binding, so the divergence has to close before synthesis rather than during implementation.",
+      "proposal": "One word per state across every surface. I propose `not set`, because it is the only member of the closed vocabulary the trader can act on and the panel's action reads 'Set your risk inputs' \u2014 'entered' names an event that did not happen, 'set' names the state the UI is reporting. If PM prefers *not entered*, I will take it without argument, but then AC-16, my U-14/U-16, the export drawer's not-sent line and AC-37's note must all carry that single wording, and the DESIGN_SYSTEM amendment records that one member.",
+      "kind": "technical",
+      "conflict_id": "cb992bd15ab1a27527da44654357bf6d72d2a959a973ea652984c738804d7a96",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "No prompt rewrite beyond inserting the named blocks.",
+      "source": "architect",
+      "why": "PM's AC-2 and AC-3 and my U-20 all require matching the contract the rec named against the candidate set, and distinguishing 'not in the candidate set' from 'no quote'. That match is only possible if the rec response carries strike + expiration + right in a machine-comparable field. If neither the prompt nor the response schema changes and the contract survives only inside the analyst prose, the frontend has to pull a strike out of a sentence with a regex \u2014 inference dressed as provenance, which will eventually draw a real quote beside the wrong contract. \u00a74d's cited-contract line is the feature's strongest fabrication guard and it is unimplementable on prose.",
+      "proposal": "Confirm whether the shipped rec schema already returns a structured contract identity; if it does, record that in the contract and nothing else changes. If it does not, adding those three fields to the response schema belongs in this feature \u2014 it is a schema field, not the grounding/citation enforcement deferred to `ai-rec-grounding`. If neither is available, then AC-2, AC-3 and U-20 are withdrawn together and the rec shows no per-contract quote at all, rather than shipping a best-effort string match behind a provenance claim.",
+      "kind": "technical",
+      "conflict_id": "7d61862856b7b0a66f0c6d435617e8650fc7ab722baa379310d663ebfc76402c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Convexa never blocks, warns on, or refuses an entry that exceeds the cap.",
+      "source": "ux",
+      "why": "Self-revision: I withdraw the 'warns on' clause. PM's S5/R5/AC-31 (annotate, never block, action stays enabled) is a genuine honesty gain that does not touch `[no-real-order-path]`, and my absolute phrasing would have deleted the one check standing between the owner and an authoritative-looking number nobody audited \u2014 PM's central call, and it is correct. 'Never blocks' and 'never refuses' still stand, and \u00a77's no-sizing-calculator ruling is unchanged.",
+      "proposal": "Replace that bullet with: Convexa never blocks or refuses an entry that exceeds the cap; it states the comparison once, in `warning.*` + icon per the design system's warning rule (never brand amber, never the green/red direction slots), and the same annotation persists at the confirm step per AC-31. The comparison must reach the UI as a closed verdict token together with the effective cap it used \u2014 the client still performs no arithmetic on the owner's entered values, so \u00a74b stands intact.",
+      "kind": "technical",
+      "conflict_id": "c5fe2f827c09f8ee3f393564faa7c18d37214864e9cc00c09e6da418037b8ac5",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Basis line (VISIBLE, never tooltip-only):** `From the {EXPIRATION} ATM straddle \u00b7 {N} DTE \u00b7 mid quotes`",
+      "source": "ux",
+      "why": "Self-revision: incomplete, and by my own standard. The headline prints \u00b1 Y.Z%, and the architect anchors that percentage on `gex_spot` rather than the live price the trader is watching at the top of the same page. A percentage of a number the reader cannot see is a claim the visible data does not support, and it will disagree with any percentage the trader computes off the live tape \u2014 the architect's own R5. PM's AC-23 requires the anchor spot on the reading and my line omits it.",
+      "proposal": "Basis line becomes: `From the {EXPIRATION} ATM straddle \u00b7 {N} DTE \u00b7 mid quotes \u00b7 % of the {ANCHOR_LABEL} spot ${ANCHOR}`, with the anchor value and which spot it is both rendered from the payload and never derived client-side; the tooltip explains why it is the gamma anchor rather than the live tape. This is what makes AC-23 satisfiable and closes the anchor-divergence risk in copy rather than leaving it to the reader.",
+      "kind": "technical",
+      "conflict_id": "e42c4455a4b53d3babf31616597ca9bb660061bef4c26331f88ce34f88d85691",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: does 'deliberate pull' cover the ANONYMOUS hand-off export (AC-39)? Today the ask-AI call is auth-outermost while the manual export floor is anonymous, so satisfying AC-39 means an unauthenticated caller can obtain the capped candidate band. Is that acceptable, and is it the same read the signed-in rec uses?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: the export drawer claims to list what actually left the machine, but the in-app single-turn prompt budget (my ~12 records) is far smaller than a human-pasted hand-off budget (my ~64). Should one assembler serve both at the SMALLER budget so the drawer's claim stays literally true, or should the two consumers have different budgets with the drawer stating which one it is showing?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: after the risk block is edited, U-19's superseded strip and \u00a75's 'Your risk inputs (the exact values sent)' need two different values \u2014 what the rec was produced with, and what is stored now. Which is authoritative in the drawer? If it is the former, the rec response must echo the risk inputs it was given, which is a wire field only you can say you need."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: which single surface owns the drop-count-with-reason (how many contracts in the band were excluded and why)? Without a renderer it is inert content, and without it a capped set reads to the trader as an exhaustive one \u2014 the export drawer count alone may not reach the reader who needs it."
+    },
+    {
+      "from": "pm",
+      "ask": "[architect] Will you run the R2 pre-commit check (count non-null quote pairs in one live SPY chain snapshot and one thin single-name) before SPEC, and specifically in an evening snapshot? The owner's dominant usage is after hours. If most chain rows carry no NBBO at night, AC-6 and AC-24 still render honestly, but the feature reads as broken on first contact and AC-33's after-hours run stops being a check and becomes the ship gate. I need the measured fill rate to know whether the candidate set is a nightly empty state carrying reasons rather than a nightly liquidity picture."
+    },
+    {
+      "from": "pm",
+      "ask": "[architect] Does the produced rec retain the risk-block values it was sent, pinned to the rec artifact? UX \u00a74c's superseded-inputs strip and my AC-28 cap check both compare against what the AI was told, not against what is currently stored. Your non-goals list names no persistence of candidates, expected move, or the positions digest and is silent on the risk block, which is mutable per-user state. If nothing pins the as-sent values, U-19 cannot detect a change and the cap check silently grades a rec produced under a $400 cap against a cap the owner has since raised to $900."
+    },
+    {
+      "from": "pm",
+      "ask": "[ux] If the straddle-implied move arrives with up to 3 tenors (architect \u00a72.1), which one does the single headline render, and where does a trader verify a move the rec cites for a different expiration? AC-23 requires the reading to display its expiration; with three in the payload and one on screen, a rec citing the second makes a claim the trader cannot check on the surface built to make it checkable. I am not asking for a second widget \u2014 I need to know whether the answer is render the nearest and let the prompt carry only that tenor (which constrains my tenor-budget conflict above) or something else."
+    },
+    {
+      "from": "pm",
+      "ask": "[ux] Is the state-export drawer reachable without a session, and does the rec panel render at all for an anonymous user? My AC-39 asserts an anonymous hand-off export carrying the candidate set and the expected move with the risk block reported as not entered, while your \u00a70 states the intended user is signed in and the rec is auth-outermost. If the drawer is auth-gated I will withdraw AC-39 rather than keep a criterion nobody can observe \u2014 I need the fact, not a design change."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: can the rec response carry a per-field reason token for `max_risk`, `position_size`, `exit_plan.target` and `exit_plan.stop` that distinguishes 'the model left this blank' from 'an input it needed was missing this cycle'? Without it, \u00a74a's `unavailable` / `not given` split collapses into one hedged literal and the feature's flagship honesty gain degrades back toward one em-dash."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: does each candidate quote \u2014 and the straddle reading \u2014 carry an explicit session-basis token (live-session vs prior-close), or only `as_of`? PM's R3 says evenings may be the majority case; my lane renders literals by closed lookup and will not infer session by comparing a timestamp against a market-hours guess in the browser."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: where does the cap comparison run, and does the wire carry a closed verdict token (within / above / not-checkable / no-cap) plus the effective dollar cap it compared against? The copy differs materially between 'Convexa compared these two numbers' and 'the AI asserted this', and I will not compute the comparison client-side from the owner's entered values."
+    },
+    {
+      "from": "ux",
+      "ask": "pm: does 'the rec's suggested size flows into the existing simulated entry pre-fill' mean the quantity field is pre-populated with the AI's number, or that the number is displayed beside a field the trader fills deliberately? The first makes the AI's size the form default, which is the hierarchy-side version of the drift the brief's binding framing warns about, and it needs a state and a literal I have not designed."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: what is the closed drop-reason vocabulary for contracts the cap or the band omitted? AC-8 and my export drawer must state how many were included and that others were omitted by the cap, by lookup on a wire token rather than by subtracting two counts in the browser."
+    },
+    {
+      "from": "ux",
+      "ask": "pm + architect: is the candidates endpoint reachable for an anonymous caller, as AC-39's anonymous hand-off export implies? My \u00a75 drawer copy and U-26's reachability rule are written for a signed-in rec panel, and an anonymous path needs its own state list and its own egress sentence."
+    }
+  ],
+  "agree_count": {
+    "architect": 5,
+    "pm": 8,
+    "ux": 7
+  }
+}

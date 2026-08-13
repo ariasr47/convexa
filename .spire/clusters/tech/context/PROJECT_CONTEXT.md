@@ -957,6 +957,28 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   **bit-exactly**. QA PASS 77/78 across three passes (1 UNVERIFIABLE: the degraded-analytics path is
   Postgres-only). Prerequisite in practice for `[score-change-is-deliberate-and-measured]` — you cannot
   improve a score you cannot measure.
+- **Tradeable rec inputs (2026-08-13, `tradeable-rec-inputs`)** — the AI recommendation's
+  missing-input gap closed: its output schema (`max_risk` / `position_size` / `exit_plan.*`) is now
+  fillable with real, bundle-traceable numbers. Four pieces: (1) **candidate option quotes/greeks**
+  via the dedicated type-capped `GET /api/candidates/{ticker}` (from the chain snapshot already in
+  hand — zero new vendor calls, warm-cache path pinned by test; NEVER on the bundle; drop-counts
+  disclosed so a capped set never reads exhaustive); (2) **straddle-implied move** (named as a
+  straddle price, not a probability; ≤3 tenors on the wire intersected with candidate tenors, ONE
+  rendered; basis line carries expiration · DTE · mid · %-of-`gex_spot` visibly); (3) the
+  **per-user risk block** (account size + `{value, unit $|%}` cap; egress disclosure ABOVE the
+  fields, test-ordered; effective dollar cap derived ONCE server-side with closed not-derivable
+  states; never a scoring input; account size excluded from every persisted client artifact by
+  mutation-guarded scan); (4) the **stated non-blocking cap check** (5-member closed verdict
+  vocabulary, pinned order `not_applicable → no_cap → not_checkable → within → above` — a no_trade
+  card carries NO cap surface; ONE server-side `max_risk` parse; annotation persists at sim-entry
+  confirm; never blocks/refuses). Plus the on-every-verdict digested "What the numbers said" line
+  (owner-ruled) and the closed four-literal sizing-field vocabulary (`—`/`not set`/`unavailable`/
+  `not given`). `position_size` is NEVER parsed (numeric pre-fill deliberately cut; entry dialog
+  default qty 1); broker book explicitly future-dated. The rec envelope pins as-sent inputs
+  (`sent.*` + digest) so the superseded-inputs strip compares against what the AI was actually told.
+  Score/tier/`state_fingerprint` byte-identical (proved by builder pin + poison-proof + QA re-proof:
+  `score=8 / dormant / ad81df2ba2c3`). Real before/after on 5 tickers: 0/5 no_trade→trade, 1/5
+  trade→no_trade with stated reason, sizing now cites your cap. QA PASS 100/100.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions
