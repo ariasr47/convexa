@@ -24,7 +24,19 @@ Nx-auto-maintained; read it and follow it. This file is not duplicated into it o
   Not product memory — do not put context/contracts here.
 - `.codex/` — Codex host adapter. **Committed.**
 - `.grok/` — Grok host adapter. **Committed.**
-- Do **not** use repo `.agents/` (Nx skill-mirror; gitignored and unused here).
+- `.agents/` — **deleted 2026-08-14, do not recreate.** It was an orphaned *Codex* repository-skill
+  mirror (`source-command-*` files whose paths pointed at a non-existent `.Codex/`), not an Nx
+  artifact — the earlier "Nx skill-mirror" note here was wrong: Nx references `.agents` nowhere, and
+  spire-os never generated it (`source-command` appears in zero commits of its history) nor installed
+  there. Spire owns exactly `.spire`, `.claude`, `.codex`, `.grok` — its receipt lists those three
+  provider roots and `.agents` zero times.
+- **`.claude/launch.json` is intentionally absent.** The preview tooling reads that exact path and no
+  other, but the file is *derivable* — `.spire/clusters/tech/project.json` already holds both lanes'
+  `serve_cmd` and `port`. Keeping a hand-written copy made it a fourth source of truth that drifted
+  from the other three (it claimed port 4300 and a bare `dashboard` target while everything else said
+  4200 and `@convexa/dashboard`). **Generate it on demand from `project.json` when a preview is
+  actually needed; do not commit a hand-maintained one.** A spire install wipes `.claude/` and
+  preserves only `settings.local.json`, so anything hand-kept there is lost on the next upgrade.
 
 ## Lane separation (enforced)
 
