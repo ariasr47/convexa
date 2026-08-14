@@ -13,6 +13,7 @@
 - Proposing a single bland default as “the” system without human rule.
 - Writing `Status: SET` without a skeptic pass on synthesis.
 - Kit-authored brand taste (no universal palette, type, or component library here).
+- Leaving a second design authority alive beside a `SET` canon (see **Single authority** below).
 
 ## Artifact
 
@@ -61,6 +62,9 @@ detect mode (codify | propose | no-UI)
 - Invoke `spire-tech-design-review` for system-consistency and gaps (review method only — it does not write the canon).
 - Document what is **already there**. Every self-disagreement becomes a **Decision card** (A/B options + recommendation). Do not average contradictions into a fake consensus.
 - Prefer evidence quotes (file paths, token names, component names) over aesthetic adjectives.
+- **Inventory rival authorities before synthesis** — project-owned design skills, style guides, or brand
+  docs that state tokens/type/palette as rules. List each with its path in the mode card. They are
+  evidence now and a **retire-or-stub** decision at close (**Single authority** below).
 
 **Propose (greenfield / stub)**
 
@@ -121,13 +125,37 @@ Goal: the human **chooses among rival complete systems**, not rubber-stamps one 
   3. **Project Banned** — once non-empty, synthesis must not reintroduce banned patterns.
   4. **Codify-only** — no silent merge of contradictions; each was a card.
   5. **Thin honesty** — incomplete binding beats generic complete filler; flag invented completeness.
+  6. **Single authority** — no surviving project artifact claims to outrank or restate the canon
+     (§ below). An unresolved rival is **Critical**; the human rules retire vs stub.
 
 - Critical → synthesizer rewrite (cap 2). Remaining Critical → human.
 
 ### Step E — Close
 
-Status card: mode, direction name, card count, skeptic pass/fail, path to `DESIGN_SYSTEM.md`.  
+Status card: mode, direction name, card count, skeptic pass/fail, path to `DESIGN_SYSTEM.md`, and the
+disposition of every rival authority found in Step A.  
 **Next:** feature work uses Design authority = this path; amendments via § below.
+
+## Single authority (after `SET`)
+
+`SET` means one binding home. A project-owned design skill, style guide, or brand doc that restates
+tokens, type, palette, or component rules becomes a **second authority the moment the canon moves** —
+observed in the field as a skill asserting it wins on conflict *after* the canon was `SET`.
+
+At close of any codify or re-baseline, each rival is **retire-or-stub** and the human rules which:
+
+| Disposition | Shape |
+|-------------|-------|
+| **Retire** | Fold anything still true into `DESIGN_SYSTEM.md`, then remove the artifact. |
+| **Stub** | Keep the file only as a pointer to the canon path (+ code token locations). No token tables, no palette, no "where they conflict, this wins". |
+
+Rules:
+
+- The canon is the seam; **never** demote it to one input among several.
+- **Never delete a project-owned artifact on your own** — it is the human's file. Surface a Decision
+  card, and hold the rival as-is until they rule.
+- Product-specific craft that is *not* system canon (domain copy rules, a bespoke workflow) may stay —
+  it is only a rival when it states system rules.
 
 ## Maturation (after SET) — Phase 4 wiring
 
@@ -152,6 +180,7 @@ Allowed when `Status: UNSET`, file missing, or human requests re-baseline. Do no
 - Put brand tokens in always-load `PROJECT_CONTEXT.md`.
 - Claim GATE Q visual proof of token match (out of scope).
 - Use marketplace design-system skills as the durable seam authority.
+- Close a codify with a project design skill still claiming to win on conflict with the canon.
 - Batch multiple product questions in one Decision card message.
 - In **propose**: spawn workers that **converge on one direction** (the observed failure mode).
 - In **propose**: synthesize or SET before the human picks A/B/C.
@@ -160,3 +189,5 @@ Allowed when `Status: UNSET`, file missing, or human requests re-baseline. Do no
 
 - Skeptic never rejects or forces a rewrite across three real runs → redesign checklist / model split before any UNSET gate.
 - Propose mode discarded twice as generic → tighten propose brief; do not lower the bar by rubber-stamping.
+- Single-authority disposition finds nothing to rule across three real codify runs → drop the step; a
+  ritual that never catches a rival is inventory, not a gate.

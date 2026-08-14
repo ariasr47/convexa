@@ -15,8 +15,8 @@ cards, drive synthesizer and skeptic.
 1. Run the model-free preflight first:
    `node .claude/tools/gates.mjs design_system_ready`
    (or `node .claude/tools/design_system_ready.mjs`). Exit 0 and a mode are required. Exit 1 means
-   the project is still template/empty — fill `project.json` + `PROJECT_CONTEXT.md` §1–§2 (or set
-   `frontend: null`) and stop; do not invent brand taste.
+   the project is still template/empty — run `/project-standup` first (or fill `project.json` +
+   `PROJECT_CONTEXT.md` §1–§2 by hand), or set `frontend: null`; do not invent brand taste.
 2. Read `.spire/clusters/tech/project.json`.
 3. Ensure `.spire/clusters/tech/context/DESIGN_SYSTEM.md` exists (install scaffold). If missing, stop
    and say the kit scaffold is absent — reinstall or restore the template; do not invent a schema.
@@ -51,6 +51,11 @@ controller rejects same-family duplicates before the Decision card. Still one A/
 One inspection path (design-review method) → contradiction **Decision cards** (not three agreeing
 authors of one system) → after rulings, go to synthesize.
 
+Also inventory **rival authorities** (project design skills, style guides, brand docs that state
+tokens/type/palette as rules) and carry each to a **retire-or-stub** Decision card at close — a `SET`
+canon must not ship beside a file claiming it wins on conflict. Never delete a project-owned artifact
+yourself; the human rules. See the single-authority section of `DESIGN_SYSTEM_METHOD.md`.
+
 ### After the human has ruled
 
 1. Record the letter/ruling in a project-owned session note.
@@ -72,4 +77,5 @@ full propose cycle unless they asked to re-baseline.
 - `DESIGN_SYSTEM.md` is `SET` (or an honest no-UI leave-`UNSET` with FYI), **and**
 - for propose: human picked A/B/C **before** SET, **and**
 - skeptic completed (or human accepted remaining Critical), **and**
+- for codify: every rival authority found is retired or stubbed by human ruling, **and**
 - you did not restate the token table into a feature SPEC.

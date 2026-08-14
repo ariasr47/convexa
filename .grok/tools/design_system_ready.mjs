@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // design_system_ready.mjs — model-free preflight for living design-canon onboarding.
 //
-// Answers: "is this project ready for `design/DESIGN_SYSTEM_METHOD.md` (living project design canon) (codify|propose|no-UI)?" without inventing
+// Answers: "is this project ready for design/DESIGN_SYSTEM_METHOD.md (living project design canon) (codify|propose|no-UI)?" without inventing
 // brand taste. Exit 0 when ready; exit 1 when blocked; exit 2 on usage errors.
 //
 // Usage:

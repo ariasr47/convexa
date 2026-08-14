@@ -39,6 +39,13 @@ Do not invent a threshold. If the product has not decided one, surface the decis
 
 Check empty, one, many, minimum, maximum, null, absent, duplicate, stale, unauthorized, offline, timeout and dependency-failure cases that materially change behavior. Select the cases from actual risk; do not create a ceremonial matrix.
 
+## Stack honesty (H3)
+
+If the project is plain ESM + `node --test` without a DOM harness, do not mark paint/layout/DOM-only
+outcomes as `test`. Use `review` (or name a harness in the seam/contract) and re-home load-bearing
+behavior into pure modules that unit tests can own. Disclose that limit next to other verification
+notes — silence recreates a false third verify tier.
+
 ## Final authoring check
 
 Before accepting a row, confirm that it names an observable outcome, can fail independently, includes the important negative or degraded behavior, and does not duplicate the interface contract. Choose and record `Verify by` with `spire-tech-risk-based-verify` (do not re-derive risk rules here).

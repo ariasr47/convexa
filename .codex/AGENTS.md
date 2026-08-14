@@ -1,8 +1,13 @@
 # AGENTS.md — Spire Tech boot document (Codex)
 
-You are running the installed `spire:tech` cluster on Codex. Phase 2 static composition and scratch-install tests validate this boot document and its native adapter; they do not prove that a current Codex host executed a role or gate. The verified limitations are stated in §5 below. Read this file and the named project/conductor artifacts before acting.
+You are running the installed `spire:tech` cluster on Codex. **Cluster entry** (`$spire-tech` /
+`spire run tech`) is the product interface into tech; the **conductor** then runs the default
+**delivery ascent**. Phase 2 static composition and scratch-install tests validate this boot document
+and its native adapter; they do not prove that a current Codex host executed a role or gate. The
+verified limitations are stated in §5 below. Read this file and the named project/conductor artifacts
+before acting.
 
-## 1. Select the installation and context
+## 1. Select the installation and context (cluster entry)
 
 Read `.spire/clusters/tech/project.json` and `.spire/clusters/tech/context/PROJECT_CONTEXT.md`, then run the installed `$spire-tech` selector or its universal equivalent:
 
@@ -10,13 +15,13 @@ Read `.spire/clusters/tech/project.json` and `.spire/clusters/tech/context/PROJE
 node .spire/bin/spire.mjs run tech --provider codex
 ```
 
-Require success before reading `.codex/ORCHESTRATOR.md`. Selection validates `.spire/installation.json`, `.spire/version`, catalog/descriptor/provider identity, launch adapter, provider config, and immutable artifacts. It records routing evidence only; it does not mean a role or gate executed.
+Require success before reading `.codex/ORCHESTRATOR.md`. Selection validates `.spire/installation.json`, `.spire/version`, catalog/descriptor/provider identity, launch adapter, provider config, and immutable artifacts. It records **cluster entry** routing only; it does not mean a role, gate, or the full delivery ascent executed. The conductor is not a second product surface.
 
 ## 2. State and sequence
 
 Project-owned artifacts live under `.spire/clusters/tech/`. Feature contracts are `.spire/clusters/tech/contracts/{FEATURE}/`; state and selector receipts are in the sibling `state/` and `receipts/` directories. Provider-native framework and tools live under `.codex/`.
 
-The conductor sequence is Discovery → Council → Plan → Backend and Frontend → QA → Ship. Every role handoff returns through the conductor; a non-zero gate blocks progress.
+The **delivery ascent** sequence (conductor-mediated) is Discovery → Council → Plan → Backend and Frontend → QA → Ship. Every role handoff returns through the conductor; a non-zero gate blocks progress.
 
 ## 3. Run gates
 
@@ -26,7 +31,16 @@ node .codex/tools/gates.mjs context_for FEATURE --write
 node .codex/tools/gates.mjs council_conflicts FEATURE
 node .codex/tools/gates.mjs interface_conformance --contract PATH --url URL
 node .codex/tools/gates.mjs ledger_tally
+node .codex/tools/gates.mjs memory_query --q "terms" --scope cluster,feature
+node .codex/tools/gates.mjs project_standup_ready
+node .codex/tools/gates.mjs foundation_ready
 ```
+
+Prefer `memory_query` before re-reading whole handovers or archives (seam files remain truth).
+
+**Onboarding:** product stand-up method `.codex/standup/PROJECT_STANDUP_METHOD.md` (fill context + seed
+backlog). Optional foundation `.codex/foundation/FOUNDATION_BOOTSTRAP_METHOD.md` (git/CI/monorepo;
+**Nx only if human chooses**). Design-system remains `.codex/design/DESIGN_SYSTEM_METHOD.md`.
 
 Structured write targets are workspace-fenced by `.codex/hooks.json` and `.codex/tools/path_guard.js`. P9 is delivered for structured write tools; arbitrary shell command strings are excluded.
 

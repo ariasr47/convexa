@@ -12,6 +12,8 @@ const ERROR_STATUS = Object.freeze({
   UNKNOWN_CLUSTER: 5,
   CLUSTER_UNAVAILABLE: 6,
   PROVIDER_MISMATCH: 7,
+  UNKNOWN_ASCENT: 8,
+  ASCENT_NOT_INSTALLED: 9,
 });
 const SPIRE_VERSION_PATTERN = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u;
 const SPIRE_GUARD_OWNER = 'spire:tech/path-guard';
@@ -28,6 +30,16 @@ const DESCRIPTOR = Object.freeze({
   launch_required: true,
   rendered_artifacts: Object.freeze(['ORCHESTRATOR.md']),
 });
+
+// Ascent universe this selector understands. It ships in the same install as the receipt that
+// records which of them a consumer actually has, so the two never disagree by version skew.
+const ASCENTS = Object.freeze({
+  'spire:tech': Object.freeze(['delivery', 'evolution']),
+});
+// Receipts written before ascents existed carry neither field and mean the single delivery ascent.
+const IMPLIED_ASCENTS = Object.freeze(['delivery']);
+const IMPLIED_DEFAULT_ASCENT = 'delivery';
+const ASCENT_ID = /^[a-z][a-z0-9-]*$/u;
 
 const CATALOG = Object.freeze({
   schema_version: 1,
@@ -98,28 +110,104 @@ const PROVIDERS = Object.freeze({
       }),
     }),
   }),
+  grok: Object.freeze({
+    root: '.grok',
+    adapter: Object.freeze({ kind: 'skill', installed: 'skills/spire-tech/SKILL.md', invoke: '$spire-tech' }),
+    capabilities: Object.freeze({
+      supported: Object.freeze(['P1', 'P10', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9']),
+      degraded: Object.freeze([]),
+    }),
+    config: Object.freeze({
+      placement: 'provider-root',
+      path: 'hooks/spire-path-guard.json',
+      format: 'json-hook-v1',
+      event: 'PreToolUse',
+      entry: Object.freeze({
+        matcher: 'Write|Edit|MultiEdit|NotebookEdit|search_replace',
+        hooks: Object.freeze([Object.freeze({
+          type: 'command',
+          command: 'node .grok/tools/path_guard.js --protocol grok',
+          commandWindows: 'node .grok/tools/path_guard.js --protocol grok',
+          timeout: 30,
+          statusMessage: 'path-guard: workspace fence (system-4b)',
+          spireOwner: SPIRE_GUARD_OWNER,
+        })]),
+      }),
+    }),
+  }),
 });
 
-const RECEIPT_FIELDS = Object.freeze([
+// Receipt schema 1 is a single installed provider. Schema 2 (written by every multi-provider
+// install, which is the default) keeps the same default-provider triple and adds the full
+// per-provider inventory. A reader that understands only one of them bricks cluster entry on the
+// install shape operators actually get.
+const RECEIPT_FIELDS_V1 = Object.freeze([
   'schema_version', 'product', 'version', 'cluster', 'provider', 'provider_root', 'installed_at',
   'artifacts', 'descriptor_sha256', 'launch_adapter', 'provider_capabilities', 'provider_config',
 ]);
+const RECEIPT_FIELDS_V2 = Object.freeze([...RECEIPT_FIELDS_V1, 'providers', 'installations']);
+// Both ascent fields or neither. Absent is the pre-ascent receipt shape; exactly one is corruption.
+const RECEIPT_FIELDS_ASCENT = Object.freeze(['ascents', 'default_ascent']);
+const INSTALLATION_FIELDS = Object.freeze([
+  'provider_root', 'launch_adapter', 'provider_capabilities', 'provider_config',
+]);
 const ARTIFACT_PLACEMENTS = Object.freeze(['provider-root', 'repo-root', 'spire-root']);
+const PROVIDER_ROOTS = Object.freeze(Object.values(PROVIDERS).map((entry) => entry.root));
 
-function refusal(error, message) {
-  return { ok: false, error, message };
+// A provider the operator asked for but did not install is a distinct, actionable refusal — never
+// "malformed", which would send them to re-install a healthy tree.
+class ProviderMismatchError extends Error {
+  constructor(requested, installed) {
+    super(`requested provider '${requested}' is not installed`);
+    this.requested = requested;
+    this.installed = installed;
+  }
 }
+
+function refusal(error, message, hint = null) {
+  const body = { ok: false, error, message };
+  if (hint) body.hint = hint;
+  return body;
+}
+
+const USAGE_HINTS = Object.freeze({
+  USAGE: 'Example: node .spire/bin/spire.mjs run tech --provider claude',
+  NOT_INSTALLED: 'From the Spire kit: node platform/lifecycle/install.mjs <this-repo>',
+  INVALID_INSTALLATION: 'Re-run install, or doctor <root> for drift detail',
+  UNKNOWN_CLUSTER: 'Only "tech" is executable today (spire:tech)',
+  CLUSTER_UNAVAILABLE: 'That cluster is planned, not executable — use tech',
+  PROVIDER_MISMATCH: 'Pass --provider claude|codex|grok matching an installed host root',
+  UNKNOWN_ASCENT: `Valid ascents for tech: ${ASCENTS['spire:tech'].join(', ')}`,
+  ASCENT_NOT_INSTALLED: 'Reinstall with --ascents to add it',
+});
 
 function parseArgs(argv) {
   if (argv[0] !== 'run' || typeof argv[1] !== 'string' || argv[1] === '') {
-    return { finding: refusal('USAGE', 'usage: spire run <cluster> [--root <consumer>] [--provider <name>] [--json]') };
+    return {
+      finding: refusal(
+        'USAGE',
+        'usage: spire run <cluster> [ascent] [--root <consumer>] [--provider <name>] [--json]',
+        USAGE_HINTS.USAGE,
+      ),
+    };
   }
-  const parsed = { selector: argv[1], root: null, provider: null, json: false };
-  for (let index = 2; index < argv.length; index += 1) {
+  const parsed = { selector: argv[1], ascent: null, root: null, provider: null, json: false, check: false };
+  // The ascent is positional and optional: only argv[2], and only when it is not a flag.
+  let first = 2;
+  if (typeof argv[2] === 'string' && argv[2] !== '' && !argv[2].startsWith('--')) {
+    parsed.ascent = argv[2];
+    first = 3;
+  }
+  for (let index = first; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--json') {
       if (parsed.json) return { finding: refusal('USAGE', '--json may be supplied only once') };
       parsed.json = true;
+      continue;
+    }
+    if (token === '--check') {
+      if (parsed.check) return { finding: refusal('USAGE', '--check may be supplied only once') };
+      parsed.check = true;
       continue;
     }
     if (token === '--root' || token === '--provider') {
@@ -254,16 +342,18 @@ function readCanonical(root, file) {
 }
 
 function artifactFile(root, receipt, artifact) {
+  // Schema 2 inventories every provider root, so a provider-root artifact resolves against its own
+  // recorded root — not the default provider's.
   const base = artifact.placement === 'repo-root' ? root
-    : artifact.placement === 'provider-root' ? path.join(root, receipt.provider_root)
+    : artifact.placement === 'provider-root' ? path.join(root, artifact.provider_root ?? receipt.provider_root)
       : artifact.placement === 'spire-root' ? path.join(root, '.spire') : null;
   if (!base || !safeRelative(artifact.path)) return null;
   const destination = path.resolve(base, ...artifact.path.split('/'));
   return contained(base, destination) ? destination : null;
 }
 
-function validateProviderCapabilities(receipt, provider) {
-  if (!sameCanonicalValue(receipt.provider_capabilities, provider.capabilities)) {
+function validateProviderCapabilities(installation, provider) {
+  if (!sameCanonicalValue(installation.provider_capabilities, provider.capabilities)) {
     throw new Error('provider capability snapshot does not match the selected provider');
   }
 }
@@ -281,9 +371,10 @@ function normalizedGuardInvocation(command, providerRoot, windowsCommand) {
     : actualPath === expectedPath;
   if (!samePath) return false;
   const protocol = match[5] ?? null;
-  return providerRoot.toLowerCase() === '.codex'
-    ? protocol === 'codex'
-    : protocol === null;
+  const root = providerRoot.toLowerCase();
+  if (root === '.codex') return protocol === 'codex';
+  if (root === '.grok') return protocol === 'grok';
+  return protocol === null;
 }
 
 function isProviderGuardHook(hook, providerRoot) {
@@ -293,11 +384,11 @@ function isProviderGuardHook(hook, providerRoot) {
     normalizedGuardInvocation(hook.commandWindows, providerRoot, true);
 }
 
-function validateProviderConfig(root, receipt, provider) {
-  if (!sameCanonicalValue(receipt.provider_config, provider.config)) {
+function validateProviderConfig(root, installation, provider) {
+  if (!sameCanonicalValue(installation.provider_config, provider.config)) {
     throw new Error('provider config snapshot does not match the selected provider');
   }
-  const configFile = path.join(root, receipt.provider_root, ...provider.config.path.split('/'));
+  const configFile = path.join(root, installation.provider_root, ...provider.config.path.split('/'));
   let configValue;
   try {
     configValue = JSON.parse(readInside(root, configFile, 'utf8'));
@@ -313,20 +404,48 @@ function validateProviderConfig(root, receipt, provider) {
   }
 }
 
-function validateArtifacts(root, receipt, provider) {
+// Mirrors the installer's receipt contract: both ascent fields or neither, and when present the
+// list is sorted, unique, non-empty, and contains the recorded default.
+function receiptAscents(receipt) {
+  const hasList = Object.hasOwn(receipt, 'ascents');
+  const hasDefault = Object.hasOwn(receipt, 'default_ascent');
+  if (!hasList && !hasDefault) {
+    return { ascents: [...IMPLIED_ASCENTS], default_ascent: IMPLIED_DEFAULT_ASCENT };
+  }
+  if (hasList !== hasDefault) return null;
+  const { ascents, default_ascent: fallback } = receipt;
+  if (!Array.isArray(ascents) || ascents.length === 0 ||
+      !ascents.every((id) => typeof id === 'string' && ASCENT_ID.test(id)) ||
+      new Set(ascents).size !== ascents.length ||
+      [...ascents].sort().join('\0') !== ascents.join('\0') ||
+      typeof fallback !== 'string' || !ascents.includes(fallback)) return null;
+  return { ascents: [...ascents], default_ascent: fallback };
+}
+
+function artifactKey(artifact) {
+  return `${artifact.placement}:${artifact.provider_root ?? ''}:${artifact.path}`;
+}
+
+function validateArtifacts(root, receipt, provider, selected) {
   if (!Array.isArray(receipt.artifacts) || receipt.artifacts.length === 0) {
     throw new Error('installation artifact inventory is empty');
   }
+  const multi = receipt.schema_version === 2;
   const keys = [];
   const folded = new Set();
   for (const artifact of receipt.artifacts) {
-    if (!exactKeys(artifact, ['placement', 'path', 'type', 'mode', 'sha256']) ||
+    // Only schema 2 carries provider_root, and only on provider-root entries.
+    const expectedKeys = ['placement', 'path', 'type', 'mode', 'sha256'];
+    if (multi && artifact.placement === 'provider-root') expectedKeys.push('provider_root');
+    if (!exactKeys(artifact, expectedKeys) ||
+        (multi && artifact.placement === 'provider-root' &&
+          !PROVIDER_ROOTS.includes(artifact.provider_root)) ||
         !ARTIFACT_PLACEMENTS.includes(artifact.placement) || !safeRelative(artifact.path) ||
         artifact.type !== 'file' || !Number.isInteger(artifact.mode) || artifact.mode < 0 || artifact.mode > 0o777 ||
         !/^[a-f0-9]{64}$/u.test(artifact.sha256)) {
       throw new Error('installation artifact entry has invalid schema');
     }
-    const key = `${artifact.placement}:${artifact.path}`;
+    const key = artifactKey(artifact);
     if (folded.has(key.toLowerCase())) throw new Error('installation artifact is duplicated');
     folded.add(key.toLowerCase());
     keys.push(key);
@@ -340,28 +459,36 @@ function validateArtifacts(root, receipt, provider) {
       throw new Error(`installation artifact is missing or changed: ${key}`);
     }
   }
+  // Mirrors the installer's ordering: placement, then provider root, then path.
   const sorted = [...receipt.artifacts]
-    .sort((left, right) => left.placement.localeCompare(right.placement) || left.path.localeCompare(right.path))
-    .map((artifact) => `${artifact.placement}:${artifact.path}`);
+    .sort((left, right) => left.placement.localeCompare(right.placement) ||
+      (left.provider_root ?? '').localeCompare(right.provider_root ?? '') ||
+      left.path.localeCompare(right.path))
+    .map(artifactKey);
   if (keys.join('\0') !== sorted.join('\0')) throw new Error('installation artifacts are not sorted');
+  // Under schema 2 the mandatory provider-root artifacts are the SELECTED provider's, not the
+  // default's — selecting codex must prove codex's own root is complete.
+  const selectedRoot = multi ? selected.provider_root : '';
   const mandatory = [
-    'spire-root:version',
-    'spire-root:catalog.json',
-    'spire-root:clusters/tech/descriptor.json',
-    'spire-root:bin/spire.mjs',
-    'spire-root:bin/spire',
-    'spire-root:bin/spire.cmd',
-    'provider-root:ORCHESTRATOR.md',
-    `provider-root:${provider.adapter.installed}`,
+    'spire-root::version',
+    'spire-root::catalog.json',
+    'spire-root::clusters/tech/descriptor.json',
+    'spire-root::bin/spire.mjs',
+    'spire-root::bin/spire',
+    'spire-root::bin/spire.cmd',
+    `provider-root:${selectedRoot}:ORCHESTRATOR.md`,
+    `provider-root:${selectedRoot}:${provider.adapter.installed}`,
   ];
-  if (receipt.provider === 'codex') mandatory.push('repo-root:AGENTS.md');
+  // Multi installs always ship the repo-root router; single installs ship it only for the
+  // providers whose boot doc relocates there.
+  if (multi || selected.name === 'codex' || selected.name === 'grok') mandatory.push('repo-root::AGENTS.md');
   for (const key of mandatory) if (!folded.has(key.toLowerCase())) throw new Error(`mandatory artifact is absent: ${key}`);
-  if (receipt.provider === 'claude' && folded.has('repo-root:agents.md')) {
+  if (!multi && selected.name === 'claude' && folded.has('repo-root::agents.md')) {
     throw new Error('Claude installation must not inventory repo-root AGENTS.md');
   }
 }
 
-function validateInstallation(root) {
+function validateInstallation(root, requestedProvider = null) {
   rootAuthority(root);
   const spireRoot = path.join(root, '.spire');
   const installed = readCanonical(root, path.join(spireRoot, 'installation.json'));
@@ -372,7 +499,15 @@ function validateInstallation(root) {
   if (!sameCanonicalValue(catalog.value, CATALOG)) throw new Error('installed catalog has invalid schema');
 
   const receipt = installed.value;
-  if (!exactKeys(receipt, RECEIPT_FIELDS) || receipt.schema_version !== 1 || receipt.product !== 'spire-os' ||
+  const multi = receipt.schema_version === 2;
+  const ascent = receiptAscents(receipt);
+  if (!ascent) throw new Error('installation receipt has invalid ascent fields');
+  const baseFields = multi ? RECEIPT_FIELDS_V2 : RECEIPT_FIELDS_V1;
+  const expectedFields = Object.hasOwn(receipt, 'ascents')
+    ? [...baseFields, ...RECEIPT_FIELDS_ASCENT]
+    : baseFields;
+  if (!exactKeys(receipt, expectedFields) ||
+      ![1, 2].includes(receipt.schema_version) || receipt.product !== 'spire-os' ||
       receipt.cluster !== DESCRIPTOR.id || !Object.hasOwn(PROVIDERS, receipt.provider) ||
       typeof receipt.version !== 'string' || !SPIRE_VERSION_PATTERN.test(receipt.version) ||
       typeof receipt.installed_at !== 'string' || Number.isNaN(Date.parse(receipt.installed_at)) ||
@@ -380,19 +515,58 @@ function validateInstallation(root) {
       !/^[a-f0-9]{64}$/u.test(receipt.descriptor_sha256)) {
     throw new Error('installation receipt has invalid schema');
   }
-  const provider = PROVIDERS[receipt.provider];
-  if (receipt.provider_root !== provider.root || !sameCanonicalValue(receipt.launch_adapter, provider.adapter)) {
+
+  // Resolve which installed provider this invocation selects, then validate THAT one end to end.
+  const defaultView = {
+    name: receipt.provider,
+    provider_root: receipt.provider_root,
+    launch_adapter: receipt.launch_adapter,
+    provider_capabilities: receipt.provider_capabilities,
+    provider_config: receipt.provider_config,
+  };
+  let installedProviders = [receipt.provider];
+  if (multi) {
+    if (!Array.isArray(receipt.providers) || receipt.providers.length === 0 ||
+        new Set(receipt.providers).size !== receipt.providers.length ||
+        !receipt.providers.every((name) => Object.hasOwn(PROVIDERS, name)) ||
+        [...receipt.providers].sort().join('\0') !== receipt.providers.join('\0') ||
+        !receipt.providers.includes(receipt.provider) ||
+        !exactKeys(receipt.installations, receipt.providers) ||
+        !receipt.providers.every((name) => exactKeys(receipt.installations[name], INSTALLATION_FIELDS))) {
+      throw new Error('installation receipt has invalid multi-provider schema');
+    }
+    // The default triple is a projection of installations[default]; a disagreement means the
+    // receipt lies about which host root cluster entry opens.
+    const canonicalDefault = receipt.installations[receipt.provider];
+    if (canonicalDefault.provider_root !== receipt.provider_root ||
+        !sameCanonicalValue(canonicalDefault.launch_adapter, receipt.launch_adapter) ||
+        !sameCanonicalValue(canonicalDefault.provider_capabilities, receipt.provider_capabilities) ||
+        !sameCanonicalValue(canonicalDefault.provider_config, receipt.provider_config)) {
+      throw new Error('installation default provider does not match its own inventory entry');
+    }
+    installedProviders = receipt.providers;
+  }
+  const selectedName = requestedProvider ?? receipt.provider;
+  if (!installedProviders.includes(selectedName)) {
+    throw new ProviderMismatchError(selectedName, installedProviders);
+  }
+  const selected = multi
+    ? { name: selectedName, ...receipt.installations[selectedName] }
+    : defaultView;
+
+  const provider = PROVIDERS[selectedName];
+  if (selected.provider_root !== provider.root || !sameCanonicalValue(selected.launch_adapter, provider.adapter)) {
     throw new Error('installation provider or adapter does not match the selected provider');
   }
   if (receipt.descriptor_sha256 !== hash(descriptor.bytes)) throw new Error('installed descriptor hash does not match');
   if (readInside(root, path.join(spireRoot, 'version'), 'utf8') !== `${receipt.version}\n`) {
     throw new Error('installed version does not match the receipt');
   }
-  validateProviderCapabilities(receipt, provider);
-  validateArtifacts(root, receipt, provider);
-  validateProviderConfig(root, receipt, provider);
+  validateProviderCapabilities(selected, provider);
+  validateArtifacts(root, receipt, provider, selected);
+  validateProviderConfig(root, selected, provider);
   inspectContained(root, path.join(root, ...DESCRIPTOR.state_root.split('/')), { leaf: 'directory' });
-  return { receipt, catalog: catalog.value, state: descriptor.value, provider };
+  return { receipt, catalog: catalog.value, state: descriptor.value, provider, selected, ascent };
 }
 
 function inspectSelectionTarget(root, destination, { allowMissing = true } = {}) {
@@ -417,13 +591,22 @@ function syncDirectory(directory) {
   }
 }
 
-function writeSelection(root, validated) {
-  const provider = validated.receipt.provider;
+// Decomposed at the first mutating call (spire.mjs:607 in the pre-decomposition numbering), not
+// at the old function boundary: prepareSelection is every check that can run before any byte
+// moves — including the :606 destination-hardlink/non-regular-destination guard
+// (inspectSelectionTarget) — and commitSelection is everything from fs.mkdirSync onward. Check
+// mode runs prepareSelection and stops; run mode runs both, from the same try/catch, so a throw
+// from either phase maps to the identical INVALID_INSTALLATION refusal in both modes. See
+// CHANGE_SPEC.md (doctor-selectability) §2.2 for why the boundary is not a skip-the-call design.
+function prepareSelection(root, validated, ascent) {
+  const provider = validated.selected.name;
   const expectedAdapter = PROVIDERS[provider].adapter;
+  if (!ASCENTS[DESCRIPTOR.id].includes(ascent)) throw new Error('selection ascent is not canonical');
   const selection = {
     schema_version: 1,
     selected_at: new Date().toISOString(),
     cluster: DESCRIPTOR.id,
+    ascent,
     provider,
     adapter: provider === 'claude'
       ? { kind: 'command', installed: 'commands/spire-tech.md', invoke: '/spire-tech' }
@@ -433,6 +616,11 @@ function writeSelection(root, validated) {
   const destination = path.join(root, ...DESCRIPTOR.state_root.split('/'), 'receipts', 'selection.json');
   const parent = path.dirname(destination);
   inspectSelectionTarget(root, destination);
+  return { selection, destination, parent };
+}
+
+function commitSelection(root, plan) {
+  const { selection, destination, parent } = plan;
   fs.mkdirSync(parent, { recursive: true });
   inspectSelectionTarget(root, destination);
 
@@ -460,52 +648,80 @@ function select(parsed) {
   try {
     rootAuthority(root);
   } catch {
-    return refusal('INVALID_INSTALLATION', `installed Spire state at '${root}' is unsafe`);
+    return refusal('INVALID_INSTALLATION', `installed Spire state at '${root}' is unsafe`, USAGE_HINTS.INVALID_INSTALLATION);
   }
   const installationFile = path.join(root, '.spire', 'installation.json');
   if (!fs.existsSync(installationFile)) {
-    return refusal('NOT_INSTALLED', `no complete Spire installation exists at '${root}'`);
+    return refusal('NOT_INSTALLED', `no complete Spire installation exists at '${root}'`, USAGE_HINTS.NOT_INSTALLED);
   }
   let validated;
   try {
-    validated = validateInstallation(root);
-  } catch {
-    return refusal('INVALID_INSTALLATION', `installed Spire state at '${root}' is malformed`);
+    validated = validateInstallation(root, parsed.provider);
+  } catch (error) {
+    if (error instanceof ProviderMismatchError) {
+      return refusal(
+        'PROVIDER_MISMATCH',
+        `requested provider '${error.requested}' does not match installed provider${error.installed.length > 1 ? 's' : ''} '${error.installed.join(', ')}'`,
+        USAGE_HINTS.PROVIDER_MISMATCH,
+      );
+    }
+    return refusal('INVALID_INSTALLATION', `installed Spire state at '${root}' is malformed`, USAGE_HINTS.INVALID_INSTALLATION);
   }
   const installation = validated.receipt;
   const catalog = validated.catalog;
   const cluster = parsed.selector === 'tech' ? 'spire:tech' : parsed.selector;
   const entry = catalog.clusters.find((candidate) => candidate.id === cluster);
-  if (!entry) return refusal('UNKNOWN_CLUSTER', `unknown cluster '${parsed.selector}'`);
+  if (!entry) return refusal('UNKNOWN_CLUSTER', `unknown cluster '${parsed.selector}'`, USAGE_HINTS.UNKNOWN_CLUSTER);
   if (entry.availability !== 'available' || entry.executable !== true) {
-    return refusal('CLUSTER_UNAVAILABLE', `cluster '${cluster}' is ${entry.availability} and cannot run`);
-  }
-  if (cluster !== DESCRIPTOR.id || installation.cluster !== cluster) {
-    return refusal('INVALID_INSTALLATION', `installed cluster '${installation.cluster}' does not match '${cluster}'`);
-  }
-  if (parsed.provider !== null && parsed.provider !== installation.provider) {
     return refusal(
-      'PROVIDER_MISMATCH',
-      `requested provider '${parsed.provider}' does not match installed provider '${installation.provider}'`,
+      'CLUSTER_UNAVAILABLE',
+      `cluster '${cluster}' is ${entry.availability} and cannot run`,
+      USAGE_HINTS.CLUSTER_UNAVAILABLE,
     );
   }
-  try {
-    writeSelection(root, validated);
-  } catch {
-    return refusal('INVALID_INSTALLATION', `selection receipt path at '${root}' is unsafe`);
+  if (cluster !== DESCRIPTOR.id || installation.cluster !== cluster) {
+    return refusal(
+      'INVALID_INSTALLATION',
+      `installed cluster '${installation.cluster}' does not match '${cluster}'`,
+      USAGE_HINTS.INVALID_INSTALLATION,
+    );
   }
-  return { ok: true, cluster, provider: installation.provider, root };
+  // An unrequested ascent falls back to the consumer's recorded default, never to a kit default.
+  // Unknown to this kit version and known-but-absent from the receipt are distinct refusals.
+  const ascent = parsed.ascent ?? validated.ascent.default_ascent;
+  if (!(ASCENTS[cluster] ?? []).includes(ascent)) {
+    return refusal('UNKNOWN_ASCENT', `unknown ascent '${ascent}' for cluster '${cluster}'`, USAGE_HINTS.UNKNOWN_ASCENT);
+  }
+  if (!validated.ascent.ascents.includes(ascent)) {
+    return refusal(
+      'ASCENT_NOT_INSTALLED',
+      `ascent '${ascent}' is not installed at '${root}'`,
+      USAGE_HINTS.ASCENT_NOT_INSTALLED,
+    );
+  }
+  // Provider resolution already happened during validation, which fails closed on an
+  // uninstalled provider — there is no fallback to the default.
+  try {
+    const plan = prepareSelection(root, validated, ascent);
+    if (!parsed.check) commitSelection(root, plan);
+  } catch {
+    return refusal('INVALID_INSTALLATION', `selection receipt path at '${root}' is unsafe`, USAGE_HINTS.INVALID_INSTALLATION);
+  }
+  return { ok: true, cluster, ascent, provider: validated.selected.name, root };
 }
 
 function emit(result, json) {
-  const output = json
-    ? JSON.stringify(result)
-    : result.ok
-      ? `selected ${result.cluster} for ${result.provider} at ${result.root}`
-      : `spire: ${result.message}`;
-  const stream = result.ok || json ? process.stdout : process.stderr;
-  stream.write(`${output}\n`);
-  return result.ok ? 0 : (ERROR_STATUS[result.error] ?? 1);
+  if (json) {
+    process.stdout.write(`${JSON.stringify(result)}\n`);
+    return result.ok ? 0 : (ERROR_STATUS[result.error] ?? 1);
+  }
+  if (result.ok) {
+    process.stdout.write(`selected ${result.cluster} ${result.ascent} for ${result.provider} at ${result.root}\n`);
+    return 0;
+  }
+  process.stderr.write(`spire: ${result.message}\n`);
+  if (result.hint) process.stderr.write(`hint: ${result.hint}\n`);
+  return ERROR_STATUS[result.error] ?? 1;
 }
 
 const parsed = parseArgs(process.argv.slice(2));

@@ -19,6 +19,10 @@ Examples of automate-worthy classes:
 - The change is **visible and intentional** (copy, label, static layout).
 - A human would always notice the break on a normal visual pass.
 - Automation would only restate CSS or string equality without protecting behavior.
+- **Zero-dep / no-DOM stack (H3):** plain ESM + `node --test` (or equivalent) with no DOM harness in
+  the project contract — paint, layout, focus rings, and browser-only DOM ACs stay `review` unless
+  a named harness (jsdom, Playwright, Cypress, …) is in the contract. Do not invent a DOM tier
+  silently. Pure modules under `test` remain the home for load-bearing logic.
 
 ## Depth guidance
 
@@ -27,8 +31,9 @@ Examples of automate-worthy classes:
 | Multi-step user journey | One integration/flow test |
 | Pure derivation / formatter | Unit test |
 | Component state matrix from SPEC | Component tests for named states that carry risk |
-| Accessibility critical path | One a11y or keyboard path check |
+| Accessibility critical path | One a11y or keyboard path check (only if harness exists) |
 | Pure cosmetic | Review |
+| Paint under zero-dep no-DOM | Review + disclose; pure logic under unit tests |
 
 ## Retired rule
 

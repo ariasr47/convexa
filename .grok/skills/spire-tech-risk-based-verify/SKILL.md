@@ -28,17 +28,24 @@ column) — never a parallel verify genre.
      refactors, structural rules that compile green while wrong.
    - `review` — copy wording, static presence, cosmetic layout, ordering that is intentional.
 
-4. **Choose depth, not count.** Prefer **one** high-level integration / e2e / a11y / visual check that
+4. **Disclose stack limits (H3).** When the consumer is plain ESM + `node --test` (or equivalent)
+   **without** a DOM harness (no jsdom/playwright/cypress in the contract), criteria that assert
+   paint, layout, focus rings, or browser-only DOM must be `review` — or the SPEC/seam must name the
+   harness that will run them. Re-home load-bearing logic (sort, classify, withhold, derive) to pure
+   modules so `test` can cover behavior without a DOM. Do **not** default-add jsdom to every consumer.
+   Record the limit next to other UNVERIFIABLE / method notes when paint stays review-only.
+
+5. **Choose depth, not count.** Prefer **one** high-level integration / e2e / a11y / visual check that
    protects the behavior over many literal component pokes. Never split one behavior into
    assertion-per-AC theater.
 
-5. **Reject hollow automation.** A green suite that asserts nothing, tolerates absence, or only
+6. **Reject hollow automation.** A green suite that asserts nothing, tolerates absence, or only
    checks "renders without throw" does **not** satisfy a `test` mark.
 
-6. **Record the method.** When verifying (build done-report or GATE Q), write **how** each row was
+7. **Record the method.** When verifying (build done-report or GATE Q), write **how** each row was
    checked: test name(s) or `review/QA` with what was inspected. Silence is not evidence.
 
-7. **Do not re-impose one-test-per-AC.** That rule is retired. Risk decides method; observability
+8. **Do not re-impose one-test-per-AC.** That rule is retired. Risk decides method; observability
    decides whether review is enough.
 
 ## Reference routing

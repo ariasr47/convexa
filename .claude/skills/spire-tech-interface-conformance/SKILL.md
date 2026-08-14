@@ -15,8 +15,9 @@ block the tool will later check.
 1. Write `INTERFACE_CONTRACT.md` in the feature contracts folder as the single FE↔BE truth.
 2. Include endpoints (method, path, purpose, auth, error semantics) in human prose as needed.
 3. Place a parseable block under a heading spelled exactly `## Conformance spec` with fenced JSON:
-   `{ "endpoints": [ { "method", "path", "path_params", "query", "required", optional "auth" } ] }`.
-4. Dot-paths, `name[]` for array fan-out, `type|null` / `type?` for optional unions.
+   `{ "endpoints": [ { "method", "path", "path_params", "query", "required", optional "auth", optional "expect_status" } ] }`.
+4. Dot-paths, `name[]` for array fan-out, `type|null` / `type?` for optional unions. Use
+   `expect_status` (default 200) for machine-checked error paths; body `required` applies when status matches.
 5. If the feature genuinely touches no backend: still write the file, mark `NO_BACKEND_CHANGE`, and
    do not invent a fake live block.
 6. Never omit the conformance block for a backend-touching feature — prose-only interface is the
