@@ -15,6 +15,7 @@ pub enum RecField {
 pub enum ReasonKind {
     NotGiven,
     Unavailable,
+    UnrecognizedValue,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -23,6 +24,7 @@ pub enum MissingInput {
     RiskBlock,
     CandidateQuotes,
     StraddleMove,
+    CandidateSet,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -59,6 +61,73 @@ pub fn field_reason(field: RecField, value_present: bool, p: InputPresence) -> O
     Some(match deps.into_iter().find(|(present, _)| !*present) {
         Some((_, missing)) => FieldReason { reason: ReasonKind::Unavailable, missing_input: Some(missing) },
         None => FieldReason { reason: ReasonKind::NotGiven, missing_input: None },
+    })
+}
+
+/// The SIX plan/conviction fields. A **separate** enum from `RecField` on purpose: `RecField` is a
+/// shared key whose other consumer (`grounding::resolve_field`) is an exhaustive match over an
+/// `Option<f64>` that none of these six can inhabit. Merging them would file a present structure as
+/// absent and would move the user-visible `n of m` pair. Pinned at 6 by a tally test.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecPlanField {
+    Structure,
+    Strikes,
+    Expiration,
+    EntryTrigger,
+    TimeHorizon,
+    Confidence,
+}
+
+/// What the assembler found in the slot. THREE members, not a bool: `Absent` and `OffScale` are
+/// different facts (`[absent-is-not-none]`) — "it never answered" versus "it answered off our
+/// scale" — and collapsing them is the defect this feature exists to close, one layer up.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlanValue {
+    Present,
+    Absent,
+    /// Reachable on `Confidence` only (INTERFACE_CONTRACT §1, confidence arm 3).
+    OffScale,
+}
+
+/// The dependency DECLARATION, with `[absent-is-not-none]` applied to the flag itself:
+/// `None` = this producer declared no dependency on the candidate set (the local-rules branch);
+/// `Some(false)` = it declared one and the set was empty; `Some(true)` = declared and met.
+/// `unavailable` is emitted from `Some(false)` and from nowhere else.
+#[derive(Debug, Clone, Copy)]
+pub struct PlanInputPresence {
+    pub candidate_set: Option<bool>,
+}
+
+/// Sibling of `field_reason` for the six. Returns the SHIPPED `FieldReason` struct unchanged.
+pub fn plan_field_reason(
+    field: RecPlanField,
+    value_present: PlanValue,
+    presence: PlanInputPresence,
+) -> Option<FieldReason> {
+    if value_present == PlanValue::Present {
+        return None;
+    }
+    let not_given = FieldReason { reason: ReasonKind::NotGiven, missing_input: None };
+    Some(match field {
+        // THE ONLY construction site of `unrecognized_value` in the codebase. An `OffScale` handed to
+        // any other arm falls to `not_given` — it cannot mint a second emit site.
+        RecPlanField::Confidence => match value_present {
+            PlanValue::OffScale => {
+                FieldReason { reason: ReasonKind::UnrecognizedValue, missing_input: None }
+            }
+            _ => not_given,
+        },
+        // The two fields that declare a candidate-set dependency. `None` = no dependency declared,
+        // so an empty set says nothing about them and the honest answer stays `not_given`.
+        RecPlanField::Strikes | RecPlanField::Expiration => match presence.candidate_set {
+            Some(false) => FieldReason {
+                reason: ReasonKind::Unavailable,
+                missing_input: Some(MissingInput::CandidateSet),
+            },
+            _ => not_given,
+        },
+        // No declared dependency: `unavailable` is structurally unreachable on these three.
+        RecPlanField::Structure | RecPlanField::EntryTrigger | RecPlanField::TimeHorizon => not_given,
     })
 }
 
@@ -114,5 +183,130 @@ mod tests {
         assert_eq!(r.reason, ReasonKind::NotGiven);
         assert!(r.missing_input.is_none());
         assert!(field_reason(RecField::InvalidationLevel, true, p).is_none());
+    }
+
+    // ---- rec-absence-literals-hole ------------------------------------------------------------
+
+    fn no_dep() -> PlanInputPresence {
+        PlanInputPresence { candidate_set: None }
+    }
+
+    #[test]
+    fn the_two_field_enums_stay_disjoint_at_five_and_six() {
+        // A tally, not a spelling test: merging the two enums is the failure this pins (AC-32).
+        const REC_FIELDS: [RecField; 5] = [
+            RecField::MaxRisk,
+            RecField::PositionSize,
+            RecField::ExitTarget,
+            RecField::ExitStop,
+            RecField::InvalidationLevel,
+        ];
+        const PLAN_FIELDS: [RecPlanField; 6] = [
+            RecPlanField::Structure,
+            RecPlanField::Strikes,
+            RecPlanField::Expiration,
+            RecPlanField::EntryTrigger,
+            RecPlanField::TimeHorizon,
+            RecPlanField::Confidence,
+        ];
+        assert_eq!(REC_FIELDS.len(), 5);
+        assert_eq!(PLAN_FIELDS.len(), 6);
+    }
+
+    #[test]
+    fn a_stated_plan_value_has_no_reason() {
+        for f in [RecPlanField::Structure, RecPlanField::Strikes, RecPlanField::Confidence] {
+            assert!(plan_field_reason(f, PlanValue::Present, no_dep()).is_none(), "{f:?}");
+        }
+    }
+
+    #[test]
+    fn a_field_with_no_declared_dependency_is_always_not_given() {
+        for f in [
+            RecPlanField::Structure,
+            RecPlanField::EntryTrigger,
+            RecPlanField::TimeHorizon,
+        ] {
+            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) })
+                .unwrap();
+            assert_eq!(r.reason, ReasonKind::NotGiven, "{f:?}");
+            assert!(r.missing_input.is_none(), "{f:?}");
+        }
+    }
+
+    #[test]
+    fn strikes_and_expiration_are_unavailable_only_when_the_declared_set_is_empty() {
+        for f in [RecPlanField::Strikes, RecPlanField::Expiration] {
+            // declared and unmet -> unavailable + candidate_set
+            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) })
+                .unwrap();
+            assert_eq!(r.reason, ReasonKind::Unavailable, "{f:?}");
+            assert_eq!(r.missing_input, Some(MissingInput::CandidateSet), "{f:?}");
+            // declared and met -> not_given
+            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(true) })
+                .unwrap();
+            assert_eq!(r.reason, ReasonKind::NotGiven, "{f:?}");
+            // NOT declared (the local-rules branch) -> not_given, even though nothing was named
+            let r = plan_field_reason(f, PlanValue::Absent, no_dep()).unwrap();
+            assert_eq!(r.reason, ReasonKind::NotGiven, "{f:?}");
+            assert!(r.missing_input.is_none(), "{f:?}");
+        }
+    }
+
+    #[test]
+    fn confidence_follows_its_fixed_order_and_never_collapses_off_scale_into_never_answered() {
+        let absent = plan_field_reason(RecPlanField::Confidence, PlanValue::Absent, no_dep()).unwrap();
+        assert_eq!(absent.reason, ReasonKind::NotGiven);
+        assert!(plan_field_reason(RecPlanField::Confidence, PlanValue::Present, no_dep()).is_none());
+        let off = plan_field_reason(RecPlanField::Confidence, PlanValue::OffScale, no_dep()).unwrap();
+        assert_eq!(off.reason, ReasonKind::UnrecognizedValue);
+        assert!(off.missing_input.is_none());
+    }
+
+    #[test]
+    fn unrecognized_value_is_unconstructable_from_any_other_field() {
+        // The single-emit-site invariant, stated as a property over BOTH functions.
+        for f in [
+            RecPlanField::Structure,
+            RecPlanField::Strikes,
+            RecPlanField::Expiration,
+            RecPlanField::EntryTrigger,
+            RecPlanField::TimeHorizon,
+        ] {
+            for v in [PlanValue::Absent, PlanValue::OffScale] {
+                let r = plan_field_reason(f, v, PlanInputPresence { candidate_set: Some(true) });
+                assert_ne!(
+                    r.map(|x| x.reason),
+                    Some(ReasonKind::UnrecognizedValue),
+                    "{f:?} must never emit unrecognized_value"
+                );
+            }
+        }
+        // The shipped five-field function has no such arm at all.
+        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: false };
+        for f in [
+            RecField::MaxRisk,
+            RecField::PositionSize,
+            RecField::ExitTarget,
+            RecField::ExitStop,
+            RecField::InvalidationLevel,
+        ] {
+            for present in [true, false] {
+                let r = field_reason(f, present, p);
+                assert_ne!(r.map(|x| x.reason), Some(ReasonKind::UnrecognizedValue), "{f:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn missing_input_is_non_null_iff_the_reason_is_unavailable() {
+        let cases = [
+            plan_field_reason(RecPlanField::Strikes, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) }),
+            plan_field_reason(RecPlanField::Strikes, PlanValue::Absent, no_dep()),
+            plan_field_reason(RecPlanField::Confidence, PlanValue::OffScale, no_dep()),
+        ];
+        for c in cases.into_iter().flatten() {
+            assert_eq!(c.missing_input.is_some(), c.reason == ReasonKind::Unavailable);
+        }
     }
 }
