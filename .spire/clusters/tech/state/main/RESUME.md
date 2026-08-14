@@ -1,107 +1,92 @@
-# RESUME — branch `main` — written 2026-08-13 (GATE PLAN closed, pre-fan-out)
+# RESUME — branch `main` — written 2026-08-13 (post-ship snapshot)
 
-Conductor snapshot at a clean gateway boundary: **`ai-rec-grounding` GATE PLAN closed; both build
-lanes NOT yet dispatched.** Overlay on the canon — reconcile against disk. Supersedes the
-2026-08-13 post-ship snapshot (that feature, `tradeable-rec-inputs`, is shipped + archived).
+Conductor snapshot at a clean gateway boundary: **`ai-rec-grounding` GATE S closed; GATE I not yet
+run.** Overlay on the canon — reconcile against disk.
 
 ## Where we are
 
-**`ai-rec-grounding` is in flight**, at `.spire/clusters/tech/contracts/ai-rec-grounding/`.
-GATE I → GATE C → GATE PLAN all closed this session. Nothing has been built yet; **no source file
-has been touched.**
+**Nothing is in flight.** `contracts/` holds only `_archive/`. `ai-rec-grounding` SHIPPED + ARCHIVED
+2026-08-13 (commit `efb6d58`, pushed → deployed): GATE I → council (28 conflicts, 28/28 quotes
+machine-verified, 5 self-revisions, 19/19 technical settled by the voices, 1 owner ruling → S2 FAIL →
+fix → PASS) → PLAN 48 items → both lanes parallel → GATE Q **65/3 FAIL → GATE Z → PASS 68/68**.
+Conformance spec promoted to `state/conformance/ai-rec-grounding.json` (2 endpoints). Canon folded:
+OPEN_THREADS §7ae + PROJECT_CONTEXT §6 + BACKLOG + DESIGN_SYSTEM Amendments. Ledger: **11 rows**
+(7 C + 3 Q + 1 S).
 
-- **GATE I (2026-08-13):** chose `ai-rec-grounding` from 14 candidates. Every number the AI rec
-  asserts must trace to a Convexa-computed value. BACKLOG carries the record + full cull.
-- **GATE C:** R1 ×3 blind → R2 ×3 (28 conflicts, **28/28 quotes machine-verified**, 5 self-revisions)
-  → R3 one exchange (**19/19 technical converged or conceded, none promoted**; 8 of 9 product
-  conflicts closed by convergence) → owner ruled D7 → R4 ×2 → S2 ×2 (pass 1: 1 Critical + 8 Important
-  + 3 Minor; pass 2 **PASS**). `SPEC.md` (~950 lines) + `INTERFACE_CONTRACT.md` **owner-approved**.
-- **GATE PLAN:** `PLAN.md` — **48 items**: B1–B16 · F1–F17 · V1–V15. Critical path
-  `B1→B2→B6→…→B16→V3`. Global Constraints carry the conformance block **verbatim**.
-- **GATE Z (raised by the planner, both resolved):** Z1 AC-7 contradicted shipped behaviour; Z2
-  named a non-existent export artifact. See `SYNTHESIZER_AMENDMENTS_REQUESTED.md`.
-- `contract_lint ai-rec-grounding` → **0 errors** (3 warnings are pre-existing PROJECT_CONTEXT
-  shard sizes, not this feature). Ledger: **7 rows**, all gate C, incl. the **first instance** of
-  `ai-asserted-numbers-are-traceable`.
+**The headline number: 44.4% of the numbers the AI asserts do not trace** to anything Convexa
+computed — every one of which rendered as fact before this ship.
 
 ## Next concrete step
 
-**1. Apply the D8 ruling (one arm, one string) BEFORE dispatching lanes.** Recorded in
-`council/decisions.md` §D8. The block-absent prefill branch has no reason literal; SPEC §4's table
-has only two. Add a **third** literal in the card's `wasn't checked` register, distinct from both
-existing ones. Touches: SPEC §4 table + AC-68's disjointness check; PLAN F3 (literal), F4
-(`prefillGate` arm), F16 (render), F17 arm 4 (assert the reason, not just no-seed). **Block-absent
-still never licences a pre-fill** — this adds an explanation, never a seed. Owner may flip it to
-silence by saying `silence`.
+**GATE I (Discovery) on "go".** Plus one queued non-blocking decision (below).
 
-**2. Then dispatch both build lanes in parallel** (`spire-tech-backend` on B-items,
-`spire-tech-frontend` on F-items), both bound to `INTERFACE_CONTRACT.md`. → GATE Q → GATE S.
+Pre-registered candidates, re-test rather than inherit:
+- **`rec-absence-literals-hole`** — BACKLOG §B, NEW this ship. Four AI-rec fields print an out-of-set
+  bare `—`. **Closing it also closes SPEC §9.5's halo residual.** Value M–H · Effort S.
+- **`score-lab-b0b-outcomes`** — S-sized backend fast-path, unchanged from two gates ago; needs
+  `MASSIVE_API_KEY` at run time; **never synthesize outcomes**.
+- **`degradation-visibility`** — flagged RISING two gates running; grew again this ship (more nullable
+  best-effort fields, still no null-rate aggregation).
+- **S5c SSE connection ceiling** — the last genuine MEDIUM from the security review; it stopped being
+  theoretical when the app went live and can take the single container down.
+- **Hygiene batch (one pass, three items):** `ci-standing-red` + `ports-free-is-ipv4-only` +
+  `cargo-fmt-whole-crate-drift`. All three cost this session or the last one real time.
 
 ## Owner-facing, unanswered
 
-- **F12 is BLOCKED on the owner** appending the **type-register Amendment** (mono = Convexa computed,
-  sans = model asserted) to `DESIGN_SYSTEM.md` §Amendments. The lane checks and **stops** rather than
-  inventing canon. Everything else can proceed around it.
-- **AI key rotation still advised** (carried from the last snapshot — a shell one-liner echoed the key
-  into a local tool log during V10; never committed, sweep clean). Owner's call.
-- Declared under default-with-veto this session, both reversible: **D8** (third literal, above) and
-  **Z1 Reading A** — clicking *Act* on a rec whose stop did not trace brings that field up **empty**
-  with a reason instead of pre-filled. Say `keep prefill` to reverse Z1.
+- **QUEUED, non-blocking (batched per OPERATOR_REPORTS §4.3 — surface at the next gateway close):**
+  should **`ai-asserted-numbers-are-traceable`** be promoted to canon via the **severity path** at 1
+  instance? `ledger_tally` says NO on recurrence (1 feature; the bar is ≥2 if binding) and it stays on
+  the watch list. The severity-path argument: a fabricated number the app presents as fact is a wrong
+  trade with real money, and 44.4% is measured, not hypothetical. The counter-argument: severity was
+  reserved for *catastrophic and irreversible* (the `loss-free-durable-migration` precedent was total
+  silent loss of the user's entire trading history), and this feature now prevents the harm
+  structurally, so the rule may simply promote normally at its 2nd instance. **Precedent: the severity
+  path was itself added by owner canon review, and promotion is contestable via GATE Z.**
+- **AI key rotation still advised** (carried forward — a shell one-liner echoed the key into a local
+  tool log during the previous feature's V10; never committed, sweep clean).
 
 ## Standing facts (verified this session — do not re-derive)
 
-1. **The BRIEF's original evidence path was STALE and R1 caught it.** `ScenarioLLMProvider` /
-   `AI_REC_SCENARIOS_ENABLED` **do not exist in the Rust backend** — `recommendation.rs:358`
-   hardcodes them off, `scenario_id` (`:803`) is deserialized and never read, the FE picker
-   (`AiRecPanel.tsx:275`) is dead code. Inherited from the **Python-era** 2026-07-16 backlog entry.
-   Replaced by fixtures through `envelope_extras` + an `AI_REC_LOCAL_ONLY=1` live arm — which
-   **DOES require a usable key** (`recommendation.rs:655` gates on `resolved.usable()`).
-2. **Scope is honestly smaller than the BRIEF's headline** (SPEC §1 says so in one sentence):
-   `max_risk` and `position_size` are **structurally not-checkable in v1**. Real coverage = stop ·
-   target · invalidation · cited contract. The cap-anchored shortcut was withdrawn at R3 — a
-   fabricated $480 under a $500 cap would have rendered "traced".
-3. **A borrow trap the planner named:** `pruned_market_state` is *moved* into `RecPromptContext` at
-   `recommendation.rs:681`, **after** the `base` closure at `:617`. B10 extracts a `Copy`
-   `GroundingAnchors` before the closure and hoists `local_only`.
-4. **:8000 orphan** (PID 58588, `taskkill /F` access-denied) serves stale code and rewrites
+1. **Backlog code references go stale, and it has now bitten twice.** The BRIEF's evidence path cited
+   `ScenarioLLMProvider` / `AI_REC_SCENARIOS_ENABLED`; those **do not exist in the Rust backend**
+   (`recommendation.rs:358` hardcodes them off, the FE picker is dead code) — inherited from the
+   **Python-era** 2026-07-16 entry. R1 caught it in round one, cost zero build time. **Re-ground a
+   feasibility claim in code before trusting it.**
+2. **`AI_REC_LOCAL_ONLY=1` DOES require a usable key** — `recommendation.rs:655` gates on
+   `resolved.usable()` before the flag is read. An R1 claim to the contrary was withdrawn.
+3. **:8000 orphan** (PID 58588, `taskkill /F` access-denied) serves stale code and rewrites
    `data/scan.json` several times a minute — **verify on :8010+**; a naive before/after byte check on
-   that file gives a false failure. `ports:free` is **IPv4-only**; Vite binds IPv6 (`localhost:`,
-   not `127.0.0.1`).
-5. **NEVER `git stash`** while another lane/conductor holds uncommitted work — it destroyed the
-   conductor's planning surface on the last feature. Targeted `git checkout -- <file>` or a worktree.
-6. **A green `nx test` does NOT mean the types are sound.** `npx nx typecheck` and
-   `cargo check -p api-rust --features postgres` are separate mandatory steps. **Check EXIT CODES,
-   not printed summaries.**
-7. **Dashboard suite baseline: 1639 passing + 5 accepted pre-existing red files** (`readonly.spec.tsx`,
+   that file gives a false failure. `ports:free` is **IPv4-only**; Vite binds IPv6 (`localhost:`).
+4. **`core.autocrlf = true` and no `.gitattributes`** — a source-scan guard matching a literal `\n`
+   fails on any fresh Windows clone. Normalize before matching; **never weaken the assertion to make
+   it pass.** (Found as GATE Q finding F-2 on the 8c pin.)
+5. **Dashboard suite baseline: 1700 passing + 5 accepted pre-existing red files** (`readonly.spec.tsx`,
    `positions.risk.spec.tsx`, `grouping.integration.spec.tsx`, `stage3-amber.spec.ts`,
-   `orders.risk.spec.tsx`). A **6th** red file is a new regression.
-8. **CI/CD exists and push = deploy** (Railway auto-deploy + CF Pages git builds + `deploy-smoke.yml`).
-   Standing-red CI is pre-existing, not ours — BACKLOG §B `ci-standing-red`.
+   `orders.risk.spec.tsx`). A 6th is a new regression. `app.risk.spec.tsx` is a **load-sensitive flake,
+   proven pre-existing** across 5 full-suite runs (3 in a clean-HEAD worktree, 2 on branch).
+6. **A green `nx test` does NOT mean the types are sound**; `nx typecheck` and
+   `cargo check -p api-rust --features postgres` are separate mandatory steps. **Exit codes, not
+   printed summaries.** **NEVER `git stash`** — use a worktree.
+7. **CI/CD exists and push = deploy** (Railway auto-deploy + CF Pages + `deploy-smoke.yml`).
+   `efb6d58` is pushed; **prod not yet probed this session** — worth a check.
 
-## Two residuals booked OPEN in SPEC §9 — do not let a lane close them falsely
+## The lessons this ship added (ledger rows exist — apply, don't rediscover)
 
-- **§9.5 halo effect** — a reader could still generalize "no marker = checked" from the fields that
-  carry a clause. Mitigated by an allowlist tooltip + the four cut fields carrying **no** marker at
-  all; reviewed, never measured against a real reader. Closes when `rec-absence-literals-hole` ships.
-- **§9.6 no-key verification gap** — with no provider key, layer-2 records **not-run with its reason**.
-  V10–V13 are key-gated. **Never a synthesized run** (the `tradeable-rec-inputs` V10 precedent).
-- **§9.7** — no export surface carries the strategy, grounding states or system prompt; widening was
-  ruled out (`egress-copy-tracks-payload`). **AC-5's export half is vacuously true — do not chase it.**
-
-## D7 (owner-ruled) — the noise bar is a MEASUREMENT, not a ship gate
-
-Ladder **pre-committed before the split is seen**: ≥5 real recs across ≥3 tickers, record the
-traced / no-match / couldn't-check split into a committed artifact; high no-match ⇒ **one** prompt
-revision + **one** re-run ⇒ still high ⇒ ship with the honest rate recorded. **Never a tolerance
-widening, never a scope cut, never a synthesized run.** Still ship-blocking regardless: **AC-33**
-(a fabricated-rec fixture must trip the check) and **AC-50** (poison-proved non-vacuous, via §2.6
-guard 8 asserted through `envelope_extras` with four poison arms).
-
-## Backlog items this session created
-
-- **`rec-absence-literals-hole`** — 4 rec fields (`Structure`, `Strike(s)`, `Expiration`,
-  `Entry trigger`) print an out-of-set bare `—` on `main`. Pre-existing `absent-is-not-none` defect;
-  this feature neither creates nor worsens it, and deliberately attaches **no** grounding marker there.
-- **PROJECT_CONTEXT shard sizes** — §2 (178) / §5 (211) / §6 (530 lines) exceed the threshold, so any
-  feature tagging into them loads the whole section. This feature's pack went 971→441 lines only after
-  dropping the `personas` tag (which is the tag on §6).
+- **A guard the builder itself could not catch.** Guard 8c had **no in-process test that could fail** —
+  the fixtures called `envelope_extras` directly with a self-built move, bypassing the real wiring.
+  Found only by *attempting the poison*, never by reading the guard. **Poison-proving is not a
+  formality; it is the only thing that finds a guard which cannot fail.**
+- **The tempting fix for a broken guard is usually the wrong one.** The CRLF failure's easy fix would
+  have weakened the only assertion covering the 8c poison arm — satisfying the guard's NAME while
+  destroying its BEHAVIOUR.
+- **An artifact about measurement integrity must name its own weakest link.** The D7 artifact now
+  states what is corroborated and what is not: the ≥50% bar is **not** in SPEC §7, exists only in that
+  file, and sits exactly between the two measured rates (57.1% / 44.4%). Stated as what happened, never
+  as what a timestamp proves — new watch key `measurement-states-its-own-provenance`.
+- **"Not mine" is the one claim a lane has an incentive to reach for.** Seven uncovered `test`-marked
+  ACs: backend said none touched `apps/api` (true), frontend covered six — **AC-34 fell between the
+  lanes** and was only caught by checking the SPEC directly.
+- **The owner's D7 ruling worked as designed.** Pass 1 came in at 57.1%, tripped the pre-committed bar,
+  earned exactly one prompt revision and one re-run, and landed at 44.4%. A ship gate would have made
+  tolerance-widening and scope-cutting the paths of least resistance instead.
