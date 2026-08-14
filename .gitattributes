@@ -1,0 +1,25 @@
+# Line-ending policy.
+#
+# Why this file exists: `core.autocrlf = true` is set on this machine and there was
+# no `.gitattributes`, so every checkout rewrote Spire's byte-exact receipts to CRLF.
+# Spire's `canonicalJson()` emits LF and its installer compares BYTES, so the
+# integrity check could never pass on a Windows clone — measured 2026-08-14 against
+# the 348-artifact receipt: 114 matched as-is, 231 matched only after CRLF->LF.
+# Git stores these as LF already; the damage was purely checkout-side, which is why
+# normalizing the working tree alone did not stick and this file is the real fix.
+#
+# The same defect class bit `ai-rec-grounding` at GATE Q (finding F-2): a Rust
+# source-scan guard matching a literal "\n" failed on any fresh Windows clone.
+
+# Spire kit + product memory: receipts are machine-compared byte-for-byte.
+.spire/**           text eol=lf
+
+# Host adapters: these carry the installed kit artifacts whose sha256 the
+# installation receipt pins.
+.claude/**          text eol=lf
+.codex/**           text eol=lf
+.grok/**            text eol=lf
+
+# Source scanned by structural guards that match on "\n" (see F-2 above).
+*.rs                text eol=lf
+*.mjs               text eol=lf
