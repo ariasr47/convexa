@@ -16,7 +16,10 @@ use crate::services::llm::{
 use crate::services::rec_inputs::cap_check::cap_verdict;
 use crate::services::rec_inputs::cited::resolve_cited;
 use crate::services::rec_inputs::digest::parse_digest;
-use crate::services::rec_inputs::field_reasons::{field_reason, FieldReason, InputPresence, RecField};
+use crate::services::rec_inputs::field_reasons::{
+    field_reason, plan_field_reason, plan_value, FieldReason, InputPresence, PlanInputPresence,
+    RecField, RecPlanField,
+};
 use crate::services::rec_inputs::grounding::{
     card_member, counts, resolve_field, GroundingAnchors, GROUNDING_TOL_PCT,
 };
@@ -475,12 +478,31 @@ fn envelope_extras(
             None => Value::Null,
         }
     };
+    // The SIX plan/conviction fields ride the same object, built at this ONE site so they cannot be
+    // partially applied (INTERFACE_CONTRACT rule 2). `local_only` declares NO candidate-set
+    // dependency — the local-rules producer needs no set at all, so an empty set says nothing about
+    // its `strikes`/`expiration` and `unavailable` must stay unreachable there.
+    let plan_presence = PlanInputPresence {
+        candidate_set: if local_only { None } else { Some(!set.contracts().is_empty()) },
+    };
+    let pfr = |field: RecPlanField| -> Value {
+        match plan_field_reason(field, plan_value(field, strategy), plan_presence) {
+            Some(r) => serde_json::to_value(r).unwrap_or(Value::Null),
+            None => Value::Null,
+        }
+    };
     let field_reasons = json!({
         "max_risk": fr(RecField::MaxRisk, present(strategy.get("max_risk"))),
         "position_size": fr(RecField::PositionSize, present(strategy.get("position_size"))),
         "exit_target": fr(RecField::ExitTarget, present(strategy.pointer("/exit_plan/target"))),
         "exit_stop": fr(RecField::ExitStop, present(strategy.pointer("/exit_plan/stop"))),
         "invalidation_level": fr(RecField::InvalidationLevel, present(strategy.get("invalidation_level"))),
+        "structure": pfr(RecPlanField::Structure),
+        "strikes": pfr(RecPlanField::Strikes),
+        "expiration": pfr(RecPlanField::Expiration),
+        "entry_trigger": pfr(RecPlanField::EntryTrigger),
+        "time_horizon": pfr(RecPlanField::TimeHorizon),
+        "confidence": pfr(RecPlanField::Confidence),
     });
 
     let strikes: Vec<f64> = strategy
@@ -901,6 +923,86 @@ mod tests {
         for k in ["checked", "traced", "untraced", "not_checkable"] {
             assert_eq!(grounding["counts"][k], 0);
         }
+    }
+
+    // ---- rec-absence-literals-hole ------------------------------------------------------------
+
+    #[test]
+    fn field_reasons_carries_exactly_eleven_keys_with_exact_spellings() {
+        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let (_cap, fr, _cited, _g) = envelope_extras(
+            &Value::Null, &set, None, None, false, None, GroundingAnchors::empty(), false,
+        );
+        let obj = fr.as_object().expect("field_reasons is an object");
+        let mut keys: Vec<&str> = obj.keys().map(|k| k.as_str()).collect();
+        keys.sort_unstable();
+        // Hand-built with `json!`, so NOTHING else pins these spellings: a typo'd key is invisible on
+        // both sides and would be wrong on every field at once (AC-32).
+        assert_eq!(
+            keys,
+            vec![
+                "confidence", "entry_trigger", "exit_stop", "exit_target", "expiration",
+                "invalidation_level", "max_risk", "position_size", "strikes", "structure",
+                "time_horizon",
+            ]
+        );
+        assert_eq!(obj.len(), 11);
+    }
+
+    #[test]
+    fn the_six_ride_the_local_rules_envelope_and_never_claim_unavailable_there() {
+        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let strategy = local_strategy_from_bundle(&serde_json::json!({
+            "signals": { "setups": [{ "bias": "long", "name": "Flip reclaim", "strategy": "long call",
+                                      "rationale": "r", "conviction": "medium" }] },
+            "market_state": { "gamma_flip": 245.0 },
+        }));
+        // local_only = true => the producer declares NO candidate-set dependency.
+        let (_cap, fr, _cited, _g) = envelope_extras(
+            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), true,
+        );
+        for k in ["strikes", "expiration"] {
+            assert_eq!(fr[k]["reason"], "not_given", "{k} must not claim an input failed here");
+            assert!(fr[k]["missing_input"].is_null(), "{k}");
+        }
+        // Rule-authored, so they carry values and no reason at all.
+        for k in ["structure", "entry_trigger", "confidence"] {
+            assert!(fr[k].is_null(), "{k} was authored by the rules and needs no reason");
+        }
+        // AC-33 — the input-independent constant is gone; the horizon is honestly absent.
+        assert_eq!(fr["time_horizon"]["reason"], "not_given");
+        assert!(strategy["time_horizon"].is_null());
+    }
+
+    #[test]
+    fn a_declared_empty_candidate_set_names_candidate_set_on_the_two_fields_that_depend_on_it() {
+        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let strategy = serde_json::json!({
+            "decision": "trade", "structure": "", "strikes": [], "expiration": null,
+            "entry_trigger": "", "time_horizon": null, "confidence": null,
+        });
+        let (_cap, fr, _cited, _g) = envelope_extras(
+            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), false,
+        );
+        for k in ["strikes", "expiration"] {
+            assert_eq!(fr[k]["reason"], "unavailable", "{k}");
+            assert_eq!(fr[k]["missing_input"], "candidate_set", "{k}");
+        }
+        for k in ["structure", "entry_trigger", "time_horizon", "confidence"] {
+            assert_eq!(fr[k]["reason"], "not_given", "{k}");
+            assert!(fr[k]["missing_input"].is_null(), "{k}");
+        }
+    }
+
+    #[test]
+    fn an_off_scale_confidence_is_reported_as_unrecognized_value_not_as_never_answered() {
+        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let strategy = serde_json::json!({ "decision": "trade", "confidence": "quite high" });
+        let (_cap, fr, _cited, _g) = envelope_extras(
+            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), false,
+        );
+        assert_eq!(fr["confidence"]["reason"], "unrecognized_value");
+        assert!(fr["confidence"]["missing_input"].is_null());
     }
 
     /// A hermetic two-contract `CandidateSet` (the 500 call + the 500 put), the standard reference set
