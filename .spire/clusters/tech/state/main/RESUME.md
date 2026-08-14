@@ -16,9 +16,43 @@ OPEN_THREADS §7ae + PROJECT_CONTEXT §6 + BACKLOG + DESIGN_SYSTEM Amendments. L
 **The headline number: 44.4% of the numbers the AI asserts do not trace** to anything Convexa
 computed — every one of which rendered as fact before this ship.
 
+## Infrastructure changed AFTER the ship — read this before trusting anything above
+
+**spire-os upgraded 3.3.0 → 3.13.0 on 2026-08-14** (commit `404d80f`; doctor **in-sync, version
+current**; `contract_lint` 0 errors). The session that shipped `ai-rec-grounding` was running the
+**3.3.0** driver; **this snapshot's next reader is the first on 3.13.0.** Re-derive the gateway
+catalog and card spec from the installed files rather than assuming they match what is described
+here.
+
+- **Why it needed `--force`:** `core.autocrlf` had rewritten Spire's byte-exact receipts to CRLF while
+  `canonicalJson` emits LF, so the integrity check could not pass. Fixed durably by **`.gitattributes`**
+  (`16251fe`) — normalizing the working tree alone did not stick, because the conversion is
+  checkout-side. Same defect class as `ai-rec-grounding`'s GATE Q finding F-2.
+- **The wipe:** `--force` wipes `.claude`/`.codex`/`.grok` and preserves only `settings.local.json`.
+  106 non-Spire files were archived first, then **deleted by owner decision** (`0cbbf62`) — recoverable
+  from `404d80f^` under their original paths. Gone from the working tree: `.claude/company/*.md`
+  (owner-authored OS-Console canon), `launch.json`, `.codex/config.toml`, and four third-party skills
+  (`react-best-practices`, `composition-patterns`, `web-design-guidelines`, `webapp-testing`).
+- **`.agents/` deleted** (`0cbbf62`) — an orphaned **Codex** repository-skill mirror, **not** Nx and
+  **not** spire-os. Untracked, so this one is not recoverable. `CLAUDE.md` corrected (`975e92f`).
+- **`.claude/launch.json` is intentionally absent** — owner decision. Generate it on demand from
+  `.spire/clusters/tech/project.json` (which holds both lanes' `serve_cmd` + `port`); never
+  hand-maintain it. The old one had drifted to port 4300 / bare `dashboard` while every other source
+  said 4200 / `@convexa/dashboard`.
+- **Reported upstream to spire-os by the owner:** the CRLF-forces-`--force` compound bug, the wipe
+  deleting unowned files, and the unverified Codex `.agents/skills` vs `.codex/skills` discovery
+  question.
+- **New in 3.13.0, not yet used:** `context/topics/` + `memory_query` (doctor flags PROJECT_CONTEXT
+  109KB · BACKLOG 173KB · DECISION_LEDGER 132KB · OPEN_THREADS 140KB, all over its 100KB budget —
+  **this supersedes the `project-context-shard-sizes` backlog item filed 2026-08-13**) ·
+  `continuity.mjs` (**doctor asks that this file be marked consumed after re-orientation:**
+  `node tools/continuity.mjs mark-consumed .spire/clusters/tech/state/main/RESUME.md`) ·
+  new commands `foundation`, `project-standup` · a stale `state/_archive/` with no matching branch.
+
 ## Next concrete step
 
-**GATE I (Discovery) on "go".** Plus one queued non-blocking decision (below).
+**Re-boot `/conductor` on 3.13.0, THEN run GATE I (Discovery).** Running discovery on the 3.3.0 driver
+would use a ten-version-stale gateway catalog. Plus one queued non-blocking decision (below).
 
 Pre-registered candidates, re-test rather than inherit:
 - **`rec-absence-literals-hole`** — BACKLOG §B, NEW this ship. Four AI-rec fields print an out-of-set
