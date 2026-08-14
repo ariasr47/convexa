@@ -4,9 +4,18 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Button, Collapse, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Collapse,
+  Stack,
+  Tooltip,
+  Typography,
+  type SxProps,
+  type Theme,
+} from '@mui/material';
 import { useState } from 'react';
-import { COPY } from './copy';
+import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -14,10 +23,15 @@ export function Field({
   label,
   value,
   tip,
+  valueSx,
 }: {
   label: string;
   value: React.ReactNode;
   tip?: string;
+  /** ai-rec-grounding (F12, DESIGN_SYSTEM Amendment 2026-08-13) — an optional per-value style
+   *  override, used by the grounding type-register split (`registerSx`). Absent everywhere else on
+   *  this shared component, so every other `Field` caller is byte-identical to `main`. */
+  valueSx?: SxProps<Theme>;
 }) {
   return (
     <Box>
@@ -31,7 +45,9 @@ export function Field({
           </Tooltip>
         )}
       </Stack>
-      <Typography variant="body2">{value}</Typography>
+      <Typography variant="body2" sx={valueSx}>
+        {value}
+      </Typography>
     </Box>
   );
 }
@@ -239,6 +255,19 @@ export function ReasoningSection({
           </Collapse>
         </Box>
       )}
+      {/* AC-33 (GATE Z Z-F1) — ONE statement, placed WITH the reasoning (never with the fields, never
+          gated on which reasoning sub-sections happen to be populated for this rec): numbers written
+          out in the AI's free prose — the lead, the key points, the re-engage conditions, the full
+          analyst read — are never scanned or checked. Unconditional so a reader can never encounter
+          the reasoning surface without it, matching how QA verified it (present on every card state
+          checked). Visible caption text, not a tooltip alone. */}
+      <Typography
+        variant="caption"
+        data-testid="reasoning-prose-not-checked"
+        sx={{ color: 'text.secondary', display: 'block' }}
+      >
+        {REASONING_PROSE_NOT_CHECKED}
+      </Typography>
     </Stack>
   );
 }

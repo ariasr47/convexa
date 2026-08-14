@@ -239,3 +239,110 @@ export function friendlyResetTime(iso: string | null | undefined): string {
   if (Number.isNaN(t)) return iso;
   return new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
+
+// ---- ai-rec-grounding (SPEC §4; verbatim) ------------------------------------------------------
+// Every string below is produced by a CLOSED LOOKUP on a wire token in `literals.ts`, never by testing
+// a null and never by comparing two figures in the browser.
+
+/** Card level — exactly one, on a produced trade verdict only. */
+export const GROUNDING_CARD = {
+  all_traced: 'Every checked figure traces to a Convexa number.',
+  none_traced: 'No figure here traces to a Convexa number.',
+  could_not_check: "Convexa couldn't check these figures this cycle.",
+  local_rules: "No AI read here — these figures come from Convexa's own rules.",
+} as const;
+
+/** `some_traced` interpolates the SERVER's integers — the browser never counts. */
+export const someTracedLine = (traced: number, checked: number) =>
+  `${traced} of ${checked} checked figures trace to a Convexa number — each exception says so below.`;
+
+/** The ONE client-selected branch: `grounding` absent. Distinct from `could_not_check` — "the check
+ *  ran and could not conclude" vs "no check reached the browser". Never synonyms. */
+export const GROUNDING_BLOCK_ABSENT = "This read wasn't checked against Convexa's numbers.";
+
+/** Per figure — on the exit stop, the exit target and the invalidation level only. */
+export const tracesToLine = (anchor: string, value: number) =>
+  `traces to Convexa's ${anchor} (${value})`;
+export const nearLine = (anchor: string, value: number) => `near Convexa's ${anchor} (${value})`;
+export const insideRangeLine = (expiration: string, low: number, high: number) =>
+  `inside Convexa's implied move for ${expiration} (${low}–${high})`;
+export const UNTRACED_LINE = "the AI's own number";
+export const UNTRACED_TIP =
+  'Convexa compared this against the levels and quotes it computed and didn’t find it. That doesn’t ' +
+  'make it wrong — it means Convexa can’t vouch for it.';
+export const COULD_NOT_CHECK_LINE = "couldn't check this";
+export const couldNotCheckTip = (clause: string) =>
+  `${clause}. The figure above is the AI's, unchanged.`;
+
+/**
+ * The withheld-prefill literals (SPEC §4 "The simulated entry dialog"; GATE Z Z1 + D8 / AC-68).
+ * THREE members of the SAME closed set, each echoing the card's own words so the reader connects the
+ * two surfaces. The third exists because reusing `not_checkable` for a response that carried NO block
+ * would be the `absent-is-not-none` collapse the card's `couldn't check` vs `wasn't checked` split
+ * exists to prevent — and the dialog is the worst place in the feature to blur them.
+ *
+ * Rendered VERBATIM by the shared dialog from the prefill input — the same seam `provenance` and
+ * `sizingNote` already use (`TradeEntryDialogView.tsx`), so the dialog imports nothing from `pages/`
+ * (dependency direction is downward only).
+ */
+export const PREFILL_WITHHELD = {
+  untraced: "Not pre-filled — this was the AI's own number.",
+  not_checkable: "Not pre-filled — Convexa couldn't check this figure.",
+  block_absent: "Not pre-filled — this read wasn't checked against Convexa's numbers.",
+} as const;
+
+/** The total label lookup over the closed anchor token. Five reuse the words `Levels in play` already
+ *  prints; the fallback is honest and still carries the number. */
+export const ANCHOR_LABEL = {
+  gex_spot: 'levels spot', // NOT `spot` — the levels anchor is not the live display price
+  call_wall: 'call wall',
+  put_wall: 'put wall',
+  peak_gex_strike: 'peak gamma strike',
+  gamma_flip: 'gamma flip',
+  max_pain: 'max pain',
+  vwap: 'VWAP',
+  vwap_upper_2: 'VWAP +2σ',
+  vwap_upper_3: 'VWAP +3σ',
+  vwap_lower_2: 'VWAP −2σ',
+  vwap_lower_3: 'VWAP −3σ',
+} as const;
+export const ANCHOR_LABEL_FALLBACK = 'a Convexa level';
+
+/** Missing-input clauses — three members are emittable in v1; the lookup carries NO arm for a state the
+ *  server cannot produce (`structurally_unchecked` renders nothing at all). */
+export const MISSING_INPUT_CLAUSE = {
+  no_named_level: 'Convexa had no named levels for this snapshot',
+  straddle_move_unavailable: 'Convexa had no implied move for that expiration',
+  no_cited_expiration: "The read didn't name an expiration to measure against",
+} as const;
+
+/** The definition tooltip — on the card-level line, once. `{tolerance}` comes off the payload; if the
+ *  constant is absent the parenthesis is omitted entirely and nothing is hardcoded. */
+export const groundingDefinitionTip = (tolerance: number | null) =>
+  'Traced means the figure lines up with a number Convexa computed from the option chain — not a ' +
+  'judgement that the trade is good. Convexa checks the stop, the target and the invalidation level. ' +
+  "It doesn't check the suggested size; the contract named and your risk cap each have their own " +
+  'line. Near means the figure sits inside Convexa’s match window for that level' +
+  (tolerance == null ? '' : ` (${tolerance}% of the level, never less than a cent)`) +
+  '. The implied-move range is measured from the snapshot’s spot at that expiration.';
+
+/** The cap surface — the shipped literal plus the refusal reason. Absent/unrecognized ⇒ the shipped
+ *  literal ALONE, never a guess. */
+export const CAP_REFUSAL_SENTENCE = {
+  no_text: `${CAP_COULD_NOT_CHECK} The read gave no risk figure.`,
+  no_dollar_figure: `${CAP_COULD_NOT_CHECK} Convexa couldn't read a dollar amount in the risk figure.`,
+  multiple_different_figures: `${CAP_COULD_NOT_CHECK} The read named more than one dollar amount.`,
+} as const;
+
+/**
+ * AC-33 (GATE Z Z-F1) — one statement, placed WITH the reasoning (never with the fields), saying
+ * numbers written out in the AI's free prose are not checked. Without it a reader has no reason to
+ * NOT generalize the per-field clauses to the prose, which would imply coverage this feature does not
+ * have (SPEC §9 item 5's halo residual). Caption idiom, no banned word, not an accusation, and
+ * DISJOINT from every other closed-set literal — deliberately not reusing `GROUNDING_BLOCK_ABSENT`'s
+ * "wasn't checked" phrasing, since that names a missing SERVER check and this names a permanent,
+ * by-design scope boundary (SPEC §1 "No prose-number extraction").
+ */
+export const REASONING_PROSE_NOT_CHECKED =
+  "Numbers written out in this reasoning aren't checked — only the stop, target and invalidation " +
+  'level above are.';

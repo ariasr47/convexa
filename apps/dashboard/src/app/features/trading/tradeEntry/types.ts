@@ -27,6 +27,13 @@ export interface EntryPrefill {
   right: OptionRight;
   stop?: number | null;
   target?: number | null;
+  /** ai-rec-grounding AC-7/AC-68: the stop/target seed is GATED on the figure's grounding state. When
+   *  a field is withheld it arrives `null` and carries this one-line reason, rendered verbatim beneath
+   *  the input — a withheld field never comes up silently. One of THREE closed-set members (the AI's
+   *  own number / Convexa couldn't check it / no check reached the browser). `undefined`/`null` ⇒
+   *  nothing to explain. */
+  stopWithheldReason?: string | null;
+  targetWithheldReason?: string | null;
   provenance?: string;
   sizingNote?: string;
   sizeText?: string;

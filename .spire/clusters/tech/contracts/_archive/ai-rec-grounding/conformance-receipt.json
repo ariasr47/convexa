@@ -1,0 +1,30 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/ai-rec-grounding/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8010",
+  "auth": null,
+  "checked_at": "2026-08-14T04:19:22Z",
+  "summary": {
+    "pass": 2,
+    "fail": 0,
+    "total": 2
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 20,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 6,
+      "failures": []
+    }
+  ]
+}

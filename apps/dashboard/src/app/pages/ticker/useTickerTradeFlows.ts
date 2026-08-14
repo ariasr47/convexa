@@ -64,7 +64,7 @@ export function useTickerTradeFlows(opts: {
   const onAcceptRec = useCallback(
     (rec: RecResponse, personaName: string) => {
       if (!rec.strategy) return;
-      const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
+      const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing, rec.grounding);
       if (pf) openEntry(pf, rec.pinned_fingerprint ?? null);
     },
     [openEntry],
@@ -78,7 +78,7 @@ export function useTickerTradeFlows(opts: {
         return;
       }
       orderGate.clear();
-      const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing);
+      const pf = recToPrefill(rec.strategy, personaName, COPY.accept.sizing, rec.grounding);
       if (!pf) return;
       const scenario = rec.scenario ?? null;
       const provenance: OrderProvenance = {

@@ -7,6 +7,7 @@ pub enum RecField {
     PositionSize,
     ExitTarget,
     ExitStop,
+    InvalidationLevel,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -52,6 +53,8 @@ pub fn field_reason(field: RecField, value_present: bool, p: InputPresence) -> O
         }
         RecField::ExitTarget => vec![(p.straddle_move, MissingInput::StraddleMove)],
         RecField::ExitStop => vec![], // market-state levels only — always present
+        // Market-state levels only, exactly like ExitStop — always present, so never `unavailable`.
+        RecField::InvalidationLevel => vec![],
     };
     Some(match deps.into_iter().find(|(present, _)| !*present) {
         Some((_, missing)) => FieldReason { reason: ReasonKind::Unavailable, missing_input: Some(missing) },
@@ -102,5 +105,14 @@ mod tests {
         let r = field_reason(RecField::ExitStop, false, p).unwrap();
         assert_eq!(r.reason, ReasonKind::NotGiven);
         assert!(r.missing_input.is_none());
+    }
+
+    #[test]
+    fn invalidation_level_is_a_first_class_field_and_never_reports_a_missing_input() {
+        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: false };
+        let r = field_reason(RecField::InvalidationLevel, false, p).unwrap();
+        assert_eq!(r.reason, ReasonKind::NotGiven);
+        assert!(r.missing_input.is_none());
+        assert!(field_reason(RecField::InvalidationLevel, true, p).is_none());
     }
 }

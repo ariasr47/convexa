@@ -30,6 +30,52 @@
 
 ---
 
+## Last GATE I — 2026-08-13 (pre-registered successor re-tested and CONFIRMED → `ai-rec-grounding`; its feasibility re-grounded UP)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/`; IN_FLIGHT showed no overlap). The prior gate and
+the 2026-08-13 RESUME overlay both pre-registered **`ai-rec-grounding`** as the strongest successor and
+directed this gate to **re-test rather than inherit** it. Re-tested and **CONFIRMED**.
+**Chosen → `ai-rec-grounding`.** **✓ SHIPPED + ARCHIVED 2026-08-13** →
+`_archive/ai-rec-grounding/` (full pipeline both lanes; GATE Q **PASS 68/68** after one GATE Z bounce
+cycle; conformance spec promoted to `state/conformance/ai-rec-grounding.json`; see OPEN_THREADS §7ae).
+**The number that justifies the feature: 44.4% of the AI's asserted numbers do not trace** to anything
+Convexa computed — all of them rendered as fact before this ship. The prompt fix took `max_risk`
+cap-checkability from **0 of 4 to 4 of 4**. *(original entry:)* Brief was at
+`contracts/ai-rec-grounding/BRIEF.md` (carries the full `Considered:` cull set). Both lanes expected.
+**Why it won:** it is the only survivor whose failure mode is a **wrong trade** rather than a degraded,
+slower or unmeasured one. `[best-effort-isolated-or-null]` covers the AI *failing*; **nothing covers it
+fabricating**, and `tradeable-rec-inputs` (shipped the day before) made the rec assert strictly MORE
+numbers. It also promotes `ai-asserted-numbers-are-traceable` — a watch-list key deliberately parked at
+**0 instances** since 2026-07-16 as aspirational — on real evidence rather than intention.
+**Queue honesty (code-verified this gate — do not re-open as greenfield):**
+1. **`ai-rec-grounding` is NOT greenfield — the verification seam SHIPPED last week and the §B entry
+   (written 2026-07-16) predates it.** `apps/api/src/services/rec_inputs/` already contains
+   `cited.rs` (a private-field `CitedKey` with **no partial constructor**, matching the rec's named
+   contract against the candidate set under a closed `CitedState`), `cap_check.rs`, `max_risk.rs` (ONE
+   parse for ONE consumer) and `field_reasons.rs` — whose `RecField { MaxRisk | PositionSize |
+   ExitTarget | ExitStop }` already enumerates the exact four fields this feature must cover.
+   **The precise gap:** `field_reasons` explains **absence** (`NotGiven`/`Unavailable`) and nothing
+   verifies **presence** — `exit_plan.stop`, `exit_plan.target` and any price the prose names are
+   rendered verbatim from the model. So this is an **extension of a live module**, not a new subsystem.
+   Feasibility revised **M**, not the entry's implied larger build. FE precedent likewise exists,
+   un-generalized: `ai-rec.risk.spec.tsx` §1 already guards "Levels in play is bundle-sourced".
+2. **`rec-prompt-single-figure-max-risk` is FOLDED IN, not separately scheduled.** `max_risk.rs`
+   returns `NotParseable` when the prose names two *different* dollar figures in one sentence — which
+   the V10 harness measured on **4 of 4** after-arm trades, so the cap check ships delivering nothing on
+   its headline path. Same surface, same session; splitting it means touching the rec twice.
+   **The parser is correct and is NOT reopened** — the fix is the prompt, never a parser loosening.
+**Runner-up:** `score-lab-b0b-outcomes` — S-sized backend fast-path, unchanged from the prior gate;
+needs `MASSIVE_API_KEY` at run time and **never synthesizes outcomes** (if the key is unavailable it
+waits). Pick it next if a backend fast-path is wanted.
+**Two items flagged RISING, not chosen** (both decision-impact **N/A**, so the cull cannot promote them —
+recorded so a later gate does not re-derive the judgement): **`degradation-visibility`**, which grew more
+valuable *this ship* because tradeable-rec-inputs added several nullable best-effort fields to a system
+that still aggregates no null rates; and the **S5c SSE connection ceiling** (§C Stage 3 / `docs/TECH_DEBT.md`),
+which stopped being theoretical when the app went live — it is the one remaining MEDIUM that can take the
+**current single container** down. **Hygiene batch worth one pass:** `ci-standing-red` +
+`ports-free-is-ipv4-only` + the :8000 orphan — the last feature lost time to all three, one QA pass having
+to **rename a running binary** to get a trustworthy measurement.
+
 ## Last GATE I — 2026-08-12 (runner-up promoted; sequencing deferral re-tested and overturned → `tradeable-rec-inputs`)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Pipeline drained (`contracts/` held only `_archive/`). The prior gate pre-registered its runner-up —
@@ -854,6 +900,39 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`rec-absence-literals-hole` — four AI-rec fields print an out-of-set bare `—`** — `NEW 2026-08-13
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  (raised by the UX voice at ai-rec-grounding R1, code-verified; deliberately cut from that feature)`.
+  `Structure`, `Strike(s)`, `Expiration` and `Entry trigger` render `—` via bare `?? '—'` /`fmtNum`
+  (`AiRecPanel.tsx:753`, `:1044`, `:1053`, `:1063`) — **outside** the closed not-a-number vocabulary,
+  where `—` is defined as "No entry, so there is nothing to size." So a model that simply omitted the
+  field renders identically to a genuine no-trade not-applicable. A pre-existing `absent-is-not-none`
+  defect; `ai-rec-grounding` neither created nor worsened it and deliberately attached **no** grounding
+  clause, marker, tint or tooltip to those four so nothing grounds a mis-stated absence (`Invalidation`
+  was taken in scope and fixed). **Closing this also closes SPEC §9.5's halo residual** — the reason
+  that residual is open is that a reader may generalize "no marker = checked" from the fields that do
+  carry a clause. *Value M–H · Effort S.* Decision-impact cull **N/A** (data-honesty class).
+  **Invariant watch:** `absent-is-not-none` (HARD) · `digested-labels-not-raw-dump` ·
+  `theme-token-discipline`.
+- **`cargo-fmt-whole-crate-drift` — `cargo fmt -p api-rust -- --check` is non-zero on ~54 files** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `SURFACED 2026-08-13 (ai-rec-grounding backend lane + QA, both verified it is pre-existing)`. The
+  drift spans files no recent feature touched (`config.rs`, `db/*`, `routes/*`, `cited.rs`, …). **Not
+  currently a CI gate**, which is the only reason it is not urgent — but it means no lane can use
+  `cargo fmt --check` as a signal, so the one cheap check that would keep Rust formatting honest is
+  permanently red and therefore ignored. Same alarm-fatigue shape as `ci-standing-red`. A blanket
+  `cargo fmt` produces an unreviewable diff, so do it as its own commit with **no other change** in it.
+  *Value M · Effort S.* Decision-impact cull **N/A** (tooling/hygiene). **Pairs naturally with
+  `ci-standing-red` and `ports-free-is-ipv4-only` as one hygiene batch.**
+- **`project-context-shard-sizes` — three sections exceed the shard threshold** — `NEW 2026-08-13
+  <!-- atlas: theme=the-machine horizon=next -->
+  (contract_lint warns on every run; measured at ai-rec-grounding GATE I)`. `PROJECT_CONTEXT.md` §2
+  (178), §5 (211) and §6 (530+ lines) are each >150, so **any feature tagging into them loads the whole
+  section** and the system-5 sharding stops paying. Measured cost: `ai-rec-grounding`'s pack was
+  **971 of 1110 lines (13% smaller)** until the `personas` tag — the tag on the 530-line §6 — was
+  dropped, after which it fell to **441 lines (60% smaller)**. So the tag-to-section mapping, not the
+  canon's size, is doing the damage. Fix is to split §6 by capability era or re-tag it more finely.
+  *Value M · Effort S–M.* Decision-impact cull **N/A** (system-of-building class).
 - **`score-lab-b0b-outcomes` — freeze `slice_current`'s outcomes** — `NEW 2026-08-12`
   <!-- atlas: theme=prove-the-edge horizon=now -->
   Carried out of `score-lab-signal-comparison` GATE S as **B0b, open**. `slice_current/outcomes.json` was
@@ -1011,8 +1090,16 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   no record ⇒ not an outcome). *Fix (optional): have the seed emit matching decision records, or mark
   seeded positions explicitly.* *Value L–M · Effort S.*
 - **`ai-rec-grounding` — every AI-asserted number traceable to a computed field** — `RAISED 2026-07-16
-  <!-- atlas: theme=trust-the-signal horizon=next -->
-  (canon review; owner agreed)`. **The gap:** `best-effort-isolated-or-null` covers the AI **failing**;
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  (canon review; owner agreed)` → **✓ PROMOTED at GATE I 2026-08-13** (brief at
+  `.spire/clusters/tech/contracts/ai-rec-grounding/BRIEF.md`; folds in the §7ad
+  `rec-prompt-single-figure-max-risk` seam). ⚠ **This entry's framing is now partly stale — it predates
+  `tradeable-rec-inputs` (2026-08-13), which shipped the verification seam.** See the 2026-08-13 GATE I
+  note above: `apps/api/src/services/rec_inputs/{cited,cap_check,max_risk,field_reasons}.rs` already
+  verifies ONE assertion class (the named contract) and already enumerates the four fields; the gap is
+  that `field_reasons` explains **absence** while nothing verifies **presence**. Effort **M**, as an
+  extension of a live module — not the greenfield build the text below implies. *(original entry:)*
+  **The gap:** `best-effort-isolated-or-null` covers the AI **failing**;
   **nothing covers it fabricating.** The rec emits strikes / stops / targets / levels as fact, and
   `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. **Scope:** every
   number the rec asserts must resolve to a bundle field (or the rec's own echoed input), verified

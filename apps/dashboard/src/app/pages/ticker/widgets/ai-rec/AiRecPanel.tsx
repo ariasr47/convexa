@@ -24,6 +24,7 @@ import {
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type {
+  GroundingState,
   PersonaDefinition,
   RecResponse,
   RecScenarioInfo,
@@ -45,7 +46,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CapAnnotation } from './CapAnnotation';
 import { CitedContractLine } from './CitedContractLine';
@@ -71,7 +72,9 @@ import {
   staleStrip,
   SUPERSEDED_STRIP,
 } from './copy';
-import { fieldLiteral, riskInputsSuperseded, type FieldLiteral } from './literals';
+import { FigureClause } from './FigureClause';
+import { GroundingNote } from './GroundingNote';
+import { fieldLiteral, registerSx, riskInputsSuperseded, type FieldLiteral } from './literals';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 import { ProvenanceChip } from './ProvenanceChip';
 import { deriveReasoning, Field, LevelsStrip, ReasoningSection } from './reasoning';
@@ -750,22 +753,41 @@ function Provenance({ rec }: { rec: RecResponse }) {
   );
 }
 
-const fmtNum = (n: number | null | undefined) => (n == null ? '—' : String(n));
-
 /** A `Field` driven by the closed `FieldLiteral` set (AC-69/70/71/72). `not_set` carries the
  *  `Set your risk inputs` action, which navigates to the Settings panel. */
 function RiskField({
   label,
   literal,
   valueTip,
+  clause,
+  groundingState,
 }: {
   label: string;
   literal: FieldLiteral;
   /** AC-62: a tip shown ONLY when the field carries a real value (e.g. the max-risk attribution). */
   valueTip?: string;
+  /** ai-rec-grounding — a clause renders ONLY on the `value` member, never beside an absence literal
+   *  (never pairing a grounding sentence with a numeric `0` treated as absent, or vice versa). */
+  clause?: ReactNode;
+  /** F12 (DESIGN_SYSTEM Amendment 2026-08-13, D3) — the value's TYPE REGISTER (mono = Convexa's,
+   *  sans = the AI's own), a closed lookup via `registerSx`. Applied to the value itself, alongside
+   *  (never instead of) the visible `clause` text — complementary signals, per D3. Undefined on
+   *  fields with no grounding data at all (Max risk, Suggested size, Structure, Strike(s),
+   *  Expiration, Entry trigger), which never pass this prop and stay at the shared default. */
+  groundingState?: GroundingState;
 }) {
   const navigate = useNavigate();
-  if (literal.kind === 'value') return <Field label={label} value={literal.text} tip={valueTip} />;
+  // F12: the register lookup applies ONLY when a caller passes `groundingState` (stop/target/
+  // invalidation) — every other `RiskField` call site (Max risk, Suggested size) omits the prop and
+  // stays byte-identical to `main`, never explicitly forced into either register.
+  const valueSx = groundingState === undefined ? undefined : registerSx(groundingState);
+  if (literal.kind === 'value')
+    return (
+      <Box>
+        <Field label={label} value={literal.text} tip={valueTip} valueSx={valueSx} />
+        {clause}
+      </Box>
+    );
   const cfg =
     literal.kind === 'dash'
       ? RISK_FIELD_COPY.dash
@@ -994,6 +1016,10 @@ function RecResult({
               </Typography>
             )}
           </Box>
+          {/* The ONE card-level grounding line (SPEC §4) — a qualifier on everything below it, so it
+              sits directly above the risk tile and nowhere else. It is one line; it is never a
+              section. */}
+          <GroundingNote grounding={rec.grounding} />
           {/* 2. RISK FIRST (foremost). Upgraded-tile chrome: rounded surface + error-tinted LEFT
               accent bar (risk = the most-important field), clipped to the radius. All four risk-input
               fields render through `fieldLiteral` — a closed lookup on the wire token, never a null
@@ -1027,10 +1053,21 @@ function RecResult({
                 })}
                 valueTip={MAX_RISK_TIP}
               />
-              <Field
+              <RiskField
                 label={COPY.risk.invalidation}
-                value={fmtNum(s.invalidation_level)}
-                tip="The level that says the idea is wrong. If price reaches it, the thesis is invalidated."
+                literal={fieldLiteral({
+                  decision: s.decision,
+                  value: s.invalidation_level,
+                  reason: rec.field_reasons?.invalidation_level,
+                })}
+                valueTip="The level that says the idea is wrong. If price reaches it, the thesis is invalidated."
+                clause={
+                  <FigureClause
+                    field={rec.grounding?.fields.invalidation_level}
+                    testId="clause-invalidation"
+                  />
+                }
+                groundingState={rec.grounding?.fields.invalidation_level.state}
               />
             </Stack>
             {/* The cap surface — an entry-stating verdict ONLY. `not_applicable` (no_trade) never
@@ -1077,6 +1114,10 @@ function RecResult({
                 value: s.exit_plan?.target,
                 reason: rec.field_reasons?.exit_target,
               })}
+              clause={
+                <FigureClause field={rec.grounding?.fields.exit_target} testId="clause-target" />
+              }
+              groundingState={rec.grounding?.fields.exit_target.state}
             />
             <RiskField
               label="Stop"
@@ -1085,6 +1126,8 @@ function RecResult({
                 value: s.exit_plan?.stop,
                 reason: rec.field_reasons?.exit_stop,
               })}
+              clause={<FigureClause field={rec.grounding?.fields.exit_stop} testId="clause-stop" />}
+              groundingState={rec.grounding?.fields.exit_stop.state}
             />
           </Stack>
           {/* 5. Sizing. */}

@@ -6,6 +6,7 @@ pub mod cap_check;
 pub mod cited;
 pub mod digest;
 pub mod field_reasons;
+pub mod grounding;
 pub mod max_risk;
 
 use quant_engine::CandidateSet;

@@ -292,8 +292,76 @@ const producedRecFixture = {
     cap_not_derivable_reason: null,
     parsed_risk_dollars: 950,
     model_max_risk_text: '$950 (a hair over the stated 1.5% cap)',
+    risk_refusal: null,
   },
-  field_reasons: { max_risk: null, position_size: null, exit_target: null, exit_stop: null },
+  field_reasons: {
+    max_risk: null,
+    position_size: null,
+    exit_target: null,
+    exit_stop: null,
+    invalidation_level: null,
+  },
+  // ai-rec-grounding — the DENSEST shape (AC-60/F13): card `some_traced` (the longest card line),
+  // stop `traced/near` on `vwap_lower_3` (the longest anchor label), target `traced/inside_range`
+  // with a full date and two 3-digit endpoints, invalidation `not_checkable/no_named_level` (its only
+  // legal reason).
+  grounding: {
+    card: 'some_traced',
+    counts: { checked: 4, traced: 2, untraced: 0, not_checkable: 2 },
+    tolerance_pct: 0.1,
+    fields: {
+      exit_stop: {
+        state: 'traced',
+        basis: 'near',
+        anchor_kind: 'vwap_lower_3',
+        anchor_value: 231.5,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+        not_checkable_reason: null,
+      },
+      exit_target: {
+        state: 'traced',
+        basis: 'inside_range',
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: 240.0,
+        range_high: 260.0,
+        expiration: '2026-07-18',
+        not_checkable_reason: null,
+      },
+      invalidation_level: {
+        state: 'not_checkable',
+        basis: null,
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+        not_checkable_reason: 'no_named_level',
+      },
+      max_risk: {
+        state: 'not_checkable',
+        basis: null,
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+        not_checkable_reason: 'structurally_unchecked',
+      },
+      position_size: {
+        state: 'not_checkable',
+        basis: null,
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+        not_checkable_reason: 'structurally_unchecked',
+      },
+    },
+  },
   cited_contract: {
     state: 'cited',
     contract: {
@@ -554,6 +622,18 @@ for (const scheme of ['dark', 'light'] as const) {
       await expect(page.getByTestId('cap-annotation')).toBeAttached();
       await expect(page.getByTestId('ai-rec-provenance-chip')).toBeAttached();
       await expect(page.getByTestId('cited-contract-line')).toBeAttached();
+      await assertNoHorizontalOverflow(page);
+    });
+
+    test('ai-rec-grounding — the densest grounding card fits at 393px', async ({ page }) => {
+      await seed(page, { scheme });
+      await page.goto('/ticker/TSLA');
+      await expect(page.getByText('Call wall').first()).toBeAttached();
+      await page.getByRole('button', { name: 'Get AI recommendation' }).click();
+      // VACUITY GUARD — the new content really did render before measuring.
+      await expect(page.getByTestId('grounding-card-line')).toBeAttached();
+      await expect(page.getByTestId('clause-stop')).toBeAttached();
+      await expect(page.getByTestId('clause-target')).toBeAttached();
       await assertNoHorizontalOverflow(page);
     });
 

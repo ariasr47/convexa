@@ -979,6 +979,31 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   Score/tier/`state_fingerprint` byte-identical (proved by builder pin + poison-proof + QA re-proof:
   `score=8 / dormant / ad81df2ba2c3`). Real before/after on 5 tickers: 0/5 no_trade→trade, 1/5
   trade→no_trade with stated reason, sizing now cites your cap. QA PASS 100/100.
+- **AI-rec grounding (2026-08-13, `ai-rec-grounding`)** — the companion to the above: those inputs made
+  the rec's numbers *fillable*; this makes them *checkable*. Generalizes the shipped `cited` mechanism
+  from the one named contract to the model's other price-scale assertions. A sixth pure leaf
+  `apps/api/src/services/rec_inputs/grounding.rs` resolves the **exit stop · exit target · invalidation
+  level** server-side against a closed 11-member `anchor_kind` set, emitting a closed four-state wire
+  vocabulary — `traced` · `untraced` · `not_checkable` · `not_applicable` — plus a three-member `basis`
+  (`exact` / `near` / `inside_range`) and a **server-folded** six-member card verdict with four integer
+  counts. `RecField` gained `InvalidationLevel`; the exhaustive `match` carries **no wildcard and no
+  exemption**. `max_risk.rs`'s OUTPUT widened to `RiskRefusal { NoText | NoDollarFigure |
+  MultipleDifferentFigures }` while **the accepted input set did not move by one** — the parser's
+  ambiguity rule is not reopened; the fix was the prompt (single dollar amount), which took cap
+  checkability from **0 of 4 to 4 of 4** on real trade verdicts.
+  **The FE never re-derives a state, label or count** — every literal renders through a closed lookup;
+  exactly one branch is client-selected (block absence). The word "verified", any check glyph, and the
+  accusatory register are banned: traceable is not the same claim as correct. **Untraced figures render
+  in place** with `the AI's own number` in visible text, distinguished by a **type register** split —
+  mono means the figure is Convexa's, sans means the app could not trace it (`DESIGN_SYSTEM.md`
+  Amendments 2026-08-13, narrowing "all data/figures mono"). **Nothing untraced ever seeds, pre-fills,
+  defaults or is arithmetically derived into any quantity, price or limit** — including the one shared
+  simulated entry dialog, where a withheld field opens empty carrying one of **three disjoint reason
+  literals** (block-absent has its own, never `not_checkable`'s). Nine structural guards (SPEC §2.6),
+  each poison-proved by the build lane **and independently by QA**. Additive: score/tier/
+  `state_fingerprint` byte-identical, proved on both arms (goldens green **and** the pin file's own diff
+  empty). **Measured on 10 live recs across 5 tickers: 44.4% of asserted numbers do not trace** — all of
+  which rendered as fact before this ship. QA PASS 68/68.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
 
 ## 7. Conventions

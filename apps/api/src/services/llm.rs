@@ -146,13 +146,17 @@ pub fn build_rec_prompts(ticker: &str, ctx: &RecPromptContext<'_>, persona_name:
          \"time_horizon\":string|null,\"confidence\":\"low\"|\"medium\"|\"high\"|null,\
          \"summary\":string|null,\"key_points\":string[],\"reengage_when\":string[],\
          \"rationale\":string}}\n\
-         Cite concrete levels from the context (walls, gamma flip, magnets, IV/HV). \
+         Cite concrete levels from the context (walls, gamma flip, magnets, IV/HV) — quote the level \
+         exactly as the context gives it, to the same decimal precision, rather than a rounded or \
+         approximate figure. \
          Prefer defined-risk. Saying no_trade is valid and preferred when edge is unclear. \
          When you name a single contract, state `right` as call or put. If the structure has more \
          than one leg, leave `right` null — do not guess. \
          Size within the owner's stated risk block when one is present; if it is absent, say so \
          rather than inventing a figure. The candidate contracts listed are the only ones Convexa \
-         sent you."
+         sent you. For `max_risk`, state exactly one dollar figure in $N form (for example $300). \
+         A percentage may appear only if it names the same dollar figure — never a range, \
+         never two different amounts."
     );
     let context = json!({
         "ticker": ticker,
@@ -609,5 +613,48 @@ mod tests {
         let v = user_context_json(&user);
         assert_eq!(v["open_positions"]["source"], "simulated");
         assert_eq!(v["open_positions"]["state"], "none_open");
+    }
+}
+
+#[cfg(test)]
+mod rec_prompt_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn ctx() -> RecPromptContext<'static> {
+        RecPromptContext {
+            market_state: json!({}),
+            signals: None,
+            ai_eval: None,
+            candidates: json!({}),
+            risk_inputs: json!({}),
+            open_positions: json!({}),
+        }
+    }
+
+    /// AC-36 (SB) — the directive is IN the assembled system prompt, and deleting it reds the build.
+    #[test]
+    fn the_assembled_system_prompt_requires_exactly_one_dollar_figure_for_the_risk_field() {
+        let (system, _user) = build_rec_prompts("SPY", &ctx(), "Default (no persona)");
+        assert!(system.contains("exactly one dollar figure"), "directive missing: {system}");
+        assert!(system.contains("$N"), "the $N form must be named: {system}");
+        assert!(
+            system.contains("percentage") && system.contains("same dollar figure"),
+            "the percentage carve-out must be stated: {system}"
+        );
+        // Anti-vacuity: the probe must not match a prompt that lacks the directive.
+        assert!(!"You are a risk-first options strategist.".contains("exactly one dollar figure"));
+    }
+
+    /// GATE Z bounce (AC-47 / D7 ladder step 3) — the one pre-committed prompt revision applied after
+    /// the first real-rec sample's untraced rate came back >=50%: quote levels exactly as given, to the
+    /// same precision, rather than a rounded approximation. Deleting it reds this test, not the build
+    /// (this directive backs a recorded measurement, not a ship-blocking AC).
+    #[test]
+    fn the_assembled_system_prompt_asks_for_levels_quoted_exactly_as_given() {
+        let (system, _user) = build_rec_prompts("SPY", &ctx(), "Default (no persona)");
+        assert!(system.contains("quote the level exactly as the context gives it"), "directive missing: {system}");
+        assert!(system.contains("same decimal precision"), "the precision clause must be stated: {system}");
+        assert!(!"You are a risk-first options strategist.".contains("quote the level exactly"));
     }
 }

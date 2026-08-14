@@ -1,0 +1,50 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "query": {},
+      "required": {
+        "market_state.ticker": "string",
+        "market_state.gex_spot": "number",
+        "market_state.call_wall": "number|null",
+        "market_state.put_wall": "number|null",
+        "market_state.peak_gex_strike": "number|null",
+        "market_state.gamma_flip": "number|null",
+        "market_state.max_pain": "number|null",
+        "market_state.vwap": "number|null",
+        "market_state.vwap_upper_2": "number|null",
+        "market_state.vwap_upper_3": "number|null",
+        "market_state.vwap_lower_2": "number|null",
+        "market_state.vwap_lower_3": "number|null",
+        "market_state.straddle_move": "object",
+        "market_state.straddle_move.state": "string",
+        "market_state.straddle_move.anchor_spot": "number|null",
+        "market_state.straddle_move.anchor_basis": "string",
+        "market_state.straddle_move.tenors": "array",
+        "signals.opportunity_score": "number",
+        "signals.opportunity_tier": "string",
+        "ai_eval.state_fingerprint": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "query": {},
+      "required": {
+        "availability.in_app_enabled": "boolean",
+        "gate.state": "string",
+        "cap.over_limit": "boolean",
+        "cap.remaining_today": "number",
+        "scenarios.enabled": "boolean",
+        "scenarios.catalog": "array"
+      }
+    }
+  ]
+}

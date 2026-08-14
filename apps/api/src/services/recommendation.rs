@@ -17,6 +17,9 @@ use crate::services::rec_inputs::cap_check::cap_verdict;
 use crate::services::rec_inputs::cited::resolve_cited;
 use crate::services::rec_inputs::digest::parse_digest;
 use crate::services::rec_inputs::field_reasons::{field_reason, FieldReason, InputPresence, RecField};
+use crate::services::rec_inputs::grounding::{
+    card_member, counts, resolve_field, GroundingAnchors, GROUNDING_TOL_PCT,
+};
 use crate::services::rec_inputs::max_risk::{parse_max_risk_dollars, ParsedRisk};
 use crate::state::AppState;
 use quant_engine::{
@@ -442,14 +445,16 @@ fn envelope_extras(
     cap_not_derivable_reason: Option<&str>,
     risk_block_present: bool,
     pruned_move: Option<&StraddleMove>,
-) -> (Value, Value, Value) {
+    anchors: GroundingAnchors,
+    local_only: bool,
+) -> (Value, Value, Value, Value) {
     let states_entry = strategy.get("decision").and_then(|v| v.as_str()) == Some("trade");
     let max_risk_text = strategy.get("max_risk").and_then(|v| v.as_str());
     let parsed = parse_max_risk_dollars(max_risk_text);
     let verdict = cap_verdict(states_entry, effective_cap, parsed);
-    let parsed_dollars = match parsed {
-        ParsedRisk::Dollars(v) => Some(v),
-        ParsedRisk::NotParseable => None,
+    let (parsed_dollars, risk_refusal) = match parsed {
+        ParsedRisk::Dollars(v) => (Some(v), None),
+        ParsedRisk::NotParseable(r) => (None, Some(r)),
     };
 
     let candidate_quotes_present = set.has_quoted_contract();
@@ -475,6 +480,7 @@ fn envelope_extras(
         "position_size": fr(RecField::PositionSize, present(strategy.get("position_size"))),
         "exit_target": fr(RecField::ExitTarget, present(strategy.pointer("/exit_plan/target"))),
         "exit_stop": fr(RecField::ExitStop, present(strategy.pointer("/exit_plan/stop"))),
+        "invalidation_level": fr(RecField::InvalidationLevel, present(strategy.get("invalidation_level"))),
     });
 
     let strikes: Vec<f64> = strategy
@@ -501,9 +507,37 @@ fn envelope_extras(
         "cap_not_derivable_reason": cap_not_derivable_reason,
         "parsed_risk_dollars": parsed_dollars,
         "model_max_risk_text": max_risk_text,
+        "risk_refusal": risk_refusal,
     });
 
-    (cap_check, field_reasons, cited_contract)
+    // --- grounding (SPEC §2.1-2.4). The SENT inputs only: `pruned_move`, never `raw_move`; the
+    // `Prompt` candidate set, never a `Handoff` one.
+    let num = |p: Option<&Value>| p.and_then(|v| v.as_f64());
+    let presence_sentinel = |p: Option<&Value>| present(p).then_some(1.0); // prose fields: presence only
+    let cited_exp = expiration;
+    let g = |field: RecField, asserted: Option<f64>| resolve_field(field, asserted, cited_exp, pruned_move, &anchors);
+    let f_stop = g(RecField::ExitStop, num(strategy.pointer("/exit_plan/stop")));
+    let f_target = g(RecField::ExitTarget, num(strategy.pointer("/exit_plan/target")));
+    let f_inval = g(RecField::InvalidationLevel, num(strategy.get("invalidation_level")));
+    let f_risk = g(RecField::MaxRisk, presence_sentinel(strategy.get("max_risk")));
+    let f_size = g(RecField::PositionSize, presence_sentinel(strategy.get("position_size")));
+    let all = [f_stop.clone(), f_target.clone(), f_inval.clone(), f_risk.clone(), f_size.clone()];
+    let c = counts(&all, outcome.state);
+    let card = card_member(states_entry, local_only, c);
+    let grounding = json!({
+        "card": card,
+        "counts": c,
+        "tolerance_pct": GROUNDING_TOL_PCT,
+        "fields": {
+            "exit_stop": f_stop,
+            "exit_target": f_target,
+            "invalidation_level": f_inval,
+            "max_risk": f_risk,
+            "position_size": f_size,
+        },
+    });
+
+    (cap_check, field_reasons, cited_contract, grounding)
 }
 
 /// POST rec — auth already checked; pass resolved user for key resolution.
@@ -591,6 +625,11 @@ pub async fn generate_recommendation(
         }
     }
 
+    // The eleven price-scale anchors, read off the SENT market_state and captured by VALUE — the
+    // `base` closure cannot borrow `pruned_market_state`, which is moved into `RecPromptContext` at
+    // the provider call below.
+    let grounding_anchors = GroundingAnchors::from_market_state(&pruned_market_state);
+
     // Risk inputs — the as-sent block (§4 shape). A settings-read failure degrades to
     // {state:"not_set"} with a warn! — the rec never fails on a settings read (SPEC §5).
     let risk_wire = state.auth.get_settings(user).ok().map(|s| s.risk_inputs);
@@ -614,14 +653,23 @@ pub async fn generate_recommendation(
     // Open positions digest — the client-supplied artifact. NEVER persisted server-side.
     let sent_positions = parse_digest(body.open_positions.as_ref());
 
+    // Hoisted above `base` so the card-level provenance member is derived inside the envelope
+    // constructor and the grounding leaf takes a plain `bool` (SPEC §2.4). Pure env read, no side
+    // effect; `AI_REC_LOCAL_ONLY=1` forces rule-based setups (free CI / offline demos).
+    let local_only = std::env::var("AI_REC_LOCAL_ONLY")
+        .map(|v| matches!(v.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .unwrap_or(false);
+
     let base = |status: &str, strategy: Value, reason: Option<&str>| {
-        let (cap_check, field_reasons, cited_contract) = envelope_extras(
+        let (cap_check, field_reasons, cited_contract, grounding) = envelope_extras(
             &strategy,
             &candidate_set,
             effective_cap,
             cap_not_derivable_reason.as_deref(),
             risk_block_present,
             pruned_move.as_ref(),
+            grounding_anchors,
+            local_only,
         );
         json!({
             "status": status,
@@ -648,6 +696,7 @@ pub async fn generate_recommendation(
             "cap_check": cap_check,
             "field_reasons": field_reasons,
             "cited_contract": cited_contract,
+            "grounding": grounding,
         })
     };
 
@@ -669,11 +718,7 @@ pub async fn generate_recommendation(
     }
 
     // Default: call the real provider when a key is resolved.
-    // Set AI_REC_LOCAL_ONLY=1 to force rule-based setups (free CI / offline demos).
-    let local_only = std::env::var("AI_REC_LOCAL_ONLY")
-        .map(|v| matches!(v.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
-        .unwrap_or(false);
-
+    // (`local_only` hoisted above `base` — see comment there.)
     let strategy = if local_only {
         local_strategy_from_bundle(&bundle)
     } else {
@@ -839,6 +884,358 @@ pub fn ensure_ai_eval(bundle: &mut Value) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn envelope_extras_returns_a_total_grounding_block_on_a_null_strategy() {
+        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let (_cap, _fr, _cited, grounding) = envelope_extras(
+            &Value::Null, &set, None, None, false, None, GroundingAnchors::empty(), false,
+        );
+        assert_eq!(grounding["card"], "not_applicable");
+        assert_eq!(grounding["tolerance_pct"], 0.1);
+        for k in ["exit_stop", "exit_target", "invalidation_level", "max_risk", "position_size"] {
+            assert!(grounding["fields"][k].is_object(), "missing field block {k}");
+            assert_eq!(grounding["fields"][k]["state"], "not_applicable");
+            assert!(grounding["fields"][k]["basis"].is_null());
+        }
+        for k in ["checked", "traced", "untraced", "not_checkable"] {
+            assert_eq!(grounding["counts"][k], 0);
+        }
+    }
+
+    /// A hermetic two-contract `CandidateSet` (the 500 call + the 500 put), the standard reference set
+    /// for the guard tests below. Mirrors `cited.rs`'s test-only `set()` builder.
+    fn reference_set() -> CandidateSet {
+        use chrono::{TimeZone, Utc};
+        use quant_engine::{Contract, Greeks};
+        let quoted = |strike: f64, side: ContractType, exp: &str| Contract {
+            strike_price: strike,
+            contract_type: side,
+            open_interest: 100.0,
+            expiration_date: exp.into(),
+            implied_volatility: 0.3,
+            greeks: Some(Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            volume: Some(10.0),
+            bid: Some(1.0),
+            ask: Some(1.2),
+        };
+        let chain = vec![
+            quoted(500.0, ContractType::Call, "2026-09-18"),
+            quoted(500.0, ContractType::Put, "2026-09-18"),
+        ];
+        CandidateSet::build(
+            &chain,
+            500.0,
+            Utc.with_ymd_and_hms(2026, 8, 12, 20, 0, 0).unwrap(),
+            DteWindow::default(),
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+        )
+    }
+
+    /// anchors 500/510/490 + a one-tenor pruned move [490, 510] for 2026-09-18 — the shared
+    /// reference fixtures for the B11-B13 guard tests.
+    fn reference_anchors() -> GroundingAnchors {
+        use crate::services::rec_inputs::grounding::AnchorKind;
+        let mut a = GroundingAnchors::empty();
+        a.set(AnchorKind::GexSpot, Some(500.00));
+        a.set(AnchorKind::CallWall, Some(510.00));
+        a.set(AnchorKind::PutWall, Some(490.00));
+        a
+    }
+
+    fn reference_move() -> StraddleMove {
+        StraddleMove {
+            state: StraddleMoveState::Ok,
+            as_of: None,
+            session_basis: None,
+            anchor_spot: Some(500.00),
+            anchor_basis: quant_engine::AnchorBasis::GexSpot,
+            anchor_label: "levels-anchor".into(),
+            primary_expiration: Some("2026-09-18".into()),
+            wide_quote_threshold_pct: 15.0,
+            tenors: vec![quant_engine::StraddleTenor {
+                expiration: "2026-09-18".into(),
+                dte: 30,
+                strike_used: 500.0,
+                strike_distance_pct: 0.0,
+                straddle_price: 10.00,
+                move_dollars: 10.00,
+                move_pct: 2.0,
+                basis: quant_engine::MoveBasis::AtmStraddleMid,
+                quote_spread_pct_of_mid: None,
+                wide_quotes: false,
+            }],
+        }
+    }
+
+    /// The standard call shape for the B11-B13 guard tests: the hermetic reference set, the one-tenor
+    /// reference move, a populated anchor set, `local_only = false`.
+    fn extras_for(strategy: &Value) -> (Value, Value, Value, Value) {
+        let set = reference_set();
+        let mv = reference_move();
+        envelope_extras(strategy, &set, Some(500.0), None, true, Some(&mv), reference_anchors(), false)
+    }
+
+    /// Same as `extras_for`, but with empty anchors and no move — for the every-input-missing arm.
+    fn extras_for_bare(strategy: &Value) -> (Value, Value, Value, Value) {
+        let set = reference_set();
+        envelope_extras(strategy, &set, Some(500.0), None, true, None, GroundingAnchors::empty(), false)
+    }
+
+    /// `local_only = true` variant, returning just the grounding block.
+    fn extras_local_only(strategy: &Value) -> Value {
+        let set = reference_set();
+        let mv = reference_move();
+        envelope_extras(strategy, &set, Some(500.0), None, true, Some(&mv), reference_anchors(), true).3
+    }
+
+    /// Every shape the partition assertion (guard 2 / AC-51) must hold over: a full trade rec; a trade
+    /// rec with every figure null; a `no_trade` rec; `Value::Null`; a trade rec with only the stop set.
+    fn partition_strategy_shapes() -> Vec<Value> {
+        vec![
+            json!({
+                "decision": "trade", "strikes": [500.0], "expiration": "2026-09-18", "right": "call",
+                "invalidation_level": 490.30, "max_risk": "$300", "position_size": "2 contracts",
+                "exit_plan": { "target": 505.0, "stop": 500.0 },
+            }),
+            json!({
+                "decision": "trade", "strikes": [], "expiration": null, "right": null,
+                "invalidation_level": null, "max_risk": null, "position_size": null,
+                "exit_plan": { "target": null, "stop": null },
+            }),
+            json!({
+                "decision": "no_trade", "strikes": [], "expiration": null, "right": null,
+                "invalidation_level": null, "max_risk": null, "position_size": null,
+                "exit_plan": { "target": null, "stop": null },
+            }),
+            Value::Null,
+            json!({
+                "decision": "trade", "strikes": [], "expiration": null, "right": null,
+                "invalidation_level": null, "max_risk": null, "position_size": null,
+                "exit_plan": { "target": null, "stop": 500.0 },
+            }),
+        ]
+    }
+
+    /// guard 2 / AC-51 — for EVERY field on EVERY branch, a `field_reason` exists IFF the grounding
+    /// state is `not_applicable` (exclusive-or). Poison arm: make one field emit both, or neither.
+    #[test]
+    fn a_field_reason_exists_exactly_when_grounding_is_not_applicable() {
+        let keys = ["max_risk", "position_size", "exit_target", "exit_stop", "invalidation_level"];
+        let shapes = partition_strategy_shapes();
+        // Anti-vacuity: the shapes must exercise BOTH sides of the biconditional.
+        assert!(shapes.len() >= 4, "the shape set must cover more than one branch");
+        for strategy in &shapes {
+            let (_cap, fr, _cited, g) = extras_for(strategy);
+            for k in keys {
+                let has_reason = !fr[k].is_null();
+                let is_na = g["fields"][k]["state"] == "not_applicable";
+                assert_eq!(has_reason, is_na, "partition broken for {k} on {strategy}");
+            }
+        }
+    }
+
+    /// AC-42 (SB) — a hand-written fabricated rec through the recommendation's OWN serialization path:
+    /// a stop far from every named anchor, a target outside the pruned move for the cited tenor, an
+    /// invalidation level far from every anchor, a strike absent from the candidate set.
+    #[test]
+    fn a_fabricated_rec_resolves_every_asserted_figure_to_a_non_traced_state() {
+        let strategy = json!({
+            "decision": "trade",
+            "strikes": [777.0], "expiration": "2026-09-18", "right": "call",
+            "invalidation_level": 611.0,
+            "max_risk": "$300", "position_size": "2 contracts",
+            "exit_plan": { "target": 640.0, "stop": 623.0 },
+        });
+        let (_cap, _fr, cited, g) = extras_for(&strategy);
+        assert_eq!(cited["state"], "off_set");
+        for k in ["exit_stop", "exit_target", "invalidation_level"] {
+            assert_eq!(g["fields"][k]["state"], "untraced", "{k} must not be traced");
+            assert!(g["fields"][k]["basis"].is_null());
+            assert!(g["fields"][k]["anchor_kind"].is_null());
+        }
+        assert_eq!(g["counts"], json!({"checked": 4, "traced": 0, "untraced": 4, "not_checkable": 0}));
+        assert_eq!(g["card"], "none_traced");
+    }
+
+    /// AC-43 (SB) — without this arm the fabrication fixture proves only that the resolver says no.
+    #[test]
+    fn the_honest_counterpart_traces_all_four_and_the_one_field_off_variant_traces_three() {
+        let honest = json!({
+            "decision": "trade",
+            "strikes": [500.0], "expiration": "2026-09-18", "right": "call",
+            "invalidation_level": 490.30,                    // inside the put wall's window -> near
+            "max_risk": "$300", "position_size": "2 contracts",
+            "exit_plan": { "target": 505.0, "stop": 500.0 },  // stop exactly on gex_spot -> exact
+        });
+        let (_cap, _fr, cited, g) = extras_for(&honest);
+        assert_eq!(cited["state"], "cited");
+        assert_eq!(g["fields"]["exit_stop"]["basis"], "exact");
+        assert_eq!(g["fields"]["exit_stop"]["anchor_kind"], "gex_spot");
+        assert_eq!(g["fields"]["exit_stop"]["anchor_value"], 500.0);
+        assert_eq!(g["fields"]["invalidation_level"]["basis"], "near");
+        assert_eq!(g["fields"]["exit_target"]["basis"], "inside_range");
+        assert_eq!(g["counts"], json!({"checked": 4, "traced": 4, "untraced": 0, "not_checkable": 0}));
+        assert_eq!(g["card"], "all_traced");
+
+        let one_off = json!({
+            "decision": "trade",
+            "strikes": [500.0], "expiration": "2026-09-18", "right": "call",
+            "invalidation_level": 490.30,
+            "max_risk": "$300", "position_size": "2 contracts",
+            "exit_plan": { "target": 505.0, "stop": 623.0 },  // the one fabricated figure
+        });
+        let (_c, _f, _ci, g2) = extras_for(&one_off);
+        assert_eq!(g2["counts"], json!({"checked": 4, "traced": 3, "untraced": 1, "not_checkable": 0}));
+        assert_eq!(g2["card"], "some_traced");
+    }
+
+    /// AC-28 — every reference input missing: the rec still returns, in full.
+    #[test]
+    fn a_rec_with_every_reference_input_missing_still_returns_with_every_checked_figure_not_checkable() {
+        let strategy = json!({
+            "decision": "trade", "strikes": [], "expiration": null, "invalidation_level": 611.0,
+            "max_risk": "$300", "position_size": "2 contracts",
+            "exit_plan": { "target": 640.0, "stop": 623.0 },
+        });
+        let (_cap, _fr, _cited, g) = extras_for_bare(&strategy); // empty anchors, no move
+        assert_eq!(g["fields"]["exit_stop"]["not_checkable_reason"], "no_named_level");
+        assert_eq!(g["fields"]["invalidation_level"]["not_checkable_reason"], "no_named_level");
+        assert_eq!(g["fields"]["exit_target"]["not_checkable_reason"], "no_cited_expiration");
+        assert_eq!(g["card"], "could_not_check");
+    }
+
+    /// AC-64 — `not_applicable` preempts `local_rules`: there are no figures to qualify.
+    #[test]
+    fn a_local_rules_rec_with_a_null_gamma_flip_renders_no_card_line_at_all() {
+        let strategy = json!({
+            "decision": "trade", "strikes": [], "expiration": null, "invalidation_level": null,
+            "max_risk": "1R defined-risk", "position_size": "small (rule-based local rec; not LLM)",
+            "exit_plan": { "target": null, "stop": null },
+        });
+        let g = extras_local_only(&strategy);
+        assert_eq!(g["counts"]["checked"], 0);
+        assert_eq!(g["card"], "not_applicable");
+    }
+
+    /// `boundary_extras` builds a trade strategy with only `field` set to `value` (the other two named
+    /// fields null), the two-anchor set (gex_spot 500.00, put_wall 2.00), and the one-tenor pruned move.
+    fn boundary_extras(field: &str, value: f64) -> Value {
+        use crate::services::rec_inputs::grounding::AnchorKind;
+        let mut strategy = json!({
+            "decision": "trade", "strikes": [], "expiration": "2026-09-18", "right": null,
+            "invalidation_level": null, "max_risk": null, "position_size": null,
+            "exit_plan": { "target": null, "stop": null },
+        });
+        match field {
+            "exit_stop" => strategy["exit_plan"]["stop"] = json!(value),
+            "invalidation_level" => strategy["invalidation_level"] = json!(value),
+            "exit_target" => strategy["exit_plan"]["target"] = json!(value),
+            other => panic!("unknown boundary field {other}"),
+        }
+        let set = reference_set();
+        let mv = reference_move();
+        let mut anchors = GroundingAnchors::empty();
+        anchors.set(AnchorKind::GexSpot, Some(500.00));
+        anchors.set(AnchorKind::PutWall, Some(2.00));
+        let (_c, _f, _ci, g) =
+            envelope_extras(&strategy, &set, None, None, true, Some(&mv), anchors, false);
+        g
+    }
+
+    /// guard 8 / AC-50 (SB) + AC-54. Poison arms, each of which must red (V3): widen the constant;
+    /// delete the cent floor; swap `pruned_move` for `raw_move`; replace a rule body with constant
+    /// Traced.
+    #[test]
+    fn the_resolution_boundaries_are_pinned_through_the_serialization_path() {
+        // anchors: gex_spot 500.00 (window +/-0.50), put_wall 2.00 (window +/-0.01, the CENT FLOOR)
+        // pruned move: 2026-09-18, anchor_spot 500.00, move_dollars 10.00 -> [490.00, 510.00]
+        struct Arm {
+            field: &'static str,
+            value: f64,
+            state: &'static str,
+            basis: Option<&'static str>,
+        }
+        let arms = [
+            Arm { field: "exit_stop", value: 500.00, state: "traced", basis: Some("exact") },
+            Arm { field: "exit_stop", value: 500.49, state: "traced", basis: Some("near") },
+            Arm { field: "exit_stop", value: 500.51, state: "untraced", basis: None },
+            Arm { field: "exit_stop", value: 2.008, state: "traced", basis: Some("near") },
+            Arm { field: "exit_stop", value: 2.015, state: "untraced", basis: None },
+            Arm { field: "invalidation_level", value: 500.00, state: "traced", basis: Some("exact") },
+            Arm { field: "invalidation_level", value: 500.49, state: "traced", basis: Some("near") },
+            Arm { field: "invalidation_level", value: 500.51, state: "untraced", basis: None },
+            Arm { field: "invalidation_level", value: 2.008, state: "traced", basis: Some("near") },
+            Arm { field: "invalidation_level", value: 2.015, state: "untraced", basis: None },
+            Arm { field: "exit_target", value: 490.00, state: "traced", basis: Some("inside_range") },
+            Arm { field: "exit_target", value: 510.00, state: "traced", basis: Some("inside_range") },
+            Arm { field: "exit_target", value: 489.99, state: "untraced", basis: None },
+            Arm { field: "exit_target", value: 510.01, state: "untraced", basis: None },
+        ];
+        for a in &arms {
+            let g = boundary_extras(a.field, a.value);
+            assert_eq!(g["fields"][a.field]["state"], a.state, "{} @ {}", a.field, a.value);
+            match a.basis {
+                Some(b) => assert_eq!(g["fields"][a.field]["basis"], b, "{} @ {}", a.field, a.value),
+                None => assert!(g["fields"][a.field]["basis"].is_null(), "{} @ {}", a.field, a.value),
+            }
+        }
+        // NON-VACUITY, asserted in the test itself: every checked field carries at least one traced arm
+        // AND at least one untraced arm. A set drifted to a single outcome fails before it can certify.
+        for field in ["exit_stop", "invalidation_level", "exit_target"] {
+            assert!(arms.iter().any(|a| a.field == field && a.state == "traced"), "{field}: no traced arm");
+            assert!(arms.iter().any(|a| a.field == field && a.state == "untraced"), "{field}: no untraced arm");
+        }
+    }
+
+    /// AC-54 — pruned and unpruned moves differ: the target is NOT traced against a tenor whose
+    /// contracts were never sent.
+    #[test]
+    fn a_target_is_never_traced_against_a_tenor_that_was_not_sent() {
+        use crate::services::rec_inputs::grounding::AnchorKind;
+        // raw: 2026-09-18 (10.00) AND 2026-12-18 (40.00). pruned: 2026-09-18 ONLY. The rec cites
+        // 2026-12-18 with a target of 530.00 — inside the RAW [460.00, 540.00], unreachable pruned.
+        let raw = StraddleMove {
+            state: StraddleMoveState::Ok,
+            as_of: None,
+            session_basis: None,
+            anchor_spot: Some(500.00),
+            anchor_basis: quant_engine::AnchorBasis::GexSpot,
+            anchor_label: "levels-anchor".into(),
+            primary_expiration: Some("2026-09-18".into()),
+            wide_quote_threshold_pct: 15.0,
+            tenors: vec![
+                quant_engine::StraddleTenor {
+                    expiration: "2026-09-18".into(), dte: 30, strike_used: 500.0,
+                    strike_distance_pct: 0.0, straddle_price: 10.00, move_dollars: 10.00,
+                    move_pct: 2.0, basis: quant_engine::MoveBasis::AtmStraddleMid,
+                    quote_spread_pct_of_mid: None, wide_quotes: false,
+                },
+                quant_engine::StraddleTenor {
+                    expiration: "2026-12-18".into(), dte: 120, strike_used: 500.0,
+                    strike_distance_pct: 0.0, straddle_price: 40.00, move_dollars: 40.00,
+                    move_pct: 8.0, basis: quant_engine::MoveBasis::AtmStraddleMid,
+                    quote_spread_pct_of_mid: None, wide_quotes: false,
+                },
+            ],
+        };
+        let pruned = restrict_move_to_tenors(&raw, &["2026-09-18".to_string()]);
+        let strategy = json!({
+            "decision": "trade", "strikes": [], "expiration": "2026-12-18", "right": null,
+            "invalidation_level": null, "max_risk": null, "position_size": null,
+            "exit_plan": { "target": 530.0, "stop": null },
+        });
+        let set = reference_set();
+        let mut anchors = GroundingAnchors::empty();
+        anchors.set(AnchorKind::GexSpot, Some(500.00));
+        let (_c, _f, _ci, g) =
+            envelope_extras(&strategy, &set, None, None, true, Some(&pruned), anchors, false);
+        assert_ne!(g["fields"]["exit_target"]["state"], "traced");
+        assert_eq!(g["fields"]["exit_target"]["state"], "not_checkable");
+        assert_eq!(g["fields"]["exit_target"]["not_checkable_reason"], "straddle_move_unavailable");
+    }
 
     #[test]
     fn status_shape() {

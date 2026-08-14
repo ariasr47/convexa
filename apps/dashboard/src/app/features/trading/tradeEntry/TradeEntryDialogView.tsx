@@ -789,6 +789,20 @@ export function TradeEntryDialog({
                 slotProps={{ htmlInput: { 'aria-label': 'Stop (optional)' } }}
                 sx={inputSx}
               />
+              {/* ai-rec-grounding (AC-68) — a withheld price field says why, in one line, drawn from
+                  the closed literal set and rendered VERBATIM (the same seam `provenance`/`sizingNote`
+                  use). Three members after D8; this branch is literal-agnostic on purpose, so the copy
+                  stays owned by `ai-rec/copy.ts` and this file never re-spells it. An unexplained
+                  blank reads as a bug rather than a refusal. */}
+              {prefill?.stopWithheldReason && (
+                <Typography
+                  variant="caption"
+                  data-testid="entry-stop-withheld"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                >
+                  {prefill.stopWithheldReason}
+                </Typography>
+              )}
             </Box>
             <Box sx={{ flex: 1 }}>
               <FieldLabel htmlFor="entry-target">Target (optional)</FieldLabel>
@@ -802,6 +816,15 @@ export function TradeEntryDialog({
                 slotProps={{ htmlInput: { 'aria-label': 'Target (optional)' } }}
                 sx={inputSx}
               />
+              {prefill?.targetWithheldReason && (
+                <Typography
+                  variant="caption"
+                  data-testid="entry-target-withheld"
+                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+                >
+                  {prefill.targetWithheldReason}
+                </Typography>
+              )}
             </Box>
           </Stack>
 

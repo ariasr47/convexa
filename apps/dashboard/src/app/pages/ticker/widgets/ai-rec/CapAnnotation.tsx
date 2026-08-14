@@ -11,8 +11,8 @@
 import type { CapCheck } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Stack, Typography } from '@mui/material';
-import { CAP_COULD_NOT_CHECK, NOT_SET } from './copy';
-import { capSurface } from './literals';
+import { NOT_SET } from './copy';
+import { capRefusalLine, capSurface } from './literals';
 
 export function CapAnnotation({ capCheck }: { capCheck: CapCheck | undefined | null }) {
   const surface = capSurface(capCheck?.verdict);
@@ -41,7 +41,7 @@ export function CapAnnotation({ capCheck }: { capCheck: CapCheck | undefined | n
       >
         <WarningAmberIcon color="warning" sx={{ fontSize: 16 }} />
         <Typography variant="caption" sx={{ color: 'warning.main' }}>
-          {CAP_COULD_NOT_CHECK}
+          {capRefusalLine(capCheck?.verdict, capCheck?.risk_refusal)}
         </Typography>
       </Stack>
     );

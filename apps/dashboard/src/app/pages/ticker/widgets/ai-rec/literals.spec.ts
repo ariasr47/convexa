@@ -1,6 +1,20 @@
+import { typographyTokens } from '@/shared/theme/tokens';
+import type { GroundingField, GroundingState } from '@convexa/api';
 import { describe, expect, it } from 'vitest';
 import {
+  ANCHOR_LABEL_FALLBACK,
+  CAP_COULD_NOT_CHECK,
+  CAP_REFUSAL_SENTENCE,
+  GROUNDING_BLOCK_ABSENT,
+  GROUNDING_CARD,
+  MISSING_INPUT_CLAUSE,
+  PREFILL_WITHHELD,
+  someTracedLine,
+  UNTRACED_LINE,
+} from './copy';
+import {
   noTradeRec,
+  recAllTraced,
   recOffSet,
   recRightUndetermined,
   tradeRecEqualToCap,
@@ -8,11 +22,17 @@ import {
   tradeRecOverCap,
 } from './fixtures';
 import {
+  anchorLabel,
   candidateFreshnessLine,
+  capRefusalLine,
   capSurface,
+  cardGroundingLine,
   citedLine,
   fieldLiteral,
+  figureClause,
   liquidityLine,
+  prefillGate,
+  registerSx,
   riskInputsSignature,
   riskInputsSuperseded,
 } from './literals';
@@ -387,5 +407,278 @@ describe('riskInputsSignature / riskInputsSuperseded — AC-64 (GATE Q correctio
   it('riskInputsSuperseded is true iff the signatures actually differ (the guard BITES)', () => {
     expect(riskInputsSuperseded(set, set)).toBe(false);
     expect(riskInputsSuperseded(set, { ...set, account_size: 75_000 })).toBe(true);
+  });
+});
+
+describe('ai-rec-grounding · closed lookups', () => {
+  const bare = (state: GroundingState): GroundingField => ({
+    state,
+    basis: null,
+    anchor_kind: null,
+    anchor_value: null,
+    range_low: null,
+    range_high: null,
+    expiration: null,
+    not_checkable_reason: null,
+  });
+
+  it('AC-3 — the clause shape is selected by the wire `basis` alone, never by which numbers are present', () => {
+    const near = figureClause({
+      state: 'traced',
+      basis: 'near',
+      anchor_kind: 'call_wall',
+      anchor_value: 412,
+      range_low: 999,
+      range_high: 999,
+      expiration: '2026-09-18',
+      not_checkable_reason: null,
+    });
+    expect(near).toEqual({ kind: 'near', anchor: 'call wall', value: 412 });
+    const range = figureClause({
+      state: 'traced',
+      basis: 'inside_range',
+      anchor_kind: 'call_wall',
+      anchor_value: 412,
+      range_low: 400,
+      range_high: 420,
+      expiration: '2026-09-18',
+      not_checkable_reason: null,
+    });
+    expect(range).toEqual({ kind: 'inside_range', expiration: '2026-09-18', low: 400, high: 420 });
+  });
+
+  it('AC-2 — a traced clause naming a source with NO number renders NOWHERE (the negative half)', () => {
+    // A malformed/impossible-per-contract payload (basis says traced-exact/near/inside_range but the
+    // number the clause would need is null) must never crash into a half-sentence — it renders
+    // `{ kind: 'none' }`, same as no clause at all, for every basis member.
+    const exactNoValue = figureClause({
+      state: 'traced',
+      basis: 'exact',
+      anchor_kind: 'call_wall',
+      anchor_value: null,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: null,
+    });
+    expect(exactNoValue).toEqual({ kind: 'none' });
+    const nearNoValue = figureClause({
+      state: 'traced',
+      basis: 'near',
+      anchor_kind: 'call_wall',
+      anchor_value: null,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: null,
+    });
+    expect(nearNoValue).toEqual({ kind: 'none' });
+    const rangeNoEndpoints = figureClause({
+      state: 'traced',
+      basis: 'inside_range',
+      anchor_kind: null,
+      anchor_value: null,
+      range_low: null,
+      range_high: 420,
+      expiration: '2026-09-18',
+      not_checkable_reason: null,
+    });
+    expect(rangeNoEndpoints).toEqual({ kind: 'none' });
+    const rangeNoExpiration = figureClause({
+      state: 'traced',
+      basis: 'inside_range',
+      anchor_kind: null,
+      anchor_value: null,
+      range_low: 400,
+      range_high: 420,
+      expiration: null,
+      not_checkable_reason: null,
+    });
+    expect(rangeNoExpiration).toEqual({ kind: 'none' });
+  });
+
+  it("AC-23 — a couldn't-check clause names WHICH missing input blocked the check, by closed lookup, never composed client-side", () => {
+    const reasonFor = (
+      reason: 'no_named_level' | 'no_cited_expiration' | 'straddle_move_unavailable',
+    ) =>
+      figureClause({
+        state: 'not_checkable',
+        not_checkable_reason: reason,
+        basis: null,
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+      });
+    const noNamedLevel = reasonFor('no_named_level');
+    const noCitedExpiration = reasonFor('no_cited_expiration');
+    const straddleUnavailable = reasonFor('straddle_move_unavailable');
+    expect(noNamedLevel).toEqual({
+      kind: 'not_checkable',
+      clause: MISSING_INPUT_CLAUSE.no_named_level,
+    });
+    expect(noCitedExpiration).toEqual({
+      kind: 'not_checkable',
+      clause: MISSING_INPUT_CLAUSE.no_cited_expiration,
+    });
+    expect(straddleUnavailable).toEqual({
+      kind: 'not_checkable',
+      clause: MISSING_INPUT_CLAUSE.straddle_move_unavailable,
+    });
+    // All three named reasons are pairwise distinct — a reader can tell WHICH input was missing.
+    const clauses = [noNamedLevel, noCitedExpiration, straddleUnavailable].map((c) =>
+      c.kind === 'not_checkable' ? c.clause : null,
+    );
+    expect(new Set(clauses).size).toBe(3);
+  });
+
+  it('AC-6 — all eleven anchor tokens map; an unrecognized token takes the level-class fallback', () => {
+    const tokens = [
+      'gex_spot',
+      'call_wall',
+      'put_wall',
+      'peak_gex_strike',
+      'gamma_flip',
+      'max_pain',
+      'vwap',
+      'vwap_upper_2',
+      'vwap_upper_3',
+      'vwap_lower_2',
+      'vwap_lower_3',
+    ] as const;
+    for (const t of tokens) {
+      expect(anchorLabel(t)).toBeTruthy();
+      expect(anchorLabel(t)).not.toMatch(/_/); // never a raw wire string
+    }
+    expect(anchorLabel('cap' as never)).toBe(ANCHOR_LABEL_FALLBACK);
+    expect(anchorLabel(null)).toBe(ANCHOR_LABEL_FALLBACK);
+  });
+
+  it('AC-26 — the structurally-unchecked pair renders NO clause', () => {
+    expect(
+      figureClause({
+        state: 'not_checkable',
+        not_checkable_reason: 'structurally_unchecked',
+        basis: null,
+        anchor_kind: null,
+        anchor_value: null,
+        range_low: null,
+        range_high: null,
+        expiration: null,
+      }),
+    ).toEqual({ kind: 'none' });
+  });
+
+  it('AC-22 (SB) + AC-68 — every literal is distinct from every other AND from all four shipped absence literals', () => {
+    const closedSet = [
+      GROUNDING_CARD.all_traced,
+      GROUNDING_CARD.none_traced,
+      GROUNDING_CARD.could_not_check,
+      GROUNDING_CARD.local_rules,
+      GROUNDING_BLOCK_ABSENT,
+      someTracedLine(1, 4),
+      UNTRACED_LINE,
+      PREFILL_WITHHELD.untraced,
+      PREFILL_WITHHELD.not_checkable,
+      PREFILL_WITHHELD.block_absent,
+    ];
+    expect(new Set(closedSet).size).toBe(closedSet.length);
+    const absence = ['—', 'not set', 'unavailable', 'not given'];
+    for (const s of closedSet) expect(absence).not.toContain(s);
+    expect(GROUNDING_CARD.could_not_check).not.toBe(GROUNDING_BLOCK_ABSENT);
+    for (const s of closedSet) expect(s.toLowerCase()).not.toContain('grounding');
+  });
+
+  it('AC-68 (D8) — the THREE prefill literals are pairwise distinct in their TAILS, not merely as strings', () => {
+    const three = [
+      PREFILL_WITHHELD.untraced,
+      PREFILL_WITHHELD.not_checkable,
+      PREFILL_WITHHELD.block_absent,
+    ];
+    expect(new Set(three).size).toBe(3);
+    const stem = 'Not pre-filled — ';
+    const tails = three.map((s) => {
+      expect(s.startsWith(stem)).toBe(true);
+      return s.slice(stem.length);
+    });
+    expect(new Set(tails).size).toBe(3);
+    for (const a of tails) for (const b of tails) if (a !== b) expect(b.includes(a)).toBe(false);
+    expect(PREFILL_WITHHELD.block_absent).toContain("wasn't checked against Convexa's numbers");
+    expect(PREFILL_WITHHELD.block_absent).not.toBe(GROUNDING_BLOCK_ABSENT);
+  });
+
+  it('AC-40 — the three refusal sentences are distinct; an absent/unknown token renders the shipped literal alone', () => {
+    expect(capRefusalLine('not_checkable', 'no_text')).toBe(CAP_REFUSAL_SENTENCE.no_text);
+    expect(capRefusalLine('not_checkable', null)).toBe(CAP_COULD_NOT_CHECK);
+    expect(capRefusalLine('not_checkable', 'bogus' as never)).toBe(CAP_COULD_NOT_CHECK);
+    expect(new Set(Object.values(CAP_REFUSAL_SENTENCE)).size).toBe(3);
+  });
+
+  it('AC-16 (SB) — poisoning a per-field token changes no count and no card member', () => {
+    const g = recAllTraced().grounding!;
+    const poisoned = {
+      ...g,
+      fields: { ...g.fields, exit_stop: { ...g.fields.exit_stop, state: 'untraced' as const } },
+    };
+    expect(cardGroundingLine(poisoned)).toEqual(cardGroundingLine(g));
+  });
+
+  it('AC-7 (SB) / AC-68 — the prefill gate is a closed lookup on the wire state, FIVE arms', () => {
+    expect(prefillGate(bare('traced'))).toEqual({ seed: true, reason: null });
+    expect(prefillGate(bare('untraced'))).toEqual({
+      seed: false,
+      reason: PREFILL_WITHHELD.untraced,
+    });
+    expect(prefillGate(bare('not_checkable'))).toEqual({
+      seed: false,
+      reason: PREFILL_WITHHELD.not_checkable,
+    });
+    // `not_applicable` — the rec stated no figure; there was nothing to seed and nothing to explain.
+    expect(prefillGate(bare('not_applicable'))).toEqual({ seed: false, reason: null });
+    // D8 — NO grounding block: never a seed, AND its own reason (never the `not_checkable` one).
+    expect(prefillGate(undefined)).toEqual({ seed: false, reason: PREFILL_WITHHELD.block_absent });
+    expect(prefillGate(null)).toEqual({ seed: false, reason: PREFILL_WITHHELD.block_absent });
+    expect(prefillGate(undefined).reason).not.toBe(PREFILL_WITHHELD.not_checkable);
+    // An unrecognized token is unreachable from a conformant server (the wire enum is closed); the
+    // shipped discipline is "unknown renders nothing, never a guess" — and it never seeds.
+    expect(prefillGate(bare('bogus' as never))).toEqual({ seed: false, reason: null });
+  });
+});
+
+describe('registerSx — F12, DESIGN_SYSTEM Amendment 2026-08-13, D3 (the type register)', () => {
+  const MONO = typographyTokens.monoFontFamily;
+  const SANS = typographyTokens.fontFamily;
+
+  it('POSITIVE — a `traced` figure is mono, an `untraced` figure is sans (asserted at rendered scope by ai-rec.grounding.spec.tsx)', () => {
+    expect(registerSx('traced')).toEqual({ fontFamily: MONO });
+    expect(registerSx('untraced')).toEqual({ fontFamily: SANS });
+  });
+
+  it('`not_checkable` is its OWN named arm — a value that exists but was never checked is still NOT traced, and must NOT inherit the mono register', () => {
+    // Asserted as its own case, never folded into `untraced` (a different fact) and never left to a
+    // wildcard that would silently default to `traced`'s mono register.
+    expect(registerSx('not_checkable')).toEqual({ fontFamily: SANS });
+    expect(registerSx('not_checkable')).not.toEqual(registerSx('traced'));
+  });
+
+  it('`not_applicable` — never actually renders a value (vacuous), but is named explicitly and stays out of the mono register', () => {
+    expect(registerSx('not_applicable')).toEqual({ fontFamily: SANS });
+  });
+
+  it('an absent grounding state (no data reached this value) defaults SAFE — never mono', () => {
+    expect(registerSx(undefined)).toEqual({ fontFamily: SANS });
+    expect(registerSx(null)).toEqual({ fontFamily: SANS });
+  });
+
+  it('EVERY non-traced member is pairwise identical to each other and distinct from `traced` — the exhaustive set has exactly two outcomes', () => {
+    const nonTraced = [
+      registerSx('untraced'),
+      registerSx('not_checkable'),
+      registerSx('not_applicable'),
+      registerSx(undefined),
+    ];
+    for (const r of nonTraced) expect(r).toEqual({ fontFamily: SANS });
+    expect(registerSx('traced')).not.toEqual({ fontFamily: SANS });
   });
 });

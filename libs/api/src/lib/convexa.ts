@@ -1500,6 +1500,10 @@ export interface RecResponse {
   cap_check?: CapCheck;
   field_reasons?: FieldReasons;
   cited_contract?: CitedContract;
+  // ---- ai-rec-grounding (additive; INTERFACE_CONTRACT §1) — always present on every `base`-built
+  // envelope. Absent ONLY from a pre-feature server (the one client-selected branch — a lookup on
+  // PRESENCE, never a re-derivation from figures).
+  grounding?: Grounding;
 }
 
 // ---- tradeable-rec-inputs response types (INTERFACE_CONTRACT §5) -------------------------------
@@ -1520,6 +1524,10 @@ export interface CapCheck {
   /** The model's raw prose, so copy can attribute each half: Convexa performed the comparison, on a
    *  figure the AI asserted. */
   model_max_risk_text: string | null;
+  /** ai-rec-grounding — the widened OUTPUT of the same ONE `max_risk` parse. Non-null IFF
+   *  `parsed_risk_dollars` is null and the risk text was examined. Never rides `cap_not_derivable_reason`
+   *  — the two tokens answer different questions and neither stands in for the other. */
+  risk_refusal: RiskRefusal | null;
 }
 
 /** The declared dependency this field was missing, in FIXED priority order. `position_size` is the
@@ -1539,6 +1547,9 @@ export interface FieldReasons {
   position_size: FieldReason | null;
   exit_target: FieldReason | null;
   exit_stop: FieldReason | null;
+  /** ai-rec-grounding — same shape as its four siblings. Required so `Invalidation` can render through
+   *  the shipped closed absence-literal set (`fieldLiteral`) now that it moves onto it. */
+  invalidation_level: FieldReason | null;
 }
 
 /** A cited contract exists only when the parsed rec yields EXACTLY ONE `(expiration, strike, right)`
@@ -1553,6 +1564,83 @@ export interface CitedContract {
   /** Both legs for `right_undetermined`, when the pair is available; otherwise empty. */
   legs: CandidateContract[];
 }
+
+// ---- ai-rec-grounding response types (INTERFACE_CONTRACT §1) ------------------------------------
+
+/** Four members, ONE fixed order server-side, first match wins. Collapsing `not_checkable` into
+ *  `untraced` is forbidden: it would stamp "matches nothing we own" on a number nobody could check. */
+export type GroundingState = 'not_applicable' | 'not_checkable' | 'traced' | 'untraced';
+
+/** Non-null IFF `state === 'traced'`, and CONSTRAINED PER FIELD: `exit_stop`/`invalidation_level` may
+ *  emit only `exact`/`near`; `exit_target` only `inside_range`; the other two, none. */
+export type MatchBasis = 'exact' | 'near' | 'inside_range';
+
+export type NotCheckableReason =
+  'structurally_unchecked' | 'no_named_level' | 'no_cited_expiration' | 'straddle_move_unavailable';
+
+/** The eleven price-scale anchors, read off the SENT market_state. There is no cap member and there
+ *  never will be one — that is what makes `traces to Convexa's risk cap (500)` unrenderable. */
+export type AnchorKind =
+  | 'gex_spot'
+  | 'call_wall'
+  | 'put_wall'
+  | 'peak_gex_strike'
+  | 'gamma_flip'
+  | 'max_pain'
+  | 'vwap'
+  | 'vwap_upper_2'
+  | 'vwap_upper_3'
+  | 'vwap_lower_2'
+  | 'vwap_lower_3';
+
+export type GroundingCard =
+  | 'not_applicable'
+  | 'local_rules'
+  | 'none_traced'
+  | 'could_not_check'
+  | 'some_traced'
+  | 'all_traced';
+
+/** Every key is ALWAYS present, `null` where the discriminator does not carry it. A client must not
+ *  select a clause shape by inspecting which keys are non-null — switch on `state`, then `basis`, then
+ *  `not_checkable_reason`. */
+export interface GroundingField {
+  state: GroundingState;
+  basis: MatchBasis | null;
+  anchor_kind: AnchorKind | null;
+  anchor_value: number | null;
+  range_low: number | null;
+  range_high: number | null;
+  expiration: string | null;
+  not_checkable_reason: NotCheckableReason | null;
+}
+
+export interface GroundingCounts {
+  checked: number;
+  traced: number;
+  untraced: number;
+  /** Excludes every `structurally_unchecked` one; includes the cited contract when
+   *  `right_undetermined`. Invariant: traced + untraced + not_checkable === checked. */
+  not_checkable: number;
+}
+
+export interface Grounding {
+  card: GroundingCard;
+  counts: GroundingCounts;
+  /** The payload-stated constant, once per response. Never per field, never a query knob. */
+  tolerance_pct: number;
+  fields: {
+    exit_stop: GroundingField;
+    exit_target: GroundingField;
+    invalidation_level: GroundingField;
+    max_risk: GroundingField;
+    position_size: GroundingField;
+  };
+}
+
+/** The widened OUTPUT of the ONE `max_risk` parse. Non-null IFF `parsed_risk_dollars` is null and the
+ *  risk text was examined. The ACCEPTED INPUT SET did not move by one input. */
+export type RiskRefusal = 'no_text' | 'no_dollar_figure' | 'multiple_different_figures';
 
 /** The as-sent echo (§1.1 in-app rec). Pinned to the envelope alongside `pinned_fingerprint` — no
  *  consumer ever recomputes any of it. */

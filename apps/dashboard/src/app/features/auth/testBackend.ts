@@ -254,6 +254,7 @@ export function defaultCapCheck(): CapCheck {
     cap_not_derivable_reason: null,
     parsed_risk_dollars: 300,
     model_max_risk_text: '$300',
+    risk_refusal: null,
   };
 }
 
@@ -780,6 +781,7 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           position_size: null,
           exit_target: null,
           exit_stop: null,
+          invalidation_level: null,
         };
         const citedContract = {
           state: 'cited' as const,

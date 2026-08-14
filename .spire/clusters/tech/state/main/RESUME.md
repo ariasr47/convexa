@@ -1,59 +1,107 @@
-# RESUME — branch `main` — written 2026-08-13 (post-ship snapshot)
+# RESUME — branch `main` — written 2026-08-13 (GATE PLAN closed, pre-fan-out)
 
-Conductor snapshot at a clean gateway boundary: **`tradeable-rec-inputs` GATE S closed; GATE I not
-yet run.** Overlay on the canon — reconcile against disk.
+Conductor snapshot at a clean gateway boundary: **`ai-rec-grounding` GATE PLAN closed; both build
+lanes NOT yet dispatched.** Overlay on the canon — reconcile against disk. Supersedes the
+2026-08-13 post-ship snapshot (that feature, `tradeable-rec-inputs`, is shipped + archived).
 
 ## Where we are
 
-**Nothing is in flight.** `contracts/` holds only `_archive/`. `tradeable-rec-inputs` SHIPPED +
-ARCHIVED 2026-08-13: full pipeline (GATE I 2026-08-12 → council 22/22 conflicts + 1 owner ruling →
-S2 FAIL→fix→PASS → PLAN B1–B18/F1–F13/V0–V11 → parallel lanes → GATE Q 93/7 → GATE Z → 100/100
-PASS, 13/13 ship-blocking). Conformance spec promoted to
-`state/conformance/tradeable-rec-inputs.json` (4 endpoints). Canon folded: OPEN_THREADS §7ad +
-PROJECT_CONTEXT §6 + BACKLOG (GATE I record + §C ship note + §E stash-trap entry). Ledger: 8 rows
-(6 C + 2 Q); `ledger_tally` → **no graduations**; new watch key `egress-copy-tracks-payload` (1).
-CLAUDE.md gained two trap entries (git-stash-destroys-sibling-work; stale tsc --build outputs).
+**`ai-rec-grounding` is in flight**, at `.spire/clusters/tech/contracts/ai-rec-grounding/`.
+GATE I → GATE C → GATE PLAN all closed this session. Nothing has been built yet; **no source file
+has been touched.**
+
+- **GATE I (2026-08-13):** chose `ai-rec-grounding` from 14 candidates. Every number the AI rec
+  asserts must trace to a Convexa-computed value. BACKLOG carries the record + full cull.
+- **GATE C:** R1 ×3 blind → R2 ×3 (28 conflicts, **28/28 quotes machine-verified**, 5 self-revisions)
+  → R3 one exchange (**19/19 technical converged or conceded, none promoted**; 8 of 9 product
+  conflicts closed by convergence) → owner ruled D7 → R4 ×2 → S2 ×2 (pass 1: 1 Critical + 8 Important
+  + 3 Minor; pass 2 **PASS**). `SPEC.md` (~950 lines) + `INTERFACE_CONTRACT.md` **owner-approved**.
+- **GATE PLAN:** `PLAN.md` — **48 items**: B1–B16 · F1–F17 · V1–V15. Critical path
+  `B1→B2→B6→…→B16→V3`. Global Constraints carry the conformance block **verbatim**.
+- **GATE Z (raised by the planner, both resolved):** Z1 AC-7 contradicted shipped behaviour; Z2
+  named a non-existent export artifact. See `SYNTHESIZER_AMENDMENTS_REQUESTED.md`.
+- `contract_lint ai-rec-grounding` → **0 errors** (3 warnings are pre-existing PROJECT_CONTEXT
+  shard sizes, not this feature). Ledger: **7 rows**, all gate C, incl. the **first instance** of
+  `ai-asserted-numbers-are-traceable`.
 
 ## Next concrete step
 
-GATE I (Discovery) on "go". Pre-registered from the 2026-08-13 ship, re-test rather than inherit:
-- **`ai-rec-grounding`** — strongest successor; strictly MORE valuable post-ship (the rec now
-  asserts candidate-sourced numbers to trace). BACKLOG §B.
-- **`score-lab-b0b-outcomes`** — S-sized backend fast-path; needs `MASSIVE_API_KEY` at run time.
-- **`rec-prompt-single-figure-max-risk`** — S; the model's `max_risk` prose names two figures in
-  one sentence → `cap_check: not_checkable` on 4/4 after-arm trades. Prompt tweak, never a parser
-  loosening. Recorded in §7ad deferred seams.
-- **V7 evening quote-fill** — owner/conductor chore, not a feature: run the shipped harness once in
-  a 20:00–23:00 ET window; pre-committed response ladder in the archived SPEC §7.
+**1. Apply the D8 ruling (one arm, one string) BEFORE dispatching lanes.** Recorded in
+`council/decisions.md` §D8. The block-absent prefill branch has no reason literal; SPEC §4's table
+has only two. Add a **third** literal in the card's `wasn't checked` register, distinct from both
+existing ones. Touches: SPEC §4 table + AC-68's disjointness check; PLAN F3 (literal), F4
+(`prefillGate` arm), F16 (render), F17 arm 4 (assert the reason, not just no-seed). **Block-absent
+still never licences a pre-fill** — this adds an explanation, never a seed. Owner may flip it to
+silence by saying `silence`.
 
-## Standing facts (verified this session — do not re-derive)
-
-1. Backend Rust (`apps/api`, Axum/Tokio, crate `api-rust`); `cargo check -p api-rust --features
-   postgres` separate mandatory step; exit codes not summaries; `npm run typecheck` separate.
-2. **:8000 orphan** (PID 58588, unkillable) serves stale code + rewrites `data/scan.json` — verify
-   on :8010+. `ports:free` is IPv4-only; Vite binds IPv6 (`localhost:`, not `127.0.0.1`).
-3. **NEVER `git stash` while another lane/conductor holds uncommitted work** — destroyed the
-   conductor's planning-surface edits this feature (rewritten from context; CLAUDE.md trap added).
-4. **Owner should rotate the AI key** — one shell one-liner echoed it into a local tool log during
-   V10 diagnosis (never committed; sweep clean). Advised, owner's call.
-5. **N1 RETIRED 2026-08-13 — the deploy claim was STALE and the owner was right.** Full CI/CD exists
-   (owner-built via Grok CLI): push = deploy (Railway auto-deploy + CF Pages git builds +
-   `deploy-smoke.yml`). `tradeable-rec-inputs` was LIVE in prod within the hour of its push (probed
-   front + back). Standing-red CI (pre-existing, not ours): see BACKLOG §B `ci-standing-red`.
-   **Lesson: a standing flag repeated across gates is a claim to RE-PROBE, not a fact to inherit.**
-6. Dashboard suite baseline: 1639 passing + 5 accepted pre-existing red files (`readonly.spec.tsx`,
-   `positions.risk.spec.tsx` network-pattern, `grouping.integration.spec.tsx`, `stage3-amber.spec.ts`,
-   `orders.risk.spec.tsx` tail network sweep). A 6th red = new regression.
-
-## The lessons this ship added (ledger rows exist — apply, don't rediscover)
-
-- Wired-to-the-wire is not rendered: six FE surfaces consumed contract fields yet never displayed
-  them; only runtime observation caught it.
-- A guard asserting only negatives passes over an EMPTY surface — assert the POSITIVE at rendered
-  scope, poison-prove every new guard.
-- A measurement that cannot run records unavailability as a finding, never a synthesized result
-  (the V10 no-key first attempt is preserved in the archived artifact as the exemplar).
+**2. Then dispatch both build lanes in parallel** (`spire-tech-backend` on B-items,
+`spire-tech-frontend` on F-items), both bound to `INTERFACE_CONTRACT.md`. → GATE Q → GATE S.
 
 ## Owner-facing, unanswered
 
-None blocking. Key rotation advised (item 4). Escalation trigger never fired this feature.
+- **F12 is BLOCKED on the owner** appending the **type-register Amendment** (mono = Convexa computed,
+  sans = model asserted) to `DESIGN_SYSTEM.md` §Amendments. The lane checks and **stops** rather than
+  inventing canon. Everything else can proceed around it.
+- **AI key rotation still advised** (carried from the last snapshot — a shell one-liner echoed the key
+  into a local tool log during V10; never committed, sweep clean). Owner's call.
+- Declared under default-with-veto this session, both reversible: **D8** (third literal, above) and
+  **Z1 Reading A** — clicking *Act* on a rec whose stop did not trace brings that field up **empty**
+  with a reason instead of pre-filled. Say `keep prefill` to reverse Z1.
+
+## Standing facts (verified this session — do not re-derive)
+
+1. **The BRIEF's original evidence path was STALE and R1 caught it.** `ScenarioLLMProvider` /
+   `AI_REC_SCENARIOS_ENABLED` **do not exist in the Rust backend** — `recommendation.rs:358`
+   hardcodes them off, `scenario_id` (`:803`) is deserialized and never read, the FE picker
+   (`AiRecPanel.tsx:275`) is dead code. Inherited from the **Python-era** 2026-07-16 backlog entry.
+   Replaced by fixtures through `envelope_extras` + an `AI_REC_LOCAL_ONLY=1` live arm — which
+   **DOES require a usable key** (`recommendation.rs:655` gates on `resolved.usable()`).
+2. **Scope is honestly smaller than the BRIEF's headline** (SPEC §1 says so in one sentence):
+   `max_risk` and `position_size` are **structurally not-checkable in v1**. Real coverage = stop ·
+   target · invalidation · cited contract. The cap-anchored shortcut was withdrawn at R3 — a
+   fabricated $480 under a $500 cap would have rendered "traced".
+3. **A borrow trap the planner named:** `pruned_market_state` is *moved* into `RecPromptContext` at
+   `recommendation.rs:681`, **after** the `base` closure at `:617`. B10 extracts a `Copy`
+   `GroundingAnchors` before the closure and hoists `local_only`.
+4. **:8000 orphan** (PID 58588, `taskkill /F` access-denied) serves stale code and rewrites
+   `data/scan.json` several times a minute — **verify on :8010+**; a naive before/after byte check on
+   that file gives a false failure. `ports:free` is **IPv4-only**; Vite binds IPv6 (`localhost:`,
+   not `127.0.0.1`).
+5. **NEVER `git stash`** while another lane/conductor holds uncommitted work — it destroyed the
+   conductor's planning surface on the last feature. Targeted `git checkout -- <file>` or a worktree.
+6. **A green `nx test` does NOT mean the types are sound.** `npx nx typecheck` and
+   `cargo check -p api-rust --features postgres` are separate mandatory steps. **Check EXIT CODES,
+   not printed summaries.**
+7. **Dashboard suite baseline: 1639 passing + 5 accepted pre-existing red files** (`readonly.spec.tsx`,
+   `positions.risk.spec.tsx`, `grouping.integration.spec.tsx`, `stage3-amber.spec.ts`,
+   `orders.risk.spec.tsx`). A **6th** red file is a new regression.
+8. **CI/CD exists and push = deploy** (Railway auto-deploy + CF Pages git builds + `deploy-smoke.yml`).
+   Standing-red CI is pre-existing, not ours — BACKLOG §B `ci-standing-red`.
+
+## Two residuals booked OPEN in SPEC §9 — do not let a lane close them falsely
+
+- **§9.5 halo effect** — a reader could still generalize "no marker = checked" from the fields that
+  carry a clause. Mitigated by an allowlist tooltip + the four cut fields carrying **no** marker at
+  all; reviewed, never measured against a real reader. Closes when `rec-absence-literals-hole` ships.
+- **§9.6 no-key verification gap** — with no provider key, layer-2 records **not-run with its reason**.
+  V10–V13 are key-gated. **Never a synthesized run** (the `tradeable-rec-inputs` V10 precedent).
+- **§9.7** — no export surface carries the strategy, grounding states or system prompt; widening was
+  ruled out (`egress-copy-tracks-payload`). **AC-5's export half is vacuously true — do not chase it.**
+
+## D7 (owner-ruled) — the noise bar is a MEASUREMENT, not a ship gate
+
+Ladder **pre-committed before the split is seen**: ≥5 real recs across ≥3 tickers, record the
+traced / no-match / couldn't-check split into a committed artifact; high no-match ⇒ **one** prompt
+revision + **one** re-run ⇒ still high ⇒ ship with the honest rate recorded. **Never a tolerance
+widening, never a scope cut, never a synthesized run.** Still ship-blocking regardless: **AC-33**
+(a fabricated-rec fixture must trip the check) and **AC-50** (poison-proved non-vacuous, via §2.6
+guard 8 asserted through `envelope_extras` with four poison arms).
+
+## Backlog items this session created
+
+- **`rec-absence-literals-hole`** — 4 rec fields (`Structure`, `Strike(s)`, `Expiration`,
+  `Entry trigger`) print an out-of-set bare `—` on `main`. Pre-existing `absent-is-not-none` defect;
+  this feature neither creates nor worsens it, and deliberately attaches **no** grounding marker there.
+- **PROJECT_CONTEXT shard sizes** — §2 (178) / §5 (211) / §6 (530 lines) exceed the threshold, so any
+  feature tagging into them loads the whole section. This feature's pack went 971→441 lines only after
+  dropping the `personas` tag (which is the tag on §6).

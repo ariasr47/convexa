@@ -1247,6 +1247,58 @@ barred from riding the right-token change) · per-quote age (blocked on a vendor
 pre-commit check procedure recorded) · broker-book positions source (future-dated behind a week of
 owner-verified daily use, its own feature, structurally separate copy set).
 
+## 7ae. ai-rec-grounding — per-figure grounding for the AI rec (SHIPPED + ARCHIVED 2026-08-13 — both lanes)
+Contracts archived at `.spire/clusters/tech/contracts/_archive/ai-rec-grounding/`. Conformance spec
+promoted to `state/conformance/ai-rec-grounding.json` (2 endpoints). GATE Q **PASS 68/68** on the
+re-run (pass 1 FAIL 65/3 → GATE Z both lanes → PASS), QA's independent receipt agreeing with the
+backend's.
+**The measured reality this feature exists for: 44.4% of the numbers the AI asserts do not trace to
+anything Convexa computed** — every one of which rendered as fact before this ship.
+**Deferred seams (specified, not built):** the halo residual (§9.5 — a reader may still generalize "no
+marker = checked" from the fields that carry a clause; mitigated by an allowlist tooltip + the four cut
+fields carrying no marker at all, reviewed but never measured against a real reader; closes when
+`rec-absence-literals-hole` ships) · no export surface carries the strategy, grounding states or system
+prompt (§9.7 — widening was ruled out under `egress-copy-tracks-payload`; **AC-5's export half is
+vacuously true, do not chase it**) · `max_risk` and `position_size` remain **structurally
+not-checkable** (the honest shortfall against the BRIEF's goal sentence, stated in SPEC §1).
+Generalizes the shipped `cited` mechanism (7ad) to the model's other asserted price-scale numbers: the
+exit stop, the exit target and the invalidation level each resolve server-side to a Convexa-computed
+figure (`traced`) or render as the AI's own, marked (`untraced`/`not_checkable`). Sixth pure leaf
+`rec_inputs/grounding.rs`; nine structural guards (§2.6), each poison-proved by both the build lane and
+QA independently (16 mutations, all RED, byte-identical restores). Contract at
+`.spire/clusters/tech/contracts/ai-rec-grounding/`.
+**GATE Q pass 1: FAIL (65/68) — 3 non-ship-blocking rows, no invariant broken, independent conformance
+PASS 2/2 on both the build lane's and QA's own receipts.** Backend bounce items and their fix:
+- **AC-41 (before/after) + AC-47 (D7 untraced-rate ladder)** — neither had a committed artifact at GATE
+  Q. Fixed by `.spire/clusters/tech/contracts/ai-rec-grounding/d7-measurement.md`: **10 real
+  `POST /api/recommendation/{ticker}` calls** (own BYO key, never `AI_REC_LOCAL_ONLY`) across SPY/QQQ/
+  IWM/NVDA/AAPL in two passes. **AC-41 result:** `max_risk` single-dollar-figure checkability on trade
+  verdicts is **4 of 4** (all parseable), against the recorded before-arm of **0 of 4** at the
+  `tradeable-rec-inputs` V10 run — the B5 prompt directive holds up on live traffic. **AC-47 result (D7,
+  explicitly not ship-blocking):** the untraced rate on the first pass was **57.1%** — at the
+  pre-committed "high" bar (≥50%) — so the ladder's one permitted step ran: one prompt revision
+  ("quote the level exactly as the context gives it, to the same decimal precision") plus one re-run.
+  Result: **44.4%**, still substantial, recorded honestly rather than chased further — no tolerance
+  widening, no scope cut, no synthesized run, per the ladder's own terms. `AC-42`/`AC-50` (both
+  ship-blocking, both poison-proved) are what keep a fabricated figure from ever reading as traced
+  regardless of this rate. **N-5 correction:** the ladder itself is genuinely pre-committed (`SPEC.md`
+  §7, on disk hours before any call), but the specific **"≥50%" bar is not in SPEC** — it exists only in
+  the artifact, whose own file timestamps postdate both passes and therefore do not independently prove
+  it was fixed before pass 1, and it sits exactly between the two measured rates (57.1% / 44.4%). Stated
+  as a limitation in the artifact itself rather than asserted as corroborated fact.
+- **F-2 (guard-8c line-ending fragility)** — the 8c wiring pin (added because nothing else could catch
+  a `pruned_move`→`raw_move` swap at `generate_recommendation`'s own call site) matched a literal `\n`;
+  under this repo's `core.autocrlf = true` + no `.gitattributes`, a fresh Windows checkout is CRLF and
+  the pin failed closed. Fixed by normalizing the source text (`\r\n` → `\n`) **before** matching, never
+  by weakening the assertion — re-poison-proved RED under both LF and CRLF on the actual working file
+  (round-tripped and restored byte-identical, sha256-verified).
+- **Shared item (7 `test`-marked ACs with no named test)** — checked AC-2, AC-12, AC-23, AC-29, AC-30,
+  AC-31, AC-34 against the backend change set: **none touch `apps/api`** — all seven are FE-rendering
+  criteria (clause content, SSE-drop isolation, reasoning-prose exclusion). Zero backend action; left to
+  the frontend lane, not resolved unilaterally by re-marking.
+**GATE Q re-runs on this fix** (not taken on trust). SPEC/INTERFACE/PLAN/the nine guards/D1–D8 were not
+reopened by this bounce.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).

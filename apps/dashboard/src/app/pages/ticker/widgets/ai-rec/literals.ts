@@ -4,20 +4,36 @@
  * testing a null, never by re-deriving a label from a scalar (`[digested-labels-not-raw-dump]`,
  * `[absent-is-not-none]`). Pure; no React, no fetch.
  */
+import { typographyTokens } from '@/shared/theme/tokens';
 import type {
+  AnchorKind,
   CandidateContract,
   CandidateSetEnvelope,
   CapVerdict,
   CitedContract,
   FieldReason,
+  Grounding,
+  GroundingField,
+  GroundingState,
   RecDecision,
   RiskInputs,
+  RiskRefusal,
 } from '@convexa/api';
 import {
-  NONE_OMITTED,
+  ANCHOR_LABEL,
+  ANCHOR_LABEL_FALLBACK,
+  CAP_COULD_NOT_CHECK,
+  CAP_REFUSAL_SENTENCE,
+  GROUNDING_BLOCK_ABSENT,
+  GROUNDING_CARD,
+  groundingDefinitionTip,
+  MISSING_INPUT_CLAUSE,
   NO_TWO_SIDED_QUOTE_LITERAL,
+  NONE_OMITTED,
   NUMBERS_SAID_EMPTY,
   NUMBERS_SAID_UNAVAILABLE,
+  PREFILL_WITHHELD,
+  someTracedLine,
 } from './copy';
 
 // ---- The four-field closed literal set (AC-69/70/71/72/72a) ------------------------------------
@@ -206,4 +222,175 @@ export function riskInputsSuperseded(
 ): boolean {
   if (!sent || !current) return false;
   return riskInputsSignature(sent) !== riskInputsSignature(current);
+}
+
+// ---- ai-rec-grounding: closed lookups (SPEC §4, INTERFACE_CONTRACT rule 1) ----------------------
+
+export type FigureClause =
+  | { kind: 'none' }
+  | { kind: 'exact'; anchor: string; value: number }
+  | { kind: 'near'; anchor: string; value: number }
+  | { kind: 'inside_range'; expiration: string; low: number; high: number }
+  | { kind: 'untraced' }
+  | { kind: 'not_checkable'; clause: string };
+
+/** Total over the eleven-member closed set; an unrecognized token renders the level-class fallback,
+ *  never a raw wire string and never a badge. */
+export function anchorLabel(kind: AnchorKind | null | undefined): string {
+  if (!kind) return ANCHOR_LABEL_FALLBACK;
+  return ANCHOR_LABEL[kind] ?? ANCHOR_LABEL_FALLBACK;
+}
+
+/** Switch on `state`, then `basis`, then `not_checkable_reason` — NEVER on which keys are non-null, and
+ *  never by comparing two figures (AC-3, ship-blocking). */
+export function figureClause(f: GroundingField | null | undefined): FigureClause {
+  if (!f) return { kind: 'none' };
+  switch (f.state) {
+    case 'traced':
+      switch (f.basis) {
+        case 'exact':
+          return f.anchor_value == null
+            ? { kind: 'none' } // a traced clause naming a source with no number renders NOWHERE (AC-2)
+            : { kind: 'exact', anchor: anchorLabel(f.anchor_kind), value: f.anchor_value };
+        case 'near':
+          return f.anchor_value == null
+            ? { kind: 'none' }
+            : { kind: 'near', anchor: anchorLabel(f.anchor_kind), value: f.anchor_value };
+        case 'inside_range':
+          return f.range_low == null || f.range_high == null || f.expiration == null
+            ? { kind: 'none' }
+            : {
+                kind: 'inside_range',
+                expiration: f.expiration,
+                low: f.range_low,
+                high: f.range_high,
+              };
+        default:
+          return { kind: 'none' };
+      }
+    case 'untraced':
+      return { kind: 'untraced' };
+    case 'not_checkable': {
+      const r = f.not_checkable_reason;
+      if (!r || r === 'structurally_unchecked') return { kind: 'none' };
+      const clause = MISSING_INPUT_CLAUSE[r];
+      return clause ? { kind: 'not_checkable', clause } : { kind: 'none' };
+    }
+    case 'not_applicable':
+    default:
+      return { kind: 'none' };
+  }
+}
+
+export type CardLine =
+  | { kind: 'none' }
+  | { kind: 'quiet'; text: string; tip: string | null }
+  | { kind: 'warning'; text: string; tip: string | null };
+
+/** The ONE client-selected branch is `grounding` ABSENT — a lookup on PRESENCE, never a re-derivation
+ *  from figures. The browser never counts, compares or folds. */
+export function cardGroundingLine(g: Grounding | null | undefined): CardLine {
+  if (!g) return { kind: 'warning', text: GROUNDING_BLOCK_ABSENT, tip: null };
+  const tip = groundingDefinitionTip(g.tolerance_pct ?? null);
+  switch (g.card) {
+    case 'all_traced':
+      return { kind: 'quiet', text: GROUNDING_CARD.all_traced, tip };
+    case 'some_traced':
+      return { kind: 'quiet', text: someTracedLine(g.counts.traced, g.counts.checked), tip };
+    case 'local_rules':
+      return { kind: 'quiet', text: GROUNDING_CARD.local_rules, tip };
+    case 'none_traced':
+      return { kind: 'warning', text: GROUNDING_CARD.none_traced, tip };
+    case 'could_not_check':
+      return { kind: 'warning', text: GROUNDING_CARD.could_not_check, tip };
+    case 'not_applicable':
+    default:
+      return { kind: 'none' };
+  }
+}
+
+/**
+ * AC-7 (SB) / AC-68 — the simulated entry dialog's prefill gate. A CLOSED LOOKUP on the wire state.
+ *
+ *   traced          → seeds exactly as on `main`
+ *   untraced        → withheld, with its own reason
+ *   not_checkable   → withheld, with its own reason
+ *   not_applicable  → the rec stated no figure: nothing to seed, nothing to explain (unchanged)
+ *   NO BLOCK (D8)   → withheld, with its OWN THIRD reason — never the `not_checkable` one, which
+ *                     would collapse "we could not check this figure" into "no check reached this
+ *                     browser at all" (`absent-is-not-none`) at the one boundary where a number stops
+ *                     being a display and becomes an input.
+ *
+ * **A missing check is NEVER a licence to pre-fill. D8 added an explanation, never a seed.**
+ *
+ * An unrecognized token is unreachable from a conformant server (the wire enum is closed). It is
+ * treated as not-seeded with no reason, following the discipline this module already applies three
+ * times (`capSurface`, `figureClause`, `cardGroundingLine`): unknown renders nothing, never a guess.
+ */
+export function prefillGate(f: GroundingField | null | undefined): {
+  seed: boolean;
+  reason: string | null;
+} {
+  if (f == null) return { seed: false, reason: PREFILL_WITHHELD.block_absent }; // D8 — checked FIRST
+  switch (f.state) {
+    case 'traced':
+      return { seed: true, reason: null };
+    case 'untraced':
+      return { seed: false, reason: PREFILL_WITHHELD.untraced };
+    case 'not_checkable':
+      return { seed: false, reason: PREFILL_WITHHELD.not_checkable };
+    case 'not_applicable':
+    default:
+      return { seed: false, reason: null };
+  }
+}
+
+/** The shipped `CAP_COULD_NOT_CHECK` literal plus the refusal reason. Absent/unrecognized ⇒ the shipped
+ *  literal ALONE, never a guess. Nothing renders off `cap_not_derivable_reason`. */
+export function capRefusalLine(
+  verdict: CapVerdict | null | undefined,
+  refusal: RiskRefusal | null | undefined,
+): string {
+  if (verdict !== 'not_checkable') return CAP_COULD_NOT_CHECK;
+  return (refusal && CAP_REFUSAL_SENTENCE[refusal]) || CAP_COULD_NOT_CHECK;
+}
+
+// ---- F12 — the type register carries authorship (DESIGN_SYSTEM Amendment 2026-08-13, D3) --------
+
+/**
+ * AC-9 — the register is set by GROUNDING STATE (Convexa-computed vs model-asserted), never by which
+ * field it is, and it NEVER carries the state on its own: the value's clause (`figureClause`) is
+ * always in visible text too, so the distinction survives a screen reader, a monochrome screenshot
+ * and a coarse pointer. The two are complementary, not alternatives (D3).
+ *
+ * The Amendment's rule, restated as an EXHAUSTIVE, no-wildcard switch (the house discipline this
+ * whole feature holds everywhere else): mono means **this figure is Convexa's** — `traced` (a value
+ * we computed, or a model-asserted value that traces to one). Every other state is **a figure the app
+ * asserts but could not trace** and renders in the body register:
+ *   - `untraced`      — checked, and it matches nothing Convexa computed.
+ *   - `not_checkable` — a value exists; there was nothing to check it against. **Still not traced** —
+ *     "we do not know" is not "we know it traces". Named as its OWN arm, never folded into `untraced`
+ *     nor left to a wildcard that would silently inherit `traced`'s mono register.
+ *   - `not_applicable` — the field carries no value; this arm never actually renders (a `Field` in
+ *     the `value` member never co-occurs with `not_applicable`), so its body-register return is
+ *     vacuous — named explicitly rather than omitted, so a future caller cannot read a missing arm as
+ *     "falls through to mono".
+ *
+ * `null`/`undefined` (no grounding data reached this value at all) get the same body-register
+ * treatment as "asserted but could not trace" — the safe default: an unproven figure is never
+ * defaulted into Convexa's mono register.
+ */
+export function registerSx(state: GroundingState | null | undefined): { fontFamily: string } {
+  switch (state) {
+    case 'traced':
+      return { fontFamily: typographyTokens.monoFontFamily };
+    case 'untraced':
+      return { fontFamily: typographyTokens.fontFamily };
+    case 'not_checkable':
+      return { fontFamily: typographyTokens.fontFamily };
+    case 'not_applicable':
+      return { fontFamily: typographyTokens.fontFamily };
+    default:
+      return { fontFamily: typographyTokens.fontFamily };
+  }
 }

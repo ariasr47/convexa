@@ -44,9 +44,13 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPY, EXPORT_HEADER, RISK_FIELD_COPY } from './copy';
+import { COPY, EXPORT_HEADER, PREFILL_WITHHELD, RISK_FIELD_COPY } from './copy';
 import {
   noTradeRec as fixtureNoTradeRec,
+  recAllTraced,
+  recBlockAbsent,
+  recCouldNotCheck,
+  recFabricated,
   tradeRecEqualToCap,
   tradeRecNoRiskBlock,
   tradeRecOverCap,
@@ -77,6 +81,67 @@ function tradeStrategy(over: Partial<RecStrategy> = {}): RecStrategy {
     ...over,
   };
 }
+
+/** AC-30/AC-31 — a fully-traced grounding block matching `tradeStrategy()`'s own stop/target/
+ *  invalidation figures, so the SSE-drop / newer-bundle / superseded-inputs tests can assert the
+ *  card-level line AND a per-figure clause stay byte-stable across events unrelated to the rec. */
+const GROUNDING_ALL_TRACED_FOR_TRADE_STRATEGY = {
+  card: 'all_traced' as const,
+  counts: { checked: 4, traced: 4, untraced: 0, not_checkable: 0 },
+  tolerance_pct: 0.1,
+  fields: {
+    exit_stop: {
+      state: 'traced' as const,
+      basis: 'near' as const,
+      anchor_kind: 'call_wall' as const,
+      anchor_value: 6.05,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: null,
+    },
+    exit_target: {
+      state: 'traced' as const,
+      basis: 'inside_range' as const,
+      anchor_kind: null,
+      anchor_value: null,
+      range_low: 10,
+      range_high: 15,
+      expiration: '2026-07-18',
+      not_checkable_reason: null,
+    },
+    invalidation_level: {
+      state: 'traced' as const,
+      basis: 'exact' as const,
+      anchor_kind: 'gamma_flip' as const,
+      anchor_value: 242,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: null,
+    },
+    max_risk: {
+      state: 'not_checkable' as const,
+      basis: null,
+      anchor_kind: null,
+      anchor_value: null,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: 'structurally_unchecked' as const,
+    },
+    position_size: {
+      state: 'not_checkable' as const,
+      basis: null,
+      anchor_kind: null,
+      anchor_value: null,
+      range_low: null,
+      range_high: null,
+      expiration: null,
+      not_checkable_reason: 'structurally_unchecked' as const,
+    },
+  },
+};
 
 function producedRec(over: Partial<RecResponse> = {}): RecResponse {
   return {
@@ -622,7 +687,9 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     within(panel()).getByText(COPY.action.get).closest('button') as HTMLButtonElement;
 
   it('SSE drop leaves the rec untouched; a newer bundle marks it stale WITHOUT mutating it or re-running', async () => {
-    const be = installBackend({});
+    const be = installBackend({
+      rec: producedRec({ grounding: GROUNDING_ALL_TRACED_FOR_TRADE_STRATEGY }),
+    });
     render(
       <MemoryRouter initialEntries={['/ticker/TSLA']}>
         <App />
@@ -635,6 +702,11 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     await tick();
     expect(within(panel()).getByText(REC_BODY)).toBeInTheDocument();
     const recCallsAtProduce = be.calls.rec;
+    // AC-30/AC-31 — capture the grounding surface BEFORE either event, so "byte-stable" is an actual
+    // before/after comparison, not an assumption.
+    const cardLineBefore = within(panel()).getByTestId('grounding-card-line').textContent;
+    const clauseBefore = within(panel()).getByTestId('clause-stop').textContent;
+    expect(cardLineBefore).toMatch(/Every checked figure traces/);
 
     // (a) SSE drop: the page's LIVE surface goes offline, but the rec is not a live-derived tile —
     // no stale marker, no offline chrome on the rec, content intact.
@@ -646,6 +718,14 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     expect(within(panel()).queryByText(COPY.stale.chip)).toBeNull();
     expect(within(panel()).queryByText(/offline/i)).toBeNull();
     expect(within(panel()).getByText(REC_BODY)).toBeInTheDocument();
+    // AC-30 (SB) — no grounding clause dims, changes, disappears or flips to "couldn't check": the
+    // card line and the stop clause are BYTE-IDENTICAL to before the drop, and the node carries no
+    // offline/dimmed marker (unlike the live-derived tiles the assertion above already checked).
+    expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
+    expect(within(panel()).getByTestId('clause-stop').textContent).toBe(clauseBefore);
+    expect(
+      within(panel()).getByTestId('grounding-card-line').getAttribute('aria-disabled'),
+    ).toBeNull();
 
     // (b) A NEWER bundle lands on the 60s poll: the stale marker appears; the rec body is
     // byte-stable and NO second POST was fired (no silent re-run — by construction).
@@ -666,6 +746,9 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     expect(within(panel()).getByText(COPY.stale.chip)).toBeInTheDocument();
     expect(within(panel()).getByText(REC_BODY)).toBeInTheDocument(); // untouched
     expect(be.calls.rec).toBe(recCallsAtProduce); // NEVER re-ran without a user action
+    // AC-31 — a newer bundle never re-derives or upgrades a grounding state: still byte-identical.
+    expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
+    expect(within(panel()).getByTestId('clause-stop').textContent).toBe(clauseBefore);
   });
 
   it('cooldown disables the ask affordance and re-enables when it elapses', async () => {
@@ -734,14 +817,20 @@ describe('ai-rec · advice behind Accept', () => {
 // Unit — the Accept→prefill handoff object (the dialog's INTERNALS have their own risk spec;
 // what this widget owns is the exact mapping it hands over).
 describe('ai-rec · recToPrefill (the handoff object)', () => {
+  // A fully-traced grounding block — used wherever a test wants the shipped `main` seeding behavior
+  // without exercising the AC-7 gate itself.
+  const allTraced = () => recAllTraced().grounding;
+
   it('maps a produced trade rec to the exact editable seed — with NO qty field (AC-79, ship-blocking)', () => {
-    const pf = recToPrefill(tradeStrategy(), 'Income Keeper', 'sizing note');
+    const pf = recToPrefill(tradeStrategy(), 'Income Keeper', 'sizing note', allTraced());
     expect(pf).toEqual({
       expiration: '2026-07-18',
       strike: 260,
       right: 'call',
       stop: 6,
       target: 12.5,
+      stopWithheldReason: null,
+      targetWithheldReason: null,
       provenance: 'Pre-filled from AI read · Income Keeper',
       sizingNote: 'sizing note',
       sizeText: '2 contracts',
@@ -751,7 +840,12 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
 
   it('hands over NOTHING for a no_trade rec', () => {
     expect(
-      recToPrefill(tradeStrategy({ decision: 'no_trade' }), 'Default (no persona)', 's'),
+      recToPrefill(
+        tradeStrategy({ decision: 'no_trade' }),
+        'Default (no persona)',
+        's',
+        allTraced(),
+      ),
     ).toBeNull();
   });
 
@@ -762,7 +856,12 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
   });
 
   it('AC-80 — a rec with no size text at all yields `size not suggested`, distinct from `not set`', () => {
-    const pf = recToPrefill(tradeStrategy({ position_size: null }), 'Default (no persona)', 's');
+    const pf = recToPrefill(
+      tradeStrategy({ position_size: null }),
+      'Default (no persona)',
+      's',
+      allTraced(),
+    );
     expect(pf?.sizeText).toBe('size not suggested');
   });
 
@@ -771,8 +870,56 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
       tradeStrategy({ position_size: 'small (rule-based local rec; not LLM)' }),
       'Default (no persona)',
       's',
+      allTraced(),
     );
     expect(pf?.sizeText).toBe('small (rule-based local rec; not LLM)');
+  });
+
+  // -----------------------------------------------------------------------------------------------
+  // ai-rec-grounding — AC-7 (SB): the gated prefill
+  // -----------------------------------------------------------------------------------------------
+  it('AC-7 (SB) — a TRACED stop/target seeds exactly as on `main`', () => {
+    const rec = recAllTraced();
+    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
+    expect(pf!.stop).toBe(rec.strategy!.exit_plan.stop);
+    expect(pf!.target).toBe(rec.strategy!.exit_plan.target);
+    expect(pf!.stopWithheldReason).toBeNull();
+    expect(pf!.targetWithheldReason).toBeNull();
+  });
+
+  it('AC-7 (SB) — an UNTRACED stop does not seed, and says why', () => {
+    const rec = recFabricated();
+    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
+    expect(pf!.stop).toBeNull();
+    expect(pf!.stopWithheldReason).toBe(PREFILL_WITHHELD.untraced);
+  });
+
+  it('AC-7 (SB) — a NOT_CHECKABLE target does not seed, and says why', () => {
+    const rec = recCouldNotCheck();
+    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
+    expect(pf!.target).toBeNull();
+    expect(pf!.targetWithheldReason).toBe(PREFILL_WITHHELD.not_checkable);
+  });
+
+  it('AC-7 (SB) + D8 — NO grounding block never licences a pre-fill, and carries its OWN reason', () => {
+    const rec = recBlockAbsent(); // states real stop/target figures — see fixtures.ts
+    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding);
+    expect(pf!.stop).toBeNull();
+    expect(pf!.target).toBeNull();
+    expect(pf!.stopWithheldReason).toBe(PREFILL_WITHHELD.block_absent);
+    expect(pf!.targetWithheldReason).toBe(PREFILL_WITHHELD.block_absent);
+    // Never the `not_checkable` literal — that would be the `absent-is-not-none` collapse.
+    expect(pf!.stopWithheldReason).not.toBe(PREFILL_WITHHELD.not_checkable);
+  });
+
+  it('AC-7 (SB) — nothing else acquires a value derived from a withheld figure', () => {
+    const rec = recFabricated();
+    const pf = recToPrefill(rec.strategy!, 'Default (no persona)', 's', rec.grounding)!;
+    // The shipped AC-79 rule still holds: there is no `qty` on the prefill at all.
+    expect('qty' in pf).toBe(false);
+    // strike / expiration come from the rec's OWN contract identity, not from stop/target.
+    expect(pf.strike).toBe(rec.strategy!.strikes[0]);
+    expect(pf.expiration).toBe(rec.strategy!.expiration);
   });
 });
 
@@ -877,6 +1024,7 @@ describe('tradeable-rec-inputs · the cap surface never appears on no_trade (AC-
           cap_not_derivable_reason: null,
           parsed_risk_dollars: null,
           model_max_risk_text: null,
+          risk_refusal: null,
         },
       },
     });
@@ -1009,6 +1157,12 @@ describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on
     const strip = await within(panel()).findByTestId('ai-rec-superseded-strip');
     expect(strip).toHaveTextContent('changed after this read');
     expect(within(strip).getByRole('button', { name: COPY.action.freshRec })).toBeInTheDocument();
+    // AC-31 (second half) — editing the risk inputs afterwards shows the shipped superseded-inputs
+    // strip, but the grounding surface itself is UNCHANGED: still the pinned `all_traced` line, no
+    // "changed"/re-derived grounding state anywhere.
+    expect(within(panel()).getByTestId('grounding-card-line')).toHaveTextContent(
+      'Every checked figure traces to a Convexa number.',
+    );
   });
 
   it('renders nothing when the currently stored block still matches what was sent', async () => {

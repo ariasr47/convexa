@@ -1,0 +1,379 @@
+{
+  "conflicts": [
+    {
+      "quote": "With the scripted fabricating scenario enabled, a rec asserting an exit stop and target that exist nowhere in the bundle renders both as *no match* with the model's text quoted, no figure in either value slot, and the summary reporting the shortfall.",
+      "source": "pm",
+      "why": "The named mechanism does not exist in this backend, so a ship-blocking criterion is unverifiable as written. `ScenarioLLMProvider` / `AI_REC_SCENARIOS_ENABLED` are Python-era: grep of `apps/api/src` returns only `recommendation.rs:358` hardcoding `\"scenarios\": { \"enabled\": false, \"catalog\": [] }`, `\"scenario\": null` at :639 and :725, and `RecRequestBody::scenario_id` (:803) which is deserialized and never read. The FE picker (`AiRecPanel.tsx:275`) is gated on `ai.scenarios?.enabled === true` and is therefore dead code today. AC-35 ('The fabricating scenario is unreachable unless the scenario registry is explicitly enabled') describes guarding a registry that would first have to be built, and I argued in R1 against building one: a config flip must never be able to put a lying model into a production process.",
+      "proposal": "Re-express the S7 evidence path against mechanisms that exist. Backend: a Rust integration test feeding hand-written fabricated strategies through `envelope_extras` against a hermetic `CandidateSet` (the `cited.rs:96-110` fixture pattern) \u2014 a strike off the set, a stop far from every anchor, a target outside the pruned move \u2014 asserting the exact member for each; no env flag, no key, no network. Frontend: UX-16 renders from a hand-written payload fixture, which needs no backend registry at all. If a live browser demo is wanted, `AI_REC_LOCAL_ONLY=1` already gives one for free (see the AC-16 conflict). If PM still wants a runtime scripted liar, that is new backend scope plus a production-reachability guard, and it should be priced as such rather than assumed shipped.",
+      "kind": "technical",
+      "conflict_id": "7b75ac938194cb0ee23c7c0f5dc3771e1538e4e0cf8c2fd21b466365d2d5c7a4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A scripted scenario under `AI_REC_SCENARIOS_ENABLED` can produce a rec whose figures all fail to trace, so UX-16 is reachable from a fixture with no LLM call and no network.",
+      "source": "ux",
+      "why": "Same falsification as the PM conflict above, and I pre-registered it in R1: the flag does not exist in the Rust backend. The second half of the sentence is true and the first half is not \u2014 UX-16 IS reachable from a fixture, but the fixture is a hand-written response payload in the dashboard spec, not a scenario the server can be asked to produce. Left as written, the build lane goes looking for a scenario registry mid-build and finds `enabled: false` hardcoded.",
+      "proposal": "Restate A8 as: 'UX-16 is reachable from a hand-written response fixture in the dashboard spec, with no LLM call, no network, and no backend scenario registry.' Nothing in UX's state matrix changes except the row label 'scripted scenario (hallucinating provider)', which becomes 'fabricated-rec fixture'.",
+      "kind": "technical",
+      "conflict_id": "688d868761114a7cb0fc232bcec8fde45fae1877e24a61101001d831ad394077",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The max-risk figure is reconciled against the quoted cost of the cited contract at the stated size wherever both are present; where either is absent the state is *couldn't check* and never *traced*. Being under the cap alone never renders as traced.",
+      "source": "pm",
+      "why": "'At the stated size' is not computable in v1. `position_size` is a free-prose string ('small (rule-based local rec; not LLM)') and `max_risk.rs:1-2` states the rule verbatim: '`position_size` is NEVER parsed by any lane.' PM's own \u00a72 Future row bars the remedy \u2014 'the typed machine-readable size field (already future-dated at `tradeable-rec-inputs`; **barred from riding this change**)'. With the size leg permanently absent, this criterion's own fallback fires every time, so combined with its last sentence ('Being under the cap alone never renders as traced') `max_risk` can NEVER reach *traced* in v1. That is a ship claim that reads as coverage and delivers a permanent 'couldn't check' on the one field the owner's account depends on \u2014 the exact caveat-that-never-resolves failure PM's \u00a73 argues against.",
+      "proposal": "Either (a) accept for v1 that `max_risk` is traced against the owner's echoed effective cap \u2014 a real named anchor the app owns and computed itself (`auth/risk.rs::effective_dollar_cap`), with the copy naming that anchor so it cannot read as 'we priced this trade'; or (b) keep AC-32's cost reconciliation but reopen the typed size field, which is a scope change PM has already barred. Not both as written. I can also offer a size-free half-check: `parsed_risk_dollars` vs the cited contract's quoted cost for ONE contract, marked *couldn't check* whenever the model states any size at all \u2014 but that is a narrower claim than AC-32 makes and it needs PM's wording.",
+      "kind": "technical",
+      "conflict_id": "89d126ee68099d0a76171c09ac2a964ce9d85397048d97413c75e6bc15194abb",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Reference is the cap and the per-contract quoted cost. Absent either \u2192 *couldn't check*.",
+      "source": "pm",
+      "why": "Same root, stated as scope: `position_size` cannot be checked against a dollar reference without extracting a quantity from prose, which `max_risk.rs:1-2` forbids by design and which OPEN_THREADS \u00a77ad future-dates. Listing it **IN** with a reference class it cannot be compared against means the field ships permanently on *couldn't check* while the scope table claims coverage. My R1 called this out as 'permanently not-checkable this feature' and I still hold that \u2014 but the honest form is to say so in the SPEC, not to book it as an IN row.",
+      "proposal": "Keep `position_size` in the wire vocabulary (it must carry a member \u2014 omitting it is the `absent-is-not-none` collapse), but book it in \u00a72 as IN-with-a-stated-limit: the member is *couldn't check*, the reason is structural ('Convexa does not read a size out of prose'), and the typed size field stays future-dated. If PM requires a real size verdict, \u00a77ad must be reopened and this stops being an M.",
+      "kind": "technical",
+      "conflict_id": "9b3f6144437c4a4e0474353455039c04898cde015fd31b8394d56888fe198fda",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`max_risk.rs` is not touched, not one line.",
+      "source": "architect",
+      "why": "SELF-REVISION \u2014 I withdraw this. PM's AC-30 ('*The rec gave no risk figure* and *the risk figure named more than one amount* render as distinct literals') and UX \u00a77c both need a server-side reason for the refusal, and the tree cannot supply one: `ParsedRisk` (`max_risk.rs:4-8`) has exactly two members, and `NotParseable` collapses four distinct causes \u2014 absent text (:11), no `$` figure at all ('1R defined-risk', :70-72), a bare number ('300', :75-77), and two different figures (:80-82). `cap_check` exposes only `parsed_risk_dollars` and `model_max_risk_text`, so the only way for the FE to tell them apart is to re-parse the prose in the browser, which `digested-labels-not-raw-dump` forbids. A second parser elsewhere would also break the module's own rule ('The ONE parse of `max_risk`, for the ONE consumer'). So `max_risk.rs` must change.",
+      "proposal": "Widen the OUTPUT, never the acceptance: `NotParseable` gains a closed reason discriminant (no-figure / multiple-different-figures), carried into `cap_check` as a closed token beside `verdict`. Every existing test in `max_risk.rs:47-93` must still pass unchanged on which inputs refuse \u2014 the ambiguity rule the BRIEF pins as 'explicitly NOT reopened' is about WHICH inputs refuse, and that set does not move by one input. That is the difference between reporting a refusal and loosening one, and the poison test is: change any input's parse OUTCOME and the build reds.",
+      "kind": "technical",
+      "conflict_id": "9d5cd16741226655f53394b6f044c38fa27b96dc8be8fa504bb6f648011151b8",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`cap_check.cap_not_derivable_reason` stays a **closed token** and gains no free-text member; UX-20 renders it through a lookup.",
+      "source": "ux",
+      "why": "That token cannot explain the state UX-20 wants explained \u2014 it is null in exactly that state. `cap_not_derivable_reason` is read from the OWNER's risk block (`recommendation.rs:609-612` \u2192 `auth/risk.rs::effective_dollar_cap`), and `auth/risk.rs:67-86` sets it to `Some(\"percent_without_account_size\")` in the one arm where `value: None`. A null cap value means `cap_verdict` returns `NoCap` at step 2 (`cap_check.rs:23-25`) and can never reach `NotCheckable` at step 3. So on every card showing `CAP_COULD_NOT_CHECK` \u2014 the 4-of-4 case UX \u00a77c is trying to fix \u2014 `cap_not_derivable_reason` is null. It explains why the owner has no cap, not why the model's figure was unreadable. Rendering a lookup on it there would print nothing, or worse, print a cap-side reason as if it were a figure-side one.",
+      "proposal": "UX-20's reason clause must render on the NEW closed refusal token from the `max_risk.rs` widening above (no-figure / multiple-different-figures), not on `cap_not_derivable_reason`. Both stay closed tokens and both stay lookups; they are two different facts and the card must not let one stand in for the other. A7 remains true as written about `cap_not_derivable_reason` itself \u2014 it just is not the token UX-20 needs.",
+      "kind": "technical",
+      "conflict_id": "ef593a54fa6cbd604639bc23929989ce2123986093acdc603fd076245420cae4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a trade verdict, every one of the four checked numbers that carries a value renders exactly one grounding state \u2014 *traced*, *no match*, or *couldn't check* \u2014 visible without hovering or expanding anything; a value with no state never renders anywhere.",
+      "source": "pm",
+      "why": "There are FIVE numeric fields the model asserts today, not four. The strategy schema (`llm.rs:143`) requires `\"invalidation_level\":number|null`, the local fallback populates it (`recommendation.rs:780`), and the FE already renders it (`AiRecPanel.tsx:1032`) \u2014 but `RecField` (`field_reasons.rs:5-10`) has no variant for it, so it has neither a reason nor a grounding. UX's \u00a72 table books it as a new per-field clause, so PM's four and UX's render disagree on the same wire. It is a bare number on the price scale, which is exactly the class that is a wrong trade when fabricated. It also makes AC-39 ('Adding a fifth stated number to the rec without a grounding state is build-breaking') unbuildable as a clean structural guard: the fifth number already exists, so the exhaustive-match guard would ship with a documented exemption \u2014 a wildcard arm by another name, which is what `structural-over-prose-enforcement` is there to prevent.",
+      "proposal": "Add `RecField::InvalidationLevel` in v1. Cost is small and bounded: two lines in `field_reasons.rs` (its dependency list is `vec![]`, identical to `ExitStop` at :54) plus one resolution rule sharing the nearest-named-level rule with `ExitStop`. Then AC-39's guard is the existing no-wildcard `match RecField` with no exemption. If PM rules it out of v1, I withdraw the scope addition \u2014 but the SPEC must then state in one sentence that the BRIEF's goal ('every number the AI recommendation asserts') is not met on ship for `invalidation_level`, and UX must drop its \u00a72 row for it.",
+      "kind": "product",
+      "conflict_id": "b168920b82a72cb827487dd81e6772a2a409f58610256a265c41eaa0244ef159",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Across the same measured run of \u22655 ordinary real recommendations with all inputs available, at least 4 show zero *no match* markers \u2014 the check is rare on honest recs while AC-33 proves it still fires on a fabricating one.",
+      "source": "pm",
+      "why": "As a ship-blocking gate this criterion can be met in only three ways, and two of them damage the feature. The untraced rate is an unmeasured property of the MODEL, not of the design \u2014 UX's own Risk 4 says so ('Nobody has measured how often a model's stop actually lands on a Convexa level'). If the measured rate comes back bad, the buildable responses are: (1) tighten the prompt so the model quotes levels as given \u2014 the honest one; (2) widen the tolerance until misses disappear \u2014 laundering, forbidden by my \u00a75 ladder and by PM's own \u00a73 'Never a parser loosening'; (3) cut fields from scope until the denominator is small. A ship gate on an unmeasured stochastic rate makes (2) and (3) the path of least resistance at GATE Q, which is precisely how this feature becomes theatre. Note also that containment (used for `exit_plan.target`) is naturally forgiving, while a nearest-named-level match on a stop or invalidation is not \u2014 a model that rounds 412.37 to 412 misses at any tight tolerance, and the fix is the prompt.",
+      "proposal": "Demote AC-36 to the same laddered, recorded measurement shape PM already wrote for AC-31: measure the traced / no-match / couldn't-check split over the same \u22655 real recs, record it in the committed artifact, and pre-commit the response ladder BEFORE the split is seen \u2014 high no-match \u21d2 one prompt revision ('quote the level exactly as the context gives it') and one re-run; still high \u21d2 ship with the honest rate recorded in the artifact and in OPEN_THREADS, and UX's Risk 3 fallback applies (the card-level line carries the claim, the per-field clause stays quiet). Keep ship-blocking on AC-33 (it fires on a fabricator) and AC-38 (the check cannot be gutted) \u2014 those two are properties of the design and are in the lane's control. This is a product call because it is PM's gate, and the tolerance constant is the single number in this design nobody has measured.",
+      "kind": "product",
+      "conflict_id": "fb162dbbec73f7177472a9d9f71f483ad869a52e68871161dad591b41c40798b",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a rec produced by the local rule-based fallback, no per-number grounding state renders and the card states the figures are Convexa's own rules rather than a model's.",
+      "source": "pm",
+      "why": "Two mechanism costs PM should see before ruling. (1) The wire cannot currently say a rec came from the local fallback: `AI_REC_LOCAL_ONLY=1` runs AFTER the key check (`recommendation.rs:673-678`), so `key_source` is a real key, `scenario` is null (:639), and the envelope has no other discriminator \u2014 AC-16 therefore requires a NEW wire field, which is not free and lands in the synthesizer's interface. (2) Suppressing per-number states there deletes the only zero-cost live demonstration this feature has: the local strategy sets `invalidation_level` AND `exit_plan.stop` to `gamma_flip` (:780, :783) \u2014 a genuine verified arm anchored on a real level \u2014 and `max_risk: \"1R defined-risk\"` (:781), pinned `NotParseable` by `max_risk.rs:70-72` \u2014 a genuine not-checkable arm. Both arms, no key, no network, in a browser. With the scenario registry gone (conflict 1), losing this leaves fixtures as the sole evidence.",
+      "proposal": "Keep emitting grounding on the local-fallback rec \u2014 it is TRUE there, and it is the most honest card in the app: every figure traces to a Convexa number because Convexa computed all of them. Let the card-level line carry PM's distinction ('these figures are Convexa's own rules, not a model's') instead of suppressing the per-field clauses. That needs the same new wire discriminator either way, but it costs no evidence path. If PM still wants suppression, I need it recorded that the live demo is gone and fixtures are the whole evidence base.",
+      "kind": "product",
+      "conflict_id": "803047bf234fc13e41eeb208761686ac031e6cbc581eda0e2153c8943d9cd5c7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The card-level member is chosen by closed lookup on a **server** token; the browser never counts, compares or folds per-field tokens into a card verdict",
+      "source": "ux",
+      "why": "One of UX's six card-level members cannot be a server token by construction. `wasn't checked` is defined as 'no verification reached the browser at all' \u2014 the state in which no server token exists to look up. So UX-2 as written cannot cover the member UX-6 requires. Two of the three causes UX gives for it are also wrong for this backend: the local fallback and the stub provider both return through the `base` closure (`recommendation.rs:617-652`), the sole envelope constructor on all six return paths, so they DO carry the grounding block. The only real cause is a client talking to a pre-feature server. (The genuinely uncovered path is different: `unavailable_envelope` (:706-727) emits no `cap_check`, no `field_reasons`, no `cited_contract` today and will emit no grounding \u2014 but it has `\"strategy\": null` and no rec body, which UX's matrix already covers with 'no grounding surface (no rec body exists)'. That row is right; I flag the hole so the SPEC names it rather than discovers it.)",
+      "proposal": "Split the card-level vocabulary explicitly: FIVE server-emitted members chosen by closed lookup (all traced / some untraced / none traced / couldn't check / nothing to check), plus ONE client-only branch \u2014 absence of the block renders `wasn't checked`. That is a lookup on presence, not a re-derivation from figures, so `digested-labels-not-raw-dump` holds. UX-2 should read 'chosen by closed lookup on a server token when the block is present; its absence renders `wasn't checked` and is the only member the browser selects'.",
+      "kind": "technical",
+      "conflict_id": "3073fa48b8f969fa3ba56cf0f6e2d9e896d5b1ae7192a56632e7ab8715f6146e",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "When the grounding pass itself fails, the rec still returns and the card renders one *grounding unavailable for this recommendation* statement in place of per-number states, no figure is presented as traced, and the ticker page, bundle and stream are untouched \u2014 no error page, no HTTP error.",
+      "source": "pm",
+      "why": "As designed there is no such failure mode, so this ship-blocking criterion pins a state the server can never emit \u2014 and an unreachable state is either untestable or gets manufactured to satisfy a test, which is worse. The resolver is a pure sync leaf over `serde_json::Value` + `CandidateSet`: no `AppState`, no `reqwest`, no `.await`, no env read, no `Result` \u2014 the same contract as its five siblings (`rec_inputs/mod.rs:1-3`). It is total by construction: every field on every one of the six return paths gets a member, and unavailable inputs are expressed as *couldn't check* on the affected field, never as an omitted block. The only way the block is absent is that the response came from a server without this feature.",
+      "proposal": "Re-express AC-21 against the reachable state: 'When no grounding block is present in the response (a pre-feature server), the card renders one `wasn't checked` statement in place of per-number states, no figure is presented as traced, and the ticker page, bundle and stream are untouched.' That is UX-6, it is testable from a fixture payload with the block omitted, and it keeps `best-effort-isolated-or-null` intact. The isolation guarantee PM wants is still delivered \u2014 it is delivered structurally (a pure total function cannot throw) rather than by a runtime catch.",
+      "kind": "technical",
+      "conflict_id": "ae3c8c4ad2a53871d251974a00597ef443ac1c78133e2de5501e93abd743d4df",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "With the scripted fabricating scenario enabled, a rec asserting an exit stop and target that exist nowhere in the bundle renders both as *no match* with the model's text quoted, no figure in either value slot, and the summary reporting the shortfall.",
+      "source": "pm",
+      "why": "This is my own AC-33 and it is unverifiable as written. The architect read the tree this gate and reports that `ScenarioLLMProvider` / `AI_REC_SCENARIOS_ENABLED` are Python-era, with `recommendation.rs:358` hardcoding scenarios disabled and `scenario_id` deserialized but never read. A ship-blocking criterion resting on a harness that does not exist is not a bar, it is a trap for the build lane. My AC-35 (the fabricating scenario is unreachable unless the registry is enabled) dies with it. UX carries the same stale dependency in UX-16, in the \"scripted scenario (hallucinating provider)\" row of its component-state matrix, and in assumption A8 \u2014 the same substitution has to be made there.",
+      "proposal": "Withdraw AC-33 and AC-35 as written; keep the RISK they test, which is the whole point of S7. Replacement, ship-blocking: a fabricated recommendation fixture \u2014 an exit stop far from every named price anchor, a target outside the pruned implied move for the cited tenor, a strike absent from the candidate set, a two-figure risk string \u2014 is fed through the serialization path, and every one of those figures resolves to the untraced state, none renders as a Convexa-traced value, and the card-level line reports the shortfall. Plus a second, browser-observable arm that costs nothing: `AI_REC_LOCAL_ONLY=1` gives a live card carrying both a traced figure (stop = gamma_flip) and a not-checkable one (`1R defined-risk`) with no key and no network \u2014 that arm is also how AC-16 gets observed. Replacement for AC-35: no build- or run-time-configurable path exists that can serve a fabricating provider on the deployed surface; the fabrication lives only in test fixtures.",
+      "kind": "technical",
+      "conflict_id": "ba138d4dd76736a0d0c996190cbecdbf576e686ec961fddb0424e37caab3d339",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`ParsedRisk::NotParseable` \u21d2 not-checkable. `Dollars(v)` with `effective_cap` present \u21d2 verified,",
+      "source": "architect",
+      "why": "This makes \"traced\" mean \"under the owner's cap\", which is the one thing my \u00a72 explicitly refused: the cap check alone is not traceability, because a fabricated figure that happens to sit under the cap passes it. A model that invents $480 against a $500 cap renders traced under this rule. It is also false authorship at the copy layer: UX's traced literal is `traces to Convexa's {source} ({value})`, and the owner's risk cap is the OWNER's number, not something Convexa computed from the chain \u2014 `traces to Convexa's risk cap (500)` is a sentence the app must not be able to say. And it double-states: the cap comparison already has its own shipped surface (`CapAnnotation`), so a second grounding sentence about the same fact breaks my AC-22 and repeats the two-vocabularies problem AC-34 exists to prevent. This is the architect's own top risk \u2014 verification theatre \u2014 arriving through the field he priced as cheapest.",
+      "proposal": "`MaxRisk` resolves to traced ONLY against a Convexa-computed figure \u2014 the quoted cost of the cited contract where a two-sided quote exists. Cap presence alone is not-checkable, never traced. The cap comparison keeps its own shipped surface and grounding adds no second statement about it. I accept the honest consequence and am not hiding it: in v1 `max_risk` and `position_size` are both structurally not-checkable on most recs, so the feature's visible value sits on stop / target / invalidation / cited contract. That is a smaller feature than the BRIEF's goal sentence, and the SPEC should say so in one sentence rather than paper over it with a cap-anchored badge.",
+      "kind": "product",
+      "conflict_id": "0d8a059606b38bb1f3685ec05457af16b323c05c590c8fda2178022df3d049d0",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The max-risk figure is reconciled against the quoted cost of the cited contract at the stated size wherever both are present; where either is absent the state is *couldn't check* and never *traced*.",
+      "source": "pm",
+      "why": "My own AC-32, and the phrase \"at the stated size\" is unbuildable given that `position_size` is never parsed by any lane \u2014 reconciling cost times size requires reading a prose size, which is the deferral I just agreed not to reopen. Left as written it would either quietly pull the typed-size field into this feature or produce a criterion nobody can pass.",
+      "proposal": "AC-32 becomes: where the cited contract carries a two-sided quote, the max-risk figure resolves against that quoted per-contract cost and the surface names it; where no such quote exists the state is *couldn't check* and never *traced*; being under the cap alone never renders as traced (that half stands). Consequent revision to AC-13, which matters more than it looks: the card-level count's denominator must be the figures this feature can actually check on this rec, not all five. If `max_risk` and `position_size` are structurally not-checkable, an honest rec would otherwise read \"2 of 5\" forever \u2014 crying wolf in a different costume, and exactly the caveat-wall failure `tradeable-rec-inputs` already shipped once.",
+      "kind": "technical",
+      "conflict_id": "f7516c65c2bd8ff8f9cfc017a0288e5926fabf48c7f3ed6ce3c73de5e606e1e1",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "| **produced \u00b7 trade** | card-level line above the risk tile + a per-field clause on every value-bearing figure | no figure renders as fact with no clause and no covering surface |",
+      "source": "ux",
+      "why": "This leaves every asserted figure sitting in the Convexa field value slot, in the same type and weight as a traced one, with a grey caption clause underneath. That is precisely the arrangement my \u00a70 named as the way option (b) fails: a number that stays on screen in fact-position, with a small grey caveat, is still read as fact by a person sizing a trade at 09:32. My AC-4 is ship-blocking on this. I accept UX's counter-argument about warning fatigue and I am NOT asking for four warning icons \u2014 but caveat weight and slot weight are two different dials, and UX has turned both down together.",
+      "proposal": "I withdraw the literal relocation (\"never appears in a value slot\") \u2014 if untraced turns out to be common, quotation-soup is worse. What must survive is that an untraced value does not render IDENTICALLY to a traced one. Concretely: (i) UX's `the AI's own number` clause in visible text, as proposed \u2014 kept; (ii) UX's own \u00a75.4 Amendment candidate, the type-register split (mono = Convexa computed, sans = model asserted), promoted from optional to REQUIRED and applied to the value itself, because it is the only mechanism on the table that distinguishes the two at a glance and in a black-and-white screenshot without spending warning chrome \u2014 I price that Amendment IN; (iii) AC-5 unchanged and still ship-blocking: no untraced figure seeds, pre-fills, defaults or is arithmetically derived into any quantity anywhere, including the simulated entry dialog. If UX will not commit to (ii), AC-4 stands as written and the figure moves out of the slot into attributed text \u2014 that is the human's pick, not mine to settle.",
+      "kind": "product",
+      "conflict_id": "ee68410ce24e9c2eb4c18acf9a859bb6cfcec69d7bc518686ea7e6ed7ac9ba3f",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`Some figures here are the AI's own \u2014 each one says so below.`",
+      "source": "ux",
+      "why": "This member collapses \"one of four figures is the model's\" and \"three of four are the model's\" into the same sentence. Those are opposite advice at 09:32 \u2014 the first is a rec worth reading with one asterisk, the second is a rec to put down. My AC-12 requires the line to name how many resolved and how many did not, and S3 exists precisely so the owner gets a go/slow-down judgement without reading four field clauses. Under this wording the card-level line stops being a judgement and becomes a pointer to the details it was supposed to save him from reading.",
+      "proposal": "Keep UX's closed card-level set, its wording discipline, and its ban on the browser counting (UX-2 holds). Change one member: the some-untraced literal takes two server-supplied integers \u2014 e.g. `3 of 4 checked figures trace to a Convexa number \u2014 each exception says so below.` The counts arrive on the wire as part of the card-level token; the browser never folds field tokens into a verdict. This costs one line and no new chrome, which is the constraint UX \u00a77d rightly set. If the architect cannot emit counts (see asks), AC-12/AC-13 fall back to UX's qualitative member and I withdraw the count rather than have it re-derived in the browser.",
+      "kind": "product",
+      "conflict_id": "a0a1136bbbc174e2fc92ebaee9b5ba8eec93b4c4585c38947282311d215c239e",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Fixing \u00a77a (the five fields rendering a bare `\u2014`) is **in scope** for this feature.",
+      "source": "ux",
+      "why": "Partly right, and I am ruling on it rather than letting it ride in silently. Only ONE of the five \u2014 `Invalidation` \u2014 acquires a grounding clause under this feature, so only that one turns into UX's \"grounding a lie\". `Structure`, `Strike(s)`, `Expiration` and `Entry trigger` carry no grounding clause: strikes and expiration are already covered by the shipped `CitedContractLine`, and the other two are not numbers this feature checks. Their bare `\u2014` is a real pre-existing `absent-is-not-none` defect, but this feature neither creates it nor worsens it, and folding four unrelated field renders into an M-sized change on a card UX itself calls a density cliff is how a diff stops being reviewable.",
+      "proposal": "`Invalidation` moves onto the closed literal set \u2014 IN, ship-blocking, and it is the priced cost of taking `invalidation_level` in scope. `Structure`, `Strike(s)`, `Expiration`, `Entry trigger` are OUT of this feature and raised as a named backlog item (`rec-absence-literals-hole`, HARD-invariant class, first-instance evidence supplied by this council) so the cut is on the record rather than silent. UX's stated trade is already satisfied without spending anything: the named-levels row (\u00a73c) is cut regardless, because numbers inside the free prose are OUT of verification in my \u00a72 and the tooltip's exclusion sentence carries that claim instead. If the human wants all five, they are In as a named add with the diff cost acknowledged \u2014 not as a footnote.",
+      "kind": "product",
+      "conflict_id": "50ea270ded74e5ddd12f99e3dda7b3e198076024e60d0764033a9a4bbbc493e4",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| wasn't checked | `This read wasn't checked against Convexa's numbers.` | `warning.main` + `WarningAmberIcon` |",
+      "source": "ux",
+      "why": "UX \u00a73a routes the local rule-based fallback into this member. On a local-fallback rec that sentence is false, and falsely alarming: the architect established that `local_strategy_from_bundle` emits `exit_plan.stop = gamma_flip` \u2014 those figures ARE Convexa's own computed numbers, produced by Convexa's rules with no model involved. Telling the owner that his most trustworthy card \"wasn't checked against Convexa's numbers\", in warning chrome, inverts the truth and trains him to discount the amber. My AC-16 requires the opposite statement on that rec. \"No model asserted anything here\" and \"a model asserted things and nothing checked them\" are as far apart as any two states in this feature.",
+      "proposal": "Split the local rule-based fallback out into its own card-level member whose literal says the figures are Convexa's own rules rather than a model's, rendered in the quiet caption idiom with no warning chrome \u2014 nothing is wrong on that card. `This read wasn't checked against Convexa's numbers.` stays, in warning chrome, for the genuinely unchecked cases: older backend, stub provider, and the grounding pass itself failing (my AC-21). This adds no chrome; it moves one case from an alarming literal to a calm one.",
+      "kind": "technical",
+      "conflict_id": "c94a23bebee592aaa5cc1944e28800899ed747ff017c5380d87dffc55dd453b8",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A number that fails to resolve never appears in a Convexa field value slot; the slot carries the state literal and the figure appears only as attributed model text.",
+      "source": "pm",
+      "why": "Composed with the architect's rule that `position_size` is permanently not-checkable and with an unmeasured untraced rate on stop/target/invalidation, this empties Convexa's value slots on a normal card. Suggested size NEVER holds a number again \u2014 its slot carries a state literal on every rec forever, and the size renders as quoted model text below. That is the tradeable-rec-inputs Critical recurring by exactly its original mechanism: individually-correct rules composing into a caveat on every card. It also costs the primary job. The trader's one-pass read is verdict -> risk -> stop/target; if three of four values move out of the slots into quotation blocks, the numbers he must act on are no longer in scannable position and the card is longer, not safer. Worse, the demotion is unfalsifiable at the copy level: nobody has measured how often a model's stop lands on a Convexa anchor (my R1 Risk 4, unresolved by either peer), so PM is ruling on the render of the common case without knowing whether it is the common case.",
+      "proposal": "Split the ruling by what it costs. Keep PM's mechanics rule and slot rule where they are load-bearing and cheap: nothing untraced pre-fills, seeds, defaults or is derived (AC-5, unconditional, I support it), and no untraced number is ever presented as a Convexa-computed figure. But render the untraced figure IN PLACE, in the model's type register, with the per-field clause `the AI's own number` directly under it \u2014 authorship stated in visible text, not slot surgery. Then re-open the demotion as a measured escalation: if a build-lane measurement shows untraced is RARE on real recs, demotion is affordable and I will take it; if untraced is common, demotion produces a card with no numbers in it. Human ruling needed on which of the two renders ships v1, because it is a user-value call and both peers' positions are consistent with either.",
+      "kind": "product",
+      "conflict_id": "35c04139650536bf536d2c0bd895ca7df6171d1dd490cacfc59999a871f8ef76",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The untraced number renders as the model's words, attributed",
+      "source": "pm",
+      "why": "This is my defining failure mode inverted. `exit_plan.stop` is a numeric field in the strategy JSON schema (the architect enumerates it at `llm.rs:140-148`), not a sentence the model uttered. Rendering `412` as `The AI said: stop 412` fabricates a quotation: it attributes to the model a string of words the model never produced, and it re-states the field label `Stop` inside the value, which is a second statement about one fact and collides with PM's own AC-22. The `AC-81` precedent PM cites does not carry over \u2014 that case displayed a genuinely non-numeric size TEXT the model actually wrote, verbatim. Here there is no prose to quote. A quotation mark asserts provenance-of-wording, and we do not have the wording.",
+      "proposal": "Attribute authorship without faking speech. `the AI's own number` \u2014 a statement about whose number it is, in Convexa's voice, generalizing a sentence already shipped in `copy.ts` (`MAX_RISK_TIP = \"This is the AI's figure \u2014 Convexa did not compute it.\"`). Reserve true quotation marks for the one class where they are honest: a stated figure the app cannot read as a number at all (PM's AC-6 row), where the model's literal characters ARE the payload and must render verbatim. This is settleable between PM and me on a question of fact about the wire shape.",
+      "kind": "technical",
+      "conflict_id": "f12477302e12aca98f0362dfff3fe2b5066211f34ab10ce1fb40d42a38e4fddf",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`PositionSize`** \u2014 **permanently not-checkable this feature.** `max_risk.rs:1-2` is explicit:",
+      "source": "architect",
+      "why": "I accept the engineering fact and contest only its render. A per-field state whose value is constant across every rec that ever ships carries zero information and costs a line on every card. Under PM's AC-1 (every checked number that carries a value renders exactly one grounding state) this becomes a permanent `couldn't check this` under Suggested size \u2014 the literal shape of the tradeable-rec-inputs Critical, and the fastest way to teach the trader that the grounding clauses are furniture. Once he learns to skip that line he skips the `couldn't check this` that MATTERS, on the stop, the day the level source is genuinely missing. This also breaks my own R1 tooltip, which promises `Convexa checks the stop, target, suggested size, invalidation level and the contract named.` \u2014 naming a field we structurally never check is copy asserting a meaning the data does not support, so I withdraw that clause.",
+      "proposal": "`position_size` carries the wire member `not-checkable` (the wire stays four-member and total, per the architect), but the FE renders NO per-field clause for a state that is structurally constant. Say it once instead, in the definition tooltip's what-is-not-checked sentence: `Convexa checks the stop, target, invalidation level and the contract named. It does not check suggested size, and the analyst read's prose is not checked figure by figure.` One statement, once, permanently true \u2014 versus one caveat per card forever. PM's AC-1 needs a carve-out sentence for the structurally-unchecked class, or AC-1 mandates the wall it is trying to prevent.",
+      "kind": "technical",
+      "conflict_id": "092c2e0801249de0233c5db657a4f87ae8a022988b9fe96db4b4664cd5e6971b",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a trade verdict, every one of the four checked numbers that carries a value renders exactly one grounding state",
+      "source": "pm",
+      "why": "`invalidation_level` appears nowhere in PM's \u00a72 scope table \u2014 not IN, not OUT, not Future \u2014 and AC-1/AC-38 both fix the count at four. The architect raised it explicitly and asked PM to price it: it is a bare `number|null` on the PRICE scale, i.e. exactly the class where a fabricated value is a wrong trade. Left at four, the card renders an asserted price-scale number with no state beside it, next to a stop and target that both carry one \u2014 and a reader generalizes from the fields that DO carry a clause, so a clause-free Invalidation reads as the app having nothing to say about a number it just presented as fact. That is the collapse the feature exists to prevent, sitting one row below the fix. AC-1's own closing clause (`a value with no state never renders anywhere`) and AC-39 (a fifth stated number without a grounding state is build-breaking) are already unsatisfiable at four members, because `invalidation_level` IS a fifth stated number and it ships today.",
+      "proposal": "Price the fifth field IN, as the architect scoped it (~2 lines in `field_reasons.rs` plus one resolution rule, reusing the same nearest-named-anchor rule as `ExitStop`), and move AC-1/AC-38 to five checked numbers. If the human cuts it for scope, then AC-39 must be reworded and the SPEC must state the shortfall in one sentence, and my copy must state it too: the definition tooltip's what-is-checked list simply omits the invalidation level, so the card never implies coverage it does not have. Withdrawing the coverage claim is acceptable; leaving a number without a clause beside four numbers that have one is not.",
+      "kind": "product",
+      "conflict_id": "bb0ff559ba8585a2213ac5f99778f112591d8a5df5680cc413865161cb105065",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`ParsedRisk::NotParseable` \u21d2 not-checkable. `Dollars(v)` with `effective_cap` present \u21d2 verified,",
+      "source": "architect",
+      "why": "This makes one wire member mean two different things, and my closed lookup renders one literal for both \u2014 so the literal necessarily lies about one of them. For `ExitStop` the verified member means `the asserted number is at a level we computed`; for `MaxRisk` under this rule it would mean `the asserted number is bounded by a number the OWNER typed`. Rendered through the same lookup, an asserted max risk of $420 against a $500 cap prints `traces to Convexa's risk cap ($500)` \u2014 which asserts 420 came from 500. It did not, and $500 is not even Convexa's number; the owner typed it. PM's AC-32 reaches the same conclusion from the product side (`Being under the cap alone never renders as traced.`), so the architect's rule is outvoted on meaning, not on style.",
+      "proposal": "Do not attach a grounding clause to `max_risk` at all. The shipped `CapAnnotation` is already the one statement about that fact, and adding a second violates PM's AC-22/AC-34 (exactly one statement per fact; no second vocabulary for a shipped one). Wire-side, the honest member for the cap-only case is not-checkable, and the improvement I want on that surface is the one from my R1 \u00a77c: give `CAP_COULD_NOT_CHECK` a reason clause rendered by closed lookup on the existing `cap_check.cap_not_derivable_reason` token, which is also what makes PM's AC-30 renderable. If PM's AC-32 reconciliation against the cited contract's quoted cost is feasible, THAT is a genuine traced claim and gets the clause; the cap comparison alone does not.",
+      "kind": "technical",
+      "conflict_id": "5659086da16f69181514a6e8f59b045cc87d0c448349719c5aff0442505558bd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "When the grounding pass itself fails, the rec still returns and the card renders one *grounding unavailable for this recommendation* statement in place of per-number states, no figure is presented as traced, and the ticker page, bundle and stream are untouched \u2014 no error page, no HTTP error.",
+      "source": "pm",
+      "why": "I support the behaviour and reject the literal. Two copy defects in seven words. (1) `grounding` is the internal feature name; it is a nominalization no trader uses and it names the machinery rather than the fact. Component names may use it, user-facing strings may not. (2) `unavailable` is one of the four shipped absence literals, where it means THE VALUE IS MISSING. Reusing it for a card-level machinery failure makes it a synonym of a settled absence literal \u2014 which PM's own AC-17 forbids (`both are distinct from every shipped absence literal`) and PM's assumption 16 forbids (`never a synonym for one of them`). The card would then carry `unavailable` in a field slot meaning `no value` and `unavailable` at card level meaning `the check did not run`, four inches apart.",
+      "proposal": "Render my card-level member instead: `Convexa couldn't check these figures this cycle.` \u2014 plain, in the user's vocabulary, no feature word, no collision with a shipped literal, and it keeps `couldn't check` meaning one thing at both card and field level. Keep every other clause of AC-21 exactly as PM wrote it, including ship-blocking status. This is a literal swap, not a behaviour change.",
+      "kind": "technical",
+      "conflict_id": "6c78751c3b9859278efd70d0c512cc85d1d658337f99fecdd8b9968c0e62e4f9",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A field carrying no value at all (`not given`, `not set`, `unavailable`, `\u2014`) carries no grounding state, marker, chip or tint.",
+      "source": "pm",
+      "why": "The premise is false on `main` and the AC is therefore unimplementable as intended on five fields. In `AiRecPanel.tsx`, `const fmtNum = (n) => (n == null ? '\u2014' : String(n))` renders Invalidation, and Structure / Strike(s) / Expiration / Entry trigger use a bare `?? '\u2014'`. Those five print a `\u2014` produced OUTSIDE the closed literal set, where the closed-set `\u2014` is defined as `No entry, so there is nothing to size.` So a model that simply omitted the invalidation level renders byte-identically to a no_trade card's not-applicable dash. The renderer cannot distinguish `no value` from `not applicable` on those fields, which means AC-19's `carries no grounding state` is enforceable but its premise \u2014 that absence is already correctly stated \u2014 is not true. PM's assumption 16 treats the four absence literals as settled and off-limits; on these five fields they were never wired up.",
+      "proposal": "Move `Invalidation`, `Structure`, `Strike(s)`, `Expiration` and `Entry trigger` onto the shipped `fieldLiteral` closed set before any grounding clause attaches to them (my UX-19). It is a small FE change with an existing helper and no wire change, and it is a precondition, not a nice-to-have: attaching a grounding clause to a field whose ABSENCE is already mis-stated is grounding a lie. If scope pressure forces a cut, cut the named-levels row (my \u00a73c) first \u2014 I would rather ship less surface than mark the provenance of a value whose absence the card already misreports.",
+      "kind": "technical",
+      "conflict_id": "485199f38062ddcd99a20332b520e222f5884875ac4c5a187a73c57ccf48e75b",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Where a *traced* claim rests on nearness or containment rather than exact equality, the surface states the range or tolerance applied and the anchor it was measured from.",
+      "source": "pm",
+      "why": "The anchor half I already do and support. The tolerance half, taken literally, puts `within 0.1%` on every traced field clause \u2014 and 0.1% is not a quantity a trader can apply to a level in his head at 09:32. It also makes the clause a percentage claim rather than a source claim, which is a harder thing to defend: 0.1% of WHAT is not obvious from the clause, and the architect's rule is `max(0.01, anchor \u00d7 TOL_PCT/100)`, a two-branch formula that no honest short clause can state. Four fields each gaining a percentage plus an anchor plus a value is also the 393px overflow case in my UX-22.",
+      "proposal": "Discharge AC-3 with the two numbers instead of the threshold. The traced clause renders the anchor's NAME and the anchor's OWN VALUE \u2014 `traces to Convexa's put wall (412)` beside the model's `412.4` \u2014 so the reader sees the actual gap rather than inferring it from a percentage; a bare `traces to Convexa's put wall` with no value is a badge and is a defect (my UX-8). State the tolerance constant ONCE, in the card-level definition tooltip, sourced from the payload-stated constant the architect is putting on the wire \u2014 never composed client-side, never repeated per field. For `ExitTarget`, containment needs a different clause shape, not a tolerance: `inside Convexa's implied move for {expiration} ({low}\u2013{high})`. That means the traced member needs the wire to carry a basis discriminator plus the displayable anchor value or range endpoints; see my asks.",
+      "kind": "technical",
+      "conflict_id": "4a61dda348ebc048e02b3786c65e90f7070f4db18989b7acc4c5c46f65f2a96f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| nothing to check | `No entry figures on a no-trade read.` | caption \u00b7 `text.disabled` |",
+      "source": "ux",
+      "why": "Self-revision. I withdraw this card-level member. PM's AC-15 is right and my justification for it was wrong: I argued that once the card-level line always renders, its absence would itself read as `traced` \u2014 but that only holds on branches where the line CAN render. If the rule is `no grounding surface on no_trade, ever`, absence there carries no meaning, and the four shipped `\u2014` literals plus their not-applicable tip already say everything true about a no-trade card. Rendering a sixth line to announce that there is nothing to announce is the caveat wall by another name, and it is the exact shape of the Critical shipped on tradeable-rec-inputs.",
+      "proposal": "The card-level set drops from six members to five: all traced / some untraced / none traced / couldn't check / wasn't checked. On `no_trade` no card-level line and no per-field clause renders at all, exactly as PM's AC-15 requires. My UX-1 changes to `exactly one of the closed FIVE renders on a produced TRADE verdict, and none renders on no_trade`; UX-4 is unchanged and gets stronger. One consequence to carry forward: my R1 put the prose-is-not-checked withdrawal in the card-level tooltip, which now does not exist on no_trade \u2014 a no-trade read that says `re-engage above 455` would then have no surface disclaiming that number. PM's AC-24 placement (with the reasoning, not with the fields) solves this and is why I took it in `agree`.",
+      "kind": "technical",
+      "conflict_id": "fe93aa2559b235df830cb5c665ff2686ce311c446cac58595a8d0bdd5a5e93b8",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "shipped scripted chip + strip, plus card-level `No figure here traces to a Convexa number.` and per-field `the AI's own number`",
+      "source": "ux",
+      "why": "Self-revision. This state-matrix row and my assumption A8 both rest on a scripted hallucinating provider behind `AI_REC_SCENARIOS_ENABLED`. The architect verified in the tree that it does not exist in this backend: `recommendation.rs:358` hardcodes `\"scenarios\": { \"enabled\": false, \"catalog\": [] }` and `RecRequestBody::scenario_id` is deserialized and never read. I wrote a component state for a fixture that cannot be produced, which means my UX-16 as written is unverifiable and my `shipped scripted chip + strip` clause describes chrome that will not mount. PM's AC-33 and AC-35 rest on the same non-existent registry, so this correction is not only mine.",
+      "proposal": "Replace the scenario row with two states that exist. (1) The all-untraced render is proved server-side by the architect's fixture-driven Rust test over `envelope_extras` \u2014 no browser, no card, so UX-16 becomes an FE unit test over a hand-written wire fixture asserting card-level `No figure here traces to a Convexa number.` plus per-field `the AI's own number`, which is strictly cheaper and needs no env flag. (2) For the live browser demonstration, use the free one the architect found: `AI_REC_LOCAL_ONLY=1` routes to `local_strategy_from_bundle`, which already emits `exit_plan.stop = gamma_flip` (a traced arm on a real anchor) and `max_risk: \"1R defined-risk\"` (a not-checkable arm). Both arms observable in a real card with no new code. I also endorse the architect's refusal to build a runtime fabricating provider: a config flip must never be able to put a lying model in front of a trader, and the card-level `none traced` literal is the one string that would look identical whether the liar was scripted or real.",
+      "kind": "technical",
+      "conflict_id": "319f77feaf3e4e7f6c43d684493c4bd2b0432ac5d03579957457308dbe3d2cad",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: does `invalidation_level` ship in v1 as the fifth `RecField` variant (~2 lines in `field_reasons.rs` + one resolution rule shared with `ExitStop`), or is the SPEC to state on the record that the BRIEF's goal sentence is not met for it on ship? I will build either; I will not cut it silently."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: with `position_size` unparseable by design and the typed size field barred from this change, do you accept `max_risk` traced against the owner's effective cap alone (naming that anchor), or does AC-32's cost-at-size reconciliation stand \u2014 which requires reopening OPEN_THREADS \u00a77ad and stops this being an M?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: do you pre-commit NOW, before any split is measured, that a high no-match rate is answered with a prompt directive and never with a wider tolerance? This is the highest-leverage single answer in the round; a ladder agreed after seeing the number is not a ladder."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: for the containment case (`exit_plan.target` inside the straddle-implied envelope) there is no single anchor value to put in the parenthesis \u2014 the anchor is a range plus its `anchor_spot` basis. What should `traces to Convexa's ... (\u2026)` read there, given that the parenthesized value is non-negotiable in your \u00a73b? I can emit the range bounds and the anchor spot; I need to know which of them the copy names."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: for `couldn't check`, your per-field tooltip takes a '{server-supplied missing-input clause}'. The existing closed set is `MissingInput { RiskBlock | CandidateQuotes | StraddleMove }` (`field_reasons.rs:19-25`). Is that the vocabulary you want reused for the grounding side, or do you need members it does not have (e.g. 'no expiration was cited', 'no named level was available')? I would rather extend one closed enum than ship two that drift."
+    },
+    {
+      "from": "pm",
+      "ask": "architect: can the response carry a server-computed CARD-LEVEL token, and with it two integers \u2014 checked figures that traced, checked figures that did not \u2014 so AC-12/AC-13 and UX-1/UX-2 can all hold with the browser never counting or folding field tokens? If counts are not emittable, say so at R2 and I withdraw the count rather than have it derived client-side."
+    },
+    {
+      "from": "pm",
+      "ask": "architect: does the wire already distinguish *the rec gave no risk figure* from *the risk figure named more than one amount* as a closed token (e.g. `cap_not_derivable_reason`), without touching `max_risk.rs`? My AC-30 and the entire observability of the prompt fix rest on it \u2014 if those two reasons render identically, nobody can see whether the fix worked and the folded-in seam becomes unmeasurable."
+    },
+    {
+      "from": "pm",
+      "ask": "architect: on the `unavailable_envelope` branch you flagged as a pre-existing hole (`:706-727`, emitting no `cap_check`/`field_reasons`/`cited_contract` today) \u2014 does a grounding block exist there, and is that branch reachable on a card that shows figures at all? AC-21 is ship-blocking and UX-6 renders the wasn't-checked member on block absence; I need to know whether that path is a real user-visible state or an unreachable one the SPEC names as known-uncovered."
+    },
+    {
+      "from": "pm",
+      "ask": "ux: if `max_risk` and `position_size` are both structurally not-checkable in v1, an ordinary honest rec shows two `couldn't check this` clauses every single time, permanently. Does your \u00a75.2 quiet-caption treatment still hold at that rate, or does the card-level line have to carry the whole claim and the per-field clause disappear for the permanently-not-checkable pair? I would rather cut a clause than ship a caveat the owner learns to skip."
+    },
+    {
+      "from": "pm",
+      "ask": "ux: is your Risk-2 fallback \u2014 dropping the affirmative card-level member entirely and rendering only the unhappy ones \u2014 a position you intend to press? My AC-12 requires the summary to render on a fully traced rec too, because a line that only appears when something is wrong teaches the owner that its absence means 'fine', which is the same silence UX-6 closes one level up."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: for the traced member, does the wire carry the anchor's DISPLAYABLE value as a server-formatted string (and for `ExitTarget` containment, the range endpoints), plus a basis discriminator distinguishing `matched a named level` from `inside a named range`? My traced clause has two shapes \u2014 `traces to Convexa's put wall (412)` and `inside Convexa's implied move for Oct 17 (396\u2013412)` \u2014 and picking between them client-side by inspecting which numbers are present is exactly the re-derivation `digested-labels-not-raw-dump` forbids. If the wire carries only a state token and an anchor name with no value, my UX-8 dies and the affirmative clause degrades to a badge; I would then rather drop the affirmative member entirely than ship a badge."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: is `TOL_PCT` readable off the payload as a plain number I may render once in the card-level definition tooltip, and does `ExitTarget` containment carry no tolerance at all? I need to state the threshold exactly once and correctly, and `max(0.01, anchor \u00d7 TOL_PCT/100)` is not a sentence \u2014 I need to know whether the honest single sentence is `within 0.1% of the level` or something wider."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does AC-23 mean the export artifact carries the RENDERED literals or the wire tokens? If it dumps tokens, `verified` / `unverified` reach a user-readable artifact \u2014 `verified` in a trading context is read as `Convexa vetted this trade`, which is the one claim this feature must never make, and the artifact has no lookup and no styling to soften it. My position is that the export surface renders the same closed literals as the card, and my UX-24 (the drawer describes egress, it makes no grounding claim) is about the DRAWER's own copy, not the artifact's contents \u2014 I do not believe we conflict, but I want it stated so the synthesizer does not resolve it by dumping tokens."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: your card-level summary is a count (`3 of 4 checked numbers traced`), mine is qualitative (`Some figures here are the AI's own \u2014 each one says so below.`). A ratio is read as a grade, and AC-13's variable denominator makes it non-comparable between cards: a thin rec stating two numbers reads `2 of 2` while a fuller, more useful rec reads `3 of 4` and looks worse. If the count is load-bearing for you, say what decision the numerator changes that the qualitative member does not \u2014 I will take the count if the answer is concrete, and I would rather concede this than have the synthesizer average the two into a line that states both."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect and PM: the architect flags `unavailable_envelope` (`recommendation.rs:706-727`) as a pre-existing branch that emits no `cap_check` / `field_reasons` / `cited_contract` at all. On that branch the FE sees no verification block, which is precisely the trigger for my card-level `This read wasn't checked against Convexa's numbers.` \u2014 but does that branch render a rec body at all? If it renders no body, the member is unreachable and I should say so rather than ship dead copy; if it renders a body, that branch is the one place `wasn't checked` fires in production and it needs a fixture."
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 8,
+    "ux": 6
+  }
+}

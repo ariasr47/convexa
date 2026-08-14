@@ -7,6 +7,8 @@ import type {
   CandidateContract,
   CandidateSetEnvelope,
   CitedContract,
+  Grounding,
+  GroundingField,
   RecResponse,
   RecStrategy,
 } from '@convexa/api';
@@ -90,6 +92,183 @@ function baseStrategy(overrides: Partial<RecStrategy> = {}): RecStrategy {
   };
 }
 
+// ---- ai-rec-grounding (SPEC §4, PLAN F9) --------------------------------------------------------
+
+const bareField = (): GroundingField => ({
+  state: 'not_applicable',
+  basis: null,
+  anchor_kind: null,
+  anchor_value: null,
+  range_low: null,
+  range_high: null,
+  expiration: null,
+  not_checkable_reason: null,
+});
+
+function tracedLevel(
+  basis: 'exact' | 'near',
+  anchor_kind: GroundingField['anchor_kind'],
+  value: number,
+): GroundingField {
+  return { ...bareField(), state: 'traced', basis, anchor_kind, anchor_value: value };
+}
+
+function tracedRange(low: number, high: number, expiration: string): GroundingField {
+  return {
+    ...bareField(),
+    state: 'traced',
+    basis: 'inside_range',
+    range_low: low,
+    range_high: high,
+    expiration,
+  };
+}
+
+function untracedField(): GroundingField {
+  return { ...bareField(), state: 'untraced' };
+}
+
+function notCheckable(reason: NonNullable<GroundingField['not_checkable_reason']>): GroundingField {
+  return { ...bareField(), state: 'not_checkable', not_checkable_reason: reason };
+}
+
+const structurallyUnchecked = (): GroundingField => notCheckable('structurally_unchecked');
+
+/** The default, fully-traced grounding block — stop on `call_wall` (near), invalidation on `gex_spot`
+ *  (exact), target inside the implied move for the cited expiration. `max_risk`/`position_size` are
+ *  ALWAYS `not_checkable/structurally_unchecked` — the suppressed pair never varies across fixtures. */
+function allTracedGrounding(): Grounding {
+  return {
+    card: 'all_traced',
+    counts: { checked: 4, traced: 4, untraced: 0, not_checkable: 0 },
+    tolerance_pct: 0.1,
+    fields: {
+      exit_stop: tracedLevel('near', 'call_wall', 262),
+      exit_target: tracedRange(240, 280, '2026-07-18'),
+      invalidation_level: tracedLevel('exact', 'gex_spot', 245),
+      max_risk: structurallyUnchecked(),
+      position_size: structurallyUnchecked(),
+    },
+  };
+}
+
+/** `recAllTraced()` — card `all_traced`, counts `{4,4,0,0}`. */
+export function recAllTraced(): RecResponse {
+  return baseResponse();
+}
+
+/** `recSomeTraced()` — card `some_traced`, counts `{4,3,1,0}`, stop `untraced`. */
+export function recSomeTraced(): RecResponse {
+  const g = allTracedGrounding();
+  return baseResponse({
+    grounding: {
+      ...g,
+      card: 'some_traced',
+      counts: { checked: 4, traced: 3, untraced: 1, not_checkable: 0 },
+      fields: { ...g.fields, exit_stop: untracedField() },
+    },
+  });
+}
+
+/** `recFabricated()` — card `none_traced`, counts `{4,0,4,0}`, all three checked fields `untraced`,
+ *  cited contract off-set. */
+export function recFabricated(): RecResponse {
+  return baseResponse({
+    grounding: {
+      card: 'none_traced',
+      counts: { checked: 4, traced: 0, untraced: 4, not_checkable: 0 },
+      tolerance_pct: 0.1,
+      fields: {
+        exit_stop: untracedField(),
+        exit_target: untracedField(),
+        invalidation_level: untracedField(),
+        max_risk: structurallyUnchecked(),
+        position_size: structurallyUnchecked(),
+      },
+    },
+    cited_contract: { state: 'off_set', contract: null, legs: [] },
+  });
+}
+
+/** `recCouldNotCheck()` — card `could_not_check`, counts `{3,0,0,3}`. */
+export function recCouldNotCheck(): RecResponse {
+  return baseResponse({
+    grounding: {
+      card: 'could_not_check',
+      counts: { checked: 3, traced: 0, untraced: 0, not_checkable: 3 },
+      tolerance_pct: 0.1,
+      fields: {
+        exit_stop: notCheckable('no_named_level'),
+        exit_target: notCheckable('no_cited_expiration'),
+        invalidation_level: notCheckable('no_named_level'),
+        max_risk: structurallyUnchecked(),
+        position_size: structurallyUnchecked(),
+      },
+    },
+  });
+}
+
+/** `recBlockAbsent()` — `baseResponse()` with the `grounding` key DELETED (not null — deleted). Must
+ *  still state real stop/target figures so F17 arm 4 can tell "withheld" from "nothing to seed". */
+export function recBlockAbsent(): RecResponse {
+  const r = baseResponse();
+  delete (r as { grounding?: Grounding }).grounding;
+  return r;
+}
+
+/** `recLocalRules()` — card `local_rules`, counts `{2,2,0,0}`, no strikes/expiration cited. */
+export function recLocalRules(): RecResponse {
+  return baseResponse({
+    strategy: baseStrategy({ strikes: [], expiration: null, structure: 'local rules' }),
+    grounding: {
+      card: 'local_rules',
+      counts: { checked: 2, traced: 2, untraced: 0, not_checkable: 0 },
+      tolerance_pct: 0.1,
+      fields: {
+        exit_stop: tracedLevel('near', 'gamma_flip', 262),
+        exit_target: bareField(), // not_applicable — no expiration cited
+        invalidation_level: tracedLevel('exact', 'gamma_flip', 245),
+        max_risk: structurallyUnchecked(),
+        position_size: structurallyUnchecked(),
+      },
+    },
+    cited_contract: { state: 'none', contract: null, legs: [] },
+  });
+}
+
+/** `recLocalRulesNothingCheckable()` — card `not_applicable`, counts `{0,0,0,0}`; every checkable
+ *  field is `not_applicable` (the `gamma_flip`-null case, AC-64). */
+export function recLocalRulesNothingCheckable(): RecResponse {
+  return baseResponse({
+    strategy: baseStrategy({
+      strikes: [],
+      expiration: null,
+      invalidation_level: null,
+      exit_plan: { target: null, stop: null },
+    }),
+    field_reasons: {
+      max_risk: null,
+      position_size: null,
+      exit_target: null,
+      exit_stop: null,
+      invalidation_level: null,
+    },
+    grounding: {
+      card: 'not_applicable',
+      counts: { checked: 0, traced: 0, untraced: 0, not_checkable: 0 },
+      tolerance_pct: 0.1,
+      fields: {
+        exit_stop: bareField(),
+        exit_target: bareField(),
+        invalidation_level: bareField(),
+        max_risk: structurallyUnchecked(),
+        position_size: structurallyUnchecked(),
+      },
+    },
+    cited_contract: { state: 'none', contract: null, legs: [] },
+  });
+}
+
 function baseResponse(overrides: Partial<RecResponse> = {}): RecResponse {
   return {
     status: 'produced',
@@ -132,9 +311,17 @@ function baseResponse(overrides: Partial<RecResponse> = {}): RecResponse {
       cap_not_derivable_reason: null,
       parsed_risk_dollars: 300,
       model_max_risk_text: '$300',
+      risk_refusal: null,
     },
-    field_reasons: { max_risk: null, position_size: null, exit_target: null, exit_stop: null },
+    field_reasons: {
+      max_risk: null,
+      position_size: null,
+      exit_target: null,
+      exit_stop: null,
+      invalidation_level: null,
+    },
     cited_contract: { state: 'cited', contract: contract(260, 'call'), legs: [] },
+    grounding: allTracedGrounding(),
     ...overrides,
   };
 }
@@ -159,9 +346,28 @@ export function noTradeRec(): RecResponse {
       cap_not_derivable_reason: null,
       parsed_risk_dollars: null,
       model_max_risk_text: null,
+      risk_refusal: null,
     },
-    field_reasons: { max_risk: null, position_size: null, exit_target: null, exit_stop: null },
+    field_reasons: {
+      max_risk: null,
+      position_size: null,
+      exit_target: null,
+      exit_stop: null,
+      invalidation_level: null,
+    },
     cited_contract: { state: 'none', contract: null, legs: [] },
+    grounding: {
+      card: 'not_applicable',
+      counts: { checked: 0, traced: 0, untraced: 0, not_checkable: 0 },
+      tolerance_pct: 0.1,
+      fields: {
+        exit_stop: bareField(),
+        exit_target: bareField(),
+        invalidation_level: bareField(),
+        max_risk: structurallyUnchecked(),
+        position_size: structurallyUnchecked(),
+      },
+    },
   });
 }
 
@@ -193,12 +399,14 @@ export function tradeRecNoRiskBlock(): RecResponse {
       cap_not_derivable_reason: null,
       parsed_risk_dollars: null,
       model_max_risk_text: null,
+      risk_refusal: null,
     },
     field_reasons: {
       max_risk: { reason: 'unavailable', missing_input: 'risk_block' },
       position_size: { reason: 'unavailable', missing_input: 'risk_block' },
       exit_target: null,
       exit_stop: null,
+      invalidation_level: null,
     },
   });
 }
@@ -213,6 +421,7 @@ export function tradeRecOverCap(): RecResponse {
       cap_not_derivable_reason: null,
       parsed_risk_dollars: 900,
       model_max_risk_text: '$900',
+      risk_refusal: null,
     },
   });
 }
@@ -227,6 +436,23 @@ export function tradeRecEqualToCap(): RecResponse {
       cap_not_derivable_reason: null,
       parsed_risk_dollars: 500,
       model_max_risk_text: '$500',
+      risk_refusal: null,
+    },
+  });
+}
+
+/** A trade verdict whose risk text names two different dollar figures — the parser refuses, and the
+ *  reason is renderable (AC-38, AC-40). */
+export function tradeRecRiskAmbiguous(): RecResponse {
+  return baseResponse({
+    strategy: baseStrategy({ max_risk: '$300 to $500' }),
+    cap_check: {
+      verdict: 'not_checkable',
+      effective_dollar_cap: 500,
+      cap_not_derivable_reason: null,
+      parsed_risk_dollars: null,
+      model_max_risk_text: '$300 to $500',
+      risk_refusal: 'multiple_different_figures',
     },
   });
 }

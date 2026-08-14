@@ -260,6 +260,70 @@ describe('TradeEntryDialog · confirm payload per mode', () => {
 });
 
 // =================================================================================================
+// ai-rec-grounding — AC-68: the withheld-reason line, three arms (D8)
+// =================================================================================================
+describe('TradeEntryDialog · the withheld-prefill reason line (AC-68)', () => {
+  it('AC-68 — a withheld stop/target opens EMPTY with its one-line reason, never a silent blank', async () => {
+    renderDialog({
+      prefill: {
+        expiration: '2026-07-18',
+        strike: 260,
+        right: 'call',
+        stop: null,
+        target: null,
+        sizeText: '2 contracts',
+        stopWithheldReason: "Not pre-filled — this was the AI's own number.",
+        targetWithheldReason: "Not pre-filled — Convexa couldn't check this figure.",
+      },
+    });
+    expect((await screen.findByLabelText('Stop (optional)')).getAttribute('value')).toBe('');
+    expect(screen.getByTestId('entry-stop-withheld')).toHaveTextContent(
+      "Not pre-filled — this was the AI's own number.",
+    );
+    expect(screen.getByTestId('entry-target-withheld')).toHaveTextContent(
+      "Not pre-filled — Convexa couldn't check this figure.",
+    );
+  });
+
+  it('AC-68 (D8) — the block-absent reason renders too, in its own words', async () => {
+    const reason = "Not pre-filled — this read wasn't checked against Convexa's numbers.";
+    renderDialog({
+      prefill: {
+        expiration: '2026-07-18',
+        strike: 260,
+        right: 'call',
+        stop: null,
+        target: null,
+        sizeText: '2 contracts',
+        stopWithheldReason: reason,
+        targetWithheldReason: reason,
+      },
+    });
+    expect((await screen.findByLabelText('Stop (optional)')).getAttribute('value')).toBe('');
+    expect(screen.getByTestId('entry-stop-withheld')).toHaveTextContent(reason);
+    expect(screen.getByTestId('entry-target-withheld')).toHaveTextContent(reason);
+  });
+
+  it('AC-68 — a TRACED (seeded) field shows the value and NO reason line', async () => {
+    renderDialog({
+      prefill: {
+        expiration: '2026-07-18',
+        strike: 260,
+        right: 'call',
+        stop: 6,
+        target: 12,
+        sizeText: '2 contracts',
+        stopWithheldReason: null,
+        targetWithheldReason: null,
+      },
+    });
+    expect((await screen.findByLabelText('Stop (optional)')).getAttribute('value')).toBe('6');
+    expect(screen.queryByTestId('entry-stop-withheld')).toBeNull();
+    expect(screen.queryByTestId('entry-target-withheld')).toBeNull();
+  });
+});
+
+// =================================================================================================
 // 2. The order variant — payload + blocking states + the byte-identity guard
 // =================================================================================================
 

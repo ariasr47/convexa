@@ -24,7 +24,7 @@ pub fn cap_verdict(states_entry: bool, effective_cap: Option<f64>, parsed: Parse
         return CapVerdict::NoCap; // 2
     };
     match parsed {
-        ParsedRisk::NotParseable => CapVerdict::NotCheckable, // 3
+        ParsedRisk::NotParseable(_) => CapVerdict::NotCheckable, // 3 — the reason rides `risk_refusal`
         ParsedRisk::Dollars(v) if v <= cap => CapVerdict::Within, // 4 — equality is WITHIN
         ParsedRisk::Dollars(_) => CapVerdict::Above, // 5
     }
@@ -32,6 +32,7 @@ pub fn cap_verdict(states_entry: bool, effective_cap: Option<f64>, parsed: Parse
 
 #[cfg(test)]
 mod tests {
+    use super::super::max_risk::RiskRefusal;
     use super::*;
 
     #[test]
@@ -41,12 +42,18 @@ mod tests {
 
     #[test]
     fn the_same_no_trade_fixture_with_no_cap_yields_not_applicable_not_no_cap() {
-        assert_eq!(cap_verdict(false, None, ParsedRisk::NotParseable), CapVerdict::NotApplicable);
+        assert_eq!(
+            cap_verdict(false, None, ParsedRisk::NotParseable(RiskRefusal::NoText)),
+            CapVerdict::NotApplicable
+        );
     }
 
     #[test]
     fn an_entry_stating_fixture_with_a_null_risk_figure_yields_not_checkable() {
-        assert_eq!(cap_verdict(true, Some(500.0), ParsedRisk::NotParseable), CapVerdict::NotCheckable);
+        assert_eq!(
+            cap_verdict(true, Some(500.0), ParsedRisk::NotParseable(RiskRefusal::NoText)),
+            CapVerdict::NotCheckable
+        );
     }
 
     #[test]
@@ -57,5 +64,12 @@ mod tests {
     #[test]
     fn strictly_greater_is_above() {
         assert_eq!(cap_verdict(true, Some(300.0), ParsedRisk::Dollars(301.0)), CapVerdict::Above);
+    }
+
+    #[test]
+    fn every_refusal_reason_still_yields_exactly_one_verdict_not_checkable() {
+        for r in [RiskRefusal::NoText, RiskRefusal::NoDollarFigure, RiskRefusal::MultipleDifferentFigures] {
+            assert_eq!(cap_verdict(true, Some(500.0), ParsedRisk::NotParseable(r)), CapVerdict::NotCheckable);
+        }
     }
 }
