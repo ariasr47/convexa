@@ -1,5 +1,6 @@
 //! Per-field reasons: declared dependency order + the `position_size` tie-break (SPEC §2.6).
 use serde::Serialize;
+use serde_json::Value;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecField {
@@ -129,6 +130,42 @@ pub fn plan_field_reason(
         // No declared dependency: `unavailable` is structurally unreachable on these three.
         RecPlanField::Structure | RecPlanField::EntryTrigger | RecPlanField::TimeHorizon => not_given,
     })
+}
+
+/// PER-FIELD and TYPE-AWARE (INTERFACE_CONTRACT §1). The shipped shared closure
+/// `present = |v| v.map(|x| !x.is_null()).unwrap_or(false)` (`recommendation.rs:470`) is NULL-ONLY and
+/// must NOT be used here: under it `""`, `[]` and `"moderate"` all read *present*.
+pub fn plan_value(field: RecPlanField, strategy: &Value) -> PlanValue {
+    let text = |key: &str| -> PlanValue {
+        match strategy.get(key).and_then(|v| v.as_str()) {
+            Some(s) if !s.trim().is_empty() => PlanValue::Present,
+            _ => PlanValue::Absent,
+        }
+    };
+    match field {
+        RecPlanField::Structure => text("structure"),
+        RecPlanField::Expiration => text("expiration"),
+        RecPlanField::EntryTrigger => text("entry_trigger"),
+        RecPlanField::TimeHorizon => text("time_horizon"),
+        RecPlanField::Strikes => {
+            let any_finite = strategy
+                .get("strikes")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().any(|x| x.as_f64().map_or(false, |n| n.is_finite())))
+                .unwrap_or(false);
+            if any_finite { PlanValue::Present } else { PlanValue::Absent }
+        }
+        // FIXED ORDER, first match wins, DO NOT REORDER (INTERFACE_CONTRACT §1):
+        //   1. null or trimmed-empty  -> Absent      (=> not_given)
+        //   2. low | medium | high    -> Present     (=> no reason; the value renders)
+        //   3. any other non-empty    -> OffScale    (=> unrecognized_value)
+        RecPlanField::Confidence => match strategy.get("confidence").and_then(|v| v.as_str()) {
+            None => PlanValue::Absent,
+            Some(s) if s.trim().is_empty() => PlanValue::Absent,
+            Some(s) if matches!(s.trim(), "low" | "medium" | "high") => PlanValue::Present,
+            Some(_) => PlanValue::OffScale,
+        },
+    }
 }
 
 #[cfg(test)]
@@ -308,5 +345,69 @@ mod tests {
         for c in cases.into_iter().flatten() {
             assert_eq!(c.missing_input.is_some(), c.reason == ReasonKind::Unavailable);
         }
+    }
+
+    #[test]
+    fn empty_string_empty_array_and_off_scale_are_all_absent_never_present() {
+        use serde_json::json;
+        let s = json!({
+            "structure": "",
+            "strikes": [],
+            "expiration": "   ",
+            "entry_trigger": null,
+            "time_horizon": "",
+            "confidence": "moderate",
+        });
+        assert_eq!(plan_value(RecPlanField::Structure, &s), PlanValue::Absent);
+        assert_eq!(plan_value(RecPlanField::Strikes, &s), PlanValue::Absent);
+        assert_eq!(plan_value(RecPlanField::Expiration, &s), PlanValue::Absent);
+        assert_eq!(plan_value(RecPlanField::EntryTrigger, &s), PlanValue::Absent);
+        assert_eq!(plan_value(RecPlanField::TimeHorizon, &s), PlanValue::Absent);
+        // "moderate" is STATED and off-scale — never `Absent`, never `Present`.
+        assert_eq!(plan_value(RecPlanField::Confidence, &s), PlanValue::OffScale);
+    }
+
+    #[test]
+    fn the_hazard_row_none_of_the_empties_can_produce_unavailable_with_a_declared_empty_set() {
+        use serde_json::json;
+        // §2.2's ship-blocking hazard: reusing the null-only closure would make all of these read
+        // `present`, the wire would carry `null`, and the browser would render `unavailable` over a
+        // field nobody ever named.
+        let s = json!({ "structure": "", "strikes": [], "expiration": "", "confidence": "moderate" });
+        let declared_empty = PlanInputPresence { candidate_set: Some(false) };
+        for f in [RecPlanField::Structure, RecPlanField::Confidence] {
+            let r = plan_field_reason(f, plan_value(f, &s), declared_empty).unwrap();
+            assert_ne!(r.reason, ReasonKind::Unavailable, "{f:?}");
+        }
+    }
+
+    #[test]
+    fn stated_values_are_present_and_strikes_needs_one_finite_number() {
+        use serde_json::json;
+        let s = json!({
+            "structure": "long call",
+            "strikes": [260.0],
+            "expiration": "2026-07-18",
+            "entry_trigger": "break above 252",
+            "time_horizon": "5d",
+            "confidence": "high",
+        });
+        for f in [
+            RecPlanField::Structure,
+            RecPlanField::Strikes,
+            RecPlanField::Expiration,
+            RecPlanField::EntryTrigger,
+            RecPlanField::TimeHorizon,
+            RecPlanField::Confidence,
+        ] {
+            assert_eq!(plan_value(f, &s), PlanValue::Present, "{f:?}");
+        }
+        // A non-numeric or null-only array carries no strike.
+        assert_eq!(
+            plan_value(RecPlanField::Strikes, &json!({ "strikes": [null, "260"] })),
+            PlanValue::Absent
+        );
+        // An absent strategy (the early-return `Value::Null` envelopes) reads absent, never present.
+        assert_eq!(plan_value(RecPlanField::Structure, &serde_json::Value::Null), PlanValue::Absent);
     }
 }
