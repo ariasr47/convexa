@@ -848,7 +848,10 @@ fn local_strategy_from_bundle(bundle: &Value) -> Value {
         "max_risk": "1R defined-risk",
         "position_size": "small (rule-based local rec; not LLM)",
         "exit_plan": { "target": null, "stop": flip },
-        "time_horizon": "1–5 sessions",
+        // rec-absence-literals-hole §2.4 — DELETED: a named author with ZERO input dependence. No
+        // rule and no read computed it; it was the same string on every card. The assembler now
+        // states nothing and `plan_field_reason` reports `not_given` (AC-33).
+        "time_horizon": null,
         "confidence": conf,
         "summary": name,
         "key_points": [rationale],
