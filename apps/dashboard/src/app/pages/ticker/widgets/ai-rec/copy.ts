@@ -346,3 +346,88 @@ export const CAP_REFUSAL_SENTENCE = {
 export const REASONING_PROSE_NOT_CHECKED =
   "Numbers written out in this reasoning aren't checked — only the stop, target and invalidation " +
   'level above are.';
+
+// ---- rec-absence-literals-hole: the six plan/conviction slots -----------------------------------
+
+/** The five plan-row labels, hoisted out of `AiRecPanel.tsx`'s inline literals so the renderer, the
+ *  standing line and the Layer-2 guard read ONE constant. CARD ORDER — the standing line joins the
+ *  first four in this order. */
+export const PLAN_FIELD_LABEL = {
+  structure: 'Structure',
+  strikes: 'Strike(s)',
+  expiration: 'Expiration',
+  entryTrigger: 'Entry trigger',
+  timeHorizon: 'Time horizon',
+  confidence: 'Confidence',
+} as const;
+
+/** The POSITION-DEFINING four, in card order (AC-10a). Time horizon and Confidence are excluded on
+ *  purpose: their absence is not what makes a rec unactionable (AC-11). */
+export const POSITION_DEFINING_LABELS = [
+  PLAN_FIELD_LABEL.structure,
+  PLAN_FIELD_LABEL.strikes,
+  PLAN_FIELD_LABEL.expiration,
+  PLAN_FIELD_LABEL.entryTrigger,
+] as const;
+
+/** The six take the SHIPPED words with a PRODUCER-NEUTRAL tip on their own sibling entry. The shipped
+ *  `not_given` tip names a producer ("The AI produced a trade read but…") and would contradict the
+ *  local-rules line on the same card; the WORD holds in every state, the shipped TIP does not. */
+export const PLAN_FIELD_COPY = {
+  notGiven: {
+    text: RISK_FIELD_COPY.notGiven.text,
+    tip: 'Nothing stated a value for this. Nothing failed; it was simply never filled in.',
+  },
+  unavailable: {
+    text: RISK_FIELD_COPY.unavailable.text,
+    tip: RISK_FIELD_COPY.unavailable.tip,
+  },
+  dash: { text: RISK_FIELD_COPY.dash.text, tip: RISK_FIELD_COPY.dash.tip },
+  /** The ONE new member of the closed not-a-number vocabulary (decisions.md §C #21). One emit site. */
+  unrecognized: {
+    text: 'unrecognized',
+    tip:
+      "The read named a conviction outside Convexa's scale. Convexa shows low, medium or high only; " +
+      "it won't repeat an answer it can't place.",
+  },
+} as const;
+
+/** The card-level standing statement (AC-10a/c). NOT an absence word — a standing statement — so the
+ *  one-new-word rule is not engaged. Producer-neutral; no icon, no tint, plain body text. */
+export const notActionableLine = (labels: readonly string[]) =>
+  `Not actionable as given. Never named: ${labels.join(', ')}.`;
+
+/** The DTE caption, reworded: a property of the REQUEST (vouched by the owner's own filter), never a
+ *  containment claim about the value. Renders on the `value` member only, and never if either bound is
+ *  unknown — a literal `?` must not reach the DOM (AC-26/27). The dash is U+2013 (en dash), matching
+ *  the shipped caption; it is NOT the U+2014 the §7 guards target. */
+export const dteWindowCaption = (min: number, max: number) => ` · your DTE window: ${min}–${max}`;
+
+/** The entry-surface reason for a contract field the read never named (AC-12a/b/c/d). Follows the
+ *  shipped `PREFILL_WITHHELD` idiom, names NO cause, and is built in `prefill.ts` and carried verbatim
+ *  — the dialog never re-spells it. */
+export const prefillUnnamedReason = (labels: readonly string[]) =>
+  `Not pre-filled — the read named no ${labels.join(', ')}.`;
+
+/** ONE mapping from a `PlanFieldLiteral` kind to (text, tip). `confidence` renders as a `Chip`, not a
+ *  `Field`, so a second RENDERER is unavoidable — this keeps it from becoming a second COPY TABLE. */
+export function literalCopy(
+  kind: 'value' | 'dash' | 'not_set' | 'unavailable' | 'not_given' | 'unrecognized',
+): { text: string; tip: string } {
+  switch (kind) {
+    case 'dash':
+      return PLAN_FIELD_COPY.dash;
+    case 'unavailable':
+      return PLAN_FIELD_COPY.unavailable;
+    case 'unrecognized':
+      return PLAN_FIELD_COPY.unrecognized;
+    case 'not_set':
+      // Unreachable on the six (AC-23); named explicitly so a future caller cannot read a missing arm
+      // as "falls through to not_given".
+      return { text: RISK_FIELD_COPY.notSet.text, tip: RISK_FIELD_COPY.notSet.tip };
+    case 'value':
+    case 'not_given':
+    default:
+      return PLAN_FIELD_COPY.notGiven;
+  }
+}

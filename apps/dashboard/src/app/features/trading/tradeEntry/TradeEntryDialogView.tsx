@@ -204,15 +204,20 @@ export function TradeEntryDialog({
     const nearest = strikes.length
       ? strikes.reduce((b, s) => (Math.abs(s - spot) < Math.abs(b - spot) ? s : b), strikes[0])
       : '';
-    const exp = prefill?.expiration || expirations[0] || '';
+    // rec-absence-literals-hole §2.5 — the dialog branches on PREFILL PRESENCE, not on the field
+    // value: `??` cannot express that (it fires identically on `null` and `undefined`).
+    // `prefill === undefined` (opened directly, not via Accept) keeps today's nearest-strike /
+    // first-expiration / `call` defaults BYTE-IDENTICAL (AC-13). A prefill that arrived with a field
+    // the read never named seeds the draft's own empty sentinel, which the confirm control rejects.
+    const exp = prefill ? (prefill.expiration ?? '') : (expirations[0] ?? '');
     setMode('manual');
     // ONE row, always — the multi-leg variant is entered by ADDING to this array, never by opening
     // something else.
     setLegs([
       newDraft({
         expiration: exp,
-        strike: prefill?.strike ?? nearest,
-        right: prefill?.right ?? 'call',
+        strike: prefill ? (prefill.strike ?? '') : nearest,
+        right: prefill ? (prefill.right ?? '') : 'call',
         // tradeable-rec-inputs (AC-79, ship-blocking): the quantity field is NEVER seeded from the
         // model — it always opens at the dialog's own default of 1, in every case.
         qty: 1,
@@ -238,7 +243,9 @@ export function TradeEntryDialog({
   // Resolve the contract stats / market fill from the picked contract (mid → theoretical BS mark via
   // the shared resolver). Best-effort: a lookup failure only degrades THIS preview, never the app.
   useEffect(() => {
-    if (!open || !expiration || strike === '') return;
+    // rec-absence-literals-hole (F11, discovered — not named in §2.5): `right === ''` (the read named
+    // no structure) has no contract to look up either, mirroring the shipped `strike === ''` guard.
+    if (!open || !expiration || strike === '' || right === '') return;
     let cancelled = false;
     setFillState('loading');
     setContractStatsFailed(false);
@@ -314,7 +321,9 @@ export function TradeEntryDialog({
         entry_basis: 'manual',
         expiration: isOption ? d.expiration || null : null,
         strike: isOption ? (d.strike === '' ? null : Number(d.strike)) : null,
-        right: isOption ? d.right : null,
+        // rec-absence-literals-hole — mirrors the shipped `strike` narrow one line above: submit
+        // already rejects `''`, but TypeScript cannot know that, so the narrow is required.
+        right: isOption ? (d.right === '' ? null : d.right) : null,
       };
     }),
     opened_time: '',
@@ -359,8 +368,13 @@ export function TradeEntryDialog({
     (goodTil === '' || goodTil < todayIso() || (expiration !== '' && goodTil > expiration));
 
   /** Every OPTION leg must name its contract; an equity leg has no contract to name. */
+  /** Every OPTION leg must name its contract; an equity leg has no contract to name. `!!d.right` is
+   *  the new conjunct (rec-absence-literals-hole AC-12f): `right` is the one contract field the
+   *  predicate could not see before, and the `''` sentinel is falsy, so the same shape serves. The
+   *  strike and expiration arms are UNCHANGED — the seam maps their unstated case onto values those
+   *  arms already reject. */
   const everyLegAddressed = legs.every(
-    (d) => d.qty >= 1 && (d.kind === 'equity' || (d.strike !== '' && !!d.expiration)),
+    (d) => d.qty >= 1 && (d.kind === 'equity' || (d.strike !== '' && !!d.expiration && !!d.right)),
   );
 
   const canConfirm = (() => {
@@ -392,7 +406,10 @@ export function TradeEntryDialog({
       target: target === '' ? null : Number(target),
     };
     if (isOrder) {
-      if (goodTilInvalid || strike === '' || !expiration) return;
+      // rec-absence-literals-hole (F11, discovered — not named in §2.5): `right` feeds
+      // `OrderContract.right: OptionRight` (non-nullable) below; mirrors the shipped
+      // `strike === ''` guard on this same line.
+      if (goodTilInvalid || strike === '' || !expiration || right === '') return;
       onConfirmOrder?.({
         ...base,
         expiration,
@@ -418,7 +435,7 @@ export function TradeEntryDialog({
       price: draftPrices[i],
       expiration: d.kind === 'option' ? d.expiration || null : null,
       strike: d.kind === 'option' ? (d.strike === '' ? null : Number(d.strike)) : null,
-      right: d.kind === 'option' ? d.right : null,
+      right: d.kind === 'option' ? (d.right === '' ? null : d.right) : null,
     }));
 
     if (effectiveMode === 'market') {
@@ -642,6 +659,19 @@ export function TradeEntryDialog({
             >
               + Add leg
             </Button>
+          )}
+
+          {/* rec-absence-literals-hole (AC-12a/b/c/d) — the read named no contract field(s): ONE
+              line, literal-agnostic on purpose so the copy stays owned by `ai-rec/copy.ts` and this
+              file never re-spells it. An unexplained blank reads as a bug rather than a refusal. */}
+          {prefill?.contractWithheldReason && (
+            <Typography
+              variant="caption"
+              data-testid="entry-contract-withheld"
+              sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+            >
+              {prefill.contractWithheldReason}
+            </Typography>
           )}
 
           {/* ORDER VARIANT — the entry trigger section (§3.1-5). */}

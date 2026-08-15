@@ -7,6 +7,7 @@ import type {
   CandidateContract,
   CandidateSetEnvelope,
   CitedContract,
+  FieldReason,
   Grounding,
   GroundingField,
   RecResponse,
@@ -474,4 +475,142 @@ export function recOffSet(): RecResponse {
     strategy: baseStrategy({ strikes: [999], expiration: '2026-12-18' }),
     cited_contract: { state: 'off_set', contract: null, legs: [] },
   });
+}
+
+// ---- rec-absence-literals-hole ------------------------------------------------------------------
+
+const reason = (
+  reason: FieldReason['reason'],
+  missing_input: FieldReason['missing_input'] = null,
+): FieldReason => ({ reason, missing_input });
+
+/** The primary observation shape: a `trade` card on which NONE of the six was named. */
+export function recNoneNamed(): RecResponse {
+  const r = baseResponse({
+    strategy: baseStrategy({
+      structure: null,
+      strikes: [],
+      expiration: null,
+      entry_trigger: null,
+      time_horizon: null,
+      confidence: null,
+    }),
+  });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    structure: reason('not_given'),
+    strikes: reason('not_given'),
+    expiration: reason('not_given'),
+    entry_trigger: reason('not_given'),
+    time_horizon: reason('not_given'),
+    confidence: reason('not_given'),
+  };
+  return r;
+}
+
+/** Three named, three not (AC-2): only the unnamed three may change. */
+export function recHalfNamed(): RecResponse {
+  const r = baseResponse({
+    strategy: baseStrategy({ expiration: null, time_horizon: null, confidence: null }),
+  });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    expiration: reason('not_given'),
+    time_horizon: reason('not_given'),
+    confidence: reason('not_given'),
+  };
+  return r;
+}
+
+/** The candidate set was declared and empty — the ONLY source of `unavailable` on these six. */
+export function recCandidateSetEmpty(): RecResponse {
+  const r = baseResponse({ strategy: baseStrategy({ strikes: [], expiration: null }) });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    strikes: reason('unavailable', 'candidate_set'),
+    expiration: reason('unavailable', 'candidate_set'),
+  };
+  return r;
+}
+
+/** A conviction stated OFF Convexa's scale. The raw string must never reach the DOM (AC-24). */
+export function recOffScaleConfidence(): RecResponse {
+  const r = baseResponse({
+    strategy: baseStrategy({ confidence: 'quite high' as RecStrategy['confidence'] }),
+  });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    confidence: reason('unrecognized_value'),
+  };
+  return r;
+}
+
+/** A reason token this build does not recognise (AC-6). */
+export function recUnknownToken(): RecResponse {
+  const r = recNoneNamed();
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    structure: { reason: 'wat' as FieldReason['reason'], missing_input: null },
+  };
+  return r;
+}
+
+/** NO per-field reason information at all — a pre-feature or degraded server (AC-5). */
+export function recNoFieldReasonsBlock(): RecResponse {
+  const r = recNoneNamed();
+  delete (r as { field_reasons?: unknown }).field_reasons;
+  return r;
+}
+
+/** Values everywhere but blank-ish: `""` / whitespace / `[]` (AC-7). */
+export function recBlankValues(): RecResponse {
+  const r = baseResponse({
+    strategy: baseStrategy({
+      structure: '',
+      strikes: [],
+      expiration: '   ',
+      entry_trigger: '',
+      time_horizon: '  ',
+      confidence: null,
+    }),
+  });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    structure: reason('not_given'),
+    strikes: reason('not_given'),
+    expiration: reason('not_given'),
+    entry_trigger: reason('not_given'),
+    time_horizon: reason('not_given'),
+    confidence: reason('not_given'),
+  };
+  return r;
+}
+
+/** The local-rules card the standing line is EXEMPT on (AC-10b), matching what the server emits. */
+export function recLocalRulesUnnamed(): RecResponse {
+  const r = recLocalRules();
+  r.strategy = baseStrategy({
+    structure: 'long call',
+    strikes: [],
+    expiration: null,
+    time_horizon: null,
+  });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    strikes: reason('not_given'),
+    expiration: reason('not_given'),
+    time_horizon: reason('not_given'),
+  };
+  return r;
+}
+
+/** Only Time horizon and Confidence unnamed — literals, but NO standing line (AC-11). */
+export function recOnlySoftFieldsUnnamed(): RecResponse {
+  const r = baseResponse({ strategy: baseStrategy({ time_horizon: null, confidence: null }) });
+  r.field_reasons = {
+    ...(r.field_reasons as NonNullable<RecResponse['field_reasons']>),
+    time_horizon: reason('not_given'),
+    confidence: reason('not_given'),
+  };
+  return r;
 }

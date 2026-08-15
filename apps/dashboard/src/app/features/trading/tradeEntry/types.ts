@@ -22,9 +22,13 @@ export type MarketFillBasis = 'snapshot' | 'theoretical';
  *  seeded from the model — it always opens at the dialog's own default. `sizeText` carries the rec's
  *  size prose for DISPLAY beside the field, never into it. */
 export interface EntryPrefill {
-  expiration: string;
-  strike: number;
-  right: OptionRight;
+  /** `null` = THE READ NAMED NO EXPIRATION (rec-absence-literals-hole §2.5). Distinct from `''`, which
+   *  is the DRAFT's own sentinel. */
+  expiration: string | null;
+  /** `null` = the read named no strike. Never `0` — a zero strike is a real, submittable number. */
+  strike: number | null;
+  /** `null` = the read named no structure, so no direction is derivable. */
+  right: OptionRight | null;
   stop?: number | null;
   target?: number | null;
   /** ai-rec-grounding AC-7/AC-68: the stop/target seed is GATED on the figure's grounding state. When
@@ -34,6 +38,10 @@ export interface EntryPrefill {
    *  nothing to explain. */
   stopWithheldReason?: string | null;
   targetWithheldReason?: string | null;
+  /** rec-absence-literals-hole (AC-12a/b/c/d) — ONE line naming the contract fields the read did not
+   *  give, built by the producer and rendered VERBATIM (the same seam `stopWithheldReason` uses; this
+   *  file never re-spells the copy). `null`/`undefined` ⇒ nothing to explain. */
+  contractWithheldReason?: string | null;
   provenance?: string;
   sizingNote?: string;
   sizeText?: string;
@@ -149,7 +157,13 @@ export interface LegDraft {
   qty: number;
   expiration: string;
   strike: number | '';
-  right: OptionRight;
+  /** `''` = the read named no structure, so no direction is typed yet (rec-absence-literals-hole
+   *  §2.5). Deliberately the file's OWN falsy sentinel (see `strike` above and `price` below), NOT a
+   *  nullable — the falsy handling this file already contains (`LegFields.tsx`'s ToggleButtonGroup,
+   *  the `d.strike === '' ? null : ...` narrow, `!!d.expiration`) extends to `right` unchanged and no
+   *  third nullability convention is introduced. `newDraft()` keeps its `'call'` default — a dialog
+   *  opened directly (no rec prefill) is unaffected. */
+  right: OptionRight | '';
   /** PER-UNIT. `''` = not typed yet, which is what makes the running net read INCOMPLETE. */
   price: number | '';
 }

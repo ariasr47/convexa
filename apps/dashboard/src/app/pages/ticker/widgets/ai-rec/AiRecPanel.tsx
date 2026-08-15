@@ -59,12 +59,16 @@ import {
   cooldownCaption,
   cooldownLabel,
   COPY,
+  dteWindowCaption,
   FREE_USES_TOTAL_FALLBACK,
   freeUsesChip,
   friendlyResetTime,
+  literalCopy,
   MAX_RISK_TIP,
+  notActionableLine,
   OWN_KEY_CHIP,
   personaChip,
+  PLAN_FIELD_LABEL,
   retryInCooldown,
   retryWhenReset,
   RISK_FIELD_COPY,
@@ -74,7 +78,14 @@ import {
 } from './copy';
 import { FigureClause } from './FigureClause';
 import { GroundingNote } from './GroundingNote';
-import { fieldLiteral, registerSx, riskInputsSuperseded, type FieldLiteral } from './literals';
+import {
+  fieldLiteral,
+  planFieldLiteral,
+  registerSx,
+  riskInputsSuperseded,
+  type FieldLiteral,
+  type PlanFieldLiteral,
+} from './literals';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 import { ProvenanceChip } from './ProvenanceChip';
 import { deriveReasoning, Field, LevelsStrip, ReasoningSection } from './reasoning';
@@ -819,6 +830,49 @@ function RiskField({
   );
 }
 
+// ---- rec-absence-literals-hole: the six plan/conviction render sites (§7 Layer 1) --------------
+/** The plan-row renderer: takes a `PlanFieldLiteral`, NEVER a rendered `React.ReactNode`. That is
+ *  what makes a bare `?? '—'` at one of these sites a TYPE ERROR rather than a style violation
+ *  (§7 Layer 1). The `Field` primitive is unchanged — the literal→element mapping happens here. */
+function PlanField({
+  label,
+  literal,
+  caption,
+}: {
+  label: string;
+  literal: PlanFieldLiteral;
+  /** Rendered ONLY beside the `value` member (AC-26) — the caller decides, this component enforces. */
+  caption?: ReactNode;
+}) {
+  if (literal.kind === 'value')
+    return (
+      <Field
+        label={label}
+        value={
+          <>
+            {literal.text}
+            {caption}
+          </>
+        }
+      />
+    );
+  const cfg = literalCopy(literal.kind);
+  return <Field label={label} tip={cfg.tip} value={cfg.text} />;
+}
+
+/** The conviction slot. A `Chip` when a value was stated; PLAIN TEXT (chip suppressed) for every
+ *  absence member — a chip whose label is an absence word reads as a stated grade. Same copy table as
+ *  `PlanField` (`literalCopy`), never a second one. */
+function ConvictionSlot({ literal }: { literal: PlanFieldLiteral }) {
+  if (literal.kind === 'value') return <Chip size="small" label={literal.text} />;
+  const cfg = literalCopy(literal.kind);
+  return (
+    <Tooltip arrow describeChild title={cfg.tip}>
+      <Typography variant="body2">{cfg.text}</Typography>
+    </Tooltip>
+  );
+}
+
 // ---- The rendered rec (produced + no_trade) --------------------------------------------------
 function RecResult({
   rec,
@@ -853,6 +907,59 @@ function RecResult({
   // (anonymous / still loading), so an unknown current block never claims supersession.
   const currentRiskInputs = useSettings().riskInputs;
   const superseded = riskInputsSuperseded(rec.sent?.risk_inputs, currentRiskInputs);
+
+  // rec-absence-literals-hole — the six plan/conviction literals, computed ONCE so the rows and the
+  // standing line (below) read the same objects (§2.3).
+  const structureLiteral = planFieldLiteral({
+    decision: s.decision,
+    value: s.structure,
+    reason: rec.field_reasons?.structure,
+  });
+  const strikesLiteral = planFieldLiteral({
+    decision: s.decision,
+    // Joining the array into a display string BEFORE the lookup is formatting, not cause selection
+    // (§2.3 UX-3(a)).
+    value: s.strikes.length ? s.strikes.map((x) => `$${x}`).join(' / ') : '',
+    reason: rec.field_reasons?.strikes,
+  });
+  const expirationLiteral = planFieldLiteral({
+    decision: s.decision,
+    value: s.expiration,
+    reason: rec.field_reasons?.expiration,
+  });
+  const entryTriggerLiteral = planFieldLiteral({
+    decision: s.decision,
+    value: s.entry_trigger,
+    reason: rec.field_reasons?.entry_trigger,
+  });
+  const timeHorizonLiteral = planFieldLiteral({
+    decision: s.decision,
+    value: s.time_horizon,
+    reason: rec.field_reasons?.time_horizon,
+  });
+  const convictionLiteral = planFieldLiteral({
+    decision: s.decision,
+    value: s.confidence,
+    reason: rec.field_reasons?.confidence,
+  });
+
+  // AC-10 — the ONE standing line. Exempt ONLY on an AFFIRMATIVE local-rules declaration; a response
+  // with no grounding block at all is NOT an exemption (AC-10c) — missing information never is.
+  const localRulesDeclared = rec.grounding?.card === 'local_rules';
+  const unnamedPositionFields = (
+    [
+      [PLAN_FIELD_LABEL.structure, structureLiteral],
+      [PLAN_FIELD_LABEL.strikes, strikesLiteral],
+      [PLAN_FIELD_LABEL.expiration, expirationLiteral],
+      [PLAN_FIELD_LABEL.entryTrigger, entryTriggerLiteral],
+    ] as const
+  )
+    .filter(([, l]) => l.kind !== 'value')
+    .map(([label]) => label);
+  const standingLine =
+    !localRulesDeclared && unnamedPositionFields.length > 0
+      ? notActionableLine(unnamedPositionFields)
+      : null;
 
   return (
     <Box>
@@ -940,9 +1047,16 @@ function RecResult({
               <Typography variant="subtitle1" component="p">
                 {COPY.noTrade.title}
               </Typography>
-              {s.confidence && (
-                <Chip size="small" variant="outlined" label={`conviction · ${s.confidence}`} />
-              )}
+              {/* AC-3d — the ONE carve-out from the no-plan-rows rule: an absent conviction renders
+                  `not given` as TEXT, never the reserved mark, never nothing. This line sits OUTSIDE
+                  the four-field risk row below (`:` unchanged), which keeps its zero-line diff. */}
+              <Box data-testid="no-trade-conviction">
+                {s.confidence ? (
+                  <Chip size="small" variant="outlined" label={`conviction · ${s.confidence}`} />
+                ) : (
+                  <Typography variant="body2">{literalCopy('not_given').text}</Typography>
+                )}
+              </Box>
             </Stack>
             {heroLead && (
               <Typography
@@ -1020,6 +1134,18 @@ function RecResult({
               sits directly above the risk tile and nowhere else. It is one line; it is never a
               section. */}
           <GroundingNote grounding={rec.grounding} />
+          {/* rec-absence-literals-hole (AC-10a/b/c, AC-11, AC-15) — the ONE standing not-actionable
+              line. Exempt only on a DECLARED local-rules card; plain body text, no icon, no tint, no
+              `warning.*` — the card-level amber is already spent by the grounding line above. */}
+          {standingLine && (
+            <Typography
+              variant="body2"
+              data-testid="rec-not-actionable"
+              sx={{ color: 'text.secondary' }}
+            >
+              {standingLine}
+            </Typography>
+          )}
           {/* 2. RISK FIRST (foremost). Upgraded-tile chrome: rounded surface + error-tinted LEFT
               accent bar (risk = the most-important field), clipped to the radius. All four risk-input
               fields render through `fieldLiteral` — a closed lookup on the wire token, never a null
@@ -1076,28 +1202,23 @@ function RecResult({
               <CapAnnotation capCheck={rec.cap_check} />
             </Box>
           </Box>
-          {/* 3. Plan. */}
+          {/* 3. Plan. Every row goes through `planFieldLiteral` — a closed lookup on the wire token,
+              never a null test, never a bare fallback (rec-absence-literals-hole §2.3). */}
           <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-            <Field label="Structure" value={s.structure ?? '—'} />
-            <Field
-              label="Strike(s)"
-              value={s.strikes.length ? s.strikes.map((x) => `$${x}`).join(' / ') : '—'}
-            />
-            <Field
-              label="Expiration"
-              value={
-                <>
-                  {s.expiration ?? '—'}
-                  {(dteMin != null || dteMax != null) && (
-                    <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
-                      {' '}
-                      · within your {dteMin ?? '?'}–{dteMax ?? '?'} DTE window
-                    </Typography>
-                  )}
-                </>
+            <PlanField label={PLAN_FIELD_LABEL.structure} literal={structureLiteral} />
+            <PlanField label={PLAN_FIELD_LABEL.strikes} literal={strikesLiteral} />
+            <PlanField
+              label={PLAN_FIELD_LABEL.expiration}
+              literal={expirationLiteral}
+              caption={
+                dteMin != null && dteMax != null ? (
+                  <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
+                    {dteWindowCaption(dteMin, dteMax)}
+                  </Typography>
+                ) : undefined
               }
             />
-            <Field label="Entry trigger" value={s.entry_trigger ?? '—'} />
+            <PlanField label={PLAN_FIELD_LABEL.entryTrigger} literal={entryTriggerLiteral} />
           </Stack>
           {/* The cited-contract fact line — a real quote for the named contract, or an honest literal
               saying why it's absent (AC-73–77). */}
@@ -1150,12 +1271,12 @@ function RecResult({
             spacing={4}
             sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}
           >
-            <Field label="Time horizon" value={s.time_horizon ?? '—'} />
+            <PlanField label={PLAN_FIELD_LABEL.timeHorizon} literal={timeHorizonLiteral} />
             <Box>
               <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                Confidence
+                {PLAN_FIELD_LABEL.confidence}
               </Typography>
-              <Chip size="small" label={s.confidence ?? '—'} />
+              <ConvictionSlot literal={convictionLiteral} />
             </Box>
           </Stack>
           {/* 7. Reasoning — Why bullets + Manage list + collapsible full read (the lead is shown in

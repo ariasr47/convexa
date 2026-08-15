@@ -831,6 +831,8 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
       target: 12.5,
       stopWithheldReason: null,
       targetWithheldReason: null,
+      // rec-absence-literals-hole (AC-13) — a fully-named rec carries NO reason line.
+      contractWithheldReason: null,
       provenance: 'Pre-filled from AI read · Income Keeper',
       sizingNote: 'sizing note',
       sizeText: '2 contracts',
@@ -849,10 +851,19 @@ describe('ai-rec · recToPrefill (the handoff object)', () => {
     ).toBeNull();
   });
 
-  it('derives the right from structure first, bias as fallback', () => {
+  it('derives the right from structure first, bias as fallback when structure IS stated but names neither word', () => {
     expect(biasToRight({ structure: 'put credit spread', bias: 'long' })).toBe('put');
-    expect(biasToRight({ structure: null, bias: 'short' })).toBe('put');
-    expect(biasToRight({ structure: null, bias: 'neutral' })).toBe('call');
+    expect(biasToRight({ structure: 'iron condor', bias: 'short' })).toBe('put');
+    expect(biasToRight({ structure: 'iron condor', bias: 'neutral' })).toBe('call');
+  });
+
+  // rec-absence-literals-hole (AC-12c) — a NEVER-NAMED structure derives NO direction, even when a
+  // bias is stated: the bias fallback above fires only once structure is confirmed present. Updated
+  // from the pre-feature assertion that `structure: null` derived a direction from `bias` alone —
+  // that is exactly the fabricated-direction defect this feature closes.
+  it('AC-12c — an unnamed structure derives NOTHING, regardless of bias', () => {
+    expect(biasToRight({ structure: null, bias: 'short' })).toBeNull();
+    expect(biasToRight({ structure: null, bias: 'neutral' })).toBeNull();
   });
 
   it('AC-80 — a rec with no size text at all yields `size not suggested`, distinct from `not set`', () => {

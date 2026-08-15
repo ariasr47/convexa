@@ -1532,13 +1532,17 @@ export interface CapCheck {
 
 /** The declared dependency this field was missing, in FIXED priority order. `position_size` is the
  *  only field with two dependencies (risk block, then candidate quotes); when both are absent the
- *  token is `risk_block` (the input the owner can fix), deterministically. */
-export type MissingInput = 'risk_block' | 'candidate_quotes' | 'straddle_move';
+ *  token is `risk_block` (the input the owner can fix), deterministically.
+ *  rec-absence-literals-hole — `candidate_set` is the new fourth member: it means the candidate SET
+ *  the assembler inserted was empty, reachable on `strikes`/`expiration` only. */
+export type MissingInput = 'risk_block' | 'candidate_quotes' | 'straddle_move' | 'candidate_set';
 
 /** `null` when the field has a value; else the closed reason. Computed SERVER-SIDE from which
- *  blocks the assembler inserted — the model is never asked why it left a field blank. */
+ *  blocks the assembler inserted — the model is never asked why it left a field blank.
+ *  rec-absence-literals-hole — `unrecognized_value` is the new third member: the field was STATED but
+ *  off Convexa's scale (reachable on `confidence` only). */
 export interface FieldReason {
-  reason: 'not_given' | 'unavailable';
+  reason: 'not_given' | 'unavailable' | 'unrecognized_value';
   missing_input: MissingInput | null;
 }
 
@@ -1550,6 +1554,14 @@ export interface FieldReasons {
   /** ai-rec-grounding — same shape as its four siblings. Required so `Invalidation` can render through
    *  the shipped closed absence-literal set (`fieldLiteral`) now that it moves onto it. */
   invalidation_level: FieldReason | null;
+  // rec-absence-literals-hole — the six plan/conviction fields. OPTIONAL (`?:`) because a pre-feature
+  // server omits them entirely, and that state is renderable, not an error.
+  structure?: FieldReason | null;
+  strikes?: FieldReason | null;
+  expiration?: FieldReason | null;
+  entry_trigger?: FieldReason | null;
+  time_horizon?: FieldReason | null;
+  confidence?: FieldReason | null;
 }
 
 /** A cited contract exists only when the parsed rec yields EXACTLY ONE `(expiration, strike, right)`

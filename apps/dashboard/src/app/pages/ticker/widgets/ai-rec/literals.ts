@@ -62,6 +62,47 @@ export function fieldLiteral(args: {
   return { kind: 'unavailable' };
 }
 
+// ---- rec-absence-literals-hole: the six plan/conviction fields' sibling selector ----------------
+
+/**
+ * The SIBLING of `FieldLiteral` for the six plan/conviction fields. A PROPER SUPERSET, not a disjoint
+ * union: TS structural typing then makes it impossible to hand a `PlanFieldLiteral` to a parameter
+ * typed `FieldLiteral` without an explicit unsafe cast, so the one new word cannot leak into a shipped
+ * consumer. The shipped union gains no member.
+ */
+export type PlanFieldLiteral = FieldLiteral | { kind: 'unrecognized' };
+
+/**
+ * The sibling selector. Shares the shipped value arms and the `no_trade`-first short-circuit, and
+ * differs in exactly two ways: an EXPLICIT `unrecognized_value` arm, and a fallthrough of `not_given`
+ * rather than `unavailable`.
+ *
+ * ARM ORDER IS LOAD-BEARING (plan R-2): the `unrecognized_value` arm sits AHEAD of the value arms,
+ * because an off-scale conviction arrives as a non-empty string and the shipped value arm would paint
+ * it (AC-24 forbids the raw string reaching the DOM). Everything after it is the shipped value test,
+ * then a CLOSED LOOKUP ON THE WIRE TOKEN ALONE — no null test, no sibling-field inference, no
+ * re-derivation (`[digested-labels-not-raw-dump]`, `[absent-is-not-none]`).
+ *
+ * `unavailable` requires BOTH tokens (plan R-3): the reason AND `missing_input: 'candidate_set'`, the
+ * only missing input any of the six can declare. `not_set` is unreachable here by construction — none
+ * of the six depends on owner input (AC-23).
+ */
+export function planFieldLiteral(args: {
+  decision: RecDecision;
+  value: string | number | null | undefined;
+  reason: FieldReason | null | undefined;
+}): PlanFieldLiteral {
+  if (args.decision === 'no_trade') return { kind: 'dash' }; // first, always
+  if (args.reason?.reason === 'unrecognized_value') return { kind: 'unrecognized' };
+  const v = args.value;
+  if (typeof v === 'number' && Number.isFinite(v) && v !== 0)
+    return { kind: 'value', text: String(v) };
+  if (typeof v === 'string' && v.trim() !== '') return { kind: 'value', text: v };
+  if (args.reason?.reason === 'unavailable' && args.reason.missing_input === 'candidate_set')
+    return { kind: 'unavailable' };
+  return { kind: 'not_given' };
+}
+
 // ---- The cap surface (AC-56/57/58/58a/63) -------------------------------------------------------
 
 export type CapSurface =
