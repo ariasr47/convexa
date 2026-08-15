@@ -450,6 +450,19 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   5 families dispositioned and the inventory set-equality pinned to {liveDotPulse, widgetLivePulse,
   ordersWatchPulse} + the hero draw + flash, with the live-browser inventory verified equal to the KEEP
   set. 2 binding.)*
+- **`[ai-asserted-numbers-are-traceable]`** (promoted 2026-08-14, 2 binding — logged at **0 instances**
+  2026-07-16 as deliberately aspirational, moved to 1 by `ai-rec-grounding`, graduated on the mechanical
+  tally) — every number or field the in-app AI **asserts** is traceable to a computed bundle field, and
+  every field it **omits** says so in a **closed vocabulary** rather than rendering a mark that means
+  something else. `[best-effort-isolated-or-null]` covers the AI *failing*; this covers it **fabricating**
+  and — added by the second instance — it covers it **going silent**. An untraceable figure is never
+  rendered as fact. An absent one is never rendered as a **reserved literal belonging to another state**,
+  and never **pre-typed into an input**: a value the read did not name must not reach a tradeable field by
+  default, inference, or a chain-derived fallback. **Measured, not asserted** — 44.4% of the AI's asserted
+  numbers did not trace at the first instance's ship, and the second instance's own defect was a
+  guaranteed output of a shipped code path, not a rare model slip. *(ai-rec-grounding — per-figure
+  grounding of asserted numbers; rec-absence-literals-hole — the absence half: six fields, one new
+  closed-vocabulary member, and the Accept seam. 2 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
@@ -1005,6 +1018,18 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   empty). **Measured on 10 live recs across 5 tickers: 44.4% of asserted numbers do not trace** — all of
   which rendered as fact before this ship. QA PASS 68/68.
 - Explanatory hover tooltips on every jargon stat/chip/chart.
+
+- **Honest absence on the AI rec (`rec-absence-literals-hole`, both lanes, shipped 2026-08-14)** — the
+  six plan/context fields (`Structure`, `Strike(s)`, `Expiration`, `Entry trigger`, `Time horizon`,
+  `confidence`) render a **closed-vocabulary literal** keyed on a wire reason token instead of a bare
+  `—`, which stays reserved to the `no_trade` risk block. Backend emits `RecPlanField` →
+  `FieldReason` on **every produced response including the local-rules and early-return branches**;
+  `unrecognized` (new vocabulary member, one emit site) means *the read answered off Convexa's scale*.
+  **Accept withholds:** a field the read never named is not seeded, defaulted or inferred into the
+  simulated entry dialog — seam carries `null`, draft carries `''`, and the submit gate rejects it.
+  The input-independent `"1–5 sessions"` time-horizon constant was deleted rather than asserted.
+  Score/tier/`state_fingerprint` byte-identical; `grounding` byte-identical against a pre-feature
+  baseline. Graduated `[ai-asserted-numbers-are-traceable]`. Seams → OPEN_THREADS §7af.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

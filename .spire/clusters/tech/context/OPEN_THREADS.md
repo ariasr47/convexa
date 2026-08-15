@@ -1299,6 +1299,45 @@ PASS 2/2 on both the build lane's and QA's own receipts.** Backend bounce items 
 **GATE Q re-runs on this fix** (not taken on trust). SPEC/INTERFACE/PLAN/the nine guards/D1–D8 were not
 reopened by this bounce.
 
+## 7af. rec-absence-literals-hole — the absence half of AI grounding (SHIPPED + ARCHIVED 2026-08-14 — both lanes)
+
+**What shipped.** Six fields on the AI rec card (`Structure`, `Strike(s)`, `Expiration`,
+`Entry trigger`, `Time horizon`, `confidence`) rendered a bare `—` when the model omitted them, while
+`—` is defined in the `no_trade` branch as *"No entry, so there is nothing to size."* All six sit in the
+**trade** branch, so a card headed `Trade · long` could print `Strike(s): —` — the reserved no-entry
+literal on a card that just told you to enter. They now render through a sibling closed lookup
+(`planFieldLiteral` / `PlanFieldLiteral = FieldLiteral | { kind: 'unrecognized' }`) keyed on the wire
+token. Backend emits a disjoint `RecPlanField` → the **shipped** `FieldReason` struct (never widening
+`RecField`, whose second consumer `resolve_field` has no `f64` for these), with `unrecognized_value`
+built at exactly one site, on **every produced response including the local-rules path**.
+**Accept no longer pre-types what nobody named:** the seam carries `null`, the draft carries `''`,
+mapped at one boundary line, branching on **prefill presence, not field value**.
+
+**GATE Q: 47/47 PASS**, 0 FAIL, 0 UNVERIFIABLE. QA built a **pre-feature baseline in a throwaway
+worktree and identity-proved it before trusting it**; `grounding` came back byte-identical (closing
+SPEC §9 open question 5) and score/tier/fingerprint were unchanged. Conformance receipts agreed
+(builder + QA independent); interface §1a Layer 2 was **run, not recorded as a gap**. Twelve poison
+drills re-run by QA with SHA-verified restores.
+
+**Graduated `[ai-asserted-numbers-are-traceable]`** into canon (2 binding) — see §9.
+
+### Seams left open (park until pulled)
+- **§9.5's residual closes in HALF ONE ONLY.** Half one — the false not-applicability verdict on absent
+  fields — is closed. **Half two survives:** a reader may still infer *"no clause means checked"* from the
+  fields that carry grounding clauses onto stated-but-unchecked ones. It closes only if the future-dated
+  **section-level plan-row caption** ships. **Binding record rule (pm, R3):** no gate report, ledger row
+  or BACKLOG line may record §9.5 as closed while half two stands.
+- **The unconditional DTE-window caption** still renders its containment claim without checking it, and
+  `{dteMin ?? '?'}` can render a literal `?` as a value. Raised at R1, out of scope here.
+- **The two `quoteTextFor` em-dash sites** (`literals.ts:101-102`, null IV / null delta) ship as a named
+  **enumerated exemption**, not a fix.
+- **One wire field, two labels** — `s.confidence` renders as `Confidence` and as `conviction · {level}`.
+- **R-7's refusal copy** (`Not pre-filled — the read named no {labels}.`) is **plan-authored**, confirmed
+  at GATE Q as a `review` row. SPEC §4 constrains the string but never spelled it.
+- **AC-17's parenthetical is imprecise** (recorded at GATE Q, not smoothed): no single poison spelling
+  reds both named places — the typed form reds typecheck + Layer 3, the pre-feature form reds the
+  label-anchored guard. Substance holds; both layers proven non-vacuous.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1498,3 +1537,12 @@ reopened by this bounce.
   inventory is **set-equality pinned** so a new family is build-breaking; surviving motion is that moment
   or a **data signal** by recorded decision, never decoration; all of it respects a shared
   `useReducedMotion`. (redesign-stage-2 · redesign-stage-3.) See PROJECT_CONTEXT §5.
+- **`ai-asserted-numbers-are-traceable`** (promoted 2026-08-14, 2 binding — logged at **0 instances**
+  2026-07-16 as deliberately aspirational, moved to 1 by `ai-rec-grounding`, graduated on the tally
+  here) — every number or field the in-app AI **asserts** must be traceable to a computed bundle
+  field, and every field it **omits** must say so in a closed vocabulary rather than rendering a mark
+  that means something else. `best-effort-isolated-or-null` covers the AI *failing*; this covers it
+  **fabricating and it covers it going silent**. An untraceable figure is not rendered as fact; an
+  absent one is not rendered as a reserved literal belonging to another state.
+  (ai-rec-grounding — the per-figure grounding of asserted numbers, 44.4% measured untraceable ·
+  rec-absence-literals-hole — the absence half, six fields.) See PROJECT_CONTEXT §5.

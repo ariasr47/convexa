@@ -30,6 +30,61 @@
 
 ---
 
+## Last GATE I — 2026-08-14 (pre-registered successor re-tested and CONFIRMED → `rec-absence-literals-hole`; scope revised UP to six fields + both lanes)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/`; `IN_FLIGHT.md` one row, `main` @ GATE S, no
+overlap). **First gate run on spire-os 3.13.0** (the prior ship ran the 3.3.0 driver; the RESUME
+overlay directed this gate to re-derive the catalog from the installed files rather than assume).
+The prior gate and the 2026-08-13 RESUME both pre-registered **`rec-absence-literals-hole`** and
+directed **re-test rather than inherit**. Re-tested and **CONFIRMED — with its scope revised UP.**
+**Chosen → `rec-absence-literals-hole`.** **✓ SHIPPED + ARCHIVED 2026-08-14** →
+`_archive/rec-absence-literals-hole/` (full pipeline both lanes; council 28 conflicts / 28 quotes
+machine-verified / 9 self-revisions / 1 owner ruling + 1 at the review cap; S2 ×2 → R4 ×3; **GATE Q
+PASS 47/47, 0 FAIL** with zero code defects — the one bounce was a canon row the conductor owed).
+Conformance spec promoted to `state/conformance/rec-absence-literals-hole.json` (2 endpoints).
+**GATE S graduated `ai-asserted-numbers-are-traceable`** (2 binding) — the key logged at 0 instances
+2026-07-16 as aspirational; it reached the bar on ordinary recurrence, so the queued severity-path
+question dissolved unasked. Canon folded: OPEN_THREADS §7af + PROJECT_CONTEXT §5/§6 + DESIGN_SYSTEM
+Amendments (`unrecognized`). **⚠ §9.5 closes in HALF ONE ONLY** — half two survives until the
+future-dated plan-row caption ships, and no report may record it closed before then.
+*(original entry:)* Brief at `_archive/rec-absence-literals-hole/BRIEF.md`
+(carries the full `Considered:` cull set). **Both lanes expected.**
+**Why it won:** it is the only survivor whose failure mode is a **wrong trade** rather than a
+degraded, slower or unmeasured one. `ai-rec-grounding` closed the numbers the AI **asserts**; this
+closes the ones it **omits** — the other half of the same hole, and the residual that feature named
+in its own SPEC §9.5. Every other candidate is decision-impact **N/A** by the cull's own test.
+**Queue honesty (code-verified this gate — do not re-open as stale):**
+1. **The entry's line numbers and lane are BOTH wrong** — the third time the "backlog code
+   references go stale" rule has bitten. The file moved to `pages/ticker/widgets/ai-rec/AiRecPanel.tsx`;
+   the bare `?? '—'` sites are **`:1081, :1084, :1090, :1100`**, not `753/1044/1053/1063`.
+2. **It is SIX fields, not four.** `Time horizon` (`:1153`) and `confidence` (`:1158`) carry the same
+   bare `?? '—'` and the 2026-08-13 entry named neither.
+3. **It is NOT FE-only.** `apps/api/src/services/rec_inputs/field_reasons.rs:5` defines
+   `RecField { MaxRisk | PositionSize | ExitTarget | ExitStop | InvalidationLevel }` — the risk/exit
+   fields only. **No reason token exists on the wire for any of the six**, so the frontend cannot
+   distinguish an omission from anything else without a backend addition. Backend lane required.
+4. **The defect is sharper than the entry states.** All six sit in the **trade** branch
+   (`AiRecPanel.tsx:997`), while `—` is defined at `:958` as the `no_trade` branch's *"No entry, so
+   there is nothing to size."* So a card headed **`Trade · long`** can print `Strike(s): —` — the
+   reserved no-entry literal on a card that just told you to enter. The fix mechanism already ships
+   **in the same file**: `fieldLiteral` (`literals.ts:50`), a closed `FieldLiteral` union with a
+   spec'd, tested five-member vocabulary.
+**Runner-up:** the **S5c SSE connection ceiling** — the last genuine MEDIUM from the security review,
+and the one that can take the **current single container** down now that the app is live. Pick it
+next if an availability/backend fast-path is wanted.
+**Flagged RISING for a THIRD consecutive gate, still not chosen:** **`degradation-visibility`**
+(decision-impact N/A, so the cull cannot promote it) — it grew again this ship, since
+`ai-rec-grounding` added more nullable best-effort fields to a system that still aggregates no null
+rates. A rule that keeps rising and can never win the cull is worth an owner decision rather than a
+fourth re-derivation.
+**`project-context-shard-sizes` escalated by this gate's own evidence** (it was already superseded
+by the 3.13.0 doctor's 100KB budget flags): the discovery pack elided the BACKLOG **Pool (1123
+lines)** and the **Ledger (575 lines)** as over-budget — **discovery's own pack dropped the primary
+discovery surface**, and both had to be read directly by targeted Read. The escape hatch worked as
+designed and is recorded here as the signal to fix the pack, per ORCHESTRATOR §3 GATE I.
+**Hygiene batch still unpaid** (`ci-standing-red` + `ports-free-is-ipv4-only` +
+`cargo-fmt-whole-crate-drift` + the :8000 orphan) — carried from the prior gate, unchanged.
+
 ## Last GATE I — 2026-08-13 (pre-registered successor re-tested and CONFIRMED → `ai-rec-grounding`; its feasibility re-grounded UP)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Pipeline drained (`contracts/` held only `_archive/`; IN_FLIGHT showed no overlap). The prior gate and
@@ -900,9 +955,42 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
-- **`rec-absence-literals-hole` — four AI-rec fields print an out-of-set bare `—`** — `NEW 2026-08-13
+- **`project-context-s2-is-python-era` — the canon's Architecture section describes a backend that no
+  <!-- atlas: theme=the-machine horizon=now -->
+  longer exists** — `SURFACED 2026-08-14 (rec-absence-literals-hole GATE PLAN; the planner refused to
+  trust the pack and said so — then conductor-verified)`. **`PROJECT_CONTEXT.md` §2 "Architecture"
+  documents the FastAPI/Python backend** — `main.py`, `src/providers/base.py` (ABC port),
+  `src/core/{engine,signals,live,darkpool,observability}.py` — while the shipped backend is **Axum/Tokio
+  Rust**, crate `api-rust`, under `apps/api/src/services/*.rs`. Measured: **23 Python-era markers** in
+  that section. The Python tree is archived at `archive/api-python/` (CLAUDE.md records the move).
+  **Why this is worse than an ordinary stale doc:** §2 carries the shard tags
+  `architecture,backend,frontend,api,engine,signals,live,sse,providers,observability,ui` — **eleven of
+  the most-used tags in the system**. So *any* feature whose BRIEF tags into the backend receives, as
+  its ground truth, a description of a backend that was deleted. `context_for` is working exactly as
+  designed; the source it shards is wrong.
+  **The connection worth recording:** this is a plausible root cause of the new watch-list key
+  `cited-code-is-verified-not-assumed` (DECISION_LEDGER, 1st instance = this same feature, 3 false
+  claims about existing code in one council). Voices that reason from canon rather than from the tree
+  are being handed Python. The council caught all three only because R1 was explicitly pointed at
+  `.rs` paths and the reviewer read source.
+  **Scope:** rewrite §2's backend half against the Rust tree; keep the frontend half (verified current).
+  Re-tag or split while in there — §2 is also **178 lines, over the 150-line shard threshold**
+  (`contract_lint` warns every run), so it pairs naturally with `project-context-shard-sizes`.
+  *Value H (it silently poisons every backend feature's ground truth) · Effort S–M.* Decision-impact
+  cull **N/A** (system-of-building class). **Do NOT bundle with a product feature** — canon repair
+  wants its own reviewable diff.
+- **`rec-absence-literals-hole` — ~~four~~ **SIX** AI-rec fields print an out-of-set bare `—`** —
   <!-- atlas: theme=trust-the-signal horizon=now -->
-  (raised by the UX voice at ai-rec-grounding R1, code-verified; deliberately cut from that feature)`.
+  `NEW 2026-08-13 (raised by the UX voice at ai-rec-grounding R1, code-verified; deliberately cut
+  from that feature)` → **✓ PROMOTED at GATE I 2026-08-14** (brief at
+  `.spire/clusters/tech/contracts/rec-absence-literals-hole/BRIEF.md`).
+  ⚠ **This entry's specifics are CORRECTED by that gate — read the 2026-08-14 GATE I note above
+  before trusting the text below.** Three corrections, all code-verified: the file moved to
+  `pages/ticker/widgets/ai-rec/` and the sites are **`:1081/:1084/:1090/:1100`**, not the ones named
+  below · **`Time horizon` (`:1153`) and `confidence` (`:1158`) carry the same defect**, making it six
+  fields · and it is **NOT FE-only** — `field_reasons.rs:5`'s `RecField` covers only the five
+  risk/exit fields, so **no wire reason token exists for any of the six** and a backend lane is
+  required. Effort **S–M**, both lanes. *(original entry:)*
   `Structure`, `Strike(s)`, `Expiration` and `Entry trigger` render `—` via bare `?? '—'` /`fmtNum`
   (`AiRecPanel.tsx:753`, `:1044`, `:1053`, `:1063`) — **outside** the closed not-a-number vocabulary,
   where `—` is defined as "No entry, so there is nothing to size." So a model that simply omitted the
@@ -957,6 +1045,17 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   public-surface leg PASSES. Value M–H (a standing-red CI trains everyone to ignore it — the classic
   alarm-fatigue failure) · Effort S–M. The 2 unused directives our feature added to
   `riskInputs.spec.tsx` were fixed same-day (post-ship cleanup commit).
+  **NEW INSTANCE + a named line, 2026-08-14 (`rec-absence-literals-hole` GATE Q):** `nx lint` is red at
+  **`stage3-headings.spec.tsx:278` — "Unexpected empty arrow function."** QA proved it **pre-existing**
+  (empty diff vs the lane's `$BASE`; reproduces in a pristine `5f16202` worktree), so it was not a
+  bounce — **but the build lane had reported "lint green," which was an unverified claim and wrong.**
+  That is the precise cost of a standing red: it stops being read, so a lane reports the colour it
+  expects. **`npm run ci` cannot be green today.** The lint fix itself is one line.
+  **Verification-integrity lesson from the same pass, worth keeping regardless of this item:**
+  QA found `nx typecheck` returned a **cache hit (34 ms)**, and even `--skip-nx-cache` did no work
+  (245 ms). **A cached green is not an observation.** Only a forced `tsc --build --force` is evidence
+  (it was green). Any gate claiming a typecheck as runtime evidence must force the build or say it
+  did not.
 - **The :8000 orphan rewrites `data/scan.json`** — `NOTE 2026-08-12`, sits beside the existing
   `ports:free` IPv4-only entry below —
   <!-- atlas: theme=the-machine horizon=now -->
@@ -1608,6 +1707,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `tradeable-rec-inputs` GATE I (2 ERRORs, BRIEF/manifest checks clean; judged non-blocking, recorded).
   Kit fix: stage-aware severity — a manifest whose `Stage:` is GATE I downgrades M3/M8 to warn.
   Propose in `KIT_BACKLOG.md`; do NOT edit `contract_lint.mjs` in place.
+  **SECOND OBSERVATION 2026-08-14** (`rec-absence-literals-hole` GATE I, **on spire-os 3.13.0** — so
+  ten versions did not fix it): byte-identical symptom, 2 ERRORs (M3 `SPEC.md` + M8
+  `INTERFACE_CONTRACT.md`), BRIEF and manifest checks clean, judged non-blocking again. The cost is
+  not the false ERROR itself but that a **GATE-I folder can never be gate-green**, so the one
+  mechanical signal guarding the route into the council is trained to be ignored there — the same
+  alarm-fatigue shape as `ci-standing-red`. Recurrence now recorded twice; propose upstream.
 - **⚠ `git stash` while lanes run DESTROYS sibling uncommitted work** — `NEW 2026-08-13`, earned the
   hard way at `tradeable-rec-inputs` —
   <!-- atlas: theme=the-machine horizon=now -->

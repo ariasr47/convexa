@@ -1,0 +1,32 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "query": {},
+      "required": {
+        "market_state.ticker": "string",
+        "signals.opportunity_score": "number",
+        "signals.opportunity_tier": "string",
+        "ai_eval.state_fingerprint": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": {
+        "ticker": "SPY"
+      },
+      "query": {},
+      "required": {
+        "availability.in_app_enabled": "boolean",
+        "gate.state": "string",
+        "cap.over_limit": "boolean",
+        "cap.remaining_today": "number"
+      }
+    }
+  ]
+}

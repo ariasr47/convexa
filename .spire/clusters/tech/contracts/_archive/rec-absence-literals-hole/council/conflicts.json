@@ -1,0 +1,363 @@
+{
+  "conflicts": [
+    {
+      "quote": "**Backend widens `RecField` (`apps/api/src/services/rec_inputs/field_reasons.rs:5`) with six members** \u2014 `Structure`, `Strikes`, `Expiration`, `EntryTrigger`, `TimeHorizon`, `Confidence` \u2014 and `FieldReasons` on the wire gains the matching six optional keys, emitted on **every** `produced` response including the local-rules fallback.",
+      "source": "ux",
+      "why": "`RecField` has a second consumer that these six cannot serve. `resolve_field(field: RecField, asserted: Option<f64>, ...)` (`grounding.rs:230`) is documented at `:227-229` as a `match RecField` with no wildcard arm and no exemption, and it takes an `Option<f64>` and nothing else. None of the six is an f64: structure / entry_trigger / time_horizon are prose, expiration is a date string, strikes is a number array, confidence is a band token. Six new arms could therefore only return `FieldGrounding::bare(GroundingState::NotApplicable)` \u2014 and in that function `not_applicable` already means the field carries no value (`:242`, `:246`, `:251`), so a PRESENT structure would be filed as absent. Widening also drops the six into the `all` array at `recommendation.rs:524`, which feeds `counts()` and the user-visible `some_traced (n of m)` line, and it forces hand-edits to two shipped guards (`grounding.rs:519`, `:559`) that enumerate the five by hand precisely so the set cannot change silently.",
+      "proposal": "Keep `RecField` at exactly five. Add a disjoint sibling enum `RecPlanField` (six members) plus `plan_field_reason(field, value_present, presence) -> Option<FieldReason>` in the same file, returning the SHIPPED `FieldReason` struct unchanged. Every wire consequence ux assumed is preserved verbatim \u2014 six optional `FieldReason | null` keys added to the same `field_reasons` object, emitted on every produced response including the local-rules path \u2014 so UX-1, UX-6 and UX-19 are unaffected by the change of mechanism. Add a tally test pinning `RecField` at 5 members and `RecPlanField` at 6 so a later hand cannot quietly merge them.",
+      "kind": "technical",
+      "conflict_id": "1d732b04e938dd635c51f472b2a71278ceabd06474a4da625d856c8f6792852f",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`unavailable` renders on `Strike(s)`/`Expiration` only, and only under `missing_input: candidate_quotes`.",
+      "source": "ux",
+      "why": "`candidate_quotes` is not the flag ux thinks it is. It is set from `set.has_quoted_contract()` (`recommendation.rs:460`) \u2014 true only when the set holds a contract carrying a two-sided QUOTE, which is strictly stronger than the assembler having given the read contracts to name. A set of forty unquoted contracts makes `candidate_quotes = false`, so a read that simply declined to name a strike would render `unavailable` (\"An input this needed was missing this cycle\") when `not given` is the truth. That is the same absent-is-not-none collapse this feature exists to close, reproduced one layer up by the fix. It also mis-fires on the very fixture ux nominates: the local-rules card emits `strikes: []` / `expiration: null` unconditionally, independent of what the set holds.",
+      "proposal": "Keep the first half of UX-6 \u2014 `unavailable` reachable on `Strike(s)`/`Expiration` only \u2014 but key it on a NEW `MissingInput` member meaning the candidate set was EMPTY (set non-empty, not quote-bearing). That is the dependency the model actually had. If council judges a new `MissingInput` member too costly for the copy it obliges, the correct fallback is my R1 \u00a72(b) fallback: all six always `not_given` and `unavailable` structurally unreachable on all six. What is not available is reusing `candidate_quotes`, because that is the one option that renders a cause we know to be false.",
+      "kind": "technical",
+      "conflict_id": "8e25875a12f316c36ca60967f432cacf6d6ef34de84f93619c6f24b13492f46a",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each of the six selects its literal by closed lookup on the wire token alone. No `??`, no `.length`, no `''`/`0`/`null`/`undefined` test decides which literal renders.",
+      "source": "ux",
+      "why": "As written this reds against the shipped function ux asks me to reuse. `fieldLiteral` (`literals.ts:56-59`) decides `{ kind: 'value' }` by testing the value itself \u2014 `typeof v === 'number' && Number.isFinite(v) && v !== 0` and `typeof v === 'string' && v.trim() !== ''` \u2014 and `value` is a member of `FieldLiteral`, so a rule that no null/empty test may decide which literal renders forbids the shipped value arms and the specs that pin them (`literals.spec.ts`). The token cannot carry that decision: a reason token exists only when the value is absent, so a token-first switch would blank a PRESENT value whenever the server's presence predicate disagreed with the payload it shipped beside. `strikes` is `number[]` on the wire, so some `.length` test must join or nullify it before any lookup can run.",
+      "proposal": "Scope UX-3 to the absence branch: which ABSENCE literal renders is a closed lookup on the token alone, with no null test and no re-derivation; value-versus-absent stays the shipped value test. Every rule ux wants (no browser-side cause invention) survives, and the shipped arms stay untouched. The stricter form is only reachable if the backend emits `strikes: null` instead of `[]` \u2014 a type change to a shipped wire field with five existing consumers, which I would not spend on this feature.",
+      "kind": "technical",
+      "conflict_id": "93f24b9f462ec347bd69b7676ea965e3a79d06d83b66e8a2a54258e8838e7cab",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`grounding.counts.checked` stays at three.",
+      "source": "ux",
+      "why": "The intent is right and I share it; the number is wrong, and it is the kind of number that gets pinned into a SPEC acceptance criterion and then reds the build against shipped behavior. `counts` documents `checked` as the qualifying fields PLUS the cited contract when its state is not None (`grounding.rs:297-298`), and the shipped guard `the_denominator_excludes_the_dollar_risk_figure_and_the_suggested_size` (`grounding.rs:613-615`) asserts `counts(&full_model_rec_fields(), CitedState::Cited).checked == 4`. Written as three, the AC fails on a card that has changed in no way.",
+      "proposal": "Restate the invariant as unchanged-ness rather than a number: `grounding.counts` is byte-identical to today and the shipped `checked == 4` guard passes UNEDITED. That is also the stronger claim, because it pins all four fields of `Counts` and the guard's own text, not one integer.",
+      "kind": "technical",
+      "conflict_id": "5b2404621cc96b433e2a73bad277972de477f697b3345ade2b2ab415c835d58d",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "That is my defining failure mode, already shipped, on the one field the brief lists last.",
+      "source": "ux",
+      "why": "It is not one field, it is four, and the other three are invisible to UX-11 as scoped. The same function fabricates `structure` \u2014 `top.get(\"strategy\")` with `unwrap_or(\"defined-risk structure\")` (`recommendation.rs:803-806`) \u2014 hardcodes `\"time_horizon\": \"1\u20135 sessions\"` (`:829`), and synthesises `\"entry_trigger\": format!(\"At/near {name}\")` where `name` itself falls back to `\"Setup\"` (`:802`, `:824`). So on the local-rules trade card FOUR of the six render values nobody stated and only `strikes` and `expiration` are genuinely absent. A feature whose primary observed-by fixture is that card cannot claim it closed the absence hole there while three further Convexa-invented values render as the read's own words.",
+      "proposal": "Extend UX-11 from conviction to every one of the six whose value on that path is a Convexa default rather than a stated one, and rule each of them one of two ways: Convexa's rules legitimately AUTHOR the value (then it is a stated value from a named producer and it stays), or the default merely fills a hole (then it becomes `null` plus a `not_given` token). My reading of the code: `entry_trigger` is authored (it names the actual setup) except for its `\"Setup\"` fallback; `structure` and `time_horizon` are fills. The scope of any deletion is PM's; the architectural floor is that the SPEC must not claim absence is closed on that card while the defaults stand.",
+      "kind": "technical",
+      "conflict_id": "a8b45b28624513471fe5e315e7541237b9661f920101bac88395fb4bfd27d4ed",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Clicking **Accept** on a trade card where `Structure`, `Strike(s)` or `Expiration` was never named opens the simulated entry surface with **no value pre-typed** in the corresponding field, and a one-line reason stating the model did not give it.",
+      "source": "pm",
+      "why": "The correction pm asked for at R2, in both directions. Accept DOES seed, and worse than pm assumed: `recToPrefill` (`prefill.ts:59-86`) sets `strike: strategy.strikes.length ? strategy.strikes[0] : 0` with the function's own doc saying the dialog snaps to the nearest available strike from there \u2014 so an omitted strike already becomes a chain-derived strike, which is precisely what AC-12's last sentence forbids. But `no value pre-typed` is not reachable at this feature's size: `AiPrefill` types `expiration: string` and `strike: number`, neither nullable (`prefill.ts:20-23`), so blanking them means widening the shared prefill seam and changing `features/trading/tradeEntry/TradeEntryDialogView.tsx` \u2014 a file outside the ai-rec folder that a shipped guard spec pins by exact path (`ai-rec.grounding.spec.tsx:516`). And `Structure` has no field to blank at all: it feeds `biasToRight` (`prefill.ts:40-46`), which parses the free-text structure and defaults to `call`, so an omitted structure produces a fabricated option RIGHT, not an empty input.",
+      "proposal": "Split, and let the owner rule on the split rather than discover it at build. This feature ships the six literals plus the wire tokens (the BRIEF's scope, my path allow-list, S\u2013M). The prefill fix books as its own item where the nullable seam and the `call` default are the subject rather than a rider on a display fix. If the owner rules the Accept half IN now, AC-12 must be re-worded for `Structure` (there is no structure input to leave empty; the observable is the derived `right`), the file allow-list must grow a third tree, and the effort must be re-priced off S\u2013M.",
+      "kind": "product",
+      "conflict_id": "2ef39a6d2f9bd55a07c1dd9df4e4f7577abd70a67eb07106fd9198d124b7533a",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A **trade** card missing one or more of `Structure` / `Strike(s)` / `Expiration` / `Entry trigger` displays **exactly one** card-level line stating the rec is not actionable as given and naming the missing field(s).",
+      "source": "pm",
+      "why": "On one shipped path the base rate is 1.0, not unknown. With `AI_REC_LOCAL_ONLY` set (`recommendation.rs:659-661`, the free-CI / offline-demo switch), `local_strategy_from_bundle` emits `\"strikes\": []` and `\"expiration\": null` on EVERY trade verdict (`:822-823`). So the standing line fires on one hundred percent of local-rules trade cards \u2014 including the card ux nominates as this feature's primary observed-by fixture \u2014 directly beside a card-level grounding line that already says there is no AI read here. A card-level claim that is unconditional on a path carries no information on that path, and it makes the demo and CI card read as broken in exactly the way pm's own Risk 3 fears.",
+      "proposal": "AC-10 must say which of two things it means, because as written it silently picks the second. Either the standing line keys on the grounding card member as well as the missing set, and is exempt on `local_rules` (mechanism: `card_member` already receives `local_only` at `recommendation.rs:526`, so the distinction is on the wire today and needs no new derivation); or the line is accepted as permanent on that path and the SPEC says so, so nobody later reads it as a regression. I have no preference between them \u2014 I need the AC to name one.",
+      "kind": "technical",
+      "conflict_id": "8552f7114aefd9f4f21dc29fe682da100f3257c8c6d4bc6c07caa14ac81cecc0",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**An ABSENT `field_reasons` block renders `unavailable`, and I am NOT adding a sixth `FieldLiteral` member for it.**",
+      "source": "architect",
+      "why": "Self-revision \u2014 I withdraw the first clause. My defence was that the only way the block is absent is a pre-feature server or a local fallback, where `unavailable` is true. Having read ux's degraded row, that is wrong: on a pre-feature server nothing failed, the server simply never learned the token, and `unavailable`'s shipped copy asserts that an input this field needed was missing THIS CYCLE \u2014 a named cause we invented. `not_given` asserts less and stays true in that state. This is the same standard I applied to ux in the `candidate_quotes` conflict above, and it convicts me first.",
+      "proposal": "Adopt UX-19: with no token, the six render `not_given`, and `unavailable` on the six is reachable ONLY from an explicit `missing_input` token, never from a fallthrough. Mechanism, since `fieldLiteral`'s fallthrough (`literals.ts:62`) is `unavailable` and must not change for the shipped five: the six take a sibling selector in the same file that shares the value arms and inverts only the final fallthrough, with one test pinning BOTH defaults so a later merge of the two functions reds. The second clause of my sentence stands unchanged \u2014 block-absence still earns no sixth `FieldLiteral` member.",
+      "kind": "technical",
+      "conflict_id": "acfb95e9e9f776814050e067e6b16bd02e49815fd36c6ac374af8ba040b5cfab",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "the server reports `value_present = false` for an out-of-set confidence, and the FE **additionally** maps through a closed table so a nonconformant server still cannot paint raw model prose.",
+      "source": "architect",
+      "why": "Self-revision \u2014 ux is right that this collapses two different facts inside my own mechanism. Reporting `value_present = false` for an off-scale confidence routes it into `plan_field_reason`'s `not_given` arm, so the wire says the read declined to answer when in fact it answered and the answer is off Convexa's scale. That is `absent-is-not-none` failing in the fix. The second half of my sentence (the FE closed lookup) stands; the first half does not.",
+      "proposal": "Make the distinction on the wire, which is cheap and which I now propose regardless of how the vocabulary question is ruled: `ReasonKind` (`field_reasons.rs:15-18`) gains a third member for off-vocabulary, emitted ONLY by the plan-field function and forbidden on the shipped five by test, so `fieldLiteral`'s two existing reason arms and the five shipped fields are untouched. Whether the browser then mints a sixth `FieldLiteral` member or renders that token through an existing one is a vocabulary call between ux (who proposes `unrecognized`) and pm (whose out-4 forbids a new absence word); my mechanism serves either and I take no side.",
+      "kind": "technical",
+      "conflict_id": "6b92405b15afb9d7c88f4d09d30f78af0d317e18f8b4833285c0f0ab2b2f899c",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Accept currently seeds contract fields from the rec.",
+      "source": "pm",
+      "why": "Withdrawn \u2014 I flagged this as my most falsifiable assumption and the architect settles it: the six are display-only and none of them seeds the entry surface. My B3 and B4 rulings and AC-12 and AC-13 were all built on the opposite footing. As written AC-12 pins a behavior that already holds today and reads as a change the build would have to invent, which is a silent no-op criterion \u2014 the exact thing my lane exists to keep off the list.",
+      "proposal": "Withdraw B4 entirely: with no prefill of these fields there is nothing to leave empty, so the empty-with-reason versus hard-block question is moot and no new refusal vocabulary is minted. Restate B3 as a standing prohibition rather than a change \u2014 this feature must not introduce seeding of a never-named structure, strike or expiration into the entry surface. AC-12 becomes negative space: accepting a trade rec whose structure, strike or expiration was never named puts no value into the entry surface and infers none from the chain, the ticker, a prior position or a default; verify by review of the entry path, not by a new automated test. AC-13 stands and is now trivially satisfied. Net effect: this feature narrows by half a ruling, and the safety property it was protecting turns out to be already true.",
+      "kind": "technical",
+      "conflict_id": "c7c2002e2f0bed94b4b661a17eab12ff0fac4567e4ae093c5fb75647e98cb41d",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a **no_trade** card, all six rows still display `\u2014`, unchanged from today, and **no** absence literal from this feature appears anywhere on that card.",
+      "source": "pm",
+      "why": "Withdrawn \u2014 factually wrong, and it was ship-blocking. UX and the architect independently establish that five of the six rows never mount on a no-trade card at all, and that the sixth renders as a chip that shows nothing when absent. AC-3 therefore asks a checker to observe six rows that do not exist. The reserved mark on that card belongs to the four risk fields, not to these six.",
+      "proposal": "Split into two observable criteria. (a) On a no-trade card, the four position-defining rows and the horizon row do not render at all \u2014 no row, no literal, no reserved mark, no skeleton, no ghost. (b) On a no-trade card the four risk fields keep the reserved mark and their current copy, unchanged from today. US-2 is unharmed and better served: the reserved mark keeps exactly one meaning, on exactly the fields entitled to carry it. My AC-16 (the reserved mark appears only where no entry exists) survives unchanged and becomes the sweep that protects both halves.",
+      "kind": "technical",
+      "conflict_id": "79a2ec6d10461cad1f641b178c25ae0b71188ae5cf6eaef016127db0217028e3",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "The response arrived but carries no usable reason for this field \u2014 an older or degraded response.",
+      "source": "pm",
+      "why": "Withdrawn. I filed the degraded and pre-feature case under the shipped literal whose copy tells the reader an input this rec needed was missing this cycle. On a response from a build that never learned these reasons, nothing was attempted and nothing failed \u2014 so that literal states a cause no producer ever gave. That is a fabricated cause, which is this feature's own defect pointed the other way, and it is my defining failure mode: a degraded state buried under the happy-path vocabulary instead of being ruled on its own terms.",
+      "proposal": "Two corrections. (1) The degraded and pre-feature state renders the never-stated literal; the missing-input literal is reachable only when the response explicitly declares a missing input, never as a fallback. AC-5 and AC-6 name the literal instead of saying an honest absence literal. (2) AC-4's three-distinct-strings fixture is restated on the corrected footing: the three facts a reader must keep apart are never-stated, Convexa's own input missing (reachable only on Strike(s) and Expiration), and the reserved no-entry mark on the risk fields. There is no longer a distinct degraded-response fact for these six, and no criterion may imply one.",
+      "kind": "technical",
+      "conflict_id": "faf2c64749e8ddbda1e6cdb19dcbd73f2f724f45aad375701ef6627aed1e08a6",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**No change to the `no_trade` branch.** `\u2014` there is *correct* and stays.",
+      "source": "pm",
+      "why": "Narrowed. I wrote that fence believing the six rendered the reserved mark on no-trade cards, which my AC-3 withdrawal now retracts. Its actual purpose \u2014 the reserved mark keeps exactly one meaning \u2014 is untouched by UX's finding that an absent conviction on a no-trade card renders nothing at all. Rendering nothing is not neutral: it teaches a reader that the card has no conviction field, which is the same absence-collapse expressed as layout rather than as copy. The architect's zero-diff commitment names a line range that does not contain that chip, so both commitments can stand.",
+      "proposal": "Narrow the fence to: on a no-trade card, the four risk fields, their reserved mark and their copy do not change. Admit exactly one addition \u2014 an absent conviction on a no-trade card renders the never-stated literal rather than nothing, and never the reserved mark. This is a one-field, one-branch scope expansion and I am flagging it as such rather than absorbing it: if the human prices it out, it is future-dated as a named residual, not silently dropped.",
+      "kind": "product",
+      "conflict_id": "62abd5432cded815832e2beca7604c7bbb0a61d0811510a99e31085a81ee2c0f",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "A committed artifact records, over **N \u2265 10 real trade-verdict recs**, how many times each of the six fields was omitted.",
+      "source": "pm",
+      "why": "Withdrawn as written. UX establishes the omission is deterministic on Convexa's own rules path, and the architect states that a rate across model-produced recs needs live calls, a supplied key and daily cap spend. A floor of ten real recs therefore makes a deliberately non-gating measurement depend on a resource the gate may not have \u2014 an unverifiable criterion. My unknown-base-rate risk is also half-answered already: on the keyless path the rate is one hundred percent.",
+      "proposal": "Restate: the gate records, across whatever trade-verdict recs it actually observes, how many carried an unnamed position-defining field, and records N honestly \u2014 no floor, no threshold, still non-gating, and a zero observed rate on the model path still does not retire the feature. Any rate across model-produced recs over time is future-dated to the degradation-visibility item, which is already flagged rising. The primary observed-by fixture becomes the keyless rules-path card, which needs no key and spends no cap.",
+      "kind": "product",
+      "conflict_id": "79366d0a344b6930dc5f9d1b5b2a5ec265b426691199bd32b776238504c2f0bb",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "An ABSENT `field_reasons` block renders `unavailable`, and I am NOT adding a sixth `FieldLiteral` member for it.",
+      "source": "architect",
+      "why": "The second half I ratify \u2014 no new vocabulary member for block-absence. The first half cannot stand. The shipped copy behind that literal tells the reader an input this rec needed was missing this cycle. When no reason information reaches the browser at all, the only true statement is that nothing was stated and Convexa is naming no cause; asserting a missing input is a cause no producer gave. UX rules the same way on its degraded row, so two of three voices land on the opposite default, and the architect's own justification for it \u2014 that the block is absent only on a pre-feature server or a local fallback, where the missing-input reading is true \u2014 is undercut by the architect's own degenerate-case handling, which makes the rules path emit reasons rather than omit the block.",
+      "proposal": "Keep the vocabulary at five members. Change only the default: when no per-field reason reaches the browser, all six render the never-stated literal, and the missing-input literal becomes reachable only from an explicitly declared missing input. No new member, no new copy, and the architect's argument that block-absence does not earn its own word is preserved intact.",
+      "kind": "technical",
+      "conflict_id": "a453925eb273dbb4eff96cd0670fd6a66c102b0eafd19615e949081a296f99a6",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Under `[digested-labels-not-raw-dump]` the wire token is authoritative and the FE renders by closed lookup: the server reports `value_present = false` for an out-of-set confidence, and the FE **additionally** maps through a closed table so a nonconformant server still cannot paint raw model prose.",
+      "source": "architect",
+      "why": "I ratify the behavior change this explicitly asks me to ratify: an off-scale conviction must never paint raw text on the card. But reporting it as not-present routes it to the never-stated literal, and the read did state something \u2014 it stated something off Convexa's scale. Collapsing it answered off our scale into it never answered is the hard absent-is-not-none rule broken by the fix itself, which is precisely the argument the architect makes against reusing the shared presence closure. Ratifying one half and swallowing the other ships a smaller copy of the defect this feature exists to close.",
+      "proposal": "Report a stated-but-off-scale conviction as its own reason, distinct from never-stated and from missing-input, so the browser can separate the two by lookup rather than by inspecting the string. Whether the browser then spends a new vocabulary word on it or reuses an existing one is the copy decision UX is already routing to the human as an amendments event; this conflict asks only that the response stop merging two facts into one. If the human refuses a new word, the resulting collapse must be booked as a named surviving residual, not absorbed silently.",
+      "kind": "technical",
+      "conflict_id": "37648f312ef3d9a51919b5c72f203bc5e587b81595646879dd24c9ee30c5bb06",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "| `confidence` | non-null **and** a member of `{low, medium, high}` | none | always `not_given` |",
+      "source": "architect",
+      "why": "This predicate cannot see the defect UX found. On the rules path the server itself supplies a conviction level when the setup states none, and that supplied level is a member of the scale \u2014 so the predicate reads it as stated, no reason fires, and the card goes on asserting a conviction nobody gave, on every keyless rec. Taking the position the dispatch asks for, and ruling it rather than routing it: the fabricated value is IN SCOPE for this feature. It sits on one of the six named fields; it is the most severe instance of the defect on this card, because an absence rendered as a confident assertion carries nothing on screen to flag it, unlike an absence rendered as the wrong mark; and no display-side change can repair a value the server invents. My Class B ruling still holds \u2014 this field gets no card-level standing line \u2014 but a class being softer is not a licence to let a fabrication through. The architect's own note says PM ratifies this behavior change, so it is mine to rule and I have; what remains between us is the mechanical fact that the stated predicate cannot detect it.",
+      "proposal": "Stop supplying a conviction the producer did not state; emit no value plus the never-stated reason, and let the closed lookup render it. I ratify the visible consequence in advance: cards that today read a stated middling conviction will read the never-stated literal, and on the rules path that is every card. Ship-blocking criterion: no conviction level renders on the card that its producer did not state \u2014 observable by producing a rules-path rec whose setup states no conviction.",
+      "kind": "technical",
+      "conflict_id": "78a4e7b91308b62491cac7144b4e5fdd7b65aad5caef925333935e4b389c44d8",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "To close half two **without a per-field marker**, I want exactly one thing: a **section-level caption under the plan row**, an instance of the pattern already shipped and council-approved for precisely this problem (`REASONING_PROSE_NOT_CHECKED`, which sits with the reasoning and says prose numbers are not checked).",
+      "source": "ux",
+      "why": "This caption and my card-level not-actionable-as-given line are two card-level honesty statements proposed independently, on a card that already carries the grounding line and a refusal line. UX counts four such statements with the caption; with mine it is five, and the risk both of us named \u2014 a wall of caveats a trader stops reading \u2014 becomes the thing we shipped. They are not the same fact and neither is redundant: mine is conditional and instance-specific (this rec is missing a named field, so it cannot be acted on as written) and fires only when something is actually wrong; the caption is unconditional and scope-general (Convexa never checks these fields) and fires on every trade card. Neither collides with the grounding line's fact, so the collision is line budget, not meaning \u2014 and UX's own rules-path finding makes it concrete: on the keyless path both lines would fire on one hundred percent of cards. Which statement earns the space is a value call, not a fact.",
+      "proposal": "My recommendation, for the human to accept or overturn: ship the conditional standing line as ship-blocking, future-date the unconditional caption. The failure this feature exists to prevent is acting without noticing, and only the conditional line interrupts that; a line printed on every card is read once and then never again. If the caption is cut I adopt UX's own condition without argument \u2014 the spec must NOT claim the grounding residual closes, and must re-book the inference half as a surviving, named residual. If the human prefers the caption, then the per-row literals plus the caption carry the feature and I withdraw the standing line rather than ship both. What I will not accept is shipping both and discovering the budget at first use.",
+      "kind": "product",
+      "conflict_id": "532e12570f3a03591a3339d40b075d1836fda6120b2673b88cc5e9fd69207751",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Under `[digested-labels-not-raw-dump]` the wire token is authoritative and the FE renders by closed lookup: the server reports `value_present = false` for an out-of-set confidence, and the FE **additionally** maps through a closed table so a nonconformant server still cannot paint raw model prose.",
+      "source": "architect",
+      "why": "The two-sided closed lookup is right and I accept it. What cannot stand is routing an out-of-set confidence through `value_present = false`, because the only reason token that predicate can produce is `not_given`, whose shipped copy says the read did not state one. An answer of `moderate` IS a stated answer \u2014 the read answered, off our scale. Reporting it as never-stated is `[absent-is-not-none]` collapsing inside the fix, in the same shape architect \u00a72(a) correctly refuses for `\"\"` and `[]`. I have no honest string for it: `not given` renames a stated answer as an omission, and `unavailable` invents a missing input. This is the one place the shipped five genuinely cannot speak.",
+      "proposal": "Keep architect's no-new-wire-type rule intact: the six keys stay `FieldReason | null` with the shipped `{ reason, missing_input }` shape, and `confidence` emits a THIRD reason value on the existing enum \u2014 `unrecognized_value` \u2014 rather than a `value_present` false. That is one new enum value on an existing type, not a new type, block or endpoint. Whether the browser then renders a sixth `FieldLiteral` member or folds it to an existing one is the separate product question I raise against pm; the wire must at minimum stop erasing the distinction, because copy cannot recover a fact the token threw away.",
+      "kind": "technical",
+      "conflict_id": "3981718337bd9e4f9b0d182b0b81f71b7668525ded8b1aeec008c18eb82d40fd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "And the only way the block is absent is a pre-feature server or a local fallback, where `unavailable` is *true*.",
+      "source": "architect",
+      "why": "It is not true on either path, and this is my defining failure mode: the shipped copy for `unavailable` is *An input this needed was missing this cycle.* On a pre-feature server no input went missing \u2014 the server is simply older and emits no token, and the sentence asserts a cycle-local failure that did not occur. On the local-rules fallback (`recommendation.rs:818-835`) the truth is that Convexa's own rules never name a strike or an expiration; nothing was attempted and nothing failed. Worse, that card already says so at card level (`GROUNDING_CARD.local_rules`), so the two lines would contradict each other on one card. The block-absent case does not need a sixth `FieldLiteral` member \u2014 I agree with architect's non-goal 1 there \u2014 it needs a different default.",
+      "proposal": "Keep the union at five for block-absence and change the degraded default only: an absent or unparsed `field_reasons` block renders `not given` on all six, never `unavailable` (my UX-19). `unavailable` becomes reachable on `Strike(s)` / `Expiration` ONLY from an explicit missing-input token, never from a fallthrough. Whether that is a sibling selector, a parameterised `fieldLiteral`, or an explicit default argument is architect's call \u2014 my requirement is only that it stays a closed lookup on the token and never becomes a null test.",
+      "kind": "technical",
+      "conflict_id": "a516e662199821b1a5e3765c25d4b778527abcd9145089d5de20b225df7d97dd",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**UX accepts the `no_trade` conviction chip staying conditional** (absent \u2192 renders nothing) while the trade card's confidence renders a literal.",
+      "source": "architect",
+      "why": "Answering the direction architect asked for: I do not accept it. `AiRecPanel.tsx:943` renders `{s.confidence && <Chip .../>}`, so an absent conviction on a no_trade card renders NOTHING \u2014 silently. That is `[absent-is-not-none]` collapsing at the render boundary on the one field of the six that does mount in that branch, and a reader cannot distinguish a read that stated no conviction from a chip that was never there. pm fences this too \u2014 *No change to the `no_trade` branch.* \u2014 which is why I raise it as a ruling rather than settle it. Note the cost is smaller than architect assumes: `:943` sits in the no_trade hero, OUTSIDE the `:956-996` range architect committed to a zero-line diff, so fixing it leaves that commitment intact.",
+      "proposal": "Direction: make `no_trade` conviction render the literal `not given` when absent \u2014 never `\u2014` (which means no entry, so there is nothing to size, and conviction is not a sizing field), never nothing. The `:956-996` risk-field block keeps its zero-line diff and `\u2014` stays reserved to it. If the human rules this out of scope, the SPEC must book it as a named surviving instance of `absent-is-not-none` on this card rather than let it read as closed.",
+      "kind": "product",
+      "conflict_id": "506bb34d414563b6b4f4160cc882a02b56ede6091cef8cc5d5ed3bf453393ff4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**No new absence word.** Every literal rendered must come from the vocabulary already shipped.",
+      "source": "pm",
+      "why": "I hold this rule for five of the six fields \u2014 my \u00a72 table adds no new word for Structure, Strikes, Expiration, Entry trigger or Time horizon. It cannot hold for `confidence`, the only banded field, which can come back with a stated answer that is not `low|medium|high`. The shipped five say: it has a value / no entry applies / set your risk inputs / an input failed this cycle / it did not state one. None of them can say *it answered, and the answer is not on our scale*. Folding that into `not_given` is the same collapse pm's own binding requirement forbids one paragraph earlier, and pm's risk 6 already concedes the exit: *the honest answer is one addition with a recorded rationale*. This is a user-facing vocabulary change on a canon surface, so it is the human's to rule, not mine to append.",
+      "proposal": "Exactly ONE addition, narrow and single-sourced: `unrecognized` \u2014 *The read named a conviction outside Convexa's scale. Convexa shows low, medium or high only \u2014 it won't repeat an answer it can't place.* Emittable from exactly one place (the confidence enum validation) so it cannot become a second `unavailable`, and recorded as a DESIGN_SYSTEM **Amendments** row on the 2026-08-12 precedent (which already records two new members of this same closed vocabulary), appended by the synthesizer after the human rules \u2014 not restated as a design system in SPEC \u00a74. If the human refuses the addition, then the honest fallback is that the SPEC books an explicit residual saying an off-scale conviction renders as an omission, and UX-10 is struck rather than quietly satisfied by `not given`.",
+      "kind": "product",
+      "conflict_id": "296c37a70e80f1959adabf7afbe386bf3ca862807d2a2c420be17be113ed7240",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On a **no_trade** card, all six rows still display `\u2014`, unchanged from today, and **no** absence literal from this feature appears anywhere on that card.",
+      "source": "pm",
+      "why": "This ship-blocking AC pins a behavior the card does not have. Code-verified at `AiRecPanel.tsx:929-996`: the `no_trade` branch mounts only the FOUR risk fields. `Structure`, `Strike(s)`, `Expiration`, `Entry trigger` and `Time horizon` are inside the trade branch only (`:1080-1160`) and render no row at all on a no_trade card \u2014 there are no six rows there to display `\u2014`. The sixth, conviction, renders as a chip at `:943`, not a `\u2014` row, and renders nothing when absent. As written AC-3 either passes vacuously (no such rows) or, read literally by a builder, obliges ADDING five rows to the no_trade branch that do not exist today \u2014 a regression on the branch it was written to protect.",
+      "proposal": "Restate AC-3 as negative space, which is what it actually protects: on a `no_trade` card the five plan fields render no row at all (no skeleton, no placeholder, no ghost), `\u2014` appears in exactly the four risk slots, and no literal introduced by this feature renders in that branch. Then handle conviction separately per my conflict on the chip. My UX-16 already carries the not-rendered-at-all shape for the other states and can be merged with it.",
+      "kind": "technical",
+      "conflict_id": "e762857c84e675082fb04a572430cac930fb6acf7988f10a3e38303ee2c6d841",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**B2 \u2014 The card carries a distinct standing: *not actionable as given*.** One card-level line, on a trade card where any Class-A field was never named, saying the rec cannot be acted on as written and naming the field(s) missing.",
+      "source": "pm",
+      "why": "Two facts my lane must put on the table before this is ruled. (1) The line is not exceptional \u2014 it is permanent on a shipped path. `recommendation.rs:818-835`, the local rules fallback that produces the `local_rules` grounding card with no provider key, emits `decision: trade` with `strikes: []` and `expiration: null` EVERY time. So on every keyless rec the card would carry a standing line saying it is not actionable as given, directly beneath a grounding line saying these figures come from Convexa's own rules. A banner that always fires is chrome, not an alarm, and it spends exactly the credibility pm's Ruling A2 is protecting. (2) Line budget: with the shipped card-level grounding line, this makes two card-level statements, and my \u00a73 plan-row scope caption would make a third \u2014 my own R1 risk 3, realised.",
+      "proposal": "Plainly, since the council asked: the card carries TWO card-level statements at most \u2014 the shipped `ai-rec-grounding` line and pm's standing line \u2014 and they are never merged. They state different facts (what Convexa checked vs whether the rec can be acted on); one merged line would have to assert a causal link between them that neither is entitled to, and AC-15's own requirement that neither restates the other's fact is what merging destroys. My \u00a73 scope caption is NOT card-level: it binds under the plan row it scopes, in the shipped `REASONING_PROSE_NOT_CHECKED` pattern, so the card reads one card-level standing statement and one section caption. On (1), the human should rule one of: suppress the standing line on the local-rules path (where no model omitted anything, so the line's own wording is false), or accept a permanent line there. If neither is acceptable, cut the standing line and keep the six literals \u2014 pm's own risk 8 already names that as the correct cut order.",
+      "kind": "product",
+      "conflict_id": "0c69d9391d29c2aeb15f4eb91edfe920fc3658d82889e1fd1457edb982247ac4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "It also fails to close `ai-rec-grounding` SPEC \u00a79.5's named residual, which is the stated reason this feature was selected.",
+      "source": "pm",
+      "why": "The premise that keeping all six closes that residual does not hold, and I will not let the SPEC inherit it. \u00a79.5's residual is an INFERENCE about present values: a trader who sees clauses on the checked fields may generalize *no clause means checked* onto the fields left bare. The literals close only half of it \u2014 they remove the false Convexa verdict (`\u2014`) that the six render when ABSENT, so there is no longer a Convexa assertion to generalize from. They touch nothing on a STATED structure, trigger, horizon or conviction, so the inference half survives untouched. I agree with pm that cutting fields fails to close it; I disagree that keeping all six closes it.",
+      "proposal": "SPEC \u00a79 states the closure in two halves and claims only the first: half one (the false not-applicability verdict on absent fields) closes outright; half two (the inference from clauses on checked fields onto stated unchecked ones) closes ONLY if the plan-row scope caption ships. If the caption is cut on line-budget grounds, the SPEC re-books half two as a surviving residual rather than claiming closure. I would rather ship the literals with an honest residual than ship a closure claim the copy does not support.",
+      "kind": "technical",
+      "conflict_id": "cbc170be7d560b5de922609f89600f47dd8eb78560a728a58564712963271e2f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A missing confidence figure is a gap in the description, not a hole in the trade.",
+      "source": "pm",
+      "why": "On the shipped local-rules path a missing confidence is not a gap in the description \u2014 it is a fabricated description. `recommendation.rs:811-814` does `top.get(\"conviction\")...unwrap_or(\"medium\")`, so when nothing states a conviction the card asserts **Confidence: medium**, a value nobody gave, rendered raw into a chip at `:1158`. Two consequences my lane cannot work around. First, no copy I write can honestly describe an invented value; the absence literal for `confidence` is UNREACHABLE while that default stands, so shipping the literal without deleting the default ships a dead branch beside a live falsehood, and UX-11 becomes untestable. Second, pm's B3 ruling \u2014 that Accept must not seed, default or infer an omitted field \u2014 is already violated one layer earlier, at display, by the server itself; ruling only on the Accept boundary leaves the stronger version of the same defect shipped.",
+      "proposal": "Rule the server-side default IN scope for this feature, narrowly: delete `unwrap_or(\"medium\")` at `recommendation.rs:811-814` and emit `confidence: null` plus the `not_given` reason, which is one line and is on the exact code path this feature already has to touch to emit the token. It is not a separate feature \u2014 it is the precondition that makes this feature's confidence literal reachable at all. If the human rules it OUT, then `confidence` must be struck from the six in the SPEC (its literal can never render on the path we can actually observe) and the fabricated default booked as a named open defect; what must not happen is a SPEC that lists a confidence absence literal the running app cannot reach.",
+      "kind": "product",
+      "conflict_id": "fb9acbb00c3902ce697fbfaeb77ec3a381a5ece9ce28ef5ba06cdbd42fd58a2a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`grounding.counts.checked` stays at three.",
+      "source": "ux",
+      "why": "Self-revision \u2014 I withdraw the number. I asserted three from the grounding tooltip's three-field allowlist wording without re-grounding it in the counter itself, which is precisely the failure mode I am here to prevent: a number with no vouched source. Architect cites a shipped guard, `the_denominator_excludes_the_dollar_risk_figure_and_the_suggested_size` (`grounding.rs:613`), pinning `checked == 4`. I have not re-verified either value, so I will not defend mine.",
+      "proposal": "Strike the literal number from my position. The requirement my lane actually needs is invariant, not numeric: whatever `counts.checked` and the user-visible `some_traced (n of m)` line read today, they are byte-identical after this feature, and no field of the six enters that denominator. Architect owns stating the current value; the AC pins byte-identity to the observed value, not to a number I remembered.",
+      "kind": "technical",
+      "conflict_id": "cc86f39ba19f1a0da64245ad605b891aa72afdeb9aabb4291c2f9eaf3a9385fa",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "`unavailable` renders on `Strike(s)`/`Expiration` only, and only under `missing_input: candidate_quotes`.",
+      "source": "ux",
+      "why": "Self-revision \u2014 I withdraw the token name. I named `candidate_quotes` from the shipped `NUMBERS_SAID_UNAVAILABLE` copy path without checking what the flag means server-side. Architect shows it is the wrong flag: `candidate_quotes` is `set.has_quoted_contract()` (`recommendation.rs:460`), and a candidate set can hold UNQUOTED contracts the model can still name a strike and an expiration from. Under my wording, a card whose set was present but unquoted would render *An input this needed was missing this cycle* when the model simply did not name a strike \u2014 the same cause-inventing error I raise against others in this round.",
+      "proposal": "UX-6 keeps its shape and loses the token name: `unavailable` renders on `Strike(s)` / `Expiration` only, and only under the explicit missing-input token architect defines for an EMPTY candidate set (his `candidate_set` boolean), never from a fallthrough and never from `candidate_quotes`. Copy is unchanged \u2014 the shipped `unavailable` string is true exactly when the set the assembler inserted was empty. The SPEC should pin architect's token name, not mine.",
+      "kind": "technical",
+      "conflict_id": "f710490d3530338c8fe895012cff70ea6e2fa1766732faa62cc84a0d6eea2af9",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "ux: in the block-absent state (pre-feature or degraded server, no token at all) nothing vouches that nothing failed \u2014 we only know the value is not there. Does the repaired `not given` tip still hold its truth condition there, or does that one state need words that assert no cause at all? I am not writing copy; I need to know whether my sibling-selector default is honest under the string it will render."
+    },
+    {
+      "from": "architect",
+      "ask": "pm: the local-rules path also fabricates `structure` (`unwrap_or(\"defined-risk structure\")`), `time_horizon` (hardcoded `1\u20135 sessions`) and part of `entry_trigger`. Deleting the conviction default is in scope by ux's position; is deleting those in scope too, or does this feature cover only absence and leave three Convexa-invented values rendering as the read's own words on its own primary fixture?"
+    },
+    {
+      "from": "architect",
+      "ask": "pm: AC-21 requires N >= 10 real trade-verdict recs, which needs a provider key and spends the daily cap \u2014 the exact observation `ai-rec-grounding` GATE Q booked as unobtainable. Is the deterministic `AI_REC_LOCAL_ONLY` card an acceptable substitute for the ship-time artifact, with the live rate deferred to an owner-run item, or must AC-21 wait for live recs?"
+    },
+    {
+      "from": "architect",
+      "ask": "ux: does the off-vocabulary case need to be reachable on any field besides `confidence`? Specifically, is an `expiration` string that is not a parseable date, or a `structure` that is pure whitespace, the same fact as an off-scale conviction (it answered, off our scale) or the same fact as silence (`not given`)? My backend predicate table has to pick one per field, and which fact each is is a vocabulary judgement, not a type question."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 beyond the conviction level, does any other Convexa-supplied default fill one of the six fields before the presence check runs? A second server-side default would be ratified as stated by exactly the same mechanism and would pass every criterion in this feature silently."
+    },
+    {
+      "from": "pm",
+      "ask": "architect \u2014 does removing the conviction default change anything a user or the record already sees (the rules-path grounding card, the stored evaluation record, the cited-contract line), or is it confined to that field's own display? I need that before I make the no-fabricated-conviction criterion ship-blocking."
+    },
+    {
+      "from": "pm",
+      "ask": "ux \u2014 if the human keeps only one card-level line, can a single surviving line carry both the conditional fact (this rec is missing a named field) and the scope fact (Convexa never checks these fields) without becoming a claim that supports neither, or is the honest answer one line plus a booked residual?"
+    },
+    {
+      "from": "ux",
+      "ask": "architect: does `plan_field_reason` emit all six keys on the LOCAL-RULES fallback response (`recommendation.rs:818-835`), not just the LLM path? My primary observed-by fixture is a keyless `Trade \u00b7 long` card with `strikes: []` and `expiration: null` \u2014 it closes the observability gap `ai-rec-grounding` \u00a79 item 6 booked, but only if the six keys ride that response too."
+    },
+    {
+      "from": "ux",
+      "ask": "pm: do the two bare `\u2014` fallbacks in `quoteTextFor` (`literals.ts:101-102`, null IV and null delta on the cited-contract line, which renders on TRADE cards) come into scope, or become a named exemption? AC-16 as written \u2014 `\u2014` appears only on `no_trade` cards \u2014 is false today because of them, so either the sites change or the AC does. My lane's preference is to fix them: a `\u2014` on a trade card is the reserved not-applicable mark asserting a verdict on a quote that simply has no IV."
+    },
+    {
+      "from": "ux",
+      "ask": "pm: which single label for `s.confidence` across both branches \u2014 `Stated conviction` (my proposal; it names the datum as the read's self-report and matches the wire's own word `conviction`) or `Confidence` (today's trade-branch label, which in a trading product reads as a calibrated statistical confidence that nothing here computes)? The unacceptable outcome is the status quo: two words for one wire field (`Confidence` at `:1156`, `conviction \u00b7 {level}` at `:944`). I will render whichever you pick."
+    },
+    {
+      "from": "ux",
+      "ask": "architect: what does `counts.checked` actually equal on a shipped produced card today, and what `n of m` does `card_member()` print? I need the observed pair to write the byte-identity AC honestly after withdrawing my own number."
+    }
+  ],
+  "agree_count": {
+    "architect": 7,
+    "pm": 8,
+    "ux": 6
+  }
+}

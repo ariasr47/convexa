@@ -1,0 +1,30 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/rec-absence-literals-hole/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8010",
+  "auth": null,
+  "checked_at": "2026-08-15T00:01:14Z",
+  "summary": {
+    "pass": 2,
+    "fail": 0,
+    "total": 2
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    }
+  ]
+}
