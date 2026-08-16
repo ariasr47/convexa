@@ -92,6 +92,7 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
   return (
     <Box
       data-testid="ai-rec-decision-card"
+      sx={{ display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'visible' }}
       data-rec-pinned-fingerprint={rec.pinned_fingerprint ?? ''}
       data-rec-as-of={rec.as_of ?? ''}
       data-rec-persona-id={rec.persona.id}
@@ -121,7 +122,7 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
       </>}
       <Box data-testid="decision-evidence" sx={{ mt: 1 }}><GroundingNote grounding={rec.grounding} /><CapAnnotation capCheck={rec.cap_check} /></Box>
       <Divider sx={{ my: 1.5 }} />
-      <Stack data-testid="decision-actions" direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+      <Stack data-testid="decision-actions" direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ flexWrap: { xs: 'nowrap', sm: 'wrap' }, '& .MuiButton-root': { minHeight: { '@media (pointer: coarse)': '44px' } } }}>
         {presentation.actions.reviewTrade && <Button variant="contained" onClick={onReview}>{COPY.action.reviewTrade}</Button>}
         {presentation.actions.createOrder && onCreateOrder && <Button variant="outlined" onClick={onCreateOrder} data-testid="ai-rec-act">{COPY.action.createOrder}</Button>}
         {presentation.actions.analysis && <Button onClick={onAnalysis}>{COPY.action.analysis}</Button>}

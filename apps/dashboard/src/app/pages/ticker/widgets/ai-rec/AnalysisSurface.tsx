@@ -157,7 +157,7 @@ export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExpo
           <Typography id="ai-rec-analysis-title" component="h2" variant="subtitle1">{analysisTitle(ticker)}</Typography>
           <IconButton autoFocus aria-label="Close analysis" onClick={handleClose}><CloseIcon /></IconButton>
         </Stack>
-        <Stack data-testid="analysis-content" spacing={2} sx={{ minHeight: 0, overflowX: 'hidden', overflowY: 'auto', p: 2.5 }}>
+        <Stack data-testid="analysis-content" spacing={2} sx={{ minHeight: 0, overflowX: 'hidden', overflowY: 'auto', overflowWrap: 'anywhere', p: 2.5 }}>
           <AnalysisSummary rec={rec} />
           <Box data-testid="analysis-rationale"><ReasoningSection strategy={strategy} expanded /></Box>
           <Box data-testid="analysis-levels"><LevelsStrip bundle={bundle ? bundle : null} /></Box>

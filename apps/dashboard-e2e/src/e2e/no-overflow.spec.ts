@@ -594,6 +594,90 @@ async function assertNoHorizontalOverflow(page: Page) {
   ).toBeLessThanOrEqual(innerWidth);
 }
 
+// ---- AI recommendation decision card -----------------------------------------------------------
+// These checks deliberately wait for the produced fixture and assert card/detail nodes before any
+// geometry assertion; an error page or an empty Ticker cannot satisfy the group.
+async function openProducedRecommendation(page: Page) {
+  await page.goto('/ticker/TSLA');
+  await expect(page.getByText('Call wall').first()).toBeAttached();
+  await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
+  await expect(page.getByTestId('ai-rec-decision-card')).toBeAttached();
+  await expect(page.getByTestId('decision-verdict')).toBeAttached();
+  await expect(page.getByTestId('decision-grid')).toBeAttached();
+}
+
+test.describe('AI recommendation decision card', () => {
+  for (const scheme of ['dark', 'light'] as const) {
+    test(`393x852 ${scheme}: analysis is a single full-width sheet without page overflow`, async ({ page }) => {
+      test.setTimeout(30_000);
+      await page.setViewportSize({ width: 393, height: 852 });
+      await stubNetwork(page);
+      await seed(page, { scheme });
+      await openProducedRecommendation(page);
+      const opener = page.getByRole('button', { name: 'Full analysis & data' });
+      await expect(opener).toBeVisible();
+      await opener.click();
+      const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('heading', { name: 'Full analysis & data · TSLA' })).toHaveCount(1);
+      await expect(dialog.getByRole('button', { name: 'Close analysis' })).toHaveCount(1);
+      const content = dialog.getByTestId('analysis-content');
+      await expect(content).toHaveCount(1);
+      const geometry = await page.evaluate(() => ({
+        pageWidth: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+      }));
+      expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.viewport);
+      const sheetWidth = await dialog.evaluate((node) => (node as HTMLElement).getBoundingClientRect().width);
+      expect(sheetWidth).toBeLessThanOrEqual(393);
+      const scroll = await content.evaluate((node) => ({ scrollHeight: node.scrollHeight, clientHeight: node.clientHeight }));
+      expect(scroll.scrollHeight).toBeGreaterThanOrEqual(scroll.clientHeight);
+    });
+  }
+
+  for (const scheme of ['dark', 'light'] as const) {
+    test(`1440x900 ${scheme}: decision hierarchy is visible while ticker context remains visible`, async ({ page }) => {
+      test.setTimeout(30_000);
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await stubNetwork(page);
+      await seed(page, { scheme });
+      await openProducedRecommendation(page);
+      await expect(page.getByTestId('decision-verdict')).toBeVisible();
+      await expect(page.getByTestId('decision-grid')).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Review simulated trade' })).toBeVisible();
+      const card = page.getByTestId('ai-rec-decision-card');
+      await expect(card).toBeVisible();
+      expect(await card.evaluate((node) => getComputedStyle(node).overflowY)).not.toMatch(/auto|scroll/);
+      await page.getByRole('button', { name: 'Full analysis & data' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
+      await expect(dialog).toBeVisible();
+      const drawerWidth = await dialog.evaluate((node) => (node as HTMLElement).getBoundingClientRect().width);
+      expect(drawerWidth).toBeLessThan(1440 * 0.6);
+      await expect(page.getByText('Call wall').first()).toBeVisible();
+    });
+  }
+
+  test('keyboard focus enters, contains, escapes, and returns to the analysis opener', async ({ page }) => {
+    test.setTimeout(30_000);
+    await page.setViewportSize({ width: 393, height: 852 });
+    await stubNetwork(page);
+    await seed(page, { scheme: 'dark' });
+    await openProducedRecommendation(page);
+    const opener = page.getByRole('button', { name: 'Full analysis & data' });
+    await opener.click();
+    const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
+    const close = dialog.getByRole('button', { name: 'Close analysis' });
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await dialog.locator(':focus').count()).toBe(1);
+    await page.keyboard.press('Shift+Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(opener).toBeFocused();
+  });
+});
+
 for (const scheme of ['dark', 'light'] as const) {
   test.describe(`393px no-overflow · ${scheme} scheme`, () => {
     test.use({ viewport: VIEWPORT });
