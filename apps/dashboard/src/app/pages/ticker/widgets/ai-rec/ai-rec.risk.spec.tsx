@@ -796,6 +796,27 @@ describe('ai-rec · honest provenance', () => {
 // 5. ADVICE, NEVER A COMMAND — the Accept seam
 // =================================================================================================
 describe('ai-rec · advice behind Accept', () => {
+  it('next-read persona changes do not request or relabel the pinned read', async () => {
+    const be = installBackend({});
+    const user = renderApp();
+    await settle();
+    const select = within(panel()).getByLabelText('Next read persona');
+    await user.click(select);
+    const options = await screen.findAllByRole('option');
+    if (options.length > 1) await user.click(options[1]); else await user.keyboard('{Escape}');
+    await ask(user);
+    await within(panel()).findByTestId('ai-rec-decision-card');
+    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+    const calls = be.calls.rec;
+    await user.click(select);
+    const afterOptions = await screen.findAllByRole('option');
+    if (afterOptions.length > 1) await user.click(afterOptions[0]); else await user.keyboard('{Escape}');
+    expect(be.calls.rec).toBe(calls);
+    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+    expect(before).toContain('Persona ·');
+    expect(before).toContain('As of');
+  });
+
   it('no_trade is a complete answer with NO Accept affordance', async () => {
     installBackend({ rec: noTradeRec() });
     const user = renderApp();
