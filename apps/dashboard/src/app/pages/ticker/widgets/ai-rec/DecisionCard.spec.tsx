@@ -51,7 +51,7 @@ describe('DecisionCard observable contract', () => {
     expect(screen.getByTestId('clause-invalidation')).toHaveTextContent("traces to Convexa's levels spot (245)");
     cleanup();
     renderCard(recFabricated());
-    const untraced = screen.getAllByText("the AI's own number")[0];
+    const untraced = screen.getByText('245');
     expect(window.getComputedStyle(untraced).fontFamily.replace(/["']/g,'')).not.toContain(typographyTokens.monoFontFamily.replace(/["']/g,''));
     expect(screen.getByTestId('clause-invalidation')).toHaveTextContent("the AI's own number");
     cleanup();
