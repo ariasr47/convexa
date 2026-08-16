@@ -15,6 +15,16 @@
     "test_cmd": "npx nx test @convexa/dashboard",
     "build_cmd": "npx nx build @convexa/dashboard --configuration=production"
   },
+  "conformance": {
+    "auth": {
+      "signup_path": "/api/auth/signup",
+      "signup_body": {
+        "email": "conformance-{{unique}}@example.test",
+        "password": "conformance-{{unique}}-password",
+        "display_name": "Conformance"
+      }
+    }
+  },
   "lane_purity": {
     "ARCHITECTURE_CONTRACT.md": [
       ["\\.tsx\\b", "UI component reference (.tsx) in an architecture contract"]
