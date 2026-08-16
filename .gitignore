@@ -77,6 +77,7 @@ Thumbs.db
 .opencode/
 
 .claude/worktrees
+.worktrees/
 .claude/settings.local.json
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
