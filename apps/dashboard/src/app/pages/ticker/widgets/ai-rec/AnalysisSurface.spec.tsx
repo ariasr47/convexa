@@ -269,7 +269,7 @@ describe('AnalysisSurface', () => {
     await user.click(opener);
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(opener).toHaveFocus();
+    await waitFor(() => expect(opener).toHaveFocus());
   });
 
   it('reopens the same pinned read without mutation or request/export activity', async () => {

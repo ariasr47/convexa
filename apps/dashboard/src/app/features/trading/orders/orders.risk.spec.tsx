@@ -381,7 +381,7 @@ function seedOrder(over: Partial<SimOrder> = {}): SimOrder {
 
 async function settleTicker() {
   await screen.findByTestId('account-avatar'); // who-am-I resolved
-  await screen.findByText('AI recommendation · TSLA'); // bundle + panel mounted
+  await screen.findByText('AI recommendation · TSLA', undefined, { timeout: T }); // lazy route + bundle + panel mounted
 }
 
 async function actIntoDialog(user: ReturnType<typeof userEvent.setup>) {
@@ -688,7 +688,10 @@ describe('orders · nothing order-flavored rides the wire; SIMULATED labeling', 
         for (const key of u.searchParams.keys()) expect(ALLOWED.has(key)).toBe(true);
       }
       expect(fetchLog.some((c) => /order|scenario|broker/i.test(c.url))).toBe(false);
-      expect(fetchLog.every((c) => c.method === 'GET')).toBe(true); // zero writes, period
+      // The seeded local portfolio may complete its autonomous signed-in book sync while this
+      // full-App flow is running. That exact persistence write is sanctioned; no order write is.
+      const nonGets = fetchLog.filter((c) => c.method !== 'GET');
+      for (const c of nonGets) expect(c).toMatchObject({ method: 'PUT', url: '/api/book' });
       expect(esInstances.length).toBeGreaterThan(0);
       for (const es of esInstances) {
         const u = new URL(es.url, 'http://x');

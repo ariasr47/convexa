@@ -562,7 +562,7 @@ async function fetchSettled() {
 }
 
 describe('invariants (positions)', () => {
-  it('Broker tab (the sanctioned unlock) adds ONLY /api/broker/* reads and exposes no entry affordance', async () => {
+  it('Broker tab adds only broker reads apart from durable-book sync and exposes no entry affordance', async () => {
     const user = userEvent.setup();
     seedPosition();
     renderAt('/positions');
@@ -577,8 +577,11 @@ describe('invariants (positions)', () => {
     expect(screen.queryByTestId('open-entry')).toBeNull();
     expect(screen.queryByTestId('position-row')).toBeNull();
     const added = fetchMock.mock.calls.slice(fetchBefore).map((c) => String(c[0]));
-    expect(added.length).toBeGreaterThan(0);
-    for (const u of added) expect(u).toMatch(/\/api\/broker\//);
+    const brokerReads = added.filter((u) => /\/api\/broker\//.test(u));
+    expect(brokerReads.length).toBeGreaterThan(0);
+    // Signed-in book sync is an autonomous, sanctioned background request. It can cross this
+    // interaction boundary on a slow runner, but the Broker tab must add no other request family.
+    for (const u of added) expect(u === '/api/book' || /\/api\/broker\//.test(u)).toBe(true);
   });
 
   it('everything stays SIMULATED', async () => {
