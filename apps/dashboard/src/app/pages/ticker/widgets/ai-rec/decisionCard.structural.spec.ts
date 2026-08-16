@@ -21,12 +21,19 @@ const stripComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').re
 const source = entries.map(([, text]) => stripComments(text)).join('\n');
 const has = (re: RegExp, text = source) => re.test(text);
 /** Detects a dialog component boundary, while deliberately permitting MUI Drawer/role=dialog. */
-const dialogBoundary = (text: string): string[] => [
-  ...text.matchAll(/\bimport\s+[\s\S]*?\b(?:\w*Dialog\w*)\b[\s\S]*?\bfrom\s+['"][^'"]+['"]/g),
-  ...text.matchAll(/\bfrom\s+['"][^'"]*Dialog(?:\.[^'"]+)?['"]/g),
-  ...text.matchAll(/\b(?:function|class|const)\s+\w*Dialog\b/g),
-  ...text.matchAll(/<\s*\w*Dialog\b/g),
-].map((match) => match[0]);
+const dialogBoundary = (text: string): string[] => {
+  const runtime = text
+    .replace(/\bimport\s+type[\s\S]*?from\s+['"][^'"]+['"];?/g, '')
+    .replace(/\btype\s+\w+/g, '');
+  const matches: string[] = [];
+  for (const match of runtime.matchAll(/\bimport\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
+    const [, clause, module] = match;
+    if (/\b\w*Dialog\b/.test(clause) || /(?:^|[\\/])\w*Dialog(?:\.[^\\/]*)?$/.test(module)) matches.push(match[0]);
+  }
+  matches.push(...[...runtime.matchAll(/\b(?:function|class|const)\s+\w*Dialog\b/g)].map((match) => match[0]));
+  matches.push(...[...runtime.matchAll(/<\s*\w*Dialog\b/g)].map((match) => match[0]));
+  return matches;
+};
 
 describe('AI recommendation decision-card structural boundaries', () => {
   it('recursively inventories production modules and bans component hex colours', () => {
@@ -68,10 +75,12 @@ describe('AI recommendation decision-card structural boundaries', () => {
   it('dialog guard is non-vacuous for common alternate entry names but permits MUI modal semantics', () => {
     for (const poison of [
       "import SimulatedOrderDialog from './SimulatedOrderDialog';",
-      "const PositionEntryDialog = () => <div />;",
+      "import { PositionEntryDialog as Entry } from './entries';",
       '<AiRecEntryDialog open />',
     ]) expect(dialogBoundary(poison).length).toBeGreaterThan(0);
     expect(dialogBoundary('<Drawer role="dialog" />')).toEqual([]);
     expect(dialogBoundary('type DialogCallback = () => void;')).toEqual([]);
+    expect(dialogBoundary("import type { DialogCallback, AnalysisDialogState } from './types';")).toEqual([]);
+    expect(dialogBoundary("import { type DialogCallback, Drawer } from './types';")).toEqual([]);
   });
 });
