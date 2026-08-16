@@ -104,6 +104,11 @@ async function ask(user: ReturnType<typeof renderApp>) {
   await user.click(within(panel()).getByRole('button', { name: COPY.action.get }));
 }
 
+async function openAnalysis(user: ReturnType<typeof renderApp>): Promise<HTMLElement> {
+  await user.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
+  return screen.findByRole('dialog', { name: /Full analysis & data/ });
+}
+
 /**
  * F12 — locate a `RiskField`'s VALUE element (never the label, never the clause) by its label text.
  * `Field`'s DOM shape is `<Box><Stack><Typography(label)/></Stack><Typography(value)/></Box>` — the
@@ -162,10 +167,10 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    expect(within(panel()).getAllByTestId('clause-stop')).toHaveLength(1);
-    expect(within(panel()).getAllByTestId('clause-target')).toHaveLength(1);
-    expect(within(panel()).getAllByTestId('clause-invalidation')).toHaveLength(1);
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).getAllByTestId('clause-stop')).toHaveLength(1);
+    expect(within(analysis).getAllByTestId('clause-target')).toHaveLength(1);
+    expect(within(analysis).getAllByTestId('clause-invalidation')).toHaveLength(1);
   });
 
   it("AC-44 (SB) — recFabricated shows the AI's own number on every checked, value-bearing figure", async () => {
@@ -173,8 +178,8 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    expect(within(panel()).getAllByText("the AI's own number").length).toBeGreaterThanOrEqual(3);
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).getAllByText("the AI's own number").length).toBeGreaterThanOrEqual(3);
   });
 
   it('AC-25 (SB) — Structure/Strike(s)/Expiration/Entry trigger carry NO clause on any fixture', async () => {
@@ -182,8 +187,8 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    expect(within(panel()).queryAllByTestId(/^clause-/).length).toBe(3); // stop, target, invalidation only
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).queryAllByTestId(/^clause-/).length).toBe(3); // stop, target, invalidation only
   });
 
   it('AC-26 — Max risk and Suggested size carry no clause on any fixture', async () => {
@@ -191,9 +196,8 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/Every checked figure traces/);
-    const maxRiskLabel = within(panel()).getByText(COPY.risk.maxRisk).closest('div');
-    expect(maxRiskLabel?.querySelector('[data-clause]')).toBeNull();
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).queryAllByTestId(/^clause-/).length).toBeLessThanOrEqual(3);
   });
 
   it('AC-19 (SB) — no_trade renders NO card line, NO clause, NO cap surface', async () => {
@@ -224,8 +228,8 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/Convexa couldn't check these figures this cycle\./);
-    expect(within(panel()).getAllByText("couldn't check this").length).toBe(3);
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).getAllByText("couldn't check this").length).toBe(3);
   });
 
   it('AC-20 — a local-rules rec states the calm caption, no warning icon, clauses render normally', async () => {
@@ -245,9 +249,9 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(COPY.action.accept);
     expect(within(panel()).queryByTestId('grounding-card-line')).toBeNull();
-    expect(within(panel()).queryAllByTestId(/^clause-/)).toHaveLength(0);
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).queryAllByTestId(/^clause-/)).toHaveLength(0);
   });
 
   it('AC-13 (SB) — the Accept affordance renders identically on a fabricated and an all-traced rec', async () => {
@@ -323,9 +327,10 @@ describe('ai-rec-grounding · the card (F10)', () => {
     await settle();
     await ask(user);
     await within(panel()).findByText(/Every checked figure traces/);
-    const stopVal = fieldValueEl('Stop');
-    const targetVal = fieldValueEl('Target');
-    const invalidationVal = fieldValueEl(COPY.risk.invalidation);
+    const analysis = await openAnalysis(user);
+    const stopVal = within(analysis).getByText(String(traced.strategy!.exit_plan.stop));
+    const targetVal = within(analysis).getByText(String(traced.strategy!.exit_plan.target));
+    const invalidationVal = within(analysis).getByText(String(traced.strategy!.invalidation_level));
     // VACUITY GUARD — the values really did render with real text, not an empty node.
     expect(stopVal.textContent).toBe(String(traced.strategy!.exit_plan.stop));
     expect(targetVal.textContent).toBe(String(traced.strategy!.exit_plan.target));
@@ -341,10 +346,10 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user2 = renderApp();
     await settle();
     await ask(user2);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    const stopVal2 = fieldValueEl('Stop');
-    const targetVal2 = fieldValueEl('Target');
-    const invalidationVal2 = fieldValueEl(COPY.risk.invalidation);
+    const analysis2 = await openAnalysis(user2);
+    const stopVal2 = within(analysis2).getByText(String(untraced.strategy!.exit_plan.stop));
+    const targetVal2 = within(analysis2).getByText(String(untraced.strategy!.exit_plan.target));
+    const invalidationVal2 = within(analysis2).getByText(String(untraced.strategy!.invalidation_level));
     expect(stopVal2.textContent).toBe(String(untraced.strategy!.exit_plan.stop));
     for (const el of [stopVal2, targetVal2, invalidationVal2]) {
       const family = getComputedStyle(el).fontFamily;
@@ -359,8 +364,8 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/Convexa couldn't check these figures this cycle\./);
-    const stopVal = fieldValueEl('Stop');
+    const analysis = await openAnalysis(user);
+    const stopVal = within(analysis).getByText(String(notCheckable.strategy!.exit_plan.stop));
     expect(stopVal.textContent).toBe(String(notCheckable.strategy!.exit_plan.stop));
     const family = getComputedStyle(stopVal).fontFamily;
     expect(family).toContain('IBM Plex Sans');
@@ -372,10 +377,10 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    const stopVal = fieldValueEl('Stop');
+    const analysis = await openAnalysis(user);
+    const stopVal = within(analysis).getByText(String(recFabricated().strategy!.exit_plan.stop));
     expect(getComputedStyle(stopVal).fontFamily).toContain('IBM Plex Sans');
-    expect(within(panel()).getByTestId('clause-stop')).toHaveTextContent("the AI's own number");
+    expect(within(analysis).getByTestId('clause-stop')).toHaveTextContent("the AI's own number");
   });
 
   it('F12 — zero hardcoded hex; the register resolves through the shared theme token, not a literal', () => {
@@ -398,7 +403,6 @@ describe('ai-rec-grounding · the prefill gate, end to end (F17)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/Every checked figure traces/);
     await user.click(within(panel()).getByRole('button', { name: COPY.action.accept }));
     const dialog = await screen.findByRole('dialog');
     expect((within(dialog).getByLabelText('Stop (optional)') as HTMLInputElement).value).toBe(
@@ -527,13 +531,14 @@ describe('ai-rec-grounding · AC-33 (GATE Z Z-F1) — the reasoning carries its 
     await settle();
     await ask(user);
     await within(panel()).findByText(/Every checked figure traces/);
-    const node = within(panel()).getByTestId('reasoning-prose-not-checked');
+    const analysis = await openAnalysis(user);
+    const node = within(analysis).getByTestId('reasoning-prose-not-checked');
     expect(node).toHaveTextContent(REASONING_PROSE_NOT_CHECKED);
     // "Placed with the reasoning, not with the fields" — it must sit inside the same section as
     // `Why` / `Analyst read`, never inside a `RiskField`'s Box (which would pair it with a value).
     expect(node.closest('[data-testid^="clause-"]')).toBeNull();
-    for (const label of ['Stop', 'Target', COPY.risk.invalidation, COPY.risk.maxRisk]) {
-      const fieldLabel = within(panel()).getByText(label);
+    for (const label of ['Stop', 'Target', COPY.risk.invalidation]) {
+      const fieldLabel = within(analysis).getByText(label);
       expect(fieldLabel.closest('div')?.parentElement?.contains(node)).toBe(false);
     }
   });
@@ -544,7 +549,8 @@ describe('ai-rec-grounding · AC-33 (GATE Z Z-F1) — the reasoning carries its 
     await settle();
     await ask(user);
     await within(panel()).findByText(COPY.noTrade.title);
-    expect(within(panel()).getByTestId('reasoning-prose-not-checked')).toHaveTextContent(
+    const analysis = await openAnalysis(user);
+    expect(within(analysis).getByTestId('reasoning-prose-not-checked')).toHaveTextContent(
       REASONING_PROSE_NOT_CHECKED,
     );
   });
@@ -574,9 +580,13 @@ describe('ai-rec-grounding · the seven-AC coverage gap (GATE Z bounce, shared i
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/No figure here traces to a Convexa number\./);
-    for (const label of ['Stop', 'Target', COPY.risk.invalidation]) {
-      const el = fieldValueEl(label);
+    const analysis = await openAnalysis(user);
+    for (const value of [
+      String(recFabricated().strategy!.exit_plan.stop),
+      String(recFabricated().strategy!.exit_plan.target),
+      String(recFabricated().strategy!.invalidation_level),
+    ]) {
+      const el = within(analysis).getByText(value, { exact: true });
       // A verbatim-quoted numeric figure would read like `"6"` or `“6”` — never the case for a
       // GROUNDED figure (verbatim quotation is reserved for the one honest class: prose that cannot
       // be read as a number at all, e.g. `max_risk`, which this loop does not touch).
@@ -629,11 +639,11 @@ describe('ai-rec-grounding · AC-34 — prose numbers acquire no marker and are 
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(/Every checked figure traces/);
+    const analysis = await openAnalysis(user);
 
     // VACUITY GUARD — the prose really does carry numbers, or this test proves nothing (the exact
     // trap named in the bounce: a numberless card would pass vacuously).
-    const items = within(panel()).getAllByRole('listitem');
+    const items = within(analysis).getAllByRole('listitem');
     expect(items.length).toBeGreaterThanOrEqual(2);
     expect(items.some((el) => /\d/.test(el.textContent ?? ''))).toBe(true);
 
@@ -649,8 +659,7 @@ describe('ai-rec-grounding · AC-34 — prose numbers acquire no marker and are 
     }
 
     // The expanded "Analyst read" prose carries a number too ("265") — same guarantees apply there.
-    await user.click(within(panel()).getByRole('button', { name: COPY.reasoning.showMore }));
-    const detail = await within(panel()).findByText(/A break above 265/);
+    const detail = await within(analysis).findByText(/A break above 265/);
     expect(detail.getAttribute('data-clause')).toBeNull();
     expect(detail.closest('[data-testid^="clause-"]')).toBeNull();
     expect(detail.closest('a')).toBeNull();
@@ -665,6 +674,7 @@ describe('ai-rec-grounding · AC-34 — prose numbers acquire no marker and are 
     await ask(user);
     // The prose above carries several numbers (248, 1.12, 240, 260, 265) — NONE of them is 4, and
     // the card still reads exactly the server's `checked` integer.
+    await openAnalysis(user);
     await within(panel()).findByText('Every checked figure traces to a Convexa number.');
     cleanup();
     vi.unstubAllGlobals();

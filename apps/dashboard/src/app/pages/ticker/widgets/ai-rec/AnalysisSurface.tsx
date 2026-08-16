@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
-import type { Grounding, OpenPositionsDigest, RecResponse, RiskInputs, TickerBundle } from '@convexa/api';
+import type { Grounding, GroundingField, OpenPositionsDigest, RecResponse, RiskInputs, TickerBundle } from '@convexa/api';
 import { COPY } from './copy';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CapAnnotation } from './CapAnnotation';
@@ -9,7 +9,8 @@ import { GroundingNote } from './GroundingNote';
 import { LevelsStrip, ReasoningSection } from './reasoning';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 import { PLAN_FIELD_LABEL, literalCopy } from './copy';
-import { planFieldLiteral } from './literals';
+import { planFieldLiteral, registerSx } from './literals';
+import { FigureClause } from './FigureClause';
 
 export function analysisTitle(ticker: string): string {
   return `${COPY.action.analysis} · ${ticker}`;
@@ -41,11 +42,25 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
   );
 }
 
-function GroundingDetail({ grounding }: { grounding: Grounding | null | undefined }) {
+function GroundingDetail({ grounding, rec }: { grounding: Grounding | null | undefined; rec: RecResponse }) {
+  const strategy = rec.strategy!;
   return (
     <Box data-testid="grounding-detail">
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Cited contract and grounding</Typography>
       <GroundingNote grounding={grounding} />
+      <Stack spacing={1} data-testid="analysis-grounding-fields" sx={{ mt: 1 }}>
+        {([
+          ['Stop', strategy.exit_plan?.stop, grounding?.fields.exit_stop, 'clause-stop'],
+          ['Target', strategy.exit_plan?.target, grounding?.fields.exit_target, 'clause-target'],
+          ['Invalidation', strategy.invalidation_level, grounding?.fields.invalidation_level, 'clause-invalidation'],
+        ] as Array<[string, string | number | null | undefined, GroundingField | undefined, string]>).map(([label, value, field, testId]) => (
+          <Box key={label as string}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>{label as string}</Typography>
+            <Typography variant="body2" sx={field ? registerSx(field.state) : undefined}>{value == null ? 'not given' : String(value)}</Typography>
+            <FigureClause field={field} testId={testId as string} />
+          </Box>
+        ))}
+      </Stack>
       {grounding && (
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           Checked {grounding.counts.checked} · traced {grounding.counts.traced} · untraced {grounding.counts.untraced} · not checkable {grounding.counts.not_checkable}
@@ -142,7 +157,7 @@ export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExpo
           <Box data-testid="analysis-levels"><LevelsStrip bundle={bundle ? bundle : null} /></Box>
           <Box data-testid="analysis-numbers"><NumbersSaidStrip candidates={rec.sent?.candidates} move={bundle?.market_state?.straddle_move} citedExpiration={strategy.expiration} /></Box>
           <Box data-testid="analysis-cited"><CitedContractLine cited={rec.cited_contract} asOf={rec.sent?.candidates?.as_of ?? null} /></Box>
-          <Box data-testid="analysis-grounding"><GroundingDetail grounding={rec.grounding} /></Box>
+          <Box data-testid="analysis-grounding"><GroundingDetail grounding={rec.grounding} rec={rec} /></Box>
           <Box data-testid="analysis-cap"><CapAnnotation capCheck={rec.cap_check} /></Box>
           <Box data-testid="analysis-as-sent"><AsSentInputs riskInputs={rec.sent?.risk_inputs} openPositions={rec.sent?.open_positions} /></Box>
           <Box data-testid="analysis-export"><Button disabled={pendingExport} onClick={handleExport}>{COPY.action.requestExport}</Button></Box>
