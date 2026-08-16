@@ -8,6 +8,8 @@ import { CitedContractLine } from './CitedContractLine';
 import { GroundingNote } from './GroundingNote';
 import { LevelsStrip, ReasoningSection } from './reasoning';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
+import { PLAN_FIELD_LABEL, literalCopy } from './copy';
+import { planFieldLiteral } from './literals';
 
 export function analysisTitle(ticker: string): string {
   return `${COPY.action.analysis} · ${ticker}`;
@@ -20,12 +22,21 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>Read summary</Typography>
       <Typography variant="h6">{strategy.decision === 'no_trade' ? COPY.noTrade.title : `${strategy.decision} · ${strategy.bias}`}</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        Persona · {rec.persona.name} · As of {rec.as_of ?? '—'}
+        Persona · {rec.persona.name} · As of {rec.as_of ? rec.as_of : '—'}
       </Typography>
       {rec.scenario && <Typography variant="caption">{`SCRIPTED SCENARIO · ${rec.scenario.name} · ${COPY.provenance.sim}`}</Typography>}
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        {strategy.structure ?? '—'} · {strategy.expiration ?? '—'} · {strategy.time_horizon ?? '—'}
+        {strategy.structure ? strategy.structure : '—'} · {strategy.expiration ? strategy.expiration : '—'} · {strategy.time_horizon ? strategy.time_horizon : '—'}
       </Typography>
+      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }} data-testid="analysis-plan-fields">
+        {([
+          [PLAN_FIELD_LABEL.timeHorizon, strategy.time_horizon, rec.field_reasons?.time_horizon],
+          [PLAN_FIELD_LABEL.confidence, strategy.confidence, rec.field_reasons?.confidence],
+        ] as const).map(([label, value, reason]) => {
+          const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
+          return <Box key={label}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="body2">{literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}</Typography></Box>;
+        })}
+      </Stack>
     </Stack>
   );
 }
@@ -52,10 +63,10 @@ function AsSentInputs({ riskInputs, openPositions }: { riskInputs: RiskInputs | 
     <Box data-testid="as-sent-inputs">
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>As-sent risk inputs</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size ?? '—'} · Per-trade cap: ${riskInputs.per_trade_cap ? `${riskInputs.per_trade_cap.value} ${riskInputs.per_trade_cap.unit}` : '—'} · Effective cap: ${effective?.value ?? '—'} (${effective?.state ?? '—'}; reason: ${effective?.not_derivable_reason ?? '—'}; derived from account ${effective?.derived_from.account_size ?? '—'}, cap ${effective?.derived_from.cap_value ?? '—'} ${effective?.derived_from.cap_unit ?? '—'}) · Storage available: ${riskInputs.storage_available} · Updated at: ${riskInputs.updated_at ?? '—'}` : 'Risk inputs not available.'}
+        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size != null ? riskInputs.account_size : '—'} · Per-trade cap: ${riskInputs.per_trade_cap ? `${riskInputs.per_trade_cap.value} ${riskInputs.per_trade_cap.unit}` : '—'} · Effective cap: ${effective?.value != null ? effective.value : '—'} (${effective?.state ? effective.state : '—'}; reason: ${effective?.not_derivable_reason ? effective.not_derivable_reason : '—'}; derived from account ${effective?.derived_from.account_size != null ? effective.derived_from.account_size : '—'}, cap ${effective?.derived_from.cap_value != null ? effective.derived_from.cap_value : '—'} ${effective?.derived_from.cap_unit ? effective.derived_from.cap_unit : '—'}) · Storage available: ${riskInputs.storage_available} · Updated at: ${riskInputs.updated_at ? riskInputs.updated_at : '—'}` : 'Risk inputs not available.'}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source} · Underlying: ${underlying ? `${underlying.direction}, ${underlying.leg_count} legs, ${underlying.nearest_expiry_dte} DTE, max loss ${underlying.max_loss.value ?? '—'} (${underlying.max_loss.state}; reason: ${underlying.max_loss.reason ?? '—'})` : '—'} · Portfolio: ${portfolio ? `${portfolio.open_count} open, capital at risk ${portfolio.capital_at_risk ?? '—'}` : '—'}` : 'not available'}
+        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source} · Underlying: ${underlying ? `${underlying.direction}, ${underlying.leg_count} legs, ${underlying.nearest_expiry_dte} DTE, max loss ${underlying.max_loss.value != null ? underlying.max_loss.value : '—'} (${underlying.max_loss.state}; reason: ${underlying.max_loss.reason ? underlying.max_loss.reason : '—'})` : '—'} · Portfolio: ${portfolio ? `${portfolio.open_count} open, capital at risk ${portfolio.capital_at_risk != null ? portfolio.capital_at_risk : '—'}` : '—'}` : 'not available'}
       </Typography>
     </Box>
   );
@@ -128,7 +139,7 @@ export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExpo
         <Stack data-testid="analysis-content" spacing={2} sx={{ minHeight: 0, overflowX: 'hidden', overflowY: 'auto', p: 2.5 }}>
           <AnalysisSummary rec={rec} />
           <Box data-testid="analysis-rationale"><ReasoningSection strategy={strategy} expanded /></Box>
-          <Box data-testid="analysis-levels"><LevelsStrip bundle={bundle ?? null} /></Box>
+          <Box data-testid="analysis-levels"><LevelsStrip bundle={bundle ? bundle : null} /></Box>
           <Box data-testid="analysis-numbers"><NumbersSaidStrip candidates={rec.sent?.candidates} move={bundle?.market_state?.straddle_move} citedExpiration={strategy.expiration} /></Box>
           <Box data-testid="analysis-cited"><CitedContractLine cited={rec.cited_contract} asOf={rec.sent?.candidates?.as_of ?? null} /></Box>
           <Box data-testid="analysis-grounding"><GroundingDetail grounding={rec.grounding} /></Box>

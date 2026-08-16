@@ -385,7 +385,7 @@ async function settleTicker() {
 }
 
 async function actIntoDialog(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('button', { name: 'Get AI recommendation' }));
+  await user.click(await screen.findByRole('button', { name: 'Analyze current snapshot' }));
   await user.click(await screen.findByTestId('ai-rec-act'));
   return await screen.findByTestId('trade-entry-dialog');
 }
@@ -771,7 +771,7 @@ describe('orders · scenario harness (keyless never blocks; ai_scenario provenan
       renderAt('/ticker/TSLA');
       await settleTicker();
       // Keyless: the REAL read is unavailable…
-      expect(await screen.findByRole('button', { name: 'Get AI recommendation' })).toBeDisabled();
+      expect(await screen.findByRole('button', { name: 'Analyze current snapshot' })).toBeDisabled();
       // …but a scenario run is NOT gated on key resolution/availability: it runs and POSTs.
       await screen.findByTestId('scenario-picker');
       await user.click(

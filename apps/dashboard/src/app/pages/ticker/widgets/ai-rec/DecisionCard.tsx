@@ -87,6 +87,7 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
   const invalidationLiteral = fieldLiteral({ decision: strategy.decision, value: strategy.invalidation_level, reason: rec.field_reasons?.invalidation_level });
   const entryTriggerLiteral = planFieldLiteral({ decision: strategy.decision, value: strategy.entry_trigger, reason: rec.field_reasons?.entry_trigger });
   const targetLiteral = fieldLiteral({ decision: strategy.decision, value: strategy.exit_plan?.target, reason: rec.field_reasons?.exit_target });
+  const localRulesDeclared = rec.grounding?.card === 'local_rules';
 
   return (
     <Box data-testid="ai-rec-decision-card">
@@ -104,7 +105,7 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
       {reasoning.lead && <Typography data-testid="decision-thesis" variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>{reasoning.lead}</Typography>}
       {!isTrade && strategy.reengage_when?.length ? <Typography variant="body2" sx={{ mt: 1 }}>{strategy.reengage_when.join(' · ')}</Typography> : null}
       {isTrade && <>
-        {missing.length > 0 && !(presentation.resultState === 'stale_newer_snapshot' || presentation.resultState === 'stale_at_generation' || presentation.resultState === 'superseded_inputs') && <Alert severity="info" sx={{ mt: 1 }} data-testid="rec-not-actionable">{incompleteAction(missing)}</Alert>}
+        {missing.length > 0 && !localRulesDeclared && !(presentation.resultState === 'stale_newer_snapshot' || presentation.resultState === 'stale_at_generation' || presentation.resultState === 'superseded_inputs') && <Alert severity="info" sx={{ mt: 1 }} data-testid="rec-not-actionable">{incompleteAction(missing)}</Alert>}
         <Box data-testid="decision-grid" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1, mt: 1 }}>
           <RiskField label="Max risk" literal={maxRiskLiteral} tip={MAX_RISK_TIP} />
           <RiskField label="Invalidation" literal={invalidationLiteral} tip="The level that says the idea is wrong." groundingState={rec.grounding?.fields.invalidation_level?.state} clause={<FigureClause field={rec.grounding?.fields.invalidation_level} testId="clause-invalidation" />} />

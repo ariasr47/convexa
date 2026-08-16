@@ -30,7 +30,7 @@ export function GroundingNote({ grounding }: { grounding: Grounding | null | und
         {line.text}
       </Typography>
       {line.tip && (
-        <AccessibleHelp label="Grounding help" text={line.tip} />
+        <AccessibleHelp label="Evidence help" text={line.tip} />
       )}
     </Stack>
   );

@@ -136,7 +136,16 @@ function convictionValueEl(): HTMLElement {
 /** Resolves any of the six plan/conviction slots by label, routing Confidence through its own
  *  traversal. */
 function slotValueEl(label: string): HTMLElement {
-  return label === PLAN_FIELD_LABEL.confidence ? convictionValueEl() : fieldValueEl(label);
+  if (label === PLAN_FIELD_LABEL.timeHorizon || label === PLAN_FIELD_LABEL.confidence) {
+    const existing = screen.queryByText(label);
+    if (!existing) {
+      const open = within(panel()).queryByRole('button', { name: COPY.action.analysis });
+      if (open) open.click();
+    }
+    const labelEl = screen.getByText(label);
+    return (labelEl.parentElement?.lastElementChild ?? labelEl.nextElementSibling) as HTMLElement;
+  }
+  return fieldValueEl(label);
 }
 
 const RESERVED = '—';
