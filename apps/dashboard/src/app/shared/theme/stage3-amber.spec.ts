@@ -333,7 +333,7 @@ const TEXT_AMBER_CONSUMERS = [
   '/src/app/features/auth/SettingsPage.tsx', //                  selected theme-toggle labels
   '/src/app/pages/ticker/widgets/opportunity-tier/OpportunityTier.tsx', // Prime banner body text
   '/src/app/pages/ticker/widgets/ai-rec/StateExportDrawer.tsx', // COPY buttons (11px)
-  '/src/app/features/trading/TradeEntryDialog.tsx', //           provenance chip label (13px)
+  '/src/app/features/trading/tradeEntry/TradeEntryDialogView.tsx', // provenance chip label (13px)
   '/src/app/shared/ui/TintChip.tsx', //                          the `emphasis` tone text
 ];
 

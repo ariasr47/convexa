@@ -699,11 +699,14 @@ describe('positions · additive (never a scoring input)', () => {
       String(c[0]),
     );
     // No bundle/ticker/scoring request is ever issued by the portfolio; only the contract lookup.
-    // (The who-am-I session read AND the sim-trade write gate are AUTH-class concerns, not scoring
-    // paths — excluded here. The auth gate carries no scoring input and never touches /api/ticker.)
+    // (The who-am-I session read, sim-trade write gate, and exact /api/book PUT persistence sync
+    // are auth/durability concerns, not scoring paths — excluded here.)
     expect(calls.some((u) => u.includes('/api/ticker/'))).toBe(false);
     const nonAuth = calls.filter(
-      (u) => !u.includes('/api/auth/') && !u.includes('/api/positions/sim-trade/gate'),
+      (u) =>
+        !u.includes('/api/auth/') &&
+        !u.includes('/api/positions/sim-trade/gate') &&
+        !u.includes('/api/book'),
     );
     expect(nonAuth.length).toBeGreaterThan(0);
     expect(nonAuth.every((u) => u.includes('/api/contract/'))).toBe(true);

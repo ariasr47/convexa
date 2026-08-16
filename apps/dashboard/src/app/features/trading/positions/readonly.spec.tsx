@@ -328,10 +328,11 @@ describe('additive-keeps-score-byte-identical · the portfolio issues no bundle/
 
     const urls = fetchMock.mock.calls.map(([u]) => String(u));
     // `/api/ticker`, the AI/scoring endpoints and any position→score POST are all absent. The
-    // session + sim-trade-gate calls belong to auth, not to the portfolio's data path.
+    // session, sim-trade-gate, and exact /api/book persistence calls belong to auth/durability,
+    // not to the portfolio's contract data path.
     expect(urls.some((u) => u.includes('/api/ticker'))).toBe(false);
     expect(urls.some((u) => /score|signals|ai[-_]/i.test(u))).toBe(false);
-    expect(urls.every((u) => /\/api\/(contract|auth|positions\/sim-trade\/gate)/.test(u))).toBe(
+    expect(urls.every((u) => /\/api\/(contract|auth|positions\/sim-trade\/gate|book)(\/|$)/.test(u))).toBe(
       true,
     );
   });

@@ -49,7 +49,7 @@ function installFetch(opts: InstallOpts = {}) {
   calledUrls = [];
   fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    calledUrls.push(url);
+    calledUrls.push(`${init?.method ?? 'GET'} ${url}`);
     if (url.includes('/api/auth/session'))
       return json(
         opts.session?.authenticated === false
@@ -632,7 +632,13 @@ describe('AC-31 (FE half) · no new fetch call is introduced by grouping', () =>
       '/api/contract/',
       '/api/ticker/', // pre-existing `useTickerSpots` per-underlying spot fetch (equity marks)
     ];
-    for (const url of calledUrls) {
+    for (const request of calledUrls) {
+      const [, url] = request.split(' ', 2);
+      if (url === '/api/book') {
+        // Signed-in durable sync uses the exact path for GET pull and PUT persistence.
+        expect(request.startsWith('GET ') || request.startsWith('PUT ')).toBe(true);
+        continue;
+      }
       expect(
         allowed.some((a) => url.includes(a)),
         url,

@@ -781,7 +781,7 @@ for (const scheme of ['dark', 'light'] as const) {
       await seed(page, { scheme });
       await page.goto('/ticker/TSLA');
       await expect(page.getByText('Call wall').first()).toBeAttached();
-      await page.getByRole('button', { name: 'Get AI recommendation' }).click();
+      await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
       // VACUITY GUARD — the densest new content really did render before measuring.
       await expect(page.getByTestId('cap-annotation')).toBeAttached();
       await expect(page.getByTestId('ai-rec-provenance-chip')).toBeAttached();
@@ -793,7 +793,7 @@ for (const scheme of ['dark', 'light'] as const) {
       await seed(page, { scheme });
       await page.goto('/ticker/TSLA');
       await expect(page.getByText('Call wall').first()).toBeAttached();
-      await page.getByRole('button', { name: 'Get AI recommendation' }).click();
+      await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
       // VACUITY GUARD — the new content really did render before measuring.
       await expect(page.getByTestId('grounding-card-line')).toBeAttached();
       await expect(page.getByTestId('clause-stop')).toBeAttached();

@@ -78,7 +78,7 @@ interface Props {
   activePersonaId: string; // 'default' | preset/custom id
   dataAge: string | null; // humanized bundle age, for the stale-born strip
   onAccept: (rec: RecResponse, personaName: string) => void;
-  /** ai-rec-backtest-orders: "Act as sim order" (UX §2). Optional so non-order hosts/tests stay
+  /** Optional simulated-order callback for hosts that expose that affordance. Non-order hosts/tests stay
    *  unchanged; the affordance is ABSENT (never disabled) when omitted. */
   onAct?: (rec: RecResponse, personaName: string) => void;
   onViewExport: (personaId: string | null) => void;
