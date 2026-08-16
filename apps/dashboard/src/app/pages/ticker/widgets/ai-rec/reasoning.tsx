@@ -185,10 +185,12 @@ function ReasoningProse({ text }: { text: string }) {
 export function ReasoningSection({
   strategy,
   suppressLead = false,
+  expanded = false,
   reengageLabel = COPY.reasoning.reengage,
 }: {
   strategy: RecStrategy;
   suppressLead?: boolean;
+  expanded?: boolean;
   reengageLabel?: string;
 }) {
   const { lead, detail, keyPoints, reengage } = deriveReasoning(strategy);
@@ -232,18 +234,21 @@ export function ReasoningSection({
       )}
       {detail && (
         <Box>
-          <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-            <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>
-            <Button
-              size="small"
-              onClick={() => setOpen((o) => !o)}
-              aria-expanded={open}
-              sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500 }}
-            >
-              {open ? COPY.reasoning.showLess : COPY.reasoning.showMore}
-            </Button>
-          </Stack>
-          <Collapse in={open}>
+          {!expanded && (
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>
+              <Button
+                size="small"
+                onClick={() => setOpen((o) => !o)}
+                aria-expanded={open}
+                sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500 }}
+              >
+                {open ? COPY.reasoning.showLess : COPY.reasoning.showMore}
+              </Button>
+            </Stack>
+          )}
+          {expanded && <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>}
+          <Collapse in={expanded || open}>
             <Box sx={{ mt: 0.5 }}>
               <ReasoningProse text={detail} />
             </Box>
