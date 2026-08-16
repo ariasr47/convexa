@@ -69,6 +69,14 @@ describe('AnalysisSurface', () => {
     expect(within(fields).queryByTestId('clause-invalidation')).toBeNull();
   });
 
+  it('renders grounding clauses beside present stop, target, and invalidation values', () => {
+    renderSurface({ rec: recAllTraced() });
+    const fields = screen.getByTestId('analysis-grounding-fields');
+    expect(within(fields).getByTestId('clause-stop')).toBeInTheDocument();
+    expect(within(fields).getByTestId('clause-target')).toBeInTheDocument();
+    expect(within(fields).getByTestId('clause-invalidation')).toBeInTheDocument();
+  });
+
   it('renders every supplied as-sent leaf, including closed absence reasons', () => {
     const rec = recAllTraced();
     rec.sent!.risk_inputs.effective_dollar_cap.not_derivable_reason = 'percent_without_account_size';
