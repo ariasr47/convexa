@@ -142,8 +142,7 @@ function slotValueEl(label: string): HTMLElement {
       const open = within(panel()).queryByRole('button', { name: COPY.action.analysis });
       if (open) open.click();
     }
-    const labelEl = screen.getByText(label);
-    return (labelEl.parentElement?.lastElementChild ?? labelEl.nextElementSibling) as HTMLElement;
+    return screen.getByTestId(`analysis-field-${label}`);
   }
   return fieldValueEl(label);
 }

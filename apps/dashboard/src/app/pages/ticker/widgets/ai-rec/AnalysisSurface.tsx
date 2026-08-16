@@ -34,7 +34,7 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
           [PLAN_FIELD_LABEL.confidence, strategy.confidence, rec.field_reasons?.confidence],
         ] as const).map(([label, value, reason]) => {
           const literal = planFieldLiteral({ decision: strategy.decision, value, reason });
-          return <Box key={label}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="body2">{literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}</Typography></Box>;
+          return <Box key={label}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography data-testid={`analysis-field-${label}`} variant="body2">{literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}</Typography></Box>;
         })}
       </Stack>
     </Stack>
