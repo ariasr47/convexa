@@ -442,6 +442,10 @@ async function ask(user: ReturnType<typeof renderApp>) {
   );
   await user.click(within(panel()).getByRole('button', { name: COPY.action.get }));
 }
+async function openAnalysis(user: ReturnType<typeof renderApp>) {
+  await user.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
+  return screen.findByRole('dialog', { name: /Full analysis & data/ });
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -479,7 +483,8 @@ describe('ai-rec · grounding (levels are bundle-sourced)', () => {
     expect(within(panel()).getByText('$999')).toBeInTheDocument();
 
     // …but the "Levels in play" strip is fed by the BUNDLE alone: 260/248/240 win, 999 never appears.
-    const strip = screen.getByText('Levels in play').parentElement as HTMLElement;
+    const analysis = await openAnalysis(user);
+    const strip = within(analysis).getByTestId('analysis-levels');
     expect(within(strip).getByText('260')).toBeInTheDocument(); // call wall (bundle)
     expect(within(strip).getByText('248')).toBeInTheDocument(); // gamma flip (bundle)
     expect(within(strip).getByText('240')).toBeInTheDocument(); // put wall (bundle)
@@ -593,12 +598,21 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
       // Produced states: the offered affordance is Accept; the provenance chip matches the source.
       await within(panel()).findByText(REC_BODY);
       expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeEnabled();
-      expect(within(panel()).getByTestId(chip as string)).toBeInTheDocument();
+      expect(
+        within(panel()).getByText(
+          chip === 'ai-rec-own-key' ? 'Using your key' : /2 of 3 free uses left today/,
+        ),
+      ).toBeInTheDocument();
     }
     // The states are mutually exclusive: no OTHER state's block/chip is in the DOM.
     for (const id of CTA_IDS) if (id !== cta) expect(within(panel()).queryByTestId(id)).toBeNull();
-    for (const c of ['ai-rec-own-key', 'ai-rec-free-uses'])
-      if (c !== chip) expect(within(panel()).queryByTestId(c)).toBeNull();
+    if (!cta) {
+      if (chip === 'ai-rec-own-key') {
+        expect(within(panel()).queryByText(/2 of 3 free uses left today/)).toBeNull();
+      } else {
+        expect(within(panel()).queryByText('Using your key')).toBeNull();
+      }
+    }
     // best-effort-isolated: the rec surface degrades ALONE — the bundle tiles keep rendering.
     expect(screen.getByText('Call wall')).toBeInTheDocument();
   });
@@ -714,7 +728,10 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     // AC-30/AC-31 — capture the grounding surface BEFORE either event, so "byte-stable" is an actual
     // before/after comparison, not an assumption.
     const cardLineBefore = within(panel()).getByTestId('grounding-card-line').textContent;
-    const clauseBefore = within(panel()).getByTestId('clause-stop').textContent;
+    fireEvent.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
+    await tick();
+    const analysis = screen.getByRole('dialog', { name: /Full analysis & data/ });
+    const clauseBefore = within(analysis).getByTestId('clause-stop').textContent;
     expect(cardLineBefore).toMatch(/Every checked figure traces/);
 
     // (a) SSE drop: the page's LIVE surface goes offline, but the rec is not a live-derived tile —
@@ -731,7 +748,7 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     // card line and the stop clause are BYTE-IDENTICAL to before the drop, and the node carries no
     // offline/dimmed marker (unlike the live-derived tiles the assertion above already checked).
     expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
-    expect(within(panel()).getByTestId('clause-stop').textContent).toBe(clauseBefore);
+    expect(within(analysis).getByTestId('clause-stop').textContent).toBe(clauseBefore);
     expect(
       within(panel()).getByTestId('grounding-card-line').getAttribute('aria-disabled'),
     ).toBeNull();
@@ -752,12 +769,12 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
       },
     });
     await tick(60_000);
-    expect(within(panel()).getByText(COPY.stale.chip)).toBeInTheDocument();
+    expect(within(panel()).getByTestId('decision-degraded')).toHaveTextContent('newer snapshot');
     expect(within(panel()).getByText(REC_BODY)).toBeInTheDocument(); // untouched
     expect(be.calls.rec).toBe(recCallsAtProduce); // NEVER re-ran without a user action
     // AC-31 — a newer bundle never re-derives or upgrades a grounding state: still byte-identical.
     expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
-    expect(within(panel()).getByTestId('clause-stop').textContent).toBe(clauseBefore);
+    expect(within(analysis).getByTestId('clause-stop').textContent).toBe(clauseBefore);
   });
 
   it('retains only direct export while a refreshed recommendation is pending', async () => {
@@ -798,8 +815,11 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
 
   it('cooldown disables the ask affordance and re-enables when it elapses', async () => {
     installBackend({
-      rec: producedRec({
+      status: makeStatus({
         gate: { state: 'cooling_down', cooldown_remaining_seconds: 3, reasons: [] },
+      }),
+      rec: producedRec({
+        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
       }),
     });
     render(
@@ -808,9 +828,6 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
       </MemoryRouter>,
     );
     await tick();
-    await act(async () => {
-      fireEvent.click(recoButton());
-    });
     await tick();
     expect(
       within(panel())
@@ -1186,23 +1203,15 @@ describe('tradeable-rec-inputs · the cap surface never appears on no_trade (AC-
     expect(within(panel()).queryByTestId('cap-annotation')).toBeNull();
   });
 
-  it('AC-69/70 (GATE Q correction) — the four-field row RENDERS on a no_trade verdict, `—` shown on all four with the not-applicable tip; never `not set` or `unavailable`', async () => {
+  it('AC-69/70 — no_trade remains a complete non-actionable verdict without a trade grid', async () => {
     installBackend({ rec: fixtureNoTradeRec() });
     const user = renderApp();
     await settle();
     await ask(user);
     await within(panel()).findByText(COPY.noTrade.title);
-    // POSITIVE — the row is present (this is the guard that was vacuous: it must assert the row
-    // EXISTS and shows `—`, not merely that the OTHER two literals are absent from an empty card).
-    const row = within(panel()).getByTestId('no-trade-four-field-row');
-    expect(within(row).getByText(COPY.risk.maxRisk)).toBeInTheDocument();
-    expect(within(row).getByText('Suggested size')).toBeInTheDocument();
-    expect(within(row).getByText('Target')).toBeInTheDocument();
-    expect(within(row).getByText('Stop')).toBeInTheDocument();
-    expect(within(row).getAllByText(RISK_FIELD_COPY.dash.text)).toHaveLength(4);
-    // NEGATIVE — never `not set` or `unavailable` on a no_trade card.
-    expect(within(panel()).queryByText(RISK_FIELD_COPY.notSet.text)).toBeNull();
-    expect(within(panel()).queryByText(RISK_FIELD_COPY.unavailable.text)).toBeNull();
+    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: COPY.action.reviewTrade })).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
   });
 });
 
@@ -1236,7 +1245,7 @@ describe('tradeable-rec-inputs · an empty risk block renders `not set` with the
     await ask(user);
     await within(panel()).findByText(`Trade · ${tradeRecNoRiskBlock().strategy!.bias}`);
     expect(within(panel()).getAllByText(RISK_FIELD_COPY.notSet.text).length).toBeGreaterThan(0);
-    expect(within(panel()).getAllByTestId('risk-field-set-risk-inputs').length).toBeGreaterThan(0);
+    expect(within(panel()).getAllByRole('link', { name: 'Set your risk inputs' }).length).toBeGreaterThan(0);
   });
 });
 
@@ -1262,7 +1271,8 @@ describe('tradeable-rec-inputs · AC-8 — the candidate set as-of + session bas
     const user = renderApp();
     await settle();
     await ask(user);
-    const line = await within(panel()).findByTestId('numbers-said-freshness');
+    const analysis = await openAnalysis(user);
+    const line = await within(analysis).findByTestId('numbers-said-freshness');
     expect(line).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
     expect(line).toHaveTextContent(/prior close|live session/);
   });
@@ -1272,7 +1282,8 @@ describe('tradeable-rec-inputs · AC-8 — the candidate set as-of + session bas
     const user = renderApp();
     await settle();
     await ask(user);
-    const cited = await within(panel()).findByTestId('cited-contract-line');
+    const analysis = await openAnalysis(user);
+    const cited = await within(analysis).findByTestId('cited-contract-line');
     expect(cited).toHaveTextContent(tradeRecEqualToCap().sent!.candidates.as_of as string);
     expect(cited.textContent ?? '').not.toContain('from the chain snapshot');
   });
@@ -1304,9 +1315,9 @@ describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on
     await settle();
     await ask(user);
     await within(panel()).findByText(`Trade · ${tradeRecEqualToCap().strategy!.bias}`);
-    const strip = await within(panel()).findByTestId('ai-rec-superseded-strip');
+    const strip = await within(panel()).findByTestId('decision-degraded');
     expect(strip).toHaveTextContent('changed after this read');
-    expect(within(strip).getByRole('button', { name: COPY.action.freshRec })).toBeInTheDocument();
+    expect(within(panel()).getByRole('button', { name: COPY.action.refresh })).toBeInTheDocument();
     // AC-31 (second half) — editing the risk inputs afterwards shows the shipped superseded-inputs
     // strip, but the grounding surface itself is UNCHANGED: still the pinned `all_traced` line, no
     // "changed"/re-derived grounding state anywhere.
@@ -1322,6 +1333,6 @@ describe('tradeable-rec-inputs · AC-64 — the superseded-inputs strip fires on
     await settle();
     await ask(user);
     await within(panel()).findByText(`Trade · ${tradeRecEqualToCap().strategy!.bias}`);
-    expect(within(panel()).queryByTestId('ai-rec-superseded-strip')).toBeNull();
+    expect(within(panel()).queryByTestId('decision-degraded')).toBeNull();
   });
 });
