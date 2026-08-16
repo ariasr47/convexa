@@ -20,6 +20,13 @@ const entries = files.map((file) => [file, readFileSync(file, 'utf8')] as const)
 const stripComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 const source = entries.map(([, text]) => stripComments(text)).join('\n');
 const has = (re: RegExp, text = source) => re.test(text);
+/** Detects a dialog component boundary, while deliberately permitting MUI Drawer/role=dialog. */
+const dialogBoundary = (text: string): string[] => [
+  ...text.matchAll(/\bimport\s+[\s\S]*?\b(?:\w*Dialog\w*)\b[\s\S]*?\bfrom\s+['"][^'"]+['"]/g),
+  ...text.matchAll(/\bfrom\s+['"][^'"]*Dialog(?:\.[^'"]+)?['"]/g),
+  ...text.matchAll(/\b(?:function|class|const)\s+\w*Dialog\b/g),
+  ...text.matchAll(/<\s*\w*Dialog\b/g),
+].map((match) => match[0]);
 
 describe('AI recommendation decision-card structural boundaries', () => {
   it('recursively inventories production modules and bans component hex colours', () => {
@@ -41,8 +48,7 @@ describe('AI recommendation decision-card structural boundaries', () => {
   });
 
   it('does not import or define an alternate simulated-entry dialog', () => {
-    expect(has(/(?:TradeEntryDialog|tradeEntry).*from/)).toBe(false);
-    expect(has(/\bTradeEntry\w*Dialog\b/)).toBe(false);
+    expect(dialogBoundary(source)).toEqual([]);
   });
 
   it('changed-path ownership excludes backend and dashboard API/client/store modules', () => {
@@ -57,5 +63,15 @@ describe('AI recommendation decision-card structural boundaries', () => {
     expect(has(/#[0-9a-f]{3,8}\b/i, poison)).toBe(true);
     expect(has(/\bstreamOffline\b/, poison)).toBe(true);
     expect(has(/Act as sim order/, poison)).toBe(true);
+  });
+
+  it('dialog guard is non-vacuous for common alternate entry names but permits MUI modal semantics', () => {
+    for (const poison of [
+      "import SimulatedOrderDialog from './SimulatedOrderDialog';",
+      "const PositionEntryDialog = () => <div />;",
+      '<AiRecEntryDialog open />',
+    ]) expect(dialogBoundary(poison).length).toBeGreaterThan(0);
+    expect(dialogBoundary('<Drawer role="dialog" />')).toEqual([]);
+    expect(dialogBoundary('type DialogCallback = () => void;')).toEqual([]);
   });
 });
