@@ -829,6 +829,22 @@ describe('ai-rec · advice behind Accept', () => {
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
   });
 
+  it('review confirmation writes exactly one position and keeps the pinned read', async () => {
+    installBackend({});
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(REC_BODY);
+    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+    await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Manual price' }));
+    await user.type(within(dialog).getByLabelText('Manual price'), '3');
+    await user.click(within(dialog).getByRole('button', { name: 'Open simulated position' }));
+    await waitFor(() => expect(allPositions()).toHaveLength(1));
+    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+  });
+
   it('create-order cancel preserves the pinned read and writes no order', async () => {
     installBackend({});
     const user = renderApp();
