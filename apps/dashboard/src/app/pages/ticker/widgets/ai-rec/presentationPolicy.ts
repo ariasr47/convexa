@@ -86,11 +86,11 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
 
   const degraded = resultState === 'stale_newer_snapshot' || resultState === 'stale_at_generation'
     || resultState === 'superseded_inputs' || resultState === 'incomplete_trade';
-  const gateIdle = input.effectiveGateState === 'available' && input.cooldownRemaining <= 0
-    && !input.cap.over_limit && input.inAppEnabled;
   const keyState = requestState === 'missing_key' || requestState === 'shared_allowance_exhausted'
     || requestState === 'shared_key_unavailable';
-  const unavailable = rec?.status === 'unavailable';
+  const unavailableRetryGate = requestState === 'unavailable' && signedIn
+    && input.effectiveGateState === 'available' && input.inAppEnabled
+    && (scenarioSelected || (input.cooldownRemaining <= 0 && !input.cap.over_limit));
 
   return {
     requestState,
@@ -100,13 +100,13 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       directExport: loading || !produced,
       analyze: !loading && requestState === 'idle' && !produced,
       askAnyway: !loading && requestState === 'no_edge',
-      retry: !loading && (unavailable || degraded) && gateIdle,
-      settings: !loading && keyState,
+      retry: !loading && (degraded && requestState === 'idle' || unavailableRetryGate),
+      settings: !loading && keyState && requestState !== 'signed_out',
       signIn: !loading && requestState === 'signed_out',
       reviewTrade: !loading && resultState === 'fresh_trade' && signedIn,
       createOrder: !loading && resultState === 'fresh_trade' && signedIn,
       analysis: !loading && produced,
-      refresh: !loading && degraded && gateIdle,
+      refresh: !loading && degraded && requestState === 'idle',
       dismiss: !loading && produced,
     },
   };
