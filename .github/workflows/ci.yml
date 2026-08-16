@@ -44,7 +44,9 @@ jobs:
         run: npm run typecheck
 
       - name: Unit tests (Vitest)
-        run: npx nx run-many -t test -p @convexa/dashboard,@convexa/api
+        # Hosted runners become timing-sensitive when Vitest saturates every reported CPU, and the
+        # jsdom diagnostics can otherwise push the useful failure summary past GitHub's log cap.
+        run: npx nx run-many -t test -p @convexa/dashboard,@convexa/api -- --reporter=dot --maxWorkers=2 --silent=passed-only
 
       - name: Production build (dashboard)
         run: npx nx build @convexa/dashboard --configuration=production
