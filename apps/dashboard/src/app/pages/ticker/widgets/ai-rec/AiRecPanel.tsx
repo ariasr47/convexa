@@ -171,6 +171,7 @@ export function AiRecPanel({
     loading,
     stale,
     signedIn,
+    canCreateOrder: Boolean(onAct),
     inAppEnabled,
     cap,
     cooldownRemaining,
@@ -339,11 +340,7 @@ export function AiRecPanel({
                 onAccept(producedRec, producedRec.persona.name),
               )
             }
-            onCreateOrder={
-              presentation.actions.createOrder && onAct
-                ? () => onAct(producedRec, producedRec.persona.name)
-                : undefined
-            }
+            onCreateOrder={presentation.actions.createOrder ? () => onAct!(producedRec, producedRec.persona.name) : undefined}
             onAnalysis={() => setAnalysisOpen(true)}
             onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}

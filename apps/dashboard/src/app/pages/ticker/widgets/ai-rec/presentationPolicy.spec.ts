@@ -9,6 +9,7 @@ const base = (): PresentationInput => ({
   loading: false,
   stale: false,
   signedIn: true,
+  canCreateOrder: true,
   inAppEnabled: true,
   cap,
   cooldownRemaining: 0,
@@ -33,7 +34,8 @@ describe('deriveAiRecPresentation', () => {
   it('cooldown', () => { expect(deriveAiRecPresentation(input({ cooldownRemaining: 4 })).requestState).toBe('cooldown'); });
   it('no edge exposes ask anyway', () => { const v = deriveAiRecPresentation(input({ effectiveGateState: 'no_fresh_edge' })); expect(v.requestState).toBe('no_edge'); expect(v.actions.askAnyway).toBe(true); });
   it('unavailable can retry when idle gate allows', () => { const rec = { ...recAllTraced(), status: 'unavailable' as const, strategy: null, unavailable_reason: 'transport' }; const v = deriveAiRecPresentation(input({ rec })); expect(v.requestState).toBe('unavailable'); expect(v.actions.retry).toBe(true); });
-  it('fresh complete trade exposes simulated actions', () => { const v = deriveAiRecPresentation(input({ rec: recAllTraced(), currentRiskInputs: recAllTraced().sent!.risk_inputs })); expect(v.resultState).toBe('fresh_trade'); expect(v.actions.reviewTrade).toBe(true); expect(v.actions.createOrder).toBe(true); expect(v.actions.analysis).toBe(true); });
+  it('fresh complete trade exposes simulated actions when callback capability is present', () => { const v = deriveAiRecPresentation(input({ rec: recAllTraced(), canCreateOrder: true, currentRiskInputs: recAllTraced().sent!.risk_inputs })); expect(v.resultState).toBe('fresh_trade'); expect(v.actions.reviewTrade).toBe(true); expect(v.actions.createOrder).toBe(true); expect(v.actions.analysis).toBe(true); });
+  it('fresh complete trade omits create-order action when callback capability is absent', () => { const v = deriveAiRecPresentation(input({ rec: recAllTraced(), canCreateOrder: false, currentRiskInputs: recAllTraced().sent!.risk_inputs })); expect(v.resultState).toBe('fresh_trade'); expect(v.actions.createOrder).toBe(false); });
   it('retained fresh result after sign-out has no create-order action', () => { const v = deriveAiRecPresentation(input({ rec: recAllTraced(), signedIn: false, currentRiskInputs: recAllTraced().sent!.risk_inputs })); expect(v.resultState).toBe('fresh_trade'); expect(v.actions.createOrder).toBe(false); expect(v.actions.reviewTrade).toBe(false); });
   it('soft fields may be absent without making a trade incomplete', () => { const rec = recAllTraced(); rec.strategy = { ...rec.strategy!, time_horizon: null, confidence: null }; const v = deriveAiRecPresentation(input({ rec })); expect(v.resultState).toBe('fresh_trade'); expect(v.missingPositionFields).toEqual([]); });
   it('blocked degraded refresh cannot retry through a cap gate', () => { const v = deriveAiRecPresentation(input({ rec: recAllTraced(), stale: true, cap: { ...cap, over_limit: true } })); expect(v.requestState).toBe('daily_cap'); expect(v.actions.retry).toBe(false); expect(v.actions.refresh).toBe(false); });
@@ -46,7 +48,7 @@ describe('deriveAiRecPresentation', () => {
   it('poisoned stale snapshot names missing structural fields and stays safe', () => {
     const rec = recAllTraced(); rec.stale_born = true; rec.strategy = { ...rec.strategy!, structure: null, strikes: [Number.NaN], expiration: null, entry_trigger: ' ' };
     const currentRiskInputs = { ...rec.sent!.risk_inputs!, account_size: (rec.sent!.risk_inputs!.account_size ?? 0) + 1 };
-    const view = deriveAiRecPresentation({ rec, loading: false, stale: true, signedIn: true, inAppEnabled: true, cap, cooldownRemaining: 0, effectiveGateState: 'available', scenarioSelected: false, currentRiskInputs });
+    const view = deriveAiRecPresentation({ rec, loading: false, stale: true, signedIn: true, canCreateOrder: true, inAppEnabled: true, cap, cooldownRemaining: 0, effectiveGateState: 'available', scenarioSelected: false, currentRiskInputs });
     expect(view.resultState).toBe('stale_newer_snapshot'); expect(view.missingPositionFields).toEqual(['Structure', 'Strike(s)', 'Expiration', 'Entry trigger']); expect(view.actions.reviewTrade).toBe(false); expect(view.actions.createOrder).toBe(false); expect(view.actions.analysis).toBe(true); expect(String(deriveAiRecPresentation)).not.toMatch(/LiveUpdate|streamOffline|EventSource|SSE/);
   });
 });

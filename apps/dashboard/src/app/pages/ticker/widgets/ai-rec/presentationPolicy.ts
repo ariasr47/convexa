@@ -15,6 +15,7 @@ export interface PresentationInput {
   loading: boolean;
   stale: boolean;
   signedIn: boolean;
+  canCreateOrder: boolean;
   inAppEnabled: boolean;
   cap: RecCap;
   cooldownRemaining: number;
@@ -106,7 +107,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       reviewTrade: !loading && resultState === 'fresh_trade' && signedIn,
       // The policy owns both fresh-result and auth actionability; the host only applies the
       // callback capability when consuming this one boolean.
-      createOrder: !loading && resultState === 'fresh_trade' && signedIn,
+      createOrder: !loading && resultState === 'fresh_trade' && signedIn && input.canCreateOrder,
       analysis: !loading && produced,
       refresh: !loading && degraded && requestState === 'idle',
       dismiss: !loading && produced,
