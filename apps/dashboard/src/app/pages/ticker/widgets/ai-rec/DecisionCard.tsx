@@ -317,7 +317,7 @@ export function DecisionCard({
         data-testid="decision-verdict"
         sx={{ mt: 1, p: 1.5, borderRadius: 2, bgcolor: 'action.hover' }}
       >
-        <Typography variant="subtitle1">
+        <Typography variant="subtitle1" component="p">
           {isTrade ? `Trade · ${strategy.bias}` : COPY.noTrade.title}
         </Typography>
       </Box>
