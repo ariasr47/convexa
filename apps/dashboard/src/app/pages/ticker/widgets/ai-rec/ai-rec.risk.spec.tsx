@@ -212,6 +212,8 @@ interface BackendCfg {
   bundle?: TickerBundle | (() => TickerBundle);
   status?: RecStatus;
   rec?: RecResponse | 'throw';
+  /** Hold the first recommendation response to make the visible loading phase observable. */
+  recDeferred?: Promise<RecResponse>;
   personas?: unknown | 'throw';
   aiKey?: {
     set?: boolean;
@@ -242,6 +244,7 @@ function installBackend(cfg: BackendCfg = {}) {
     },
     riskInputs: cfg.riskInputs,
     secondRecDeferred: cfg.secondRecDeferred,
+    recDeferred: cfg.recDeferred,
   };
   const calls = { ticker: 0, status: 0, rec: 0, export: 0, personas: 0, aiKeyPut: 0 };
   const recPostBodies: string[] = [];
@@ -352,6 +355,7 @@ function installBackend(cfg: BackendCfg = {}) {
         calls.rec++;
         recPostBodies.push(String(init?.body ?? ''));
         if (state.rec === 'throw') throw new Error('network down');
+        if (calls.rec === 1 && state.recDeferred) return json(await state.recDeferred);
         if (calls.rec === 2 && state.secondRecDeferred) {
           return json(await state.secondRecDeferred);
         }
@@ -552,27 +556,72 @@ describe('ai-rec · auth gate is outermost', () => {
     be.responsesSeen.forEach((b) => expect(b).not.toMatch(/"(key|api_key|ciphertext)"\s*:/));
   });
 
-  it.each([
-    { name: 'produced retained read', rec: recAllTraced() },
-    { name: 'unavailable BYO state', rec: recUnavailable('no_key') },
-  ])('$name is replaced by the signed-out gate with only export available', async ({ rec }) => {
-    const be = installBackend({ authenticated: false, rec });
-    renderApp();
-    await settle();
-
-    expect(await within(panel()).findByTestId('ai-rec-auth-gate')).toBeInTheDocument();
+  async function assertSignedOutTransition(be: ReturnType<typeof installBackend>) {
+    const requestsBefore = be.calls.rec;
+    window.dispatchEvent(new Event('convexa:test-sign-out'));
+    await waitFor(() =>
+      expect(within(panel()).getByTestId('ai-rec-auth-gate')).toBeInTheDocument(),
+    );
     expect(within(panel()).getByTestId('ai-rec-signin-button')).toBeEnabled();
     expect(
       within(panel()).getAllByRole('button', { name: COPY.action.viewExport }).length,
     ).toBeGreaterThan(0);
-    expect(within(panel()).queryByTestId('ai-rec-decision-card')).toBeNull();
-    expect(within(panel()).queryByTestId('ai-rec-state-no-key')).toBeNull();
-    expect(within(panel()).queryByTestId('ai-rec-state-admin-exhausted')).toBeNull();
-    expect(within(panel()).queryByTestId('ai-rec-state-shared-unconfigured')).toBeNull();
-    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
-    expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
-    expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
-    expect(be.calls.rec).toBe(0);
+    for (const testId of [
+      'ai-rec-decision-card',
+      'ai-rec-state-no-key',
+      'ai-rec-state-admin-exhausted',
+      'ai-rec-state-shared-unconfigured',
+    ]) {
+      expect(within(panel()).queryByTestId(testId)).toBeNull();
+    }
+    for (const label of [
+      COPY.action.retry,
+      COPY.action.accept,
+      COPY.action.createOrder,
+      COPY.action.analysis,
+      COPY.action.dismiss,
+    ]) {
+      expect(within(panel()).queryByRole('button', { name: label })).toBeNull();
+    }
+    expect(within(panel()).queryByText(COPY.loading.title)).toBeNull();
+    expect(within(panel()).queryByText(COPY.unavailable.title)).toBeNull();
+    expect(
+      within(panel()).queryByText(/Next read persona|AI key|Daily AI limit|Cooling down/),
+    ).toBeNull();
+    expect(be.calls.rec).toBe(requestsBefore);
+  }
+
+  it('produced retained read transitions from signed-in to signed-out without remount/request', async () => {
+    const be = installBackend({ authenticated: true, rec: recAllTraced() });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
+    await assertSignedOutTransition(be);
+  });
+
+  it('unavailable BYO state transitions from signed-in to signed-out without remount/request', async () => {
+    const be = installBackend({ authenticated: true, rec: recUnavailable('no_key') });
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    expect(within(panel()).getByTestId('ai-rec-state-no-key')).toBeInTheDocument();
+    await assertSignedOutTransition(be);
+  });
+
+  it('loading transitions from signed-in to signed-out without remount/request', async () => {
+    let resolveRec!: (value: RecResponse) => void;
+    const recDeferred = new Promise<RecResponse>((resolve) => {
+      resolveRec = resolve;
+    });
+    const be = installBackend({ authenticated: true, rec: recAllTraced(), recDeferred });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByRole('button', { name: COPY.action.get }));
+    await within(panel()).findByText(COPY.loading.title);
+    expect(be.calls.rec).toBe(1);
+    await assertSignedOutTransition(be);
+    resolveRec(recAllTraced());
   });
 });
 
