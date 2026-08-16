@@ -331,6 +331,7 @@ export function AiRecPanel({
           <UnavailableBlock
             cap={cap}
             cooldownRemaining={cooldownRemaining}
+            retryAllowed={presentation.actions.retry}
             onRetry={ai.retry}
             scenario={rec?.scenario ?? null}
           />
@@ -374,9 +375,7 @@ export function AiRecPanel({
               {!hasRec && <SnapshotHint bundle={bundle} />}
               {!producedRec && (
                 <ActionRegion
-                  inAppEnabled={inAppEnabled}
                   cap={cap}
-                  effectiveGateState={effectiveGateState}
                   cooldownRemaining={cooldownRemaining}
                   reasons={gate.reasons}
                   compact={hasRec}
@@ -479,9 +478,7 @@ function SignedOutGate({
 
 // ---- The gated action control ----------------------------------------------------------------
 function ActionRegion({
-  inAppEnabled,
   cap,
-  effectiveGateState,
   cooldownRemaining,
   reasons,
   compact,
@@ -492,9 +489,7 @@ function ActionRegion({
   onGet,
   onAskAnyway,
 }: {
-  inAppEnabled: boolean;
   cap: { over_limit: boolean; resets_at: string };
-  effectiveGateState: string;
   cooldownRemaining: number;
   reasons: string[];
   compact: boolean;
@@ -614,11 +609,13 @@ function ActionRegion({
 function UnavailableBlock({
   cap,
   cooldownRemaining,
+  retryAllowed,
   onRetry,
   scenario = null,
 }: {
   cap: { over_limit: boolean; resets_at: string };
   cooldownRemaining: number;
+  retryAllowed: boolean;
   onRetry: () => void;
   /** Non-null when a FAULT SCENARIO produced this degraded state — the scripted marking still
    *  shows so the operator knows it was scripted (UX §6, AC-40). The block itself is the standard
@@ -640,9 +637,11 @@ function UnavailableBlock({
       sx={{ mt: 1 }}
       action={
         <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
-          <Button color="inherit" size="small" disabled={retryDisabled} onClick={onRetry}>
-            {COPY.action.retry}
-          </Button>
+          {retryAllowed && (
+            <Button color="inherit" size="small" disabled={retryDisabled} onClick={onRetry}>
+              {COPY.action.retry}
+            </Button>
+          )}
           {sub && (
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {sub}

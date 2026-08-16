@@ -1,11 +1,10 @@
 # ai-rec-decision-card — pipeline manifest
-Stage:        GATE PLAN complete — ready for frontend execution
+Stage:        GATE V — written behavior contract awaiting owner approval
 Repos:        frontend
 Brief:        BRIEF.md present; visual direction approved 2026-08-15
 Contracts:
-  - SPEC.md                    locked — owner approved 2026-08-15
-  - INTERFACE_CONTRACT.md      locked — NO_BACKEND_CHANGE
-  - PLAN.md                    executable — 6 tasks / all 32 ACs mapped
+  - SPEC.md                    draft — owner review required
+  - INTERFACE_CONTRACT.md      NO_BACKEND_CHANGE
 Open amendments: none
 QA (GATE Q):  pending implementation
-Last gateway:  GATE PLAN + contract_lint PASS (0 errors, 3 project-context size warnings) @ 2026-08-15
+Last gateway:  GATE V contract_lint PASS (0 errors, 3 project-context size warnings) @ 2026-08-15

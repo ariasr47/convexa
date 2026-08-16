@@ -608,7 +608,9 @@ async function openProducedRecommendation(page: Page) {
 
 test.describe('AI recommendation decision card', () => {
   for (const scheme of ['dark', 'light'] as const) {
-    test(`393x852 ${scheme}: analysis is a single full-width sheet without page overflow`, async ({ page }) => {
+    test(`393x852 ${scheme}: analysis is a single full-width sheet without page overflow`, async ({
+      page,
+    }) => {
       test.setTimeout(30_000);
       await page.setViewportSize({ width: 393, height: 852 });
       await stubNetwork(page);
@@ -619,15 +621,22 @@ test.describe('AI recommendation decision card', () => {
       await opener.click();
       const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
       await expect(dialog).toBeVisible();
-      await expect(dialog.getByRole('heading', { name: 'Full analysis & data · TSLA' })).toHaveCount(1);
+      await expect(
+        dialog.getByRole('heading', { name: 'Full analysis & data · TSLA' }),
+      ).toHaveCount(1);
       await expect(dialog.getByRole('button', { name: 'Close analysis' })).toHaveCount(1);
       const content = dialog.getByTestId('analysis-content');
       await expect(content).toHaveCount(1);
       await expect(page.locator('.MuiDrawer-paper')).toHaveCSS('overflow', 'hidden');
-      const scrollRegions = await dialog.locator('*').evaluateAll((nodes) => nodes.filter((node) => {
-        const style = getComputedStyle(node);
-        return /auto|scroll/.test(style.overflowY);
-      }).map((node) => (node as HTMLElement).dataset.testid ?? node.className).filter(Boolean));
+      const scrollRegions = await dialog.locator('*').evaluateAll((nodes) =>
+        nodes
+          .filter((node) => {
+            const style = getComputedStyle(node);
+            return /auto|scroll/.test(style.overflowY);
+          })
+          .map((node) => (node as HTMLElement).dataset.testid ?? node.className)
+          .filter(Boolean),
+      );
       expect(scrollRegions).toEqual(['analysis-content']);
       const geometry = await page.evaluate(() => ({
         pageWidth: document.documentElement.scrollWidth,
@@ -636,9 +645,14 @@ test.describe('AI recommendation decision card', () => {
       }));
       expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.viewport);
       expect(geometry.bodyWidth).toBeLessThanOrEqual(geometry.viewport);
-      const sheetWidth = await dialog.evaluate((node) => (node as HTMLElement).getBoundingClientRect().width);
+      const sheetWidth = await dialog.evaluate(
+        (node) => (node as HTMLElement).getBoundingClientRect().width,
+      );
       expect(sheetWidth).toBeLessThanOrEqual(393.5);
-      const scroll = await content.evaluate((node) => ({ scrollHeight: node.scrollHeight, clientHeight: node.clientHeight }));
+      const scroll = await content.evaluate((node) => ({
+        scrollHeight: node.scrollHeight,
+        clientHeight: node.clientHeight,
+      }));
       expect(scroll.scrollHeight).toBeGreaterThan(scroll.clientHeight);
       const cardMobile = await page.getByTestId('ai-rec-decision-card').evaluate((node) => ({
         scrollWidth: node.scrollWidth,
@@ -652,7 +666,9 @@ test.describe('AI recommendation decision card', () => {
   }
 
   for (const scheme of ['dark', 'light'] as const) {
-    test(`1440x900 ${scheme}: decision hierarchy is visible while ticker context remains visible`, async ({ page }) => {
+    test(`1440x900 ${scheme}: decision hierarchy is visible while ticker context remains visible`, async ({
+      page,
+    }) => {
       test.setTimeout(30_000);
       await page.setViewportSize({ width: 1440, height: 900 });
       await stubNetwork(page);
@@ -663,7 +679,9 @@ test.describe('AI recommendation decision card', () => {
       await expect(page.getByRole('button', { name: 'Review simulated trade' })).toBeVisible();
       const card = page.getByTestId('ai-rec-decision-card');
       await expect(card).toBeVisible();
-      expect(await card.evaluate((node) => getComputedStyle(node).overflowY)).not.toMatch(/auto|scroll/);
+      expect(await card.evaluate((node) => getComputedStyle(node).overflowY)).not.toMatch(
+        /auto|scroll/,
+      );
       const wideGeometry = await page.evaluate(() => ({
         html: document.documentElement.scrollWidth,
         body: document.body.scrollWidth,
@@ -682,13 +700,17 @@ test.describe('AI recommendation decision card', () => {
       await page.getByRole('button', { name: 'Full analysis & data' }).click();
       const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
       await expect(dialog).toBeVisible();
-      const drawerWidth = await dialog.evaluate((node) => (node as HTMLElement).getBoundingClientRect().width);
+      const drawerWidth = await dialog.evaluate(
+        (node) => (node as HTMLElement).getBoundingClientRect().width,
+      );
       expect(drawerWidth).toBeLessThan(1440 * 0.6);
       await expect(page.getByText('Call wall').first()).toBeVisible();
     });
   }
 
-  test('keyboard focus enters, contains, escapes, and returns to the analysis opener', async ({ page }) => {
+  test('keyboard focus enters, contains, escapes, and returns to the analysis opener', async ({
+    page,
+  }) => {
     test.setTimeout(30_000);
     await page.setViewportSize({ width: 393, height: 852 });
     await stubNetwork(page);
@@ -699,21 +721,36 @@ test.describe('AI recommendation decision card', () => {
     const dialog = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
     const close = dialog.getByRole('button', { name: 'Close analysis' });
     await expect(close).toBeFocused();
-    const focusableCount = await dialog.evaluate((node) => node.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ).length);
+    const focusableCount = await dialog.evaluate(
+      (node) =>
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ).length,
+    );
     expect(focusableCount).toBeGreaterThan(1);
     for (let index = 1; index < focusableCount; index += 1) await page.keyboard.press('Tab');
-    const last = await dialog.evaluate((node, count) => node.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ).item(count - 1) === document.activeElement, focusableCount);
+    const last = await dialog.evaluate(
+      (node, count) =>
+        node
+          .querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          )
+          .item(count - 1) === document.activeElement,
+      focusableCount,
+    );
     expect(last).toBe(true);
     await page.keyboard.press('Tab');
     await expect(close).toBeFocused();
     await page.keyboard.press('Shift+Tab');
-    const wrappedLast = await dialog.evaluate((node, count) => node.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ).item(count - 1) === document.activeElement, focusableCount);
+    const wrappedLast = await dialog.evaluate(
+      (node, count) =>
+        node
+          .querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          )
+          .item(count - 1) === document.activeElement,
+      focusableCount,
+    );
     expect(wrappedLast).toBe(true);
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);

@@ -3,18 +3,10 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
-import {
-  Box,
-  Button,
-  Collapse,
-  Stack,
-  Typography,
-  type SxProps,
-  type Theme,
-} from '@mui/material';
+import { Box, Button, Collapse, Stack, Typography, type SxProps, type Theme } from '@mui/material';
 import { useState } from 'react';
-import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
 import { AccessibleHelp } from './AccessibleHelp';
+import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
 
 const MONO = typographyTokens.monoFontFamily;
 

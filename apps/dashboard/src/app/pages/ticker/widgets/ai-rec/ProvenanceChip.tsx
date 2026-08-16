@@ -6,8 +6,8 @@
  */
 import type { RiskInputs } from '@convexa/api';
 import { Chip } from '@mui/material';
-import { PROVENANCE_CHIP_TIP, provenanceChip } from './copy';
 import { AccessibleHelp } from './AccessibleHelp';
+import { PROVENANCE_CHIP_TIP, provenanceChip } from './copy';
 
 export function ProvenanceChip({ riskInputs }: { riskInputs: RiskInputs | undefined | null }) {
   if (!riskInputs || riskInputs.state !== 'set' || riskInputs.account_size == null) return null;

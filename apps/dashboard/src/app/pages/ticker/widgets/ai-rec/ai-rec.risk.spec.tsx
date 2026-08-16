@@ -786,6 +786,21 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(be.calls.ticker).toBe(tickerBefore);
   });
 
+  it('transport fault under a denied no-fresh-edge gate hides Retry per presentation policy', async () => {
+    const be = installBackend({
+      rec: 'throw',
+      status: makeStatus({
+        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 0, reasons: ['score low'] },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(await within(panel()).findByRole('button', { name: COPY.action.askAnyway }));
+    await within(panel()).findByText(COPY.unavailable.title);
+    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
+    expect(be.calls.rec).toBe(1);
+  });
+
   it('personas endpoint down: the panel degrades to the embedded presets and still produces a rec', async () => {
     const be = installBackend({ personas: 'throw' });
     const user = renderApp();

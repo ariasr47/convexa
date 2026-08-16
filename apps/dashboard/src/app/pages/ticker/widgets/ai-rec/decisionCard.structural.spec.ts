@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 const featureDir = resolve(process.cwd(), 'src/app/pages/ticker/widgets/ai-rec');
 const isExcluded = (file: string) =>
-  /\.spec\.(?:ts|tsx)$|\.test\.(?:ts|tsx)$|(?:^|[\\/])(?:fixtures?|__fixtures__)(?:[\\/]|\.)/i.test(file);
+  /\.spec\.(?:ts|tsx)$|\.test\.(?:ts|tsx)$|(?:^|[\\/])(?:fixtures?|__fixtures__)(?:[\\/]|\.)/i.test(
+    file,
+  );
 function productionFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -17,7 +19,8 @@ function productionFiles(dir: string): string[] {
 const files = productionFiles(featureDir);
 const entries = files.map((file) => [file, readFileSync(file, 'utf8')] as const);
 // Comments may quote retired copy or dialog provenance; guards inspect executable/source text only.
-const stripComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+const stripComments = (text: string) =>
+  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
 const source = entries.map(([, text]) => stripComments(text)).join('\n');
 const has = (re: RegExp, text = source) => re.test(text);
 /** Detects a dialog component boundary, while deliberately permitting MUI Drawer/role=dialog. */
@@ -28,9 +31,12 @@ const dialogBoundary = (text: string): string[] => {
   const matches: string[] = [];
   for (const match of runtime.matchAll(/\bimport\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]/g)) {
     const [, clause, module] = match;
-    if (/\b\w*Dialog\b/.test(clause) || /(?:^|[\\/])\w*Dialog(?:\.[^\\/]*)?$/.test(module)) matches.push(match[0]);
+    if (/\b\w*Dialog\b/.test(clause) || /(?:^|[\\/])\w*Dialog(?:\.[^\\/]*)?$/.test(module))
+      matches.push(match[0]);
   }
-  matches.push(...[...runtime.matchAll(/\b(?:function|class|const)\s+\w*Dialog\b/g)].map((match) => match[0]));
+  matches.push(
+    ...[...runtime.matchAll(/\b(?:function|class|const)\s+\w*Dialog\b/g)].map((match) => match[0]),
+  );
   matches.push(...[...runtime.matchAll(/<\s*\w*Dialog\b/g)].map((match) => match[0]));
   return matches;
 };
@@ -59,10 +65,15 @@ describe('AI recommendation decision-card structural boundaries', () => {
   });
 
   it('changed-path ownership excludes backend and dashboard API/client/store modules', () => {
-    const changed = execFileSync('git', ['diff', '--name-only', 'c678dc1..HEAD'], { encoding: 'utf8' })
-      .split(/\r?\n/).filter(Boolean);
+    const changed = execFileSync('git', ['diff', '--name-only', 'c678dc1..HEAD'], {
+      encoding: 'utf8',
+    })
+      .split(/\r?\n/)
+      .filter(Boolean);
     expect(changed.some((file) => /^(?:apps\/api|libs\/api)(?:\/|$)/.test(file))).toBe(false);
-    expect(changed.some((file) => /^apps\/dashboard\/.*(?:api|client|store)(?:\/|\.)/i.test(file))).toBe(false);
+    expect(
+      changed.some((file) => /^apps\/dashboard\/.*(?:api|client|store)(?:\/|\.)/i.test(file)),
+    ).toBe(false);
   });
 
   it('the guards catch an omitted/new production module poison', () => {
@@ -77,10 +88,13 @@ describe('AI recommendation decision-card structural boundaries', () => {
       "import SimulatedOrderDialog from './SimulatedOrderDialog';",
       "import { PositionEntryDialog as Entry } from './entries';",
       '<AiRecEntryDialog open />',
-    ]) expect(dialogBoundary(poison).length).toBeGreaterThan(0);
+    ])
+      expect(dialogBoundary(poison).length).toBeGreaterThan(0);
     expect(dialogBoundary('<Drawer role="dialog" />')).toEqual([]);
     expect(dialogBoundary('type DialogCallback = () => void;')).toEqual([]);
-    expect(dialogBoundary("import type { DialogCallback, AnalysisDialogState } from './types';")).toEqual([]);
+    expect(
+      dialogBoundary("import type { DialogCallback, AnalysisDialogState } from './types';"),
+    ).toEqual([]);
     expect(dialogBoundary("import { type DialogCallback, Drawer } from './types';")).toEqual([]);
   });
 });
