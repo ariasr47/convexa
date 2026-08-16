@@ -812,6 +812,21 @@ describe('ai-rec · advice behind Accept', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(allPositions()).toEqual([]); // advice, not a command
   });
+
+  it('review cancel preserves the pinned card and writes no position', async () => {
+    installBackend({});
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(REC_BODY);
+    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+    await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(allPositions()).toHaveLength(0);
+    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+  });
+
 });
 
 // Unit — the Accept→prefill handoff object (the dialog's INTERNALS have their own risk spec;
