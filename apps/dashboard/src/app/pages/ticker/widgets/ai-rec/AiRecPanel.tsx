@@ -102,17 +102,8 @@ export function AiRecPanel({
   onChangeReadPersona,
   fillHeight,
 }: Props) {
-  const {
-    rec,
-    loading,
-    stale,
-    inAppEnabled,
-    cap,
-    effectiveGateState,
-    readinessGateState,
-    cooldownRemaining,
-    gate,
-  } = ai;
+  const { rec, loading, stale, inAppEnabled, cap, readinessGateState, cooldownRemaining, gate } =
+    ai;
   const navigate = useNavigate();
 
   // Auth gate is OUTERMOST over ai-rec's own gating (D6f, AC-E4/E5). Logged-out ⇒ the "ask AI" control
@@ -179,7 +170,6 @@ export function AiRecPanel({
     inAppEnabled,
     cap,
     cooldownRemaining,
-    effectiveGateState,
     readinessGateState,
     scenarioSelected,
     currentRiskInputs,

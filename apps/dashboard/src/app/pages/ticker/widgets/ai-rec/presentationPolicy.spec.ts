@@ -13,7 +13,6 @@ const base = (): PresentationInput => ({
   inAppEnabled: true,
   cap,
   cooldownRemaining: 0,
-  effectiveGateState: 'available',
   readinessGateState: 'available',
   scenarioSelected: false,
   currentRiskInputs: null,
@@ -156,7 +155,6 @@ describe('deriveAiRecPresentation', () => {
         scenarioSelected: true,
         cap: { ...cap, over_limit: true },
         cooldownRemaining: 30,
-        effectiveGateState: 'cooling_down',
         readinessGateState: 'available',
       }),
     );
@@ -291,7 +289,6 @@ describe('deriveAiRecPresentation', () => {
       inAppEnabled: true,
       cap,
       cooldownRemaining: 0,
-      effectiveGateState: 'available',
       readinessGateState: 'available',
       scenarioSelected: false,
       currentRiskInputs,

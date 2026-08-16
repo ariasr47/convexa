@@ -197,15 +197,6 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     );
   }, [rec, bundle]);
 
-  // Effective gate state: the local countdown is the cooldown source of truth; otherwise the
-  // server's reported gate (no_fresh_edge / available). A server cooling_down with a now-elapsed
-  // local countdown reads as available again.
-  const effectiveGateState =
-    cooldownRemaining > 0
-      ? 'cooling_down'
-      : gate.state === 'cooling_down'
-        ? 'available'
-        : gate.state;
   // Readiness is the server's gate decision independent of the local cooldown display. The
   // backend resolves no_fresh_edge before cooling_down, so a raw cooling_down gate means the
   // readiness decision was available; keep no_fresh_edge distinct even if a cooldown is present.
@@ -219,7 +210,6 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     cap,
     statusReady,
     cooldownRemaining,
-    effectiveGateState,
     readinessGateState,
     // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
     scenarios,

@@ -30,7 +30,6 @@ export interface PresentationInput {
   inAppEnabled: boolean;
   cap: RecCap;
   cooldownRemaining: number;
-  effectiveGateState: string;
   readinessGateState: 'available' | 'no_fresh_edge';
   scenarioSelected: boolean;
   currentRiskInputs: RiskInputs | null | undefined;
