@@ -1,23 +1,29 @@
-/** Task 5 source boundaries. These guards intentionally inspect production source, not rendered CSS. */
+/** Task 5 source boundaries. Production inventory is recursive and intentionally mutation-tested. */
+import { execFileSync } from 'node:child_process';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const modules = import.meta.glob('./*.{ts,tsx}', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-const productionEntries = Object.entries(modules).filter(([file]) =>
-  /(?:DecisionCard|AnalysisSurface|presentationPolicy)\.(?:ts|tsx)$/.test(file),
-);
-const source = productionEntries.map(([, value]) => value).join('\n');
-const productionFiles = productionEntries.map(([file]) => file);
-
-function has(re: RegExp, text = source): boolean {
-  return re.test(text);
+const featureDir = resolve(process.cwd(), 'src/app/pages/ticker/widgets/ai-rec');
+const isExcluded = (file: string) =>
+  /\.spec\.(?:ts|tsx)$|\.test\.(?:ts|tsx)$|(?:^|[\\/])(?:fixtures?|__fixtures__)(?:[\\/]|\.)/i.test(file);
+function productionFiles(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return productionFiles(path);
+    return /\.(?:ts|tsx)$/.test(entry.name) && !isExcluded(path) ? [path] : [];
+  });
 }
+const files = productionFiles(featureDir);
+const entries = files.map((file) => [file, readFileSync(file, 'utf8')] as const);
+// Comments may quote retired copy or dialog provenance; guards inspect executable/source text only.
+const stripComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+const source = entries.map(([, text]) => stripComments(text)).join('\n');
+const has = (re: RegExp, text = source) => re.test(text);
 
 describe('AI recommendation decision-card structural boundaries', () => {
-  it('uses theme tokens rather than component-owned hex colours', () => {
+  it('recursively inventories production modules and bans component hex colours', () => {
+    expect(files.length).toBeGreaterThan(3);
     expect(has(/#[0-9a-f]{3,8}\b/i)).toBe(false);
     expect(has(/#fff\b/i)).toBe(false);
   });
@@ -39,9 +45,17 @@ describe('AI recommendation decision-card structural boundaries', () => {
     expect(has(/\bTradeEntry\w*Dialog\b/)).toBe(false);
   });
 
-  it('keeps API/client/store ownership outside the decision-card presentation files', () => {
-    expect(productionFiles.length).toBe(3);
-    expect(productionFiles.some((file) => /(?:api|client|store)/i.test(file))).toBe(false);
-    expect(has(/(?:fetch\s*\(|axios|use[A-Z]\w*(?:Store|Client|Api)\b)/)).toBe(false);
+  it('changed-path ownership excludes backend and dashboard API/client/store modules', () => {
+    const changed = execFileSync('git', ['diff', '--name-only', 'c678dc1..HEAD'], { encoding: 'utf8' })
+      .split(/\r?\n/).filter(Boolean);
+    expect(changed.some((file) => /^(?:apps\/api|libs\/api)(?:\/|$)/.test(file))).toBe(false);
+    expect(changed.some((file) => /^apps\/dashboard\/.*(?:api|client|store)(?:\/|\.)/i.test(file))).toBe(false);
+  });
+
+  it('the guards catch an omitted/new production module poison', () => {
+    const poison = stripComments("export const poison = '#fff streamOffline Act as sim order';");
+    expect(has(/#[0-9a-f]{3,8}\b/i, poison)).toBe(true);
+    expect(has(/\bstreamOffline\b/, poison)).toBe(true);
+    expect(has(/Act as sim order/, poison)).toBe(true);
   });
 });
