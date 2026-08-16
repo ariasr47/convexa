@@ -7,7 +7,6 @@
 
 // ---- §2 — the Act affordance -------------------------------------------------------------------
 
-export const ACT_LABEL = 'Act as sim order';
 export const ACT_TOOLTIP =
   'Creates a simulated order encoding this plan — trigger, limit, stop, target — that watches ' +
   'live data and works the entry unattended. No real order, ever.';

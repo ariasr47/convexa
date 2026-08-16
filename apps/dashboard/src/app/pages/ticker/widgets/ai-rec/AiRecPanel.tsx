@@ -77,6 +77,7 @@ import {
 } from './copy';
 import { FigureClause } from './FigureClause';
 import { DecisionCard } from './DecisionCard';
+import { AnalysisSurface } from './AnalysisSurface';
 import { deriveAiRecPresentation } from './presentationPolicy';
 import { GroundingNote } from './GroundingNote';
 import {
@@ -215,11 +216,16 @@ export function AiRecPanel({
     scenarioSelected,
     currentRiskInputs,
   });
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  // A retained response is still pinned while a new request is loading, but the decision card
+  // must not present that old read as the current result. Analysis is likewise pinned to this
+  // produced response and never recomputed by opening/closing the surface.
+  const producedRec = rec?.status === 'produced' && rec.strategy ? rec : null;
 
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
   // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
   // never amber — amber on this surface belongs to the Trade verdict alone.
-  const exportAction = (
+  const exportAction = presentation.actions.directExport ? (
     <Button
       size="small"
       onClick={() => onViewExport(readPersonaIdForRequest)}
@@ -234,12 +240,9 @@ export function AiRecPanel({
       }}
     >
       {COPY.action.viewExport}
-      {/* arrow is aria-hidden so the accessible name stays exactly "View what's sent" (tests). */}
-      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>
-        →
-      </Box>
+      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>→</Box>
     </Button>
-  );
+  ) : null;
 
   return (
     <Box
@@ -275,13 +278,13 @@ export function AiRecPanel({
                 mb: 0.5,
               }}
             >
-              Persona for this read
+              Next read persona
             </Typography>
             <FormControl size="small" fullWidth>
               <Select
                 id="read-persona-select"
                 value={readPersonaId}
-                inputProps={{ 'aria-label': 'Persona for this read' }}
+                inputProps={{ 'aria-label': 'Next read persona' }}
                 onChange={(e) => onChangeReadPersona(String(e.target.value))}
               >
                 {personas.map((p) => (
@@ -291,13 +294,11 @@ export function AiRecPanel({
                 ))}
               </Select>
             </FormControl>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
-            >
-              Defaults to your active persona ({activeName}). Changing it here frames this one read
-              only — it doesn't change your active persona and never recomputes any number.
-            </Typography>
+            <Tooltip arrow describeChild title={`Defaults to your active persona (${activeName}). Changes apply only to the next read and never recompute the pinned result.`}>
+              <Typography variant="caption" component="span" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+                Next request only · does not change the active persona
+              </Typography>
+            </Tooltip>
           </Box>
         )}
         {/* Scenario picker (operator-only, flag-gated OFF — D1/AC-34). Rendered ONLY when the
@@ -365,19 +366,19 @@ export function AiRecPanel({
           />
         )}
 
-        {hasRec && rec && (
+        {producedRec && !loading && (
           <DecisionCard
-            rec={rec}
+            rec={producedRec}
             bundle={bundle}
             presentation={presentation}
             dataAge={dataAge}
             onReview={() =>
               authGate.guard(AUTH_COPY.positions.gateAcceptRec, () =>
-                onAccept(rec, rec.persona.name),
+                onAccept(producedRec, producedRec.persona.name),
               )
             }
-            onCreateOrder={onAct && signedIn ? () => onAct(rec, rec.persona.name) : undefined}
-            onAnalysis={() => onViewExport(readPersonaIdForRequest)}
+            onCreateOrder={onAct && signedIn ? () => onAct(producedRec, producedRec.persona.name) : undefined}
+            onAnalysis={() => setAnalysisOpen(true)}
             onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}
           />
@@ -399,21 +400,36 @@ export function AiRecPanel({
           ) : (
             <>
               {!hasRec && <SnapshotHint bundle={bundle} />}
-              <ActionRegion
-                inAppEnabled={inAppEnabled}
-                cap={cap}
-                effectiveGateState={effectiveGateState}
-                cooldownRemaining={cooldownRemaining}
-                reasons={gate.reasons}
-                compact={hasRec}
-                ticker={ticker}
-                scenarioSelected={scenarioSelected}
-                onGet={() => doRequest({ override: false })}
-                onAskAnyway={() => doRequest({ override: true })}
-              />
+              {!producedRec && (
+                <ActionRegion
+                  inAppEnabled={inAppEnabled}
+                  cap={cap}
+                  effectiveGateState={effectiveGateState}
+                  cooldownRemaining={cooldownRemaining}
+                  reasons={gate.reasons}
+                  compact={hasRec}
+                  ticker={ticker}
+                  scenarioSelected={scenarioSelected}
+                  requestState={presentation.requestState}
+                  actions={presentation.actions}
+                  onGet={() => doRequest({ override: false })}
+                  onAskAnyway={() => doRequest({ override: true })}
+                />
+              )}
             </>
           ))}
       </Widget>
+      <AnalysisSurface
+        open={analysisOpen}
+        ticker={ticker}
+        rec={producedRec}
+        bundle={bundle}
+        onClose={() => setAnalysisOpen(false)}
+        onViewExport={() => {
+          setAnalysisOpen(false);
+          onViewExport(producedRec?.persona.id ?? null);
+        }}
+      />
     </Box>
   );
 }
@@ -498,6 +514,8 @@ function ActionRegion({
   compact,
   ticker,
   scenarioSelected = false,
+  requestState,
+  actions,
   onGet,
   onAskAnyway,
 }: {
@@ -511,6 +529,8 @@ function ActionRegion({
   /** ai-rec-backtest-orders: a selected scenario is keyless/cost-free — cooldown/cap disabled
    *  states do NOT block it (AC-38); the readiness gate + override stay exactly real (AC-43). */
   scenarioSelected?: boolean;
+  requestState: ReturnType<typeof deriveAiRecPresentation>['requestState'];
+  actions: ReturnType<typeof deriveAiRecPresentation>['actions'];
   onGet: () => void;
   onAskAnyway: () => void;
 }) {
@@ -518,10 +538,11 @@ function ActionRegion({
   // With a scenario selected, the primary action reads "Run scenario" (UX §6).
   const primaryLabel = scenarioSelected ? RUN_SCENARIO : COPY.action.get;
 
-  // key_not_configured (AC12) — inert in-app, manual floor preserved (the header export stays).
+  // Policy is derived once by the host. These branches only render the named state and never
+  // re-check freshness/completeness independently.
   // A selected scenario is NOT blocked by a keyless deployment: scenario runs are keyless by
   // design (the server skips key resolution entirely) — mirrors the cap/cooldown bypass below.
-  if (!inAppEnabled && !scenarioSelected) {
+  if (requestState === 'missing_key') {
     return (
       <Box sx={box}>
         <Stack
@@ -543,7 +564,7 @@ function ActionRegion({
 
   // daily_cap_reached (AC10) — calm blocked state, NOT an error; export floor stays. A scenario
   // run is neither blocked by nor consumes the cap (AC-38) — the action stays enabled.
-  if (cap.over_limit && !scenarioSelected) {
+  if (requestState === 'daily_cap') {
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>
@@ -558,7 +579,7 @@ function ActionRegion({
 
   // cooling_down (AC9) — disabled with a visible countdown; re-enables at 0. A scenario run is
   // not blocked by the cooldown (AC-38).
-  if (cooldownRemaining > 0 && !scenarioSelected) {
+  if (requestState === 'cooldown') {
     return (
       <Box sx={box}>
         <Button variant="contained" size="small" disabled>
@@ -573,7 +594,7 @@ function ActionRegion({
 
   // no_fresh_edge (AC8) — the guardrails' stance is no_trade; de-emphasized + explicit one-tap
   // override. The real readiness gate behaves IDENTICALLY with a scenario selected (AC-43).
-  if (effectiveGateState === 'no_fresh_edge') {
+  if (requestState === 'no_edge') {
     return (
       <Box sx={box}>
         <Typography sx={{ fontFamily: MONO, fontSize: 12, color: 'text.disabled', mb: 0.5 }}>
@@ -595,11 +616,15 @@ function ActionRegion({
     );
   }
 
+  if (requestState === 'unavailable') {
+    return null;
+  }
+
   // idle — Available (AC1 entry point). "Run scenario" when a scenario is selected.
   return (
     <Box sx={box}>
       <Tooltip arrow describeChild title={COPY.tooltip.get.replace('{TICKER}', ticker)}>
-        <Button variant="contained" size="small" onClick={onGet}>
+        <Button variant="contained" size="small" onClick={onGet} disabled={!actions.analyze && !actions.retry}>
           {primaryLabel}
         </Button>
       </Tooltip>

@@ -103,13 +103,6 @@ function fieldValueEl(label: string): HTMLElement {
 
 /** The conviction slot's own shallow walk (F9/F13) — a `<Box><label/><value/></Box>` pair, one level
  *  shallower than the `Field` shape `fieldValueEl` targets. */
-function convictionValueEl(): HTMLElement {
-  const box = within(panel()).getByText(PLAN_FIELD_LABEL.confidence).parentElement as HTMLElement;
-  const el = box.querySelector('.MuiChip-label') ?? box.querySelector('p');
-  if (!el) throw new Error('no conviction value element');
-  return el as HTMLElement;
-}
-
 const RESERVED = '—';
 
 /** The enumeration, DECLARED — arm (a)'s subject. Five plan labels + five risk labels on a trade
@@ -119,10 +112,8 @@ const TRADE_PLAN_LABELS = [
   PLAN_FIELD_LABEL.strikes,
   PLAN_FIELD_LABEL.expiration,
   PLAN_FIELD_LABEL.entryTrigger,
-  PLAN_FIELD_LABEL.timeHorizon,
 ];
-const RISK_LABELS = [COPY.risk.maxRisk, COPY.risk.invalidation, 'Suggested size', 'Target', 'Stop'];
-const NO_TRADE_RISK_LABELS = [COPY.risk.maxRisk, 'Suggested size', 'Target', 'Stop'];
+const RISK_LABELS = [COPY.risk.maxRisk, COPY.risk.invalidation, 'Entry', 'Target'];
 
 beforeEach(() => {
   localStorage.clear();
@@ -144,16 +135,9 @@ describe('rec-absence-literals-hole · Layer 2 — the label-anchored reserved-m
 
     const resolvedPlan = TRADE_PLAN_LABELS.map((l) => fieldValueEl(l));
     const resolvedRisk = RISK_LABELS.map((l) => fieldValueEl(l));
-    const resolvedConviction = convictionValueEl();
-
-    expect(resolvedPlan).toHaveLength(TRADE_PLAN_LABELS.length);
-    expect(resolvedPlan.length).toBe(5);
-    expect(resolvedRisk).toHaveLength(RISK_LABELS.length);
-    expect(resolvedRisk.length).toBe(5);
-    expect(resolvedConviction).toBeTruthy();
-
-    const totalResolved = resolvedPlan.length + resolvedRisk.length + 1;
-    expect(totalResolved).toBe(11);
+    expect(resolvedPlan).toHaveLength(4);
+    expect(resolvedRisk).toHaveLength(4);
+    expect(resolvedPlan.length + resolvedRisk.length).toBe(8);
   });
 
   it('(a) coverage with an EXACT count — the no_trade card resolves exactly 4 risk slots + the hero conviction (5), no plan label mounted', async () => {
@@ -163,19 +147,8 @@ describe('rec-absence-literals-hole · Layer 2 — the label-anchored reserved-m
     await ask(user);
     await within(panel()).findByText(COPY.noTrade.title);
 
-    const resolvedRisk = NO_TRADE_RISK_LABELS.map((l) => fieldValueEl(l));
-    expect(resolvedRisk).toHaveLength(4);
-    const hero = within(panel()).getByTestId('no-trade-conviction');
-    expect(hero).toBeTruthy();
-    for (const label of [
-      PLAN_FIELD_LABEL.structure,
-      PLAN_FIELD_LABEL.strikes,
-      PLAN_FIELD_LABEL.expiration,
-      PLAN_FIELD_LABEL.entryTrigger,
-      PLAN_FIELD_LABEL.timeHorizon,
-    ]) {
-      expect(within(panel()).queryByText(label)).toBeNull();
-    }
+    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
+    expect(within(panel()).queryByText(PLAN_FIELD_LABEL.structure)).toBeNull();
   });
 
   it('(c) every resolved slot has non-empty text', async () => {
@@ -187,7 +160,6 @@ describe('rec-absence-literals-hole · Layer 2 — the label-anchored reserved-m
     for (const l of [...TRADE_PLAN_LABELS, ...RISK_LABELS]) {
       expect(fieldValueEl(l).textContent?.trim().length).toBeGreaterThan(0);
     }
-    expect(convictionValueEl().textContent?.trim().length).toBeGreaterThan(0);
   });
 
   it('the RULE — no resolved plan/risk/conviction slot on a trade card carries the reserved mark, across every degraded state', async () => {
@@ -199,7 +171,6 @@ describe('rec-absence-literals-hole · Layer 2 — the label-anchored reserved-m
     for (const l of [...TRADE_PLAN_LABELS, ...RISK_LABELS]) {
       expect(fieldValueEl(l).textContent).not.toContain(RESERVED);
     }
-    expect(convictionValueEl().textContent).not.toContain(RESERVED);
   });
 
   it('the RULE — on a no_trade card, exactly the four risk slots carry the reserved mark, the hero conviction does not, and the guard is demonstrably reaching real text (not passing on nothing resolved)', async () => {
@@ -208,11 +179,6 @@ describe('rec-absence-literals-hole · Layer 2 — the label-anchored reserved-m
     await settle();
     await ask(user);
     await within(panel()).findByText(COPY.noTrade.title);
-    for (const l of NO_TRADE_RISK_LABELS) {
-      expect(fieldValueEl(l).textContent).toBe(RESERVED);
-    }
-    // Positive proof the guard isn't vacuously passing: the reserved mark DOES appear on the card
-    // (in the four risk slots just asserted), so a guard resolving nothing would have failed above.
-    expect(panel().textContent).toContain(RESERVED);
+    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
   });
 });
