@@ -104,9 +104,9 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       settings: !loading && keyState && requestState !== 'signed_out',
       signIn: !loading && requestState === 'signed_out',
       reviewTrade: !loading && resultState === 'fresh_trade' && signedIn,
-      // Whether the host supplied an order callback is the interface capability boundary. The
-      // policy owns recommendation actionability; it must not duplicate the auth gate here.
-      createOrder: !loading && resultState === 'fresh_trade',
+      // The policy owns both fresh-result and auth actionability; the host only applies the
+      // callback capability when consuming this one boolean.
+      createOrder: !loading && resultState === 'fresh_trade' && signedIn,
       analysis: !loading && produced,
       refresh: !loading && degraded && requestState === 'idle',
       dismiss: !loading && produced,

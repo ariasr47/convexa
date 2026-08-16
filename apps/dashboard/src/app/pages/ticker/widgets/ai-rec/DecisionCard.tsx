@@ -90,7 +90,13 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
   const localRulesDeclared = rec.grounding?.card === 'local_rules';
 
   return (
-    <Box data-testid="ai-rec-decision-card">
+    <Box
+      data-testid="ai-rec-decision-card"
+      data-rec-pinned-fingerprint={rec.pinned_fingerprint ?? ''}
+      data-rec-as-of={rec.as_of ?? ''}
+      data-rec-persona-id={rec.persona.id}
+      data-rec-persona-name={rec.persona.name}
+    >
       <DecisionContext rec={rec} dataAge={dataAge} />
       <Provenance rec={rec} />
       {(presentation.resultState === 'stale_newer_snapshot' || presentation.resultState === 'stale_at_generation' || presentation.resultState === 'superseded_inputs') && (

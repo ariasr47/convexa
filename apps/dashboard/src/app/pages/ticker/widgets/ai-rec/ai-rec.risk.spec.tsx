@@ -446,26 +446,18 @@ async function openAnalysis(user: ReturnType<typeof renderApp>) {
   await user.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
   return screen.findByRole('dialog', { name: /Full analysis & data/ });
 }
-function expectPinnedResponse(
-  be: ReturnType<typeof installBackend>,
-  rec: RecResponse,
-) {
+function pinnedCardSnapshot(card: HTMLElement) {
+  return {
+    text: card.textContent,
+    fingerprint: card.dataset.recPinnedFingerprint,
+    asOf: card.dataset.recAsOf,
+    personaId: card.dataset.recPersonaId,
+    personaName: card.dataset.recPersonaName,
+  };
+}
+function expectPinnedActionsUnchanged(be: ReturnType<typeof installBackend>) {
   expect(be.calls.rec).toBe(1);
-  expect(
-    be.responsesSeen.some((raw) => {
-      try {
-        const body = JSON.parse(raw) as Partial<RecResponse>;
-        return (
-          body.pinned_fingerprint === rec.pinned_fingerprint &&
-          body.as_of === rec.as_of &&
-          body.persona?.id === rec.persona.id &&
-          body.persona?.name === rec.persona.name
-        );
-      } catch {
-        return false;
-      }
-    }),
-  ).toBe(true);
+  expect(within(panel()).queryByRole('button', { name: COPY.action.refresh })).toBeNull();
 }
 
 beforeEach(() => {
@@ -925,14 +917,15 @@ describe('ai-rec · advice behind Accept', () => {
     await settle();
     await ask(user);
     await within(panel()).findByTestId('ai-rec-decision-card');
-    expectPinnedResponse(be, orderRec);
+    expectPinnedActionsUnchanged(be);
     const pinnedCard = within(panel()).getByTestId('ai-rec-decision-card');
+    const before = pinnedCardSnapshot(pinnedCard);
     await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(allPositions()).toHaveLength(0);
-    expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
-    expect(be.calls.rec).toBe(1);
+    expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(before);
+    expectPinnedActionsUnchanged(be);
   });
 
   it('review confirmation writes exactly one position and keeps the pinned read', async () => {
@@ -942,16 +935,17 @@ describe('ai-rec · advice behind Accept', () => {
     await settle();
     await ask(user);
     await within(panel()).findByTestId('ai-rec-decision-card');
-    expectPinnedResponse(be, orderRec);
     const pinnedCard = within(panel()).getByTestId('ai-rec-decision-card');
+    expectPinnedActionsUnchanged(be);
+    const before = pinnedCardSnapshot(pinnedCard);
     await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Manual price' }));
     await user.type(within(dialog).getByLabelText('Manual price'), '3');
     await user.click(within(dialog).getByRole('button', { name: 'Open simulated position' }));
     await waitFor(() => expect(allPositions()).toHaveLength(1));
-    expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
-    expect(be.calls.rec).toBe(1);
+    expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(before);
+    expectPinnedActionsUnchanged(be);
   });
 
   it('create-order cancel preserves the pinned read and writes no order', async () => {
@@ -961,16 +955,17 @@ describe('ai-rec · advice behind Accept', () => {
     await settle();
     await ask(user);
     await within(panel()).findByTestId('ai-rec-decision-card');
-    expectPinnedResponse(be, orderRec);
     const pinnedCard = within(panel()).getByTestId('ai-rec-decision-card');
+    expect(be.calls.rec).toBe(1);
+    const before = pinnedCardSnapshot(pinnedCard);
     const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
     await user.click(action);
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent(/Simulated order/);
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(allOrders()).toHaveLength(0);
-    expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
-    expect(be.calls.rec).toBe(1);
+    expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(before);
+    expectPinnedActionsUnchanged(be);
   });
 
   it('create-order confirmation writes exactly one simulated order and keeps the pinned read', async () => {
@@ -983,8 +978,9 @@ describe('ai-rec · advice behind Accept', () => {
       await settle();
       await ask(user);
       await within(panel()).findByTestId('ai-rec-decision-card');
-      expectPinnedResponse(be, orderRec);
       const pinnedCard = within(panel()).getByTestId('ai-rec-decision-card');
+      expectPinnedActionsUnchanged(be);
+      const before = pinnedCardSnapshot(pinnedCard);
       const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
       await user.click(action);
       const dialog = await screen.findByRole('dialog');
@@ -992,8 +988,8 @@ describe('ai-rec · advice behind Accept', () => {
       expect(confirm).toBeEnabled();
       await user.click(confirm);
       await waitFor(() => expect(allOrders()).toHaveLength(1));
-      expect(within(panel()).getByTestId('ai-rec-decision-card')).toBeInTheDocument();
-      expect(be.calls.rec).toBe(1);
+      expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(before);
+      expectPinnedActionsUnchanged(be);
     } finally {
       vi.useRealTimers();
     }
