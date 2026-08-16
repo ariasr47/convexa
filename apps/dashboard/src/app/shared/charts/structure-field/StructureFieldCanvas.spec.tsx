@@ -41,11 +41,22 @@ describe('StructureFieldCanvas hover probe (AC-7)', () => {
         createLinearGradient: () => ({ addColorStop: () => undefined }),
         createRadialGradient: () => ({ addColorStop: () => undefined }),
       },
-      { get: (target, key) => (key in target ? target[key as keyof typeof target] : () => undefined) },
+      {
+        get: (target, key) =>
+          key in target ? target[key as keyof typeof target] : () => undefined,
+      },
     ) as unknown as CanvasRenderingContext2D;
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context);
     vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      x: 0, y: 0, top: 0, left: 0, right: 600, bottom: 300, width: 600, height: 300, toJSON: () => ({}),
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 600,
+      bottom: 300,
+      width: 600,
+      height: 300,
+      toJSON: () => ({}),
     });
 
     render(<StructureFieldCanvas model={model} variant="ticker" height={300} />);
@@ -54,6 +65,10 @@ describe('StructureFieldCanvas hover probe (AC-7)', () => {
     const frame = [...rafs.values()][0];
     expect(frame).toBeDefined();
     frame!(performance.now());
-    await waitFor(() => expect(screen.getByText((text) => text.includes('$452') && text.includes('net GEX'))).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByText((text) => text.includes('$452') && text.includes('net GEX')),
+      ).toBeInTheDocument(),
+    );
   });
 });

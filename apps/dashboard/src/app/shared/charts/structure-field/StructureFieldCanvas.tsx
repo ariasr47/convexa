@@ -10,10 +10,10 @@
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef, useState } from 'react';
-import type { FieldSample, StructureFieldModel } from './types';
-import { layoutMarkerLabels, layoutTapeLabel } from './markerLayout';
 import type { MarkerLayoutBox } from './markerLayout';
+import { layoutMarkerLabels, layoutTapeLabel } from './markerLayout';
 import { structureBufferKey } from './structureBufferKey';
+import type { FieldSample, StructureFieldModel } from './types';
 
 const INK = '#0B0F17';
 const PANEL = '#131A24';
@@ -368,11 +368,31 @@ export function StructureFieldCanvas({
       // levels and tape labels never cover one another or the fixed captions.
       o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
       const markerDefs = [
-        { id: 'put', x: xOf(m.putWall), label: `put $${m.putWall.toFixed(0)}`, color: RED, preferredLane: 0 },
-        { id: 'call', x: xOf(m.callWall), label: `call $${m.callWall.toFixed(0)}`, color: GREEN, preferredLane: 0 },
+        {
+          id: 'put',
+          x: xOf(m.putWall),
+          label: `put $${m.putWall.toFixed(0)}`,
+          color: RED,
+          preferredLane: 0,
+        },
+        {
+          id: 'call',
+          x: xOf(m.callWall),
+          label: `call $${m.callWall.toFixed(0)}`,
+          color: GREEN,
+          preferredLane: 0,
+        },
         { id: 'flip', x: xOf(m.gammaFlip), label: 'flip', color: AMBER, preferredLane: 1 },
-        { id: 'spot', x: xOf(m.spot), label: `spot $${m.spot.toFixed(1)}`, color: STEEL, preferredLane: 2 },
-      ].filter((marker) => Number.isFinite(marker.x) && marker.x >= pad.l && marker.x <= pad.l + plotW);
+        {
+          id: 'spot',
+          x: xOf(m.spot),
+          label: `spot $${m.spot.toFixed(1)}`,
+          color: STEEL,
+          preferredLane: 2,
+        },
+      ].filter(
+        (marker) => Number.isFinite(marker.x) && marker.x >= pad.l && marker.x <= pad.l + plotW,
+      );
       const markerBoxes = layoutMarkerLabels({
         bounds: { left: pad.l, right: pad.l + plotW, top: pad.t + 2, bottom: pad.t + plotH - 2 },
         markers: markerDefs,
