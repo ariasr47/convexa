@@ -58,6 +58,21 @@ import {
 } from './fixtures';
 import { biasToRight, recToPrefill } from './prefill';
 
+// Test-only mutable consumer seam: the production AuthProvider remains untouched. Transition tests
+// flip the value consumed by AiRecPanel and rerender the same mounted tree.
+let gateOverride: { allowed: boolean; promptText: string | null } | null = null;
+let rerenderCurrent: (() => void) | null = null;
+vi.mock('@/features/auth/useGate', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/features/auth/useGate')>();
+  return {
+    ...actual,
+    useGate: () => {
+      const base = actual.useGate();
+      return gateOverride ? { ...base, ...gateOverride } : base;
+    },
+  };
+});
+
 // ---- INTERFACE-shaped fixtures (pinned to the shared bundle: fp-A / 2026-06-26T14:00:00Z) ------
 const FP_A = 'fp-A';
 const SNAP_A = '2026-06-26T14:00:00Z';
@@ -409,11 +424,17 @@ const liveUpdate = () => ({
 // ---- Mounts ------------------------------------------------------------------------------------
 function renderApp() {
   const user = userEvent.setup();
-  render(
+  const mounted = render(
     <MemoryRouter initialEntries={['/ticker/TSLA']}>
       <App />
     </MemoryRouter>,
   );
+  rerenderCurrent = () =>
+    mounted.rerender(
+      <MemoryRouter initialEntries={['/ticker/TSLA']}>
+        <App />
+      </MemoryRouter>,
+    );
   return user;
 }
 function renderSettings() {
@@ -470,6 +491,8 @@ beforeEach(() => {
   __resetOrdersMemory();
 });
 afterEach(() => {
+  gateOverride = null;
+  rerenderCurrent = null;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   cleanup();
@@ -558,7 +581,10 @@ describe('ai-rec · auth gate is outermost', () => {
 
   async function assertSignedOutTransition(be: ReturnType<typeof installBackend>) {
     const requestsBefore = be.calls.rec;
-    window.dispatchEvent(new Event('convexa:test-sign-out'));
+    act(() => {
+      gateOverride = { allowed: false, promptText: null };
+      rerenderCurrent?.();
+    });
     await waitFor(() =>
       expect(within(panel()).getByTestId('ai-rec-auth-gate')).toBeInTheDocument(),
     );

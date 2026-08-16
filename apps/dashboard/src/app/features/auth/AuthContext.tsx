@@ -100,18 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // mount read). Each read tags itself; only the latest applies.
   const seq = useRef(0);
 
-  // Test harness seam: lets host-surface integration tests transition the active provider to the
-  // anonymous state without remounting the app or simulating a second recommendation request.
-  // This event is inert unless a test explicitly dispatches it.
-  useEffect(() => {
-    const onTestSignOut = () => {
-      seq.current++;
-      setState({ ...ANON, ready: true });
-    };
-    window.addEventListener('convexa:test-sign-out', onTestSignOut);
-    return () => window.removeEventListener('convexa:test-sign-out', onTestSignOut);
-  }, []);
-
   const refresh = useCallback(async () => {
     const id = ++seq.current;
     try {
