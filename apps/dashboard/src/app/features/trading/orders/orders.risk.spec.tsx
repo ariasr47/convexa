@@ -435,8 +435,10 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       // by design; this assertion was previously `toBe(2)` (a pre-feature artifact of the deleted
       // parser) and is corrected here to assert the new rule on purpose, not by accident.
       expect(o.qty).toBe(1);
-      expect(o.stop).toBe(3);
-      expect(o.target).toBe(9);
+      // The fixture's exit_plan is intentionally ungrounded (no grounding block), so D8 withholds
+      // both values from the order prefill; model prose alone never licenses a stop/target.
+      expect(o.stop).toBeNull();
+      expect(o.target).toBeNull();
       // Rec provenance pinned on the order itself.
       expect(o.provenance.source).toBe('ai_rec');
       expect(o.provenance.rec_fingerprint).toBe('fp-A');
@@ -466,8 +468,8 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       // Carried through from the SAME order's qty (AC-79: dialog default 1, never seeded from the
       // rec's size text — see the correction at `:437`).
       expect(pos.legs[0].qty).toBe(1);
-      expect(pos.stop).toBe(3);
-      expect(pos.target).toBe(9);
+      expect(pos.stop).toBeNull();
+      expect(pos.target).toBeNull();
 
       // Decision records: append-only audit of every transition, joined to the position.
       const events = allDecisions()
