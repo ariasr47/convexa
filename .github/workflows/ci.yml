@@ -46,7 +46,21 @@ jobs:
       - name: Unit tests (Vitest)
         # Hosted runners become timing-sensitive when Vitest saturates every reported CPU, and the
         # jsdom diagnostics can otherwise push the useful failure summary past GitHub's log cap.
-        run: npx nx run-many -t test -p @convexa/dashboard,@convexa/api -- --reporter=dot --maxWorkers=2 --silent=passed-only
+        run: |
+          set +e
+          log="$RUNNER_TEMP/vitest.log"
+          npx nx run-many -t test -p @convexa/dashboard,@convexa/api -- --reporter=dot --maxWorkers=2 --silent=passed-only >"$log" 2>&1
+          status=$?
+          tail -n 250 "$log"
+          exit "$status"
+
+      - name: Upload Vitest log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-log
+          path: ${{ runner.temp }}/vitest.log
+          retention-days: 7
 
       - name: Production build (dashboard)
         run: npx nx build @convexa/dashboard --configuration=production
