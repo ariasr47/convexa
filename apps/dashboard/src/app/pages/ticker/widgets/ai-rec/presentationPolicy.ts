@@ -122,9 +122,11 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
   const unavailableRetryGate =
     requestState === 'unavailable' &&
     signedIn &&
-    input.effectiveGateState === 'available' &&
     input.inAppEnabled &&
-    (scenarioSelected || (input.cooldownRemaining <= 0 && !input.cap.over_limit));
+    (scenarioSelected ||
+      (input.effectiveGateState === 'available' &&
+        input.cooldownRemaining <= 0 &&
+        !input.cap.over_limit));
 
   return {
     requestState,

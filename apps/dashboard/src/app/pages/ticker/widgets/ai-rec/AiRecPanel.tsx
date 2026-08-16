@@ -622,10 +622,10 @@ function UnavailableBlock({
    *  unavailable handling — no special copy (AC-35). */
   scenario?: RecScenarioInfo | null;
 }) {
-  // Retry respects cooldown + cap (E6): if a retry would land in cooldown/over-cap, disable it.
+  // Presentation policy is the sole authority for retry actionability. Cap/cooldown remain visible
+  // as explanatory context, but must not independently disable a retry (scenario retries bypass them).
   const blockedByCooldown = cooldownRemaining > 0;
   const blockedByCap = cap.over_limit;
-  const retryDisabled = blockedByCooldown || blockedByCap;
   const sub = blockedByCooldown
     ? retryInCooldown(cooldownRemaining)
     : blockedByCap
@@ -638,7 +638,7 @@ function UnavailableBlock({
       action={
         <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
           {retryAllowed && (
-            <Button color="inherit" size="small" disabled={retryDisabled} onClick={onRetry}>
+            <Button color="inherit" size="small" onClick={onRetry}>
               {COPY.action.retry}
             </Button>
           )}

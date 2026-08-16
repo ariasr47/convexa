@@ -801,6 +801,33 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(be.calls.rec).toBe(1);
   });
 
+  it('scenario transport fault keeps Retry actionable despite active cap and cooldown', async () => {
+    const be = installBackend({
+      rec: 'throw',
+      status: makeStatus({
+        gate: { state: 'available', cooldown_remaining_seconds: 30, reasons: [] },
+        cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
+        scenarios: {
+          enabled: true,
+          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
+        },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
+    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
+    expect(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' })).toHaveTextContent(
+      'Breakout rehearsal',
+    );
+    await user.click(await within(panel()).findByRole('button', { name: 'Run scenario' }));
+    await within(panel()).findByText(COPY.unavailable.title);
+
+    // The selected scenario bypasses cap/cooldown in presentation policy, so retry is allowed.
+    expect(within(panel()).getByRole('button', { name: COPY.action.retry })).toBeEnabled();
+    expect(be.calls.rec).toBe(1);
+  });
+
   it('personas endpoint down: the panel degrades to the embedded presets and still produces a rec', async () => {
     const be = installBackend({ personas: 'throw' });
     const user = renderApp();
