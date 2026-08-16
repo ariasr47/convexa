@@ -137,10 +137,9 @@ function convictionValueEl(): HTMLElement {
  *  traversal. */
 async function slotValueEl(user: ReturnType<typeof userEvent.setup>, label: string): Promise<HTMLElement> {
   if (label === PLAN_FIELD_LABEL.timeHorizon || label === PLAN_FIELD_LABEL.confidence) {
-    const existing = screen.queryByText(label);
-    if (!existing) {
-      const open = within(panel()).queryByRole('button', { name: COPY.action.analysis });
-      if (open) await user.click(open);
+    if (!screen.queryByRole('dialog', { name: /Full analysis & data/ })) {
+      await user.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
+      await screen.findByRole('dialog', { name: /Full analysis & data/ });
     }
     return screen.findByTestId(`analysis-field-${label}`);
   }
@@ -447,6 +446,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     expect(fieldValueEl(PLAN_FIELD_LABEL.timeHorizon).textContent).toBe('not given');
     expect((await slotValueEl(user, PLAN_FIELD_LABEL.confidence)).textContent).toBe('not given');
     expect(within(panel()).queryByTestId('rec-not-actionable')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Close analysis' }));
     await user.click(await within(panel()).findByRole('button', { name: COPY.action.accept }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
