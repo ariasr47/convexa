@@ -275,12 +275,14 @@ function TableLayout(props: ViewProps & { visibleColumns: ColumnKey[] }) {
   const tdPad = density === 'compact' ? '7px 12px' : '12px';
   return (
     <Box
+      data-testid="positions-table-frame"
       sx={{
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: '10px',
-        overflow: 'hidden',
+        overflowX: 'auto',
+        overflowY: 'hidden',
       }}
     >
       <Box
@@ -296,7 +298,18 @@ function TableLayout(props: ViewProps & { visibleColumns: ColumnKey[] }) {
                 {headerLabel(c)}
               </Box>
             ))}
-            <Box component="th" sx={thSx} />
+            <Box
+              component="th"
+              sx={{
+                ...thSx,
+                position: 'sticky',
+                right: 0,
+                zIndex: 2,
+                bgcolor: 'background.paper',
+                borderLeft: '1px solid',
+                borderLeftColor: 'divider',
+              }}
+            />
           </Box>
         </Box>
         <Box component="tbody">

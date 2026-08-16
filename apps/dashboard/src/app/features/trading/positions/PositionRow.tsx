@@ -183,9 +183,13 @@ export function cellContent(
   const isTerminal = p.status === 'closed' || p.status === 'cancelled';
   const liveDim = streamOffline ? 0.5 : 1;
   const offlineTag = streamOffline ? (
-    <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}>
-      {' '}
-      · {OFFLINE}
+    <Typography
+      component="span"
+      variant="caption"
+      data-testid="offline-tag"
+      sx={{ color: 'text.disabled', display: 'block', flexBasis: '100%', lineHeight: 1.2 }}
+    >
+      {OFFLINE}
     </Typography>
   ) : null;
   const plColor =
@@ -281,7 +285,8 @@ export function cellContent(
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: 'center', opacity: liveDim }}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
           data-testid="cell-mark"
         >
           <Typography variant="body2" sx={MONO}>
@@ -305,7 +310,8 @@ export function cellContent(
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: 'center', opacity: liveDim }}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
           data-testid="cell-pl"
         >
           <Tooltip arrow title={PL_TIP}>
@@ -330,7 +336,8 @@ export function cellContent(
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: 'center', opacity: liveDim }}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.25, opacity: liveDim }}
           data-testid="cell-pl-pct"
         >
           <Tooltip arrow title={plPctBasisTip(st.basis)}>
@@ -600,6 +607,15 @@ export function PositionRow({
     borderColor: 'divider',
     whiteSpace: 'nowrap' as const,
   };
+  const actionTdSx = {
+    ...tdSx,
+    position: 'sticky' as const,
+    right: 0,
+    zIndex: 1,
+    bgcolor: 'background.paper',
+    borderLeft: '1px solid',
+    borderLeftColor: 'divider',
+  };
   return (
     <>
       <Box component="tr" data-testid="position-row" data-id={p.id} data-status={p.status}>
@@ -612,7 +628,7 @@ export function PositionRow({
             })}
           </Box>
         ))}
-        <Box component="td" sx={tdSx}>
+        <Box component="td" sx={actionTdSx} data-testid="position-actions-cell">
           {p.status === 'open' && (
             <Refused when={!!ctx.faulted}>
               <Box component="button" type="button" onClick={() => onClose(p.id)} sx={rowActionSx}>
