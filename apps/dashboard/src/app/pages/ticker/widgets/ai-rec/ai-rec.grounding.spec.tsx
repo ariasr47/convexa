@@ -236,12 +236,13 @@ describe('ai-rec-grounding · the card (F10)', () => {
     expect(line.querySelector('svg[color="warning"]')).toBeNull();
   });
 
-  it('AC-64 — a local-rules rec with nothing checkable renders NO card line and NO clause', async () => {
+  it('AC-64 — a local-rules not-applicable trade renders exactly one honest card line and NO clause', async () => {
     installBackend(recLocalRulesNothingCheckable());
     const user = renderApp();
     await settle();
     await ask(user);
-    expect(within(panel()).queryByTestId('grounding-card-line')).toBeNull();
+    const line = within(panel()).getByTestId('grounding-card-line');
+    expect(line).toHaveTextContent('No figures were provided for checking in this read.');
     const analysis = await openAnalysis(user);
     expect(within(analysis).queryAllByTestId(/^clause-/)).toHaveLength(0);
   });

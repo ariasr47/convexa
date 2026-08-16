@@ -383,7 +383,7 @@ export function DecisionCard({
         </>
       )}
       <Box data-testid="decision-evidence" sx={{ mt: 1 }}>
-        <GroundingNote grounding={rec.grounding} />
+        {isTrade && <GroundingNote grounding={rec.grounding} />}
         <CapAnnotation capCheck={rec.cap_check} />
       </Box>
       <Divider sx={{ my: 1.5 }} />

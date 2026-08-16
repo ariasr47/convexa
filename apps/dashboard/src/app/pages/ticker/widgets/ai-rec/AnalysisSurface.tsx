@@ -131,7 +131,7 @@ function GroundingDetail({
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
         Cited contract and grounding
       </Typography>
-      <GroundingNote grounding={grounding} />
+      {strategy.decision === 'trade' && <GroundingNote grounding={grounding} />}
       <Stack spacing={1} data-testid="analysis-grounding-fields" sx={{ mt: 1 }}>
         {rows.map(([label, value, reason, field, testId]) => {
           const literal = fieldLiteral({ decision: strategy.decision, value, reason });

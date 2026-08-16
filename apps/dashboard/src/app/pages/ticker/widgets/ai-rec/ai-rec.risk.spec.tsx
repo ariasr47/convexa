@@ -35,11 +35,11 @@ import { AppThemeProvider } from '@/features/auth/ThemeProvider';
 import { maskedKeyLabel } from '@/features/auth/copy';
 import { makeBundle } from '@/features/auth/testBackend';
 import { PRESETS } from '@/features/personas/presets';
+import { __resetOrdersMemory, allOrders } from '@/features/trading/orders/store';
 import {
   __resetMemory as __resetPositions,
   allPositions,
 } from '@/features/trading/positions/store';
-import { __resetOrdersMemory, allOrders } from '@/features/trading/orders/store';
 import type { RecResponse, RecStatus, RecStrategy, RiskInputs, TickerBundle } from '@convexa/api';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -551,6 +551,29 @@ describe('ai-rec · auth gate is outermost', () => {
     // Egress scan: no response the export path produced carries a key field.
     be.responsesSeen.forEach((b) => expect(b).not.toMatch(/"(key|api_key|ciphertext)"\s*:/));
   });
+
+  it.each([
+    { name: 'produced retained read', rec: recAllTraced() },
+    { name: 'unavailable BYO state', rec: recUnavailable('no_key') },
+  ])('$name is replaced by the signed-out gate with only export available', async ({ rec }) => {
+    const be = installBackend({ authenticated: false, rec });
+    renderApp();
+    await settle();
+
+    expect(await within(panel()).findByTestId('ai-rec-auth-gate')).toBeInTheDocument();
+    expect(within(panel()).getByTestId('ai-rec-signin-button')).toBeEnabled();
+    expect(
+      within(panel()).getAllByRole('button', { name: COPY.action.viewExport }).length,
+    ).toBeGreaterThan(0);
+    expect(within(panel()).queryByTestId('ai-rec-decision-card')).toBeNull();
+    expect(within(panel()).queryByTestId('ai-rec-state-no-key')).toBeNull();
+    expect(within(panel()).queryByTestId('ai-rec-state-admin-exhausted')).toBeNull();
+    expect(within(panel()).queryByTestId('ai-rec-state-shared-unconfigured')).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
+    expect(be.calls.rec).toBe(0);
+  });
 });
 
 // =================================================================================================
@@ -798,7 +821,10 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
       resolveSecond = resolve;
       rejectSecond = reject;
     });
-    const be = installBackend({ rec: producedRec({ stale_born: true }), secondRecDeferred: secondRec });
+    const be = installBackend({
+      rec: producedRec({ stale_born: true }),
+      secondRecDeferred: secondRec,
+    });
     try {
       const user = renderApp();
       await settle();
@@ -809,7 +835,9 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
       await user.click(refresh);
 
       expect(be.calls.rec).toBe(2); // exactly one explicit refresh POST
-      expect(within(panel()).getByRole('button', { name: COPY.action.viewExport })).toBeInTheDocument();
+      expect(
+        within(panel()).getByRole('button', { name: COPY.action.viewExport }),
+      ).toBeInTheDocument();
       expect(within(panel()).queryByTestId('ai-rec-decision-card')).toBeNull();
       expect(within(panel()).queryByRole('button', { name: COPY.action.reviewTrade })).toBeNull();
       expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
@@ -875,14 +903,16 @@ describe('ai-rec · advice behind Accept', () => {
     const select = within(panel()).getByLabelText('Next read persona');
     await user.click(select);
     const options = await screen.findAllByRole('option');
-    if (options.length > 1) await user.click(options[1]); else await user.keyboard('{Escape}');
+    if (options.length > 1) await user.click(options[1]);
+    else await user.keyboard('{Escape}');
     await ask(user);
     await within(panel()).findByTestId('ai-rec-decision-card');
     const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
     const calls = be.calls.rec;
     await user.click(select);
     const afterOptions = await screen.findAllByRole('option');
-    if (afterOptions.length > 1) await user.click(afterOptions[0]); else await user.keyboard('{Escape}');
+    if (afterOptions.length > 1) await user.click(afterOptions[0]);
+    else await user.keyboard('{Escape}');
     expect(be.calls.rec).toBe(calls);
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
     expect(before).toContain('Persona ·');
@@ -988,13 +1018,14 @@ describe('ai-rec · advice behind Accept', () => {
       expect(confirm).toBeEnabled();
       await user.click(confirm);
       await waitFor(() => expect(allOrders()).toHaveLength(1));
-      expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(before);
+      expect(pinnedCardSnapshot(within(panel()).getByTestId('ai-rec-decision-card'))).toEqual(
+        before,
+      );
       expectPinnedActionsUnchanged(be);
     } finally {
       vi.useRealTimers();
     }
   });
-
 });
 
 // Unit — the Accept→prefill handoff object (the dialog's INTERNALS have their own risk spec;
@@ -1272,7 +1303,9 @@ describe('tradeable-rec-inputs · an empty risk block renders `not set` with the
     await ask(user);
     await within(panel()).findByText(`Trade · ${tradeRecNoRiskBlock().strategy!.bias}`);
     expect(within(panel()).getAllByText(RISK_FIELD_COPY.notSet.text).length).toBeGreaterThan(0);
-    expect(within(panel()).getAllByRole('link', { name: 'Set your risk inputs' }).length).toBeGreaterThan(0);
+    expect(
+      within(panel()).getAllByRole('link', { name: 'Set your risk inputs' }).length,
+    ).toBeGreaterThan(0);
   });
 });
 

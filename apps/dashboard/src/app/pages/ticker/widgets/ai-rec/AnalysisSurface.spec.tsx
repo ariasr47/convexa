@@ -70,6 +70,42 @@ describe('AnalysisSurface', () => {
     expect(within(dialog).getByText('As-sent risk inputs')).toBeInTheDocument();
   });
 
+  it('AC-2 partial data uses closed literals or omission and never renders a reserved em dash', () => {
+    const rec = recAllTraced();
+    const sent = rec.sent!;
+    const riskInputs = sent.risk_inputs!;
+    const openPositions = sent.open_positions!;
+    rec.as_of = null;
+    rec.strategy!.structure = null;
+    rec.strategy!.expiration = null;
+    rec.strategy!.time_horizon = null;
+    rec.strategy!.confidence = null;
+    rec.field_reasons = {
+      ...rec.field_reasons!,
+      structure: { reason: 'not_given', missing_input: null },
+      expiration: { reason: 'not_given', missing_input: null },
+      time_horizon: { reason: 'not_given', missing_input: null },
+      confidence: { reason: 'not_given', missing_input: null },
+    };
+    riskInputs.account_size = null;
+    riskInputs.per_trade_cap = null;
+    riskInputs.effective_dollar_cap.value = null;
+    riskInputs.effective_dollar_cap.derived_from = {
+      account_size: null,
+      cap_value: null,
+      cap_unit: null,
+    };
+    openPositions.this_underlying = null;
+    renderSurface({ rec });
+    const summary = screen.getByTestId('analysis-summary');
+    const inputs = screen.getByTestId('as-sent-inputs');
+    expect(summary).toHaveTextContent('not given');
+    expect(summary.textContent).not.toContain('—');
+    expect(inputs.textContent).not.toContain('—');
+    expect(inputs).toHaveTextContent('State: set');
+    expect(inputs).toHaveTextContent('State: none_open');
+  });
+
   it('uses the closed risk-field literals and suppresses grounding clauses for absent figures', () => {
     const rec = recAllTraced();
     rec.strategy!.exit_plan = { stop: null, target: null };

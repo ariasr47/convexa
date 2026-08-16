@@ -319,15 +319,15 @@ export function AiRecPanel({
         )}
 
         {/* Body */}
-        {phase === 'loading' && <LoadingBlock ticker={ticker} readName={readName} />}
+        {signedIn && phase === 'loading' && <LoadingBlock ticker={ticker} readName={readName} />}
 
         {/* byo-ai-key CTA states (a/c/e) — distinct testids + copy; all route to Settings. The
             "View what's sent" export floor in the header stays present in every state (AC-23). */}
-        {phase === 'byo_cta' && byoCta && (
+        {signedIn && phase === 'byo_cta' && byoCta && (
           <ByoKeyCta reason={byoCta} rec={rec as RecResponse} onAddKey={goToSettings} />
         )}
 
-        {phase === 'unavailable' && (
+        {signedIn && phase === 'unavailable' && (
           <UnavailableBlock
             cap={cap}
             cooldownRemaining={cooldownRemaining}
@@ -336,7 +336,7 @@ export function AiRecPanel({
           />
         )}
 
-        {producedRec && !loading && (
+        {signedIn && producedRec && !loading && (
           <DecisionCard
             rec={producedRec}
             bundle={bundle}
@@ -360,18 +360,16 @@ export function AiRecPanel({
 
         {/* The action region (primary action in idle; the NEXT-query control alongside a rendered
             rec). Hidden while loading, the byo CTA, and the unavailable block (each owns its action). */}
-        {phase !== 'loading' &&
+        {!signedIn ? (
+          <SignedOutGate
+            hasRec={false}
+            promptText={authGate.promptText}
+            onSignIn={() => authGate.signIn(AUTH_COPY.askAi.gate)}
+          />
+        ) : (
+          phase !== 'loading' &&
           phase !== 'unavailable' &&
-          phase !== 'byo_cta' &&
-          // Auth OUTERMOST (AC-E4/E7): logged-out (or a server 403 on a stale cookie) ⇒ the sign-in
-          // gate ONLY — no persona/snapshot/cooldown/cap/no_key. Matches the Figma signed-out state.
-          (!signedIn ? (
-            <SignedOutGate
-              hasRec={hasRec}
-              promptText={authGate.promptText}
-              onSignIn={() => authGate.signIn(AUTH_COPY.askAi.gate)}
-            />
-          ) : (
+          phase !== 'byo_cta' && (
             <>
               {!hasRec && <SnapshotHint bundle={bundle} />}
               {!producedRec && (
@@ -391,7 +389,8 @@ export function AiRecPanel({
                 />
               )}
             </>
-          ))}
+          )
+        )}
       </Widget>
       <AnalysisSurface
         open={analysisOpen}

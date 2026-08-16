@@ -10,8 +10,8 @@
 import type { Grounding } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { Stack, Typography } from '@mui/material';
-import { cardGroundingLine } from './literals';
 import { AccessibleHelp } from './AccessibleHelp';
+import { cardGroundingLine } from './literals';
 
 export function GroundingNote({ grounding }: { grounding: Grounding | null | undefined }) {
   const line = cardGroundingLine(grounding);
@@ -29,9 +29,7 @@ export function GroundingNote({ grounding }: { grounding: Grounding | null | und
       <Typography variant="caption" sx={{ color: warn ? 'warning.main' : 'text.secondary' }}>
         {line.text}
       </Typography>
-      {line.tip && (
-        <AccessibleHelp label="Evidence help" text={line.tip} />
-      )}
+      {line.tip && <AccessibleHelp label="Evidence help" text={line.tip} />}
     </Stack>
   );
 }
