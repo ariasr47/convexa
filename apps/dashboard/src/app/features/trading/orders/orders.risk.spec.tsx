@@ -495,13 +495,16 @@ describe('orders · the end-to-end flow (rec → order → position provenance)'
       expect(allDecisions().length).toBe(decisionCount);
 
       // [no-real-order-path]: beyond the throw-by-construction, sweep the log — NOTHING
-      // order-flavored ever rode the wire, and the only non-GETs are the rec POST + the gate.
+      // order-flavored ever rode the wire. The only non-GETs are the recommendation POST,
+      // the simulated-trade gate POST, and the durable-book PUT.
       expect(fetchLog.some((c) => /order|broker/i.test(c.url))).toBe(false);
       const nonGets = fetchLog.filter((c) => c.method !== 'GET');
       expect(nonGets.length).toBeGreaterThan(0);
       for (const c of nonGets) {
         expect(
-          c.url.includes('/api/recommendation/') || c.url.includes('/api/positions/sim-trade/gate'),
+          (c.method === 'POST' && /^\/api\/recommendation\/[^/]+$/.test(c.url)) ||
+            (c.method === 'POST' && c.url === '/api/positions/sim-trade/gate') ||
+            (c.method === 'PUT' && c.url === '/api/book'),
         ).toBe(true);
       }
     },
