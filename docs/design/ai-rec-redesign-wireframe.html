@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Convexa — AI recommendation UX redesign wireframe</title>
+    <style>
+      @font-face {
+        font-family: "Archivo";
+        src: url("../../apps/dashboard/public/fonts/archivo/archivo-latin-standard-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "IBM Plex Sans";
+        src: url("../../apps/dashboard/public/fonts/ibm-plex-sans/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "IBM Plex Sans";
+        src: url("../../apps/dashboard/public/fonts/ibm-plex-sans/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+        font-weight: 600;
+      }
+      @font-face {
+        font-family: "IBM Plex Mono";
+        src: url("../../apps/dashboard/public/fonts/ibm-plex-mono/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+        font-weight: 500;
+      }
+
+      :root {
+        --canvas: #0b0f17;
+        --panel: #131a24;
+        --panel-raised: #19212d;
+        --panel-soft: #202936;
+        --line: #2a3545;
+        --text: #e9e4d6;
+        --muted: #8a9bb4;
+        --quiet: #697b93;
+        --amber: #f2a93b;
+        --signal: #5e8bc4;
+        --warning: #e07a3f;
+        --focus: #f7c66f;
+        --radius: 10px;
+        color-scheme: dark;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; background: var(--canvas); color: var(--text); }
+      body { font-family: "IBM Plex Sans", sans-serif; font-size: 14px; }
+      button { font: inherit; }
+      button:focus-visible, a:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+      .prototype-bar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-height: 64px;
+        padding: 10px 24px;
+        background: rgba(11, 15, 23, .96);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(14px);
+      }
+      .prototype-title { margin-right: auto; }
+      .prototype-title strong { display: block; font-family: Archivo, sans-serif; font-size: 15px; }
+      .prototype-title span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+      .state-switcher { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; }
+      .state-switcher button, .device-toggle {
+        min-height: 36px;
+        padding: 0 11px;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .state-switcher button[aria-pressed="true"], .device-toggle[aria-pressed="true"] {
+        color: var(--text);
+        background: var(--panel-soft);
+      }
+      .device-toggle { border: 1px solid var(--line); }
+
+      .app-shell { min-height: calc(100vh - 64px); transition: width .15s ease; }
+      .app-shell.mobile { width: 393px; min-height: 852px; margin: 28px auto; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; }
+      .app-nav {
+        display: flex;
+        align-items: center;
+        height: 58px;
+        padding: 0 max(24px, calc((100% - 980px) / 2));
+        background: #101722;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { font-family: Archivo, sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 18px; }
+      .brand span { color: var(--amber); }
+      .nav-links { display: flex; gap: 24px; margin-left: 36px; color: var(--muted); }
+      .nav-links b { color: var(--amber); font-weight: 600; }
+      .account { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+      .page { width: min(980px, calc(100% - 40px)); margin: 44px auto 80px; }
+      .page-context { display: flex; justify-content: space-between; align-items: end; margin-bottom: 14px; }
+      .eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; font-weight: 600; }
+      .page-context h1 { margin: 5px 0 0; font-family: Archivo, sans-serif; font-size: 22px; }
+      .page-context p { margin: 0; color: var(--muted); font-size: 12px; }
+      .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+
+      .widget { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 14px 36px rgba(0,0,0,.22); }
+      .widget.ai { border-color: rgba(242, 169, 59, .72); }
+      .widget-head { display: flex; align-items: center; min-height: 48px; padding: 0 14px; border-bottom: 1px solid var(--line); }
+      .widget-title { font-family: Archivo, sans-serif; font-weight: 650; }
+      .widget-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+      .icon-button { width: 44px; height: 44px; color: var(--muted); background: transparent; border: 0; border-radius: 7px; cursor: pointer; }
+      .widget-body { padding: 16px; }
+
+      .meta-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 13px; }
+      .chip { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; }
+      .chip.fresh { color: var(--text); }
+      .chip.warning { color: var(--warning); border-color: rgba(224, 122, 63, .55); }
+      .meta-control { margin-left: auto; min-height: 32px; padding: 0 10px; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 7px; cursor: pointer; }
+
+      .status-banner { display: none; gap: 10px; align-items: center; margin-bottom: 12px; padding: 10px 12px; color: var(--text); background: rgba(224,122,63,.09); border: 1px solid rgba(224,122,63,.45); border-radius: 8px; }
+      .status-banner strong { font-size: 12px; }
+      .status-banner span { color: var(--muted); font-size: 12px; }
+      .status-banner button { margin-left: auto; min-height: 36px; padding: 0 10px; color: var(--text); background: transparent; border: 1px solid var(--warning); border-radius: 7px; cursor: pointer; }
+
+      .verdict { padding: 16px; background: var(--panel-raised); border-left: 3px solid var(--amber); border-radius: 9px; }
+      .verdict.no-trade { border-left-color: var(--signal); }
+      .verdict-kicker { display: flex; align-items: center; gap: 7px; color: var(--amber); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+      .verdict.no-trade .verdict-kicker { color: var(--signal); }
+      .verdict h2 { margin: 8px 0 3px; font-family: Archivo, sans-serif; font-size: 22px; line-height: 1.15; }
+      .verdict-sub { color: var(--muted); font-size: 12px; }
+      .verdict-lead { margin: 12px 0 0; color: var(--text); line-height: 1.5; }
+
+      .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+      .decision-cell { min-height: 70px; padding: 10px 11px; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 8px; }
+      .decision-cell.risk { border-left: 3px solid var(--quiet); }
+      .cell-label { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+      .cell-value { margin-top: 6px; font-family: "IBM Plex Mono", monospace; font-size: 15px; }
+      .cell-note { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.35; }
+
+      .trust-line { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0; padding: 9px 10px; color: var(--muted); background: rgba(94,139,196,.08); border-radius: 7px; font-size: 12px; line-height: 1.35; }
+      .trust-line b { color: var(--text); font-weight: 500; }
+      .evidence { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 14px; }
+      .evidence span { padding: 4px 7px; color: var(--muted); background: var(--panel-raised); border-radius: 6px; font: 11px "IBM Plex Mono", monospace; }
+
+      .actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding-top: 13px; border-top: 1px solid var(--line); }
+      .primary, .secondary, .link-button {
+        min-height: 44px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .primary { padding: 0 16px; color: #141414; background: var(--amber); border: 1px solid var(--amber); }
+      .secondary { padding: 0 14px; color: var(--text); background: transparent; border: 1px solid rgba(242,169,59,.7); }
+      .link-button { padding: 0 6px; color: var(--signal); background: transparent; border: 0; justify-self: start; }
+      .action-caption { grid-column: 1 / -1; margin: -1px 0 0; color: var(--muted); font-size: 11px; }
+
+      .orders { min-height: 100%; }
+      .orders-empty { display: grid; min-height: 440px; place-items: center; padding: 44px; text-align: center; color: var(--muted); }
+      .orders-empty strong { display: block; color: var(--text); margin-bottom: 7px; }
+
+      .drawer-backdrop { position: fixed; inset: 64px 0 0; z-index: 30; display: none; background: rgba(3,6,10,.62); }
+      .drawer-backdrop.open { display: block; }
+      .drawer { position: absolute; top: 0; right: 0; width: min(560px, 100%); height: 100%; overflow: auto; background: var(--panel); border-left: 1px solid var(--line); box-shadow: -18px 0 54px rgba(0,0,0,.42); }
+      .drawer-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; min-height: 64px; padding: 0 18px; background: rgba(19,26,36,.97); border-bottom: 1px solid var(--line); }
+      .drawer-head h2 { margin: 0; font-family: Archivo, sans-serif; font-size: 18px; }
+      .drawer-head button { margin-left: auto; }
+      .drawer-body { padding: 20px 20px 96px; }
+      .drawer-section { padding: 17px 0; border-bottom: 1px solid var(--line); }
+      .drawer-section:first-child { padding-top: 0; }
+      .drawer-section h3 { margin: 0 0 9px; font-size: 11px; color: var(--muted); letter-spacing: .09em; text-transform: uppercase; }
+      .drawer-section p, .drawer-section li { color: var(--muted); line-height: 1.58; }
+      .drawer-section ul { margin: 0; padding-left: 19px; }
+      .drawer-footer { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 12px 18px; background: rgba(19,26,36,.97); border-top: 1px solid var(--line); }
+
+      .state-only { display: none; }
+      .loading-layout { padding: 4px 0; }
+      .skeleton { height: 18px; margin: 10px 0; background: var(--panel-raised); border-radius: 6px; }
+      .skeleton.short { width: 48%; }
+      .skeleton.tall { height: 76px; }
+      .empty-state { padding: 38px 16px; text-align: center; }
+      .empty-state h2 { margin: 0 0 8px; font-family: Archivo, sans-serif; font-size: 20px; }
+      .empty-state p { max-width: 44ch; margin: 0 auto 18px; color: var(--muted); line-height: 1.55; }
+
+      .annotation { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+      .annotation div { padding: 12px; color: var(--muted); background: rgba(19,26,36,.7); border: 1px solid var(--line); border-radius: 8px; font-size: 11px; line-height: 1.45; }
+      .annotation b { display: block; margin-bottom: 4px; color: var(--text); }
+
+      .app-shell.mobile .prototype-hidden { display: none; }
+      .app-shell.mobile .app-nav { padding: 0 14px; }
+      .app-shell.mobile .nav-links { display: none; }
+      .app-shell.mobile .account { font-size: 0; }
+      .app-shell.mobile .account::after { content: "RA"; display: grid; place-items: center; width: 34px; height: 34px; color: #141414; background: var(--amber); border-radius: 50%; font-size: 11px; font-weight: 600; }
+      .app-shell.mobile .page { width: calc(100% - 24px); margin: 22px auto 40px; }
+      .app-shell.mobile .page-context p { display: none; }
+      .app-shell.mobile .grid { grid-template-columns: 1fr; }
+      .app-shell.mobile .orders { display: none; }
+      .app-shell.mobile .decision-grid { grid-template-columns: 1fr 1fr; }
+      .app-shell.mobile .actions { position: sticky; bottom: 0; margin: 0 -16px -16px; padding: 12px 16px 16px; background: var(--panel); }
+      .app-shell.mobile .actions .primary { grid-column: 1 / -1; }
+      .app-shell.mobile .actions .secondary { grid-column: 1 / -1; }
+      .app-shell.mobile .annotation { grid-template-columns: 1fr; }
+      .app-shell.mobile .drawer-backdrop { inset: 0; }
+      .app-shell.mobile .drawer { width: 100%; }
+
+      @media (max-width: 860px) {
+        .prototype-bar { align-items: flex-start; flex-wrap: wrap; }
+        .prototype-title { width: 100%; }
+        .state-switcher { overflow-x: auto; width: calc(100% - 86px); }
+        .grid { grid-template-columns: 1fr; }
+        .annotation { grid-template-columns: 1fr 1fr; }
+      }
+      @media (max-width: 520px) {
+        .prototype-bar { padding: 10px 12px; }
+        .annotation { grid-template-columns: 1fr; }
+      }
+      @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+    </style>
+  </head>
+  <body>
+    <header class="prototype-bar">
+      <div class="prototype-title">
+        <strong>AI recommendation redesign · concept A</strong>
+        <span>Decision card + analysis drawer · use the controls to inspect states</span>
+      </div>
+      <div class="state-switcher" role="group" aria-label="Recommendation state">
+        <button data-state="fresh" aria-pressed="true">Fresh trade</button>
+        <button data-state="no-trade" aria-pressed="false">No trade</button>
+        <button data-state="stale" aria-pressed="false">Stale</button>
+        <button data-state="loading" aria-pressed="false">Loading</button>
+        <button data-state="unavailable" aria-pressed="false">Unavailable</button>
+        <button data-state="signed-out" aria-pressed="false">Signed out</button>
+      </div>
+      <button class="device-toggle" id="device-toggle" aria-pressed="false">393px</button>
+    </header>
+
+    <main class="app-shell" id="app-shell">
+      <nav class="app-nav" aria-label="Primary">
+        <div class="brand">CONVE<span>X</span>A</div>
+        <div class="nav-links"><span>Scanner</span><b>Ticker</b><span>Positions</span><span>Blog</span></div>
+        <div class="account">rodrigoarias4@gmail.com</div>
+      </nav>
+
+      <section class="page">
+        <div class="page-context">
+          <div><div class="eyebrow">Ticker intelligence</div><h1>SPY · Recommendation</h1></div>
+          <p>Illustrative wireframe · simulated actions only</p>
+        </div>
+
+        <div class="grid">
+          <article class="widget ai" aria-labelledby="ai-title">
+            <header class="widget-head">
+              <div class="widget-title" id="ai-title">AI recommendation · SPY</div>
+              <div class="widget-actions"><button class="icon-button" aria-label="Dismiss recommendation">×</button></div>
+            </header>
+            <div class="widget-body">
+              <div class="meta-row" id="meta-row">
+                <span class="chip fresh" id="freshness-chip">● Fresh · 10:19 ET</span>
+                <span class="chip">SIMULATED</span>
+                <button class="meta-control" type="button">Persona · Default ▾</button>
+              </div>
+
+              <div class="status-banner" id="stale-banner" role="status">
+                <span aria-hidden="true">⚠</span>
+                <div><strong>New snapshot available</strong><br><span>This recommendation uses older levels.</span></div>
+                <button type="button">Refresh</button>
+              </div>
+
+              <div id="fresh-content">
+                <section class="verdict" id="verdict-box">
+                  <div class="verdict-kicker" id="verdict-kicker">Trade idea</div>
+                  <h2 id="verdict-title">Long volatility near $773</h2>
+                  <div class="verdict-sub" id="verdict-sub">Long straddle · Sep 11 · Medium conviction</div>
+                  <p class="verdict-lead" id="verdict-lead">Price is pinned at the call wall while volatility is cheap; the setup favors a defined-risk expansion trade.</p>
+                </section>
+
+                <div class="decision-grid" id="decision-grid">
+                  <div class="decision-cell risk"><div class="cell-label">Max risk</div><div class="cell-value">Debit paid</div><div class="cell-note">About 2× ATM premium</div></div>
+                  <div class="decision-cell"><div class="cell-label">Invalidation</div><div class="cell-value">$765.37</div><div class="cell-note">Thesis breaks below flip</div></div>
+                  <div class="decision-cell"><div class="cell-label">Entry</div><div class="cell-value">Near $773</div><div class="cell-note">At the call wall</div></div>
+                  <div class="decision-cell"><div class="cell-label">Target</div><div class="cell-value">$735</div><div class="cell-note">AI-stated figure</div></div>
+                </div>
+
+                <div class="trust-line" id="trust-line"><span aria-hidden="true">ⓘ</span><div><b>2 of 3 checked figures trace to Convexa.</b> The exception is labeled in the analysis.</div></div>
+                <div class="evidence" id="evidence"><span>call wall 773</span><span>gamma flip 765.4</span><span>IV/HV 0.80</span></div>
+
+                <div class="actions" id="trade-actions">
+                  <button class="primary" type="button">Review simulated trade</button>
+                  <button class="secondary" type="button">Create sim order</button>
+                  <button class="link-button" type="button" id="open-analysis">Full analysis &amp; data →</button>
+                  <div class="action-caption">Nothing is saved until you review the pre-filled trade and confirm.</div>
+                </div>
+              </div>
+
+              <div class="state-only loading-layout" id="loading-content" role="status">
+                <div class="eyebrow">Comparing the current snapshot</div>
+                <div class="skeleton short"></div><div class="skeleton tall"></div><div class="skeleton"></div><div class="skeleton"></div>
+                <p style="color:var(--muted);margin:16px 0 0">Reading SPY with the Default persona. This usually takes a few seconds.</p>
+              </div>
+
+              <div class="state-only empty-state" id="unavailable-content">
+                <div style="font-size:24px;color:var(--warning)" aria-hidden="true">⚠</div>
+                <h2>Couldn’t get a recommendation</h2>
+                <p>Your dashboard and last market snapshot are safe. Retry the AI read, or inspect exactly what would be sent.</p>
+                <button class="primary" type="button">Retry recommendation</button>
+                <br><button class="link-button" type="button" style="margin-top:10px">View request data</button>
+              </div>
+
+              <div class="state-only empty-state" id="signed-out-content">
+                <div style="font-size:24px;color:var(--signal)" aria-hidden="true">◇</div>
+                <h2>Sign in to ask AI</h2>
+                <p>Browsing stays available without an account. Sign in only when you want a recommendation or simulated action.</p>
+                <button class="primary" type="button">Sign in</button>
+                <br><button class="link-button" type="button" style="margin-top:10px">Preview what’s sent</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="widget orders">
+            <header class="widget-head"><div class="widget-title">Simulated orders · SPY</div><span class="chip" style="margin-left:auto">SIMULATED</span></header>
+            <div class="orders-empty"><div><strong>No simulated orders for SPY</strong>Review a recommendation or create a trigger order when you’re ready.</div></div>
+          </article>
+        </div>
+
+        <aside class="annotation prototype-hidden" aria-label="Design rationale">
+          <div><b>1 · Verdict first</b>The answer, instrument, horizon, and confidence form one glanceable statement.</div>
+          <div><b>2 · Risk before rationale</b>Entry, risk, invalidation, and target precede every explanatory paragraph.</div>
+          <div><b>3 · Action stays visible</b>The simulated-trade path is above the fold and names the review step honestly.</div>
+          <div><b>4 · Evidence on demand</b>Long reasoning, grounding, provenance, and request data move into one drawer.</div>
+        </aside>
+      </section>
+
+      <div class="drawer-backdrop" id="drawer-backdrop">
+        <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+          <header class="drawer-head"><h2 id="drawer-title">Full analysis · SPY</h2><button class="icon-button" id="close-analysis" aria-label="Close analysis">×</button></header>
+          <div class="drawer-body">
+            <section class="drawer-section"><h3>Recommendation</h3><p><strong style="color:var(--text)">Long volatility near $773.</strong> Long straddle · Sep 11 · Medium conviction.</p></section>
+            <section class="drawer-section"><h3>Why this trade</h3><ul><li>Spot is pinned at the call wall and peak gamma near $773.</li><li>IV/HV is 0.80, so near-term volatility is inexpensive relative to realized volatility.</li><li>A break below the gamma flip can expand the volatility regime.</li></ul></section>
+            <section class="drawer-section"><h3>Manage the trade</h3><ul><li>Close decisively below $765.37 if the regime flips.</li><li>Reassess if price holds above the call wall and shifts the magnet higher.</li><li>Confirm IV rank when enough history is available.</li></ul></section>
+            <section class="drawer-section"><h3>Numbers &amp; grounding</h3><p>Call wall $773 · Gamma flip $765.37 · IV/HV 0.80 · VWAP $773.3.</p><p>Two of three checked figures trace to Convexa. The target is the AI’s own number and is not pre-filled automatically.</p></section>
+            <section class="drawer-section"><h3>Snapshot &amp; persona</h3><p>As of Aug 10, 10:19 ET · Default persona · Simulated/advisory. The recommendation is pinned to this snapshot and does not update itself.</p></section>
+            <section class="drawer-section"><h3>Privacy &amp; request data</h3><p>Review the computed snapshot, candidate contracts, risk inputs, simulated positions, persona prompt, and field glossary that were sent. No identity, API key, broker credential, or real order is included.</p><button class="link-button" type="button">View exactly what was sent →</button></section>
+          </div>
+          <footer class="drawer-footer"><button class="primary" type="button">Review simulated trade</button><button class="secondary" type="button">Create sim order</button></footer>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      const stateButtons = [...document.querySelectorAll('[data-state]')];
+      const shell = document.getElementById('app-shell');
+      const fresh = document.getElementById('fresh-content');
+      const loading = document.getElementById('loading-content');
+      const unavailable = document.getElementById('unavailable-content');
+      const signedOut = document.getElementById('signed-out-content');
+      const staleBanner = document.getElementById('stale-banner');
+      const freshnessChip = document.getElementById('freshness-chip');
+      const metaRow = document.getElementById('meta-row');
+      const verdict = document.getElementById('verdict-box');
+      const kicker = document.getElementById('verdict-kicker');
+      const title = document.getElementById('verdict-title');
+      const sub = document.getElementById('verdict-sub');
+      const lead = document.getElementById('verdict-lead');
+      const decision = document.getElementById('decision-grid');
+      const trust = document.getElementById('trust-line');
+      const evidence = document.getElementById('evidence');
+      const actions = document.getElementById('trade-actions');
+
+      function setState(next) {
+        stateButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.state === next)));
+        [fresh, loading, unavailable, signedOut].forEach(node => node.style.display = 'none');
+        staleBanner.style.display = 'none';
+        metaRow.style.display = 'flex';
+        if (next === 'loading') { loading.style.display = 'block'; return; }
+        if (next === 'unavailable') { unavailable.style.display = 'block'; return; }
+        if (next === 'signed-out') { metaRow.style.display = 'none'; signedOut.style.display = 'block'; return; }
+        fresh.style.display = 'block';
+        verdict.classList.toggle('no-trade', next === 'no-trade');
+        decision.style.display = next === 'no-trade' ? 'none' : 'grid';
+        trust.style.display = next === 'no-trade' ? 'none' : 'flex';
+        evidence.style.display = next === 'no-trade' ? 'none' : 'flex';
+        if (next === 'no-trade') {
+          freshnessChip.textContent = '● Fresh · 10:19 ET';
+          freshnessChip.className = 'chip fresh';
+          kicker.textContent = 'No trade';
+          title.textContent = 'No clean edge right now';
+          sub.textContent = 'Sit this one out · Medium conviction';
+          lead.textContent = 'Price is pinned between nearby structure levels without enough asymmetry to justify an entry.';
+          actions.innerHTML = '<button class="secondary" type="button">Dismiss</button><button class="link-button" type="button" id="open-analysis-alt">See what would change →</button><div class="action-caption">A no-trade verdict is a complete answer. No simulated position will be created.</div>';
+          document.getElementById('open-analysis-alt').addEventListener('click', openDrawer);
+        } else {
+          kicker.textContent = 'Trade idea';
+          title.textContent = 'Long volatility near $773';
+          sub.textContent = 'Long straddle · Sep 11 · Medium conviction';
+          lead.textContent = 'Price is pinned at the call wall while volatility is cheap; the setup favors a defined-risk expansion trade.';
+          actions.innerHTML = '<button class="primary" type="button">Review simulated trade</button><button class="secondary" type="button">Create sim order</button><button class="link-button" type="button" id="open-analysis-alt">Full analysis &amp; data →</button><div class="action-caption">Nothing is saved until you review the pre-filled trade and confirm.</div>';
+          document.getElementById('open-analysis-alt').addEventListener('click', openDrawer);
+          if (next === 'stale') {
+            freshnessChip.textContent = '⚠ Older snapshot · 10:19 ET';
+            freshnessChip.className = 'chip warning';
+            staleBanner.style.display = 'flex';
+            actions.innerHTML = '<button class="primary" type="button">Refresh recommendation</button><button class="link-button" type="button" id="open-analysis-alt">Review old analysis →</button><div class="action-caption">Simulated actions pause until you refresh, so old levels cannot look current.</div>';
+            document.getElementById('open-analysis-alt').addEventListener('click', openDrawer);
+          } else {
+            freshnessChip.textContent = '● Fresh · 10:19 ET';
+            freshnessChip.className = 'chip fresh';
+          }
+        }
+      }
+
+      const backdrop = document.getElementById('drawer-backdrop');
+      const closeButton = document.getElementById('close-analysis');
+      let drawerTrigger = null;
+      function openDrawer(event) { drawerTrigger = event?.currentTarget || null; backdrop.classList.add('open'); closeButton.focus(); }
+      function closeDrawer() { backdrop.classList.remove('open'); drawerTrigger?.focus(); }
+      document.getElementById('open-analysis').addEventListener('click', openDrawer);
+      closeButton.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', event => { if (event.target === backdrop) closeDrawer(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape' && backdrop.classList.contains('open')) closeDrawer(); });
+      stateButtons.forEach(button => button.addEventListener('click', () => setState(button.dataset.state)));
+
+      const device = document.getElementById('device-toggle');
+      device.addEventListener('click', () => {
+        const mobile = shell.classList.toggle('mobile');
+        device.setAttribute('aria-pressed', String(mobile));
+        device.textContent = mobile ? 'Desktop' : '393px';
+      });
+      setState('fresh');
+    </script>
+  </body>
+</html>
