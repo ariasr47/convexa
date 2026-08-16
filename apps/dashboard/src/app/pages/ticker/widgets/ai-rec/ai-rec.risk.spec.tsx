@@ -877,10 +877,8 @@ describe('ai-rec · advice behind Accept', () => {
     await user.type(trigger, '260');
     await user.click(within(dialog).getByRole('button', { name: 'Limit' }));
     await user.type(within(dialog).getByLabelText('Limit price'), '3');
-    const goodTil = within(dialog).getByLabelText('GOOD-TIL');
-    await user.click(goodTil);
-    const tilOptions = await screen.findAllByRole('option');
-    await user.click(tilOptions[tilOptions.length - 1]);
+    const goodTil = within(dialog).getByLabelText('Good-til');
+    fireEvent.change(goodTil, { target: { value: '2026-08-30' } });
     await user.click(within(dialog).getByRole('button', { name: 'Place simulated order' }));
     await waitFor(() => expect(allOrders()).toHaveLength(1));
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
