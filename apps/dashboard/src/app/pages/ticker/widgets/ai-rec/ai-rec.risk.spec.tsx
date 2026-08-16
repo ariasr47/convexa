@@ -862,6 +862,30 @@ describe('ai-rec · advice behind Accept', () => {
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
   });
 
+  it('create-order confirmation writes exactly one simulated order and keeps the pinned read', async () => {
+    installBackend({});
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(REC_BODY);
+    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+    const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
+    await user.click(action);
+    const dialog = await screen.findByRole('dialog');
+    const trigger = within(dialog).getByLabelText('Trigger level');
+    await user.clear(trigger);
+    await user.type(trigger, '260');
+    await user.click(within(dialog).getByRole('button', { name: 'Limit' }));
+    await user.type(within(dialog).getByLabelText('Limit price'), '3');
+    const goodTil = within(dialog).getByLabelText('GOOD-TIL');
+    await user.click(goodTil);
+    const tilOptions = await screen.findAllByRole('option');
+    await user.click(tilOptions[tilOptions.length - 1]);
+    await user.click(within(dialog).getByRole('button', { name: 'Place simulated order' }));
+    await waitFor(() => expect(allOrders()).toHaveLength(1));
+    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+  });
+
 });
 
 // Unit — the Accept→prefill handoff object (the dialog's INTERNALS have their own risk spec;
