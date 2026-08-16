@@ -30,10 +30,8 @@ describe('AnalysisSurface', () => {
     rec.strategy!.reengage_when = ['If support breaks'];
     renderSurface({ rec, bundle: makeBundle() });
     const dialog = screen.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
-    const text = dialog.textContent ?? '';
-    expect(text.indexOf('Read summary')).toBeLessThan(text.indexOf('Why'));
-    expect(text.indexOf('Why')).toBeLessThan(text.indexOf('Levels in play'));
-    expect(text.indexOf('Levels in play')).toBeLessThan(text.indexOf('What’s sent to the AI'));
+    const ordered = ['analysis-summary', 'analysis-rationale', 'analysis-levels', 'analysis-numbers', 'analysis-cited', 'analysis-grounding', 'analysis-cap', 'analysis-as-sent', 'analysis-export'].map((id) => within(dialog).getByTestId(id));
+    ordered.slice(1).forEach((node, i) => expect(ordered[i].compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());
     expect(within(dialog).getByText('As-sent risk inputs')).toBeInTheDocument();
   });
 
@@ -50,6 +48,18 @@ describe('AnalysisSurface', () => {
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('No trade — sit this one out')).toBeInTheDocument();
     expect(within(dialog).getByText('As-sent risk inputs')).toBeInTheDocument();
+  });
+
+  it('renders every supplied as-sent leaf, including closed absence reasons', () => {
+    const rec = recAllTraced();
+    rec.sent!.risk_inputs.effective_dollar_cap.not_derivable_reason = 'percent_without_account_size';
+    rec.sent!.risk_inputs.effective_dollar_cap.derived_from = { account_size: null, cap_value: 2, cap_unit: 'percent' };
+    rec.sent!.open_positions.this_underlying = { direction: 'long', leg_count: 2, nearest_expiry_dte: 14, max_loss: { state: 'ineligible', value: null, reason: 'multi-leg' } };
+    renderSurface({ rec });
+    const section = screen.getByTestId('as-sent-inputs');
+    expect(section).toHaveTextContent('percent_without_account_size');
+    expect(section).toHaveTextContent('cap 2 percent');
+    expect(section).toHaveTextContent('reason: multi-leg');
   });
 
   it('closes before invoking export', async () => {
@@ -81,8 +91,7 @@ describe('AnalysisSurface', () => {
     const user = userEvent.setup();
     function Harness() {
       const [open, setOpen] = React.useState(false);
-      const openerRef = React.useRef<HTMLButtonElement>(null);
-      return <><button ref={openerRef} onClick={() => setOpen(true)}>Full analysis &amp; data</button><AnalysisSurface open={open} ticker="TSLA" rec={recAllTraced()} bundle={null} onClose={() => { setOpen(false); openerRef.current?.focus(); }} onViewExport={vi.fn()} /></>;
+      return <><button onClick={() => setOpen(true)}>Full analysis &amp; data</button><AnalysisSurface open={open} ticker="TSLA" rec={recAllTraced()} bundle={null} onClose={() => setOpen(false)} onViewExport={vi.fn()} /></>;
     }
     render(<ThemeProvider theme={theme}><Harness /></ThemeProvider>);
     const opener = screen.getByRole('button', { name: 'Full analysis & data' });

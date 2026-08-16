@@ -52,10 +52,10 @@ function AsSentInputs({ riskInputs, openPositions }: { riskInputs: RiskInputs | 
     <Box data-testid="as-sent-inputs">
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>As-sent risk inputs</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size ?? '—'} · Per-trade cap: ${riskInputs.per_trade_cap ? `${riskInputs.per_trade_cap.value} ${riskInputs.per_trade_cap.unit}` : '—'} · Effective cap: ${effective?.value ?? '—'} (${effective?.state ?? '—'}) · Storage available: ${riskInputs.storage_available} · Updated at: ${riskInputs.updated_at ?? '—'}` : 'Risk inputs not available.'}
+        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size ?? '—'} · Per-trade cap: ${riskInputs.per_trade_cap ? `${riskInputs.per_trade_cap.value} ${riskInputs.per_trade_cap.unit}` : '—'} · Effective cap: ${effective?.value ?? '—'} (${effective?.state ?? '—'}; reason: ${effective?.not_derivable_reason ?? '—'}; derived from account ${effective?.derived_from.account_size ?? '—'}, cap ${effective?.derived_from.cap_value ?? '—'} ${effective?.derived_from.cap_unit ?? '—'}) · Storage available: ${riskInputs.storage_available} · Updated at: ${riskInputs.updated_at ?? '—'}` : 'Risk inputs not available.'}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source} · Underlying: ${underlying ? `${underlying.direction}, ${underlying.leg_count} legs, ${underlying.nearest_expiry_dte} DTE, max loss ${underlying.max_loss.value ?? '—'} (${underlying.max_loss.state})` : '—'} · Portfolio: ${portfolio ? `${portfolio.open_count} open, capital at risk ${portfolio.capital_at_risk ?? '—'}` : '—'}` : 'not available'}
+        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source} · Underlying: ${underlying ? `${underlying.direction}, ${underlying.leg_count} legs, ${underlying.nearest_expiry_dte} DTE, max loss ${underlying.max_loss.value ?? '—'} (${underlying.max_loss.state}; reason: ${underlying.max_loss.reason ?? '—'})` : '—'} · Portfolio: ${portfolio ? `${portfolio.open_count} open, capital at risk ${portfolio.capital_at_risk ?? '—'}` : '—'}` : 'not available'}
       </Typography>
     </Box>
   );
@@ -127,14 +127,14 @@ export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExpo
         </Stack>
         <Stack data-testid="analysis-content" spacing={2} sx={{ minHeight: 0, overflowX: 'hidden', overflowY: 'auto', p: 2.5 }}>
           <AnalysisSummary rec={rec} />
-          <ReasoningSection strategy={strategy} expanded />
-          <LevelsStrip bundle={bundle ?? null} />
-          <NumbersSaidStrip candidates={rec.sent?.candidates} move={bundle?.market_state?.straddle_move} citedExpiration={strategy.expiration} />
-          <CitedContractLine cited={rec.cited_contract} asOf={rec.sent?.candidates?.as_of ?? null} />
-          <GroundingDetail grounding={rec.grounding} />
-          <CapAnnotation capCheck={rec.cap_check} />
-          <AsSentInputs riskInputs={rec.sent?.risk_inputs} openPositions={rec.sent?.open_positions} />
-          <Button disabled={pendingExport} onClick={handleExport}>{COPY.action.requestExport}</Button>
+          <Box data-testid="analysis-rationale"><ReasoningSection strategy={strategy} expanded /></Box>
+          <Box data-testid="analysis-levels"><LevelsStrip bundle={bundle ?? null} /></Box>
+          <Box data-testid="analysis-numbers"><NumbersSaidStrip candidates={rec.sent?.candidates} move={bundle?.market_state?.straddle_move} citedExpiration={strategy.expiration} /></Box>
+          <Box data-testid="analysis-cited"><CitedContractLine cited={rec.cited_contract} asOf={rec.sent?.candidates?.as_of ?? null} /></Box>
+          <Box data-testid="analysis-grounding"><GroundingDetail grounding={rec.grounding} /></Box>
+          <Box data-testid="analysis-cap"><CapAnnotation capCheck={rec.cap_check} /></Box>
+          <Box data-testid="analysis-as-sent"><AsSentInputs riskInputs={rec.sent?.risk_inputs} openPositions={rec.sent?.open_positions} /></Box>
+          <Box data-testid="analysis-export"><Button disabled={pendingExport} onClick={handleExport}>{COPY.action.requestExport}</Button></Box>
         </Stack>
       </Stack>
     </Drawer>
