@@ -294,6 +294,7 @@ function installBackend(cfg: BackendCfg = {}) {
             : { authenticated: false, user: null, google_available: false, settings: null },
         );
       }
+      if (url.includes('/api/positions/sim-trade/gate')) return json({ allowed: true });
       // byo-ai-key credential endpoints — the ONLY channel the raw key ever rides (browser→server).
       if (url.includes('/api/auth/ai-key')) {
         if (!state.authenticated) return json({ error: 'auth_required', message: 'sign in' }, 403);
@@ -865,22 +866,26 @@ describe('ai-rec · advice behind Accept', () => {
   });
 
   it('create-order confirmation writes exactly one simulated order and keeps the pinned read', async () => {
-    const orderRec = recAllTraced();
-    orderRec.strategy!.expiration = '2026-09-18';
-    installBackend({ rec: orderRec });
-    const user = renderApp();
-    await settle();
-    await ask(user);
-    await within(panel()).findByTestId('ai-rec-decision-card');
-    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
-    const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
-    await user.click(action);
-    const dialog = await screen.findByRole('dialog');
-    const confirm = within(dialog).getByRole('button', { name: 'Place simulated order' });
-    expect(confirm).toBeEnabled();
-    await user.click(confirm);
-    await waitFor(() => expect(allOrders()).toHaveLength(1));
-    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-07-01T12:00:00Z'));
+    try {
+      installBackend({});
+      const user = renderApp();
+      await settle();
+      await ask(user);
+      await within(panel()).findByText(REC_BODY);
+      const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+      const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
+      await user.click(action);
+      const dialog = await screen.findByRole('dialog');
+      const confirm = within(dialog).getByRole('button', { name: 'Place simulated order' });
+      expect(confirm).toBeEnabled();
+      await user.click(confirm);
+      await waitFor(() => expect(allOrders()).toHaveLength(1));
+      expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
 });
