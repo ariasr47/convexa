@@ -560,7 +560,7 @@ async function stubNetwork(page: Page) {
       return route.fulfill({ status: 204, body: '' });
     }
     if (path.startsWith('/api/ticker/')) return route.fulfill({ json: bundle });
-    if (path.startsWith('/api/stream/')) {
+    if (path === '/api/stream/TSLA' && route.request().method() === 'GET') {
       return route.fulfill({ status: 200, contentType: 'text/event-stream', body: '' });
     }
     if (path.startsWith('/api/recommendation/status/')) {
@@ -587,7 +587,8 @@ async function stubNetwork(page: Page) {
     }
     if (path.startsWith('/api/scan')) return route.fulfill({ json: scan });
 
-    // Anything else (incl. SSE) is left to the network, exactly as the Cypress suite did.
+    // Other API routes (including non-TSLA SSE) are left to the network, exactly as the Cypress
+    // suite did; only the static TSLA board stream is explicitly fixture-owned here.
     return route.fallback();
   });
 }
@@ -807,8 +808,9 @@ for (const scheme of ['dark', 'light'] as const) {
       // VACUITY GUARD — the new content really did render before measuring.
       await expect(page.getByTestId('grounding-card-line')).toBeAttached();
       await page.getByRole('button', { name: 'Full analysis & data' }).click();
-      await expect(page.getByTestId('clause-stop').first()).toBeAttached();
-      await expect(page.getByTestId('clause-target').first()).toBeAttached();
+      const analysis = page.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
+      await expect(analysis.getByTestId('clause-stop')).toHaveCount(1);
+      await expect(analysis.getByTestId('clause-target')).toHaveCount(1);
       await assertNoHorizontalOverflow(page);
     });
 
