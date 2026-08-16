@@ -196,7 +196,7 @@ export function ReasoningSection({
   const { lead, detail, keyPoints, reengage } = deriveReasoning(strategy);
   const [open, setOpen] = useState(false);
   const detailSection = detail ? (
-    <Box>
+    <Box data-testid={expanded ? 'reasoning-full-read' : undefined}>
       {!expanded && (
         <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
           <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>
@@ -223,7 +223,7 @@ export function ReasoningSection({
       {!suppressLead && lead && <Field label={COPY.reasoning.rationale} value={lead} />}
       {expanded && detailSection}
       {keyPoints.length > 0 && (
-        <Box>
+        <Box data-testid={expanded ? 'reasoning-key-points' : undefined}>
           <SectionLabel>{COPY.reasoning.keyPoints}</SectionLabel>
           <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2.5 }}>
             {keyPoints.map((k, i) => (
@@ -240,7 +240,7 @@ export function ReasoningSection({
         </Box>
       )}
       {reengage.length > 0 && (
-        <Box>
+        <Box data-testid={expanded ? 'reasoning-reengage' : undefined}>
           <SectionLabel>{reengageLabel}</SectionLabel>
           <Stack spacing={0.5}>
             {reengage.map((r, i) => (

@@ -62,6 +62,41 @@ describe('AnalysisSurface', () => {
     expect(section).toHaveTextContent('reason: multi-leg');
   });
 
+  it('renders incomplete, pre-grounding, and scripted pinned responses safely', () => {
+    const incomplete = recAllTraced();
+    incomplete.strategy!.structure = null;
+    incomplete.strategy!.strikes = [];
+    incomplete.strategy!.expiration = null;
+    const preGrounding = recAllTraced();
+    delete preGrounding.grounding;
+    const scripted = recAllTraced();
+    scripted.scenario = { id: 'scenario-1', name: 'Breakout rehearsal' };
+    const cases = [incomplete, preGrounding, scripted];
+    cases.forEach((rec) => {
+      const { unmount } = renderSurface({ rec, bundle: makeBundle() });
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent(rec === scripted ? 'SCRIPTED SCENARIO · Breakout rehearsal' : 'Read summary');
+      expect(dialog).toHaveTextContent('As-sent risk inputs');
+      unmount();
+    });
+  });
+
+  it('keeps full rationale before Why and re-engagement in expanded mode', () => {
+    const rec = recAllTraced();
+    rec.strategy!.rationale = 'Pinned lead. Full rationale detail.';
+    rec.strategy!.key_points = ['Why this level matters'];
+    rec.strategy!.reengage_when = ['Manage when support breaks'];
+    renderSurface({ rec, bundle: makeBundle() });
+    const reasoning = screen.getByTestId('analysis-rationale');
+    const nodes = [
+      within(reasoning).getByTestId('reasoning-full-read'),
+      within(reasoning).getByTestId('reasoning-key-points'),
+      within(reasoning).getByTestId('reasoning-reengage'),
+    ];
+    nodes.slice(1).forEach((node, i) => expect(nodes[i].compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy());
+    expect(within(nodes[0]).getByText('Full rationale detail.')).toBeInTheDocument();
+  });
+
   it('closes before invoking export', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
@@ -99,6 +134,33 @@ describe('AnalysisSurface', () => {
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(opener).toHaveFocus();
+  });
+
+  it('reopens the same pinned read without mutation or request/export activity', async () => {
+    const user = userEvent.setup();
+    const rec = recAllTraced();
+    const bundle = makeBundle();
+    const beforeRec = structuredClone(rec);
+    const beforeBundle = structuredClone(bundle);
+    const callbacks = { close: vi.fn(), export: vi.fn() };
+    function Harness() {
+      const [open, setOpen] = React.useState(false);
+      return <><button onClick={() => setOpen(true)}>Open pinned analysis</button><AnalysisSurface open={open} ticker="TSLA" rec={rec} bundle={bundle} onClose={() => { callbacks.close(); setOpen(false); }} onViewExport={callbacks.export} /></>;
+    }
+    render(<ThemeProvider theme={theme}><Harness /></ThemeProvider>);
+    const opener = screen.getByRole('button', { name: 'Open pinned analysis' });
+    await user.click(opener);
+    const first = screen.getByTestId('analysis-summary').textContent;
+    const rationale = screen.getByTestId('reasoning-prose-not-checked').textContent;
+    await user.click(screen.getByRole('button', { name: 'Close analysis' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await user.click(opener);
+    expect(screen.getByTestId('analysis-summary').textContent).toBe(first);
+    expect(screen.getByTestId('reasoning-prose-not-checked').textContent).toBe(rationale);
+    expect(rec).toEqual(beforeRec);
+    expect(bundle).toEqual(beforeBundle);
+    expect(callbacks.close).toHaveBeenCalledTimes(1);
+    expect(callbacks.export).not.toHaveBeenCalled();
   });
 
   it('does not render when the pinned response is absent or not produced', () => {
