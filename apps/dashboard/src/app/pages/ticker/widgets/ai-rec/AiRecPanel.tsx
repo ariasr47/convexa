@@ -20,12 +20,7 @@ import {
 } from '@/features/trading/orders/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
-import type {
-  PersonaDefinition,
-  RecResponse,
-  RecScenarioInfo,
-  TickerBundle,
-} from '@convexa/api';
+import type { PersonaDefinition, RecResponse, RecScenarioInfo, TickerBundle } from '@convexa/api';
 import {
   Alert,
   Box,
@@ -41,6 +36,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnalysisSurface } from './AnalysisSurface';
 import {
   adminExhaustedTitle,
   BYO_KEY,
@@ -55,7 +51,6 @@ import {
   retryWhenReset,
 } from './copy';
 import { DecisionCard } from './DecisionCard';
-import { AnalysisSurface } from './AnalysisSurface';
 import { deriveAiRecPresentation } from './presentationPolicy';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
@@ -183,7 +178,9 @@ export function AiRecPanel({
   // A retained response is still pinned while a new request is loading, but the decision card
   // must not present that old read as the current result. Analysis is likewise pinned to this
   // produced response and never recomputed by opening/closing the surface.
-  const producedRec = rec?.status === 'produced' && rec.strategy ? rec : null;
+  // Auth is the outer presentation boundary: a retained result is hidden immediately when the
+  // session becomes signed out, including its analysis/persona/quota/simulation controls.
+  const producedRec = signedIn && rec?.status === 'produced' && rec.strategy ? rec : null;
 
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
   // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
@@ -203,7 +200,9 @@ export function AiRecPanel({
       }}
     >
       {COPY.action.viewExport}
-      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>→</Box>
+      <Box component="span" aria-hidden sx={{ ml: 0.5 }}>
+        →
+      </Box>
     </Button>
   ) : null;
 
@@ -257,8 +256,16 @@ export function AiRecPanel({
                 ))}
               </Select>
             </FormControl>
-            <Tooltip arrow describeChild title={`Defaults to your active persona (${activeName}). Changes apply only to the next read and never recompute the pinned result.`}>
-              <Typography variant="caption" component="span" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
+            <Tooltip
+              arrow
+              describeChild
+              title={`Defaults to your active persona (${activeName}). Changes apply only to the next read and never recompute the pinned result.`}
+            >
+              <Typography
+                variant="caption"
+                component="span"
+                sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+              >
                 Next request only · does not change the active persona
               </Typography>
             </Tooltip>
@@ -340,7 +347,11 @@ export function AiRecPanel({
                 onAccept(producedRec, producedRec.persona.name),
               )
             }
-            onCreateOrder={presentation.actions.createOrder ? () => onAct!(producedRec, producedRec.persona.name) : undefined}
+            onCreateOrder={
+              presentation.actions.createOrder
+                ? () => onAct!(producedRec, producedRec.persona.name)
+                : undefined
+            }
             onAnalysis={() => setAnalysisOpen(true)}
             onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}
@@ -587,7 +598,12 @@ function ActionRegion({
   return (
     <Box sx={box}>
       <Tooltip arrow describeChild title={COPY.tooltip.get.replace('{TICKER}', ticker)}>
-        <Button variant="contained" size="small" onClick={onGet} disabled={!actions.analyze && !actions.retry}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={onGet}
+          disabled={!actions.analyze && !actions.retry}
+        >
           {primaryLabel}
         </Button>
       </Tooltip>

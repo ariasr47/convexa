@@ -624,6 +624,19 @@ describe('ai-rec-grounding · closed lookups', () => {
     expect(cardGroundingLine(poisoned)).toEqual(cardGroundingLine(g));
   });
 
+  it('AC-23 — not_applicable gets one honest closed grounding statement', () => {
+    const line = cardGroundingLine({
+      card: 'not_applicable',
+      counts: { checked: 0, traced: 0, untraced: 0, not_checkable: 0 },
+      tolerance_pct: 0,
+      fields: recAllTraced().grounding!.fields,
+    });
+    expect(line.kind).toBe('quiet');
+    if (line.kind !== 'quiet') throw new Error('expected a closed grounding statement');
+    expect(line.text).toBe(GROUNDING_CARD.not_applicable);
+    expect(line.text).not.toMatch(/AI|source|Convexa number/i);
+  });
+
   it('AC-7 (SB) / AC-68 — the prefill gate is a closed lookup on the wire state, FIVE arms', () => {
     expect(prefillGate(bare('traced'))).toEqual({ seed: true, reason: null });
     expect(prefillGate(bare('untraced'))).toEqual({

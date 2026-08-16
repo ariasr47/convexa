@@ -126,16 +126,12 @@ function fieldValueEl(label: string): HTMLElement {
 
 /** The conviction slot's value element — a Chip label or a suppressed-chip `<p>`, a sibling of its
  *  own label inside one shallow `Box` (not the `Field` shape `fieldValueEl` targets). */
-function convictionValueEl(): HTMLElement {
-  const box = within(panel()).getByText(PLAN_FIELD_LABEL.confidence).parentElement as HTMLElement;
-  const el = box.querySelector('.MuiChip-label') ?? box.querySelector('p');
-  if (!el) throw new Error('no conviction value element');
-  return el as HTMLElement;
-}
-
 /** Resolves any of the six plan/conviction slots by label, routing Confidence through its own
  *  traversal. */
-async function slotValueEl(user: ReturnType<typeof userEvent.setup>, label: string): Promise<HTMLElement> {
+async function slotValueEl(
+  user: ReturnType<typeof userEvent.setup>,
+  label: string,
+): Promise<HTMLElement> {
   if (label === PLAN_FIELD_LABEL.timeHorizon || label === PLAN_FIELD_LABEL.confidence) {
     if (!screen.queryByRole('dialog', { name: /Full analysis & data/ })) {
       await user.click(within(panel()).getByRole('button', { name: COPY.action.analysis }));
@@ -417,12 +413,14 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     expect(within(panel()).queryByTestId('rec-not-actionable')).toBeNull();
   });
 
-  it('AC-10b (SB) — the local-rules path is EXEMPT: no standing line, the shipped local-rules line unchanged', async () => {
+  it('AC-10b (SB) — local-rules still names missing position fields while retaining its grounding line', async () => {
     installBackend(recLocalRulesUnnamed());
     const user = renderApp();
     await settle();
     await ask(user);
-    expect(within(panel()).queryByTestId('rec-not-actionable')).toBeNull();
+    expect(within(panel()).getByTestId('rec-not-actionable')).toHaveTextContent(
+      'Never named: Strike(s), Expiration',
+    );
     expect(within(panel()).getByTestId('grounding-card-line')).toHaveTextContent(
       "No AI read here — these figures come from Convexa's own rules.",
     );

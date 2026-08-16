@@ -256,6 +256,7 @@ export const GROUNDING_CARD = {
   none_traced: 'No figure here traces to a Convexa number.',
   could_not_check: "Convexa couldn't check these figures this cycle.",
   local_rules: "No AI read here — these figures come from Convexa's own rules.",
+  not_applicable: 'No figures were provided for checking in this read.',
 } as const;
 
 /** `some_traced` interpolates the SERVER's integers — the browser never counts. */

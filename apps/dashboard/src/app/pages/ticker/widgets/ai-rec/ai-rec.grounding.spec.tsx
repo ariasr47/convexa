@@ -116,14 +116,6 @@ async function openAnalysis(user: ReturnType<typeof renderApp>): Promise<HTMLEle
  * climbing from the label's nearest `<div>` ancestor (the `Stack`) to its parent (the `Box`) and
  * querying the first `<p>` reaches exactly the value node the register applies to.
  */
-function fieldValueEl(label: string): HTMLElement {
-  const labelEl = within(panel()).getByText(label);
-  const fieldBox = labelEl.closest('div')?.parentElement as HTMLElement;
-  const value = fieldBox.querySelector('p');
-  if (!value) throw new Error(`no value <p> found for field "${label}"`);
-  return value as HTMLElement;
-}
-
 beforeEach(() => {
   localStorage.clear();
   __resetPositions();
@@ -349,7 +341,9 @@ describe('ai-rec-grounding · the card (F10)', () => {
     const analysis2 = await openAnalysis(user2);
     const stopVal2 = within(analysis2).getByText(String(untraced.strategy!.exit_plan.stop));
     const targetVal2 = within(analysis2).getByText(String(untraced.strategy!.exit_plan.target));
-    const invalidationVal2 = within(analysis2).getByText(String(untraced.strategy!.invalidation_level));
+    const invalidationVal2 = within(analysis2).getByText(
+      String(untraced.strategy!.invalidation_level),
+    );
     expect(stopVal2.textContent).toBe(String(untraced.strategy!.exit_plan.stop));
     for (const el of [stopVal2, targetVal2, invalidationVal2]) {
       const family = getComputedStyle(el).fontFamily;

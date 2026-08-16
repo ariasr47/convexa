@@ -345,6 +345,7 @@ export function cardGroundingLine(g: Grounding | null | undefined): CardLine {
     case 'could_not_check':
       return { kind: 'warning', text: GROUNDING_CARD.could_not_check, tip };
     case 'not_applicable':
+      return { kind: 'quiet', text: GROUNDING_CARD.not_applicable, tip };
     default:
       return { kind: 'none' };
   }
