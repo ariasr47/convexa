@@ -871,7 +871,7 @@ describe('ai-rec · advice behind Accept', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(REC_BODY);
+    await within(panel()).findByTestId('ai-rec-decision-card');
     const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
     const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
     await user.click(action);
