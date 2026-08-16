@@ -195,9 +195,33 @@ export function ReasoningSection({
 }) {
   const { lead, detail, keyPoints, reengage } = deriveReasoning(strategy);
   const [open, setOpen] = useState(false);
+  const detailSection = detail ? (
+    <Box>
+      {!expanded && (
+        <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+          <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>
+          <Button
+            size="small"
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500 }}
+          >
+            {open ? COPY.reasoning.showLess : COPY.reasoning.showMore}
+          </Button>
+        </Stack>
+      )}
+      {expanded && <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>}
+      <Collapse in={expanded || open}>
+        <Box sx={{ mt: 0.5 }}>
+          <ReasoningProse text={detail} />
+        </Box>
+      </Collapse>
+    </Box>
+  ) : null;
   return (
     <Stack spacing={1.5}>
       {!suppressLead && lead && <Field label={COPY.reasoning.rationale} value={lead} />}
+      {expanded && detailSection}
       {keyPoints.length > 0 && (
         <Box>
           <SectionLabel>{COPY.reasoning.keyPoints}</SectionLabel>
@@ -232,29 +256,7 @@ export function ReasoningSection({
           </Stack>
         </Box>
       )}
-      {detail && (
-        <Box>
-          {!expanded && (
-            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
-              <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>
-              <Button
-                size="small"
-                onClick={() => setOpen((o) => !o)}
-                aria-expanded={open}
-                sx={{ p: 0, minWidth: 0, textTransform: 'none', fontWeight: 500 }}
-              >
-                {open ? COPY.reasoning.showLess : COPY.reasoning.showMore}
-              </Button>
-            </Stack>
-          )}
-          {expanded && <SectionLabel>{COPY.reasoning.fullRead}</SectionLabel>}
-          <Collapse in={expanded || open}>
-            <Box sx={{ mt: 0.5 }}>
-              <ReasoningProse text={detail} />
-            </Box>
-          </Collapse>
-        </Box>
-      )}
+      {!expanded && detailSection}
       {/* AC-33 (GATE Z Z-F1) — ONE statement, placed WITH the reasoning (never with the fields, never
           gated on which reasoning sub-sections happen to be populated for this rec): numbers written
           out in the AI's free prose — the lead, the key points, the re-engage conditions, the full

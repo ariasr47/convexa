@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
 import type { Grounding, OpenPositionsDigest, RecResponse, RiskInputs, TickerBundle } from '@convexa/api';
 import { COPY } from './copy';
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CapAnnotation } from './CapAnnotation';
 import { CitedContractLine } from './CitedContractLine';
 import { GroundingNote } from './GroundingNote';
@@ -45,14 +45,17 @@ function GroundingDetail({ grounding }: { grounding: Grounding | null | undefine
 }
 
 function AsSentInputs({ riskInputs, openPositions }: { riskInputs: RiskInputs | null | undefined; openPositions: OpenPositionsDigest | null | undefined }) {
+  const effective = riskInputs?.effective_dollar_cap;
+  const underlying = openPositions?.this_underlying;
+  const portfolio = openPositions?.portfolio;
   return (
     <Box data-testid="as-sent-inputs">
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>As-sent risk inputs</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size ?? '—'} · Per-trade cap: ${riskInputs.per_trade_cap?.value ?? '—'} ${riskInputs.per_trade_cap?.unit ?? ''}` : 'Risk inputs not available.'}
+        {riskInputs ? `State: ${riskInputs.state} · Account size: ${riskInputs.account_size ?? '—'} · Per-trade cap: ${riskInputs.per_trade_cap ? `${riskInputs.per_trade_cap.value} ${riskInputs.per_trade_cap.unit}` : '—'} · Effective cap: ${effective?.value ?? '—'} (${effective?.state ?? '—'}) · Storage available: ${riskInputs.storage_available} · Updated at: ${riskInputs.updated_at ?? '—'}` : 'Risk inputs not available.'}
       </Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source}` : 'not available'}
+        Open positions: {openPositions ? `${openPositions.state} · ${openPositions.source} · Underlying: ${underlying ? `${underlying.direction}, ${underlying.leg_count} legs, ${underlying.nearest_expiry_dte} DTE, max loss ${underlying.max_loss.value ?? '—'} (${underlying.max_loss.state})` : '—'} · Portfolio: ${portfolio ? `${portfolio.open_count} open, capital at risk ${portfolio.capital_at_risk ?? '—'}` : '—'}` : 'not available'}
       </Typography>
     </Box>
   );
@@ -68,25 +71,47 @@ export interface AnalysisSurfaceProps {
 }
 
 export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExport }: AnalysisSurfaceProps) {
-  if (!rec || rec.status !== 'produced' || !rec.strategy) return null;
-  const strategy = rec.strategy;
   const openerRef = useRef<HTMLElement | null>(null);
+  const pendingExportRef = useRef(false);
+  const [pendingExport, setPendingExport] = useState(false);
+  const [surfaceOpen, setSurfaceOpen] = useState(open);
   useLayoutEffect(() => {
     if (open && document.activeElement instanceof HTMLElement && !document.activeElement.closest('[role="dialog"]')) {
       openerRef.current = document.activeElement;
     }
   }, [open]);
+  useEffect(() => setSurfaceOpen(open), [open]);
+  useEffect(() => {
+    if (open && (!rec || rec.status !== 'produced' || !rec.strategy)) onClose();
+  }, [open, rec, onClose]);
   const handleClose = () => {
     onClose();
     requestAnimationFrame(() => openerRef.current?.focus());
   };
+  const handleExport = () => {
+    pendingExportRef.current = true;
+    setPendingExport(true);
+    setSurfaceOpen(false);
+  };
+  if (!open || !rec || rec.status !== 'produced' || !rec.strategy) return null;
+  const strategy = rec.strategy;
   return (
     <Drawer
       anchor="right"
-      open={open}
+      open={open && surfaceOpen}
       onClose={handleClose}
       aria-labelledby="ai-rec-analysis-title"
       slotProps={{
+        transition: {
+          onExited: () => {
+            if (pendingExportRef.current) {
+              pendingExportRef.current = false;
+              setPendingExport(false);
+              onClose();
+              onViewExport();
+            }
+          },
+        },
         paper: {
           role: 'dialog',
           'aria-modal': true,
@@ -109,7 +134,7 @@ export function AnalysisSurface({ open, ticker, rec, bundle, onClose, onViewExpo
           <GroundingDetail grounding={rec.grounding} />
           <CapAnnotation capCheck={rec.cap_check} />
           <AsSentInputs riskInputs={rec.sent?.risk_inputs} openPositions={rec.sent?.open_positions} />
-          <Button onClick={() => { handleClose(); onViewExport(); }}>{COPY.action.requestExport}</Button>
+          <Button disabled={pendingExport} onClick={handleExport}>{COPY.action.requestExport}</Button>
         </Stack>
       </Stack>
     </Drawer>

@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { recAllTraced, noTradeRec } from './fixtures';
 import { AnalysisSurface } from './AnalysisSurface';
+import { makeBundle } from '@/features/auth/testBackend';
 
 afterEach(cleanup);
 
@@ -27,7 +28,7 @@ describe('AnalysisSurface', () => {
     const rec = recAllTraced();
     rec.strategy!.key_points = ['Support holds'];
     rec.strategy!.reengage_when = ['If support breaks'];
-    renderSurface({ rec, bundle: { market_state: { call_wall: 250 } } as never });
+    renderSurface({ rec, bundle: makeBundle() });
     const dialog = screen.getByRole('dialog', { name: 'Full analysis & data · TSLA' });
     const text = dialog.textContent ?? '';
     expect(text.indexOf('Read summary')).toBeLessThan(text.indexOf('Why'));
@@ -55,9 +56,14 @@ describe('AnalysisSurface', () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     const onViewExport = vi.fn();
-    renderSurface({ onClose, onViewExport });
+    function Harness() {
+      const [open, setOpen] = React.useState(true);
+      return <AnalysisSurface open={open} ticker="TSLA" rec={recAllTraced()} bundle={makeBundle()} onClose={() => { onClose(); setOpen(false); }} onViewExport={() => { expect(screen.queryByRole('dialog')).toBeNull(); onViewExport(); }} />;
+    }
+    render(<ThemeProvider theme={theme}><Harness /></ThemeProvider>);
     await user.click(screen.getByRole('button', { name: 'What’s sent to the AI' }));
-    expect(onClose).toHaveBeenCalledBefore(onViewExport);
+    await waitFor(() => expect(onViewExport).toHaveBeenCalledTimes(1));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('moves initial focus into the surface and traps Tab and Shift+Tab', async () => {
@@ -87,9 +93,19 @@ describe('AnalysisSurface', () => {
   });
 
   it('does not render when the pinned response is absent or not produced', () => {
-    const { rerender } = renderSurface({ open: false });
+    const onClose = vi.fn();
+    const { rerender } = renderSurface({ open: false, onClose });
     expect(screen.queryByRole('dialog')).toBeNull();
     rerender(<ThemeProvider theme={theme}><AnalysisSurface open ticker="TSLA" rec={{ ...recAllTraced(), status: 'unavailable', strategy: null }} bundle={null} onClose={vi.fn()} onViewExport={vi.fn()} /></ThemeProvider>);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('closes an open surface when its pinned result disappears and does not reopen on replacement', async () => {
+    const onClose = vi.fn();
+    const { rerender } = renderSurface({ onClose });
+    rerender(<ThemeProvider theme={theme}><AnalysisSurface open ticker="TSLA" rec={null} bundle={null} onClose={onClose} onViewExport={vi.fn()} /></ThemeProvider>);
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    rerender(<ThemeProvider theme={theme}><AnalysisSurface open={false} ticker="TSLA" rec={recAllTraced()} bundle={makeBundle()} onClose={onClose} onViewExport={vi.fn()} /></ThemeProvider>);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
