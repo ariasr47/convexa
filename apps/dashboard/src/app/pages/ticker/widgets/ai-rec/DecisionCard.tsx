@@ -5,7 +5,7 @@ import { AccessibleHelp } from './AccessibleHelp';
 import { FigureClause } from './FigureClause';
 import { GroundingNote } from './GroundingNote';
 import { fieldLiteral, planFieldLiteral, registerSx, type FieldLiteral, type PlanFieldLiteral } from './literals';
-import { BYO_KEY, COPY, dteWindowCaption, incompleteAction, literalCopy, PLAN_FIELD_LABEL, MAX_RISK_TIP, FREE_USES_TOTAL_FALLBACK, freeUsesChip, OWN_KEY_CHIP, staleBornStrip, staleStrip, SUPERSEDED_STRIP } from './copy';
+import { BYO_KEY, COPY, dteWindowCaption, literalCopy, PLAN_FIELD_LABEL, MAX_RISK_TIP, FREE_USES_TOTAL_FALLBACK, freeUsesChip, OWN_KEY_CHIP, staleBornStrip, staleStrip, SUPERSEDED_STRIP } from './copy';
 import { deriveReasoning } from './reasoning';
 import type { AiRecPresentation } from './presentationPolicy';
 import { CapAnnotation } from './CapAnnotation';
@@ -105,7 +105,7 @@ export function DecisionCard({ rec, bundle, presentation, dataAge, onReview, onC
       {reasoning.lead && <Typography data-testid="decision-thesis" variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>{reasoning.lead}</Typography>}
       {!isTrade && strategy.reengage_when?.length ? <Typography variant="body2" sx={{ mt: 1 }}>{strategy.reengage_when.join(' · ')}</Typography> : null}
       {isTrade && <>
-        {missing.length > 0 && !(presentation.resultState === 'stale_newer_snapshot' || presentation.resultState === 'stale_at_generation' || presentation.resultState === 'superseded_inputs') && <Alert severity="info" sx={{ mt: 1 }} data-testid="rec-not-actionable">{incompleteAction(missing)}</Alert>}
+        {missing.length > 0 && !(presentation.resultState === 'stale_newer_snapshot' || presentation.resultState === 'stale_at_generation' || presentation.resultState === 'superseded_inputs') && <Alert severity="info" sx={{ mt: 1 }} data-testid="rec-not-actionable">Not actionable as given. Nothing is saved until you review and confirm.</Alert>}
         <Box data-testid="decision-grid" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1, mt: 1 }}>
           <RiskField label="Max risk" literal={maxRiskLiteral} tip={MAX_RISK_TIP} />
           <RiskField label="Invalidation" literal={invalidationLiteral} tip="The level that says the idea is wrong." groundingState={rec.grounding?.fields.invalidation_level?.state} clause={<FigureClause field={rec.grounding?.fields.invalidation_level} testId="clause-invalidation" />} />
