@@ -223,6 +223,8 @@ interface BackendCfg {
    *  read, so a test can diverge it from a produced rec's `sent.risk_inputs` and observe the
    *  superseded-inputs strip. Omitted ⇒ no `risk_inputs` key at all (matches the shipped shape). */
   riskInputs?: RiskInputs;
+  /** Optional flow-test seam: hold the second recommendation response until the test settles it. */
+  secondRecDeferred?: Promise<RecResponse>;
 }
 
 function installBackend(cfg: BackendCfg = {}) {
@@ -239,6 +241,7 @@ function installBackend(cfg: BackendCfg = {}) {
       put: cfg.aiKey?.put ?? ('ok' as 'ok' | 'transport'),
     },
     riskInputs: cfg.riskInputs,
+    secondRecDeferred: cfg.secondRecDeferred,
   };
   const calls = { ticker: 0, status: 0, rec: 0, export: 0, personas: 0, aiKeyPut: 0 };
   const recPostBodies: string[] = [];
@@ -349,6 +352,9 @@ function installBackend(cfg: BackendCfg = {}) {
         calls.rec++;
         recPostBodies.push(String(init?.body ?? ''));
         if (state.rec === 'throw') throw new Error('network down');
+        if (calls.rec === 2 && state.secondRecDeferred) {
+          return json(await state.secondRecDeferred);
+        }
         return json(state.rec);
       }
       if (url.includes('/api/personas')) {
@@ -752,6 +758,42 @@ describe('ai-rec · static artifact pinned to its snapshot (timers)', () => {
     // AC-31 — a newer bundle never re-derives or upgrades a grounding state: still byte-identical.
     expect(within(panel()).getByTestId('grounding-card-line').textContent).toBe(cardLineBefore);
     expect(within(panel()).getByTestId('clause-stop').textContent).toBe(clauseBefore);
+  });
+
+  it('retains only direct export while a refreshed recommendation is pending', async () => {
+    vi.useRealTimers();
+    let resolveSecond!: (rec: RecResponse) => void;
+    let rejectSecond!: (reason?: unknown) => void;
+    const secondRec = new Promise<RecResponse>((resolve, reject) => {
+      resolveSecond = resolve;
+      rejectSecond = reject;
+    });
+    const be = installBackend({ rec: producedRec({ stale_born: true }), secondRecDeferred: secondRec });
+    try {
+      const user = renderApp();
+      await settle();
+      await ask(user);
+      await within(panel()).findByTestId('ai-rec-decision-card');
+      expect(be.calls.rec).toBe(1);
+      const refresh = within(panel()).getByRole('button', { name: COPY.action.refresh });
+      await user.click(refresh);
+
+      expect(be.calls.rec).toBe(2); // exactly one explicit refresh POST
+      expect(within(panel()).getByRole('button', { name: COPY.action.viewExport })).toBeInTheDocument();
+      expect(within(panel()).queryByTestId('ai-rec-decision-card')).toBeNull();
+      expect(within(panel()).queryByRole('button', { name: COPY.action.reviewTrade })).toBeNull();
+      expect(within(panel()).queryByRole('button', { name: COPY.action.createOrder })).toBeNull();
+      expect(within(panel()).queryByRole('button', { name: COPY.action.analysis })).toBeNull();
+      expect(within(panel()).queryByText(REC_BODY)).toBeNull(); // old pinned response is not actionable
+
+      resolveSecond(producedRec({ strategy: tradeStrategy({ max_risk: '2% of account ($400)' }) }));
+      await within(panel()).findByTestId('ai-rec-decision-card');
+      expect(be.calls.rec).toBe(2);
+    } finally {
+      // Settle the controllable request even if an assertion above fails, so the test cannot hang.
+      resolveSecond(producedRec());
+      rejectSecond(new Error('retained-loading cleanup'));
+    }
   });
 
   it('cooldown disables the ask affordance and re-enables when it elapses', async () => {
