@@ -78,7 +78,7 @@ export function QuickSymbols({ currentSymbol, onSelect }: QuickSymbolsProps) {
             aria-hidden
             sx={(t) => ({
               alignSelf: 'center',
-              width: 1,
+              width: '1px',
               height: 16,
               bgcolor: t.palette.divider,
               mx: 0.25,

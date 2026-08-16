@@ -11,6 +11,9 @@
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { useEffect, useRef, useState } from 'react';
 import type { FieldSample, StructureFieldModel } from './types';
+import { layoutMarkerLabels, layoutTapeLabel } from './markerLayout';
+import type { MarkerLayoutBox } from './markerLayout';
+import { structureBufferKey } from './structureBufferKey';
 
 const INK = '#0B0F17';
 const PANEL = '#131A24';
@@ -180,6 +183,7 @@ export function StructureFieldCanvas({
     // Dynamic sim state
     const particles: Particle[] = [];
     const midTrail: MidSample[] = [];
+    const markerLayoutRef: { current: MarkerLayoutBox[] } = { current: [] };
     let spawnAcc = 0;
 
     const layout = () => {
@@ -198,9 +202,6 @@ export function StructureFieldCanvas({
     };
 
     let { w, h } = layout();
-
-    const makeKey = (m: StructureFieldModel) =>
-      `${m.symbol}|${m.spot}|${m.putWall}|${m.callWall}|${m.gammaFlip}|${m.samples.length}|${m.samples[0]?.strike}|${m.samples[m.samples.length - 1]?.strike}|${m.samples[0]?.netGex}|${m.samples[Math.floor(m.samples.length / 2)]?.netGex}`;
 
     const paintStructure = (m: StructureFieldModel) => {
       if (!offCtx) return;
@@ -331,7 +332,7 @@ export function StructureFieldCanvas({
       o.stroke();
 
       // Level lines
-      const level = (k: number, color: string, label: string, width = 1.5, yLabel = 14) => {
+      const level = (k: number, color: string, width = 1.5) => {
         const x = xOf(k);
         if (x < pad.l || x > pad.l + plotW) return;
         o.strokeStyle = color;
@@ -342,14 +343,11 @@ export function StructureFieldCanvas({
         o.lineTo(x, pad.t + plotH);
         o.stroke();
         o.globalAlpha = 1;
-        o.fillStyle = color;
-        o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
-        o.fillText(label, Math.min(x + 6, pad.l + plotW - 78), pad.t + yLabel);
       };
 
-      level(m.putWall, RED, `put $${m.putWall.toFixed(0)}`, 1.6, 14);
-      level(m.callWall, GREEN, `call $${m.callWall.toFixed(0)}`, 1.6, 14);
-      level(m.spot, STEEL, `spot $${m.spot.toFixed(1)}`, 1, 42);
+      level(m.putWall, RED, 1.6);
+      level(m.callWall, GREEN, 1.6);
+      level(m.spot, STEEL, 1);
 
       // Flip — structural amber (static core; breath is dynamic)
       {
@@ -364,9 +362,35 @@ export function StructureFieldCanvas({
         o.lineTo(x, pad.t + plotH);
         o.stroke();
         o.restore();
-        o.fillStyle = AMBER;
-        o.font = '700 11px "IBM Plex Sans", system-ui, sans-serif';
-        o.fillText('flip', Math.min(x + 6, pad.l + plotW - 40), pad.t + 28);
+      }
+
+      // Measure and place every marker label as a box before painting, so clustered
+      // levels and tape labels never cover one another or the fixed captions.
+      o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+      const markerDefs = [
+        { id: 'put', x: xOf(m.putWall), label: `put $${m.putWall.toFixed(0)}`, color: RED, preferredLane: 0 },
+        { id: 'call', x: xOf(m.callWall), label: `call $${m.callWall.toFixed(0)}`, color: GREEN, preferredLane: 0 },
+        { id: 'flip', x: xOf(m.gammaFlip), label: 'flip', color: AMBER, preferredLane: 1 },
+        { id: 'spot', x: xOf(m.spot), label: `spot $${m.spot.toFixed(1)}`, color: STEEL, preferredLane: 2 },
+      ].filter((marker) => Number.isFinite(marker.x) && marker.x >= pad.l && marker.x <= pad.l + plotW);
+      const markerBoxes = layoutMarkerLabels({
+        bounds: { left: pad.l, right: pad.l + plotW, top: pad.t + 2, bottom: pad.t + plotH - 2 },
+        markers: markerDefs,
+        measure: (label) => o.measureText(label).width,
+        laneHeight: 16,
+        laneGap: 2,
+        reserved: [
+          { x: pad.l, y: pad.t + 2, width: 76, height: 16 },
+          // Fixed axis captions occupy the top and bottom-left corners; marker labels,
+          // including live/mid, must never be placed over either caption.
+          { x: pad.l, y: pad.t + plotH - 22, width: 76, height: 20 },
+        ],
+      });
+      markerLayoutRef.current = markerBoxes;
+      o.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+      for (const marker of markerBoxes) {
+        o.fillStyle = marker.color ?? PHOSPHOR;
+        o.fillText(marker.label, marker.x + 8, marker.y + 12);
       }
 
       // Axis labels (structure)
@@ -393,7 +417,7 @@ export function StructureFieldCanvas({
         return;
       }
 
-      const key = makeKey(m);
+      const key = structureBufferKey(m);
       if (key !== structureKey) {
         structureKey = key;
         structureDirty = true;
@@ -595,13 +619,35 @@ export function StructureFieldCanvas({
         ctx.arc(x, y0, 8 + pulse * 4, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.fillStyle = PHOSPHOR;
         ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
-        ctx.fillText(
-          m.live ? `live $${m.liveMid.toFixed(2)}` : `mid $${m.liveMid.toFixed(2)}`,
-          Math.min(x + 8, pad.l + plotW - 88),
-          pad.t + plotH - 10,
-        );
+        const tapeBox = layoutTapeLabel({
+          anchorX: x,
+          label: `${m.live ? 'live' : 'mid'} $${m.liveMid.toFixed(2)}`,
+          bounds: { left: pad.l, right: pad.l + plotW, top: pad.t + 2, bottom: pad.t + plotH - 2 },
+          measure: (label) => ctx.measureText(label).width,
+          reserved: [
+            ...markerLayoutRef.current,
+            { x: pad.l, y: pad.t + 2, width: 76, height: 16 },
+            { x: pad.l, y: pad.t + plotH - 22, width: 76, height: 20 },
+          ],
+        });
+        if (tapeBox) {
+          ctx.fillStyle = PHOSPHOR;
+          ctx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
+          ctx.fillText(tapeBox.label, tapeBox.x + 8, tapeBox.y + 12);
+          if (tapeBox.edgeTreatment !== 'none') {
+            ctx.strokeStyle = SIGNAL;
+            ctx.globalAlpha = 0.8;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(tapeBox.anchorX, tapeBox.y + tapeBox.height / 2);
+            ctx.lineTo(
+              tapeBox.edgeTreatment === 'left' ? tapeBox.x : tapeBox.x + tapeBox.width,
+              tapeBox.y + tapeBox.height / 2,
+            );
+            ctx.stroke();
+          }
+        }
         ctx.restore();
       }
 

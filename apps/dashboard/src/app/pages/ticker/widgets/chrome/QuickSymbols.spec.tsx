@@ -46,6 +46,22 @@ describe('QuickSymbols', () => {
     expect(chips.map((c) => c.textContent)).toEqual(['SPY', 'QQQ', 'NVDA', 'AMD', 'IWM']);
   });
 
+  it('uses a physical 1px vertical separator when recents exist (AC-1)', () => {
+    recordVisit('IWM');
+    renderQuick();
+    const row = screen.getByTestId('quick-symbols');
+    const separator = row.querySelector('[aria-hidden="true"]') as HTMLElement;
+    expect(separator).toBeTruthy();
+    const styles = getComputedStyle(separator);
+    expect(styles.width).toBe('1px');
+    expect(styles.height).toBe('16px');
+  });
+
+  it('does not render an orphan separator without recents (AC-2)', () => {
+    renderQuick();
+    expect(screen.getByTestId('quick-symbols').querySelector('[aria-hidden="true"]')).toBeNull();
+  });
+
   it('marks the current route symbol selected (AC-4)', () => {
     renderQuick({ currentSymbol: 'qqq' });
     const qqq = screen.getByRole('button', { name: 'QQQ' });
@@ -59,5 +75,19 @@ describe('QuickSymbols', () => {
     const { onSelect } = renderQuick();
     await user.click(screen.getByRole('button', { name: 'SPY' }));
     expect(onSelect).toHaveBeenCalledWith('SPY');
+  });
+
+  it('keeps native button keyboard and focus semantics (AC-7)', async () => {
+    const user = userEvent.setup();
+    const { onSelect } = renderQuick();
+    const spy = screen.getByRole('button', { name: 'SPY' });
+    spy.focus();
+    expect(spy).toHaveFocus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    expect(onSelect).toHaveBeenNthCalledWith(1, 'SPY');
+    expect(onSelect).toHaveBeenNthCalledWith(2, 'SPY');
+    expect(spy).toHaveAttribute('type', 'button');
+    expect(spy).toHaveAttribute('aria-pressed', 'false');
   });
 });
