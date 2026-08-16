@@ -553,7 +553,16 @@ async function stubNetwork(page: Page) {
         },
       });
     }
+    if (path === '/api/book' && route.request().method() === 'GET') {
+      return route.fulfill({ json: { blob: {}, updated_at: 0 } });
+    }
+    if (path === '/api/book' && route.request().method() === 'PUT') {
+      return route.fulfill({ status: 204, body: '' });
+    }
     if (path.startsWith('/api/ticker/')) return route.fulfill({ json: bundle });
+    if (path.startsWith('/api/stream/')) {
+      return route.fulfill({ status: 200, contentType: 'text/event-stream', body: '' });
+    }
     if (path.startsWith('/api/recommendation/status/')) {
       return route.fulfill({
         json: {
@@ -785,6 +794,7 @@ for (const scheme of ['dark', 'light'] as const) {
       // VACUITY GUARD — the densest new content really did render before measuring.
       await expect(page.getByTestId('cap-annotation')).toBeAttached();
       await expect(page.getByTestId('ai-rec-provenance-chip')).toBeAttached();
+      await page.getByRole('button', { name: 'Full analysis & data' }).click();
       await expect(page.getByTestId('cited-contract-line')).toBeAttached();
       await assertNoHorizontalOverflow(page);
     });
@@ -796,8 +806,9 @@ for (const scheme of ['dark', 'light'] as const) {
       await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
       // VACUITY GUARD — the new content really did render before measuring.
       await expect(page.getByTestId('grounding-card-line')).toBeAttached();
-      await expect(page.getByTestId('clause-stop')).toBeAttached();
-      await expect(page.getByTestId('clause-target')).toBeAttached();
+      await page.getByRole('button', { name: 'Full analysis & data' }).click();
+      await expect(page.getByTestId('clause-stop').first()).toBeAttached();
+      await expect(page.getByTestId('clause-target').first()).toBeAttached();
       await assertNoHorizontalOverflow(page);
     });
 

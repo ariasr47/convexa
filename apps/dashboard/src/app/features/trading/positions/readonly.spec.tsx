@@ -332,8 +332,8 @@ describe('additive-keeps-score-byte-identical · the portfolio issues no bundle/
     // not to the portfolio's contract data path.
     expect(urls.some((u) => u.includes('/api/ticker'))).toBe(false);
     expect(urls.some((u) => /score|signals|ai[-_]/i.test(u))).toBe(false);
-    expect(urls.every((u) => /\/api\/(contract|auth|positions\/sim-trade\/gate|book)(\/|$)/.test(u))).toBe(
-      true,
-    );
+    expect(
+      urls.every((u) => /\/api\/(contract|auth|positions\/sim-trade\/gate|book)(\/|$)/.test(u)),
+    ).toBe(true);
   });
 });
