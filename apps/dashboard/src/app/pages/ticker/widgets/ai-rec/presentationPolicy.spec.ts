@@ -129,6 +129,37 @@ describe('deriveAiRecPresentation', () => {
     expect(v.requestState).toBe('unavailable');
     expect(v.actions.retry).toBe(true);
   });
+  it('scenario cannot retry an unavailable response while the effective gate denies freshness', () => {
+    const rec = {
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: 'transport',
+    };
+    const v = deriveAiRecPresentation(
+      input({ rec, scenarioSelected: true, effectiveGateState: 'no_fresh_edge' }),
+    );
+    expect(v.requestState).toBe('unavailable');
+    expect(v.actions.retry).toBe(false);
+  });
+  it('scenario bypasses active cap and cooldown when the effective gate is available', () => {
+    const rec = {
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: 'transport',
+    };
+    const v = deriveAiRecPresentation(
+      input({
+        rec,
+        scenarioSelected: true,
+        cap: { ...cap, over_limit: true },
+        cooldownRemaining: 30,
+        effectiveGateState: 'available',
+      }),
+    );
+    expect(v.actions.retry).toBe(true);
+  });
   it('fresh complete trade exposes simulated actions when callback capability is present', () => {
     const v = deriveAiRecPresentation(
       input({

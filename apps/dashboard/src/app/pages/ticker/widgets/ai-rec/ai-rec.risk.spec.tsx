@@ -801,11 +801,11 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(be.calls.rec).toBe(1);
   });
 
-  it('scenario transport fault keeps Retry actionable despite active cap and cooldown', async () => {
+  it('scenario transport fault keeps Retry actionable despite an active cap when the gate is available', async () => {
     const be = installBackend({
       rec: 'throw',
       status: makeStatus({
-        gate: { state: 'available', cooldown_remaining_seconds: 30, reasons: [] },
+        gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
         cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
         scenarios: {
           enabled: true,
@@ -817,14 +817,36 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     await settle();
     await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
     await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
-    expect(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' })).toHaveTextContent(
-      'Breakout rehearsal',
-    );
+    expect(
+      within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }),
+    ).toHaveTextContent('Breakout rehearsal');
     await user.click(await within(panel()).findByRole('button', { name: 'Run scenario' }));
     await within(panel()).findByText(COPY.unavailable.title);
 
     // The selected scenario bypasses cap/cooldown in presentation policy, so retry is allowed.
     expect(within(panel()).getByRole('button', { name: COPY.action.retry })).toBeEnabled();
+    expect(be.calls.rec).toBe(1);
+  });
+
+  it('scenario transport fault under the denied no-fresh-edge gate hides Retry after the real override', async () => {
+    const be = installBackend({
+      rec: 'throw',
+      status: makeStatus({
+        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 0, reasons: ['score low'] },
+        scenarios: {
+          enabled: true,
+          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
+        },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
+    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
+    await user.click(await within(panel()).findByRole('button', { name: COPY.action.askAnyway }));
+    await within(panel()).findByText(COPY.unavailable.title);
+
+    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
     expect(be.calls.rec).toBe(1);
   });
 
