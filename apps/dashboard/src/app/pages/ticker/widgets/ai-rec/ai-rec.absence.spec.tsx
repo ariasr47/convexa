@@ -135,14 +135,14 @@ function convictionValueEl(): HTMLElement {
 
 /** Resolves any of the six plan/conviction slots by label, routing Confidence through its own
  *  traversal. */
-function slotValueEl(label: string): HTMLElement {
+async function slotValueEl(user: ReturnType<typeof userEvent.setup>, label: string): Promise<HTMLElement> {
   if (label === PLAN_FIELD_LABEL.timeHorizon || label === PLAN_FIELD_LABEL.confidence) {
     const existing = screen.queryByText(label);
     if (!existing) {
       const open = within(panel()).queryByRole('button', { name: COPY.action.analysis });
-      if (open) open.click();
+      if (open) await user.click(open);
     }
-    return screen.getByTestId(`analysis-field-${label}`);
+    return screen.findByTestId(`analysis-field-${label}`);
   }
   return fieldValueEl(label);
 }
@@ -169,7 +169,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await within(panel()).findByText(`Trade · long`);
     let resolved = 0;
     for (const label of SIX) {
-      const el = slotValueEl(label);
+      const el = await slotValueEl(user, label);
       resolved++;
       expect(el.textContent).not.toBe('');
       expect(el.textContent).not.toContain(RESERVED);
@@ -196,7 +196,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user);
     for (const label of SIX) {
-      const text = slotValueEl(label).textContent ?? '';
+      const text = (await slotValueEl(user, label)).textContent ?? '';
       expect(['not given', 'unavailable', 'unrecognized']).not.toContain(text);
     }
     expect(within(panel()).queryByText('not given')).toBeNull();
@@ -237,7 +237,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user);
     for (const label of SIX) {
-      const el = slotValueEl(label);
+      const el = await slotValueEl(user, label);
       expect(el.textContent).toBe('not given');
     }
     const text = panel().textContent ?? '';
@@ -262,7 +262,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user);
     for (const label of SIX) {
-      const el = slotValueEl(label);
+      const el = await slotValueEl(user, label);
       expect(el.textContent?.trim().length).toBeGreaterThan(0);
       expect(el.textContent).toBe('not given');
     }
@@ -273,7 +273,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    const el = slotValueEl(PLAN_FIELD_LABEL.confidence);
+    const el = await slotValueEl(user, PLAN_FIELD_LABEL.confidence);
     expect(el.textContent).toBe('unrecognized');
     expect(el.textContent).not.toBe('not given');
     expect(panel().textContent).not.toContain('quite high');
@@ -292,7 +292,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
       PLAN_FIELD_LABEL.timeHorizon,
       PLAN_FIELD_LABEL.confidence,
     ]) {
-      expect(slotValueEl(label).textContent).not.toBe('unavailable');
+      expect((await slotValueEl(user, label)).textContent).not.toBe('unavailable');
     }
     cleanup();
     vi.unstubAllGlobals();
@@ -302,7 +302,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user2);
     for (const label of SIX) {
-      expect(slotValueEl(label).textContent).not.toBe('unavailable');
+      expect((await slotValueEl(user, label)).textContent).not.toBe('unavailable');
     }
   });
 
@@ -313,7 +313,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
       await settle();
       await ask(user);
       for (const label of SIX) {
-        expect(slotValueEl(label).textContent).not.toBe('not set');
+        expect((await slotValueEl(user, label)).textContent).not.toBe('not set');
       }
       expect(within(panel()).queryByTestId('risk-field-set-risk-inputs')).toBeNull();
       cleanup();
@@ -369,11 +369,13 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    const before = SIX.map((label) => slotValueEl(label).textContent);
+    const before = [] as Array<string | null>;
+    for (const label of SIX) before.push((await slotValueEl(user, label)).textContent);
     // Fire the mocked EventSource's onerror directly (the SSE-drop signal) and let effects settle.
     esInstances[0]?.onerror?.(new Event('error'));
     await new Promise((r) => setTimeout(r, 0));
-    const after = SIX.map((label) => slotValueEl(label).textContent);
+    const after = [] as Array<string | null>;
+    for (const label of SIX) after.push((await slotValueEl(user, label)).textContent);
     expect(after).toEqual(before);
   });
 
@@ -443,7 +445,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user);
     expect(fieldValueEl(PLAN_FIELD_LABEL.timeHorizon).textContent).toBe('not given');
-    expect(slotValueEl(PLAN_FIELD_LABEL.confidence).textContent).toBe('not given');
+    expect((await slotValueEl(user, PLAN_FIELD_LABEL.confidence)).textContent).toBe('not given');
     expect(within(panel()).queryByTestId('rec-not-actionable')).toBeNull();
     await user.click(await within(panel()).findByRole('button', { name: COPY.action.accept }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
