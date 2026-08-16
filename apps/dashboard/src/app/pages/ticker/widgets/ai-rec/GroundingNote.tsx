@@ -8,10 +8,10 @@
  * marker LESS honest.
  */
 import type { Grounding } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Stack, Tooltip, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { cardGroundingLine } from './literals';
+import { AccessibleHelp } from './AccessibleHelp';
 
 export function GroundingNote({ grounding }: { grounding: Grounding | null | undefined }) {
   const line = cardGroundingLine(grounding);
@@ -30,9 +30,7 @@ export function GroundingNote({ grounding }: { grounding: Grounding | null | und
         {line.text}
       </Typography>
       {line.tip && (
-        <Tooltip arrow title={line.tip}>
-          <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-        </Tooltip>
+        <AccessibleHelp label="Grounding help" text={line.tip} />
       )}
     </Stack>
   );

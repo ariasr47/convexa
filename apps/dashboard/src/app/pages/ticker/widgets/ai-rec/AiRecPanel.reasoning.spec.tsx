@@ -75,7 +75,7 @@ describe('ReasoningSection', () => {
     expect(screen.getByText('Dominant call wall at 425')).toBeInTheDocument();
     expect(screen.getByText('Re-engage when')).toBeInTheDocument();
     expect(screen.getByText('Break and hold above 425')).toBeInTheDocument();
-    const toggle = screen.getByRole('button', { name: 'Show full analysis' });
+    const toggle = screen.getByRole('button', { name: 'Full analysis & data' });
     expect(toggle).toBeInTheDocument();
     await user.click(toggle);
     expect(screen.getByRole('button', { name: 'Show less' })).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('ReasoningSection', () => {
     expect(screen.getByText('Rationale')).toBeInTheDocument();
     expect(screen.getByText('Full first sentence.')).toBeInTheDocument();
     // Remaining sentence is available behind the toggle.
-    expect(screen.getByRole('button', { name: 'Show full analysis' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Full analysis & data' })).toBeInTheDocument();
     expect(screen.queryByText('Why')).toBeNull();
     expect(screen.queryByText('Re-engage when')).toBeNull();
   });

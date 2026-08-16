@@ -12,7 +12,6 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { useSettings } from '@/features/auth/useSettings';
 import {
-  ACT_LABEL,
   ACT_TOOLTIP,
   RUN_SCENARIO,
   SCENARIO_CAPTION,
@@ -77,6 +76,8 @@ import {
   SUPERSEDED_STRIP,
 } from './copy';
 import { FigureClause } from './FigureClause';
+import { DecisionCard } from './DecisionCard';
+import { deriveAiRecPresentation } from './presentationPolicy';
 import { GroundingNote } from './GroundingNote';
 import {
   fieldLiteral,
@@ -107,6 +108,9 @@ function byoCtaState(
   if (r === 'no_key' || r === 'over_limit' || r === 'shared_key_unconfigured') return r;
   return null;
 }
+
+// Kept exported for legacy focused tests while the mounted result uses DecisionCard.
+export { RecResult };
 
 interface Props {
   ticker: string;
@@ -151,6 +155,7 @@ export function AiRecPanel({
   // Signed-in = auth allowed AND no server-set sign-in prompt pending (a 403 sets promptText). When
   // signed out we show ONLY the sign-in gate (no persona/snapshot) — the Figma signed-out state.
   const signedIn = authGate.allowed && !authGate.promptText;
+  const { riskInputs: currentRiskInputs } = useSettings();
 
   // The "Add your key in Settings" CTA navigates to the Settings route + deep-links the AI-key section.
   const goToSettings = () => navigate('/settings#ai-key');
@@ -198,6 +203,18 @@ export function AiRecPanel({
             : 'idle';
 
   const hasRec = phase === 'produced' || phase === 'no_trade';
+  const presentation = deriveAiRecPresentation({
+    rec,
+    loading,
+    stale,
+    signedIn,
+    inAppEnabled,
+    cap,
+    cooldownRemaining,
+    effectiveGateState,
+    scenarioSelected,
+    currentRiskInputs,
+  });
 
   // The always-available export link, lifted into the Widget header `actions` slot (Figma 149:621).
   // Stage-3 §4.1: link-class action text binds `info` (the token rule: links/info = signal),
@@ -349,23 +366,20 @@ export function AiRecPanel({
         )}
 
         {hasRec && rec && (
-          <RecResult
+          <DecisionCard
             rec={rec}
-            stale={stale}
-            dataAge={dataAge}
             bundle={bundle}
-            onAccept={() =>
+            presentation={presentation}
+            dataAge={dataAge}
+            onReview={() =>
               authGate.guard(AUTH_COPY.positions.gateAcceptRec, () =>
                 onAccept(rec, rec.persona.name),
               )
             }
+            onCreateOrder={onAct && signedIn ? () => onAct(rec, rec.persona.name) : undefined}
+            onAnalysis={() => onViewExport(readPersonaIdForRequest)}
+            onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}
-            // Act as sim order (UX §2.1): produced TRADE rec only — real or scenario; ABSENT
-            // (never merely disabled) on every degraded/gated/signed-out state (AC-1/2/3).
-            onAct={onAct && signedIn ? () => onAct(rec, rec.persona.name) : undefined}
-            onViewExport={() => onViewExport(readPersonaIdForRequest)}
-            onFresh={() => doRequest({ override: false })}
-            freshDisabled={!inAppEnabled || cap.over_limit || cooldownRemaining > 0}
           />
         )}
 
@@ -1262,7 +1276,7 @@ function RecResult({
               })}
             />
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              A suggestion. Your size is your risk decision — you'll be able to change it on Accept.
+              A suggestion. Your size is your risk decision — you'll be able to change it during review.
             </Typography>
           </Box>
           {/* 6. Read context. */}
@@ -1301,7 +1315,7 @@ function RecResult({
         {!isNoTrade && onAct && (
           <Tooltip arrow describeChild title={ACT_TOOLTIP}>
             <Button variant="outlined" size="small" onClick={onAct} data-testid="ai-rec-act">
-              {ACT_LABEL}
+              {COPY.action.createOrder}
             </Button>
           </Tooltip>
         )}

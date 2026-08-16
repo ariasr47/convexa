@@ -10,12 +10,18 @@ export const COPY = {
   intro:
     'Risk-first read on the current snapshot, framed by your persona. Advisory — you confirm every paper trade.',
   action: {
-    get: 'Get AI recommendation',
+    get: 'Analyze current snapshot',
     askAnyway: 'Ask anyway',
     retry: 'Retry',
-    accept: 'Accept into ghost trade',
+    accept: 'Review simulated trade',
+    analyze: 'Analyze current snapshot',
+    reviewTrade: 'Review simulated trade',
+    createOrder: 'Create sim order',
+    analysis: 'Full analysis & data',
+    requestExport: 'What’s sent to the AI',
+    refresh: 'Refresh analysis',
     viewExport: "View what's sent",
-    freshRec: 'Get a fresh recommendation',
+    freshRec: 'Refresh analysis',
     dismiss: 'Dismiss',
   },
   loading: {
@@ -27,7 +33,7 @@ export const COPY = {
   },
   noTrade: {
     title: 'No trade — sit this one out',
-    caption: "No entry to Accept — a 'no trade' read is a complete, correct answer.",
+    caption: "No simulated entry — a 'no trade' read is a complete, correct answer.",
   },
   // Structured-reasoning section labels (the redesigned read: scannable verdict + why + re-engage,
   // full prose behind a toggle). Sentence-case, verbatim.
@@ -38,7 +44,7 @@ export const COPY = {
     levels: 'Levels in play',
     fullRead: 'Analyst read',
     rationale: 'Rationale',
-    showMore: 'Show full analysis',
+    showMore: 'Full analysis & data',
     showLess: 'Show less',
   },
   unavailable: {
@@ -76,10 +82,10 @@ export const COPY = {
   },
   tooltip: {
     advisory:
-      'A read, not an order. Nothing is tracked until you Accept and confirm a paper (simulated) trade.',
+      'A read, not an order. Nothing is saved until you review and confirm a simulated trade.',
     get:
       'Ask the AI for a risk-first entry read on {TICKER}, framed by your active persona and the ' +
-      "current snapshot. Advisory only — you'll review and explicitly Accept before anything is tracked.",
+      "current snapshot. Advisory only — you'll review and explicitly confirm before anything is saved.",
     askAnyway: 'Override the quiet gate and request a read anyway. Still rate-limited.',
     persona:
       'This read was produced by the {name} persona. A different persona may read the same snapshot ' +
@@ -156,7 +162,7 @@ export const cooldownCaption = (remaining: number) =>
 /** Stale strip — a newer snapshot has arrived; the read is from {as_of}. */
 export const staleStrip = (asOf: string | null) =>
   `A newer snapshot has arrived. This read is from ${asOf ?? 'an earlier snapshot'}. ` +
-  'Get a fresh recommendation when you’re ready.';
+  'Refresh analysis when you’re ready.';
 /** Stale-born strip — generated off an already-stale bundle ({data_age}). */
 export const staleBornStrip = (dataAge: string) =>
   `This read was generated from a snapshot already marked stale (${dataAge}). ` +
@@ -396,6 +402,9 @@ export const PLAN_FIELD_COPY = {
  *  one-new-word rule is not engaged. Producer-neutral; no icon, no tint, plain body text. */
 export const notActionableLine = (labels: readonly string[]) =>
   `Not actionable as given. Never named: ${labels.join(', ')}.`;
+
+export const incompleteAction = (labels: readonly string[]) =>
+  `${notActionableLine(labels)} Nothing is saved until you review and confirm.`;
 
 /** The DTE caption, reworded: a property of the REQUEST (vouched by the owner's own filter), never a
  *  containment claim about the value. Renders on the `value` member only, and never if either bound is

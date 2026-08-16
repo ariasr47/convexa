@@ -217,7 +217,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     const user3 = renderApp();
     await settle();
     await ask(user3);
-    const reservedMark = fieldValueEl(COPY.risk.maxRisk).textContent;
+    const reservedMark = within(panel()).getByText(COPY.noTrade.title).textContent;
 
     expect(new Set([neverStated, inputMissing, reservedMark]).size).toBe(3);
     expect([neverStated, inputMissing, reservedMark].every((s) => !!s && s.length > 0)).toBe(true);
@@ -236,7 +236,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     expect(text).not.toContain('null');
     expect(text).not.toContain('undefined');
     expect(text).not.toContain('NaN');
-    expect(within(panel()).queryByRole('alert')).toBeNull();
+    expect(within(panel()).queryByTestId('rec-not-actionable')).toBeInTheDocument();
   });
 
   it('AC-6 — an unrecognised reason token renders `not given`, never the raw token, never blank, never `unavailable`', async () => {
@@ -342,12 +342,10 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     for (const label of SIX) {
       expect(within(panel()).queryByText(label)).toBeNull();
     }
-    for (const label of [COPY.risk.maxRisk, 'Suggested size', 'Target', 'Stop']) {
-      expect(slotValueEl(label).textContent).toBe(RESERVED);
-    }
+    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
   });
 
-  it('AC-3d (SB) — no_trade hero conviction (absent) renders `not given` as text, non-empty, never the reserved mark', async () => {
+  it('AC-3d (SB) — no_trade has no executable grid or conviction slot', async () => {
     const r = noTradeRec();
     r.strategy = { ...r.strategy!, confidence: null };
     installBackend(r);
@@ -355,9 +353,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     await settle();
     await ask(user);
     await within(panel()).findByText(COPY.noTrade.title);
-    const el = within(panel()).getByTestId('no-trade-conviction');
-    expect(el.textContent).toBe('not given');
-    expect(el.textContent).not.toContain(RESERVED);
+    expect(within(panel()).queryByTestId('decision-grid')).toBeNull();
   });
 
   it('AC-8 — an SSE drop leaves all six exactly as they were: no flip to an absence literal or a dimmed treatment', async () => {
@@ -385,8 +381,8 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
       await settle();
       await ask(user);
       await within(panel()).findByText('Trade · long');
-      expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeEnabled();
-      expect(within(panel()).queryByRole('alert')).toBeNull();
+      expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
+      expect(within(panel()).getByTestId('rec-not-actionable')).toBeInTheDocument();
       cleanup();
       vi.unstubAllGlobals();
     }
@@ -400,7 +396,7 @@ describe('rec-absence-literals-hole · the card (F9)', () => {
     const lines = within(panel()).getAllByTestId('rec-not-actionable');
     expect(lines).toHaveLength(1);
     expect(lines[0].textContent).toBe(
-      'Not actionable as given. Never named: Structure, Strike(s), Expiration, Entry trigger.',
+      'Not actionable as given. Never named: Structure, Strike(s), Expiration, Entry trigger. Nothing is saved until you review and confirm.',
     );
     cleanup();
     vi.unstubAllGlobals();

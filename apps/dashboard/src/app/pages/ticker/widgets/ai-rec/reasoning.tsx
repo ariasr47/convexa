@@ -3,19 +3,18 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
   Button,
   Collapse,
   Stack,
-  Tooltip,
   Typography,
   type SxProps,
   type Theme,
 } from '@mui/material';
 import { useState } from 'react';
 import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';
+import { AccessibleHelp } from './AccessibleHelp';
 
 const MONO = typographyTokens.monoFontFamily;
 
@@ -39,11 +38,7 @@ export function Field({
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           {label}
         </Typography>
-        {tip && (
-          <Tooltip arrow title={tip}>
-            <InfoOutlinedIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
-          </Tooltip>
-        )}
+        {tip && <AccessibleHelp label={`${label} help`} text={tip} />}
       </Stack>
       <Typography variant="body2" sx={valueSx}>
         {value}

@@ -5,8 +5,9 @@
  * 'set'`) — an unset block has nothing to attribute.
  */
 import type { RiskInputs } from '@convexa/api';
-import { Chip, Tooltip } from '@mui/material';
+import { Chip } from '@mui/material';
 import { PROVENANCE_CHIP_TIP, provenanceChip } from './copy';
+import { AccessibleHelp } from './AccessibleHelp';
 
 export function ProvenanceChip({ riskInputs }: { riskInputs: RiskInputs | undefined | null }) {
   if (!riskInputs || riskInputs.state !== 'set' || riskInputs.account_size == null) return null;
@@ -17,13 +18,14 @@ export function ProvenanceChip({ riskInputs }: { riskInputs: RiskInputs | undefi
       : `Max $${cap.value}/trade`
     : 'no per-trade cap set';
   return (
-    <Tooltip arrow describeChild title={PROVENANCE_CHIP_TIP}>
+    <>
       <Chip
         size="small"
         variant="outlined"
         data-testid="ai-rec-provenance-chip"
         label={provenanceChip(riskInputs.account_size, capText)}
       />
-    </Tooltip>
+      <AccessibleHelp label="Risk input provenance help" text={PROVENANCE_CHIP_TIP} />
+    </>
   );
 }
