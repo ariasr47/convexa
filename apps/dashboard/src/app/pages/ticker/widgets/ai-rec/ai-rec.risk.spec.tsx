@@ -816,11 +816,13 @@ describe('ai-rec · advice behind Accept', () => {
   });
 
   it('review cancel preserves the pinned card and writes no position', async () => {
-    installBackend({});
+    const orderRec = recAllTraced();
+    orderRec.strategy!.expiration = '2026-09-18';
+    installBackend({ rec: orderRec });
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(REC_BODY);
+    await within(panel()).findByTestId('ai-rec-decision-card');
     const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
     await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
     const dialog = await screen.findByRole('dialog');
@@ -834,7 +836,7 @@ describe('ai-rec · advice behind Accept', () => {
     const user = renderApp();
     await settle();
     await ask(user);
-    await within(panel()).findByText(REC_BODY);
+    await within(panel()).findByTestId('ai-rec-decision-card');
     const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
     await user.click(within(panel()).getByRole('button', { name: COPY.action.reviewTrade }));
     const dialog = await screen.findByRole('dialog');
@@ -863,7 +865,9 @@ describe('ai-rec · advice behind Accept', () => {
   });
 
   it('create-order confirmation writes exactly one simulated order and keeps the pinned read', async () => {
-    installBackend({});
+    const orderRec = recAllTraced();
+    orderRec.strategy!.expiration = '2026-09-18';
+    installBackend({ rec: orderRec });
     const user = renderApp();
     await settle();
     await ask(user);
@@ -872,14 +876,9 @@ describe('ai-rec · advice behind Accept', () => {
     const action = within(panel()).getByRole('button', { name: COPY.action.createOrder });
     await user.click(action);
     const dialog = await screen.findByRole('dialog');
-    const trigger = within(dialog).getByLabelText('Trigger level');
-    await user.clear(trigger);
-    await user.type(trigger, '260');
-    await user.click(within(dialog).getByRole('button', { name: 'Limit' }));
-    await user.type(within(dialog).getByLabelText('Limit price'), '3');
-    const goodTil = within(dialog).getByLabelText('Good-til');
-    fireEvent.change(goodTil, { target: { value: '2026-08-30' } });
-    await user.click(within(dialog).getByRole('button', { name: 'Place simulated order' }));
+    const confirm = within(dialog).getByRole('button', { name: 'Place simulated order' });
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
     await waitFor(() => expect(allOrders()).toHaveLength(1));
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
   });
