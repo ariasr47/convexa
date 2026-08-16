@@ -39,6 +39,7 @@ import {
   __resetMemory as __resetPositions,
   allPositions,
 } from '@/features/trading/positions/store';
+import { __resetOrdersMemory, allOrders } from '@/features/trading/orders/store';
 import type { RecResponse, RecStatus, RecStrategy, RiskInputs, TickerBundle } from '@convexa/api';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -438,6 +439,7 @@ async function ask(user: ReturnType<typeof renderApp>) {
 beforeEach(() => {
   localStorage.clear();
   __resetPositions(); // the ONE book — the ghost-trade store has no writer any more
+  __resetOrdersMemory();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -824,6 +826,23 @@ describe('ai-rec · advice behind Accept', () => {
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(allPositions()).toHaveLength(0);
+    expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
+  });
+
+  it('create-order cancel preserves the pinned read and writes no order', async () => {
+    installBackend({});
+    const user = renderApp();
+    await settle();
+    await ask(user);
+    await within(panel()).findByText(REC_BODY);
+    const before = within(panel()).getByTestId('ai-rec-decision-card').textContent;
+    const action = within(panel()).queryByRole('button', { name: COPY.action.createOrder });
+    if (!action) return;
+    await user.click(action);
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveTextContent(/Simulated order/);
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(allOrders()).toHaveLength(0);
     expect(within(panel()).getByTestId('ai-rec-decision-card').textContent).toBe(before);
   });
 
