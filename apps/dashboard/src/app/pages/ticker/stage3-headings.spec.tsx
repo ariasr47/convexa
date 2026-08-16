@@ -74,7 +74,7 @@ function aiStub(over: Partial<Record<string, unknown>> = {}): AiRec {
     cap: CAP,
     statusReady: true,
     cooldownRemaining: 0,
-    effectiveGateState: 'available',
+    readinessGateState: 'available',
     scenarios: null,
     rec: null,
     loading: false,
