@@ -206,6 +206,11 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       : gate.state === 'cooling_down'
         ? 'available'
         : gate.state;
+  // Readiness is the server's gate decision independent of the local cooldown display. The
+  // backend resolves no_fresh_edge before cooling_down, so a raw cooling_down gate means the
+  // readiness decision was available; keep no_fresh_edge distinct even if a cooldown is present.
+  const readinessGateState: 'available' | 'no_fresh_edge' =
+    gate.state === 'no_fresh_edge' ? 'no_fresh_edge' : 'available';
 
   return {
     // gating / availability
@@ -215,6 +220,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     statusReady,
     cooldownRemaining,
     effectiveGateState,
+    readinessGateState,
     // scenario advertisement (ai-rec-backtest-orders — wire-driven, default disabled)
     scenarios,
     // the pinned artifact

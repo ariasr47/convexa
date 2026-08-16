@@ -31,6 +31,7 @@ export interface PresentationInput {
   cap: RecCap;
   cooldownRemaining: number;
   effectiveGateState: string;
+  readinessGateState: 'available' | 'no_fresh_edge';
   scenarioSelected: boolean;
   currentRiskInputs: RiskInputs | null | undefined;
 }
@@ -97,7 +98,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       (!input.inAppEnabled && !scenarioSelected ? 'missing_key' : null) ??
       (input.cap.over_limit && !scenarioSelected ? 'daily_cap' : null) ??
       (input.cooldownRemaining > 0 && !scenarioSelected ? 'cooldown' : null) ??
-      (input.effectiveGateState === 'no_fresh_edge' ? 'no_edge' : null) ??
+      (input.readinessGateState === 'no_fresh_edge' ? 'no_edge' : null) ??
       'idle';
 
   let resultState: AiRecResultState | null = null;
@@ -123,7 +124,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
     requestState === 'unavailable' &&
     signedIn &&
     input.inAppEnabled &&
-    input.effectiveGateState === 'available' &&
+    input.readinessGateState === 'available' &&
     (scenarioSelected || (input.cooldownRemaining <= 0 && !input.cap.over_limit));
 
   return {

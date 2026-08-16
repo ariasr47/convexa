@@ -14,6 +14,7 @@ const base = (): PresentationInput => ({
   cap,
   cooldownRemaining: 0,
   effectiveGateState: 'available',
+  readinessGateState: 'available',
   scenarioSelected: false,
   currentRiskInputs: null,
 });
@@ -52,7 +53,7 @@ describe('deriveAiRecPresentation', () => {
       unavailable_reason: 'no_key',
     };
     const v = deriveAiRecPresentation(
-      input({ rec, signedIn: false, effectiveGateState: 'no_fresh_edge' }),
+      input({ rec, signedIn: false, readinessGateState: 'no_fresh_edge' }),
     );
     expect(v.requestState).toBe('signed_out');
     expect(v.actions.askAnyway).toBe(false);
@@ -114,7 +115,7 @@ describe('deriveAiRecPresentation', () => {
     expect(deriveAiRecPresentation(input({ cooldownRemaining: 4 })).requestState).toBe('cooldown');
   });
   it('no edge exposes ask anyway', () => {
-    const v = deriveAiRecPresentation(input({ effectiveGateState: 'no_fresh_edge' }));
+    const v = deriveAiRecPresentation(input({ readinessGateState: 'no_fresh_edge' }));
     expect(v.requestState).toBe('no_edge');
     expect(v.actions.askAnyway).toBe(true);
   });
@@ -137,12 +138,12 @@ describe('deriveAiRecPresentation', () => {
       unavailable_reason: 'transport',
     };
     const v = deriveAiRecPresentation(
-      input({ rec, scenarioSelected: true, effectiveGateState: 'no_fresh_edge' }),
+      input({ rec, scenarioSelected: true, readinessGateState: 'no_fresh_edge' }),
     );
     expect(v.requestState).toBe('unavailable');
     expect(v.actions.retry).toBe(false);
   });
-  it('scenario bypasses active cap and cooldown when the effective gate is available', () => {
+  it('scenario bypasses active cap and cooldown when readiness is available', () => {
     const rec = {
       ...recAllTraced(),
       status: 'unavailable' as const,
@@ -155,7 +156,8 @@ describe('deriveAiRecPresentation', () => {
         scenarioSelected: true,
         cap: { ...cap, over_limit: true },
         cooldownRemaining: 30,
-        effectiveGateState: 'available',
+        effectiveGateState: 'cooling_down',
+        readinessGateState: 'available',
       }),
     );
     expect(v.actions.retry).toBe(true);
@@ -290,6 +292,7 @@ describe('deriveAiRecPresentation', () => {
       cap,
       cooldownRemaining: 0,
       effectiveGateState: 'available',
+      readinessGateState: 'available',
       scenarioSelected: false,
       currentRiskInputs,
     });

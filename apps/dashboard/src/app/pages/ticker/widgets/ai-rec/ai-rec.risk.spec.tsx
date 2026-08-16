@@ -828,6 +828,53 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     expect(be.calls.rec).toBe(1);
   });
 
+  it('scenario transport fault keeps Retry actionable during server cooldown when readiness is available', async () => {
+    const be = installBackend({
+      rec: 'throw',
+      status: makeStatus({
+        gate: { state: 'cooling_down', cooldown_remaining_seconds: 30, reasons: [] },
+        cap: { over_limit: true, remaining_today: 0, resets_at: '2026-06-27T04:00:00Z' },
+        scenarios: {
+          enabled: true,
+          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
+        },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
+    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
+    await user.click(await within(panel()).findByRole('button', { name: 'Run scenario' }));
+    await within(panel()).findByText(COPY.unavailable.title);
+
+    expect(within(panel()).getByRole('button', { name: COPY.action.retry })).toBeEnabled();
+    expect(be.calls.rec).toBe(1);
+  });
+
+  it('scenario transport fault under raw no-fresh-edge plus cooldown still requires the override and hides Retry', async () => {
+    const be = installBackend({
+      rec: 'throw',
+      status: makeStatus({
+        gate: { state: 'no_fresh_edge', cooldown_remaining_seconds: 30, reasons: ['score low'] },
+        scenarios: {
+          enabled: true,
+          catalog: [{ id: 'breakout', name: 'Breakout rehearsal' }],
+        },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByRole('combobox', { name: 'Scenario (operator)' }));
+    await user.click(await screen.findByRole('option', { name: 'Breakout rehearsal' }));
+    const askAnyway = await within(panel()).findByRole('button', { name: COPY.action.askAnyway });
+    expect(askAnyway).toBeEnabled();
+    await user.click(askAnyway);
+    await within(panel()).findByText(COPY.unavailable.title);
+
+    expect(within(panel()).queryByRole('button', { name: COPY.action.retry })).toBeNull();
+    expect(be.calls.rec).toBe(1);
+  });
+
   it('scenario transport fault under the denied no-fresh-edge gate hides Retry after the real override', async () => {
     const be = installBackend({
       rec: 'throw',
