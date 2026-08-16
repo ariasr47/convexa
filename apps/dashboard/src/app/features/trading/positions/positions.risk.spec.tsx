@@ -190,6 +190,22 @@ interface Cfg {
 }
 const esInstances: { onmessage: ((e: MessageEvent) => void) | null }[] = [];
 
+interface NetworkCall {
+  method: string;
+  url: string;
+}
+
+function observedRequest(input: RequestInfo | URL, init?: RequestInit): NetworkCall {
+  return {
+    method: (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase(),
+    url: input instanceof Request ? input.url : String(input),
+  };
+}
+
+function isBookSyncException(call: NetworkCall): boolean {
+  return call.url === '/api/book' && (call.method === 'GET' || call.method === 'PUT');
+}
+
 function installBackend(cfg: Cfg = {}) {
   esInstances.length = 0;
   const contractFor = cfg.contract ?? (() => QUOTE);
@@ -211,8 +227,8 @@ function installBackend(cfg: Cfg = {}) {
     });
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const { url } = observedRequest(input, init);
       // user-accounts: who-am-I read on mount (signed-in write path; gating covered in the auth suite).
       if (url.includes('/api/auth/session'))
         return json({
@@ -689,27 +705,35 @@ describe('positions · no-real-order-path', () => {
 // 6. additive-keeps-score-byte-identical — the portfolio never touches a scoring input
 // =================================================================================================
 describe('positions · additive (never a scoring input)', () => {
+  it('admits only exact GET/PUT book sync requests', () => {
+    expect(isBookSyncException({ method: 'GET', url: '/api/book' })).toBe(true);
+    expect(isBookSyncException({ method: 'PUT', url: '/api/book' })).toBe(true);
+    expect(isBookSyncException({ method: 'DELETE', url: '/api/book' })).toBe(false);
+    expect(isBookSyncException({ method: 'PUT', url: '/api/book/archive' })).toBe(false);
+    expect(isBookSyncException({ method: 'PUT', url: '/api/bookkeeping' })).toBe(false);
+  });
+
   it('opening positions issues ONLY contract lookups — never a bundle/ticker/scoring request', async () => {
     const user = userEvent.setup();
     installBackend();
     renderHarness();
     await openManual(user, '5');
     await openManual(user, '6', 255);
-    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) =>
-      String(c[0]),
+    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([input, init]) =>
+      observedRequest(input, init),
     );
     // No bundle/ticker/scoring request is ever issued by the portfolio; only the contract lookup.
-    // (The who-am-I session read, sim-trade write gate, and exact /api/book PUT persistence sync
-    // are auth/durability concerns, not scoring paths — excluded here.)
-    expect(calls.some((u) => u.includes('/api/ticker/'))).toBe(false);
+    // (The who-am-I session read, sim-trade write gate, and exact /api/book GET pull / PUT
+    // persistence sync are auth/durability concerns, not scoring paths — excluded here.)
+    expect(calls.some(({ url }) => url.includes('/api/ticker/'))).toBe(false);
     const nonAuth = calls.filter(
-      (u) =>
-        !u.includes('/api/auth/') &&
-        !u.includes('/api/positions/sim-trade/gate') &&
-        !u.includes('/api/book'),
+      (call) =>
+        !call.url.includes('/api/auth/') &&
+        !call.url.includes('/api/positions/sim-trade/gate') &&
+        !isBookSyncException(call),
     );
     expect(nonAuth.length).toBeGreaterThan(0);
-    expect(nonAuth.every((u) => u.includes('/api/contract/'))).toBe(true);
+    expect(nonAuth.every(({ url }) => url.includes('/api/contract/'))).toBe(true);
   }, 20000);
 });
 

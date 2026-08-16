@@ -56,6 +56,22 @@ const QUOTE: TrackedContract = {
 
 let fetchMock: ReturnType<typeof vi.fn>;
 
+interface NetworkCall {
+  method: string;
+  url: string;
+}
+
+function observedRequest(input: RequestInfo | URL, init?: RequestInit): NetworkCall {
+  return {
+    method: (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase(),
+    url: input instanceof Request ? input.url : String(input),
+  };
+}
+
+function isBookSyncException(call: NetworkCall): boolean {
+  return call.url === '/api/book' && (call.method === 'GET' || call.method === 'PUT');
+}
+
 function installBackend() {
   class MockEventSource {
     onmessage: ((e: MessageEvent) => void) | null = null;
@@ -70,8 +86,8 @@ function installBackend() {
       status,
       headers: { 'Content-Type': 'application/json' },
     });
-  fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
+  fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const { url } = observedRequest(input, init);
     if (url.includes('/api/auth/session'))
       return json({
         authenticated: true,
@@ -321,19 +337,30 @@ describe('AC-80 · re-deriving the view never refetches and never touches the bo
 // ---- The scoring rail --------------------------------------------------------------------------
 
 describe('additive-keeps-score-byte-identical · the portfolio issues no bundle/scoring request', () => {
+  it('admits only exact GET/PUT book sync requests', () => {
+    expect(isBookSyncException({ method: 'GET', url: '/api/book' })).toBe(true);
+    expect(isBookSyncException({ method: 'PUT', url: '/api/book' })).toBe(true);
+    expect(isBookSyncException({ method: 'DELETE', url: '/api/book' })).toBe(false);
+    expect(isBookSyncException({ method: 'GET', url: '/api/book/archive' })).toBe(false);
+  });
+
   it('the ONLY endpoint the portfolio touches is the existing per-contract lookup', async () => {
     putPosition(pos({ id: 'p-1' }));
     await mount();
     await waitFor(() => expect(contractCalls()).toBeGreaterThan(0));
 
-    const urls = fetchMock.mock.calls.map(([u]) => String(u));
+    const calls = fetchMock.mock.calls.map(([input, init]) => observedRequest(input, init));
     // `/api/ticker`, the AI/scoring endpoints and any position→score POST are all absent. The
-    // session, sim-trade-gate, and exact /api/book persistence calls belong to auth/durability,
-    // not to the portfolio's contract data path.
-    expect(urls.some((u) => u.includes('/api/ticker'))).toBe(false);
-    expect(urls.some((u) => /score|signals|ai[-_]/i.test(u))).toBe(false);
+    // session, sim-trade-gate, and exact /api/book GET pull / PUT persistence calls belong to
+    // auth/durability, not to the portfolio's contract data path.
+    expect(calls.some(({ url }) => url.includes('/api/ticker'))).toBe(false);
+    expect(calls.some(({ url }) => /score|signals|ai[-_]/i.test(url))).toBe(false);
     expect(
-      urls.every((u) => /\/api\/(contract|auth|positions\/sim-trade\/gate|book)(\/|$)/.test(u)),
+      calls.every(
+        (call) =>
+          /\/api\/(contract|auth|positions\/sim-trade\/gate)(\/|$)/.test(call.url) ||
+          isBookSyncException(call),
+      ),
     ).toBe(true);
   });
 });
