@@ -12,32 +12,26 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { useSettings } from '@/features/auth/useSettings';
 import {
-  ACT_TOOLTIP,
   RUN_SCENARIO,
   SCENARIO_CAPTION,
   SCENARIO_LABEL,
   SCENARIO_NONE,
   SCRIPTED_CHIP,
-  scriptedStrip,
 } from '@/features/trading/orders/copy';
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type {
-  GroundingState,
   PersonaDefinition,
   RecResponse,
   RecScenarioInfo,
-  RecStrategy,
   TickerBundle,
 } from '@convexa/api';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
-  Divider,
   FormControl,
   MenuItem,
   Select,
@@ -45,55 +39,26 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CapAnnotation } from './CapAnnotation';
-import { CitedContractLine } from './CitedContractLine';
 import {
   adminExhaustedTitle,
-  asOfChip,
   BYO_KEY,
   CAP_CAPTION,
   capTitle,
   cooldownCaption,
   cooldownLabel,
   COPY,
-  dteWindowCaption,
   FREE_USES_TOTAL_FALLBACK,
-  freeUsesChip,
   friendlyResetTime,
-  literalCopy,
-  MAX_RISK_TIP,
-  notActionableLine,
-  OWN_KEY_CHIP,
-  personaChip,
-  PLAN_FIELD_LABEL,
   retryInCooldown,
   retryWhenReset,
-  RISK_FIELD_COPY,
-  staleBornStrip,
-  staleStrip,
-  SUPERSEDED_STRIP,
 } from './copy';
-import { FigureClause } from './FigureClause';
 import { DecisionCard } from './DecisionCard';
 import { AnalysisSurface } from './AnalysisSurface';
 import { deriveAiRecPresentation } from './presentationPolicy';
-import { GroundingNote } from './GroundingNote';
-import {
-  fieldLiteral,
-  planFieldLiteral,
-  registerSx,
-  riskInputsSuperseded,
-  type FieldLiteral,
-  type PlanFieldLiteral,
-} from './literals';
-import { NumbersSaidStrip } from './NumbersSaidStrip';
-import { ProvenanceChip } from './ProvenanceChip';
-import { deriveReasoning, Field, LevelsStrip, ReasoningSection } from './reasoning';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
-export { deriveReasoning, leadAndRest, LevelsStrip, ReasoningSection } from './reasoning';
 export { useReadPersonas } from './useReadPersonas';
 
 const MONO = typographyTokens.monoFontFamily; // verdict labels render in Roboto Mono (Figma 149:598)
@@ -109,9 +74,6 @@ function byoCtaState(
   if (r === 'no_key' || r === 'over_limit' || r === 'shared_key_unconfigured') return r;
   return null;
 }
-
-// Kept exported for legacy focused tests while the mounted result uses DecisionCard.
-export { RecResult };
 
 interface Props {
   ticker: string;
@@ -377,7 +339,11 @@ export function AiRecPanel({
                 onAccept(producedRec, producedRec.persona.name),
               )
             }
-            onCreateOrder={onAct && signedIn ? () => onAct(producedRec, producedRec.persona.name) : undefined}
+            onCreateOrder={
+              presentation.actions.createOrder && onAct
+                ? () => onAct(producedRec, producedRec.persona.name)
+                : undefined
+            }
             onAnalysis={() => setAnalysisOpen(true)}
             onRefresh={() => doRequest({ override: false })}
             onDismiss={ai.dismiss}
@@ -744,613 +710,6 @@ function ByoKeyCta({
       >
         {cfg.cta}
       </Button>
-    </Box>
-  );
-}
-
-// ---- Provenance header (AC3/AC4) + byo-ai-key key-source chips (b/d) --------------------------
-function Provenance({ rec }: { rec: RecResponse }) {
-  // The provenance chip reads ONLY `key_source` (never a score field — AC-14). shared_admin (b) ⇒ the
-  // subordinate free-uses chip; own_key (d) ⇒ the "Using your key" chip. NO chip for none.
-  const showFreeUses = rec.key_source === 'shared_admin' && rec.remaining_free_uses != null;
-  const showOwnKey = rec.key_source === 'own_key';
-  const freeUsesTotal = rec.free_uses_total ?? FREE_USES_TOTAL_FALLBACK;
-  return (
-    <Stack
-      direction="row"
-      spacing={1}
-      sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5, mb: 1 }}
-    >
-      {/* SCRIPTED SCENARIO marking (D8-4) — keyed OFF rec.scenario ONLY (INTERFACE §1.3). */}
-      {rec.scenario && (
-        <Tooltip arrow title={scriptedStrip(rec.scenario.name)}>
-          <Chip
-            size="small"
-            color="warning"
-            variant="outlined"
-            label={SCRIPTED_CHIP}
-            data-testid="ai-rec-scripted-chip"
-          />
-        </Tooltip>
-      )}
-      <Tooltip arrow title={COPY.tooltip.persona.replace('{name}', rec.persona.name)}>
-        <Chip size="small" variant="outlined" label={personaChip(rec.persona.name)} />
-      </Tooltip>
-      <Tooltip arrow title={COPY.tooltip.asOf}>
-        <Chip size="small" variant="outlined" label={asOfChip(rec.as_of)} />
-      </Tooltip>
-      <Tooltip arrow title={COPY.tooltip.advisory}>
-        <Chip size="small" variant="outlined" label={COPY.provenance.sim} />
-      </Tooltip>
-      {showFreeUses && (
-        <Tooltip arrow describeChild title={BYO_KEY.freeUses.tooltip}>
-          <Chip
-            size="small"
-            variant="outlined"
-            data-testid="ai-rec-free-uses"
-            label={freeUsesChip(rec.remaining_free_uses as number, freeUsesTotal)}
-          />
-        </Tooltip>
-      )}
-      {showOwnKey && (
-        <Tooltip arrow describeChild title={BYO_KEY.ownKey.tooltip}>
-          <Chip size="small" variant="outlined" data-testid="ai-rec-own-key" label={OWN_KEY_CHIP} />
-        </Tooltip>
-      )}
-      {/* Provenance chip (SPEC §4) — the owner's entered values verbatim; no client arithmetic. */}
-      <ProvenanceChip riskInputs={rec.sent?.risk_inputs} />
-    </Stack>
-  );
-}
-
-/** A `Field` driven by the closed `FieldLiteral` set (AC-69/70/71/72). `not_set` carries the
- *  `Set your risk inputs` action, which navigates to the Settings panel. */
-function RiskField({
-  label,
-  literal,
-  valueTip,
-  clause,
-  groundingState,
-}: {
-  label: string;
-  literal: FieldLiteral;
-  /** AC-62: a tip shown ONLY when the field carries a real value (e.g. the max-risk attribution). */
-  valueTip?: string;
-  /** ai-rec-grounding — a clause renders ONLY on the `value` member, never beside an absence literal
-   *  (never pairing a grounding sentence with a numeric `0` treated as absent, or vice versa). */
-  clause?: ReactNode;
-  /** F12 (DESIGN_SYSTEM Amendment 2026-08-13, D3) — the value's TYPE REGISTER (mono = Convexa's,
-   *  sans = the AI's own), a closed lookup via `registerSx`. Applied to the value itself, alongside
-   *  (never instead of) the visible `clause` text — complementary signals, per D3. Undefined on
-   *  fields with no grounding data at all (Max risk, Suggested size, Structure, Strike(s),
-   *  Expiration, Entry trigger), which never pass this prop and stay at the shared default. */
-  groundingState?: GroundingState;
-}) {
-  const navigate = useNavigate();
-  // F12: the register lookup applies ONLY when a caller passes `groundingState` (stop/target/
-  // invalidation) — every other `RiskField` call site (Max risk, Suggested size) omits the prop and
-  // stays byte-identical to `main`, never explicitly forced into either register.
-  const valueSx = groundingState === undefined ? undefined : registerSx(groundingState);
-  if (literal.kind === 'value')
-    return (
-      <Box>
-        <Field label={label} value={literal.text} tip={valueTip} valueSx={valueSx} />
-        {clause}
-      </Box>
-    );
-  const cfg =
-    literal.kind === 'dash'
-      ? RISK_FIELD_COPY.dash
-      : literal.kind === 'not_set'
-        ? RISK_FIELD_COPY.notSet
-        : literal.kind === 'not_given'
-          ? RISK_FIELD_COPY.notGiven
-          : RISK_FIELD_COPY.unavailable;
-  return (
-    <Field
-      label={label}
-      tip={cfg.tip}
-      value={
-        <>
-          {cfg.text}
-          {literal.kind === 'not_set' && (
-            <Button
-              size="small"
-              onClick={() => navigate('/settings#risk-inputs')}
-              sx={{ ml: 0.5, p: 0, minWidth: 0, textTransform: 'none', fontSize: 12 }}
-              data-testid="risk-field-set-risk-inputs"
-            >
-              {RISK_FIELD_COPY.notSet.action}
-            </Button>
-          )}
-        </>
-      }
-    />
-  );
-}
-
-// ---- rec-absence-literals-hole: the six plan/conviction render sites (§7 Layer 1) --------------
-/** The plan-row renderer: takes a `PlanFieldLiteral`, NEVER a rendered `React.ReactNode`. That is
- *  what makes a bare `?? '—'` at one of these sites a TYPE ERROR rather than a style violation
- *  (§7 Layer 1). The `Field` primitive is unchanged — the literal→element mapping happens here. */
-function PlanField({
-  label,
-  literal,
-  caption,
-}: {
-  label: string;
-  literal: PlanFieldLiteral;
-  /** Rendered ONLY beside the `value` member (AC-26) — the caller decides, this component enforces. */
-  caption?: ReactNode;
-}) {
-  if (literal.kind === 'value')
-    return (
-      <Field
-        label={label}
-        value={
-          <>
-            {literal.text}
-            {caption}
-          </>
-        }
-      />
-    );
-  const cfg = literalCopy(literal.kind);
-  return <Field label={label} tip={cfg.tip} value={cfg.text} />;
-}
-
-/** The conviction slot. A `Chip` when a value was stated; PLAIN TEXT (chip suppressed) for every
- *  absence member — a chip whose label is an absence word reads as a stated grade. Same copy table as
- *  `PlanField` (`literalCopy`), never a second one. */
-function ConvictionSlot({ literal }: { literal: PlanFieldLiteral }) {
-  if (literal.kind === 'value') return <Chip size="small" label={literal.text} />;
-  const cfg = literalCopy(literal.kind);
-  return (
-    <Tooltip arrow describeChild title={cfg.tip}>
-      <Typography variant="body2">{cfg.text}</Typography>
-    </Tooltip>
-  );
-}
-
-// ---- The rendered rec (produced + no_trade) --------------------------------------------------
-function RecResult({
-  rec,
-  stale,
-  dataAge,
-  bundle,
-  onAccept,
-  onAct,
-  onDismiss,
-  onViewExport,
-  onFresh,
-  freshDisabled,
-}: {
-  rec: RecResponse;
-  stale: boolean;
-  dataAge: string | null;
-  bundle: TickerBundle | null;
-  onAccept: () => void;
-  onAct?: () => void;
-  onDismiss: () => void;
-  onViewExport: () => void;
-  onFresh: () => void;
-  freshDisabled: boolean;
-}) {
-  const s = rec.strategy as RecStrategy;
-  const isNoTrade = s.decision === 'no_trade';
-  const dteMin = bundle?.market_state.dte_min;
-  const dteMax = bundle?.market_state.dte_max;
-  const heroLead = deriveReasoning(s).lead;
-  // AC-64 — the superseded-inputs detector: the pinned as-sent block's signature compared against
-  // the CURRENTLY stored block (SPEC §2.4(a)); `useSettings().riskInputs` is `null` when unresolved
-  // (anonymous / still loading), so an unknown current block never claims supersession.
-  const currentRiskInputs = useSettings().riskInputs;
-  const superseded = riskInputsSuperseded(rec.sent?.risk_inputs, currentRiskInputs);
-
-  // rec-absence-literals-hole — the six plan/conviction literals, computed ONCE so the rows and the
-  // standing line (below) read the same objects (§2.3).
-  const structureLiteral = planFieldLiteral({
-    decision: s.decision,
-    value: s.structure,
-    reason: rec.field_reasons?.structure,
-  });
-  const strikesLiteral = planFieldLiteral({
-    decision: s.decision,
-    // Joining the array into a display string BEFORE the lookup is formatting, not cause selection
-    // (§2.3 UX-3(a)).
-    value: s.strikes.length ? s.strikes.map((x) => `$${x}`).join(' / ') : '',
-    reason: rec.field_reasons?.strikes,
-  });
-  const expirationLiteral = planFieldLiteral({
-    decision: s.decision,
-    value: s.expiration,
-    reason: rec.field_reasons?.expiration,
-  });
-  const entryTriggerLiteral = planFieldLiteral({
-    decision: s.decision,
-    value: s.entry_trigger,
-    reason: rec.field_reasons?.entry_trigger,
-  });
-  const timeHorizonLiteral = planFieldLiteral({
-    decision: s.decision,
-    value: s.time_horizon,
-    reason: rec.field_reasons?.time_horizon,
-  });
-  const convictionLiteral = planFieldLiteral({
-    decision: s.decision,
-    value: s.confidence,
-    reason: rec.field_reasons?.confidence,
-  });
-
-  // AC-10 — the ONE standing line. Exempt ONLY on an AFFIRMATIVE local-rules declaration; a response
-  // with no grounding block at all is NOT an exemption (AC-10c) — missing information never is.
-  const localRulesDeclared = rec.grounding?.card === 'local_rules';
-  const unnamedPositionFields = (
-    [
-      [PLAN_FIELD_LABEL.structure, structureLiteral],
-      [PLAN_FIELD_LABEL.strikes, strikesLiteral],
-      [PLAN_FIELD_LABEL.expiration, expirationLiteral],
-      [PLAN_FIELD_LABEL.entryTrigger, entryTriggerLiteral],
-    ] as const
-  )
-    .filter(([, l]) => l.kind !== 'value')
-    .map(([label]) => label);
-  const standingLine =
-    !localRulesDeclared && unnamedPositionFields.length > 0
-      ? notActionableLine(unnamedPositionFields)
-      : null;
-
-  return (
-    <Box>
-      {/* Scripted-scenario strip (D8-4) — every scenario-produced rec is marked, never mistakable
-          for a real AI read. Warning-tinted, never red. */}
-      {rec.scenario && (
-        <Alert severity="warning" sx={{ mb: 1, py: 0 }} data-testid="ai-rec-scripted-strip">
-          {scriptedStrip(rec.scenario.name)}
-        </Alert>
-      )}
-
-      {/* Stale-born (E5) — generated off an already-stale bundle; warned AT BIRTH. */}
-      {rec.stale_born && (
-        <Alert severity="warning" sx={{ mb: 1, py: 0 }}>
-          {staleBornStrip(dataAge ?? 'older data')}
-        </Alert>
-      )}
-
-      {/* Stale (AC6) — a NEWER bundle arrived after generation. Rec body stays byte-stable. */}
-      {stale && (
-        <Box sx={{ mb: 1 }}>
-          <Chip
-            size="small"
-            color="warning"
-            variant="outlined"
-            label={COPY.stale.chip}
-            sx={{ mb: 0.5 }}
-          />
-          <Alert
-            severity="info"
-            sx={{ py: 0 }}
-            action={
-              <Button color="inherit" size="small" disabled={freshDisabled} onClick={onFresh}>
-                {COPY.action.freshRec}
-              </Button>
-            }
-          >
-            {staleStrip(rec.as_of)}
-          </Alert>
-        </Box>
-      )}
-
-      {/* Superseded-inputs (AC-64) — the shipped STALE-STRIP treatment (info, never warning.*+icon):
-          the risk block changed after this rec was produced. Fires only when BOTH the as-sent block
-          and the currently-stored block are known and their signatures differ. */}
-      {superseded && (
-        <Box sx={{ mb: 1 }}>
-          <Alert
-            severity="info"
-            sx={{ py: 0 }}
-            data-testid="ai-rec-superseded-strip"
-            action={
-              <Button color="inherit" size="small" disabled={freshDisabled} onClick={onFresh}>
-                {COPY.action.freshRec}
-              </Button>
-            }
-          >
-            {SUPERSEDED_STRIP}
-          </Alert>
-        </Box>
-      )}
-
-      <Provenance rec={rec} />
-
-      <LevelsStrip bundle={bundle} />
-
-      {/* `What the numbers said` — on EVERY verdict including no_trade (AC-66, ship-blocking). */}
-      <NumbersSaidStrip
-        candidates={rec.sent?.candidates}
-        move={bundle?.market_state.straddle_move}
-        citedExpiration={s.expiration}
-      />
-
-      {isNoTrade ? (
-        <Box>
-          {/* Verdict hero — the answer at a glance (calm/info, never red), with the one-line lead. */}
-          <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'action.hover', mb: 1.5 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
-            >
-              <InfoOutlinedIcon color="info" sx={{ fontSize: 18 }} />
-              {/* component="p" (stage-3 §5.6): a verdict is data/copy, not document structure. */}
-              <Typography variant="subtitle1" component="p">
-                {COPY.noTrade.title}
-              </Typography>
-              {/* AC-3d — the ONE carve-out from the no-plan-rows rule: an absent conviction renders
-                  `not given` as TEXT, never the reserved mark, never nothing. This line sits OUTSIDE
-                  the four-field risk row below (`:` unchanged), which keeps its zero-line diff. */}
-              <Box data-testid="no-trade-conviction">
-                {s.confidence ? (
-                  <Chip size="small" variant="outlined" label={`conviction · ${s.confidence}`} />
-                ) : (
-                  <Typography variant="body2">{literalCopy('not_given').text}</Typography>
-                )}
-              </Box>
-            </Stack>
-            {heroLead && (
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', mt: 0.75, lineHeight: 1.6 }}
-              >
-                {heroLead}
-              </Typography>
-            )}
-          </Box>
-          {/* AC-69/70 — `no_trade` is a RESULT, not an empty card: the four fields still render, each
-              through the SAME `fieldLiteral` closed lookup the trade branch uses. `decision ===
-              'no_trade'` short-circuits every one of them to the `dash` member (`—` + `No entry, so
-              there is nothing to size.`) — this is the card's only not-applicable statement, and the
-              cap surface still renders NOTHING here (AC-58a; no `CapAnnotation` is mounted). */}
-          <Stack
-            direction="row"
-            spacing={4}
-            sx={{ flexWrap: 'wrap', rowGap: 1, mb: 1.5 }}
-            data-testid="no-trade-four-field-row"
-          >
-            <RiskField
-              label={COPY.risk.maxRisk}
-              literal={fieldLiteral({ decision: s.decision, value: s.max_risk, reason: null })}
-            />
-            <RiskField
-              label="Suggested size"
-              literal={fieldLiteral({ decision: s.decision, value: s.position_size, reason: null })}
-            />
-            <RiskField
-              label="Target"
-              literal={fieldLiteral({
-                decision: s.decision,
-                value: s.exit_plan?.target,
-                reason: null,
-              })}
-            />
-            <RiskField
-              label="Stop"
-              literal={fieldLiteral({
-                decision: s.decision,
-                value: s.exit_plan?.stop,
-                reason: null,
-              })}
-            />
-          </Stack>
-          <ReasoningSection strategy={s} suppressLead />
-          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
-            {COPY.noTrade.caption}
-          </Typography>
-        </Box>
-      ) : (
-        <Stack spacing={1.5}>
-          {/* Verdict header — decision + direction at a glance + the one-line lead (structure and the
-              rest sit in the plan below; risk stays first among the detail tiles). */}
-          <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-              {/* The verdict hero icon KEEPS `primary` (§4.1) — the Trade verdict IS this
-                  surface's one line that matters (its no-trade sibling stays `info`: the
-                  asymmetry is the meaning). */}
-              <InfoOutlinedIcon color="primary" sx={{ fontSize: 18 }} />
-              {/* component="p" (stage-3 §5.6): a verdict is data/copy, not document structure. */}
-              <Typography variant="subtitle1" component="p">{`Trade · ${s.bias}`}</Typography>
-            </Stack>
-            {heroLead && (
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', mt: 0.75, lineHeight: 1.6 }}
-              >
-                {heroLead}
-              </Typography>
-            )}
-          </Box>
-          {/* The ONE card-level grounding line (SPEC §4) — a qualifier on everything below it, so it
-              sits directly above the risk tile and nowhere else. It is one line; it is never a
-              section. */}
-          <GroundingNote grounding={rec.grounding} />
-          {/* rec-absence-literals-hole (AC-10a/b/c, AC-11, AC-15) — the ONE standing not-actionable
-              line. Exempt only on a DECLARED local-rules card; plain body text, no icon, no tint, no
-              `warning.*` — the card-level amber is already spent by the grounding line above. */}
-          {standingLine && (
-            <Typography
-              variant="body2"
-              data-testid="rec-not-actionable"
-              sx={{ color: 'text.secondary' }}
-            >
-              {standingLine}
-            </Typography>
-          )}
-          {/* 2. RISK FIRST (foremost). Upgraded-tile chrome: rounded surface + error-tinted LEFT
-              accent bar (risk = the most-important field), clipped to the radius. All four risk-input
-              fields render through `fieldLiteral` — a closed lookup on the wire token, never a null
-              test (AC-69/70/71/72). */}
-          <Box
-            sx={{
-              position: 'relative',
-              p: 1.25,
-              pl: 2.25,
-              borderRadius: 3,
-              overflow: 'hidden',
-              bgcolor: 'action.hover',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 4,
-                bgcolor: 'error.main',
-              },
-            }}
-          >
-            <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-              <RiskField
-                label={COPY.risk.maxRisk}
-                literal={fieldLiteral({
-                  decision: s.decision,
-                  value: s.max_risk,
-                  reason: rec.field_reasons?.max_risk,
-                })}
-                valueTip={MAX_RISK_TIP}
-              />
-              <RiskField
-                label={COPY.risk.invalidation}
-                literal={fieldLiteral({
-                  decision: s.decision,
-                  value: s.invalidation_level,
-                  reason: rec.field_reasons?.invalidation_level,
-                })}
-                valueTip="The level that says the idea is wrong. If price reaches it, the thesis is invalidated."
-                clause={
-                  <FigureClause
-                    field={rec.grounding?.fields.invalidation_level}
-                    testId="clause-invalidation"
-                  />
-                }
-                groundingState={rec.grounding?.fields.invalidation_level.state}
-              />
-            </Stack>
-            {/* The cap surface — an entry-stating verdict ONLY. `not_applicable` (no_trade) never
-                reaches this branch at all (AC-58a). */}
-            <Box sx={{ mt: 1 }}>
-              <CapAnnotation capCheck={rec.cap_check} />
-            </Box>
-          </Box>
-          {/* 3. Plan. Every row goes through `planFieldLiteral` — a closed lookup on the wire token,
-              never a null test, never a bare fallback (rec-absence-literals-hole §2.3). */}
-          <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-            <PlanField label={PLAN_FIELD_LABEL.structure} literal={structureLiteral} />
-            <PlanField label={PLAN_FIELD_LABEL.strikes} literal={strikesLiteral} />
-            <PlanField
-              label={PLAN_FIELD_LABEL.expiration}
-              literal={expirationLiteral}
-              caption={
-                dteMin != null && dteMax != null ? (
-                  <Typography component="span" variant="caption" sx={{ color: 'text.secondary' }}>
-                    {dteWindowCaption(dteMin, dteMax)}
-                  </Typography>
-                ) : undefined
-              }
-            />
-            <PlanField label={PLAN_FIELD_LABEL.entryTrigger} literal={entryTriggerLiteral} />
-          </Stack>
-          {/* The cited-contract fact line — a real quote for the named contract, or an honest literal
-              saying why it's absent (AC-73–77). */}
-          <CitedContractLine
-            cited={rec.cited_contract}
-            asOf={rec.sent?.candidates?.as_of ?? null}
-          />
-          {/* 4. Exit. */}
-          <Stack direction="row" spacing={4} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-            <RiskField
-              label="Target"
-              literal={fieldLiteral({
-                decision: s.decision,
-                value: s.exit_plan?.target,
-                reason: rec.field_reasons?.exit_target,
-              })}
-              clause={
-                <FigureClause field={rec.grounding?.fields.exit_target} testId="clause-target" />
-              }
-              groundingState={rec.grounding?.fields.exit_target.state}
-            />
-            <RiskField
-              label="Stop"
-              literal={fieldLiteral({
-                decision: s.decision,
-                value: s.exit_plan?.stop,
-                reason: rec.field_reasons?.exit_stop,
-              })}
-              clause={<FigureClause field={rec.grounding?.fields.exit_stop} testId="clause-stop" />}
-              groundingState={rec.grounding?.fields.exit_stop.state}
-            />
-          </Stack>
-          {/* 5. Sizing. */}
-          <Box>
-            <RiskField
-              label="Suggested size"
-              literal={fieldLiteral({
-                decision: s.decision,
-                value: s.position_size,
-                reason: rec.field_reasons?.position_size,
-              })}
-            />
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              A suggestion. Your size is your risk decision — you'll be able to change it during review.
-            </Typography>
-          </Box>
-          {/* 6. Read context. */}
-          <Stack
-            direction="row"
-            spacing={4}
-            sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}
-          >
-            <PlanField label={PLAN_FIELD_LABEL.timeHorizon} literal={timeHorizonLiteral} />
-            <Box>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                {PLAN_FIELD_LABEL.confidence}
-              </Typography>
-              <ConvictionSlot literal={convictionLiteral} />
-            </Box>
-          </Stack>
-          {/* 7. Reasoning — Why bullets + Manage list + collapsible full read (the lead is shown in
-              the verdict header above). Degrades gracefully when the model omits structure. */}
-          <ReasoningSection strategy={s} suppressLead reengageLabel={COPY.reasoning.manage} />
-        </Stack>
-      )}
-
-      <Divider sx={{ my: 1.5 }} />
-      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
-        {/* Accept is ABSENT on a no_trade rec (AC5) — never just disabled. Accept stays FIRST and
-            byte-identical with Act beside it (orders AC-1/47). */}
-        {!isNoTrade && (
-          <Tooltip arrow describeChild title={COPY.tooltip.advisory}>
-            <Button variant="contained" size="small" onClick={onAccept}>
-              {COPY.action.accept}
-            </Button>
-          </Tooltip>
-        )}
-        {/* Act as sim order (UX §2.1): produced TRADE rec ONLY (real or scenario); ABSENT on
-            no_trade and every degraded/gated state — the host omits the handler there. */}
-        {!isNoTrade && onAct && (
-          <Tooltip arrow describeChild title={ACT_TOOLTIP}>
-            <Button variant="outlined" size="small" onClick={onAct} data-testid="ai-rec-act">
-              {COPY.action.createOrder}
-            </Button>
-          </Tooltip>
-        )}
-        <Button size="small" onClick={onViewExport}>
-          {COPY.action.viewExport}
-        </Button>
-        <Button size="small" color="inherit" onClick={onDismiss}>
-          {COPY.action.dismiss}
-        </Button>
-      </Stack>
     </Box>
   );
 }

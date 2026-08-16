@@ -1,6 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
-import type { Grounding, GroundingField, OpenPositionsDigest, RecResponse, RiskInputs, TickerBundle } from '@convexa/api';
+import type { Grounding, OpenPositionsDigest, RecResponse, RiskInputs, TickerBundle } from '@convexa/api';
 import { COPY } from './copy';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CapAnnotation } from './CapAnnotation';
@@ -9,7 +9,7 @@ import { GroundingNote } from './GroundingNote';
 import { LevelsStrip, ReasoningSection } from './reasoning';
 import { NumbersSaidStrip } from './NumbersSaidStrip';
 import { PLAN_FIELD_LABEL, literalCopy } from './copy';
-import { planFieldLiteral, registerSx } from './literals';
+import { fieldLiteral, planFieldLiteral, registerSx } from './literals';
 import { FigureClause } from './FigureClause';
 
 export function analysisTitle(ticker: string): string {
@@ -44,22 +44,28 @@ function AnalysisSummary({ rec }: { rec: RecResponse }) {
 
 function GroundingDetail({ grounding, rec }: { grounding: Grounding | null | undefined; rec: RecResponse }) {
   const strategy = rec.strategy!;
+  const rows = [
+    ['Stop', strategy.exit_plan?.stop, rec.field_reasons?.exit_stop, grounding?.fields.exit_stop, 'clause-stop'],
+    ['Target', strategy.exit_plan?.target, rec.field_reasons?.exit_target, grounding?.fields.exit_target, 'clause-target'],
+    ['Invalidation', strategy.invalidation_level, rec.field_reasons?.invalidation_level, grounding?.fields.invalidation_level, 'clause-invalidation'],
+  ] as const;
   return (
     <Box data-testid="grounding-detail">
       <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>Cited contract and grounding</Typography>
       <GroundingNote grounding={grounding} />
       <Stack spacing={1} data-testid="analysis-grounding-fields" sx={{ mt: 1 }}>
-        {([
-          ['Stop', strategy.exit_plan?.stop, grounding?.fields.exit_stop, 'clause-stop'],
-          ['Target', strategy.exit_plan?.target, grounding?.fields.exit_target, 'clause-target'],
-          ['Invalidation', strategy.invalidation_level, grounding?.fields.invalidation_level, 'clause-invalidation'],
-        ] as Array<[string, string | number | null | undefined, GroundingField | undefined, string]>).map(([label, value, field, testId]) => (
-          <Box key={label as string}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>{label as string}</Typography>
-            <Typography variant="body2" sx={field ? registerSx(field.state) : undefined}>{value == null ? 'not given' : String(value)}</Typography>
-            <FigureClause field={field} testId={testId as string} />
+        {rows.map(([label, value, reason, field, testId]) => {
+          const literal = fieldLiteral({ decision: strategy.decision, value, reason });
+          return (
+          <Box key={label}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>{label}</Typography>
+            <Typography variant="body2" sx={field ? registerSx(field.state) : undefined}>
+              {literal.kind === 'value' ? literal.text : literalCopy(literal.kind).text}
+            </Typography>
+            {literal.kind === 'value' && <FigureClause field={field} testId={testId} />}
           </Box>
-        ))}
+          );
+        })}
       </Stack>
       {grounding && (
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>

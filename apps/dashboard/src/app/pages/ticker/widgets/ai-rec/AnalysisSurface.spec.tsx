@@ -50,6 +50,25 @@ describe('AnalysisSurface', () => {
     expect(within(dialog).getByText('As-sent risk inputs')).toBeInTheDocument();
   });
 
+  it('uses the closed risk-field literals and suppresses grounding clauses for absent figures', () => {
+    const rec = recAllTraced();
+    rec.strategy!.exit_plan = { stop: null, target: null };
+    rec.strategy!.invalidation_level = null;
+    rec.field_reasons = {
+      ...rec.field_reasons,
+      exit_stop: { reason: 'not_given', missing_input: null },
+      exit_target: { reason: 'unavailable', missing_input: 'risk_block' },
+      invalidation_level: { reason: 'not_given', missing_input: null },
+    };
+    renderSurface({ rec });
+    const fields = screen.getByTestId('analysis-grounding-fields');
+    expect(within(fields).getAllByText('not given')).toHaveLength(2);
+    expect(within(fields).getByText('not set')).toBeInTheDocument();
+    expect(within(fields).queryByTestId('clause-stop')).toBeNull();
+    expect(within(fields).queryByTestId('clause-target')).toBeNull();
+    expect(within(fields).queryByTestId('clause-invalidation')).toBeNull();
+  });
+
   it('renders every supplied as-sent leaf, including closed absence reasons', () => {
     const rec = recAllTraced();
     rec.sent!.risk_inputs.effective_dollar_cap.not_derivable_reason = 'percent_without_account_size';

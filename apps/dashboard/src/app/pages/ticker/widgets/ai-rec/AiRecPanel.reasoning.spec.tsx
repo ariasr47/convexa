@@ -7,7 +7,7 @@ import type { RecStrategy, TickerBundle } from '@convexa/api';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import { deriveReasoning, leadAndRest, LevelsStrip, ReasoningSection } from './AiRecPanel';
+import { deriveReasoning, leadAndRest, LevelsStrip, ReasoningSection } from './reasoning';
 
 afterEach(cleanup);
 

@@ -104,7 +104,9 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       settings: !loading && keyState && requestState !== 'signed_out',
       signIn: !loading && requestState === 'signed_out',
       reviewTrade: !loading && resultState === 'fresh_trade' && signedIn,
-      createOrder: !loading && resultState === 'fresh_trade' && signedIn,
+      // Whether the host supplied an order callback is the interface capability boundary. The
+      // policy owns recommendation actionability; it must not duplicate the auth gate here.
+      createOrder: !loading && resultState === 'fresh_trade',
       analysis: !loading && produced,
       refresh: !loading && degraded && requestState === 'idle',
       dismiss: !loading && produced,
