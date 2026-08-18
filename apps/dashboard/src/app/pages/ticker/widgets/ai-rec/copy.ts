@@ -354,6 +354,14 @@ export const REASONING_PROSE_NOT_CHECKED =
   "Numbers written out in this reasoning aren't checked — only the stop, target and invalidation " +
   'level above are.';
 
+/**
+ * rec-plan-scope-caption — section-level scope boundary for the six plan fields.
+ * Permanent: none of the six enters figure-grounding clauses / counts.checked.
+ * Sibling of REASONING_PROSE_NOT_CHECKED; never merged into grounding / absence / not-actionable.
+ */
+export const PLAN_FIELDS_NOT_CHECKED =
+  "Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.";
+
 // ---- rec-absence-literals-hole: the six plan/conviction slots -----------------------------------
 
 /** The five plan-row labels, hoisted out of `AiRecPanel.tsx`'s inline literals so the renderer, the

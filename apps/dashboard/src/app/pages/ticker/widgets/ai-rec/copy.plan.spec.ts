@@ -5,11 +5,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   dteWindowCaption,
+  GROUNDING_BLOCK_ABSENT,
+  GROUNDING_CARD,
   literalCopy,
   notActionableLine,
   PLAN_FIELD_COPY,
+  PLAN_FIELD_LABEL,
+  PLAN_FIELDS_NOT_CHECKED,
   POSITION_DEFINING_LABELS,
   prefillUnnamedReason,
+  REASONING_PROSE_NOT_CHECKED,
 } from './copy';
 
 const RESERVED = '—'; // the reserved mark, ESCAPED so this file cannot poison the Layer-3 scan
@@ -62,5 +67,35 @@ describe('rec-absence-literals-hole · the new copy', () => {
       expect(literalCopy(k).tip.length).toBeGreaterThan(0);
     }
     expect(literalCopy('dash').text).toBe(RESERVED);
+  });
+});
+
+describe('rec-plan-scope-caption · PLAN_FIELDS_NOT_CHECKED', () => {
+  it('PLAN_FIELDS_NOT_CHECKED is the SPEC §4 closed constant', () => {
+    expect(PLAN_FIELDS_NOT_CHECKED).toBe(
+      "Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.",
+    );
+  });
+
+  it('PLAN_FIELDS_NOT_CHECKED names every PLAN_FIELD_LABEL and stays disjoint from siblings', () => {
+    for (const label of Object.values(PLAN_FIELD_LABEL)) {
+      expect(PLAN_FIELDS_NOT_CHECKED).toContain(label);
+    }
+    expect(PLAN_FIELDS_NOT_CHECKED).not.toBe(REASONING_PROSE_NOT_CHECKED);
+    expect(PLAN_FIELDS_NOT_CHECKED).not.toBe(GROUNDING_BLOCK_ABSENT);
+    for (const line of Object.values(GROUNDING_CARD)) {
+      expect(PLAN_FIELDS_NOT_CHECKED).not.toBe(line);
+    }
+    for (const lit of [
+      PLAN_FIELD_COPY.notGiven.text,
+      PLAN_FIELD_COPY.unavailable.text,
+      PLAN_FIELD_COPY.unrecognized.text,
+      '—',
+    ]) {
+      expect(PLAN_FIELDS_NOT_CHECKED).not.toBe(lit);
+    }
+    expect(PLAN_FIELDS_NOT_CHECKED.toLowerCase()).not.toMatch(
+      /\b(verified|confirmed|validated|approved|safe|trusted|grounding|hallucinated|suspect|invalid)\b/,
+    );
   });
 });
