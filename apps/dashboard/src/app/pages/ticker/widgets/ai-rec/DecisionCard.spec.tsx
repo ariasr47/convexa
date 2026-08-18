@@ -2,11 +2,15 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PLAN_FIELDS_NOT_CHECKED } from './copy';
 import { DecisionCard } from './DecisionCard';
 import {
   noTradeRec,
   recAllTraced,
+  recBlockAbsent,
   recFabricated,
+  recLocalRules,
+  recLocalRulesNothingCheckable,
   recNoneNamed,
   tradeRecNoRiskBlock,
 } from './fixtures';
@@ -62,6 +66,7 @@ describe('DecisionCard observable contract', () => {
       'decision-provenance',
       'decision-verdict',
       'decision-metadata',
+      'plan-fields-not-checked',
       'decision-thesis',
       'decision-grid',
       'decision-evidence',
@@ -268,5 +273,61 @@ describe('DecisionCard observable contract', () => {
     expect(screen.getByText('No trade — sit this one out')).toBeInTheDocument();
     expect(screen.queryByTestId('decision-grid')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Review simulated trade' })).toBeNull();
+  });
+});
+
+describe('plan-scope caption on DecisionCard', () => {
+  it('renders exactly one caption after decision-metadata on a non-local_rules trade', () => {
+    renderCard(recAllTraced());
+    const caption = screen.getByTestId('plan-fields-not-checked');
+    expect(caption).toHaveTextContent(PLAN_FIELDS_NOT_CHECKED);
+    expect(screen.getAllByTestId('plan-fields-not-checked')).toHaveLength(1);
+    const meta = screen.getByTestId('decision-metadata');
+    expect(meta.compareDocumentPosition(caption) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(meta.contains(caption)).toBe(false);
+    expect(caption.closest('[data-testid^="clause-"]')).toBeNull();
+    expect(caption.closest('[data-testid="grounding-card-line"]')).toBeNull();
+    expect(caption.closest('[data-testid="rec-not-actionable"]')).toBeNull();
+  });
+
+  it('sits before decision-thesis when a lead exists', () => {
+    const rec = recAllTraced();
+    rec.strategy!.rationale = 'Lead sentence. More detail follows.';
+    renderCard(rec);
+    const caption = screen.getByTestId('plan-fields-not-checked');
+    const thesis = screen.getByTestId('decision-thesis');
+    expect(caption.compareDocumentPosition(thesis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('uses quiet caption chrome (AC-17)', () => {
+    renderCard(recAllTraced());
+    const caption = screen.getByTestId('plan-fields-not-checked');
+    expect(caption.tagName.toLowerCase()).toBe('span'); // MUI Typography caption → span
+    expect(caption).toHaveTextContent(PLAN_FIELDS_NOT_CHECKED);
+  });
+
+  it('is absent on local_rules with shared_admin key_source (AC-2)', () => {
+    const rec = recLocalRules();
+    rec.key_source = 'shared_admin';
+    rec.remaining_free_uses = 1;
+    renderCard(rec);
+    expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();
+  });
+
+  it('is present on not_applicable (AC-2r) and missing grounding', () => {
+    renderCard(recLocalRulesNothingCheckable());
+    expect(screen.getByTestId('plan-fields-not-checked')).toBeInTheDocument();
+    cleanup();
+    renderCard(recBlockAbsent());
+    expect(screen.getByTestId('plan-fields-not-checked')).toBeInTheDocument();
+  });
+
+  it('is absent on no_trade and reserved dash treatment stays (AC-5)', () => {
+    renderCard(
+      noTradeRec(),
+      pres({ resultState: 'no_trade', actions: actions({ reviewTrade: false, createOrder: false }) }),
+    );
+    expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();
+    expect(screen.queryByTestId('decision-metadata')).toBeNull();
   });
 });

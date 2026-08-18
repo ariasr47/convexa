@@ -14,10 +14,12 @@ import {
   MAX_RISK_TIP,
   OWN_KEY_CHIP,
   PLAN_FIELD_LABEL,
+  PLAN_FIELDS_NOT_CHECKED,
   staleBornStrip,
   staleStrip,
   SUPERSEDED_STRIP,
 } from './copy';
+import { shouldShowPlanFieldsNotChecked } from './planScopeCaption';
 import { FigureClause } from './FigureClause';
 import { GroundingNote } from './GroundingNote';
 import {
@@ -322,6 +324,15 @@ export function DecisionCard({
         </Typography>
       </Box>
       {isTrade && <DecisionMetadata rec={rec} bundle={bundle} />}
+      {shouldShowPlanFieldsNotChecked(rec) && (
+        <Typography
+          variant="caption"
+          data-testid="plan-fields-not-checked"
+          sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
+        >
+          {PLAN_FIELDS_NOT_CHECKED}
+        </Typography>
+      )}
       {reasoning.lead && (
         <Typography
           data-testid="decision-thesis"
