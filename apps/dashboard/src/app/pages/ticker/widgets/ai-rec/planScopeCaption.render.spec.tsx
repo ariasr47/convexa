@@ -5,12 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AnalysisSurface } from './AnalysisSurface';
 import { DecisionCard } from './DecisionCard';
 import { PLAN_FIELDS_NOT_CHECKED, REASONING_PROSE_NOT_CHECKED } from './copy';
-import {
-  noTradeRec,
-  recAllTraced,
-  recLocalRules,
-  recLocalRulesNothingCheckable,
-} from './fixtures';
+import { noTradeRec, recAllTraced, recLocalRules, recLocalRulesNothingCheckable } from './fixtures';
 import type { AiRecPresentation } from './presentationPolicy';
 
 afterEach(cleanup);
@@ -105,5 +100,37 @@ describe('plan-scope caption · DOM integration (AC-1+2+2r+3+5)', () => {
       }),
     );
     expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();
+  });
+
+  it('AC-8 — re-render / parent update leaves caption and plan values unchanged', () => {
+    const rec = recAllTraced();
+    const view = renderCardAndAnalysis(rec);
+    const beforeCaption = screen.getByTestId('plan-fields-not-checked').textContent;
+    const beforeMeta = screen.getByTestId('decision-metadata').textContent;
+    view.rerender(
+      <ThemeProvider theme={theme}>
+        <DecisionCard
+          rec={rec}
+          bundle={null}
+          presentation={pres()}
+          dataAge="older data"
+          onReview={vi.fn()}
+          onCreateOrder={vi.fn()}
+          onAnalysis={vi.fn()}
+          onRefresh={vi.fn()}
+          onDismiss={vi.fn()}
+        />
+        <AnalysisSurface
+          open
+          ticker="TSLA"
+          rec={rec}
+          bundle={null}
+          onClose={vi.fn()}
+          onViewExport={vi.fn()}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('plan-fields-not-checked').textContent).toBe(beforeCaption);
+    expect(screen.getByTestId('decision-metadata').textContent).toBe(beforeMeta);
   });
 });

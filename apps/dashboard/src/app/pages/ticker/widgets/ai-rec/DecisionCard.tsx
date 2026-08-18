@@ -19,7 +19,6 @@ import {
   staleStrip,
   SUPERSEDED_STRIP,
 } from './copy';
-import { shouldShowPlanFieldsNotChecked } from './planScopeCaption';
 import { FigureClause } from './FigureClause';
 import { GroundingNote } from './GroundingNote';
 import {
@@ -29,6 +28,7 @@ import {
   type FieldLiteral,
   type PlanFieldLiteral,
 } from './literals';
+import { shouldShowPlanFieldsNotChecked } from './planScopeCaption';
 import type { AiRecPresentation } from './presentationPolicy';
 import { ProvenanceChip } from './ProvenanceChip';
 import { deriveReasoning } from './reasoning';

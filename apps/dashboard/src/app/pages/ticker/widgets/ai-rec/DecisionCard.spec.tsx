@@ -325,7 +325,10 @@ describe('plan-scope caption on DecisionCard', () => {
   it('is absent on no_trade and reserved dash treatment stays (AC-5)', () => {
     renderCard(
       noTradeRec(),
-      pres({ resultState: 'no_trade', actions: actions({ reviewTrade: false, createOrder: false }) }),
+      pres({
+        resultState: 'no_trade',
+        actions: actions({ reviewTrade: false, createOrder: false }),
+      }),
     );
     expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();
     expect(screen.queryByTestId('decision-metadata')).toBeNull();
