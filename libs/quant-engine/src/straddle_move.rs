@@ -174,7 +174,9 @@ fn tenor_move(contracts: &[Contract], anchor: f64, exp: &str, dte: i64) -> Optio
 
     let leg = |k: f64, side: ContractType| -> Option<&Contract> {
         contracts.iter().find(|c| {
-            c.expiration_key() == exp && (c.strike_price - k).abs() < 1e-6 && c.contract_type == side
+            c.expiration_key() == exp
+                && (c.strike_price - k).abs() < 1e-6
+                && c.contract_type == side
         })
     };
     let mid = |c: &Contract| -> Option<(f64, f64)> {
@@ -249,7 +251,8 @@ fn round4(x: f64) -> f64 {
 /// Invariant enforced: `tenors(move) subset-of tenors(candidates)` in any artifact carrying both.
 pub fn restrict_move_to_tenors(mv: &StraddleMove, allowed: &[String]) -> StraddleMove {
     let mut out = mv.clone();
-    out.tenors.retain(|t| allowed.iter().any(|e| e == &t.expiration));
+    out.tenors
+        .retain(|t| allowed.iter().any(|e| e == &t.expiration));
     out.primary_expiration = out.tenors.first().map(|t| t.expiration.clone());
     if out.tenors.is_empty() && out.state == StraddleMoveState::Ok {
         // Unreachable while the candidate set is non-empty (both sides use `select_tenors`), so
@@ -262,7 +265,11 @@ pub fn restrict_move_to_tenors(mv: &StraddleMove, allowed: &[String]) -> Straddl
 
 /// Assertion helper shared by the guard tests (`Err(expiration)` names the first violation).
 pub fn assert_tenor_subset(mv: &StraddleMove, allowed: &[String]) -> Result<(), String> {
-    match mv.tenors.iter().find(|t| !allowed.iter().any(|e| e == &t.expiration)) {
+    match mv
+        .tenors
+        .iter()
+        .find(|t| !allowed.iter().any(|e| e == &t.expiration))
+    {
         Some(t) => Err(t.expiration.clone()),
         None => Ok(()),
     }
@@ -274,29 +281,60 @@ mod tests {
     use crate::types::{ContractType, Greeks};
     use chrono::TimeZone;
 
-    fn q(strike: f64, side: ContractType, exp: &str, bid: Option<f64>, ask: Option<f64>, iv: f64) -> Contract {
+    fn q(
+        strike: f64,
+        side: ContractType,
+        exp: &str,
+        bid: Option<f64>,
+        ask: Option<f64>,
+        iv: f64,
+    ) -> Contract {
         Contract {
             strike_price: strike,
             contract_type: side,
             open_interest: 100.0,
             expiration_date: exp.into(),
             implied_volatility: iv,
-            greeks: Some(Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            greeks: Some(Greeks {
+                gamma: Some(0.01),
+                delta: Some(0.5),
+                theta: None,
+                vega: None,
+            }),
             volume: Some(10.0),
             bid,
             ask,
         }
     }
     fn meta() -> SnapshotMeta {
-        SnapshotMeta { as_of_iso: Some("2026-08-12T20:05:00Z".into()), session_basis: Some("after_close".into()) }
+        SnapshotMeta {
+            as_of_iso: Some("2026-08-12T20:05:00Z".into()),
+            session_basis: Some("after_close".into()),
+        }
     }
-    fn as_of() -> DateTime<Utc> { Utc.with_ymd_and_hms(2026, 8, 12, 20, 5, 0).unwrap() }
+    fn as_of() -> DateTime<Utc> {
+        Utc.with_ymd_and_hms(2026, 8, 12, 20, 5, 0).unwrap()
+    }
 
     #[test]
     fn market_basis_move_is_the_atm_straddle_mid() {
         let chain = vec![
-            q(100.0, ContractType::Call, "2026-09-18", Some(3.0), Some(3.4), 0.30),
-            q(100.0, ContractType::Put, "2026-09-18", Some(2.6), Some(3.0), 0.30),
+            q(
+                100.0,
+                ContractType::Call,
+                "2026-09-18",
+                Some(3.0),
+                Some(3.4),
+                0.30,
+            ),
+            q(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(2.6),
+                Some(3.0),
+                0.30,
+            ),
         ];
         let mv = compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
         assert_eq!(mv.state, StraddleMoveState::Ok);
@@ -312,8 +350,22 @@ mod tests {
     #[test]
     fn a_missing_leg_changes_the_basis_value_and_never_silently_substitutes() {
         let chain = vec![
-            q(100.0, ContractType::Call, "2026-09-18", Some(3.0), None, 0.30),
-            q(100.0, ContractType::Put, "2026-09-18", Some(2.6), Some(3.0), 0.30),
+            q(
+                100.0,
+                ContractType::Call,
+                "2026-09-18",
+                Some(3.0),
+                None,
+                0.30,
+            ),
+            q(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(2.6),
+                Some(3.0),
+                0.30,
+            ),
         ];
         let mv = compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
         assert_eq!(mv.tenors[0].basis, MoveBasis::IvDerivedEstimate);
@@ -336,10 +388,27 @@ mod tests {
     #[test]
     fn no_expiration_in_window_is_its_own_state() {
         let chain = vec![
-            q(100.0, ContractType::Call, "2026-09-18", Some(3.0), Some(3.4), 0.30),
-            q(100.0, ContractType::Put, "2026-09-18", Some(2.6), Some(3.0), 0.30),
+            q(
+                100.0,
+                ContractType::Call,
+                "2026-09-18",
+                Some(3.0),
+                Some(3.4),
+                0.30,
+            ),
+            q(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(2.6),
+                Some(3.0),
+                0.30,
+            ),
         ];
-        let w = DteWindow { min: Some(0.0), max: Some(3.0) };
+        let w = DteWindow {
+            min: Some(0.0),
+            max: Some(3.0),
+        };
         let mv = compute_straddle_move(&chain, 100.0, as_of(), w, &meta());
         assert_eq!(mv.state, StraddleMoveState::NoExpirationInWindow);
         assert!(mv.tenors.is_empty());
@@ -356,7 +425,14 @@ mod tests {
     fn at_most_three_tenors_ascending_and_sparse_ones_are_omitted_never_null() {
         let mut chain = Vec::new();
         for exp in ["2026-08-21", "2026-09-18", "2026-10-16", "2026-11-20"] {
-            chain.push(q(100.0, ContractType::Call, exp, Some(3.0), Some(3.4), 0.30));
+            chain.push(q(
+                100.0,
+                ContractType::Call,
+                exp,
+                Some(3.0),
+                Some(3.4),
+                0.30,
+            ));
             chain.push(q(100.0, ContractType::Put, exp, Some(2.6), Some(3.0), 0.30));
         }
         chain.push(q(100.0, ContractType::Call, "2026-12-18", None, None, 0.0)); // sparse: omitted
@@ -369,8 +445,22 @@ mod tests {
     #[test]
     fn a_wide_straddle_carries_the_marker_and_the_threshold_applied() {
         let chain = vec![
-            q(100.0, ContractType::Call, "2026-09-18", Some(2.0), Some(4.4), 0.30),
-            q(100.0, ContractType::Put, "2026-09-18", Some(2.0), Some(3.6), 0.30),
+            q(
+                100.0,
+                ContractType::Call,
+                "2026-09-18",
+                Some(2.0),
+                Some(4.4),
+                0.30,
+            ),
+            q(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(2.0),
+                Some(3.6),
+                0.30,
+            ),
         ];
         let mv = compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
         assert!(mv.tenors[0].wide_quotes);
@@ -384,7 +474,14 @@ mod tests {
     fn restricting_a_three_tenor_move_to_two_candidate_tenors_yields_exactly_two() {
         let mut chain = Vec::new();
         for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
-            chain.push(q(100.0, ContractType::Call, exp, Some(3.0), Some(3.4), 0.30));
+            chain.push(q(
+                100.0,
+                ContractType::Call,
+                exp,
+                Some(3.0),
+                Some(3.4),
+                0.30,
+            ));
             chain.push(q(100.0, ContractType::Put, exp, Some(2.6), Some(3.0), 0.30));
         }
         let mv = compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
@@ -398,8 +495,22 @@ mod tests {
     #[test]
     fn widening_the_restriction_makes_the_intersection_assertion_fail() {
         let chain = vec![
-            q(100.0, ContractType::Call, "2026-09-18", Some(3.0), Some(3.4), 0.30),
-            q(100.0, ContractType::Put, "2026-09-18", Some(2.6), Some(3.0), 0.30),
+            q(
+                100.0,
+                ContractType::Call,
+                "2026-09-18",
+                Some(3.0),
+                Some(3.4),
+                0.30,
+            ),
+            q(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(2.6),
+                Some(3.0),
+                0.30,
+            ),
         ];
         let mv = compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
         // Poison: check the subset assertion against an allowed list that does NOT contain the

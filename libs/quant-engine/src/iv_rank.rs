@@ -19,7 +19,8 @@ pub const N_MIN: usize = 20;
 pub const BAND_RICH_AT: f64 = 70.0;
 pub const BAND_CHEAP_BELOW: f64 = 30.0;
 
-const ADVISORY_NOTE: &str = "Advisory context - where current implied volatility sits within this ticker's \
+const ADVISORY_NOTE: &str =
+    "Advisory context - where current implied volatility sits within this ticker's \
 own recently-accumulated history. Not a forecast, not a scored signal, not a \
 guarantee.";
 
@@ -84,8 +85,16 @@ pub fn interpolate_cm30(points: &[TermStructurePoint]) -> Option<(f64, &'static 
         }
     }
 
-    let below: Vec<_> = clean.iter().copied().filter(|(d, _)| *d < CM30_TARGET_DTE).collect();
-    let above: Vec<_> = clean.iter().copied().filter(|(d, _)| *d > CM30_TARGET_DTE).collect();
+    let below: Vec<_> = clean
+        .iter()
+        .copied()
+        .filter(|(d, _)| *d < CM30_TARGET_DTE)
+        .collect();
+    let above: Vec<_> = clean
+        .iter()
+        .copied()
+        .filter(|(d, _)| *d > CM30_TARGET_DTE)
+        .collect();
 
     if let (Some(&(d0, iv0)), Some(&(d1, iv1))) = (below.last(), above.first()) {
         let frac = (CM30_TARGET_DTE - d0) / (d1 - d0);
@@ -94,14 +103,12 @@ pub fn interpolate_cm30(points: &[TermStructurePoint]) -> Option<(f64, &'static 
     }
 
     // All on one side → nearest tenor (no extrapolation).
-    let (dte, iv) = clean
-        .into_iter()
-        .min_by(|a, b| {
-            (a.0 - CM30_TARGET_DTE)
-                .abs()
-                .partial_cmp(&(b.0 - CM30_TARGET_DTE).abs())
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })?;
+    let (dte, iv) = clean.into_iter().min_by(|a, b| {
+        (a.0 - CM30_TARGET_DTE)
+            .abs()
+            .partial_cmp(&(b.0 - CM30_TARGET_DTE).abs())
+            .unwrap_or(std::cmp::Ordering::Equal)
+    })?;
     Some((iv, "nearest_tenor", dte))
 }
 
@@ -125,16 +132,15 @@ pub fn derive_cm30_sample(
     };
     let _ = spot; // presence gate only (Python checks spot > 0)
 
-    let (iv_value, iv_basis, basis_dte) =
-        if let Some(ts) = term_structure {
-            if let Some(r) = interpolate_cm30(&ts.points) {
-                r
-            } else {
-                fallback_atm(atm_iv_pct, atm_iv_dte)?
-            }
+    let (iv_value, iv_basis, basis_dte) = if let Some(ts) = term_structure {
+        if let Some(r) = interpolate_cm30(&ts.points) {
+            r
         } else {
             fallback_atm(atm_iv_pct, atm_iv_dte)?
-        };
+        }
+    } else {
+        fallback_atm(atm_iv_pct, atm_iv_dte)?
+    };
 
     if !(iv_value > 0.0) || !iv_value.is_finite() {
         return None;

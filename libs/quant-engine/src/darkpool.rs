@@ -172,16 +172,7 @@ pub fn analyze_off_exchange_default(
     block_min_shares: i64,
     now_ns: i64,
 ) -> Option<OffExchange> {
-    analyze_off_exchange(
-        trades,
-        spot,
-        5,
-        0.0025,
-        0.03,
-        block_min_shares,
-        5,
-        now_ns,
-    )
+    analyze_off_exchange(trades, spot, 5, 0.0025, 0.03, block_min_shares, 5, now_ns)
 }
 
 /// Map levels into the shape `generate_signals` expects for confluence.
@@ -227,7 +218,9 @@ mod tests {
     #[test]
     fn none_without_offex() {
         let trades = vec![tr(100.0, 100.0, false), tr(101.0, 200.0, false)];
-        assert!(analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).is_none());
+        assert!(
+            analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).is_none()
+        );
     }
 
     #[test]
@@ -238,7 +231,8 @@ mod tests {
             tr(105.0, 200.0, true),
             tr(100.0, 3000.0, false), // lit — total only
         ];
-        let ox = analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).unwrap();
+        let ox =
+            analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).unwrap();
         assert_eq!(ox.offex_shares, 1700);
         assert_eq!(ox.total_shares, 4700);
         assert!(ox.ratio_pct.unwrap() > 30.0 && ox.ratio_pct.unwrap() < 40.0);
@@ -254,7 +248,8 @@ mod tests {
             tr(110.0, 5500.0, true),
             tr(100.0, 100.0, true), // below threshold
         ];
-        let ox = analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).unwrap();
+        let ox =
+            analyze_off_exchange_default(&trades, 100.0, 5000, 1_700_000_100_000_000_000).unwrap();
         assert_eq!(ox.blocks.len(), 2);
         assert!(ox.blocks[0].notional >= ox.blocks[1].notional);
         assert_eq!(ox.block_min_shares, 5000);

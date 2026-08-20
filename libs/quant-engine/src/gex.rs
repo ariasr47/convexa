@@ -47,11 +47,7 @@ struct StrikeAcc {
 /// - Walls, peak GEX, net/call/put GEX, flip, DEX, and higher-order greeks use the
 ///   DTE / expiration **window**.
 /// - Output dollar aggregates are rounded to 2 decimal places (wire parity with Python).
-pub fn process_gex_profile(
-    contracts: &[Contract],
-    spot: f64,
-    options: &GexOptions,
-) -> GexResult {
+pub fn process_gex_profile(contracts: &[Contract], spot: f64, options: &GexOptions) -> GexResult {
     if contracts.is_empty() || spot <= 0.0 {
         return GexResult::empty();
     }
@@ -172,13 +168,7 @@ pub fn process_gex_profile(
 
         // Flip legs: only positive IV (matches prior filter)
         if contract.implied_volatility > 0.0 {
-            flip_legs.push(
-                strike,
-                t_years,
-                contract.implied_volatility,
-                oi,
-                side,
-            );
+            flip_legs.push(strike, t_years, contract.implied_volatility, oi, side);
         }
 
         // DEX
@@ -569,8 +559,26 @@ mod tests {
         let as_of = Utc.with_ymd_and_hms(2026, 8, 1, 15, 0, 0).unwrap();
         let exp = "2026-08-21";
         let contracts = vec![
-            mk(105.0, ContractType::Call, 1000.0, 0.02, 0.4, 0.25, exp, Some(50.0)),
-            mk(95.0, ContractType::Put, 200.0, 0.01, -0.3, 0.28, exp, Some(20.0)),
+            mk(
+                105.0,
+                ContractType::Call,
+                1000.0,
+                0.02,
+                0.4,
+                0.25,
+                exp,
+                Some(50.0),
+            ),
+            mk(
+                95.0,
+                ContractType::Put,
+                200.0,
+                0.01,
+                -0.3,
+                0.28,
+                exp,
+                Some(20.0),
+            ),
         ];
         let r = process_gex_profile_at(&contracts, 100.0, as_of);
 
@@ -592,8 +600,26 @@ mod tests {
         let near = "2026-08-21";
         let far = "2027-08-20";
         let contracts = vec![
-            mk(100.0, ContractType::Call, 100.0, 0.05, 0.5, 0.2, near, Some(10.0)),
-            mk(100.0, ContractType::Put, 900.0, 0.05, -0.5, 0.2, far, Some(10.0)),
+            mk(
+                100.0,
+                ContractType::Call,
+                100.0,
+                0.05,
+                0.5,
+                0.2,
+                near,
+                Some(10.0),
+            ),
+            mk(
+                100.0,
+                ContractType::Put,
+                900.0,
+                0.05,
+                -0.5,
+                0.2,
+                far,
+                Some(10.0),
+            ),
         ];
         let opts = GexOptions::default()
             .with_as_of(as_of)
@@ -611,7 +637,16 @@ mod tests {
         let exp = "2026-08-21";
         let mut bare = mk(100.0, ContractType::Call, 500.0, 0.0, 0.5, 0.2, exp, None);
         bare.greeks = None;
-        let priced = mk(100.0, ContractType::Put, 100.0, 0.02, -0.4, 0.25, exp, Some(5.0));
+        let priced = mk(
+            100.0,
+            ContractType::Put,
+            100.0,
+            0.02,
+            -0.4,
+            0.25,
+            exp,
+            Some(5.0),
+        );
         let r = process_gex_profile_at(&[bare, priced], 100.0, as_of);
         assert!(r.net_gex < 0.0);
         assert!((r.put_call_ratio - 0.2).abs() < 0.01);

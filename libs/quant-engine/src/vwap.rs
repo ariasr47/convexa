@@ -44,7 +44,15 @@ pub struct IntradayBar {
 impl IntradayBar {
     /// Build from ET Y-M-D and clock time.
     #[inline]
-    pub fn from_et(year: i32, month: u32, day: u32, hour: u32, minute: u32, vw: f64, v: f64) -> Self {
+    pub fn from_et(
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        vw: f64,
+        v: f64,
+    ) -> Self {
         Self {
             session_ymd: session_key(year, month, day),
             minute_of_day: (hour * 60 + minute) as u16,
@@ -90,7 +98,11 @@ fn is_rth(minute_of_day: u16) -> bool {
 /// Compute session-anchored VWAP bands from 1-minute bars.
 ///
 /// Returns `None` when no session has enough RTH bars (caller emits null fields).
-pub fn calculate_vwap_bands(bars: &[IntradayBar], regular_hours_only: bool, min_bars: usize) -> Option<VwapBands> {
+pub fn calculate_vwap_bands(
+    bars: &[IntradayBar],
+    regular_hours_only: bool,
+    min_bars: usize,
+) -> Option<VwapBands> {
     if bars.is_empty() || min_bars == 0 {
         return None;
     }
@@ -104,10 +116,7 @@ pub fn calculate_vwap_bands(bars: &[IntradayBar], regular_hours_only: bool, min_
         if regular_hours_only && !is_rth(b.minute_of_day) {
             continue;
         }
-        sessions
-            .entry(b.session_ymd)
-            .or_default()
-            .push((b.vw, b.v));
+        sessions.entry(b.session_ymd).or_default().push((b.vw, b.v));
     }
 
     // Latest session (max ymd key) with enough bars.
@@ -193,9 +202,7 @@ mod tests {
     #[test]
     fn equal_price_zero_sigma() {
         let s = session_key(2026, 8, 7);
-        let bars: Vec<_> = (0..15)
-            .map(|i| bar(s, 10, i, 100.0, 500.0))
-            .collect();
+        let bars: Vec<_> = (0..15).map(|i| bar(s, 10, i, 100.0, 500.0)).collect();
         let b = calculate_vwap_bands_default(&bars).unwrap();
         assert!((b.vwap - 100.0).abs() < 1e-9);
         assert!((b.vwap_upper_2 - 100.0).abs() < 1e-9);
@@ -228,9 +235,7 @@ mod tests {
     fn prefers_latest_session_with_enough_bars() {
         let old = session_key(2026, 8, 6);
         let new = session_key(2026, 8, 7);
-        let mut bars: Vec<_> = (0..20)
-            .map(|i| bar(old, 10, i, 90.0, 100.0))
-            .collect();
+        let mut bars: Vec<_> = (0..20).map(|i| bar(old, 10, i, 90.0, 100.0)).collect();
         // New session sparse → fall back to old
         bars.push(bar(new, 10, 0, 200.0, 100.0));
         let b = calculate_vwap_bands_default(&bars).unwrap();
@@ -261,9 +266,7 @@ mod tests {
     #[test]
     fn includes_1600_bar() {
         let s = session_key(2026, 8, 7);
-        let mut bars: Vec<_> = (0..10)
-            .map(|i| bar(s, 15, 50 + i, 100.0, 100.0))
-            .collect();
+        let mut bars: Vec<_> = (0..10).map(|i| bar(s, 15, 50 + i, 100.0, 100.0)).collect();
         bars.push(bar(s, 16, 0, 110.0, 1000.0)); // 16:00 inclusive
         let b = calculate_vwap_bands_default(&bars).unwrap();
         assert!(b.vwap > 100.0); // pulled up by 16:00 volume

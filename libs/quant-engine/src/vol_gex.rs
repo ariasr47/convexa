@@ -106,7 +106,10 @@ pub fn vol_normalize_gex(
     hv_30d: Option<HvPercent>,
 ) -> Option<VolNormalizedGex> {
     let (vol, basis) = resolve_vol_scalar(atm_iv, hv_30d)?;
-    if !net_gex.is_finite() || !call_gex.is_finite() || !put_gex.is_finite() || !total_gex.is_finite()
+    if !net_gex.is_finite()
+        || !call_gex.is_finite()
+        || !put_gex.is_finite()
+        || !total_gex.is_finite()
     {
         return None;
     }

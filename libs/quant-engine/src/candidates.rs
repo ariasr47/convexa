@@ -118,7 +118,11 @@ pub struct DropLedger {
 }
 impl DropLedger {
     pub fn total(&self) -> u32 {
-        self.outside_window + self.outside_band + self.no_interest + self.expiration_cap + self.strike_cap
+        self.outside_window
+            + self.outside_band
+            + self.no_interest
+            + self.expiration_cap
+            + self.strike_cap
     }
 }
 
@@ -188,7 +192,9 @@ impl CandidateSet {
         self.budget
     }
     pub fn has_quoted_contract(&self) -> bool {
-        self.contracts.iter().any(|c| c.quote_presence == QuotePresence::Quoted)
+        self.contracts
+            .iter()
+            .any(|c| c.quote_presence == QuotePresence::Quoted)
     }
 
     /// A stated failure — never an error, never a null.
@@ -209,7 +215,11 @@ impl CandidateSet {
             budget,
             sent_to_model,
             caps: budget.caps(),
-            included: IncludedBlock { contracts: 0, expirations: Vec::new(), expiration_count: 0 },
+            included: IncludedBlock {
+                contracts: 0,
+                expirations: Vec::new(),
+                expiration_count: 0,
+            },
             omitted: OmittedBlock {
                 total: 0,
                 expirations_omitted_by_cap: 0,
@@ -236,7 +246,16 @@ impl CandidateSet {
         sent_to_model: bool,
         meta: &SnapshotMeta,
     ) -> Self {
-        Self::build_with_caps(contracts, anchor_spot, as_of, window, budget, budget.caps(), sent_to_model, meta)
+        Self::build_with_caps(
+            contracts,
+            anchor_spot,
+            as_of,
+            window,
+            budget,
+            budget.caps(),
+            sent_to_model,
+            meta,
+        )
     }
 
     /// Test-only seam: same algorithm with an overridden cap set, so a poison test can prove the
@@ -285,13 +304,19 @@ impl CandidateSet {
                 ledger.no_interest += 1;
                 continue;
             }
-            kept.push(Kept { c, dte, distance_pct });
+            kept.push(Kept {
+                c,
+                dte,
+                distance_pct,
+            });
         }
 
         // Step 3: tenor selection — THE SAME function the move uses.
         let mut by_exp: BTreeMap<String, i64> = BTreeMap::new();
         for k in &kept {
-            by_exp.entry(k.c.expiration_key().to_string()).or_insert(k.dte);
+            by_exp
+                .entry(k.c.expiration_key().to_string())
+                .or_insert(k.dte);
         }
         let distinct_kept = by_exp.len();
         let selected_tenors = select_tenors(by_exp.into_iter().collect(), window, caps.tenors);
@@ -312,7 +337,10 @@ impl CandidateSet {
         // strike first), keep `strikes_per_tenor_right`, rest ⇒ strike_cap.
         let mut groups: BTreeMap<(String, bool), Vec<Kept>> = BTreeMap::new();
         for k in kept2 {
-            let key = (k.c.expiration_key().to_string(), k.c.contract_type.is_call());
+            let key = (
+                k.c.expiration_key().to_string(),
+                k.c.contract_type.is_call(),
+            );
             groups.entry(key).or_default().push(k);
         }
         let mut group_list: Vec<((String, bool), Vec<Kept>)> = groups.into_iter().collect();
@@ -322,7 +350,11 @@ impl CandidateSet {
                     .abs()
                     .partial_cmp(&b.distance_pct.abs())
                     .unwrap_or(std::cmp::Ordering::Equal)
-                    .then_with(|| a.c.strike_price.partial_cmp(&b.c.strike_price).unwrap_or(std::cmp::Ordering::Equal))
+                    .then_with(|| {
+                        a.c.strike_price
+                            .partial_cmp(&b.c.strike_price)
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
             });
             if rows.len() > caps.strikes_per_tenor_right {
                 let overflow = rows.split_off(caps.strikes_per_tenor_right);
@@ -364,7 +396,11 @@ impl CandidateSet {
                 .cmp(&b.dte)
                 .then_with(|| a.expiration.cmp(&b.expiration))
                 .then_with(|| b.right.is_call().cmp(&a.right.is_call()))
-                .then_with(|| a.strike.partial_cmp(&b.strike).unwrap_or(std::cmp::Ordering::Equal))
+                .then_with(|| {
+                    a.strike
+                        .partial_cmp(&b.strike)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
         });
 
         let mut exp_seen: Vec<(String, i64)> = Vec::new();
@@ -377,7 +413,10 @@ impl CandidateSet {
         let expiration_count = exp_seen.len() as u32;
         let expirations: Vec<String> = exp_seen.into_iter().map(|(e, _)| e).collect();
 
-        let quoted = final_rows.iter().filter(|c| c.quote_presence == QuotePresence::Quoted).count() as u32;
+        let quoted = final_rows
+            .iter()
+            .filter(|c| c.quote_presence == QuotePresence::Quoted)
+            .count() as u32;
         let no_two_sided = final_rows.len() as u32 - quoted;
 
         let atm_relative_spread_band = primary_exp
@@ -386,7 +425,12 @@ impl CandidateSet {
                 final_rows
                     .iter()
                     .filter(|c| c.expiration == exp && c.quote_presence == QuotePresence::Quoted)
-                    .min_by(|a, b| a.distance_pct.abs().partial_cmp(&b.distance_pct.abs()).unwrap_or(std::cmp::Ordering::Equal))
+                    .min_by(|a, b| {
+                        a.distance_pct
+                            .abs()
+                            .partial_cmp(&b.distance_pct.abs())
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    })
             })
             .and_then(|row| row.spread_pct_of_mid)
             .map(|pct| {
@@ -420,7 +464,11 @@ impl CandidateSet {
             budget,
             sent_to_model,
             caps,
-            included: IncludedBlock { contracts: included_count, expirations, expiration_count },
+            included: IncludedBlock {
+                contracts: included_count,
+                expirations,
+                expiration_count,
+            },
             omitted: OmittedBlock {
                 total: ledger.total(),
                 expirations_omitted_by_cap,
@@ -475,7 +523,11 @@ fn map_row(c: &Contract, dte: i64, distance_pct: f64) -> CandidateContract {
         (Some(b), Some(a)) if a >= b => {
             let mid = (a + b) / 2.0;
             let spread_abs = a - b;
-            let spread_pct = if mid > 0.0 { Some(round4(spread_abs / mid * 100.0)) } else { None };
+            let spread_pct = if mid > 0.0 {
+                Some(round4(spread_abs / mid * 100.0))
+            } else {
+                None
+            };
             (
                 QuotePresence::Quoted,
                 Some(b),
@@ -494,10 +546,26 @@ fn map_row(c: &Contract, dte: i64, distance_pct: f64) -> CandidateContract {
         IvState::Priced
     };
     let (iv, greeks) = if iv_state == IvState::Unpriced {
-        (None, CandidateGreeks { delta: None, gamma: None, theta: None, vega: None })
+        (
+            None,
+            CandidateGreeks {
+                delta: None,
+                gamma: None,
+                theta: None,
+                vega: None,
+            },
+        )
     } else {
         let g: Greeks = c.greeks.unwrap_or_default();
-        (Some(c.implied_volatility), CandidateGreeks { delta: g.delta, gamma: g.gamma, theta: g.theta, vega: g.vega })
+        (
+            Some(c.implied_volatility),
+            CandidateGreeks {
+                delta: g.delta,
+                gamma: g.gamma,
+                theta: g.theta,
+                vega: g.vega,
+            },
+        )
     };
     CandidateContract {
         expiration: c.expiration_key().to_string(),
@@ -535,7 +603,10 @@ mod tests {
     }
 
     fn meta() -> SnapshotMeta {
-        SnapshotMeta { as_of_iso: Some("2026-08-12T20:05:00Z".into()), session_basis: Some("after_close".into()) }
+        SnapshotMeta {
+            as_of_iso: Some("2026-08-12T20:05:00Z".into()),
+            session_basis: Some("after_close".into()),
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -557,9 +628,19 @@ mod tests {
             expiration_date: exp.into(),
             implied_volatility: iv,
             greeks: Some(if has_greeks {
-                Greeks { gamma: Some(0.01), delta: Some(0.5), theta: Some(-0.02), vega: Some(0.1) }
+                Greeks {
+                    gamma: Some(0.01),
+                    delta: Some(0.5),
+                    theta: Some(-0.02),
+                    vega: Some(0.1),
+                }
             } else {
-                Greeks { gamma: None, delta: None, theta: None, vega: None }
+                Greeks {
+                    gamma: None,
+                    delta: None,
+                    theta: None,
+                    vega: None,
+                }
             }),
             volume: vol,
             bid,
@@ -568,7 +649,17 @@ mod tests {
     }
 
     fn quoted(strike: f64, side: ContractType, exp: &str) -> Contract {
-        mk(strike, side, exp, Some(1.0), Some(1.2), 0.3, 100.0, Some(10.0), true)
+        mk(
+            strike,
+            side,
+            exp,
+            Some(1.0),
+            Some(1.2),
+            0.3,
+            100.0,
+            Some(10.0),
+            true,
+        )
     }
 
     #[test]
@@ -584,9 +675,22 @@ mod tests {
                 chain.push(quoted(strike, ContractType::Put, exp));
             }
         }
-        let caps = CandidateCaps { tenors: 4, rights: 2, strikes_per_tenor_right: 99, max_records: 64, max_bytes: 24_000 };
+        let caps = CandidateCaps {
+            tenors: 4,
+            rights: 2,
+            strikes_per_tenor_right: 99,
+            max_records: 64,
+            max_bytes: 24_000,
+        };
         let set = CandidateSet::build_with_caps(
-            &chain, 100.0, as_of(), DteWindow::default(), CandidateBudget::Handoff, caps, false, &meta(),
+            &chain,
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Handoff,
+            caps,
+            false,
+            &meta(),
         );
         assert!(set.contracts.len() <= caps.max_records);
         assert!(serde_json::to_vec(&set.contracts).unwrap().len() <= caps.max_bytes);
@@ -605,11 +709,28 @@ mod tests {
                 chain.push(quoted(strike, ContractType::Put, exp));
             }
         }
-        let caps = CandidateCaps { tenors: 4, rights: 2, strikes_per_tenor_right: 99, max_records: 64, max_bytes: 24_000 };
+        let caps = CandidateCaps {
+            tenors: 4,
+            rights: 2,
+            strikes_per_tenor_right: 99,
+            max_records: 64,
+            max_bytes: 24_000,
+        };
         let set = CandidateSet::build_with_caps(
-            &chain, 100.0, as_of(), DteWindow::default(), CandidateBudget::Handoff, caps, false, &meta(),
+            &chain,
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Handoff,
+            caps,
+            false,
+            &meta(),
         );
-        assert!(set.contracts.len() <= 64, "record ceiling must still bind at {} rows", set.contracts.len());
+        assert!(
+            set.contracts.len() <= 64,
+            "record ceiling must still bind at {} rows",
+            set.contracts.len()
+        );
     }
 
     #[test]
@@ -618,7 +739,13 @@ mod tests {
         // In band, in window, has interest: kept.
         for i in 0..300 {
             let strike = 100.0 + (i % 20) as f64 * 0.1;
-            let exp = ["2026-08-21", "2026-09-18", "2026-10-16", "2026-11-20", "2026-12-18"][i % 5];
+            let exp = [
+                "2026-08-21",
+                "2026-09-18",
+                "2026-10-16",
+                "2026-11-20",
+                "2026-12-18",
+            ][i % 5];
             chain.push(quoted(strike, ContractType::Call, exp));
         }
         // Outside band.
@@ -627,7 +754,17 @@ mod tests {
         }
         // No interest (zero OI, zero volume).
         for _ in 0..200 {
-            chain.push(mk(100.0, ContractType::Put, "2026-09-18", Some(1.0), Some(1.1), 0.3, 0.0, Some(0.0), true));
+            chain.push(mk(
+                100.0,
+                ContractType::Put,
+                "2026-09-18",
+                Some(1.0),
+                Some(1.1),
+                0.3,
+                0.0,
+                Some(0.0),
+                true,
+            ));
         }
         // Outside window (far expiration, past a tight window bound below).
         for _ in 0..200 {
@@ -635,7 +772,16 @@ mod tests {
         }
         assert_eq!(chain.len(), 900);
         let set = CandidateSet::build(
-            &chain, 100.0, as_of(), DteWindow { min: None, max: Some(200.0) }, CandidateBudget::Handoff, false, &meta(),
+            &chain,
+            100.0,
+            as_of(),
+            DteWindow {
+                min: None,
+                max: Some(200.0),
+            },
+            CandidateBudget::Handoff,
+            false,
+            &meta(),
         );
         assert_eq!(set.included.contracts + set.omitted.total, 900);
     }
@@ -643,9 +789,28 @@ mod tests {
     #[test]
     fn drop_reasons_are_evaluated_in_fixed_order_and_each_row_counted_once() {
         // Outside the window AND outside the band AND no interest — must count ONLY outside_window.
-        let c = mk(500.0, ContractType::Call, "2099-01-01", None, None, 0.0, 0.0, Some(0.0), false);
+        let c = mk(
+            500.0,
+            ContractType::Call,
+            "2099-01-01",
+            None,
+            None,
+            0.0,
+            0.0,
+            Some(0.0),
+            false,
+        );
         let set = CandidateSet::build(
-            &[c], 100.0, as_of(), DteWindow { min: None, max: Some(30.0) }, CandidateBudget::Handoff, false, &meta(),
+            &[c],
+            100.0,
+            as_of(),
+            DteWindow {
+                min: None,
+                max: Some(30.0),
+            },
+            CandidateBudget::Handoff,
+            false,
+            &meta(),
         );
         assert_eq!(set.omitted.by_reason.outside_window, 1);
         assert_eq!(set.omitted.by_reason.outside_band, 0);
@@ -655,18 +820,57 @@ mod tests {
 
     #[test]
     fn a_zero_bid_row_is_included_as_no_two_sided_quote_and_never_claims_no_quote_existed() {
-        let c = mk(100.0, ContractType::Call, "2026-09-18", None, None, 0.3, 100.0, Some(10.0), true);
-        let set = CandidateSet::build(&[c], 100.0, as_of(), DteWindow::default(), CandidateBudget::Handoff, false, &meta());
+        let c = mk(
+            100.0,
+            ContractType::Call,
+            "2026-09-18",
+            None,
+            None,
+            0.3,
+            100.0,
+            Some(10.0),
+            true,
+        );
+        let set = CandidateSet::build(
+            &[c],
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Handoff,
+            false,
+            &meta(),
+        );
         assert_eq!(set.contracts.len(), 1);
-        assert_eq!(set.contracts[0].quote_presence, QuotePresence::NoTwoSidedQuote);
+        assert_eq!(
+            set.contracts[0].quote_presence,
+            QuotePresence::NoTwoSidedQuote
+        );
         assert!(set.contracts[0].bid.is_none());
         assert!(set.contracts[0].ask.is_none());
     }
 
     #[test]
     fn a_greeks_absent_row_carries_unpriced_and_ships_no_zero_iv_or_greek() {
-        let c = mk(100.0, ContractType::Call, "2026-09-18", Some(1.0), Some(1.2), 0.0, 100.0, Some(10.0), false);
-        let set = CandidateSet::build(&[c], 100.0, as_of(), DteWindow::default(), CandidateBudget::Handoff, false, &meta());
+        let c = mk(
+            100.0,
+            ContractType::Call,
+            "2026-09-18",
+            Some(1.0),
+            Some(1.2),
+            0.0,
+            100.0,
+            Some(10.0),
+            false,
+        );
+        let set = CandidateSet::build(
+            &[c],
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Handoff,
+            false,
+            &meta(),
+        );
         let row = &set.contracts[0];
         assert_eq!(row.iv_state, IvState::Unpriced);
         assert!(row.iv.is_none());
@@ -676,8 +880,26 @@ mod tests {
 
     #[test]
     fn zero_oi_and_zero_volume_rows_are_dropped_as_no_interest_before_any_cap() {
-        let c = mk(100.0, ContractType::Call, "2026-09-18", Some(1.0), Some(1.2), 0.3, 0.0, Some(0.0), true);
-        let set = CandidateSet::build(&[c], 100.0, as_of(), DteWindow::default(), CandidateBudget::Handoff, false, &meta());
+        let c = mk(
+            100.0,
+            ContractType::Call,
+            "2026-09-18",
+            Some(1.0),
+            Some(1.2),
+            0.3,
+            0.0,
+            Some(0.0),
+            true,
+        );
+        let set = CandidateSet::build(
+            &[c],
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Handoff,
+            false,
+            &meta(),
+        );
         assert_eq!(set.omitted.by_reason.no_interest, 1);
         assert_eq!(set.contracts.len(), 0);
     }
@@ -685,8 +907,24 @@ mod tests {
     #[test]
     fn ranking_is_nearest_to_anchor_not_liquidity() {
         // A far-but-liquid strike must lose to a near-but-illiquid one when the group cap trims.
-        let caps = CandidateCaps { tenors: 4, rights: 2, strikes_per_tenor_right: 1, max_records: 64, max_bytes: 24_000 };
-        let near_illiquid = mk(100.0, ContractType::Call, "2026-09-18", None, None, 0.0, 1.0, Some(0.0), false);
+        let caps = CandidateCaps {
+            tenors: 4,
+            rights: 2,
+            strikes_per_tenor_right: 1,
+            max_records: 64,
+            max_bytes: 24_000,
+        };
+        let near_illiquid = mk(
+            100.0,
+            ContractType::Call,
+            "2026-09-18",
+            None,
+            None,
+            0.0,
+            1.0,
+            Some(0.0),
+            false,
+        );
         let far_liquid = quoted(105.0, ContractType::Call, "2026-09-18");
         let set = CandidateSet::build_with_caps(
             &[near_illiquid, far_liquid],
@@ -710,11 +948,27 @@ mod tests {
             chain.push(quoted(100.0, ContractType::Call, exp));
             chain.push(quoted(100.0, ContractType::Put, exp));
         }
-        let mv = crate::straddle_move::compute_straddle_move(&chain, 100.0, as_of(), DteWindow::default(), &meta());
+        let mv = crate::straddle_move::compute_straddle_move(
+            &chain,
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            &meta(),
+        );
         // Prompt budget caps tenors at 2 — narrower than the move's up-to-3 — yet the PRIMARY
         // (nearest) tenor must still land in the candidate block by construction (same selector).
-        let set = CandidateSet::build(&chain, 100.0, as_of(), DteWindow::default(), CandidateBudget::Prompt, true, &meta());
-        let primary = mv.primary_expiration.expect("move should resolve a primary tenor");
+        let set = CandidateSet::build(
+            &chain,
+            100.0,
+            as_of(),
+            DteWindow::default(),
+            CandidateBudget::Prompt,
+            true,
+            &meta(),
+        );
+        let primary = mv
+            .primary_expiration
+            .expect("move should resolve a primary tenor");
         assert!(set.included_expirations().iter().any(|e| e == &primary));
     }
 }

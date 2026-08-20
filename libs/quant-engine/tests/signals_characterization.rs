@@ -68,10 +68,7 @@ fn signals_byte_identical_to_python_fixtures() {
             }
         }
 
-        let actual = generate_signals(
-            &fx.inputs.market_state,
-            fx.inputs.off_exchange.as_ref(),
-        );
+        let actual = generate_signals(&fx.inputs.market_state, fx.inputs.off_exchange.as_ref());
         let mut actual_v = serde_json::to_value(&actual).unwrap();
         // Additive explainability field — not in Python goldens.
         if let Some(obj) = actual_v.as_object_mut() {

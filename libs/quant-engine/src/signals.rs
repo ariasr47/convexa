@@ -419,11 +419,7 @@ pub fn generate_signals(
                 conviction: if buy_prem { "high" } else { "medium" }.into(),
             });
         }
-        if setups.is_empty()
-            || setups
-                .iter()
-                .all(|s| s.name == "Gamma-flip transition")
-        {
+        if setups.is_empty() || setups.iter().all(|s| s.name == "Gamma-flip transition") {
             setups.push(Setup {
                 name: "Trend regime".into(),
                 bias: "directional".into(),

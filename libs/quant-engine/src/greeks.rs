@@ -46,15 +46,7 @@ pub fn calc_vanna(d1: f64, d2: f64, sigma: f64, t: f64, q: f64) -> f64 {
 }
 
 /// Charm = −∂Δ/∂t (daily delta bleed), generalized via b = r − q.
-pub fn calc_charm(
-    side: ContractType,
-    t: f64,
-    r: f64,
-    sigma: f64,
-    d1: f64,
-    d2: f64,
-    q: f64,
-) -> f64 {
+pub fn calc_charm(side: ContractType, t: f64, r: f64, sigma: f64, d1: f64, d2: f64, q: f64) -> f64 {
     let b = r - q;
     let carry = libm::exp((b - r) * t); // e^{−q t}
     let base = norm_pdf(d1) * ((b / (sigma * t.sqrt())) - (d2 / (2.0 * t)));
@@ -145,7 +137,10 @@ pub fn fsum(xs: &[f64]) -> f64 {
 
 /// Time to expiry as a fraction of a 365-day year from `as_of` to the expiration date
 /// (expiry treated as UTC midnight of that calendar day).
-pub fn time_to_expiry_years(expiry: chrono::NaiveDate, as_of: chrono::DateTime<chrono::Utc>) -> f64 {
+pub fn time_to_expiry_years(
+    expiry: chrono::NaiveDate,
+    as_of: chrono::DateTime<chrono::Utc>,
+) -> f64 {
     let expiry_dt = expiry
         .and_hms_opt(0, 0, 0)
         .map(|ndt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(ndt, chrono::Utc));

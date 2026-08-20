@@ -233,8 +233,10 @@ fn wilder_rsi(closes: &[f64], period: usize) -> Option<f64> {
     if deltas.len() < period {
         return None;
     }
-    let mut avg_gain: f64 = deltas[..period].iter().map(|d| d.max(0.0)).sum::<f64>() / period as f64;
-    let mut avg_loss: f64 = deltas[..period].iter().map(|d| (-d).max(0.0)).sum::<f64>() / period as f64;
+    let mut avg_gain: f64 =
+        deltas[..period].iter().map(|d| d.max(0.0)).sum::<f64>() / period as f64;
+    let mut avg_loss: f64 =
+        deltas[..period].iter().map(|d| (-d).max(0.0)).sum::<f64>() / period as f64;
     for &d in &deltas[period..] {
         avg_gain = (avg_gain * (period as f64 - 1.0) + d.max(0.0)) / period as f64;
         avg_loss = (avg_loss * (period as f64 - 1.0) + (-d).max(0.0)) / period as f64;
@@ -331,8 +333,11 @@ fn strength_read(daily_bars: &[DailyBar]) -> Option<TrendStrengthRead> {
     let mut lows = Vec::new();
     let mut closes = Vec::new();
     for b in daily_bars.iter().rev() {
-        let (Some(h), Some(l), Some(c)) = (b.high.and_then(finite), b.low.and_then(finite), b.close.and_then(finite))
-        else {
+        let (Some(h), Some(l), Some(c)) = (
+            b.high.and_then(finite),
+            b.low.and_then(finite),
+            b.close.and_then(finite),
+        ) else {
             break;
         };
         highs.push(h);
@@ -412,7 +417,10 @@ fn trend_momentum(daily_bars: &[DailyBar]) -> Option<TrendMomentumRead> {
     })
 }
 
-fn gex_profile_shape(strike_profile: &[StrikeProfileRow], gex_spot: f64) -> Option<GexProfileShapeRead> {
+fn gex_profile_shape(
+    strike_profile: &[StrikeProfileRow],
+    gex_spot: f64,
+) -> Option<GexProfileShapeRead> {
     let spot = finite(gex_spot).filter(|&s| s > 0.0)?;
     let mut rows: Vec<(f64, f64)> = Vec::new();
     for r in strike_profile {
@@ -436,8 +444,16 @@ fn gex_profile_shape(strike_profile: &[StrikeProfileRow], gex_spot: f64) -> Opti
     let mut concentration = (hhi_raw - 1.0 / n_f) / (1.0 - 1.0 / n_f);
     concentration = concentration.clamp(0.0, 1.0);
 
-    let above: f64 = rows.iter().filter(|(k, _)| *k > spot).map(|(_, w)| *w).sum();
-    let below: f64 = rows.iter().filter(|(k, _)| *k < spot).map(|(_, w)| *w).sum();
+    let above: f64 = rows
+        .iter()
+        .filter(|(k, _)| *k > spot)
+        .map(|(_, w)| *w)
+        .sum();
+    let below: f64 = rows
+        .iter()
+        .filter(|(k, _)| *k < spot)
+        .map(|(_, w)| *w)
+        .sum();
     let side_total = above + below;
     if side_total <= 0.0 {
         return None;
@@ -648,7 +664,12 @@ mod tests {
         (0..n)
             .map(|i| {
                 let c = 100.0 + i as f64 * 0.5;
-                bar(c, c + 1.0, c - 1.0, &format!("2025-{:02}-{:02}", 1 + i / 28, 1 + i % 28))
+                bar(
+                    c,
+                    c + 1.0,
+                    c - 1.0,
+                    &format!("2025-{:02}-{:02}", 1 + i / 28, 1 + i % 28),
+                )
             })
             .collect()
     }

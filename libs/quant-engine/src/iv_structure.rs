@@ -314,13 +314,7 @@ mod tests {
     use crate::types::Greeks;
     use chrono::TimeZone;
 
-    fn c(
-        strike: f64,
-        side: ContractType,
-        exp: &str,
-        iv: f64,
-        delta: Option<f64>,
-    ) -> Contract {
+    fn c(strike: f64, side: ContractType, exp: &str, iv: f64, delta: Option<f64>) -> Contract {
         Contract {
             strike_price: strike,
             contract_type: side,

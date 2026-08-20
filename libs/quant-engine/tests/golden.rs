@@ -187,12 +187,7 @@ fn assert_strike(name: &str, got: f64, exp: f64, tol: &ParityTolerances) {
     );
 }
 
-fn assert_opt_aggregate(
-    name: &str,
-    got: Option<f64>,
-    exp: Option<f64>,
-    tol: &ParityTolerances,
-) {
+fn assert_opt_aggregate(name: &str, got: Option<f64>, exp: Option<f64>, tol: &ParityTolerances) {
     match (got, exp) {
         (None, None) => {}
         (Some(g), Some(e)) => assert_aggregate(name, g, e, tol),
@@ -365,9 +360,7 @@ fn run_fixture(path: &std::path::Path) {
 fn golden_fixtures_if_present() {
     let paths = load_golden_paths();
     if paths.is_empty() {
-        eprintln!(
-            "quant-engine golden: no tests/fixtures/gex_*.json yet — skipping parity checks"
-        );
+        eprintln!("quant-engine golden: no tests/fixtures/gex_*.json yet — skipping parity checks");
         return;
     }
     for p in &paths {

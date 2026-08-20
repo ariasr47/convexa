@@ -35,6 +35,11 @@ pub mod vol_gex;
 pub mod vol_units;
 pub mod vwap;
 
+pub use candidates::{
+    CandidateBudget, CandidateCaps, CandidateContract, CandidateGreeks, CandidateLiquidity,
+    CandidateSet, CandidateSetState, DropLedger, IncludedBlock, IvState, OmittedBlock,
+    QuotePresence, SpreadBand, BAND_PCT, SPREAD_TIGHT_PCT,
+};
 pub use context_pack::{compute_market_context, DailyBar, MarketContextPack};
 pub use darkpool::{
     analyze_off_exchange, analyze_off_exchange_default, off_exchange_signal_input, BlockPrint,
@@ -50,13 +55,9 @@ pub use iv_structure::{
     compute_iv_skew, compute_iv_structure, compute_term_structure, IvSkew, SkewReference,
     TermState, TermStructure, TermStructurePoint,
 };
-pub use vwap::{
-    calculate_vwap_bands, calculate_vwap_bands_default, session_key, IntradayBar, VwapBands,
-    VWAP_MIN_BARS,
-};
 pub use signals::{
     compute_opportunity_tier, evaluate_gate, generate_signals, market_state_from_gex,
-    state_fingerprint, GateEval, MarketStateInput, OffExchangeInput, ScoreDrivers, Signals, Setup,
+    state_fingerprint, GateEval, MarketStateInput, OffExchangeInput, ScoreDrivers, Setup, Signals,
     DEFAULT_GATE_SCORE,
 };
 pub use simd::gex_kernel_name;
@@ -69,10 +70,9 @@ pub use types::{
     Contract, ContractType, DealerFlowCharm, DealerFlowProjection, DealerFlowVanna, DteWindow,
     GexOptions, GexResult, Greeks, ParityTolerances, RegimeTag, SnapshotMeta, StrikeProfileRow,
 };
-pub use candidates::{
-    CandidateBudget, CandidateCaps, CandidateContract, CandidateGreeks, CandidateLiquidity,
-    CandidateSet, CandidateSetState, DropLedger, IncludedBlock, IvState, OmittedBlock,
-    QuotePresence, SpreadBand, BAND_PCT, SPREAD_TIGHT_PCT,
-};
 pub use vol_gex::{resolve_vol_scalar, vol_normalize_gex, VolNormBasis, VolNormalizedGex};
 pub use vol_units::{atm_iv_to_wire_percent, HvPercent, IvDecimal};
+pub use vwap::{
+    calculate_vwap_bands, calculate_vwap_bands_default, session_key, IntradayBar, VwapBands,
+    VWAP_MIN_BARS,
+};

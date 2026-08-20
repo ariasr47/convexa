@@ -54,7 +54,11 @@ fn build_flip_legs(fix: &GoldenFixture) -> (FlipLegSoA, f64, f64) {
         .as_ref()
         .map(|o| o.risk_free_rate)
         .unwrap_or(0.045);
-    let q = fix.options.as_ref().map(|o| o.dividend_yield).unwrap_or(0.0);
+    let q = fix
+        .options
+        .as_ref()
+        .map(|o| o.dividend_yield)
+        .unwrap_or(0.0);
     let mut legs = FlipLegSoA::with_capacity(fix.contracts.len());
     for c in &fix.contracts {
         if c.implied_volatility <= 0.0 {

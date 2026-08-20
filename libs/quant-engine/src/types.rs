@@ -104,7 +104,9 @@ impl Contract {
     }
 
     pub fn expiration_key(&self) -> &str {
-        self.expiration_date.get(..10).unwrap_or(self.expiration_date.as_str())
+        self.expiration_date
+            .get(..10)
+            .unwrap_or(self.expiration_date.as_str())
     }
 
     #[inline]

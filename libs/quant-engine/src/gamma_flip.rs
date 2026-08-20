@@ -100,11 +100,7 @@ fn gex_at_spot(
         // d1 = (ln S − ln K + (b + ½σ²)t) / (σ√t)
         let d1 = (log_s - ln_k[j] + b * t[j] + half_sig2_t[j]) * inv[j];
         let phi = norm_pdf(d1);
-        let disc = if q == 0.0 {
-            1.0
-        } else {
-            libm::exp(-q * t[j])
-        };
+        let disc = if q == 0.0 { 1.0 } else { libm::exp(-q * t[j]) };
         // weight * phi * s  with weight = disc * oi * sign * inv
         sum += disc * phi * oi[j] * sign[j] * inv[j];
     }
@@ -130,7 +126,11 @@ fn gex_curve(legs: &FlipLegSoA, price_shifts: &[f64], r: f64, q: f64) -> Vec<f64
     price_shifts
         .par_iter()
         .map(|&s| {
-            let log_s = if s > 0.0 { libm::log(s) } else { f64::NEG_INFINITY };
+            let log_s = if s > 0.0 {
+                libm::log(s)
+            } else {
+                f64::NEG_INFINITY
+            };
             gex_at_spot(s, log_s, b, q, n, ln_k, t, inv, half_sig2_t, oi, sign)
         })
         .collect()
@@ -150,7 +150,11 @@ fn gex_curve_serial(legs: &FlipLegSoA, price_shifts: &[f64], r: f64, q: f64) -> 
     price_shifts
         .iter()
         .map(|&s| {
-            let log_s = if s > 0.0 { libm::log(s) } else { f64::NEG_INFINITY };
+            let log_s = if s > 0.0 {
+                libm::log(s)
+            } else {
+                f64::NEG_INFINITY
+            };
             gex_at_spot(s, log_s, b, q, n, ln_k, t, inv, half_sig2_t, oi, sign)
         })
         .collect()
@@ -254,14 +258,7 @@ mod tests {
     use crate::types::{Contract, ContractType, Greeks};
     use chrono::{TimeZone, Utc};
 
-    fn c(
-        strike: f64,
-        side: ContractType,
-        oi: f64,
-        iv: f64,
-        gamma: f64,
-        exp: &str,
-    ) -> Contract {
+    fn c(strike: f64, side: ContractType, oi: f64, iv: f64, gamma: f64, exp: &str) -> Contract {
         Contract {
             strike_price: strike,
             contract_type: side,
