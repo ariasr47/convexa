@@ -6,7 +6,12 @@ import type {
   TickerBundle,
 } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
-import { Box, Button, Drawer, IconButton, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CapAnnotation } from './CapAnnotation';
 import { CitedContractLine } from './CitedContractLine';
@@ -22,7 +27,8 @@ export function analysisTitle(ticker: string): string {
 }
 
 function AnalysisSummary({ rec }: { rec: RecResponse }) {
-  const strategy = rec.strategy!;
+  const strategy = rec.strategy;
+  if (!strategy) return null;
   return (
     <Stack spacing={1} data-testid="analysis-summary">
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -102,7 +108,8 @@ function GroundingDetail({
   grounding: Grounding | null | undefined;
   rec: RecResponse;
 }) {
-  const strategy = rec.strategy!;
+  const strategy = rec.strategy;
+  if (!strategy) return null;
   const rows = [
     [
       'Stop',

@@ -1,4 +1,4 @@
-import { Typography } from '@mui/material';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 /** Uppercase caption label above a field (Figma label pattern; not a MUI floating InputLabel). */

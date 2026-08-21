@@ -94,7 +94,10 @@ pub async fn put_book(
     };
 
     let schema_version = body.schema_version.unwrap_or(3).max(1);
-    let updated_at = body.updated_at.filter(|t| t.is_finite() && *t > 0.0).unwrap_or_else(now_secs);
+    let updated_at = body
+        .updated_at
+        .filter(|t| t.is_finite() && *t > 0.0)
+        .unwrap_or_else(now_secs);
     if !body.blob.is_object() {
         return (
             StatusCode::BAD_REQUEST,

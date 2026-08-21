@@ -1,0 +1,110 @@
+{
+  "conflicts": [
+    {
+      "quote": "product preference is that **any paid-book body class still living on the same app OLTP volume** also leaves that volume if it would otherwise remain the retention bottleneck.",
+      "source": "pm",
+      "why": "Read against live ring BYTEA still co-located on app Postgres, this preference pulls `ChainSnapshotStore` / `pg_chain_snapshot` body migration into this BRIEF whenever OLTP feels tight inside the existing 14d+48/symbol envelope. Architect\u2019s named shape moves only prune-proof session-archive bodies (pointer index + FS/Railway-volume body store); ring non-move is an explicit non-goal because the ring is already bounded while session identity is unbounded by design. Expanding to a second body-store cutover is scope, not required by the session-OLTP failure mode.",
+      "proposal": "Keep this ship to session-archive body/index split only. Satisfy AC-22 by recording residual risk: ring BYTEA may still pressure OLTP inside the 48/14d envelope. A human Decision card is required before ring bodies become In.",
+      "kind": "product",
+      "conflict_id": "cec469e9f03a6d6d8d78a30d66d029abb4081da9fd2322357be34b2ee058e82b",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Silent ring deferral** \u2014 session bodies move, ring bodies still dominate disk, and the BRIEF \"weeks can accumulate\" claim stays false.",
+      "source": "pm",
+      "why": "That causal claim does not follow from the store split. Weeks of session corpus accumulate because session books are prune-proof and were retaining full chain BYTEA beside identity; moving those bodies off the app OLTP volume is the mechanism that stops Postgres disk from being session retention policy. The ring remains separately capped (14d + 48/symbol), so leaving ring BYTEA in place does not by itself falsify session-book accumulation for the corpus wait.",
+      "proposal": "Treat ring deferral as residual bounded OLTP pressure (AC-22), not as failure of the BRIEF\u2019s session-retention decision impact. Ship-blocking ACs stay on session bodies off OLTP, zero-Massive list/load, and honest miss/unreadable/not-storing.",
+      "kind": "technical",
+      "conflict_id": "0b07881f47cb8b4d6d28bb6976c8aa299aa8aa2e822c9706fca5bd556c619342",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** absence of trader UI (AC-15), not raising 48 / not buying hist-chain (AC-19/20), program non-absorption (AC-21), explicit ring-body decision (AC-22), operator-without-trader-UI (AC-23), \"authorizes: nothing\" framing (AC-24), and Path-B same-store continuity at product level (AC-25).",
+      "source": "pm",
+      "why": "Trader-chrome absence and the hit-envelope `authorizes: nothing` field are negative space / wire invariants: a Settings row, `/_ops` storage badge, Ask-AI disclosure, or dropped `authorizes` key can land under an unrelated change while a review pass still looks fine. Risk-based verify assigns that silently-regressing class to `test` (structural `apps/dashboard` empty-diff + research-wire assertion) \u2014 matching UX AC-U1/U2/U13. Bundling them with intentional scope checks (no 48 raise, no hist-chain, program non-absorption, named ring deferral, Path-B continuity, positive operator-without-trader-UI) conflates two risk classes.",
+      "proposal": "Reclassify AC-15 and AC-24 as `Verify by: test`; leave AC-19\u2013AC-23 and AC-25 as `review`. No DOM harness required \u2014 route/affordance negative assertion plus wire-field assertion is enough.",
+      "kind": "technical",
+      "conflict_id": "a22173172f27018a88e09904b0be15db2c4db11be78f99e453d7a04b2de91c47",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Operator-facing clarity may lightly touch research wording so `no session book`, `session book unreadable`, and `session archive not storing` stay distinguishable when object miss becomes common \u2014 but pixel layout, motion, and theme work are out of scope; my ACs bind operator list/load/desk observables, not screens.",
+      "source": "pm",
+      "why": "Those three strings are already the shipped closed set that keeps object-miss distinguishable (`session book unreadable: <reason>` for identity/pointer without readable body; miss stays miss; not-storing stays not-storing). \"Lightly touch\" invites a second deck or storage-backend synonyms (\"object store miss,\" \"volume unavailable,\" \"off Postgres\") \u2014 UX's defining failure mode and a direct reopen of session-chain-archive \u00a74.",
+      "proposal": "Withdraw \"lightly touch.\" Reuse exact shipped session-chain-archive \u00a74 strings; map missing object onto existing unreadable; ban storage-branded rename strings. Pixel/motion/theme stay Out; `NO_UI_CHANGE` in SPEC \u00a74.",
+      "kind": "product",
+      "conflict_id": "c705f8f76927879fb69f9f38b0575c7b5cbda31ebf87bbefdcbd9ed273890643",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "When the object / volume store is **disabled / not configured / unavailable**, the trader desk remains available; archival does **not** report a false stored success; the operator can observe honest **`session archive not storing`** (or store-error) distinct from `no session book` and from unreadable.",
+      "source": "pm",
+      "why": "The parenthetical \"or store-error\" opens a synonym for the disabled/unavailable class and risks collapsing it into list I/O `session archive store error: <reason>` or into unreadable. Shipped vocabulary already separates not-storing (archive disabled/unavailable) from list store-error and from unreadable; AC honesty requires the exact not-storing string for this situation, not an equivalent class name.",
+      "proposal": "Bind AC-8's operator-visible outcome to exact **`session archive not storing`** when the archive/store is disabled / not configured / unavailable at open. Keep list metadata I/O faults on **`session archive store error: <reason>`** and missing/corrupt body on **`session book unreadable: <reason>`** \u2014 no \"or store-error\" alias for not-storing.",
+      "kind": "technical",
+      "conflict_id": "40a7bfedb6e77921766d338eab5c3c1e09d453b7615043e54b5c8ac4bf944407",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: confirm env-configured filesystem root on a Railway volume (S3 deferred) satisfies this ship\u2019s \u201cobject storage or a dedicated volume\u201d prod adapter requirement."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: confirm Architect\u2019s explicit 48-ring non-move plus residual \u201cring BYTEA may still pressure OLTP inside the 48/14d envelope\u201d satisfies AC-22 without making ring-body migration ship-blocking."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: confirm the liquid-name ensure Notify worker may await FS body put off-path without violating AC-13, as long as trader HTTP/SSE still does not await object I/O."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: confirm `session book unreadable: <reason>` may keep an opaque body-store I/O fault in `<reason>` when it does not introduce S3/volume/BYTEA/path product vocabulary."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Does this ship\u2019s Definition of Done include finishing the migrator clear/drop of inline BYTEA / `body_b64` so GATE Q can observe bodies off the app OLTP volume (AC-1/2), not only dual-read serving of legacy rows?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Under ring Non-move, what residual Postgres disk bound should product treat as accepted for the 4\u20136 week corpus wait, so \u201cweeks can accumulate without the Railway Postgres disk becoming the retention policy\u201d is not overclaimed while ring BYTEA remains co-located?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: Confirm SPEC binds the exact shipped operator strings (`no session book for <SYMBOL> on <ET_DATE>` / `session book unreadable: <reason>` / `session archive not storing`) as the honesty observables, with my shortened AC labels treated as aliases only \u2014 not a second vocabulary."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm research list/load wire fields and closed miss/unreadable/not-storing `detail` strings remain byte-compatible with shipped session-chain-archive under the FS body store (no storage-location envelope field; no fifth \"S3\"/\"volume\" miss enum member)."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what opaque `<reason>` tokens (if any) already ship on `session book unreadable: <reason>` so the storage-backend ban list does not forbid a live fault string you already emit?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: accept Verify-by `test` for AC-15 (trader-UI silence) and AC-24 (`authorizes: nothing` on research hit), keeping AC-19\u201323 and AC-25 as `review`?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: withdraw \"lightly touch research wording\" in favor of exact session-chain-archive \u00a74 reuse for this ship?"
+    }
+  ],
+  "agree_count": {
+    "architect": 8,
+    "pm": 11,
+    "ux": 9
+  }
+}

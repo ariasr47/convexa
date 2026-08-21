@@ -3,6 +3,7 @@
 //! Not part of the trader path. See `docs/SYSTEM_DESIGN_AND_BACKTEST.html` (P0–P2).
 
 pub mod artifact;
+pub mod batch_backtest;
 pub mod candidates;
 pub mod comparison;
 pub mod derivation;
@@ -12,6 +13,7 @@ pub mod labels;
 pub mod outcomes;
 pub mod pairing;
 pub mod render;
+pub mod replay_outcome_join;
 pub mod run;
 #[cfg(test)]
 pub mod scan_guards;

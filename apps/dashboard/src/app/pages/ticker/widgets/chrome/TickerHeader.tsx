@@ -21,7 +21,12 @@ import { flashColorSx, useFlashOnChange } from '@/shared/hooks/useFlashOnChange'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { Refused } from '@/shared/ui/Refused';
 import type { LiveUpdate, MarketState, Signals } from '@convexa/api';
-import { Box, Button, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useLiveTape } from '../../liveTapeStore';
 import { LAST_TRADE_TOOLTIP, OFFLINE_CHIP_TOOLTIP, SINGLE_NAME_CAVEAT } from '../_kit/copy';

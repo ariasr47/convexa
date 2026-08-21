@@ -7,7 +7,9 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type { StrikeRow } from '@convexa/api';
-import { Box, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { fmtThresh, freshCaption, volOiTip, withStructureAge } from '../_kit/copy';
 
 const MONO = typographyTokens.monoFontFamily;

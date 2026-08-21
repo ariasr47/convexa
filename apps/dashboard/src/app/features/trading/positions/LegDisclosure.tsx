@@ -25,7 +25,9 @@
  */
 import { MARK_BASIS_META } from '@/features/trading/model/mark';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Chip, Tooltip } from '@mui/material';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Tooltip from '@mui/material/Tooltip';
 import {
   LEGS_TIP,
   MAX_LOSS_ASSUMPTION,

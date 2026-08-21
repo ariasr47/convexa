@@ -80,7 +80,7 @@ export function useBrokerMarks(
     }
     return keys;
   }, [legsById]);
-  const trackKey = [...contractKeys.keys()].sort().join(',');
+  const trackKey = [...contractKeys.keys()].toSorted().join(',');
   const servedAt = data?.meta.served_at;
 
   useEffect(() => {

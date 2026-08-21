@@ -1,7 +1,12 @@
 /**
  * Shared chrome for individual lab demo pages — back link, title, candidate chip.
  */
-import { Box, Button, Chip, Container, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 

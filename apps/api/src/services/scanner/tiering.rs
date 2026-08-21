@@ -139,8 +139,7 @@ pub fn plan_cycle(
     let promo_slots = cfg.promotion_cap.min(cfg.slow_batch_size);
     let promoted: Vec<String> = ranked.into_iter().take(promo_slots).collect();
     let remaining = cfg.slow_batch_size.saturating_sub(promoted.len());
-    let exclude: std::collections::HashSet<&str> =
-        promoted.iter().map(|s| s.as_str()).collect();
+    let exclude: std::collections::HashSet<&str> = promoted.iter().map(|s| s.as_str()).collect();
     let (baseline, next_cursor) = round_robin(universe, rr_cursor, remaining, &exclude);
 
     let mut batch = promoted.clone();

@@ -403,6 +403,7 @@ async fn run_slow_batch(state: &AppState, plan: &SlowPlan, cfg: &LoopConfig) -> 
             let t0 = std::time::Instant::now();
             // Prefer warm gex_cache; singleflight miss → one shared compute.
             let result = analytics::load_or_compute(&state, &sym).await;
+            crate::services::session_chain_archive::maybe_wake(&state.ensure_wake, &sym);
             let cnow = now_secs();
             let (row, ok_price, snap_for_history): (
                 ScanRow,

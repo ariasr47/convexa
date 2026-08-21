@@ -32,20 +32,32 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 import { AuthDialogProvider } from '@/features/auth/AuthDialogProvider';
 import { SettingsPage } from '@/features/auth/SettingsPage';
 import { AppThemeProvider } from '@/features/auth/ThemeProvider';
-import { maskedKeyLabel } from '@/features/auth/copy';
-import { makeBundle } from '@/features/auth/testBackend';
+import { AUTH_COPY, maskedKeyLabel } from '@/features/auth/copy';
+import {
+  defaultAiCatalog,
+  emptyAiSlots,
+  makeAiBootstrap,
+  makeBundle,
+} from '@/features/auth/testBackend';
 import { PRESETS } from '@/features/personas/presets';
 import { __resetOrdersMemory, allOrders } from '@/features/trading/orders/store';
 import {
   __resetMemory as __resetPositions,
   allPositions,
 } from '@/features/trading/positions/store';
-import type { RecResponse, RecStatus, RecStrategy, RiskInputs, TickerBundle } from '@convexa/api';
+import type {
+  ByoProvider,
+  RecResponse,
+  RecStatus,
+  RecStrategy,
+  RiskInputs,
+  TickerBundle,
+} from '@convexa/api';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { COPY, EXPORT_HEADER, PREFILL_WITHHELD, RISK_FIELD_COPY } from './copy';
+import { COPY, EXPORT_HEADER, POWERING, PREFILL_WITHHELD, RISK_FIELD_COPY } from './copy';
 import {
   noTradeRec as fixtureNoTradeRec,
   recAllTraced,
@@ -174,17 +186,11 @@ function producedRec(over: Partial<RecResponse> = {}): RecResponse {
   };
 }
 
-const producedOwn = () => producedRec({ key_source: 'own_key' });
-const producedShared = (remaining = 2, total = 3) =>
-  producedRec({
-    key_source: 'shared_admin',
-    remaining_free_uses: remaining,
-    free_uses_total: total,
-  });
-const recUnavailable = (
-  reason: 'no_key' | 'over_limit' | 'shared_key_unconfigured',
-  extra: Partial<RecResponse> = {},
-) =>
+const producedOwn = () =>
+  producedRec({ key_source: 'own_key', provider: 'anthropic', model: 'claude-opus-4-8' });
+const producedSubscription = () =>
+  producedRec({ key_source: 'grok_subscription', provider: null, model: 'grok-3' });
+const recUnavailable = (reason: string, extra: Partial<RecResponse> = {}) =>
   producedRec({
     status: 'unavailable',
     strategy: null,
@@ -235,6 +241,7 @@ interface BackendCfg {
     last4?: string | null;
     storage_available?: boolean;
     put?: 'ok' | 'transport';
+    catalog?: ReturnType<typeof defaultAiCatalog>;
   };
   /** tradeable-rec-inputs AC-64 — the CURRENTLY stored risk block, echoed on the who-am-I settings
    *  read, so a test can diverge it from a produced rec's `sent.risk_inputs` and observe the
@@ -256,14 +263,28 @@ function installBackend(cfg: BackendCfg = {}) {
       last4: cfg.aiKey?.last4 ?? null,
       storage_available: cfg.aiKey?.storage_available ?? true,
       put: cfg.aiKey?.put ?? ('ok' as 'ok' | 'transport'),
+      catalog: cfg.aiKey?.catalog ?? defaultAiCatalog(),
+      slots: {
+        ...emptyAiSlots(),
+        ...(cfg.aiKey?.set ? { anthropic: { set: true, last4: cfg.aiKey.last4 ?? '1234' } } : {}),
+      },
     },
     riskInputs: cfg.riskInputs,
     secondRecDeferred: cfg.secondRecDeferred,
     recDeferred: cfg.recDeferred,
   };
-  const calls = { ticker: 0, status: 0, rec: 0, export: 0, personas: 0, aiKeyPut: 0 };
+  const calls = {
+    ticker: 0,
+    status: 0,
+    rec: 0,
+    export: 0,
+    personas: 0,
+    aiKeyPut: 0,
+    settingsPut: 0,
+  };
   const recPostBodies: string[] = [];
   const aiKeyPutBodies: string[] = [];
+  const settingsPutBodies: string[] = [];
   const responsesSeen: string[] = []; // every JSON body the FE received (egress scans)
   const esInstances: { onmessage: ((e: MessageEvent) => void) | null }[] = [];
 
@@ -316,33 +337,83 @@ function installBackend(cfg: BackendCfg = {}) {
         );
       }
       if (url.includes('/api/positions/sim-trade/gate')) return json({ allowed: true });
-      // byo-ai-key credential endpoints — the ONLY channel the raw key ever rides (browser→server).
+      if (url.includes('/api/auth/settings') && method === 'PUT') {
+        calls.settingsPut++;
+        settingsPutBodies.push(String(init?.body ?? ''));
+        const patch = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : {};
+        return json({
+          active_persona_id: null,
+          default_ticker: null,
+          theme: 'dark',
+          ...patch,
+        });
+      }
       if (url.includes('/api/auth/ai-key')) {
         if (!state.authenticated) return json({ error: 'auth_required', message: 'sign in' }, 403);
         if (method === 'GET') {
-          return json({
-            set: state.aiKey.set,
-            last4: state.aiKey.set ? state.aiKey.last4 : null,
-            storage_available: state.aiKey.storage_available,
-          });
+          const slots = state.aiKey.slots ?? emptyAiSlots();
+          if (state.aiKey.set) slots.anthropic = { set: true, last4: state.aiKey.last4 ?? '1234' };
+          return json(
+            makeAiBootstrap({
+              storage_available: state.aiKey.storage_available,
+              put: state.aiKey.put,
+              slots,
+              grok: { available: false, connected: false, unavailable_reason: null },
+              preference: {
+                power_path: state.aiKey.set ? 'own_key' : null,
+                provider: state.aiKey.set ? 'anthropic' : null,
+                model: 'claude-opus-4-8',
+              },
+              catalog: state.aiKey.catalog,
+            }),
+          );
         }
         if (method === 'PUT') {
           calls.aiKeyPut++;
           aiKeyPutBodies.push(String(init?.body ?? ''));
           if (state.aiKey.put === 'transport') return new Response('', { status: 502 });
-          const parsed = init?.body ? (JSON.parse(String(init.body)) as { key?: string }) : {};
+          const parsed = init?.body
+            ? (JSON.parse(String(init.body)) as { key?: string; provider?: ByoProvider })
+            : {};
+          const provider = parsed.provider ?? 'anthropic';
           state.aiKey.set = true;
           state.aiKey.last4 = (parsed.key ?? '').slice(-4);
-          return json({ set: true, last4: state.aiKey.last4, storage_available: true });
+          state.aiKey.slots = {
+            ...emptyAiSlots(),
+            ...state.aiKey.slots,
+            [provider]: { set: true, last4: state.aiKey.last4 },
+          };
+          return json(
+            makeAiBootstrap({
+              storage_available: true,
+              put: 'ok',
+              slots: state.aiKey.slots,
+              grok: { available: false, connected: false, unavailable_reason: null },
+              preference: { power_path: 'own_key', provider, model: 'claude-opus-4-8' },
+              catalog: state.aiKey.catalog,
+            }),
+          );
         }
         if (method === 'DELETE') {
-          state.aiKey.set = false;
-          state.aiKey.last4 = null;
-          return json({
-            set: false,
-            last4: null,
-            storage_available: state.aiKey.storage_available,
-          });
+          const provider = (new URL(url, 'http://local.invalid').searchParams.get('provider') ??
+            'anthropic') as ByoProvider;
+          state.aiKey.set = provider === 'anthropic' ? false : state.aiKey.set;
+          state.aiKey.last4 = provider === 'anthropic' ? null : state.aiKey.last4;
+          state.aiKey.slots = {
+            ...emptyAiSlots(),
+            ...state.aiKey.slots,
+            [provider]: { set: false, last4: null },
+          };
+          return json(
+            makeAiBootstrap({
+              storage_available: state.aiKey.storage_available,
+              put: 'ok',
+              slots: state.aiKey.slots,
+              grok: { available: false, connected: false, unavailable_reason: null },
+              preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
+              catalog: state.aiKey.catalog,
+            }),
+          );
         }
       }
       if (url.includes('/api/ticker/')) {
@@ -391,6 +462,7 @@ function installBackend(cfg: BackendCfg = {}) {
     calls,
     recPostBodies,
     aiKeyPutBodies,
+    settingsPutBodies,
     responsesSeen,
     esCount: () => esInstances.length,
     emit: (payload: unknown) =>
@@ -557,14 +629,16 @@ describe('ai-rec · auth gate is outermost', () => {
     expect(within(panel()).queryByText(/Daily AI limit/)).toBeNull();
     for (const id of [
       'ai-rec-state-no-key',
-      'ai-rec-state-admin-exhausted',
-      'ai-rec-state-shared-unconfigured',
-      'ai-rec-free-uses',
+      'ai-rec-state-key-unusable',
+      'ai-rec-state-key-rejected',
+      'ai-rec-state-model-missing',
+      'ai-rec-state-oauth-expired',
       'ai-rec-own-key',
     ]) {
       expect(within(panel()).queryByTestId(id)).toBeNull();
     }
     expect(be.calls.rec).toBe(0); // the LLM was never invoked
+    expect(within(panel()).queryByTestId('ai-rec-model-select')).toBeNull();
   });
 
   it('the manual export floor stays anonymous-usable (no auth gate, no rec call, no key in the payload)', async () => {
@@ -595,8 +669,9 @@ describe('ai-rec · auth gate is outermost', () => {
     for (const testId of [
       'ai-rec-decision-card',
       'ai-rec-state-no-key',
-      'ai-rec-state-admin-exhausted',
-      'ai-rec-state-shared-unconfigured',
+      'ai-rec-state-key-unusable',
+      'ai-rec-state-key-rejected',
+      'ai-rec-state-model-missing',
     ]) {
       expect(within(panel()).queryByTestId(testId)).toBeNull();
     }
@@ -655,43 +730,69 @@ describe('ai-rec · auth gate is outermost', () => {
 // 3. The ALWAYS-200 STATUS MACHINE — one distinct affordance per state; the surface degrades alone
 // =================================================================================================
 describe('ai-rec · key-resolution machine (distinct affordance per state)', () => {
-  // The parameterized 5-state matrix: what matters is WHICH affordance each state offers (the
-  // add-key path vs the Accept path vs a chip), not its wording — and that the page renders on.
   const CTA_IDS = [
     'ai-rec-state-no-key',
-    'ai-rec-state-admin-exhausted',
-    'ai-rec-state-shared-unconfigured',
+    'ai-rec-state-key-unusable',
+    'ai-rec-state-key-rejected',
+    'ai-rec-state-model-missing',
+    'ai-rec-state-oauth-expired',
+    'ai-rec-state-oauth-unlinked',
+    'ai-rec-state-subscription-unavailable',
   ] as const;
   it.each([
     {
-      name: 'regular user, no key (a) → the add-key path',
+      name: 'no power path → setup block (not model-missing)',
       rec: recUnavailable('no_key'),
       cta: 'ai-rec-state-no-key',
       chip: null,
     },
     {
-      name: 'admin exhausted (c) → the add-key path',
-      rec: recUnavailable('over_limit', { remaining_free_uses: 0, free_uses_total: 3 }),
-      cta: 'ai-rec-state-admin-exhausted',
+      name: 'key unusable → replace-key, not add-a-key',
+      rec: recUnavailable('key_unusable'),
+      cta: 'ai-rec-state-key-unusable',
       chip: null,
     },
     {
-      name: 'admin, shared key unconfigured (e) → the add-key path',
-      rec: recUnavailable('shared_key_unconfigured'),
-      cta: 'ai-rec-state-shared-unconfigured',
+      name: 'key rejected → replace-key, not generic LLM error',
+      rec: recUnavailable('key_rejected'),
+      cta: 'ai-rec-state-key-rejected',
       chip: null,
     },
     {
-      name: 'own key (d) → a produced rec + Accept, own-key chip, NO counter',
+      name: 'saved model left catalog → choose-another-model',
+      rec: recUnavailable('model_not_in_catalog'),
+      cta: 'ai-rec-state-model-missing',
+      chip: null,
+    },
+    {
+      name: 'oauth expired → reconnect, not unlinked / no-key',
+      rec: recUnavailable('oauth_expired'),
+      cta: 'ai-rec-state-oauth-expired',
+      chip: null,
+    },
+    {
+      name: 'oauth unlinked → connect, not expired / no-key',
+      rec: recUnavailable('oauth_unlinked'),
+      cta: 'ai-rec-state-oauth-unlinked',
+      chip: null,
+    },
+    {
+      name: 'subscription unavailable → distinct, not expired / unlinked',
+      rec: recUnavailable('subscription_unavailable'),
+      cta: 'ai-rec-state-subscription-unavailable',
+      chip: null,
+    },
+    {
+      name: 'own key → produced rec + Using your Anthropic key, NO free-uses',
       rec: producedOwn(),
       cta: null,
-      chip: 'ai-rec-own-key',
+      chip: 'Using your Anthropic key',
     },
     {
-      name: 'admin with allowance (b) → a produced rec + Accept, the free-uses counter',
-      rec: producedShared(2, 3),
+      name: 'subscription → produced rec + your Grok subscription, not BYO Grok',
+      rec: producedSubscription(),
       cta: null,
-      chip: 'ai-rec-free-uses',
+      chip: 'your Grok subscription',
     },
   ])('$name', async ({ rec, cta, chip }) => {
     installBackend({ rec });
@@ -700,45 +801,120 @@ describe('ai-rec · key-resolution machine (distinct affordance per state)', () 
     await ask(user);
 
     if (cta) {
-      // Degraded key states: the ONE offered affordance is the add-key→Settings CTA; no rec body.
       const block = await within(panel()).findByTestId(cta);
       expect(within(block).getByTestId('ai-rec-add-key-cta')).toBeEnabled();
       expect(within(panel()).queryByText(REC_BODY)).toBeNull();
       expect(within(panel()).queryByRole('button', { name: COPY.action.accept })).toBeNull();
+      expect(within(panel()).queryByText(/free uses|Convexa Grok pool/i)).toBeNull();
     } else {
-      // Produced states: the offered affordance is Accept; the provenance chip matches the source.
       await within(panel()).findByText(REC_BODY);
       expect(within(panel()).getByRole('button', { name: COPY.action.accept })).toBeEnabled();
-      expect(
-        within(panel()).getByText(
-          chip === 'ai-rec-own-key' ? 'Using your key' : /2 of 3 free uses left today/,
-        ),
-      ).toBeInTheDocument();
+      expect(within(panel()).getByText(chip as string)).toBeInTheDocument();
+      expect(within(panel()).queryByText(/free uses|Convexa Grok pool/i)).toBeNull();
     }
-    // The states are mutually exclusive: no OTHER state's block/chip is in the DOM.
     for (const id of CTA_IDS) if (id !== cta) expect(within(panel()).queryByTestId(id)).toBeNull();
-    if (!cta) {
-      if (chip === 'ai-rec-own-key') {
-        expect(within(panel()).queryByText(/2 of 3 free uses left today/)).toBeNull();
-      } else {
-        expect(within(panel()).queryByText('Using your key')).toBeNull();
-      }
-    }
-    // best-effort-isolated: the rec surface degrades ALONE — the bundle tiles keep rendering.
     expect(screen.getByText('Call wall')).toBeInTheDocument();
   });
 
-  it('gated_off (in-app disabled): the ask affordance is inert; the export floor is offered instead', async () => {
-    const be = installBackend({ status: makeStatus({ availability: { in_app_enabled: false } }) });
+  it('gated_off / no power path: setup block (not model-missing); export floor stays (AC-13/21)', async () => {
+    const be = installBackend({
+      status: makeStatus({
+        availability: { in_app_enabled: false },
+        powering: {
+          key_source: 'none',
+          provider: null,
+          model: 'claude-opus-4-8',
+          unavailable_reason: 'no_key',
+          preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
+        },
+      }),
+    });
     const user = renderApp();
     await settle();
-    await waitFor(() =>
-      expect(within(panel()).getByRole('button', { name: COPY.action.get })).toBeDisabled(),
-    );
+    const block = await within(panel()).findByTestId('ai-rec-state-no-key');
+    expect(block).toHaveTextContent(POWERING.noKey.title);
+    expect(within(panel()).queryByTestId('ai-rec-state-model-missing')).toBeNull();
+    expect(
+      within(panel()).getByRole('combobox', { name: 'Model for recommendations' }),
+    ).toHaveTextContent('claude-opus-4-8');
     await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
     expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
     expect(be.calls.rec).toBe(0);
     expect(screen.getByText('Call wall')).toBeInTheDocument();
+  });
+
+  it('Ask-AI Settings CTA deep-links to the AI providers panel (AC-28)', async () => {
+    installBackend({
+      status: makeStatus({
+        availability: { in_app_enabled: false },
+        powering: {
+          key_source: 'none',
+          provider: null,
+          model: 'claude-opus-4-8',
+          unavailable_reason: 'no_key',
+          preference: { power_path: null, provider: null, model: 'claude-opus-4-8' },
+        },
+      }),
+    });
+    const user = renderApp();
+    await settle();
+    await user.click(within(panel()).getByTestId('ai-rec-add-key-cta'));
+    const section = await screen.findByTestId('settings-ai-key-section');
+    expect(section).toHaveAttribute('id', 'ai-key');
+    expect(await screen.findByTestId('settings-ai-key-panel')).toHaveTextContent(
+      AUTH_COPY.settings.aiKey.heading,
+    );
+  });
+
+  it('Ask-AI model select writes the standing preference (AC-6 / D6)', async () => {
+    const catalog = defaultAiCatalog();
+    catalog.providers = catalog.providers.map((p) =>
+      p.provider === 'anthropic'
+        ? {
+            provider: 'anthropic',
+            models: [
+              { id: 'claude-opus-4-8', recommended: true },
+              { id: 'claude-sonnet-4-5', recommended: false },
+            ],
+          }
+        : p,
+    );
+    const be = installBackend({ rec: producedOwn(), aiKey: { catalog } });
+    const user = renderApp();
+    await settle();
+    const select = await within(panel()).findByRole('combobox', {
+      name: 'Model for recommendations',
+    });
+    await user.click(select);
+    const opt = await screen.findByRole('option', { name: /claude-sonnet-4-5/ });
+    await user.click(opt);
+    await waitFor(() => expect(be.calls.settingsPut).toBe(1));
+    expect(JSON.parse(be.settingsPutBodies[0])).toEqual({ ai_model: 'claude-sonnet-4-5' });
+    expect(screen.queryByRole('option', { name: /^default$/i })).toBeNull();
+  });
+
+  it('manual export remains reachable on every powering blocked state (AC-21/29)', async () => {
+    for (const reason of [
+      'no_key',
+      'key_unusable',
+      'key_rejected',
+      'model_not_in_catalog',
+      'oauth_expired',
+      'oauth_unlinked',
+      'subscription_unavailable',
+    ]) {
+      cleanup();
+      const be = installBackend({ rec: recUnavailable(reason) });
+      const user = renderApp();
+      await settle();
+      await ask(user);
+      expect(
+        within(panel()).getAllByRole('button', { name: COPY.action.viewExport }).length,
+      ).toBeGreaterThan(0);
+      expect(be.calls.export).toBe(0);
+      await user.click(within(panel()).getAllByRole('button', { name: COPY.action.viewExport })[0]);
+      expect(await screen.findByText(EXPORT_HEADER('TSLA'))).toBeInTheDocument();
+    }
   });
 
   it('daily cap: a calm disabled affordance; the export floor still works without a rec call', async () => {
@@ -1349,17 +1525,15 @@ describe('byo key · write-only (Settings)', () => {
       maskedKeyLabel('1234'),
     );
     // The raw key left the browser exactly once, in the PUT body…
-    expect(be.aiKeyPutBodies).toEqual([JSON.stringify({ key: RAW_KEY })]);
-    // …and never re-entered: not in the DOM, no reveal control, and no response carried it.
+    expect(be.aiKeyPutBodies).toEqual([JSON.stringify({ key: RAW_KEY, provider: 'anthropic' })]);
     expect(document.body.textContent ?? '').not.toContain(RAW_KEY);
     expect(screen.queryByText(/show key|reveal|copy key|view key/i)).toBeNull();
     be.responsesSeen
       .filter((b) => b.includes('storage_available'))
       .forEach((b) => {
+        expect(b).not.toContain(RAW_KEY);
         const o = JSON.parse(b) as Record<string, unknown>;
-        expect(Object.keys(o).every((k) => ['set', 'last4', 'storage_available'].includes(k))).toBe(
-          true,
-        );
+        for (const k of ['key', 'api_key', 'ciphertext', 'secret']) expect(o).not.toHaveProperty(k);
       });
   });
 

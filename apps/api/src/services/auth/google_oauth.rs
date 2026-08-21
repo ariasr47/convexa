@@ -157,7 +157,10 @@ pub async fn exchange(code: &str) -> Result<GoogleIdentity, String> {
         .json()
         .await
         .map_err(|_| "userinfo parse failed".to_string())?;
-    let sub = info.sub.filter(|s| !s.is_empty()).ok_or_else(|| "no sub".to_string())?;
+    let sub = info
+        .sub
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "no sub".to_string())?;
     let email = info.email.unwrap_or_default().trim().to_string();
     Ok(GoogleIdentity {
         sub,

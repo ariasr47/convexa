@@ -89,13 +89,20 @@ impl LlmProvider {
 /// Resolved material for one rec call — NEVER log key_material.
 #[derive(Debug, Clone)]
 pub struct ResolvedLlmKey {
-    pub key_source: &'static str, // own_key | shared_admin | none
+    pub key_source: &'static str, // own_key | grok_subscription | none
     pub provider: LlmProvider,
+    /// Wire `provider` — null for subscription / none.
+    pub wire_provider: Option<&'static str>,
     pub key_material: Option<String>,
     pub model: String,
+    /// Wire `model` — null only when truly unknown.
+    pub wire_model: Option<String>,
     pub base_url: Option<String>,
     pub unavailable_reason: Option<&'static str>,
     pub metering_identity: Option<String>,
+    pub preference_power_path: Option<String>,
+    pub preference_provider: Option<String>,
+    pub preference_model: Option<String>,
 }
 
 impl ResolvedLlmKey {
@@ -103,16 +110,60 @@ impl ResolvedLlmKey {
         Self {
             key_source: "none",
             provider: LlmProvider::Anthropic,
+            wire_provider: None,
             key_material: None,
-            model: LlmProvider::Anthropic.default_model().into(),
+            model: String::new(),
+            wire_model: None,
             base_url: None,
             unavailable_reason: Some(reason),
             metering_identity: None,
+            preference_power_path: None,
+            preference_provider: None,
+            preference_model: None,
+        }
+    }
+
+    pub fn unsigned() -> Self {
+        Self {
+            key_source: "none",
+            provider: LlmProvider::Anthropic,
+            wire_provider: None,
+            key_material: None,
+            model: String::new(),
+            wire_model: None,
+            base_url: None,
+            unavailable_reason: None,
+            metering_identity: None,
+            preference_power_path: None,
+            preference_provider: None,
+            preference_model: None,
         }
     }
 
     pub fn usable(&self) -> bool {
-        self.key_material.is_some() && self.key_source != "none"
+        self.key_material.is_some()
+            && (self.key_source == "own_key" || self.key_source == "grok_subscription")
+    }
+
+    pub fn wire_provider_value(&self) -> serde_json::Value {
+        self.wire_provider
+            .map(|s| serde_json::Value::String(s.into()))
+            .unwrap_or(serde_json::Value::Null)
+    }
+
+    pub fn wire_model_value(&self) -> serde_json::Value {
+        self.wire_model
+            .clone()
+            .map(serde_json::Value::String)
+            .unwrap_or(serde_json::Value::Null)
+    }
+}
+
+pub fn provider_http_reason(status: reqwest::StatusCode) -> &'static str {
+    if status.as_u16() == 401 || status.as_u16() == 403 {
+        "key_rejected"
+    } else {
+        "llm_error"
     }
 }
 
@@ -133,7 +184,11 @@ pub struct RecPromptContext<'a> {
 }
 
 /// System + user prompt for a market-state recommendation.
-pub fn build_rec_prompts(ticker: &str, ctx: &RecPromptContext<'_>, persona_name: &str) -> (String, String) {
+pub fn build_rec_prompts(
+    ticker: &str,
+    ctx: &RecPromptContext<'_>,
+    persona_name: &str,
+) -> (String, String) {
     let system = format!(
         "You are a risk-first options strategist for Convexa. Persona: {persona_name}. \
          Respond ONLY with a single JSON object (no markdown) matching this schema:\n\
@@ -182,10 +237,7 @@ pub async fn complete_strategy(
     system: &str,
     user: &str,
 ) -> Result<Value, &'static str> {
-    let key = resolved
-        .key_material
-        .as_deref()
-        .ok_or("no_key")?;
+    let key = resolved.key_material.as_deref().ok_or("no_key")?;
     let model = &resolved.model;
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
@@ -193,19 +245,12 @@ pub async fn complete_strategy(
         .map_err(|_| "llm_error")?;
 
     let text = match resolved.provider {
-        LlmProvider::Anthropic => {
-            anthropic_messages(&client, key, model, system, user).await?
-        }
+        LlmProvider::Anthropic => anthropic_messages(&client, key, model, system, user).await?,
         LlmProvider::OpenAi | LlmProvider::Xai | LlmProvider::OpenAiCompatible => {
             let base = resolved
                 .base_url
                 .clone()
-                .or_else(|| {
-                    resolved
-                        .provider
-                        .default_base_url()
-                        .map(|s| s.to_string())
-                })
+                .or_else(|| resolved.provider.default_base_url().map(|s| s.to_string()))
                 .unwrap_or_else(|| "https://api.openai.com/v1".into());
             openai_chat(&client, &base, key, model, system, user).await?
         }
@@ -214,9 +259,7 @@ pub async fn complete_strategy(
                 .base_url
                 .clone()
                 .or_else(|| resolved.provider.default_base_url().map(|s| s.to_string()))
-                .unwrap_or_else(|| {
-                    "https://generativelanguage.googleapis.com/v1beta".into()
-                });
+                .unwrap_or_else(|| "https://generativelanguage.googleapis.com/v1beta".into());
             gemini_generate(&client, &base, key, model, system, user).await?
         }
     };
@@ -256,7 +299,7 @@ async fn anthropic_messages(
         // Log status + short body snippet only (never the API key).
         let snippet: String = text_body.chars().take(240).collect();
         warn!(%status, model, body = %snippet, "anthropic HTTP error");
-        return Err("llm_error");
+        return Err(provider_http_reason(status));
     }
     let v: Value = serde_json::from_str(&text_body).map_err(|_| "llm_error")?;
     // content[0].text
@@ -277,10 +320,7 @@ async fn openai_chat(
     system: &str,
     user: &str,
 ) -> Result<String, &'static str> {
-    let url = format!(
-        "{}/chat/completions",
-        base.trim_end_matches('/')
-    );
+    let url = format!("{}/chat/completions", base.trim_end_matches('/'));
     let body = json!({
         "model": model,
         "temperature": 0.2,
@@ -306,7 +346,7 @@ async fn openai_chat(
     if !status.is_success() {
         let snippet: String = text_body.chars().take(240).collect();
         warn!(%status, model, body = %snippet, "openai-compatible HTTP error");
-        return Err("llm_error");
+        return Err(provider_http_reason(status));
     }
     let v: Value = serde_json::from_str(&text_body).map_err(|_| "llm_error")?;
     v.pointer("/choices/0/message/content")
@@ -347,9 +387,10 @@ async fn gemini_generate(
         .send()
         .await
         .map_err(|_| "timeout")?;
-    if !resp.status().is_success() {
-        warn!(status = %resp.status(), "gemini HTTP error");
-        return Err("llm_error");
+    let status = resp.status();
+    if !status.is_success() {
+        warn!(status = %status, "gemini HTTP error");
+        return Err(provider_http_reason(status));
     }
     let v: Value = resp.json().await.map_err(|_| "llm_error")?;
     v.pointer("/candidates/0/content/parts/0/text")
@@ -372,10 +413,7 @@ fn parse_strategy_json(text: &str) -> Result<Value, &'static str> {
     let trimmed = text.trim();
     // Strip optional ```json fences
     let body = if let Some(rest) = trimmed.strip_prefix("```") {
-        let rest = rest
-            .strip_prefix("json")
-            .unwrap_or(rest)
-            .trim_start();
+        let rest = rest.strip_prefix("json").unwrap_or(rest).trim_start();
         rest.strip_suffix("```").unwrap_or(rest).trim()
     } else {
         trimmed
@@ -391,10 +429,7 @@ fn parse_strategy_json(text: &str) -> Result<Value, &'static str> {
     } else {
         "no_trade"
     };
-    let bias = v
-        .get("bias")
-        .and_then(|b| b.as_str())
-        .unwrap_or("neutral");
+    let bias = v.get("bias").and_then(|b| b.as_str()).unwrap_or("neutral");
     let bias = match bias {
         "long" | "short" | "neutral" | "volatility" => bias,
         _ => "neutral",
@@ -433,6 +468,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn vendor_auth_http_maps_to_key_rejected() {
+        assert_eq!(
+            provider_http_reason(reqwest::StatusCode::UNAUTHORIZED),
+            "key_rejected"
+        );
+        assert_eq!(
+            provider_http_reason(reqwest::StatusCode::FORBIDDEN),
+            "key_rejected"
+        );
+        assert_eq!(
+            provider_http_reason(reqwest::StatusCode::INTERNAL_SERVER_ERROR),
+            "llm_error"
+        );
+    }
+
+    #[test]
     fn detect_prefixes() {
         assert_eq!(
             LlmProvider::detect_from_key("sk-ant-api03-xxxx"),
@@ -442,13 +493,17 @@ mod tests {
             LlmProvider::detect_from_key("sk-proj-xxxx"),
             LlmProvider::OpenAi
         );
-        assert_eq!(LlmProvider::detect_from_key("AIzaSyxxx"), LlmProvider::Gemini);
+        assert_eq!(
+            LlmProvider::detect_from_key("AIzaSyxxx"),
+            LlmProvider::Gemini
+        );
         assert_eq!(LlmProvider::detect_from_key("xai-xxx"), LlmProvider::Xai);
     }
 
     #[test]
     fn parse_strategy_strips_fences() {
-        let raw = "```json\n{\"decision\":\"no_trade\",\"bias\":\"neutral\",\"rationale\":\"wait\"}\n```";
+        let raw =
+            "```json\n{\"decision\":\"no_trade\",\"bias\":\"neutral\",\"rationale\":\"wait\"}\n```";
         let v = parse_strategy_json(raw).unwrap();
         assert_eq!(v["decision"], "no_trade");
     }
@@ -489,7 +544,12 @@ mod tests {
             open_interest: 100.0,
             expiration_date: exp.into(),
             implied_volatility: 0.3,
-            greeks: Some(quant_engine::Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            greeks: Some(quant_engine::Greeks {
+                gamma: Some(0.01),
+                delta: Some(0.5),
+                theta: None,
+                vega: None,
+            }),
             volume: Some(10.0),
             bid: Some(1.0),
             ask: Some(1.2),
@@ -511,13 +571,26 @@ mod tests {
         let mut chain = Vec::new();
         for exp in ["2026-08-21", "2026-09-18", "2026-10-16"] {
             for i in 0..30 {
-                chain.push(quoted(100.0 + i as f64 * 0.1, quant_engine::ContractType::Call, exp));
-                chain.push(quoted(100.0 + i as f64 * 0.1, quant_engine::ContractType::Put, exp));
+                chain.push(quoted(
+                    100.0 + i as f64 * 0.1,
+                    quant_engine::ContractType::Call,
+                    exp,
+                ));
+                chain.push(quoted(
+                    100.0 + i as f64 * 0.1,
+                    quant_engine::ContractType::Put,
+                    exp,
+                ));
             }
         }
         let set = quant_engine::CandidateSet::build(
-            &chain, 100.0, as_of(), quant_engine::DteWindow::default(),
-            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+            &chain,
+            100.0,
+            as_of(),
+            quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt,
+            true,
+            &quant_engine::SnapshotMeta::default(),
         );
         let candidates = crate::services::rec_inputs::candidate_envelope("SPY", &set, Some(1.0));
         let ctx = RecPromptContext {
@@ -530,8 +603,14 @@ mod tests {
         };
         let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
         let v = user_context_json(&user);
-        let n = v["candidate_contracts"]["contracts"].as_array().unwrap().len();
-        assert!(n <= 20, "prompt block carried {n} records, budget caps at 20");
+        let n = v["candidate_contracts"]["contracts"]
+            .as_array()
+            .unwrap()
+            .len();
+        assert!(
+            n <= 20,
+            "prompt block carried {n} records, budget caps at 20"
+        );
     }
 
     #[test]
@@ -541,12 +620,23 @@ mod tests {
             chain.push(quoted(100.0, quant_engine::ContractType::Call, exp));
             chain.push(quoted(100.0, quant_engine::ContractType::Put, exp));
         }
-        let mv = quant_engine::compute_straddle_move(&chain, 100.0, as_of(), quant_engine::DteWindow::default(), &quant_engine::SnapshotMeta::default());
+        let mv = quant_engine::compute_straddle_move(
+            &chain,
+            100.0,
+            as_of(),
+            quant_engine::DteWindow::default(),
+            &quant_engine::SnapshotMeta::default(),
+        );
         assert_eq!(mv.tenors.len(), 3);
         // Prompt budget caps tenors at 2 — narrower than the move's 3.
         let set = quant_engine::CandidateSet::build(
-            &chain, 100.0, as_of(), quant_engine::DteWindow::default(),
-            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+            &chain,
+            100.0,
+            as_of(),
+            quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt,
+            true,
+            &quant_engine::SnapshotMeta::default(),
         );
         let pruned = quant_engine::restrict_move_to_tenors(&mv, set.included_expirations());
         assert!(pruned.tenors.len() <= 2);
@@ -562,13 +652,22 @@ mod tests {
         };
         let (_, user) = build_rec_prompts("SPY", &ctx, "Default");
         let v = user_context_json(&user);
-        let forwarded_tenors = v["market_state"]["straddle_move"]["tenors"].as_array().unwrap();
+        let forwarded_tenors = v["market_state"]["straddle_move"]["tenors"]
+            .as_array()
+            .unwrap();
         assert!(forwarded_tenors.len() <= 2);
         let candidate_exps: Vec<String> = v["candidate_contracts"]["included"]["expirations"]
-            .as_array().unwrap().iter().map(|x| x.as_str().unwrap().to_string()).collect();
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_str().unwrap().to_string())
+            .collect();
         for t in forwarded_tenors {
             let exp = t["expiration"].as_str().unwrap();
-            assert!(candidate_exps.iter().any(|e| e == exp), "{exp} forwarded but not in candidate set");
+            assert!(
+                candidate_exps.iter().any(|e| e == exp),
+                "{exp} forwarded but not in candidate set"
+            );
         }
     }
 
@@ -580,8 +679,13 @@ mod tests {
             quoted(100.0, quant_engine::ContractType::Put, "2026-08-21"),
         ];
         let narrow_set = quant_engine::CandidateSet::build(
-            &narrow_chain, 100.0, as_of(), quant_engine::DteWindow::default(),
-            quant_engine::CandidateBudget::Prompt, true, &quant_engine::SnapshotMeta::default(),
+            &narrow_chain,
+            100.0,
+            as_of(),
+            quant_engine::DteWindow::default(),
+            quant_engine::CandidateBudget::Prompt,
+            true,
+            &quant_engine::SnapshotMeta::default(),
         );
 
         // A three-tenor move computed off a WIDER chain (as if the restriction were wrongly
@@ -591,7 +695,13 @@ mod tests {
             wide_chain.push(quoted(100.0, quant_engine::ContractType::Call, exp));
             wide_chain.push(quoted(100.0, quant_engine::ContractType::Put, exp));
         }
-        let mv = quant_engine::compute_straddle_move(&wide_chain, 100.0, as_of(), quant_engine::DteWindow::default(), &quant_engine::SnapshotMeta::default());
+        let mv = quant_engine::compute_straddle_move(
+            &wide_chain,
+            100.0,
+            as_of(),
+            quant_engine::DteWindow::default(),
+            &quant_engine::SnapshotMeta::default(),
+        );
         assert_eq!(mv.tenors.len(), 3);
 
         // Poison: assert against the NARROW set's included tenors (the correct bound). The
@@ -636,7 +746,10 @@ mod rec_prompt_tests {
     #[test]
     fn the_assembled_system_prompt_requires_exactly_one_dollar_figure_for_the_risk_field() {
         let (system, _user) = build_rec_prompts("SPY", &ctx(), "Default (no persona)");
-        assert!(system.contains("exactly one dollar figure"), "directive missing: {system}");
+        assert!(
+            system.contains("exactly one dollar figure"),
+            "directive missing: {system}"
+        );
         assert!(system.contains("$N"), "the $N form must be named: {system}");
         assert!(
             system.contains("percentage") && system.contains("same dollar figure"),
@@ -653,8 +766,14 @@ mod rec_prompt_tests {
     #[test]
     fn the_assembled_system_prompt_asks_for_levels_quoted_exactly_as_given() {
         let (system, _user) = build_rec_prompts("SPY", &ctx(), "Default (no persona)");
-        assert!(system.contains("quote the level exactly as the context gives it"), "directive missing: {system}");
-        assert!(system.contains("same decimal precision"), "the precision clause must be stated: {system}");
+        assert!(
+            system.contains("quote the level exactly as the context gives it"),
+            "directive missing: {system}"
+        );
+        assert!(
+            system.contains("same decimal precision"),
+            "the precision clause must be stated: {system}"
+        );
         assert!(!"You are a risk-first options strategist.".contains("quote the level exactly"));
     }
 }

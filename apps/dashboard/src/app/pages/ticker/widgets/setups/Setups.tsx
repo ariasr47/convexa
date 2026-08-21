@@ -6,7 +6,11 @@
 import { TintChip } from '@/shared/ui/TintChip';
 import { Widget } from '@/shared/ui/Widget';
 import type { Setup } from '@convexa/api';
-import { Alert, Card, CardContent, Stack, Typography } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { setupsSubtitle } from '../_kit/copy';
 
 interface Props {

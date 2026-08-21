@@ -5,7 +5,7 @@
  * 'set'`) — an unset block has nothing to attribute.
  */
 import type { RiskInputs } from '@convexa/api';
-import { Chip } from '@mui/material';
+import Chip from '@mui/material/Chip';
 import { AccessibleHelp } from './AccessibleHelp';
 import { PROVENANCE_CHIP_TIP, provenanceChip } from './copy';
 

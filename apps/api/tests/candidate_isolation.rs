@@ -35,10 +35,22 @@ fn matches_candidate_needle(src: &str) -> bool {
 fn no_bundle_path_module_references_the_candidates_module() {
     let scanned = scan_bundle_path_files();
     // Anti-vacuity: the scanned set is non-empty and contains all four named files.
-    assert_eq!(scanned.len(), 4, "expected exactly the four named bundle-path files");
+    assert_eq!(
+        scanned.len(),
+        4,
+        "expected exactly the four named bundle-path files"
+    );
     let names: Vec<&str> = scanned.iter().map(|(n, _)| n.as_str()).collect();
-    for n in ["routes/market.rs", "routes/stream.rs", "state.rs", "services/analytics.rs"] {
-        assert!(names.contains(&n), "{n} must be in the scanned set; got {names:?}");
+    for n in [
+        "routes/market.rs",
+        "routes/stream.rs",
+        "state.rs",
+        "services/analytics.rs",
+    ] {
+        assert!(
+            names.contains(&n),
+            "{n} must be in the scanned set; got {names:?}"
+        );
     }
 
     let mut violations = Vec::new();
@@ -57,7 +69,10 @@ fn no_bundle_path_module_references_the_candidates_module() {
 #[test]
 fn the_guard_bites() {
     let poisoned = "use quant_engine::CandidateSet;";
-    assert!(matches_candidate_needle(poisoned), "the guard must fire on a poisoned bundle-path import");
+    assert!(
+        matches_candidate_needle(poisoned),
+        "the guard must fire on a poisoned bundle-path import"
+    );
 }
 
 /// 3 — the selector has no vendor access: no HTTP/async runtime dependency line in
@@ -65,16 +80,23 @@ fn the_guard_bites() {
 #[test]
 fn the_selector_has_no_vendor_access() {
     let root = workspace_root();
-    let cargo_toml = fs::read_to_string(root.join("libs/quant-engine/Cargo.toml")).expect("Cargo.toml");
+    let cargo_toml =
+        fs::read_to_string(root.join("libs/quant-engine/Cargo.toml")).expect("Cargo.toml");
     for banned in ["reqwest", "hyper", "tokio"] {
         assert!(
-            !cargo_toml.lines().any(|l| l.trim_start().starts_with(banned)),
+            !cargo_toml
+                .lines()
+                .any(|l| l.trim_start().starts_with(banned)),
             "quant-engine/Cargo.toml must not depend on {banned}"
         );
     }
-    let src = fs::read_to_string(root.join("libs/quant-engine/src/candidates.rs")).expect("candidates.rs");
+    let src = fs::read_to_string(root.join("libs/quant-engine/src/candidates.rs"))
+        .expect("candidates.rs");
     for banned in ["AppState", "massive", "fetch_"] {
-        assert!(!src.contains(banned), "candidates.rs must not reference {banned}");
+        assert!(
+            !src.contains(banned),
+            "candidates.rs must not reference {banned}"
+        );
     }
 }
 
@@ -84,7 +106,8 @@ fn the_selector_has_no_vendor_access() {
 #[test]
 fn the_candidates_route_never_forces_a_refresh() {
     let root = workspace_root();
-    let src = fs::read_to_string(root.join("apps/api/src/routes/candidates.rs")).expect("routes/candidates.rs");
+    let src = fs::read_to_string(root.join("apps/api/src/routes/candidates.rs"))
+        .expect("routes/candidates.rs");
     assert!(
         src.contains("load_analytics(&state, &sym, None, None, false)"),
         "routes/candidates.rs must read the warm snapshot with no DTE filter and refresh=false"
@@ -100,12 +123,22 @@ fn the_candidates_route_never_forces_a_refresh() {
 #[test]
 fn the_match_key_constructor_takes_a_non_optional_right() {
     let root = workspace_root();
-    let src = fs::read_to_string(root.join("apps/api/src/services/rec_inputs/cited.rs")).expect("cited.rs");
+    let src = fs::read_to_string(root.join("apps/api/src/services/rec_inputs/cited.rs"))
+        .expect("cited.rs");
     let ctor_start = src.find("pub fn new(").expect("CitedKey::new not found");
-    let ctor_sig_end = src[ctor_start..].find(')').map(|i| ctor_start + i).unwrap_or(src.len());
+    let ctor_sig_end = src[ctor_start..]
+        .find(')')
+        .map(|i| ctor_start + i)
+        .unwrap_or(src.len());
     let sig = &src[ctor_start..ctor_sig_end];
-    assert!(sig.contains("right: ContractType"), "CitedKey::new must take right: ContractType; got: {sig}");
-    assert!(!sig.contains("right: Option<ContractType>"), "CitedKey::new must NOT accept an optional right");
+    assert!(
+        sig.contains("right: ContractType"),
+        "CitedKey::new must take right: ContractType; got: {sig}"
+    );
+    assert!(
+        !sig.contains("right: Option<ContractType>"),
+        "CitedKey::new must NOT accept an optional right"
+    );
 
     // Anti-vacuity: a mutated signature string must fail the positive assertion above.
     let poisoned_sig = "pub fn new(expiration: String, strike: f64, right: Option<ContractType>";

@@ -8,7 +8,8 @@
  * `extras.hatchAlt` (per the README, prototype-only extras fold into `sx`, NOT new theme keys).
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box, type BoxProps } from '@mui/material';
+import type { BoxProps } from '@mui/material/Box';
+import Box from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 
 /**

@@ -141,7 +141,7 @@ function normalize(c: ViewConfig): ViewConfig {
   return {
     ...c,
     columns: [...c.columns],
-    filter: { ...c.filter, status: [...c.filter.status].sort() },
+    filter: { ...c.filter, status: c.filter.status.toSorted() },
   };
 }
 

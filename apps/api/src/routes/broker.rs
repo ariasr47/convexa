@@ -31,7 +31,11 @@ pub async fn get_credential(State(state): State<AppState>, headers: HeaderMap) -
     let Some(user) = resolved.user else {
         return auth_err(403, "auth_required", "Sign in to do this.");
     };
-    (StatusCode::OK, Json(state.auth.broker_credential_hint(&user))).into_response()
+    (
+        StatusCode::OK,
+        Json(state.auth.broker_credential_hint(&user)),
+    )
+        .into_response()
 }
 
 /// PUT /api/broker/credential — both halves required (no body echo on 422).

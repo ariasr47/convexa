@@ -1,5 +1,6 @@
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { IconButton, Tooltip } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 
 /** Keyboard and pointer reachable help trigger used by the decision card. */
 export function AccessibleHelp({ label, text }: { label: string; text: string }) {

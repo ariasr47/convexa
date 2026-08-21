@@ -742,6 +742,11 @@ export interface UserSettings {
   // Risk inputs (tradeable-rec-inputs) — OPTIONAL key so an older backend degrades to `not_set`,
   // never a throw (mirrors `RecStatus.scenarios` at the ai-rec-backtest-orders precedent).
   risk_inputs?: RiskInputs;
+  // ai-providers — standing preference (single writer). Optional so an older session echo
+  // degrades to nulls rather than throwing.
+  ai_power_path?: PowerPath | null;
+  ai_provider?: ByoProvider | null;
+  ai_model?: string | null;
 }
 
 /** Authenticated identity (never the raw email as id; `id` is opaque + stable). */
@@ -1364,12 +1369,32 @@ export interface Handoff {
 export type RecStatusKind = 'produced' | 'unavailable' | 'gated_off';
 export type RecDecision = 'trade' | 'no_trade';
 
-// ---- byo-ai-key (INTERFACE_CONTRACT byo-ai-key) ----------------------------------------------
-// Which key produced a rec (drives the provenance chip ONLY; NEVER a scoring input — AC-14).
-export type KeySource = 'own_key' | 'shared_admin' | 'none';
-// The `unavailable_reason` values the FE maps to the three CTA states (a/c/e). These are the
-// recognized intents; the wire string set may be wider, but the FE only keys off these three.
-export type ByoUnavailableReason = 'no_key' | 'over_limit' | 'shared_key_unconfigured';
+// ---- ai-providers (INTERFACE_CONTRACT ai-providers) ------------------------------------------
+// Provenance / power-path tokens. NEVER scoring inputs. `shared_admin` is retired as a product
+// path — poison fixtures may still assign the string via a cast, never as a live union member.
+export type ByoProvider = 'anthropic' | 'openai' | 'xai' | 'gemini';
+export const BYO_PROVIDERS: readonly ByoProvider[] = [
+  'anthropic',
+  'openai',
+  'xai',
+  'gemini',
+] as const;
+export type PowerPath = 'own_key' | 'grok_subscription';
+export type KeySource = 'own_key' | 'grok_subscription' | 'none';
+export type GrokUnavailableReason = 'subscription_unavailable' | 'oauth_unlinked' | 'oauth_expired';
+export type PoweringUnavailableReason =
+  | 'no_key'
+  | 'subscription_unavailable'
+  | 'oauth_unlinked'
+  | 'oauth_expired'
+  | 'storage_unavailable'
+  | 'model_not_in_catalog'
+  | 'model_missing'
+  | 'model_unset'
+  | 'key_unusable'
+  | 'key_rejected';
+/** @deprecated Retired with free-uses. Kept only so older fixtures type-check via widening. */
+export type ByoUnavailableReason = PoweringUnavailableReason;
 export type RecBias = 'long' | 'short' | 'neutral' | 'volatility';
 export type RecConfidence = 'low' | 'medium' | 'high';
 export type RecGateState = 'available' | 'no_fresh_edge' | 'cooling_down';
@@ -1482,11 +1507,14 @@ export interface RecResponse {
   unavailable_reason: string | null; // present iff status === 'unavailable'; NEVER leaks key text
   gate: RecGate; // gating snapshot AT THE TIME OF THIS RESPONSE
   cap: RecCap;
-  // byo-ai-key (additive; INTERFACE_CONTRACT byo-ai-key §2.1). NEVER a `key` field — these are the
-  // ONLY new datums the FE reads, and none is a scoring input (AC-14).
-  key_source?: KeySource; // own_key → state d chip; shared_admin → state b chip; none → no chip
-  remaining_free_uses?: number | null; // ADMIN shared-key path only (post-decrement); absent for regular/own-key
-  free_uses_total?: number | null; // the per-admin allowance (default 3); present when remaining_free_uses is
+  // ai-providers (additive; INTERFACE_CONTRACT ai-providers). NEVER a `key` field — provenance
+  // names what ran. `remaining_free_uses` / `free_uses_total` are retired product fields (optional
+  // legacy ignore only — the UI must not advertise them).
+  key_source?: KeySource;
+  provider?: string | null;
+  model?: string | null;
+  remaining_free_uses?: number | null;
+  free_uses_total?: number | null;
   // ai-rec-backtest-orders (INTERFACE §1.3, additive): scenario provenance. NON-NULL on EVERY
   // scenario-driven response (produced, scenario no_trade, AND fault scenarios); null/absent on
   // every real read. The FE keys the "SCRIPTED SCENARIO" marking off this field ONLY (D8-4).
@@ -1721,10 +1749,12 @@ export interface RecStatus {
   availability: { in_app_enabled: boolean }; // false ⇒ no key configured / feature off → inert in-app
   gate: RecGate;
   cap: RecCap;
-  // byo-ai-key (additive; INTERFACE_CONTRACT byo-ai-key §2.2) — so the panel can pre-render an admin's
-  // count before requesting. The read does NOT pre-commit a free use. Absent for regular users.
+  // Retired free-uses counters — optional legacy ignore only. Do not advertise.
   remaining_free_uses?: number | null;
   free_uses_total?: number | null;
+  // ai-providers — standing powering probe. Optional so an older backend degrades (no powering
+  // chrome) rather than throwing. Signed-out: key_source none, preference nulls, reason null.
+  powering?: RecPowering;
   // ai-rec-backtest-orders (INTERFACE §2): the scenario advertisement. The wire ALWAYS carries it
   // after this feature (flag OFF ⇒ `{enabled:false, catalog:[]}` — the catalog is never enumerable
   // while disabled, D1/AC-34). Typed OPTIONAL here only as FE resilience against an older backend:
@@ -1732,44 +1762,105 @@ export interface RecStatus {
   scenarios?: { enabled: boolean; catalog: RecScenarioInfo[] };
 }
 
-/** byo-ai-key: the masked-hint read returned by all three credential endpoints (INTERFACE §1). It
- *  carries at most a last-4 hint — NEVER the raw key, ciphertext, or any recoverable field (AC-10). */
-export interface AiKeyStatus {
-  set: boolean; // a key is stored
-  last4: string | null; // last-4 masked hint; non-null ONLY when set === true
-  storage_available: boolean; // false ⇒ Settings storage-unavailable variant (AC-18)
+export interface RecPoweringPreference {
+  power_path: PowerPath | null;
+  provider: ByoProvider | null;
+  model: string | null;
 }
 
-/** GET /api/auth/ai-key — masked-hint read driving the Settings Empty/Set state. Returns ONLY
- *  set/last4/storage_available; NEVER the key. 403 ⇒ AuthError('auth_required') (anonymous). */
-export async function getAiKeyStatus(): Promise<AiKeyStatus> {
+export interface RecPowering {
+  key_source: KeySource;
+  provider: string | null;
+  model: string | null;
+  unavailable_reason: string | null;
+  preference: RecPoweringPreference;
+}
+
+/** Closed catalog model id the leaf will call. `recommended` is at most one true per list. */
+export interface CatalogModel {
+  id: string;
+  recommended: boolean;
+}
+
+export interface CatalogProvider {
+  provider: ByoProvider;
+  models: CatalogModel[];
+}
+
+export interface AiProviderSlot {
+  provider: ByoProvider;
+  set: boolean;
+  last4: string | null;
+}
+
+export interface GrokSubscriptionStatus {
+  available: boolean;
+  connected: boolean;
+  unavailable_reason: GrokUnavailableReason | null;
+}
+
+export interface AiPreference {
+  power_path: PowerPath | null;
+  provider: ByoProvider | null;
+  model: string | null;
+}
+
+/** GET/PUT/DELETE `/api/auth/ai-key` bootstrap. All keys always present. NEVER carries secrets. */
+export interface AiProvidersBootstrap {
+  storage_available: boolean;
+  providers: AiProviderSlot[];
+  grok: GrokSubscriptionStatus;
+  preference: AiPreference;
+  catalog: {
+    providers: CatalogProvider[];
+    grok_subscription: { provider: string; models: CatalogModel[] };
+  };
+}
+
+/** @deprecated Use AiProvidersBootstrap. Kept as an alias so existing imports compile. */
+export type AiKeyStatus = AiProvidersBootstrap;
+
+/** GET /api/auth/ai-key — Settings + Ask-AI bootstrap (matrix, grok arm, preference, catalog).
+ *  NEVER returns a secret. 403 ⇒ AuthError('auth_required') (anonymous). */
+export async function getAiKeyStatus(): Promise<AiProvidersBootstrap> {
   const res = await fetch('/api/auth/ai-key', { credentials: 'same-origin' });
   if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiKeyStatus;
+  return (await res.json()) as AiProvidersBootstrap;
 }
 
-/** PUT /api/auth/ai-key — store/overwrite the user's Anthropic key (rotate == overwrite, no history).
- *  This is the ONLY call that sends a raw key, and it travels browser→server only. Returns the masked
- *  status — NEVER echoes the key (AC-10). The storage-unavailable case is a 200 `{set:false,
- *  storage_available:false}`, NOT a 5xx (AC-18). 403 ⇒ AuthError; 422 ⇒ AuthError('validation'). */
-export async function setAiKey(key: string): Promise<AiKeyStatus> {
+/** PUT /api/auth/ai-key — store/overwrite the BYO ciphertext for ONE closed provider slot.
+ *  The client MUST send `provider`; the server must not retitle the slot from the key string.
+ *  Returns the full bootstrap — NEVER echoes the key. Storage-unavailable is a 200 with
+ *  `storage_available:false`, NOT a 5xx. */
+export async function setAiKey(key: string, provider: ByoProvider): Promise<AiProvidersBootstrap> {
   const res = await fetch('/api/auth/ai-key', {
     method: 'PUT',
     headers: JSON_HEADERS,
     credentials: 'same-origin',
-    body: JSON.stringify({ key }),
+    body: JSON.stringify({ key, provider }),
   });
   if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiKeyStatus;
+  return (await res.json()) as AiProvidersBootstrap;
 }
 
-/** DELETE /api/auth/ai-key — delete the stored key (→ role no-key behavior on the rec surface).
- *  Idempotent (200 `set:false` even when none was set). 403 ⇒ AuthError('auth_required'). */
-export async function removeAiKey(): Promise<AiKeyStatus> {
-  const res = await fetch('/api/auth/ai-key', { method: 'DELETE', credentials: 'same-origin' });
+/** DELETE /api/auth/ai-key?provider= — remove one BYO slot. Idempotent. 403 / 422 as documented. */
+export async function removeAiKey(provider: ByoProvider): Promise<AiProvidersBootstrap> {
+  const res = await fetch(`/api/auth/ai-key?provider=${encodeURIComponent(provider)}`, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+  });
   if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiKeyStatus;
+  return (await res.json()) as AiProvidersBootstrap;
 }
+
+/** DELETE /api/auth/grok — unlink the Grok subscription. Session required. */
+export async function disconnectGrok(): Promise<void> {
+  const res = await fetch('/api/auth/grok', { method: 'DELETE', credentials: 'same-origin' });
+  if (!res.ok) throw await toAuthError(res);
+}
+
+/** Browser navigation target for Connect Grok. Only used when `grok.available` is true. */
+export const GROK_OAUTH_START = '/api/auth/grok/start';
 
 // ---- Durable book (multi-device positions blob) ------------------------------------------------
 

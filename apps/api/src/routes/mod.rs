@@ -10,12 +10,14 @@ mod health;
 pub(crate) mod market;
 mod price;
 mod recommendation;
+mod research_chain_snapshots;
+mod research_session_books;
 mod scan;
 mod stream;
 mod ticker;
 
 use crate::state::AppState;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 
 /// Build the public API router.
@@ -27,6 +29,22 @@ pub fn router(state: AppState) -> Router {
         .route("/health", get(health::health))
         .route("/api/health", get(health::health))
         .route("/api/_metrics", get(health::cache_metrics))
+        .route(
+            "/api/_research/chain-snapshots/{symbol}",
+            get(research_chain_snapshots::list_snapshots),
+        )
+        .route(
+            "/api/_research/chain-snapshots/{symbol}/snapshot",
+            get(research_chain_snapshots::load_snapshot),
+        )
+        .route(
+            "/api/_research/session-books/{symbol}",
+            get(research_session_books::list_session_books),
+        )
+        .route(
+            "/api/_research/session-books/{symbol}/book",
+            get(research_session_books::load_session_book),
+        )
         // Server-side durable book (signed-in multi-device positions blob)
         .route("/api/book", get(book::get_book).put(book::put_book))
         // Path A — warm price
@@ -42,7 +60,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/market-data", get(market::get_market_data))
         .route("/api/signals", get(market::get_signals))
         .route("/api/strike-profile", get(market::get_strike_profile))
-        .route("/api/contract/{ticker}", get(contract::get_tracked_contract))
+        .route(
+            "/api/contract/{ticker}",
+            get(contract::get_tracked_contract),
+        )
         .route("/api/candidates/{ticker}", get(candidates::get_candidates))
         .route("/api/personas", get(market::get_personas))
         // Auth
@@ -62,6 +83,9 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/auth/google/start", get(auth::google_start))
         .route("/api/auth/google/callback", get(auth::google_callback))
+        .route("/api/auth/grok/start", get(auth::grok_start))
+        .route("/api/auth/grok/callback", get(auth::grok_callback))
+        .route("/api/auth/grok", delete(auth::grok_delete))
         // Broker (credential storage + book envelope)
         .route(
             "/api/broker/credential",

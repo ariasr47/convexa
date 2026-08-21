@@ -53,7 +53,8 @@ export function useTickerSpots(
   // The de-duplicated FOREIGN set, as one sorted string — the `trackKey` shape the contract fan-out
   // uses, so this effect re-arms on exactly the same terms and never from its own writes.
   const spotKey = useMemo(
-    () => [...new Set(tickers.map(up).filter((t) => t !== '' && t !== focused))].sort().join(','),
+    () =>
+      [...new Set(tickers.map(up).filter((t) => t !== '' && t !== focused))].toSorted().join(','),
     [tickers, focused],
   );
   const foreign = useMemo(() => (spotKey === '' ? [] : spotKey.split(',')), [spotKey]);

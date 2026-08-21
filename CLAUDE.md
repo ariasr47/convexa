@@ -87,8 +87,11 @@ the workspace root by the `node .claude/tools/path_guard.js` PreToolUse hook.
   `python -c "import io;print(io.open('FILE','rb').read().count(bytes([0])))"`
 - **Orphaned dev servers hold ports and serve STALE code.** uvicorn's `multiprocessing` children
   outlive a killed parent (three orphans on :8000 once fed a verification pass last session's build);
-  Vite lingers on :4200/:4300. When a port is busy — or before any run-the-app verification —
-  `npm run ports:free` (kills listener trees on 8000/4200/4300; extra ports as args).
+  Vite lingers on :4200/:4300 **including IPv6 `[::1]`** (the common bind on this box — use
+  `localhost`, not `127.0.0.1`). When a port is busy — or before any run-the-app verification —
+  `npm run ports:free` (kills listener trees on 8000/4200/4300 in **both** address families; extra
+  ports as args). Never 8001 (pdf-translator). An "all clear" that only swept IPv4 is how a stale
+  Vite on `[::1]:4300` once certified the previous session's build.
 - **NEVER `git stash` while any other session/lane may hold uncommitted work.** Stash captures the
   WHOLE working tree; a selective restore (`git checkout stash@{0} -- <my files>`) followed by
   `stash drop` silently destroys everyone else's uncommitted edits. This happened 2026-08-13: a build

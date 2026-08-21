@@ -1,0 +1,139 @@
+{
+  "conflicts": [
+    {
+      "quote": "At most **one** paid ensure attempt per liquid name per ET day runs **off the trader request path**; the trader HTTP path does not await that Massive I/O.",
+      "source": "pm",
+      "why": "Read as a hard one-shot latch after any Massive/compute failure, this turns a transient vendor blip into a permanent `(T, D)` miss when the ring is also empty \u2014 colliding with ship-blocking warm-day hit ACs. R1\u2019s presence + in-flight `(T, D)` singleflight already blocks concurrent stampede and per-request tax; it does not by itself forbid a later spaced retry after a failed force-compute while identity is still absent.",
+      "proposal": "Keep desk non-await and no concurrent stampede. Product picks one bound: (a) at most one successful fill per `(T, D)` with spaced off-path retries allowed after hard failure until identity exists or ET date rolls, or (b) a true day-scoped attempt-spent latch after the first Massive attempt (success or fail). R4 must name which; the ensure leaf\u2019s budget mechanism follows.",
+      "kind": "product",
+      "conflict_id": "aae649d8ebb830127ec74e7b94f750b71dcf92aaacfea70db4eb4aab7f165cc0",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "When capture/ensure is **disabled** for the day, research for `(SPY\\|QQQ\\|IWM, D)` reports honest **`no session book`** and does **not** fabricate an empty book or call Massive on the research read to create one.",
+      "source": "pm",
+      "why": "If \u201ccapture/ensure disabled\u201d is read to include session-archive store unavailable, this collapses the shipped `session archive not storing` class into `no session book` and breaks the four-way absence distinction UX and the isolation rules require. Store-off already has its own AC-13 outcome.",
+      "proposal": "Narrow AC-10 to ensure skipped / never obtained a paid book / ensure feature off \u2192 `no session book`. Keep archive store unavailable exclusively on AC-13 \u2192 `session archive not storing` (desk still up).",
+      "kind": "technical",
+      "conflict_id": "76153abc199426b1330d01ef603aac1513868cade84e1fb88e4b130858c5c3cc",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Extra Massive lives **only** on this arm, off the trader request path, \u22641 successful attempt intent per `(T, D)` while identity absent.",
+      "source": "architect",
+      "why": "Product + BRIEF lock invoice policy at at-most-one paid fetch per liquid name per ET day while the session identity is still absent \u2014 not at-most-one successful compute. Softening to successful-attempt intent silently re-opens same-day retry invoices after a failed force-compute, which AC-8 exists to forbid.",
+      "proposal": "Bound the force-compute arm to at most one Massive fetch per `(T, D)` for the ET day while identity is absent (presence short-circuit + singleflight + no same-day re-arm after a completed attempt, success or fail). Later ET days are new identities.",
+      "kind": "product",
+      "conflict_id": "e53e1d65647443155c6668273531e52dba51ae788f4f17befa8253adf3977038",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Optional fire-and-forget wake from scanner/ticker warm traffic for those three symbols is allowed only if it never joins the trader HTTP await path.",
+      "source": "architect",
+      "why": "Await-only is weaker than the product path rule: extra Massive I/O must not sit on the ticker/scanner request path at all. A request-scoped fire-and-forget that still starts vendor/ensure work can contend with desk latency and rate limits even when HTTP does not await.",
+      "proposal": "Allow at most a non-blocking wake signal into the dedicated ensure worker from warm traffic; Massive and force-compute run only inside that off-path worker, never as request-scoped tasks from ticker/scanner handlers.",
+      "kind": "technical",
+      "conflict_id": "f23523af10bbd06b2082f83a74f397e5bf0dbe5d06e268c785b30d977bfe5678",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Honest degraded outcomes** \u2014 disabled ensure, true never-captured, ensure failure, and research miss remain distinguishable and non-fabricating (`absent-is-not-none`).",
+      "source": "pm",
+      "why": "Overclaim. UX correctly keeps one shipped miss string for every no-identity cause and bans why-taxonomy (warm cache / not ensured / not a lab name). Disabled ensure, never-captured, and ensure failure are not operator-distinguishable from each other in research copy \u2014 only the four shipped classes stay distinct (session miss \u2260 ring miss \u2260 not storing \u2260 unreadable).",
+      "proposal": "Retract cause-level distinguishability among no-identity cases. Keep AC-10\u201314 as honesty/non-fabrication + four-class separation; do not require miss copy to explain why the identity is absent.",
+      "kind": "product",
+      "conflict_id": "952603fd9fad0ffbba85dd67c8b48b3a5b2f6a167b7ebd1fae5b83d0dc58718f",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Honest degraded outcomes** \u2014 disabled ensure, true never-captured, ensure failure, and research miss remain distinguishable and non-fabricating (`absent-is-not-none`).",
+      "source": "pm",
+      "why": "On the research read surface, disabled ensure, ensure failure, never-captured, and ordinary miss all present as the same closed `no session book\u2026` detail (PM\u2019s own AC-10/11/12). Claiming they \u201cremain distinguishable\u201d either invents a fifth/sixth absence class (banned: no ensure-pending / not-a-lab-name rename) or asserts a meaning the wire does not support \u2014 UX\u2019s defining failure mode. The four shipped distinctions that must stay are session-miss \u2260 ring `no stored snapshot\u2026` \u2260 `session archive not storing` \u2260 `session book unreadable: <reason>`.",
+      "proposal": "Retract distinguishability among disabled-ensure / never-captured / ensure-failure / research-miss on the research read; keep AC-10\u201312\u2019s shared honest `no session book` and AC-13/14\u2019s distinct not-storing / unreadable classes.",
+      "kind": "technical",
+      "conflict_id": "e929c85f5014045d2312819a76d36c84adf310297d9519d8ec3e1e6f8b4a2983",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** absence of trader UI (AC-18), not raising the 48 cap (AC-21), closed three-name scope (AC-22), program #3\u2013#7 not absorbed (AC-23), operator-without-trader-UI check (AC-24), and the explicit \u201cauthorizes: nothing\u201d research framing (AC-25).",
+      "source": "pm",
+      "why": "Trader-chrome absence and the hit-envelope `authorizes: nothing` field can die silently under unrelated dashboard or research-wire refactors while a normal review pass still looks fine. Risk-based verify marks those as `test` (structural affordance / copy byte-identity / wire-field assertion) \u2014 matching UX AC-U1/U2/U4. Scope non-goals (48-cap, closed trio, program #3\u2013#7 not absorbed) and positive operator-path-without-trader-UI remain fair `review`.",
+      "proposal": "Reclassify AC-18 and AC-25 as `Verify by: test`; leave AC-21\u2013AC-24 as `review`.",
+      "kind": "technical",
+      "conflict_id": "f78697428f4c0e2d75bae22c736470bb910672651184d3678bcf7291ff4a8324",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Endpoint paths, JSON field names, and operator copy are theirs / R4\u2019s to name; this position only requires an off-path ensure component boundary and the promote-then-force data flow above.",
+      "source": "architect",
+      "why": "This ship has no new operator vocabulary to mint. Hit framing, mandatory `source_as_of`, provenance, `authorizes: nothing`, and the four absence `detail` strings are already shipped by `session-chain-archive`. \u201cTo name\u201d read as greenfield naming would reopen absence vocabulary and invite banned lab-rename / warm-cache-excuse copy.",
+      "proposal": "R4/UX reuse the shipped session-chain-archive list/load fields and exact \u00a74 strings; they preserve and cite, they do not newly name miss classes or hit framing for this feature.",
+      "kind": "technical",
+      "conflict_id": "5fc040346c64c1a103aa4618de8ece8baf9e9fe33642a169802246dd1b166f04",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: for AC-1\u20133, by when must the `(SPY|QQQ|IWM, D)` hit be observable \u2014 end of RTH, end of ET calendar day D, or any time before the next research join \u2014 so the ensure worker\u2019s cadence and off-hours force-compute eligibility can be named?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: does a failed Massive/force-compute attempt consume the day\u2019s paid-ensure budget, or may the off-path worker retry later the same ET day while identity is still absent?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: confirm AC-10 \u201ccapture/ensure disabled\u201d is disjoint from session-archive store unavailable (AC-13 / `session archive not storing`)."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: confirm that \u201cload before ensure completes\u201d stays the ordinary dated `no session book for <SYMBOL> on <ET_DATE>` string with no fifth pending/ensure-loading class."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: What concrete predicate implements \u201cin today\u2019s paid-capture / scannable-servable universe\u201d for ET date D, so holiday or outside-coverage absence stays honest `no session book` rather than a failed AC-1\u20133?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: By what observable deadline on or after ET date D has the dedicated ensure worker finished for SPY/QQQ/IWM so research list/load hit is checkable for the ship-blocking warm-cache guarantee?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: Confirm operator verification stays list/load against the shipped session-book envelope only \u2014 no fifth miss/pending class and no ensure-progress chrome when a read lands before the off-path worker has completed."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: Confirm In-scope #7 does not require operator-visible distinct copy for ensure-failed vs never-captured beyond the four shipped absence classes."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: Confirm AC-18 (no trader chrome) and AC-25 (`authorizes: nothing` on successful research read) may ship as Verify-by `test`, with AC-21\u201324 staying `review`."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: Confirm research list/load framing fields and miss `detail` strings remain byte-compatible with shipped session-chain-archive (reuse, not a new ensure-pending enum member)."
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 6,
+    "ux": 5
+  }
+}

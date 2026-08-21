@@ -5,7 +5,7 @@
  * verdict; it performs no matching of its own).
  */
 import type { CitedContract } from '@convexa/api';
-import { Typography } from '@mui/material';
+import Typography from '@mui/material/Typography';
 import { OFF_SET_LITERAL, UNDETERMINED_RIGHT_BOTH_LEGS, UNDETERMINED_RIGHT_NO_QUOTE } from './copy';
 import { citedLine } from './literals';
 

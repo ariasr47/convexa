@@ -34,7 +34,11 @@
 import { typographyTokens } from '@/shared/theme/tokens';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { useCallback, useMemo, useState } from 'react';
 import { ArchiveBlock } from './ArchiveBlock';
 import {

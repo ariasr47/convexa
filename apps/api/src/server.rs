@@ -21,6 +21,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
 
     // Background pre-warm of top symbols (price + GEX).
     warmer::spawn(state.clone());
+    crate::services::session_chain_archive::ensure_worker::spawn(state.clone());
 
     // Phase 4 two-speed scanner over the owner-curated universe.
     if state.config.scan_enabled {

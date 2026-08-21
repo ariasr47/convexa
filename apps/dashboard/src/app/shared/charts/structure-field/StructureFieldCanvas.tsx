@@ -832,6 +832,10 @@ export function StructureFieldCanvas({
     model.putWall,
     model.gammaFlip,
     model.symbol,
+    pad.l,
+    pad.r,
+    pad.t,
+    pad.b,
   ]);
 
   useEffect(() => {

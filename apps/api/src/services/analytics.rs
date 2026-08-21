@@ -7,9 +7,8 @@ use quant_engine::{
     analyze_off_exchange_default, calculate_historical_volatility_30d,
     calculate_vwap_bands_default, compute_iv_rank_read, compute_iv_structure,
     compute_market_context, derive_cm30_sample, generate_signals, iv_hv_ratio,
-    market_state_from_gex, off_exchange_signal_input, process_gex_profile, vol_normalize_gex,
-    HvPercent, IvDecimal,
-    session_date_from_ns, GexOptions, IV_RANK_WINDOW_CAP,
+    market_state_from_gex, off_exchange_signal_input, process_gex_profile, session_date_from_ns,
+    vol_normalize_gex, GexOptions, HvPercent, IvDecimal, IV_RANK_WINDOW_CAP,
 };
 use std::time::Instant;
 use tracing::{info, warn};
@@ -30,6 +29,7 @@ pub async fn load_analytics(
     if !refresh && !filter_active {
         if let Some(hit) = state.gex_cache.get(sym).await {
             info!(ticker = %sym, "gex cache hit");
+            crate::services::session_chain_archive::maybe_wake(&state.ensure_wake, sym);
             return Ok((Some(hit), "cache".into()));
         }
     }
@@ -37,7 +37,9 @@ pub async fn load_analytics(
     // DTE filters: not keyed in gex_cache yet — still singleflight per (sym) would
     // mix filtered/unfiltered, so only singleflight the default full-chain path.
     let snap = if filter_active {
-        compute_analytics(state, sym, min_dte, max_dte).await?
+        let (snap, vendor) = compute_analytics(state, sym, min_dte, max_dte).await?;
+        crate::services::chain_snapshot::spawn_capture(state.clone(), vendor);
+        snap
     } else {
         state
             .gex_flight
@@ -45,12 +47,14 @@ pub async fn load_analytics(
                 // Re-check cache after winning/joining flight (leader may have filled it).
                 if !refresh {
                     if let Some(hit) = state.gex_cache.get(sym).await {
+                        crate::services::session_chain_archive::maybe_wake(&state.ensure_wake, sym);
                         return Ok(hit);
                     }
                 }
-                let snap = compute_analytics(state, sym, None, None).await?;
+                let (snap, vendor) = compute_analytics(state, sym, None, None).await?;
                 state.gex_cache.set(snap.clone()).await;
                 seed_price_if_empty(state, &snap).await;
+                crate::services::chain_snapshot::spawn_capture(state.clone(), vendor);
                 Ok(snap)
             })
             .await?
@@ -71,17 +75,22 @@ pub async fn load_analytics(
 pub async fn load_or_compute(state: &AppState, sym: &str) -> Result<AnalyticsSnapshot, AppError> {
     if let Some(hit) = state.gex_cache.get(sym).await {
         info!(ticker = %sym, "scanner/warm path: gex cache hit");
+        // Live hole: warm hit returns without capture. Wake the off-path ensure worker
+        // (Notify only — trader HTTP does not await Massive / force-compute).
+        crate::services::session_chain_archive::maybe_wake(&state.ensure_wake, sym);
         return Ok(hit);
     }
     state
         .gex_flight
         .join_or_run(sym, || async {
             if let Some(hit) = state.gex_cache.get(sym).await {
+                crate::services::session_chain_archive::maybe_wake(&state.ensure_wake, sym);
                 return Ok(hit);
             }
-            let snap = compute_analytics(state, sym, None, None).await?;
+            let (snap, vendor) = compute_analytics(state, sym, None, None).await?;
             state.gex_cache.set(snap.clone()).await;
             seed_price_if_empty(state, &snap).await;
+            crate::services::chain_snapshot::spawn_capture(state.clone(), vendor);
             Ok(snap)
         })
         .await
@@ -93,7 +102,8 @@ pub async fn refresh_analytics(state: &AppState, sym: &str) -> Result<AnalyticsS
     state
         .gex_flight
         .join_or_run(sym, || async {
-            let snap = compute_analytics(state, sym, None, None).await?;
+            let (snap, _vendor) = compute_analytics(state, sym, None, None).await?;
+            // Intentionally drop _vendor — warmer / refresh_analytics must not capture.
             state.gex_cache.set(snap.clone()).await;
 
             // Keep price warm alongside GEX for the progressive path.
@@ -156,7 +166,13 @@ async fn compute_analytics(
     sym: &str,
     min_dte: Option<f64>,
     max_dte: Option<f64>,
-) -> Result<AnalyticsSnapshot, AppError> {
+) -> Result<
+    (
+        AnalyticsSnapshot,
+        crate::services::market_data::VendorBundle,
+    ),
+    AppError,
+> {
     let t0 = Instant::now();
     // Chain + daily + minute bars in parallel (Python `_acquire_vendor_inputs`).
     // Each is independently best-effort for HV / VWAP; only the chain is required.
@@ -207,8 +223,7 @@ async fn compute_analytics(
         ttl_secs: state.config.gex_ttl_for(sym).as_secs(),
         iv_rank_enabled: true,
     };
-    let mut snap =
-        compute_analytics_from_vendor(&vendor, &params, Some(&state.iv_store)).await?;
+    let mut snap = compute_analytics_from_vendor(&vendor, &params, Some(&state.iv_store)).await?;
     // Preserve vendor I/O timing in the live path log (CPU is inside compute).
     info!(
         ticker = %sym,
@@ -219,7 +234,16 @@ async fn compute_analytics(
     );
     // Fold vendor wait into compute_ms so desk metrics stay wall-clock complete.
     snap.compute_ms += vendor_ms;
-    Ok(snap)
+    Ok((snap, vendor))
+}
+
+/// Off-path ensure only: fetch a live VendorBundle. Does **not** fire-and-forget capture.
+pub(crate) async fn fetch_vendor_bundle_for_ensure(
+    state: &AppState,
+    sym: &str,
+) -> Result<crate::services::market_data::VendorBundle, AppError> {
+    let (_snap, vendor) = compute_analytics(state, sym, None, None).await?;
+    Ok(vendor)
 }
 
 /// Pure-ish Path B compute from a resolved [`VendorBundle`] — **no network**.
@@ -314,12 +338,7 @@ pub async fn compute_analytics_from_vendor(
 
     let now_ns = as_of.timestamp_nanos_opt().unwrap_or(0);
     let off_exchange = if params.include_dark_pool && !trades.is_empty() {
-        analyze_off_exchange_default(
-            trades,
-            display_price,
-            params.block_min_shares,
-            now_ns,
-        )
+        analyze_off_exchange_default(trades, display_price, params.block_min_shares, now_ns)
     } else {
         None
     };
@@ -388,7 +407,10 @@ pub async fn compute_analytics_from_vendor(
         &market.contracts,
         market.synchronized_spot,
         as_of,
-        quant_engine::DteWindow { min: params.min_dte, max: params.max_dte },
+        quant_engine::DteWindow {
+            min: params.min_dte,
+            max: params.max_dte,
+        },
         &quant_engine::SnapshotMeta {
             as_of_iso: Some(as_of.to_rfc3339()),
             session_basis: Some(market.market_phase.as_str().to_string()),

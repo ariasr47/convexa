@@ -16,9 +16,10 @@
 // https://<service>.up.railway.app) — set in the Pages dashboard, NEVER committed and
 // NOT a secret (it's a public URL). No secret value lives in this file.
 //
-// /api/_metrics is operator-only (ARCHITECTURE §5/S3, OQ-4 recommended option): it is NOT
-// proxied through the public edge — we return 404 so it is unreachable via *.pages.dev.
-// The operator reads it via the Railway URL directly. (system-6 to confirm.)
+// /api/_metrics and /api/_research/* are operator-only (ARCHITECTURE §5/S3; chain-snapshot-
+// capture AC-16): they are NOT proxied through the public trader origin — we return 404 so
+// they are unreachable via *.pages.dev. The operator reads them via the Railway URL directly.
+// Token gate alone is not the _metrics posture.
 
 interface Env {
   API_ORIGIN: string;
@@ -40,8 +41,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
   const url = new URL(request.url);
 
-  // R4 / S3: never expose operator metrics over the public origin.
-  if (url.pathname === '/api/_metrics' || url.pathname.startsWith('/api/_metrics/')) {
+  // R4 / S3 / AC-16: never expose operator metrics or research corpus over the public origin.
+  if (
+    url.pathname === '/api/_metrics' ||
+    url.pathname.startsWith('/api/_metrics/') ||
+    url.pathname === '/api/_research' ||
+    url.pathname.startsWith('/api/_research/')
+  ) {
     return new Response('Not Found', { status: 404 });
   }
 

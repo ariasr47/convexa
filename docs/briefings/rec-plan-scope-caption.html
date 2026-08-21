@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>What we are shipping — plan-scope caption</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@87,500;87,700;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1A2330;
+      --line: rgba(138, 155, 180, 0.22);
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --ok: #3FA36A;
+      --bad: #D45B5B;
+      --warn: #E07A3F;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1200px 500px at 80% -10%, rgba(242, 169, 59, 0.08), transparent 50%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: "IBM Plex Sans", sans-serif;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 28px 120px; }
+    header.mast {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+    .kicker {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--amber-text);
+      margin: 0 0 10px;
+    }
+    h1 {
+      font-family: "Archivo", sans-serif;
+      font-stretch: 112%;
+      font-weight: 700;
+      font-size: clamp(36px, 5vw, 58px);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      margin: 0 0 14px;
+    }
+    .lede { max-width: 42rem; color: var(--steel); margin: 0; }
+    .status {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 14px 16px;
+      border-radius: 10px;
+      min-width: 220px;
+    }
+    .status dt { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: 0.08em; }
+    .status dd { margin: 2px 0 10px; font-weight: 600; }
+    .status dd:last-child { margin-bottom: 0; }
+    nav.toc {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 18px;
+      margin: 22px 0 48px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+    }
+    nav.toc a { color: var(--steel); text-decoration: none; border-bottom: 1px solid transparent; }
+    nav.toc a:hover { color: var(--phosphor); border-color: var(--amber); }
+    section { margin: 72px 0; }
+    h2 {
+      font-family: "Archivo", sans-serif;
+      font-stretch: 87%;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+    h3 { font-size: 18px; margin: 28px 0 8px; }
+    p { max-width: 68ch; }
+    .sub { color: var(--steel); margin: 0 0 22px; max-width: 68ch; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { margin-top: 0; }
+    .muted { color: var(--steel); }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+    .amber { color: var(--amber-text); }
+    .ok { color: var(--ok); }
+    .bad { color: var(--bad); }
+    .chip {
+      display: inline-block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--steel);
+    }
+    .chip.checked { border-color: rgba(63, 163, 106, 0.45); color: #8fd4aa; }
+    .chip.bare { border-color: rgba(138, 155, 180, 0.35); }
+    .chip.off { opacity: 0.45; }
+    .quote {
+      font-family: "Archivo", sans-serif;
+      font-stretch: 87%;
+      font-size: 22px;
+      line-height: 1.3;
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px;
+      margin: 18px 0;
+      max-width: 46rem;
+    }
+    .timeline { display: grid; grid-template-columns: 88px 1fr; gap: 8px 16px; }
+    .timeline .when { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--amber-text); padding-top: 3px; }
+    .mock {
+      background: var(--raised);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 16px 14px;
+    }
+    .verdict { font-family: "Archivo", sans-serif; font-size: 20px; margin: 0 0 12px; }
+    .fields { display: flex; flex-wrap: wrap; gap: 12px 18px; }
+    .field label { display: block; font-size: 11px; color: var(--steel); }
+    .field .val { font-family: "IBM Plex Mono", monospace; font-size: 14px; }
+    .caption {
+      margin: 12px 0 8px;
+      font-size: 12.5px;
+      color: var(--steel);
+      display: block;
+    }
+    .caption.hl {
+      outline: 1px dashed rgba(242, 169, 59, 0.7);
+      outline-offset: 6px;
+      background: rgba(242, 169, 59, 0.06);
+      padding: 6px 8px;
+      border-radius: 4px;
+    }
+    .thesis { font-size: 14px; color: var(--steel); margin: 10px 0 14px; }
+    .risk-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .risk {
+      background: rgba(11, 15, 23, 0.45);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .risk .k { font-size: 11px; color: var(--steel); }
+    .risk .v { font-family: "IBM Plex Mono", monospace; }
+    .clause { font-size: 11px; color: #8fd4aa; margin-top: 4px; }
+    .clause.none { color: var(--steel); }
+    .toggle {
+      display: flex; gap: 8px; margin: 0 0 14px;
+    }
+    button.tab {
+      background: transparent;
+      color: var(--steel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font: 500 13px "IBM Plex Sans", sans-serif;
+      cursor: pointer;
+    }
+    button.tab[aria-pressed="true"] {
+      color: var(--ink);
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+    button.tab:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    svg.flow { width: 100%; height: auto; display: block; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+    }
+    th, td {
+      text-align: left;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    th { color: var(--steel); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .yes { color: var(--ok); }
+    .no { color: var(--bad); }
+    .callout {
+      background: var(--panel);
+      border: 1px solid rgba(242, 169, 59, 0.28);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    footer.note {
+      margin-top: 80px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--steel);
+      font-size: 13px;
+    }
+    @media (max-width: 820px) {
+      .grid-2, .grid-3, header.mast { grid-template-columns: 1fr; }
+      .wrap { padding: 24px 16px 80px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="mast">
+      <div>
+        <p class="kicker">Convexa · rec-plan-scope-caption · ship briefing</p>
+        <h1>One quiet sentence that stops a wrong trade.</h1>
+        <p class="lede">We are not shipping a new signal, a smarter model, or a checked plan. We are shipping a scope boundary: when Convexa shows a trade plan, it will say out loud which fields nobody checked.</p>
+      </div>
+      <dl class="status">
+        <dt>Status</dt><dd>Quality check passed</dd>
+        <dt>Surface</dt><dd>Ticker · Decision card</dd>
+        <dt>Server</dt><dd>Unchanged</dd>
+        <dt>Waiting on</dt><dd>Ship or hold</dd>
+      </dl>
+    </header>
+
+    <nav class="toc" aria-label="Sections">
+      <a href="#hole">The hole</a>
+      <a href="#lineage">The three ships</a>
+      <a href="#demo">Before / after</a>
+      <a href="#copy">The sentence</a>
+      <a href="#when">When it appears</a>
+      <a href="#where">Where it sits</a>
+      <a href="#not">What it is not</a>
+      <a href="#residuals">Known leftovers</a>
+      <a href="#evidence">Evidence</a>
+      <a href="#ship">If we ship</a>
+    </nav>
+
+    <section id="hole">
+      <h2>The hole this closes</h2>
+      <p class="sub">Same failure class as the last two AI-grounding ships: a trader treats an unchecked field as verified and sizes or enters on it.</p>
+      <p>Convexa can already check three risk/exit numbers against its own computed levels: <strong>stop</strong>, <strong>target</strong>, and <strong>invalidation</strong>. Those can carry a small “traces to / near / inside” clause.</p>
+      <p>Six other fields sit on the same card as ordinary stated values:</p>
+      <p>
+        <span class="chip bare">Structure</span>
+        <span class="chip bare">Strike(s)</span>
+        <span class="chip bare">Expiration</span>
+        <span class="chip bare">Entry trigger</span>
+        <span class="chip bare">Time horizon</span>
+        <span class="chip bare">Confidence</span>
+      </p>
+      <p>They have no clause. After the last two ships, a reader who learned “a clause means Convexa checked it” can invert the lesson: <em>no clause means it was checked too, or it wouldn’t be sitting there so cleanly.</em></p>
+      <p class="quote">A trader sees a checked target next to an unchecked strike, treats the whole plan as verified, and enters. That is a wrong trade.</p>
+      <p>We do <em>not</em> start checking those six fields. We name the boundary so “no clause” cannot be read as “checked.”</p>
+    </section>
+
+    <section id="lineage">
+      <h2>The three-ship arc</h2>
+      <p class="sub">This is half two of a hole the last ship was not allowed to call closed.</p>
+      <div class="timeline">
+        <div class="when">Ship 1</div>
+        <div class="card">
+          <h3>Numbers the model asserts</h3>
+          <p class="muted">If the AI writes “stop 412,” Convexa must either trace that figure to a computed field or say it could not. Measured at ship: 44% of asserted numbers did not trace — and used to render as fact.</p>
+        </div>
+        <div class="when">Ship 2</div>
+        <div class="card">
+          <h3>Numbers the model omits</h3>
+          <p class="muted">A missing strike used to print the reserved no-entry dash. “We never got a strike” looked identical to “no strike applies.” Closed vocabulary: not given / unavailable / unrecognized — never the no-entry mark.</p>
+        </div>
+        <div class="when">This ship</div>
+        <div class="card">
+          <h3>The inference that remains</h3>
+          <p class="muted">Half two of the same item: even with honest absence marks, a reader can still generalize “no clause means checked” onto the six plan fields. One section caption is the remaining mechanism. Until this ships, that item may not be recorded closed.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo">
+      <h2>Before and after, on the card a trader acts from</h2>
+      <p class="sub">Primary wrong-trade story: a produced model trade with a stated structure and trigger, plus checked target and invalidation. Toggle to see the halo form and break.</p>
+      <div class="toggle" role="group" aria-label="Card state">
+        <button class="tab" id="btn-before" aria-pressed="true" type="button">Before — the halo</button>
+        <button class="tab" id="btn-after" aria-pressed="false" type="button">After — the caption</button>
+      </div>
+      <div class="grid-2">
+        <div class="mock" id="mock-card">
+          <p class="verdict">Trade · bullish</p>
+          <div class="fields">
+            <div class="field"><label>Structure</label><div class="val">long call</div></div>
+            <div class="field"><label>Strike(s)</label><div class="val">$260</div></div>
+            <div class="field"><label>Expiration</label><div class="val">not given</div></div>
+            <div class="field"><label>Entry trigger</label><div class="val">break above 252</div></div>
+            <div class="field"><label>Time horizon</label><div class="val">not given</div></div>
+            <div class="field"><label>Confidence</label><div class="val">medium</div></div>
+          </div>
+          <span class="caption" id="scope-caption">Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.</span>
+          <p class="thesis">Break and hold above 252 with dealer support under the call wall.</p>
+          <div class="risk-grid">
+            <div class="risk"><div class="k">Max risk</div><div class="v">$480</div></div>
+            <div class="risk"><div class="k">Invalidation</div><div class="v">248</div><div class="clause">near Convexa's put wall (247.6)</div></div>
+            <div class="risk"><div class="k">Entry</div><div class="v">break above 252</div><div class="clause none">no clause</div></div>
+            <div class="risk"><div class="k">Target</div><div class="v">275</div><div class="clause">near Convexa's call wall (274.8)</div></div>
+          </div>
+        </div>
+        <div class="card" id="halo-read">
+          <h3 id="halo-title">What a hurried trader can conclude</h3>
+          <p id="halo-body">Two green clauses sit next to a clean strike and a clean trigger. Nothing on the plan row says those fields were never run through Convexa’s numbers. The card looks internally consistent. That consistency is the defect.</p>
+          <p class="mono muted" id="halo-meta">Checked: invalidation, target.<br />Unchecked, looking checked: structure, strike, trigger, confidence.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="copy">
+      <h2>The exact sentence</h2>
+      <p class="sub">Closed constant. Never interpolated. Never “because strikes were empty.”</p>
+      <p class="quote">Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.</p>
+      <table>
+        <thead><tr><th>Clause</th><th>Why it is there</th></tr></thead>
+        <tbody>
+          <tr><td>Names all six plan labels</td><td>Uses the same words already on the row. No new vocabulary.</td></tr>
+          <tr><td>“aren't checked”</td><td>Permanent scope: none of the six enters the figure-grounding set. Not a per-rec diagnosis.</td></tr>
+          <tr><td>“only the stop, target and invalidation level are”</td><td>Names the allowlist, not “the numbers below” — layout can drift.</td></tr>
+          <tr><td>No verified / confirmed / safe / trusted</td><td>Those words are banned as claims about the plan. Traceable is not the same as correct.</td></tr>
+        </tbody>
+      </table>
+      <p>Chrome: quiet secondary caption, block display, no warning icon, no amber alarm, no new animation. Same honesty pattern as the reasoning-prose caption already in the analysis drawer.</p>
+    </section>
+
+    <section id="when">
+      <h2>When it appears — a two-question machine</h2>
+      <p class="sub">Show/hide is structural. It does not inspect whether a field looks “stated” or whether a risk clause rendered. A boundary that vanishes when every field is an absence mark would teach “no caption means full coverage.”</p>
+      <svg class="flow" viewBox="0 0 980 280" role="img" aria-label="Show hide flowchart">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8A9BB4" />
+          </marker>
+        </defs>
+        <rect x="20" y="100" width="180" height="72" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.35)" />
+        <text x="110" y="130" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Produced rec</text>
+        <text x="110" y="150" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">already on the card</text>
+        <line x1="200" y1="136" x2="248" y2="136" stroke="#8A9BB4" marker-end="url(#arrow)" />
+        <rect x="256" y="88" width="210" height="96" rx="8" fill="#131A24" stroke="#F2A93B" />
+        <text x="361" y="118" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">Q1</text>
+        <text x="361" y="140" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Is this a trade?</text>
+        <text x="361" y="160" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">decision === trade</text>
+        <line x1="361" y1="184" x2="361" y2="228" stroke="#8A9BB4" marker-end="url(#arrow)" />
+        <text x="371" y="218" fill="#D45B5B" font-family="IBM Plex Mono" font-size="11">no → hide</text>
+        <rect x="286" y="234" width="150" height="34" rx="6" fill="#1A2330" stroke="rgba(212,91,91,0.4)" />
+        <text x="361" y="256" text-anchor="middle" fill="#D45B5B" font-family="IBM Plex Sans" font-size="13">no_trade / no card</text>
+        <line x1="466" y1="136" x2="514" y2="136" stroke="#8A9BB4" marker-end="url(#arrow)" />
+        <rect x="522" y="88" width="230" height="96" rx="8" fill="#131A24" stroke="#F2A93B" />
+        <text x="637" y="118" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">Q2</text>
+        <text x="637" y="140" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">Local-rules producer?</text>
+        <text x="637" y="160" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">card === local_rules</text>
+        <line x1="637" y1="184" x2="637" y2="228" stroke="#8A9BB4" marker-end="url(#arrow)" />
+        <text x="647" y="218" fill="#D45B5B" font-family="IBM Plex Mono" font-size="11">yes → hide</text>
+        <rect x="552" y="234" width="170" height="34" rx="6" fill="#1A2330" stroke="rgba(212,91,91,0.4)" />
+        <text x="637" y="256" text-anchor="middle" fill="#D45B5B" font-family="IBM Plex Sans" font-size="13">no standing banner</text>
+        <line x1="752" y1="136" x2="800" y2="136" stroke="#8A9BB4" marker-end="url(#arrow)" />
+        <rect x="808" y="100" width="152" height="72" rx="8" fill="rgba(242,169,59,0.12)" stroke="#F2A93B" />
+        <text x="884" y="132" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Sans" font-size="14">Show once</text>
+        <text x="884" y="152" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="12">one caption</text>
+      </svg>
+      <div class="grid-2" style="margin-top:18px">
+        <div class="card">
+          <h3>Never used as a gate</h3>
+          <ul class="muted">
+            <li>Who paid for the key (<span class="mono">key_source</span>)</li>
+            <li>Whether strikes are empty</li>
+            <li>Whether a stop/target clause rendered</li>
+            <li>Whether the trader opened analysis</li>
+          </ul>
+          <p class="muted">Local-rules envelopes can carry a real admin key and still always state a structure. Gating on “keyless” would either hide the model path or hang a permanent banner on the rules path.</p>
+        </div>
+        <div class="card">
+          <h3>Odd case we accepted</h3>
+          <p class="muted">If the card token is <span class="mono">not_applicable</span> (local-only body with nothing checkable) and a trade plan row still mounts, the caption <strong>shows</strong>. Hide is only the word <span class="mono">local_rules</span>. A second hide token would need a server change, which this feature forbids.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="where">
+      <h2>Where it sits</h2>
+      <p class="sub">On the pinned Decision card — the surface a trader can act from without opening the drawer. One instance. Never inside the wrapping plan-field row (that row is a horizontal flex; a block caption inside it becomes a seventh chip).</p>
+      <div class="card">
+        <ol class="mono muted">
+          <li>Trade · bias</li>
+          <li>Six plan fields (the row)</li>
+          <li style="color:#F2A93B">← caption lands here, as the next sibling</li>
+          <li>Thesis lead, if any</li>
+          <li>Risk grid (max risk / invalidation+clause / entry / target+clause)</li>
+        </ol>
+        <p>Analysis may repeat plan labels. It must not grow a second copy of this caption. The drawer already has its own prose caption: numbers written in the reasoning aren’t checked.</p>
+      </div>
+    </section>
+
+    <section id="not">
+      <h2>What we are not shipping</h2>
+      <div class="grid-3">
+        <div class="card"><h3>Not a smarter check</h3><p class="muted">Plan fields do not enter the grounded set. The model is not asked to ground them. Stop / target / invalidation stay the only allowlist.</p></div>
+        <div class="card"><h3>Not per-field chips</h3><p class="muted">No tint, tooltip, or “not checked” mark on Structure or Strike. That would invent a new type register and re-open line budget.</p></div>
+        <div class="card"><h3>Not a server change</h3><p class="muted">Empty API diff. Score, tier, and fingerprint stay byte-identical. No new wire field.</p></div>
+        <div class="card"><h3>Not a banner on local rules</h3><p class="muted">The rules path always emits a trade shape when a setup exists. A permanent caption there would go numb and lose its meaning.</p></div>
+        <div class="card"><h3>Not Accept / prefill work</h3><p class="muted">The simulated entry dialog is untouched. Absence marks on the six fields stay as shipped.</p></div>
+        <div class="card"><h3>Not a measurement</h3><p class="muted">We are not yet measuring whether readers actually drop the inference. That is future work, named as such.</p></div>
+      </div>
+    </section>
+
+    <section id="residuals">
+      <h2>Known leftovers — shipping as written</h2>
+      <p class="sub">The design review found these. They did not block the spec. They will still be true after ship.</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>The second clause can disagree with the card line</h3>
+          <p class="muted">The caption says stop / target / invalidation <em>are</em> checked. On a missing-grounding or not-applicable envelope, a sibling line on the same card can say this read wasn’t checked at all. Distinct, and in that state opposite. The first clause (“plan fields aren’t checked”) remains true.</p>
+        </div>
+        <div class="card">
+          <h3>Grid Entry still has no local mark</h3>
+          <p class="muted">The risk grid restates the entry trigger beside a checked target, with no clause on Entry. The caption sits above the thesis, not in that cell. We forbade putting it in the grid. The adjacency remains.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <h2>What already landed</h2>
+      <p class="sub">Frontend only. Quality check: 19 of 19 written checks passed, none failed.</p>
+      <table>
+        <thead><tr><th>Must be true</th><th>How we know</th></tr></thead>
+        <tbody>
+          <tr><td>Exactly one caption on a model trade</td><td>DOM tests on the card, including with analysis open</td></tr>
+          <tr><td>Zero captions on local-rules, even with an admin key</td><td>Dedicated fixture <span class="mono">shared_admin</span></td></tr>
+          <tr><td>Absent on no-trade and empty / loading / signed-out</td><td>Tests + cold ticker in the browser (no ghost)</td></tr>
+          <tr><td>Does not move when live tape drops</td><td>Re-render stability test; caption is not live-derived</td></tr>
+          <tr><td>Server / score untouched</td><td>Empty <span class="mono">apps/api</span> and <span class="mono">libs/api</span> vs the pre-feature commit</td></tr>
+        </tbody>
+      </table>
+      <p class="muted">Live produced-rec chrome was not painted in a browser on the quality pass (API was not in that session). Show/hide was observed through the fixture suite that mounts the real card.</p>
+    </section>
+
+    <section id="ship">
+      <h2>If we ship</h2>
+      <div class="callout">
+        <p>Shipping archives this feature and updates the standing notes. It is the first time we are allowed to record the leftover “no clause means checked” hole as closed.</p>
+        <p>It does not make plan fields true. It does not make the model better. It makes the card stop implying a check that never ran.</p>
+        <p class="muted" style="margin-bottom:0">Still waiting: A ship now · B hold for your own look.</p>
+      </div>
+    </section>
+
+    <footer class="note">
+      Briefing for the owner, generated 2026-08-17 from the approved spec, the shipped Decision card, and the passing quality report. Not a second contract. The written plan remains in <span class="mono">.spire/clusters/tech/contracts/rec-plan-scope-caption/</span>.
+    </footer>
+  </div>
+  <script>
+    const before = document.getElementById("btn-before");
+    const after = document.getElementById("btn-after");
+    const cap = document.getElementById("scope-caption");
+    const title = document.getElementById("halo-title");
+    const body = document.getElementById("halo-body");
+    const meta = document.getElementById("halo-meta");
+    function setMode(mode) {
+      const isAfter = mode === "after";
+      before.setAttribute("aria-pressed", String(!isAfter));
+      after.setAttribute("aria-pressed", String(isAfter));
+      cap.style.display = isAfter ? "block" : "none";
+      cap.classList.toggle("hl", isAfter);
+      title.textContent = isAfter
+        ? "What the card now states"
+        : "What a hurried trader can conclude";
+      body.textContent = isAfter
+        ? "The six plan fields stay exactly as they were. Nothing on them is newly checked. The sentence under the row names the boundary, in the same quiet voice as the analysis-drawer honesty line."
+        : "Two green clauses sit next to a clean strike and a clean trigger. Nothing on the plan row says those fields were never run through Convexa’s numbers. The card looks internally consistent. That consistency is the defect.";
+      meta.innerHTML = isAfter
+        ? "Checked allowlist: stop, target, invalidation.<br />Named unchecked: the six plan fields."
+        : "Checked: invalidation, target.<br />Unchecked, looking checked: structure, strike, trigger, confidence.";
+    }
+    setMode("before");
+    before.addEventListener("click", () => setMode("before"));
+    after.addEventListener("click", () => setMode("after"));
+  </script>
+</body>
+</html>

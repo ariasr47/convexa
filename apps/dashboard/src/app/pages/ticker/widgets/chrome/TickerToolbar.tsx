@@ -18,19 +18,17 @@
 import { PersonaPicker } from '@/features/personas/components';
 import type { usePersona } from '@/features/personas/usePersona';
 import type { Expiration } from '@convexa/api';
-import {
-  Box,
-  Checkbox,
-  CircularProgress,
-  FormControl,
-  ListItemText,
-  MenuItem,
-  OutlinedInput,
-  Select,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
+import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { type ReactNode } from 'react';
 import { dteLabel } from '../_kit/copy';
 

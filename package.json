@@ -27,6 +27,7 @@
     "format:check": "prettier --check \"apps/dashboard/**/*.{ts,tsx,js,jsx,mjs,css,json,md}\" \"apps/dashboard-e2e/**/*.{ts,tsx,js,mjs,json}\" \"libs/**/*.{ts,tsx,js,mjs,json,md}\" \"tools/**/*.{js,mjs,ts}\" \"functions/**/*.{ts,js}\" \"*.{json,md,mjs,yml}\" --ignore-unknown",
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
+    "test:tools": "node --test tools/*.spec.mjs",
     "worktree:link": "node tools/link-workspace.mjs",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run check:bundle",
     "conformance:public": "node .claude/tools/interface_conformance.mjs --spec .spire/clusters/tech/state/conformance/public-surface.json --url",

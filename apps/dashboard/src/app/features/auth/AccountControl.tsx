@@ -10,7 +10,11 @@
  * The degraded state is treated as unauthenticated (shows `Sign in`); the "couldn't reach sign-in"
  * copy surfaces only on submit / on a gated action — never here, and never on the trader path.
  */
-import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';

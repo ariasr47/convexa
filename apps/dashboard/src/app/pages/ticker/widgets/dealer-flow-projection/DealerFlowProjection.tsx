@@ -22,7 +22,12 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import { Widget } from '@/shared/ui/Widget';
 import type { DealerFlowProjection as Dfp } from '@convexa/api';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import {
   CHARM_EMPTY,
   CHARM_LABEL,

@@ -5,6 +5,7 @@
 mod cookies;
 pub mod crypto;
 pub mod google_oauth;
+pub mod grok_oauth;
 mod passwords;
 pub mod risk;
 mod service;
@@ -16,9 +17,10 @@ pub use risk::{
     RiskInputsState, RiskInputsWire,
 };
 pub use service::{
-    auth_required, settings_auth_required, AuthConfig, AuthError, AuthService, IdentityShape,
-    ResolvedSession, SettingsWire, CREDENTIAL_KIND_BROKER,
+    auth_required, settings_auth_required, AiSlot, AuthConfig, AuthError, AuthService,
+    IdentityShape, ResolvedSession, SettingsWire, BROKER_PROVIDER, CREDENTIAL_KIND_BROKER,
 };
 pub use store::{
-    AuthStore, CredentialRecord, SessionRecord, SettingsPatch, SettingsRecord, UserRecord,
+    AuthStore, CredentialRecord, GrokLinkRecord, SessionRecord, SettingsPatch, SettingsRecord,
+    UserRecord,
 };

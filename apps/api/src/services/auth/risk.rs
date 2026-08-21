@@ -57,14 +57,22 @@ pub struct EffectiveDollarCap {
 
 /// Derived **exactly once, server-side**; the client performs no arithmetic on the owner's
 /// entered values.
-pub fn effective_dollar_cap(account_size: Option<f64>, cap: Option<PerTradeCap>) -> EffectiveDollarCap {
+pub fn effective_dollar_cap(
+    account_size: Option<f64>,
+    cap: Option<PerTradeCap>,
+) -> EffectiveDollarCap {
     let derived_from = DerivedFrom {
         account_size,
         cap_value: cap.map(|c| c.value),
         cap_unit: cap.map(|c| c.unit),
     };
     match (cap, account_size) {
-        (None, _) => EffectiveDollarCap { state: CapState::NotSet, value: None, not_derivable_reason: None, derived_from },
+        (None, _) => EffectiveDollarCap {
+            state: CapState::NotSet,
+            value: None,
+            not_derivable_reason: None,
+            derived_from,
+        },
         (Some(c), _) if c.unit == CapUnit::Usd => EffectiveDollarCap {
             state: CapState::Derived,
             value: Some(round2(c.value)),
@@ -184,14 +192,26 @@ mod tests {
 
     #[test]
     fn a_dollar_cap_derives_to_itself_with_no_account_size() {
-        let r = effective_dollar_cap(None, Some(PerTradeCap { value: 500.0, unit: CapUnit::Usd }));
+        let r = effective_dollar_cap(
+            None,
+            Some(PerTradeCap {
+                value: 500.0,
+                unit: CapUnit::Usd,
+            }),
+        );
         assert_eq!(r.state, CapState::Derived);
         assert_eq!(r.value, Some(500.0));
     }
 
     #[test]
     fn a_percent_cap_without_an_account_size_is_not_derivable_and_names_why() {
-        let r = effective_dollar_cap(None, Some(PerTradeCap { value: 5.0, unit: CapUnit::Percent }));
+        let r = effective_dollar_cap(
+            None,
+            Some(PerTradeCap {
+                value: 5.0,
+                unit: CapUnit::Percent,
+            }),
+        );
         assert_eq!(r.state, CapState::NotDerivable);
         assert_eq!(r.not_derivable_reason, Some("percent_without_account_size"));
         assert!(r.value.is_none());
@@ -199,7 +219,13 @@ mod tests {
 
     #[test]
     fn a_percent_cap_derives_against_the_account_size() {
-        let r = effective_dollar_cap(Some(10_000.0), Some(PerTradeCap { value: 5.0, unit: CapUnit::Percent }));
+        let r = effective_dollar_cap(
+            Some(10_000.0),
+            Some(PerTradeCap {
+                value: 5.0,
+                unit: CapUnit::Percent,
+            }),
+        );
         assert_eq!(r.state, CapState::Derived);
         assert_eq!(r.value, Some(500.0));
     }
@@ -213,7 +239,8 @@ mod tests {
 
     #[test]
     fn a_dollar_cap_above_the_account_size_is_refused() {
-        let err = validate(Some(Some(1000.0)), Some(Some((2000.0, "usd".into()))), None).unwrap_err();
+        let err =
+            validate(Some(Some(1000.0)), Some(Some((2000.0, "usd".into()))), None).unwrap_err();
         assert!(err.contains("account size"));
     }
 

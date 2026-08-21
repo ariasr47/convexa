@@ -11,7 +11,11 @@ use tracing::info;
 pub async fn run_gex_on_chain(
     cfg: &Config,
     ticker: &str,
-) -> AppResult<(crate::domain::OptionsMarketState, GexResult, std::time::Duration)> {
+) -> AppResult<(
+    crate::domain::OptionsMarketState,
+    GexResult,
+    std::time::Duration,
+)> {
     let client = MassiveRestClient::new(cfg)?;
     let state = client.fetch_options_market_state(ticker).await?;
 

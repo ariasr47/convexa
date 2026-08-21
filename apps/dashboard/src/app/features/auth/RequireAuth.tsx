@@ -12,7 +12,11 @@
  * Product spine: refuse VISIBLY (never silent redirect), say what unlocks, and leave a free path
  * into the public Ticker so the funnel does not dead-end.
  */
-import { Box, Button, Paper, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';

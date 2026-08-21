@@ -6,8 +6,13 @@ export type AiRecRequestState =
   | 'loading'
   | 'signed_out'
   | 'missing_key'
-  | 'shared_allowance_exhausted'
-  | 'shared_key_unavailable'
+  | 'key_unusable'
+  | 'key_rejected'
+  | 'model_not_in_catalog'
+  | 'model_unset'
+  | 'oauth_expired'
+  | 'oauth_unlinked'
+  | 'subscription_unavailable'
   | 'cooldown'
   | 'daily_cap'
   | 'no_edge'
@@ -33,6 +38,8 @@ export interface PresentationInput {
   readinessGateState: 'available' | 'no_fresh_edge';
   scenarioSelected: boolean;
   currentRiskInputs: RiskInputs | null | undefined;
+  /** Status `powering.unavailable_reason` — drives idle setup/replace blocks before an ask. */
+  poweringReason?: string | null;
 }
 
 export interface AiRecPresentation {
@@ -65,18 +72,35 @@ function missingFields(rec: RecResponse | null): MissingPositionField[] {
   return missing;
 }
 
-function responseKeyState(rec: RecResponse | null): AiRecRequestState | null {
-  if (!rec || rec.status !== 'unavailable') return null;
-  switch (rec.unavailable_reason) {
+/** Map a closed powering / rec unavailable_reason. `over_limit` is NOT a powering CTA (daily cap
+ *  is `cap.over_limit`). Retired free-uses reasons fall through to generic unavailable. */
+export function poweringRequestState(reason: string | null | undefined): AiRecRequestState | null {
+  switch (reason) {
     case 'no_key':
       return 'missing_key';
-    case 'over_limit':
-      return 'shared_allowance_exhausted';
-    case 'shared_key_unconfigured':
-      return 'shared_key_unavailable';
+    case 'key_unusable':
+      return 'key_unusable';
+    case 'key_rejected':
+      return 'key_rejected';
+    case 'model_not_in_catalog':
+    case 'model_missing':
+      return 'model_not_in_catalog';
+    case 'model_unset':
+      return 'model_unset';
+    case 'oauth_expired':
+      return 'oauth_expired';
+    case 'oauth_unlinked':
+      return 'oauth_unlinked';
+    case 'subscription_unavailable':
+      return 'subscription_unavailable';
     default:
-      return 'unavailable';
+      return null;
   }
+}
+
+function responseKeyState(rec: RecResponse | null): AiRecRequestState | null {
+  if (!rec || rec.status !== 'unavailable') return null;
+  return poweringRequestState(rec.unavailable_reason) ?? 'unavailable';
 }
 
 export function deriveAiRecPresentation(input: PresentationInput): AiRecPresentation {
@@ -94,6 +118,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
   else
     requestState =
       responseKeyState(rec) ??
+      (scenarioSelected ? null : poweringRequestState(input.poweringReason)) ??
       (!input.inAppEnabled && !scenarioSelected ? 'missing_key' : null) ??
       (input.cap.over_limit && !scenarioSelected ? 'daily_cap' : null) ??
       (input.cooldownRemaining > 0 && !scenarioSelected ? 'cooldown' : null) ??
@@ -101,11 +126,11 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
       'idle';
 
   let resultState: AiRecResultState | null = null;
-  if (produced) {
+  if (produced && rec?.strategy) {
     if (input.stale) resultState = 'stale_newer_snapshot';
-    else if (rec!.stale_born) resultState = 'stale_at_generation';
+    else if (rec.stale_born) resultState = 'stale_at_generation';
     else if (superseded) resultState = 'superseded_inputs';
-    else if (rec!.strategy!.decision === 'no_trade') resultState = 'no_trade';
+    else if (rec.strategy.decision === 'no_trade') resultState = 'no_trade';
     else if (missingPositionFields.length > 0) resultState = 'incomplete_trade';
     else resultState = 'fresh_trade';
   }
@@ -117,8 +142,13 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
     resultState === 'incomplete_trade';
   const keyState =
     requestState === 'missing_key' ||
-    requestState === 'shared_allowance_exhausted' ||
-    requestState === 'shared_key_unavailable';
+    requestState === 'key_unusable' ||
+    requestState === 'key_rejected' ||
+    requestState === 'model_not_in_catalog' ||
+    requestState === 'model_unset' ||
+    requestState === 'oauth_expired' ||
+    requestState === 'oauth_unlinked' ||
+    requestState === 'subscription_unavailable';
   const unavailableRetryGate =
     requestState === 'unavailable' &&
     signedIn &&

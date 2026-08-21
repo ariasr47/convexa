@@ -18,8 +18,7 @@ pub fn hash_password(plaintext: &str) -> Result<String, String> {
 pub fn verify_password(plaintext: &str, stored_hash: Option<&str>) -> bool {
     static DUMMY: std::sync::OnceLock<String> = std::sync::OnceLock::new();
     let dummy = DUMMY.get_or_init(|| {
-        hash_password("argon2-dummy-verify-target-not-a-real-password")
-            .expect("dummy hash")
+        hash_password("argon2-dummy-verify-target-not-a-real-password").expect("dummy hash")
     });
     let target = stored_hash.unwrap_or(dummy.as_str());
     let parsed = match PasswordHash::new(target) {

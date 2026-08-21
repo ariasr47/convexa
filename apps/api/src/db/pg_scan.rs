@@ -7,8 +7,8 @@
 use crate::db::postgres::Pg;
 use crate::error::{AppError, AppResult};
 use crate::services::scanner::store::{
-    BundleBlob, ScanRow, ScanScoreDrivers, StructureSample, SweepHeartbeat,
-    STRUCTURE_HISTORY_MAX, STRUCTURE_HISTORY_MIN_INTERVAL_SECS,
+    BundleBlob, ScanRow, ScanScoreDrivers, StructureSample, SweepHeartbeat, STRUCTURE_HISTORY_MAX,
+    STRUCTURE_HISTORY_MIN_INTERVAL_SECS,
 };
 use sqlx::Row;
 use tracing::warn;
@@ -24,8 +24,7 @@ impl PgScanStore {
     }
 
     fn drivers_json(d: &Option<ScanScoreDrivers>) -> Option<String> {
-        d.as_ref()
-            .and_then(|v| serde_json::to_string(v).ok())
+        d.as_ref().and_then(|v| serde_json::to_string(v).ok())
     }
 
     fn parse_drivers(raw: Option<String>) -> Option<ScanScoreDrivers> {
@@ -289,10 +288,8 @@ impl PgScanStore {
         .map_err(|e| AppError::Config(format!("postgres scan read: {e}")))?;
         let mut out: Vec<ScanRow> = rows.iter().map(Self::row_from_sql).collect();
         if let Some(syms) = symbols {
-            let want: std::collections::HashSet<String> = syms
-                .iter()
-                .map(|s| s.to_ascii_uppercase())
-                .collect();
+            let want: std::collections::HashSet<String> =
+                syms.iter().map(|s| s.to_ascii_uppercase()).collect();
             out.retain(|r| want.contains(&r.symbol));
         }
         Ok(out)
@@ -385,13 +382,12 @@ impl PgScanStore {
 
     pub async fn read_bundle_blob(&self, symbol: &str) -> AppResult<Option<BundleBlob>> {
         let sym = symbol.to_ascii_uppercase();
-        let row = sqlx::query(
-            r#"SELECT symbol, as_of, bundle_json FROM scan_bundles WHERE symbol = $1"#,
-        )
-        .bind(&sym)
-        .fetch_optional(&self.pg.pool)
-        .await
-        .map_err(|e| AppError::Config(format!("postgres scan bundle read: {e}")))?;
+        let row =
+            sqlx::query(r#"SELECT symbol, as_of, bundle_json FROM scan_bundles WHERE symbol = $1"#)
+                .bind(&sym)
+                .fetch_optional(&self.pg.pool)
+                .await
+                .map_err(|e| AppError::Config(format!("postgres scan bundle read: {e}")))?;
         Ok(row.map(|r| BundleBlob {
             symbol: r.get("symbol"),
             as_of: r.get("as_of"),
@@ -509,12 +505,10 @@ impl PgScanStore {
 
     /// Total structure samples stored (all symbols) — operator health.
     pub async fn count_structure_samples(&self) -> AppResult<i64> {
-        let n: i64 = sqlx::query_scalar(
-            r#"SELECT COUNT(*)::bigint FROM scan_structure_history"#,
-        )
-        .fetch_one(&self.pg.pool)
-        .await
-        .map_err(|e| AppError::Config(format!("postgres structure history count: {e}")))?;
+        let n: i64 = sqlx::query_scalar(r#"SELECT COUNT(*)::bigint FROM scan_structure_history"#)
+            .fetch_one(&self.pg.pool)
+            .await
+            .map_err(|e| AppError::Config(format!("postgres structure history count: {e}")))?;
         Ok(n)
     }
 

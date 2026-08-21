@@ -3022,7 +3022,7 @@
       "mode": 420,
       "path": "version",
       "placement": "spire-root",
-      "sha256": "3713acffd953d571bccbe163951aeef988a75f945c049b7fba53f080311267fa",
+      "sha256": "48db5ba7b36657849c691489598f13b3f4353726d4da2ebfb365aa9b172b2800",
       "type": "file"
     }
   ],
@@ -3165,7 +3165,7 @@
       "provider_root": ".grok"
     }
   },
-  "installed_at": "2026-08-14T16:19:42.306Z",
+  "installed_at": "2026-08-17T17:03:23.598Z",
   "launch_adapter": {
     "installed": "commands/spire-tech.md",
     "invoke": "/spire-tech",
@@ -3212,5 +3212,5 @@
     "grok"
   ],
   "schema_version": 2,
-  "version": "3.13.0"
+  "version": "3.16.0"
 }

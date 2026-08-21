@@ -61,7 +61,10 @@ mod tests {
     fn roundtrip_sign() {
         let sid = new_session_id();
         let cookie = sign_cookie(&sid, "test-key");
-        assert_eq!(unsign_cookie(Some(&cookie), "test-key").as_deref(), Some(sid.as_str()));
+        assert_eq!(
+            unsign_cookie(Some(&cookie), "test-key").as_deref(),
+            Some(sid.as_str())
+        );
         assert!(unsign_cookie(Some(&cookie), "wrong").is_none());
         assert!(unsign_cookie(Some("garbage"), "test-key").is_none());
     }

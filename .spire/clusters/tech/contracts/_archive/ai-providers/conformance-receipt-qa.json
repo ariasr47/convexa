@@ -1,0 +1,51 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/ai-providers/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": "signup",
+  "checked_at": "2026-08-18T16:34:57Z",
+  "summary": {
+    "pass": 5,
+    "fail": 0,
+    "total": 5
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/auth/ai-key",
+      "verdict": "PASS",
+      "required_checked": 20,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/settings",
+      "verdict": "PASS",
+      "required_checked": 5,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 13,
+      "failures": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/recommendation/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 5,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "verdict": "PASS",
+      "required_checked": 4,
+      "failures": []
+    }
+  ]
+}

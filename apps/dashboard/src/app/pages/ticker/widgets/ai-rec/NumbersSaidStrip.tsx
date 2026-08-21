@@ -6,7 +6,8 @@
  * another tenor's number). No per-contract rows, no strike axis, no sorting, no expansion.
  */
 import type { CandidateSetEnvelope, StraddleMove as StraddleMoveRead } from '@convexa/api';
-import { Box, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { headline } from '../straddle-move/copy';
 import { candidateFreshnessLine, liquidityLine } from './literals';
 

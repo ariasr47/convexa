@@ -22,7 +22,12 @@
 import { flashColorSx, type FlashState } from '@/shared/hooks/useFlashOnChange';
 import { typographyTokens } from '@/shared/theme/tokens';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Card, CardContent, Skeleton, Stack, Tooltip, Typography } from '@mui/material';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 
 /** The mono numeric stack (Figma `font-family/mono`), single-sourced from tokens — figures are mono. */

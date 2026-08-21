@@ -8,7 +8,12 @@
  * the ONLY navigating element (the card body does not link).
  */
 import { elevationFor } from '@/shared/theme/tokens';
-import { Box, Card, CardContent, Link, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 

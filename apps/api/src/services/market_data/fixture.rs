@@ -1,8 +1,6 @@
 //! Frozen market-data fixtures for hermetic CI / research replay.
 
-use super::{
-    DailyBarWire, IntradayBarWire, MarketDataSourceKind, TradePrintWire, VendorBundle,
-};
+use super::{DailyBarWire, IntradayBarWire, MarketDataSourceKind, TradePrintWire, VendorBundle};
 use crate::domain::{MarketPhase, OptionsMarketState};
 use crate::error::{AppError, AppResult};
 use chrono::{DateTime, Utc};
@@ -74,11 +72,7 @@ impl FixtureCatalog {
         }
     }
 
-    pub fn resolve(
-        &self,
-        symbol: &str,
-        as_of: Option<DateTime<Utc>>,
-    ) -> AppResult<VendorBundle> {
+    pub fn resolve(&self, symbol: &str, as_of: Option<DateTime<Utc>>) -> AppResult<VendorBundle> {
         let key = symbol.trim().to_ascii_uppercase();
         let samples = self.by_symbol.get(&key).ok_or_else(|| {
             AppError::NotFound(format!("fixture market data not found for {key}"))
@@ -117,9 +111,7 @@ fn parse_as_of(raw: &str, path: &Path) -> AppResult<DateTime<Utc>> {
             DateTime::parse_from_str(&format!("{raw}T16:00:00Z"), "%Y-%m-%dT%H:%M:%SZ")
                 .map(|d| d.with_timezone(&Utc))
         })
-        .map_err(|e| {
-            AppError::Config(format!("fixture {} bad as_of {raw}: {e}", path.display()))
-        })
+        .map_err(|e| AppError::Config(format!("fixture {} bad as_of {raw}: {e}", path.display())))
 }
 
 fn sample_to_bundle(s: FixtureSampleFields, path: &Path) -> AppResult<VendorBundle> {
@@ -157,12 +149,10 @@ fn sample_to_bundle(s: FixtureSampleFields, path: &Path) -> AppResult<VendorBund
 
 /// Load a single fixture JSON file into a catalog (merge).
 pub fn load_fixture_file(path: &Path, catalog: &mut FixtureCatalog) -> AppResult<()> {
-    let raw = fs::read_to_string(path).map_err(|e| {
-        AppError::Config(format!("fixture read {}: {e}", path.display()))
-    })?;
-    let file: FixtureFile = serde_json::from_str(&raw).map_err(|e| {
-        AppError::Config(format!("fixture parse {}: {e}", path.display()))
-    })?;
+    let raw = fs::read_to_string(path)
+        .map_err(|e| AppError::Config(format!("fixture read {}: {e}", path.display())))?;
+    let file: FixtureFile = serde_json::from_str(&raw)
+        .map_err(|e| AppError::Config(format!("fixture parse {}: {e}", path.display())))?;
     let samples = match file {
         FixtureFile::Multi { samples } => samples,
         FixtureFile::Single(s) => vec![s],

@@ -101,9 +101,7 @@ pub async fn stream_prices(
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(32);
     tokio::spawn(async move {
-        let _ = tx
-            .send(Ok(Event::default().comment("connected")))
-            .await;
+        let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut latest: HashMap<String, (f64, i64)> = HashMap::new();
         let mut dirty: HashSet<String> = HashSet::new();
@@ -199,9 +197,7 @@ pub async fn stream_ticker(
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
-        let _ = tx
-            .send(Ok(Event::default().comment("connected")))
-            .await;
+        let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut bid = 0.0_f64;
         let mut ask = 0.0_f64;

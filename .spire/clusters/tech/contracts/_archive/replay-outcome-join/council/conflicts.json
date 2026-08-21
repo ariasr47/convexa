@@ -1,0 +1,110 @@
+{
+  "conflicts": [
+    {
+      "quote": "A stored identity that loads but yields an **empty / unusable book** is reported as **empty book**, textually distinct from no-snapshot and from no-label, and is not counted as a successful paired measurement row.",
+      "source": "pm",
+      "why": "Architect verified batch-backtest already emits distinct `unreadable` / `compute_failed` dispositions, and UX already has a separate `stored snapshot unreadable` family. Folding those into **empty book** collapses producer-distinct states and violates `absent-is-not-none` the same way collapsing no-label into miss would.",
+      "proposal": "Retract AC-9's \"empty / unusable\" collapse: **empty book** means market-empty stored book only; **unreadable** / **compute_failed** stay their own operator-visible class with UX's unreadable literal family; AC-11 reconciliation must count that class separately from the BRIEF triangle.",
+      "kind": "technical",
+      "conflict_id": "1eabc0fb9be6c7957e9770bf8f688d0d1c1df19ac95530fb8a401d98ba1283bf",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM** accepts either (a) a one-field spot additive on `ReplayedMeasurement` or (b) documented session-close `p0`; if they demand capture-mid returns without (a), the build is blocked on that seam.",
+      "source": "architect",
+      "why": "Session-close p0 answers a different measurement question than capture-mid p0 on the paid book. Treating (a) and (b) as peer product outcomes the lane may pick quietly redefines the BRIEF decision impact (score on the exact book we kept) without a human Decision card.",
+      "proposal": "Prefer (a) the one-field spot additive so paired returns use capture-time underlying matching the paid book; if (a) is refused, require an explicit human Decision that documented session-close p0 is acceptable for v1 and must ride every rate \u2014 do not ship an unspoken fallback.",
+      "kind": "product",
+      "conflict_id": "dfecc9653cec396c40ea2027563d86e3ef3ddda7429614f4a5171ef3a0096e00",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Inputs:      replayed scores from stored snapshots \u00b7 labels from join-outcomes (Stocks aggs)",
+      "source": "ux",
+      "why": "Architect's happy path may use a pinned join-outcomes-shaped `--labels` file with zero Stocks I/O; baking 'Stocks aggs' into the standing Inputs line on every successful report invents a vendor claim the run may not have made (defining copy failure mode).",
+      "proposal": "Standing Inputs/provenance names the actual label source for that run \u2014 pinned labels file when present, and/or Stocks daily_bars fill only when gaps were fetched \u2014 never a fixed 'Stocks aggs' claim.",
+      "kind": "technical",
+      "conflict_id": "323d5cd9f1cd2ae2808d76b7535b994a301eb0a6358b2a34c15fa126396563dd",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every printed ranking rate / AUC / lift / precision-style figure carries **horizon** and **n** in the same block as the number; a figure lacking either is withheld",
+      "source": "ux",
+      "why": "A single undifferentiated `n` cannot defend whether the denominator is paired rows or ET sessions when multiple snapshots share one session; architect requires both `n_rows` and `n_sessions`, plus window and `p0` basis \u2014 one `n` renames two (or more) facts as one.",
+      "proposal": "Every printed rate block carries horizon, `n_paired`/`n_rows`, `n_sessions`, window/corpus identity, label rule/threshold/version, and the locked `p0` basis; withhold the rate if any required assumption field is missing.",
+      "kind": "technical",
+      "conflict_id": "8c89905e83273b91063c6ea9d4b83c517191c127358e7dbf47aa7e88f608eba3",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns intentional framing and surface boundaries:** assumption readability (AC-5/26), no trader UI (AC-20), coexistence with existing labs (AC-22), genre labeling (AC-23), and the explicit non-target status of 0.467 (AC-24).",
+      "source": "pm",
+      "why": "Horizon / n / window (and once locked, `p0` basis) can silently drop from a rate block under refactor while the report still looks fine \u2014 that is invisible on a wording review pass and is exactly the microcopy integrity failure this lane exists to stop. Presence of assumption fields must be `test`; prose readability of those labels can stay `review`.",
+      "proposal": "Split AC-5 verify-by: `test` for presence of horizon + n_rows/n_paired + n_sessions + window/corpus identity (+ `p0` basis once locked) beside every printed rate; `review` for whether those labels are readable/intentional. Leave AC-26 / AC-22 / AC-23 / AC-24 as `review`.",
+      "kind": "technical",
+      "conflict_id": "a8c4687f5d920004e1eb5814514192b7c3d08d5fb021851a9ee862ae298b7ab3",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: do you accept a one-field additive underlying spot on `ReplayedMeasurement` (capture-mid `p0` matching the paid book), or do you lock documented session-close `p0` from the Stocks bar series used for labels?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: confirm the printed primary KPI as score-lab's existing `large_abs_move` (optional cheap `up_move` / `structure_event`), or name a different roster from your open headline-KPI decision so we do not invent a new vocabulary?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: for a run with zero paired rows but honest degraded counts, soft empty success vs loud non-measurement exit \u2014 which exit tone do you want for AC-12?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: if session-close `p0` is chosen over a capture-spot additive, is stating `p0` basis = session-close on every rate enough for your microcopy traceability rule, or must capture mid ride the replay artifact?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: for v1, is the ReplayedMeasurement spot additive in the same ship as the join CLI, or is measurement blocked until that producer seam lands?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: confirm the unreadable / compute_failed literal family stays first-class beside miss / empty-book / no-label so the retracted AC-9 collapse cannot return in copy."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: confirm hermetic Options vendor-call counter = 0 is assertable for the third CLI without Options credentials, matching AC-13."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: which entry-price seam is locked for v1 \u2014 architect's preferred additive capture `display_spot` on `ReplayedMeasurement`, or session-close `p0` \u2014 so every rate can name the basis in-band without UX inventing it?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what exact operator-facing literal maps `compute_failed` (distinct from unreadable / `no_label` / `empty_book` / `no_snapshot`)?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: do you accept architect's primary KPI continuity to score-lab `large_abs_move` (optional cheap secondaries) as the printed rate family \u2014 facts + threshold/horizon/n only, no go/no-go chrome?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: confirm zero-paired-rows exit tone \u2014 AC-12 default of no success-looking measurement artifact while still printing degraded counts?"
+    }
+  ],
+  "agree_count": {
+    "architect": 8,
+    "pm": 10,
+    "ux": 9
+  }
+}

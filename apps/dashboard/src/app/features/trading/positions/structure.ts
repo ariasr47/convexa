@@ -108,7 +108,7 @@ export const STRUCTURE_ORDINAL: Record<StructureKind, number> = Object.fromEntri
  * never mutated.
  */
 function canonical(legs: readonly Leg[]): Leg[] {
-  return [...legs].sort(
+  return legs.toSorted(
     (a, b) =>
       a.kind.localeCompare(b.kind) ||
       String(a.expiration ?? '').localeCompare(String(b.expiration ?? '')) ||

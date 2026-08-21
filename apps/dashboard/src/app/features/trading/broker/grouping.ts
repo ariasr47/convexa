@@ -190,7 +190,7 @@ function buildGroup(
   unsorted: readonly BrokerPositionView[],
   modeled_label: 'single' | 'dual',
 ): BrokerGroup {
-  const members = [...unsorted].sort((a, b) =>
+  const members = unsorted.toSorted((a, b) =>
     a.broker.broker_position_id < b.broker.broker_position_id
       ? -1
       : a.broker.broker_position_id > b.broker.broker_position_id
@@ -317,7 +317,7 @@ export function groupBook(
   }
 
   const groups = [...buckets.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .toSorted(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([key, members]) => buildGroup(key, members, modeled_label));
 
   return { groups, ungrouped };

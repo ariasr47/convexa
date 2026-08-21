@@ -8,7 +8,7 @@
  * Structurally distinct from `warning` (burnt orange, reserved for TRUE warnings + icon).
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { alpha } from '@mui/material/styles';
 
 type Tone = 'success' | 'error' | 'info' | 'warning' | 'neutral' | 'emphasis';

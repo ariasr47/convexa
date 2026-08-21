@@ -93,17 +93,38 @@ export const AUTH_COPY = {
     themeSystem: 'System',
     saved: 'Saved',
     saveError: "Couldn't save that setting. Please try again.",
-    // byo-ai-key (UX_BLUEPRINT §5; verbatim). Write-only key entry; the masked last-4 hint is all
-    // that's ever read back. NO reveal/show/copy control anywhere (PRODUCT_CONTRACT §6).
+    // ai-providers (SPEC §4). Write-only keys; closed labels; no free / pool / cheaper / included.
     aiKey: {
-      heading: 'AI key',
+      heading: 'AI providers',
       helper:
-        "Your own Anthropic key lets AI recommendations run on your key, at your cost. It's stored " +
-        "encrypted and used only for your own recommendations — it's never shown again and never " +
-        'leaves the server.',
-      inputLabel: 'Anthropic API key',
-      inputPlaceholder: 'sk-ant-…',
-      inputHelper: "Starts with sk-ant-. Stored encrypted; you won't be able to view it again.",
+        'Connect Grok (while signed into Convexa) to run Ask-AI on your Grok subscription when ' +
+        'available. Otherwise store your own API key for Anthropic, OpenAI, Gemini, or Grok — ' +
+        "it's stored encrypted, never shown again, and used only for your recommendations.",
+      preferredHeading: 'Your Grok subscription',
+      alternativeHeading: 'Your API key',
+      modelHeading: 'Model for recommendations',
+      modelUnpoweredCaption: 'A power path is still needed before Ask-AI can run.',
+      modelRecommendedCaption: 'Catalog recommended default',
+      modelEmpty: 'No models listed for this path.',
+      modelNotInCatalog: "The selected model isn't in the current catalog. Choose another model.",
+      grokUnavailable:
+        "Your Grok subscription isn't available to connect on this deployment yet. You can still " +
+        'add your own API key below.',
+      grokConnectBtn: 'Connect Grok',
+      grokConnectingBtn: 'Connecting…',
+      grokDisconnectBtn: 'Disconnect',
+      grokUseBtn: 'Use this subscription',
+      grokActive: 'Active',
+      grokConnected: 'Connected to your Grok subscription.',
+      grokDisconnected: 'Grok disconnected.',
+      grokExpired:
+        'Your Grok connection expired. Reconnect to use your subscription, or use your own key.',
+      grokUnlinked: 'Connect Grok to use your Grok subscription, or use your own API key.',
+      grokSubscriptionUnavailable:
+        "Your Grok subscription isn't available for Ask-AI right now. You can still add your own " +
+        'API key below.',
+      inputLabel: 'API key',
+      inputHelper: "Stored encrypted; you won't be able to view it again.",
       addBtn: 'Add key',
       addingBtn: 'Adding…',
       setSubLine: 'Stored encrypted. Used only for your recommendations. Never shown again.',
@@ -111,21 +132,22 @@ export const AUTH_COPY = {
       replaceSubmitBtn: 'Replace key',
       replacingBtn: 'Replacing…',
       removeBtn: 'Remove',
-      removeConfirmTitle: 'Remove your stored Anthropic key?',
+      useThisKeyBtn: 'Use this key',
+      usingProvider: (label: string) => `Using your ${label} key.`,
+      removeConfirmTitle: 'Remove this stored key?',
       removeConfirmBody:
-        'AI recommendations will stop running on your key. You can add a key again any time.',
+        'Ask-AI will stop using this key. You can add a key again any time. Other providers stay as they are.',
       removeConfirmBtn: 'Remove key',
       removeCancelBtn: 'Keep key',
       cancelBtn: 'Cancel',
       savedAdd: 'AI key saved.',
       savedRemove: 'AI key removed.',
       saveError: "Couldn't save your key. Please try again.",
-      validationEmpty: 'Enter your Anthropic key.',
-      validationFormat: "That doesn't look like an Anthropic key (it should start with sk-ant-).",
+      validationEmpty: 'Enter your API key.',
       storageUnavailable:
         "Key storage isn't set up on this deployment yet, so a key can't be saved right now. The " +
         'manual export hand-off still works without a key.',
-      anonymous: 'Sign in to add your own Anthropic key for AI recommendations.',
+      anonymous: 'Sign in to manage AI providers for recommendations.',
     },
     // broker-connect (SPEC §4, verbatim). The byo-ai-key write-only/masked shape reused
     // deliberately: keys are SENT on save; only the App Key's last-4 hint is ever read back.

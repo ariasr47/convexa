@@ -45,7 +45,7 @@ export function layoutMarkerLabels({
   reserved = [],
 }: MarkerLayoutOptions): MarkerLayoutBox[] {
   const laneStep = laneHeight + laneGap;
-  const sorted = [...markers].sort((a, b) => a.x - b.x || a.id.localeCompare(b.id));
+  const sorted = markers.toSorted((a, b) => a.x - b.x || a.id.localeCompare(b.id));
   const placed: MarkerLayoutBox[] = [];
   const maxWidth = Math.max(0, bounds.right - bounds.left);
 

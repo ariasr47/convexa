@@ -3,7 +3,7 @@
 use crate::error::{AppError, AppResult};
 use std::collections::HashSet;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 /// Default mega-liquid names: longer GEX TTL + included in the warm set unless overridden.
@@ -79,6 +79,23 @@ pub struct Config {
     pub public_rate_limit_per_min: u32,
     /// When set, `GET /api/_metrics` requires `Authorization: Bearer <token>` (or `X-Metrics-Token`).
     pub metrics_secret_token: Option<String>,
+    /// Dual retention: drop snapshots older than this (default 14 days).
+    pub chain_snapshot_max_age_secs: u64,
+    /// Dual retention: per-symbol count ring (default 48).
+    pub chain_snapshot_max_per_symbol: usize,
+    /// JSON store directory (local/dev). Postgres is used when DATABASE_URL + feature.
+    pub chain_snapshot_store_path: PathBuf,
+    /// False → `capture not storing` (env off or store failed to open).
+    pub chain_snapshot_enabled: bool,
+    /// False → `session archive not storing` (env off or store failed to open).
+    pub session_chain_archive_enabled: bool,
+    /// JSON sibling directory (must not equal or nest under `chain_snapshot_store_path`).
+    pub session_chain_archive_store_path: PathBuf,
+    /// Filesystem body-store root. Required when archive enabled + FS body store in use.
+    /// `None` = unset/empty → open fail-open to not-storing (no silent default).
+    pub session_chain_archive_body_root: Option<PathBuf>,
+    /// False → skip liquid-name ensure worker (disjoint from SESSION_CHAIN_ARCHIVE_ENABLED).
+    pub liquid_session_ensure_enabled: bool,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
 }
@@ -132,7 +149,8 @@ impl Config {
 
         // Base TTL for ad-hoc names; liquid/warm names use the longer tier.
         let gex_cache_ttl_secs = env_u64("GEX_CACHE_TTL_SECS", 10);
-        let gex_cache_ttl_liquid_secs = env_u64("GEX_CACHE_TTL_LIQUID_SECS", 20).max(gex_cache_ttl_secs);
+        let gex_cache_ttl_liquid_secs =
+            env_u64("GEX_CACHE_TTL_LIQUID_SECS", 20).max(gex_cache_ttl_secs);
 
         let warm_symbols = parse_symbol_list(
             &env::var("WARM_SYMBOLS").unwrap_or_else(|_| DEFAULT_LIQUID.join(",")),
@@ -150,7 +168,12 @@ impl Config {
         let warm_interval_secs = env_u64("WARM_INTERVAL_SECS", 25);
         let warm_concurrency = env_u64("WARM_CONCURRENCY", 2).max(1) as usize;
         let warm_enabled = env::var("WARM_ENABLED")
-            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
             .unwrap_or(true);
 
         let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -159,20 +182,28 @@ impl Config {
             .unwrap_or_else(|_| PathBuf::from("."));
 
         let scan_enabled = env::var("SCAN_ENABLED")
-            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
             .unwrap_or(true);
         let scan_universe_path = env::var("SCAN_UNIVERSE_PATH")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| {
-                workspace_root.join("apps/api/config/universe.json")
-            });
+            .unwrap_or_else(|_| workspace_root.join("apps/api/config/universe.json"));
         let scan_fast_interval_secs = env_u64("SCAN_FAST_INTERVAL_SECS", 30);
         let scan_slow_batch_size = env_u64("SCAN_SLOW_BATCH_SIZE", 4).max(1) as usize;
         let scan_promotion_cap = env_u64("SCAN_PROMOTION_CAP", 2).max(1) as usize;
         let scan_stale_after_secs = env_u64("SCAN_STALE_AFTER_SECS", 180);
         // Unset ⇒ gated (true), matching Python SCAN_MARKET_HOURS_ONLY.
         let scan_market_hours_only = env::var("SCAN_MARKET_HOURS_ONLY")
-            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
             .unwrap_or(true);
 
         let scan_store_path = env::var("SCAN_STORE_PATH")
@@ -185,7 +216,9 @@ impl Config {
             .or_else(|| {
                 let mode = env::var("SCAN_STORE").unwrap_or_default();
                 if mode.eq_ignore_ascii_case("postgres") || mode.eq_ignore_ascii_case("pg") {
-                    env::var("DATABASE_URL").ok().filter(|s| !s.trim().is_empty())
+                    env::var("DATABASE_URL")
+                        .ok()
+                        .filter(|s| !s.trim().is_empty())
                 } else {
                     None
                 }
@@ -202,7 +235,12 @@ impl Config {
             hex::encode(b)
         });
         let auth_cookie_secure = env::var("AUTH_COOKIE_SECURE")
-            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
             .unwrap_or(true);
         let auth_cookie_samesite =
             env::var("AUTH_COOKIE_SAMESITE").unwrap_or_else(|_| "lax".into());
@@ -225,10 +263,16 @@ impl Config {
 
         // Python defaults: INCLUDE_DARK_POOL=true, DARKPOOL_LOOKBACK_SECONDS=3600, BLOCK_MIN_SHARES=5000.
         let include_dark_pool = env::var("INCLUDE_DARK_POOL")
-            .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
             .unwrap_or(true);
         // Default 1h (Python). Cap at 7d so after-hours/weekend smoke can still see last RTH tape.
-        let darkpool_lookback_secs = env_u64("DARKPOOL_LOOKBACK_SECONDS", 3600).clamp(60, 7 * 86_400);
+        let darkpool_lookback_secs =
+            env_u64("DARKPOOL_LOOKBACK_SECONDS", 3600).clamp(60, 7 * 86_400);
         let block_min_shares = env_u64("BLOCK_MIN_SHARES", 5000).clamp(1, 1_000_000) as i64;
         let iv_store_path = env::var("IV_STORE_PATH")
             .map(PathBuf::from)
@@ -246,11 +290,39 @@ impl Config {
 
         // Default 120/min per IP on vendor/compute routes. Unset in local is still limited;
         // set PUBLIC_RATE_LIMIT_PER_MIN=0 to disable for load tests.
-        let public_rate_limit_per_min = env_u64("PUBLIC_RATE_LIMIT_PER_MIN", 120).min(u64::from(u32::MAX)) as u32;
+        let public_rate_limit_per_min =
+            env_u64("PUBLIC_RATE_LIMIT_PER_MIN", 120).min(u64::from(u32::MAX)) as u32;
         let metrics_secret_token = env::var("METRICS_SECRET_TOKEN")
             .ok()
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty());
+
+        let chain_snapshot_max_age_secs = env_u64("CHAIN_SNAPSHOT_MAX_AGE_SECS", 1_209_600);
+        let chain_snapshot_max_per_symbol =
+            env_u64("CHAIN_SNAPSHOT_MAX_PER_SYMBOL", 48).max(1) as usize;
+        let chain_snapshot_store_path = env::var("CHAIN_SNAPSHOT_STORE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| {
+                scan_store_path
+                    .parent()
+                    .unwrap_or(scan_store_path.as_path())
+                    .join("chain_snapshots")
+            });
+        let chain_snapshot_enabled = env::var("CHAIN_SNAPSHOT_ENABLED")
+            .map(|v| {
+                !matches!(
+                    v.to_ascii_lowercase().as_str(),
+                    "0" | "false" | "no" | "off"
+                )
+            })
+            .unwrap_or(true);
+        let session_chain_archive_enabled = env_flag_default_true("SESSION_CHAIN_ARCHIVE_ENABLED");
+        let liquid_session_ensure_enabled = env_flag_default_true("LIQUID_SESSION_ENSURE_ENABLED");
+        let session_chain_archive_store_path = env::var("SESSION_CHAIN_ARCHIVE_STORE_PATH")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| default_session_archive_path(&chain_snapshot_store_path));
+        let session_chain_archive_body_root =
+            parse_optional_path_env("SESSION_CHAIN_ARCHIVE_BODY_ROOT");
 
         Ok(Self {
             massive_api_key,
@@ -289,6 +361,14 @@ impl Config {
             database_url,
             public_rate_limit_per_min,
             metrics_secret_token,
+            chain_snapshot_max_age_secs,
+            chain_snapshot_max_per_symbol,
+            chain_snapshot_store_path,
+            chain_snapshot_enabled,
+            session_chain_archive_enabled,
+            session_chain_archive_store_path,
+            session_chain_archive_body_root,
+            liquid_session_ensure_enabled,
             workspace_root,
         })
     }
@@ -309,8 +389,7 @@ impl Config {
     }
 
     pub fn is_liquid(&self, ticker: &str) -> bool {
-        self.liquid_symbols
-            .contains(&ticker.to_ascii_uppercase())
+        self.liquid_symbols.contains(&ticker.to_ascii_uppercase())
     }
 }
 
@@ -345,4 +424,118 @@ mod tests {
         let v = parse_symbol_list("spy, QQQ;nvda  aapl");
         assert_eq!(v, vec!["SPY", "QQQ", "NVDA", "AAPL"]);
     }
+
+    #[test]
+    fn chain_snapshot_retention_defaults() {
+        // env_u64 fallbacks used by from_env when keys are unset.
+        assert_eq!(
+            env_u64("CHAIN_SNAPSHOT_MAX_AGE_SECS_UNSET_SENTINEL", 1_209_600),
+            1_209_600
+        );
+        assert_eq!(
+            env_u64("CHAIN_SNAPSHOT_MAX_PER_SYMBOL_UNSET_SENTINEL", 48),
+            48
+        );
+        let default_age = 1_209_600u64;
+        let default_per = 48usize;
+        assert_eq!(default_age, 14 * 24 * 3600);
+        assert_eq!(default_per, 48);
+    }
+
+    #[test]
+    fn session_chain_archive_defaults() {
+        assert!(env_flag_default_true(
+            "SESSION_CHAIN_ARCHIVE_ENABLED_UNSET_SENTINEL"
+        ));
+        assert!(env_flag_default_true(
+            "LIQUID_SESSION_ENSURE_ENABLED_UNSET_SENTINEL"
+        ));
+        let ring = PathBuf::from("data/chain_snapshots");
+        let archive = default_session_archive_path(&ring);
+        assert!(archive.ends_with("session_chain_archive"));
+        assert_eq!(archive, PathBuf::from("data/session_chain_archive"));
+    }
+
+    #[test]
+    fn session_archive_path_must_not_nest_under_ring_default() {
+        let ring = PathBuf::from("data/chain_snapshots");
+        let archive = default_session_archive_path(&ring);
+        assert_ne!(archive, ring);
+        assert!(!archive.starts_with(&ring));
+    }
+
+    #[test]
+    fn body_root_unset_is_none_not_invented_path() {
+        std::env::remove_var("SESSION_CHAIN_ARCHIVE_BODY_ROOT");
+        assert!(
+            parse_optional_path_env("SESSION_CHAIN_ARCHIVE_BODY_ROOT_UNSET_SENTINEL").is_none()
+        );
+    }
+
+    #[test]
+    fn body_root_conflicts_when_equal_or_nested_under_ring_or_index() {
+        let ring = PathBuf::from("data/chain_snapshots");
+        let index = PathBuf::from("data/session_chain_archive");
+        assert!(body_root_conflicts(
+            Path::new("data/chain_snapshots"),
+            &ring,
+            &index
+        ));
+        assert!(body_root_conflicts(
+            Path::new("data/chain_snapshots/bodies"),
+            &ring,
+            &index
+        ));
+        assert!(body_root_conflicts(
+            Path::new("data/session_chain_archive"),
+            &ring,
+            &index
+        ));
+        assert!(body_root_conflicts(
+            Path::new("data/session_chain_archive/bodies"),
+            &ring,
+            &index
+        ));
+        assert!(!body_root_conflicts(
+            Path::new("data/session_chain_archive_bodies"),
+            &ring,
+            &index
+        ));
+    }
+}
+
+fn env_flag_default_true(key: &str) -> bool {
+    env::var(key)
+        .map(|v| {
+            !matches!(
+                v.to_ascii_lowercase().as_str(),
+                "0" | "false" | "no" | "off"
+            )
+        })
+        .unwrap_or(true)
+}
+
+fn default_session_archive_path(ring: &Path) -> PathBuf {
+    ring.parent().unwrap_or(ring).join("session_chain_archive")
+}
+
+/// Trimmed env path; unset/empty → `None` (never invents a default).
+pub fn parse_optional_path_env(key: &str) -> Option<PathBuf> {
+    env::var(key)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+}
+
+/// True when `candidate` equals `other` or is a nested descendant of it.
+pub fn path_equals_or_nests(candidate: &Path, other: &Path) -> bool {
+    let c = candidate.components().collect::<Vec<_>>();
+    let o = other.components().collect::<Vec<_>>();
+    c == o || (c.starts_with(&o) && c.len() > o.len())
+}
+
+/// Body root must not equal or nest under the ring store or the index Json dir.
+pub fn body_root_conflicts(body_root: &Path, ring: &Path, index: &Path) -> bool {
+    path_equals_or_nests(body_root, ring) || path_equals_or_nests(body_root, index)
 }

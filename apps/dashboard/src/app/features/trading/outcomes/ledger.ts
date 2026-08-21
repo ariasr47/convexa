@@ -340,7 +340,7 @@ function cohortFor(outcomes: Outcome[]): Cohort {
   if (n < N_MIN) return { state: 'building', n, n_min: N_MIN };
   const pcts = outcomes.map((o) => o.plPct);
   const hits = outcomes.filter((o) => o.hit).length;
-  const times = outcomes.map((o) => o.closeTime).sort();
+  const times = outcomes.map((o) => o.closeTime).toSorted();
   return {
     state: 'computed',
     hit_rate: Math.round((hits / n) * 100),
@@ -388,7 +388,7 @@ function buildFamily(spec: FamilySpec, counted: Outcome[]): CellFamily {
 
   const cells: Cell[] = [...buckets.entries()]
     .map(([key, list]) => ({ key, label: spec.label(key), cohort: cohortFor(list) }))
-    .sort(spec.order);
+    .toSorted(spec.order);
 
   return { key: spec.key, cells, coverage };
 }
@@ -529,7 +529,7 @@ export function computeLedgerRead(
   const digestTimes = decisions
     .filter((d) => d.entry_context != null)
     .map((d) => d.clock_time)
-    .sort();
+    .toSorted();
   const captureEpoch = digestTimes.length > 0 ? digestTimes[0] : null;
 
   return {

@@ -1,10 +1,13 @@
 //! AI recommendation leaf — wire-compatible with Python `ai_recommendation`.
 //!
 //! Pure consumer of cached bundles. Never feeds score/fingerprint.
-//! Key resolution order (BYO multi-provider):
-//!   1. User's encrypted own key (any provider) → `own_key`
-//!   2. Else shared server keys (ANTHROPIC / OPENAI / XAI / GEMINI env) for admin emails → `shared_admin`
-//!   3. Else `none` / `no_key`
+//! Key resolution (INTERFACE fixed order; D5 + D7):
+//!   1. Auth outermost (caller)
+//!   2. `ai_power_path` null → `none` / `no_key` (do not evaluate model)
+//!   3. Model gate when path is set
+//!   4. `grok_subscription` → subscription/OAuth reasons only; never BYO; never env XAI
+//!   5. `own_key` → decrypt selected provider slot
+//!   6. Never fall through onto server env keys (`shared_admin` deleted)
 //!
 //! LLM calls use `services::llm` (Anthropic / OpenAI-compatible / Gemini).
 
@@ -26,8 +29,8 @@ use crate::services::rec_inputs::grounding::{
 use crate::services::rec_inputs::max_risk::{parse_max_risk_dollars, ParsedRisk};
 use crate::state::AppState;
 use quant_engine::{
-    restrict_move_to_tenors, CandidateBudget, CandidateSet, ContractType, DteWindow,
-    SnapshotMeta, StraddleMove, StraddleMoveState, DEFAULT_GATE_SCORE,
+    restrict_move_to_tenors, CandidateBudget, CandidateSet, ContractType, DteWindow, SnapshotMeta,
+    StraddleMove, StraddleMoveState, DEFAULT_GATE_SCORE,
 };
 use serde_json::{json, Value};
 use std::sync::Mutex;
@@ -93,158 +96,141 @@ fn resets_at_iso() -> String {
 
 fn feature_flag_on() -> bool {
     std::env::var("AI_REC_IN_APP_ENABLED")
-        .map(|v| !matches!(v.to_ascii_lowercase().as_str(), "0" | "false" | "no" | "off"))
+        .map(|v| {
+            !matches!(
+                v.to_ascii_lowercase().as_str(),
+                "0" | "false" | "no" | "off"
+            )
+        })
         .unwrap_or(true)
 }
 
-fn shared_env_key(provider: LlmProvider) -> Option<String> {
-    let env_name = match provider {
-        LlmProvider::Anthropic => "ANTHROPIC_API_KEY",
-        LlmProvider::OpenAi => "OPENAI_API_KEY",
-        LlmProvider::Xai => "XAI_API_KEY",
-        LlmProvider::Gemini => "GEMINI_API_KEY",
-        LlmProvider::OpenAiCompatible => "OPENAI_COMPAT_API_KEY",
-    };
-    std::env::var(env_name)
-        .ok()
-        .filter(|s| !s.trim().is_empty())
+fn own_key_base_url(provider: LlmProvider) -> Option<String> {
+    std::env::var(format!(
+        "AI_REC_BASE_URL_{}",
+        provider.as_str().to_ascii_uppercase()
+    ))
+    .ok()
+    .filter(|s| !s.is_empty())
+    .or_else(|| provider.default_base_url().map(|s| s.to_string()))
 }
 
-/// Any shared server key configured (for anonymous status "in_app" advertising).
-fn any_shared_key() -> bool {
-    [
-        LlmProvider::Anthropic,
-        LlmProvider::OpenAi,
-        LlmProvider::Xai,
-        LlmProvider::Gemini,
-        LlmProvider::OpenAiCompatible,
-    ]
-    .into_iter()
-    .any(|p| shared_env_key(p).is_some())
-}
-
-fn is_admin_email(email: &str) -> bool {
-    let list = std::env::var("AUTH_ADMIN_EMAILS").unwrap_or_default();
-    if list.trim().is_empty() {
-        // Demo seed email counts as admin for local shared-key path.
-        if let Ok(seed) = std::env::var("AUTH_DEMO_SEED") {
-            if let Some((e, _)) = seed.split_once(':') {
-                return email.eq_ignore_ascii_case(e.trim());
-            }
-        }
-        return false;
-    }
-    list.split(&[',', ';'][..])
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .any(|a| a.eq_ignore_ascii_case(email))
-}
-
-/// Resolve key for a signed-in user (or none when anonymous status probe).
+/// Resolve key for a signed-in user (or unsigned status probe).
 pub fn resolve_llm_key(
     state: &AppState,
+    user: Option<&crate::services::auth::UserRecord>,
+) -> ResolvedLlmKey {
+    resolve_llm_key_for(&state.auth, user)
+}
+
+pub fn resolve_llm_key_for(
+    auth: &crate::services::auth::AuthService,
     user: Option<&crate::services::auth::UserRecord>,
 ) -> ResolvedLlmKey {
     if !feature_flag_on() {
         return ResolvedLlmKey::none("no_key");
     }
+    let Some(u) = user else {
+        return ResolvedLlmKey::unsigned();
+    };
+    // Force legacy-slot promote + own_key backfill before reading preference.
+    let _ = auth.inspect_ai_slot(&u.id, "anthropic");
+    let settings = auth
+        .raw_settings(&u.id)
+        .unwrap_or_else(|| crate::services::auth::SettingsRecord::defaults(&u.id));
 
-    // (1) Own BYO key first — any provider.
-    if let Some(u) = user {
-        if let Some((material, provider)) = state.auth.get_decrypted_ai_key(&u.id) {
-            // Prefer provider-specific override, then global AI_REC_MODEL (Anthropic),
-            // then the provider default (matches Python AI_REC_MODEL default).
-            let model = std::env::var(format!(
-                "AI_REC_MODEL_{}",
-                provider.as_str().to_ascii_uppercase()
-            ))
-            .ok()
-            .filter(|s| !s.is_empty())
-            .or_else(|| {
-                if provider == LlmProvider::Anthropic {
-                    std::env::var("AI_REC_MODEL")
-                        .ok()
-                        .filter(|s| !s.is_empty())
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_else(|| provider.default_model().into());
-            let base_url = std::env::var(format!(
-                "AI_REC_BASE_URL_{}",
-                provider.as_str().to_ascii_uppercase()
-            ))
-            .ok()
-            .filter(|s| !s.is_empty())
-            .or_else(|| provider.default_base_url().map(|s| s.to_string()));
-            return ResolvedLlmKey {
-                key_source: "own_key",
-                provider,
-                key_material: Some(material),
-                model,
-                base_url,
-                unavailable_reason: None,
-                metering_identity: Some(u.id.clone()),
-            };
+    let pref_path = settings.ai_power_path.clone();
+    let pref_provider = settings.ai_provider.clone();
+    let pref_model = settings.ai_model.clone();
+
+    let mut out = ResolvedLlmKey {
+        key_source: "none",
+        provider: LlmProvider::Anthropic,
+        wire_provider: None,
+        key_material: None,
+        model: pref_model.clone().unwrap_or_default(),
+        wire_model: pref_model.clone(),
+        base_url: None,
+        unavailable_reason: None,
+        metering_identity: Some(u.id.clone()),
+        preference_power_path: pref_path.clone(),
+        preference_provider: pref_provider.clone(),
+        preference_model: pref_model.clone(),
+    };
+
+    let Some(path) = pref_path.as_deref() else {
+        out.unavailable_reason = Some("no_key");
+        return out;
+    };
+
+    let catalog =
+        crate::services::llm_catalog::catalog_for_path(Some(path), pref_provider.as_deref());
+    let selected = pref_model
+        .clone()
+        .or_else(|| crate::services::llm_catalog::recommended_id(&catalog).map(|s| s.to_string()));
+    match selected {
+        None => {
+            out.unavailable_reason = Some("model_unset");
+            out.wire_model = None;
+            return out;
         }
-
-        // (2) Shared admin pool — prefer Anthropic, then others.
-        if is_admin_email(&u.email) {
-            for p in [
-                LlmProvider::Anthropic,
-                LlmProvider::OpenAi,
-                LlmProvider::Xai,
-                LlmProvider::Gemini,
-            ] {
-                if let Some(material) = shared_env_key(p) {
-                    return ResolvedLlmKey {
-                        key_source: "shared_admin",
-                        provider: p,
-                        key_material: Some(material),
-                        model: p.default_model().into(),
-                        base_url: p.default_base_url().map(|s| s.to_string()),
-                        unavailable_reason: None,
-                        metering_identity: Some(u.id.clone()),
-                    };
-                }
+        Some(id) => {
+            out.model = id.clone();
+            out.wire_model = Some(id.clone());
+            if !crate::services::llm_catalog::catalog_contains(&catalog, &id) {
+                out.unavailable_reason = Some("model_not_in_catalog");
+                return out;
             }
-            // Admin but no shared key configured
-            return ResolvedLlmKey {
-                key_source: "none",
-                provider: LlmProvider::Anthropic,
-                key_material: None,
-                model: LlmProvider::Anthropic.default_model().into(),
-                base_url: None,
-                unavailable_reason: Some("shared_key_unconfigured"),
-                metering_identity: Some(u.id.clone()),
-            };
         }
-
-        // Regular user, no own key
-        return ResolvedLlmKey {
-            key_source: "none",
-            provider: LlmProvider::Anthropic,
-            key_material: None,
-            model: LlmProvider::Anthropic.default_model().into(),
-            base_url: None,
-            unavailable_reason: Some("no_key"),
-            metering_identity: Some(u.id.clone()),
-        };
     }
 
-    // Anonymous status probe
-    if any_shared_key() {
-        ResolvedLlmKey {
-            key_source: "shared_admin",
-            provider: LlmProvider::Anthropic,
-            key_material: None, // never expose shared material without a session
-            model: LlmProvider::Anthropic.default_model().into(),
-            base_url: None,
-            unavailable_reason: None,
-            metering_identity: None,
+    match path {
+        "grok_subscription" => {
+            // Never decrypt BYO. Never spend a Convexa env XAI_API_KEY.
+            let (available, connected, reason) = auth.grok_link_status(u);
+            out.provider = LlmProvider::Xai;
+            out.wire_provider = None;
+            if available && connected {
+                out.key_source = "grok_subscription";
+                // v1 has no spend material even if a stale link row exists.
+                out.unavailable_reason = Some("subscription_unavailable");
+            } else {
+                out.unavailable_reason = reason.or(Some("oauth_unlinked"));
+            }
+            out
         }
-    } else {
-        ResolvedLlmKey::none("no_key")
+        "own_key" => {
+            let Some(prov_s) = pref_provider.as_deref() else {
+                out.unavailable_reason = Some("no_key");
+                return out;
+            };
+            if !crate::services::llm_catalog::is_trader_byo(prov_s) {
+                out.unavailable_reason = Some("no_key");
+                return out;
+            }
+            let provider = LlmProvider::parse(prov_s).unwrap_or(LlmProvider::Anthropic);
+            out.provider = provider;
+            out.wire_provider = Some(provider.as_str());
+            match auth.inspect_ai_slot(&u.id, prov_s) {
+                crate::services::auth::AiSlot::Empty => {
+                    out.unavailable_reason = Some("no_key");
+                }
+                crate::services::auth::AiSlot::Unusable => {
+                    out.unavailable_reason = Some("key_unusable");
+                }
+                crate::services::auth::AiSlot::Ready { plaintext } => {
+                    out.key_source = "own_key";
+                    out.key_material = Some(plaintext);
+                    out.base_url = own_key_base_url(provider);
+                    out.unavailable_reason = None;
+                }
+            }
+            out
+        }
+        _ => {
+            out.unavailable_reason = Some("no_key");
+            out
+        }
     }
 }
 
@@ -290,10 +276,7 @@ fn derive_gate(ai_eval: &Value) -> Value {
         .get("ready")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
-    let reasons = ai_eval
-        .get("reasons")
-        .cloned()
-        .unwrap_or_else(|| json!([]));
+    let reasons = ai_eval.get("reasons").cloned().unwrap_or_else(|| json!([]));
     let cd = cooldown_remaining();
     if !ready {
         json!({
@@ -344,13 +327,53 @@ fn assemble_persona_prompt(persona_id: Option<&str>) -> String {
     )
 }
 
-/// GET status — side-effect-free.
-pub fn status_payload(ai_eval: Option<&Value>, resolved: &ResolvedLlmKey) -> Value {
+/// GET status — side-effect-free. No D4 persist. No free-uses counters.
+pub fn status_payload(
+    ai_eval: Option<&Value>,
+    resolved: &ResolvedLlmKey,
+    signed_in: bool,
+) -> Value {
     let (remaining, over, resets) = rate_snapshot();
     let gate = derive_gate(ai_eval.unwrap_or(&json!({})));
-    // In-app available when feature on AND (shared configured OR user has usable own/shared key).
-    let user_has = resolved.key_source == "own_key" || resolved.key_source == "shared_admin";
-    let in_app = feature_flag_on() && (any_shared_key() || user_has);
+    let in_app = signed_in
+        && resolved.usable()
+        && (resolved.key_source == "own_key" || resolved.key_source == "grok_subscription");
+    let (key_source, provider, model, reason, pref_path, pref_prov, pref_model) = if signed_in {
+        (
+            resolved.key_source,
+            resolved.wire_provider_value(),
+            resolved.wire_model_value(),
+            resolved
+                .unavailable_reason
+                .map(|s| json!(s))
+                .unwrap_or(Value::Null),
+            resolved
+                .preference_power_path
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
+            resolved
+                .preference_provider
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
+            resolved
+                .preference_model
+                .clone()
+                .map(Value::String)
+                .unwrap_or(Value::Null),
+        )
+    } else {
+        (
+            "none",
+            Value::Null,
+            Value::Null,
+            Value::Null,
+            Value::Null,
+            Value::Null,
+            Value::Null,
+        )
+    };
     json!({
         "availability": { "in_app_enabled": in_app },
         "gate": gate,
@@ -359,8 +382,17 @@ pub fn status_payload(ai_eval: Option<&Value>, resolved: &ResolvedLlmKey) -> Val
             "remaining_today": remaining,
             "resets_at": resets,
         },
-        "remaining_free_uses": null,
-        "free_uses_total": null,
+        "powering": {
+            "key_source": key_source,
+            "provider": provider,
+            "model": model,
+            "unavailable_reason": reason,
+            "preference": {
+                "power_path": pref_path,
+                "provider": pref_prov,
+                "model": pref_model,
+            },
+        },
         "scenarios": { "enabled": false, "catalog": [] },
     })
 }
@@ -386,7 +418,13 @@ pub fn not_set_risk_inputs() -> Value {
 /// GET export — no LLM. `candidates` (the §1 handoff envelope) and `risk_inputs` (the §4 shape)
 /// are pre-assembled by the caller (`routes/recommendation.rs`, which resolves the session
 /// optionally) so this stays a pure, synchronously-testable function.
-pub fn build_export(ticker: &str, bundle: &Value, persona_id: Option<&str>, candidates: Value, risk_inputs: Value) -> Value {
+pub fn build_export(
+    ticker: &str,
+    bundle: &Value,
+    persona_id: Option<&str>,
+    candidates: Value,
+    risk_inputs: Value,
+) -> Value {
     let as_of = bundle
         .pointer("/meta/freshness/snapshot_iso")
         .or_else(|| bundle.pointer("/meta/as_of"))
@@ -420,9 +458,15 @@ pub fn build_export(ticker: &str, bundle: &Value, persona_id: Option<&str>, cand
         ("persona_prompt", true, "the persona prompt"),
         ("glossary", true, "the glossary"),
     ];
-    let egress_categories: Vec<Value> =
-        categories.iter().map(|(k, sent, _)| json!({ "key": k, "sent": sent })).collect();
-    let sent_labels: Vec<&str> = categories.iter().filter(|(_, sent, _)| *sent).map(|(_, _, l)| *l).collect();
+    let egress_categories: Vec<Value> = categories
+        .iter()
+        .map(|(k, sent, _)| json!({ "key": k, "sent": sent }))
+        .collect();
+    let sent_labels: Vec<&str> = categories
+        .iter()
+        .filter(|(_, sent, _)| *sent)
+        .map(|(_, _, l)| *l)
+        .collect();
     let egress_note = format!(
         "Complete list of what leaves the machine for {ticker}: {}.",
         sent_labels.join(", ")
@@ -473,8 +517,11 @@ fn envelope_extras(
     let present = |v: Option<&Value>| v.map(|x| !x.is_null()).unwrap_or(false);
     let fr = |field: RecField, is_present: bool| -> Value {
         match field_reason(field, is_present, presence) {
-            Some(r) => serde_json::to_value(FieldReason { reason: r.reason, missing_input: r.missing_input })
-                .unwrap_or(Value::Null),
+            Some(r) => serde_json::to_value(FieldReason {
+                reason: r.reason,
+                missing_input: r.missing_input,
+            })
+            .unwrap_or(Value::Null),
             None => Value::Null,
         }
     };
@@ -483,7 +530,11 @@ fn envelope_extras(
     // dependency — the local-rules producer needs no set at all, so an empty set says nothing about
     // its `strikes`/`expiration` and `unavailable` must stay unreachable there.
     let plan_presence = PlanInputPresence {
-        candidate_set: if local_only { None } else { Some(!set.contracts().is_empty()) },
+        candidate_set: if local_only {
+            None
+        } else {
+            Some(!set.contracts().is_empty())
+        },
     };
     let pfr = |field: RecPlanField| -> Value {
         match plan_field_reason(field, plan_value(field, strategy), plan_presence) {
@@ -511,11 +562,14 @@ fn envelope_extras(
         .map(|a| a.iter().filter_map(|x| x.as_f64()).collect())
         .unwrap_or_default();
     let expiration = strategy.get("expiration").and_then(|v| v.as_str());
-    let right = strategy.get("right").and_then(|v| v.as_str()).and_then(|s| match s {
-        "call" => Some(ContractType::Call),
-        "put" => Some(ContractType::Put),
-        _ => None,
-    });
+    let right = strategy
+        .get("right")
+        .and_then(|v| v.as_str())
+        .and_then(|s| match s {
+            "call" => Some(ContractType::Call),
+            "put" => Some(ContractType::Put),
+            _ => None,
+        });
     let outcome = resolve_cited(set, &strikes, expiration, right);
     let cited_contract = json!({
         "state": outcome.state,
@@ -537,13 +591,33 @@ fn envelope_extras(
     let num = |p: Option<&Value>| p.and_then(|v| v.as_f64());
     let presence_sentinel = |p: Option<&Value>| present(p).then_some(1.0); // prose fields: presence only
     let cited_exp = expiration;
-    let g = |field: RecField, asserted: Option<f64>| resolve_field(field, asserted, cited_exp, pruned_move, &anchors);
+    let g = |field: RecField, asserted: Option<f64>| {
+        resolve_field(field, asserted, cited_exp, pruned_move, &anchors)
+    };
     let f_stop = g(RecField::ExitStop, num(strategy.pointer("/exit_plan/stop")));
-    let f_target = g(RecField::ExitTarget, num(strategy.pointer("/exit_plan/target")));
-    let f_inval = g(RecField::InvalidationLevel, num(strategy.get("invalidation_level")));
-    let f_risk = g(RecField::MaxRisk, presence_sentinel(strategy.get("max_risk")));
-    let f_size = g(RecField::PositionSize, presence_sentinel(strategy.get("position_size")));
-    let all = [f_stop.clone(), f_target.clone(), f_inval.clone(), f_risk.clone(), f_size.clone()];
+    let f_target = g(
+        RecField::ExitTarget,
+        num(strategy.pointer("/exit_plan/target")),
+    );
+    let f_inval = g(
+        RecField::InvalidationLevel,
+        num(strategy.get("invalidation_level")),
+    );
+    let f_risk = g(
+        RecField::MaxRisk,
+        presence_sentinel(strategy.get("max_risk")),
+    );
+    let f_size = g(
+        RecField::PositionSize,
+        presence_sentinel(strategy.get("position_size")),
+    );
+    let all = [
+        f_stop.clone(),
+        f_target.clone(),
+        f_inval.clone(),
+        f_risk.clone(),
+        f_size.clone(),
+    ];
     let c = counts(&all, outcome.state);
     let card = card_member(states_entry, local_only, c);
     let grounding = json!({
@@ -582,6 +656,7 @@ pub async fn generate_recommendation(
                 "llm_error",
                 &json!({}),
                 &json!({"over_limit": false, "remaining_today": DAILY_CAP, "resets_at": resets_at_iso()}),
+                &resolved,
             );
         }
     };
@@ -619,23 +694,31 @@ pub async fn generate_recommendation(
             &snap.contracts,
             snap.gex_spot,
             chrono::Utc::now(),
-            DteWindow { min: min_dte, max: max_dte },
+            DteWindow {
+                min: min_dte,
+                max: max_dte,
+            },
             CandidateBudget::Prompt,
             true,
             &SnapshotMeta {
-                as_of_iso: chrono::DateTime::from_timestamp(snap.cached_at, 0).map(|d| d.to_rfc3339()),
+                as_of_iso: chrono::DateTime::from_timestamp(snap.cached_at, 0)
+                    .map(|d| d.to_rfc3339()),
                 session_basis: Some(snap.market_phase.as_str().to_string()),
             },
         ),
         None => CandidateSet::unavailable(CandidateBudget::Prompt, true, &empty_meta, None),
     };
-    let sent_candidates = crate::services::rec_inputs::candidate_envelope(ticker, &candidate_set, None);
+    let sent_candidates =
+        crate::services::rec_inputs::candidate_envelope(ticker, &candidate_set, None);
 
     // Pruned market_state: the FULL straddle_move already on the bundle, restricted to the tenors
     // actually present in the candidate block — ONE restriction function, never a local filter.
-    let raw_move: Option<StraddleMove> =
-        bundle.pointer("/market_state/straddle_move").and_then(|v| serde_json::from_value(v.clone()).ok());
-    let pruned_move = raw_move.as_ref().map(|mv| restrict_move_to_tenors(mv, candidate_set.included_expirations()));
+    let raw_move: Option<StraddleMove> = bundle
+        .pointer("/market_state/straddle_move")
+        .and_then(|v| serde_json::from_value(v.clone()).ok());
+    let pruned_move = raw_move
+        .as_ref()
+        .map(|mv| restrict_move_to_tenors(mv, candidate_set.included_expirations()));
     let sent_tenors: Vec<String> = pruned_move
         .as_ref()
         .map(|mv| mv.tenors.iter().map(|t| t.expiration.clone()).collect())
@@ -643,7 +726,10 @@ pub async fn generate_recommendation(
     let mut pruned_market_state = bundle.get("market_state").cloned().unwrap_or(json!({}));
     if let Some(mv) = &pruned_move {
         if let Some(o) = pruned_market_state.as_object_mut() {
-            o.insert("straddle_move".into(), serde_json::to_value(mv).unwrap_or(Value::Null));
+            o.insert(
+                "straddle_move".into(),
+                serde_json::to_value(mv).unwrap_or(Value::Null),
+            );
         }
     }
 
@@ -662,11 +748,20 @@ pub async fn generate_recommendation(
         .map(|r| serde_json::to_value(r).unwrap_or_else(|_| not_set_risk_inputs()))
         .unwrap_or_else(not_set_risk_inputs);
     let risk_block_present = sent_risk_inputs.get("state").and_then(|v| v.as_str()) == Some("set");
-    let account_size = sent_risk_inputs.get("account_size").and_then(|v| v.as_f64());
-    let cap_value = sent_risk_inputs.pointer("/per_trade_cap/value").and_then(|v| v.as_f64());
-    let cap_unit = sent_risk_inputs.pointer("/per_trade_cap/unit").and_then(|v| v.as_str());
-    let sent_digest = crate::services::rec_inputs::digest::risk_inputs_digest(account_size, cap_value, cap_unit);
-    let effective_cap = sent_risk_inputs.pointer("/effective_dollar_cap/value").and_then(|v| v.as_f64());
+    let account_size = sent_risk_inputs
+        .get("account_size")
+        .and_then(|v| v.as_f64());
+    let cap_value = sent_risk_inputs
+        .pointer("/per_trade_cap/value")
+        .and_then(|v| v.as_f64());
+    let cap_unit = sent_risk_inputs
+        .pointer("/per_trade_cap/unit")
+        .and_then(|v| v.as_str());
+    let sent_digest =
+        crate::services::rec_inputs::digest::risk_inputs_digest(account_size, cap_value, cap_unit);
+    let effective_cap = sent_risk_inputs
+        .pointer("/effective_dollar_cap/value")
+        .and_then(|v| v.as_f64());
     let cap_not_derivable_reason = sent_risk_inputs
         .pointer("/effective_dollar_cap/not_derivable_reason")
         .and_then(|v| v.as_str())
@@ -704,8 +799,8 @@ pub async fn generate_recommendation(
             "gate": gate,
             "cap": cap,
             "key_source": key_source,
-            "remaining_free_uses": null,
-            "free_uses_total": null,
+            "provider": resolved.wire_provider_value(),
+            "model": resolved.wire_model_value(),
             "scenario": null,
             "sent": {
                 "budget": "prompt",
@@ -776,6 +871,7 @@ fn unavailable_envelope(
     reason: &str,
     gate: &Value,
     cap: &Value,
+    resolved: &ResolvedLlmKey,
 ) -> Value {
     let (pid, pname) = persona_name(body.persona_id.as_deref());
     json!({
@@ -788,7 +884,9 @@ fn unavailable_envelope(
         "unavailable_reason": reason,
         "gate": gate,
         "cap": cap,
-        "key_source": "none",
+        "key_source": resolved.key_source,
+        "provider": resolved.wire_provider_value(),
+        "model": resolved.wire_model_value(),
         "scenario": null,
     })
 }
@@ -820,16 +918,16 @@ fn local_strategy_from_bundle(bundle: &Value) -> Value {
         });
     }
     let top = &setups[0];
-    let bias = top.get("bias").and_then(|v| v.as_str()).unwrap_or("neutral");
+    let bias = top
+        .get("bias")
+        .and_then(|v| v.as_str())
+        .unwrap_or("neutral");
     let name = top.get("name").and_then(|v| v.as_str()).unwrap_or("Setup");
     let strategy = top
         .get("strategy")
         .and_then(|v| v.as_str())
         .unwrap_or("defined-risk structure");
-    let rationale = top
-        .get("rationale")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
+    let rationale = top.get("rationale").and_then(|v| v.as_str()).unwrap_or("");
     let conf = top
         .get("conviction")
         .and_then(|v| v.as_str())
@@ -912,14 +1010,35 @@ mod tests {
 
     #[test]
     fn envelope_extras_returns_a_total_grounding_block_on_a_null_strategy() {
-        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let set = CandidateSet::unavailable(
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+            None,
+        );
         let (_cap, _fr, _cited, grounding) = envelope_extras(
-            &Value::Null, &set, None, None, false, None, GroundingAnchors::empty(), false,
+            &Value::Null,
+            &set,
+            None,
+            None,
+            false,
+            None,
+            GroundingAnchors::empty(),
+            false,
         );
         assert_eq!(grounding["card"], "not_applicable");
         assert_eq!(grounding["tolerance_pct"], 0.1);
-        for k in ["exit_stop", "exit_target", "invalidation_level", "max_risk", "position_size"] {
-            assert!(grounding["fields"][k].is_object(), "missing field block {k}");
+        for k in [
+            "exit_stop",
+            "exit_target",
+            "invalidation_level",
+            "max_risk",
+            "position_size",
+        ] {
+            assert!(
+                grounding["fields"][k].is_object(),
+                "missing field block {k}"
+            );
             assert_eq!(grounding["fields"][k]["state"], "not_applicable");
             assert!(grounding["fields"][k]["basis"].is_null());
         }
@@ -932,9 +1051,21 @@ mod tests {
 
     #[test]
     fn field_reasons_carries_exactly_eleven_keys_with_exact_spellings() {
-        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let set = CandidateSet::unavailable(
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+            None,
+        );
         let (_cap, fr, _cited, _g) = envelope_extras(
-            &Value::Null, &set, None, None, false, None, GroundingAnchors::empty(), false,
+            &Value::Null,
+            &set,
+            None,
+            None,
+            false,
+            None,
+            GroundingAnchors::empty(),
+            false,
         );
         let obj = fr.as_object().expect("field_reasons is an object");
         let mut keys: Vec<&str> = obj.keys().map(|k| k.as_str()).collect();
@@ -944,8 +1075,16 @@ mod tests {
         assert_eq!(
             keys,
             vec![
-                "confidence", "entry_trigger", "exit_stop", "exit_target", "expiration",
-                "invalidation_level", "max_risk", "position_size", "strikes", "structure",
+                "confidence",
+                "entry_trigger",
+                "exit_stop",
+                "exit_target",
+                "expiration",
+                "invalidation_level",
+                "max_risk",
+                "position_size",
+                "strikes",
+                "structure",
                 "time_horizon",
             ]
         );
@@ -954,7 +1093,12 @@ mod tests {
 
     #[test]
     fn the_six_ride_the_local_rules_envelope_and_never_claim_unavailable_there() {
-        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let set = CandidateSet::unavailable(
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+            None,
+        );
         let strategy = local_strategy_from_bundle(&serde_json::json!({
             "signals": { "setups": [{ "bias": "long", "name": "Flip reclaim", "strategy": "long call",
                                       "rationale": "r", "conviction": "medium" }] },
@@ -962,15 +1106,28 @@ mod tests {
         }));
         // local_only = true => the producer declares NO candidate-set dependency.
         let (_cap, fr, _cited, _g) = envelope_extras(
-            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), true,
+            &strategy,
+            &set,
+            None,
+            None,
+            false,
+            None,
+            GroundingAnchors::empty(),
+            true,
         );
         for k in ["strikes", "expiration"] {
-            assert_eq!(fr[k]["reason"], "not_given", "{k} must not claim an input failed here");
+            assert_eq!(
+                fr[k]["reason"], "not_given",
+                "{k} must not claim an input failed here"
+            );
             assert!(fr[k]["missing_input"].is_null(), "{k}");
         }
         // Rule-authored, so they carry values and no reason at all.
         for k in ["structure", "entry_trigger", "confidence"] {
-            assert!(fr[k].is_null(), "{k} was authored by the rules and needs no reason");
+            assert!(
+                fr[k].is_null(),
+                "{k} was authored by the rules and needs no reason"
+            );
         }
         // AC-33 — the input-independent constant is gone; the horizon is honestly absent.
         assert_eq!(fr["time_horizon"]["reason"], "not_given");
@@ -979,13 +1136,25 @@ mod tests {
 
     #[test]
     fn a_declared_empty_candidate_set_names_candidate_set_on_the_two_fields_that_depend_on_it() {
-        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let set = CandidateSet::unavailable(
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+            None,
+        );
         let strategy = serde_json::json!({
             "decision": "trade", "structure": "", "strikes": [], "expiration": null,
             "entry_trigger": "", "time_horizon": null, "confidence": null,
         });
         let (_cap, fr, _cited, _g) = envelope_extras(
-            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), false,
+            &strategy,
+            &set,
+            None,
+            None,
+            false,
+            None,
+            GroundingAnchors::empty(),
+            false,
         );
         for k in ["strikes", "expiration"] {
             assert_eq!(fr[k]["reason"], "unavailable", "{k}");
@@ -999,10 +1168,22 @@ mod tests {
 
     #[test]
     fn an_off_scale_confidence_is_reported_as_unrecognized_value_not_as_never_answered() {
-        let set = CandidateSet::unavailable(CandidateBudget::Prompt, true, &SnapshotMeta::default(), None);
+        let set = CandidateSet::unavailable(
+            CandidateBudget::Prompt,
+            true,
+            &SnapshotMeta::default(),
+            None,
+        );
         let strategy = serde_json::json!({ "decision": "trade", "confidence": "quite high" });
         let (_cap, fr, _cited, _g) = envelope_extras(
-            &strategy, &set, None, None, false, None, GroundingAnchors::empty(), false,
+            &strategy,
+            &set,
+            None,
+            None,
+            false,
+            None,
+            GroundingAnchors::empty(),
+            false,
         );
         assert_eq!(fr["confidence"]["reason"], "unrecognized_value");
         assert!(fr["confidence"]["missing_input"].is_null());
@@ -1019,7 +1200,12 @@ mod tests {
             open_interest: 100.0,
             expiration_date: exp.into(),
             implied_volatility: 0.3,
-            greeks: Some(Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            greeks: Some(Greeks {
+                gamma: Some(0.01),
+                delta: Some(0.5),
+                theta: None,
+                vega: None,
+            }),
             volume: Some(10.0),
             bid: Some(1.0),
             ask: Some(1.2),
@@ -1080,20 +1266,48 @@ mod tests {
     fn extras_for(strategy: &Value) -> (Value, Value, Value, Value) {
         let set = reference_set();
         let mv = reference_move();
-        envelope_extras(strategy, &set, Some(500.0), None, true, Some(&mv), reference_anchors(), false)
+        envelope_extras(
+            strategy,
+            &set,
+            Some(500.0),
+            None,
+            true,
+            Some(&mv),
+            reference_anchors(),
+            false,
+        )
     }
 
     /// Same as `extras_for`, but with empty anchors and no move — for the every-input-missing arm.
     fn extras_for_bare(strategy: &Value) -> (Value, Value, Value, Value) {
         let set = reference_set();
-        envelope_extras(strategy, &set, Some(500.0), None, true, None, GroundingAnchors::empty(), false)
+        envelope_extras(
+            strategy,
+            &set,
+            Some(500.0),
+            None,
+            true,
+            None,
+            GroundingAnchors::empty(),
+            false,
+        )
     }
 
     /// `local_only = true` variant, returning just the grounding block.
     fn extras_local_only(strategy: &Value) -> Value {
         let set = reference_set();
         let mv = reference_move();
-        envelope_extras(strategy, &set, Some(500.0), None, true, Some(&mv), reference_anchors(), true).3
+        envelope_extras(
+            strategy,
+            &set,
+            Some(500.0),
+            None,
+            true,
+            Some(&mv),
+            reference_anchors(),
+            true,
+        )
+        .3
     }
 
     /// Every shape the partition assertion (guard 2 / AC-51) must hold over: a full trade rec; a trade
@@ -1128,10 +1342,19 @@ mod tests {
     /// state is `not_applicable` (exclusive-or). Poison arm: make one field emit both, or neither.
     #[test]
     fn a_field_reason_exists_exactly_when_grounding_is_not_applicable() {
-        let keys = ["max_risk", "position_size", "exit_target", "exit_stop", "invalidation_level"];
+        let keys = [
+            "max_risk",
+            "position_size",
+            "exit_target",
+            "exit_stop",
+            "invalidation_level",
+        ];
         let shapes = partition_strategy_shapes();
         // Anti-vacuity: the shapes must exercise BOTH sides of the biconditional.
-        assert!(shapes.len() >= 4, "the shape set must cover more than one branch");
+        assert!(
+            shapes.len() >= 4,
+            "the shape set must cover more than one branch"
+        );
         for strategy in &shapes {
             let (_cap, fr, _cited, g) = extras_for(strategy);
             for k in keys {
@@ -1157,11 +1380,17 @@ mod tests {
         let (_cap, _fr, cited, g) = extras_for(&strategy);
         assert_eq!(cited["state"], "off_set");
         for k in ["exit_stop", "exit_target", "invalidation_level"] {
-            assert_eq!(g["fields"][k]["state"], "untraced", "{k} must not be traced");
+            assert_eq!(
+                g["fields"][k]["state"], "untraced",
+                "{k} must not be traced"
+            );
             assert!(g["fields"][k]["basis"].is_null());
             assert!(g["fields"][k]["anchor_kind"].is_null());
         }
-        assert_eq!(g["counts"], json!({"checked": 4, "traced": 0, "untraced": 4, "not_checkable": 0}));
+        assert_eq!(
+            g["counts"],
+            json!({"checked": 4, "traced": 0, "untraced": 4, "not_checkable": 0})
+        );
         assert_eq!(g["card"], "none_traced");
     }
 
@@ -1182,7 +1411,10 @@ mod tests {
         assert_eq!(g["fields"]["exit_stop"]["anchor_value"], 500.0);
         assert_eq!(g["fields"]["invalidation_level"]["basis"], "near");
         assert_eq!(g["fields"]["exit_target"]["basis"], "inside_range");
-        assert_eq!(g["counts"], json!({"checked": 4, "traced": 4, "untraced": 0, "not_checkable": 0}));
+        assert_eq!(
+            g["counts"],
+            json!({"checked": 4, "traced": 4, "untraced": 0, "not_checkable": 0})
+        );
         assert_eq!(g["card"], "all_traced");
 
         let one_off = json!({
@@ -1193,22 +1425,35 @@ mod tests {
             "exit_plan": { "target": 505.0, "stop": 623.0 },  // the one fabricated figure
         });
         let (_c, _f, _ci, g2) = extras_for(&one_off);
-        assert_eq!(g2["counts"], json!({"checked": 4, "traced": 3, "untraced": 1, "not_checkable": 0}));
+        assert_eq!(
+            g2["counts"],
+            json!({"checked": 4, "traced": 3, "untraced": 1, "not_checkable": 0})
+        );
         assert_eq!(g2["card"], "some_traced");
     }
 
     /// AC-28 — every reference input missing: the rec still returns, in full.
     #[test]
-    fn a_rec_with_every_reference_input_missing_still_returns_with_every_checked_figure_not_checkable() {
+    fn a_rec_with_every_reference_input_missing_still_returns_with_every_checked_figure_not_checkable(
+    ) {
         let strategy = json!({
             "decision": "trade", "strikes": [], "expiration": null, "invalidation_level": 611.0,
             "max_risk": "$300", "position_size": "2 contracts",
             "exit_plan": { "target": 640.0, "stop": 623.0 },
         });
         let (_cap, _fr, _cited, g) = extras_for_bare(&strategy); // empty anchors, no move
-        assert_eq!(g["fields"]["exit_stop"]["not_checkable_reason"], "no_named_level");
-        assert_eq!(g["fields"]["invalidation_level"]["not_checkable_reason"], "no_named_level");
-        assert_eq!(g["fields"]["exit_target"]["not_checkable_reason"], "no_cited_expiration");
+        assert_eq!(
+            g["fields"]["exit_stop"]["not_checkable_reason"],
+            "no_named_level"
+        );
+        assert_eq!(
+            g["fields"]["invalidation_level"]["not_checkable_reason"],
+            "no_named_level"
+        );
+        assert_eq!(
+            g["fields"]["exit_target"]["not_checkable_reason"],
+            "no_cited_expiration"
+        );
         assert_eq!(g["card"], "could_not_check");
     }
 
@@ -1264,34 +1509,124 @@ mod tests {
             basis: Option<&'static str>,
         }
         let arms = [
-            Arm { field: "exit_stop", value: 500.00, state: "traced", basis: Some("exact") },
-            Arm { field: "exit_stop", value: 500.49, state: "traced", basis: Some("near") },
-            Arm { field: "exit_stop", value: 500.51, state: "untraced", basis: None },
-            Arm { field: "exit_stop", value: 2.008, state: "traced", basis: Some("near") },
-            Arm { field: "exit_stop", value: 2.015, state: "untraced", basis: None },
-            Arm { field: "invalidation_level", value: 500.00, state: "traced", basis: Some("exact") },
-            Arm { field: "invalidation_level", value: 500.49, state: "traced", basis: Some("near") },
-            Arm { field: "invalidation_level", value: 500.51, state: "untraced", basis: None },
-            Arm { field: "invalidation_level", value: 2.008, state: "traced", basis: Some("near") },
-            Arm { field: "invalidation_level", value: 2.015, state: "untraced", basis: None },
-            Arm { field: "exit_target", value: 490.00, state: "traced", basis: Some("inside_range") },
-            Arm { field: "exit_target", value: 510.00, state: "traced", basis: Some("inside_range") },
-            Arm { field: "exit_target", value: 489.99, state: "untraced", basis: None },
-            Arm { field: "exit_target", value: 510.01, state: "untraced", basis: None },
+            Arm {
+                field: "exit_stop",
+                value: 500.00,
+                state: "traced",
+                basis: Some("exact"),
+            },
+            Arm {
+                field: "exit_stop",
+                value: 500.49,
+                state: "traced",
+                basis: Some("near"),
+            },
+            Arm {
+                field: "exit_stop",
+                value: 500.51,
+                state: "untraced",
+                basis: None,
+            },
+            Arm {
+                field: "exit_stop",
+                value: 2.008,
+                state: "traced",
+                basis: Some("near"),
+            },
+            Arm {
+                field: "exit_stop",
+                value: 2.015,
+                state: "untraced",
+                basis: None,
+            },
+            Arm {
+                field: "invalidation_level",
+                value: 500.00,
+                state: "traced",
+                basis: Some("exact"),
+            },
+            Arm {
+                field: "invalidation_level",
+                value: 500.49,
+                state: "traced",
+                basis: Some("near"),
+            },
+            Arm {
+                field: "invalidation_level",
+                value: 500.51,
+                state: "untraced",
+                basis: None,
+            },
+            Arm {
+                field: "invalidation_level",
+                value: 2.008,
+                state: "traced",
+                basis: Some("near"),
+            },
+            Arm {
+                field: "invalidation_level",
+                value: 2.015,
+                state: "untraced",
+                basis: None,
+            },
+            Arm {
+                field: "exit_target",
+                value: 490.00,
+                state: "traced",
+                basis: Some("inside_range"),
+            },
+            Arm {
+                field: "exit_target",
+                value: 510.00,
+                state: "traced",
+                basis: Some("inside_range"),
+            },
+            Arm {
+                field: "exit_target",
+                value: 489.99,
+                state: "untraced",
+                basis: None,
+            },
+            Arm {
+                field: "exit_target",
+                value: 510.01,
+                state: "untraced",
+                basis: None,
+            },
         ];
         for a in &arms {
             let g = boundary_extras(a.field, a.value);
-            assert_eq!(g["fields"][a.field]["state"], a.state, "{} @ {}", a.field, a.value);
+            assert_eq!(
+                g["fields"][a.field]["state"], a.state,
+                "{} @ {}",
+                a.field, a.value
+            );
             match a.basis {
-                Some(b) => assert_eq!(g["fields"][a.field]["basis"], b, "{} @ {}", a.field, a.value),
-                None => assert!(g["fields"][a.field]["basis"].is_null(), "{} @ {}", a.field, a.value),
+                Some(b) => assert_eq!(
+                    g["fields"][a.field]["basis"], b,
+                    "{} @ {}",
+                    a.field, a.value
+                ),
+                None => assert!(
+                    g["fields"][a.field]["basis"].is_null(),
+                    "{} @ {}",
+                    a.field,
+                    a.value
+                ),
             }
         }
         // NON-VACUITY, asserted in the test itself: every checked field carries at least one traced arm
         // AND at least one untraced arm. A set drifted to a single outcome fails before it can certify.
         for field in ["exit_stop", "invalidation_level", "exit_target"] {
-            assert!(arms.iter().any(|a| a.field == field && a.state == "traced"), "{field}: no traced arm");
-            assert!(arms.iter().any(|a| a.field == field && a.state == "untraced"), "{field}: no untraced arm");
+            assert!(
+                arms.iter().any(|a| a.field == field && a.state == "traced"),
+                "{field}: no traced arm"
+            );
+            assert!(
+                arms.iter()
+                    .any(|a| a.field == field && a.state == "untraced"),
+                "{field}: no untraced arm"
+            );
         }
     }
 
@@ -1313,16 +1648,28 @@ mod tests {
             wide_quote_threshold_pct: 15.0,
             tenors: vec![
                 quant_engine::StraddleTenor {
-                    expiration: "2026-09-18".into(), dte: 30, strike_used: 500.0,
-                    strike_distance_pct: 0.0, straddle_price: 10.00, move_dollars: 10.00,
-                    move_pct: 2.0, basis: quant_engine::MoveBasis::AtmStraddleMid,
-                    quote_spread_pct_of_mid: None, wide_quotes: false,
+                    expiration: "2026-09-18".into(),
+                    dte: 30,
+                    strike_used: 500.0,
+                    strike_distance_pct: 0.0,
+                    straddle_price: 10.00,
+                    move_dollars: 10.00,
+                    move_pct: 2.0,
+                    basis: quant_engine::MoveBasis::AtmStraddleMid,
+                    quote_spread_pct_of_mid: None,
+                    wide_quotes: false,
                 },
                 quant_engine::StraddleTenor {
-                    expiration: "2026-12-18".into(), dte: 120, strike_used: 500.0,
-                    strike_distance_pct: 0.0, straddle_price: 40.00, move_dollars: 40.00,
-                    move_pct: 8.0, basis: quant_engine::MoveBasis::AtmStraddleMid,
-                    quote_spread_pct_of_mid: None, wide_quotes: false,
+                    expiration: "2026-12-18".into(),
+                    dte: 120,
+                    strike_used: 500.0,
+                    strike_distance_pct: 0.0,
+                    straddle_price: 40.00,
+                    move_dollars: 40.00,
+                    move_pct: 8.0,
+                    basis: quant_engine::MoveBasis::AtmStraddleMid,
+                    quote_spread_pct_of_mid: None,
+                    wide_quotes: false,
                 },
             ],
         };
@@ -1335,21 +1682,52 @@ mod tests {
         let set = reference_set();
         let mut anchors = GroundingAnchors::empty();
         anchors.set(AnchorKind::GexSpot, Some(500.00));
-        let (_c, _f, _ci, g) =
-            envelope_extras(&strategy, &set, None, None, true, Some(&pruned), anchors, false);
+        let (_c, _f, _ci, g) = envelope_extras(
+            &strategy,
+            &set,
+            None,
+            None,
+            true,
+            Some(&pruned),
+            anchors,
+            false,
+        );
         assert_ne!(g["fields"]["exit_target"]["state"], "traced");
         assert_eq!(g["fields"]["exit_target"]["state"], "not_checkable");
-        assert_eq!(g["fields"]["exit_target"]["not_checkable_reason"], "straddle_move_unavailable");
+        assert_eq!(
+            g["fields"]["exit_target"]["not_checkable_reason"],
+            "straddle_move_unavailable"
+        );
     }
 
     #[test]
     fn status_shape() {
         let resolved = ResolvedLlmKey::none("no_key");
-        let s = status_payload(Some(&json!({"ready": true, "reasons": []})), &resolved);
+        let s = status_payload(
+            Some(&json!({"ready": true, "reasons": []})),
+            &resolved,
+            true,
+        );
         assert!(s["availability"]["in_app_enabled"].is_boolean());
         assert!(s["gate"]["state"].is_string());
         assert!(s["cap"]["remaining_today"].is_number());
         assert_eq!(s["scenarios"]["enabled"], false);
+        assert_eq!(s["powering"]["key_source"], "none");
+        assert_eq!(s["powering"]["unavailable_reason"], "no_key");
+        assert!(s.get("remaining_free_uses").is_none());
+        assert!(s.get("free_uses_total").is_none());
+        assert_ne!(s["powering"]["key_source"], "shared_admin");
+    }
+
+    #[test]
+    fn signed_out_status_has_null_powering_reason() {
+        let resolved = ResolvedLlmKey::unsigned();
+        let s = status_payload(None, &resolved, false);
+        assert_eq!(s["powering"]["key_source"], "none");
+        assert!(s["powering"]["unavailable_reason"].is_null());
+        assert!(s["powering"]["preference"]["power_path"].is_null());
+        assert_eq!(s["availability"]["in_app_enabled"], false);
+        assert!(s.get("remaining_free_uses").is_none());
     }
 
     fn stub_bundle() -> Value {
@@ -1369,22 +1747,44 @@ mod tests {
     #[test]
     fn export_shape() {
         let bundle = stub_bundle();
-        let e = build_export("SPY", &bundle, Some("income_keeper"), stub_candidates(), not_set_risk_inputs());
+        let e = build_export(
+            "SPY",
+            &bundle,
+            Some("income_keeper"),
+            stub_candidates(),
+            not_set_risk_inputs(),
+        );
         assert_eq!(e["ticker"], "SPY");
-        assert!(e["persona_prompt"].as_str().unwrap().contains("Income Keeper"));
+        assert!(e["persona_prompt"]
+            .as_str()
+            .unwrap()
+            .contains("Income Keeper"));
         assert!(e["context"]["signals"].is_object());
     }
 
     #[test]
     fn an_anonymous_export_reports_risk_inputs_not_set_with_the_section_present() {
-        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        let e = build_export(
+            "SPY",
+            &stub_bundle(),
+            None,
+            stub_candidates(),
+            not_set_risk_inputs(),
+        );
         assert_eq!(e["context"]["risk_inputs"]["state"], "not_set");
         assert!(e["context"]["risk_inputs"].is_object());
     }
 
     #[test]
-    fn the_egress_note_is_composed_from_the_categories_and_no_longer_claims_no_account_or_identity() {
-        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+    fn the_egress_note_is_composed_from_the_categories_and_no_longer_claims_no_account_or_identity()
+    {
+        let e = build_export(
+            "SPY",
+            &stub_bundle(),
+            None,
+            stub_candidates(),
+            not_set_risk_inputs(),
+        );
         let note = e["egress_note"].as_str().unwrap();
         assert!(!note.to_ascii_lowercase().contains("no account or identity"));
         for cat in e["egress_categories"].as_array().unwrap() {
@@ -1406,7 +1806,13 @@ mod tests {
 
     #[test]
     fn a_category_that_was_not_sent_is_present_with_sent_false() {
-        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        let e = build_export(
+            "SPY",
+            &stub_bundle(),
+            None,
+            stub_candidates(),
+            not_set_risk_inputs(),
+        );
         let cats = e["egress_categories"].as_array().unwrap();
         let op = cats.iter().find(|c| c["key"] == "open_positions").unwrap();
         assert_eq!(op["sent"], false);
@@ -1417,8 +1823,134 @@ mod tests {
 
     #[test]
     fn the_export_candidate_block_uses_the_handoff_budget_and_sent_to_model_false() {
-        let e = build_export("SPY", &stub_bundle(), None, stub_candidates(), not_set_risk_inputs());
+        let e = build_export(
+            "SPY",
+            &stub_bundle(),
+            None,
+            stub_candidates(),
+            not_set_risk_inputs(),
+        );
         assert_eq!(e["context"]["candidates"]["budget"], "handoff");
         assert_eq!(e["context"]["candidates"]["sent_to_model"], false);
+    }
+
+    fn resolve_svc() -> crate::services::auth::AuthService {
+        crate::services::auth::AuthService::new(
+            crate::services::auth::AuthStore::open_memory().unwrap(),
+            crate::services::auth::AuthConfig {
+                signing_key: "test-signing-key".into(),
+                registration_open: true,
+                cookie_secure: false,
+                ..Default::default()
+            },
+        )
+    }
+
+    fn resolve_user(s: &crate::services::auth::AuthService) -> crate::services::auth::UserRecord {
+        let (_, sid) = s.signup("res@b.co", "password1", None).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        s.resolve_session(Some(&cookie)).user.unwrap()
+    }
+
+    #[test]
+    fn resolve_null_path_is_no_key_and_does_not_evaluate_model() {
+        let s = resolve_svc();
+        let user = resolve_user(&s);
+        let r = resolve_llm_key_for(&s, Some(&user));
+        assert_eq!(r.key_source, "none");
+        assert_eq!(r.unavailable_reason, Some("no_key"));
+        assert_ne!(r.unavailable_reason, Some("model_missing"));
+        assert_ne!(r.unavailable_reason, Some("model_unset"));
+        assert_ne!(r.key_source, "shared_admin");
+        assert!(r.key_material.is_none());
+    }
+
+    #[test]
+    fn resolve_unsigned_is_none_with_null_reason() {
+        let s = resolve_svc();
+        let r = resolve_llm_key_for(&s, None);
+        assert_eq!(r.key_source, "none");
+        assert!(r.unavailable_reason.is_none());
+        assert!(r.key_material.is_none());
+    }
+
+    #[test]
+    fn resolve_own_key_decrypts_selected_slot() {
+        let s = resolve_svc();
+        let user = resolve_user(&s);
+        s.set_ai_key(&user, "sk-ant-test-key-zzzz", "anthropic");
+        let r = resolve_llm_key_for(&s, Some(&user));
+        assert_eq!(r.key_source, "own_key");
+        assert_eq!(r.wire_provider, Some("anthropic"));
+        assert!(r.key_material.is_some());
+        assert!(r.unavailable_reason.is_none());
+        assert_ne!(r.key_source, "shared_admin");
+    }
+
+    #[test]
+    fn resolve_grok_subscription_never_spends_byo() {
+        let s = resolve_svc();
+        let user = resolve_user(&s);
+        s.set_ai_key(&user, "sk-ant-test-key-zzzz", "anthropic");
+        s.write_settings(
+            &user,
+            crate::services::auth::SettingsPatch {
+                ai_power_path: Some(Some("grok_subscription".into())),
+                ai_provider: Some(None),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let r = resolve_llm_key_for(&s, Some(&user));
+        assert_eq!(r.key_source, "none");
+        assert_eq!(r.unavailable_reason, Some("oauth_unlinked"));
+        assert!(r.key_material.is_none());
+        assert!(r.wire_provider.is_none());
+    }
+
+    #[test]
+    fn resolve_decrypt_fail_is_key_unusable() {
+        let s = resolve_svc();
+        let user = resolve_user(&s);
+        s.test_store()
+            .set_credential(&user.id, "ai", "not-valid-ciphertext", "abcd", "anthropic")
+            .unwrap();
+        s.write_settings(
+            &user,
+            crate::services::auth::SettingsPatch {
+                ai_power_path: Some(Some("own_key".into())),
+                ai_provider: Some(Some("anthropic".into())),
+                ai_model: Some(Some(
+                    crate::services::llm::LlmProvider::Anthropic
+                        .default_model()
+                        .into(),
+                )),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let r = resolve_llm_key_for(&s, Some(&user));
+        assert_eq!(r.unavailable_reason, Some("key_unusable"));
+        assert_eq!(r.key_source, "none");
+        assert!(r.key_material.is_none());
+    }
+
+    #[test]
+    fn resolve_saved_model_not_in_catalog_blocks_without_substitute() {
+        let s = resolve_svc();
+        let user = resolve_user(&s);
+        s.set_ai_key(&user, "sk-ant-test-key-zzzz", "anthropic");
+        s.write_settings(
+            &user,
+            crate::services::auth::SettingsPatch {
+                ai_model: Some(Some("not-a-catalog-model".into())),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let r = resolve_llm_key_for(&s, Some(&user));
+        assert_eq!(r.unavailable_reason, Some("model_not_in_catalog"));
+        assert!(r.key_material.is_none());
+        assert_eq!(r.wire_model.as_deref(), Some("not-a-catalog-model"));
     }
 }

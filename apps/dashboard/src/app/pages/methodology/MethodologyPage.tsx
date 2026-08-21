@@ -4,7 +4,10 @@
  * Renders inside AppShell's `<main>`; this page does not nest a second main.
  */
 import { METHOD_COPY } from '@/pages/methodology/copy';
-import { Box, Button, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 

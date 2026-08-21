@@ -11,7 +11,7 @@
  * Product spine #6 — keyboard: a skip link is the first tab stop, targeting the ONE `<main>` landmark.
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { Outlet } from 'react-router-dom';
 import { TopNav } from './TopNav';
 

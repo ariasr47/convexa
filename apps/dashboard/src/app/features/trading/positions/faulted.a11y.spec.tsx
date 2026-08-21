@@ -23,7 +23,9 @@
  * those two are strictly stronger than one flaky end-to-end assertion. Do not merge them.
  */
 import { themeForPref } from '@/shared/theme/theme';
-import { Box, Button, ThemeProvider } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';

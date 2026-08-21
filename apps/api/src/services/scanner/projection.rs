@@ -99,7 +99,13 @@ pub fn project_from_analytics(
     let sig = snap.signals.as_ref();
     let score = sig.map(|s| s.opportunity_score as f64);
     let tier = score.map(|s| {
-        compute_opportunity_tier(s as i32, ai_ready, bands.watch, bands.actionable, bands.prime)
+        compute_opportunity_tier(
+            s as i32,
+            ai_ready,
+            bands.watch,
+            bands.actionable,
+            bands.prime,
+        )
     });
 
     let display_price = price.or(if snap.display_spot > 0.0 {

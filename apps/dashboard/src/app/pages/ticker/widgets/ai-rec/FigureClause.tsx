@@ -7,7 +7,8 @@
  * beneath it (never colour alone, never tooltip alone — tooltips are unreachable on touch).
  */
 import type { GroundingField } from '@convexa/api';
-import { Tooltip, Typography } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import {
   COULD_NOT_CHECK_LINE,

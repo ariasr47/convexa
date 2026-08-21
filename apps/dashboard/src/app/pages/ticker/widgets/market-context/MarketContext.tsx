@@ -38,7 +38,12 @@ import type {
   TrendMomentumRead,
 } from '@convexa/api';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import {
   MC_ADVISORY,
   MC_ATR_EMPTY,

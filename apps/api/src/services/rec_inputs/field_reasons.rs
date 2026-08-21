@@ -52,7 +52,10 @@ pub fn field_reason(field: RecField, value_present: bool, p: InputPresence) -> O
     let deps: Vec<(bool, MissingInput)> = match field {
         RecField::MaxRisk => vec![(p.risk_block, MissingInput::RiskBlock)],
         RecField::PositionSize => {
-            vec![(p.risk_block, MissingInput::RiskBlock), (p.candidate_quotes, MissingInput::CandidateQuotes)]
+            vec![
+                (p.risk_block, MissingInput::RiskBlock),
+                (p.candidate_quotes, MissingInput::CandidateQuotes),
+            ]
         }
         RecField::ExitTarget => vec![(p.straddle_move, MissingInput::StraddleMove)],
         RecField::ExitStop => vec![], // market-state levels only — always present
@@ -60,8 +63,14 @@ pub fn field_reason(field: RecField, value_present: bool, p: InputPresence) -> O
         RecField::InvalidationLevel => vec![],
     };
     Some(match deps.into_iter().find(|(present, _)| !*present) {
-        Some((_, missing)) => FieldReason { reason: ReasonKind::Unavailable, missing_input: Some(missing) },
-        None => FieldReason { reason: ReasonKind::NotGiven, missing_input: None },
+        Some((_, missing)) => FieldReason {
+            reason: ReasonKind::Unavailable,
+            missing_input: Some(missing),
+        },
+        None => FieldReason {
+            reason: ReasonKind::NotGiven,
+            missing_input: None,
+        },
     })
 }
 
@@ -108,14 +117,18 @@ pub fn plan_field_reason(
     if value_present == PlanValue::Present {
         return None;
     }
-    let not_given = FieldReason { reason: ReasonKind::NotGiven, missing_input: None };
+    let not_given = FieldReason {
+        reason: ReasonKind::NotGiven,
+        missing_input: None,
+    };
     Some(match field {
         // THE ONLY construction site of `unrecognized_value` in the codebase. An `OffScale` handed to
         // any other arm falls to `not_given` — it cannot mint a second emit site.
         RecPlanField::Confidence => match value_present {
-            PlanValue::OffScale => {
-                FieldReason { reason: ReasonKind::UnrecognizedValue, missing_input: None }
-            }
+            PlanValue::OffScale => FieldReason {
+                reason: ReasonKind::UnrecognizedValue,
+                missing_input: None,
+            },
             _ => not_given,
         },
         // The two fields that declare a candidate-set dependency. `None` = no dependency declared,
@@ -128,7 +141,9 @@ pub fn plan_field_reason(
             _ => not_given,
         },
         // No declared dependency: `unavailable` is structurally unreachable on these three.
-        RecPlanField::Structure | RecPlanField::EntryTrigger | RecPlanField::TimeHorizon => not_given,
+        RecPlanField::Structure | RecPlanField::EntryTrigger | RecPlanField::TimeHorizon => {
+            not_given
+        }
     })
 }
 
@@ -151,9 +166,16 @@ pub fn plan_value(field: RecPlanField, strategy: &Value) -> PlanValue {
             let any_finite = strategy
                 .get("strikes")
                 .and_then(|v| v.as_array())
-                .map(|a| a.iter().any(|x| x.as_f64().map_or(false, |n| n.is_finite())))
+                .map(|a| {
+                    a.iter()
+                        .any(|x| x.as_f64().map_or(false, |n| n.is_finite()))
+                })
                 .unwrap_or(false);
-            if any_finite { PlanValue::Present } else { PlanValue::Absent }
+            if any_finite {
+                PlanValue::Present
+            } else {
+                PlanValue::Absent
+            }
         }
         // FIXED ORDER, first match wins, DO NOT REORDER (INTERFACE_CONTRACT §1):
         //   1. null or trimmed-empty  -> Absent      (=> not_given)
@@ -173,7 +195,11 @@ mod tests {
     use super::*;
 
     fn all_present() -> InputPresence {
-        InputPresence { risk_block: true, candidate_quotes: true, straddle_move: true }
+        InputPresence {
+            risk_block: true,
+            candidate_quotes: true,
+            straddle_move: true,
+        }
     }
 
     #[test]
@@ -190,7 +216,10 @@ mod tests {
 
     #[test]
     fn a_null_max_risk_with_no_risk_block_is_unavailable_naming_the_risk_block() {
-        let p = InputPresence { risk_block: false, ..all_present() };
+        let p = InputPresence {
+            risk_block: false,
+            ..all_present()
+        };
         let r = field_reason(RecField::MaxRisk, false, p).unwrap();
         assert_eq!(r.reason, ReasonKind::Unavailable);
         assert_eq!(r.missing_input, Some(MissingInput::RiskBlock));
@@ -198,7 +227,11 @@ mod tests {
 
     #[test]
     fn position_size_with_both_dependencies_absent_names_the_risk_block_on_every_run() {
-        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: true };
+        let p = InputPresence {
+            risk_block: false,
+            candidate_quotes: false,
+            straddle_move: true,
+        };
         for _ in 0..100 {
             let r = field_reason(RecField::PositionSize, false, p).unwrap();
             assert_eq!(r.missing_input, Some(MissingInput::RiskBlock));
@@ -207,7 +240,11 @@ mod tests {
 
     #[test]
     fn exit_stop_never_reports_a_missing_input() {
-        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: false };
+        let p = InputPresence {
+            risk_block: false,
+            candidate_quotes: false,
+            straddle_move: false,
+        };
         let r = field_reason(RecField::ExitStop, false, p).unwrap();
         assert_eq!(r.reason, ReasonKind::NotGiven);
         assert!(r.missing_input.is_none());
@@ -215,7 +252,11 @@ mod tests {
 
     #[test]
     fn invalidation_level_is_a_first_class_field_and_never_reports_a_missing_input() {
-        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: false };
+        let p = InputPresence {
+            risk_block: false,
+            candidate_quotes: false,
+            straddle_move: false,
+        };
         let r = field_reason(RecField::InvalidationLevel, false, p).unwrap();
         assert_eq!(r.reason, ReasonKind::NotGiven);
         assert!(r.missing_input.is_none());
@@ -225,7 +266,9 @@ mod tests {
     // ---- rec-absence-literals-hole ------------------------------------------------------------
 
     fn no_dep() -> PlanInputPresence {
-        PlanInputPresence { candidate_set: None }
+        PlanInputPresence {
+            candidate_set: None,
+        }
     }
 
     #[test]
@@ -252,8 +295,15 @@ mod tests {
 
     #[test]
     fn a_stated_plan_value_has_no_reason() {
-        for f in [RecPlanField::Structure, RecPlanField::Strikes, RecPlanField::Confidence] {
-            assert!(plan_field_reason(f, PlanValue::Present, no_dep()).is_none(), "{f:?}");
+        for f in [
+            RecPlanField::Structure,
+            RecPlanField::Strikes,
+            RecPlanField::Confidence,
+        ] {
+            assert!(
+                plan_field_reason(f, PlanValue::Present, no_dep()).is_none(),
+                "{f:?}"
+            );
         }
     }
 
@@ -264,8 +314,14 @@ mod tests {
             RecPlanField::EntryTrigger,
             RecPlanField::TimeHorizon,
         ] {
-            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) })
-                .unwrap();
+            let r = plan_field_reason(
+                f,
+                PlanValue::Absent,
+                PlanInputPresence {
+                    candidate_set: Some(false),
+                },
+            )
+            .unwrap();
             assert_eq!(r.reason, ReasonKind::NotGiven, "{f:?}");
             assert!(r.missing_input.is_none(), "{f:?}");
         }
@@ -275,13 +331,25 @@ mod tests {
     fn strikes_and_expiration_are_unavailable_only_when_the_declared_set_is_empty() {
         for f in [RecPlanField::Strikes, RecPlanField::Expiration] {
             // declared and unmet -> unavailable + candidate_set
-            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) })
-                .unwrap();
+            let r = plan_field_reason(
+                f,
+                PlanValue::Absent,
+                PlanInputPresence {
+                    candidate_set: Some(false),
+                },
+            )
+            .unwrap();
             assert_eq!(r.reason, ReasonKind::Unavailable, "{f:?}");
             assert_eq!(r.missing_input, Some(MissingInput::CandidateSet), "{f:?}");
             // declared and met -> not_given
-            let r = plan_field_reason(f, PlanValue::Absent, PlanInputPresence { candidate_set: Some(true) })
-                .unwrap();
+            let r = plan_field_reason(
+                f,
+                PlanValue::Absent,
+                PlanInputPresence {
+                    candidate_set: Some(true),
+                },
+            )
+            .unwrap();
             assert_eq!(r.reason, ReasonKind::NotGiven, "{f:?}");
             // NOT declared (the local-rules branch) -> not_given, even though nothing was named
             let r = plan_field_reason(f, PlanValue::Absent, no_dep()).unwrap();
@@ -292,10 +360,14 @@ mod tests {
 
     #[test]
     fn confidence_follows_its_fixed_order_and_never_collapses_off_scale_into_never_answered() {
-        let absent = plan_field_reason(RecPlanField::Confidence, PlanValue::Absent, no_dep()).unwrap();
+        let absent =
+            plan_field_reason(RecPlanField::Confidence, PlanValue::Absent, no_dep()).unwrap();
         assert_eq!(absent.reason, ReasonKind::NotGiven);
-        assert!(plan_field_reason(RecPlanField::Confidence, PlanValue::Present, no_dep()).is_none());
-        let off = plan_field_reason(RecPlanField::Confidence, PlanValue::OffScale, no_dep()).unwrap();
+        assert!(
+            plan_field_reason(RecPlanField::Confidence, PlanValue::Present, no_dep()).is_none()
+        );
+        let off =
+            plan_field_reason(RecPlanField::Confidence, PlanValue::OffScale, no_dep()).unwrap();
         assert_eq!(off.reason, ReasonKind::UnrecognizedValue);
         assert!(off.missing_input.is_none());
     }
@@ -311,7 +383,13 @@ mod tests {
             RecPlanField::TimeHorizon,
         ] {
             for v in [PlanValue::Absent, PlanValue::OffScale] {
-                let r = plan_field_reason(f, v, PlanInputPresence { candidate_set: Some(true) });
+                let r = plan_field_reason(
+                    f,
+                    v,
+                    PlanInputPresence {
+                        candidate_set: Some(true),
+                    },
+                );
                 assert_ne!(
                     r.map(|x| x.reason),
                     Some(ReasonKind::UnrecognizedValue),
@@ -320,7 +398,11 @@ mod tests {
             }
         }
         // The shipped five-field function has no such arm at all.
-        let p = InputPresence { risk_block: false, candidate_quotes: false, straddle_move: false };
+        let p = InputPresence {
+            risk_block: false,
+            candidate_quotes: false,
+            straddle_move: false,
+        };
         for f in [
             RecField::MaxRisk,
             RecField::PositionSize,
@@ -330,7 +412,11 @@ mod tests {
         ] {
             for present in [true, false] {
                 let r = field_reason(f, present, p);
-                assert_ne!(r.map(|x| x.reason), Some(ReasonKind::UnrecognizedValue), "{f:?}");
+                assert_ne!(
+                    r.map(|x| x.reason),
+                    Some(ReasonKind::UnrecognizedValue),
+                    "{f:?}"
+                );
             }
         }
     }
@@ -338,12 +424,21 @@ mod tests {
     #[test]
     fn missing_input_is_non_null_iff_the_reason_is_unavailable() {
         let cases = [
-            plan_field_reason(RecPlanField::Strikes, PlanValue::Absent, PlanInputPresence { candidate_set: Some(false) }),
+            plan_field_reason(
+                RecPlanField::Strikes,
+                PlanValue::Absent,
+                PlanInputPresence {
+                    candidate_set: Some(false),
+                },
+            ),
             plan_field_reason(RecPlanField::Strikes, PlanValue::Absent, no_dep()),
             plan_field_reason(RecPlanField::Confidence, PlanValue::OffScale, no_dep()),
         ];
         for c in cases.into_iter().flatten() {
-            assert_eq!(c.missing_input.is_some(), c.reason == ReasonKind::Unavailable);
+            assert_eq!(
+                c.missing_input.is_some(),
+                c.reason == ReasonKind::Unavailable
+            );
         }
     }
 
@@ -361,10 +456,16 @@ mod tests {
         assert_eq!(plan_value(RecPlanField::Structure, &s), PlanValue::Absent);
         assert_eq!(plan_value(RecPlanField::Strikes, &s), PlanValue::Absent);
         assert_eq!(plan_value(RecPlanField::Expiration, &s), PlanValue::Absent);
-        assert_eq!(plan_value(RecPlanField::EntryTrigger, &s), PlanValue::Absent);
+        assert_eq!(
+            plan_value(RecPlanField::EntryTrigger, &s),
+            PlanValue::Absent
+        );
         assert_eq!(plan_value(RecPlanField::TimeHorizon, &s), PlanValue::Absent);
         // "moderate" is STATED and off-scale — never `Absent`, never `Present`.
-        assert_eq!(plan_value(RecPlanField::Confidence, &s), PlanValue::OffScale);
+        assert_eq!(
+            plan_value(RecPlanField::Confidence, &s),
+            PlanValue::OffScale
+        );
     }
 
     #[test]
@@ -373,8 +474,11 @@ mod tests {
         // §2.2's ship-blocking hazard: reusing the null-only closure would make all of these read
         // `present`, the wire would carry `null`, and the browser would render `unavailable` over a
         // field nobody ever named.
-        let s = json!({ "structure": "", "strikes": [], "expiration": "", "confidence": "moderate" });
-        let declared_empty = PlanInputPresence { candidate_set: Some(false) };
+        let s =
+            json!({ "structure": "", "strikes": [], "expiration": "", "confidence": "moderate" });
+        let declared_empty = PlanInputPresence {
+            candidate_set: Some(false),
+        };
         for f in [RecPlanField::Structure, RecPlanField::Confidence] {
             let r = plan_field_reason(f, plan_value(f, &s), declared_empty).unwrap();
             assert_ne!(r.reason, ReasonKind::Unavailable, "{f:?}");
@@ -408,6 +512,9 @@ mod tests {
             PlanValue::Absent
         );
         // An absent strategy (the early-return `Value::Null` envelopes) reads absent, never present.
-        assert_eq!(plan_value(RecPlanField::Structure, &serde_json::Value::Null), PlanValue::Absent);
+        assert_eq!(
+            plan_value(RecPlanField::Structure, &serde_json::Value::Null),
+            PlanValue::Absent
+        );
     }
 }

@@ -1,0 +1,176 @@
+{
+  "conflicts": [
+    {
+      "quote": "**capture_disabled** \u2014 store open path is `Disabled` / `\"capture not storing\"` \u2192 hard CLI error **before** any artifact claim of \"empty research.\"",
+      "source": "architect",
+      "why": "Treating store `Disabled` / capture-not-storing as an automatic hard fail before measurement conflates \"capture write is off\" with \"history is unreadable.\" That contradicts the product requirement that capture-off still replays already-stored books, and it collapses two operator-visible cases that `[absent-is-not-none]` must keep apart.",
+      "proposal": "Hard-fail only when the store cannot be opened for read (not configured / unreadable). If capture write is off but the durable store still lists/loads prior captures, open read-only and proceed. Empty inventory after a successful open is `empty_corpus`, not `capture_disabled`.",
+      "kind": "technical",
+      "conflict_id": "bbcd0eed3681e04238f1ff3a756bdfa12592df2fc5299761f75844990bb67902",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "**empty_corpus** \u2014 store enabled; list filters yield zero metas \u2192 write an honest empty artifact (zero replayed rows), exit success for the empty case the BRIEF requires.",
+      "source": "architect",
+      "why": "A durable zero-row \"research report\" file is exactly the quotable false finding PM AC-9 and UX-10 reject: later notes can cite the artifact as \"we measured and found nothing scored.\" BRIEF honest-empty is a process outcome, not a success-shaped measurement file.",
+      "proposal": "On `empty_corpus` after a successful store open: print a console-only honest-empty disposition (distinct from miss / empty-book / unreadable / compute_failed), write **no** dated measurement artifact, perform zero Massive calls, exit success.",
+      "kind": "product",
+      "conflict_id": "4b3f9f38c048ee121dd6fc676c790b029e155d2045b80149d025ef3aa8701668",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Honest empty corpus (capture off / empty store) produces **no** measurement artifact that could later be quoted as \"we measured and found nothing scored\"",
+      "source": "ux",
+      "why": "The no-artifact rule for a truly empty inventory is sound, but binding \"capture off\" into the same empty-corpus path as \"empty store\" erases the read-still-works case: capture write may be off while dated books remain listable/loadable. That lump invites either blocking legitimate replay or labeling a store-open failure as honest empty.",
+      "proposal": "Keep no measurement artifact for readable-store + zero selected metas. Treat capture-write-off-with-readable-history as a normal replay path. Treat store-not-configured / unreadable-open as a loud named failure, not the empty-corpus family.",
+      "kind": "technical",
+      "conflict_id": "61271bd19303ed0c1aa88f629e78718beba7071645cc312226c97314a7572cf1",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Recommend: refuse split mode with an honest message rather than fabricating empty buckets; owner confirms.",
+      "source": "pm",
+      "why": "A blanket refuse treats every empty train/holdout as invalid split mode. For an operator-supplied `--split-at` outside the corpus, an empty bucket with counts = 0 is the honest application of the cut; refusing hides whether the cut ran. Silent re-cutting would be fabrication \u2014 empty membership is not.",
+      "proposal": "Refuse only when `--train-frac` cannot form two buckets from distinct `as_of` timestamps. For `--split-at`, always apply the chronological cut and allow empty train or holdout as first-class membership printed in the report.",
+      "kind": "product",
+      "conflict_id": "7cb902fdfdc8710a164387f7389fea4320ac551fccbadc5185cc5967b8f59125",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**capture_disabled** \u2014 store open path is `Disabled` / `\"capture not storing\"` \u2192 hard CLI error **before** any artifact claim of \"empty research.\"",
+      "source": "architect",
+      "why": "My degraded table and AC-23 require that with capture turned off going forward, replay over **already stored** books still completes with zero Massive calls. If `Disabled` / \"capture not storing\" hard-fails store open, research cannot read the corpus we already paid to keep \u2014 the BRIEF's whole point. Named failure is right when the store truly cannot open; it is wrong if the same mode is how capture write is switched off while historical bytes remain.",
+      "proposal": "Split write-disabled from read-unavailable: capture write off must still list/load existing snapshots for this CLI; hard CLI error only when the store backend cannot be opened or is unreadable as a store (AC-15). Empty enabled store with zero metas stays honest empty (AC-9), distinct from that hard failure.",
+      "kind": "technical",
+      "conflict_id": "1db2ae27e7060d16bb5063634970585881f834b9924380bc6e06753e8c138921",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**empty_corpus** \u2014 store enabled; list filters yield zero metas \u2192 write an honest empty artifact (zero replayed rows), exit success for the empty case the BRIEF requires.",
+      "source": "architect",
+      "why": "AC-9 forbids a success-looking measurement artifact that can later be read as a run with findings. A dated file under the research output path with exit success is exactly what gets pasted into a weekly note as \"we measured and found nothing scored,\" even with zero rows. BRIEF's \"honest empty\" means no silent live fetch and an operator-visible empty \u2014 not permission to emit a quotable research report.",
+      "proposal": "Empty corpus \u2192 console/stderr honest empty with closed vocabulary; write **no** research report artifact under the research output path. Keep capture-disabled / unreadable-store as loud named failures with no measurement artifact (AC-15).",
+      "kind": "product",
+      "conflict_id": "adcadbcb1f11fb8f0536b5f02af16cf9054e004e32f5e14ab7f836dacb4d9b84",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Empty train or empty holdout after a requested split is an **honest empty bucket** in the report (counts = 0), not a silent re-cut and not a vendor fetch.",
+      "source": "architect",
+      "why": "An empty train or empty holdout after the operator explicitly requested a split is not a useful measurement \u2014 it fabricates split theater (my risk #7 / AC-4/AC-5). My open product decision already recommended refusing split mode with an honest message rather than shipping empty buckets; allowing counts = 0 as success lets a one-book corpus or a cut past every as_of look like a completed split run.",
+      "proposal": "When a split is requested and the cut cannot produce two non-empty buckets, refuse split mode with an honest named message and write no split membership report. Unsplit replay-all remains available. Owner confirms on the Decision card if empty buckets should ever be allowed.",
+      "kind": "product",
+      "conflict_id": "caf7f90217091686f0427461f1a230a2f15d770aee6ecd4bd37657937b18d5bc",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**replayed** \u2014 load + deserialize + compute succeeded.",
+      "source": "architect",
+      "why": "The closed row vocabulary is only replayed / missing / unreadable / compute_failed. A stored identity that loads with an empty/unusable chain can still return Ok from compute and land as **replayed**, which would present zeros as a successful measurement. That collapses AC-12 and `[absent-is-not-none]` (absent \u2260 empty book \u2260 replay error). UX-8 depends on the same missing disposition.",
+      "proposal": "Add an explicit row disposition for empty/unusable loaded book (snapshot present; book empty as stored), distinct from replayed, missing, unreadable, and compute_failed, and carry it into console + artifact.",
+      "kind": "technical",
+      "conflict_id": "0cb8f978160a116f031eab4b1e4b225e2acf604c55613164e3359f539a1cde2a",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Honest empty corpus (capture off / empty store) produces **no** measurement artifact that could later be quoted as \"we measured and found nothing scored\"",
+      "source": "ux",
+      "why": "I agree that empty corpus must not emit a quotable measurement artifact (AC-9). The parenthetical equates \"capture off\" with empty store as the same situation. Capture off with retained books must still replay (AC-23); only zero metas after an honest list is empty corpus. UX's own state matrix already lists capture-not-storing under error\u2014unreadable, so treating bare capture off as empty corpus contradicts both AC-23 and that row.",
+      "proposal": "Keep UX-10's no-measurement-artifact rule for true empty corpus (zero metas). Amend the trigger: empty corpus = enabled store / filters yield zero snapshots \u2014 not \"capture off\" alone. Capture-not-storing / Disabled stays on the named-failure path; capture write off with stored books stays on the success/replay path.",
+      "kind": "technical",
+      "conflict_id": "8b28de31b488cdc98a0fdc809fb50b102522e4484d8623d02e83a72cc6ee0774",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Empty corpus is **honest empty** (artifact with zero replayed rows), not a silent live fetch and not collapsed into capture-disabled.",
+      "source": "architect",
+      "why": "A success-exit research file under the measurement artifact path, even with zero replayed rows, is exactly what a later note can quote as \"we ran measurement and found nothing.\" That contradicts UX-10 and PM AC-9 (no success-looking measurement artifact). Honest empty must stay operator-visible without leaving a quotable measurement run.",
+      "proposal": "On empty_corpus: print the closed no-stored-snapshot / empty-store wording on stderr/stdout only; write no `data/research/batch_backtest_*.json` measurement artifact (or only a distinctly named non-measurement status receipt that cannot satisfy AC-1). Keep capture_disabled as the separate hard error Architect already named.",
+      "kind": "product",
+      "conflict_id": "79c17b4238ac186978cf12dd0a9ae7df39ae1f026b60a916ac5b2633967b5ad8",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**Absent \u2260 empty \u2260 error:** capture-disabled \u2260 empty_corpus \u2260 per-row missing \u2260 compute_failed.",
+      "source": "architect",
+      "why": "This restatement of `[absent-is-not-none]` drops the BRIEF's and PM's required middle case: snapshot **present and loaded**, chain **empty/unusable as stored**. Architect's closed row set is only replayed / missing / unreadable / compute_failed \u2014 so an empty stored book can only land as replayed (zeros-as-measurement) or compute_failed (false fault). UX-8 and PM AC-12 cannot be implemented honestly without a distinct disposition.",
+      "proposal": "Add a closed row disposition **empty_book** (or **empty_unusable**): load + deserialize succeeded, stored chain has no usable contracts \u2014 printed with a literal distinct from `no stored snapshot for <SYMBOL>`, from unreadable, and from replay/compute error. Keep corpus-level empty_corpus separate.",
+      "kind": "technical",
+      "conflict_id": "c273ecd15aec36e67f7c655f4b5977267c0608e86985549168cff2bff7895dee",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: For open decision #2, confirm refuse-only-when-`--train-frac`-cannot-split versus refuse-any-empty-bucket \u2014 owner call."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Confirm v1 measurement stays descriptive aggregates over Path-B outputs (no score-lab AUC/lift pairing key required on day one)."
+    },
+    {
+      "from": "architect",
+      "ask": "UX: On console-only `empty_corpus` (no artifact file), is the standing block still required on stdout, or is a shorter honest-empty disposition family enough?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Exact console literal for whole-run `empty_corpus` (zero metas after list/filter) versus per-symbol `no stored snapshot for <SYMBOL>` \u2014 they must not collapse."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: When store mode is Disabled / \"capture not storing\", does open fail before any list/load, or can research still read snapshots already on disk? AC-23 is blocked until this is settled."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: After adding empty/unusable-book, is the gate evaluated before calling compute (disposition without a score figure) or after compute returns empty-derived outputs?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: Once Architect names the empty-stored-book disposition, what exact operator literal ships (parallel to `no stored snapshot for <SYMBOL>` / `stored snapshot unreadable: <reason>`)? AC-12 needs the distinction; you own the words."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm operator-facing miss/fault strings may stay the capture family (`no stored snapshot for <SYMBOL>`, `stored snapshot unreadable: <reason>`) mapped 1:1 from your disposition types \u2014 you named types, not those literals."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: settle your open #2 \u2014 refuse undersized split vs Architect's honest empty train/holdout buckets \u2014 so I can write either refuse copy or empty-bucket copy, not both."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: bound which Path-B aggregates appear in the v1 report body (Architect left summary stats to you) so captions do not invent metrics the compute row does not carry."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: after empty_corpus artifact is settled, what exit code and stderr phase labels should the working/loading progress use so a partial write can never be titled as the final research report?"
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 9,
+    "ux": 8
+  }
+}

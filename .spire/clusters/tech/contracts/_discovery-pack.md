@@ -240,6 +240,31 @@
   5 families dispositioned and the inventory set-equality pinned to {liveDotPulse, widgetLivePulse,
   ordersWatchPulse} + the hero draw + flash, with the live-browser inventory verified equal to the KEEP
   set. 2 binding.)*
+- **`[ai-asserted-numbers-are-traceable]`** (promoted 2026-08-14, 2 binding — logged at **0 instances**
+  2026-07-16 as deliberately aspirational, moved to 1 by `ai-rec-grounding`, graduated on the mechanical
+  tally) — every number or field the in-app AI **asserts** is traceable to a computed bundle field, and
+  every field it **omits** says so in a **closed vocabulary** rather than rendering a mark that means
+  something else. `[best-effort-isolated-or-null]` covers the AI *failing*; this covers it **fabricating**
+  and — added by the second instance — it covers it **going silent**. An untraceable figure is never
+  rendered as fact. An absent one is never rendered as a **reserved literal belonging to another state**,
+  and never **pre-typed into an input**: a value the read did not name must not reach a tradeable field by
+  default, inference, or a chain-derived fallback. **Measured, not asserted** — 44.4% of the AI's asserted
+  numbers did not trace at the first instance's ship, and the second instance's own defect was a
+  guaranteed output of a shipped code path, not a rare model slip. A third instance
+  (`rec-plan-scope-caption`) closed the remaining **inference** half: a reader must not be able to
+  treat an unchecked plan field as checked merely because a sibling field carries a clause.
+  *(ai-rec-grounding — per-figure grounding of asserted numbers; rec-absence-literals-hole — the
+  absence half: six fields, one new closed-vocabulary member, and the Accept seam;
+  rec-plan-scope-caption — one section-level scope caption on the pinned DecisionCard plan row.
+  3 instances.)*
+- **`[cited-code-is-verified-not-assumed]`** (promoted 2026-08-17, 2 binding) — a design or plan
+  artifact must not assert a fact about **existing code** it will reuse unless that fact was **read
+  at source**. Unverifiable claims carry a `[lane-check]` mark instead of being asserted. The
+  failure this prevents is a spec that cannot compile or a plan that attaches to a file that is
+  no longer the surface. *(rec-absence-literals-hole — three false citations in one council, none
+  caught by the authoring voice; rec-plan-scope-caption — PLAN locked the caption as a sibling
+  after the live `DecisionMetadata` row Stack after reading `DecisionCard.tsx`, refusing
+  Python-era `AiRecPanel` line numbers. 2 binding.)*
 
 # BACKLOG — idea pool + roadmap discovery (standing reference)
 
@@ -272,6 +297,165 @@
   project-owned backlog, NOT in the generic `ORCHESTRATOR.md`.)
 
 ---
+
+## Last GATE S — 2026-08-18 (`batch-backtest-cli` — P3 replay of stored books)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (`go` after capture) → council (D1=A refuse hollow split) → PLAN
+(B1–B9 · F1) → both lanes → **GATE Q PASS 28/0/0**. Archived to
+`_archive/batch-backtest-cli/`. Conformance re-pin of `_research` routes promoted.
+**No new canon graduation.** Working tree still uncommitted; push is deploy.
+Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-18 (c) (queue-drain after capture ship → `batch-backtest-cli`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Pipeline drained after `chain-snapshot-capture` GATE S. Owner said `go`.
+**Chosen → `batch-backtest-cli`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/batch-backtest-cli/`. Brief at
+`.spire/clusters/tech/contracts/_archive/batch-backtest-cli/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** capture exists so the $199+$199 subscriptions can be measured, not only
+served live. P2 `score-lab` still ranks digested samples; it never reloads a stored chain.
+P3 is now feasible. Do **not** buy hist-chain. `project-context-s2-is-python-era` still
+unpaid — this BRIEF cites live Rust; do not bundle.
+
+## Last GATE S — 2026-08-18 (`chain-snapshot-capture` — keep paid Massive snapshots)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Full pipeline: GATE I (owner-named) → council (D1=A every paid fetch; dual retention 14d+48) →
+PLAN (B1–B9 · F1–F2) → both lanes → **GATE Q PASS 28/0/0**. Archived to
+`_archive/chain-snapshot-capture/`. Conformance JSON promoted. **No new canon graduation.**
+P3 batch-backtest CLI is now unblocked. Working tree still uncommitted; push is deploy.
+Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-18 (owner: keep paid Massive snapshots → `chain-snapshot-capture`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner-directed after `ai-providers` ship. **Chosen → `chain-snapshot-capture`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/chain-snapshot-capture/`. Brief at
+`.spire/clusters/tech/contracts/_archive/chain-snapshot-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** Stocks $199 + Options $199/mo is not sustainable without keeping what those
+calls already return. P0 already saves a digested structure row and a latest-wins
+`scan_bundles` cache; the live `VendorBundle` is discarded. Batch replay (P3) is blocked
+on this. Do **not** buy a new Massive product; do **not** invent hist-chain endpoints.
+
+## Last GATE S — 2026-08-18 (`ai-providers` — multi-provider keys + named model)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Full pipeline: GATE I (owner-named) → council (D1–D7; D7 = user's Grok subscription) → PLAN
+(B1–B10 · F1–F9) → both lanes (FE crashed once at ~249k, resumed) → **GATE Q PASS 26/0/4**.
+Archived to `_archive/ai-providers/`. Conformance JSON promoted. **No new canon graduation.**
+New watch-list key `user-subscription-not-operator-pool`. AC-9/10/14/15 remain blocked-on
+AC-27. Working tree still uncommitted; push is deploy — owner call. Pipeline drained;
+next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-17 (b) (owner request: multi-provider keys + Grok pool + model choice → `ai-providers`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner-directed after `rec-plan-scope-caption` ship. **Chosen → `ai-providers`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/ai-providers/`. Brief at
+`.spire/clusters/tech/contracts/_archive/ai-providers/BRIEF.md`. **Both lanes.**
+**Why it won:** owner named it. Settings is still Anthropic-only; the server already
+accepts `provider` on the key PUT and can call four vendors, but the trader cannot pick a
+model and there is no Grok OAuth / Convexa sub-pool path. Decision-impact: which model's
+read they act on, and whether they pay BYO when a cheaper pool was intended.
+**Do not invent** an xAI SuperGrok-subscription protocol — the asked path is "log in with
+Grok to use Convexa's cheaper pool." Architect names a buildable mechanism or blocks that
+arm. `project-context-s2-is-python-era` still unpaid; this BRIEF cites live Rust paths.
+
+## Last GATE S — 2026-08-17 (b) (`rec-plan-scope-caption` — §9.5 half two closed)
+> [discovery: 8 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE S — 2026-08-17 (owner-directed archive of two live FE folders)
+> [discovery: 8 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE I — 2026-08-17 (queue-drain cull → `rec-plan-scope-caption`; four stale alarms cleared)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/` + `_discovery-pack.md`; `IN_FLIGHT` empty;
+`main` @ `593f601` = `origin/main`). Owner-directed archive of `ticker-visual-collisions` +
+`ai-rec-decision-card` had just closed. Discovery pack again elided the BACKLOG **Pool (1173
+lines)** and the **Ledger (601 lines)** as over-budget — escape hatch used; both read directly.
+**Chosen → `rec-plan-scope-caption`.** **✓ SHIPPED + ARCHIVED 2026-08-17 (b)** →
+`_archive/rec-plan-scope-caption/` (FE-only; GATE Q 19/19). Brief at
+`.spire/clusters/tech/contracts/_archive/rec-plan-scope-caption/BRIEF.md` (full `Considered:`).
+**Frontend-only expected (`NO_BACKEND_CHANGE`).**
+**Why it won:** it is the only survivor whose failure mode is a **wrong trade**. Half one of
+§9.5 (false `—` on absent plan fields) closed at `rec-absence-literals-hole`; half two — a
+reader inferring *"no clause means checked"* onto **stated** structure / trigger / horizon /
+conviction — was future-dated when that council cut the caption on line-budget. The
+decision-card ship moved long-form into a drawer, which is new **placement** evidence; it did
+**not** remove the always-on condition: `recommendation.rs:841-849` still emits `trade` with
+empty strikes and a stated structure/trigger whenever a setup exists. That constraint binds
+the design — the caption must not become standing chrome on `local_rules`.
+**Queue honesty (code-verified this gate — do not re-open as stale):**
+1. **S5c is NOT resolved on the live backend.** `docs/TECH_DEBT.md` ticks it at `86adf3b`,
+   which patched Python `main.py` / `live.py`. Rust `config.rs` never reads
+   `MAX_LIVE_SESSIONS` / `MAX_LIVE_SUBSCRIBERS` (decoy lines in `.env.example`).
+   `routes/stream.rs` caps **symbols per request** (120), not concurrent subscribers.
+   Strongest N/A-class runner-up; do not start it until `project-context-s2-is-python-era`
+   is its own reviewable diff.
+2. **`signed-out-refused-affordances` SHIPPED 2026-08-10** (IMPROVEMENT_BACKLOG 5.1,
+   `shared/ui/Refused`). The §A "displaced to L4" row is stale.
+3. **`split-decision-log` CLOSED.** `features/trading/model/store.ts` is a read-only
+   legacy harvest source; write paths were deleted at the v3 cutover.
+4. **The DTE `?` / containment caption is CLOSED** in `ai-rec-decision-card`
+   (`dteWindowCaption` requires both finite bounds; wording is a request property).
+**Flagged RISING for a FOURTH consecutive gate, still not chosen:**
+`degradation-visibility` (decision-impact N/A). Do not re-derive a fifth time — it needs
+an owner override if it is ever to run.
+**Hygiene batch still unpaid** (`ci-standing-red` weakened by HEAD CI green 2026-08-16,
+not retired · `ports-free-is-ipv4-only` · `cargo-fmt-whole-crate-drift` · the :8000 orphan).
+**X4 (ledger checkpoint) still blocked** on N≥20 closed outcomes.
+**`project-context-s2-is-python-era` still unpaid** — fix before the next backend feature.
+
+## Last GATE I — 2026-08-14 (pre-registered successor re-tested and CONFIRMED → `rec-absence-literals-hole`; scope revised UP to six fields + both lanes)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/`; `IN_FLIGHT.md` one row, `main` @ GATE S, no
+overlap). **First gate run on spire-os 3.13.0** (the prior ship ran the 3.3.0 driver; the RESUME
+overlay directed this gate to re-derive the catalog from the installed files rather than assume).
+The prior gate and the 2026-08-13 RESUME both pre-registered **`rec-absence-literals-hole`** and
+directed **re-test rather than inherit**. Re-tested and **CONFIRMED — with its scope revised UP.**
+**Chosen → `rec-absence-literals-hole`.** **✓ SHIPPED + ARCHIVED 2026-08-14** →
+`_archive/rec-absence-literals-hole/` (full pipeline both lanes; council 28 conflicts / 28 quotes
+machine-verified / 9 self-revisions / 1 owner ruling + 1 at the review cap; S2 ×2 → R4 ×3; **GATE Q
+PASS 47/47, 0 FAIL** with zero code defects — the one bounce was a canon row the conductor owed).
+Conformance spec promoted to `state/conformance/rec-absence-literals-hole.json` (2 endpoints).
+**GATE S graduated `ai-asserted-numbers-are-traceable`** (2 binding) — the key logged at 0 instances
+2026-07-16 as aspirational; it reached the bar on ordinary recurrence, so the queued severity-path
+question dissolved unasked. Canon folded: OPEN_THREADS §7af + PROJECT_CONTEXT §5/§6 + DESIGN_SYSTEM
+Amendments (`unrecognized`). **⚠ §9.5 closes in HALF ONE ONLY** — half two survives until the
+future-dated plan-row caption ships, and no report may record it closed before then.
+*(original entry:)* Brief at `_archive/rec-absence-literals-hole/BRIEF.md`
+(carries the full `Considered:` cull set). **Both lanes expected.**
+**Why it won:** it is the only survivor whose failure mode is a **wrong trade** rather than a
+degraded, slower or unmeasured one. `ai-rec-grounding` closed the numbers the AI **asserts**; this
+closes the ones it **omits** — the other half of the same hole, and the residual that feature named
+in its own SPEC §9.5. Every other candidate is decision-impact **N/A** by the cull's own test.
+**Queue honesty (code-verified this gate — do not re-open as stale):**
+1. **The entry's line numbers and lane are BOTH wrong** — the third time the "backlog code
+   references go stale" rule has bitten. The file moved to `pages/ticker/widgets/ai-rec/AiRecPanel.tsx`;
+   the bare `?? '—'` sites are **`:1081, :1084, :1090, :1100`**, not `753/1044/1053/1063`.
+2. **It is SIX fields, not four.** `Time horizon` (`:1153`) and `confidence` (`:1158`) carry the same
+   bare `?? '—'` and the 2026-08-13 entry named neither.
+3. **It is NOT FE-only.** `apps/api/src/services/rec_inputs/field_reasons.rs:5` defines
+   `RecField { MaxRisk | PositionSize | ExitTarget | ExitStop | InvalidationLevel }` — the risk/exit
+   fields only. **No reason token exists on the wire for any of the six**, so the frontend cannot
+   distinguish an omission from anything else without a backend addition. Backend lane required.
+4. **The defect is sharper than the entry states.** All six sit in the **trade** branch
+   (`AiRecPanel.tsx:997`), while `—` is defined at `:958` as the `no_trade` branch's *"No entry, so
+   there is nothing to size."* So a card headed **`Trade · long`** can print `Strike(s): —` — the
+   reserved no-entry literal on a card that just told you to enter. The fix mechanism already ships
+   **in the same file**: `fieldLiteral` (`literals.ts:50`), a closed `FieldLiteral` union with a
+   spec'd, tested five-member vocabulary.
+**Runner-up:** the **S5c SSE connection ceiling** — the last genuine MEDIUM from the security review,
+and the one that can take the **current single container** down now that the app is live. Pick it
+next if an availability/backend fast-path is wanted.
+**Flagged RISING for a THIRD consecutive gate, still not chosen:** **`degradation-visibility`**
+(decision-impact N/A, so the cull cannot promote it) — it grew again this ship, since
+`ai-rec-grounding` added more nullable best-effort fields to a system that still aggregates no null
+rates. A rule that keeps rising and can never win the cull is worth an owner decision rather than a
+fourth re-derivation.
+**`project-context-shard-sizes` escalated by this gate's own evidence** (it was already superseded
+by the 3.13.0 doctor's 100KB budget flags): the discovery pack elided the BACKLOG **Pool (1123
+lines)** and the **Ledger (575 lines)** as over-budget — **discovery's own pack dropped the primary
+discovery surface**, and both had to be read directly by targeted Read. The escape hatch worked as
+designed and is recorded here as the signal to fix the pack, per ORCHESTRATOR §3 GATE I.
+**Hygiene batch still unpaid** (`ci-standing-red` + `ports-free-is-ipv4-only` +
+`cargo-fmt-whole-crate-drift` + the :8000 orphan) — carried from the prior gate, unchanged.
 
 ## Last GATE I — 2026-08-13 (pre-registered successor re-tested and CONFIRMED → `ai-rec-grounding`; its feasibility re-grounded UP)
 <!-- atlas: theme=trust-the-signal horizon=now -->
@@ -978,7 +1162,7 @@ tooling — judged on operational value). The export/alerting/persistence rest o
 ## Last GATE I — 2026-06-22 (pipeline had drained; 4 features archived)
 > [discovery: 12 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Pool
-> [discovery: 1123 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
+> [discovery: 1184 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
 # Open Threads (session snapshot)
 
 > Unresolved decisions / deferred work carried out of a long working session. Pairs with
@@ -1073,6 +1257,20 @@ decision (Databento Blue Ocean, or Webull supplement).
 > [discovery: 39 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7ae. ai-rec-grounding — per-figure grounding for the AI rec (SHIPPED + ARCHIVED 2026-08-13 — both lanes)
 > [discovery: 51 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7af. rec-absence-literals-hole — the absence half of AI grounding (SHIPPED + ARCHIVED 2026-08-14 — both lanes)
+> [discovery: 39 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ag. ticker-visual-collisions — Quick hairline + GEX label lanes (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+> [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ah. ai-rec-decision-card — decision-first card + analysis surface (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+> [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7al. batch-backtest-cli — P3 replay of stored books (SHIPPED + ARCHIVED 2026-08-18)
+> [discovery: 13 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ak. chain-snapshot-capture — keep paid Massive snapshots (SHIPPED + ARCHIVED 2026-08-18)
+> [discovery: 14 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7aj. ai-providers — multi-provider keys + named model (SHIPPED + ARCHIVED 2026-08-18 — both lanes)
+> [discovery: 18 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ai. rec-plan-scope-caption — plan-row scope caption (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+> [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1092,11 +1290,13 @@ decision (Databento Blue Ocean, or Webull supplement).
   Pages builds the frontend from git — the `tradeable-rec-inputs` push (`47a8961`) was serving live on
   `convexa.pages.dev` within the hour, front AND back (probed: `/api/candidates/SPY` 200; the served
   `TickerDashboard` chunk carries the feature's literals). Built by the owner in Grok CLI sessions
-  (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Genuinely open (both
-  red BEFORE the 08-13 push, verified):** (a) the CI frontend job is standing-red — lint warnings policy
-  (mostly `pages/lab/StructureField*` + one `useAlerts.ts` directive) plus the 5 accepted pre-existing
-  red spec files fail it; (b) the conformance **local auth-gated leg** exits 2 (config class) at its
-  signup bootstrap. See BACKLOG §B `ci-standing-red`. The 2026-07-28 wording below is history:
+  (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Update 2026-08-17:**
+  HEAD `593f601` CI Frontend job **succeeded** (lint · typecheck · test · build · e2e) and Conformance
+  + Deploy smoke succeeded — the 2026-08-13/14 "frontend job is standing-red" claim is **stale as of
+  that run**. BACKLOG §B `ci-standing-red` stays until a dedicated hygiene pass retires the item; do
+  not treat one green HEAD as proof the five-file baseline can never regress. Historical (both red
+  BEFORE the 08-13 push): (a) lint warnings policy + 5 accepted pre-existing red specs; (b)
+  conformance **local auth-gated leg** exits 2 at signup bootstrap. The 2026-07-28 wording below is history:
   *(a) conformance sweep not in CI; (b) push ≠ deploy, applied by hand — both now false.*
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
@@ -1163,7 +1363,7 @@ decision (Databento Blue Ocean, or Webull supplement).
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
-> [discovery: 109 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 125 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 # DECISION LEDGER — compounding memory (standing reference)
 
 > How the system gets wiser per feature. The conveyor between a one-off decision and the shared
@@ -1227,6 +1427,8 @@ decision (Databento Blue Ocean, or Webull supplement).
 | `structural-over-prose-enforcement` | an invariant is enforced by **construction** — type, module boundary, empty diff, mutation-tested scan, build-breaking lint — not by **prose an implementer must remember**; where both exist, prefer the shape that makes the violation **impossible or build-breaking**. **The bar: poison what the rule forbids and the build must go red, and the poison test must itself be proven non-vacuous** | CONTEXT §5 · THREADS §9 | **2026-08-06** | outcome-ledger, scanner, positions-legs, broker-option-grouping (4 features). **Held back THREE times** on the stated objection that it was "a design heuristic without a crisp violation test" — the entry each time said volume was not the missing piece, a statable bar was. `broker-option-grouping` supplied it, and supplied the argument for why prose could never have sufficed: `structure.ts:153` falls back to `custom` **only** because a vendor field is null today, so the forbidden name would appear **by itself, with nobody deciding it**, the day the field arrives. Promoted on the bar, not on the count |
 | `single-motion-moment` | the app has **ONE orchestrated motion moment**; the app-wide keyframe inventory is **set-equality pinned** so a new family is **build-breaking**; surviving motion is that moment or a **data signal** by recorded decision, never decoration; all of it respects a shared `useReducedMotion` | CONTEXT §5 · THREADS §9 | **2026-08-06** | redesign-stage-2, redesign-stage-3 (2 binding). **Crossed the threshold at redesign-stage-3 on 2026-07-22 and was MISSED at that GATE S** — surfaced by `ledger_tally` at the `broker-option-grouping` ship and graduated then. Exactly the miss the mechanical tally exists to prevent; the counting was already code, but the tally was not run at that ship |
 | `dark-pool-context-only` | off-exchange / dark-pool is **context only** — capped confluence, toggleable, never a directional smart-money signal; block prints display-only and unscored; no-side chips must not render success green | CONTEXT §5 · THREADS §9 | **2026-08-11** | dark-pool-stream-isolation, redesign-stage-3 (2 binding). Long-standing prose in §5/§9; formal key graduation via `ledger_tally` at `distance-to-level-tiles` GATE S (the prior "pre-existing canon" note was not in this table, so the tally kept marking GRADUATES) |
+| `ai-asserted-numbers-are-traceable` | every number or field the in-app AI **asserts** is traceable to a computed bundle field, and every field it **omits** says so in a **closed vocabulary** rather than a mark meaning something else; an untraceable figure is never rendered as fact, an absent one never as a **reserved literal of another state** and never **pre-typed into a tradeable input** by default, inference or chain-derived fallback | CONTEXT §5 · THREADS §9 | **2026-08-14** | ai-rec-grounding (per-figure grounding; **44.4% of asserted numbers measured untraceable**), rec-absence-literals-hole (the absence half — six fields, one new vocabulary member, the Accept seam) — **2 binding**. Logged at **0 instances** 2026-07-16 as explicitly aspirational ("an aspirational rule is not canon"); the queued severity-path question dissolved when the 2nd instance arrived, so it graduated on **ordinary recurrence** exactly as the rule intends |
+| `cited-code-is-verified-not-assumed` | a design or plan artifact must not assert a fact about **existing code** it will reuse unless that fact was **read at source**; unverifiable claims carry a `[lane-check]` mark instead of being asserted | CONTEXT §5 · THREADS §9 | **2026-08-17** | rec-absence-literals-hole (1st instance — 3 false citations inside one council), rec-plan-scope-caption (2nd — PLAN locked attachment against live `DecisionCard.tsx`, not Python-era `AiRecPanel`) — **2 binding**. Graduated by `ledger_tally` at this GATE S |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -1363,8 +1565,10 @@ be exactly it.
   `model-read-carries-its-assumptions`** rather than a separate rule — the honest read is that a
   self-describing read already implies "say when you don't know." Log recurrence; promote only if it earns
   a bar distinct from its parent. *binding:yes.*
-- **`ai-asserted-numbers-are-traceable`** (**0 instances — PROPOSED 2026-07-16, owner canon review; NOT
-  promoted**) — every number the in-app AI **asserts** (strike, stop, target, level, price) must be
+- _(**`ai-asserted-numbers-are-traceable`** **GRADUATED 2026-08-14** — 2 binding (ai-rec-grounding, rec-absence-literals-hole);
+  now in Promoted canon above. It reached the bar on **ordinary recurrence**, which is why the queued
+  severity-path question was never put to the owner. Original entry retained below for provenance.)_
+  (**0 instances at proposal — 2026-07-16, owner canon review; NOT promoted then**) — every number the in-app AI **asserts** (strike, stop, target, level, price) must be
   **traceable to a computed bundle field**; an untraceable number is not rendered as fact. Rationale:
   `best-effort-isolated-or-null` covers the AI **failing**, nothing covers it **fabricating** —
   `model-read-carries-its-assumptions` disciplines *our* model reads, not the LLM's output. The
@@ -1383,4 +1587,4 @@ be exactly it.
   already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 575 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 662 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

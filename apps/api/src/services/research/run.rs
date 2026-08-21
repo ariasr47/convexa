@@ -474,7 +474,10 @@ mod tests {
             "console heading does not name the single-symbol case: {heading:?}"
         );
         // Must NOT read the multi-symbol run's opposite claim.
-        assert_ne!(heading, "Per symbol \u{2014} pooled above is not a summary of these");
+        assert_ne!(
+            heading,
+            "Per symbol \u{2014} pooled above is not a summary of these"
+        );
 
         // A multi-symbol run must be unaffected — the original heading is preserved verbatim.
         let mut multi_inputs = base_inputs();

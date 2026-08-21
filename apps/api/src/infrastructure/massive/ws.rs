@@ -144,10 +144,7 @@ async fn connection_loop(
 ) -> AppResult<()> {
     let mut backoff_secs = 1_u64;
     loop {
-        let url = format!(
-            "wss://{}/stocks",
-            inner.feed.ws_host()
-        );
+        let url = format!("wss://{}/stocks", inner.feed.ws_host());
         info!(%url, feed = inner.feed.as_str(), "connecting stock websocket");
 
         match run_session(&inner, &mut cmd_rx, &event_tx, &url).await {
@@ -260,8 +257,8 @@ async fn handle_text(
     write: &mut (impl SinkExt<Message, Error = tokio_tungstenite::tungstenite::Error> + Unpin),
     pending: &mut Vec<HubCmd>,
 ) -> AppResult<()> {
-    let v: Value = serde_json::from_str(text)
-        .map_err(|e| AppError::Massive(format!("ws json: {e}")))?;
+    let v: Value =
+        serde_json::from_str(text).map_err(|e| AppError::Massive(format!("ws json: {e}")))?;
 
     // Massive/Polygon sends either a single object or an array of status/events.
     let items: Vec<Value> = match v {

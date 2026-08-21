@@ -19,7 +19,9 @@
  */
 import { money } from '@/features/trading/positions/labels';
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { NOT_PROVIDED, UNAVAILABLE } from './brokerView';

@@ -17,7 +17,8 @@ import { AUTH_COPY } from '@/features/auth/copy';
 import { EntryPrefill, TradeEntryDialog } from '@/features/trading/TradeEntryDialog';
 import { OrdersPanel } from '@/features/trading/orders/OrdersPanel';
 import type { LiveUpdate, TickerBundle } from '@convexa/api';
-import { Box, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
 import { CustomizationToolbar } from './CustomizationToolbar';
 import { PositionsView } from './PositionsView';
@@ -97,7 +98,7 @@ export function PositionsPanel({
 
   const strikeList = Array.from(
     new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
-  ).sort((a, b) => a - b);
+  ).toSorted((a, b) => a - b);
   const expirations = data?.expirations.map((e) => e.date) ?? [];
 
   return (

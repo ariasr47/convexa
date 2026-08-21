@@ -7,16 +7,14 @@
  * focused/streamed one show the §4.3 not-evaluated state — CORRECT and required, not a bug (D5).
  */
 import { SIMULATED_TIP } from '@/features/trading/positions/labels';
-import {
-  Box,
-  Button,
-  Chip,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { OrderDetailDialog } from './OrderDetailDialog';
 import { OrderRow } from './OrderRow';

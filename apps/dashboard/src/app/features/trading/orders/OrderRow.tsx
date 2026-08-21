@@ -9,7 +9,12 @@
  * Token-only styling; the Watching pulse is reduced-motion-guarded via the CSS media query.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Button, Chip, Stack, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useRef, useState } from 'react';
 import {

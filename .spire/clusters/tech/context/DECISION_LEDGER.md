@@ -62,6 +62,7 @@
 | `single-motion-moment` | the app has **ONE orchestrated motion moment**; the app-wide keyframe inventory is **set-equality pinned** so a new family is **build-breaking**; surviving motion is that moment or a **data signal** by recorded decision, never decoration; all of it respects a shared `useReducedMotion` | CONTEXT §5 · THREADS §9 | **2026-08-06** | redesign-stage-2, redesign-stage-3 (2 binding). **Crossed the threshold at redesign-stage-3 on 2026-07-22 and was MISSED at that GATE S** — surfaced by `ledger_tally` at the `broker-option-grouping` ship and graduated then. Exactly the miss the mechanical tally exists to prevent; the counting was already code, but the tally was not run at that ship |
 | `dark-pool-context-only` | off-exchange / dark-pool is **context only** — capped confluence, toggleable, never a directional smart-money signal; block prints display-only and unscored; no-side chips must not render success green | CONTEXT §5 · THREADS §9 | **2026-08-11** | dark-pool-stream-isolation, redesign-stage-3 (2 binding). Long-standing prose in §5/§9; formal key graduation via `ledger_tally` at `distance-to-level-tiles` GATE S (the prior "pre-existing canon" note was not in this table, so the tally kept marking GRADUATES) |
 | `ai-asserted-numbers-are-traceable` | every number or field the in-app AI **asserts** is traceable to a computed bundle field, and every field it **omits** says so in a **closed vocabulary** rather than a mark meaning something else; an untraceable figure is never rendered as fact, an absent one never as a **reserved literal of another state** and never **pre-typed into a tradeable input** by default, inference or chain-derived fallback | CONTEXT §5 · THREADS §9 | **2026-08-14** | ai-rec-grounding (per-figure grounding; **44.4% of asserted numbers measured untraceable**), rec-absence-literals-hole (the absence half — six fields, one new vocabulary member, the Accept seam) — **2 binding**. Logged at **0 instances** 2026-07-16 as explicitly aspirational ("an aspirational rule is not canon"); the queued severity-path question dissolved when the 2nd instance arrived, so it graduated on **ordinary recurrence** exactly as the rule intends |
+| `cited-code-is-verified-not-assumed` | a design or plan artifact must not assert a fact about **existing code** it will reuse unless that fact was **read at source**; unverifiable claims carry a `[lane-check]` mark instead of being asserted | CONTEXT §5 · THREADS §9 | **2026-08-17** | rec-absence-literals-hole (1st instance — 3 false citations inside one council), rec-plan-scope-caption (2nd — PLAN locked attachment against live `DecisionCard.tsx`, not Python-era `AiRecPanel`) — **2 binding**. Graduated by `ledger_tally` at this GATE S |
 
 > Pre-existing canon (recorded by the ledger, already a rule before it existed — not re-promoted):
 > `gamma-sourcing-split` (CONTEXT §3 / THREADS §9).
@@ -802,3 +803,125 @@ be exactly it.
 | `structural-over-prose-enforcement` | rec-absence-literals-hole | C | four enforcement layers, each with a stated poison AND a stated non-vacuity proof. **The bar was raised by this council:** a character-level em-dash scan was rejected after measurement (`copy.ts` 50 + `AiRecPanel.tsx` 57 + `literals.ts` 28 ≈ 135 legitimate punctuation sites) — a guard red on day one against shipped unrelated code is `ci-standing-red` in miniature, not enforcement. Re-homed to a slot-scoped render guard whose non-vacuity arm asserts **an exact count** of resolved label anchors, so tagging five of six reds where a bare "non-empty" assertion would have passed | yes |
 | `single-shared-sim-entry-dialog` | rec-absence-literals-hole | C | **honored, not narrowed** — the Accept fix changes the ONE shared sim dialog's *seeding*, never forks it. Uniform rule across all three seeded fields: **the seam carries `null`, the draft carries `''`, mapped at one boundary line.** `LegDraft.right` becomes `OptionRight \| ''` following the file's own established sentinel (`strike: number \| ''`, `price: number \| ''` — "not typed yet") rather than introducing a nullable into a third file. Branching on **prefill presence, not field value**, is what carries the distinction, because `??` fires identically on `null` and `undefined` | yes |
 | `cited-code-is-verified-not-assumed` | rec-absence-literals-hole | C | **NEW KEY (1st instance — 3 occurrences inside one feature, the `vendor-contract-verified-not-faked` shape).** A design artifact must not assert a fact about EXISTING code it plans to reuse unless that fact was read at source. This council asserted three and all three were false: `Field` "already has the test ids the shipped specs use" (it has no `data-testid` prop at all, `reasoning.tsx:22-53`) · `LegDraft.right` was assumed widenable to `null` (non-nullable `OptionRight`, `types.ts:152` — would not compile) · the prefill seam was named `AiPrefill` when the dialog's prop and `openEntry` both take `EntryPrefill` (`types.ts:24-40`) — a **second** compile failure, found only by an explicitly-commissioned self-audit after the first two. Two were caught by the adversarial reviewer, one by the audit, **none by the authoring voice's own confidence.** Countermeasure adopted here: unverifiable claims carry a `[lane-check]` mark (6 in the shipped SPEC) instead of being asserted, and the plan schedules each as an owned verification step. *binding:yes — a future feature violates it by spec'ing a mechanism against remembered code.* | yes |
+| `structural-over-prose-enforcement` | ticker-visual-collisions | S | Quick separator width and GEX marker-label bounds/collisions are rejecting tests (`QuickSymbols.spec.tsx`, `markerLayout.spec.ts`, `StructureFieldCanvas.spec.tsx`); a future marker that paints its own `measureText` + clamp path is the live/mid defect this feature already bounced once | yes |
+| `theme-token-discipline` | ticker-visual-collisions | S | repair uses existing divider/text/directional chart tokens only — no new hex, palette role, or motion family | yes |
+| `live-vs-static-isolation` | ticker-visual-collisions | S | `live` vs `mid` wording and offline/static treatment stay; only placement changed | yes |
+| `single-motion-moment` | ticker-visual-collisions | S | no new animation or keyframe family | yes |
+| `additive-keeps-score-byte-identical` | ticker-visual-collisions | S | `NO_BACKEND_CHANGE`; empty `apps/api` feature diff | yes |
+| `structural-over-prose-enforcement` | ai-rec-decision-card | S | result buttons consume `deriveAiRecPresentation`; they do not each re-derive freshness, completeness, auth, cap, cooldown, or risk-input changes. A new action that bypasses the policy is the violation | yes |
+| `single-shared-sim-entry-dialog` | ai-rec-decision-card | S | Review and Create-sim-order stay on the one shared `TradeEntryDialog`; this feature adds no forked entry surface | yes |
+| `no-real-order-path` | ai-rec-decision-card | S | card actions are simulated only; no broker or live-order path | yes |
+| `ai-asserted-numbers-are-traceable` | ai-rec-decision-card | S | the card does not invent evidence, recompute counts, or pre-type a field the read did not name; analysis is a non-mutating view of the pinned `RecResponse` | yes |
+| `absent-is-not-none` | ai-rec-decision-card | S | missing, unavailable, unrecognized, and not-applicable stay distinct closed-vocabulary members on the recomposed card | yes |
+| `live-vs-static-isolation` | ai-rec-decision-card | S | live-tape/SSE status stays isolated from the static pinned read; analysis open/close sends no request and recomputes nothing | yes |
+| `theme-token-discipline` | ai-rec-decision-card | S | Curvature Terminal tokens via `extrasFor(theme)`; no new palette role, font, or hex | yes |
+| `single-motion-moment` | ai-rec-decision-card | S | no new orchestrated motion or keyframe family | yes |
+| `additive-keeps-score-byte-identical` | ai-rec-decision-card | S | `NO_BACKEND_CHANGE`; no score, tier, gate, or fingerprint input | yes |
+| `cited-code-is-verified-not-assumed` | rec-plan-scope-caption | PLAN | 2nd feature for the watch-list key. PLAN locked attachment against live `DecisionCard.tsx`: `DecisionMetadata` is a row `Stack` (`direction="row"`, `flexWrap: 'wrap'`, `data-testid="decision-metadata"`). Caption is a **sibling after** that node, never a child of the wrap flex (a `display:block` inside it becomes a seventh item). Placement asserts document order, not `within(decision-metadata)`. Cite `DecisionCard.tsx` / `copy.ts` / `AnalysisSurface.tsx`, not Python-era `AiRecPanel` line numbers | yes |
+| `ai-asserted-numbers-are-traceable` | rec-plan-scope-caption | S | **3rd instance — the inference/halo half.** Plan fields stay outside the grounded set; a reader must not infer “checked” from a missing clause. Closed by one section-level caption on the pinned DecisionCard plan row (`PLAN_FIELDS_NOT_CHECKED`), not by extending `counts.checked` or adding per-field marks. Already canon; this instance completes the key’s three-part cover (asserted · omitted · inferred) | yes |
+| `absent-is-not-none` | rec-plan-scope-caption | S | the caption is a scope-boundary constant, never a reserved absence literal (`—` / `not given` / `unavailable` / `unrecognized`). Field literals and the caption stay disjoint closed sets | yes |
+| `digested-labels-not-raw-dump` | rec-plan-scope-caption | S | one section caption; no per-field marker/tint/clause; no browser re-label from scalars; plan labels continue from closed `PLAN_FIELD_LABEL` only | yes |
+| `additive-keeps-score-byte-identical` | rec-plan-scope-caption | S | `NO_BACKEND_CHANGE`; empty `apps/api` and `libs/api` feature diffs vs `593f601`; score / tier / fingerprint cannot observe this caption | yes |
+| `live-vs-static-isolation` | rec-plan-scope-caption | S | caption is static presentation of the pinned rec; SSE drop does not dim, blank, or remove it | yes |
+| `theme-token-discipline` | rec-plan-scope-caption | S | quiet `text.secondary` caption; zero hex; no new palette role | yes |
+| `single-motion-moment` | rec-plan-scope-caption | S | no new animation, keyframe, or motion prop | yes |
+| `cited-code-is-verified-not-assumed` | rec-plan-scope-caption | S | ship confirms the PLAN lock: attachment was implemented against live `DecisionCard.tsx` (sibling after the row Stack), not against remembered `AiRecPanel` line numbers | yes |
+| `secret-encrypted-at-rest` | ai-providers | C | BYO keys stay write-only / ciphertext-only; Grok OAuth spends the **user's subscription**, never a Convexa shared pool secret in the browser (D7) | yes |
+| `server-side-gate-enforcement` | ai-providers | C | Ask-AI and key/OAuth/preference writes stay server-gated; no admin/shared free-uses path (D5) | yes |
+| `secret-encrypted-at-rest` | ai-providers | S | QA live: four-slot BYO add/replace/remove never echoed the raw key; encrypt-before-store; decrypt-fail is `key_unusable`, not a leak | yes |
+| `server-side-gate-enforcement` | ai-providers | S | Ask-AI / key / preference writes stay server-gated; `resolve_llm_key` never falls through to env/`shared_admin`; `ai_model:null` → 422 | yes |
+| `additive-keeps-score-byte-identical` | ai-providers | S | QA live: score/tier/fingerprint `77\|actionable\|b799cc7aca96` identical across preference change; provider/model never scoring inputs | yes |
+| `best-effort-isolated-or-null` | ai-providers | S | LLM/key/OAuth faults isolate to Ask-AI; bundle + SSE + score tiles intact; incomplete GET ai-key degrades Settings quietly | yes |
+| `no-real-order-path` | ai-providers | S | powering is credential + model choice only; no broker or live-order path | yes |
+| `theme-token-discipline` | ai-providers | S | Settings/Ask-AI chrome tokens only; warnings `warning.*`; zero new hex | yes |
+| `single-motion-moment` | ai-providers | S | no new orchestrated motion or keyframe family | yes |
+| `digested-labels-not-raw-dump` | ai-providers | S | closed BYO labels + `your Grok subscription`; FE never infers a provider from the pasted key string | yes |
+| `absent-is-not-none` | ai-providers | S | `no_key` / `key_unusable` / `key_rejected` / `model_not_in_catalog` stay distinct; oauth/subscription reasons stay open/blocked-on, not collapsed into no-key | yes |
+| `ai-asserted-numbers-are-traceable` | ai-providers | S | provenance names path/provider/model from the resolved call; omitted fields omit the chip (never invent `default`); does not claim a check the rec did not run | yes |
+| `cited-code-is-verified-not-assumed` | ai-providers | S | BRIEF/SPEC cited live `llm.rs` / `auth.rs` / `recommendation.rs` / `AiKeySection.tsx`, not Python `ai_recommendation.py`; OAuth arm present-but-unavailable rather than invented endpoints | yes |
+| `user-subscription-not-operator-pool` | ai-providers | S | **NEW KEY (1st instance — D7).** A trader-facing subscription/OAuth arm spends the **user's own** vendor subscription (here SuperGrok / Grok). Never a Convexa-billed shared pool, never env `XAI_API_KEY` as product spend, never copy "Convexa Grok pool" / free / unvouched cheaper / included. BYO `xai` key stays a distinct path. *binding:yes — a future "sign in with vendor X" feature violates it by metering Convexa's key as the product.* | yes |
+| `operator-vs-trader-path-separation` | chain-snapshot-capture | I | paid-feed capture is research/operator; never a trader-route surface; a stored-blob read must not trigger a vendor fetch | yes |
+| `cited-code-is-verified-not-assumed` | chain-snapshot-capture | I | live `scan_bundles` is latest-wins `ON CONFLICT (symbol)` — not a history; do not treat it as already this feature. Cite `live.rs` / `massive/rest.rs` / `scan_structure_history`, not Python `scanstore` | yes |
+| `operator-vs-trader-path-separation` | chain-snapshot-capture | S | QA: `/api/_research/*` 404 on trader origin like `_metrics`; no trader chrome; list/load `vendor_called=false`; stored books never a trader feed | yes |
+| `cited-code-is-verified-not-assumed` | chain-snapshot-capture | S | hooks only `load_or_compute` + `load_analytics`; `compute_analytics` / warmer excluded; new `ChainSnapshotStore` not `scan_bundles`; `as_of` TEXT not timestamptz | yes |
+| `best-effort-isolated-or-null` | chain-snapshot-capture | S | capture write failure leaves desk up; no invented row; storage-not-configured is `capture not storing` | yes |
+| `additive-keeps-score-byte-identical` | chain-snapshot-capture | S | blobs never a scoring input; QA score/tier/fingerprint identity holds capture on vs fail | yes |
+| `no-secrets-in-image` | chain-snapshot-capture | S | stored snapshot material contains no API keys; serialize boundary before persist | yes |
+| `absent-is-not-none` | chain-snapshot-capture | S | list miss `detail` is exact `no stored snapshot for <SYMBOL>`; not an empty chain book; not a vendor fill-in | yes |
+| `score-change-is-deliberate-and-measured` | batch-backtest-cli | I | a replay report does not authorize a live score/weight/gate change; measurement only | yes |
+| `operator-vs-trader-path-separation` | batch-backtest-cli | I | P3 is research CLI; zero Massive on replay; never a trader route or live-score write | yes |
+| `score-change-is-deliberate-and-measured` | batch-backtest-cli | S | QA: report standing block **Authorizes: nothing**; replay does not write live score/tier/fingerprint | yes |
+| `operator-vs-trader-path-separation` | batch-backtest-cli | S | CLI-only; structural dashboard scan 12/12; zero Massive on replay; no trader route | yes |
+| `additive-keeps-score-byte-identical` | batch-backtest-cli | S | measurement-only; live scoring path untouched | yes |
+| `absent-is-not-none` | batch-backtest-cli | S | empty_corpus ≠ miss ≠ empty_book ≠ unreadable; no quotable artifact on empty corpus | yes |
+| `cited-code-is-verified-not-assumed` | batch-backtest-cli | S | opens json/pg for read; never `Disabled` / serve opener; Path-B via `compute_analytics_from_vendor` | yes |
+| `score-change-is-deliberate-and-measured` | replay-outcome-join | I | joining labels to replayed scores is measurement only; does not authorize a live score change | yes |
+| `operator-vs-trader-path-separation` | replay-outcome-join | I | research CLI/report only; Options snapshot API must stay at zero; no trader UI | yes |
+| `score-change-is-deliberate-and-measured` | replay-outcome-join | S | QA: standing Authorizes: nothing; join report does not write live score/tier/fingerprint | yes |
+| `operator-vs-trader-path-separation` | replay-outcome-join | S | CLI-only; F1 14/14; Options API 0; no trader route or `_research` join HTTP | yes |
+| `additive-keeps-score-byte-identical` | replay-outcome-join | S | measurement-only; live scoring path untouched after a successful join | yes |
+| `absent-is-not-none` | replay-outcome-join | S | no_snapshot ≠ empty_book ≠ no_label ≠ no_p0 ≠ unreadable ≠ compute_failed; missing `display_spot` is first-class `no_p0` | yes |
+| `best-effort-isolated-or-null` | replay-outcome-join | S | degraded rows isolate; run continues; Stocks-fill fail stays no_label, never Options fallback | yes |
+| `cited-code-is-verified-not-assumed` | replay-outcome-join | S | live Rust: `cmd_join_outcomes` / `cmd_batch_backtest` / `cmd_score_lab` / `ReplayedMeasurement`; `--replay` is the producer wrapper `rows[]` | yes |
+| `model-read-carries-its-assumptions` | replay-outcome-join | S | every printed rate carries horizon, `n_paired`, `n_sessions`, window, label rule/`label_version`, locked `p0` = capture-time underlying | yes |
+| `structural-over-prose-enforcement` | replay-outcome-join | S | F1 mutation-tested scan (poison then restore); CLI disposition enum not prose | yes |
+| `operator-vs-trader-path-separation` | session-chain-archive | I | session archive is research; prune-proof copy must not sit on the trader request path or trigger a vendor fetch on read | yes |
+| `cited-code-is-verified-not-assumed` | session-chain-archive | I | cite live `chain_snapshot/{capture,store,pg_chain_snapshot}.rs` + `config.rs` 48/14d defaults; do not treat `scan_bundles` or Python `scanstore` as this store | yes |
+| `operator-vs-trader-path-separation` | session-chain-archive | S | QA: `/api/_research/session-books` 404 on Pages trader origin; no trader chrome; list/load `vendor_called=false`; `authorizes: nothing` | yes |
+| `cited-code-is-verified-not-assumed` | session-chain-archive | S | sibling `session_chain_archive/` not a ring flag; ET `et_date` not UTC `session_date_from_ns`; ring miss string stays live `no stored snapshot for <SYMBOL>` | yes |
+| `best-effort-isolated-or-null` | session-chain-archive | S | archive write failure leaves desk up; disabled is `session archive not storing`, not a trader error | yes |
+| `additive-keeps-score-byte-identical` | session-chain-archive | S | blobs never a scoring input; QA score/tier/fingerprint identity holds archive on vs fail | yes |
+| `no-secrets-in-image` | session-chain-archive | S | stored session material contains no API keys | yes |
+| `absent-is-not-none` | session-chain-archive | S | `no session book` ≠ ring miss ≠ not-storing ≠ unreadable; QQQ miss stayed honest | yes |
+| `structural-over-prose-enforcement` | session-chain-archive | S | poison 48-ring prune still loads session identity; AC-15 dashboard structural empty-diff | yes |
+
+> **GATE S tally — session-chain-archive (2026-08-20).** **NO new graduations.** Honored already-promoted
+> keys (`operator-vs-trader-path-separation` · `cited-code-is-verified-not-assumed` ·
+> `best-effort-isolated-or-null` · `additive-keeps-score-byte-identical` · `no-secrets-in-image` ·
+> `absent-is-not-none` · `structural-over-prose-enforcement`). Conformance JSON promoted to
+> `state/conformance/session-chain-archive.json`. Program `keep-paid-books` #2 unblocked.
+| `operator-vs-trader-path-separation` | liquid-names-session-capture | I | ensure-session for SPY/QQQ/IWM is off the trader request path; research reads stay zero-Massive | yes |
+| `cited-code-is-verified-not-assumed` | liquid-names-session-capture | I | cite live `analytics.rs` cache-hit skip of `spawn_capture` and `session_chain_archive/`; warmer stays excluded | yes |
+| `operator-vs-trader-path-separation` | liquid-names-session-capture | S | QA: ensure off trader request path; research list/load `vendor_called=false`; Pages `_research` 404; no trader chrome | yes |
+| `cited-code-is-verified-not-assumed` | liquid-names-session-capture | S | live hole remains `load_or_compute` cache-hit; ensure leaf awaits `capture_into`; warmer still drops `_vendor` | yes |
+| `best-effort-isolated-or-null` | liquid-names-session-capture | S | desk ticker 200 while ensure is off-path; store-off is `session archive not storing` | yes |
+| `additive-keeps-score-byte-identical` | liquid-names-session-capture | S | isolation pin; blobs never scoring inputs | yes |
+| `absent-is-not-none` | liquid-names-session-capture | S | miss stays `no session book`; four classes; no fifth pending class | yes |
+| `single-ticker-on-demand` | liquid-names-session-capture | S | request path still one ticker; multi-name ensure is off-path worker | yes |
+
+> **GATE S tally — liquid-names-session-capture (2026-08-20).** **NO new graduations.** Honored already-promoted keys. Conformance re-pin `state/conformance/liquid-names-session-capture.json`. Program #3 join-smoke unblocked.
+| `operator-vs-trader-path-separation` | chain-archive-object-store | S | research list/load zero Massive; BODY_ROOT I/O off trader path; Pages `_research` 404 | yes |
+| `absent-is-not-none` | chain-archive-object-store | S | missing object = `session book unreadable`; unset BODY_ROOT = `session archive not storing` | yes |
+| `no-secrets-in-image` | chain-archive-object-store | S | body files contain no API keys; dial is env path | yes |
+| `cited-code-is-verified-not-assumed` | chain-archive-object-store | S | unique-per-put locator; v12 drops BYTEA; ring store Non-move | yes |
+
+> **GATE S tally — chain-archive-object-store (2026-08-20).** **NO new graduations.** Conformance
+> `state/conformance/chain-archive-object-store.json`. Keep-paid-books builds complete; #5 clock running.
+
+> **GATE S tally — batch-backtest-cli (2026-08-18).** **NO new graduations.** Honored already-promoted
+> keys (`score-change-is-deliberate-and-measured` · `operator-vs-trader-path-separation` ·
+> `additive-keeps-score-byte-identical` · `absent-is-not-none` · `cited-code-is-verified-not-assumed`).
+> Conformance re-pin promoted to `state/conformance/batch-backtest-cli.json`.
+
+> **GATE S tally — chain-snapshot-capture (2026-08-18).** **NO new graduations.** Honored keys already
+> promoted (`operator-vs-trader-path-separation` · `cited-code-is-verified-not-assumed` ·
+> `best-effort-isolated-or-null` · `additive-keeps-score-byte-identical` · `no-secrets-in-image` ·
+> `absent-is-not-none`). Conformance JSON promoted to `state/conformance/chain-snapshot-capture.json`.
+> P3 batch-backtest CLI is now unblocked (was blocked-on durable capture).
+
+> **GATE S tally — ai-providers (2026-08-18).** **NO new graduations.** All honored keys are already
+> promoted canon. New watch-list key `user-subscription-not-operator-pool` (1 feature, binding).
+> Conformance JSON promoted to `state/conformance/ai-providers.json`. AC-9/10/14/15 stay
+> open/blocked-on until xAI user-OAuth docs verify (AC-27).
+
+> **GATE S tally — ticker-visual-collisions + ai-rec-decision-card (2026-08-17).** **NO new graduations.**
+> All keys these two logged are already promoted canon except watch-list leftovers from earlier
+> features (`cited-code-is-verified-not-assumed` still 1 feature). Owner-directed archive of two
+> FE-only folders already on `main`; `NO_BACKEND_CHANGE` so no conformance JSON promoted.
+
+> **GATE S tally — rec-plan-scope-caption (2026-08-17).** **`cited-code-is-verified-not-assumed`
+> GRADUATES** (2 features, all binding — mechanical `ledger_tally`). Already-promoted keys gained
+> instances (`ai-asserted-numbers-are-traceable` now covers asserted · omitted · inferred;
+> `absent-is-not-none` · `digested-labels-not-raw-dump` · `additive-keeps-score-byte-identical` ·
+> `live-vs-static-isolation` · `theme-token-discipline` · `single-motion-moment`).
+> `NO_BACKEND_CHANGE` — no conformance JSON promoted. **`ai-rec-grounding` SPEC §9.5 recorded closed.**

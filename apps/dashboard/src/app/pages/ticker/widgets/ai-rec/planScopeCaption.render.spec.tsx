@@ -69,7 +69,7 @@ describe('plan-scope caption · DOM integration (AC-1+2+2r+3+5)', () => {
 
   it('AC-2 — local_rules + shared_admin → zero instances on card and open analysis', () => {
     const rec = recLocalRules();
-    rec.key_source = 'shared_admin';
+    (rec as { key_source?: string }).key_source = 'shared_admin';
     rec.remaining_free_uses = 2;
     renderCardAndAnalysis(rec);
     expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();

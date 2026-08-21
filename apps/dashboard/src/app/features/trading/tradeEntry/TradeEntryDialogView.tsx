@@ -59,7 +59,6 @@ import { triggerMet } from '@/features/trading/orders/engine';
 import type { Trigger } from '@/features/trading/orders/types';
 import { resolveMarketFill, type ResolvedFill } from '@/features/trading/positions/entry';
 import {
-  DIALOG_FILL_MODE_SINGLE_LEG_ONLY,
   DIALOG_NET_COMPUTED,
   DIALOG_NET_INCOMPLETE,
   DISCLAIMER,
@@ -72,26 +71,25 @@ import type { LegInput } from '@/features/trading/positions/usePortfolio';
 import { extrasFor } from '@/shared/theme/tokens';
 import { fetchTrackedContract } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogContent,
-  IconButton,
-  MenuItem,
-  Select,
-  Stack,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
 import { alpha, useTheme } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useState, type ReactNode } from 'react';
 import { FieldLabel } from './FieldLabel';
+import { FillModeToggle } from './FillModeToggle';
 import { LegFields, multiplierFor } from './LegFields';
 import {
   defaultGoodTil,
@@ -566,41 +564,11 @@ export function TradeEntryDialog({
               control in the ORDER VARIANT ONLY, §3.1-6). Market/Limit resolve ONE option contract,
               so once the entry is not a single option leg they are refused VISIBLY, never hidden. */}
           {!isOrder && (
-            <Box>
-              <ToggleButtonGroup
-                exclusive
-                size="small"
-                value={effectiveMode}
-                onChange={(_, v) => v && singleOptionEntry && setMode(v)}
-                fullWidth
-                aria-label="fill mode"
-              >
-                <ToggleButton value="manual">Manual price</ToggleButton>
-                <ToggleButton
-                  value="market"
-                  aria-disabled={!singleOptionEntry}
-                  title={singleOptionEntry ? undefined : DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
-                >
-                  Market
-                </ToggleButton>
-                <ToggleButton
-                  value="limit"
-                  aria-disabled={!singleOptionEntry}
-                  title={singleOptionEntry ? undefined : DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
-                >
-                  Limit
-                </ToggleButton>
-              </ToggleButtonGroup>
-              {!singleOptionEntry && (
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}
-                  data-testid="entry-fill-mode-note"
-                >
-                  {DIALOG_FILL_MODE_SINGLE_LEG_ONLY}
-                </Typography>
-              )}
-            </Box>
+            <FillModeToggle
+              value={effectiveMode}
+              singleOptionEntry={singleOptionEntry}
+              onChange={setMode}
+            />
           )}
 
           {/* THE DERIVED NAME (AC-18) — read from the drafted legs by the SAME recogniser the book

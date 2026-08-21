@@ -8,7 +8,9 @@
 import type { FieldSample, StructureFieldModel } from '@/shared/charts/structure-field';
 import { StructureFieldCanvas } from '@/shared/charts/structure-field';
 import type { StrikeRow } from '@convexa/api';
-import { Box, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { memo, useMemo } from 'react';
 
@@ -39,7 +41,7 @@ export function windowedStrikes(
   const hi = Math.max(spot * 1.1, callWall > 0 ? callWall : spot * 1.1);
   return strikes
     .filter((s) => s.strike >= lo && s.strike <= hi)
-    .sort((a, b) => a.strike - b.strike);
+    .toSorted((a, b) => a.strike - b.strike);
 }
 
 function rowsToSamples(rows: StrikeRow[]): FieldSample[] {

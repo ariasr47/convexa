@@ -4,7 +4,9 @@
  * Visibly disabled look, still focusable, carries an honest reason. Never a silent no-op button.
  * Pair with `useGate` for the actual write path.
  */
-import { Box, Button, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 export interface RefusedProps {

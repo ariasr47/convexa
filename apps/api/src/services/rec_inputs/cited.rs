@@ -13,11 +13,19 @@ pub struct CitedKey {
 
 impl CitedKey {
     pub fn new(expiration: String, strike: f64, right: ContractType) -> Self {
-        Self { expiration, strike, right }
+        Self {
+            expiration,
+            strike,
+            right,
+        }
     }
 
     /// The ONLY derivation from a parsed rec: EXACTLY one strike AND an expiration AND a right.
-    pub fn from_strategy(strikes: &[f64], expiration: Option<&str>, right: Option<ContractType>) -> Option<Self> {
+    pub fn from_strategy(
+        strikes: &[f64],
+        expiration: Option<&str>,
+        right: Option<ContractType>,
+    ) -> Option<Self> {
         match (strikes, expiration, right) {
             ([k], Some(e), Some(r)) => Some(Self::new(e.to_string(), *k, r)),
             _ => None,
@@ -48,7 +56,11 @@ pub fn resolve_cited(
     right: Option<ContractType>,
 ) -> CitedOutcome {
     let (Some(exp), [k]) = (expiration, strikes) else {
-        return CitedOutcome { state: CitedState::None, contract: None, legs: Vec::new() };
+        return CitedOutcome {
+            state: CitedState::None,
+            contract: None,
+            legs: Vec::new(),
+        };
     };
     let pair: Vec<CandidateContract> = set
         .contracts()
@@ -58,14 +70,30 @@ pub fn resolve_cited(
         .collect();
     match right {
         Some(r) => match pair.iter().find(|c| c.right == r) {
-            Some(c) => CitedOutcome { state: CitedState::Cited, contract: Some(c.clone()), legs: Vec::new() },
+            Some(c) => CitedOutcome {
+                state: CitedState::Cited,
+                contract: Some(c.clone()),
+                legs: Vec::new(),
+            },
             // The exact contract was not sent — the ORIGINAL, narrower meaning of off_set.
-            None => CitedOutcome { state: CitedState::OffSet, contract: None, legs: Vec::new() },
+            None => CitedOutcome {
+                state: CitedState::OffSet,
+                contract: None,
+                legs: Vec::new(),
+            },
         },
         // Right absent while strike AND expiration ARE in the set: its own state, never `off_set`
         // (which would rename "we can't tell which leg you mean" as "we didn't send it").
-        None if !pair.is_empty() => CitedOutcome { state: CitedState::RightUndetermined, contract: None, legs: pair },
-        None => CitedOutcome { state: CitedState::OffSet, contract: None, legs: Vec::new() },
+        None if !pair.is_empty() => CitedOutcome {
+            state: CitedState::RightUndetermined,
+            contract: None,
+            legs: pair,
+        },
+        None => CitedOutcome {
+            state: CitedState::OffSet,
+            contract: None,
+            legs: Vec::new(),
+        },
     }
 }
 
@@ -73,7 +101,9 @@ pub fn resolve_cited(
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
-    use quant_engine::{CandidateBudget, Contract, ContractType as CT, DteWindow, Greeks, SnapshotMeta};
+    use quant_engine::{
+        CandidateBudget, Contract, ContractType as CT, DteWindow, Greeks, SnapshotMeta,
+    };
 
     fn as_of() -> chrono::DateTime<Utc> {
         Utc.with_ymd_and_hms(2026, 8, 12, 20, 0, 0).unwrap()
@@ -86,7 +116,12 @@ mod tests {
             open_interest: 100.0,
             expiration_date: exp.into(),
             implied_volatility: 0.3,
-            greeks: Some(Greeks { gamma: Some(0.01), delta: Some(0.5), theta: None, vega: None }),
+            greeks: Some(Greeks {
+                gamma: Some(0.01),
+                delta: Some(0.5),
+                theta: None,
+                vega: None,
+            }),
             volume: Some(10.0),
             bid: Some(1.0),
             ask: Some(1.2),
@@ -124,7 +159,8 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_right_with_the_strike_and_expiration_in_the_set_yields_right_undetermined_with_both_legs() {
+    fn a_missing_right_with_the_strike_and_expiration_in_the_set_yields_right_undetermined_with_both_legs(
+    ) {
         let s = set();
         let out = resolve_cited(&s, &[100.0], Some("2026-09-18"), None);
         assert_eq!(out.state, CitedState::RightUndetermined);

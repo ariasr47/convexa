@@ -21,7 +21,7 @@
  * figures via the mono family; zero hardcoded hex.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { useId, useState } from 'react';
 import { Refused } from './FaultedBanner';
 import { MAX_LOSS_LABEL, MAX_LOSS_WITHHELD_META, money } from './labels';

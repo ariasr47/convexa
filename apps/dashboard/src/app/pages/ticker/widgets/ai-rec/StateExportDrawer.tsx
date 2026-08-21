@@ -10,17 +10,15 @@ import { useSettings } from '@/features/auth/useSettings';
 import { extrasFor, typographyTokens } from '@/shared/theme/tokens';
 import { fetchRecExport, RecExport, RiskInputs } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Drawer,
-  IconButton,
-  Snackbar,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useEffect, useState } from 'react';
 import {

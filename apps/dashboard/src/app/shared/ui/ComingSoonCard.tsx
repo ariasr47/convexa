@@ -7,7 +7,10 @@
  * affordance lives in `action` and is the caller's responsibility (e.g. a non-navigating waitlist
  * toast button, or a link to an honest placeholder page). Pure presentation: no data, no fetch.
  */
-import { Box, Chip, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { ComingSoonBox } from './ComingSoonBox';
 

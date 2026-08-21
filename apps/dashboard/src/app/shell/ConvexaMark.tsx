@@ -16,7 +16,8 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import { ARC_X_PATHS, ARC_X_STROKE, ARC_X_VIEWBOX } from '@/shared/ui/arc';
-import { Box, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 
 interface Props {
   /** Legacy call-site prop (nav ≈ 18, footer 16) — kept so call sites need zero churn; the

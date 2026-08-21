@@ -16,7 +16,7 @@
  * Scans use the Vite `?raw` idiom and are MUTATION-GUARDED (house rule). Comments are stripped
  * where a token may legitimately be MENTIONED as documentation (e.g. "brandGradient was deleted").
  */
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { ThemeProvider } from '@mui/material/styles';
 import { render } from '@testing-library/react';
 import { createElement } from 'react';

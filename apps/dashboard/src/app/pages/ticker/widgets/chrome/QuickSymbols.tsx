@@ -5,7 +5,9 @@
  * Selected = current **route** symbol. Theme tokens only — no hex, no P/L green/red.
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { listRecents, PINNED_TICKERS } from '../../recentTickers/store';
 

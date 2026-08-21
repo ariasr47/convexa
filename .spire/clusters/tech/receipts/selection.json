@@ -1,12 +1,12 @@
 {
   "adapter": {
-    "installed": "commands/spire-tech.md",
-    "invoke": "/spire-tech",
-    "kind": "command"
+    "installed": "skills/spire-tech/SKILL.md",
+    "invoke": "$spire-tech",
+    "kind": "skill"
   },
   "ascent": "delivery",
   "cluster": "spire:tech",
-  "provider": "claude",
+  "provider": "grok",
   "schema_version": 1,
-  "selected_at": "2026-08-14T18:23:17.204Z"
+  "selected_at": "2026-08-20T15:32:37.434Z"
 }

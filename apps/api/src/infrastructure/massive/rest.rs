@@ -173,10 +173,7 @@ impl MassiveRestClient {
                         next
                     } else {
                         let sep = if next.contains('?') { '&' } else { '?' };
-                        format!(
-                            "{next}{sep}apiKey={}",
-                            urlencoding_simple(&self.api_key)
-                        )
+                        format!("{next}{sep}apiKey={}", urlencoding_simple(&self.api_key))
                     };
                 }
                 _ => break,
@@ -218,12 +215,20 @@ impl MassiveRestClient {
             );
             loop {
                 let body: Value = self.get_json(&url).await?;
-                let results = body.get("results").and_then(|v| v.as_array()).cloned().unwrap_or_default();
+                let results = body
+                    .get("results")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_default();
                 for row in &results {
                     counts.rows += 1;
                     let lq = row.get("last_quote");
-                    let bid = lq.and_then(|q| q.get("bid").or_else(|| q.get("p"))).and_then(|v| v.as_f64());
-                    let ask = lq.and_then(|q| q.get("ask").or_else(|| q.get("P"))).and_then(|v| v.as_f64());
+                    let bid = lq
+                        .and_then(|q| q.get("bid").or_else(|| q.get("p")))
+                        .and_then(|v| v.as_f64());
+                    let ask = lq
+                        .and_then(|q| q.get("ask").or_else(|| q.get("P")))
+                        .and_then(|v| v.as_f64());
                     match (bid, ask) {
                         (None, None) => counts.vendor_null += 1,
                         (Some(b), Some(a)) if b > 0.0 && a > 0.0 => counts.both_sides += 1,
@@ -240,7 +245,10 @@ impl MassiveRestClient {
                         }
                     }
                 }
-                let next_url = body.get("next_url").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let next_url = body
+                    .get("next_url")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
                 match next_url {
                     Some(next) if !next.is_empty() => {
                         url = if next.contains("apiKey=") {
@@ -267,7 +275,10 @@ impl MassiveRestClient {
     }
 
     /// Fast single-ticker stock snapshot (Path A). One small REST call — not the options chain.
-    pub async fn fetch_stock_ticker_snapshot(&self, ticker: &str) -> AppResult<StockTickerSnapshot> {
+    pub async fn fetch_stock_ticker_snapshot(
+        &self,
+        ticker: &str,
+    ) -> AppResult<StockTickerSnapshot> {
         let ticker = ticker.trim().to_ascii_uppercase();
         let url = format!(
             "{}/v2/snapshot/locale/us/markets/stocks/tickers/{}?apiKey={}",
@@ -335,7 +346,10 @@ impl MassiveRestClient {
     }
 
     /// Path A helper: stock snapshot → `LivePrice` for the price cache.
-    pub async fn fetch_quick_live_price(&self, ticker: &str) -> AppResult<crate::domain::LivePrice> {
+    pub async fn fetch_quick_live_price(
+        &self,
+        ticker: &str,
+    ) -> AppResult<crate::domain::LivePrice> {
         let snap = self.fetch_stock_ticker_snapshot(ticker).await?;
         Ok(crate::domain::LivePrice {
             symbol: snap.symbol,
@@ -353,7 +367,11 @@ impl MassiveRestClient {
     /// Default lookback **400 calendar days** (~270 sessions) so EMA50 / ADX / RSI / ATR
     /// can warm up (Python `fetch_daily_bars`). HV only needs the last 31 closes.
     /// Best-effort: empty vec on vendor failure.
-    pub async fn fetch_daily_bars(&self, ticker: &str, lookback_days: i64) -> AppResult<Vec<DailyBar>> {
+    pub async fn fetch_daily_bars(
+        &self,
+        ticker: &str,
+        lookback_days: i64,
+    ) -> AppResult<Vec<DailyBar>> {
         let ticker = ticker.trim().to_ascii_uppercase();
         if ticker.is_empty() {
             return Ok(Vec::new());
@@ -400,7 +418,11 @@ impl MassiveRestClient {
     }
 
     /// Convenience: closes only (HV path). Prefer [`Self::fetch_daily_bars`] when OHLC is needed.
-    pub async fn fetch_daily_closes(&self, ticker: &str, lookback_days: i64) -> AppResult<Vec<f64>> {
+    pub async fn fetch_daily_closes(
+        &self,
+        ticker: &str,
+        lookback_days: i64,
+    ) -> AppResult<Vec<f64>> {
         let bars = self.fetch_daily_bars(ticker, lookback_days).await?;
         Ok(bars
             .into_iter()
@@ -520,10 +542,7 @@ impl MassiveRestClient {
                 let Some(size) = row.size.filter(|s| *s > 0.0 && s.is_finite()) else {
                     continue;
                 };
-                let ts = row
-                    .sip_timestamp
-                    .or(row.participant_timestamp)
-                    .unwrap_or(0);
+                let ts = row.sip_timestamp.or(row.participant_timestamp).unwrap_or(0);
                 if ts <= 0 {
                     continue;
                 }
@@ -546,10 +565,7 @@ impl MassiveRestClient {
                         next
                     } else {
                         let sep = if next.contains('?') { '&' } else { '?' };
-                        format!(
-                            "{next}{sep}apiKey={}",
-                            urlencoding_simple(&self.api_key)
-                        )
+                        format!("{next}{sep}apiKey={}", urlencoding_simple(&self.api_key))
                     };
                 }
                 _ => break,
@@ -647,7 +663,11 @@ impl MassiveRestClient {
             }
         }
 
-        info!(priced = out.len(), requested = wanted.len(), "stock snapshots ready");
+        info!(
+            priced = out.len(),
+            requested = wanted.len(),
+            "stock snapshots ready"
+        );
         Ok(out)
     }
 
@@ -859,11 +879,7 @@ fn normalize_contract(row: &RawOptionRow) -> Option<Contract> {
         return None;
     }
 
-    let has_greeks = row
-        .greeks
-        .as_ref()
-        .and_then(|g| g.gamma)
-        .is_some();
+    let has_greeks = row.greeks.as_ref().and_then(|g| g.gamma).is_some();
 
     let greeks = if has_greeks {
         let g = row.greeks.as_ref().unwrap();
@@ -926,8 +942,7 @@ fn compute_atm_iv(contracts: &[Contract], spot: f64) -> (f64, Option<String>, Op
         }
         by_exp.entry(exp.clone()).or_insert_with(|| {
             let d = chrono::NaiveDate::parse_from_str(&exp, "%Y-%m-%d").ok();
-            d.map(|ed| (ed - today).num_days() as f64)
-                .unwrap_or(0.0)
+            d.map(|ed| (ed - today).num_days() as f64).unwrap_or(0.0)
         });
     }
     const MIN_DTE: f64 = 7.0;
@@ -937,7 +952,10 @@ fn compute_atm_iv(contracts: &[Contract], spot: f64) -> (f64, Option<String>, Op
         .map(|(e, d)| (e.clone(), *d))
         .collect();
     let target = if !eligible.is_empty() {
-        eligible.into_iter().min_by(|a, b| a.1.partial_cmp(&b.1).unwrap()).map(|(e, _)| e)
+        eligible
+            .into_iter()
+            .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+            .map(|(e, _)| e)
     } else {
         by_exp
             .into_iter()
@@ -990,4 +1008,3 @@ fn urlencoding_simple(s: &str) -> String {
         })
         .collect()
 }
-

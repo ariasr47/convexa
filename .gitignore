@@ -78,6 +78,7 @@ Thumbs.db
 
 .claude/worktrees
 .claude/settings.local.json
+.codex/config.toml
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
@@ -87,6 +88,10 @@ apps/api/.env
 apps/api/.env.*
 !apps/api/.env.example
 apps/api/data/
+apps/api/serve-conformance.log
+apps/api/serve-conformance.log.err
+**/*_serve.out.log
+**/*_serve.err.log
 /data/
 
 # Python leftovers (archived under archive/api-python)

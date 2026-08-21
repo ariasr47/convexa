@@ -24,7 +24,13 @@ import {
   putBrokerCredential,
   type BrokerCredentialHint,
 } from '@convexa/api';
-import { Alert, Box, Button, Snackbar, Stack, TextField, Typography } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { SignInPrompt } from './SignInPrompt';

@@ -8,7 +8,7 @@
  * datum can never be rendered two ways.
  */
 import type { ScanRow } from '@convexa/api';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { Link as RouterLink } from 'react-router-dom';
 import type { PollDelta } from './format';
 import {

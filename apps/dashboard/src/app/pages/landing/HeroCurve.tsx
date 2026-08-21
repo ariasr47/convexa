@@ -23,7 +23,7 @@
  */
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion';
 import { quadArcLength, quadChainPath, type Pt } from '@/shared/ui/arc';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { keyframes } from '@mui/material/styles';
 
 // The payoff silhouette in a 1200×400 design box. The draw ORIGIN is the left, baseline-hugging

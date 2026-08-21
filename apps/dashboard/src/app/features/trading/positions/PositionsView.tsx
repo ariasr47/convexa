@@ -13,8 +13,10 @@
  * map. `cellContent` (incl. the offline-dim live cells) is reused as-is.
  */
 import { extrasFor } from '@/shared/theme/tokens';
-import { Box, Typography, useMediaQuery } from '@mui/material';
+import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { COLUMN_LABELS, TABLE_HEADER_LABELS } from './defaults';
 import type { DerivedGroup } from './derive';
 import {

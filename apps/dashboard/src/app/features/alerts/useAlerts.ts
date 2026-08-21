@@ -23,7 +23,6 @@ function deliverBrowser(title: string, body: string) {
   try {
     if (typeof Notification === 'undefined') return;
     if (Notification.permission !== 'granted') return;
-    // eslint-disable-next-line no-new
     new Notification(title, { body, tag: `convexa-${title}` });
   } catch {
     /* ignore */

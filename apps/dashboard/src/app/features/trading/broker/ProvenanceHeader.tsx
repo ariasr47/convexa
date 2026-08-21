@@ -10,7 +10,10 @@
  * re-dresses the snapshot fields (their treatment lives on the rows).
  */
 import { typographyTokens } from '@/shared/theme/tokens';
-import { Box, Button, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { BROKER_COPY, ageText, stampTime } from './copy';
 
 interface Props {

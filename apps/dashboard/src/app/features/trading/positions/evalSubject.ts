@@ -39,7 +39,7 @@ const notional = (l: Leg) => Math.abs(l.qty * l.multiplier);
 
 /** Largest notional, then nearest expiration, then lowest strike, then leg.id lexicographic. */
 function pick(candidates: readonly Leg[]): Leg {
-  return [...candidates].sort((a, b) => {
+  return candidates.toSorted((a, b) => {
     const n = notional(b) - notional(a);
     if (n !== 0) return n;
     const ea = a.expiration ?? '9999-12-31';
@@ -106,7 +106,7 @@ export function tickerEvalSubject(
   const symbol = ticker.toUpperCase();
   const open = positions
     .filter((p) => p.status === 'open' && (p.legs[0]?.ticker ?? '').toUpperCase() === symbol)
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .toSorted((a, b) => a.id.localeCompare(b.id));
 
   /** The leg the `pos_*` params are read off — the SAME selection rule at every position count. */
   const legOf = (p: SimPosition): Leg | null => {

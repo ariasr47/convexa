@@ -11,9 +11,13 @@ pub mod migrations;
 #[cfg(feature = "postgres")]
 pub mod pg_auth;
 #[cfg(feature = "postgres")]
+pub mod pg_chain_snapshot;
+#[cfg(feature = "postgres")]
 pub mod pg_iv;
 #[cfg(feature = "postgres")]
 pub mod pg_scan;
+#[cfg(feature = "postgres")]
+pub mod pg_session_chain_archive;
 #[cfg(feature = "postgres")]
 pub mod postgres;
 

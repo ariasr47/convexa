@@ -778,10 +778,9 @@ describe('orders · scenario harness (keyless never blocks; ai_scenario provenan
       const user = userEvent.setup();
       renderAt('/ticker/TSLA');
       await settleTicker();
-      // Keyless: the REAL read is unavailable…
-      expect(
-        await screen.findByRole('button', { name: 'Analyze current snapshot' }),
-      ).toBeDisabled();
+      // Keyless: the REAL in-app read is unavailable (powering setup, not a disabled Analyze).
+      expect(await screen.findByTestId('ai-rec-state-no-key')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Analyze current snapshot' })).toBeNull();
       // …but a scenario run is NOT gated on key resolution/availability: it runs and POSTs.
       await screen.findByTestId('scenario-picker');
       await user.click(

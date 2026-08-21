@@ -8,67 +8,57 @@
  * invalidation FIRST, `no_trade` first-class (info, not red), honest "as of {snapshot}" + stale
  * wording, the export floor reachable from every state. SIMULATED everywhere.
  */
+import { ownKeyChip, pathLabel } from '@/features/auth/aiProviderLabels';
+import { useAuth } from '@/features/auth/AuthContext';
 import { AUTH_COPY } from '@/features/auth/copy';
 import { useGate } from '@/features/auth/useGate';
 import { useSettings } from '@/features/auth/useSettings';
-import {
-  RUN_SCENARIO,
-  SCENARIO_CAPTION,
-  SCENARIO_LABEL,
-  SCENARIO_NONE,
-  SCRIPTED_CHIP,
-} from '@/features/trading/orders/copy';
-import { typographyTokens } from '@/shared/theme/tokens';
+import { SCENARIO_CAPTION, SCENARIO_LABEL, SCENARIO_NONE } from '@/features/trading/orders/copy';
 import { Widget } from '@/shared/ui/Widget';
-import type { PersonaDefinition, RecResponse, RecScenarioInfo, TickerBundle } from '@convexa/api';
 import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  FormControl,
-  MenuItem,
-  Select,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import { useState } from 'react';
+  getAiKeyStatus,
+  type AiProvidersBootstrap,
+  type PersonaDefinition,
+  type RecResponse,
+  type RecScenarioInfo,
+  type TickerBundle,
+} from '@convexa/api';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnalysisSurface } from './AnalysisSurface';
 import {
-  adminExhaustedTitle,
-  BYO_KEY,
-  CAP_CAPTION,
-  capTitle,
-  cooldownCaption,
-  cooldownLabel,
-  COPY,
-  FREE_USES_TOTAL_FALLBACK,
-  friendlyResetTime,
-  retryInCooldown,
-  retryWhenReset,
-} from './copy';
+  ActionRegion,
+  AskModelSelect,
+  LoadingBlock,
+  PoweringCta,
+  SignedOutGate,
+  SnapshotHint,
+  UnavailableBlock,
+} from './AiRecPanelBlocks';
+import { AnalysisSurface } from './AnalysisSurface';
+import { COPY } from './copy';
 import { DecisionCard } from './DecisionCard';
 import { deriveAiRecPresentation } from './presentationPolicy';
 import type { AiRec, RecRequestOpts } from './useAiRecommendation';
 
 export { useReadPersonas } from './useReadPersonas';
 
-const MONO = typographyTokens.monoFontFamily; // verdict labels render in Roboto Mono (Figma 149:598)
-
-/** Map an `unavailable` rec's `unavailable_reason` to one of the three key-resolution CTA states
- *  (a/c/e). Returns null when it's NOT a byo-ai-key reason (so the shipped `unavailable` block shows).
- *  The FE keys ONLY off these three intents (UX_BLUEPRINT §3); any other reason falls through. */
-function byoCtaState(
-  rec: RecResponse | null,
-): 'no_key' | 'over_limit' | 'shared_key_unconfigured' | null {
-  if (!rec || rec.status !== 'unavailable') return null;
-  const r = rec.unavailable_reason;
-  if (r === 'no_key' || r === 'over_limit' || r === 'shared_key_unconfigured') return r;
-  return null;
-}
+const POWERING_STATES = new Set([
+  'missing_key',
+  'key_unusable',
+  'key_rejected',
+  'model_not_in_catalog',
+  'model_unset',
+  'oauth_expired',
+  'oauth_unlinked',
+  'subscription_unavailable',
+]);
 
 interface Props {
   ticker: string;
@@ -102,9 +92,19 @@ export function AiRecPanel({
   onChangeReadPersona,
   fillHeight,
 }: Props) {
-  const { rec, loading, stale, inAppEnabled, cap, readinessGateState, cooldownRemaining, gate } =
-    ai;
+  const {
+    rec,
+    loading,
+    stale,
+    inAppEnabled,
+    powering,
+    cap,
+    readinessGateState,
+    cooldownRemaining,
+    gate,
+  } = ai;
   const navigate = useNavigate();
+  const auth = useAuth();
 
   // Auth gate is OUTERMOST over ai-rec's own gating (D6f, AC-E4/E5). Logged-out ⇒ the "ask AI" control
   // shows a sign-in prompt and the LLM is NOT invoked; ai-rec's cooldown/cap/no_key are NOT shown. The
@@ -129,6 +129,25 @@ export function AiRecPanel({
   const scenariosEnabled = ai.scenarios?.enabled === true;
   const scenarioSelected = scenariosEnabled && scenarioId !== '';
 
+  const [bootstrap, setBootstrap] = useState<AiProvidersBootstrap | null>(null);
+  useEffect(() => {
+    if (!signedIn) {
+      setBootstrap(null);
+      return;
+    }
+    let cancelled = false;
+    getAiKeyStatus()
+      .then((s) => {
+        if (!cancelled) setBootstrap(s);
+      })
+      .catch(() => {
+        if (!cancelled) setBootstrap(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
+
   // Guard the LLM invoke: logged-out ⇒ prompt + no invoke; a server 403 (stale cookie) ⇒ same prompt
   // and nothing produced (AC-E7). Auth FIRST, then ai-rec's existing gating runs inside `ai.request`.
   // A selected scenario rides the SAME request (auth stays outermost, AC-42).
@@ -142,25 +161,6 @@ export function AiRecPanel({
       }),
     );
 
-  // The byo-ai-key key-resolution state (layer 3, UX_BLUEPRINT §2/§3). Read OFF the status fields,
-  // never re-derived: an `unavailable` rec whose reason is one of no_key (a) / over_limit (c) /
-  // shared_key_unconfigured (e) renders a distinct CTA block instead of the generic unavailable Alert.
-  const byoCta = byoCtaState(rec);
-
-  // Exactly one body state. A byo CTA (a/c/e) preempts the generic `unavailable` block.
-  const phase = loading
-    ? 'loading'
-    : byoCta
-      ? 'byo_cta'
-      : rec?.status === 'unavailable'
-        ? 'unavailable'
-        : rec && rec.status === 'produced' && rec.strategy?.decision === 'no_trade'
-          ? 'no_trade'
-          : rec && rec.status === 'produced'
-            ? 'produced'
-            : 'idle';
-
-  const hasRec = phase === 'produced' || phase === 'no_trade';
   const presentation = deriveAiRecPresentation({
     rec,
     loading,
@@ -173,7 +173,29 @@ export function AiRecPanel({
     readinessGateState,
     scenarioSelected,
     currentRiskInputs,
+    poweringReason:
+      rec?.status === 'produced'
+        ? null
+        : rec?.status === 'unavailable'
+          ? rec.unavailable_reason
+          : (powering?.unavailable_reason ?? null),
   });
+  const poweringCta = POWERING_STATES.has(presentation.requestState);
+
+  // Exactly one body state. A powering CTA preempts the generic `unavailable` block.
+  const phase = loading
+    ? 'loading'
+    : poweringCta
+      ? 'powering_cta'
+      : rec?.status === 'unavailable'
+        ? 'unavailable'
+        : rec && rec.status === 'produced' && rec.strategy?.decision === 'no_trade'
+          ? 'no_trade'
+          : rec && rec.status === 'produced'
+            ? 'produced'
+            : 'idle';
+
+  const hasRec = phase === 'produced' || phase === 'no_trade';
   const [analysisOpen, setAnalysisOpen] = useState(false);
   // A retained response is still pinned while a new request is loading, but the decision card
   // must not present that old read as the current result. Analysis is likewise pinned to this
@@ -319,12 +341,37 @@ export function AiRecPanel({
         )}
 
         {/* Body */}
-        {signedIn && phase === 'loading' && <LoadingBlock ticker={ticker} readName={readName} />}
+        {signedIn && phase === 'loading' && (
+          <LoadingBlock
+            ticker={ticker}
+            readName={readName}
+            path={
+              pathLabel(powering?.key_source, powering?.provider) ??
+              (powering?.key_source === 'own_key' ? ownKeyChip(powering.provider) : null)
+            }
+            model={powering?.model ?? bootstrap?.preference.model ?? null}
+          />
+        )}
 
-        {/* byo-ai-key CTA states (a/c/e) — distinct testids + copy; all route to Settings. The
-            "View what's sent" export floor in the header stays present in every state (AC-23). */}
-        {signedIn && phase === 'byo_cta' && byoCta && (
-          <ByoKeyCta reason={byoCta} rec={rec as RecResponse} onAddKey={goToSettings} />
+        {signedIn && (
+          <AskModelSelect
+            bootstrap={bootstrap}
+            disabled={loading}
+            onChange={async (id) => {
+              try {
+                await auth.updateSettings({ ai_model: id });
+                const next = await getAiKeyStatus();
+                setBootstrap(next);
+              } catch {
+                /* save-error is surfaced by settings; keep last known catalog */
+              }
+            }}
+          />
+        )}
+
+        {/* Distinct powering CTAs — never collapse reasons; never free-uses. Export stays in header. */}
+        {signedIn && phase === 'powering_cta' && (
+          <PoweringCta reason={presentation.requestState} onSettings={goToSettings} />
         )}
 
         {signedIn && phase === 'unavailable' && (
@@ -349,8 +396,8 @@ export function AiRecPanel({
               )
             }
             onCreateOrder={
-              presentation.actions.createOrder
-                ? () => onAct!(producedRec, producedRec.persona.name)
+              presentation.actions.createOrder && onAct
+                ? () => onAct(producedRec, producedRec.persona.name)
                 : undefined
             }
             onAnalysis={() => setAnalysisOpen(true)}
@@ -370,7 +417,7 @@ export function AiRecPanel({
         ) : (
           phase !== 'loading' &&
           phase !== 'unavailable' &&
-          phase !== 'byo_cta' && (
+          phase !== 'powering_cta' && (
             <>
               {!hasRec && <SnapshotHint bundle={bundle} />}
               {!producedRec && (
@@ -402,325 +449,6 @@ export function AiRecPanel({
           onViewExport(producedRec?.persona.id ?? null);
         }}
       />
-    </Box>
-  );
-}
-
-// ---- Loading (AC1/AC2) -----------------------------------------------------------------------
-function LoadingBlock({ ticker, readName }: { ticker: string; readName: string }) {
-  return (
-    <Box sx={{ py: 1 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <CircularProgress size={18} />
-        {/* component="p" (stage-3 §5.6): a transient state title must not mount/unmount an <h6>. */}
-        <Typography variant="subtitle1" component="p">
-          {COPY.loading.title}
-        </Typography>
-      </Stack>
-      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        Asking the AI for a risk-first read on {ticker} ({readName}). This can take a few seconds.
-      </Typography>
-    </Box>
-  );
-}
-
-// ---- Snapshot idle hint ----------------------------------------------------------------------
-function SnapshotHint({ bundle }: { bundle: TickerBundle | null }) {
-  return (
-    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-      Reads the current snapshot
-      {bundle?.meta.freshness.snapshot_iso ? `, as of ${bundle.meta.freshness.snapshot_iso}` : ''}.
-    </Typography>
-  );
-}
-
-// ---- Signed-out gate (AC-E4/E7) — Figma 149:598 signed-out state -----------------------------
-// A centered prompt + a single enabled "Sign in to ask AI" CTA (no disabled Get button). When the
-// sign-in transport itself is degraded, show that warning copy with no button.
-function SignedOutGate({
-  hasRec,
-  promptText,
-  onSignIn,
-}: {
-  hasRec: boolean;
-  promptText: string | null;
-  onSignIn: () => void;
-}) {
-  const degraded = promptText === AUTH_COPY.gate.unavailable;
-  return (
-    <Box
-      data-testid="ai-rec-auth-gate"
-      sx={{
-        mt: hasRec ? 2 : 1,
-        p: 3,
-        borderRadius: 3,
-        bgcolor: 'action.hover',
-        textAlign: 'center',
-      }}
-    >
-      <Typography
-        data-testid="ai-rec-signin-prompt"
-        variant="body2"
-        sx={{ color: degraded ? 'warning.main' : 'text.secondary', mb: degraded ? 0 : 1.5 }}
-      >
-        {degraded ? promptText : AUTH_COPY.askAi.signedOut}
-      </Typography>
-      {!degraded && (
-        <Tooltip arrow describeChild title={AUTH_COPY.askAi.tooltip}>
-          <Button variant="contained" onClick={onSignIn} data-testid="ai-rec-signin-button">
-            {AUTH_COPY.askAi.cta}
-          </Button>
-        </Tooltip>
-      )}
-    </Box>
-  );
-}
-
-// ---- The gated action control ----------------------------------------------------------------
-function ActionRegion({
-  cap,
-  cooldownRemaining,
-  reasons,
-  compact,
-  ticker,
-  scenarioSelected = false,
-  requestState,
-  actions,
-  onGet,
-  onAskAnyway,
-}: {
-  cap: { over_limit: boolean; resets_at: string };
-  cooldownRemaining: number;
-  reasons: string[];
-  compact: boolean;
-  ticker: string;
-  /** ai-rec-backtest-orders: a selected scenario is keyless/cost-free — cooldown/cap disabled
-   *  states do NOT block it (AC-38); the readiness gate + override stay exactly real (AC-43). */
-  scenarioSelected?: boolean;
-  requestState: ReturnType<typeof deriveAiRecPresentation>['requestState'];
-  actions: ReturnType<typeof deriveAiRecPresentation>['actions'];
-  onGet: () => void;
-  onAskAnyway: () => void;
-}) {
-  const box = { mt: compact ? 2 : 1 };
-  // With a scenario selected, the primary action reads "Run scenario" (UX §6).
-  const primaryLabel = scenarioSelected ? RUN_SCENARIO : COPY.action.get;
-
-  // Policy is derived once by the host. These branches only render the named state and never
-  // re-check freshness/completeness independently.
-  // A selected scenario is NOT blocked by a keyless deployment: scenario runs are keyless by
-  // design (the server skips key resolution entirely) — mirrors the cap/cooldown bypass below.
-  if (requestState === 'missing_key') {
-    return (
-      <Box sx={box}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 0.5 }}
-        >
-          <Button variant="contained" size="small" disabled>
-            {COPY.action.get}
-          </Button>
-          <Chip size="small" variant="outlined" label={COPY.noKey.chip} />
-        </Stack>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-          {COPY.noKey.caption}
-        </Typography>
-      </Box>
-    );
-  }
-
-  // daily_cap_reached (AC10) — calm blocked state, NOT an error; export floor stays. A scenario
-  // run is neither blocked by nor consumes the cap (AC-38) — the action stays enabled.
-  if (requestState === 'daily_cap') {
-    return (
-      <Box sx={box}>
-        <Button variant="contained" size="small" disabled>
-          {capTitle(friendlyResetTime(cap.resets_at))}
-        </Button>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-          {CAP_CAPTION}
-        </Typography>
-      </Box>
-    );
-  }
-
-  // cooling_down (AC9) — disabled with a visible countdown; re-enables at 0. A scenario run is
-  // not blocked by the cooldown (AC-38).
-  if (requestState === 'cooldown') {
-    return (
-      <Box sx={box}>
-        <Button variant="contained" size="small" disabled>
-          {cooldownLabel(cooldownRemaining)}
-        </Button>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 0.5 }}>
-          {cooldownCaption(cooldownRemaining)}
-        </Typography>
-      </Box>
-    );
-  }
-
-  // no_fresh_edge (AC8) — the guardrails' stance is no_trade; de-emphasized + explicit one-tap
-  // override. The real readiness gate behaves IDENTICALLY with a scenario selected (AC-43).
-  if (requestState === 'no_edge') {
-    return (
-      <Box sx={box}>
-        <Typography sx={{ fontFamily: MONO, fontSize: 12, color: 'text.disabled', mb: 0.5 }}>
-          no_trade
-        </Typography>
-        <Typography sx={{ fontWeight: 500, fontSize: 14, color: 'text.primary', mb: 1.5 }}>
-          {COPY.noEdge.title}
-          {reasons.length ? ` — ${reasons[0]}` : ''}
-        </Typography>
-        <Tooltip arrow describeChild title={COPY.tooltip.askAnyway}>
-          <Button variant="outlined" size="small" color="inherit" onClick={onAskAnyway}>
-            {COPY.action.askAnyway}
-          </Button>
-        </Tooltip>
-        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mt: 1.5 }}>
-          {COPY.noEdge.caption}
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (requestState === 'unavailable') {
-    return null;
-  }
-
-  // idle — Available (AC1 entry point). "Run scenario" when a scenario is selected.
-  return (
-    <Box sx={box}>
-      <Tooltip arrow describeChild title={COPY.tooltip.get.replace('{TICKER}', ticker)}>
-        <Button
-          variant="contained"
-          size="small"
-          onClick={onGet}
-          disabled={!actions.analyze && !actions.retry}
-        >
-          {primaryLabel}
-        </Button>
-      </Tooltip>
-    </Box>
-  );
-}
-
-// ---- Unavailable (AC11) ----------------------------------------------------------------------
-function UnavailableBlock({
-  cap,
-  cooldownRemaining,
-  retryAllowed,
-  onRetry,
-  scenario = null,
-}: {
-  cap: { over_limit: boolean; resets_at: string };
-  cooldownRemaining: number;
-  retryAllowed: boolean;
-  onRetry: () => void;
-  /** Non-null when a FAULT SCENARIO produced this degraded state — the scripted marking still
-   *  shows so the operator knows it was scripted (UX §6, AC-40). The block itself is the standard
-   *  unavailable handling — no special copy (AC-35). */
-  scenario?: RecScenarioInfo | null;
-}) {
-  // Presentation policy is the sole authority for retry actionability. Cap/cooldown remain visible
-  // as explanatory context, but must not independently disable a retry (scenario retries bypass them).
-  const blockedByCooldown = cooldownRemaining > 0;
-  const blockedByCap = cap.over_limit;
-  const sub = blockedByCooldown
-    ? retryInCooldown(cooldownRemaining)
-    : blockedByCap
-      ? retryWhenReset(friendlyResetTime(cap.resets_at))
-      : null;
-  return (
-    <Alert
-      severity="warning"
-      sx={{ mt: 1 }}
-      action={
-        <Stack spacing={0.25} sx={{ alignItems: 'flex-end' }}>
-          {retryAllowed && (
-            <Button color="inherit" size="small" onClick={onRetry}>
-              {COPY.action.retry}
-            </Button>
-          )}
-          {sub && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {sub}
-            </Typography>
-          )}
-        </Stack>
-      }
-    >
-      {/* component="p" (stage-3 §5.6): transient-state title, not document structure. */}
-      <Typography variant="subtitle2" component="p">
-        {COPY.unavailable.title}
-      </Typography>
-      <Typography variant="body2">{COPY.unavailable.body}</Typography>
-      {scenario && (
-        <Chip
-          size="small"
-          color="warning"
-          variant="outlined"
-          label={SCRIPTED_CHIP}
-          data-testid="ai-rec-scripted-chip"
-          sx={{ mt: 0.5 }}
-        />
-      )}
-    </Alert>
-  );
-}
-
-// ---- byo-ai-key CTA states (a/c/e) — UX_BLUEPRINT §3 ------------------------------------------
-// Three observably-distinct CTA bodies (distinct testid + title/body copy; same button label). None
-// is an error red; none frames a free trial. (c) implies daily renewal. Each routes to Settings.
-function ByoKeyCta({
-  reason,
-  rec,
-  onAddKey,
-}: {
-  reason: 'no_key' | 'over_limit' | 'shared_key_unconfigured';
-  rec: RecResponse;
-  onAddKey: () => void;
-}) {
-  const total = rec.free_uses_total ?? FREE_USES_TOTAL_FALLBACK;
-  const cfg =
-    reason === 'no_key'
-      ? {
-          testid: 'ai-rec-state-no-key',
-          title: BYO_KEY.noKey.title,
-          body: BYO_KEY.noKey.body,
-          cta: BYO_KEY.noKey.cta,
-        }
-      : reason === 'over_limit'
-        ? {
-            testid: 'ai-rec-state-admin-exhausted',
-            title: adminExhaustedTitle(total),
-            body: BYO_KEY.adminExhausted.body,
-            cta: BYO_KEY.adminExhausted.cta,
-          }
-        : {
-            testid: 'ai-rec-state-shared-unconfigured',
-            title: BYO_KEY.sharedUnconfigured.title,
-            body: BYO_KEY.sharedUnconfigured.body,
-            cta: BYO_KEY.sharedUnconfigured.cta,
-          };
-  return (
-    <Box sx={{ mt: 1, p: 1.5, borderRadius: 3, bgcolor: 'action.hover' }} data-testid={cfg.testid}>
-      {/* component="p" (stage-3 §5.6): BYO-key CTA titles are transient, never headings. */}
-      <Typography variant="subtitle1" component="p">
-        {cfg.title}
-      </Typography>
-      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5 }}>
-        {cfg.body}
-      </Typography>
-      <Button
-        variant="contained"
-        size="small"
-        sx={{ mt: 1.5 }}
-        data-testid="ai-rec-add-key-cta"
-        onClick={onAddKey}
-      >
-        {cfg.cta}
-      </Button>
     </Box>
   );
 }

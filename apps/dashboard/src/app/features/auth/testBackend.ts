@@ -8,6 +8,8 @@
  * the auth-write handlers can be told to 409/422/401/503 to drive every error state.
  */
 import type {
+  AiProvidersBootstrap,
+  ByoProvider,
   CandidateBudget,
   CandidateContract,
   CandidateSetEnvelope,
@@ -19,24 +21,99 @@ import type {
   TickerBundle,
   UserSettings,
 } from '@convexa/api';
+import { BYO_PROVIDERS } from '@convexa/api';
 import { vi } from 'vitest';
 
-/** byo-ai-key: how the rec POST resolves the key (the 5 observable states a–e). Each maps to the
- *  INTERFACE_CONTRACT §3 wire shape. `transport` simulates a network fault on the POST. */
+/** How the rec POST resolves powering. Retired `produced_shared` / free-uses states are gone. */
 export type RecKeyState =
-  | 'produced_own' // (d) produced + key_source own_key
-  | 'produced_shared' // (b) produced + key_source shared_admin + remaining_free_uses/total
-  | 'no_key' // (a) unavailable + no_key (regular)
-  | 'over_limit' // (c) unavailable + over_limit (admin exhausted)
-  | 'shared_unconfigured' // (e) unavailable + shared_key_unconfigured (admin, no shared key)
-  | 'transport'; // a network fault → the FE-synthesized unavailable
+  | 'produced_own'
+  | 'produced_subscription'
+  | 'no_key'
+  | 'key_unusable'
+  | 'key_rejected'
+  | 'model_not_in_catalog'
+  | 'oauth_expired'
+  | 'oauth_unlinked'
+  | 'subscription_unavailable'
+  | 'transport';
 
-/** byo-ai-key: the masked-hint the GET ai-key read returns (NEVER a raw key). */
-export interface AiKeyBackendState {
+export interface AiProviderSlotState {
   set: boolean;
   last4: string | null;
+}
+
+export interface AiKeyBackendState {
   storage_available: boolean;
-  put: 'ok' | 'auth_required' | 'validation' | 'transport'; // PUT outcome (storage-unavailable is a 200 `set:false`)
+  put: 'ok' | 'auth_required' | 'validation' | 'transport';
+  slots: Record<ByoProvider, AiProviderSlotState>;
+  grok: AiProvidersBootstrap['grok'];
+  preference: AiProvidersBootstrap['preference'];
+  catalog: AiProvidersBootstrap['catalog'];
+  /** Legacy single-slot shims used by older tests (`set`/`last4` map to the anthropic row). */
+  set?: boolean;
+  last4?: string | null;
+}
+
+export function defaultAiCatalog(): AiProvidersBootstrap['catalog'] {
+  return {
+    providers: [
+      { provider: 'anthropic', models: [{ id: 'claude-opus-4-8', recommended: true }] },
+      { provider: 'openai', models: [{ id: 'gpt-4o', recommended: true }] },
+      { provider: 'xai', models: [{ id: 'grok-3', recommended: true }] },
+      { provider: 'gemini', models: [{ id: 'gemini-2.0-flash', recommended: true }] },
+    ],
+    grok_subscription: { provider: 'xai', models: [{ id: 'grok-3', recommended: true }] },
+  };
+}
+
+export function emptyAiSlots(): Record<ByoProvider, AiProviderSlotState> {
+  return {
+    anthropic: { set: false, last4: null },
+    openai: { set: false, last4: null },
+    xai: { set: false, last4: null },
+    gemini: { set: false, last4: null },
+  };
+}
+
+export function makeAiBootstrap(state: AiKeyBackendState): AiProvidersBootstrap {
+  return {
+    storage_available: state.storage_available,
+    providers: BYO_PROVIDERS.map((p) => ({
+      provider: p,
+      set: state.slots[p].set,
+      last4: state.slots[p].set ? state.slots[p].last4 : null,
+    })),
+    grok: state.grok,
+    preference: state.preference,
+    catalog: state.catalog,
+  };
+}
+
+function normalizeAiKeyState(partial?: Partial<AiKeyBackendState>): AiKeyBackendState {
+  const slots = emptyAiSlots();
+  if (partial?.slots) {
+    for (const p of BYO_PROVIDERS) {
+      if (partial.slots[p]) slots[p] = { ...slots[p], ...partial.slots[p] };
+    }
+  }
+  if (partial?.set) {
+    slots.anthropic = { set: true, last4: partial.last4 ?? slots.anthropic.last4 };
+  }
+  const catalog = partial?.catalog ?? defaultAiCatalog();
+  const recommended =
+    catalog.providers[0]?.models.find((m) => m.recommended)?.id ?? 'claude-opus-4-8';
+  return {
+    storage_available: partial?.storage_available ?? true,
+    put: partial?.put ?? 'ok',
+    slots,
+    grok: partial?.grok ?? { available: false, connected: false, unavailable_reason: null },
+    preference: partial?.preference ?? {
+      power_path: slots.anthropic.set ? 'own_key' : null,
+      provider: slots.anthropic.set ? 'anthropic' : null,
+      model: recommended,
+    },
+    catalog,
+  };
 }
 
 export interface AuthBackendState {
@@ -410,7 +487,7 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
     recKey: initial.recKey ?? 'produced_own',
     remainingFreeUses: initial.remainingFreeUses ?? 3,
     freeUsesTotal: initial.freeUsesTotal ?? 3,
-    aiKey: initial.aiKey ?? { set: false, last4: null, storage_available: true, put: 'ok' },
+    aiKey: normalizeAiKeyState(initial.aiKey),
     riskInputs: initial.riskInputs ?? defaultRiskInputs(),
     candidates: initial.candidates ?? makeCandidatesFixture(),
     capCheck: initial.capCheck ?? defaultCapCheck(),
@@ -540,6 +617,38 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           return authErr('auth_unavailable', 'auth down', 503);
         if (state.settingsWrite === 'validation') return authErr('validation', 'bad theme', 422);
         const patch = init?.body ? JSON.parse(String(init.body)) : {};
+        if ('ai_model' in patch && patch.ai_model === null)
+          return authErr('validation', 'clear forbidden', 422);
+        if (
+          patch.ai_power_path === 'own_key' &&
+          !patch.ai_provider &&
+          !state.aiKey.preference.provider
+        )
+          return authErr('validation', 'provider required', 422);
+        if ('ai_power_path' in patch || 'ai_provider' in patch || 'ai_model' in patch) {
+          const nextPath =
+            'ai_power_path' in patch ? patch.ai_power_path : state.aiKey.preference.power_path;
+          const nextProvider =
+            'ai_provider' in patch ? patch.ai_provider : state.aiKey.preference.provider;
+          let nextModel = 'ai_model' in patch ? patch.ai_model : state.aiKey.preference.model;
+          const catalog =
+            nextPath === 'grok_subscription'
+              ? state.aiKey.catalog.grok_subscription.models
+              : (state.aiKey.catalog.providers.find((p) => p.provider === nextProvider)?.models ??
+                []);
+          if (
+            ('ai_power_path' in patch || 'ai_provider' in patch) &&
+            nextModel &&
+            !catalog.some((m) => m.id === nextModel)
+          ) {
+            nextModel = catalog.find((m) => m.recommended)?.id ?? nextModel;
+          }
+          state.aiKey.preference = {
+            power_path: nextPath,
+            provider: nextPath === 'own_key' ? nextProvider : null,
+            model: nextModel,
+          };
+        }
         // ---- tradeable-rec-inputs: the owner-entered risk-inputs patch — server-side refusals are
         // authoritative (INTERFACE_CONTRACT §4); nothing is stored on a refusal.
         if ('risk_inputs' in patch) {
@@ -613,19 +722,32 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           return authErr('auth_unavailable', 'auth down', 503);
         return json({ authorized: true });
       }
-      // ---- byo-ai-key credential endpoints (write-only key; masked-hint read) -------------------
+      if (url.includes('/api/auth/grok') && method === 'DELETE') {
+        if (!state.session.authenticated)
+          return keyJson({ error: 'auth_required', message: 'sign in' }, 403);
+        state.aiKey.grok = {
+          ...state.aiKey.grok,
+          connected: false,
+          unavailable_reason: 'oauth_unlinked',
+        };
+        if (state.aiKey.preference.power_path === 'grok_subscription') {
+          state.aiKey.preference = { ...state.aiKey.preference, power_path: null };
+        }
+        return keyJson(makeAiBootstrap(state.aiKey));
+      }
+      // ---- ai-providers credential endpoints (write-only key; full bootstrap) -------------------
       if (url.includes('/api/auth/ai-key')) {
-        // All three sit behind the auth gate — anonymous ⇒ 403 auth_required (never a key state).
         if (!state.session.authenticated)
           return keyJson({ error: 'auth_required', message: 'sign in' }, 403);
         if (method === 'GET') {
           calls.aiKeyGet++;
-          // The read returns ONLY the masked hint (set/last4/storage_available) — NEVER the key.
-          return keyJson({
-            set: state.aiKey.set,
-            last4: state.aiKey.set ? state.aiKey.last4 : null,
-            storage_available: state.aiKey.storage_available,
-          });
+          // D4: persist recommended default when model is still null.
+          if (state.aiKey.preference.model == null) {
+            const rec =
+              state.aiKey.catalog.providers[0]?.models.find((m) => m.recommended)?.id ?? null;
+            state.aiKey.preference = { ...state.aiKey.preference, model: rec };
+          }
+          return keyJson(makeAiBootstrap(state.aiKey));
         }
         if (method === 'PUT') {
           calls.aiKeyPut++;
@@ -637,23 +759,47 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
           if (state.aiKey.put === 'validation')
             return keyJson({ error: 'validation', message: 'bad key' }, 422);
           if (state.aiKey.storage_available === false) {
-            // Storage unavailable is a contained 200 `set:false`, NEVER a 5xx (AC-18).
-            return keyJson({ set: false, storage_available: false });
+            return keyJson({ ...makeAiBootstrap(state.aiKey), storage_available: false });
           }
-          // Store the masked LAST-4 derived from the raw key — the raw key is NEVER echoed back.
-          const parsed = body ? (JSON.parse(body) as { key?: string }) : {};
+          const parsed = body ? (JSON.parse(body) as { key?: string; provider?: string }) : {};
           const raw = parsed.key ?? '';
-          state.aiKey = { ...state.aiKey, set: true, last4: raw.slice(-4) };
-          return keyJson({ set: true, last4: state.aiKey.last4, storage_available: true });
+          const provider = (parsed.provider ?? '') as ByoProvider;
+          if (!BYO_PROVIDERS.includes(provider))
+            return keyJson({ error: 'validation', message: 'provider required' }, 422);
+          state.aiKey.slots[provider] = { set: true, last4: raw.slice(-4) };
+          const catalog =
+            state.aiKey.catalog.providers.find((p) => p.provider === provider)?.models ?? [];
+          const keep =
+            state.aiKey.preference.model &&
+            catalog.some((m) => m.id === state.aiKey.preference.model)
+              ? state.aiKey.preference.model
+              : (catalog.find((m) => m.recommended)?.id ?? state.aiKey.preference.model);
+          state.aiKey.preference = {
+            power_path: 'own_key',
+            provider,
+            model: keep,
+          };
+          return keyJson(makeAiBootstrap(state.aiKey));
         }
         if (method === 'DELETE') {
           calls.aiKeyDelete++;
-          state.aiKey = { ...state.aiKey, set: false, last4: null };
-          return keyJson({
-            set: false,
-            last4: null,
-            storage_available: state.aiKey.storage_available,
-          });
+          const q = new URL(url, 'http://local.invalid').searchParams.get(
+            'provider',
+          ) as ByoProvider | null;
+          if (!q || !BYO_PROVIDERS.includes(q))
+            return keyJson({ error: 'validation', message: 'provider required' }, 422);
+          state.aiKey.slots[q] = { set: false, last4: null };
+          if (
+            state.aiKey.preference.power_path === 'own_key' &&
+            state.aiKey.preference.provider === q
+          ) {
+            state.aiKey.preference = {
+              ...state.aiKey.preference,
+              power_path: null,
+              provider: null,
+            };
+          }
+          return keyJson(makeAiBootstrap(state.aiKey));
         }
       }
       // ---- trader bundle (UNTOUCHED by auth) ----------------------------------------------------
@@ -669,15 +815,50 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
       }
       // ---- ai-rec status / export / personas / contract (anonymous-usable floors) ---------------
       if (url.includes('/api/recommendation/status/')) {
-        // byo-ai-key: an admin shared-key path pre-renders its count; regular users carry no counter.
-        const adminShared = state.recKey === 'produced_shared' || state.recKey === 'over_limit';
+        const signedIn = state.session.authenticated;
+        const pref = state.aiKey.preference;
+        const usable =
+          signedIn &&
+          ((pref.power_path === 'own_key' &&
+            pref.provider != null &&
+            state.aiKey.slots[pref.provider]?.set) ||
+            (pref.power_path === 'grok_subscription' &&
+              state.aiKey.grok.connected &&
+              state.aiKey.grok.available));
+        const reason = !signedIn
+          ? null
+          : pref.power_path == null
+            ? 'no_key'
+            : state.recKey === 'key_unusable'
+              ? 'key_unusable'
+              : state.recKey === 'key_rejected'
+                ? 'key_rejected'
+                : state.recKey === 'model_not_in_catalog'
+                  ? 'model_not_in_catalog'
+                  : state.recKey === 'oauth_expired'
+                    ? 'oauth_expired'
+                    : state.recKey === 'oauth_unlinked'
+                      ? 'oauth_unlinked'
+                      : state.recKey === 'subscription_unavailable'
+                        ? 'subscription_unavailable'
+                        : usable
+                          ? null
+                          : 'no_key';
         return keyJson({
-          availability: { in_app_enabled: true },
+          availability: { in_app_enabled: !!usable },
           gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
           cap: { over_limit: false, remaining_today: 50, resets_at: '2026-06-27T04:00:00Z' },
-          ...(adminShared
-            ? { remaining_free_uses: state.remainingFreeUses, free_uses_total: state.freeUsesTotal }
-            : {}),
+          powering: {
+            key_source: usable
+              ? pref.power_path === 'grok_subscription'
+                ? 'grok_subscription'
+                : 'own_key'
+              : 'none',
+            provider: pref.power_path === 'own_key' ? pref.provider : null,
+            model: pref.model,
+            unavailable_reason: reason,
+            preference: signedIn ? pref : { power_path: null, provider: null, model: null },
+          },
         });
       }
       if (url.includes('/api/recommendation/export/')) {
@@ -798,56 +979,54 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
             strategy,
             unavailable_reason: null,
             key_source: 'own_key',
+            provider: state.aiKey.preference.provider ?? 'anthropic',
+            model: state.aiKey.preference.model,
             sent,
             cap_check: state.capCheck,
             field_reasons: fieldReasons,
             cited_contract: citedContract,
           });
         }
-        if (state.recKey === 'produced_shared') {
-          // Decrement ONLY on a produced shared rec; the returned value is the post-decrement count.
-          state.remainingFreeUses = Math.max(0, state.remainingFreeUses - 1);
+        if (state.recKey === 'produced_subscription') {
           return keyJson({
             ...base,
             status: 'produced',
             strategy,
             unavailable_reason: null,
-            key_source: 'shared_admin',
-            remaining_free_uses: state.remainingFreeUses,
-            free_uses_total: state.freeUsesTotal,
+            key_source: 'grok_subscription',
+            provider: null,
+            model: state.aiKey.preference.model,
             sent,
             cap_check: state.capCheck,
             field_reasons: fieldReasons,
             cited_contract: citedContract,
           });
         }
-        if (state.recKey === 'no_key') {
+        const blocked: Record<string, string> = {
+          no_key: 'no_key',
+          key_unusable: 'key_unusable',
+          key_rejected: 'key_rejected',
+          model_not_in_catalog: 'model_not_in_catalog',
+          oauth_expired: 'oauth_expired',
+          oauth_unlinked: 'oauth_unlinked',
+          subscription_unavailable: 'subscription_unavailable',
+        };
+        if (state.recKey in blocked) {
           return keyJson({
             ...base,
             status: 'unavailable',
             strategy: null,
-            unavailable_reason: 'no_key',
+            unavailable_reason: blocked[state.recKey],
             key_source: 'none',
+            provider: state.aiKey.preference.provider,
+            model: state.aiKey.preference.model,
           });
         }
-        if (state.recKey === 'over_limit') {
-          // An LLM-failed shared call does NOT decrement; the exhausted state holds at 0 (AC-17).
-          return keyJson({
-            ...base,
-            status: 'unavailable',
-            strategy: null,
-            unavailable_reason: 'over_limit',
-            key_source: 'none',
-            remaining_free_uses: 0,
-            free_uses_total: state.freeUsesTotal,
-          });
-        }
-        // shared_unconfigured (e)
         return keyJson({
           ...base,
           status: 'unavailable',
           strategy: null,
-          unavailable_reason: 'shared_key_unconfigured',
+          unavailable_reason: 'no_key',
           key_source: 'none',
         });
       }
@@ -898,7 +1077,7 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
       if (opts?.total != null) state.freeUsesTotal = opts.total;
     },
     setAiKeyStored(s) {
-      state.aiKey = { ...state.aiKey, ...s };
+      state.aiKey = normalizeAiKeyState({ ...state.aiKey, ...s });
     },
     setRiskInputs(patch) {
       state.riskInputs = { ...state.riskInputs, ...patch };

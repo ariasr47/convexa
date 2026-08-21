@@ -59,6 +59,33 @@ pub struct SettingsRecord {
     pub risk_cap_unit: Option<String>,
     #[serde(default)]
     pub risk_updated_at: Option<f64>,
+    /// Standing Ask-AI preference (ai-providers). `#[serde(default)]` is the disk-JSON
+    /// forward-migration for records written before this feature.
+    #[serde(default)]
+    pub ai_power_path: Option<String>,
+    #[serde(default)]
+    pub ai_provider: Option<String>,
+    #[serde(default)]
+    pub ai_model: Option<String>,
+}
+
+impl SettingsRecord {
+    pub fn defaults(user_id: &str) -> Self {
+        Self {
+            user_id: user_id.into(),
+            active_persona_id: None,
+            default_ticker: None,
+            theme: "dark".into(),
+            scan_view: None,
+            risk_account_size: None,
+            risk_cap_value: None,
+            risk_cap_unit: None,
+            risk_updated_at: None,
+            ai_power_path: None,
+            ai_provider: None,
+            ai_model: None,
+        }
+    }
 }
 
 /// Encrypted BYO AI credential (kind = "ai"). Never expose ciphertext on the wire.
@@ -79,6 +106,16 @@ fn default_provider() -> String {
     "anthropic".into()
 }
 
+/// Opaque Grok subscription link (no secrets on the wire).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GrokLinkRecord {
+    pub user_id: String,
+    /// unlinked | linked | expired
+    pub status: String,
+    pub encrypted_material: Option<String>,
+    pub updated_at: f64,
+}
+
 #[derive(Default, Serialize, Deserialize)]
 struct DiskAuth {
     users: HashMap<String, UserRecord>,
@@ -86,9 +123,12 @@ struct DiskAuth {
     by_email: HashMap<String, String>,
     sessions: HashMap<String, SessionRecord>,
     settings: HashMap<String, SettingsRecord>,
-    /// (user_id, kind) → credential
+    /// (user_id, kind, provider) → credential. Legacy keys are `{user}::{kind}`.
     #[serde(default)]
     credentials: HashMap<String, CredentialRecord>,
+    /// user_id → grok subscription link
+    #[serde(default)]
+    grok_links: HashMap<String, GrokLinkRecord>,
 }
 
 #[derive(Clone)]
@@ -291,34 +331,104 @@ impl JsonAuthStore {
         if let Some(s) = self.get_settings(user_id)? {
             return Ok(s);
         }
-        let rec = SettingsRecord {
-            user_id: user_id.into(),
-            active_persona_id: None,
-            default_ticker: None,
-            theme: "dark".into(),
-            scan_view: None,
-            risk_account_size: None,
-            risk_cap_value: None,
-            risk_cap_unit: None,
-            risk_updated_at: None,
-        };
+        let rec = SettingsRecord::defaults(user_id);
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
         g.settings.insert(user_id.into(), rec.clone());
         self.persist_locked(&g);
         Ok(rec)
     }
 
-    fn cred_key(user_id: &str, kind: &str) -> String {
+    fn cred_key(user_id: &str, kind: &str, provider: &str) -> String {
+        format!("{user_id}::{kind}::{provider}")
+    }
+
+    fn legacy_cred_key(user_id: &str, kind: &str) -> String {
         format!("{user_id}::{kind}")
+    }
+
+    fn promote_legacy_ai_locked(st: &mut DiskAuth, user_id: &str) {
+        let legacy = Self::legacy_cred_key(user_id, "ai");
+        let Some(rec) = st.credentials.get(&legacy).cloned() else {
+            return;
+        };
+        let provider = if rec.provider.trim().is_empty() {
+            "anthropic".to_string()
+        } else {
+            rec.provider.clone()
+        };
+        let dest = Self::cred_key(user_id, "ai", &provider);
+        if !st.credentials.contains_key(&dest) {
+            let mut moved = rec;
+            moved.provider = provider.clone();
+            st.credentials.insert(dest, moved);
+        }
+        st.credentials.remove(&legacy);
+
+        if crate::services::llm_catalog::is_trader_byo(&provider) {
+            let settings = st
+                .settings
+                .entry(user_id.to_string())
+                .or_insert_with(|| SettingsRecord::defaults(user_id));
+            if settings.ai_power_path.is_none() {
+                settings.ai_power_path = Some("own_key".into());
+                settings.ai_provider = Some(provider);
+            }
+        }
+    }
+
+    fn promote_legacy_kind_locked(st: &mut DiskAuth, user_id: &str, kind: &str, provider: &str) {
+        if kind == "ai" {
+            Self::promote_legacy_ai_locked(st, user_id);
+            return;
+        }
+        let legacy = Self::legacy_cred_key(user_id, kind);
+        let dest = Self::cred_key(user_id, kind, provider);
+        if st.credentials.contains_key(&dest) {
+            st.credentials.remove(&legacy);
+            return;
+        }
+        if let Some(mut rec) = st.credentials.remove(&legacy) {
+            if rec.provider.trim().is_empty() {
+                rec.provider = provider.to_string();
+            }
+            let slot = rec.provider.clone();
+            st.credentials
+                .insert(Self::cred_key(user_id, kind, &slot), rec);
+        }
+    }
+
+    pub fn promote_legacy_ai(&self, user_id: &str) -> AppResult<()> {
+        let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        Self::promote_legacy_ai_locked(&mut g, user_id);
+        self.persist_locked(&g);
+        Ok(())
     }
 
     pub fn get_credential(
         &self,
         user_id: &str,
         kind: &str,
+        provider: &str,
     ) -> AppResult<Option<CredentialRecord>> {
-        let g = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        Ok(g.credentials.get(&Self::cred_key(user_id, kind)).cloned())
+        let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        Self::promote_legacy_kind_locked(&mut g, user_id, kind, provider);
+        self.persist_locked(&g);
+        Ok(g.credentials
+            .get(&Self::cred_key(user_id, kind, provider))
+            .cloned())
+    }
+
+    pub fn list_credentials(&self, user_id: &str, kind: &str) -> AppResult<Vec<CredentialRecord>> {
+        let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        if kind == "ai" {
+            Self::promote_legacy_ai_locked(&mut g, user_id);
+            self.persist_locked(&g);
+        }
+        Ok(g.credentials
+            .values()
+            .filter(|c| c.user_id == user_id && c.kind == kind)
+            .cloned()
+            .collect())
     }
 
     pub fn set_credential(
@@ -331,12 +441,13 @@ impl JsonAuthStore {
     ) -> AppResult<()> {
         let now = now_secs();
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        let k = Self::cred_key(user_id, kind);
-        let created = g
-            .credentials
-            .get(&k)
-            .map(|c| c.created_at)
-            .unwrap_or(now);
+        if kind == "ai" {
+            Self::promote_legacy_ai_locked(&mut g, user_id);
+        } else {
+            Self::promote_legacy_kind_locked(&mut g, user_id, kind, provider);
+        }
+        let k = Self::cred_key(user_id, kind, provider);
+        let created = g.credentials.get(&k).map(|c| c.created_at).unwrap_or(now);
         g.credentials.insert(
             k,
             CredentialRecord {
@@ -353,9 +464,46 @@ impl JsonAuthStore {
         Ok(())
     }
 
-    pub fn delete_credential(&self, user_id: &str, kind: &str) -> AppResult<()> {
+    pub fn delete_credential(&self, user_id: &str, kind: &str, provider: &str) -> AppResult<()> {
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
-        g.credentials.remove(&Self::cred_key(user_id, kind));
+        if kind == "ai" {
+            Self::promote_legacy_ai_locked(&mut g, user_id);
+        } else {
+            Self::promote_legacy_kind_locked(&mut g, user_id, kind, provider);
+        }
+        g.credentials
+            .remove(&Self::cred_key(user_id, kind, provider));
+        // Drop a leftover legacy row only when it belonged to this slot.
+        let legacy = Self::legacy_cred_key(user_id, kind);
+        if let Some(rec) = g.credentials.get(&legacy) {
+            let lp = if rec.provider.trim().is_empty() {
+                "anthropic"
+            } else {
+                rec.provider.as_str()
+            };
+            if lp == provider {
+                g.credentials.remove(&legacy);
+            }
+        }
+        self.persist_locked(&g);
+        Ok(())
+    }
+
+    pub fn get_grok_link(&self, user_id: &str) -> AppResult<Option<GrokLinkRecord>> {
+        let g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        Ok(g.grok_links.get(user_id).cloned())
+    }
+
+    pub fn set_grok_link(&self, rec: &GrokLinkRecord) -> AppResult<()> {
+        let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        g.grok_links.insert(rec.user_id.clone(), rec.clone());
+        self.persist_locked(&g);
+        Ok(())
+    }
+
+    pub fn delete_grok_link(&self, user_id: &str) -> AppResult<()> {
+        let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        g.grok_links.remove(user_id);
         self.persist_locked(&g);
         Ok(())
     }
@@ -367,11 +515,7 @@ impl JsonAuthStore {
     ) -> AppResult<SettingsRecord> {
         let mut cur = self.upsert_settings_defaults(user_id)?;
         if let Some(ref v) = patch.active_persona_id {
-            cur.active_persona_id = if v.is_empty() {
-                None
-            } else {
-                Some(v.clone())
-            };
+            cur.active_persona_id = if v.is_empty() { None } else { Some(v.clone()) };
         }
         if let Some(ref v) = patch.default_ticker {
             cur.default_ticker = if v.is_empty() {
@@ -403,6 +547,15 @@ impl JsonAuthStore {
             }
             cur.risk_updated_at = Some(now_secs());
         }
+        if let Some(v) = patch.ai_power_path.clone() {
+            cur.ai_power_path = v;
+        }
+        if let Some(v) = patch.ai_provider.clone() {
+            cur.ai_provider = v;
+        }
+        if let Some(v) = patch.ai_model.clone() {
+            cur.ai_model = v;
+        }
         let mut g = self.state.lock().unwrap_or_else(|e| e.into_inner());
         g.settings.insert(user_id.into(), cur.clone());
         self.persist_locked(&g);
@@ -421,6 +574,10 @@ pub struct SettingsPatch {
     pub risk_account_size: Option<Option<f64>>,
     /// `(value, unit)` where `unit` is `"usd" | "percent"`. Outer `Option` = present-in-request.
     pub per_trade_cap: Option<Option<(f64, String)>>,
+    /// Outer `Option` = field present; inner `None` = clear (server-internal for path/provider).
+    pub ai_power_path: Option<Option<String>>,
+    pub ai_provider: Option<Option<String>>,
+    pub ai_model: Option<Option<String>>,
 }
 
 fn normalize_json_path(path: &Path) -> PathBuf {
@@ -580,11 +737,19 @@ impl AuthStore {
         &self,
         user_id: &str,
         kind: &str,
+        provider: &str,
     ) -> AppResult<Option<CredentialRecord>> {
         match self {
-            Self::Json(s) => s.get_credential(user_id, kind),
+            Self::Json(s) => s.get_credential(user_id, kind, provider),
             #[cfg(feature = "postgres")]
-            Self::Postgres(s) => s.get_credential(user_id, kind),
+            Self::Postgres(s) => s.get_credential(user_id, kind, provider),
+        }
+    }
+    pub fn list_credentials(&self, user_id: &str, kind: &str) -> AppResult<Vec<CredentialRecord>> {
+        match self {
+            Self::Json(s) => s.list_credentials(user_id, kind),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.list_credentials(user_id, kind),
         }
     }
     pub fn set_credential(
@@ -601,11 +766,39 @@ impl AuthStore {
             Self::Postgres(s) => s.set_credential(user_id, kind, ciphertext, last4, provider),
         }
     }
-    pub fn delete_credential(&self, user_id: &str, kind: &str) -> AppResult<()> {
+    pub fn delete_credential(&self, user_id: &str, kind: &str, provider: &str) -> AppResult<()> {
         match self {
-            Self::Json(s) => s.delete_credential(user_id, kind),
+            Self::Json(s) => s.delete_credential(user_id, kind, provider),
             #[cfg(feature = "postgres")]
-            Self::Postgres(s) => s.delete_credential(user_id, kind),
+            Self::Postgres(s) => s.delete_credential(user_id, kind, provider),
+        }
+    }
+    pub fn promote_legacy_ai(&self, user_id: &str) -> AppResult<()> {
+        match self {
+            Self::Json(s) => s.promote_legacy_ai(user_id),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.promote_legacy_ai(user_id),
+        }
+    }
+    pub fn get_grok_link(&self, user_id: &str) -> AppResult<Option<GrokLinkRecord>> {
+        match self {
+            Self::Json(s) => s.get_grok_link(user_id),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.get_grok_link(user_id),
+        }
+    }
+    pub fn set_grok_link(&self, rec: &GrokLinkRecord) -> AppResult<()> {
+        match self {
+            Self::Json(s) => s.set_grok_link(rec),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.set_grok_link(rec),
+        }
+    }
+    pub fn delete_grok_link(&self, user_id: &str) -> AppResult<()> {
+        match self {
+            Self::Json(s) => s.delete_grok_link(user_id),
+            #[cfg(feature = "postgres")]
+            Self::Postgres(s) => s.delete_grok_link(user_id),
         }
     }
 }
@@ -620,7 +813,10 @@ mod tests {
         let u = store
             .create_user("Test@Example.com", Some("hash"), Some("T"))
             .unwrap();
-        assert!(store.get_user_by_email("test@example.com").unwrap().is_some());
+        assert!(store
+            .get_user_by_email("test@example.com")
+            .unwrap()
+            .is_some());
         store
             .create_session(&SessionRecord {
                 id: "sid1".into(),
@@ -652,11 +848,116 @@ mod tests {
         store
             .set_credential(&u.id, "ai", "cipher", "abcd", "openai")
             .unwrap();
-        let rec = store.get_credential(&u.id, "ai").unwrap().unwrap();
+        let rec = store
+            .get_credential(&u.id, "ai", "openai")
+            .unwrap()
+            .unwrap();
         assert_eq!(rec.last4, "abcd");
         assert_eq!(rec.provider, "openai");
-        store.delete_credential(&u.id, "ai").unwrap();
-        assert!(store.get_credential(&u.id, "ai").unwrap().is_none());
+        store.delete_credential(&u.id, "ai", "openai").unwrap();
+        assert!(store
+            .get_credential(&u.id, "ai", "openai")
+            .unwrap()
+            .is_none());
+    }
+
+    #[test]
+    fn two_provider_slots_are_independent() {
+        let store = AuthStore::open_memory().unwrap();
+        let u = store.create_user("slots@ex.com", Some("h"), None).unwrap();
+        store
+            .set_credential(&u.id, "ai", "cipher-a", "aaa1", "anthropic")
+            .unwrap();
+        store
+            .set_credential(&u.id, "ai", "cipher-o", "ooo2", "openai")
+            .unwrap();
+        let a = store
+            .get_credential(&u.id, "ai", "anthropic")
+            .unwrap()
+            .unwrap();
+        let o = store
+            .get_credential(&u.id, "ai", "openai")
+            .unwrap()
+            .unwrap();
+        assert_eq!(a.last4, "aaa1");
+        assert_eq!(o.last4, "ooo2");
+        store.delete_credential(&u.id, "ai", "openai").unwrap();
+        assert!(store
+            .get_credential(&u.id, "ai", "openai")
+            .unwrap()
+            .is_none());
+        assert!(store
+            .get_credential(&u.id, "ai", "anthropic")
+            .unwrap()
+            .is_some());
+    }
+
+    #[test]
+    fn legacy_ai_row_promotes_to_provider_slot_and_backfills_own_key() {
+        let store = JsonAuthStore::open_memory().unwrap();
+        let u = store.create_user("legacy@ex.com", Some("h"), None).unwrap();
+        let now = now_secs();
+        {
+            let mut g = store.state.lock().unwrap();
+            g.credentials.insert(
+                format!("{}::ai", u.id),
+                CredentialRecord {
+                    user_id: u.id.clone(),
+                    kind: "ai".into(),
+                    ciphertext: "legacy-ct".into(),
+                    last4: "leg4".into(),
+                    provider: "openai".into(),
+                    created_at: now,
+                    updated_at: now,
+                },
+            );
+        }
+        let rec = store
+            .get_credential(&u.id, "ai", "openai")
+            .unwrap()
+            .unwrap();
+        assert_eq!(rec.last4, "leg4");
+        assert!(store
+            .state
+            .lock()
+            .unwrap()
+            .credentials
+            .get(&format!("{}::ai", u.id))
+            .is_none());
+        let s = store.get_settings(&u.id).unwrap().unwrap();
+        assert_eq!(s.ai_power_path.as_deref(), Some("own_key"));
+        assert_eq!(s.ai_provider.as_deref(), Some("openai"));
+        assert!(s.ai_model.is_none());
+    }
+
+    #[test]
+    fn openai_compatible_legacy_is_not_a_trader_slot() {
+        let store = JsonAuthStore::open_memory().unwrap();
+        let u = store.create_user("compat@ex.com", Some("h"), None).unwrap();
+        let now = now_secs();
+        {
+            let mut g = store.state.lock().unwrap();
+            g.credentials.insert(
+                format!("{}::ai", u.id),
+                CredentialRecord {
+                    user_id: u.id.clone(),
+                    kind: "ai".into(),
+                    ciphertext: "compat-ct".into(),
+                    last4: "cmp4".into(),
+                    provider: "openai_compatible".into(),
+                    created_at: now,
+                    updated_at: now,
+                },
+            );
+        }
+        let listed = store.list_credentials(&u.id, "ai").unwrap();
+        assert!(listed.iter().all(|c| c.provider == "openai_compatible"));
+        assert!(store
+            .get_credential(&u.id, "ai", "anthropic")
+            .unwrap()
+            .is_none());
+        let s = store.get_settings(&u.id).unwrap();
+        assert!(s.is_none() || s.unwrap().ai_power_path.is_none());
     }
 
     #[test]
@@ -685,7 +986,8 @@ mod tests {
 
     #[test]
     fn a_corrupt_settings_blob_degrades_to_defaults_without_overwriting_the_original() {
-        let dir = std::env::temp_dir().join(format!("auth_store_test_corrupt_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("auth_store_test_corrupt_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("corrupt.json");
         let malformed = b"{ not valid json at all";
@@ -714,13 +1016,25 @@ mod tests {
 
         // Zero IS a legal stored value — never coerced to "unset".
         let s1 = store
-            .update_settings(&u.id, &SettingsPatch { risk_account_size: Some(Some(0.0)), ..Default::default() })
+            .update_settings(
+                &u.id,
+                &SettingsPatch {
+                    risk_account_size: Some(Some(0.0)),
+                    ..Default::default()
+                },
+            )
             .unwrap();
         assert_eq!(s1.risk_account_size, Some(0.0));
 
         // Clearing (inner None) is a DIFFERENT, distinct state from "set to zero".
         let s2 = store
-            .update_settings(&u.id, &SettingsPatch { risk_account_size: Some(None), ..Default::default() })
+            .update_settings(
+                &u.id,
+                &SettingsPatch {
+                    risk_account_size: Some(None),
+                    ..Default::default()
+                },
+            )
             .unwrap();
         assert_eq!(s2.risk_account_size, None);
     }

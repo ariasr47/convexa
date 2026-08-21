@@ -67,11 +67,15 @@ pub async fn get_export(
                 &snap.contracts,
                 snap.gex_spot,
                 chrono::Utc::now(),
-                DteWindow { min: min_dte, max: max_dte },
+                DteWindow {
+                    min: min_dte,
+                    max: max_dte,
+                },
                 CandidateBudget::Handoff,
                 false,
                 &SnapshotMeta {
-                    as_of_iso: chrono::DateTime::from_timestamp(snap.cached_at, 0).map(|d| d.to_rfc3339()),
+                    as_of_iso: chrono::DateTime::from_timestamp(snap.cached_at, 0)
+                        .map(|d| d.to_rfc3339()),
                     session_basis: Some(snap.market_phase.as_str().to_string()),
                 },
             );
@@ -85,11 +89,19 @@ pub async fn get_export(
     let cookie = cookie_opt(&headers);
     let user = state.auth.resolve_session(cookie.as_deref()).user;
     let risk_inputs = match user.as_ref().and_then(|u| state.auth.get_settings(u).ok()) {
-        Some(settings) => serde_json::to_value(settings.risk_inputs).unwrap_or_else(|_| not_set_risk_inputs()),
+        Some(settings) => {
+            serde_json::to_value(settings.risk_inputs).unwrap_or_else(|_| not_set_risk_inputs())
+        }
         None => not_set_risk_inputs(),
     };
 
-    Ok(Json(build_export(&sym, &bundle, q.persona_id.as_deref(), candidates, risk_inputs)))
+    Ok(Json(build_export(
+        &sym,
+        &bundle,
+        q.persona_id.as_deref(),
+        candidates,
+        risk_inputs,
+    )))
 }
 
 /// GET /api/recommendation/status/{ticker} — always 200 when bundle exists.
@@ -111,13 +123,10 @@ pub async fn get_status(
     )
     .await?;
     let cookie = cookie_opt(&headers);
-    let user = state
-        .auth
-        .resolve_session(cookie.as_deref())
-        .user;
+    let user = state.auth.resolve_session(cookie.as_deref()).user;
     let resolved = resolve_llm_key(&state, user.as_ref());
     let ai = bundle.get("ai_eval");
-    Ok(Json(status_payload(ai, &resolved)))
+    Ok(Json(status_payload(ai, &resolved, user.is_some())))
 }
 
 /// POST /api/positions/sim-trade/gate — auth gate only.
@@ -125,12 +134,19 @@ pub async fn sim_trade_gate(State(state): State<AppState>, headers: HeaderMap) -
     if let Err(r) = require_user(&state, &headers) {
         return r;
     }
-    (StatusCode::OK, Json(serde_json::json!({ "authorized": true }))).into_response()
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({ "authorized": true })),
+    )
+        .into_response()
 }
 
 /// Helper: resolve optional session without failing (for status free-use fields later).
 #[allow(dead_code)]
 pub fn optional_user(state: &AppState, headers: &HeaderMap) -> bool {
     let cookie = cookie_opt(headers);
-    state.auth.resolve_session(cookie.as_deref()).authenticated()
+    state
+        .auth
+        .resolve_session(cookie.as_deref())
+        .authenticated()
 }

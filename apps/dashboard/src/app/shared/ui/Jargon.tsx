@@ -6,7 +6,8 @@
  * Reusable across surfaces (Landing value props, the Ticker tiles, etc.): the caller supplies the
  * VERBATIM glossary copy (the honesty floor lives in the copy, not here).
  */
-import { Box, Tooltip } from '@mui/material';
+import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
 
 export interface JargonProps {
   /** The visible (underlined) term. */

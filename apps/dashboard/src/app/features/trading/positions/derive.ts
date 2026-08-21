@@ -102,7 +102,7 @@ export function applySort(
   dir: SortDir,
   sessionDeltaOf: SessionDeltaLookup = NO_SESSION_DELTA,
 ): PositionView[] {
-  return [...views].sort((a, b) => {
+  return views.toSorted((a, b) => {
     const va = sortValue(a, key, sessionDeltaOf);
     const vb = sortValue(b, key, sessionDeltaOf);
     let cmp: number;

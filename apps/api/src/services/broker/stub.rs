@@ -9,11 +9,7 @@ const STUB_ACCOUNT_REF: &str = "57ab0000ac0000ef";
 pub struct StubProvider;
 
 impl PositionsProvider for StubProvider {
-    fn fetch_book(
-        &self,
-        _credential: &BrokerCredential,
-        _account_ref: Option<&str>,
-    ) -> BrokerBook {
+    fn fetch_book(&self, _credential: &BrokerCredential, _account_ref: Option<&str>) -> BrokerBook {
         let arm = std::env::var("STUB_BROKER_BOOK")
             .unwrap_or_else(|_| "ok".into())
             .trim()

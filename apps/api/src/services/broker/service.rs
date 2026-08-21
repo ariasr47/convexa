@@ -173,8 +173,7 @@ impl BrokerBookService {
                 }
 
                 let fetched = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    self.provider
-                        .fetch_book(&cred, prior_ref.as_deref())
+                    self.provider.fetch_book(&cred, prior_ref.as_deref())
                 }))
                 .ok();
 
@@ -234,12 +233,7 @@ impl BrokerBookService {
         }
     }
 
-    fn assemble(
-        &self,
-        st: &UserState,
-        basis: &str,
-        fallback_reason: Option<&str>,
-    ) -> BrokerBook {
+    fn assemble(&self, st: &UserState, basis: &str, fallback_reason: Option<&str>) -> BrokerBook {
         let last_at = st.last_attempt_ts.map(iso);
         let outcome = if last_at.is_some() {
             st.last_attempt_outcome.clone()

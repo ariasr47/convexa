@@ -32,20 +32,21 @@ pub async fn get_tracked_contract(
         "c" | "call" => ContractType::Call,
         "p" | "put" => ContractType::Put,
         _ => {
-            return Err(AppError::Config(
-                "right must be 'call' or 'put'.".into(),
-            ));
+            return Err(AppError::Config("right must be 'call' or 'put'.".into()));
         }
     };
     // Map config 400-style to 422 for FE contract
     let right_label = if right.is_call() { "call" } else { "put" };
-    let exp10 = q.expiration.get(..10).unwrap_or(q.expiration.as_str()).to_string();
+    let exp10 = q
+        .expiration
+        .get(..10)
+        .unwrap_or(q.expiration.as_str())
+        .to_string();
 
     // Prefer warm analytics (full chain kept on snapshot); else live compute.
     let (snap_opt, _) = load_analytics(&state, &sym, None, None, false).await?;
-    let snap = snap_opt.ok_or_else(|| {
-        AppError::NotFound(format!("No option-chain data for {sym}"))
-    })?;
+    let snap =
+        snap_opt.ok_or_else(|| AppError::NotFound(format!("No option-chain data for {sym}")))?;
 
     let match_c = snap.contracts.iter().find(|c| {
         c.expiration_key() == exp10

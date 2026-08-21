@@ -1,20 +1,25 @@
+import { GROK_SUBSCRIPTION_LABEL, ownKeyChip } from '@/features/auth/aiProviderLabels';
+import { typographyTokens } from '@/shared/theme/tokens';
 import type { RecResponse, TickerBundle } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Alert, Box, Button, Chip, Divider, Stack, Typography } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { AccessibleHelp } from './AccessibleHelp';
 import { CapAnnotation } from './CapAnnotation';
 import {
-  BYO_KEY,
   COPY,
   dteWindowCaption,
-  FREE_USES_TOTAL_FALLBACK,
-  freeUsesChip,
   incompleteAction,
   literalCopy,
   MAX_RISK_TIP,
-  OWN_KEY_CHIP,
   PLAN_FIELD_LABEL,
   PLAN_FIELDS_NOT_CHECKED,
+  POWERING,
   staleBornStrip,
   staleStrip,
   SUPERSEDED_STRIP,
@@ -96,8 +101,10 @@ function RiskField({
 }
 
 export function Provenance({ rec }: { rec: RecResponse }) {
-  const free = rec.key_source === 'shared_admin' && rec.remaining_free_uses != null;
-  const own = rec.key_source === 'own_key';
+  const source = rec.key_source;
+  const own = source === 'own_key';
+  const subscription = source === 'grok_subscription';
+  const model = rec.model?.trim() ? rec.model.trim() : null;
   return (
     <Stack
       direction="row"
@@ -123,31 +130,43 @@ export function Provenance({ rec }: { rec: RecResponse }) {
       <AccessibleHelp label="Snapshot provenance help" text={COPY.tooltip.asOf} />
       <Chip size="small" variant="outlined" label={COPY.provenance.sim} />
       <AccessibleHelp label="Simulated advisory help" text={COPY.tooltip.advisory} />
-      {free && (
+      {subscription && (
         <>
           <Chip
             size="small"
             variant="outlined"
-            label={freeUsesChip(
-              rec.remaining_free_uses as number,
-              rec.free_uses_total ?? FREE_USES_TOTAL_FALLBACK,
-            )}
+            label={GROK_SUBSCRIPTION_LABEL}
+            data-testid="ai-rec-path-chip"
           />
-          <AccessibleHelp label="Shared key allowance help" text={BYO_KEY.freeUses.tooltip} />
+          <AccessibleHelp label="Grok subscription help" text={POWERING.subscription.tooltip} />
         </>
       )}
       {own && (
         <>
-          <Chip size="small" variant="outlined" label={OWN_KEY_CHIP} />
-          <AccessibleHelp label="Own key help" text={BYO_KEY.ownKey.tooltip} />
+          <Chip
+            size="small"
+            variant="outlined"
+            label={ownKeyChip(rec.provider)}
+            data-testid="ai-rec-path-chip"
+          />
+          <AccessibleHelp label="Own key help" text={POWERING.ownKey.tooltip} />
         </>
+      )}
+      {model && (
+        <Chip
+          size="small"
+          variant="outlined"
+          label={`Model · ${model}`}
+          data-testid="ai-rec-model-chip"
+          sx={{ fontFamily: typographyTokens.monoFontFamily }}
+        />
       )}
       <ProvenanceChip riskInputs={rec.sent?.risk_inputs} />
     </Stack>
   );
 }
 
-function DecisionContext({ rec, dataAge }: { rec: RecResponse; dataAge: string | null }) {
+function DecisionContext({ rec }: { rec: RecResponse }) {
   return (
     <Box data-testid="decision-context">
       {rec.scenario && (
@@ -160,7 +179,8 @@ function DecisionContext({ rec, dataAge }: { rec: RecResponse; dataAge: string |
 }
 
 function DecisionMetadata({ rec, bundle }: { rec: RecResponse; bundle: TickerBundle | null }) {
-  const s = rec.strategy!;
+  const s = rec.strategy;
+  if (!s) return null;
   const strikeText =
     s.strikes
       ?.filter(Number.isFinite)
@@ -261,7 +281,8 @@ export function DecisionCard({
   onRefresh,
   onDismiss,
 }: DecisionCardProps) {
-  const strategy = rec.strategy!;
+  const strategy = rec.strategy;
+  if (!strategy) return null;
   const isTrade = strategy.decision === 'trade';
   const reasoning = deriveReasoning(strategy);
   const missing = presentation.missingPositionFields;
@@ -295,7 +316,7 @@ export function DecisionCard({
       data-rec-persona-id={rec.persona.id}
       data-rec-persona-name={rec.persona.name}
     >
-      <DecisionContext rec={rec} dataAge={dataAge} />
+      <DecisionContext rec={rec} />
       <Provenance rec={rec} />
       {(presentation.resultState === 'stale_newer_snapshot' ||
         presentation.resultState === 'stale_at_generation' ||

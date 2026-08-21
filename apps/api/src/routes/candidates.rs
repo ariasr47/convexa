@@ -32,9 +32,12 @@ pub async fn get_candidates(
     // handed to the SELECTOR below, never to `load_analytics` (AC-13 trap — see B6/B7).
     let (snap_opt, _) = load_analytics(&state, &sym, None, None, false).await?;
     // 404 is reserved for "this ticker has no chain at all" (the /api/contract carve-out).
-    let snap = snap_opt.ok_or_else(|| AppError::NotFound(format!("No option-chain data for {sym}")))?;
+    let snap =
+        snap_opt.ok_or_else(|| AppError::NotFound(format!("No option-chain data for {sym}")))?;
     if snap.contracts.is_empty() {
-        return Err(AppError::NotFound(format!("No option-chain data for {sym}")));
+        return Err(AppError::NotFound(format!(
+            "No option-chain data for {sym}"
+        )));
     }
     let budget = match q.budget.as_deref() {
         Some("prompt") => CandidateBudget::Prompt,
@@ -45,7 +48,10 @@ pub async fn get_candidates(
         &snap.contracts,
         snap.gex_spot,
         chrono::Utc::now(),
-        DteWindow { min: q.min_dte, max: q.max_dte },
+        DteWindow {
+            min: q.min_dte,
+            max: q.max_dte,
+        },
         budget,
         false, // computed for display / hand-off — NOT sent to the model
         &SnapshotMeta {
@@ -53,5 +59,7 @@ pub async fn get_candidates(
             session_basis: Some(snap.market_phase.as_str().to_string()),
         },
     );
-    Ok(Json(crate::services::rec_inputs::candidate_envelope(&sym, &set, age)))
+    Ok(Json(crate::services::rec_inputs::candidate_envelope(
+        &sym, &set, age,
+    )))
 }

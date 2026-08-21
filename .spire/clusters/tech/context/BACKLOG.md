@@ -30,6 +30,231 @@
 
 ---
 
+## Program — keep-paid-books (owner-directed 2026-08-19)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Grouping only — **not** a pipeline feature. Owner said put all seven briefing
+recommendations in the pool and work them **one by one**. Each build still
+earns its own `BRIEF.md` via GATE I. Theme: `prove-the-edge`.
+Outcome: the $199 Options book we already fetch survives as a dated research
+corpus, then we measure it; do **not** buy hist-chain to paper over prune.
+
+| # | Item | Shape | Status |
+|---|---|---|---|
+| 1 | `session-chain-archive` — 1 book / symbol / ET day prune cannot delete | pipeline feature | **SHIPPED 2026-08-20** |
+| 2 | `liquid-names-session-capture` — SPY/QQQ/IWM session book even if gex-cache is warm | pipeline feature | **SHIPPED 2026-08-20** |
+| 3 | `paid-book-join-smoke` — run `batch-backtest` then `replay-outcome-join` on a real corpus | chore (no BRIEF) | **DONE 2026-08-20** |
+| 4 | `weekly-digest-lab-ritual` — `join-outcomes` → `score-lab --horizon 1d` on SPY/QQQ/IWM | habit (runbook exists) | **RAN 2026-08-20** (keep weekly) |
+| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20** |
+| 6 | `ai-rec-lab-p4` — frozen AI export packs / multi-model lab | pipeline feature (later) | blocked-on boring P2–P3 + #5 |
+| 7 | `chain-archive-object-store` — session bodies off app-Postgres BYTEA | pipeline feature (later) | **SHIPPED 2026-08-20** |
+
+Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
+
+## Last GATE I — 2026-08-20 (canon repair → `project-context-s2-is-python-era`)
+<!-- atlas: theme=the-machine horizon=now -->
+Owner picked Architecture canon after keep-paid-books builds drained.
+**Chosen → `project-context-s2-is-python-era`.** Inline conductor repair (no council —
+the file being repaired is what a council would read). `PROJECT_CONTEXT.md` §2 backend
+rewritten against `api-rust` + `quant-engine`; Python named only as archived. §2 split
+into `## 2` backend (~60 lines) + `## 2b` frontend (~131) for shard size.
+**No product code.** Push still deploy.
+
+## Last GATE S — 2026-08-20 (`chain-archive-object-store` — session bodies off OLTP)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (keep-paid-books #7) → council (D1=A exact shipped copy) → PLAN → both
+lanes → **GATE Q PASS 25/0/0**. Archived to `_archive/chain-archive-object-store/`.
+Conformance re-pin promoted. **No new canon graduation expected.** Working tree uncommitted;
+push is deploy. Program remaining: #5 wait (clock 2026-08-20) · #6 P4 blocked-on #5.
+
+## Last GATE S — 2026-08-20 (`liquid-names-session-capture` — SPY/QQQ/IWM despite warm cache)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (keep-paid-books #2) → council (D1=A same-day retry) → PLAN (B1–B8 · F1–F2)
+→ both lanes → **GATE Q PASS 25/0/0**. Archived to `_archive/liquid-names-session-capture/`.
+Conformance re-pin promoted. **No new canon graduation expected.** Working tree uncommitted;
+push is deploy. **Next in program → `paid-book-join-smoke` (chore).**
+
+## Last GATE S — 2026-08-20 (`session-chain-archive` — prune-proof session books)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (keep-paid-books #1) → council (D1=A mandatory `source_as_of`) →
+PLAN (B1–B8 · F1–F2) → both lanes → **GATE Q PASS 27/0/0**. Archived to
+`_archive/session-chain-archive/`. Conformance JSON promoted. **No new canon graduation
+expected** (tally next). Working tree still uncommitted; push is deploy.
+**Next in program → `liquid-names-session-capture`.**
+
+## Last GATE I — 2026-08-20 (keep-paid-books #2 → `liquid-names-session-capture`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner `ship it and continue`. **Chosen → `liquid-names-session-capture`.** Brief at
+`.spire/clusters/tech/contracts/liquid-names-session-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** #1 shipped a prune-proof archive, but a warm gex-cache never hands a
+`VendorBundle` to capture — QA observed QQQ as honest `no session book`. The names
+score-lab already uses are the ones missing paid session books. Do not bundle object-store
+or hist-chain. Cite live Rust.
+
+## Last GATE I — 2026-08-19 (keep-paid-books program → `session-chain-archive`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner: put all 7 briefing recommendations in the backlog and work them 1-by-1.
+**Chosen → `session-chain-archive`.** Brief at
+`.spire/clusters/tech/contracts/session-chain-archive/BRIEF.md`.
+**Backend / research; trader UI out of scope (`NO_UI_CHANGE` expected).**
+**Why it won:** the 48-slot cap is deleting paid Options books the same day we
+fetch them. Nothing downstream (#2 force-capture, #3 join smoke, #5 weeks of
+corpus, #7 object store) matters until a session copy outlives prune.
+`project-context-s2-is-python-era` still unpaid — this BRIEF cites live Rust.
+
+## Last GATE I — 2026-08-18 (d) (after back-test eval → `replay-outcome-join`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` (next **build**, not a docs runbook) after the P0–P3 evaluation.
+**Chosen → `replay-outcome-join`.** **SHIPPED 2026-08-19** (see Last GATE S below).
+Brief archived at `_archive/replay-outcome-join/BRIEF.md`.
+
+## Last GATE S — 2026-08-19 (`replay-outcome-join` — labels on replayed paid books)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (`go` after back-test eval) → council (D1=A capture-time `p0`) →
+PLAN (B1–B10 · F1) → crash-recovery GATE R → both lanes → **GATE Q PASS 35/0/0**.
+Archived to `_archive/replay-outcome-join/`. Conformance re-pin of `_research` routes
+promoted. **No new canon graduation expected** (tally next). Working tree still
+uncommitted; push is deploy. Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE S — 2026-08-18 (`batch-backtest-cli` — P3 replay of stored books)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (`go` after capture) → council (D1=A refuse hollow split) → PLAN
+(B1–B9 · F1) → both lanes → **GATE Q PASS 28/0/0**. Archived to
+`_archive/batch-backtest-cli/`. Conformance re-pin of `_research` routes promoted.
+**No new canon graduation.** Working tree still uncommitted; push is deploy.
+Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-18 (c) (queue-drain after capture ship → `batch-backtest-cli`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Pipeline drained after `chain-snapshot-capture` GATE S. Owner said `go`.
+**Chosen → `batch-backtest-cli`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/batch-backtest-cli/`. Brief at
+`.spire/clusters/tech/contracts/_archive/batch-backtest-cli/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** capture exists so the $199+$199 subscriptions can be measured, not only
+served live. P2 `score-lab` still ranks digested samples; it never reloads a stored chain.
+P3 is now feasible. Do **not** buy hist-chain. `project-context-s2-is-python-era` still
+unpaid — this BRIEF cites live Rust; do not bundle.
+
+## Last GATE S — 2026-08-18 (`chain-snapshot-capture` — keep paid Massive snapshots)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Full pipeline: GATE I (owner-named) → council (D1=A every paid fetch; dual retention 14d+48) →
+PLAN (B1–B9 · F1–F2) → both lanes → **GATE Q PASS 28/0/0**. Archived to
+`_archive/chain-snapshot-capture/`. Conformance JSON promoted. **No new canon graduation.**
+P3 batch-backtest CLI is now unblocked. Working tree still uncommitted; push is deploy.
+Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-18 (owner: keep paid Massive snapshots → `chain-snapshot-capture`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner-directed after `ai-providers` ship. **Chosen → `chain-snapshot-capture`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/chain-snapshot-capture/`. Brief at
+`.spire/clusters/tech/contracts/_archive/chain-snapshot-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** Stocks $199 + Options $199/mo is not sustainable without keeping what those
+calls already return. P0 already saves a digested structure row and a latest-wins
+`scan_bundles` cache; the live `VendorBundle` is discarded. Batch replay (P3) is blocked
+on this. Do **not** buy a new Massive product; do **not** invent hist-chain endpoints.
+
+## Last GATE S — 2026-08-18 (`ai-providers` — multi-provider keys + named model)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Full pipeline: GATE I (owner-named) → council (D1–D7; D7 = user's Grok subscription) → PLAN
+(B1–B10 · F1–F9) → both lanes (FE crashed once at ~249k, resumed) → **GATE Q PASS 26/0/4**.
+Archived to `_archive/ai-providers/`. Conformance JSON promoted. **No new canon graduation.**
+New watch-list key `user-subscription-not-operator-pool`. AC-9/10/14/15 remain blocked-on
+AC-27. Working tree still uncommitted; push is deploy — owner call. Pipeline drained;
+next move is GATE I (`go`).
+
+## Last GATE I — 2026-08-17 (b) (owner request: multi-provider keys + Grok pool + model choice → `ai-providers`)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner-directed after `rec-plan-scope-caption` ship. **Chosen → `ai-providers`.**
+**✓ SHIPPED + ARCHIVED 2026-08-18** → `_archive/ai-providers/`. Brief at
+`.spire/clusters/tech/contracts/_archive/ai-providers/BRIEF.md`. **Both lanes.**
+**Why it won:** owner named it. Settings is still Anthropic-only; the server already
+accepts `provider` on the key PUT and can call four vendors, but the trader cannot pick a
+model and there is no Grok OAuth / Convexa sub-pool path. Decision-impact: which model's
+read they act on, and whether they pay BYO when a cheaper pool was intended.
+**Do not invent** an xAI SuperGrok-subscription protocol — the asked path is "log in with
+Grok to use Convexa's cheaper pool." Architect names a buildable mechanism or blocks that
+arm. `project-context-s2-is-python-era` still unpaid; this BRIEF cites live Rust paths.
+
+## Hygiene 2026-08-20 (Vercel React review batch — not a pipeline feature)
+<!-- atlas: theme=the-machine horizon=now -->
+Owner asked for the hygiene batch after a Vite/React skill review. **Not GATE I.**
+Paid in this pass: (1) Vite analogue of `optimizePackageImports` for `@mui/material`
+(`tools/vite-mui-path-imports.mjs`); (2) `cargo fmt -p api-rust -p quant-engine` so
+`--check` is green; (3) `ports:free` IPv6 (`netstat -ano` both families; never :8001);
+(4) `ci-standing-red` retired — local `npm run ci` analogue + e2e 52/52 + cargo test
+green 2026-08-20; origin Frontend job already green 2026-08-16.
+**Follow-on four, owner-named same day:** `mui-dev-eslint-path-imports` (source rewrite
++ ESLint lock + VS Code auto-import exclude; Vite plugin stays out of `vite.config.mts`
+because `tools/` is outside the dashboard module boundary) · `god-module-split-trade-entry-portfolio`
+(FE only: `openTypes` / `useContractLive` / `FillModeToggle` / `AiRecPanelBlocks`) ·
+`widget-variant-not-boolean` (`bodyPad` + `bodyVariant`, no `noBodyPad`) ·
+`toSorted-on-new-sorts` (production sorts + `tsconfig` `lib: es2023`) ·
+`light-theme-first-paint` (blocking `data-theme` + paper canvas) ·
+`eslint-warning-hygiene` (dashboard lint 0 warnings). Remaining review
+findings stay in §B (`hygiene-review-2026-08-20` cluster) so GATE I can resurface
+them. `project-context-s2-is-python-era` was repaired the same calendar day (canon
+§2 Axum/`api-rust`).
+
+## Last GATE S — 2026-08-17 (b) (`rec-plan-scope-caption` — §9.5 half two closed)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Full pipeline: GATE I → council (7 conflicts, D1–D4, S2 Critical none) → PLAN (B1 · F1–F5 · V1–V5)
+→ frontend only → **GATE Q PASS 19/19**. Archived to `_archive/rec-plan-scope-caption/`.
+`NO_BACKEND_CHANGE` — no conformance JSON promoted. Product `fc3bb8c`–`a944bd2`.
+**`ai-rec-grounding` SPEC §9.5 is now recorded closed** (half one at `rec-absence-literals-hole`;
+half two here). S2 residuals (copy second clause vs sibling honesty lines; grid `Entry` halo)
+shipped as written — they are not §9.5. Pipeline drained; next move is GATE I (`go`).
+
+## Last GATE S — 2026-08-17 (owner-directed archive of two live FE folders)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Owner said `archive both` after a boot that had read stale GATE V / ship-HOLD sheets.
+**`ticker-visual-collisions`** and **`ai-rec-decision-card`** moved to `_archive/`. Both are
+`NO_BACKEND_CHANGE` (no conformance JSON to promote). Product already on `main`; HEAD `593f601`
+CI Frontend + Conformance + Deploy smoke green (2026-08-16). **No new canon graduation** expected
+(reaffirmations of already-promoted keys). **§9.5 half two stays open** — do not record it closed.
+Pipeline drained; next move is GATE I (`go`) or a named feature.
+
+## Last GATE I — 2026-08-17 (queue-drain cull → `rec-plan-scope-caption`; four stale alarms cleared)
+<!-- atlas: theme=trust-the-signal horizon=now -->
+Pipeline drained (`contracts/` held only `_archive/` + `_discovery-pack.md`; `IN_FLIGHT` empty;
+`main` @ `593f601` = `origin/main`). Owner-directed archive of `ticker-visual-collisions` +
+`ai-rec-decision-card` had just closed. Discovery pack again elided the BACKLOG **Pool (1173
+lines)** and the **Ledger (601 lines)** as over-budget — escape hatch used; both read directly.
+**Chosen → `rec-plan-scope-caption`.** **✓ SHIPPED + ARCHIVED 2026-08-17 (b)** →
+`_archive/rec-plan-scope-caption/` (FE-only; GATE Q 19/19). Brief at
+`.spire/clusters/tech/contracts/_archive/rec-plan-scope-caption/BRIEF.md` (full `Considered:`).
+**Frontend-only expected (`NO_BACKEND_CHANGE`).**
+**Why it won:** it is the only survivor whose failure mode is a **wrong trade**. Half one of
+§9.5 (false `—` on absent plan fields) closed at `rec-absence-literals-hole`; half two — a
+reader inferring *"no clause means checked"* onto **stated** structure / trigger / horizon /
+conviction — was future-dated when that council cut the caption on line-budget. The
+decision-card ship moved long-form into a drawer, which is new **placement** evidence; it did
+**not** remove the always-on condition: `recommendation.rs:841-849` still emits `trade` with
+empty strikes and a stated structure/trigger whenever a setup exists. That constraint binds
+the design — the caption must not become standing chrome on `local_rules`.
+**Queue honesty (code-verified this gate — do not re-open as stale):**
+1. **S5c is NOT resolved on the live backend.** `docs/TECH_DEBT.md` ticks it at `86adf3b`,
+   which patched Python `main.py` / `live.py`. Rust `config.rs` never reads
+   `MAX_LIVE_SESSIONS` / `MAX_LIVE_SUBSCRIBERS` (decoy lines in `.env.example`).
+   `routes/stream.rs` caps **symbols per request** (120), not concurrent subscribers.
+   Strongest N/A-class runner-up; do not start it until `project-context-s2-is-python-era`
+   is its own reviewable diff.
+2. **`signed-out-refused-affordances` SHIPPED 2026-08-10** (IMPROVEMENT_BACKLOG 5.1,
+   `shared/ui/Refused`). The §A "displaced to L4" row is stale.
+3. **`split-decision-log` CLOSED.** `features/trading/model/store.ts` is a read-only
+   legacy harvest source; write paths were deleted at the v3 cutover.
+4. **The DTE `?` / containment caption is CLOSED** in `ai-rec-decision-card`
+   (`dteWindowCaption` requires both finite bounds; wording is a request property).
+**Flagged RISING for a FOURTH consecutive gate, still not chosen:**
+`degradation-visibility` (decision-impact N/A). Do not re-derive a fifth time — it needs
+an owner override if it is ever to run.
+**Hygiene batch 2026-08-20:** `ci-standing-red` retired · `ports-free-is-ipv4-only` closed
+· `cargo-fmt-whole-crate-drift` closed. The :8000 *access-denied orphan* can still outlive
+`taskkill` (Windows file lock) — see §B `ports-orphan-access-denied`.
+**X4 (ledger checkpoint) still blocked** on N≥20 closed outcomes.
+**`project-context-s2-is-python-era` repaired 2026-08-20** (canon §2).
+
 ## Last GATE I — 2026-08-14 (pre-registered successor re-tested and CONFIRMED → `rec-absence-literals-hole`; scope revised UP to six fields + both lanes)
 <!-- atlas: theme=trust-the-signal horizon=now -->
 Pipeline drained (`contracts/` held only `_archive/`; `IN_FLIGHT.md` one row, `main` @ GATE S, no
@@ -806,7 +1031,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
 > **⏭ The queue is owned by the 2026-08-01 roadmap adoption above** (`docs/ROADMAP_2026-08.md`):
 > `index-first-defaults` → `broker-connect` (SnapTrade) → `vol-normalized-gex` → `alerts` → ledger
 > checkpoint. Items below remain in the pool but are displaced by it.
-- **DISPLACED to L4 (was ⏭ NEXT) — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
+- **✓ SHIPPED 2026-08-10 — `signed-out-refused-affordances`** (IMPROVEMENT_BACKLOG 5.1;
+  `shared/ui/Refused` on signed-out write CTAs). The L4-displacement row below is provenance only.
+  *(original entry:)* **DISPLACED to L4 (was ⏭ NEXT) — `signed-out-refused-affordances`** (owner-directed 2026-07-28, straight off the
   `positions-legs` manual-verification recon). **Small, FE-only, GATE-V shaped.**
   **The defect:** on `/positions` while signed out, `+ Open simulated position` renders as a **normal,
   fully-enabled CTA** — not greyed, focusable, no tooltip. Clicking it calls
@@ -955,9 +1182,157 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   (`OPEN_THREADS` §7)
 
 ### B. Ready candidates (feasible, small, unscheduled)
+- **`project-context-shard-sizes` — split PROJECT_CONTEXT §5/§6** — `RAISED 2026-08-13, still
+  <!-- atlas: theme=the-machine horizon=next -->
+  unpaid after the 2026-08-20 hygiene batch (that batch did Vite barrels / cargo fmt /
+  ports IPv6 / retired ci-standing-red — **not** this split). §5 and §6 still exceed the
+  150-line shard; packs balloon when a feature tags into them. *Value M · Effort S–M.*
+  Decision-impact cull **N/A** (system-of-building). Hygiene-review leftover #5.
+- **`mui-dev-eslint-path-imports` — optional follow-on to the Vite barrel rewrite** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on)** — dashboard source rewritten to
+  `import Box from '@mui/material/Box'` (one-shot `tools/rewrite-mui-path-imports.mjs`);
+  ESLint `@typescript-eslint/no-restricted-imports` forbids `@mui/material` and
+  `@mui/icons-material` barrels (`allowTypeImports: true`); `.vscode/settings.json`
+  `typescript.preferences.autoImportSpecifierExcludeRegexes` = `^@mui/[^/]+$`.
+  `useTheme` / `ThemeProvider` come from `@mui/material/styles` (those paths are not
+  under `@mui/material/`). Vite transform plugin is **not** wired into
+  `vite.config.mts` (`tools/` import violates `@nx/enforce-module-boundaries`);
+  the lock is source + ESLint. *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20 (Vercel review)`. Transform plugin is in; source still writes
+  `from '@mui/material'`. Optional: ESLint `no-restricted-imports` on `^@mui/[^/]+$` plus
+  VS Code `autoImportSpecifierExcludeRegexes` so new files don't re-feed the barrel.
+  Not required for prod (Rolldown tree-shakes). *Value L · Effort S.*
+- **`ai-key-status-inflight-dedupe` — one in-flight GET /api/auth/ai-key per page** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `NEW 2026-08-20 (Vercel client-swr-dedup analogue)`. Settings + Ask-AI both call
+  `getAiKeyStatus()`. No SWR (canon: no wholesale query-lib). A module-level in-flight
+  Map on that one endpoint is enough. *Value L–M · Effort S.* Decision-impact **N/A**.
+- **`light-theme-first-paint` — anonymous/light-pref users can flash dark** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on)** — blocking inline script in `index.html`
+  sets `html[data-theme]` + `theme-color` from `convexa.theme-paint` (last resolved
+  mode) else `convexa.uiprefs.v1` / legacy `gammaflow.*`. `styles.css` paints paper
+  when `data-theme=light`, ink otherwise (AC-A3 anonymous / no-JS stays dark).
+  `AppThemeProvider` writes the paint cache after who-am-I (not into uiprefs, AC-F2).
+  Static meta remains `#0B0F17`. Hexes pinned to palette canvas tokens in
+  `firstPaintTheme.spec.ts`. *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `NEW 2026-08-20 (Vercel rendering-hydration-no-flicker analogue; CSR not SSR)`.
+  `index.html` is dark; `AppThemeProvider` applies the pref after who-am-I. Tiny blocking
+  script on `<html>` class + `theme-color` would close it. *Value L · Effort S.*
+- **`s5c-live-subscriber-caps` — Rust stream still caps symbols-per-request, not subscribers** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `RECONFIRMED 2026-08-20`. TECH_DEBT ticks S5c at a Python patch; `routes/stream.rs`
+  caps 120 symbols per request. Do not inherit the Python-era "fixed" tick.
+  *Value M · Effort S–M.*
+- **`god-module-split-trade-entry-portfolio` — leftover 3.4** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on, FE)** — extracted
+  `positions/openTypes.ts` + `positions/useContractLive.ts` from `usePortfolio.ts`
+  (hook re-exports types/refusals); `tradeEntry/FillModeToggle.tsx` from
+  `TradeEntryDialogView.tsx`; `ai-rec/AiRecPanelBlocks.tsx` from `AiRecPanel.tsx`.
+  `usePortfolio` still re-exports so callers do not fork. **Still unpaid:**
+  `services/recommendation.rs` (~1866 lines) — split on next churn, not this pass.
+  *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20`. Ticker path already split. Remaining: `TradeEntryDialogView.tsx`,
+  `usePortfolio.ts`, `AiRecPanel.tsx`, `recommendation.rs`. Split **on churn**, not
+  aesthetics. *Value L until a feature has to edit them · Effort M.*
+- **`god-module-split-recommendation-rs` — leftover of leftover 3.4** —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20`. FE god-modules split same day. `apps/api/src/services/recommendation.rs`
+  is still ~1866 lines. Split **on churn**, not aesthetics. *Value L until a feature
+  has to edit it · Effort M.*
+- **`eslint-warning-hygiene` — 149 dashboard warnings, lint still exits 0** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on)** — 0 warnings. Specs: `no-non-null-assertion`
+  + `no-explicit-any` off (query-then-`!` is a test idiom). Product: unused disable,
+  unused bindings, real `!` narrowed (WebGL `requireGL`, rec.strategy guards, term
+  structure, create-order `onAct`), exhaustive-deps either used or explained
+  (`spotRef`). A new warning is now a new warning. *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20`. Almost all test `!` and a few exhaustive-deps. Not CI-red; still
+  trains people to ignore the log. *Value L · Effort S–M.*
+- **`toSorted-on-new-sorts` — dashboard has zero `toSorted()`** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on)** — production dashboard sorts converted
+  to `toSorted()` (orders store, grouping, derive/view, scanner, ticker, portfolio
+  hooks, archive, charts). Remaining `.sort(` is test-assertion only.
+  `tsconfig.app.json` / `tsconfig.spec.json` `lib` now include `es2023` so the
+  method types exist (was `es2022`/`dom` only). New sorts stay copy-safe by
+  convention. *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20 (Vercel js-tosorted)`. `orders/store.ts` sorts a fresh `Object.values`
+  array today (safe). Prefer `toSorted()` on any **new** sort of props/state.
+  *Value L · Effort S (convention, not a bug).*
+- **`widget-variant-not-boolean` — next Widget flag is a variant, not a fifth boolean** —
+  **✓ CLOSED 2026-08-20 (hygiene follow-on)** — `noBodyPad?: boolean` removed.
+  Independent named variants: `bodyVariant?: 'flush' | 'inset'` (surface) and
+  `bodyPad?: 'default' | 'none'` (padding). Call sites: GEX/term-structure/history
+  use `bodyPad="none"`; inset widgets keep `bodyVariant="inset"`. Widget spec
+  mutation-guards the prop names. `live?` stays a data-signal boolean, not a
+  variant. Next Widget flag is still a named variant, not a new boolean.
+  *(historical body retained:)* —
+  <!-- atlas: theme=the-machine horizon=later -->
+  `NEW 2026-08-20 (Vercel composition)`. `live?` / `noBodyPad?` / `span?` / chrome quiet
+  are fine. The *next* boolean on Widget becomes `Widget.Inset` / `Widget.Flush`.
+  Standing rule, not a feature. *Value L.*
+- **`owner-device-signoff` — IMPROVEMENT_BACKLOG 5.6 still open** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  Hardening shipped; e2e 393 is green; **owner phone + notch sign-off** is the hole
+  (`docs/DEVICE_REVIEW.md`). Habit/chore, not GATE I. *Value M · Effort S (owner).*
+- **`n1-push-deploys` — local main is ahead + dirty; push still deploys** —
+  <!-- atlas: theme=the-machine horizon=now -->
+  `REMINDER 2026-08-20`. Roadmap N1. Owner call, not a build. Do not push from a
+  hygiene pass.
+- **`x1-snaptrade-readonly` — SnapTrade import of the owner's real accounts** —
+  <!-- atlas: theme=prove-the-edge horizon=next -->
+  `NEW 2026-08-20 (roadmap X1 remainder)`. `broker-connect` shipped Webull-direct 2026-08-05;
+  SnapTrade (≤5 connections free, multi-broker) is the remaining rock. Triggers system-6
+  security review (first real-account connection). *Value H · Effort M.* Next real product
+  feature when the owner says go — not hygiene.
+- **`session-chain-archive` — one paid book per symbol per ET day, prune-proof** —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  **✓ SHIPPED + ARCHIVED 2026-08-20** → `_archive/session-chain-archive/`.
+  Program `keep-paid-books` #1. GATE Q 27/0/0. Conformance promoted.
+- **`liquid-names-session-capture` — SPY / QQQ / IWM always get a session book** —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  **✓ SHIPPED + ARCHIVED 2026-08-20** → `_archive/liquid-names-session-capture/`.
+  Program `keep-paid-books` #2. GATE Q 25/0/0. Live hits SPY/QQQ/IWM 2026-08-20.
+- **`paid-book-join-smoke` — first honest paid-book join on files we already have** —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-19 (keep-paid-books #3)`. **Chore, not a pipeline feature.** Run
+  `batch-backtest` then `replay-outcome-join` on IWM (25 live books) or a 19 Aug
+  subset. Expect 5d not-computable. Paste the tool evidence. Authorizes: nothing.
+  *Value M · Effort S.* Queued after #1 (can use today's books; still sequenced).
+- **`weekly-digest-lab-ritual` — keep ranking the nine-day digest** —
+  <!-- atlas: theme=prove-the-edge horizon=now -->
+  `NEW 2026-08-19 (keep-paid-books #4)`. **Habit.** Runbook already at
+  `docs/research/WEEKLY_SCORE_LAB_RUNBOOK.md`. `join-outcomes` →
+  `score-lab --horizon 1d` on SPY/QQQ/IWM. Paste, don't retype. Only series
+  that can grow 5d labels in the next two weeks. *Value H · Effort S (ops).*
+- **`session-corpus-wait` — four to six ET weeks of archived session books** —
+  <!-- atlas: theme=prove-the-edge horizon=next -->
+  `NEW 2026-08-19 (keep-paid-books #5)`. **Wait, not a build.** Time-split and
+  a paid-book AUC are hollow until the archive has calendar. Blocked-on #1
+  landing plus elapsed sessions. Do not promote as a BRIEF.
+- **`ai-rec-lab-p4` — frozen export packs / multi-model AI lab** —
+  <!-- atlas: theme=prove-the-edge horizon=later -->
+  `NEW 2026-08-19 (keep-paid-books #6)`. Blocked-on boring P2–P3 use **and** #5.
+  Do not start. SYSTEM_DESIGN P4. *Value M · Effort L.* Parked.
+- **`chain-archive-object-store` — session bodies off app-Postgres BYTEA** —
+  <!-- atlas: theme=prove-the-edge horizon=next -->
+  `NEW 2026-08-19 (keep-paid-books #7)`. Local JSON was 3.77 GB for **one
+  unthinned day**. Session archive belongs in object storage / a dedicated
+  volume; Postgres keeps metadata + labels. Blocked-on #1 (local prune-proof
+  folder first). Do **not** raise the 48 cap to fake 14 days. *Value H · Effort M.*
+- **`rec-plan-scope-caption` — the §9.5 half-two plan-row caption** —
+  <!-- atlas: theme=trust-the-signal horizon=now -->
+  `✓ SHIPPED + ARCHIVED 2026-08-17 (b)` → `_archive/rec-plan-scope-caption/`. Frontend-only.
+  Closed `ai-rec-grounding` SPEC §9.5 half two. Must not become standing chrome on `local_rules`
+  (held).
 - **`project-context-s2-is-python-era` — the canon's Architecture section describes a backend that no
   <!-- atlas: theme=the-machine horizon=now -->
-  longer exists** — `SURFACED 2026-08-14 (rec-absence-literals-hole GATE PLAN; the planner refused to
+  longer exists** — **✓ REPAIRED 2026-08-20** (`PROJECT_CONTEXT.md` §2 backend = `api-rust` /
+  `quant-engine`; Python archived; §2 / §2b split). Original:
+  `SURFACED 2026-08-14 (rec-absence-literals-hole GATE PLAN; the planner refused to
   trust the pack and said so — then conductor-verified)`. **`PROJECT_CONTEXT.md` §2 "Architecture"
   documents the FastAPI/Python backend** — `main.py`, `src/providers/base.py` (ABC port),
   `src/core/{engine,signals,live,darkpool,observability}.py` — while the shipped backend is **Axum/Tokio
@@ -1003,6 +1378,9 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Invariant watch:** `absent-is-not-none` (HARD) · `digested-labels-not-raw-dump` ·
   `theme-token-discipline`.
 - **`cargo-fmt-whole-crate-drift` — `cargo fmt -p api-rust -- --check` is non-zero on ~54 files** —
+  **✓ CLOSED 2026-08-20 (hygiene batch)** — `cargo fmt -p api-rust -p quant-engine` applied;
+  `--check` green. Future drift: keep fmt in the same PR as the Rust it touches, or a
+  dedicated fmt-only commit. *(historical body retained:)* —
   <!-- atlas: theme=the-machine horizon=next -->
   `SURFACED 2026-08-13 (ai-rec-grounding backend lane + QA, both verified it is pre-existing)`. The
   drift spans files no recent feature touched (`config.rs`, `db/*`, `routes/*`, `cited.rs`, …). **Not
@@ -1035,7 +1413,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   block printed twice. **Every number stays correct** (pooled 74, not double-counted), so this is cosmetic,
   and it **predates** the feature's fix passes. One `dedup()`. Found by QA at GATE Q pass 3.
 - **`ci-standing-red` — the CI frontend job + conformance local leg are standing-red (pre-existing,
-  NOT from tradeable-rec-inputs)** — `NEW 2026-08-13, gh-run-verified` —
+  NOT from tradeable-rec-inputs)** — `NEW 2026-08-13, gh-run-verified` · **✓ CLOSED 2026-08-20
+  (hygiene batch)** — origin Frontend job green 2026-08-16 (`593f601`); local 2026-08-20:
+  lint 0, format:check 0, typecheck 0, Vitest 1985/1985, e2e 52/52, cargo test api-rust +
+  quant-engine 0, release+postgres build 0. Warnings remain (see `eslint-warning-hygiene`);
+  they do not fail the job. Do not resurrect this item from the 08-13/14 log lines below
+  without a new failing run. *(historical body retained:)* —
   <!-- atlas: theme=the-machine horizon=now -->
   Both were red on the pre-feature push too (backend job green both times). (a) `ci.yml` Frontend job:
   `@convexa/dashboard:lint` fails under the warnings policy — `pages/lab/StructureField{Lab,WebGL}.tsx`
@@ -1063,8 +1446,8 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `data/scan.json` **several times a minute** with nothing else running. Two separate QA passes had to work
   around it — one by **renaming the locked binary** (Windows permits renaming a running exe →
   `target/debug/api-rust-orphan-locked.exe`), then rebuilding and serving on its own port. **Any future pass
-  doing a naive before/after byte check on that file will get a false failure.** Real fix belongs with the
-  `ports:free` IPv6 gap.
+  doing a naive before/after byte check on that file will get a false failure.** Leftover after the
+  IPv6 sweep: `ports-orphan-access-denied`.
 - **`rename-org-scope-to-convexa` + local folder** — `✓ CLOSED (2026-08-10)` —
   <!-- atlas: theme=the-machine horizon=done -->
   Package scope is `@convexa/*` (`@convexa/source`, `@convexa/api`, `@convexa/dashboard`,
@@ -1073,7 +1456,16 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   **Still intentionally unrenamed:** `gammaflow.*` durable localStorage keys (loss-free migration),
   archived "GammaFlow" brand history in ledgers/contracts, and kit `banned_tokens` that keep
   framework files project-neutral.
+- **`ports-orphan-access-denied` — Windows can refuse `taskkill` on an orphan api-rust** —
+  <!-- atlas: theme=the-machine horizon=next -->
+  `SPLIT 2026-08-20 from the closed IPv6 gap`. IPv6 sweep is closed; this leftover is the
+  PID that `taskkill /F` **access-denied** while still rewriting `data/scan.json`. Workaround
+  remains rename-the-locked-exe. *Value M · Effort S–M (Windows).*
 - **`ports-free-is-ipv4-only` — the tool written to prevent the stale-server trap does not prevent it** —
+  **✓ CLOSED 2026-08-20 (hygiene batch)** — `tools/free-ports.mjs` now parses `netstat -ano`
+  (both families), matches on local-address *port* (not `includes(':${port} ')`), Unix
+  `lsof -iTCP` LISTEN, never touches :8001. Tests in `tools/free-ports.spec.mjs`. CLAUDE.md
+  trap updated. Leftover: `ports-orphan-access-denied`. *(historical body retained:)* —
   <!-- atlas: theme=the-machine horizon=now -->
   `SURFACED 2026-08-06 (broker-option-grouping GATE Q re-run, finding R-5; QA-measured, not inferred)`.
   **`npm run ports:free` reported "all clear" while three IPv6-only orphans were live** —
@@ -1152,7 +1544,11 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   live-verified** here (no local Postgres — the iv-rank/persistent-db precedent), so this item should be
   scheduled alongside the next real Postgres exercise. *Value M · Effort S–M.* **Build-system/infra
   class:** trading-decision cull **N/A**.
-- **`split-decision-log` — the append-only decision log is SPLIT across two durable stores (LIVE bug)** —
+- **`split-decision-log` — ~~LIVE bug~~ ✓ CLOSED (v3 cutover)** —
+  `CORRECTED 2026-08-17 (GATE I):` `features/trading/model/store.ts` is a **read-only** legacy
+  harvest/migration source; `putTrade` / `clearTrade` / the second `appendDecision` are deleted.
+  The stranded-write hole cannot recur from current code. Outcome ledger still unions both blobs
+  as harvest. *(original entry:)* **`split-decision-log` — the append-only decision log is SPLIT across two durable stores (LIVE bug)** —
   <!-- atlas: theme=trust-the-signal horizon=now -->
   `SURFACED 2026-07-16 (outcome-ledger GATE A·X; conductor-verified in code)`. **Pre-existing +
   feature-independent — NOT an outcome-ledger regression.**

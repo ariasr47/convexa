@@ -38,17 +38,15 @@ import { StateExportDrawer } from '@/pages/ticker/widgets/ai-rec/StateExportDraw
 import { useAiRecommendation } from '@/pages/ticker/widgets/ai-rec/useAiRecommendation';
 import { PrimeBanner, tierMeta } from '@/pages/ticker/widgets/opportunity-tier';
 import { OptionRight } from '@convexa/api';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Fade,
-  Skeleton,
-  Snackbar,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Fade from '@mui/material/Fade';
+import Skeleton from '@mui/material/Skeleton';
+import Snackbar from '@mui/material/Snackbar';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -287,7 +285,7 @@ export function TickerDashboard() {
   const volOiThreshold = m?.vol_oi_unusual_threshold ?? 1;
   const unusualStrikes = (data?.strike_profile.strikes ?? [])
     .filter((s) => s.vol_oi_ratio != null && s.vol_oi_ratio >= volOiThreshold)
-    .sort((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
+    .toSorted((a, b) => (b.vol_oi_ratio as number) - (a.vol_oi_ratio as number))
     .slice(0, 8);
 
   const allDates = data?.expirations.map((e) => e.date) ?? [];
@@ -347,7 +345,7 @@ export function TickerDashboard() {
   });
   const strikeList = Array.from(
     new Set((data?.strike_profile.strikes ?? []).map((s) => s.strike)),
-  ).sort((a, b) => a - b);
+  ).toSorted((a, b) => a - b);
   const tm = tierMeta(theme, sig?.opportunity_tier ?? 'dormant');
 
   // Persona customize dialog (the hand-off viewer was removed to match the Figma toolbar).

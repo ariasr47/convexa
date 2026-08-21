@@ -12,7 +12,7 @@
  * "Couldn't refresh …" warning keep that. When a background poll is in flight it appends a quiet
  * "· refreshing…" that clears on resolve.
  */
-import { Typography } from '@mui/material';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { structureAsOfPhrase } from '../_kit/copy';
 

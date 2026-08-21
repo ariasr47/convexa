@@ -14,21 +14,19 @@ import { TEST_ACCOUNT_PASSWORD } from '@/features/trading/positions/testSeed';
 import { extrasFor } from '@/shared/theme/tokens';
 import { AuthError } from '@convexa/api';
 import CloseIcon from '@mui/icons-material/Close';
-import {
-  Alert,
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  Divider,
-  IconButton,
-  Link,
-  Stack,
-  TextField,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
 import { useTheme } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { AUTH_COPY } from './copy';

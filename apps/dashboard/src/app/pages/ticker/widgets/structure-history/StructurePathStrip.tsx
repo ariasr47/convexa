@@ -3,7 +3,9 @@
  * Not a free-standing bento peer: history of structure, not a second GEX field.
  */
 import type { StructureSample } from '@convexa/api';
-import { Box, Skeleton, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import { humanAge } from '../_kit';

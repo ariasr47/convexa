@@ -13,6 +13,37 @@
     />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0B0F17" />
+    <!-- Blocking first-paint hint: local light pref must not flash the dark canvas. No-JS and
+         anonymous never-touched stay dark (AC-A3). Hexes are the palette canvas tokens; pinned
+         by firstPaintTheme.spec.ts. Duplicate of resolveFirstPaintMode — cannot import the module. -->
+    <script>
+      (function () {
+        var DARK = '#0B0F17';
+        var LIGHT = '#F6F6F3';
+        var mode = 'dark';
+        try {
+          var cached = localStorage.getItem('convexa.theme-paint');
+          if (cached === 'light' || cached === 'dark') {
+            mode = cached;
+          } else {
+            var raw =
+              localStorage.getItem('convexa.uiprefs.v1') ||
+              localStorage.getItem('gammaflow.uiprefs.v1');
+            var pref = raw ? JSON.parse(raw).theme : 'dark';
+            if (pref === 'light') mode = 'light';
+            else if (
+              pref === 'system' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: light)').matches
+            )
+              mode = 'light';
+          }
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', mode);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', mode === 'light' ? LIGHT : DARK);
+      })();
+    </script>
     <link rel="canonical" href="https://convexa.pages.dev/" />
 
     <!-- Open Graph (Facebook, LinkedIn, Slack, iMessage, …) -->

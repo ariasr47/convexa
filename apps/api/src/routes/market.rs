@@ -74,8 +74,7 @@ pub async fn build_bundle(
     dark_pool: bool,
 ) -> Result<Value, AppError> {
     let t0 = Instant::now();
-    let (snap_opt, source) =
-        load_analytics(state, sym, min_dte, max_dte, refresh).await?;
+    let (snap_opt, source) = load_analytics(state, sym, min_dte, max_dte, refresh).await?;
     let snap = snap_opt.ok_or_else(|| AppError::NotFound(format!("no analytics for {sym}")))?;
 
     let price = state
@@ -115,20 +114,16 @@ pub async fn build_bundle(
     );
     let ox_in = off_exchange.as_ref().map(off_exchange_signal_input);
     let signals = if dark_pool {
-        snap.signals.clone().unwrap_or_else(|| generate_signals(&ms_in, ox_in.as_ref()))
+        snap.signals
+            .clone()
+            .unwrap_or_else(|| generate_signals(&ms_in, ox_in.as_ref()))
     } else {
         // Explicit re-score without dark-pool bonus so score matches dark_pool=false semantics.
         generate_signals(&ms_in, None)
     };
 
     let gate = evaluate_gate(&signals, DEFAULT_GATE_SCORE);
-    let tier = compute_opportunity_tier(
-        signals.opportunity_score,
-        gate.ready,
-        40,
-        60,
-        80,
-    );
+    let tier = compute_opportunity_tier(signals.opportunity_score, gate.ready, 40, 60, 80);
     // prime_prompt_eligible: prime tier AND gate ready (Python serve-time key).
     let prime_prompt_eligible = tier == "prime" && gate.ready;
     // Serve-time keys (Python main.py adds these after generate_signals).

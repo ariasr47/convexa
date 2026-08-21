@@ -100,11 +100,17 @@ fn view_from_account_json(raw: &str, state: &AppState) -> Option<ScanView> {
         .as_ref()
         .map(|u| u.universe.iter().cloned().collect())
         .unwrap_or_default();
-    let symbols: Vec<_> = symbols.into_iter().filter(|s| universe.contains(s)).collect();
+    let symbols: Vec<_> = symbols
+        .into_iter()
+        .filter(|s| universe.contains(s))
+        .collect();
     if symbols.is_empty() {
         return None;
     }
-    let sort = v.get("sort").cloned().unwrap_or(serde_json::json!({"key":"score","dir":"desc"}));
+    let sort = v
+        .get("sort")
+        .cloned()
+        .unwrap_or(serde_json::json!({"key":"score","dir":"desc"}));
     let key = sort
         .get("key")
         .and_then(|x| x.as_str())
@@ -211,7 +217,8 @@ pub struct StructureHistoryResponse {
     pub backend: &'static str,
 }
 
-const STRUCTURE_HISTORY_BASIS: &str = "Slow-lane structure recomputes only — not live price ticks. \
+const STRUCTURE_HISTORY_BASIS: &str =
+    "Slow-lane structure recomputes only — not live price ticks. \
 Samples thinned to ≥5 minutes; last 576 kept per symbol (research capture spine). \
 Snapshot path, never a forecast. Durable: JSON file (local) or Postgres (prod).";
 
@@ -311,7 +318,10 @@ pub async fn put_scan_view(
     };
     let (view, err) = normalize_view_body(&body, &uni.universe);
     if let Some(e) = err {
-        return (StatusCode::UNPROCESSABLE_ENTITY, Json(serde_json::json!({"detail": e})))
+        return (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            Json(serde_json::json!({"detail": e})),
+        )
             .into_response();
     }
     let view = view.unwrap();
@@ -368,7 +378,10 @@ fn normalize_view_body(
             Some("symbols must include at least one universe symbol.".into()),
         );
     }
-    let sort_obj = body.sort.clone().unwrap_or(serde_json::json!({"key":"score","dir":"desc"}));
+    let sort_obj = body
+        .sort
+        .clone()
+        .unwrap_or(serde_json::json!({"key":"score","dir":"desc"}));
     let key = sort_obj
         .get("key")
         .and_then(|x| x.as_str())

@@ -22,7 +22,11 @@ pub fn parse_digest(v: Option<&Value>) -> Value {
 }
 
 /// Change detector only — never a security primitive, never persisted server-side.
-pub fn risk_inputs_digest(account_size: Option<f64>, cap_value: Option<f64>, cap_unit: Option<&str>) -> String {
+pub fn risk_inputs_digest(
+    account_size: Option<f64>,
+    cap_value: Option<f64>,
+    cap_unit: Option<&str>,
+) -> String {
     let canon = format!("{account_size:?}|{cap_value:?}|{}", cap_unit.unwrap_or("-"));
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in canon.as_bytes() {
@@ -39,9 +43,15 @@ mod tests {
     #[test]
     fn an_unlabelled_or_malformed_digest_parses_to_not_sent_and_never_fails_the_rec() {
         assert_eq!(parse_digest(None)["state"], "not_sent");
-        assert_eq!(parse_digest(Some(&json!({}))) ["state"], "not_sent");
-        assert_eq!(parse_digest(Some(&json!({"source": "webull"})))["state"], "not_sent");
-        assert_eq!(parse_digest(Some(&json!({"source": "simulated", "state": "bogus"})))["state"], "not_sent");
+        assert_eq!(parse_digest(Some(&json!({})))["state"], "not_sent");
+        assert_eq!(
+            parse_digest(Some(&json!({"source": "webull"})))["state"],
+            "not_sent"
+        );
+        assert_eq!(
+            parse_digest(Some(&json!({"source": "simulated", "state": "bogus"})))["state"],
+            "not_sent"
+        );
     }
 
     #[test]

@@ -101,20 +101,16 @@ pub async fn stream_progressive(
             "price": price,
             "latency_hint": "path_a_cache",
         });
-        let _ = tx.send(
-            Event::default()
-                .event("price")
-                .data(payload.to_string()),
-        );
+        let _ = tx.send(Event::default().event("price").data(payload.to_string()));
     }
 
     tokio::spawn(async move {
         let price_handle = if need_price_fetch {
             let state = state.clone();
             let sym = sym.clone();
-            Some(tokio::spawn(
-                async move { resolve_price_fast(&state, &sym).await },
-            ))
+            Some(tokio::spawn(async move {
+                resolve_price_fast(&state, &sym).await
+            }))
         } else {
             None
         };
@@ -122,9 +118,9 @@ pub async fn stream_progressive(
         let gex_handle = {
             let state = state.clone();
             let sym = sym.clone();
-            tokio::spawn(async move {
-                load_analytics(&state, &sym, min_dte, max_dte, refresh).await
-            })
+            tokio::spawn(
+                async move { load_analytics(&state, &sym, min_dte, max_dte, refresh).await },
+            )
         };
 
         if let Some(handle) = price_handle {
@@ -135,11 +131,7 @@ pub async fn stream_progressive(
                         "price": price,
                         "latency_hint": "path_a_snapshot",
                     });
-                    let _ = tx.send(
-                        Event::default()
-                            .event("price")
-                            .data(payload.to_string()),
-                    );
+                    let _ = tx.send(Event::default().event("price").data(payload.to_string()));
                 }
                 Ok(Err(e)) => {
                     warn!(ticker = %sym, error = %e, "progressive price failed");
@@ -148,11 +140,7 @@ pub async fn stream_progressive(
                         "price": null,
                         "error": e.to_string(),
                     });
-                    let _ = tx.send(
-                        Event::default()
-                            .event("price")
-                            .data(payload.to_string()),
-                    );
+                    let _ = tx.send(Event::default().event("price").data(payload.to_string()));
                 }
                 Err(e) => {
                     let payload = serde_json::json!({
@@ -160,11 +148,7 @@ pub async fn stream_progressive(
                         "price": null,
                         "error": format!("price task: {e}"),
                     });
-                    let _ = tx.send(
-                        Event::default()
-                            .event("price")
-                            .data(payload.to_string()),
-                    );
+                    let _ = tx.send(Event::default().event("price").data(payload.to_string()));
                 }
             }
         }

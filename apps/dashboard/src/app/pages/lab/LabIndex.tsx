@@ -1,16 +1,14 @@
 /**
  * /lab — hub for instrument demos that may graduate onto the ticker page.
  */
-import {
-  Box,
-  Card,
-  CardActionArea,
-  CardContent,
-  Chip,
-  Container,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { LAB_DEMOS } from './labCatalog';

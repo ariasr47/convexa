@@ -102,7 +102,7 @@ export function ordersFaulted(): boolean {
 
 /** Every order, newest-created first (stable for both surfaces). */
 export function allOrders(): SimOrder[] {
-  return Object.values(read()).sort((a, b) => (a.created_time < b.created_time ? 1 : -1));
+  return Object.values(read()).toSorted((a, b) => (a.created_time < b.created_time ? 1 : -1));
 }
 
 export function getOrder(id: string): SimOrder | null {

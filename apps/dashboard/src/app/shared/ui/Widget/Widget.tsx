@@ -33,17 +33,15 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import {
-  Box,
-  Dialog,
-  Fade,
-  IconButton,
-  Menu,
-  MenuItem,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Dialog from '@mui/material/Dialog';
+import Fade from '@mui/material/Fade';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
@@ -64,11 +62,16 @@ export interface WidgetProps {
   /** Bento column span. */
   span?: 1 | 2;
   bodySx?: SxProps<Theme>;
-  noBodyPad?: boolean;
-  /** 'flush' (default) — content sits directly on the widget surface (charts/cards). 'inset' — the body
-   *  is a recessed darker "well" so a grid of raised paper StatTiles regains contrast (Live tape / Dealer
-   *  positioning, which are groups of same-surface tiles). */
+  /**
+   * Body surface. `flush` (default) sits on the widget; `inset` recesses a well so raised tiles pop.
+   * Do not add a boolean for this — pick a named variant.
+   */
   bodyVariant?: 'flush' | 'inset';
+  /**
+   * Body padding. `default` is the standard pad; `none` is for charts that paint to the edges.
+   * Do not add `noBodyPad` — pick a named variant. Independent of `bodyVariant`.
+   */
+  bodyPad?: 'default' | 'none';
 }
 
 /**
@@ -109,8 +112,8 @@ export function Widget({
   children,
   span = 1,
   bodySx,
-  noBodyPad,
   bodyVariant = 'flush',
+  bodyPad = 'default',
 }: WidgetProps) {
   const reduced = useReducedMotion();
   const chrome = useWidgetChrome();
@@ -149,7 +152,7 @@ export function Widget({
   const body = (
     <Box
       sx={[
-        !noBodyPad && { p: 2, pt: 1.5 },
+        bodyPad === 'default' && { p: 2, pt: 1.5 },
         // Container-query context for the body: each widget styles its internals by its OWN width.
         { containerType: 'inline-size' },
         ...(Array.isArray(bodySx) ? bodySx : [bodySx]),

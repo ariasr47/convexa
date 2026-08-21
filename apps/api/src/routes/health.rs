@@ -123,15 +123,21 @@ pub async fn cache_metrics(
     .into_response()
 }
 
-fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {
+pub(crate) fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {
     if let Some(v) = headers.get("x-metrics-token").and_then(|h| h.to_str().ok()) {
         if v.trim() == expected {
             return true;
         }
     }
-    if let Some(v) = headers.get(axum::http::header::AUTHORIZATION).and_then(|h| h.to_str().ok()) {
+    if let Some(v) = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|h| h.to_str().ok())
+    {
         let v = v.trim();
-        if let Some(rest) = v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer ")) {
+        if let Some(rest) = v
+            .strip_prefix("Bearer ")
+            .or_else(|| v.strip_prefix("bearer "))
+        {
             if rest.trim() == expected {
                 return true;
             }

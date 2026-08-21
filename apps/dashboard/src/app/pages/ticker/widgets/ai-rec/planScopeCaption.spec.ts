@@ -15,7 +15,7 @@ describe('shouldShowPlanFieldsNotChecked', () => {
 
   it('hides on local_rules even with shared_admin key_source (AC-2 / D2)', () => {
     const rec = recLocalRules();
-    rec.key_source = 'shared_admin';
+    (rec as { key_source?: string }).key_source = 'shared_admin';
     rec.remaining_free_uses = 2;
     expect(rec.grounding!.card).toBe('local_rules');
     expect(rec.key_source).not.toBe('none');

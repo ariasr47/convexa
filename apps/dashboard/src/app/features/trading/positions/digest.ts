@@ -71,7 +71,7 @@ function thisUnderlyingFor(
   if (matches.length === 0) return null;
   // The single-position case reads cleanest; with several open on the same underlying, the nearest-
   // expiry one is the most decision-relevant to a fresh rec (a same-day roll candidate, e.g.).
-  const primary = [...matches].sort((a, b) => {
+  const primary = matches.toSorted((a, b) => {
     const da = nearestExpiryDte(a, now) ?? Infinity;
     const db = nearestExpiryDte(b, now) ?? Infinity;
     return da - db;

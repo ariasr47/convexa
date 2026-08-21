@@ -133,6 +133,54 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// P3 research: replay stored chain snapshots through Path-B compute (measurement only).
+    BatchBacktest {
+        /// Comma-separated symbols (required).
+        #[arg(long)]
+        symbols: String,
+        /// Override chain-snapshot store path (json). Opens for read; never Disabled.
+        #[arg(long)]
+        store: Option<PathBuf>,
+        #[arg(long)]
+        from: Option<String>,
+        #[arg(long)]
+        to: Option<String>,
+        /// Single dated identity (RFC3339 UTC). Mutually exclusive with --from/--to.
+        #[arg(long)]
+        as_of: Option<String>,
+        #[arg(long)]
+        limit: Option<usize>,
+        #[arg(long)]
+        split_at: Option<String>,
+        #[arg(long)]
+        train_frac: Option<f64>,
+        #[arg(long)]
+        out: Option<PathBuf>,
+        #[arg(long)]
+        min_dte: Option<f64>,
+        #[arg(long)]
+        max_dte: Option<f64>,
+        /// Print JSON artifact to stdout; standing prose + progress on stderr.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Research: join batch-backtest replayed scores to forward stock-bar labels (measurement only).
+    ReplayOutcomeJoin {
+        /// Batch-backtest research artifact (required).
+        #[arg(long)]
+        replay: PathBuf,
+        /// Snapshot-keyed join-outcomes-shaped labels; when set ⇒ zero Stocks I/O.
+        #[arg(long)]
+        labels: Option<PathBuf>,
+        #[arg(long)]
+        out: Option<PathBuf>,
+        /// Horizons as session counts with d suffix (default 1d,5d).
+        #[arg(long, default_value = "1d,5d")]
+        horizons: String,
+        /// JSON on stdout; standing prose + progress on stderr.
+        #[arg(long)]
+        json: bool,
+    },
     /// §7 pre-commit measurement (tradeable-rec-inputs B18/V7): quote-fill + raw-row key dump —
     /// whole chain, the ±15%-band ∩ active-window cut, and the 64-record handoff candidate set.
     /// Counts vendor-null separately from filtered-zero (the zero-bid trap). Writes
@@ -272,6 +320,16 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 database_url: None,
                 public_rate_limit_per_min: 0,
                 metrics_secret_token: None,
+                chain_snapshot_max_age_secs: 1_209_600,
+                chain_snapshot_max_per_symbol: 48,
+                chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../data/chain_snapshots"),
+                chain_snapshot_enabled: false,
+                session_chain_archive_enabled: false,
+                session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../data/session_chain_archive"),
+                session_chain_archive_body_root: None,
+                liquid_session_ensure_enabled: false,
                 workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
             });
             let path = path.unwrap_or_else(|| cfg.default_fixture_path());
@@ -351,7 +409,10 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             let out = serde_json::Value::Object(report);
             let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/research");
             std::fs::create_dir_all(&dir)?;
-            let path = dir.join(format!("quote_fill_{}.json", chrono::Utc::now().format("%Y%m%dT%H%M%SZ")));
+            let path = dir.join(format!(
+                "quote_fill_{}.json",
+                chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
+            ));
             std::fs::write(&path, serde_json::to_string_pretty(&out)?)?;
             if json {
                 println!("{}", serde_json::to_string_pretty(&out)?);
@@ -429,6 +490,35 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 json,
             )
             .await?;
+        }
+        Commands::BatchBacktest {
+            symbols,
+            store,
+            from,
+            to,
+            as_of,
+            limit,
+            split_at,
+            train_frac,
+            out,
+            min_dte,
+            max_dte,
+            json,
+        } => {
+            cmd_batch_backtest(
+                &symbols, store, from, to, as_of, limit, split_at, train_frac, out, min_dte,
+                max_dte, json,
+            )
+            .await?;
+        }
+        Commands::ReplayOutcomeJoin {
+            replay,
+            labels,
+            out,
+            horizons,
+            json,
+        } => {
+            cmd_replay_outcome_join(replay, labels, out, &horizons, json).await?;
         }
     }
     Ok(())
@@ -626,6 +716,16 @@ async fn cmd_score_lab(
             database_url: None,
             public_rate_limit_per_min: 0,
             metrics_secret_token: None,
+            chain_snapshot_max_age_secs: 1_209_600,
+            chain_snapshot_max_per_symbol: 48,
+            chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../data/chain_snapshots"),
+            chain_snapshot_enabled: false,
+            session_chain_archive_enabled: false,
+            session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../data/session_chain_archive"),
+            session_chain_archive_body_root: None,
+            liquid_session_ensure_enabled: false,
             workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
         }
     });
@@ -760,6 +860,237 @@ fn resolve_requested_symbols(
     syms.dedup();
     syms
 }
+
+// ---------------------------------------------------------------------------
+// P3 research: replay stored chain snapshots (measurement only)
+// ---------------------------------------------------------------------------
+
+async fn cmd_batch_backtest(
+    symbols: &str,
+    store_path: Option<PathBuf>,
+    from: Option<String>,
+    to: Option<String>,
+    as_of: Option<String>,
+    limit: Option<usize>,
+    split_at: Option<String>,
+    train_frac: Option<f64>,
+    out_path: Option<PathBuf>,
+    min_dte: Option<f64>,
+    max_dte: Option<f64>,
+    json: bool,
+) -> anyhow::Result<()> {
+    use api_rust::services::research::batch_backtest::{
+        default_out_path, emit_run, file_stamp_now, hermetic_params, open_chain_store_for_cli,
+        parse_symbols, progress_line, run_batch_backtest, run_stamp_now, validate_flags,
+        BatchBacktestOpts, EmitOpts, RawFlags, SelectMode,
+    };
+
+    let symbols = parse_symbols(symbols)?;
+    let flags = validate_flags(&RawFlags {
+        as_of: as_of.clone(),
+        from,
+        to,
+        split_at,
+        train_frac,
+    })?;
+
+    let cfg = Config::from_env().unwrap_or_else(|_| Config {
+        massive_api_key: String::new(),
+        data_feed: api_rust::DataFeed::Delayed,
+        rest_base: "https://api.massive.com".into(),
+        redis_url: None,
+        http_bind: "0.0.0.0:8000".into(),
+        gex_cache_ttl_secs: 10,
+        gex_cache_ttl_liquid_secs: 20,
+        warm_symbols: vec![],
+        liquid_symbols: Default::default(),
+        warm_interval_secs: 25,
+        warm_concurrency: 2,
+        warm_enabled: false,
+        scan_enabled: false,
+        scan_universe_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("config/universe.json"),
+        scan_fast_interval_secs: 30,
+        scan_slow_batch_size: 4,
+        scan_promotion_cap: 2,
+        scan_stale_after_secs: 180,
+        scan_market_hours_only: false,
+        scan_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/scan.sqlite3"),
+        scan_database_url: None,
+        auth_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../data/auth.sqlite3"),
+        auth_session_signing_key: "dev".into(),
+        auth_cookie_secure: false,
+        auth_cookie_samesite: "lax".into(),
+        auth_session_idle_secs: 3600,
+        auth_session_absolute_secs: 86400,
+        auth_registration_open: true,
+        auth_demo_seed: None,
+        include_dark_pool: true,
+        darkpool_lookback_secs: 3600,
+        block_min_shares: 5000,
+        iv_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/iv_timeseries.json"),
+        database_url: None,
+        public_rate_limit_per_min: 0,
+        metrics_secret_token: None,
+        chain_snapshot_max_age_secs: 1_209_600,
+        chain_snapshot_max_per_symbol: 48,
+        chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/chain_snapshots"),
+        chain_snapshot_enabled: false,
+        session_chain_archive_enabled: false,
+        session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/session_chain_archive"),
+        session_chain_archive_body_root: None,
+        liquid_session_ensure_enabled: false,
+        workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
+    });
+
+    let store = match open_chain_store_for_cli(store_path, &cfg).await {
+        Ok(s) => s,
+        Err(e) => {
+            let result = api_rust::services::research::batch_backtest::RunResult::StoreUnreadable(
+                e.to_string(),
+            );
+            return emit_run(
+                &result,
+                &EmitOpts {
+                    json,
+                    out: None,
+                    as_of_mode: flags.as_of.is_some(),
+                },
+                &mut std::io::stdout(),
+                &mut std::io::stderr(),
+            );
+        }
+    };
+
+    let as_of_mode = flags.as_of.is_some();
+    let mode = if let Some(t) = flags.as_of {
+        SelectMode::AsOf(t)
+    } else {
+        SelectMode::Window {
+            from: flags.from,
+            to: flags.to,
+            limit,
+        }
+    };
+    let out = out_path.unwrap_or_else(|| default_out_path(&cfg.workspace_root, &file_stamp_now()));
+    let opts = BatchBacktestOpts {
+        symbols,
+        mode,
+        split: flags.split,
+        params: hermetic_params(min_dte, max_dte),
+        run_stamp: run_stamp_now(),
+    };
+    let mut progress = |phase: &str| {
+        eprintln!("{}", progress_line(phase));
+    };
+    let result = run_batch_backtest(&store, &opts, None, &mut progress).await;
+    emit_run(
+        &result,
+        &EmitOpts {
+            json,
+            out: Some(out),
+            as_of_mode,
+        },
+        &mut std::io::stdout(),
+        &mut std::io::stderr(),
+    )
+}
+
+// --- end cmd_batch_backtest ---
+
+async fn cmd_replay_outcome_join(
+    replay: PathBuf,
+    labels: Option<PathBuf>,
+    out: Option<PathBuf>,
+    horizons_raw: &str,
+    json: bool,
+) -> anyhow::Result<()> {
+    use api_rust::services::research::replay_outcome_join::{
+        apply_no_label_reasons, assert_labels_keyspace, default_out_path, emit_from_join,
+        fill_labels_from_stocks, join_rows, load_labels_file, load_replay_artifact, parse_horizons,
+        progress_line, sidecar_labels_path, write_labels_sidecar, JoinInput, STOCKS_FILL_PROGRESS,
+    };
+    use chrono::{SecondsFormat, Utc};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    eprintln!("{}", progress_line("load replay"));
+    let hz_owned = parse_horizons(horizons_raw)?;
+    let hz: Vec<&str> = hz_owned.iter().map(|s| s.as_str()).collect();
+    let art = load_replay_artifact(&replay)?;
+
+    eprintln!("{}", progress_line("load/join labels"));
+    let (label_rows, stocks_fill_ran, labels_path_for_provenance, window_misses) = match &labels {
+        Some(p) => {
+            let labs = load_labels_file(p)?;
+            assert_labels_keyspace(&art.rows, &labs)?;
+            (labs, false, Some(p.as_path()), Default::default())
+        }
+        None => {
+            let cfg = Config::from_env()?;
+            match api_rust::infrastructure::massive::MassiveRestClient::new(&cfg) {
+                Ok(client) => {
+                    let market = api_rust::services::market_data::MarketDataPort::live(client);
+                    eprintln!("{STOCKS_FILL_PROGRESS}");
+                    let joined_at = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .map(|d| d.as_secs_f64())
+                        .unwrap_or(0.0);
+                    let fill =
+                        fill_labels_from_stocks(&art.rows, &hz, &market, Utc::now(), joined_at)
+                            .await;
+                    (fill.outcomes, true, None, fill.window_misses)
+                }
+                Err(e) => {
+                    eprintln!("stocks daily_bars unavailable: {e}");
+                    (Vec::new(), false, None, Default::default())
+                }
+            }
+        }
+    };
+
+    eprintln!("{}", progress_line("pair"));
+    let (mut rows, counts) = join_rows(JoinInput {
+        replay: &art.rows,
+        labels: &label_rows,
+        horizons: &hz,
+    })?;
+    apply_no_label_reasons(&mut rows, &window_misses);
+
+    let cfg_root = Config::from_env()
+        .map(|c| c.workspace_root)
+        .unwrap_or_else(|_| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."));
+    let stamp = Utc::now().format("%Y%m%dT%H%M%SZ").to_string();
+    let out_path = out.unwrap_or_else(|| default_out_path(&cfg_root, &stamp));
+    let run_stamp = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+
+    if stocks_fill_ran && !label_rows.is_empty() {
+        let _ = write_labels_sidecar(&sidecar_labels_path(&out_path), &label_rows);
+    }
+
+    eprintln!("{}", progress_line("write"));
+    let write_out = if counts.paired >= 1 {
+        Some(out_path.as_path())
+    } else {
+        None
+    };
+    emit_from_join(
+        &art.rows,
+        rows,
+        counts,
+        &hz,
+        labels_path_for_provenance,
+        stocks_fill_ran && labels.is_none(),
+        write_out,
+        json,
+        &run_stamp,
+        &mut std::io::stdout(),
+        &mut std::io::stderr(),
+    )?;
+    Ok(())
+}
+// --- end cmd_replay_outcome_join ---
 
 // ---------------------------------------------------------------------------
 // Fixture command (offline, no Massive key required if Config stubbed)
@@ -962,5 +1293,116 @@ mod driver_loo_flag_guard {
             parse_driver_loo(&["--driver-loo"]).is_err(),
             "--driver-loo with no value must be rejected once it is a real bool-value flag"
         );
+    }
+}
+
+#[cfg(test)]
+mod batch_backtest_wiring {
+    use super::{Cli, Commands};
+    use clap::Parser;
+
+    const MAIN_SRC: &str = include_str!("main.rs");
+
+    fn cmd_batch_backtest_body() -> &'static str {
+        let start = MAIN_SRC
+            .find("async fn cmd_batch_backtest(")
+            .expect("cmd_batch_backtest not found");
+        let rest = &MAIN_SRC[start..];
+        let end = rest
+            .find("\n// --- end cmd_batch_backtest ---")
+            .unwrap_or(rest.len());
+        &rest[..end]
+    }
+
+    #[test]
+    fn batch_backtest_clap_parses_core_flags() {
+        let cli = Cli::try_parse_from([
+            "api-rust",
+            "batch-backtest",
+            "--symbols",
+            "SPY,QQQ",
+            "--as-of",
+            "1970-01-01T00:00:00.000000001Z",
+            "--json",
+        ])
+        .unwrap();
+        match cli.cmd {
+            Commands::BatchBacktest {
+                symbols,
+                as_of,
+                json,
+                ..
+            } => {
+                assert_eq!(symbols, "SPY,QQQ");
+                assert!(as_of.is_some());
+                assert!(json);
+            }
+            other => panic!("expected BatchBacktest, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn score_lab_still_parses_as_its_own_command() {
+        let cli = Cli::try_parse_from(["api-rust", "score-lab", "--outcomes", "x.json"]).unwrap();
+        assert!(matches!(cli.cmd, Commands::ScoreLab { .. }));
+    }
+
+    #[test]
+    fn replay_outcome_join_clap_requires_replay() {
+        assert!(Cli::try_parse_from(["api-rust", "replay-outcome-join"]).is_err());
+        let cli = Cli::try_parse_from([
+            "api-rust",
+            "replay-outcome-join",
+            "--replay",
+            "replay.json",
+            "--labels",
+            "labels.json",
+            "--json",
+        ])
+        .unwrap();
+        match cli.cmd {
+            Commands::ReplayOutcomeJoin {
+                replay,
+                labels,
+                json,
+                horizons,
+                ..
+            } => {
+                assert!(replay.ends_with("replay.json"));
+                assert!(labels.unwrap().ends_with("labels.json"));
+                assert!(json);
+                assert_eq!(horizons, "1d,5d");
+            }
+            other => panic!("expected ReplayOutcomeJoin, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn cmd_batch_backtest_does_not_reference_massive_or_live_or_disabled_opener() {
+        let body = cmd_batch_backtest_body();
+        assert!(
+            body.len() > 200,
+            "cmd_batch_backtest body not sliced (len {})",
+            body.len()
+        );
+        assert!(
+            body.contains("open_chain_store_for_cli") || body.contains("open_json"),
+            "cmd_batch_backtest must open json/pg for read"
+        );
+        assert!(
+            body.contains("run_batch_backtest") || body.contains("select_and_replay"),
+            "anti-vacuity: orchestration call missing"
+        );
+        for needle in [
+            "MassiveRestClient",
+            "MarketDataPort::live",
+            "ChainSnapshotStore::disabled",
+            "open_chain_snapshot_store",
+        ] {
+            assert!(
+                !body.contains(needle),
+                "cmd_batch_backtest must not contain {needle}"
+            );
+        }
     }
 }

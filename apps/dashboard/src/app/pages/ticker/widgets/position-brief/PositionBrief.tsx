@@ -18,7 +18,10 @@ import { money, pct } from '@/features/trading/positions/labels';
 import type { PositionView } from '@/features/trading/positions/view';
 import { extrasFor } from '@/shared/theme/tokens';
 import { Refused } from '@/shared/ui/Refused';
-import { Box, Button, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 import { BRIEF_COPY } from './copy';
 

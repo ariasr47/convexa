@@ -104,9 +104,20 @@ fn no_http_client_on_the_score_lab_path() {
         "MarketDataPort",
         "Client::new",
     ];
+    // Third CLI (replay-outcome-join) may inject MarketDataPort for Stocks daily_bars
+    // fill only (SPEC §2 / PLAN B7/B9). That is not the score-lab path. Options /
+    // MassiveRestClient / reqwest stay banned in every research/ file including it.
+    let names: Vec<&str> = files.iter().map(|(n, _)| n.as_str()).collect();
+    assert!(
+        names.contains(&"replay_outcome_join.rs"),
+        "replay_outcome_join.rs must stay in the research/ scan; got {names:?}"
+    );
     let mut violations = Vec::new();
     for (name, src) in &files {
         for needle in banned {
+            if name == "replay_outcome_join.rs" && needle == "MarketDataPort" {
+                continue;
+            }
             if src.contains(needle) {
                 violations.push(format!("{name}: {needle}"));
             }

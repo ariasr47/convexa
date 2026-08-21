@@ -9,7 +9,8 @@
  */
 import type { Grounding } from '@convexa/api';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Stack, Typography } from '@mui/material';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { AccessibleHelp } from './AccessibleHelp';
 import { cardGroundingLine } from './literals';
 

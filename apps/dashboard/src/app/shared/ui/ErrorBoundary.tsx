@@ -2,7 +2,9 @@
  * Route / widget error boundaries — honest degraded UI so one throw cannot blank the desk.
  * Class component required by React error-boundary API.
  */
-import { Box, Button, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 export type ErrorBoundaryVariant = 'route' | 'widget';

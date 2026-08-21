@@ -13,7 +13,22 @@
  * `font-display: swap` on every face; Plex Sans 400 + Plex Mono 400 are preloaded from
  * index.html (the first-paint body + data faces). Values consumed via
  * shared/theme/tokens.ts `typographyTokens` — components never name a face directly.
+ *
+ * First-paint canvas: anonymous / no-JS stays ink (AC-A3). `html[data-theme=light]` is set
+ * by the blocking index.html script (and later AppThemeProvider) so a stored light pref
+ * does not flash dark. Hexes are palette.dark/light.background.default — pinned in
+ * firstPaintTheme.spec.ts.
  */
+html,
+body {
+  background-color: #0b0f17;
+  color-scheme: dark;
+}
+html[data-theme='light'],
+html[data-theme='light'] body {
+  background-color: #f6f6f3;
+  color-scheme: light;
+}
 
 @font-face {
   font-family: 'Archivo';

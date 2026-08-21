@@ -221,7 +221,7 @@ function stable(v: unknown): string {
   if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
   const o = v as Record<string, unknown>;
   return `{${Object.keys(o)
-    .sort()
+    .toSorted()
     .map((k) => `${JSON.stringify(k)}:${stable(o[k])}`)
     .join(',')}}`;
 }

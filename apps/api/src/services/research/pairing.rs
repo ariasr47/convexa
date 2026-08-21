@@ -37,7 +37,8 @@ pub struct LabRow {
 
 /// Millisecond bucket — mirrors `score_lab.rs::as_of_key` exactly (avoids float round-trip
 /// flakiness). Kept as its own fn so both pairing paths use the identical key.
-fn as_of_key(as_of: f64) -> u64 {
+/// Millisecond bucket — mirrors `score_lab.rs::as_of_key` exactly.
+pub fn as_of_key(as_of: f64) -> u64 {
     (as_of * 1000.0).round() as u64
 }
 

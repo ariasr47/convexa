@@ -233,6 +233,81 @@ ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_cap_unit      TEXT;
 ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS risk_updated_at    DOUBLE PRECISION;
 "#,
     ),
+    (
+        9,
+        "ai_providers_slots",
+        r#"
+-- Per-provider BYO identity: (user_id, kind, provider)
+ALTER TABLE credentials ADD COLUMN IF NOT EXISTS provider TEXT NOT NULL DEFAULT 'anthropic';
+
+-- Rebuild PK (Postgres): promote legacy rows first (provider already column-defaulted).
+ALTER TABLE credentials DROP CONSTRAINT IF EXISTS credentials_pkey;
+ALTER TABLE credentials ADD PRIMARY KEY (user_id, kind, provider);
+
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_power_path TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_provider   TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS ai_model      TEXT;
+
+-- Opaque Grok subscription link metadata (no secrets on wire). Unused while grok.available=false.
+CREATE TABLE IF NOT EXISTS grok_links (
+    user_id            TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    status             TEXT NOT NULL DEFAULT 'unlinked',
+    encrypted_material TEXT,
+    updated_at         DOUBLE PRECISION NOT NULL
+);
+"#,
+    ),
+    (
+        10,
+        "chain_snapshots",
+        r#"
+-- Append-only research chain snapshots. Identity is TEXT as_of (RFC3339 nanos),
+-- never timestamptz — GATE Q seed 1970-01-01T00:00:00.000000001Z must round-trip.
+CREATE TABLE IF NOT EXISTS chain_snapshots (
+    symbol      TEXT NOT NULL,
+    as_of       TEXT NOT NULL,
+    as_of_ns    BIGINT NOT NULL,
+    source      TEXT NOT NULL,
+    body        BYTEA NOT NULL,
+    captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (symbol, as_of)
+);
+CREATE INDEX IF NOT EXISTS chain_snapshots_symbol_as_of_idx
+    ON chain_snapshots (symbol, as_of DESC);
+CREATE INDEX IF NOT EXISTS chain_snapshots_symbol_as_of_ns_idx
+    ON chain_snapshots (symbol, as_of_ns ASC);
+"#,
+    ),
+    (
+        11,
+        "session_chain_archive",
+        r#"
+-- Sibling prune-proof session archive. Identity is (symbol, et_date TEXT).
+-- No FK / ON DELETE CASCADE from chain_snapshots — ring DELETE cannot name this table.
+CREATE TABLE IF NOT EXISTS session_chain_archive (
+    symbol         TEXT NOT NULL,
+    et_date        TEXT NOT NULL,
+    source_as_of   TEXT NOT NULL,
+    source_as_of_ns BIGINT NOT NULL,
+    source         TEXT NOT NULL,
+    body           BYTEA NOT NULL,
+    archived_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (symbol, et_date)
+);
+CREATE INDEX IF NOT EXISTS session_chain_archive_symbol_et_date_idx
+    ON session_chain_archive (symbol, et_date ASC);
+"#,
+    ),
+    (
+        12,
+        "session_chain_archive_body_locator",
+        r#"
+ALTER TABLE session_chain_archive
+  ADD COLUMN IF NOT EXISTS body_locator TEXT;
+ALTER TABLE session_chain_archive
+  ALTER COLUMN body DROP NOT NULL;
+"#,
+    ),
 ];
 
 /// Apply all pending migrations. Safe to call on every boot.
@@ -248,10 +323,11 @@ pub async fn apply(pool: &PgPool) -> AppResult<()> {
     .await
     .map_err(|e| AppError::Config(format!("schema_migrations table: {e}")))?;
 
-    let applied: Vec<i64> = sqlx::query_scalar("SELECT version FROM schema_migrations ORDER BY version")
-        .fetch_all(pool)
-        .await
-        .map_err(|e| AppError::Config(format!("schema_migrations read: {e}")))?;
+    let applied: Vec<i64> =
+        sqlx::query_scalar("SELECT version FROM schema_migrations ORDER BY version")
+            .fetch_all(pool)
+            .await
+            .map_err(|e| AppError::Config(format!("schema_migrations read: {e}")))?;
     let applied: std::collections::HashSet<i64> = applied.into_iter().collect();
 
     // Pre-versioned DBs already have core tables from the old bootstrap string.
@@ -343,24 +419,80 @@ mod tests {
 
     #[test]
     fn structure_history_migration_present() {
-        assert!(MIGRATIONS
-            .iter()
-            .any(|(_, n, b)| *n == "scan_structure_history"
-                && b.contains("scan_structure_history")));
+        assert!(MIGRATIONS.iter().any(
+            |(_, n, b)| *n == "scan_structure_history" && b.contains("scan_structure_history")
+        ));
     }
 
     #[test]
     fn capture_spine_migration_present() {
-        assert!(MIGRATIONS.iter().any(|(_, n, b)| *n == "structure_capture_spine"
-            && b.contains("structure_outcomes")
-            && b.contains("score_drivers")
-            && b.contains("net_gex")));
+        assert!(MIGRATIONS
+            .iter()
+            .any(|(_, n, b)| *n == "structure_capture_spine"
+                && b.contains("structure_outcomes")
+                && b.contains("score_drivers")
+                && b.contains("net_gex")));
     }
 
     #[test]
     fn structure_history_normalize_migration_present() {
-        assert!(MIGRATIONS.iter().any(|(_, n, b)| *n
-            == "structure_history_symbol_normalize"
-            && b.contains("upper(btrim(symbol))")));
+        assert!(MIGRATIONS
+            .iter()
+            .any(|(_, n, b)| *n == "structure_history_symbol_normalize"
+                && b.contains("upper(btrim(symbol))")));
+    }
+
+    #[test]
+    fn ai_providers_slots_migration_is_v9() {
+        let (v, _name, body) = MIGRATIONS
+            .iter()
+            .find(|(_, n, _)| *n == "ai_providers_slots")
+            .expect("v9 ai_providers_slots must exist");
+        assert_eq!(*v, 9);
+        assert!(body.contains("PRIMARY KEY (user_id, kind, provider)"));
+        assert!(body.contains("ai_power_path"));
+        assert!(body.contains("ai_provider"));
+        assert!(body.contains("ai_model"));
+        assert!(body.contains("grok_links"));
+    }
+
+    #[test]
+    fn chain_snapshots_migration_is_v10() {
+        let (v, name, body) = MIGRATIONS
+            .iter()
+            .find(|(_, n, _)| *n == "chain_snapshots")
+            .expect("v10 chain_snapshots must exist");
+        assert_eq!(*v, 10);
+        assert_eq!(*name, "chain_snapshots");
+        assert!(body.contains("as_of       TEXT NOT NULL"));
+        assert!(body.contains("as_of_ns BIGINT NOT NULL"));
+        assert!(body.contains("PRIMARY KEY (symbol, as_of)"));
+        assert!(!body.contains("as_of       TIMESTAMPTZ"));
+    }
+
+    #[test]
+    fn session_chain_archive_migration_is_v11() {
+        let (v, name, body) = MIGRATIONS
+            .iter()
+            .find(|(_, n, _)| *n == "session_chain_archive")
+            .expect("v11 session_chain_archive must exist");
+        assert_eq!(*v, 11);
+        assert_eq!(*name, "session_chain_archive");
+        assert!(body.contains("PRIMARY KEY (symbol, et_date)"));
+        assert!(!body.contains("REFERENCES chain_snapshots"));
+        assert!(!body.contains("ON DELETE CASCADE"));
+    }
+
+    #[test]
+    fn session_archive_body_locator_migration_is_v12() {
+        let (v, name, sql) = MIGRATIONS
+            .iter()
+            .find(|(_, n, _)| *n == "session_chain_archive_body_locator")
+            .expect("v12 body_locator migration");
+        assert_eq!(*v, 12);
+        assert_eq!(*name, "session_chain_archive_body_locator");
+        assert!(sql.contains("body_locator"));
+        assert!(sql.contains("DROP NOT NULL") || (sql.contains("body") && sql.contains("NULL")));
+        assert!(!name.contains("chain_snapshots"));
     }
 }

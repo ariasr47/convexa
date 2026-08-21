@@ -17,6 +17,16 @@ export default [
     },
   },
   {
+    // Specs use `!` after a query that just asserted presence (`getByRole(...)!`). That is a
+    // test idiom, not a product non-null lie. Leaving it as warn trained a 120-line ignore
+    // habit. Product files keep the rule.
+    files: ['**/*.{spec,test}.{ts,tsx,js,jsx}'],
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     ignores: [
       '**/dist',
       '**/out-tsc',
@@ -81,6 +91,30 @@ export default [
               onlyDependOnLibsWithTags: ['type:app', 'type:lib'],
             },
             { sourceTag: 'type:lib', onlyDependOnLibsWithTags: ['type:lib'] },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Vite analogue of Next optimizePackageImports: source must not import the @mui barrel
+    // (type-only barrels are allowed — erased, no runtime graph). Path imports stay.
+    files: ['apps/dashboard/**/*.{ts,tsx}', 'libs/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@mui/material',
+              message: 'Use path imports: import Box from "@mui/material/Box".',
+              allowTypeImports: true,
+            },
+            {
+              name: '@mui/icons-material',
+              message: 'Use path imports: import Menu from "@mui/icons-material/Menu".',
+              allowTypeImports: true,
+            },
           ],
         },
       ],

@@ -1,0 +1,99 @@
+{
+  "conflicts": [
+    {
+      "quote": "**`absent-is-not-none`** \u2014 three closed absence classes must remain distinguishable in types / store outcomes all the way to the research consumer: **`no session book`** (never archived for that identity) \u2260 **empty / pruned intraday ring** \u2260 **archive store disabled or unreadable**.",
+      "source": "architect",
+      "why": "PM rule 6 and UX's closed term set require four separately observable outcomes (miss \u2260 empty ring \u2260 not-storing/disabled \u2260 unreadable/corrupt). My own isolation table already splits disabled-open from corrupt-body; the binding restatement's 'three' OR collapses the last two and understates the store-outcome surface peers bind.",
+      "proposal": "Bind four research outcomes end-to-end: `no session book` \u2260 `empty 48-ring` \u2260 `session archive not storing` / disabled \u2260 `session book unreadable` \u2014 keep the isolation-table split; retire the 'three classes' restatement.",
+      "kind": "technical",
+      "conflict_id": "e5519825d15bddd5fb17aa43ab9d78315ac2a2ba20481500e467a6c2c6934754",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Three absences stay three strings.",
+      "source": "ux",
+      "why": "Product closed rule and architect store outcomes require four distinguishable classes: `no session book` \u2260 empty 48-ring \u2260 disabled/not-storing \u2260 unreadable/corrupt. Folding disabled and unreadable into one of \u201cthree absences\u201d (even with an and/or string pair) lets an operator confuse \u201cconfigure/enable the store\u201d with \u201crepair a corrupt body,\u201d which is the same honesty failure `absent-is-not-none` forbids.",
+      "proposal": "Keep four mandatory-distinct operator outcomes: use `session archive not storing` only when the archive is disabled/unavailable, and `session book unreadable: <reason>` only when an identity exists but cannot be read \u2014 never as interchangeable labels for one shared state.",
+      "kind": "technical",
+      "conflict_id": "82f779ef57014910fbd1a93cfeadd06d0bbcf7aa2e4903a182a894953441a998",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns** absence of trader UI (AC-15), not raising the 48 cap (AC-19), program #2\u2013#7 not absorbed (AC-20/21), operator-without-trader-UI check (AC-22), and the explicit \u201cauthorizes: nothing\u201d research framing (AC-23).",
+      "source": "pm",
+      "why": "Trader-UI silence is negative space. A human review cannot reliably notice what is absent across Landing, Ticker, Settings, Ask-AI, Scanner, Positions, and shell nav after an unrelated change lands a badge, toast, or Settings row. That is exactly the silently-regressing class risk-based-verify assigns to `test`. Bundling AC-15 with AC-22 under `review` also conflates two different risks: absence of trader chrome (must be asserted) vs presence of an operator path (visible/intentional).",
+      "proposal": "Keep AC-15 ship-blocking; mark Verify by **test** (structural `apps/dashboard` empty-diff / no new trader route affordance), matching UX-1/UX-2. Leave AC-19/20/21/22/23 as **review**. No DOM harness required \u2014 file/route negative assertion is enough.",
+      "kind": "technical",
+      "conflict_id": "9f0471e32115187274f678d8fbaa65e57caac45691aff63b2defac20605d08ae",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**UX / interface (via synthesizer later)** will key session list/load on **`(symbol, et_date)`**, not on ring `as_of` alone \u2014 provenance `source_as_of` may be shown but is not the session identity.",
+      "source": "architect",
+      "why": "I accept `(symbol, et_date)` as identity and that provenance is not the key. I reject optional provenance under the rest of Architect's own position: first-wins plus eligibility that does not gate on RTH means the archived body can be a pre/post-RTH morning book while operator vocabulary and the BRIEF still say \"ET trading session.\" If `source_as_of` is only \"may\" be shown, research copy can assert a session/RTH meaning the bytes do not support \u2014 my defining failure mode.",
+      "proposal": "Keep identity `(symbol, et_date)` and first-wins if PM accepts them. Make `source_as_of` / `archived from capture at <UTC>` mandatory on every successful operator session-book read (still not the identity). If product wants the noun to mean RTH close only, change eligibility or conflict policy instead of leaving provenance optional.",
+      "kind": "product",
+      "conflict_id": "d7d6144728016ee7b77ea219a89ad64553321ef38d89d019db664c19eed65a61",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: confirm Path-B / `batch-backtest` / `replay-outcome-join` rewiring onto the session archive is out of this ship (existence + dedicated research list/load only), matching my R1 assumption."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: confirm pre/post-RTH paid captures whose `as_of` falls on an ET calendar date remain eligible archival candidates (not RTH-gated), since product language says 'ET trading session' while identity is locked as ET calendar date."
+    },
+    {
+      "from": "architect",
+      "ask": "PM: with first-wins named, do you accept possible morning-book corpus quality for v1, or do you want to override to last-RTH / explicit close despite deferring selection timing?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: is the mandatory six-part \u00a73 framing required on every programmatic load vehicle (JSON artifact / join input), or only on human-visible operator presentation layered over the load?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: name the v1 research list/load vehicle (CLI, `_research`, or other) so PM AC-22 and UX-15 have a concrete operator check path without inventing trader chrome."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: is capture provenance (`source_as_of` or equivalent) exposed on research list/load in v1 so operators can see that first-wins kept a morning/pre-RTH book, or is that deferred?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: after splitting disabled vs unreadable into two mandatory strings, does the \u00a73 research-read framing order still bind for whatever vehicle Architect names (including CLI-only stdout)?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm the research list/load in your data-flow is an operator-observable v1 surface (thin CLI, `_research` read, or equivalent print path) \u2014 not store-API-only \u2014 so the closed absence strings and framing have an attach point, without rewriting Path-B CLIs."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm successful load always returns `source_as_of` (or equivalent capture UTC) and that store-disabled vs miss vs unreadable remain distinct typed outcomes all the way to that operator surface."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: accept Verify by **test** for AC-15 (trader-UI silence / negative space), keeping AC-22 as **review**?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: accept Architect's first-wins plus pre/post-RTH eligibility for the product noun \"ET trading session,\" or require RTH-only / last-RTH so \"Tuesday's book\" cannot silently be a morning first-win?"
+    }
+  ],
+  "agree_count": {
+    "architect": 8,
+    "pm": 7,
+    "ux": 10
+  }
+}

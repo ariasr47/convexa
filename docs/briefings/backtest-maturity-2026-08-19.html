@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Convexa — Paid books, back-tests, and how to keep what we buy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@96,600;96,800;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1B2432;
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --amber-text: #D9A03A;
+      --signal: #5E8BC4;
+      --warn: #E07A3F;
+      --line: rgba(138, 155, 180, 0.24);
+      --ok: #5E8BC4;
+      --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --display: "Archivo", "IBM Plex Sans", sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(1200px 480px at 8% -10%, rgba(242, 169, 59, 0.07), transparent 55%),
+        var(--ink);
+      color: var(--phosphor);
+      font-family: var(--sans);
+      font-size: 16.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 96px; }
+    a { color: var(--signal); text-decoration: none; }
+    a:hover { color: var(--amber); }
+    a:focus-visible { outline: 2px solid var(--amber-text); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--display); font-stretch: 112%; letter-spacing: -0.03em; }
+    h1 { font-size: clamp(2rem, 4.2vw, 3.1rem); line-height: 1.08; margin: 0 0 12px; font-weight: 700; }
+    h2 {
+      font-size: 1.45rem; color: var(--phosphor); margin: 56px 0 14px;
+      padding-top: 8px;
+    }
+    h2 .kicker {
+      display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--amber-text); margin-bottom: 6px; font-stretch: 96%;
+    }
+    h3 { font-size: 1.05rem; margin: 22px 0 8px; color: var(--phosphor); }
+    p, li { color: var(--steel); }
+    strong { color: var(--phosphor); }
+    code, pre, .mono { font-family: var(--mono); }
+    code { color: var(--amber-text); font-size: 0.86em; }
+    .lede { max-width: 62ch; font-size: 1.08rem; color: var(--steel); margin: 0 0 22px; }
+    .meta {
+      font-family: var(--mono); font-size: 0.78rem; color: var(--steel);
+      letter-spacing: 0.04em; margin-bottom: 18px;
+    }
+    .chip {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+      color: var(--amber-text); margin: 0 6px 10px 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 5;
+      background: rgba(11, 15, 23, 0.92); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line); margin: 0 -22px 28px; padding: 10px 22px;
+    }
+    .nav ol {
+      display: flex; flex-wrap: wrap; gap: 8px 16px; list-style: none;
+      margin: 0; padding: 0; font-family: var(--mono); font-size: 0.72rem;
+    }
+    .nav a { color: var(--steel); }
+    .nav a:hover { color: var(--phosphor); }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .grid2 { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    .grid3 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    .grid4 { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    @media (min-width: 820px) {
+      .grid2 { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: 1fr 1fr 1fr; }
+      .grid4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat { text-align: left; }
+    .stat b {
+      display: block; font-family: var(--mono); font-size: 1.55rem; color: var(--phosphor);
+      font-variant-numeric: tabular-nums; letter-spacing: -0.03em;
+    }
+    .stat span { font-size: 0.82rem; color: var(--steel); }
+    .stat.warn b { color: var(--warn); }
+    .stat.amber b { color: var(--amber); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: var(--raised); color: var(--phosphor); font-weight: 600; }
+    td { background: var(--panel); color: var(--steel); }
+    td strong { color: var(--phosphor); }
+    .note {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px 16px; margin: 14px 0;
+    }
+    .note.warn { border-color: rgba(224, 122, 63, 0.55); }
+    .note.warn strong { color: var(--warn); }
+    .note.ok { border-color: rgba(94, 139, 196, 0.45); }
+    .caption { font-size: 0.8rem; color: var(--steel); text-align: center; margin-top: 8px; }
+    .diagram {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 16px 12px; margin: 16px 0 8px; overflow-x: auto;
+    }
+    .diagram svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .film {
+      display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px;
+      margin: 10px 0 6px;
+    }
+    .film i {
+      display: block; height: 18px; border-radius: 2px;
+      background: var(--amber); opacity: 0.85;
+    }
+    .film i.empty { background: var(--raised); opacity: 1; border: 1px solid var(--line); }
+    .film-label {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 0.7rem; color: var(--steel);
+    }
+    .step {
+      display: grid; grid-template-columns: 48px 1fr; gap: 12px; margin: 14px 0;
+    }
+    .step .n {
+      font-family: var(--display); font-stretch: 112%; font-weight: 700;
+      color: var(--amber); font-size: 1.4rem; line-height: 1.1;
+    }
+    pre {
+      background: var(--raised); border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px 14px; overflow-x: auto; color: var(--phosphor); font-size: 0.8rem; line-height: 1.45;
+    }
+    .tag {
+      display: inline-block; font-family: var(--mono); font-size: 0.68rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 6px; margin-right: 6px;
+    }
+    .tag-keep { background: rgba(94,139,196,0.16); color: var(--signal); }
+    .tag-drop { background: rgba(224,122,63,0.14); color: var(--warn); }
+    .tag-later { background: rgba(138,155,180,0.12); color: var(--steel); }
+    footer {
+      margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--steel);
+    }
+    .thesis {
+      border-left: 3px solid var(--amber);
+      padding: 4px 0 4px 16px; margin: 8px 0 22px;
+      font-size: 1.18rem; color: var(--phosphor); max-width: 68ch;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --ink: #F6F6F3; --panel: #FFFFFF; --raised: #F0EEE8;
+        --phosphor: #17202B; --steel: #4A5664; --amber: #C57F19;
+        --amber-text: #8F5C0F; --signal: #3B6EA8; --line: rgba(23,32,43,0.14);
+      }
+      body { background: var(--ink); }
+      .nav { background: rgba(246,246,243,0.94); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p>
+      <span class="chip">Research desk</span>
+      <span class="chip">Not a trader screen</span>
+      <span class="chip">Authorizes: nothing</span>
+    </p>
+    <h1>We keep the books we pay for. We still mostly measure the digest.</h1>
+    <p class="meta">Convexa · 19 Aug 2026 · inventory from this machine’s <code>data/</code> · tools shipped P0–P3 + join</p>
+    <p class="thesis">
+      The $199 Options plan is no longer thrown away after one request. The next failure is quieter:
+      the 48-slot cap is filling in a single session, so fourteen days of retention currently hold
+      about seventeen hours of the same day.
+    </p>
+    <p class="lede">
+      This is an inventory and a maturity plan, not a score change. Every tool below prints
+      <strong>Authorizes: nothing</strong>. A ranking figure is a measurement. It is not permission
+      to retune live <code>opportunity_score</code>.
+    </p>
+
+    <nav class="nav" aria-label="On this page">
+      <ol>
+        <li><a href="#now">Now</a></li>
+        <li><a href="#store">What we store</a></li>
+        <li><a href="#test">What we back-test</a></li>
+        <li><a href="#gap">The gap</a></li>
+        <li><a href="#keep">Keep the paid data</a></li>
+        <li><a href="#path">Mature path</a></li>
+        <li><a href="#rec">Do this next</a></li>
+      </ol>
+    </nav>
+
+    <!-- NOW -->
+    <h2 id="now"><span class="kicker">01 · Desk blotter</span>What is on disk today</h2>
+    <p>Two different memories. The digest has nine days. The paid options books have one.</p>
+    <div class="grid4">
+      <div class="card stat amber"><b>3.77 GB</b><span>paid chain snapshots, 68 symbols</span></div>
+      <div class="card stat"><b>3,010</b><span>live Massive books kept (plus 1 fixture)</span></div>
+      <div class="card stat warn"><b>1 session</b><span>almost all books are 19 Aug, not 14 days</span></div>
+      <div class="card stat"><b>22,925</b><span>digested structure samples, 10–19 Aug</span></div>
+    </div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="card stat"><b>69</b><span>scanner universe on this box</span></div>
+      <div class="card stat warn"><b>QQQ absent</b><span>no paid book file; SPY is the 1970 fixture only</span></div>
+      <div class="card stat"><b>0.467</b><span>only published score-lab AUC vs large next-day move (10 Aug slice)</span></div>
+    </div>
+
+    <div class="diagram" role="img" aria-label="Two rails: digested diary spanning nine days versus paid books spanning one session">
+      <svg viewBox="0 0 960 280" xmlns="http://www.w3.org/2000/svg">
+        <text x="24" y="28" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">DIGESTED DIARY  ·  scan_structure_history</text>
+        <rect x="24" y="44" width="912" height="36" rx="6" fill="#1B2432" stroke="rgba(138,155,180,0.28)"/>
+        <rect x="24" y="44" width="912" height="36" rx="6" fill="#5E8BC4" opacity="0.35"/>
+        <text x="36" y="67" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">10 Aug ──────── 9 days of score / walls / flip / net GEX ──────── 19 Aug</text>
+        <text x="24" y="118" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">PAID OPTIONS BOOKS  ·  chain_snapshots</text>
+        <rect x="24" y="134" width="912" height="36" rx="6" fill="#1B2432" stroke="rgba(138,155,180,0.28)"/>
+        <rect x="820" y="134" width="116" height="36" rx="6" fill="#F2A93B"/>
+        <text x="36" y="157" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">empty  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·</text>
+        <text x="828" y="157" fill="#0B0F17" font-family="IBM Plex Sans" font-size="13" font-weight="700">19 Aug only</text>
+        <path d="M480 186 v22" stroke="#F2A93B" stroke-width="2"/>
+        <text x="480" y="232" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="12">JOIN  ·  the measurement we just built, not yet run on a multi-day corpus</text>
+        <text x="480" y="254" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">score-lab reads the top rail · batch-backtest + replay-outcome-join read the bottom rail</text>
+      </svg>
+    </div>
+    <p class="caption">Same scanner. Two stores. Only the thin digest currently has enough calendar to rank next-day moves.</p>
+
+    <!-- STORE -->
+    <h2 id="store"><span class="kicker">02 · Four memories</span>What we currently store</h2>
+    <p>
+      Capture is a one-way leaf: score, fingerprint, and the trader SSE never import it.
+      A failed write logs and moves on. Public site 404s <code>/api/_research/*</code>.
+    </p>
+
+    <div class="diagram" role="img" aria-label="Four storage layers from raw paid book to labels">
+      <svg viewBox="0 0 960 340" xmlns="http://www.w3.org/2000/svg">
+        <rect x="20" y="20" width="220" height="300" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="130" y="48" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">LAYER A · PAID</text>
+        <text x="130" y="78" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Chain snapshot</text>
+        <text x="36" y="110" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Full options chain</text>
+        <text x="36" y="130" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">OI · IV · Δ Γ Θ V</text>
+        <text x="36" y="150" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Daily + minute bars</text>
+        <text x="36" y="170" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Trade prints</text>
+        <text x="36" y="200" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Identity (symbol, as_of)</text>
+        <text x="36" y="230" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">~50 MB / name</text>
+        <text x="36" y="250" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">3.77 GB here</text>
+        <text x="36" y="280" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">Cap 48 + 14 days</text>
+        <text x="36" y="300" fill="#E07A3F" font-family="IBM Plex Sans" font-size="12">AND — both bite</text>
+
+        <rect x="260" y="20" width="220" height="300" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="370" y="48" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">LAYER B · DIGEST</text>
+        <text x="370" y="78" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Structure diary</text>
+        <text x="276" y="110" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">score + drivers</text>
+        <text x="276" y="130" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">walls · flip · net GEX</text>
+        <text x="276" y="150" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">IV/HV · ATM IV</text>
+        <text x="276" y="170" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">regime / tier</text>
+        <text x="276" y="200" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Thinned ≥ 5 min</text>
+        <text x="276" y="230" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">Ring 576 / symbol</text>
+        <text x="276" y="250" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">22,925 rows · 9 days</text>
+        <text x="276" y="280" fill="#5E8BC4" font-family="IBM Plex Sans" font-size="12">This is what</text>
+        <text x="276" y="300" fill="#5E8BC4" font-family="IBM Plex Sans" font-size="12">score-lab ranks</text>
+
+        <rect x="500" y="20" width="220" height="300" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="610" y="48" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">LAYER C · CACHE</text>
+        <text x="610" y="78" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Latest-wins</text>
+        <text x="516" y="110" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">scan_rows (board)</text>
+        <text x="516" y="130" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">scan_bundles (1/symbol)</text>
+        <text x="516" y="150" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">gex cache (seconds)</text>
+        <text x="516" y="200" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Overwrites. Not history.</text>
+        <text x="516" y="250" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">bundles = 0 here</text>
+        <text x="516" y="280" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Desk freshness only</text>
+
+        <rect x="740" y="20" width="200" height="300" rx="10" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="840" y="48" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">LAYER D · LABELS</text>
+        <text x="840" y="78" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="16">Forward path</text>
+        <text x="756" y="110" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Stocks daily aggs</text>
+        <text x="756" y="130" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">1d / 5d session counts</text>
+        <text x="756" y="150" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">structure_outcomes</text>
+        <text x="756" y="200" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Cheap. Already paid.</text>
+        <text x="756" y="250" fill="#E9E4D6" font-family="IBM Plex Mono" font-size="11">join-outcomes CLI</text>
+        <text x="756" y="280" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="12">Never Options API</text>
+      </svg>
+    </div>
+    <p class="caption">Layer A is the thing the Options subscription buys. Layer B is a handful of numbers derived from it. We currently rank B.</p>
+
+    <h3>Layer A — the paid options book</h3>
+    <p>
+      Each snapshot is a frozen <code>VendorBundle</code>: the full chain
+      (strike, right, expiry, OI, IV, greeks, volume, optional NBBO), plus daily bars,
+      RTH minutes, and trade prints, keyed <code>(symbol, as_of)</code> with nanosecond
+      RFC3339 identity. Source is <code>live_massive</code> or <code>fixture</code>.
+      Secrets are stripped. Append-only: a second cycle does not overwrite the first.
+    </p>
+    <p>
+      Written off the trader path from scanner / ticker cold compute
+      (<code>load_or_compute</code> / cache-miss serve). The warmer
+      (<code>refresh_analytics</code>) is excluded on purpose — it would stampede the same book.
+    </p>
+    <div class="note warn">
+      <strong>Retention is dual, and the count cap is winning.</strong>
+      Defaults: <code>CHAIN_SNAPSHOT_MAX_AGE_SECS=1209600</code> (14 days) <em>and</em>
+      <code>CHAIN_SNAPSHOT_MAX_PER_SYMBOL=48</code>. Both apply. On this box the 48-slot
+      ring filled in ~17 hours of 19 Aug. 2,993 of 3,011 entries are that one calendar day.
+      Fourteen-day age prune never gets a chance to matter.
+    </div>
+
+    <p class="film-label"><span>48 slots, filled with the same session</span><span>intended: 14 different days</span></p>
+    <div class="film" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="film" aria-hidden="true">
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i class="empty"></i>
+      <i class="empty"></i><i class="empty"></i><i class="empty"></i><i></i>
+    </div>
+    <p class="caption">Top strip = what the cap actually stored today (intraday reprints of 19 Aug). Bottom strip = what “14 days of paid books” was supposed to look like.</p>
+
+    <h3>On this machine, 19 Aug 2026</h3>
+    <table>
+      <thead>
+        <tr><th>Store</th><th>Where</th><th>What is actually there</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Chain snapshots</strong></td>
+          <td><code>data/chain_snapshots/{SYM}.json</code> · Postgres <code>chain_snapshots</code></td>
+          <td>68 files · 3.77 GB · 3,010 live books · heaviest MU 237 MB / GLD 155 MB / SMH 142 MB · <strong>QQQ missing · SPY = QA fixture only</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Structure diary</strong></td>
+          <td><code>data/scan.json</code> history · PG <code>scan_structure_history</code></td>
+          <td>69 symbols · 22,925 samples · 10 Aug 17:15Z → 19 Aug 18:29Z · ~321–409 rows/name · 221 missing <code>score_drivers</code></td>
+        </tr>
+        <tr>
+          <td><strong>Board / bundles</strong></td>
+          <td><code>scan_rows</code> · <code>scan_bundles</code></td>
+          <td>69 latest board rows · <strong>0 stored bundles</strong> locally (latest-wins cache empty; not the research spine)</td>
+        </tr>
+        <tr>
+          <td><strong>IV rank series</strong></td>
+          <td><code>data/iv_timeseries.json</code> · PG <code>iv_samples</code></td>
+          <td>~123 KB session IV history (ATM IV per session date). Used by live IV rank, not by the four research CLIs.</td>
+        </tr>
+        <tr>
+          <td><strong>Forward labels</strong></td>
+          <td><code>data/research/outcomes_*.json</code> · PG <code>structure_outcomes</code></td>
+          <td>Join artifacts from 11 Aug (the 221-row SPY/QQQ/IWM slice). Durable, not ring-pruned.</td>
+        </tr>
+        <tr>
+          <td><strong>Not this</strong></td>
+          <td>Positions / outcome ledger / user book</td>
+          <td>Trader sim history. Different product. Does not replay chains.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>What a paid book contains (and what it does not)</h3>
+    <div class="grid2">
+      <div class="card">
+        <h3>Inside each snapshot</h3>
+        <ul>
+          <li>Every option contract on the snapshot: strike, call/put, expiry, OI, IV, greeks, volume.</li>
+          <li>Synchronized spot + display spot + market phase.</li>
+          <li>Daily bars (for HV) · minute bars (VWAP) · prints (dark-pool / blocks, context only).</li>
+          <li>Provenance: <code>live_massive</code> vs fixture, frozen <code>as_of</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Not bought, not stored</h3>
+        <ul>
+          <li>Massive point-in-time <em>historical</em> options chains (separate product — P7).</li>
+          <li>Historical IV surface as a vendor series (we keep our own ATM IV diary).</li>
+          <li>Index underlyings we do not scan (VIX/SPX) unless they are in the universe.</li>
+          <li>Overnight session (Massive is 4 AM–8 PM ET). Unsolved; not a capture bug.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- TEST -->
+    <h2 id="test"><span class="kicker">03 · Four tools</span>What we currently back-test</h2>
+    <p>
+      “Back-test” here does not mean a broker P&amp;L simulator. It means:
+      <strong>replay our compute on a frozen input, then (optionally) join a forward stock-bar label.</strong>
+      No tool writes live score, tier, or fingerprint.
+    </p>
+
+    <div class="diagram" role="img" aria-label="Four research CLIs and what each consumes">
+      <svg viewBox="0 0 960 320" xmlns="http://www.w3.org/2000/svg">
+        <rect x="30" y="20" width="170" height="70" rx="8" fill="#1B2432" stroke="#F2A93B"/>
+        <text x="115" y="50" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Paid book</text>
+        <text x="115" y="70" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">chain_snapshots</text>
+        <rect x="30" y="120" width="170" height="70" rx="8" fill="#1B2432" stroke="#5E8BC4"/>
+        <text x="115" y="150" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Digest row</text>
+        <text x="115" y="170" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">structure history</text>
+        <rect x="30" y="220" width="170" height="70" rx="8" fill="#1B2432" stroke="rgba(138,155,180,0.4)"/>
+        <text x="115" y="250" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Stock bars</text>
+        <text x="115" y="270" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">/v2/aggs  ·  $199</text>
+
+        <rect x="280" y="20" width="190" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="375" y="48" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">P3</text>
+        <text x="375" y="70" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">batch-backtest</text>
+        <rect x="280" y="120" width="190" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="375" y="148" text-anchor="middle" fill="#5E8BC4" font-family="IBM Plex Mono" font-size="11">P2</text>
+        <text x="375" y="170" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">score-lab</text>
+        <rect x="280" y="220" width="190" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="375" y="248" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">P0</text>
+        <text x="375" y="270" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">join-outcomes</text>
+
+        <rect x="540" y="70" width="200" height="90" rx="8" fill="#131A24" stroke="#F2A93B"/>
+        <text x="640" y="108" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="11">NEW 19 Aug</text>
+        <text x="640" y="132" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="14">replay-outcome-join</text>
+
+        <rect x="800" y="70" width="140" height="90" rx="8" fill="#1B2432" stroke="rgba(138,155,180,0.28)"/>
+        <text x="870" y="112" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">Dated report</text>
+        <text x="870" y="134" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="11">Authorizes: 0</text>
+
+        <path d="M200 55 H280" stroke="#F2A93B" stroke-width="2"/>
+        <path d="M200 155 H280" stroke="#5E8BC4" stroke-width="2"/>
+        <path d="M200 255 H280" stroke="rgba(138,155,180,0.5)" stroke-width="2"/>
+        <path d="M470 55 H540 640 70" stroke="#F2A93B" stroke-width="2" fill="none"/>
+        <path d="M470 255 H640 V160" stroke="rgba(138,155,180,0.5)" stroke-width="2" fill="none"/>
+        <path d="M740 115 H800" stroke="#F2A93B" stroke-width="2"/>
+      </svg>
+    </div>
+    <p class="caption">score-lab never reloads a chain. batch-backtest never attaches a next-day label. The join is the missing meeting point — shipped yesterday, not yet run on a multi-week corpus.</p>
+
+    <div class="grid2">
+      <div class="card">
+        <h3><span class="tag tag-keep">P0</span> join-outcomes</h3>
+        <p>Attaches 1d / 5d session-count labels from Massive daily stock bars to digested samples. Writes <code>structure_outcomes</code>. Zero Options calls.</p>
+        <pre>cargo run -p api-rust -- join-outcomes --symbols SPY,QQQ,IWM</pre>
+      </div>
+      <div class="card">
+        <h3><span class="tag tag-keep">P2</span> score-lab</h3>
+        <p>Ranks five candidate signals against three labels, pooled and per-symbol. Comparative report is the default. Strict read: a degraded column aborts the run rather than faking “absent.”</p>
+        <pre>cargo run -p api-rust -- score-lab --outcomes data/research/outcomes_….json --horizon 1d</pre>
+      </div>
+      <div class="card">
+        <h3><span class="tag tag-keep">P3</span> batch-backtest</h3>
+        <p>Reloads stored books, runs Path-B <code>compute_analytics_from_vendor</code>, emits score / tier / walls / flip / <code>display_spot</code>. Zero Massive. Time split flags exist; a hollow split is refused.</p>
+        <pre>cargo run -p api-rust -- batch-backtest --symbols SPY,IWM --from … --to …</pre>
+      </div>
+      <div class="card">
+        <h3><span class="tag tag-keep">JOIN</span> replay-outcome-join</h3>
+        <p>Pairs replayed scores with 1d/5d labels. <code>p0</code> is capture-time <code>display_spot</code>, never a silent session close. Honest states: no snapshot ≠ empty book ≠ no label ≠ no_p0. Stocks fill only if labels are missing.</p>
+        <pre>cargo run -p api-rust -- replay-outcome-join --replay data/research/batch_….json</pre>
+      </div>
+    </div>
+
+    <h3>What the lab actually ranks (P2)</h3>
+    <table>
+      <thead><tr><th>Candidates (signals)</th><th>Labels (outcomes)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>Composite opportunity score</strong> (primary)<br/>
+            Vol-normalized |net GEX|<br/>
+            Raw |net GEX| (control for the vol-norm one)<br/>
+            Closeness to flip<br/>
+            Closeness to nearer wall
+          </td>
+          <td>
+            <strong>large_abs_move</strong> — |return| ≥ pooled median (primary KPI)<br/>
+            up_move — return &gt; 0 (expect ~chance; score is not direction)<br/>
+            structure_event — path touched call wall, put wall, or flip<br/>
+            <em>Horizons: 1d and 5d session counts, not clock hours.</em>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>The only published slice (11 Aug, 221 rows, same afternoon).</strong>
+      Composite vs large move: AUC <strong>0.467</strong>, top-decile lift 0.17 — worse than chance.
+      Composite vs structure_event: AUC 0.932 — mostly definitional (score is built from wall/flip proximity).
+      Pass bar is multi-week, operator-judged, never a per-run “AT BAR.” That slice is too thin to retune anything.
+    </div>
+
+    <h3>What we are <em>not</em> back-testing yet</h3>
+    <ul>
+      <li>The live score on the <strong>exact paid chain</strong> vs next-day move — tool exists; corpus is one session and missing SPY/QQQ.</li>
+      <li>AI recommendation quality (P4). Blocked until P2–P3 are boringly used.</li>
+      <li>Options P&amp;L / fill paths / broker outcomes. Labels are stock-bar session returns, not contract P&amp;L.</li>
+      <li>Intraday 30-minute horizons. Still 1d / 5d only.</li>
+      <li>Vendor historical chains before we existed (P7). Extra Massive product. Do not buy to paper over the cap.</li>
+    </ul>
+
+    <!-- GAP -->
+    <h2 id="gap"><span class="kicker">04 · The real hole</span>Tools shipped. Calendar has not.</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>We can measure</h3>
+        <ul>
+          <li>Whether digested score ranked next-day |move| on 10 Aug (it did not, on that slice).</li>
+          <li>Whether geometry candidates differ from the composite (comparative lab).</li>
+          <li>Whether Path-B replay of a stored book is byte-repeatable (P3 tests).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>We cannot honestly claim yet</h3>
+        <ul>
+          <li>The score “works” or “doesn’t” on paid books — one session, no 5d labels.</li>
+          <li>A train/validate split — hollow split is correctly refused.</li>
+          <li>SPY/QQQ paid-book performance — those files are missing or fixture-only here.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="diagram" role="img" aria-label="Why 48 snapshots is not 14 days">
+      <svg viewBox="0 0 960 210" xmlns="http://www.w3.org/2000/svg">
+        <text x="24" y="28" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">DIGEST RING  576 × ≥5 min thinning</text>
+        <rect x="24" y="40" width="912" height="28" rx="4" fill="#5E8BC4" opacity="0.35"/>
+        <text x="36" y="59" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">~9 calendar days currently sit in 321–409 samples / name — thinning works</text>
+        <text x="24" y="108" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">CHAIN RING  48 × no thinning</text>
+        <rect x="24" y="120" width="912" height="28" rx="4" fill="#1B2432" stroke="rgba(138,155,180,0.28)"/>
+        <rect x="24" y="120" width="912" height="28" rx="4" fill="#E07A3F" opacity="0.85"/>
+        <text x="36" y="139" fill="#0B0F17" font-family="IBM Plex Sans" font-size="13" font-weight="700">48 full chains in ~17 hours · then prune deletes the oldest paid book</text>
+        <text x="24" y="180" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">A 50 MB book, captured every cache miss, fills the research corpus with reprints of this afternoon. The Options invoice is for a chain we then throw away tonight.</text>
+      </svg>
+    </div>
+
+    <div class="note warn">
+      <strong>SPY and QQQ are the names the lab already uses — and they are the ones without paid books on this box.</strong>
+      SPY’s file is the 1970 GATE Q fixture. QQQ has no file. IWM has 25 live books (18–19 Aug).
+      Capture follows scanner cache-miss / ticker cold compute, not “always keep the liquid names.”
+      If those names stay warm in gex-cache, the paid chain is never appended.
+    </div>
+
+    <!-- KEEP -->
+    <h2 id="keep"><span class="kicker">05 · Keep what we pay for</span>Do not buy more Massive. Stop deleting today.</h2>
+    <p>
+      Stocks $199 already labels the next session. Options $199 already returns the book.
+      Maturity is a retention design, not a new vendor SKU.
+    </p>
+
+    <div class="diagram" role="img" aria-label="Two-ring keep strategy: session archive plus optional intraday">
+      <svg viewBox="0 0 960 250" xmlns="http://www.w3.org/2000/svg">
+        <rect x="40" y="30" width="400" height="180" rx="12" fill="#131A24" stroke="#F2A93B"/>
+        <text x="240" y="64" text-anchor="middle" fill="#F2A93B" font-family="IBM Plex Mono" font-size="12">SESSION ARCHIVE  ·  never prune</text>
+        <text x="240" y="100" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="20">1 book / symbol / ET day</text>
+        <text x="240" y="130" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Pick: last RTH slow-lane of the day</text>
+        <text x="240" y="152" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">~70 × 50 MB × 60 days ≈ 210 GB, not 2 TB</text>
+        <text x="240" y="186" text-anchor="middle" fill="#E9E4D6" font-family="IBM Plex Sans" font-size="13">This is the research corpus.</text>
+
+        <rect x="520" y="30" width="400" height="180" rx="12" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+        <text x="720" y="64" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Mono" font-size="12">INTRADAY RING  ·  optional, allowed to die</text>
+        <text x="720" y="100" text-anchor="middle" fill="#E9E4D6" font-family="Archivo" font-size="20">Today’s 48 reprints</text>
+        <text x="720" y="130" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Useful for same-day path studies</text>
+        <text x="720" y="152" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Must not be the only copy</text>
+        <text x="720" y="186" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Prune this ring, never the archive.</text>
+      </svg>
+    </div>
+    <p class="caption">One full chain per name per session is enough to ask “did yesterday’s book rank today’s move?” That is the whole product question.</p>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Keep (no new spend)</h3>
+        <ul>
+          <li>Session-level archive that prune cannot touch (object store or dated folder).</li>
+          <li>Force-capture SPY / QQQ / IWM at least once per RTH even if gex-cache is warm.</li>
+          <li>Stocks aggs join for labels — already paid, already built.</li>
+          <li><code>CHAIN_SNAPSHOT_ENABLED=true</code>. Turning it off to save disk is how we go back to throwing the invoice away.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Do not (yet)</h3>
+        <ul>
+          <li><span class="tag tag-drop">P7</span> Buy Massive hist-chain / hist IV / indices to backfill. Capture what we already fetch first.</li>
+          <li>Raise the 48 cap and keep full-size intraday books for 14 days. That is terabytes (14 × 48 × 70 × ~50 MB).</li>
+          <li>Put unbounded BYTEA chains on the Railway Postgres volume as the long-term archive.</li>
+          <li>Redistribute stored snapshots on a trader route. License: our research, never a feed.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- PATH -->
+    <h2 id="path"><span class="kicker">06 · Maturity</span>What “grown-up” looks like from here</h2>
+    <div class="diagram" role="img" aria-label="Phase ladder from shipped capture to shadow scores">
+      <svg viewBox="0 0 960 200" xmlns="http://www.w3.org/2000/svg">
+        <g font-family="IBM Plex Sans" font-size="12">
+          <rect x="16" y="50" width="110" height="70" rx="8" fill="#F2A93B"/>
+          <text x="71" y="80" text-anchor="middle" fill="#0B0F17" font-weight="700">P0</text>
+          <text x="71" y="100" text-anchor="middle" fill="#0B0F17">digest + join</text>
+          <rect x="136" y="50" width="110" height="70" rx="8" fill="#F2A93B"/>
+          <text x="191" y="80" text-anchor="middle" fill="#0B0F17" font-weight="700">P1</text>
+          <text x="191" y="100" text-anchor="middle" fill="#0B0F17">hermetic port</text>
+          <rect x="256" y="50" width="110" height="70" rx="8" fill="#F2A93B"/>
+          <text x="311" y="80" text-anchor="middle" fill="#0B0F17" font-weight="700">P2</text>
+          <text x="311" y="100" text-anchor="middle" fill="#0B0F17">score-lab</text>
+          <rect x="376" y="50" width="110" height="70" rx="8" fill="#F2A93B"/>
+          <text x="431" y="80" text-anchor="middle" fill="#0B0F17" font-weight="700">P3</text>
+          <text x="431" y="100" text-anchor="middle" fill="#0B0F17">replay books</text>
+          <rect x="496" y="50" width="110" height="70" rx="8" fill="#1B2432" stroke="#F2A93B"/>
+          <text x="551" y="80" text-anchor="middle" fill="#F2A93B" font-weight="700">NOW</text>
+          <text x="551" y="100" text-anchor="middle" fill="#E9E4D6">keep + use</text>
+          <rect x="616" y="50" width="110" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+          <text x="671" y="80" text-anchor="middle" fill="#8A9BB4" font-weight="700">P4</text>
+          <text x="671" y="100" text-anchor="middle" fill="#8A9BB4">AI lab</text>
+          <rect x="736" y="50" width="90" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+          <text x="781" y="80" text-anchor="middle" fill="#8A9BB4" font-weight="700">P5</text>
+          <text x="781" y="100" text-anchor="middle" fill="#8A9BB4">shadow</text>
+          <rect x="836" y="50" width="108" height="70" rx="8" fill="#131A24" stroke="rgba(138,155,180,0.28)"/>
+          <text x="890" y="80" text-anchor="middle" fill="#8A9BB4" font-weight="700">P7</text>
+          <text x="890" y="100" text-anchor="middle" fill="#8A9BB4">hist-chain</text>
+        </g>
+        <text x="480" y="160" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">Shipped through P3 + join. The gap is operational: thin, archive, run weekly, then wait for weeks of session books.</text>
+        <text x="480" y="182" text-anchor="middle" fill="#8A9BB4" font-family="IBM Plex Sans" font-size="13">P6 (product replay UI) stays optional and internal. P7 only after P2–P3 are boring.</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead><tr><th>Grown-up research looks like</th><th>We are here</th></tr></thead>
+      <tbody>
+        <tr><td>Point-in-time books we actually paid for, one per session, for months</td><td>3,010 books, almost all one afternoon, then prune</td></tr>
+        <tr><td>Labels from stock bars we already pay for, 1d and 5d, durable</td><td>Built. 5d still empty on short windows (need five sessions after the sample day)</td></tr>
+        <tr><td>Hermetic replay, byte-identical second run, zero Options</td><td>Shipped and tested</td></tr>
+        <tr><td>Comparative ranking with floors, coupling marks, evidence header</td><td>Shipped. One thin published slice</td></tr>
+        <tr><td>Time-based train / holdout that is actually two non-empty buckets</td><td>Flags exist; corpus cannot form them yet</td></tr>
+        <tr><td>Weekly ritual pasted from the tool, never retyped</td><td>Runbook exists; not yet a habit on paid books</td></tr>
+        <tr><td>Score change only via a measured, version-bumped feature</td><td>Standing rule. Do not skip it because a join looks interesting</td></tr>
+      </tbody>
+    </table>
+
+    <!-- REC -->
+    <h2 id="rec"><span class="kicker">07 · Sequence</span>Recommendations, in order</h2>
+    <p>One job at a time. Later steps are cheaper if the first two land.</p>
+
+    <div class="step">
+      <div class="n">1</div>
+      <div>
+        <h3>Thin capture to one session book</h3>
+        <p>After each RTH (or on the last slow-lane of the day), copy one snapshot per symbol into an archive prune cannot delete. Leave the 48-slot ring as an optional same-day buffer. This single change turns $398/mo into a dated corpus instead of a 17-hour loop.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <div>
+        <h3>Guarantee the names we already measure</h3>
+        <p>SPY, QQQ, IWM must produce a session book even when gex-cache is warm. Today the lab’s own tickers are the ones missing paid chains. That is an operational bug, not a vendor gap.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">3</div>
+      <div>
+        <h3>Smoke the new join on what we have — honestly</h3>
+        <p>Run <code>batch-backtest</code> then <code>replay-outcome-join</code> on IWM (25 live books) or a 19 Aug subset. Expect 5d = not-computable. Paste the tool’s evidence block. Do not retune. The point is to prove the pipe on real files, not to harvest an AUC.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">4</div>
+      <div>
+        <h3>Keep the cheap weekly digest ritual</h3>
+        <p>The structure diary already spans nine days. Continue <code>join-outcomes</code> → <code>score-lab --horizon 1d</code> on SPY/QQQ/IWM. Paste, don’t retype. This is the only series that can grow 5d labels in the next two weeks.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">5</div>
+      <div>
+        <h3>Wait for four to six session weeks of archived books</h3>
+        <p>Then a time split is real, 5d labels exist, and a paid-book AUC means something. That is the first moment a score-changing feature could even be proposed — still under <code>score-change-is-deliberate-and-measured</code>, with before/after on real tickers and a fingerprint-basis bump.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">6</div>
+      <div>
+        <h3>Only then: AI lab (P4), then shadow (P5)</h3>
+        <p>Frozen export packs, multi-model, cost/latency. Champion policy. No silent swap. Product replay UI (P6) stays internal and badged. Hist-chain (P7) remains “only if P2–P3 are boringly solid.”</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">7</div>
+      <div>
+        <h3>Prod storage: not unbounded BYTEA on the app database</h3>
+        <p>Local JSON is already 3.8 GB for one day of unthinned books. Session archive belongs in object storage (or a dedicated volume) with identity <code>(symbol, et_date)</code>. Postgres can keep metadata + labels. The chain body is the expensive part — keep it, just not in the OLTP row.</p>
+      </div>
+    </div>
+
+    <div class="note ok">
+      <strong>Decision impact, if we do 1–5.</strong>
+      You will be able to say, with a pasted report: “on the exact Options book we paid for that session, did the score rank the next session’s large move — and over how many weeks?” That is the question the 11 Aug digest slice asked and could not settle. Buying hist-chain does not answer it. Keeping Tuesday’s book until next month does.
+    </div>
+
+    <h3>Standing rules this plan must not break</h3>
+    <ul>
+      <li><strong>Authorizes: nothing</strong> — a report never ships a live weight.</li>
+      <li><strong>Additive keeps score byte-identical</strong> until a deliberate, measured score feature.</li>
+      <li><strong>Best-effort capture</strong> — a store failure never takes down bundle / scan / SSE.</li>
+      <li><strong>Operator vs trader path</strong> — research CLIs and <code>/_research</code> stay unlinked from the desk.</li>
+      <li><strong>Absent is not none</strong> — no snapshot, empty book, no label, no_p0 stay distinct.</li>
+      <li><strong>Dark-pool is context only</strong> — prints in the book are not a scored signal.</li>
+    </ul>
+
+    <footer>
+      Grounded against live code and this machine’s <code>data/</code> on 19 Aug 2026:
+      <code>apps/api/src/services/chain_snapshot/</code>,
+      <code>services/research/{score_lab,batch_backtest,replay_outcome_join,candidates,labels}.rs</code>,
+      migrations 6 + 10, archived briefs for <code>chain-snapshot-capture</code>,
+      <code>batch-backtest-cli</code>, <code>replay-outcome-join</code>.
+      Predecessor blueprint: <code>docs/SYSTEM_DESIGN_AND_BACKTEST.html</code> (P0–P7 intent).
+      This page is the post-ship inventory of that intent.
+    </footer>
+  </div>
+</body>
+</html>

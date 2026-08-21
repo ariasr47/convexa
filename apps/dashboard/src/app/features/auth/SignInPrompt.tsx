@@ -6,7 +6,9 @@
  * The copy is supplied by the caller (it differs per action: track positions / save a view / accept a
  * rec / ask AI / "couldn't reach sign-in" when degraded), so this component is purely presentational.
  */
-import { Alert, Button, Collapse } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
 import { AUTH_COPY } from './copy';
 
 interface Props {

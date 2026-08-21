@@ -7,7 +7,10 @@
 import type { OpportunityTier } from '@convexa/api';
 import BoltIcon from '@mui/icons-material/Bolt';
 import CloseIcon from '@mui/icons-material/Close';
-import { Alert, Box, Button, IconButton } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import { alpha, Theme } from '@mui/material/styles';
 // The tier WORD map stays in the trading KERNEL: `outcomes/ledger.ts` reads the same closed lookup,
 // and `features/ -> pages/` would invert the downward-only dependency direction (SPEC §2.7).

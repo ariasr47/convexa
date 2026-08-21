@@ -51,9 +51,28 @@ fn double_optional_cap(body: &Value) -> Option<Option<(f64, String)>> {
 pub struct AiKeyBody {
     /// Raw API key (write-only). Never echoed.
     pub key: String,
-    /// Optional: anthropic | openai | xai | gemini | openai_compatible.
-    /// When omitted, provider is inferred from the key prefix.
+    /// Required closed BYO provider — never inferred into the slot from key prefix.
     pub provider: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+pub struct AiKeyQuery {
+    pub provider: Option<String>,
+}
+
+fn closed_byo_provider(raw: Option<&str>) -> Result<&'static str, AuthErr> {
+    let Some(p) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Err(AuthErr {
+            status: 422,
+            code: "validation",
+            message: "provider is required.".into(),
+        });
+    };
+    crate::services::llm_catalog::parse_byo_provider(p).ok_or_else(|| AuthErr {
+        status: 422,
+        code: "validation",
+        message: "provider must be anthropic, openai, xai, or gemini.".into(),
+    })
 }
 
 fn cookie_from_headers(headers: &HeaderMap) -> Option<String> {
@@ -80,16 +99,12 @@ fn set_session_cookie(state: &AppState, signed: &str) -> HeaderValue {
         ""
     };
     let samesite = state.auth.cookie_samesite();
-    let v = format!(
-        "{COOKIE_NAME}={signed}; Path=/; HttpOnly; SameSite={samesite}{secure}"
-    );
+    let v = format!("{COOKIE_NAME}={signed}; Path=/; HttpOnly; SameSite={samesite}{secure}");
     HeaderValue::from_str(&v).unwrap_or_else(|_| HeaderValue::from_static(""))
 }
 
 fn clear_session_cookie() -> HeaderValue {
-    HeaderValue::from_static(
-        "gf_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax",
-    )
+    HeaderValue::from_static("gf_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax")
 }
 
 fn auth_err(e: AuthErr) -> Response {
@@ -98,7 +113,10 @@ fn auth_err(e: AuthErr) -> Response {
 }
 
 /// GET /api/auth/session — always 200 identity shape.
-pub async fn session_status(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
+pub async fn session_status(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
     let cookie = cookie_from_headers(&headers);
     Json(auth(&state).session_status(cookie.as_deref()))
 }
@@ -170,13 +188,33 @@ pub async fn put_settings(
     let Some(user) = resolved.user else {
         return auth_err(settings_auth_required());
     };
+    if body.get("ai_model").is_some_and(|v| v.is_null()) {
+        return auth_err(AuthErr {
+            status: 422,
+            code: "validation",
+            message: "ai_model cannot be cleared; send a catalog id or omit the field.".into(),
+        });
+    }
     let patch = SettingsPatch {
-        active_persona_id: body.get("active_persona_id").and_then(|v| v.as_str()).map(String::from),
-        default_ticker: body.get("default_ticker").and_then(|v| v.as_str()).map(String::from),
+        active_persona_id: body
+            .get("active_persona_id")
+            .and_then(|v| v.as_str())
+            .map(String::from),
+        default_ticker: body
+            .get("default_ticker")
+            .and_then(|v| v.as_str())
+            .map(String::from),
         theme: body.get("theme").and_then(|v| v.as_str()).map(String::from),
         scan_view: None,
         risk_account_size: double_optional_f64(&body, "account_size"),
         per_trade_cap: double_optional_cap(&body),
+        ai_power_path: body
+            .get("ai_power_path")
+            .map(|v| v.as_str().map(String::from)),
+        ai_provider: body
+            .get("ai_provider")
+            .map(|v| v.as_str().map(String::from)),
+        ai_model: body.get("ai_model").map(|v| v.as_str().map(String::from)),
     };
     match auth(&state).write_settings(&user, patch) {
         Ok(s) => (StatusCode::OK, Json(s)).into_response(),
@@ -202,17 +240,21 @@ pub fn cookie_opt(headers: &HeaderMap) -> Option<String> {
 // BYO AI key (FE Settings write-only)
 // ---------------------------------------------------------------------------
 
-/// GET /api/auth/ai-key — `{set, last4, storage_available, provider?}`.
+/// GET /api/auth/ai-key — full bootstrap (matrix + grok + preference + catalog).
 pub async fn get_ai_key(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
         return auth_err(auth_required());
     };
-    (StatusCode::OK, Json(auth(&state).ai_key_hint(&user))).into_response()
+    (
+        StatusCode::OK,
+        Json(auth(&state).ai_providers_bootstrap(&user)),
+    )
+        .into_response()
 }
 
-/// PUT /api/auth/ai-key — encrypt+store; returns masked status (never echoes key).
+/// PUT /api/auth/ai-key — encrypt+store one provider slot; returns full bootstrap.
 pub async fn put_ai_key(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -231,19 +273,69 @@ pub async fn put_ai_key(
             message: "Enter a valid API key.".into(),
         });
     }
-    let out = auth(&state).set_ai_key(&user, raw, body.provider.as_deref());
+    let provider = match closed_byo_provider(body.provider.as_deref()) {
+        Ok(p) => p,
+        Err(e) => return auth_err(e),
+    };
+    let out = auth(&state).set_ai_key(&user, raw, provider);
     (StatusCode::OK, Json(out)).into_response()
 }
 
-/// DELETE /api/auth/ai-key — idempotent.
-pub async fn delete_ai_key(State(state): State<AppState>, headers: HeaderMap) -> Response {
+/// DELETE /api/auth/ai-key?provider= — scoped, idempotent.
+pub async fn delete_ai_key(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(q): Query<AiKeyQuery>,
+) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
         return auth_err(auth_required());
     };
-    let out = auth(&state).delete_ai_key(&user);
+    let provider = match closed_byo_provider(q.provider.as_deref()) {
+        Ok(p) => p,
+        Err(e) => return auth_err(e),
+    };
+    let out = auth(&state).delete_ai_key(&user, provider);
     (StatusCode::OK, Json(out)).into_response()
+}
+
+/// GET /api/auth/grok/start — 409 until xAI user-OAuth is verified (never 302 to a fabricated URL).
+pub async fn grok_start(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if let Err(r) = require_user(&state, &headers) {
+        return r;
+    }
+    auth_err(auth(&state).grok_start_blocked())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GrokCallbackQuery {
+    #[allow(dead_code)]
+    pub code: Option<String>,
+    #[allow(dead_code)]
+    pub state: Option<String>,
+    #[allow(dead_code)]
+    pub error: Option<String>,
+}
+
+/// GET /api/auth/grok/callback — arm unavailable: redirect home with error, no token persist.
+pub async fn grok_callback(
+    State(state): State<AppState>,
+    Query(_q): Query<GrokCallbackQuery>,
+) -> Response {
+    let _ = state;
+    let post = std::env::var("AUTH_APP_POST_LOGIN_URL").unwrap_or_else(|_| "/".into());
+    Redirect::temporary(&format!("{post}?grok=unavailable")).into_response()
+}
+
+/// DELETE /api/auth/grok — unlink; clear path if it was grok_subscription.
+pub async fn grok_delete(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let cookie = cookie_from_headers(&headers);
+    let resolved = auth(&state).resolve_session(cookie.as_deref());
+    let Some(user) = resolved.user else {
+        return auth_err(auth_required());
+    };
+    (StatusCode::OK, Json(auth(&state).grok_disconnect(&user))).into_response()
 }
 
 // ---------------------------------------------------------------------------

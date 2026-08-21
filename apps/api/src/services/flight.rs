@@ -28,7 +28,11 @@ impl GexFlight {
     }
 
     /// Join an in-flight compute for `ticker`, or run `compute` once and fan out.
-    pub async fn join_or_run<F, Fut>(&self, ticker: &str, compute: F) -> AppResult<AnalyticsSnapshot>
+    pub async fn join_or_run<F, Fut>(
+        &self,
+        ticker: &str,
+        compute: F,
+    ) -> AppResult<AnalyticsSnapshot>
     where
         F: FnOnce() -> Fut,
         Fut: Future<Output = AppResult<AnalyticsSnapshot>>,

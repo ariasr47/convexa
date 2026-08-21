@@ -116,12 +116,35 @@ describe('DecisionCard observable contract', () => {
     expect(screen.getByText('Using your key')).toBeInTheDocument();
     expect(screen.getByTestId('ai-rec-provenance-chip')).toBeInTheDocument();
   });
-  it('retains shared allowance provenance', () => {
+  it('subscription provenance is your Grok subscription, never BYO Grok or a pool', () => {
     const rec = recAllTraced();
-    rec.key_source = 'shared_admin';
-    rec.remaining_free_uses = 2;
+    rec.key_source = 'grok_subscription';
+    rec.provider = null;
+    rec.model = 'grok-3';
     renderCard(rec);
-    expect(screen.getByText('2 of 3 free uses left today')).toBeInTheDocument();
+    expect(screen.getByText('your Grok subscription')).toBeInTheDocument();
+    expect(screen.getByText('Model · grok-3')).toBeInTheDocument();
+    expect(screen.queryByText('Using your Grok key')).toBeNull();
+    expect(screen.queryByText(/Convexa Grok pool|free uses/i)).toBeNull();
+  });
+  it('own-key BYO Grok is distinct from subscription', () => {
+    const rec = recAllTraced();
+    rec.key_source = 'own_key';
+    rec.provider = 'xai';
+    rec.model = 'grok-3';
+    renderCard(rec);
+    expect(screen.getByText('Using your Grok key')).toBeInTheDocument();
+    expect(screen.queryByText('your Grok subscription')).toBeNull();
+  });
+  it('omits unnamed model chip — never invents default', () => {
+    const rec = recAllTraced();
+    rec.key_source = 'own_key';
+    rec.provider = 'anthropic';
+    rec.model = null;
+    renderCard(rec);
+    expect(screen.getByText('Using your Anthropic key')).toBeInTheDocument();
+    expect(screen.queryByText(/Model ·/)).toBeNull();
+    expect(screen.queryByText(/Model · default/i)).toBeNull();
   });
   it('shows stale-born warning icon and superseded recovery copy', () => {
     const rec = recAllTraced();
@@ -306,9 +329,10 @@ describe('plan-scope caption on DecisionCard', () => {
     expect(caption).toHaveTextContent(PLAN_FIELDS_NOT_CHECKED);
   });
 
-  it('is absent on local_rules with shared_admin key_source (AC-2)', () => {
+  it('is absent on local_rules with a poison shared_admin key_source (AC-2)', () => {
     const rec = recLocalRules();
-    rec.key_source = 'shared_admin';
+    // Negative fixture only — not a live powering path.
+    (rec as { key_source?: string }).key_source = 'shared_admin';
     rec.remaining_free_uses = 1;
     renderCard(rec);
     expect(screen.queryByTestId('plan-fields-not-checked')).toBeNull();

@@ -8,7 +8,10 @@
  *  - `available=true` (AC-G3): enabled/clickable; starts the server-side flow by navigating to
  *    `/api/auth/google/start` (a full-page redirect — the server does the OAuth dance).
  */
-import { Box, Button, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { AUTH_COPY } from './copy';
 
 /** The official multicolor Google "G" (the MUI GoogleIcon is monochrome). */

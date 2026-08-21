@@ -96,54 +96,68 @@ export const COPY = {
   },
 } as const;
 
-// ---- byo-ai-key (UX_BLUEPRINT §5; verbatim) --------------------------------------------------
-// The five key-resolution states layered on top of the shipped gate/cooldown/cap. Honest, not a free
-// trial: states (a)/(e) frame BYO as a setup step; (c) frames the allowance as renewing daily.
-export const BYO_KEY = {
+// ---- ai-providers powering copy (SPEC §4). Closed reasons stay distinct. Never free / pool /
+// cheaper / included. Subscription label ≠ BYO "Grok".
+export const POWERING = {
   noKey: {
-    title: 'Add your Anthropic key to get AI recommendations',
+    title: 'Add an API key to power recommendations',
     body:
-      'AI recommendations run on your own Anthropic API key — your key, your cost. Add it once in ' +
-      'Settings and this unlocks. The manual export below always works without a key.',
-    cta: 'Add your key in Settings',
+      'Add an API key for Anthropic, OpenAI, Gemini, or Grok to power recommendations. Your key, your cost. ' +
+      'The manual export below always works without a key.',
+    cta: 'Open AI providers in Settings',
   },
-  adminExhausted: {
-    body:
-      'Your free allowance on the shared key is used up for today. Add your own Anthropic key in ' +
-      'Settings to keep getting recommendations — your free uses come back tomorrow.',
-    cta: 'Add your key in Settings',
+  keyUnusable: {
+    title: "Your saved key can't be used",
+    body: "Your saved key can't be used. Replace it in Settings.",
+    cta: 'Replace key in Settings',
   },
-  sharedUnconfigured: {
-    title: "The shared AI key isn't set up",
-    body:
-      "There's no shared key configured for free admin recommendations right now. Add your own " +
-      'Anthropic key in Settings to use recommendations — your key, your cost. The manual export ' +
-      'below still works without a key.',
-    cta: 'Add your key in Settings',
+  keyRejected: {
+    title: 'The provider rejected your key',
+    body: 'The provider rejected your key. Replace it in Settings.',
+    cta: 'Replace key in Settings',
   },
-  freeUses: {
-    tooltip:
-      "Free recommendations on the shared key, for admins. Used today's allowance? Add your own " +
-      'Anthropic key in Settings to keep going. The count resets daily.',
+  modelMissing: {
+    title: 'Choose another model',
+    body: "The selected model isn't in the current catalog. Choose another model before asking.",
+    cta: 'Choose a model',
+  },
+  modelUnset: {
+    title: 'Choose a model',
+    body: 'Choose a model from the catalog before asking.',
+    cta: 'Choose a model',
+  },
+  oauthExpired: {
+    title: 'Your Grok connection expired',
+    body: 'Your Grok connection expired. Reconnect to use your subscription, or use your own key.',
+    cta: 'Open AI providers in Settings',
+  },
+  oauthUnlinked: {
+    title: 'Connect Grok or add your key',
+    body: 'Connect Grok to use your Grok subscription, or use your own API key.',
+    cta: 'Open AI providers in Settings',
+  },
+  subscriptionUnavailable: {
+    title: "Your Grok subscription isn't available",
+    body: "Your Grok subscription isn't available for Ask-AI right now. You can still add your own API key below.",
+    cta: 'Open AI providers in Settings',
   },
   ownKey: {
-    chip: 'Using your key',
+    tooltip: 'This recommendation ran on your own API key — your cost. Manage keys in Settings.',
+  },
+  subscription: {
     tooltip:
-      "This recommendation ran on your own Anthropic key — your cost, no shared limit. It doesn't " +
-      'use the free admin allowance. Manage your key in Settings.',
+      'This recommendation ran on your Grok subscription. Manage the connection in Settings.',
   },
 } as const;
 
-/** `You've used today's {total} free recommendations` — state (c) exhausted title. */
-export const adminExhaustedTitle = (total: number) =>
-  `You've used today's ${total} free recommendations`;
-/** `{remaining} of {total} free uses left today` — state (b) subordinate chip. */
-export const freeUsesChip = (remaining: number, total: number) =>
-  `${remaining} of ${total} free uses left today`;
-/** `Using your key` — state (d) subordinate chip. */
+/** @deprecated Use POWERING.noKey — kept so existing heading-scan imports resolve. */
+export const BYO_KEY = {
+  noKey: POWERING.noKey,
+  ownKey: { chip: 'Using your key', tooltip: POWERING.ownKey.tooltip },
+} as const;
+
+/** Own-key honesty chip (generic floor). Prefer `ownKeyChip(provider)` when provider is named. */
 export const OWN_KEY_CHIP = BYO_KEY.ownKey.chip;
-/** The default allowance display constant when `free_uses_total` is absent (UX §6). */
-export const FREE_USES_TOTAL_FALLBACK = 3;
 
 /** `Persona · {name}` provenance chip. */
 export const personaChip = (name: string) => `Persona · ${name}`;

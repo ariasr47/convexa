@@ -42,7 +42,7 @@ export function useLivePrices(symbols: string[]): LivePricesState {
 
   // The subscription key: sorted + joined so a re-render with the same symbols in a different order
   // does not tear the connection down and rebuild it.
-  const key = [...new Set(symbols.map((s) => s.toUpperCase()))].sort().join(',');
+  const key = [...new Set(symbols.map((s) => s.toUpperCase()))].toSorted().join(',');
   const lastSeen = useRef<number>(0);
 
   useEffect(() => {

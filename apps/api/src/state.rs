@@ -1,17 +1,22 @@
 //! Shared application state for the Axum server.
 
-use crate::config::Config;
+use crate::config::{body_root_conflicts, Config};
 use crate::domain::{LivePrice, MarketPhase};
 use crate::error::AppResult;
 use crate::infrastructure::massive::MassiveRestClient;
+use crate::infrastructure::massive::StockStreamHub;
 use crate::infrastructure::redis::PriceCache;
+use crate::middleware::RateLimiter;
 use crate::services::auth::{AuthConfig, AuthService, AuthStore};
 use crate::services::broker::{get_positions_provider, BrokerBookService};
+use crate::services::chain_snapshot::ChainSnapshotStore;
 use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
-use crate::middleware::RateLimiter;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
-use crate::infrastructure::massive::StockStreamHub;
+#[cfg(feature = "postgres")]
+use crate::services::session_chain_archive::body_store::FsBodyStore;
+use crate::services::session_chain_archive::{EnsureGate, EnsureWake, SessionChainArchive};
+use chrono::Utc;
 use quant_engine::{Contract, GexResult, Signals};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -43,6 +48,14 @@ pub struct AppState {
     pub stock_hub: StockStreamHub,
     /// Per-IP rate limiter for expensive public routes (process-local).
     pub rate_limiter: Arc<RateLimiter>,
+    /// Append-only research chain snapshots (Disabled when not configured).
+    pub chain_snapshots: ChainSnapshotStore,
+    /// Sibling prune-proof session archive (Disabled when not configured).
+    pub session_archive: SessionChainArchive,
+    /// Non-blocking wake into the liquid-name session ensure worker.
+    pub ensure_wake: EnsureWake,
+    /// `(T, D)` singleflight + Massive spacing for the ensure worker.
+    pub ensure_gate: Arc<EnsureGate>,
     /// Shared Postgres pool when durable stores are postgres-backed (book sync, etc.).
     #[cfg(feature = "postgres")]
     pub pg: Option<crate::db::postgres::Pg>,
@@ -98,11 +111,8 @@ impl AppState {
             ScanStore::open(&config.scan_store_path, None).await?
         };
         #[cfg(not(feature = "postgres"))]
-        let scan = ScanStore::open(
-            &config.scan_store_path,
-            config.scan_database_url.as_deref(),
-        )
-        .await?;
+        let scan =
+            ScanStore::open(&config.scan_store_path, config.scan_database_url.as_deref()).await?;
 
         #[cfg(feature = "postgres")]
         let auth_store = if let Some(ref p) = pg {
@@ -171,6 +181,29 @@ impl AppState {
             info!("public rate limit: disabled (PUBLIC_RATE_LIMIT_PER_MIN=0)");
         }
 
+        let chain_snapshots = open_chain_snapshot_store(&config, {
+            #[cfg(feature = "postgres")]
+            {
+                pg.clone()
+            }
+            #[cfg(not(feature = "postgres"))]
+            {
+                ()
+            }
+        })
+        .await;
+        let session_archive = open_session_chain_archive_store(&config, {
+            #[cfg(feature = "postgres")]
+            {
+                pg.clone()
+            }
+            #[cfg(not(feature = "postgres"))]
+            {
+                ()
+            }
+        })
+        .await;
+
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -184,9 +217,257 @@ impl AppState {
             iv_store,
             stock_hub,
             rate_limiter,
+            chain_snapshots,
+            session_archive,
+            ensure_wake: EnsureWake::default(),
+            ensure_gate: Arc::new(EnsureGate::new()),
             #[cfg(feature = "postgres")]
             pg,
         })
+    }
+
+    /// Hermetic constructor for research-route / capture tests (no live vendor needed to boot).
+    pub async fn for_tests(
+        chain_snapshots: ChainSnapshotStore,
+        session_archive: SessionChainArchive,
+    ) -> AppResult<Self> {
+        let mut config = test_stub_config();
+        config.chain_snapshot_enabled = chain_snapshots.is_enabled();
+        config.session_chain_archive_enabled = session_archive.is_enabled();
+        let prices = PriceCache::connect(None).await?;
+        let massive = MassiveRestClient::new(&config)?;
+        let gex_cache = GexCache::new(config.clone());
+        let auth_store = AuthStore::open_memory()?;
+        let auth = AuthService::new(
+            auth_store,
+            AuthConfig {
+                signing_key: config.auth_session_signing_key.clone(),
+                session_idle_secs: config.auth_session_idle_secs as f64,
+                session_absolute_secs: config.auth_session_absolute_secs as f64,
+                cookie_secure: config.auth_cookie_secure,
+                cookie_samesite: config.auth_cookie_samesite.clone(),
+                registration_open: config.auth_registration_open,
+                password_min_length: 8,
+            },
+        );
+        let iv_path = std::env::temp_dir().join(format!(
+            "convexa_iv_test_{}_{}.json",
+            std::process::id(),
+            Utc::now().timestamp_nanos_opt().unwrap_or(0)
+        ));
+        Ok(Self {
+            config: Arc::new(config),
+            prices,
+            massive,
+            gex_cache,
+            gex_flight: GexFlight::new(),
+            scan: ScanStore::memory(),
+            universe: None,
+            auth,
+            broker: BrokerBookService::new(get_positions_provider()),
+            iv_store: IvStore::open(&iv_path)?,
+            stock_hub: StockStreamHub::spawn(&test_stub_config()),
+            rate_limiter: Arc::new(RateLimiter::new(0)),
+            chain_snapshots,
+            session_archive,
+            ensure_wake: EnsureWake::default(),
+            ensure_gate: Arc::new(EnsureGate::new()),
+            #[cfg(feature = "postgres")]
+            pg: None,
+        })
+    }
+}
+
+fn test_stub_config() -> Config {
+    use crate::config::DataFeed;
+    use std::collections::HashSet;
+    use std::path::PathBuf;
+    Config {
+        massive_api_key: "test".into(),
+        data_feed: DataFeed::Delayed,
+        rest_base: "https://api.massive.com".into(),
+        redis_url: None,
+        http_bind: "127.0.0.1:0".into(),
+        gex_cache_ttl_secs: 10,
+        gex_cache_ttl_liquid_secs: 20,
+        warm_symbols: vec![],
+        liquid_symbols: HashSet::new(),
+        warm_interval_secs: 30,
+        warm_concurrency: 1,
+        warm_enabled: false,
+        scan_enabled: false,
+        scan_universe_path: PathBuf::from("."),
+        scan_fast_interval_secs: 30,
+        scan_slow_batch_size: 4,
+        scan_promotion_cap: 2,
+        scan_stale_after_secs: 180,
+        scan_market_hours_only: false,
+        scan_store_path: PathBuf::from("."),
+        scan_database_url: None,
+        auth_store_path: PathBuf::from("."),
+        auth_session_signing_key: "test".into(),
+        auth_cookie_secure: false,
+        auth_cookie_samesite: "lax".into(),
+        auth_session_idle_secs: 3600,
+        auth_session_absolute_secs: 86400,
+        auth_registration_open: true,
+        auth_demo_seed: None,
+        include_dark_pool: false,
+        darkpool_lookback_secs: 3600,
+        block_min_shares: 5000,
+        iv_store_path: PathBuf::from("data/iv_timeseries.json"),
+        database_url: None,
+        public_rate_limit_per_min: 0,
+        metrics_secret_token: None,
+        chain_snapshot_max_age_secs: 1_209_600,
+        chain_snapshot_max_per_symbol: 48,
+        chain_snapshot_store_path: PathBuf::from("data/chain_snapshots"),
+        chain_snapshot_enabled: true,
+        session_chain_archive_enabled: true,
+        session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
+        session_chain_archive_body_root: None,
+        liquid_session_ensure_enabled: false,
+        workspace_root: PathBuf::from("."),
+    }
+}
+
+#[cfg(feature = "postgres")]
+async fn open_chain_snapshot_store(
+    config: &Config,
+    pg: Option<crate::db::postgres::Pg>,
+) -> ChainSnapshotStore {
+    if !config.chain_snapshot_enabled {
+        info!("chain snapshot store: disabled");
+        return ChainSnapshotStore::disabled();
+    }
+    if let Some(p) = pg {
+        let store = ChainSnapshotStore::open_postgres(p);
+        if let Err(e) = store.plant_conformance_seed().await {
+            warn!(error = %e, "chain snapshot conformance seed skipped");
+        }
+        return store;
+    }
+    open_chain_snapshot_json(config).await
+}
+
+#[cfg(not(feature = "postgres"))]
+async fn open_chain_snapshot_store(config: &Config, _pg: ()) -> ChainSnapshotStore {
+    if !config.chain_snapshot_enabled {
+        info!("chain snapshot store: disabled");
+        return ChainSnapshotStore::disabled();
+    }
+    open_chain_snapshot_json(config).await
+}
+
+fn session_archive_body_root_or_disabled(config: &Config) -> Option<&std::path::PathBuf> {
+    let Some(body_root) = config.session_chain_archive_body_root.as_ref() else {
+        warn!("SESSION_CHAIN_ARCHIVE_BODY_ROOT unset; session archive not storing");
+        return None;
+    };
+    if body_root.as_os_str().is_empty() {
+        warn!("SESSION_CHAIN_ARCHIVE_BODY_ROOT empty; session archive not storing");
+        return None;
+    }
+    if body_root_conflicts(
+        body_root,
+        &config.chain_snapshot_store_path,
+        &config.session_chain_archive_store_path,
+    ) {
+        warn!(
+            "SESSION_CHAIN_ARCHIVE_BODY_ROOT conflicts with ring/index; session archive not storing"
+        );
+        return None;
+    }
+    Some(body_root)
+}
+
+#[cfg(feature = "postgres")]
+async fn open_session_chain_archive_store(
+    config: &Config,
+    pg: Option<crate::db::postgres::Pg>,
+) -> SessionChainArchive {
+    if !config.session_chain_archive_enabled {
+        info!("session chain archive: disabled");
+        return SessionChainArchive::disabled();
+    }
+    let Some(body_root) = session_archive_body_root_or_disabled(config) else {
+        return SessionChainArchive::disabled();
+    };
+    if let Some(p) = pg {
+        let bodies = match FsBodyStore::open(body_root) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!(error = %e, "session archive body store unusable; session archive not storing");
+                return SessionChainArchive::disabled();
+            }
+        };
+        let store = SessionChainArchive::open_postgres(p, bodies);
+        if let Err(e) = store.migrate_inline_bodies().await {
+            warn!(error = %e, "session archive migrator failed; session archive not storing");
+            return SessionChainArchive::disabled();
+        }
+        if let Err(e) = store.plant_conformance_seed().await {
+            warn!(error = %e, "session archive conformance seed skipped");
+        }
+        return store;
+    }
+    open_session_chain_archive_json(config).await
+}
+
+#[cfg(not(feature = "postgres"))]
+async fn open_session_chain_archive_store(config: &Config, _pg: ()) -> SessionChainArchive {
+    if !config.session_chain_archive_enabled {
+        info!("session chain archive: disabled");
+        return SessionChainArchive::disabled();
+    }
+    open_session_chain_archive_json(config).await
+}
+
+async fn open_session_chain_archive_json(config: &Config) -> SessionChainArchive {
+    let Some(body_root) = session_archive_body_root_or_disabled(config) else {
+        return SessionChainArchive::disabled();
+    };
+    match SessionChainArchive::open_json(
+        &config.session_chain_archive_store_path,
+        &config.chain_snapshot_store_path,
+        body_root,
+    )
+    .await
+    {
+        Ok(store) => {
+            info!(
+                path = %config.session_chain_archive_store_path.display(),
+                body_root = %body_root.display(),
+                "session chain archive: json"
+            );
+            if let Err(e) = store.plant_conformance_seed().await {
+                warn!(error = %e, "session archive conformance seed skipped");
+            }
+            store
+        }
+        Err(e) => {
+            warn!(error = %e, "session archive store open failed; session archive not storing");
+            SessionChainArchive::disabled()
+        }
+    }
+}
+
+async fn open_chain_snapshot_json(config: &Config) -> ChainSnapshotStore {
+    match ChainSnapshotStore::open_json(&config.chain_snapshot_store_path).await {
+        Ok(store) => {
+            info!(
+                path = %config.chain_snapshot_store_path.display(),
+                "chain snapshot store: json"
+            );
+            if let Err(e) = store.plant_conformance_seed().await {
+                warn!(error = %e, "chain snapshot conformance seed skipped");
+            }
+            store
+        }
+        Err(e) => {
+            warn!(error = %e, "chain snapshot store open failed; capture not storing");
+            ChainSnapshotStore::disabled()
+        }
     }
 }
 
@@ -458,6 +739,14 @@ mod tests {
             database_url: None,
             public_rate_limit_per_min: 0,
             metrics_secret_token: None,
+            chain_snapshot_max_age_secs: 1_209_600,
+            chain_snapshot_max_per_symbol: 48,
+            chain_snapshot_store_path: PathBuf::from("data/chain_snapshots"),
+            chain_snapshot_enabled: true,
+            session_chain_archive_enabled: true,
+            session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
+            session_chain_archive_body_root: None,
+            liquid_session_ensure_enabled: false,
             workspace_root: PathBuf::from("."),
         }
     }
@@ -503,6 +792,28 @@ mod tests {
         assert_eq!(m.sets, 1);
         let snap = cache.peek("SPY").await.unwrap();
         assert_eq!(snap.ttl_secs, 60);
+    }
+
+    #[tokio::test]
+    async fn open_json_with_unset_body_root_yields_disabled_not_storing() {
+        let mut config = test_config();
+        config.session_chain_archive_enabled = true;
+        config.session_chain_archive_body_root = None;
+        let store = open_session_chain_archive_json(&config).await;
+        let err = store.list("SPY", None).await.unwrap_err();
+        assert!(err.to_string().contains("session archive not storing"));
+    }
+
+    #[tokio::test]
+    async fn open_json_with_body_root_nested_under_ring_yields_disabled() {
+        let mut config = test_config();
+        config.session_chain_archive_enabled = true;
+        config.chain_snapshot_store_path = PathBuf::from("data/chain_snapshots");
+        config.session_chain_archive_store_path = PathBuf::from("data/session_chain_archive");
+        config.session_chain_archive_body_root = Some(PathBuf::from("data/chain_snapshots/bodies"));
+        let store = open_session_chain_archive_json(&config).await;
+        let err = store.list("SPY", None).await.unwrap_err();
+        assert!(err.to_string().contains("session archive not storing"));
     }
 }
 

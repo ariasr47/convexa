@@ -166,14 +166,14 @@ const legCountText = (n: number) => `${n} leg${n === 1 ? '' : 's'}`;
 function distinctStrikes(legs: readonly Leg[]): number[] {
   const set = new Set<number>();
   for (const l of legs) if (isOption(l) && l.strike != null) set.add(l.strike);
-  return [...set].sort((a, b) => a - b);
+  return [...set].toSorted((a, b) => a - b);
 }
 
 /** The distinct expirations across the option legs, ascending. */
 function distinctExpirations(legs: readonly Leg[]): string[] {
   const set = new Set<string>();
   for (const l of legs) if (isOption(l) && l.expiration != null) set.add(l.expiration);
-  return [...set].sort();
+  return [...set].toSorted();
 }
 
 /** The one right shared by every option leg, or `null` when the structure mixes rights. */

@@ -7,7 +7,8 @@
  *
  * Color: last non-null sample sign → theme `success.main` / `error.main` (token discipline).
  */
-import { Box, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMemo } from 'react';
 import type { PlSample } from './useTrends';

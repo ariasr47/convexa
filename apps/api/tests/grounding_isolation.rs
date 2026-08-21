@@ -7,16 +7,33 @@ fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-const LEAF_FILES: [&str; 6] =
-    ["cap_check.rs", "cited.rs", "digest.rs", "field_reasons.rs", "grounding.rs", "max_risk.rs"];
-const BANNED_IN_LEAF: [&str; 6] =
-    ["crate::state", "crate::routes", "AppState", "reqwest", ".await", "std::env"];
+const LEAF_FILES: [&str; 6] = [
+    "cap_check.rs",
+    "cited.rs",
+    "digest.rs",
+    "field_reasons.rs",
+    "grounding.rs",
+    "max_risk.rs",
+];
+const BANNED_IN_LEAF: [&str; 6] = [
+    "crate::state",
+    "crate::routes",
+    "AppState",
+    "reqwest",
+    ".await",
+    "std::env",
+];
 
 fn leaf_sources() -> Vec<(String, String)> {
     let root = workspace_root().join("apps/api/src/services/rec_inputs");
     LEAF_FILES
         .iter()
-        .map(|f| (f.to_string(), fs::read_to_string(root.join(f)).unwrap_or_else(|_| panic!("{f} missing"))))
+        .map(|f| {
+            (
+                f.to_string(),
+                fs::read_to_string(root.join(f)).unwrap_or_else(|_| panic!("{f} missing")),
+            )
+        })
         .collect()
 }
 
@@ -27,7 +44,10 @@ fn the_rec_input_leaves_stay_pure() {
     let scanned = leaf_sources();
     // Anti-vacuity 1 — the scanned set is real and complete.
     assert_eq!(scanned.len(), 6, "expected exactly the six leaf files");
-    assert!(scanned.iter().any(|(n, _)| n == "grounding.rs"), "grounding.rs must be scanned");
+    assert!(
+        scanned.iter().any(|(n, _)| n == "grounding.rs"),
+        "grounding.rs must be scanned"
+    );
     // Anti-vacuity 2 — a truncated read must not read as clean.
     for (n, src) in &scanned {
         assert!(src.len() > 200, "{n} looks truncated: {} bytes", src.len());
@@ -55,7 +75,10 @@ fn the_purity_scan_bites() {
 fn no_configurable_path_can_serve_a_fabricating_recommendation_source() {
     let src = fs::read_to_string(workspace_root().join("apps/api/src/services/recommendation.rs"))
         .expect("recommendation.rs");
-    assert!(src.contains("pub scenario_id: Option<String>"), "the field must still exist to be pinned");
+    assert!(
+        src.contains("pub scenario_id: Option<String>"),
+        "the field must still exist to be pinned"
+    );
     assert_eq!(
         src.matches("scenario_id").count(),
         1,
@@ -96,7 +119,10 @@ fn no_configurable_path_can_serve_a_fabricating_recommendation_source() {
             "unexpected env read on the rec path: {name}"
         );
     }
-    assert!(!env_reads.is_empty(), "anti-vacuity: the env-read extractor found nothing");
+    assert!(
+        !env_reads.is_empty(),
+        "anti-vacuity: the env-read extractor found nothing"
+    );
 }
 
 /// guard 8c wiring pin — closes a gap the in-process `envelope_extras` fixtures cannot reach.
@@ -110,10 +136,8 @@ fn no_configurable_path_can_serve_a_fabricating_recommendation_source() {
 /// function over a live `AppState` + a fetched bundle with no hermetic in-process fixture today.
 #[test]
 fn the_base_closure_grounds_against_the_pruned_move_never_the_raw_one() {
-    let raw = fs::read_to_string(
-        workspace_root().join("apps/api/src/services/recommendation.rs"),
-    )
-    .expect("recommendation.rs");
+    let raw = fs::read_to_string(workspace_root().join("apps/api/src/services/recommendation.rs"))
+        .expect("recommendation.rs");
     // Line-ending-agnostic (F-2 fix): `core.autocrlf = true` + no `.gitattributes` means a fresh
     // Windows checkout of this tree is CRLF while the byte pattern below was authored against LF.
     // Normalize BEFORE matching rather than weakening the assertion — the assertion is the ONLY
@@ -124,10 +148,13 @@ fn the_base_closure_grounds_against_the_pruned_move_never_the_raw_one() {
         src.contains("            pruned_move.as_ref(),\n            grounding_anchors,"),
         "the base closure's envelope_extras call must pass pruned_move.as_ref(), never raw_move"
     );
-    // `raw_move.as_ref()` must appear exactly ONCE in the whole file — the tenor-restriction line
-    // that DERIVES `pruned_move`. Any second occurrence is `raw_move` reaching a caller directly.
+    // `raw_move.as_ref()` must appear exactly ONCE — the tenor-restriction line that DERIVES
+    // `pruned_move`. rustfmt may split the method chain across lines; collapse whitespace so
+    // the pin still sees that one call and still catches a second `raw_move.as_ref()` reaching
+    // a caller directly.
+    let collapsed: String = src.chars().filter(|c| !c.is_whitespace()).collect();
     assert_eq!(
-        src.matches("raw_move.as_ref()").count(),
+        collapsed.matches("raw_move.as_ref()").count(),
         1,
         "raw_move.as_ref() must appear exactly once (deriving pruned_move) — a second mention is the poison"
     );

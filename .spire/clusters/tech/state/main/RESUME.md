@@ -1,6 +1,6 @@
 # RESUME — branch `main` — written 2026-08-14 (post-ship snapshot)
 
-**Resume status:** ACTIVE
+**Resume status:** CONSUMED (as of 2026-08-15)
 
 Conductor snapshot at a clean gateway boundary: **`rec-absence-literals-hole` GATE S closed; GATE I
 not yet run.** Overlay on the canon — reconcile against disk.

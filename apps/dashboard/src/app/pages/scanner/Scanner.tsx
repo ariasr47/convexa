@@ -16,8 +16,13 @@
  * is the one gated write and the SERVER refuses it, not this file (`[server-side-gate-enforcement]`).
  */
 import { Jargon } from '@/shared/ui/Jargon';
-import { Alert, Box, Link, Skeleton, Typography, useMediaQuery } from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Link from '@mui/material/Link';
+import Skeleton from '@mui/material/Skeleton';
 import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { EMPTY_FILTERS, filtersActive, partitionLeadGroup } from './format';

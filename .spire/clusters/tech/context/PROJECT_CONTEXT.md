@@ -26,55 +26,68 @@ attracted/repelled, is the regime mean-reverting or trending, and is there an ed
 Built for **longer-dated (≈7–45 DTE) swing trading with optional intraday timing**. The
 computed bundle also feeds an **external** downstream AI that produces risk-first trade calls.
 
-## 2. Architecture
-<!-- shard: tags=architecture,backend,frontend,api,engine,signals,live,sse,providers,observability,ui -->
-**Backend** (FastAPI, `apps/api/` + `apps/api/src/`):
-- `main.py` — endpoints, response envelope, 60s in-memory cache, config, the `LiveHub`, the
-  filter-independent `/api/contract/{ticker}` tracked-contract lookup (off a ticker-keyed snapshot
-  cache), serve-time opportunity tiering + `position_eval`.
-- `src/providers/base.py` — `MarketDataProvider` **port** (ABC) + TypedDict contracts. Vendor
-  swaps = one new adapter; engine/signals/main never import a vendor SDK.
-- `src/providers/massive.py` — Massive (Polygon-style) **adapter**; `__init__.py` = `get_provider()` factory (`DATA_PROVIDER` env).
-- `src/core/engine.py` — `QuantEngine`: GEX profile, greeks, vectorized gamma flip, + DEX & Vol/OI
-  (in the GEX pass) and `compute_iv_skew` / `compute_term_structure` (guarded, full-chain helpers).
-- `src/core/signals.py` — regime/vol-regime/setups/opportunity-score + AI gate + fingerprint, +
-  `compute_opportunity_tier` (dormant→prime bands) & `position_fingerprint` (open-position dedupe).
-- `src/core/live.py` — `LiveSession`/`LiveHub`: live NBBO mid, rolling net flow, live flip,
-  session classifier; one ref-counted session per ticker (8s grace teardown).
-- `src/core/darkpool.py` — off-exchange (TRF) volume ratio + volume-by-price.
-- `src/core/observability.py` — bundle-pipeline instrumentation: span/timer primitive (ContextVar
-  trace), per-request `RequestTrace`, process-local rolling `MetricsAggregate` (p50/p95 per stage &
-  total, cache hit/miss, vendor latency + min rate-limit headroom; per-ticker rolls up to global),
-  structured emitter. `engine/signals/darkpool` do NOT import it (Level-1, orchestration-boundary only).
-- `src/core/personas.py` — trader-persona **prompt projection** (read-only data, post-FREEZE): the
-  decomposed FIXED/PERSONA hand-off template + the 7 built-in `PersonaDefinition`s + the A1 disposition
-  map, served at `GET /api/personas`. A **non-input to scoring by construction** — imports only
-  `logging`/`os`; never touches signals/score/gate/fingerprint/engine. No LLM call.
-- `src/core/ai_recommendation.py` — the **in-app AI-recommendation** proxy + state-export serializer:
-  an isolated, best-effort, **one-way leaf** (`signals`/`engine`/`live`/`darkpool` do NOT import it —
-  the structural guarantee of score byte-identity). An `LLMProvider` seam (`AnthropicLLMProvider` via
-  forced tool-use structured output; `StubLLMProvider` for keyless/no-cost verification), the
-  read+serialize context exporter (no recompute), process-local cooldown/daily-cap, and `ai_eval`-derived
-  gating. Imports only `personas`/stdlib/lazy `anthropic`; reads `ANTHROPIC_API_KEY` only here. Served by
-  the three `/api/recommendation/*` endpoints in `main.py`.
-- `src/models/market_data.py` — `MarketState` Pydantic response model.
-- `src/auth/` — **user accounts subpackage** (the project's first stateful surface + credential store; a
-  **one-way leaf** the engine/signals/live/darkpool/bundle/SSE path NEVER imports — `main.py` is the sole
-  orchestration boundary that mounts it). `ports.py` = three storage ports (`UserStore`/`SessionStore`/
-  `UserSettingsStore`) + normalized record dataclasses, mirroring the `MarketDataProvider` port pattern;
-  `sqlite_store.py` = the ONLY adapter this phase — a single shared `:memory:` sqlite3 connection
-  (`check_same_thread=False`, lock-guarded; persists across requests for the process lifetime, **resets on
-  restart**), with the persistent adapter registered as a seam but not built; `__init__.py` = env-selected
-  store factory (`ACCOUNT_STORE`, default `memory`, like `get_provider()`/`DATA_PROVIDER`); `passwords.py`
-  = argon2 hashing (always-hash dummy-verify → non-enumerating timing); `cookies.py` = HMAC-signed opaque
-  session-id cookie; `service.py` = signup/login/logout/session-resolution (idle+absolute expiry,
-  server-authoritative revocation) + settings (server-wins) + Google identity mapping (known-sub→login /
-  verified-email→auto-link / else create); `google_oauth.py` = server-side Authorization-Code flow,
-  **config-gated OFF when creds absent** (no crash; `available()` False); `errors.py` = the auth error
-  class; `router.py` = the `/api/auth/*` endpoints (signed HTTP-only Secure SameSite cookie). `main.py`
-  also wires the auth gate as the **outermost** precondition on `POST /api/recommendation/{ticker}` and adds
-  `POST /api/positions/sim-trade/gate` (the session-resolving gate the FE Positions write actions call).
+## 2. Backend architecture
+<!-- shard: tags=architecture,backend,api,engine,signals,live,sse,providers,observability -->
+> **Repaired 2026-08-20 (`project-context-s2-is-python-era`).** The live server is **Axum / Tokio**,
+> crate **`api-rust`**, tree `apps/api/src/`. Quant compute is **`libs/quant-engine`** (pure; no I/O).
+> Python FastAPI (`main.py`, `src/core/*.py`, `src/providers/*.py`) is **archived** at
+> `archive/api-python/` and is **not** ground truth. Do not cite it.
 
+**Serve / process:** `main.rs` + `server.rs` — clap: `serve` (HTTP) plus research CLIs
+(`join-outcomes`, `score-lab`, `batch-backtest`, `replay-outcome-join`). Bind/port from
+`project.json` / env. `config.rs` + `state.rs` hold `AppState` (gex cache, Massive client,
+scanner/warmer/ensure workers, snapshot + session-archive stores).
+
+**Vendor + hermetic port:** `infrastructure/massive/` (REST + WebSocket). Optional
+`infrastructure/redis/` price cache. `services/market_data/` — `MarketDataPort::{Live, Fixture}`
+→ `VendorBundle`. Fixture arm is how research/CI avoids the network. Adapter swap stays in
+infrastructure; `quant-engine` never imports a vendor SDK.
+
+**Compute path:** `services/analytics.rs` — `compute_analytics_from_vendor` is the one Path-B
+entry (live and replay). Scanner / ticker **cold** compute may `spawn_capture` into the 48/14d
+ring; `refresh_analytics` (warmer) does **not**. `load_or_compute` **cache-hit** returns without
+capture — SPY/QQQ/IWM session books are filled by the off-path
+`session_chain_archive/ensure_worker` instead. Opportunity score / tier / fingerprint come from
+`quant-engine::signals` (`generate_signals`, `compute_opportunity_tier`) — **not** from a Python
+`signals.py`.
+
+**Pure engine (`libs/quant-engine`):** dollar GEX (vendor gamma), walls, peak, **analytic** gamma
+flip, DEX, Vol/OI, IV skew/term, HV, VWAP, dark-pool/off-exchange, IV rank, market-context pack,
+rule-based setups + `state_fingerprint`. Math invariants stay in §3. This crate has **no** HTTP,
+auth, or Massive client.
+
+**Live / SSE:** `services/price_stream.rs` + `domain/` (`MarketPhase`, spots). Live NBBO mid is
+the structure anchor; last-trade is display-only. SSE is trader-page scoped on the client.
+
+**Capture / research stores:** `services/chain_snapshot/` — append-only paid `VendorBundle` ring
+(48/symbol **and** 14d). `services/session_chain_archive/` — prune-proof `(symbol, et_date)`
+session books; **bodies** on `SESSION_CHAIN_ARCHIVE_BODY_ROOT` (not app-Postgres BYTEA). Research
+list/load: `GET /api/_research/chain-snapshots/*` and `GET /api/_research/session-books/*` (zero
+Massive; Pages trader origin **404s** `/api/_research` like `/api/_metrics`).
+
+**Scanner:** `services/scanner/` — bounded **off-request-path** universe sweep writing
+`scan_structure_history` / board cache. The trading/serve **request path** still computes exactly
+the one ticker asked for (`single-ticker-on-demand` narrowed form).
+
+**AI rec (one-way leaf):** `services/recommendation.rs` + `llm.rs` + `rec_inputs/` +
+`llm_catalog.rs`. Score/tier/fingerprint modules do not import it. Multi-provider BYO keys;
+Grok subscription arm is present-but-unavailable until OAuth is buildable. `GET /api/personas`
+is a non-scoring prompt projection (`routes/market.rs`).
+
+**Auth / book / broker:** `services/auth/` — sessions, settings, encrypted credentials (argon2;
+ciphertext-only secrets). Real HTTP statuses (401/403/409); trading path degrades to anonymous.
+`routes/book.rs` — durable user book blob. `services/broker/` — read-only brokerage port
+(**no order/execution path**). `POST /api/positions/sim-trade/gate` remains server-side.
+
+**Observability:** `GET /api/_metrics` (token-gated when `METRICS_SECRET_TOKEN` is set) —
+read-only, off trader routes. `quant-engine` does not import it.
+
+**Persistence:** `db/` Postgres migrations when `DATABASE_URL` + `--features postgres`; else
+JSON/sqlite under `data/`. Research CLIs in `services/research/` **Authorizes: nothing** on
+the live score.
+
+## 2b. Frontend architecture
+<!-- shard: tags=frontend,ui -->
 **Frontend** (`apps/dashboard/` in the Nx monorepo, React 19 + Vite + MUI/Emotion):
 - **Multi-page shell (Convexa, 2026-06-24):** `src/app/app.tsx` is the **route table** (a single
   `BrowserRouter`; the MUI theme is **mode-aware dark + light** — `features/auth/ThemeProvider` over
@@ -82,8 +95,8 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   2026-07-01): `/` → `pages/landing/` (the full-bleed Convexa splash, outside the shell) · a persistent
   `shell/AppShell.tsx` (`<Outlet/>` nav — Convexa wordmark + Ticker/Positions/Scanner, mounts once)
   wrapping `/ticker/:symbol` (→ `pages/ticker/TickerDashboard.tsx`, the relocated GEX dashboard; bare
-  `/ticker`→TSLA) + `/positions` (→ `pages/positions/PositionsPage.tsx`, the route shell over
-  `features/trading/positions/`) + `/scanner` (→ `pages/scanner/`, a static coming-soon stub) ·
+  `/ticker`→**SPY** via `index-first-defaults`) + `/positions` (→ `pages/positions/PositionsPage.tsx`, the route shell over
+  `features/trading/positions/`) + `/scanner` (→ `pages/scanner/`, **shipped** multi-ticker surface) ·
   `/settings` (→ `features/auth/SettingsPage.tsx`) · `/_ops/metrics` (→ `pages/operator-metrics/`)
   stays OFF the shell + unlinked. **Live SSE is page-scoped to the Ticker page** (opens on mount, closes
   on nav-away, reopens on return, never double-subscribes); the positions store is a localStorage
@@ -460,12 +473,68 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   and never **pre-typed into an input**: a value the read did not name must not reach a tradeable field by
   default, inference, or a chain-derived fallback. **Measured, not asserted** — 44.4% of the AI's asserted
   numbers did not trace at the first instance's ship, and the second instance's own defect was a
-  guaranteed output of a shipped code path, not a rare model slip. *(ai-rec-grounding — per-figure
-  grounding of asserted numbers; rec-absence-literals-hole — the absence half: six fields, one new
-  closed-vocabulary member, and the Accept seam. 2 binding.)*
+  guaranteed output of a shipped code path, not a rare model slip. A third instance
+  (`rec-plan-scope-caption`) closed the remaining **inference** half: a reader must not be able to
+  treat an unchecked plan field as checked merely because a sibling field carries a clause.
+  *(ai-rec-grounding — per-figure grounding of asserted numbers; rec-absence-literals-hole — the
+  absence half: six fields, one new closed-vocabulary member, and the Accept seam;
+  rec-plan-scope-caption — one section-level scope caption on the pinned DecisionCard plan row.
+  3 instances.)*
+- **`[cited-code-is-verified-not-assumed]`** (promoted 2026-08-17, 2 binding) — a design or plan
+  artifact must not assert a fact about **existing code** it will reuse unless that fact was **read
+  at source**. Unverifiable claims carry a `[lane-check]` mark instead of being asserted. The
+  failure this prevents is a spec that cannot compile or a plan that attaches to a file that is
+  no longer the surface. *(rec-absence-literals-hole — three false citations in one council, none
+  caught by the authoring voice; rec-plan-scope-caption — PLAN locked the caption as a sibling
+  after the live `DecisionMetadata` row Stack after reading `DecisionCard.tsx`, refusing
+  Python-era `AiRecPanel` line numbers. 2 binding.)*
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
+- **Session body store (`chain-archive-object-store`, BE + structural FE, shipped 2026-08-20)** —
+  session-archive bodies live on `SESSION_CHAIN_ARCHIVE_BODY_ROOT` (unique-per-put files); the app
+  DB keeps identity + locator only. Missing object is `session book unreadable`. Ring BYTEA
+  unchanged. `NO_UI_CHANGE`. QA PASS 25/0/0; independent conformance 4/4.
+- **Liquid-name session ensure (`liquid-names-session-capture`, BE + structural FE, shipped 2026-08-20)** —
+  off-path worker guarantees a weekday session-archive book for **SPY, QQQ, IWM** even when
+  gex-cache is warm (promote same-ET ring row, else one in-flight paid fetch with ≥300s retries).
+  No Massive on the trader request path. Reuses `/api/_research/session-books`. `NO_UI_CHANGE`.
+  QA PASS 25/0/0; independent conformance 6/6.
+- **Session chain archive (`session-chain-archive`, BE + structural FE, shipped 2026-08-20)** —
+  one paid options book per symbol per ET calendar day in a sibling store the 48/14d ring prune
+  **cannot delete**. Identity `(symbol, et_date)` America/New_York; first-wins; `source_as_of`
+  mandatory on successful research load. List/load `/api/_research/session-books` zero Massive;
+  `authorizes: nothing`. Pages trader origin 404s `_research`. `NO_UI_CHANGE`. QA PASS 27/0/0;
+  independent conformance 4/4. Does **not** force-capture cache-warm SPY/QQQ/IWM (program #2).
+- **Replay-outcome join (`replay-outcome-join`, BE + structural FE, shipped 2026-08-19)** — research
+  command `replay-outcome-join` joins `batch-backtest` replayed scores to forward `1d`/`5d` stock-bar
+  labels (`large_abs_move`, median-once). Third CLI — does **not** replace `score-lab` or
+  `batch-backtest`. Zero Options calls. Report standing: **Authorizes: nothing**. Capture-time
+  `display_spot` is `p0`; a `replayed` row without a positive finite spot is first-class `no_p0`,
+  never a silent session-close. `NO_UI_CHANGE`. QA PASS 35/0/0; capture `_research` conformance
+  re-pin 4/4.
+- **Batch back-test CLI (`batch-backtest-cli`, BE + structural FE, shipped 2026-08-18)** — research
+  command `batch-backtest` replays stored `ChainSnapshotStore` books through
+  `compute_analytics_from_vendor` with **zero Massive calls**. Empty corpus writes **no**
+  measurement artifact. A train/holdout split that cannot produce two sides with ≥1 `replayed`
+  row is **refused**. Report standing block: **Authorizes: nothing** (does not change live
+  score). `NO_UI_CHANGE`. QA PASS 28/0/0; capture `_research` conformance re-pin 4/4.
+- **Paid-feed snapshot capture (`chain-snapshot-capture`, BE + Pages 404, shipped 2026-08-18)** —
+  every successful paid Massive options book from the **scanner slow-lane** and a **ticker cold
+  compute** is appended as a dated research snapshot (`ChainSnapshotStore`, not latest-wins
+  `scan_bundles`). Dual retention: **14 days** and **48 per symbol**. Research list/load under
+  `/api/_research/chain-snapshots` makes **zero** vendor calls; Pages trader origin **404s** that
+  prefix like `/api/_metrics`. Warmer / 25s refresh is **excluded**. Score/tier/fingerprint
+  unchanged. QA PASS 28/0/0; independent conformance 4/4. Unblocks P3 batch-backtest CLI.
+- **AI providers (`ai-providers`, FE+BE, shipped 2026-08-18)** — Settings "AI providers" replaces the
+  Anthropic-only key panel. A signed-in trader stores **one BYO ciphertext per** closed provider
+  (Anthropic / OpenAI / Gemini / Grok), always sees a **named model** from a closed catalog, and
+  Settings + Ask-AI share one standing preference. Free-uses / `shared_admin` / silent env-key
+  fallthrough are **deleted**. Preferred Grok **subscription** OAuth (`grok_subscription` = the
+  trader's own SuperGrok / Grok plan, never a Convexa-billed pool) ships **present-but-unavailable**
+  (no fake Connect; start → 409) until xAI user-OAuth docs verify (AC-9/10/14/15 open/blocked-on).
+  Score/tier/`state_fingerprint` byte-identical. QA PASS 26/0/4; independent conformance 5/5.
+  New watch-list key `user-subscription-not-operator-pool`.
 - **Index-first defaults (`index-first-defaults`, FE-only, shipped 2026-08-01)** — the edge-first
   roadmap's first feature (`docs/ROADMAP_2026-08.md`): bare `/ticker` falls back to **SPY** via a
   pref-wins `DefaultTickerRedirect` (a stored `default_ticker` ALWAYS wins; auth fault ⇒ anonymous,
@@ -754,7 +823,9 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   scoring input; `no-real-order-path` untouched (Positions stays `SIMULATED`). QA PASS (Sonnet,
   de-correlated; AC-E7 server-gate FAIL bounced+fixed, GATE Q re-run 30/30, conformance 2/2, `dashboard`
   246/246 + `@convexa/api` 7/7). *(2026-06-25.)*
-- **Hybrid bring-your-own AI key (`byo-ai-key`, FE+BE)** — per-user Anthropic keys for the in-app AI rec.
+- **Hybrid bring-your-own AI key (`byo-ai-key`, FE+BE)** — **NARROWED 2026-08-18 by `ai-providers`:**
+  admin/shared free-uses and the Anthropic-only slot are gone; current powering is the multi-provider
+  panel + named model (see the `ai-providers` bullet). Original ship: per-user Anthropic keys for the in-app AI rec.
   A signed-in user stores their own key (Settings "AI key" section, write-only — masked `····last4`, Replace/
   Remove, **no reveal**) and the rec calls Anthropic with **their** key (their cost, no shared cap). The
   shared `ANTHROPIC_API_KEY` gives a free allowance **only to ADMIN users** (`AI_REC_ADMIN_EMAILS` allowlist;
@@ -1030,6 +1101,23 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   The input-independent `"1–5 sessions"` time-horizon constant was deleted rather than asserted.
   Score/tier/`state_fingerprint` byte-identical; `grounding` byte-identical against a pre-feature
   baseline. Graduated `[ai-asserted-numbers-are-traceable]`. Seams → OPEN_THREADS §7af.
+- **Ticker visual collisions (`ticker-visual-collisions`, FE-only, shipped 2026-08-17)** — Quick
+  pins/recents separator is a 1px hairline; GEX strike-profile marker labels use a measured
+  collision layout so clustered and edge `put`/`call`/`flip`/`spot`/`live`|`mid` boxes stay
+  readable and inside the canvas. Words, colors, values, and live-vs-static meaning unchanged.
+  `NO_BACKEND_CHANGE`. Product `a5a6955`. Seams → OPEN_THREADS §7ag.
+- **AI recommendation decision card (`ai-rec-decision-card`, FE-only, shipped 2026-08-17)** — the
+  produced read answers verdict → invalidation/risk → safe simulated next action on a compact
+  card; long-form reasoning, grounding, provenance, and export live on a desktop drawer / mobile
+  sheet. Actionability is one pure policy (`deriveAiRecPresentation`); analysis is a non-mutating
+  view of the pinned read. Shared sim-entry dialog unchanged. `NO_BACKEND_CHANGE`. Seams →
+  OPEN_THREADS §7ah.
+- **Plan-scope caption (`rec-plan-scope-caption`, FE-only, shipped 2026-08-17)** — a produced
+  non-`local_rules` trade rec shows exactly one quiet caption under the pinned DecisionCard plan
+  row stating the six plan fields are not checked (only stop / target / invalidation are). Hide is
+  affirmative `grounding.card === 'local_rules'` only (not `key_source`). Analysis gains no second
+  instance. `NO_BACKEND_CHANGE`. Closes `ai-rec-grounding` SPEC §9.5 (both halves). Product
+  `fc3bb8c`–`a944bd2`. Seams → OPEN_THREADS §7ai.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->
@@ -1071,14 +1159,14 @@ computed bundle also feeds an **external** downstream AI that produces risk-firs
   backend deps: **`argon2-cffi`** (password hashing) + **`authlib`** (OAuth) in `apps/api/requirements.txt`
   (re-run the venv `pip install -r requirements.txt`). A raw password / hash / signing key / Google secret
   never appears in a response or a log line.
-  **AI key (byo-ai-key):** `AI_KEY_ENCRYPTION_KEY` (server-side Fernet key encrypting stored per-user
-  Anthropic keys; gitignored; absent ⇒ an **ephemeral per-process key** so stored keys reset on restart —
-  set a stable one once a persistent store lands or saved keys become unreadable after restart),
-  `AI_REC_ADMIN_EMAILS` (comma-separated allowlist of admin emails that get the shared-key free allowance;
-  matched case-insensitively against the session email; everyone else gets 0 free + must BYO),
-  `AI_REC_ADMIN_FREE_DAILY` (per-admin daily free allowance on the shared key, default 3 — distinct from the
-  global `AI_REC_DAILY_CAP`). New backend dep **`cryptography`**. A raw user API key / its ciphertext never
-  appears in a response, log line, or the browser.
+  **AI key (`byo-ai-key`, narrowed by `ai-providers` 2026-08-18):** `AI_KEY_ENCRYPTION_KEY` (server-side
+  Fernet key encrypting stored per-user BYO keys — now one ciphertext **per provider**; gitignored;
+  absent ⇒ an **ephemeral per-process key** so stored keys reset on restart — set a stable one or saved
+  keys become unreadable after restart). **`AI_REC_ADMIN_EMAILS` / `AI_REC_ADMIN_FREE_DAILY` are
+  retired** — there is no admin/shared free-uses path. A raw user API key / its ciphertext never
+  appears in a response, log line, or the browser. Catalog recommended defaults may be overridden
+  with `AI_REC_MODEL_{PROVIDER}` / `AI_REC_MODEL` (visible catalog entries, never a hidden resolve
+  substitute).
 - **Add a vendor:** implement `MarketDataProvider` in `apps/api/src/providers/<name>.py`, register in
   `_PROVIDERS`, set `DATA_PROVIDER`. Nothing else changes.
 - **Run:** backend `npx nx serve api` (uvicorn :8000, i.e. `apps/api/.venv/Scripts/python.exe

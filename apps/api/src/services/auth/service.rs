@@ -56,6 +56,9 @@ pub struct SettingsWire {
     pub theme: String,
     /// tradeable-rec-inputs B9: always present for a resolved session (INTERFACE §4).
     pub risk_inputs: super::risk::RiskInputsWire,
+    pub ai_power_path: Option<String>,
+    pub ai_provider: Option<String>,
+    pub ai_model: Option<String>,
 }
 
 impl SettingsWire {
@@ -71,6 +74,9 @@ impl SettingsWire {
                 s.risk_updated_at,
                 storage_available,
             ),
+            ai_power_path: s.ai_power_path.clone(),
+            ai_provider: s.ai_provider.clone(),
+            ai_model: s.ai_model.clone(),
         }
     }
 }
@@ -169,6 +175,24 @@ fn google_unavailable() -> AuthError {
         message: "Google sign-in is not configured on this server.".into(),
     }
 }
+fn grok_unavailable() -> AuthError {
+    AuthError {
+        status: 409,
+        code: "grok_unavailable",
+        message: "Grok subscription connect is not available on this server.".into(),
+    }
+}
+
+pub const CREDENTIAL_KIND_AI: &str = "ai";
+pub const BROKER_PROVIDER: &str = "webull";
+
+/// Decrypt outcome for one BYO slot — empty vs unusable stay distinct.
+#[derive(Debug, Clone)]
+pub enum AiSlot {
+    Empty,
+    Unusable,
+    Ready { plaintext: String },
+}
 
 pub const CREDENTIAL_KIND_BROKER: &str = "broker_webull";
 
@@ -191,10 +215,7 @@ impl AuthService {
         }
     }
 
-    pub fn set_broker_cache_invalidator(
-        &mut self,
-        f: std::sync::Arc<dyn Fn(&str) + Send + Sync>,
-    ) {
+    pub fn set_broker_cache_invalidator(&mut self, f: std::sync::Arc<dyn Fn(&str) + Send + Sync>) {
         self.broker_cache_invalidator = Some(f);
     }
 
@@ -222,11 +243,7 @@ impl AuthService {
 
     pub fn set_demo_seed_hint(&mut self, email: impl Into<String>) {
         let e = email.into();
-        self.demo_seed_email = if e.trim().is_empty() {
-            None
-        } else {
-            Some(e)
-        };
+        self.demo_seed_email = if e.trim().is_empty() { None } else { Some(e) };
     }
 
     pub fn signed_cookie_value(&self, session_id: &str) -> String {
@@ -375,13 +392,7 @@ impl AuthService {
         password: &str,
         display_name: Option<&str>,
     ) -> Result<bool, AuthError> {
-        if self
-            .store
-            .get_user_by_email(email)
-            .ok()
-            .flatten()
-            .is_some()
-        {
+        if self.store.get_user_by_email(email).ok().flatten().is_some() {
             return Ok(false);
         }
         let hash = passwords::hash_password(password).map_err(|_| auth_unavailable())?;
@@ -432,8 +443,59 @@ impl AuthService {
             .ok()
             .flatten()
             .and_then(|s| s.risk_account_size);
-        if let Err(msg) = super::risk::validate(patch.risk_account_size, patch.per_trade_cap.clone(), stored_account) {
+        if let Err(msg) = super::risk::validate(
+            patch.risk_account_size,
+            patch.per_trade_cap.clone(),
+            stored_account,
+        ) {
             return Err(validation(msg));
+        }
+        if let Some(None) = patch.ai_model {
+            return Err(validation(
+                "ai_model cannot be cleared; send a catalog id or omit the field.",
+            ));
+        }
+        if let Some(Some(ref path)) = patch.ai_power_path {
+            if !matches!(path.as_str(), "own_key" | "grok_subscription") {
+                return Err(validation(
+                    "ai_power_path must be own_key or grok_subscription.",
+                ));
+            }
+        }
+        if let Some(Some(ref prov)) = patch.ai_provider {
+            if crate::services::llm_catalog::parse_byo_provider(prov).is_none() {
+                return Err(validation("ai_provider must be a closed BYO provider."));
+            }
+        }
+        let stored = self.store.get_settings(&user.id).ok().flatten();
+        let new_path = match &patch.ai_power_path {
+            Some(v) => v.clone(),
+            None => stored.as_ref().and_then(|s| s.ai_power_path.clone()),
+        };
+        let new_prov = match &patch.ai_provider {
+            Some(v) => v.clone(),
+            None => stored.as_ref().and_then(|s| s.ai_provider.clone()),
+        };
+        if new_path.as_deref() == Some("own_key") && new_prov.is_none() {
+            return Err(validation(
+                "ai_provider is required when ai_power_path is own_key.",
+            ));
+        }
+        let path_changed = patch.ai_power_path.is_some()
+            && patch.ai_power_path != Some(stored.as_ref().and_then(|s| s.ai_power_path.clone()));
+        let prov_changed = patch.ai_provider.is_some()
+            && patch.ai_provider != Some(stored.as_ref().and_then(|s| s.ai_provider.clone()));
+        let mut patch = patch;
+        if (path_changed || prov_changed) && patch.ai_model.is_none() {
+            let catalog = crate::services::llm_catalog::catalog_for_path(
+                new_path.as_deref(),
+                new_prov.as_deref(),
+            );
+            let next = crate::services::llm_catalog::apply_model_switch(
+                stored.as_ref().and_then(|s| s.ai_model.as_deref()),
+                &catalog,
+            );
+            patch.ai_model = Some(next);
         }
         self.store
             .update_settings(&user.id, &patch)
@@ -468,119 +530,253 @@ impl AuthService {
             })
     }
 
-    // ------------------------------------------------------------------ BYO AI key
+    // ------------------------------------------------------------------ BYO AI key (per-provider matrix)
 
-    /// Masked-hint read: `{set, last4, storage_available, provider?}`. Never decrypts.
-    pub fn ai_key_hint(&self, user: &UserRecord) -> serde_json::Value {
-        match self.store.get_credential(&user.id, "ai") {
-            Ok(None) => serde_json::json!({
-                "set": false,
-                "last4": null,
-                "storage_available": true,
-                "provider": null,
-            }),
-            Ok(Some(rec)) => serde_json::json!({
-                "set": true,
-                "last4": rec.last4,
-                "storage_available": true,
-                "provider": rec.provider,
-            }),
+    pub fn raw_settings(&self, user_id: &str) -> Option<SettingsRecord> {
+        self.store.get_settings(user_id).ok().flatten()
+    }
+
+    pub fn inspect_ai_slot(&self, user_id: &str, provider: &str) -> AiSlot {
+        let rec = match self
+            .store
+            .get_credential(user_id, CREDENTIAL_KIND_AI, provider)
+        {
+            Ok(Some(r)) => r,
+            Ok(None) => return AiSlot::Empty,
             Err(e) => {
-                warn!(error = %e, "ai-key hint fault");
-                serde_json::json!({
-                    "set": false,
-                    "last4": null,
-                    "storage_available": false,
-                    "provider": null,
-                })
+                warn!(error = %e, "ai-key inspect fault");
+                return AiSlot::Unusable;
+            }
+        };
+        match crate::services::auth::crypto::decrypt(&rec.ciphertext) {
+            Some(pt) => AiSlot::Ready { plaintext: pt },
+            None => AiSlot::Unusable,
+        }
+    }
+
+    pub fn grok_link_status(&self, user: &UserRecord) -> (bool, bool, Option<&'static str>) {
+        self.grok_status_for(user)
+    }
+
+    fn grok_status_for(&self, user: &UserRecord) -> (bool, bool, Option<&'static str>) {
+        let available = super::grok_oauth::available();
+        let link = self.store.get_grok_link(&user.id).ok().flatten();
+        let connected = link.as_ref().is_some_and(|l| l.status == "linked");
+        let reason = if connected && available {
+            None
+        } else if link.as_ref().is_some_and(|l| l.status == "expired") {
+            Some("oauth_expired")
+        } else {
+            Some("oauth_unlinked")
+        };
+        (available, connected, reason)
+    }
+
+    fn persist_d4_model(&self, user: &UserRecord, settings: &SettingsRecord) -> SettingsRecord {
+        if settings.ai_model.is_some() {
+            return settings.clone();
+        }
+        if settings.ai_power_path.is_some() {
+            return settings.clone();
+        }
+        let grok_available = super::grok_oauth::available();
+        let preview = crate::services::llm_catalog::preview_catalog_for_null_path(grok_available);
+        let Some(id) = crate::services::llm_catalog::recommended_id(&preview) else {
+            return settings.clone();
+        };
+        match self.store.update_settings(
+            &user.id,
+            &SettingsPatch {
+                ai_model: Some(Some(id.to_string())),
+                ..Default::default()
+            },
+        ) {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(error = %e, "ai-key D4 persist fault");
+                settings.clone()
             }
         }
     }
 
-    /// Encrypt + store. `provider` optional (auto-detected from key prefix when None).
-    /// Returns masked status; on store fault → 200 set:false storage_available:false.
+    fn bootstrap_from(
+        &self,
+        user: &UserRecord,
+        storage_available: bool,
+        settings: &SettingsRecord,
+    ) -> serde_json::Value {
+        let slots = self
+            .store
+            .list_credentials(&user.id, CREDENTIAL_KIND_AI)
+            .unwrap_or_default();
+        let providers: Vec<serde_json::Value> = crate::services::llm_catalog::BYO_PROVIDERS
+            .iter()
+            .map(|p| {
+                let rec = slots.iter().find(|c| c.provider == *p);
+                match rec {
+                    Some(r) => serde_json::json!({
+                        "provider": *p,
+                        "set": true,
+                        "last4": r.last4,
+                    }),
+                    None => serde_json::json!({
+                        "provider": *p,
+                        "set": false,
+                        "last4": serde_json::Value::Null,
+                    }),
+                }
+            })
+            .collect();
+        let (g_avail, g_conn, g_reason) = self.grok_status_for(user);
+        serde_json::json!({
+            "storage_available": storage_available,
+            "providers": providers,
+            "grok": {
+                "available": g_avail,
+                "connected": g_conn,
+                "unavailable_reason": g_reason,
+            },
+            "preference": {
+                "power_path": settings.ai_power_path,
+                "provider": settings.ai_provider,
+                "model": settings.ai_model,
+            },
+            "catalog": crate::services::llm_catalog::catalogs_to_json(),
+        })
+    }
+
+    fn storage_unavailable_bootstrap(&self, user: &UserRecord) -> serde_json::Value {
+        let settings = SettingsRecord::defaults(&user.id);
+        self.bootstrap_from(user, false, &settings)
+    }
+
+    /// Full Settings / Ask-AI bootstrap. D4 first-visit persist lives here only.
+    pub fn ai_providers_bootstrap(&self, user: &UserRecord) -> serde_json::Value {
+        let _ = self.store.promote_legacy_ai(&user.id);
+        let settings = match self.store.upsert_settings_defaults(&user.id) {
+            Ok(s) => s,
+            Err(e) => {
+                warn!(error = %e, "ai-key settings read fault");
+                return self.storage_unavailable_bootstrap(user);
+            }
+        };
+        let settings = self.persist_d4_model(user, &settings);
+        match self.store.list_credentials(&user.id, CREDENTIAL_KIND_AI) {
+            Ok(_) => self.bootstrap_from(user, true, &settings),
+            Err(e) => {
+                warn!(error = %e, "ai-key list fault");
+                self.bootstrap_from(user, false, &settings)
+            }
+        }
+    }
+
+    /// Encrypt + store under the **requested** provider slot (never retitled from key prefix).
+    /// Successful save is a power gesture: `own_key` + that provider + model switch.
     pub fn set_ai_key(
         &self,
         user: &UserRecord,
         raw_key: &str,
-        provider: Option<&str>,
+        provider: &str,
     ) -> serde_json::Value {
         let raw = raw_key.trim();
-        if raw.len() < 8 {
-            // Caller maps this; we still return a soft storage shape for AC-18 path when empty
-            // reaches here. Prefer validation at the router.
-        }
         let last4 = if raw.len() >= 4 {
             raw[raw.len() - 4..].to_string()
         } else {
             raw.to_string()
         };
-        let prov = provider
-            .and_then(crate::services::llm::LlmProvider::parse)
-            .unwrap_or_else(|| crate::services::llm::LlmProvider::detect_from_key(raw));
         match crate::services::auth::crypto::encrypt(raw) {
             Ok(ct) => {
                 if let Err(e) =
                     self.store
-                        .set_credential(&user.id, "ai", &ct, &last4, prov.as_str())
+                        .set_credential(&user.id, CREDENTIAL_KIND_AI, &ct, &last4, provider)
                 {
                     warn!(error = %e, "ai-key store fault");
-                    return serde_json::json!({
-                        "set": false,
-                        "last4": null,
-                        "storage_available": false,
-                        "provider": null,
-                    });
+                    return self.storage_unavailable_bootstrap(user);
                 }
-                serde_json::json!({
-                    "set": true,
-                    "last4": last4,
-                    "storage_available": true,
-                    "provider": prov.as_str(),
-                })
+                let current = self
+                    .store
+                    .get_settings(&user.id)
+                    .ok()
+                    .flatten()
+                    .unwrap_or_else(|| SettingsRecord::defaults(&user.id));
+                let catalog =
+                    crate::services::llm_catalog::byo_catalog(provider).unwrap_or_else(|| {
+                        crate::services::llm_catalog::preview_catalog_for_null_path(false)
+                    });
+                let next_model = crate::services::llm_catalog::apply_model_switch(
+                    current.ai_model.as_deref(),
+                    &catalog,
+                );
+                if let Err(e) = self.store.update_settings(
+                    &user.id,
+                    &SettingsPatch {
+                        ai_power_path: Some(Some("own_key".into())),
+                        ai_provider: Some(Some(provider.to_string())),
+                        ai_model: Some(next_model),
+                        ..Default::default()
+                    },
+                ) {
+                    warn!(error = %e, "ai-key preference write fault");
+                }
+                self.ai_providers_bootstrap(user)
             }
             Err(e) => {
                 warn!(error = %e, "ai-key encrypt fault");
-                serde_json::json!({
-                    "set": false,
-                    "last4": null,
-                    "storage_available": false,
-                    "provider": null,
-                })
+                self.storage_unavailable_bootstrap(user)
             }
         }
     }
 
-    pub fn delete_ai_key(&self, user: &UserRecord) -> serde_json::Value {
-        match self.store.delete_credential(&user.id, "ai") {
-            Ok(()) => serde_json::json!({
-                "set": false,
-                "last4": null,
-                "storage_available": true,
-                "provider": null,
-            }),
-            Err(e) => {
-                warn!(error = %e, "ai-key delete fault");
-                serde_json::json!({
-                    "set": false,
-                    "last4": null,
-                    "storage_available": false,
-                    "provider": null,
-                })
+    pub fn delete_ai_key(&self, user: &UserRecord, provider: &str) -> serde_json::Value {
+        if let Err(e) = self
+            .store
+            .delete_credential(&user.id, CREDENTIAL_KIND_AI, provider)
+        {
+            warn!(error = %e, "ai-key delete fault");
+            return self.storage_unavailable_bootstrap(user);
+        }
+        if let Ok(Some(s)) = self.store.get_settings(&user.id) {
+            if s.ai_power_path.as_deref() == Some("own_key")
+                && s.ai_provider.as_deref() == Some(provider)
+            {
+                if let Err(e) = self.store.update_settings(
+                    &user.id,
+                    &SettingsPatch {
+                        ai_power_path: Some(None),
+                        ai_provider: Some(None),
+                        ..Default::default()
+                    },
+                ) {
+                    warn!(error = %e, "ai-key preference clear fault");
+                }
             }
         }
+        self.ai_providers_bootstrap(user)
     }
 
-    /// Decrypt stored key for one server-side call. Never log the result.
-    pub fn get_decrypted_ai_key(
-        &self,
-        user_id: &str,
-    ) -> Option<(String, crate::services::llm::LlmProvider)> {
-        let rec = self.store.get_credential(user_id, "ai").ok().flatten()?;
-        let pt = crate::services::auth::crypto::decrypt(&rec.ciphertext)?;
-        let prov = crate::services::llm::LlmProvider::parse(&rec.provider)
-            .unwrap_or_else(|| crate::services::llm::LlmProvider::detect_from_key(&pt));
-        Some((pt, prov))
+    pub fn grok_start_blocked(&self) -> AuthError {
+        grok_unavailable()
+    }
+
+    pub fn grok_disconnect(&self, user: &UserRecord) -> serde_json::Value {
+        if let Err(e) = self.store.delete_grok_link(&user.id) {
+            warn!(error = %e, "grok unlink fault");
+        }
+        if let Ok(Some(s)) = self.store.get_settings(&user.id) {
+            if s.ai_power_path.as_deref() == Some("grok_subscription") {
+                if let Err(e) = self.store.update_settings(
+                    &user.id,
+                    &SettingsPatch {
+                        ai_power_path: Some(None),
+                        ai_provider: Some(None),
+                        ..Default::default()
+                    },
+                ) {
+                    warn!(error = %e, "grok preference clear fault");
+                }
+            }
+        }
+        self.ai_providers_bootstrap(user)
     }
 
     // ------------------------------------------------------------------ Google OAuth
@@ -609,9 +805,9 @@ impl AuthService {
         if !super::google_oauth::consume_state(state) {
             return Err(validation("Invalid or expired sign-in state."));
         }
-        let code = code.filter(|c| !c.is_empty()).ok_or_else(|| {
-            validation("Missing authorization code.")
-        })?;
+        let code = code
+            .filter(|c| !c.is_empty())
+            .ok_or_else(|| validation("Missing authorization code."))?;
         let identity = super::google_oauth::exchange(code)
             .await
             .map_err(|_| auth_unavailable())?;
@@ -642,11 +838,7 @@ impl AuthService {
             }
             let created = self
                 .store
-                .create_google_user(
-                    &identity.email,
-                    identity.name.as_deref(),
-                    &identity.sub,
-                )
+                .create_google_user(&identity.email, identity.name.as_deref(), &identity.sub)
                 .map_err(|_| auth_unavailable())?;
             let _ = self.store.upsert_settings_defaults(&created.id);
             user = Some(created);
@@ -660,7 +852,10 @@ impl AuthService {
     // ------------------------------------------------------------------ Broker credential (kind=broker_webull)
 
     pub fn broker_credential_hint(&self, user: &UserRecord) -> serde_json::Value {
-        match self.store.get_credential(&user.id, CREDENTIAL_KIND_BROKER) {
+        match self
+            .store
+            .get_credential(&user.id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
+        {
             Ok(None) => serde_json::json!({
                 "set": false, "last4": null, "storage_available": true
             }),
@@ -722,29 +917,30 @@ impl AuthService {
     }
 
     pub fn delete_broker_credential(&self, user: &UserRecord) -> serde_json::Value {
-        let out = match self.store.delete_credential(&user.id, CREDENTIAL_KIND_BROKER) {
-            Ok(()) => serde_json::json!({
-                "set": false, "last4": null, "storage_available": true
-            }),
-            Err(e) => {
-                warn!(error = %e, "broker-credential delete fault");
-                serde_json::json!({
-                    "set": false, "last4": null, "storage_available": false
-                })
-            }
-        };
+        let out =
+            match self
+                .store
+                .delete_credential(&user.id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
+            {
+                Ok(()) => serde_json::json!({
+                    "set": false, "last4": null, "storage_available": true
+                }),
+                Err(e) => {
+                    warn!(error = %e, "broker-credential delete fault");
+                    serde_json::json!({
+                        "set": false, "last4": null, "storage_available": false
+                    })
+                }
+            };
         self.invalidate_broker_cache(&user.id);
         out
     }
 
     /// Decrypt broker pair for server-side fetch. Never log.
-    pub fn get_decrypted_broker_credential(
-        &self,
-        user_id: &str,
-    ) -> Option<(String, String)> {
+    pub fn get_decrypted_broker_credential(&self, user_id: &str) -> Option<(String, String)> {
         let rec = self
             .store
-            .get_credential(user_id, CREDENTIAL_KIND_BROKER)
+            .get_credential(user_id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
             .ok()
             .flatten()?;
         let pt = crate::services::auth::crypto::decrypt(&rec.ciphertext)?;
@@ -755,6 +951,11 @@ impl AuthService {
             return None;
         }
         Some((key, secret))
+    }
+
+    #[cfg(test)]
+    pub fn test_store(&self) -> &AuthStore {
+        &self.store
     }
 
     fn new_session(&self, user_id: &str) -> Result<String, AuthError> {
@@ -819,5 +1020,158 @@ mod tests {
         let s = svc(false);
         let err = s.signup("a@b.co", "password1", None).unwrap_err();
         assert_eq!(err.code, "signups_closed");
+    }
+
+    fn signed_user(s: &AuthService) -> UserRecord {
+        let (_, sid) = s.signup("ai@b.co", "password1", Some("A")).unwrap();
+        let cookie = s.signed_cookie_value(&sid);
+        s.resolve_session(Some(&cookie)).user.unwrap()
+    }
+
+    #[test]
+    fn ai_bootstrap_has_four_providers_and_d4_model_without_writing_path() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        let boot = s.ai_providers_bootstrap(&user);
+        assert_eq!(boot["storage_available"], true);
+        let providers = boot["providers"].as_array().unwrap();
+        assert_eq!(providers.len(), 4);
+        assert_eq!(providers[0]["provider"], "anthropic");
+        assert_eq!(providers[1]["provider"], "openai");
+        assert_eq!(providers[2]["provider"], "xai");
+        assert_eq!(providers[3]["provider"], "gemini");
+        assert_eq!(boot["grok"]["available"], false);
+        assert_eq!(boot["grok"]["connected"], false);
+        assert_eq!(boot["grok"]["unavailable_reason"], "oauth_unlinked");
+        assert!(boot["preference"]["power_path"].is_null());
+        assert!(boot["preference"]["provider"].is_null());
+        assert_eq!(
+            boot["preference"]["model"],
+            crate::services::llm::LlmProvider::Anthropic.default_model()
+        );
+        assert_eq!(boot["catalog"]["grok_subscription"]["provider"], "xai");
+        let settings = s.get_settings(&user).unwrap();
+        assert!(settings.ai_power_path.is_none());
+        assert_eq!(
+            settings.ai_model.as_deref(),
+            Some(crate::services::llm::LlmProvider::Anthropic.default_model())
+        );
+    }
+
+    #[test]
+    fn set_ai_key_never_echoes_secret_and_is_a_power_gesture() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        let secret = "sk-ant-secret-never-echo-zzzz";
+        let out = s.set_ai_key(&user, secret, "anthropic");
+        let dumped = out.to_string();
+        assert!(!dumped.contains(secret), "secret leaked: {dumped}");
+        assert_eq!(out["providers"][0]["set"], true);
+        assert_eq!(out["providers"][0]["last4"], "zzzz");
+        assert_eq!(out["preference"]["power_path"], "own_key");
+        assert_eq!(out["preference"]["provider"], "anthropic");
+        assert!(out["preference"]["model"].as_str().is_some());
+    }
+
+    #[test]
+    fn delete_active_own_key_slot_clears_path() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        s.set_ai_key(&user, "sk-ant-secret-never-echo-zzzz", "anthropic");
+        let out = s.delete_ai_key(&user, "anthropic");
+        assert_eq!(out["providers"][0]["set"], false);
+        assert!(out["providers"][0]["last4"].is_null());
+        assert!(out["preference"]["power_path"].is_null());
+        assert!(out["preference"]["provider"].is_null());
+    }
+
+    #[test]
+    fn settings_forbid_clearing_ai_model() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        let err = s
+            .write_settings(
+                &user,
+                SettingsPatch {
+                    ai_model: Some(None),
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+        assert_eq!(err.code, "validation");
+        assert_eq!(err.status, 422);
+    }
+
+    #[test]
+    fn settings_own_key_requires_provider() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        let err = s
+            .write_settings(
+                &user,
+                SettingsPatch {
+                    ai_power_path: Some(Some("own_key".into())),
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+        assert_eq!(err.code, "validation");
+    }
+
+    #[test]
+    fn settings_rejects_pool_grok_path() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        let err = s
+            .write_settings(
+                &user,
+                SettingsPatch {
+                    ai_power_path: Some(Some("pool_grok".into())),
+                    ..Default::default()
+                },
+            )
+            .unwrap_err();
+        assert_eq!(err.code, "validation");
+    }
+
+    #[test]
+    fn settings_switch_writes_recommended_when_model_not_in_new_catalog() {
+        let s = svc(true);
+        let user = signed_user(&s);
+        s.write_settings(
+            &user,
+            SettingsPatch {
+                ai_power_path: Some(Some("own_key".into())),
+                ai_provider: Some(Some("openai".into())),
+                ai_model: Some(Some("gpt-4o".into())),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let out = s
+            .write_settings(
+                &user,
+                SettingsPatch {
+                    ai_provider: Some(Some("anthropic".into())),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        assert_eq!(out.ai_provider.as_deref(), Some("anthropic"));
+        assert_eq!(
+            out.ai_model.as_deref(),
+            Some(crate::services::llm::LlmProvider::Anthropic.default_model())
+        );
+        let boot = s.ai_providers_bootstrap(&user);
+        assert_eq!(boot["preference"]["provider"], "anthropic");
+        assert_eq!(boot["preference"]["model"], out.ai_model.clone().unwrap());
+    }
+
+    #[test]
+    fn grok_start_is_unavailable() {
+        let s = svc(true);
+        let err = s.grok_start_blocked();
+        assert_eq!(err.status, 409);
+        assert_eq!(err.code, "grok_unavailable");
     }
 }

@@ -13,15 +13,13 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { BrokerBook, OptionRight } from '@convexa/api';
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import type { BrokerPositionView } from './brokerView';
 import { BROKER_COPY, stampTime } from './copy';

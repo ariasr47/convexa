@@ -57,7 +57,7 @@ export function WallMagnetView({
     };
     let w = layout();
 
-    const paint = (now: number) => {
+    const paint = () => {
       if (!running) return;
       const target = spotRef.current;
       // Soft settle toward structure spot; walls as visual magnets
@@ -139,6 +139,8 @@ export function WallMagnetView({
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
     };
+    // `spot` is read from spotRef so this rAF loop is not torn down every live tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [putWall, callWall, gammaFlip, height, reduced]);
 
   return (

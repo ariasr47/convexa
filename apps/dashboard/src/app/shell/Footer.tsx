@@ -9,7 +9,11 @@
  */
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { ArcDivider } from '@/shared/ui/ArcDivider';
-import { Box, Container, Link, Stack, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 import { ConvexaMark } from './ConvexaMark';
 

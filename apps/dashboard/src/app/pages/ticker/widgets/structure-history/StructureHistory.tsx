@@ -28,7 +28,7 @@ export function StructureHistory({
       subtitle="Slow-lane samples · session path, not live ticks"
       span={2}
       bodyVariant="inset"
-      noBodyPad
+      bodyPad="none"
     >
       <StructurePathStrip
         symbol={symbol}

@@ -25,8 +25,9 @@
 
 ## Hot work (pointers only — detail stays in RESUME / contracts)
 > Refresh when GATE R or ship changes the picture. Prefer branch RESUME over duplicating state here.
-- Active branch / feature: <fill or "see state/IN_FLIGHT.md">
-- Live contracts: `contracts/{FEATURE}/` (not `_archive/`)
+- Active program: `keep-paid-books` (BACKLOG; grouping only) — builds done; #5 clock 2026-08-20
+- Active feature: none — `project-context-s2-is-python-era` repaired 2026-08-20
+- Live contracts: none
 
 ## Operator shortcuts
 - Invariant floor: run the installed `gates.mjs context_for --print` (no feature)

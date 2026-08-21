@@ -336,7 +336,7 @@ function whyFromScoreDrivers(
     { pts: d.dark_pool, label: 'dark-pool confluence' },
   ]
     .filter((p) => p.pts > 0)
-    .sort((a, b) => b.pts - a.pts);
+    .toSorted((a, b) => b.pts - a.pts);
   if (parts.length === 0) return null;
   return parts
     .slice(0, 2)

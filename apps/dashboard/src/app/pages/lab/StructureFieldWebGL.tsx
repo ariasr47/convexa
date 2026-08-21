@@ -223,8 +223,13 @@ function roundRect(
   ctx.closePath();
 }
 
+function requireGL<T>(value: T | null, what: string): T {
+  if (value == null) throw new Error(what);
+  return value;
+}
+
 function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
-  const sh = gl.createShader(type)!;
+  const sh = requireGL(gl.createShader(type), 'createShader');
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
   if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
@@ -238,7 +243,7 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
 function link(gl: WebGL2RenderingContext, vsSrc: string, fsSrc: string): WebGLProgram {
   const vs = compile(gl, gl.VERTEX_SHADER, vsSrc);
   const fs = compile(gl, gl.FRAGMENT_SHADER, fsSrc);
-  const prog = gl.createProgram()!;
+  const prog = requireGL(gl.createProgram(), 'createProgram');
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);
   gl.linkProgram(prog);
@@ -306,7 +311,7 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
       return;
     }
 
-    const quadBuf = gl.createBuffer()!;
+    const quadBuf = requireGL(gl.createBuffer(), 'createBuffer');
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
     gl.bufferData(
       gl.ARRAY_BUFFER,
@@ -314,9 +319,9 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
       gl.STATIC_DRAW,
     );
 
-    const colorBuf = gl.createBuffer()!;
-    const pointBuf = gl.createBuffer()!;
-    const gexTex = gl.createTexture()!;
+    const colorBuf = requireGL(gl.createBuffer(), 'createBuffer');
+    const pointBuf = requireGL(gl.createBuffer(), 'createBuffer');
+    const gexTex = requireGL(gl.createTexture(), 'createTexture');
     gl.bindTexture(gl.TEXTURE_2D, gexTex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -533,9 +538,10 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
       gl.uniform1f(loc.field.u_callU, toU(m.callWall));
       gl.uniform1f(loc.field.u_flipU, toU(m.gammaFlip));
       gl.uniform1f(loc.field.u_spotU, toU(m.spot));
-      const hasMid = m.liveMid != null && Number.isFinite(m.liveMid);
+      const mid = m.liveMid;
+      const hasMid = mid != null && Number.isFinite(mid);
       gl.uniform1f(loc.field.u_hasMid, hasMid ? 1 : 0);
-      gl.uniform1f(loc.field.u_midU, hasMid ? toU(m.liveMid!) : 0);
+      gl.uniform1f(loc.field.u_midU, hasMid ? toU(mid) : 0);
       gl.uniform1f(loc.field.u_live, m.live ? 1 : 0);
       gl.uniform3fv(loc.field.u_ink, ink);
       gl.uniform3fv(loc.field.u_panel, panel);
@@ -833,12 +839,12 @@ export function StructureFieldWebGL({ model, height = 520, className }: Structur
       labelAt(m.gammaFlip, SF.amber, 'flip', 28);
       labelAt(m.spot, SF.steel, `spot $${m.spot.toFixed(1)}`, 42);
 
-      if (hasMid) {
-        const x = xOf(m.liveMid!, minK, maxK, plotW);
+      if (hasMid && mid != null) {
+        const x = xOf(mid, minK, maxK, plotW);
         octx.fillStyle = SF.phosphor;
         octx.font = '600 11px "IBM Plex Sans", system-ui, sans-serif';
         octx.fillText(
-          m.live ? `live $${m.liveMid!.toFixed(2)}` : `mid $${m.liveMid!.toFixed(2)}`,
+          m.live ? `live $${mid.toFixed(2)}` : `mid $${mid.toFixed(2)}`,
           Math.min(x + 8, pad.l + plotW - 88),
           pad.t + plotH - 10,
         );

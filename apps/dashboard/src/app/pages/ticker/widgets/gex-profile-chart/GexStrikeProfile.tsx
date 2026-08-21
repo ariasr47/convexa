@@ -58,7 +58,7 @@ export const GexStrikeProfile = memo(function GexStrikeProfile({
       subtitle={gexProfileSubtitle(props.spot, expLabel, structureAgeSeconds)}
       info={GEX_INFO}
       span={2}
-      noBodyPad
+      bodyPad="none"
       actions={<GexLegend />}
     >
       <StructurePathStrip

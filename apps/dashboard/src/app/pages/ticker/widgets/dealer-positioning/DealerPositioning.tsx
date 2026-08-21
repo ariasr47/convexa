@@ -8,7 +8,9 @@
 import { OPPORTUNITY_TIER_INFO } from '@/pages/ticker/widgets/opportunity-tier';
 import { Widget } from '@/shared/ui/Widget';
 import type { MarketState, OffExchange, Signals } from '@convexa/api';
-import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import Box from '@mui/material/Box';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { memo, useState } from 'react';
 import {
   dealerPositioningSubtitle,

@@ -263,7 +263,7 @@ export function sortRows(rows: ScanRow[], sort: ScanViewSort): ScanRow[] {
   const sign = sort.dir === 'asc' ? 1 : -1;
   return rows
     .map((row, index) => ({ row, index, key: pick(row) }))
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const aNull = a.key == null;
       const bNull = b.key == null;
       if (aNull || bNull) {

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI providers — wireframe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@87,600;112,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0B0F17;
+      --panel: #131A24;
+      --raised: #1A2330;
+      --line: rgba(138, 155, 180, 0.22);
+      --phosphor: #E9E4D6;
+      --steel: #8A9BB4;
+      --amber: #F2A93B;
+      --signal: #5E8BC4;
+      --ok: #3FA36A;
+      --warn: #E07A3F;
+      --bad: #D45B5B;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 420px at 90% -8%, rgba(242, 169, 59, 0.07), transparent 45%),
+        var(--ink);
+      color: var(--phosphor);
+      font: 16px/1.5 "IBM Plex Sans", sans-serif;
+    }
+    .page { max-width: 1180px; margin: 0 auto; padding: 32px 22px 100px; }
+    .kicker {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin: 0 0 8px;
+    }
+    h1 {
+      font-family: "Archivo", sans-serif;
+      font-stretch: 112%;
+      font-size: clamp(32px, 4.5vw, 48px);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      margin: 0 0 12px;
+    }
+    .lede { color: var(--steel); max-width: 62ch; margin: 0 0 22px; }
+    .rules {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 0 0 22px;
+    }
+    .rules span {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12.5px;
+      color: var(--steel);
+    }
+    .scenes {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 0 0 22px;
+    }
+    button.scene {
+      background: transparent;
+      color: var(--steel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 11px;
+      font: 500 13px "IBM Plex Sans", sans-serif;
+      cursor: pointer;
+    }
+    button.scene[aria-pressed="true"] {
+      color: var(--ink);
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+    button.scene:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    .layout { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 18px; align-items: start; }
+    .note {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 16px 14px;
+    }
+    .note h2 { font-size: 16px; margin: 0 0 8px; }
+    .note p, .note li { color: var(--steel); font-size: 14.5px; }
+    .note ul { margin: 8px 0 0; padding-left: 18px; }
+    .frame {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px 16px 18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    }
+    .frame .bar {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 12px;
+      color: var(--steel);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    h3.panel {
+      font-family: "Archivo", sans-serif;
+      font-stretch: 87%;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--steel);
+      margin: 0 0 6px;
+    }
+    .helper { color: var(--steel); font-size: 13.5px; margin: 0 0 14px; }
+    .card {
+      background: var(--raised);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 12px 11px;
+      margin: 0 0 10px;
+    }
+    .card.active { border-color: rgba(94, 139, 196, 0.55); }
+    .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+    .label { font-size: 12px; color: var(--steel); }
+    .mono { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; }
+    .btn {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--phosphor);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font: 500 13px "IBM Plex Sans", sans-serif;
+    }
+    .btn.primary { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+    .btn.warn { color: var(--warn); border-color: rgba(224,122,63,.45); }
+    .btn.ghost { color: var(--steel); }
+    .btn[disabled] { opacity: .4; }
+    .stack { display: flex; gap: 6px; flex-wrap: wrap; }
+    input, select {
+      width: 100%;
+      background: #0f1620;
+      border: 1px solid var(--line);
+      color: var(--phosphor);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font: 14px "IBM Plex Sans", sans-serif;
+    }
+    .info, .warnbox {
+      font-size: 13px;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 0 0 10px;
+    }
+    .info { background: rgba(94,139,196,.12); color: #b9cbe3; }
+    .warnbox { background: rgba(224,122,63,.12); color: #f0c2a4; }
+    .chip {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: var(--steel);
+    }
+    .chip.path { color: #b9cbe3; border-color: rgba(94,139,196,.45); }
+    .verdict { font-family: "Archivo", sans-serif; font-size: 18px; margin: 0 0 8px; }
+    .caption { font-size: 12.5px; color: var(--steel); margin: 8px 0; }
+    .ask { width: 100%; padding: 10px; font-weight: 600; }
+    .wf { font-size: 11px; color: var(--steel); margin: 0 0 8px; font-family: "IBM Plex Mono", monospace; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <p class="kicker">Convexa · ai-providers · wireframe from the written spec</p>
+    <h1>How AI powering looks after this design.</h1>
+    <p class="lede">Not the live app — a clickable mock of Settings and Ask-AI. No free uses. Two ways to run a recommendation: your API key, or sign in with Grok to use <em>your</em> Grok subscription. You always see a named model.</p>
+    <div class="rules">
+      <span>No free uses</span>
+      <span>Key per vendor</span>
+      <span>Always a named model</span>
+      <span>Subscription ≠ personal Grok key</span>
+      <span>Keys never shown again</span>
+    </div>
+
+    <div class="scenes" role="tablist" aria-label="Wireframe scenes">
+      <button class="scene" data-scene="today" aria-pressed="false">Today (old)</button>
+      <button class="scene" data-scene="empty" aria-pressed="true">Settings · first visit</button>
+      <button class="scene" data-scene="pool" aria-pressed="false">Settings · Grok pool</button>
+      <button class="scene" data-scene="byo" aria-pressed="false">Settings · your Anthropic key</button>
+      <button class="scene" data-scene="unavail" aria-pressed="false">Settings · pool not available</button>
+      <button class="scene" data-scene="ask-off" aria-pressed="false">Ask-AI · no power</button>
+      <button class="scene" data-scene="ask-on" aria-pressed="false">Ask-AI · after a read</button>
+      <button class="scene" data-scene="ask-stale" aria-pressed="false">Ask-AI · model gone</button>
+    </div>
+
+    <div class="layout">
+      <div class="frame" id="stage"></div>
+      <aside class="note" id="explain"></aside>
+    </div>
+  </div>
+
+  <script>
+    const scenes = {
+      today: {
+        title: "Settings · AI key",
+        where: "Today, shipped",
+        explain: {
+          h: "What you have now",
+          body: "One Anthropic box. The server already knows four vendors; the screen does not. Model is a hidden server default. Admins still have leftover “free uses.”"
+        },
+        html: `
+          <p class="wf">SETTINGS / ACCOUNT</p>
+          <h3 class="panel">AI key</h3>
+          <p class="helper">Your own Anthropic key lets AI recommendations run on your key, at your cost. It’s stored encrypted and never shown again.</p>
+          <label class="label">Anthropic API key</label>
+          <input type="password" value="" placeholder="sk-ant-…" />
+          <div class="stack" style="margin-top:10px"><button class="btn primary">Add key</button></div>
+        `
+      },
+      empty: {
+        title: "Settings · AI providers",
+        where: "First visit · signed in",
+        explain: {
+          h: "First visit",
+          body: "The old single Anthropic field becomes a panel. Sign in with Grok is offered first when this deployment can complete it — that uses your Grok subscription, not a Convexa pool. Model already has a named recommended default — Ask still stays off until you connect Grok or save a key."
+        },
+        html: `
+          <p class="wf">SETTINGS / ACCOUNT</p>
+          <h3 class="panel">AI providers</h3>
+          <p class="helper">Connect Grok while signed in to run recommendations on your Grok subscription when available. Otherwise store your own API key for Anthropic, OpenAI, Gemini, or Grok. Keys are encrypted and never shown again.</p>
+
+          <div class="card">
+            <div class="row">
+              <div>
+                <div class="label">Preferred · your Grok subscription</div>
+                <div>Not connected</div>
+              </div>
+              <button class="btn primary">Connect Grok</button>
+            </div>
+          </div>
+
+          <div class="label" style="margin:6px 0 8px">Your API key</div>
+          <div class="card">
+            <div class="row"><div><div class="mono">Anthropic</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">OpenAI</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">Gemini</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">Grok</div><div class="label">Personal API key · not your subscription</div></div><button class="btn">Add key</button></div>
+          </div>
+
+          <div class="label" style="margin:12px 0 6px">Model for recommendations</div>
+          <select disabled>
+            <option>grok-4.6 · catalog recommended</option>
+          </select>
+          <p class="caption">A model is selected. Recommendations still need a key or a Grok connection.</p>
+        `
+      },
+      pool: {
+        title: "Settings · AI providers",
+        where: "Grok connected · pool is the active path",
+        explain: {
+          h: "Preferred path in use",
+          body: "Connect Grok links your Grok subscription and makes that the standing path. The model list is the subscription catalog. Disconnect unlinks. Use this key on a stored vendor row is how you leave the subscription path."
+        },
+        html: `
+          <p class="wf">SETTINGS / ACCOUNT</p>
+          <h3 class="panel">AI providers</h3>
+          <p class="helper">Connect Grok while signed in to run recommendations on your Grok subscription when available. Otherwise store your own key.</p>
+          <div class="card active">
+            <div class="row">
+              <div>
+                <div class="label">Preferred · your Grok subscription</div>
+                <div>Connected · <span class="chip path">active</span></div>
+              </div>
+              <button class="btn">Disconnect</button>
+            </div>
+          </div>
+          <div class="label" style="margin:6px 0 8px">Your API key</div>
+          <div class="card">
+            <div class="row"><div><div class="mono">Anthropic</div><div class="label">•••• ant-4k2q</div></div>
+              <div class="stack"><button class="btn">Use this key</button><button class="btn">Replace</button><button class="btn warn">Remove</button></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">OpenAI</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="label" style="margin:12px 0 6px">Model for recommendations</div>
+          <select>
+            <option selected>grok-4.6 · catalog recommended</option>
+            <option>grok-4</option>
+            <option>grok-3</option>
+          </select>
+        `
+      },
+      byo: {
+        title: "Settings · AI providers",
+        where: "Using your Anthropic key",
+        explain: {
+          h: "Declining the pool",
+          body: "Saving a key or pressing Use this key makes that vendor the active path. You keep the other keys. The model list switches to that vendor’s catalog. If the old model isn’t on the new list, the recommended default for that vendor is selected by name."
+        },
+        html: `
+          <p class="wf">SETTINGS / ACCOUNT</p>
+          <h3 class="panel">AI providers</h3>
+          <div class="card">
+            <div class="row">
+              <div>
+                <div class="label">Preferred · your Grok subscription</div>
+                <div>Connected</div>
+              </div>
+              <button class="btn">Disconnect</button>
+            </div>
+          </div>
+          <div class="card active">
+            <div class="row"><div><div class="mono">Anthropic</div><div class="label">•••• ant-4k2q · <span class="chip path">active</span></div></div>
+              <div class="stack"><button class="btn">Replace</button><button class="btn warn">Remove</button></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">OpenAI</div><div class="label">•••• proj-91ab</div></div>
+              <div class="stack"><button class="btn">Use this key</button><button class="btn">Replace</button><button class="btn warn">Remove</button></div>
+            </div>
+          </div>
+          <div class="label" style="margin:12px 0 6px">Model for recommendations</div>
+          <select>
+            <option selected>claude-opus-4-8 · catalog recommended</option>
+            <option>claude-sonnet-4-5</option>
+          </select>
+        `
+      },
+      unavail: {
+        title: "Settings · AI providers",
+        where: "This deployment cannot complete Grok sign-in",
+        explain: {
+          h: "Honest blocked-on",
+          body: "Until Grok sign-in is verified and configured, the preferred card is an info note — no Connect button that cannot finish. Your own keys still ship."
+        },
+        html: `
+          <p class="wf">SETTINGS / ACCOUNT</p>
+          <h3 class="panel">AI providers</h3>
+          <div class="info">Signing in with Grok isn’t available on this deployment. You can still add your own API key below.</div>
+          <div class="card">
+            <div class="row"><div><div class="mono">Anthropic</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="card">
+            <div class="row"><div><div class="mono">OpenAI</div><div class="label">No key</div></div><button class="btn">Add key</button></div>
+          </div>
+          <div class="label" style="margin:12px 0 6px">Model for recommendations</div>
+          <select>
+            <option selected>claude-opus-4-8 · catalog recommended</option>
+          </select>
+          <p class="caption">A model is selected. Recommendations still need a key.</p>
+        `
+      },
+      "ask-off": {
+        title: "Ticker · Ask AI",
+        where: "Signed in · no key · pool not connected",
+        explain: {
+          h: "Ask stays a setup block",
+          body: "This is not “pick a model.” The recommended model can already be visible. Analyze stays off until you connect Grok or add a key. Signed-out users still see Sign in first."
+        },
+        html: `
+          <p class="wf">TICKER / ASK AI</p>
+          <div class="card">
+            <div class="label">Model</div>
+            <select>
+              <option selected>grok-4.6 · catalog recommended</option>
+            </select>
+            <p class="caption">Add an API key for Anthropic, OpenAI, Gemini, or Grok to power recommendations. Your key, your cost.</p>
+            <button class="btn primary ask" disabled>Analyze</button>
+            <div class="stack" style="margin-top:10px">
+              <button class="btn">Go to Settings</button>
+            </div>
+          </div>
+        `
+      },
+      "ask-on": {
+        title: "Ticker · Ask AI",
+        where: "After a pool read",
+        explain: {
+          h: "What actually ran",
+          body: "The model control is the same saved choice as Settings. Provenance must say your Grok subscription — never the same “Grok” chip as a personal xAI API key. No “free uses” chip."
+        },
+        html: `
+          <p class="wf">TICKER / ASK AI</p>
+          <div class="card">
+            <div class="row" style="margin-bottom:8px">
+              <div class="stack">
+                <span class="chip path">Your Grok subscription</span>
+                <span class="chip">grok-4.6</span>
+              </div>
+              <button class="btn primary">Analyze</button>
+            </div>
+            <select>
+              <option selected>grok-4.6 · catalog recommended</option>
+              <option>grok-4</option>
+            </select>
+            <p class="verdict" style="margin-top:14px">Trade · bullish</p>
+            <p class="caption">Structure, Strike(s), Expiration, Entry trigger, Time horizon and Confidence aren't checked — only the stop, target and invalidation level are.</p>
+          </div>
+        `
+      },
+      "ask-stale": {
+        title: "Ticker · Ask AI",
+        where: "Saved model no longer in the catalog",
+        explain: {
+          h: "The one case Analyze must block for the model",
+          body: "If a saved id disappears from the catalog, we do not silently pick another model. You choose again. That is different from having no key."
+        },
+        html: `
+          <p class="wf">TICKER / ASK AI</p>
+          <div class="warnbox">The saved model isn’t in this catalog anymore. Choose another model to run a recommendation.</div>
+          <div class="card">
+            <div class="label">Model</div>
+            <select>
+              <option value="">Choose a model…</option>
+              <option>grok-4.6 · catalog recommended</option>
+              <option>grok-4</option>
+            </select>
+            <button class="btn primary ask" disabled style="margin-top:10px">Analyze</button>
+          </div>
+        `
+      }
+    };
+
+    const stage = document.getElementById("stage");
+    const explain = document.getElementById("explain");
+
+    function show(id) {
+      const s = scenes[id];
+      document.querySelectorAll("button.scene").forEach((b) => {
+        b.setAttribute("aria-pressed", String(b.dataset.scene === id));
+      });
+      stage.innerHTML = `<div class="bar"><span>${s.where}</span><span>WIREFRAME</span></div>` + s.html;
+      explain.innerHTML = `<h2>${s.explain.h}</h2><p>${s.explain.body}</p>
+        <ul>
+          <li>Keys are write-only. You see a masked last-4, never the secret.</li>
+          <li>Green/red are not used for “connected.” That’s not P/L.</li>
+          <li>Copy never says free, cheaper, or included in v1.</li>
+        </ul>`;
+    }
+
+    document.querySelectorAll("button.scene").forEach((b) => {
+      b.addEventListener("click", () => show(b.dataset.scene));
+    });
+    show("empty");
+  </script>
+</body>
+</html>

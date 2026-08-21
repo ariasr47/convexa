@@ -11,7 +11,7 @@
  * `role="separator"` + `aria-orientation="horizontal"`; the SVG itself is aria-hidden.
  */
 import { bowedArcPath } from '@/shared/ui/arc';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 /** Reserved divider height in px (contract §5.1: ~16–24, fixed). */

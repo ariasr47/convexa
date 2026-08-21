@@ -63,14 +63,12 @@ impl JsonIvStore {
     pub fn open(path: impl AsRef<Path>) -> AppResult<Self> {
         let path = path.as_ref().to_path_buf();
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).map_err(|e| {
-                AppError::Config(format!("iv store dir {}: {e}", parent.display()))
-            })?;
+            fs::create_dir_all(parent)
+                .map_err(|e| AppError::Config(format!("iv store dir {}: {e}", parent.display())))?;
         }
         let data = if path.exists() {
-            let raw = fs::read_to_string(&path).map_err(|e| {
-                AppError::Config(format!("iv store read {}: {e}", path.display()))
-            })?;
+            let raw = fs::read_to_string(&path)
+                .map_err(|e| AppError::Config(format!("iv store read {}: {e}", path.display())))?;
             serde_json::from_str(&raw).unwrap_or_else(|e| {
                 warn!(error = %e, path = %path.display(), "iv store corrupt; starting empty");
                 DiskIv::default()
@@ -129,8 +127,7 @@ impl JsonIvStore {
         let raw = serde_json::to_string_pretty(data)
             .map_err(|e| AppError::Config(format!("iv store serialize: {e}")))?;
         let tmp = self.path.with_extension("json.tmp");
-        fs::write(&tmp, raw)
-            .map_err(|e| AppError::Config(format!("iv store write: {e}")))?;
+        fs::write(&tmp, raw).map_err(|e| AppError::Config(format!("iv store write: {e}")))?;
         fs::rename(&tmp, &self.path)
             .map_err(|e| AppError::Config(format!("iv store rename: {e}")))?;
         Ok(())

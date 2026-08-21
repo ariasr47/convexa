@@ -1,0 +1,102 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/auth/ai-key",
+      "path_params": {},
+      "query": {},
+      "auth": true,
+      "required": {
+        "storage_available": "boolean",
+        "providers": "array",
+        "providers[].provider": "string",
+        "providers[].set": "boolean",
+        "providers[].last4": "string|null",
+        "grok.available": "boolean",
+        "grok.connected": "boolean",
+        "grok.unavailable_reason": "string|null",
+        "preference.power_path": "string|null",
+        "preference.provider": "string|null",
+        "preference.model": "string|null",
+        "catalog.providers": "array",
+        "catalog.providers[].provider": "string",
+        "catalog.providers[].models": "array",
+        "catalog.providers[].models[].id": "string",
+        "catalog.providers[].models[].recommended": "boolean",
+        "catalog.grok_subscription.provider": "string",
+        "catalog.grok_subscription.models": "array",
+        "catalog.grok_subscription.models[].id": "string",
+        "catalog.grok_subscription.models[].recommended": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/settings",
+      "path_params": {},
+      "query": {},
+      "auth": true,
+      "required": {
+        "theme": "string",
+        "ai_power_path": "string|null",
+        "ai_provider": "string|null",
+        "ai_model": "string|null",
+        "risk_inputs": "object"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "query": {},
+      "required": {
+        "availability.in_app_enabled": "boolean",
+        "gate.state": "string",
+        "cap.over_limit": "boolean",
+        "cap.remaining_today": "number",
+        "powering.key_source": "string",
+        "powering.provider": "string|null",
+        "powering.model": "string|null",
+        "powering.unavailable_reason": "string|null",
+        "powering.preference.power_path": "string|null",
+        "powering.preference.provider": "string|null",
+        "powering.preference.model": "string|null",
+        "scenarios.enabled": "boolean",
+        "scenarios.catalog": "array"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/recommendation/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "query": {},
+      "auth": true,
+      "body": {
+        "persona_id": null,
+        "snapshot_fingerprint": "conformance-ai-providers",
+        "dte_min": null,
+        "dte_max": null,
+        "dark_pool": true,
+        "override": true
+      },
+      "required": {
+        "key_source": "string",
+        "provider": "string|null",
+        "model": "string|null",
+        "unavailable_reason": "string|null",
+        "status": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}",
+      "path_params": { "ticker": "SPY" },
+      "query": {},
+      "required": {
+        "market_state.ticker": "string",
+        "signals.opportunity_score": "number",
+        "signals.opportunity_tier": "string",
+        "ai_eval.state_fingerprint": "string"
+      }
+    }
+  ]
+}

@@ -16,7 +16,9 @@
  * feature adds none. The only in-app step offered is `Reload the page`.
  */
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { Box, Tooltip, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { cloneElement, type MouseEvent, type ReactElement } from 'react';
 import {

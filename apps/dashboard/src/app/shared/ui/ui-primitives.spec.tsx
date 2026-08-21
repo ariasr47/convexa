@@ -12,7 +12,7 @@
  */
 import { theme } from '@/shared/theme/theme';
 import LockIcon from '@mui/icons-material/Lock';
-import { Button } from '@mui/material';
+import Button from '@mui/material/Button';
 import { ThemeProvider } from '@mui/material/styles';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

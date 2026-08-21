@@ -1,0 +1,134 @@
+"endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": { "symbol": "SPY" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "books[].symbol": "string",
+        "books[].et_date": "string",
+        "books[].source_as_of": "string",
+        "books[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": { "symbol": "QQQ" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "books[].symbol": "string",
+        "books[].et_date": "string",
+        "books[].source_as_of": "string",
+        "books[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": { "symbol": "IWM" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "books[].symbol": "string",
+        "books[].et_date": "string",
+        "books[].source_as_of": "string",
+        "books[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}",
+      "path_params": { "symbol": "ZZZZNOPE" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "books": "array",
+        "store": "string",
+        "detail": "string",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "path_params": { "symbol": "ZZZZNOPE" },
+      "query": { "et_date": "2000-01-01" },
+      "expect_status": 404,
+      "required": {
+        "error": "string",
+        "detail": "string",
+        "symbol": "string",
+        "et_date": "string",
+        "store": "string",
+        "vendor_called": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book",
+      "path_params": { "symbol": "SPY" },
+      "query": { "et_date": "2020-01-02" },
+      "expect_status": 200,
+      "required": {
+        "symbol": "string",
+        "et_date": "string",
+        "source_as_of": "string",
+        "source": "string",
+        "store": "string",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "authorizes": "string",
+        "market": "object",
+        "market.ticker": "string",
+        "market.synchronized_spot": "number",
+        "market.current_spot": "number",
+        "market.timestamp": "number",
+        "market.atm_iv": "number",
+        "market.atm_iv_expiration": "string|null",
+        "market.atm_iv_dte": "number|null",
+        "market.market_phase": "string",
+        "market.contracts": "array",
+        "daily_bars": "array",
+        "minutes": "array",
+        "trades": "array"
+      }
+    }
+  ]
+}

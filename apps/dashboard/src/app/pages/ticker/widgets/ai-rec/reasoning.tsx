@@ -3,7 +3,12 @@
  */
 import { typographyTokens } from '@/shared/theme/tokens';
 import type { RecStrategy, TickerBundle } from '@convexa/api';
-import { Box, Button, Collapse, Stack, Typography, type SxProps, type Theme } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
+import Stack from '@mui/material/Stack';
+import type { SxProps, Theme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { AccessibleHelp } from './AccessibleHelp';
 import { COPY, REASONING_PROSE_NOT_CHECKED } from './copy';

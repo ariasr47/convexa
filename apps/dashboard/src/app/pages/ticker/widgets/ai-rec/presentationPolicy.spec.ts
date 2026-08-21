@@ -71,23 +71,63 @@ describe('deriveAiRecPresentation', () => {
     expect(v.requestState).toBe('missing_key');
     expect(v.actions.settings).toBe(true);
   });
-  it('shared allowance exhausted', () => {
+  it('key unusable is distinct from no_key', () => {
+    const rec = {
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: 'key_unusable',
+    };
+    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('key_unusable');
+  });
+  it('key rejected is distinct from unusable', () => {
+    const rec = {
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: 'key_rejected',
+    };
+    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('key_rejected');
+  });
+  it('model not in catalog is distinct from no_key', () => {
+    const rec = {
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: 'model_not_in_catalog',
+    };
+    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('model_not_in_catalog');
+  });
+  it('oauth expired / unlinked / subscription unavailable stay distinct', () => {
+    const rec = (reason: string) => ({
+      ...recAllTraced(),
+      status: 'unavailable' as const,
+      strategy: null,
+      unavailable_reason: reason,
+    });
+    expect(deriveAiRecPresentation(input({ rec: rec('oauth_expired') })).requestState).toBe(
+      'oauth_expired',
+    );
+    expect(deriveAiRecPresentation(input({ rec: rec('oauth_unlinked') })).requestState).toBe(
+      'oauth_unlinked',
+    );
+    expect(
+      deriveAiRecPresentation(input({ rec: rec('subscription_unavailable') })).requestState,
+    ).toBe('subscription_unavailable');
+  });
+  it('status powering reason drives idle setup before an ask', () => {
+    expect(deriveAiRecPresentation(input({ poweringReason: 'no_key' })).requestState).toBe(
+      'missing_key',
+    );
+  });
+  it('retired free-uses unavailable_reason is not a powering CTA', () => {
     const rec = {
       ...recAllTraced(),
       status: 'unavailable' as const,
       strategy: null,
       unavailable_reason: 'over_limit',
     };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('shared_allowance_exhausted');
-  });
-  it('shared key unavailable', () => {
-    const rec = {
-      ...recAllTraced(),
-      status: 'unavailable' as const,
-      strategy: null,
-      unavailable_reason: 'shared_key_unconfigured',
-    };
-    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('shared_key_unavailable');
+    expect(deriveAiRecPresentation(input({ rec })).requestState).toBe('unavailable');
   });
   it('deployment key gate', () => {
     expect(deriveAiRecPresentation(input({ inAppEnabled: false })).requestState).toBe(

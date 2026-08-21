@@ -1,0 +1,180 @@
+{
+  "conflicts": [
+    {
+      "quote": "Given an existing dated snapshot for T from cycle 1, after a later successful cycle 2 for T, **both** dated snapshots are still present (count for T is +1 vs post-cycle-1, and cycle 1's identity remains loadable).",
+      "source": "pm",
+      "why": "My R1 requires a min-interval thinning skip before append (same pattern as STRUCTURE_HISTORY_MIN_INTERVAL_SECS): if cycle 2 is a fresh-vendor success but arrives inside the interval, the write is a success no-op and count does not increase. As written, AC-4 forbids that governor and forces unbounded cadence on every paid fetch, which is the blob-volume failure mode I named.",
+      "proposal": "Narrow AC-4 / US-1 to: every fresh-vendor success appends unless interval-thinning skips; skipped cycles are observable to the operator as capture-skipped (not silent success), and AC-4's +1 assertion applies only when the second cycle is outside the min interval (or thinning is dialed to zero).",
+      "kind": "product",
+      "conflict_id": "18414e85c4d01e6b1aa0185d0aa136f7640ee7779a22019a1d51efb9107ca752",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "9. **Retention is bounded and age-based**, not latest-wins-in-disguise.",
+      "source": "pm",
+      "why": "Age-only retention cannot govern high-cadence same-day fresh-vendor captures: many large chain blobs can accumulate well before any max-age prune fires. My R1 cost governor is a per-symbol count ring and/or max-age; a count ring necessarily drops older rows that may still be younger than an age bound, which contradicts age-as-sole-bound semantics in AC-19/20.",
+      "proposal": "Keep append-shaped history (never latest-wins collapse to one row) but allow a dual bound: max-age and per-symbol max-count, both architect-named with product-attackable defaults. AC-19/20 should assert \"inside the active retention policy\" rather than age alone.",
+      "kind": "product",
+      "conflict_id": "ccc9fc0a570f28b70558fb227f359ce1e818c790453d9b740f3dbf56d61c44da",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "before append, if the newest blob for `symbol` is younger than a configured minimum interval, skip write (same idea as `STRUCTURE_HISTORY_MIN_INTERVAL_SECS` on structure history).",
+      "source": "architect",
+      "why": "Product happy-path and AC-1/AC-2 require that a successful cycle which already fetched a paid book leaves a new dated snapshot. A silent min-interval skip means a paid fetch can complete with no research blob and no degraded AC covering that miss \u2014 undercutting the BRIEF's 'keep what we already paid for' outcome.",
+      "proposal": "Drop min-interval thinning from v1 (govern cost with retention ring/max-age only), or open a human Decision that adds an explicit skip AC (operator-detectable 'capture skipped by interval' after a paid fetch). Do not ship skip-as-success-no-op without that Decision.",
+      "kind": "product",
+      "conflict_id": "4f26c095410a75c60462f59bf0d3cffc704fd0824a2c58c3ec3202c44d9e8c8c",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Thinning + ring are mandatory; wrong defaults fail operationally, not architecturally.",
+      "source": "architect",
+      "why": "Calling thinning mandatory pre-decides a product tradeoff (corpus completeness vs disk) that the BRIEF does not authorize and that my ACs treat as append-on-paid-fetch. Operational risk is real, but 'mandatory thinning' cannot override ship criteria without a Decision card.",
+      "proposal": "Treat ring and/or max-age retention as the mandatory cost governor; keep interval thinning optional and Decision-gated. If volume still forces thinning, return with numbers and an observable skip AC \u2014 do not declare it mandatory in architecture alone.",
+      "kind": "product",
+      "conflict_id": "5b58c3634615a52d3611d0d48fdbfa196f2baa34d928f4fc2cf8bef82136fa79",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM** will set the retention dials (min capture interval, per-symbol max blobs and/or max age) as product/cost policy; I only require that those dials exist and are enforced by ring/interval mechanisms.",
+      "source": "architect",
+      "why": "BRIEF Feasibility assigns Architect to name storage + retention + identity; my In-scope #5 binds outcomes (finite, age/bound, not latest-wins) and says the architect names the bound. Dumping numeric dials (especially a min-capture interval) onto PM also smuggles thinning into policy without an AC.",
+      "proposal": "Architect names concrete retention mechanism defaults (and any interval only if a Decision approves thinning). Product keeps outcome ACs (bounded, append-shaped, not latest-wins collapse). Numeric defaults that change cost/completeness go on a human Decision card, not an R1 assumption.",
+      "kind": "product",
+      "conflict_id": "66ce89ed30e5033f2efa693cb6f12f5ff01edd8aed0ed22ce2e0ed76fa3fb60f",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "per-symbol ring (count cap) and/or max-age prune after successful append; prune failure logs and does not fail the append (copy the structure-history prune isolation in `pg_scan.rs`).",
+      "source": "architect",
+      "why": "The 'and/or' allows a count-only ring with no age policy. Product decision #9 and AC-19 lock age/bound semantics ('older than the named bound'); count-only pruning can discard a still-young snapshot solely because N newer ones arrived \u2014 a different value call than age pruning, and it makes AC-19's age check untestable.",
+      "proposal": "Require a named max-age (or dual policy: max-age plus optional count cap) so age-based ACs remain observable. Count-cap alone is not a silent substitute for age-based retention.",
+      "kind": "product",
+      "conflict_id": "0ff2384466076a4b23bfb0dae68bf57eb1901231c7b19edd447d2c0814cb8f0d",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**`review` owns payload-composition intent (AC-3), absence of trader UI (AC-15), P3 not absorbed (AC-22), operator-without-trader-UI check (AC-23), and single-ticker-on-demand / sweep-only multi-ticker framing (AC-24).**",
+      "source": "pm",
+      "why": "Absence of capture chrome across trader routes is negative space: a Settings toggle, nav link, or shared LiveBadge import can land green under a copy review and still violate `[operator-vs-trader-path-separation]`. Risk-based verify marks that class of silently-regressing absence as `test` (UX-1/UX-2); marking AC-15 `review` because \"there is no trader chrome\" assumes the very invariant under test.",
+      "proposal": "Mark AC-15 `Verify by: test` (structural empty-diff / no capture affordance on trader routes). Keep AC-23 (positive operator path exists without trader UI) as `review` if desired.",
+      "kind": "technical",
+      "conflict_id": "200df8d4e93023cccff67dacbbc22e00b305fcfccff849e4dd5cac962d590b1a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**UI layout, microcopy polish, or new dashboard pages** \u2014 there is no trader presentation to design; operator CLI / ops checks are enough for observability this round.",
+      "source": "pm",
+      "why": "Research-read framing is the honesty surface for stored blobs (`RESEARCH READ \u2014 STORED CHAIN SNAPSHOT`, `captured at`, `loaded from store \u00b7 no vendor call`, ban on `live`). Folding that into Out as \"microcopy polish\" lets synthesis drop UX-3/UX-4/UX-5/UX-11 while still claiming CLI/ops observability \u2014 which is how a stored book gets skim-read as live.",
+      "proposal": "Keep trader UI / dashboard layout / new pages Out and `NO_UI_CHANGE` in SPEC \u00a74. Carve operator research-read copy (CLI / ops-check wording under the closed vocabulary) as In \u2014 consistent with PM's assumption that operator-facing CLI help text may be lightly touched.",
+      "kind": "product",
+      "conflict_id": "b9b5ba17dac09e5aabf852432306843657565771b4926dd043fa7d86af4adc3e",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Requesting snapshots for a ticker that has none reports **none for this ticker** (distinct from \"empty chain book\") and does **not** call Massive to create one.",
+      "source": "pm",
+      "why": "Behavioral outcome is right (absent store \u2260 empty chain; no vendor fill-in), but locking a second approved empty string fights the closed term set that already ships `no stored snapshot for <SYMBOL>\u2026`. Two \"correct\" miss phrases is how later surfaces pick the friendlier one and drift into market-empty language.",
+      "proposal": "Keep AC-9's meaning and no-Massive rule; bind the operator-visible text to `no stored snapshot for <SYMBOL>` (plus store-vouched `pruned by retention` only when Architect exposes that distinction).",
+      "kind": "technical",
+      "conflict_id": "8c938b8bd1495576813a103432d517ba23ec7cd807412d33b032ab87f2b255c2",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**UX / Interface (later)** will name any research read transport and bytes shape; this position intentionally omits endpoint signatures and JSON field names.",
+      "source": "architect",
+      "why": "UX owns labels, framing, and states \u2014 not transports, CLI flags, endpoint signatures, or bytes/wire shape. Naming those from this lane is inventing server/interface facts, which is my defining failure mode and leaves UX-3/UX-5/UX-6 unimplementable without a real field list from Architect.",
+      "proposal": "Architect (or Interface at synthesis) names load/list transport and bytes; UX only binds human-visible framing and the state matrix over Architect-named facts (symbol, as_of/captured-at UTC, store hit / miss / error).",
+      "kind": "technical",
+      "conflict_id": "5e9322d5f1d127dd7ebdcdaf1fa5f861c6b1677be722636b080087a1855ba8a2",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Skips are success no-ops, not errors.",
+      "source": "architect",
+      "why": "A paid cycle that writes nothing is an operator-visible outcome class. An invisible success no-op collapses intentional interval-thinning into the same silence as \"capture never ran\" or a swallowed write failure, so I cannot keep Empty / capture-skipped copy honest without inventing a skip claim the store never signaled.",
+      "proposal": "Keep thinning off the trader path and non-failing for the desk, but emit an operator-visible skip reason (structured log / research counter), e.g. `capture skipped \u2014 within min interval`, distinct from write-failure `capture skipped \u2014 trader path unchanged` and from `no stored snapshot` miss.",
+      "kind": "product",
+      "conflict_id": "7a522d83fd466a4457dcf3a12fe279d1ee6253349c2540afb19f028ef863ad24",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Do you accept min-interval thinning skips as a permitted non-append after a fresh-vendor success, or must every such success produce a new dated row while inside retention?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: May retention combine max-age with a per-symbol count ring that can drop rows still inside the age window, or must every snapshot younger than the age bound remain loadable regardless of count?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: What disk/cost ceiling (e.g. rough snapshots\u00b7symbol\u00b7day or GB) should the architect-named bounds target so the dials are not arbitrary?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: If thinning skips are accepted, is operator wording still `capture skipped` (same family as write failure) or do you need a distinct reason token such as `capture skipped \u2014 inside min interval`?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Will serve-path capture be wired this round under the off-path spawn rule, or must AC-2 be recorded as explicitly blocked-on?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Can research read distinguish retention-pruned from never-captured with store evidence (for UX-8), or must empty stay a single honest miss string?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: If min-interval thinning is Decision-rejected, are ring + max-age alone sufficient under effort M for the blob-volume risk you named?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: Is CLI-only research-read framing enough this ship for UX-3/UX-5/UX-6, or do you require an unlinked operator check vehicle beyond CLI?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: will research load/list expose a store-vouched prune-vs-never-captured distinction, or only a single miss/not-found? UX-8 will not invent prune copy without that signal."
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm the research-read surface exposes at least symbol, as_of (for `captured at` UTC), and store hit vs miss vs error \u2014 and, if thinning ships, an operator-visible skip reason class."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: is operator-visible reason for intentional interval-thin skips required this round, or is count-unchanged after a successful cycle enough without a named skip class?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: confirm research-read operator copy (CLI/ops wording under the closed vocabulary) is In even while trader UI / dashboard pages stay Out \u2014 so UX-3/UX-4/UX-5/UX-11 are ship criteria, not polish."
+    }
+  ],
+  "agree_count": {
+    "architect": 10,
+    "pm": 5,
+    "ux": 7
+  }
+}

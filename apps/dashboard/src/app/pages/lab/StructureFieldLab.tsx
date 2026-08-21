@@ -5,16 +5,14 @@
  * Renderer toggle: Canvas2D (original) vs WebGL2 (comparison twin).
  */
 import { getTicker } from '@convexa/api';
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
+import Stack from '@mui/material/Stack';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { StructureFieldCanvas } from './StructureFieldCanvas';
@@ -39,7 +37,10 @@ export function StructureFieldLab() {
     return () => clearInterval(id);
   }, [useLive]);
 
-  const demo = useMemo(() => buildDemoField(Date.now()), [tick]);
+  const demo = useMemo(() => {
+    void tick;
+    return buildDemoField(Date.now());
+  }, [tick]);
 
   const loadSpy = useCallback(async () => {
     setLoading(true);

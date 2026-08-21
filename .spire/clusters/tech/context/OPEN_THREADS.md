@@ -1322,11 +1322,12 @@ drills re-run by QA with SHA-verified restores.
 **Graduated `[ai-asserted-numbers-are-traceable]`** into canon (2 binding) — see §9.
 
 ### Seams left open (park until pulled)
-- **§9.5's residual closes in HALF ONE ONLY.** Half one — the false not-applicability verdict on absent
-  fields — is closed. **Half two survives:** a reader may still infer *"no clause means checked"* from the
-  fields that carry grounding clauses onto stated-but-unchecked ones. It closes only if the future-dated
-  **section-level plan-row caption** ships. **Binding record rule (pm, R3):** no gate report, ledger row
-  or BACKLOG line may record §9.5 as closed while half two stands.
+- **§9.5 is CLOSED (both halves) as of `rec-plan-scope-caption` GATE S 2026-08-17.** Half one
+  (false not-applicability on absent fields) closed at this ship’s predecessor. Half two — a reader
+  inferring *"no clause means checked"* onto stated plan fields — closed when the section-level
+  plan-row caption shipped (QA 19/19). See §7ai. S2 leftovers that remain are **not** §9.5: the
+  caption’s second clause vs absent/not_applicable sibling lines, and the risk-grid `Entry`
+  restatement with no local mark.
 - **The unconditional DTE-window caption** still renders its containment claim without checking it, and
   `{dteMin ?? '?'}` can render a literal `?` as a value. Raised at R1, out of scope here.
 - **The two `quoteTextFor` em-dash sites** (`literals.ts:101-102`, null IV / null delta) ship as a named
@@ -1337,6 +1338,185 @@ drills re-run by QA with SHA-verified restores.
 - **AC-17's parenthetical is imprecise** (recorded at GATE Q, not smoothed): no single poison spelling
   reds both named places — the typed form reds typecheck + Layer 3, the pre-feature form reds the
   label-anchored guard. Substance holds; both layers proven non-vacuous.
+
+## 7ag. ticker-visual-collisions — Quick hairline + GEX label lanes (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+
+**What shipped.** Two Ticker-page paint defects: the pins/recents separator is a **1px vertical
+hairline** (MUI can no longer stretch it into a grey block), and GEX strike-profile marker labels
+(`put` / `call` / `flip` / `spot` / `live`|`mid`) go through a measured collision layout so clustered
+or edge values stay readable and inside the canvas. Product commit `a5a6955`. `NO_BACKEND_CHANGE`.
+
+**Verification.** GATE Q 2026-08-15: **7 PASS / 1 FAIL** — the FAIL was AC-8's configured dashboard
+suite, then the accepted five-file baseline; no feature-owned defect. Owner archived 2026-08-17 after
+HEAD `593f601` CI Frontend job succeeded (lint · typecheck · test · build · e2e, 2026-08-16). No
+conformance spec (`NO_BACKEND_CHANGE`).
+
+### Seams left open
+- None owned by this folder. Chart markers added later must use the shared layout path, not a
+  private `measureText` + clamp (the live/mid bounce already proved the private path intersects
+  `− dealer γ`).
+
+## 7ah. ai-rec-decision-card — decision-first card + analysis surface (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+
+**What shipped.** The AI recommendation is a **decision card** (verdict, invalidation, risk, safe
+simulated next action) with long-form reasoning, grounding, provenance, and export on a **desktop
+drawer / mobile sheet**. `AiRecPanel` still owns the pinned read; `deriveAiRecPresentation` is the
+only action policy; analysis is a non-mutating view. Shared `TradeEntryDialog` unchanged. Product
+landed `6172e58` then iterated through `3b165c8`+. `NO_BACKEND_CHANGE`.
+
+**Verification.** No `QA_REPORT.md` in the Spire folder (implementation continued after an unclosed
+GATE V sheet). Owner archived 2026-08-17 on product-on-main + HEAD CI green. No conformance spec.
+
+### Seams left open
+- **§9.5 half two was still open at this ship** — closed later the same day by `rec-plan-scope-caption`
+  (§7ai). This decision-card ship did not close the inference.
+- Future-dated user-research instrumentation (time-to-verdict / simulated-flow completion) was
+  deferred in the SPEC.
+
+## 7al. batch-backtest-cli — P3 replay of stored books (SHIPPED + ARCHIVED 2026-08-18)
+
+**What shipped.** `cargo run -p api-rust -- batch-backtest` replays captured options books
+offline. Zero vendor calls. Hollow split refused. Empty store: honest console, no report file.
+Authorizes: nothing. Contracts at `_archive/batch-backtest-cli/`. Conformance re-pin
+`state/conformance/batch-backtest-cli.json`.
+
+**Verification.** GATE Q PASS 28/0/0. Independent conformance PASS 4/4.
+
+### Seams left open
+- P4 AI lab still later (blocked-on boring P2–P3 use).
+- P7 vendor hist-chain still extra Massive product.
+- `project-context-s2-is-python-era` still unpaid.
+
+## 7ak. chain-snapshot-capture — keep paid Massive snapshots (SHIPPED + ARCHIVED 2026-08-18)
+
+**What shipped.** Dated history of already-fetched `VendorBundle`s (options chain + bars + trades)
+from scanner + serve cold compute. Dual retention 14d + 48/symbol. Research list/load with no
+Massive call. Public site 404s `/api/_research/*`. Warmer excluded. Contracts at
+`.spire/clusters/tech/contracts/_archive/chain-snapshot-capture/`. Conformance at
+`state/conformance/chain-snapshot-capture.json`.
+
+**Verification.** GATE Q PASS 28/0/0. Independent conformance PASS 4/4. `NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- **P3 batch-backtest CLI** is now unblocked (was blocked-on durable capture).
+- Warmer / `refresh_analytics` still does not capture (by design this ship).
+- Vendor hist-chain / P7 still extra Massive product — not bought.
+
+## 7aj. ai-providers — multi-provider keys + named model (SHIPPED + ARCHIVED 2026-08-18 — both lanes)
+
+**What shipped.** Settings "AI providers" + Ask-AI share one standing preference. One BYO
+ciphertext per closed provider (Anthropic / OpenAI / Gemini / Grok); named catalog model always
+visible; provenance names path + model. Free-uses / `shared_admin` deleted. Grok **subscription**
+OAuth (`grok_subscription` = the trader's own plan, never a Convexa pool) is present-but-unavailable
+(`grok.available=false`, start 409). Score/tier/fingerprint byte-identical. Contracts at
+`.spire/clusters/tech/contracts/_archive/ai-providers/`. Conformance at
+`state/conformance/ai-providers.json`.
+
+**Verification.** GATE Q PASS 26 PASS / 0 FAIL / 4 UNVERIFIABLE. Independent conformance PASS 5/5
+(matches builder). Typecheck `tsc --build --force` exit 0. Suite 1912 passed / 1 accepted
+`orders.risk`. `NOTE: VISUAL_EVIDENCE_UNAVAILABLE` (Chrome DevTools profile lock).
+
+### Seams left open
+- **AC-9/10/14/15 stay open/blocked-on** until primary xAI user-OAuth docs/scopes verify a
+  buildable subscription spend path (AC-27). Do not invent endpoints or ship a fake Connect.
+- Pixel inspection of Settings/Ask-AI was unavailable this ship — structural evidence only.
+
+## 7ai. rec-plan-scope-caption — plan-row scope caption (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
+
+**What shipped.** On a produced non-`local_rules` **trade** recommendation, the pinned DecisionCard
+plan row now carries exactly one quiet caption: the six plan fields (Structure, Strike(s), Expiration,
+Entry trigger, Time horizon, Confidence) are not checked — only stop, target, and invalidation are.
+Closed constant `PLAN_FIELDS_NOT_CHECKED` in `copy.ts`; structural show/hide
+`shouldShowPlanFieldsNotChecked` (`decision === 'trade'` and `grounding?.card !== 'local_rules'`;
+never `key_source`); one render site as a **sibling after** `DecisionMetadata`, never inside the
+row flex, never a second instance on analysis. Local-rules path stays banner-free. `NO_BACKEND_CHANGE`;
+empty `apps/api` + `libs/api` vs `593f601`. Product commits `fc3bb8c`–`a944bd2`.
+
+**Verification.** GATE Q PASS 19/19, 0 FAIL, 0 UNVERIFIABLE. No live `endpoints` pin (honest
+`NO_BACKEND_CHANGE`). Live produced-rec chrome was not painted (`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`);
+show/hide observed via the DecisionCard fixture suite. Contracts at
+`.spire/clusters/tech/contracts/_archive/rec-plan-scope-caption/`.
+
+**§9.5 (ai-rec-grounding) may now be recorded closed.** Both halves have shipped: absence literals
+(`rec-absence-literals-hole`) and the inference caption (this feature).
+
+### Seams left open
+- S2 Important residuals shipped as written: the caption’s “are checked” clause can disagree with
+  the grounding card line on missing/`not_applicable` envelopes; risk-grid `Entry` still restates
+  the unchecked trigger beside a checked target with no local mark.
+- Measuring whether the caption actually reduces the inference in real readers (SPEC future).
+- Same scope-boundary on reassessment recs if those surfaces present the same adjacency.
+
+## 7ap. chain-archive-object-store — session bodies off app OLTP (SHIPPED + ARCHIVED 2026-08-20)
+
+**What shipped.** Session-archive **bodies** live under `SESSION_CHAIN_ARCHIVE_BODY_ROOT` (unique-per-put
+locator). Index stays thin (`body_locator`); Postgres BYTEA dropped. Missing file =
+`session book unreadable`. Unset/nested BODY_ROOT fail-open `session archive not storing`.
+48-ring BYTEA **not moved**. Reuses `/api/_research/session-books`. `NO_UI_CHANGE`.
+Contracts at `_archive/chain-archive-object-store/`. Conformance
+`state/conformance/chain-archive-object-store.json`.
+
+**Verification.** GATE Q PASS 25/0/0. Independent conformance PASS 4/4.
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- 48-ring BYTEA may still pressure OLTP inside 14d+48 (named residual).
+- Program #5 corpus wait (clock 2026-08-20); #6 P4 blocked-on #5.
+- P7 hist-chain still extra Massive product.
+- `project-context-s2-is-python-era` still unpaid.
+
+## 7ao. liquid-names-session-capture — SPY/QQQ/IWM session books despite warm cache (SHIPPED + ARCHIVED 2026-08-20)
+
+**What shipped.** Off-path ensure worker for closed trio `{SPY, QQQ, IWM}`: presence short-circuit
+→ promote same-ET ring snapshot (zero Massive) → else await `capture_into` /
+`archive_session_best_effort`. Same-day spaced retries (≥300s) after failed fetch; singleflight;
+no Massive on the trader request path. Weekday ET only. Wake = `Notify` only. Reuses
+`/api/_research/session-books`. `NO_UI_CHANGE`. Contracts at
+`_archive/liquid-names-session-capture/`. Conformance
+`state/conformance/liquid-names-session-capture.json`.
+
+**Verification.** GATE Q PASS 25/0/0. Independent conformance PASS 6/6 (matches builder).
+Live hits `(SPY|QQQ|IWM, 2026-08-20)`. `NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- Program #3–#4 **DONE**; #5 clock 2026-08-20; #6 P4 blocked-on #5; #7 **SHIPPED**.
+- P7 vendor hist-chain still extra Massive product.
+- `project-context-s2-is-python-era` still unpaid.
+
+## 7an. session-chain-archive — one paid book per ET day, prune-proof (SHIPPED + ARCHIVED 2026-08-20)
+
+**What shipped.** Sibling session archive beside the 48/14d ring. Identity `(symbol, et_date)`
+America/New_York; first-wins; promote after successful ring append. 48-ring prune cannot delete
+the session book (poison-prune test). Research list/load `GET /api/_research/session-books/...`
+zero Massive; `authorizes: nothing`; mandatory `source_as_of` on every successful load (owner A).
+Four outcomes: `no session book` ≠ ring `no stored snapshot` ≠ `session archive not storing` ≠
+`session book unreadable`. `NO_UI_CHANGE`. Pages `_research` 404. Contracts at
+`_archive/session-chain-archive/`. Conformance `state/conformance/session-chain-archive.json`.
+
+**Verification.** GATE Q PASS 27/0/0. Independent conformance PASS 4/4 (matches builder).
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- Program #2 **SHIPPED**. Remaining at ship time of this thread: #3–#7 (later #3–#4 ran; #7 shipped; #5 clock / #6 blocked).
+- P7 vendor hist-chain still extra Massive product.
+- `project-context-s2-is-python-era` still unpaid.
+
+## 7am. replay-outcome-join — labels on replayed paid books (SHIPPED + ARCHIVED 2026-08-19)
+
+**What shipped.** `cargo run -p api-rust -- replay-outcome-join --replay <batch_backtest.json>`
+joins stored-book replayed scores to forward `1d`/`5d` labels. Zero Options. Authorizes: nothing.
+`display_spot` on producer `ReplayedMeasurement` is capture-time `p0`; missing spot is `no_p0`.
+Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
+`_archive/replay-outcome-join/`. Conformance re-pin `state/conformance/replay-outcome-join.json`.
+
+**Verification.** GATE Q PASS 35/0/0. Independent conformance PASS 4/4 (matches builder).
+`NOTE: VISUAL_EVIDENCE_UNAVAILABLE`.
+
+### Seams left open
+- P4 AI lab still later (blocked-on boring P2–P3 use; we still have not run a multi-week corpus).
+- P7 vendor hist-chain still extra Massive product.
+- `project-context-s2-is-python-era` still unpaid.
+- Sibling `grounding_isolation` suite red remains out-of-feature.
 
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
@@ -1357,11 +1537,14 @@ drills re-run by QA with SHA-verified restores.
   Pages builds the frontend from git — the `tradeable-rec-inputs` push (`47a8961`) was serving live on
   `convexa.pages.dev` within the hour, front AND back (probed: `/api/candidates/SPY` 200; the served
   `TickerDashboard` chunk carries the feature's literals). Built by the owner in Grok CLI sessions
-  (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Genuinely open (both
-  red BEFORE the 08-13 push, verified):** (a) the CI frontend job is standing-red — lint warnings policy
-  (mostly `pages/lab/StructureField*` + one `useAlerts.ts` directive) plus the 5 accepted pre-existing
-  red spec files fail it; (b) the conformance **local auth-gated leg** exits 2 (config class) at its
-  signup bootstrap. See BACKLOG §B `ci-standing-red`. The 2026-07-28 wording below is history:
+  (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Update 2026-08-17:**
+  HEAD `593f601` CI Frontend job **succeeded** (lint · typecheck · test · build · e2e) and Conformance
+  + Deploy smoke succeeded — the 2026-08-13/14 "frontend job is standing-red" claim is **stale as of
+  that run**. BACKLOG §B `ci-standing-red` **retired 2026-08-20** (hygiene batch; local full
+  frontend+backend analogue green the same day). Do not treat one green HEAD as proof the
+  five-file baseline can never regress. Historical (both red
+  BEFORE the 08-13 push): (a) lint warnings policy + 5 accepted pre-existing red specs; (b)
+  conformance **local auth-gated leg** exits 2 at signup bootstrap. The 2026-07-28 wording below is history:
   *(a) conformance sweep not in CI; (b) push ≠ deploy, applied by hand — both now false.*
 - **Cold-run suite flakiness:** 2 timing-based positions/settings specs occasionally fail on a cold run; a
   clean `--skip-nx-cache` run is green. Not chased yet — flag if it worsens.
@@ -1545,4 +1728,11 @@ drills re-run by QA with SHA-verified restores.
   **fabricating and it covers it going silent**. An untraceable figure is not rendered as fact; an
   absent one is not rendered as a reserved literal belonging to another state.
   (ai-rec-grounding — the per-figure grounding of asserted numbers, 44.4% measured untraceable ·
-  rec-absence-literals-hole — the absence half, six fields.) See PROJECT_CONTEXT §5.
+  rec-absence-literals-hole — the absence half, six fields · rec-plan-scope-caption — the
+  inference/halo half: one section caption so “no clause” cannot be read as “checked.”) See
+  PROJECT_CONTEXT §5.
+- **`cited-code-is-verified-not-assumed`** (promoted 2026-08-17, 2 binding) — a design or plan
+  artifact must not assert a fact about existing code it will reuse unless that fact was read at
+  source; unverifiable claims carry a `[lane-check]` mark. (rec-absence-literals-hole — three
+  false citations in one council · rec-plan-scope-caption — live `DecisionCard.tsx` attachment,
+  not Python-era `AiRecPanel`.) See PROJECT_CONTEXT §5.

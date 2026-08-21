@@ -1,0 +1,157 @@
+{
+  "conflicts": [
+    {
+      "quote": "Switching the active BYO provider (with keys set on more than one) updates the named provider+model pair Settings and Ask-AI agree on before the next ask.",
+      "source": "pm",
+      "why": "Live credential PK is (user_id, kind) with kind=\"ai\" \u2014 one BYO ciphertext per user; replace overwrites. Concurrent keys-on-more-than-one needs a credential-identity expansion architect deferred as a v1 non-goal (complexity + migration). AC-25 and the In-scope 'key per chosen BYO provider' bullet cannot ship against the one-row store.",
+      "proposal": "Human picks scope: (a) one active BYO credential and rewrite AC-1/4/25 to replace-switches-vendor; or (b) expand PK/rows to per-provider slots and drop the one-slot non-goal before build.",
+      "kind": "product",
+      "conflict_id": "4a76e0e7b41e24d8bef868f0c995afdf3062861843d8286a7440e1ea60c448fc",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The server can persist **per-user, per-provider** BYO secrets under the existing encrypt-at-rest / never-echo floors and resolve exactly one usable key (or none) for an Ask-AI call without returning plaintext to the client.",
+      "source": "pm",
+      "why": "Encrypt-at-rest and never-echo already hold, but per-provider concurrency does not: CredentialRecord is one row per (user_id, kind=\"ai\"). Treating multi-slot persistence as already available under the existing store is false and will fail AC-1/4/25 at implementation.",
+      "proposal": "If product chooses multi-slot, name an explicit schema/PK change; if product chooses one active key, drop the per-provider persistence assumption.",
+      "kind": "technical",
+      "conflict_id": "001a6137321f376386f5bca2b884ef1d19efc4241c6bf9c80a1ade267457a6f8",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On resolve: if preference \u2208 catalog for the active provider \u2192 use it; else fall back to catalog default **and surface that effective model** on status/rec provenance so it is never invisible.",
+      "source": "architect",
+      "why": "PM AC-17 forbids silently substituting another model when the saved selection is missing from the catalog; auto-calling the catalog default still runs a model the trader did not choose for this path even if provenance later names it. Retracting this R1 resolver claim.",
+      "proposal": "If preference is unset or \u2209 catalog \u2192 resolve blocked with a closed model_missing / model_unset reason (no LLM call). Catalog recommended default may appear only as a visible selectable option (UX 'Server default \u00b7 {name}'); it is used only after it is the selected preference.",
+      "kind": "product",
+      "conflict_id": "731d5fa44042417cfa61e4648d71487510f111f5ebdd92f6ef2d7b4232c957f8",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep **one active BYO credential** (`kind = \"ai\"`). Switching vendor = replace.",
+      "source": "architect",
+      "why": "R1-pm In-scope and ACs require a key set per chosen BYO provider, including switching with keys set on more than one (AC-1/4/25). One-slot replace-to-switch cannot leave multiple providers observably set and forces re-pasting secrets to change vendor \u2014 that silently narrows owner-facing multi-provider powering.",
+      "proposal": "Human picks scope: (a) accept one-active BYO for v1 and rewrite PM ACs to sequential capability per vendor (add/replace/remove for whichever provider is active, never concurrent), or (b) expand credential storage to a multi-slot matrix before build. Do not leave both claims for the synthesizer.",
+      "kind": "product",
+      "conflict_id": "a66d19784849fd7e36a759db0bee7ba3ef815bdfcf0f284a4c93431697b9d7d6",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On resolve: if preference \u2208 catalog for the active provider \u2192 use it; else fall back to catalog default **and surface that effective model** on status/rec provenance so it is never invisible.",
+      "source": "architect",
+      "why": "Falling back and calling on a catalog default when the saved preference is missing/invalid substitutes a model the trader did not select for this path. Surfacing after the fact still lets Ask-AI run \u2014 that breaks AC-17 (distinct blocked state; no silent substitute; no recommendation until the trader picks a catalog model).",
+      "proposal": "Status may show the catalog recommended default as a suggested/current picker value the trader can see and change (agree with UX). When the saved preference is absent from the active catalog, Ask-AI stays blocked until the trader selects a catalog model; do not resolve-and-call on an unconfirmed substitute.",
+      "kind": "product",
+      "conflict_id": "0ec998f03b332e96443597d463f259e173b8a4b67e1203bd9b9c6802bb3f94a5",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Recommend PM rename Ask-AI admin copy later if \"free\" collides with pool messaging \u2014 pool copy must stay non-\"free\" regardless.",
+      "source": "ux",
+      "why": "Deferring the admin-copy rename past this ship leaves the defining vocabulary collision live: traders will read admin \"free uses\" and the preferred Grok pool as the same path. PM AC-19 is ship-blocking that legacy admin shared-allowance outcomes stay mutually distinct from Convexa Grok pool states in product language.",
+      "proposal": "Keep any Ask-AI admin-allowance wording fix required for admin\u2260pool honesty inside this feature's review gate (AC-19). Pool copy still never says \"free\" unless a vouched field authorizes it.",
+      "kind": "product",
+      "conflict_id": "cc6cda0847e6ccf79a256db02e4dfb7c5db31bce791238c0cf6b7cd7acb240fc",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Switching the active BYO provider (with keys set on more than one) updates the named provider+model pair Settings and Ask-AI agree on before the next ask.",
+      "source": "pm",
+      "why": "UX R1 information structure is a single BYO credential row (provider select \u2192 one masked last-4 \u2192 replace/remove), matching today's `(user_id, kind=ai)` shape and Architect's one-active-BYO non-goal. Concurrent keys-per-provider forces a four-row set/unset matrix, different empty/replace states, and a provider-switch control the current panel does not have \u2014 that is a scope expansion, not a copy tweak.",
+      "proposal": "v1: one active BYO key; switching vendor is replace. Trader sees the stored provider label + masked hint for that single credential. Drop AC-25's \"keys set on more than one\" (and \"per-provider\" secret persistence) unless the human explicitly expands to multi-slot.",
+      "kind": "product",
+      "conflict_id": "e4144d759d859ab85ade5cf1cf60772aab337fc4387a0fdaab7a6b7935c6f236",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The server can persist **per-user, per-provider** BYO secrets under the existing encrypt-at-rest / never-echo floors and resolve exactly one usable key (or none) for an Ask-AI call without returning plaintext to the client.",
+      "source": "pm",
+      "why": "Same multi-slot assumption: per-provider stored secrets imply multiple concurrent BYO credentials. UX cannot honestly render \"set for that provider\" across four vendors while Architect keeps a single `kind = \"ai\"` record and UX keeps one write-only chrome path.",
+      "proposal": "Persist one BYO secret per user; the closed provider label on that record is what Settings/Ask-AI display. Multi-provider means the trader may choose any of the four when writing, not that four ciphertexts coexist.",
+      "kind": "product",
+      "conflict_id": "767922d1145b340dc44d73755b0698778d160123968024d748a4bb692c951452",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On resolve: if preference \u2208 catalog for the active provider \u2192 use it; else fall back to catalog default **and surface that effective model** on status/rec provenance so it is never invisible.",
+      "source": "architect",
+      "why": "Auto-substituting another model when the saved preference is absent from the catalog renames the trader's choice. Surfacing the substitute still asserts \"this is what you are running\" without an explicit re-pick \u2014 the defining UX integrity failure for this feature. PM already requires a distinct choose-another-model block with no silent substitute.",
+      "proposal": "If preference \u2209 catalog (or unset with no accepted recommended default policy): return a distinct `model_not_in_catalog` / model-missing outcome; FE shows the blocked choose-another state and does not ask. Never resolve a different model behind the trader's back.",
+      "kind": "product",
+      "conflict_id": "9c1f8e7d955a07017bae6e89fc657978c2b891b49e183cf064ca2fcf438848ad",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "No powered ask runs against an unnamed / invisible default: if the product would otherwise have used an env default the trader never selected, the surface instead requires an explicit model choice (blocked until chosen) rather than silently asking.",
+      "source": "pm",
+      "why": "BRIEF requires a named model the trader can see and override \u2014 not necessarily an empty control until a click. Forcing blank-until-chosen while a server catalog still has a recommended default recreates a visually empty model field (today's failure mode) unless every empty state is perfectly copy-disciplined. Architect's catalog recommended default + UX's \"show that name as the current selection\" already make the default visible and overrideable.",
+      "proposal": "When the catalog exposes a recommended default and no valid saved preference exists, preselect that named model (optionally labeled as the catalog recommended default) so Ask is enabled with a visible name; trader can change it. Block ask only when the catalog is empty/unavailable or the saved selection is invalid (AC-17 path) \u2014 not whenever an env-derived recommendation exists.",
+      "kind": "product",
+      "conflict_id": "55f323ae67ccb442f6a734619db3b3fb65d2b1e903095334169ed04d3390f248",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: does v1 require concurrent BYO keys across providers (AC-25), or is one active BYO credential with replace-to-switch-vendor acceptable?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: does AC-7 allow the catalog recommended default to appear pre-selected and named on first visit, or must the model control start empty/blocked until the trader clicks a choice?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: if product keeps one active BYO slot, is replace-to-switch (single set-state + provider chip from stored provider) acceptable, or do you need per-provider set/empty rows regardless of storage?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: when OAuth is config-gated unavailable, is there any non-OAuth way for a trader to become pool-entitled in v1, or is `pool_grok` spend unreachable until the OAuth identity arm verifies?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: under one-active BYO, will status still expose the closed provider label for the single stored key so Settings/Ask-AI can show a named provider without FE key-string forensics?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: does the Ask-AI model control always write through to the standing preference (PM In), or do you need a one-shot \"next ask only\" override (PM Future-dated)?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: while the OAuth identity arm stays config-gated / blocked-on, can any signed-in trader be `pool_grok`-entitled in v1, or must Settings render the preferred path only as present-but-unavailable (info note, no Connect CTA that cannot complete)?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: confirm the closed FE-consumable unavailable-reason set for at least no_key \u00b7 pool_unavailable \u00b7 pool_exhausted \u00b7 oauth_expired/unlinked \u00b7 storage_unavailable \u00b7 model_not_in_catalog \u00b7 key_rejected \u00b7 shared_admin variants so Ask-AI copy cannot collapse states."
+    },
+    {
+      "from": "ux",
+      "ask": "PM: with one-shot model override Out, do Settings and Ask-AI bind to the same persisted model preference (Ask-AI select writes that preference), so both surfaces always label-agree before the next ask?"
+    }
+  ],
+  "agree_count": {
+    "architect": 7,
+    "pm": 8,
+    "ux": 9
+  }
+}

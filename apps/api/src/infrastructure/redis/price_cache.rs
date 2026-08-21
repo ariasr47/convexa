@@ -104,8 +104,7 @@ pub struct RedisPriceCache {
 
 impl RedisPriceCache {
     pub async fn connect(url: &str) -> AppResult<Self> {
-        let client = redis::Client::open(url)
-            .map_err(|e| AppError::Redis(format!("open: {e}")))?;
+        let client = redis::Client::open(url).map_err(|e| AppError::Redis(format!("open: {e}")))?;
         // Probe connectivity
         let mut con = client
             .get_multiplexed_async_connection()

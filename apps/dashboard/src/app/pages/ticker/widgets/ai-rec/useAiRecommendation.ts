@@ -18,6 +18,7 @@ import {
   OpenPositionsDigest,
   RecCap,
   RecGate,
+  RecPowering,
   RecResponse,
   RecScenarioInfo,
   RecStatus,
@@ -64,6 +65,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   const [cap, setCap] = useState<RecCap>(DEFAULT_CAP);
   const [inAppEnabled, setInAppEnabled] = useState(true);
   const [statusReady, setStatusReady] = useState(false);
+  const [powering, setPowering] = useState<RecPowering | null>(null);
   // Scenario advertisement — driven ENTIRELY off the wire (never assumed). Default = disabled.
   const [scenarios, setScenarios] = useState<ScenarioAdvert>({ enabled: false, catalog: [] });
 
@@ -89,6 +91,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
       .then((s: RecStatus) => {
         if (cancelled) return;
         setInAppEnabled(s.availability.in_app_enabled);
+        setPowering(s.powering ?? null);
         // INTERFACE §2: the wire always carries `scenarios` post-feature; an absent field (older
         // backend) degrades to disabled — zero scenario surface (AC-34), never a throw.
         setScenarios(
@@ -106,6 +109,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
         // Transport fault on status: degrade the action to inert, keep the rest of the page intact.
         if (cancelled) return;
         setInAppEnabled(false);
+        setPowering(null);
         setScenarios({ enabled: false, catalog: [] });
         setStatusReady(true);
       });
@@ -206,6 +210,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   return {
     // gating / availability
     inAppEnabled,
+    powering,
     gate,
     cap,
     statusReady,

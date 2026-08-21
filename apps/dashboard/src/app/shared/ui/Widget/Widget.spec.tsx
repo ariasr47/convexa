@@ -151,6 +151,14 @@ describe('Widget — reduced motion', () => {
   });
 });
 
+describe('Widget — body variants (not booleans)', () => {
+  it('padding and surface are named variants; noBodyPad is not a prop', () => {
+    expect(widgetSource).toMatch(/bodyPad\?: 'default' \| 'none'/);
+    expect(widgetSource).toMatch(/bodyVariant\?: 'flush' \| 'inset'/);
+    expect(widgetSource).not.toMatch(/noBodyPad\?:/);
+  });
+});
+
 describe('Widget — motion negative space (stage 3: reveal retired)', () => {
   // Pure checker (mutation-guarded below): the retired motion tokens a source must NOT carry,
   // and the kept data-signal token it MUST still carry.

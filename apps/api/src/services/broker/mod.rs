@@ -91,11 +91,7 @@ pub struct BrokerBook {
 }
 
 pub trait PositionsProvider: Send + Sync {
-    fn fetch_book(
-        &self,
-        credential: &BrokerCredential,
-        account_ref: Option<&str>,
-    ) -> BrokerBook;
+    fn fetch_book(&self, credential: &BrokerCredential, account_ref: Option<&str>) -> BrokerBook;
 }
 
 /// Env-selected provider (`POSITIONS_PROVIDER`, default `stub`).
@@ -114,11 +110,7 @@ pub fn get_positions_provider() -> std::sync::Arc<dyn PositionsProvider> {
 struct WebullPlaceholder;
 
 impl PositionsProvider for WebullPlaceholder {
-    fn fetch_book(
-        &self,
-        _credential: &BrokerCredential,
-        _account_ref: Option<&str>,
-    ) -> BrokerBook {
+    fn fetch_book(&self, _credential: &BrokerCredential, _account_ref: Option<&str>) -> BrokerBook {
         BrokerBook {
             state: "unknown".into(),
             reason: Some("adapter_fault".into()),

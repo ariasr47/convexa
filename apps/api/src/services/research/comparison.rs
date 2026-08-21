@@ -1345,7 +1345,11 @@ mod identities {
             &slice_0810_outcomes(),
             &requested(&["SPY", "QQQ", "IWM", "DIA"]),
         );
-        assert_eq!(cells.len(), 75, "must run over the full declared grid, not a subset");
+        assert_eq!(
+            cells.len(),
+            75,
+            "must run over the full declared grid, not a subset"
+        );
 
         let mut violations: Vec<String> = Vec::new();
         for c in &cells {
@@ -1367,10 +1371,8 @@ mod identities {
         // The 6 pooled GEX-magnitude cells are the exact regression this criterion caught — an
         // appended, unparenthesized caveat line — so pin them positively rather than only
         // asserting the absence of a violation above.
-        let pooled_gex_cells: Vec<&Cell> = cells
-            .iter()
-            .filter(|c| c.not_symbol_comparable)
-            .collect();
+        let pooled_gex_cells: Vec<&Cell> =
+            cells.iter().filter(|c| c.not_symbol_comparable).collect();
         assert_eq!(
             pooled_gex_cells.len(),
             6,

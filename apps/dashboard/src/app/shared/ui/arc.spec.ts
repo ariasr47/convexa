@@ -81,7 +81,7 @@ describe('§8-1 · arc-in-exactly-3-places — importer SET EQUALITY (mutation-g
     expect(importsArcPrimitive(`import { quadArcPath } from './arc';`)).toBe(true);
     // Near-misses must NOT count as arc-primitive imports (ArcDivider is its own pin below).
     expect(importsArcPrimitive(`import { ArcDivider } from '@/shared/ui/ArcDivider';`)).toBe(false);
-    expect(importsArcPrimitive(`import { Box } from '@mui/material';`)).toBe(false);
+    expect(importsArcPrimitive(`import Box from '@mui/material/Box';`)).toBe(false);
     expect(importsArcDivider(`import { ArcDivider } from '@/shared/ui/ArcDivider';`)).toBe(true);
     expect(importsArcDivider(`import { quadArcPath } from '@/shared/ui/arc';`)).toBe(false);
   });

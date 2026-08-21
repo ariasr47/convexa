@@ -21,24 +21,22 @@ import { usePersona } from '@/features/personas/usePersona';
 import { DisclaimerCopy } from '@/shared/copy/disclaimer';
 import { extrasFor } from '@/shared/theme/tokens';
 import type { ThemePref } from '@convexa/api';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Container,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-  Snackbar,
-  Stack,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from '@mui/material';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import Container from '@mui/material/Container';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Snackbar from '@mui/material/Snackbar';
+import Stack from '@mui/material/Stack';
 import { alpha } from '@mui/material/styles';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { AiKeySection } from './AiKeySection';
@@ -102,13 +100,17 @@ export function SettingsPage() {
   const [savedOpen, setSavedOpen] = useState(false);
   const { hash } = useLocation();
 
-  // broker-connect: the Broker tab's S1 CTA deep-links `/settings#brokerage` — land on the
-  // section, not the page top. (Guarded: jsdom has no scrollIntoView.)
+  // Deep-links: Broker tab → `#brokerage`; Ask-AI Settings CTA → `#ai-key` / `#ai-providers`.
+  // Guarded: jsdom has no scrollIntoView.
   useEffect(() => {
-    if (hash === '#brokerage') {
-      const el = document.getElementById('brokerage');
-      el?.scrollIntoView?.({ block: 'start' });
-    }
+    const id =
+      hash === '#brokerage'
+        ? 'brokerage'
+        : hash === '#ai-key' || hash === '#ai-providers'
+          ? 'ai-key'
+          : null;
+    if (!id) return;
+    document.getElementById(id)?.scrollIntoView?.({ block: 'start' });
   }, [hash]);
 
   // Keep the ticker text field synced to the effective value when it changes from outside
@@ -354,7 +356,7 @@ export function SettingsPage() {
           <RiskInputsSection />
         </PanelCard>
 
-        {/* ===== 4. AI key panel (re-skin only; all logic + testids + the security floor preserved) ===== */}
+        {/* ===== 4. AI providers panel (ai-providers — keep #ai-key for Ask-AI deep-link) ===== */}
         <PanelCard heading={C.aiKey.heading} testId="settings-ai-key-panel">
           <AiKeySection embedded />
         </PanelCard>

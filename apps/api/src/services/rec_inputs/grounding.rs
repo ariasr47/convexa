@@ -156,7 +156,10 @@ impl GroundingAnchors {
     }
 
     fn index(kind: AnchorKind) -> usize {
-        ANCHOR_ORDER.iter().position(|k| *k == kind).expect("ANCHOR_ORDER is total over AnchorKind")
+        ANCHOR_ORDER
+            .iter()
+            .position(|k| *k == kind)
+            .expect("ANCHOR_ORDER is total over AnchorKind")
     }
 
     pub fn set(&mut self, kind: AnchorKind, v: Option<f64>) {
@@ -188,13 +191,20 @@ impl GroundingAnchors {
     pub fn from_market_state(market_state: &Value) -> Self {
         let mut a = Self::empty();
         for kind in ANCHOR_ORDER {
-            a.set(kind, market_state.get(Self::wire_key(kind)).and_then(|v| v.as_f64()));
+            a.set(
+                kind,
+                market_state
+                    .get(Self::wire_key(kind))
+                    .and_then(|v| v.as_f64()),
+            );
         }
         a
     }
 
     fn present(&self) -> impl Iterator<Item = (AnchorKind, f64)> + '_ {
-        ANCHOR_ORDER.into_iter().filter_map(|k| self.get(k).map(|v| (k, v)))
+        ANCHOR_ORDER
+            .into_iter()
+            .filter_map(|k| self.get(k).map(|v| (k, v)))
     }
 }
 
@@ -259,7 +269,12 @@ pub fn resolve_field(
             let hit = pruned_move
                 .filter(|m| m.state == StraddleMoveState::Ok)
                 .and_then(|m| m.anchor_spot.map(|s| (m, s)))
-                .and_then(|(m, s)| m.tenors.iter().find(|t| t.expiration == exp).map(|t| (s, t)));
+                .and_then(|(m, s)| {
+                    m.tenors
+                        .iter()
+                        .find(|t| t.expiration == exp)
+                        .map(|t| (s, t))
+                });
             let Some((anchor_spot, t)) = hit else {
                 return FieldGrounding::not_checkable(NotCheckableReason::StraddleMoveUnavailable);
             };
@@ -298,7 +313,12 @@ pub fn cited_as_state(s: CitedState) -> GroundingState {
 /// `not_checkable/structurally_unchecked`, PLUS the cited contract when its state is not `None`.
 /// `not_checkable` excludes the same two by the same rule, which is what keeps the identity true.
 pub fn counts(fields: &[FieldGrounding], cited: CitedState) -> Counts {
-    let mut c = Counts { checked: 0, traced: 0, untraced: 0, not_checkable: 0 };
+    let mut c = Counts {
+        checked: 0,
+        traced: 0,
+        untraced: 0,
+        not_checkable: 0,
+    };
     let mut tally = |state: GroundingState, structural: bool| match state {
         GroundingState::NotApplicable => {}
         GroundingState::NotCheckable if structural => {}
@@ -316,7 +336,10 @@ pub fn counts(fields: &[FieldGrounding], cited: CitedState) -> Counts {
         }
     };
     for f in fields {
-        tally(f.state, f.not_checkable_reason == Some(NotCheckableReason::StructurallyUnchecked));
+        tally(
+            f.state,
+            f.not_checkable_reason == Some(NotCheckableReason::StructurallyUnchecked),
+        );
     }
     tally(cited_as_state(cited), false);
     c
@@ -351,18 +374,36 @@ mod tests {
     /// why they are pinned as strings rather than trusted to `rename_all`.
     #[test]
     fn every_token_serializes_to_its_contract_spelling() {
-        assert_eq!(serde_json::to_value(GroundingState::NotApplicable).unwrap(), "not_applicable");
-        assert_eq!(serde_json::to_value(GroundingState::NotCheckable).unwrap(), "not_checkable");
-        assert_eq!(serde_json::to_value(GroundingState::Traced).unwrap(), "traced");
-        assert_eq!(serde_json::to_value(GroundingState::Untraced).unwrap(), "untraced");
+        assert_eq!(
+            serde_json::to_value(GroundingState::NotApplicable).unwrap(),
+            "not_applicable"
+        );
+        assert_eq!(
+            serde_json::to_value(GroundingState::NotCheckable).unwrap(),
+            "not_checkable"
+        );
+        assert_eq!(
+            serde_json::to_value(GroundingState::Traced).unwrap(),
+            "traced"
+        );
+        assert_eq!(
+            serde_json::to_value(GroundingState::Untraced).unwrap(),
+            "untraced"
+        );
         assert_eq!(serde_json::to_value(MatchBasis::Exact).unwrap(), "exact");
         assert_eq!(serde_json::to_value(MatchBasis::Near).unwrap(), "near");
-        assert_eq!(serde_json::to_value(MatchBasis::InsideRange).unwrap(), "inside_range");
+        assert_eq!(
+            serde_json::to_value(MatchBasis::InsideRange).unwrap(),
+            "inside_range"
+        );
         assert_eq!(
             serde_json::to_value(NotCheckableReason::StructurallyUnchecked).unwrap(),
             "structurally_unchecked"
         );
-        assert_eq!(serde_json::to_value(NotCheckableReason::NoNamedLevel).unwrap(), "no_named_level");
+        assert_eq!(
+            serde_json::to_value(NotCheckableReason::NoNamedLevel).unwrap(),
+            "no_named_level"
+        );
         assert_eq!(
             serde_json::to_value(NotCheckableReason::NoCitedExpiration).unwrap(),
             "no_cited_expiration"
@@ -371,23 +412,58 @@ mod tests {
             serde_json::to_value(NotCheckableReason::StraddleMoveUnavailable).unwrap(),
             "straddle_move_unavailable"
         );
-        assert_eq!(serde_json::to_value(CardMember::NotApplicable).unwrap(), "not_applicable");
-        assert_eq!(serde_json::to_value(CardMember::LocalRules).unwrap(), "local_rules");
-        assert_eq!(serde_json::to_value(CardMember::NoneTraced).unwrap(), "none_traced");
-        assert_eq!(serde_json::to_value(CardMember::CouldNotCheck).unwrap(), "could_not_check");
-        assert_eq!(serde_json::to_value(CardMember::SomeTraced).unwrap(), "some_traced");
-        assert_eq!(serde_json::to_value(CardMember::AllTraced).unwrap(), "all_traced");
+        assert_eq!(
+            serde_json::to_value(CardMember::NotApplicable).unwrap(),
+            "not_applicable"
+        );
+        assert_eq!(
+            serde_json::to_value(CardMember::LocalRules).unwrap(),
+            "local_rules"
+        );
+        assert_eq!(
+            serde_json::to_value(CardMember::NoneTraced).unwrap(),
+            "none_traced"
+        );
+        assert_eq!(
+            serde_json::to_value(CardMember::CouldNotCheck).unwrap(),
+            "could_not_check"
+        );
+        assert_eq!(
+            serde_json::to_value(CardMember::SomeTraced).unwrap(),
+            "some_traced"
+        );
+        assert_eq!(
+            serde_json::to_value(CardMember::AllTraced).unwrap(),
+            "all_traced"
+        );
     }
 
     #[test]
     fn every_anchor_kind_serializes_to_its_contract_spelling_in_the_fixed_order() {
         let expected = [
-            "gex_spot", "call_wall", "put_wall", "peak_gex_strike", "gamma_flip", "max_pain", "vwap",
-            "vwap_upper_2", "vwap_upper_3", "vwap_lower_2", "vwap_lower_3",
+            "gex_spot",
+            "call_wall",
+            "put_wall",
+            "peak_gex_strike",
+            "gamma_flip",
+            "max_pain",
+            "vwap",
+            "vwap_upper_2",
+            "vwap_upper_3",
+            "vwap_lower_2",
+            "vwap_lower_3",
         ];
-        assert_eq!(ANCHOR_ORDER.len(), 11, "the anchor set is eleven members, no more, no fewer");
+        assert_eq!(
+            ANCHOR_ORDER.len(),
+            11,
+            "the anchor set is eleven members, no more, no fewer"
+        );
         for (i, k) in ANCHOR_ORDER.iter().enumerate() {
-            assert_eq!(serde_json::to_value(*k).unwrap(), expected[i], "anchor {i} spelling/order moved");
+            assert_eq!(
+                serde_json::to_value(*k).unwrap(),
+                expected[i],
+                "anchor {i} spelling/order moved"
+            );
         }
         // There is no cap member and there never will be one — that is what makes
         // `traces to Convexa's risk cap (500)` unrenderable by construction.
@@ -412,22 +488,37 @@ mod tests {
     #[test]
     fn just_inside_the_window_is_traced_near_and_just_outside_is_untraced() {
         // anchor 500.00 -> window half-width 0.50. Literal edges, NEVER derived from the constant.
-        assert_eq!(resolve_named_level(500.49, &anchors_at(500.00)).basis, Some(MatchBasis::Near));
-        assert_eq!(resolve_named_level(500.51, &anchors_at(500.00)).state, GroundingState::Untraced);
+        assert_eq!(
+            resolve_named_level(500.49, &anchors_at(500.00)).basis,
+            Some(MatchBasis::Near)
+        );
+        assert_eq!(
+            resolve_named_level(500.51, &anchors_at(500.00)).state,
+            GroundingState::Untraced
+        );
     }
 
     #[test]
     fn under_ten_dollars_the_cent_floor_binds_rather_than_the_percentage() {
         // anchor 2.00 -> the percentage would give 0.002; the floor gives 0.01.
-        assert_eq!(resolve_named_level(2.008, &anchors_at(2.00)).basis, Some(MatchBasis::Near));
-        assert_eq!(resolve_named_level(2.015, &anchors_at(2.00)).state, GroundingState::Untraced);
+        assert_eq!(
+            resolve_named_level(2.008, &anchors_at(2.00)).basis,
+            Some(MatchBasis::Near)
+        );
+        assert_eq!(
+            resolve_named_level(2.015, &anchors_at(2.00)).state,
+            GroundingState::Untraced
+        );
     }
 
     #[test]
     fn every_anchor_absent_is_not_checkable_no_named_level() {
         let f = resolve_named_level(500.00, &GroundingAnchors::empty());
         assert_eq!(f.state, GroundingState::NotCheckable);
-        assert_eq!(f.not_checkable_reason, Some(NotCheckableReason::NoNamedLevel));
+        assert_eq!(
+            f.not_checkable_reason,
+            Some(NotCheckableReason::NoNamedLevel)
+        );
     }
 
     #[test]
@@ -436,7 +527,10 @@ mod tests {
         a.set(AnchorKind::CallWall, Some(100.0));
         a.set(AnchorKind::GexSpot, Some(100.0));
         for _ in 0..100 {
-            assert_eq!(resolve_named_level(100.0, &a).anchor_kind, Some(AnchorKind::GexSpot));
+            assert_eq!(
+                resolve_named_level(100.0, &a).anchor_kind,
+                Some(AnchorKind::GexSpot)
+            );
         }
     }
 
@@ -482,8 +576,17 @@ mod tests {
     #[test]
     fn exit_target_with_no_cited_expiration_is_not_checkable_no_cited_expiration_first() {
         // Branch 1 is evaluated FIRST even though branch 2 would also fire.
-        let f = resolve_field(RecField::ExitTarget, Some(505.0), None, None, &GroundingAnchors::empty());
-        assert_eq!(f.not_checkable_reason, Some(NotCheckableReason::NoCitedExpiration));
+        let f = resolve_field(
+            RecField::ExitTarget,
+            Some(505.0),
+            None,
+            None,
+            &GroundingAnchors::empty(),
+        );
+        assert_eq!(
+            f.not_checkable_reason,
+            Some(NotCheckableReason::NoCitedExpiration)
+        );
     }
 
     #[test]
@@ -496,14 +599,23 @@ mod tests {
             Some(&mv),
             &GroundingAnchors::empty(),
         );
-        assert_eq!(f.not_checkable_reason, Some(NotCheckableReason::StraddleMoveUnavailable));
+        assert_eq!(
+            f.not_checkable_reason,
+            Some(NotCheckableReason::StraddleMoveUnavailable)
+        );
     }
 
     #[test]
     fn exit_target_containment_carries_no_tolerance_at_all() {
         let mv = one_tenor_move(); // anchor_spot 500.00, move_dollars 10.00 -> [490.00, 510.00]
         let inside = |v: f64| {
-            resolve_field(RecField::ExitTarget, Some(v), Some("2026-09-18"), Some(&mv), &GroundingAnchors::empty())
+            resolve_field(
+                RecField::ExitTarget,
+                Some(v),
+                Some("2026-09-18"),
+                Some(&mv),
+                &GroundingAnchors::empty(),
+            )
         };
         assert_eq!(inside(490.00).basis, Some(MatchBasis::InsideRange));
         assert_eq!(inside(510.00).basis, Some(MatchBasis::InsideRange));
@@ -526,7 +638,13 @@ mod tests {
             RecField::ExitStop,
             RecField::InvalidationLevel,
         ] {
-            let f = resolve_field(field, Some(1.0), Some("2026-09-18"), Some(&one_tenor_move()), &anchors_at(1.0));
+            let f = resolve_field(
+                field,
+                Some(1.0),
+                Some("2026-09-18"),
+                Some(&one_tenor_move()),
+                &anchors_at(1.0),
+            );
             if f.not_checkable_reason == Some(NotCheckableReason::StructurallyUnchecked) {
                 structural.push(field);
             }
@@ -543,12 +661,26 @@ mod tests {
         for field in [RecField::ExitStop, RecField::InvalidationLevel] {
             for v in [500.00, 500.49, 500.51] {
                 let b = resolve_field(field, Some(v), Some("2026-09-18"), Some(&mv), &a).basis;
-                assert_ne!(b, Some(MatchBasis::InsideRange), "{field:?} must never emit inside_range");
+                assert_ne!(
+                    b,
+                    Some(MatchBasis::InsideRange),
+                    "{field:?} must never emit inside_range"
+                );
             }
         }
         for v in [490.00, 505.00, 510.01] {
-            let b = resolve_field(RecField::ExitTarget, Some(v), Some("2026-09-18"), Some(&mv), &a).basis;
-            assert!(b.is_none() || b == Some(MatchBasis::InsideRange), "exit_target emitted {b:?}");
+            let b = resolve_field(
+                RecField::ExitTarget,
+                Some(v),
+                Some("2026-09-18"),
+                Some(&mv),
+                &a,
+            )
+            .basis;
+            assert!(
+                b.is_none() || b == Some(MatchBasis::InsideRange),
+                "exit_target emitted {b:?}"
+            );
         }
         for field in [RecField::MaxRisk, RecField::PositionSize] {
             assert_eq!(resolve_field(field, Some(1.0), None, None, &a).basis, None);
@@ -573,9 +705,15 @@ mod tests {
     #[test]
     fn the_cited_state_maps_totally_and_gains_no_second_wire_token() {
         assert_eq!(cited_as_state(CitedState::Cited), GroundingState::Traced);
-        assert_eq!(cited_as_state(CitedState::RightUndetermined), GroundingState::NotCheckable);
+        assert_eq!(
+            cited_as_state(CitedState::RightUndetermined),
+            GroundingState::NotCheckable
+        );
         assert_eq!(cited_as_state(CitedState::OffSet), GroundingState::Untraced);
-        assert_eq!(cited_as_state(CitedState::None), GroundingState::NotApplicable);
+        assert_eq!(
+            cited_as_state(CitedState::None),
+            GroundingState::NotApplicable
+        );
     }
 
     fn sample_field_shapes() -> Vec<[FieldGrounding; 5]> {
@@ -585,10 +723,34 @@ mod tests {
         let not_checkable = FieldGrounding::not_checkable(NotCheckableReason::NoNamedLevel);
         let structural = FieldGrounding::not_checkable(NotCheckableReason::StructurallyUnchecked);
         vec![
-            [traced.clone(), traced.clone(), traced.clone(), structural.clone(), structural.clone()],
-            [untraced.clone(), untraced.clone(), untraced.clone(), structural.clone(), structural.clone()],
-            [not_checkable.clone(), not_checkable.clone(), not_checkable.clone(), structural.clone(), structural.clone()],
-            [traced.clone(), untraced.clone(), not_checkable.clone(), structural.clone(), structural.clone()],
+            [
+                traced.clone(),
+                traced.clone(),
+                traced.clone(),
+                structural.clone(),
+                structural.clone(),
+            ],
+            [
+                untraced.clone(),
+                untraced.clone(),
+                untraced.clone(),
+                structural.clone(),
+                structural.clone(),
+            ],
+            [
+                not_checkable.clone(),
+                not_checkable.clone(),
+                not_checkable.clone(),
+                structural.clone(),
+                structural.clone(),
+            ],
+            [
+                traced.clone(),
+                untraced.clone(),
+                not_checkable.clone(),
+                structural.clone(),
+                structural.clone(),
+            ],
             [na.clone(), na.clone(), na.clone(), na.clone(), na.clone()],
         ]
     }
@@ -596,15 +758,30 @@ mod tests {
     fn full_model_rec_fields() -> [FieldGrounding; 5] {
         let traced = FieldGrounding::level(MatchBasis::Exact, AnchorKind::GexSpot, 500.0);
         let structural = FieldGrounding::not_checkable(NotCheckableReason::StructurallyUnchecked);
-        [traced.clone(), traced.clone(), traced, structural.clone(), structural]
+        [
+            traced.clone(),
+            traced.clone(),
+            traced,
+            structural.clone(),
+            structural,
+        ]
     }
 
     #[test]
     fn the_counts_satisfy_the_partition_identity_on_every_shape() {
-        for cited in [CitedState::Cited, CitedState::RightUndetermined, CitedState::OffSet, CitedState::None] {
+        for cited in [
+            CitedState::Cited,
+            CitedState::RightUndetermined,
+            CitedState::OffSet,
+            CitedState::None,
+        ] {
             for fields in sample_field_shapes() {
                 let c = counts(&fields, cited);
-                assert_eq!(c.traced + c.untraced + c.not_checkable, c.checked, "identity broken: {c:?}");
+                assert_eq!(
+                    c.traced + c.untraced + c.not_checkable,
+                    c.checked,
+                    "identity broken: {c:?}"
+                );
             }
         }
     }
@@ -612,31 +789,80 @@ mod tests {
     #[test]
     fn the_denominator_excludes_the_dollar_risk_figure_and_the_suggested_size() {
         // A full model rec: stop + target + invalidation + cited contract = 4, never 5 or 6.
-        assert_eq!(counts(&full_model_rec_fields(), CitedState::Cited).checked, 4);
+        assert_eq!(
+            counts(&full_model_rec_fields(), CitedState::Cited).checked,
+            4
+        );
     }
 
     #[test]
     fn the_card_member_order_is_fixed_and_first_match_wins() {
-        let na = Counts { checked: 0, traced: 0, untraced: 0, not_checkable: 0 };
+        let na = Counts {
+            checked: 0,
+            traced: 0,
+            untraced: 0,
+            not_checkable: 0,
+        };
         // 1 preempts 2 — the gamma_flip-null local-rules case (AC-64).
         assert_eq!(card_member(true, true, na), CardMember::NotApplicable);
         assert_eq!(card_member(false, true, na), CardMember::NotApplicable);
-        let one_traced = Counts { checked: 1, traced: 1, untraced: 0, not_checkable: 0 };
+        let one_traced = Counts {
+            checked: 1,
+            traced: 1,
+            untraced: 0,
+            not_checkable: 0,
+        };
         assert_eq!(card_member(true, true, one_traced), CardMember::LocalRules);
         assert_eq!(
-            card_member(true, false, Counts { checked: 2, traced: 0, untraced: 2, not_checkable: 0 }),
+            card_member(
+                true,
+                false,
+                Counts {
+                    checked: 2,
+                    traced: 0,
+                    untraced: 2,
+                    not_checkable: 0
+                }
+            ),
             CardMember::NoneTraced
         );
         assert_eq!(
-            card_member(true, false, Counts { checked: 2, traced: 0, untraced: 0, not_checkable: 2 }),
+            card_member(
+                true,
+                false,
+                Counts {
+                    checked: 2,
+                    traced: 0,
+                    untraced: 0,
+                    not_checkable: 2
+                }
+            ),
             CardMember::CouldNotCheck
         );
         assert_eq!(
-            card_member(true, false, Counts { checked: 4, traced: 3, untraced: 1, not_checkable: 0 }),
+            card_member(
+                true,
+                false,
+                Counts {
+                    checked: 4,
+                    traced: 3,
+                    untraced: 1,
+                    not_checkable: 0
+                }
+            ),
             CardMember::SomeTraced
         );
         assert_eq!(
-            card_member(true, false, Counts { checked: 4, traced: 4, untraced: 0, not_checkable: 0 }),
+            card_member(
+                true,
+                false,
+                Counts {
+                    checked: 4,
+                    traced: 4,
+                    untraced: 0,
+                    not_checkable: 0
+                }
+            ),
             CardMember::AllTraced
         );
     }

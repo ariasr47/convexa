@@ -117,7 +117,7 @@ export function sampleTermPoints(points: TermStructure['points']): TermStructure
       out.push(best);
     }
   }
-  return out.sort((a, b) => a.dte - b.dte);
+  return out.toSorted((a, b) => a.dte - b.dte);
 }
 
 /** Conventional DTE label: 0 = expires today (0DTE), 1 = tomorrow, else N days. */

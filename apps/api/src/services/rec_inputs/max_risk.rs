@@ -18,7 +18,9 @@ pub enum ParsedRisk {
 }
 
 pub fn parse_max_risk_dollars(text: Option<&str>) -> ParsedRisk {
-    let Some(t) = text else { return ParsedRisk::NotParseable(RiskRefusal::NoText) };
+    let Some(t) = text else {
+        return ParsedRisk::NotParseable(RiskRefusal::NoText);
+    };
     let chars: Vec<char> = t.chars().collect();
     let mut vals: Vec<f64> = Vec::new();
     let mut i = 0usize;
@@ -60,7 +62,10 @@ mod tests {
 
     #[test]
     fn plain_dollar_figure() {
-        assert_eq!(parse_max_risk_dollars(Some("$300")), ParsedRisk::Dollars(300.0));
+        assert_eq!(
+            parse_max_risk_dollars(Some("$300")),
+            ParsedRisk::Dollars(300.0)
+        );
     }
 
     #[test]
@@ -73,7 +78,10 @@ mod tests {
 
     #[test]
     fn comma_thousands_separator() {
-        assert_eq!(parse_max_risk_dollars(Some("$1,250.50")), ParsedRisk::Dollars(1250.5));
+        assert_eq!(
+            parse_max_risk_dollars(Some("$1,250.50")),
+            ParsedRisk::Dollars(1250.5)
+        );
     }
 
     #[test]
@@ -102,12 +110,18 @@ mod tests {
 
     #[test]
     fn two_mentions_of_the_same_figure_stay_unambiguous() {
-        assert_eq!(parse_max_risk_dollars(Some("$300 ($300)")), ParsedRisk::Dollars(300.0));
+        assert_eq!(
+            parse_max_risk_dollars(Some("$300 ($300)")),
+            ParsedRisk::Dollars(300.0)
+        );
     }
 
     #[test]
     fn absent_text_is_not_parseable() {
-        assert_eq!(parse_max_risk_dollars(None), ParsedRisk::NotParseable(RiskRefusal::NoText));
+        assert_eq!(
+            parse_max_risk_dollars(None),
+            ParsedRisk::NotParseable(RiskRefusal::NoText)
+        );
     }
 
     /// AC-39 (SB) — the ACCEPTED INPUT SET does not move by one input. Each row pins an input's parse
@@ -120,15 +134,31 @@ mod tests {
             (Some("1.5% of account ($300)"), ParsedRisk::Dollars(300.0)),
             (Some("$1,250.50"), ParsedRisk::Dollars(1250.5)),
             (Some("$300 ($300)"), ParsedRisk::Dollars(300.0)),
-            (Some("1R defined-risk"), ParsedRisk::NotParseable(RiskRefusal::NoDollarFigure)),
-            (Some("300"), ParsedRisk::NotParseable(RiskRefusal::NoDollarFigure)),
-            (Some("$300 to $500"), ParsedRisk::NotParseable(RiskRefusal::MultipleDifferentFigures)),
+            (
+                Some("1R defined-risk"),
+                ParsedRisk::NotParseable(RiskRefusal::NoDollarFigure),
+            ),
+            (
+                Some("300"),
+                ParsedRisk::NotParseable(RiskRefusal::NoDollarFigure),
+            ),
+            (
+                Some("$300 to $500"),
+                ParsedRisk::NotParseable(RiskRefusal::MultipleDifferentFigures),
+            ),
             (None, ParsedRisk::NotParseable(RiskRefusal::NoText)),
         ];
         for (input, expected) in cases {
-            assert_eq!(parse_max_risk_dollars(*input), *expected, "parse outcome moved for {input:?}");
+            assert_eq!(
+                parse_max_risk_dollars(*input),
+                *expected,
+                "parse outcome moved for {input:?}"
+            );
         }
         // Anti-vacuity: an accepted and a refused input must not compare equal.
-        assert_ne!(parse_max_risk_dollars(Some("$300")), parse_max_risk_dollars(Some("300")));
+        assert_ne!(
+            parse_max_risk_dollars(Some("$300")),
+            parse_max_risk_dollars(Some("300"))
+        );
     }
 }

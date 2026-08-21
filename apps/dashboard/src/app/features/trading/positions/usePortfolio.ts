@@ -21,13 +21,7 @@ import { resolveLegMark } from '@/features/trading/model/legMark';
 import { MarkResult } from '@/features/trading/model/mark';
 import { SCHEMA_VERSION as GT_SCHEMA } from '@/features/trading/model/types';
 import { useTickerSpots } from '@/features/trading/model/useTickerSpots';
-import {
-  fetchTrackedContract,
-  LiveUpdate,
-  OptionRight,
-  TickerBundle,
-  TrackedContract,
-} from '@convexa/api';
+import { LiveUpdate, OptionRight, TickerBundle } from '@convexa/api';
 import {
   useCallback,
   useDeferredValue,
@@ -45,12 +39,19 @@ import {
   plPctStateOf,
   positionPl,
   SIM_POSITION_SCHEMA_VERSION,
-  type InstrumentKind,
   type Leg,
   type LegId,
-  type LegSide,
   type SimPosition,
 } from './leg';
+import {
+  OPEN_REFUSED_MULTI_UNDERLYING,
+  OPEN_REFUSED_NO_LEGS,
+  OPEN_REFUSED_NO_MARKET_FILL,
+  OPEN_REFUSED_STORE_FAULTED,
+  type LegInput,
+  type OpenPositionInput,
+  type OpenResult,
+} from './openTypes';
 import {
   allPositions,
   appendDecision,
@@ -70,84 +71,23 @@ import {
   CustomizationState,
   DecisionRecord,
   EntryBasis,
-  EntryMode,
   FilterState,
   PositionId,
   SavedView,
   StoreHealth,
   ViewConfig,
 } from './types';
+import { useContractLive } from './useContractLive';
 import { usePlTrends } from './useTrends';
 import { buildPositionView, type PositionView } from './view';
 
-/**
- * ONE drafted leg, as the shared entry dialog emits it. `price` is PER-UNIT and POSITIVE — direction
- * lives in `side` and nowhere else (SPEC §2.1's hard stands), and `multiplier` is set at
- * CONSTRUCTION (100 for a contract, 1 for equity) and stored, never re-derived downstream.
- *
- * `price: null` means the trader has not typed one yet. The dialog will not confirm in that state —
- * a partial net is never shown and never saved.
- */
-export interface LegInput {
-  kind: InstrumentKind;
-  ticker: string;
-  side: LegSide;
-  qty: number;
-  multiplier: number;
-  price: number | null;
-  expiration: string | null;
-  strike: number | null;
-  right: OptionRight | null;
-}
-
-/**
- * A SINGLE-LEG ENTRY IS A ONE-ELEMENT ARRAY, so there is exactly ONE open path — never a single-leg
- * path plus a multi-leg path (SPEC §2.7 *Entry input shape*). That is what keeps
- * `single-shared-sim-entry-dialog` a variant rather than a fork at the data boundary.
- */
-export interface OpenPositionInput {
-  legs: LegInput[];
-  entryMode: EntryMode;
-  /** limit: the PER-UNIT limit price. Single-leg only — see `composeMark.netLimitDollarsFor`. */
-  limitPrice?: number;
-  /** Pre-resolved fill (market mode, single leg) so the dialog's own fetch isn't repeated. */
-  resolvedMark?: number;
-  resolvedBasis?: EntryBasis;
-  stop?: number | null;
-  target?: number | null;
-  /**
-   * outcome-ledger (AC-E18): the AI-rec identity this entry was seeded from, carried onto the `open`
-   * decision record so a direct Accept stays attributable and `not_attributable_by_path` stays 0.
-   * Absent / null on a manual open — never a stale claim.
-   */
-  aiRecFingerprint?: string | null;
-  /**
-   * tradeable-rec-inputs (AC-82): whether a risk block was present AT ENTRY — the presence flag
-   * ONLY, never an account-size value (AC-29a). Absent/null when the host could not resolve it this
-   * cycle (anonymous / a faulted settings read) — never a fabricated `false`.
-   */
-  riskBlockPresent?: boolean | null;
-}
-
-/** Refusals `openPosition` can return. Each is SHOWN to the trader; none is ever swallowed. */
-export const OPEN_REFUSED_MULTI_UNDERLYING =
-  'Every leg of a position must be on the same underlying — no position was opened.';
-export const OPEN_REFUSED_NO_LEGS = 'No legs to open — no position was opened.';
-export const OPEN_REFUSED_NO_MARKET_FILL = "Couldn't fill at market — no position was opened.";
-export const OPEN_REFUSED_STORE_FAULTED =
-  "Convexa couldn't read your saved data and won't save anything new until that's sorted — no position was opened.";
-
-export interface OpenResult {
-  ok: boolean;
-  reason?: string;
-  position?: SimPosition;
-}
-
-/** One CONTRACT's per-cycle lookup result, shared by every leg that references it. */
-interface ContractLive {
-  tracked: TrackedContract | null;
-  unavailable: boolean;
-}
+export {
+  OPEN_REFUSED_MULTI_UNDERLYING,
+  OPEN_REFUSED_NO_LEGS,
+  OPEN_REFUSED_NO_MARKET_FILL,
+  OPEN_REFUSED_STORE_FAULTED,
+} from './openTypes';
+export type { LegInput, OpenPositionInput, OpenResult } from './openTypes';
 
 export function usePortfolio(
   /**
@@ -168,7 +108,6 @@ export function usePortfolio(
   const [positions, setPositions] = useState<SimPosition[]>(() => allPositions());
   const [historyVersion, setHistoryVersion] = useState(0);
   const [custom, setCustom] = useState<CustomizationState>(() => getCustomization());
-  const [contractLive, setContractLive] = useState<Record<string, ContractLive>>({});
   /** Keyed by `LegId` — the mark ladder resolves LEGS now, not positions. */
   const lastMarkRef = useRef<Map<LegId, number>>(new Map());
   const trends = usePlTrends();
@@ -195,56 +134,8 @@ export function usePortfolio(
   // The durable record IS the `SimPosition` now — no lift, no second shape, no bridge.
   const simPositions = positions;
 
-  // ---- Per-CONTRACT tracked-contract fetch, de-duplicated across the WHOLE portfolio -----------
-  // A condor plus a covered call on the same underlying must not issue duplicate lookups (SPEC
-  // §2.5). Per-contract isolation is preserved: one contract's 404 marks ONLY the legs referencing
-  // it and every other row keeps rendering. Resolution is per-leg at the FETCH layer even though
-  // display is all-or-nothing, so a row renders while its slowest leg is still in flight.
-  const contractKeys = useMemo(() => {
-    const keys = new Map<
-      string,
-      { ticker: string; expiration: string; strike: number; right: OptionRight }
-    >();
-    for (const p of simPositions) {
-      if (p.status !== 'open' && p.status !== 'pending') continue;
-      for (const l of p.legs) {
-        const key = legContractKey(l);
-        if (key && !keys.has(key)) {
-          keys.set(key, {
-            ticker: l.ticker,
-            expiration: l.expiration as string,
-            strike: l.strike as number,
-            right: l.right as OptionRight,
-          });
-        }
-      }
-    }
-    return keys;
-  }, [simPositions]);
-  const trackKey = [...contractKeys.keys()].sort().join(',');
-
-  useEffect(() => {
-    let cancelled = false;
-    contractKeys.forEach((c, key) => {
-      fetchTrackedContract(c.ticker, {
-        expiration: c.expiration,
-        strike: c.strike,
-        right: c.right,
-      })
-        .then((tc) => {
-          if (cancelled) return;
-          setContractLive((prev) => ({ ...prev, [key]: { tracked: tc, unavailable: tc == null } }));
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setContractLive((prev) => ({ ...prev, [key]: { tracked: null, unavailable: true } }));
-        });
-    });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackKey, servedAt]);
+  // Per-CONTRACT tracked-contract fetch (SPEC §2.5) — see `useContractLive`.
+  const contractLive = useContractLive(simPositions, servedAt);
 
   // ---- Per-UNDERLYING spot fan-out (R8) --------------------------------------------------------
   // The book is multi-ticker; the page is not. Every DISTINCT underlying in the open/pending book
