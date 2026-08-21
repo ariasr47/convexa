@@ -1820,12 +1820,27 @@ export interface AiProvidersBootstrap {
 /** @deprecated Use AiProvidersBootstrap. Kept as an alias so existing imports compile. */
 export type AiKeyStatus = AiProvidersBootstrap;
 
+/** In-flight GET /api/auth/ai-key. Overlapping callers share one Promise; cleared on settle.
+ *  Not a cache — a later call after success/failure fetches again. */
+let aiKeyStatusInflight: Promise<AiProvidersBootstrap> | null = null;
+
 /** GET /api/auth/ai-key — Settings + Ask-AI bootstrap (matrix, grok arm, preference, catalog).
  *  NEVER returns a secret. 403 ⇒ AuthError('auth_required') (anonymous). */
 export async function getAiKeyStatus(): Promise<AiProvidersBootstrap> {
-  const res = await fetch('/api/auth/ai-key', { credentials: 'same-origin' });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiProvidersBootstrap;
+  if (aiKeyStatusInflight) return aiKeyStatusInflight;
+  aiKeyStatusInflight = (async () => {
+    const res = await fetch('/api/auth/ai-key', { credentials: 'same-origin' });
+    if (!res.ok) throw await toAuthError(res);
+    return (await res.json()) as AiProvidersBootstrap;
+  })().finally(() => {
+    aiKeyStatusInflight = null;
+  });
+  return aiKeyStatusInflight;
+}
+
+/** Test seam — drop a hanging in-flight GET so the next spec starts clean. */
+export function __resetAiKeyStatusInflight() {
+  aiKeyStatusInflight = null;
 }
 
 /** PUT /api/auth/ai-key — store/overwrite the BYO ciphertext for ONE closed provider slot.

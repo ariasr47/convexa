@@ -12,6 +12,7 @@ import {
   fetchPersonas,
   fetchRecExport,
   fetchRecStatus,
+  __resetAiKeyStatusInflight,
   getAiKeyStatus,
   getScan,
   getScanUniverse,
@@ -43,6 +44,7 @@ const REQ: RecRequest = {
 };
 
 afterEach(() => {
+  __resetAiKeyStatusInflight();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -134,6 +136,41 @@ const BOOTSTRAP = {
 };
 
 describe('ai-providers credential client', () => {
+  it('overlapping getAiKeyStatus share one fetch (not a cache — sequential calls refetch)', async () => {
+    let release!: (value: Response) => void;
+    let held: Promise<Response> | null = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const fetchFn = stubFetch(() => held ?? ok(BOOTSTRAP));
+
+    const first = getAiKeyStatus();
+    const second = getAiKeyStatus();
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    release(ok(BOOTSTRAP));
+    const [a, b] = await Promise.all([first, second]);
+    expect(a.preference.model).toBe('claude-opus-4-8');
+    expect(b.preference.model).toBe(a.preference.model);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    held = null;
+    await getAiKeyStatus();
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('a failed in-flight GET does not stick — the next call fetches again', async () => {
+    let n = 0;
+    const fetchFn = stubFetch(() => {
+      n += 1;
+      if (n === 1) return new Response('', { status: 502 });
+      return ok(BOOTSTRAP);
+    });
+    await expect(getAiKeyStatus()).rejects.toBeTruthy();
+    const s = await getAiKeyStatus();
+    expect(s.providers).toHaveLength(4);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
   it('getAiKeyStatus GETs /api/auth/ai-key and returns the bootstrap — never a secret', async () => {
     const fetchFn = stubFetch(() => ok(BOOTSTRAP));
     const s = await getAiKeyStatus();

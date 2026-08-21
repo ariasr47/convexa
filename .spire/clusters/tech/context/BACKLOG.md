@@ -1204,6 +1204,11 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   VS Code `autoImportSpecifierExcludeRegexes` so new files don't re-feed the barrel.
   Not required for prod (Rolldown tree-shakes). *Value L · Effort S.*
 - **`ai-key-status-inflight-dedupe` — one in-flight GET /api/auth/ai-key per page** —
+  **✓ CLOSED 2026-08-21** — `getAiKeyStatus()` shares one Promise while a GET is in
+  the air; `finally` clears it. Overlapping boots (Strict Mode, remount, two tabs)
+  hit the network once. Sequential calls after settle refetch (not a TTL cache;
+  post-save GET still waits for a fresh bootstrap). Failures do not stick.
+  *(historical body retained:)* —
   <!-- atlas: theme=the-machine horizon=next -->
   `NEW 2026-08-20 (Vercel client-swr-dedup analogue)`. Settings + Ask-AI both call
   `getAiKeyStatus()`. No SWR (canon: no wholesale query-lib). A module-level in-flight
@@ -1221,6 +1226,12 @@ Cull verdicts (so the next discovery doesn't re-litigate):
   `index.html` is dark; `AppThemeProvider` applies the pref after who-am-I. Tiny blocking
   script on `<html>` class + `theme-color` would close it. *Value L · Effort S.*
 - **`s5c-live-subscriber-caps` — Rust stream still caps symbols-per-request, not subscribers** —
+  **✓ CLOSED 2026-08-21** — `LiveCapacity` on both SSE routes. `MAX_LIVE_SUBSCRIBERS`
+  (default 500, 0=off) counts live SSE clients; `MAX_LIVE_SESSIONS` (default 50, 0=off)
+  refuses only when a request would add a *new* ticker to the shared hub. Over either:
+  503 + `Retry-After: 30`, not 429. Slot released on disconnect. `MAX_SYMBOLS=120`
+  still truncates one URL's symbol list. TECH_DEBT's Python tick is no longer the
+  live truth. *(historical body retained:)* —
   <!-- atlas: theme=the-machine horizon=next -->
   `RECONFIRMED 2026-08-20`. TECH_DEBT ticks S5c at a Python patch; `routes/stream.rs`
   caps 120 symbols per request. Do not inherit the Python-era "fixed" tick.
