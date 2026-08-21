@@ -330,6 +330,8 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                     .join("../../data/session_chain_archive"),
                 session_chain_archive_body_root: None,
                 liquid_session_ensure_enabled: false,
+                max_live_sessions: 0,
+                max_live_subscribers: 0,
                 workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
             });
             let path = path.unwrap_or_else(|| cfg.default_fixture_path());
@@ -726,6 +728,8 @@ async fn cmd_score_lab(
                 .join("../../data/session_chain_archive"),
             session_chain_archive_body_root: None,
             liquid_session_ensure_enabled: false,
+            max_live_sessions: 0,
+            max_live_subscribers: 0,
             workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
         }
     });
@@ -942,6 +946,8 @@ async fn cmd_batch_backtest(
             .join("../../data/session_chain_archive"),
         session_chain_archive_body_root: None,
         liquid_session_ensure_enabled: false,
+        max_live_sessions: 0,
+        max_live_subscribers: 0,
         workspace_root: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.."),
     });
 

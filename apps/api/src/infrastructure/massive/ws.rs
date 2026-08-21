@@ -94,6 +94,12 @@ impl StockStreamHub {
         self.inner.symbols.read().await.len()
     }
 
+    /// How many of `wanted` are not yet on the shared socket (S5c session ceiling).
+    pub async fn missing_count(&self, wanted: &[String]) -> usize {
+        let set = self.inner.symbols.read().await;
+        wanted.iter().filter(|s| !set.contains(*s)).count()
+    }
+
     pub fn shutdown(&self) {
         let _ = self.inner.cmd_tx.send(HubCmd::Shutdown);
     }

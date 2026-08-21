@@ -12,6 +12,7 @@ use crate::services::broker::{get_positions_provider, BrokerBookService};
 use crate::services::chain_snapshot::ChainSnapshotStore;
 use crate::services::flight::GexFlight;
 use crate::services::iv_store::IvStore;
+use crate::services::live_capacity::LiveCapacity;
 use crate::services::scanner::{load_universe, ScanStore, UniverseConfig};
 #[cfg(feature = "postgres")]
 use crate::services::session_chain_archive::body_store::FsBodyStore;
@@ -46,6 +47,8 @@ pub struct AppState {
     pub iv_store: IvStore,
     /// Shared stocks WebSocket hub (Path A + multi-symbol SSE).
     pub stock_hub: StockStreamHub,
+    /// S5c SSE / hub-symbol ceilings (0 = off).
+    pub live_capacity: LiveCapacity,
     /// Per-IP rate limiter for expensive public routes (process-local).
     pub rate_limiter: Arc<RateLimiter>,
     /// Append-only research chain snapshots (Disabled when not configured).
@@ -166,6 +169,14 @@ impl AppState {
         // Warm hub with configured symbols so progressive/scanner paths get live ticks sooner.
         let _ = stock_hub.subscribe(&config.warm_symbols).await;
 
+        let live_capacity =
+            LiveCapacity::new(config.max_live_sessions, config.max_live_subscribers);
+        info!(
+            max_sessions = config.max_live_sessions,
+            max_subscribers = config.max_live_subscribers,
+            "live hub ceilings (0=OFF)"
+        );
+
         info!(
             google_available = crate::services::auth::google_oauth::available(),
             "auth: google_available (needs GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI)"
@@ -216,6 +227,7 @@ impl AppState {
             broker,
             iv_store,
             stock_hub,
+            live_capacity,
             rate_limiter,
             chain_snapshots,
             session_archive,
@@ -267,6 +279,7 @@ impl AppState {
             broker: BrokerBookService::new(get_positions_provider()),
             iv_store: IvStore::open(&iv_path)?,
             stock_hub: StockStreamHub::spawn(&test_stub_config()),
+            live_capacity: LiveCapacity::new(0, 0),
             rate_limiter: Arc::new(RateLimiter::new(0)),
             chain_snapshots,
             session_archive,
@@ -327,6 +340,8 @@ fn test_stub_config() -> Config {
         session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
         session_chain_archive_body_root: None,
         liquid_session_ensure_enabled: false,
+        max_live_sessions: 0,
+        max_live_subscribers: 0,
         workspace_root: PathBuf::from("."),
     }
 }
@@ -747,6 +762,8 @@ mod tests {
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,
             liquid_session_ensure_enabled: false,
+            max_live_sessions: 0,
+            max_live_subscribers: 0,
             workspace_root: PathBuf::from("."),
         }
     }

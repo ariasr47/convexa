@@ -2,8 +2,10 @@
 
 use crate::domain::{StreamEvent, StreamKind};
 use crate::error::AppError;
+use crate::services::live_capacity::{LiveCapacityKind, SubscriberGuard, CAPACITY_DETAIL};
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -16,6 +18,7 @@ use std::convert::Infallible;
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
+use tracing::warn;
 
 const MAX_SYMBOLS: usize = 120;
 const PRICE_THROTTLE_MS: u64 = 1000;
@@ -58,6 +61,37 @@ fn clean_symbols(raw: &str) -> Vec<String> {
     out
 }
 
+fn capacity_unavailable() -> Response {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        [("Retry-After", "30")],
+        Json(json!({ "detail": CAPACITY_DETAIL })),
+    )
+        .into_response()
+}
+
+async fn admit_sse(state: &AppState, symbols: &[String]) -> Result<SubscriberGuard, Response> {
+    match state
+        .live_capacity
+        .admit_and_subscribe(&state.stock_hub, symbols)
+        .await
+    {
+        Ok(g) => Ok(g),
+        Err(kind) => {
+            let limit = match kind {
+                LiveCapacityKind::Subscribers => state.live_capacity.max_subscribers(),
+                LiveCapacityKind::Sessions => state.live_capacity.max_sessions(),
+            };
+            let which = match kind {
+                LiveCapacityKind::Subscribers => "subscribers",
+                LiveCapacityKind::Sessions => "sessions",
+            };
+            warn!(which, limit, "live subscribe REFUSED — ceiling reached");
+            Err(capacity_unavailable())
+        }
+    }
+}
+
 fn market_session() -> &'static str {
     let et = Utc::now().with_timezone(&New_York);
     if et.weekday().num_days_from_monday() >= 5 {
@@ -94,13 +128,17 @@ pub async fn stream_prices(
             .into_response());
     }
 
-    let _ = state.stock_hub.subscribe(&symbols).await;
+    let guard = match admit_sse(&state, &symbols).await {
+        Ok(g) => g,
+        Err(resp) => return Ok(resp),
+    };
     let mut rx = state.stock_hub.subscribe_events();
     let want: HashSet<String> = symbols.iter().cloned().collect();
     let prices_cache = state.prices.clone();
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(32);
     tokio::spawn(async move {
+        let _guard = guard;
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut latest: HashMap<String, (f64, i64)> = HashMap::new();
@@ -182,7 +220,10 @@ pub async fn stream_ticker(
         return Err(AppError::NotFound("empty ticker".into()));
     }
 
-    let _ = state.stock_hub.subscribe(&[sym.clone()]).await;
+    let guard = match admit_sse(&state, std::slice::from_ref(&sym)).await {
+        Ok(g) => g,
+        Err(resp) => return Ok(resp),
+    };
     let mut rx = state.stock_hub.subscribe_events();
     let feed = state.config.data_feed.as_str().to_string();
     let prices = state.prices.clone();
@@ -197,6 +238,7 @@ pub async fn stream_ticker(
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
+        let _guard = guard;
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut bid = 0.0_f64;

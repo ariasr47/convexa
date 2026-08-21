@@ -7,6 +7,7 @@ pub mod chain;
 pub mod chain_snapshot;
 pub mod flight;
 pub mod iv_store;
+pub mod live_capacity;
 pub mod llm;
 pub mod llm_catalog;
 pub mod market_data;

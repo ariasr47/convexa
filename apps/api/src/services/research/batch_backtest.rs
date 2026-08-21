@@ -1166,6 +1166,8 @@ mod tests {
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,
             liquid_session_ensure_enabled: false,
+            max_live_sessions: 0,
+            max_live_subscribers: 0,
             workspace_root: PathBuf::from("."),
         }
     }

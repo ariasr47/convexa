@@ -96,6 +96,10 @@ pub struct Config {
     pub session_chain_archive_body_root: Option<PathBuf>,
     /// False → skip liquid-name ensure worker (disjoint from SESSION_CHAIN_ARCHIVE_ENABLED).
     pub liquid_session_ensure_enabled: bool,
+    /// Distinct tickers that may be added to the shared vendor hub. `0` = off. Default 50.
+    pub max_live_sessions: usize,
+    /// Total SSE clients across all streams. `0` = off. Default 500.
+    pub max_live_subscribers: usize,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
 }
@@ -318,6 +322,9 @@ impl Config {
             .unwrap_or(true);
         let session_chain_archive_enabled = env_flag_default_true("SESSION_CHAIN_ARCHIVE_ENABLED");
         let liquid_session_ensure_enabled = env_flag_default_true("LIQUID_SESSION_ENSURE_ENABLED");
+        // S5c: 0 disables either ceiling (Python convention). Unset → Python defaults 50 / 500.
+        let max_live_sessions = env_u64("MAX_LIVE_SESSIONS", 50) as usize;
+        let max_live_subscribers = env_u64("MAX_LIVE_SUBSCRIBERS", 500) as usize;
         let session_chain_archive_store_path = env::var("SESSION_CHAIN_ARCHIVE_STORE_PATH")
             .map(PathBuf::from)
             .unwrap_or_else(|_| default_session_archive_path(&chain_snapshot_store_path));
@@ -369,6 +376,8 @@ impl Config {
             session_chain_archive_store_path,
             session_chain_archive_body_root,
             liquid_session_ensure_enabled,
+            max_live_sessions,
+            max_live_subscribers,
             workspace_root,
         })
     }
