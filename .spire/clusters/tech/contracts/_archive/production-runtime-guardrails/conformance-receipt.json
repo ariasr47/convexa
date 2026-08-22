@@ -1,15 +1,15 @@
 {
   "tool": "interface_conformance",
-  "verdict": "UNVERIFIABLE",
-  "mode": "sample",
+  "verdict": "PASS",
+  "mode": "live",
   "source": ".spire/clusters/tech/contracts/production-runtime-guardrails/INTERFACE_CONTRACT.md",
-  "base_url": null,
+  "base_url": "https://convexa-production.up.railway.app",
   "auth": null,
-  "checked_at": "2026-08-22T05:37:41Z",
+  "checked_at": "2026-08-22T08:22:24Z",
   "summary": {
-    "pass": 1,
+    "pass": 2,
     "fail": 0,
-    "total": 1
+    "total": 2
   },
   "endpoints": [
     {
@@ -17,6 +17,13 @@
       "path": "/api/health",
       "verdict": "PASS",
       "required_checked": 4,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/_metrics",
+      "verdict": "PASS",
+      "required_checked": 2,
       "failures": []
     }
   ]

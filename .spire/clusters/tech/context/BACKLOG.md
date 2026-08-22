@@ -59,20 +59,27 @@ or microservices without a measured bottleneck and a separate owner decision.
 
 | # | Item | Shape | Status |
 |---|---|---|---|
-| 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **PROMOTED 2026-08-21** |
-| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | queued after #1 |
+| 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **NEXT — unblocked by #1** |
 | 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | queued after #2 |
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
 | 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
 | 7 | `telemetry-slos` — trace correlation/export, service-level objectives, dashboards and alert runbook | backend/infra feature | queued after #6 |
 | 8 | `replica-safe-workers` — API/worker process split, singleton/job coordination, distributed rate limiting | backend/infra feature | queued after #7 |
-| 9 | `recovery-deployment-maturity` — backup/restore drill, staging/migration/smoke/rollback gates, declarative host config | ops feature | queued after #8; external host actions require owner credentials |
+| 9 | `recovery-deployment-maturity` — backup/restore drill, staging/migration/smoke/rollback gates, declarative host config | ops feature | queued after #8; migrate `railway.json` watch paths to Railway IaC before 2026-12-01 once the translator preserves them |
 | 10 | `resilience-and-quant-assurance` — standardized upstream resilience plus property/fuzz/benchmark regression gates | backend/quant feature | queued after #9 |
 
 Current-state corrections folded into the program: CI/CD and production smoke already exist;
 session bodies already sit outside app Postgres on a filesystem body-store. Their successors
 harden those capabilities rather than rebuilding them.
+
+## Last GATE S — 2026-08-22 (`production-runtime-guardrails` — fail-closed production profile)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline completed with production deployment evidence: **GATE Q PASS 26/0/0**, independent
+live conformance 2/2, same-SHA real-Postgres CI, one Railway startup owner, and a matching-hash
+mounted-volume replacement drill. Archived to `_archive/production-runtime-guardrails/`; standalone
+conformance promoted. No decision key graduated. Program advances to #2 `postgres-release-safety`.
 
 ## Last GATE I — 2026-08-20 (canon repair → `project-context-s2-is-python-era`)
 <!-- atlas: theme=the-machine horizon=now -->

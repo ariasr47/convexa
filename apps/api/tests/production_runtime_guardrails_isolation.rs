@@ -5,6 +5,28 @@ fn workspace() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
+fn production_runtime_guardrails_receipt(root: &std::path::Path) -> PathBuf {
+    let active = root.join(
+        ".spire/clusters/tech/contracts/production-runtime-guardrails/conformance-receipt.json",
+    );
+    if active.is_file() {
+        return active;
+    }
+
+    root.join(
+        ".spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json",
+    )
+}
+
+#[test]
+fn completed_guardrail_receipt_is_resolved_from_the_contract_archive() {
+    let receipt = production_runtime_guardrails_receipt(&workspace());
+    assert!(receipt.is_file());
+    assert!(receipt.ends_with(
+        ".spire/clusters/tech/contracts/_archive/production-runtime-guardrails/conformance-receipt.json"
+    ));
+}
+
 fn forbidden_runtime_boundary(source: &str) -> bool {
     source.contains("quant_engine")
 }
@@ -256,14 +278,16 @@ fn comprehensive_secret_egress_canary_scan_is_non_vacuous() {
         name == ".env" || (name.starts_with(".env.") && name != ".env.example")
     }));
 
-    for relative in [
-        ".spire/clusters/tech/contracts/production-runtime-guardrails/conformance-receipt.json",
-        ".spire/clusters/tech/state/conformance/production-runtime-guardrails-transport.json",
-        "apps/api/Dockerfile",
-        "apps/api/.env.example",
+    for path in [
+        production_runtime_guardrails_receipt(&root),
+        root.join(
+            ".spire/clusters/tech/state/conformance/production-runtime-guardrails-transport.json",
+        ),
+        root.join("apps/api/Dockerfile"),
+        root.join("apps/api/.env.example"),
     ] {
-        let contents = fs::read_to_string(root.join(relative)).unwrap();
-        assert!(!contains_any(&contents, &canaries), "{relative}");
+        let contents = fs::read_to_string(&path).unwrap();
+        assert!(!contains_any(&contents, &canaries), "{}", path.display());
     }
 
     let auth_source =

@@ -499,6 +499,15 @@ per-IP budget; an audit script in the commit walks every route and proves it.
 "Massive bill". Massive is **flat-rate** (§1), so the real exposure was **vendor rate-limit exhaustion**
 — which breaks the app for real users while it happens — not a metered invoice. Same fix, different why.
 
+**✅ PRODUCTION RUNTIME GUARDRAILS SHIPPED + ARCHIVED 2026-08-22.** The Rust API now refuses an
+incomplete production profile before bind/workers, requires real Postgres schema preflight, exact HTTPS
+origins, secure cookies, operator-only metrics, and addressed signing/encryption key rings. Railway is
+one replica/startup owner with `/data/session-chain-archive` mounted; same-SHA real-Postgres CI, live
+conformance, and an actual replacement-survival volume receipt all passed. Backend-only Railway watch
+paths prevent docs/evidence commits from redeploying the API. Next production-maturity slice:
+`postgres-release-safety`; the supported `railway.json` watch-path control must migrate to Railway IaC
+before 2026-12-01 once migration preserves that field.
+
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 Contracts archived at `.spire/clusters/tech/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
 re-skin to the Figma dark-fintech design system, delivered as ~30 commits on the `convexa-redesign` branch
