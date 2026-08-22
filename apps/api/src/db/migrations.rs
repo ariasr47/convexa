@@ -346,7 +346,10 @@ pub async fn apply(pool: &PgPool) -> AppResult<()> {
             continue;
         }
         info!(version, name, "postgres migration applying");
-        for (i, stmt) in split_sql_statements(body).into_iter().enumerate() {
+        let statements = split_sql_statements(body).map_err(|error| {
+            AppError::Config(format!("migration v{version}/{name} split: {error}"))
+        })?;
+        for (i, stmt) in statements.into_iter().enumerate() {
             sqlx::query(&stmt).execute(pool).await.map_err(|e| {
                 let preview: String = stmt.chars().take(96).collect();
                 AppError::Config(format!(
@@ -384,25 +387,192 @@ async fn table_exists(pool: &PgPool, name: &str) -> AppResult<bool> {
     Ok(exists)
 }
 
-/// Split a SQL script into individual statements on `;`.
-pub fn split_sql_statements(script: &str) -> Vec<String> {
-    script
-        .split(';')
-        .filter_map(|chunk| {
-            let trimmed = chunk.trim();
-            if trimmed.is_empty() {
-                return None;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SqlSplitError {
+    offset: usize,
+    construct: &'static str,
+}
+
+impl std::fmt::Display for SqlSplitError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "unterminated {} at byte {}",
+            self.construct, self.offset
+        )
+    }
+}
+
+impl std::error::Error for SqlSplitError {}
+
+#[derive(Clone, Copy)]
+enum SqlLexState {
+    Normal,
+    SingleQuoted { backslash_escapes: bool },
+    DoubleQuoted,
+    DollarQuoted { delimiter: usize, length: usize },
+    LineComment,
+    BlockComment { depth: usize },
+}
+
+fn starts_escape_string(bytes: &[u8], quote: usize) -> bool {
+    let identifier_byte = |byte: u8| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'$');
+    let e_prefix = quote >= 1
+        && matches!(bytes[quote - 1], b'e' | b'E')
+        && (quote == 1 || !identifier_byte(bytes[quote - 2]));
+    let unicode_prefix = quote >= 2
+        && bytes[quote - 1] == b'&'
+        && matches!(bytes[quote - 2], b'u' | b'U')
+        && (quote == 2 || !identifier_byte(bytes[quote - 3]));
+    e_prefix || unicode_prefix
+}
+
+fn dollar_delimiter_length(bytes: &[u8], start: usize) -> Option<usize> {
+    if bytes.get(start) != Some(&b'$') {
+        return None;
+    }
+    if bytes.get(start + 1) == Some(&b'$') {
+        return Some(2);
+    }
+    let first = *bytes.get(start + 1)?;
+    if !(first.is_ascii_alphabetic() || first == b'_') {
+        return None;
+    }
+    let mut cursor = start + 2;
+    while bytes
+        .get(cursor)
+        .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
+    {
+        cursor += 1;
+    }
+    (bytes.get(cursor) == Some(&b'$')).then_some(cursor - start + 1)
+}
+
+/// Split a Postgres script only on semicolons outside comments and quoted SQL.
+pub fn split_sql_statements(script: &str) -> Result<Vec<String>, SqlSplitError> {
+    let bytes = script.as_bytes();
+    let mut statements = Vec::new();
+    let mut state = SqlLexState::Normal;
+    let mut statement_start = 0;
+    let mut statement_has_sql = false;
+    let mut cursor = 0;
+
+    while cursor < bytes.len() {
+        match state {
+            SqlLexState::Normal => match bytes[cursor] {
+                b'-' if bytes.get(cursor + 1) == Some(&b'-') => {
+                    state = SqlLexState::LineComment;
+                    cursor += 2;
+                }
+                b'/' if bytes.get(cursor + 1) == Some(&b'*') => {
+                    state = SqlLexState::BlockComment { depth: 1 };
+                    cursor += 2;
+                }
+                b'\'' => {
+                    statement_has_sql = true;
+                    state = SqlLexState::SingleQuoted {
+                        backslash_escapes: starts_escape_string(bytes, cursor),
+                    };
+                    cursor += 1;
+                }
+                b'"' => {
+                    statement_has_sql = true;
+                    state = SqlLexState::DoubleQuoted;
+                    cursor += 1;
+                }
+                b'$' => {
+                    statement_has_sql = true;
+                    if let Some(length) = dollar_delimiter_length(bytes, cursor) {
+                        state = SqlLexState::DollarQuoted {
+                            delimiter: cursor,
+                            length,
+                        };
+                        cursor += length;
+                    } else {
+                        cursor += 1;
+                    }
+                }
+                b';' => {
+                    if statement_has_sql {
+                        statements.push(script[statement_start..cursor].trim().to_string());
+                    }
+                    statement_start = cursor + 1;
+                    statement_has_sql = false;
+                    cursor += 1;
+                }
+                byte => {
+                    statement_has_sql |= !byte.is_ascii_whitespace();
+                    cursor += 1;
+                }
+            },
+            SqlLexState::SingleQuoted { backslash_escapes } => match bytes[cursor] {
+                b'\\' if backslash_escapes && cursor + 1 < bytes.len() => cursor += 2,
+                b'\'' if bytes.get(cursor + 1) == Some(&b'\'') => cursor += 2,
+                b'\'' => {
+                    state = SqlLexState::Normal;
+                    cursor += 1;
+                }
+                _ => cursor += 1,
+            },
+            SqlLexState::DoubleQuoted => {
+                if bytes[cursor] == b'"' && bytes.get(cursor + 1) == Some(&b'"') {
+                    cursor += 2;
+                } else if bytes[cursor] == b'"' {
+                    state = SqlLexState::Normal;
+                    cursor += 1;
+                } else {
+                    cursor += 1;
+                }
             }
-            let has_sql = trimmed.lines().any(|line| {
-                let l = line.trim();
-                !l.is_empty() && !l.starts_with("--")
-            });
-            if !has_sql {
-                return None;
+            SqlLexState::DollarQuoted { delimiter, length } => {
+                if bytes[cursor..].starts_with(&bytes[delimiter..delimiter + length]) {
+                    state = SqlLexState::Normal;
+                    cursor += length;
+                } else {
+                    cursor += 1;
+                }
             }
-            Some(trimmed.to_string())
-        })
-        .collect()
+            SqlLexState::LineComment => {
+                if matches!(bytes[cursor], b'\r' | b'\n') {
+                    state = SqlLexState::Normal;
+                }
+                cursor += 1;
+            }
+            SqlLexState::BlockComment { depth } => {
+                if bytes[cursor..].starts_with(b"/*") {
+                    state = SqlLexState::BlockComment { depth: depth + 1 };
+                    cursor += 2;
+                } else if bytes[cursor..].starts_with(b"*/") {
+                    cursor += 2;
+                    state = if depth == 1 {
+                        SqlLexState::Normal
+                    } else {
+                        SqlLexState::BlockComment { depth: depth - 1 }
+                    };
+                } else {
+                    cursor += 1;
+                }
+            }
+        }
+    }
+
+    let construct = match state {
+        SqlLexState::Normal | SqlLexState::LineComment => None,
+        SqlLexState::SingleQuoted { .. } => Some("single-quoted string"),
+        SqlLexState::DoubleQuoted => Some("double-quoted identifier"),
+        SqlLexState::DollarQuoted { .. } => Some("dollar-quoted body"),
+        SqlLexState::BlockComment { .. } => Some("block comment"),
+    };
+    if let Some(construct) = construct {
+        return Err(SqlSplitError {
+            offset: bytes.len(),
+            construct,
+        });
+    }
+    if statement_has_sql {
+        statements.push(script[statement_start..].trim().to_string());
+    }
+    Ok(statements)
 }
 
 #[cfg(test)]
@@ -417,8 +587,60 @@ mod tests {
             assert!(v > prev, "versions must increase ({name})");
             assert!(seen.insert(v), "duplicate version {v}");
             assert!(!name.is_empty());
-            assert!(!split_sql_statements(body).is_empty(), "{name} empty");
+            assert!(
+                !split_sql_statements(body)
+                    .expect("compiled migration SQL must split")
+                    .is_empty(),
+                "{name} empty"
+            );
             prev = v;
+        }
+    }
+
+    #[test]
+    fn splitter_keeps_the_v5_comment_attached_to_its_statement() {
+        let (_, _, body) = MIGRATIONS
+            .iter()
+            .find(|(version, _, _)| *version == 5)
+            .expect("v5 migration must exist");
+
+        let statements = split_sql_statements(body).expect("v5 migration SQL must split");
+
+        assert_eq!(statements.len(), 2);
+        assert!(statements[0].contains("local cache; signed-in clients"));
+        assert!(statements[0].contains("CREATE TABLE IF NOT EXISTS user_book"));
+        assert!(!statements[0].trim_start().starts_with("signed-in clients"));
+    }
+
+    #[test]
+    fn splitter_ignores_semicolons_in_comments_and_quoted_sql() {
+        let script = r#"
+-- line comment; its tail must never become SQL
+CREATE TABLE "semi;colon" (value TEXT DEFAULT 'one;two');
+/* outer comment; /* nested comment; */ still comment; */
+DO $body$
+BEGIN
+    PERFORM 'inside;body';
+END;
+$body$;
+SELECT 'it''s;quoted', "also;quoted";
+"#;
+
+        let statements = split_sql_statements(script).expect("quoted SQL must split");
+
+        assert_eq!(statements.len(), 3, "{statements:#?}");
+        assert!(statements[0].contains("CREATE TABLE"));
+        assert!(statements[1].contains("PERFORM 'inside;body';"));
+        assert!(statements[2].contains("'it''s;quoted'"));
+        assert!(statements
+            .iter()
+            .all(|statement| !statement.trim_start().starts_with("its tail")));
+    }
+
+    #[test]
+    fn splitter_refuses_unterminated_quoted_or_commented_sql() {
+        for script in ["SELECT 'unterminated;", "SELECT $$unterminated;", "/* open"] {
+            assert!(split_sql_statements(script).is_err(), "{script}");
         }
     }
 
