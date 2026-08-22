@@ -37,6 +37,14 @@ fn url(base: &str, db: &str) -> String {
     u.set_query(None);
     u.to_string()
 }
+fn credential_url(base: &str, db: &str, user: &str, password: &str) -> String {
+    let mut u = url::Url::parse(&url(base, db)).expect("database URL");
+    u.set_username(user).unwrap();
+    u.set_password(Some(password)).unwrap();
+    u.query_pairs_mut()
+        .append_pair("application_name", "release-query-canary");
+    u.to_string()
+}
 async fn admin() -> PgPool {
     PgPoolOptions::new()
         .max_connections(2)
@@ -94,10 +102,129 @@ fn terminal(rs: &[Value]) -> &Value {
         .find(|v| v["kind"] == "terminal")
         .expect("terminal record")
 }
+fn assert_terminal_contract(rs: &[Value]) {
+    assert_eq!(rs.iter().filter(|v| v["kind"] == "terminal").count(), 1);
+    let t = terminal(rs);
+    assert_eq!(rs.last(), Some(t), "the terminal record must be last");
+    let mut keys = t.as_object().unwrap().keys().cloned().collect::<Vec<_>>();
+    keys.sort();
+    assert_eq!(
+        keys,
+        [
+            "elapsed_ms",
+            "failing_version",
+            "highest_committed_version",
+            "kind",
+            "message",
+            "outcome",
+            "reason",
+            "schema_version",
+            "target_version"
+        ]
+    );
+    assert_eq!(t["schema_version"], 1);
+    assert!(matches!(
+        t["outcome"].as_str(),
+        Some("work applied" | "already current" | "unsafe database refused" | "execution failed")
+    ));
+    assert!(t["message"].is_string());
+    assert!(t["elapsed_ms"].as_u64().is_some());
+    let legal_reason = match t["outcome"].as_str().unwrap() {
+        "work applied" => t["reason"] == "migrations applied",
+        "already current" => t["reason"] == "already current",
+        "unsafe database refused" => matches!(
+            t["reason"].as_str(),
+            Some("inconsistent history" | "future history" | "schema incompatible")
+        ),
+        "execution failed" => matches!(
+            t["reason"].as_str(),
+            Some(
+                "migration owner busy"
+                    | "postgres unavailable"
+                    | "schema unverifiable"
+                    | "transaction failed"
+                    | "post-apply schema rejected"
+                    | "commit status unverifiable"
+                    | "manifest invalid"
+                    | "cancelled"
+                    | "internal failure"
+            )
+        ),
+        _ => false,
+    };
+    assert!(legal_reason, "illegal outcome/reason pair: {t}");
+
+    for record in &rs[..rs.len() - 1] {
+        let object = record.as_object().expect("progress record object");
+        let mut keys = object.keys().cloned().collect::<Vec<_>>();
+        keys.sort();
+        assert_eq!(
+            keys,
+            [
+                "elapsed_ms",
+                "kind",
+                "message",
+                "name",
+                "schema_version",
+                "state",
+                "version"
+            ]
+        );
+        assert_eq!(record["schema_version"], 1);
+        assert_eq!(record["kind"], "progress");
+        assert!(record["elapsed_ms"].as_u64().is_some());
+        match record["state"].as_str().expect("closed progress state") {
+            "checking" => {
+                assert_eq!(record["message"], "Checking PostgreSQL schema…");
+                assert!(record["version"].is_null() && record["name"].is_null());
+            }
+            "waiting" => {
+                assert_eq!(
+                    record["message"],
+                    "Another migration run is active. Waiting…"
+                );
+                assert!(record["version"].is_null() && record["name"].is_null());
+            }
+            state @ ("version_started" | "version_committed" | "version_rolled_back") => {
+                let version = record["version"].as_i64().expect("progress version");
+                let name = record["name"].as_str().expect("progress name");
+                assert!(version > 0 && !name.is_empty());
+                let expected = match state {
+                    "version_started" => format!("Applying migration {version} ({name})…"),
+                    "version_committed" => format!("Migration {version} ({name}) committed."),
+                    "version_rolled_back" => {
+                        format!("Migration {version} ({name}) rolled back.")
+                    }
+                    _ => unreachable!(),
+                };
+                assert_eq!(record["message"], expected);
+            }
+            state => panic!("unrecognized progress state: {state}"),
+        }
+    }
+}
+fn assert_no_secret_egress(out: &Output) {
+    assert_no_secret_values(out, &["unrelated-env-canary", "release-query-canary"]);
+}
+fn assert_no_secret_values(out: &Output, canaries: &[&str]) {
+    for bytes in [&out.stdout, &out.stderr] {
+        let text = String::from_utf8_lossy(bytes);
+        for canary in ["postgresql://", "DATABASE_URL", "password", "Bearer "]
+            .into_iter()
+            .chain(canaries.iter().copied())
+        {
+            assert!(
+                !text.contains(canary),
+                "secret canary {canary:?} leaked in process output: {text}"
+            );
+        }
+    }
+}
 fn migrate(db: &str, extra: &[(&str, &str)]) -> Output {
     let mut c = Command::new(bin());
     c.args(["postgres-migrate"])
         .env("DATABASE_URL", db)
+        .env("UNRELATED_RELEASE_SECRET", "unrelated-env-canary")
         .env_remove("APP_ENV");
     for (k, v) in extra {
         c.env(k, v);
@@ -108,11 +235,18 @@ fn port() -> u16 {
     let l = TcpListener::bind("127.0.0.1:0").expect("reserve port");
     l.local_addr().unwrap().port()
 }
+fn listener_bound(p: u16) -> bool {
+    std::net::TcpStream::connect(("127.0.0.1", p)).is_ok()
+}
 fn env(c: &mut Command, db: &str, p: u16, root: &std::path::Path) {
     let session = URL_SAFE_NO_PAD.encode([51_u8; 32]);
     let encryption = URL_SAFE_NO_PAD.encode([52_u8; 32]);
     let metrics = URL_SAFE_NO_PAD.encode([53_u8; 32]);
     c.envs([
+        (
+            String::from("UNRELATED_RELEASE_SECRET"),
+            String::from("unrelated-env-canary"),
+        ),
         (String::from("APP_ENV"), String::from("prod")),
         (String::from("DATABASE_URL"), db.into()),
         (String::from("MASSIVE_API_KEY"), String::from("test-key")),
@@ -279,11 +413,40 @@ fn cli_fresh_prefix_current_jsonl_and_exit_contract() {
         let d = url(&base(), &n);
         let x = migrate(&d, &[]);
         assert!(x.status.success(), "fresh migration: {:?}", x);
-        assert_eq!(terminal(&records(&x))["outcome"], "work applied");
+        let xr = records(&x);
+        assert_terminal_contract(&xr);
+        assert_eq!(terminal(&xr)["outcome"], "work applied");
+        // Exact-prefix upgrade: remove the final ledger fact and revert that version's schema
+        // shape. The runner must apply the missing suffix, not classify this as a hole.
+        let p = PgPool::connect(&d).await.unwrap();
+        sqlx::query("DELETE FROM schema_migrations WHERE version = 12")
+            .execute(&p)
+            .await
+            .unwrap();
+        sqlx::query("ALTER TABLE session_chain_archive DROP COLUMN body_locator")
+            .execute(&p)
+            .await
+            .unwrap();
+        sqlx::query("ALTER TABLE session_chain_archive ALTER COLUMN body SET NOT NULL")
+            .execute(&p)
+            .await
+            .unwrap();
+        drop(p);
+        let prefix = migrate(&d, &[]);
+        assert!(prefix.status.success());
+        let prefix_records = records(&prefix);
+        assert_terminal_contract(&prefix_records);
+        assert_eq!(terminal(&prefix_records)["outcome"], "work applied");
+        assert_no_secret_egress(&prefix);
+        let before_current = fp(&d).await;
         let y = migrate(&d, &[]);
         assert!(y.status.success());
-        assert_eq!(terminal(&records(&y))["outcome"], "already current");
-        assert!(!String::from_utf8_lossy(&x.stdout).contains("postgresql://"));
+        let yr = records(&y);
+        assert_terminal_contract(&yr);
+        assert_eq!(terminal(&yr)["outcome"], "already current");
+        assert_eq!(before_current, fp(&d).await);
+        assert_no_secret_egress(&x);
+        assert_no_secret_egress(&y);
         drop_db(&a, &n).await;
     });
 }
@@ -291,7 +454,68 @@ fn cli_fresh_prefix_current_jsonl_and_exit_contract() {
 #[test]
 fn cli_refusal_failure_cancellation_and_secret_matrix() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async{let a=admin().await;let n=name("matrix");create(&a,&n).await;let d=url(&base(),&n);let x=Command::new(bin()).args(["postgres-migrate"]).env_remove("DATABASE_URL").output().unwrap();assert!(!x.status.success());assert_eq!(terminal(&records(&x))["reason"],"postgres unavailable");let x=migrate(&d,&[("MIGRATION_LOCK_TIMEOUT_SECONDS","0")]);assert!(!x.status.success());assert_eq!(terminal(&records(&x))["reason"],"internal failure");let p=PgPool::connect(&d).await.unwrap();sqlx::query("CREATE TABLE schema_migrations (version BIGINT PRIMARY KEY,name TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())").execute(&p).await.unwrap();sqlx::query("INSERT INTO schema_migrations(version,name) VALUES(99,'future')").execute(&p).await.unwrap();drop(p);let x=migrate(&d,&[]);assert!(!x.status.success());assert_eq!(terminal(&records(&x))["reason"],"future history");assert!(!String::from_utf8_lossy(&x.stdout).contains("postgresql://"));drop_db(&a,&n).await;});
+    rt.block_on(async {
+        let a = admin().await;
+        let missing = Command::new(bin()).args(["postgres-migrate"]).env_remove("DATABASE_URL").output().unwrap();
+        assert!(!missing.status.success());
+        let mr = records(&missing); assert_terminal_contract(&mr);
+        assert_eq!(terminal(&mr)["reason"], "postgres unavailable");
+        assert_no_secret_egress(&missing);
+        let unreachable = migrate("postgresql://127.0.0.1:1/unreachable_release", &[]);
+        assert!(!unreachable.status.success()); assert_terminal_contract(&records(&unreachable));
+        assert_eq!(terminal(&records(&unreachable))["reason"], "postgres unavailable"); assert_no_secret_egress(&unreachable);
+
+        let bad_timeout_name = name("bad_timeout"); create(&a, &bad_timeout_name).await;
+        let bad_timeout = migrate(&url(&base(), &bad_timeout_name), &[("MIGRATION_LOCK_TIMEOUT_SECONDS", "0")]);
+        assert!(!bad_timeout.status.success()); assert_terminal_contract(&records(&bad_timeout));
+        assert_eq!(terminal(&records(&bad_timeout))["reason"], "internal failure");
+        drop_db(&a, &bad_timeout_name).await;
+
+        // Every representable unsafe history shape is exercised against a disposable database.
+        for (label, rows, reason) in [
+            ("hole", vec![(1_i64, "baseline_core"), (3, "scan_structure_history")], "inconsistent history"),
+            ("reorder", vec![(1_i64, "renamed"), (2, "scan_store")], "inconsistent history"),
+            ("name", vec![(1_i64, "wrong_name")], "inconsistent history"),
+            ("future", vec![(99_i64, "future")], "future history"),
+        ] {
+            let n = name(label); create(&a, &n).await; let d = url(&base(), &n);
+            let p = PgPool::connect(&d).await.unwrap();
+            sqlx::query("CREATE TABLE schema_migrations (version BIGINT PRIMARY KEY,name TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())").execute(&p).await.unwrap();
+            for (v, name) in rows { sqlx::query("INSERT INTO schema_migrations(version,name) VALUES($1,$2)").bind(v).bind(name).execute(&p).await.unwrap(); }
+            drop(p); let before = fp(&d).await; let out = migrate(&d, &[]); let rs = records(&out);
+            assert!(!out.status.success()); assert_terminal_contract(&rs); assert_eq!(terminal(&rs)["reason"], reason); assert_eq!(before, fp(&d).await); assert_no_secret_egress(&out);
+            drop_db(&a, &n).await;
+        }
+
+        // A current ledger with a missing required relation is unsafe, not repairable.
+        let n = name("incompatible"); create(&a, &n).await; let d = url(&base(), &n);
+        assert!(migrate(&d, &[]).status.success());
+        let p = PgPool::connect(&d).await.unwrap(); sqlx::query("DROP TABLE users CASCADE").execute(&p).await.unwrap(); drop(p);
+        let out = migrate(&d, &[]); assert!(!out.status.success()); assert_terminal_contract(&records(&out));
+        assert_eq!(terminal(&records(&out))["reason"], "schema incompatible"); drop_db(&a, &n).await;
+
+        // A connected role with no ledger inspection privilege must fail closed as
+        // unverifiable; this is distinct from an unreachable server.
+        let n = name("inspection_denied"); create(&a, &n).await; let d = url(&base(), &n);
+        assert!(migrate(&d, &[]).status.success());
+        let role = format!("release_denied_{}", std::process::id()); let password = "release-denied-canary";
+        sqlx::query(&format!("CREATE ROLE \"{role}\" LOGIN PASSWORD '{password}'")).execute(&a).await.unwrap();
+        sqlx::query(&format!("GRANT CONNECT ON DATABASE \"{n}\" TO \"{role}\"")).execute(&a).await.unwrap();
+        sqlx::query("REVOKE ALL ON schema_migrations FROM PUBLIC").execute(&PgPool::connect(&d).await.unwrap()).await.unwrap();
+        let denied = migrate(&credential_url(&base(), &n, &role, password), &[]);
+        assert!(!denied.status.success()); assert_terminal_contract(&records(&denied)); assert_eq!(terminal(&records(&denied))["reason"], "schema unverifiable"); assert_no_secret_egress(&denied); assert_no_secret_values(&denied, &[&role, password]);
+        sqlx::query(&format!("REVOKE CONNECT ON DATABASE \"{n}\" FROM \"{role}\"")).execute(&a).await.unwrap();
+        sqlx::query(&format!("DROP ROLE IF EXISTS \"{role}\"")).execute(&a).await.unwrap(); drop_db(&a, &n).await;
+
+        // A held session lock must produce the closed busy outcome and release the contender
+        // connection when it exits; once released, a fresh owner can migrate normally.
+        let n = name("busy"); create(&a, &n).await; let d = url(&base(), &n);
+        let p = PgPool::connect(&d).await.unwrap(); sqlx::query("SELECT pg_advisory_lock($1)").bind(7_391_481_002_431_i64).execute(&p).await.unwrap();
+        let out = migrate(&d, &[("MIGRATION_LOCK_TIMEOUT_SECONDS", "1")]); assert!(!out.status.success()); assert_terminal_contract(&records(&out));
+        assert_eq!(terminal(&records(&out))["reason"], "migration owner busy");
+        sqlx::query("SELECT pg_advisory_unlock($1)").bind(7_391_481_002_431_i64).execute(&p).await.unwrap(); drop(p);
+        assert!(migrate(&d, &[]).status.success()); drop_db(&a, &n).await;
+    });
 }
 
 #[test]
@@ -322,6 +546,10 @@ fn two_release_processes_have_one_owner_and_contender_rereads() {
         assert!(yo.status.success());
         let xr = records(&xo);
         let yr = records(&yo);
+        assert_terminal_contract(&xr);
+        assert_terminal_contract(&yr);
+        assert_no_secret_egress(&xo);
+        assert_no_secret_egress(&yo);
         let os = [
             terminal(&xr)["outcome"].as_str().unwrap(),
             terminal(&yr)["outcome"].as_str().unwrap(),
@@ -347,8 +575,12 @@ fn atomic_version_failure_preserves_only_proved_prefix_and_retry_resumes() {
         drop(p);
         let x = migrate(&d, &[]);
         assert!(!x.status.success());
-        assert_eq!(terminal(&records(&x))["reason"], "transaction failed");
-        assert_eq!(terminal(&records(&x))["failing_version"], 1);
+        let xr = records(&x);
+        assert_terminal_contract(&xr);
+        assert_eq!(terminal(&xr)["reason"], "transaction failed");
+        assert_eq!(terminal(&xr)["failing_version"], 1);
+        assert!(terminal(&xr)["highest_committed_version"].is_null());
+        assert_no_secret_egress(&x);
         let p = PgPool::connect(&d).await.unwrap();
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM schema_migrations")
             .fetch_one(&p)
@@ -359,7 +591,10 @@ fn atomic_version_failure_preserves_only_proved_prefix_and_retry_resumes() {
         drop(p);
         let y = migrate(&d, &[]);
         assert!(y.status.success());
-        assert_eq!(terminal(&records(&y))["outcome"], "work applied");
+        let yr = records(&y);
+        assert_terminal_contract(&yr);
+        assert_eq!(terminal(&yr)["outcome"], "work applied");
+        assert_no_secret_egress(&y);
         drop_db(&a, &n).await;
     });
 }
@@ -375,7 +610,8 @@ fn serve_current_binds_after_verify_and_health_shape_is_unchanged() {
         assert!(migrate(&d, &[]).status.success());
         let r = serve(&d);
         assert!(health(r.port).await);
-        let _ = stop(r);
+        let output = stop(r);
+        assert_no_secret_egress(&output);
         drop_db(&a, &n).await;
     });
 }
@@ -395,9 +631,50 @@ fn serve_refusal_matrix_is_read_only_pre_bind_pre_worker() {
         assert!(!out.status.success());
         assert!(String::from_utf8_lossy(&out.stderr)
             .contains("Startup refused: required PostgreSQL migrations are missing."));
-        assert!(!health(p).await);
+        assert_no_secret_egress(&out);
+        assert!(!listener_bound(p));
         assert_eq!(before, fp(&d).await);
         drop_db(&a, &n).await;
+
+        for (label, rows, message) in [
+            ("hole", vec![(1_i64, "baseline_core"), (3, "scan_structure_history")], "Startup refused: the PostgreSQL migration history is inconsistent with this release."),
+            ("future", vec![(99_i64, "future")], "Startup refused: the database records migrations newer than this release."),
+            ("name", vec![(1_i64, "wrong_name")], "Startup refused: the PostgreSQL migration history is inconsistent with this release."),
+        ] {
+            let n = name(&format!("serve_{label}")); create(&a, &n).await; let d = url(&base(), &n);
+            let p = PgPool::connect(&d).await.unwrap();
+            sqlx::query("CREATE TABLE schema_migrations(version BIGINT PRIMARY KEY,name TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())").execute(&p).await.unwrap();
+            for (v, row_name) in rows { sqlx::query("INSERT INTO schema_migrations(version,name) VALUES($1,$2)").bind(v).bind(row_name).execute(&p).await.unwrap(); }
+            drop(p); let before = fp(&d).await; let r = serve(&d); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
+            assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains(message)); assert_no_secret_egress(&out); assert!(!listener_bound(port)); assert_eq!(before, fp(&d).await); drop_db(&a, &n).await;
+        }
+
+        // A genuine exact-prefix database is missing only the final ledger fact and its
+        // corresponding relation shape; serve must refuse before binding instead of repairing.
+        let n = name("serve_exact_prefix"); create(&a, &n).await; let d = url(&base(), &n);
+        assert!(migrate(&d, &[]).status.success());
+        let p = PgPool::connect(&d).await.unwrap();
+        sqlx::query("DELETE FROM schema_migrations WHERE version = 12").execute(&p).await.unwrap();
+        sqlx::query("ALTER TABLE session_chain_archive DROP COLUMN body_locator").execute(&p).await.unwrap();
+        sqlx::query("ALTER TABLE session_chain_archive ALTER COLUMN body SET NOT NULL").execute(&p).await.unwrap();
+        drop(p);
+        let before = fp(&d).await; let r = serve(&d); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
+        assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains("Startup refused: required PostgreSQL migrations are missing.")); assert_no_secret_egress(&out); assert!(!listener_bound(port)); assert_eq!(before, fp(&d).await); drop_db(&a, &n).await;
+
+        let n = name("serve_inspection_denied"); create(&a, &n).await; let d = url(&base(), &n); assert!(migrate(&d, &[]).status.success());
+        let role = format!("release_serve_denied_{}", std::process::id()); let password = "serve-denied-canary";
+        sqlx::query(&format!("CREATE ROLE \"{role}\" LOGIN PASSWORD '{password}'")).execute(&a).await.unwrap();
+        sqlx::query(&format!("GRANT CONNECT ON DATABASE \"{n}\" TO \"{role}\"")).execute(&a).await.unwrap();
+        sqlx::query("REVOKE ALL ON schema_migrations FROM PUBLIC").execute(&PgPool::connect(&d).await.unwrap()).await.unwrap();
+        let r = serve(&credential_url(&base(), &n, &role, password)); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
+        assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains("Startup refused: the PostgreSQL schema could not be verified.")); assert_no_secret_egress(&out); assert_no_secret_values(&out, &[&role, password]); assert!(!listener_bound(port));
+        sqlx::query(&format!("REVOKE CONNECT ON DATABASE \"{n}\" FROM \"{role}\"")).execute(&a).await.unwrap();
+        sqlx::query(&format!("DROP ROLE IF EXISTS \"{role}\"")).execute(&a).await.unwrap(); drop_db(&a, &n).await;
+
+        let n = name("serve_incompatible"); create(&a, &n).await; let d = url(&base(), &n); assert!(migrate(&d, &[]).status.success());
+        let p = PgPool::connect(&d).await.unwrap(); sqlx::query("DROP TABLE users CASCADE").execute(&p).await.unwrap(); drop(p);
+        let before = fp(&d).await; let r = serve(&d); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
+        assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains("Startup refused: the PostgreSQL schema is incomplete or incompatible with this release.")); assert_no_secret_egress(&out); assert!(!listener_bound(port)); assert_eq!(before, fp(&d).await); drop_db(&a, &n).await;
     });
 }
 
@@ -415,8 +692,10 @@ fn simultaneous_serve_processes_are_read_only() {
         let y = serve(&d);
         assert!(health(x.port).await);
         assert!(health(y.port).await);
-        let _ = stop(x);
-        let _ = stop(y);
+        let xo = stop(x);
+        let yo = stop(y);
+        assert_no_secret_egress(&xo);
+        assert_no_secret_egress(&yo);
         assert_eq!(before, fp(&d).await);
         drop_db(&a, &n).await;
     });
@@ -425,5 +704,58 @@ fn simultaneous_serve_processes_are_read_only() {
 #[test]
 fn same_revision_missing_migrations_negative_control_is_closed() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async{let _fixture=base();let sha=std::env::var("RELEASE_GIT_SHA").expect("RELEASE_GIT_SHA is required");assert!(sha.len()==40&&sha.bytes().all(|b|b.is_ascii_hexdigit())&&sha.chars().all(|c|!c.is_ascii_uppercase()));let a=admin().await;let n=name("negative");create(&a,&n).await;let d=url(&base(),&n);let before=fp(&d).await;let r=serve(&d);let p=r.port;let out=wait_for_exit(r,Duration::from_secs(25)).await;let after=fp(&d).await;assert!(!out.status.success());let startup_message="Startup refused: required PostgreSQL migrations are missing.";assert!(String::from_utf8_lossy(&out.stderr).contains(startup_message));assert!(!health(p).await);assert_eq!(before,after);if let Some(path)=std::env::var_os("POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT"){let v=serde_json::json!({"schema_version":1,"feature":"postgres-release-safety","git_sha":sha,"precondition":"migrations missing","command":"api-rust serve","exit_status":out.status.code().unwrap_or(1),"startup_message":startup_message,"listener_bound":false,"workers_started":false,"database_fingerprint_before":before,"database_fingerprint_after":after});std::fs::write(path,serde_json::to_vec(&v).unwrap()).unwrap();}drop_db(&a,&n).await;});
+    rt.block_on(async {
+        let _fixture = base();
+        let sha = std::env::var("RELEASE_GIT_SHA").expect("RELEASE_GIT_SHA is required");
+        assert!(
+            sha.len() == 40
+                && sha.bytes().all(|byte| byte.is_ascii_hexdigit())
+                && sha.chars().all(|character| !character.is_ascii_uppercase())
+        );
+        let admin = admin().await;
+        let database = name("negative");
+        create(&admin, &database).await;
+        let database_url = url(&base(), &database);
+        let before = fp(&database_url).await;
+        let running = serve(&database_url);
+        let port = running.port;
+        let output = wait_for_exit(running, Duration::from_secs(25)).await;
+        let after = fp(&database_url).await;
+        assert!(!output.status.success());
+        assert_no_secret_egress(&output);
+        let startup_message = "Startup refused: required PostgreSQL migrations are missing.";
+        assert!(String::from_utf8_lossy(&output.stderr).contains(startup_message));
+        assert!(!health(port).await);
+        assert_eq!(before, after);
+        if let Some(path) = std::env::var_os("POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT") {
+            let value = serde_json::json!({
+                "schema_version": 1,
+                "feature": "postgres-release-safety",
+                "git_sha": sha,
+                "precondition": "migrations missing",
+                "command": "api-rust serve",
+                "exit_status": output.status.code().unwrap_or(1),
+                "startup_message": startup_message,
+                "listener_bound": false,
+                "workers_started": false,
+                "database_fingerprint_before": before,
+                "database_fingerprint_after": after
+            });
+            let bytes = serde_json::to_vec(&value).unwrap();
+            for forbidden in [
+                b"postgresql://".as_slice(),
+                b"DATABASE_URL".as_slice(),
+                b"password".as_slice(),
+                b"Bearer ".as_slice(),
+                b"unrelated-env-canary".as_slice(),
+                b"release-query-canary".as_slice(),
+            ] {
+                assert!(!bytes
+                    .windows(forbidden.len())
+                    .any(|window| window == forbidden));
+            }
+            std::fs::write(path, bytes).unwrap();
+        }
+        drop_db(&admin, &database).await;
+    });
 }

@@ -9,10 +9,13 @@ fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src")
 }
 fn files(paths: &[&str]) -> Vec<(PathBuf, String)> {
+    files_from(&root(), paths)
+}
+fn files_from(base: &Path, paths: &[&str]) -> Vec<(PathBuf, String)> {
     paths
         .iter()
         .map(|p| {
-            let q = root().join(p);
+            let q = base.join(p);
             (q.clone(), fs::read_to_string(q).expect("owned source path"))
         })
         .collect()
@@ -31,22 +34,42 @@ fn recursive(dir: &Path) -> Vec<(PathBuf, String)> {
     out
 }
 fn scan(paths: &[&str], forbidden: &[&str]) -> usize {
+    scan_from(&root(), paths, forbidden).expect("clean source boundary")
+}
+fn scan_from(base: &Path, paths: &[&str], forbidden: &[&str]) -> Result<usize, String> {
     let mut inspected = 0;
-    for (p, s) in files(paths) {
+    for (p, s) in files_from(base, paths) {
         inspected += 1;
         for needle in forbidden {
-            assert!(
-                !s.contains(needle),
-                "{} contains forbidden {needle}",
-                p.display()
-            );
+            if s.contains(needle) {
+                return Err(format!("{} contains forbidden {needle}", p.display()));
+            }
         }
     }
-    assert!(inspected > 0);
-    inspected
+    (inspected > 0)
+        .then_some(inspected)
+        .ok_or_else(|| "no source files inspected".to_string())
 }
-fn poisoned_scan(source: &str, forbidden: &[&str]) -> bool {
-    forbidden.iter().any(|needle| source.contains(needle))
+
+fn copied_source_mutation_is_rejected(path: &str, injection: &str, forbidden: &[&str]) {
+    let fixture = std::env::temp_dir().join(format!(
+        "convexa-postgres-release-safety-mutation-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let target = fixture.join(path);
+    fs::create_dir_all(target.parent().unwrap()).expect("create copied source graph");
+    let clean = fs::read_to_string(root().join(path)).expect("read source for mutation fixture");
+    fs::write(&target, &clean).expect("write clean copied source");
+    assert!(scan_from(&fixture, &[path], forbidden).is_ok());
+    fs::write(&target, format!("{clean}\n{injection}\n")).expect("inject forbidden source");
+    assert!(scan_from(&fixture, &[path], forbidden).is_err());
+    fs::write(&target, clean).expect("restore copied source");
+    assert!(scan_from(&fixture, &[path], forbidden).is_ok());
+    fs::remove_dir_all(&fixture).expect("clean copied source graph");
 }
 
 #[test]
@@ -68,10 +91,11 @@ fn writer_is_reachable_only_from_the_cli_entry_and_guard_bites() {
             .count()
             <= 1
     );
-    assert!(poisoned_scan(
+    copied_source_mutation_is_rejected(
+        "server.rs",
         "use crate::db::migration_runner;",
-        &["migration_runner"]
-    ));
+        &["migration_runner"],
+    );
     assert!(recursive(&root()).len() > 20);
 }
 
@@ -96,10 +120,11 @@ fn serve_graph_contains_no_ddl_transaction_or_advisory_lock_and_guard_bites() {
             ]
         ) > 0
     );
-    assert!(poisoned_scan(
-        "SELECT pg_try_advisory_lock($1)",
-        &["pg_try_advisory_lock"]
-    ));
+    copied_source_mutation_is_rejected(
+        "server.rs",
+        "const FORBIDDEN_SQL: &str = \"SELECT pg_try_advisory_lock($1)\";",
+        &["pg_try_advisory_lock"],
+    );
 }
 
 #[test]
@@ -119,7 +144,11 @@ fn migration_command_contains_no_app_state_router_vendor_cache_archive_or_worker
             ]
         ) > 0
     );
-    assert!(poisoned_scan("AppState::new(config).await", &["AppState"]));
+    copied_source_mutation_is_rejected(
+        "db/migration_runner.rs",
+        "fn forbidden_state() { AppState::new(config); }",
+        &["AppState"],
+    );
 }
 
 #[test]
@@ -157,10 +186,11 @@ fn terminal_diagnostics_and_receipt_paths_reject_secret_egress_and_guard_bites()
             &["connection_string", "sql_preview", "raw_driver_error"]
         ) > 0
     );
-    assert!(poisoned_scan(
-        "println!(\"password={password}\")",
-        &["password"]
-    ));
+    copied_source_mutation_is_rejected(
+        "db/migration_runner.rs",
+        "fn forbidden_secret() { println!(\"raw_driver_error\"); }",
+        &["raw_driver_error"],
+    );
 }
 
 #[test]
