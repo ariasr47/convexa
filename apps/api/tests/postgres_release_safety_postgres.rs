@@ -469,7 +469,9 @@ fn cli_refusal_failure_cancellation_and_secret_matrix() {
         let bad_timeout = migrate(&url(&base(), &bad_timeout_name), &[("MIGRATION_LOCK_TIMEOUT_SECONDS", "0")]);
         assert!(!bad_timeout.status.success()); assert_terminal_contract(&records(&bad_timeout));
         assert_eq!(terminal(&records(&bad_timeout))["reason"], "internal failure");
+        let bad_timeout_target = terminal(&records(&bad_timeout))["target_version"].clone();
         drop_db(&a, &bad_timeout_name).await;
+        assert_eq!(bad_timeout_target, 12, "a valid non-empty manifest establishes target version before timeout validation");
 
         // Every representable unsafe history shape is exercised against a disposable database.
         for (label, rows, reason) in [
@@ -670,6 +672,35 @@ fn serve_refusal_matrix_is_read_only_pre_bind_pre_worker() {
         assert!(!out.status.success()); assert!(String::from_utf8_lossy(&out.stderr).contains("Startup refused: the PostgreSQL schema could not be verified.")); assert_no_secret_egress(&out); assert_no_secret_values(&out, &[&role, password]); assert!(!listener_bound(port));
         sqlx::query(&format!("REVOKE CONNECT ON DATABASE \"{n}\" FROM \"{role}\"")).execute(&a).await.unwrap();
         sqlx::query(&format!("DROP ROLE IF EXISTS \"{role}\"")).execute(&a).await.unwrap(); drop_db(&a, &n).await;
+
+        // The role can classify the current ledger but cannot inspect one required table.
+        // Permission denial is unverifiable, not evidence of a deterministic schema mismatch.
+        let n = name("serve_probe_denied"); create(&a, &n).await; let d = url(&base(), &n); assert!(migrate(&d, &[]).status.success());
+        let role = format!("release_serve_probe_denied_{}", std::process::id()); let password = "serve-probe-denied-canary";
+        sqlx::query(&format!("CREATE ROLE \"{role}\" LOGIN PASSWORD '{password}'")).execute(&a).await.unwrap();
+        sqlx::query(&format!("GRANT CONNECT ON DATABASE \"{n}\" TO \"{role}\"")).execute(&a).await.unwrap();
+        let fixture = PgPool::connect(&d).await.unwrap();
+        sqlx::query(&format!("GRANT USAGE ON SCHEMA public TO \"{role}\"")).execute(&fixture).await.unwrap();
+        sqlx::query(&format!("GRANT SELECT ON schema_migrations TO \"{role}\"")).execute(&fixture).await.unwrap();
+        sqlx::query("REVOKE ALL ON users FROM PUBLIC").execute(&fixture).await.unwrap();
+        drop(fixture);
+        let r = serve(&credential_url(&base(), &n, &role, password)); let port = r.port; let out = wait_for_exit(r, Duration::from_secs(25)).await;
+        let stderr = String::from_utf8_lossy(&out.stderr).into_owned();
+        let status_success = out.status.success();
+        let leaked = [&role[..], password].iter().any(|canary| String::from_utf8_lossy(&out.stdout).contains(canary) || String::from_utf8_lossy(&out.stderr).contains(canary));
+        let bound = listener_bound(port);
+        let fixture = PgPool::connect(&d).await.unwrap();
+        sqlx::query(&format!("DROP OWNED BY \"{role}\""))
+            .execute(&fixture)
+            .await
+            .unwrap();
+        drop(fixture);
+        sqlx::query(&format!("REVOKE CONNECT ON DATABASE \"{n}\" FROM \"{role}\"")).execute(&a).await.unwrap();
+        sqlx::query(&format!("DROP ROLE IF EXISTS \"{role}\"")).execute(&a).await.unwrap(); drop_db(&a, &n).await;
+        assert!(!status_success);
+        assert!(stderr.contains("Startup refused: the PostgreSQL schema could not be verified."), "unexpected startup refusal: {stderr}");
+        assert!(!leaked, "restricted-role credentials leaked");
+        assert!(!bound, "listener bound despite unverifiable schema");
 
         let n = name("serve_incompatible"); create(&a, &n).await; let d = url(&base(), &n); assert!(migrate(&d, &[]).status.success());
         let p = PgPool::connect(&d).await.unwrap(); sqlx::query("DROP TABLE users CASCADE").execute(&p).await.unwrap(); drop(p);

@@ -79,6 +79,20 @@ const PROBES: &[&str] = &[
     "SELECT symbol,et_date,body_locator FROM session_chain_archive LIMIT 0",
 ];
 
+fn classify_probe_error(error: sqlx::Error) -> VerificationFailure {
+    let is_deterministic_schema_mismatch = match &error {
+        sqlx::Error::Database(database) => {
+            matches!(database.code().as_deref(), Some("42P01" | "42703"))
+        }
+        _ => false,
+    };
+    if is_deterministic_schema_mismatch {
+        VerificationFailure::Incompatible
+    } else {
+        VerificationFailure::Unverifiable
+    }
+}
+
 pub async fn verify_pool(
     pool: &sqlx::PgPool,
     manifest: &ValidatedManifest,
@@ -121,7 +135,7 @@ pub async fn verify_pool(
         sqlx::query(probe)
             .execute(pool)
             .await
-            .map_err(|_| VerificationFailure::Incompatible)?;
+            .map_err(classify_probe_error)?;
     }
     Ok(())
 }
@@ -153,7 +167,7 @@ pub(crate) async fn verify_connection(
             sqlx::query(probe)
                 .execute(&mut *connection)
                 .await
-                .map_err(|_| VerificationFailure::Incompatible)?;
+                .map_err(classify_probe_error)?;
         }
     }
     Ok(state)

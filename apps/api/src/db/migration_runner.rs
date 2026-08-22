@@ -340,7 +340,7 @@ async fn run_compiled_with_injection(
                 TerminalOutcome::ExecutionFailed,
                 TerminalReason::InternalFailure,
                 "Migration failed: the migration operation could not complete.",
-                None,
+                target,
                 None,
                 None,
                 started.elapsed().as_millis() as u64,
@@ -908,6 +908,45 @@ mod tests {
         assert!(timeout_from(Some("0")).is_err());
         assert!(timeout_from(Some("3601")).is_err());
         assert_eq!(timeout_from(None).unwrap(), Duration::from_secs(120));
+    }
+
+    #[tokio::test]
+    async fn invalid_manifest_refuses_before_database_access() {
+        let entries = [migrations::Migration {
+            version: 0,
+            name: "invalid_zero_version",
+            sql: "CREATE TABLE must_never_run(id INT);",
+        }];
+        let mut capture = Capture(Vec::new());
+        let injection = RunnerInjection {
+            manifest: Some(&entries),
+            verification: VerificationPort::AcceptAll,
+            commit: CommitPort::Database,
+        };
+        let result = run_compiled_with_injection(
+            &mut capture,
+            Some("postgresql://invalid-manifest-canary@127.0.0.1:1/must_not_connect"),
+            None,
+            injection,
+        )
+        .await;
+
+        assert_eq!(result.exit_code, 1);
+        assert_eq!(result.terminal.outcome, TerminalOutcome::ExecutionFailed);
+        assert_eq!(result.terminal.reason, TerminalReason::ManifestInvalid);
+        assert_eq!(result.terminal.target_version, None);
+        assert_eq!(
+            result.terminal.message,
+            "Migration failed: this release contains an invalid migration manifest."
+        );
+        assert_eq!(
+            capture
+                .0
+                .iter()
+                .filter(|event| matches!(event, CommandEvent::Terminal(_)))
+                .count(),
+            1
+        );
     }
     #[test]
     fn event_schema_state_and_copy_matrix_is_exact() {

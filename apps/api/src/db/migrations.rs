@@ -334,6 +334,7 @@ pub struct ValidatedManifest {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ManifestError {
     Empty,
+    NonPositiveVersion(i64),
     DuplicateVersion(i64),
     NonIncreasing(i64),
     EmptyName,
@@ -371,6 +372,9 @@ pub fn validate_manifest(entries: &[Migration]) -> Result<ValidatedManifest, Man
     let mut previous = None;
     let mut validated = Vec::with_capacity(entries.len());
     for entry in entries {
+        if entry.version <= 0 {
+            return Err(ManifestError::NonPositiveVersion(entry.version));
+        }
         if entry.name.trim().is_empty() {
             return Err(ManifestError::EmptyName);
         }
@@ -616,6 +620,21 @@ mod tests {
                 "{name} empty"
             );
             prev = v;
+        }
+    }
+
+    #[test]
+    fn invalid_manifest_rejects_non_positive_versions() {
+        for version in [0, -1] {
+            let entries = [Migration {
+                version,
+                name: "non_positive",
+                sql: "CREATE TABLE non_positive(id INT);",
+            }];
+            assert!(
+                validate_manifest(&entries).is_err(),
+                "manifest version {version} must be rejected"
+            );
         }
     }
 

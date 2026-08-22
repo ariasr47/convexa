@@ -17,15 +17,64 @@
 ## Release order (PostgreSQL)
 
 Build the target image, then Railway runs `api-rust postgres-migrate` as its pre-deploy command
-against the private Postgres service. A nonzero terminal outcome stops promotion. Only after that
-gate succeeds does the API replica start and pass `GET /api/health`. Startup is read-only: it never
-applies migrations. An exact prefix may leave earlier versions committed when a later version fails;
-inconsistent or future history is refused.
+against the private Postgres service. If its nonzero outcome is `unsafe database refused` or
+`execution failed`, stop promotion and do not start an API replica. Only `work applied` or
+`already current` permits replica startup, followed by `GET /api/health`. Startup is read-only: it
+never applies migrations. An exact prefix may leave earlier versions committed when a later version
+fails; inconsistent or future history is refused.
 
 The root GATE-S release conductor records the live Railway review (project, environment, service,
 deployment, SHA/image, config source, terminal object, Railway `SUCCESS`, and direct health `200`).
 QA independently validates the repository/process receipt; that machine receipt does not prove host
 observations.
+
+### Exact migration and startup copy
+
+Progress records use only the matching message below:
+
+| State                 | Exact message                               |
+| --------------------- | ------------------------------------------- |
+| `checking`            | `Checking PostgreSQL schema…`               |
+| `waiting`             | `Another migration run is active. Waiting…` |
+| `version_started`     | `Applying migration {version} ({name})…`    |
+| `version_committed`   | `Migration {version} ({name}) committed.`   |
+| `version_rolled_back` | `Migration {version} ({name}) rolled back.` |
+
+Terminal records use only these outcome/reason messages. `work applied` and `already current` exit
+zero. `unsafe database refused` and `execution failed` exit nonzero and stop promotion before any
+replica starts.
+
+| Outcome / reason                                   | Exact message                                                                                       |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `work applied` / `migrations applied`              | `Migrations applied. The PostgreSQL schema is ready for this release.`                              |
+| `already current` / `already current`              | `No migrations were needed. The PostgreSQL schema is ready for this release.`                       |
+| `unsafe database refused` / `inconsistent history` | `Migration refused: the database migration history is inconsistent with this release.`              |
+| `unsafe database refused` / `future history`       | `Migration refused: the database records migrations newer than this release.`                       |
+| `unsafe database refused` / `schema incompatible`  | `Migration refused: the PostgreSQL schema is incomplete or incompatible with this release.`         |
+| `execution failed` / `schema unverifiable`         | `Migration failed: the PostgreSQL schema could not be verified.`                                    |
+| `execution failed` / `postgres unavailable`        | `Migration failed: PostgreSQL is unavailable.`                                                      |
+| `execution failed` / `migration owner busy`        | `Migration failed: another migration run remained active past the wait deadline.`                   |
+| `execution failed` / `transaction failed`          | `Migration failed. The failing schema version was not committed.`                                   |
+| `execution failed` / `post-apply schema rejected`  | `Migrations were committed, but the resulting PostgreSQL schema was not accepted for this release.` |
+| `execution failed` / `commit status unverifiable`  | `Migration failed. Commit status could not be verified.`                                            |
+| `execution failed` / `manifest invalid`            | `Migration failed: this release contains an invalid migration manifest.`                            |
+| `execution failed` / `cancelled`                   | `Migration failed: the migration operation was cancelled.`                                          |
+| `execution failed` / `internal failure`            | `Migration failed: the migration operation could not complete.`                                     |
+
+Production startup refusal uses only the matching message and occurs before listener bind or worker
+start:
+
+| Condition                     | Exact message                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| Missing versions              | `Startup refused: required PostgreSQL migrations are missing.`                            |
+| Inconsistent history          | `Startup refused: the PostgreSQL migration history is inconsistent with this release.`    |
+| Future history                | `Startup refused: the database records migrations newer than this release.`               |
+| Deterministic schema mismatch | `Startup refused: the PostgreSQL schema is incomplete or incompatible with this release.` |
+| Unverifiable schema           | `Startup refused: the PostgreSQL schema could not be verified.`                           |
+
+`Highest committed version: {version}.` may appear only after a fresh ledger read proves an exact
+manifest prefix. A `version_rolled_back` progress message and the transaction-failure terminal message
+are permitted only after rollback or a fresh ledger read proves the failing version absent.
 
 | Piece                  | Host                                   | Process                                           |
 | ---------------------- | -------------------------------------- | ------------------------------------------------- |
