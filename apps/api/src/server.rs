@@ -33,7 +33,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
         {
             let schema = crate::runtime_guardrails::preflight::SchemaPreflight::run(
                 &validated.database_url,
-                Duration::from_secs(20),
+                crate::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT,
             )
             .await
             .map_err(|_| {

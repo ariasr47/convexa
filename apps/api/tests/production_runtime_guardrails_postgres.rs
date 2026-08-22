@@ -1,7 +1,8 @@
 #![cfg(feature = "postgres")]
 
 use api_rust::db::migrations::compiled_migrations;
-use api_rust::db::postgres::Pg;
+use api_rust::db::postgres::{Pg, POSTGRES_ACQUIRE_TIMEOUT};
+use api_rust::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT;
 use api_rust::services::auth::{AiSlot, SettingsPatch};
 use api_rust::services::chain_snapshot::{fixture_probe_bundle, serialize_capture, to_wire};
 use api_rust::services::scanner::{ScanRow, StructureSample};
@@ -14,6 +15,10 @@ use rand::RngCore;
 use sqlx::postgres::PgPoolOptions;
 use std::path::Path;
 use std::time::Duration;
+
+const HARNESS_COMPLETION_MARGIN: Duration = Duration::from_secs(2);
+const LISTENER_OBSERVATION_INTERVAL: Duration = Duration::from_millis(100);
+const LISTENER_CONNECT_BOUND: Duration = Duration::from_millis(250);
 
 struct EnvRestore(Vec<(String, Option<String>)>);
 
@@ -89,25 +94,69 @@ fn production_env(database_url: &str, root: &Path) -> EnvRestore {
     ])
 }
 
-async fn assert_serve_refuses_without_listener(mut config: api_rust::config::Config) {
+fn refusal_observation_bound() -> Duration {
+    PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT + HARNESS_COMPLETION_MARGIN
+}
+
+async fn assert_listener_closed(
+    address: std::net::SocketAddr,
+    stage: &'static str,
+    observation: &'static str,
+) {
+    let connected = tokio::time::timeout(
+        LISTENER_CONNECT_BOUND,
+        tokio::net::TcpStream::connect(address),
+    )
+    .await;
+    assert!(
+        !matches!(connected, Ok(Ok(_))),
+        "stage={stage} observation={observation}: failed startup opened listener {address}"
+    );
+}
+
+async fn assert_schema_refusal_without_listener(
+    stage: &'static str,
+    mut config: api_rust::config::Config,
+) {
     let reservation = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("reserve observation port");
     let address = reservation.local_addr().unwrap();
     drop(reservation);
     config.http_bind = address.to_string();
-    let result = tokio::time::timeout(Duration::from_secs(5), api_rust::server::serve(config))
-        .await
-        .expect("failed startup must be bounded");
-    assert!(result.is_err());
-    let connected = tokio::time::timeout(
-        Duration::from_millis(250),
-        tokio::net::TcpStream::connect(address),
-    )
-    .await;
+
+    assert_listener_closed(address, stage, "before_startup").await;
+    let started = tokio::time::Instant::now();
+    let deadline = tokio::time::sleep(refusal_observation_bound());
+    tokio::pin!(deadline);
+    let mut listener_checks = 1_u64;
+    let mut interval = tokio::time::interval(LISTENER_OBSERVATION_INTERVAL);
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    interval.tick().await;
+    let mut serve = Box::pin(api_rust::server::serve(config));
+    let result = loop {
+        tokio::select! {
+            result = &mut serve => break result,
+            _ = interval.tick() => {
+                assert_listener_closed(address, stage, "startup_pending").await;
+                listener_checks += 1;
+            }
+            _ = &mut deadline => {
+                panic!(
+                    "stage={stage}: startup exceeded mechanism-derived bound {:?}; elapsed={:?}; listener_closed_checks={listener_checks}",
+                    refusal_observation_bound(),
+                    started.elapsed(),
+                );
+            }
+        }
+    };
+
+    assert!(result.is_err(), "stage={stage}: startup must refuse");
+    assert_listener_closed(address, stage, "after_refusal").await;
+    listener_checks += 1;
     assert!(
-        !matches!(connected, Ok(Ok(_))),
-        "failed schema/bootstrap must leave no listener at {address}"
+        listener_checks >= 2,
+        "stage={stage}: listener refusal observation must be non-vacuous"
     );
 }
 
@@ -155,6 +204,8 @@ fn assert_production_runtime_shape() {
 #[tokio::test(flavor = "multi_thread")]
 async fn postgres_harness_runtime_supports_production_blocking_adapters() {
     assert_production_runtime_shape();
+    assert!(POSTGRES_ACQUIRE_TIMEOUT < PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT);
+    assert!(PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT < refusal_observation_bound());
     assert_eq!(
         tokio::task::block_in_place(|| "blocking-adapter-entered"),
         "blocking-adapter-entered"
@@ -220,7 +271,11 @@ async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
     drop(partial_pool);
     let partial_root = std::env::temp_dir().join(owned_name("partial_root"));
     let _partial_env = production_env(&partial_url, &partial_root);
-    assert_serve_refuses_without_listener(api_rust::config::Config::from_env().unwrap()).await;
+    assert_schema_refusal_without_listener(
+        "partial_current_schema",
+        api_rust::config::Config::from_env().unwrap(),
+    )
+    .await;
     drop(_partial_env);
     assert!(
         Pg::connect_strict(&partial_url).await.is_err(),
@@ -445,7 +500,11 @@ async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
         "postgresql://postgres:postgres@127.0.0.1:1/unreachable",
         &broken_root,
     );
-    assert_serve_refuses_without_listener(api_rust::config::Config::from_env().unwrap()).await;
+    assert_schema_refusal_without_listener(
+        "broken_replacement_database",
+        api_rust::config::Config::from_env().unwrap(),
+    )
+    .await;
     drop(_broken_env);
 
     for name in [&fresh_name, &partial_name, &future_name, &persistence_name] {

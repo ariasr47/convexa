@@ -4,6 +4,9 @@ use crate::db::postgres::Pg;
 use std::time::Duration;
 
 #[cfg(feature = "postgres")]
+pub const PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT: Duration = Duration::from_secs(20);
+
+#[cfg(feature = "postgres")]
 pub struct SchemaPreflight {
     pub pg: Pg,
     pub startup_id: String,

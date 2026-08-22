@@ -6,6 +6,8 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use tracing::{info, warn};
 
+pub const POSTGRES_ACQUIRE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
+
 /// Process-wide connection pool.
 #[derive(Clone)]
 pub struct Pg {
@@ -23,7 +25,7 @@ impl Pg {
             .max(1);
         let pool = PgPoolOptions::new()
             .max_connections(max)
-            .acquire_timeout(std::time::Duration::from_secs(15))
+            .acquire_timeout(POSTGRES_ACQUIRE_TIMEOUT)
             .connect(database_url)
             .await
             .map_err(|e| AppError::Config(format!("postgres connect: {e}")))?;
@@ -77,7 +79,7 @@ impl Pg {
 
         let pool = PgPoolOptions::new()
             .max_connections(max)
-            .acquire_timeout(std::time::Duration::from_secs(15))
+            .acquire_timeout(POSTGRES_ACQUIRE_TIMEOUT)
             .connect(database_url)
             .await
             .map_err(|e| AppError::Config(format!("postgres connect: {e}")))?;
