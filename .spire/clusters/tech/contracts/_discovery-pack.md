@@ -318,6 +318,32 @@ corpus, then we measure it; do **not** buy hist-chain to paper over prune.
 
 Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
 
+## Program — production-maturity (owner-directed 2026-08-21)
+<!-- atlas: theme=the-machine horizon=now -->
+Grouping only — **not** a pipeline feature. Owner approved the production-maturity
+recommendations as a program and asked to implement all of them. Deliver one independently
+verifiable slice per `BRIEF.md`; do not introduce Kubernetes, Kafka, a service mesh, GraphQL,
+or microservices without a measured bottleneck and a separate owner decision.
+
+| # | Item | Shape | Status |
+|---|---|---|---|
+| 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **NEXT — unblocked by #1** |
+| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | queued after #2 |
+| 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
+| 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
+| 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
+| 7 | `telemetry-slos` — trace correlation/export, service-level objectives, dashboards and alert runbook | backend/infra feature | queued after #6 |
+| 8 | `replica-safe-workers` — API/worker process split, singleton/job coordination, distributed rate limiting | backend/infra feature | queued after #7 |
+| 9 | `recovery-deployment-maturity` — backup/restore drill, staging/migration/smoke/rollback gates, declarative host config | ops feature | queued after #8; migrate `railway.json` watch paths to Railway IaC before 2026-12-01 once the translator preserves them |
+| 10 | `resilience-and-quant-assurance` — standardized upstream resilience plus property/fuzz/benchmark regression gates | backend/quant feature | queued after #9 |
+
+Current-state corrections folded into the program: CI/CD and production smoke already exist;
+session bodies already sit outside app Postgres on a filesystem body-store. Their successors
+harden those capabilities rather than rebuilding them.
+
+## Last GATE S — 2026-08-22 (`production-runtime-guardrails` — fail-closed production profile)
+> [discovery: 6 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Last GATE I — 2026-08-20 (canon repair → `project-context-s2-is-python-era`)
 <!-- atlas: theme=the-machine horizon=now -->
 Owner picked Architecture canon after keep-paid-books builds drained.
@@ -1311,7 +1337,7 @@ decision (Databento Blue Ocean, or Webull supplement).
 ## 7j. Persistent datastore — in-memory → Postgres (SHIPPED + ARCHIVED — backend infra fast-path)
 > [discovery: 31 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7k. Deploy — Railway + Cloudflare Pages + system-6 go-live review (SHIPPED artifacts; live-deploy owner-applied)
-> [discovery: 49 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 58 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 > [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7m. Ticker UX-polish program + ai-rec structured display (SHIPPED + ARCHIVED — FE-only, catch-up QA)
@@ -1683,4 +1709,4 @@ be exactly it.
   already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 704 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 711 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

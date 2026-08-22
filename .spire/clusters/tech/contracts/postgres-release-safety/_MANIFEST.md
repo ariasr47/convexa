@@ -1,0 +1,18 @@
+# postgres-release-safety — pipeline manifest
+Stage:        GATE PLAN — approved and executable
+Repos:        backend
+Brief:        BRIEF.md present
+Contracts:
+  - SPEC.md                    locked — approved 2026-08-22; 29 AC; NO_UI_CHANGE
+  - INTERFACE_CONTRACT.md      locked — release CLI protocol + unchanged health conformance
+  - PLAN.md                    locked — 6 backend tasks + 1 closer; 10 verification stages
+Open amendments: none
+QA (GATE Q):  pending
+Workers:      one sequential backend lane; no frontend lane
+Council:      R1 3 voices · R2 4 conflicts · R3 0 unresolved · R4 repair loop 1
+S2:           pass 1 found 1 Critical / 2 Important / 1 Minor; all closed
+              GATE Z evidence repairs ended with 0 Critical / 0 Important / 1 Minor
+GATE Z:       planner STOP exposed unprovable chronology; contract now splits immutable
+              repository/process validation from accountable live Railway review
+Gate-check:   contract_lint 0 errors / 2 pre-existing context-size warnings
+Last gateway:  GATE PLAN @ 2026-08-22

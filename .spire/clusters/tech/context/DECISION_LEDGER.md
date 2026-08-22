@@ -901,6 +901,13 @@ be exactly it.
 | `secret-encrypted-at-rest` | production-runtime-guardrails | C | versioned AES-GCM envelopes write with one active key and read only the addressed retired/legacy key; missing historical material degrades to no usable credential without overwriting ciphertext | yes |
 | `no-secrets-in-image` | production-runtime-guardrails | C | key rings, database URL, origin policy, and metrics token remain runtime-injected; diagnostics and receipts carry names/ids/classes only, never configured values | yes |
 | `operator-vs-trader-path-separation` | production-runtime-guardrails | C | startup validation and authenticated metrics remain outside trader routes; no dashboard surface, vendor fetch, bundle/SSE mutation, or scoring input is introduced | yes |
+| `production-fails-closed` | postgres-release-safety | I | release migration ownership is explicit; production startup may verify an already-current PostgreSQL schema but may not mutate it or bind while it is absent, behind, divergent, future, unusable, or unverifiable | yes |
+| `no-secrets-in-image` | postgres-release-safety | I | the migration command ships in the existing image but receives DATABASE_URL only at runtime and may emit only allowlisted, secret-free operational evidence | yes |
+| `cited-code-is-verified-not-assumed` | postgres-release-safety | I | live migrations.rs, Pg::connect_strict, server startup order, CI Postgres service, and railway.json were read at source; unverified Railway pre-start semantics remain a lane-check | yes |
+| `structural-over-prose-enforcement` | postgres-release-safety | C | a dedicated writer module and mutation-tested dependency guard exclude migration writes from server/state/worker construction; one transaction makes each version's DDL and ledger row atomic | yes |
+| `production-fails-closed` | postgres-release-safety | C | production serve performs only bounded read-only history/probe verification and exits before listener/workers for every non-current or unverifiable schema state | yes |
+| `no-secrets-in-image` | postgres-release-safety | C | command stdout is a closed JSONL schema and receipts reject secret-shaped fields; raw SQL, driver text, URLs, credentials, bound values, and arbitrary environment values are forbidden | yes |
+| `cited-code-is-verified-not-assumed` | postgres-release-safety | C | the contract names verified Rust and CI paths while requiring current host authority before asserting any Railway migration-before-start mechanism | yes |
 
 > **GATE S tally — chain-archive-object-store (2026-08-20).** **NO new graduations.** Conformance
 > `state/conformance/chain-archive-object-store.json`. Keep-paid-books builds complete; #5 clock running.

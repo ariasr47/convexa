@@ -1,0 +1,10 @@
+# postgres-release-safety — brief
+
+Goal:            Make every PostgreSQL schema change a deliberate release operation: one migration owner at a time, each version committed atomically with its ledger row, and a release command that can be run and observed independently before application replicas start. Production API startup must continue to refuse missing, partial, future, or unusable schemas without binding a listener or starting workers.
+Decision impact: N/A — internal production correctness. Success is observed as concurrent migration attempts serializing safely, failed statements leaving neither partial schema changes nor a recorded version, the release command producing closed machine-checkable outcomes, and application startup never becoming the accidental multi-replica migration coordinator.
+Feasibility:     pass
+Effort:          M
+Invariant watch: structural-over-prose-enforcement; no-secrets-in-image; cited-code-is-verified-not-assumed; production-fails-closed (watch); existing trading/quant outputs and score identity remain untouched
+Context tags:    architecture,backend,observability,security,invariants
+Source:          BACKLOG production-maturity program item 2; owner instruction to continue with roadmap items 1 and 2
+Considered:      postgres-release-safety (CHOSEN — next unblocked program slice; correctness H / effort M); api-contract-generation (sequenced next by owner, after this schema/release boundary is safe); supply-chain-automation (culled: program order, depends on stable release surfaces); capacity-baseline (culled: program order); remote-archive-body-store (culled: current volume-backed store is operational); telemetry-slos (culled: program order); replica-safe-workers (culled: migration ownership must be settled before scaling worker replicas); recovery-deployment-maturity (culled: broader deployment program follows its narrower release-safety prerequisite); resilience-and-quant-assurance (culled: program order); ai-rec-lab-p4 (blocked on the 4–6 ET-week session corpus gate)

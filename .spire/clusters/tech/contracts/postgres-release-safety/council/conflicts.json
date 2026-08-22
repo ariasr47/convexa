@@ -1,0 +1,75 @@
+{
+  "conflicts": [
+    {
+      "quote": "Migration failed. No schema version was committed.",
+      "source": "ux",
+      "why": "This is factually false when one version commits successfully and a later version fails: the required per-version transaction boundary preserves the earlier committed version while rolling back only the failing version. The sentence could cause an operator or automation author to infer that the entire invocation was rolled back.",
+      "proposal": "Scope the terminal claim to the failing version: the closed result should state that the failing version was not committed and may separately identify versions committed earlier in the same invocation. UX should choose the exact wording after that technical fact is preserved.",
+      "kind": "technical",
+      "conflict_id": "a7b7c448944b35185751734bb52599df195ed3e87f432d7f0fb50c1c4ea26b68",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "No schema version was committed.",
+      "source": "ux",
+      "why": "This is not true when one version commits successfully and a later version fails: the design deliberately preserves earlier committed versions while rolling back only the failing version. The unqualified copy would tell an operator that the whole invocation committed nothing even when it advanced the database partway.",
+      "proposal": "Use `The failing schema version was not committed.` and, when safely available, separately report the highest version that had already committed before the failure.",
+      "kind": "technical",
+      "conflict_id": "7ed24b8f28d71c09e47f183d5daec9f6f851d69a52b73047ad85be728291ad18",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Migration failed. No schema version was committed.",
+      "source": "ux",
+      "why": "This overstates the rollback boundary. The agreed behavior commits each successful version independently, so an invocation may commit earlier versions before a later version fails; a post-apply usability check may also fail after version commits. The sentence would tell the operator that nothing was committed when the database can prove otherwise.",
+      "proposal": "For a transaction failure, say `Migration failed. The failing schema version was not committed.` For a post-apply usability failure, use a separate reason-specific message that explicitly says migrations were committed but the resulting PostgreSQL schema could not be verified. Keep both as non-success terminal outcomes.",
+      "kind": "technical",
+      "conflict_id": "6f12209156ff14c9f242179a2fec8c3635a881545cb62291b41a179f51b0ec1e",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Migration refused: the database schema is incomplete.",
+      "source": "ux",
+      "why": "This renames every proposed partial or inconsistent state as incomplete. The architecture position distinguishes a diverged migration history, including reordered or renamed ledger entries, from an actually missing schema object and from an unusable schema. A renamed or reordered history is inconsistent with the release, but it is not necessarily incomplete.",
+      "proposal": "Use `Migration refused: the database migration history is inconsistent with this release.` for divergence. Reserve `incomplete` for a separately vouched missing-schema condition, and keep `could not be verified` for an unusable or unverifiable schema.",
+      "kind": "technical",
+      "conflict_id": "8d15f95578d65de0b8478ade5ff17038a744806450e54faf9c1163b518c3c84f",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: should lock-deadline exhaustion remain the top-level execution-failed outcome with a stable busy reason, preserving the four-state terminal set, or is a fifth top-level product outcome required?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: what exact failure wording should replace the invocation-wide no-version-committed claim while making clear that the failing version rolled back and earlier versions may remain committed?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: What exact refusal copy distinguishes a consistently-behind exact prefix, which is migratable, from a diverged or internally inconsistent ledger, which is refused, without calling both states partial?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Can the terminal diagnostic safely expose the highest committed version after a later version fails, without including raw SQL or driver text, so operator copy can acknowledge prior committed progress?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architecture: which closed observable reason distinguishes a migration-transaction failure from a post-apply usability failure after earlier version commits, so the terminal copy can state precisely what was and was not committed?"
+    }
+  ],
+  "agree_count": {
+    "architect": 4,
+    "pm": 4,
+    "ux": 3
+  }
+}
