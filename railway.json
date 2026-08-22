@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "watchPatterns": [
+      "/apps/api/**",
+      "/libs/quant-engine/**",
+      "/Cargo.toml",
+      "/Cargo.lock",
+      "/railway.json"
+    ]
+  }
+}
