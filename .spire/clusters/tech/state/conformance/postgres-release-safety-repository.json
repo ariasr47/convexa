@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "feature": "postgres-release-safety",
+  "scope": "repository_and_process_only",
+  "result": "PASS",
+  "git_sha": "4267be12a609a94c95a9760c51f443389abacd32",
+  "railway_config": {
+    "path": "railway.json",
+    "sha256": "4b375c4e2e21b833c72490b5e9f81bc485dab4c0ebc121932c6daebd0a091a88",
+    "pre_deploy_command": [
+      "api-rust postgres-migrate"
+    ],
+    "healthcheck_path": "/api/health"
+  },
+  "migration_terminal": {
+    "schema_version": 1,
+    "kind": "terminal",
+    "outcome": "already current",
+    "reason": "already current",
+    "message": "No migrations were needed. The PostgreSQL schema is ready for this release.",
+    "target_version": 12,
+    "highest_committed_version": 12,
+    "failing_version": null,
+    "elapsed_ms": 168
+  },
+  "migration_terminal_sha256": "16b5a44b4d4b4b5887a50dd65947cffc011aa68245f97a5b5a6c9591ae2ad409",
+  "negative_control": {
+    "command": "api-rust serve",
+    "database_fingerprint_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "database_fingerprint_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "exit_status": 1,
+    "feature": "postgres-release-safety",
+    "git_sha": "4267be12a609a94c95a9760c51f443389abacd32",
+    "listener_bound": false,
+    "precondition": "migrations missing",
+    "schema_version": 1,
+    "startup_message": "Startup refused: required PostgreSQL migrations are missing.",
+    "workers_started": false
+  },
+  "negative_control_sha256": "812df1af3f15e3b1b3e1a6590da322bba96d4d97d4f4d3a281c7d755bdbd0a11"
+}

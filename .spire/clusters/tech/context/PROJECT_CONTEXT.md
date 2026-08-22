@@ -360,6 +360,12 @@ startup-owner, live conformance, and volume-replacement receipts.
   via env** (host Variables / Pages env), values owner-entered; images run **non-root**. *(containerize-apps
   — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
   registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
+- **`[production-fails-closed]`** (promoted 2026-08-22, 2 binding) — a production process proves every
+  required durable and configuration prerequisite **before** workers or a network listener start.
+  Missing, stale, divergent, unavailable, or unverifiable state is a startup refusal, never a silent
+  development fallback. Production runtime configuration and schema readiness are explicit typed
+  boundaries; release migrations run in a separate serialized command, while normal serve remains
+  read-only. *(production-runtime-guardrails; postgres-release-safety.)*
 - **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding; **NARROWED to SIM-ONLY
   2026-07-16**) — every **simulated** entry flow (ghost trade, positions, act-on-rec/orders) launches **THE
   one shared `app/features/trading/TradeEntryDialog`**. A new **sim** entry shape is an additive **variant**
@@ -1126,6 +1132,15 @@ startup-owner, live conformance, and volume-replacement receipts.
   affirmative `grounding.card === 'local_rules'` only (not `key_source`). Analysis gains no second
   instance. `NO_BACKEND_CHANGE`. Closes `ai-rec-grounding` SPEC §9.5 (both halves). Product
   `fc3bb8c`–`a944bd2`. Seams → OPEN_THREADS §7ai.
+
+- **PostgreSQL release safety (`postgres-release-safety`, backend/infra, shipped 2026-08-22)** — the
+  release image exposes one canonical non-root `api-rust` executable; Railway runs the serialized,
+  advisory-lock-protected `postgres-migrate` command before replica startup. Each migration version is
+  atomic with its ledger row, normal production serve is read-only and refuses every non-current or
+  unverifiable schema before workers/listener, and closed JSONL/receipts exclude secrets. Real
+  PostgreSQL 17, same-revision negative controls, immutable config validation, exact Railway terminal
+  equality, one live replica, and independent health conformance all passed (QA 29/0/0). Standalone
+  conformance: `state/conformance/postgres-release-safety.json`.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

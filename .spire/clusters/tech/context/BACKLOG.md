@@ -60,8 +60,8 @@ or microservices without a measured bottleneck and a separate owner decision.
 | # | Item | Shape | Status |
 |---|---|---|---|
 | 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
-| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **PROMOTED 2026-08-22 — GATE I; design starting** |
-| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | queued after #2 |
+| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **NEXT — owner directed; starts after #2 archive** |
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
 | 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
@@ -73,6 +73,15 @@ or microservices without a measured bottleneck and a separate owner decision.
 Current-state corrections folded into the program: CI/CD and production smoke already exist;
 session bodies already sit outside app Postgres on a filesystem body-store. Their successors
 harden those capabilities rather than rebuilding them.
+
+## Last GATE S — 2026-08-22 (`postgres-release-safety` — serialized release migrations)
+<!-- atlas: theme=the-machine horizon=now -->
+Full pipeline completed with **GATE Q PASS 29/0/0**, independent live conformance 1/1, real
+PostgreSQL 17 migration/refusal matrices, and a repository/process receipt matched to direct Railway
+deployment evidence. The release image now exposes one canonical non-root executable; Railway runs
+the exact migration command before one healthy replica starts, and production serve remains
+read-only/fail-closed against schema drift. Archived to `_archive/postgres-release-safety/`;
+standalone conformance promoted. Program advances to #3 `api-contract-generation`.
 
 ## Last GATE S — 2026-08-22 (`production-runtime-guardrails` — fail-closed production profile)
 <!-- atlas: theme=prove-the-edge horizon=now -->

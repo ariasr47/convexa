@@ -1,0 +1,16 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "path_params": {},
+      "query": {},
+      "required": {
+        "status": "string",
+        "service": "string",
+        "durable_store": "string",
+        "metrics_auth": "string"
+      }
+    }
+  ]
+}

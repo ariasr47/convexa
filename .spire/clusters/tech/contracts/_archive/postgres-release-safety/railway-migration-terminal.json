@@ -1,0 +1,1 @@
+{"schema_version":1,"kind":"terminal","outcome":"already current","reason":"already current","message":"No migrations were needed. The PostgreSQL schema is ready for this release.","target_version":12,"highest_committed_version":12,"failing_version":null,"elapsed_ms":168}

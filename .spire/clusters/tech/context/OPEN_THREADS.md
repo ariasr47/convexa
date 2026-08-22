@@ -504,9 +504,18 @@ incomplete production profile before bind/workers, requires real Postgres schema
 origins, secure cookies, operator-only metrics, and addressed signing/encryption key rings. Railway is
 one replica/startup owner with `/data/session-chain-archive` mounted; same-SHA real-Postgres CI, live
 conformance, and an actual replacement-survival volume receipt all passed. Backend-only Railway watch
-paths prevent docs/evidence commits from redeploying the API. Next production-maturity slice:
-`postgres-release-safety`; the supported `railway.json` watch-path control must migrate to Railway IaC
-before 2026-12-01 once migration preserves that field.
+paths prevent docs/evidence commits from redeploying the API. The supported `railway.json` watch-path
+control must migrate to Railway IaC before 2026-12-01 once migration preserves that field.
+
+**✅ POSTGRESQL RELEASE SAFETY SHIPPED + ARCHIVED 2026-08-22.** The release image now installs one
+canonical non-root executable at `/usr/local/bin/api-rust`; Railway executes `api-rust
+postgres-migrate` from that same image before starting the replica. Migrations serialize with a
+PostgreSQL advisory lock and commit each version's DDL plus ledger row atomically; normal production
+serve performs bounded read-only verification and refuses every absent/behind/divergent/future/
+unavailable/unverifiable schema before workers or listener. Final fresh QA passed 29/0/0 against real
+PostgreSQL 17 and live Railway deployment `377e7c0f-9b99-4dc9-ae01-0fc36610644a` at SHA `4267be1`:
+one exact terminal object, SUCCESS, one replica, startup SHA through listener bind, and health 200.
+Next production-maturity slice: `api-contract-generation`.
 
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 Contracts archived at `.spire/clusters/tech/contracts/_archive/convexa-redesign/`. A **presentation-only** full-app
@@ -1688,6 +1697,10 @@ Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
   all config/secrets injected at runtime via env (host Variables / Pages env), never committed/baked/
   hardcoded; images run non-root. (containerize-apps Dockerfiles+.dockerignore; persistent-db `DATABASE_URL`;
   deploy real Railway push + Pages Function `API_ORIGIN`.) See PROJECT_CONTEXT §5.
+- **`[production-fails-closed]`** (promoted 2026-08-22, 2 binding) — production proves required durable
+  state and configuration before workers/listener; missing, stale, divergent, unavailable, or
+  unverifiable prerequisites refuse startup rather than falling back to development behavior.
+  *(production-runtime-guardrails · postgres-release-safety.)* See PROJECT_CONTEXT §5.
 - **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding) — every sim-entry flow launches
   THE one shared `app/features/trading/TradeEntryDialog`; new entry shapes are additive variants (props/modes),
   never a forked second dialog; dead forks deleted with zero-importer proof. (sim-entry-unification;
