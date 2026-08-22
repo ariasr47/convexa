@@ -80,6 +80,9 @@ enum Commands {
         #[arg(long)]
         bind: Option<String>,
     },
+    /// Apply the compiled PostgreSQL schema as an explicit release operation.
+    #[cfg(feature = "postgres")]
+    PostgresMigrate,
     /// Validate mounted-volume continuity across an operator-managed restart/redeploy.
     ProductionVolumeDrill {
         #[command(subcommand)]
@@ -312,6 +315,10 @@ async fn main() -> ExitCode {
         .init();
 
     let cli = Cli::parse();
+    #[cfg(feature = "postgres")]
+    if matches!(&cli.cmd, Commands::PostgresMigrate) {
+        return api_rust::db::postgres_migrate_cli().await;
+    }
     match run(cli).await {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
@@ -545,6 +552,8 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             }
             server::serve(cfg).await?;
         }
+        #[cfg(feature = "postgres")]
+        Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),
         Commands::ProductionVolumeDrill { phase } => {
             production_volume_drill(phase)?;
         }
@@ -813,7 +822,6 @@ async fn open_scan_store_for_cli(
     {
         if let Some(url) = cfg.database_url.as_ref().filter(|u| !u.trim().is_empty()) {
             let pg = api_rust::db::postgres::Pg::connect(url).await?;
-            pg.migrate().await?;
             return Ok(ScanStore::open_postgres(pg));
         }
     }

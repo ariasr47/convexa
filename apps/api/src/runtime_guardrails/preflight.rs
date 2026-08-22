@@ -13,16 +13,25 @@ pub struct SchemaPreflight {
 }
 
 #[cfg(feature = "postgres")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PreflightFailure {
     TimedOut,
     UnreachableOrUnusable,
+    Schema(String),
 }
 
 #[cfg(feature = "postgres")]
 impl std::fmt::Display for PreflightFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str("Postgres must be reachable and usable before startup.")
+        match self {
+            Self::TimedOut => {
+                formatter.write_str("Startup refused: the PostgreSQL schema could not be verified.")
+            }
+            Self::UnreachableOrUnusable => {
+                formatter.write_str("Startup refused: the PostgreSQL schema could not be verified.")
+            }
+            Self::Schema(message) => formatter.write_str(message),
+        }
     }
 }
 
@@ -37,7 +46,7 @@ impl SchemaPreflight {
         let pg = tokio::time::timeout(timeout, Pg::connect_strict(database_url))
             .await
             .map_err(|_| PreflightFailure::TimedOut)?
-            .map_err(|_| PreflightFailure::UnreachableOrUnusable)?;
+            .map_err(|error| PreflightFailure::Schema(error.to_string()))?;
         emit_startup_event("schema_preflight_finished", &startup_id);
         Ok(Self { pg, startup_id })
     }

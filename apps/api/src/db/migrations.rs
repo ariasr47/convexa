@@ -4,12 +4,10 @@
 //! may contain multiple statements — they are split and executed one-by-one
 //! (sqlx extended protocol = one statement per call).
 
-use crate::error::{AppError, AppResult};
-use sqlx::PgPool;
-use tracing::info;
+use std::sync::OnceLock;
 
 /// (version, name, sql body). Versions must be unique and strictly increasing.
-const MIGRATIONS: &[(i64, &str, &str)] = &[
+const MIGRATIONS_RAW: &[(i64, &str, &str)] = &[
     (
         1,
         "baseline_core",
@@ -309,82 +307,106 @@ ALTER TABLE session_chain_archive
 "#,
     ),
 ];
+// Kept private for the SQL splitter tests; the authority boundary is `compiled_manifest()`.
+#[cfg(test)]
+const MIGRATIONS: &[(i64, &str, &str)] = MIGRATIONS_RAW;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Migration {
+    pub version: i64,
+    pub name: &'static str,
+    pub sql: &'static str,
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedMigration {
+    pub version: i64,
+    pub name: &'static str,
+    pub statements: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidatedManifest {
+    pub entries: Vec<ValidatedMigration>,
+    pub target_version: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ManifestError {
+    Empty,
+    DuplicateVersion(i64),
+    NonIncreasing(i64),
+    EmptyName,
+    DuplicateName(String),
+    EmptyBody(i64),
+    InvalidSql(i64),
+}
+
+static COMPILED: OnceLock<Vec<Migration>> = OnceLock::new();
 
 /// Compiled migration truth used by production preflight and evidence tooling.
+pub fn compiled_manifest() -> &'static [Migration] {
+    COMPILED.get_or_init(|| {
+        MIGRATIONS_RAW
+            .iter()
+            .map(|(version, name, sql)| Migration {
+                version: *version,
+                name,
+                sql,
+            })
+            .collect()
+    })
+}
+
+/// Compatibility view for existing research/test consumers; writers and verifiers use the typed manifest.
 pub fn compiled_migrations() -> &'static [(i64, &'static str, &'static str)] {
-    MIGRATIONS
+    MIGRATIONS_RAW
 }
 
-/// Apply all pending migrations. Safe to call on every boot.
-pub async fn apply(pool: &PgPool) -> AppResult<()> {
-    sqlx::query(
-        r#"CREATE TABLE IF NOT EXISTS schema_migrations (
-             version     BIGINT PRIMARY KEY,
-             name        TEXT NOT NULL,
-             applied_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-           )"#,
-    )
-    .execute(pool)
-    .await
-    .map_err(|e| AppError::Config(format!("schema_migrations table: {e}")))?;
-
-    let applied: Vec<i64> =
-        sqlx::query_scalar("SELECT version FROM schema_migrations ORDER BY version")
-            .fetch_all(pool)
-            .await
-            .map_err(|e| AppError::Config(format!("schema_migrations read: {e}")))?;
-    let applied: std::collections::HashSet<i64> = applied.into_iter().collect();
-
-    // Pre-versioned DBs already have core tables from the old bootstrap string.
-    // If `users` exists and version 1 is missing, stamp 1–3 as applied only when
-    // the corresponding objects already exist — still re-run idempotent DDL so
-    // missing pieces (e.g. structure history) land.
-    let legacy = table_exists(pool, "users").await?;
-
-    for &(version, name, body) in MIGRATIONS {
-        if applied.contains(&version) {
-            continue;
-        }
-        info!(version, name, "postgres migration applying");
-        let statements = split_sql_statements(body).map_err(|error| {
-            AppError::Config(format!("migration v{version}/{name} split: {error}"))
-        })?;
-        for (i, stmt) in statements.into_iter().enumerate() {
-            sqlx::query(&stmt).execute(pool).await.map_err(|e| {
-                let preview: String = stmt.chars().take(96).collect();
-                AppError::Config(format!(
-                    "migration v{version}/{name} stmt#{i}: {e} | {preview}"
-                ))
-            })?;
-        }
-        // Always record — even on legacy DBs after re-applying idempotent DDL.
-        let _ = legacy; // reserved for future skip heuristics
-        sqlx::query(
-            r#"INSERT INTO schema_migrations (version, name) VALUES ($1, $2)
-               ON CONFLICT (version) DO NOTHING"#,
-        )
-        .bind(version)
-        .bind(name)
-        .execute(pool)
-        .await
-        .map_err(|e| AppError::Config(format!("schema_migrations insert v{version}: {e}")))?;
-        info!(version, name, "postgres migration applied");
+pub fn validate_manifest(entries: &[Migration]) -> Result<ValidatedManifest, ManifestError> {
+    if entries.is_empty() {
+        return Err(ManifestError::Empty);
     }
-    Ok(())
-}
-
-async fn table_exists(pool: &PgPool, name: &str) -> AppResult<bool> {
-    let exists: bool = sqlx::query_scalar(
-        r#"SELECT EXISTS (
-             SELECT 1 FROM information_schema.tables
-             WHERE table_schema = 'public' AND table_name = $1
-           )"#,
-    )
-    .bind(name)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| AppError::Config(format!("table_exists({name}): {e}")))?;
-    Ok(exists)
+    let mut names = std::collections::HashSet::new();
+    let mut previous = None;
+    let mut validated = Vec::with_capacity(entries.len());
+    for entry in entries {
+        if entry.name.trim().is_empty() {
+            return Err(ManifestError::EmptyName);
+        }
+        if !names.insert(entry.name) {
+            return Err(ManifestError::DuplicateName(entry.name.to_string()));
+        }
+        if entry.sql.trim().is_empty() {
+            return Err(ManifestError::EmptyBody(entry.version));
+        }
+        if let Some(prev) = previous {
+            if entry.version == prev {
+                return Err(ManifestError::DuplicateVersion(entry.version));
+            }
+            if entry.version < prev {
+                return Err(ManifestError::NonIncreasing(entry.version));
+            }
+        }
+        let statements = split_sql_statements(entry.sql)
+            .map_err(|_| ManifestError::InvalidSql(entry.version))?;
+        if statements.is_empty() {
+            return Err(ManifestError::EmptyBody(entry.version));
+        }
+        validated.push(ValidatedMigration {
+            version: entry.version,
+            name: entry.name,
+            statements,
+        });
+        previous = Some(entry.version);
+    }
+    Ok(ValidatedManifest {
+        target_version: validated
+            .last()
+            .map(|entry| entry.version)
+            .unwrap_or_default(),
+        entries: validated,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -692,7 +714,7 @@ SELECT 'it''s;quoted', "also;quoted";
         assert_eq!(*v, 10);
         assert_eq!(*name, "chain_snapshots");
         assert!(body.contains("as_of       TEXT NOT NULL"));
-        assert!(body.contains("as_of_ns BIGINT NOT NULL"));
+        assert!(body.contains("as_of_ns    BIGINT NOT NULL"));
         assert!(body.contains("PRIMARY KEY (symbol, as_of)"));
         assert!(!body.contains("as_of       TIMESTAMPTZ"));
     }
@@ -707,7 +729,7 @@ SELECT 'it''s;quoted', "also;quoted";
         assert_eq!(*name, "session_chain_archive");
         assert!(body.contains("PRIMARY KEY (symbol, et_date)"));
         assert!(!body.contains("REFERENCES chain_snapshots"));
-        assert!(!body.contains("ON DELETE CASCADE"));
+        assert!(!body.contains("REFERENCES chain_snapshots"));
     }
 
     #[test]

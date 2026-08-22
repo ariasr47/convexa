@@ -7,7 +7,16 @@
 //! shared Postgres plugin can serve both stacks during cutover if needed.
 
 #[cfg(feature = "postgres")]
+mod migration_runner;
+#[cfg(feature = "postgres")]
 pub mod migrations;
+#[cfg(feature = "postgres")]
+pub mod schema_verifier;
+
+#[cfg(feature = "postgres")]
+pub async fn postgres_migrate_cli() -> std::process::ExitCode {
+    migration_runner::run_stdout().await
+}
 #[cfg(feature = "postgres")]
 pub mod pg_auth;
 #[cfg(feature = "postgres")]

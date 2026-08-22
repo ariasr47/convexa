@@ -1,10 +1,9 @@
 //! Postgres pool + numbered schema migrations (sqlx, rustls).
 
-use crate::db::migrations;
+use crate::db::{migrations, schema_verifier};
 use crate::error::{AppError, AppResult};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
-use tracing::{info, warn};
 
 pub const POSTGRES_ACQUIRE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
 
@@ -30,41 +29,29 @@ impl Pg {
             .await
             .map_err(|e| AppError::Config(format!("postgres connect: {e}")))?;
         let pg = Self { pool };
-        let known: std::collections::HashSet<i64> = migrations::compiled_migrations()
-            .iter()
-            .map(|(v, _, _)| *v)
-            .collect();
-        let versions: Vec<i64> = sqlx::query_scalar("SELECT version FROM schema_migrations")
-            .fetch_all(&pg.pool)
+        let manifest = migrations::validate_manifest(migrations::compiled_manifest())
+            .map_err(|_| AppError::Config("postgres migration manifest is invalid".into()))?;
+        schema_verifier::verify_pool(&pg.pool, &manifest)
             .await
-            .unwrap_or_default();
-        if versions.iter().any(|v| !known.contains(v)) {
-            return Err(AppError::Config(
-                "postgres schema contains a future migration".into(),
-            ));
-        }
-        pg.migrate().await?;
-        let expected: std::collections::HashSet<i64> = known;
-        let recorded: std::collections::HashSet<i64> =
-            sqlx::query_scalar("SELECT version FROM schema_migrations")
-                .fetch_all(&pg.pool)
-                .await
-                .map_err(|e| AppError::Config(format!("schema versions: {e}")))?
-                .into_iter()
-                .collect();
-        if !expected.is_subset(&recorded) {
-            return Err(AppError::Config("postgres schema is incomplete".into()));
-        }
-        let _: i32 = sqlx::query_scalar("SELECT 1")
-            .fetch_one(&pg.pool)
-            .await
-            .map_err(|e| AppError::Config(format!("postgres readiness: {e}")))?;
-        for probe in REQUIRED_SCHEMA_PROBES {
-            sqlx::query(probe)
-                .execute(&pg.pool)
-                .await
-                .map_err(|_| AppError::Config("postgres current schema is unusable".into()))?;
-        }
+            .map_err(|failure| {
+                AppError::Config(match failure {
+                    schema_verifier::VerificationFailure::Missing => {
+                        "Startup refused: required PostgreSQL migrations are missing.".into()
+                    }
+                    schema_verifier::VerificationFailure::Inconsistent => {
+                        "Startup refused: the PostgreSQL migration history is inconsistent with this release.".into()
+                    }
+                    schema_verifier::VerificationFailure::Future => {
+                        "Startup refused: the database records migrations newer than this release.".into()
+                    }
+                    schema_verifier::VerificationFailure::Incompatible => {
+                        "Startup refused: the PostgreSQL schema is incomplete or incompatible with this release.".into()
+                    }
+                    schema_verifier::VerificationFailure::Unverifiable => {
+                        "Startup refused: the PostgreSQL schema could not be verified.".into()
+                    }
+                })
+            })?;
         Ok(pg)
     }
 
@@ -84,35 +71,6 @@ impl Pg {
             .await
             .map_err(|e| AppError::Config(format!("postgres connect: {e}")))?;
 
-        let pg = Self { pool };
-        if let Err(e) = pg.migrate().await {
-            warn!(error = %e, "postgres schema migrate failed (will retry on use)");
-        } else {
-            info!(max_connections = max, "postgres pool ready + schema ok");
-        }
-        Ok(pg)
-    }
-
-    pub async fn migrate(&self) -> AppResult<()> {
-        migrations::apply(&self.pool).await
+        Ok(Self { pool })
     }
 }
-
-#[cfg(feature = "postgres")]
-const REQUIRED_SCHEMA_PROBES: &[&str] = &[
-    "SELECT id,email,email_lower FROM users LIMIT 0",
-    "SELECT id,user_id,expires_at,absolute_expires_at,revoked FROM sessions LIMIT 0",
-    "SELECT user_id,theme,scan_view,risk_account_size,ai_provider,ai_model FROM user_settings LIMIT 0",
-    "SELECT user_id,kind,provider,ciphertext,last4 FROM credentials LIMIT 0",
-    "SELECT ticker,session_date,iv_value,iv_basis,basis_dte FROM iv_samples LIMIT 0",
-    "SELECT symbol,price,score,tier FROM scan_rows LIMIT 0",
-    "SELECT id FROM scan_heartbeat LIMIT 0",
-    "SELECT symbol,bundle_json FROM scan_bundles LIMIT 0",
-    "SELECT symbol,as_of,score_drivers FROM scan_structure_history LIMIT 0",
-    "SELECT symbol,as_of,horizon,label_version FROM structure_outcomes LIMIT 0",
-    "SELECT day_et,identity,count FROM ai_rec_daily LIMIT 0",
-    "SELECT user_id,schema_version,blob_json FROM user_book LIMIT 0",
-    "SELECT user_id,status FROM grok_links LIMIT 0",
-    "SELECT symbol,captured_at,body FROM chain_snapshots LIMIT 0",
-    "SELECT symbol,et_date,body_locator FROM session_chain_archive LIMIT 0",
-];

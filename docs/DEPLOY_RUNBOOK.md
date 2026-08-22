@@ -14,6 +14,19 @@
 
 ## Topology (current)
 
+## Release order (PostgreSQL)
+
+Build the target image, then Railway runs `api-rust postgres-migrate` as its pre-deploy command
+against the private Postgres service. A nonzero terminal outcome stops promotion. Only after that
+gate succeeds does the API replica start and pass `GET /api/health`. Startup is read-only: it never
+applies migrations. An exact prefix may leave earlier versions committed when a later version fails;
+inconsistent or future history is refused.
+
+The root GATE-S release conductor records the live Railway review (project, environment, service,
+deployment, SHA/image, config source, terminal object, Railway `SUCCESS`, and direct health `200`).
+QA independently validates the repository/process receipt; that machine receipt does not prove host
+observations.
+
 | Piece                  | Host                                   | Process                                           |
 | ---------------------- | -------------------------------------- | ------------------------------------------------- |
 | SPA                    | Cloudflare Pages (`convexa.pages.dev`) | Static Vite build + Pages Function proxy `/api/*` |

@@ -8,6 +8,17 @@ Health: `service=api-rust`, `durable_store=postgres`.
 
 ## Durable stores
 
+## Release migration gate
+
+The production order is: build the target image → Railway pre-deploy `api-rust postgres-migrate` →
+stop promotion on nonzero exit → start `serve` → check `/api/health`. The migration runner owns a
+single advisory-locked session and commits each version atomically. `serve` performs only read-only
+history/probe checks and refuses before binding when migrations are absent, inconsistent, future, or
+the schema is incompatible. Earlier versions can remain committed if a later version fails.
+
+The root GATE-S release conductor owns direct Railway review; QA independently checks the deterministic
+repository/process receipt. The receipt does not assert Railway status, image identity, or health.
+
 | Mode                          | When                                                               | Backends                                                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **JSON** (default local)      | No `DATABASE_URL`, or binary built without `--features postgres`   | `data/auth.json`, `data/iv_timeseries.json`, `data/scan.json`                                                                      |

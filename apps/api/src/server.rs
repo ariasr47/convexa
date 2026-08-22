@@ -36,12 +36,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
                 crate::runtime_guardrails::preflight::PRODUCTION_SCHEMA_PREFLIGHT_TIMEOUT,
             )
             .await
-            .map_err(|_| {
-                crate::error::AppError::Config(
-                    "Production startup refused\nDurable store: Postgres must be reachable and usable before startup."
-                        .into(),
-                )
-            })?;
+            .map_err(|failure| crate::error::AppError::Config(failure.to_string()))?;
             production_startup_id = Some(schema.startup_id.clone());
             crate::runtime_guardrails::archive::ArchiveRootProbe::run(
                 &validated.archive_root,

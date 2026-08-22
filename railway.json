@@ -8,5 +8,9 @@
       "/Cargo.lock",
       "/railway.json"
     ]
+  },
+  "deploy": {
+    "preDeployCommand": ["api-rust postgres-migrate"],
+    "healthcheckPath": "/api/health"
   }
 }
