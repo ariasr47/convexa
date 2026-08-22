@@ -103,13 +103,32 @@ fn set_session_cookie(state: &AppState, signed: &str) -> HeaderValue {
     HeaderValue::from_str(&v).unwrap_or_else(|_| HeaderValue::from_static(""))
 }
 
-fn clear_session_cookie() -> HeaderValue {
-    HeaderValue::from_static("gf_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax")
+fn clear_session_cookie(secure: bool) -> HeaderValue {
+    let secure = if secure { "; Secure" } else { "" };
+    let value = format!("gf_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax{secure}");
+    HeaderValue::from_str(&value).expect("fixed session clearing cookie is a valid header")
 }
 
 fn auth_err(e: AuthErr) -> Response {
     let status = StatusCode::from_u16(e.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     (status, Json(e.envelope())).into_response()
+}
+
+#[cfg(test)]
+mod production_cookie_tests {
+    use super::*;
+
+    #[test]
+    fn production_logout_clear_cookie_keeps_first_party_security_attributes() {
+        let header = clear_session_cookie(true);
+        let value = header.to_str().expect("cookie header");
+        assert!(value.starts_with("gf_session=; Path=/;"));
+        assert!(value.contains("; Secure"));
+        assert!(value.contains("; HttpOnly"));
+        assert!(value.contains("; SameSite=Lax"));
+        assert!(value.contains("; Max-Age=0"));
+        assert!(!value.to_ascii_lowercase().contains("domain="));
+    }
 }
 
 /// GET /api/auth/session — always 200 identity shape.
@@ -158,8 +177,10 @@ pub async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Respon
         Json(serde_json::json!({ "authenticated": false })),
     )
         .into_response();
-    res.headers_mut()
-        .insert(header::SET_COOKIE, clear_session_cookie());
+    res.headers_mut().insert(
+        header::SET_COOKIE,
+        clear_session_cookie(state.auth.cookie_secure()),
+    );
     res
 }
 
@@ -223,6 +244,7 @@ pub async fn put_settings(
 }
 
 /// Helper for other routes: require signed-in user.
+#[allow(clippy::result_large_err)]
 pub fn require_user(
     state: &AppState,
     headers: &HeaderMap,

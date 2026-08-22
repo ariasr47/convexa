@@ -4,7 +4,7 @@ use crate::config::{body_root_conflicts, Config};
 use crate::domain::{LivePrice, MarketPhase};
 use crate::error::AppResult;
 use crate::infrastructure::massive::MassiveRestClient;
-use crate::infrastructure::massive::StockStreamHub;
+use crate::infrastructure::massive::{StockStreamHub, StockStreamWorkerStarter};
 use crate::infrastructure::redis::PriceCache;
 use crate::middleware::RateLimiter;
 use crate::services::auth::{AuthConfig, AuthService, AuthStore};
@@ -47,6 +47,7 @@ pub struct AppState {
     pub iv_store: IvStore,
     /// Shared stocks WebSocket hub (Path A + multi-symbol SSE).
     pub stock_hub: StockStreamHub,
+    pub stock_worker: Arc<StockStreamWorkerStarter>,
     /// S5c SSE / hub-symbol ceilings (0 = off).
     pub live_capacity: LiveCapacity,
     /// Per-IP rate limiter for expensive public routes (process-local).
@@ -66,26 +67,116 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(config: Config) -> AppResult<Self> {
-        let prices = PriceCache::connect(config.redis_url.as_deref()).await?;
-        let massive = MassiveRestClient::new(&config)?;
-        let gex_cache = GexCache::new(config.clone());
-        let gex_flight = GexFlight::new();
-        let universe = match load_universe(&config.scan_universe_path) {
-            Ok(u) => Some(Arc::new(u)),
-            Err(e) => {
-                warn!(error = %e, "scanner universe not loaded");
-                None
-            }
-        };
+        #[cfg(feature = "postgres")]
+        {
+            Self::new_inner(config, None).await
+        }
+        #[cfg(not(feature = "postgres"))]
+        {
+            Self::new_inner(config).await
+        }
+    }
 
+    #[cfg(feature = "postgres")]
+    pub async fn new_production(
+        config: Config,
+        preflight_pg: crate::db::postgres::Pg,
+    ) -> AppResult<Self> {
+        Self::new_inner(config, Some(preflight_pg)).await
+    }
+
+    #[cfg(feature = "postgres")]
+    async fn new_inner(
+        config: Config,
+        preflight_pg: Option<crate::db::postgres::Pg>,
+    ) -> AppResult<Self> {
+        let production =
+            preflight_pg.is_some() || std::env::var("APP_ENV").ok().as_deref() == Some("prod");
+        Self::construct(config, production, preflight_pg).await
+    }
+
+    #[cfg(not(feature = "postgres"))]
+    async fn new_inner(config: Config) -> AppResult<Self> {
+        let production = std::env::var("APP_ENV").ok().as_deref() == Some("prod");
+        Self::construct(config, production).await
+    }
+
+    async fn construct(
+        config: Config,
+        production: bool,
+        #[cfg(feature = "postgres")] preflight_pg: Option<crate::db::postgres::Pg>,
+    ) -> AppResult<Self> {
+        if production {
+            if config
+                .database_url
+                .as_deref()
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
+            {
+                return Err(crate::error::AppError::Config(
+                    "production requires DATABASE_URL".into(),
+                ));
+            }
+            if !config.session_chain_archive_enabled
+                || config.session_chain_archive_body_root.is_none()
+            {
+                return Err(crate::error::AppError::Config(
+                    "production requires session archive and SESSION_CHAIN_ARCHIVE_BODY_ROOT"
+                        .into(),
+                ));
+            }
+            if config.metrics_secret_token.is_none() {
+                return Err(crate::error::AppError::Config(
+                    "production requires METRICS_SECRET_TOKEN".into(),
+                ));
+            }
+            for name in [
+                "AUTH_SESSION_ACTIVE_KEY_ID",
+                "AUTH_SESSION_KEYS_JSON",
+                "AI_KEY_ENCRYPTION_ACTIVE_KEY_ID",
+                "AI_KEY_ENCRYPTION_KEYS_JSON",
+            ] {
+                if std::env::var(name)
+                    .ok()
+                    .filter(|v| !v.trim().is_empty())
+                    .is_none()
+                {
+                    return Err(crate::error::AppError::Config(format!(
+                        "production requires {name}"
+                    )));
+                }
+            }
+            if std::env::var("ALLOWED_BROWSER_ORIGINS")
+                .ok()
+                .and_then(|s| {
+                    crate::runtime_guardrails::origins::AllowedBrowserOrigins::parse(&s).ok()
+                })
+                .is_none()
+            {
+                return Err(crate::error::AppError::Config(
+                    "production requires valid ALLOWED_BROWSER_ORIGINS".into(),
+                ));
+            }
+        }
         // Durable backends: Postgres when built with `--features postgres` + DATABASE_URL;
         // otherwise JSON-on-disk (local/dev). Open the pool BEFORE scan so scan can share it.
         #[cfg(feature = "postgres")]
-        let pg = if let Some(url) = config.database_url.as_deref() {
-            match crate::db::postgres::Pg::connect(url).await {
+        let pg = if let Some(preflight_pg) = preflight_pg {
+            info!(backend = "postgres", "durable stores: preflighted postgres");
+            Some(preflight_pg)
+        } else if let Some(url) = config.database_url.as_deref() {
+            let result = if production {
+                crate::db::postgres::Pg::connect_strict(url).await
+            } else {
+                crate::db::postgres::Pg::connect(url).await
+            };
+            match result {
                 Ok(p) => {
                     info!(backend = "postgres", "durable stores: postgres");
                     Some(p)
+                }
+                Err(e) if production => {
+                    return Err(e);
                 }
                 Err(e) => {
                     warn!(error = %e, "postgres connect failed; falling back to JSON stores");
@@ -98,6 +189,11 @@ impl AppState {
         };
         #[cfg(not(feature = "postgres"))]
         {
+            if production {
+                return Err(crate::error::AppError::Config(
+                    "production binary must be built with postgres feature".into(),
+                ));
+            }
             if config.database_url.is_some() {
                 warn!(
                     "DATABASE_URL set but binary built without `--features postgres`; \
@@ -105,6 +201,18 @@ impl AppState {
                 );
             }
         }
+
+        let prices = PriceCache::connect(config.redis_url.as_deref()).await?;
+        let massive = MassiveRestClient::new(&config)?;
+        let gex_cache = GexCache::new(config.clone());
+        let gex_flight = GexFlight::new();
+        let universe = match load_universe(&config.scan_universe_path) {
+            Ok(u) => Some(Arc::new(u)),
+            Err(e) => {
+                warn!(error = %e, "scanner universe not loaded");
+                None
+            }
+        };
 
         // Scan store: Postgres when the pool is up (multi-replica safe); else JSON file.
         #[cfg(feature = "postgres")]
@@ -165,7 +273,8 @@ impl AppState {
         #[cfg(not(feature = "postgres"))]
         let iv_store = IvStore::open(&config.iv_store_path)?;
 
-        let stock_hub = StockStreamHub::spawn(&config);
+        let (stock_hub, stock_worker) = StockStreamHub::dormant(&config);
+        let stock_worker = Arc::new(StockStreamWorkerStarter::new(stock_worker));
         // Warm hub with configured symbols so progressive/scanner paths get live ticks sooner.
         let _ = stock_hub.subscribe(&config.warm_symbols).await;
 
@@ -214,6 +323,12 @@ impl AppState {
             }
         })
         .await;
+        if production && !session_archive.is_enabled() {
+            return Err(crate::error::AppError::Config(
+                "Production startup refused\nArchive body root: the configured path must be writable and flushable before startup."
+                    .into(),
+            ));
+        }
 
         Ok(Self {
             config: Arc::new(config),
@@ -227,6 +342,7 @@ impl AppState {
             broker,
             iv_store,
             stock_hub,
+            stock_worker,
             live_capacity,
             rate_limiter,
             chain_snapshots,
@@ -246,6 +362,32 @@ impl AppState {
         let mut config = test_stub_config();
         config.chain_snapshot_enabled = chain_snapshots.is_enabled();
         config.session_chain_archive_enabled = session_archive.is_enabled();
+        Self::for_tests_with_config(config, chain_snapshots, session_archive).await
+    }
+
+    /// Hermetic state using production transport policy and the real router-facing services.
+    /// It deliberately uses in-memory metadata and never represents a production bootstrap;
+    /// the Postgres suite separately constructs production `AppState` values.
+    pub async fn for_runtime_guardrail_tests(metrics_token: String) -> AppResult<Self> {
+        let mut config = test_stub_config();
+        config.auth_cookie_secure = true;
+        config.auth_cookie_samesite = "Lax".into();
+        config.metrics_secret_token = Some(metrics_token);
+        config.chain_snapshot_enabled = true;
+        config.session_chain_archive_enabled = true;
+        Self::for_tests_with_config(
+            config,
+            ChainSnapshotStore::memory(),
+            SessionChainArchive::memory(),
+        )
+        .await
+    }
+
+    async fn for_tests_with_config(
+        config: Config,
+        chain_snapshots: ChainSnapshotStore,
+        session_archive: SessionChainArchive,
+    ) -> AppResult<Self> {
         let prices = PriceCache::connect(None).await?;
         let massive = MassiveRestClient::new(&config)?;
         let gex_cache = GexCache::new(config.clone());
@@ -267,6 +409,7 @@ impl AppState {
             std::process::id(),
             Utc::now().timestamp_nanos_opt().unwrap_or(0)
         ));
+        let (stock_hub, stock_worker) = StockStreamHub::dormant(&test_stub_config());
         Ok(Self {
             config: Arc::new(config),
             prices,
@@ -278,7 +421,8 @@ impl AppState {
             auth,
             broker: BrokerBookService::new(get_positions_provider()),
             iv_store: IvStore::open(&iv_path)?,
-            stock_hub: StockStreamHub::spawn(&test_stub_config()),
+            stock_hub,
+            stock_worker: Arc::new(StockStreamWorkerStarter::new(stock_worker)),
             live_capacity: LiveCapacity::new(0, 0),
             rate_limiter: Arc::new(RateLimiter::new(0)),
             chain_snapshots,
@@ -291,7 +435,7 @@ impl AppState {
     }
 }
 
-fn test_stub_config() -> Config {
+pub(crate) fn test_stub_config() -> Config {
     use crate::config::DataFeed;
     use std::collections::HashSet;
     use std::path::PathBuf;
@@ -695,6 +839,10 @@ impl GexCache {
 
     pub async fn len(&self) -> usize {
         self.inner.read().await.len()
+    }
+
+    pub async fn is_empty(&self) -> bool {
+        self.inner.read().await.is_empty()
     }
 
     pub async fn metrics_snapshot(&self) -> CacheMetricsSnapshot {

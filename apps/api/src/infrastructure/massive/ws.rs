@@ -10,6 +10,7 @@ use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tracing::{debug, error, info, warn};
@@ -42,6 +43,14 @@ enum HubCmd {
 impl StockStreamHub {
     /// Spawn the connection supervisor. Call once per process.
     pub fn spawn(cfg: &Config) -> Self {
+        let (hub, worker) = Self::dormant(cfg);
+        worker.spawn();
+        hub
+    }
+
+    /// Construct the hub without starting any network task. The caller owns the worker
+    /// and must spawn it after its listener/readiness boundary.
+    pub fn dormant(cfg: &Config) -> (Self, StockStreamWorker) {
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
         let (event_tx, _) = broadcast::channel(BROADCAST_CAPACITY);
         let inner = Arc::new(HubInner {
@@ -51,13 +60,16 @@ impl StockStreamHub {
             event_tx: event_tx.clone(),
             symbols: RwLock::new(HashSet::new()),
         });
-        let run_inner = Arc::clone(&inner);
-        tokio::spawn(async move {
-            if let Err(e) = connection_loop(run_inner, cmd_rx, event_tx).await {
-                error!(error = %e, "stock stream hub exited");
-            }
-        });
-        Self { inner }
+        (
+            Self {
+                inner: Arc::clone(&inner),
+            },
+            StockStreamWorker {
+                inner,
+                cmd_rx,
+                event_tx,
+            },
+        )
     }
 
     /// Ensure `symbols` are on the shared socket.
@@ -102,6 +114,40 @@ impl StockStreamHub {
 
     pub fn shutdown(&self) {
         let _ = self.inner.cmd_tx.send(HubCmd::Shutdown);
+    }
+}
+
+pub struct StockStreamWorker {
+    inner: Arc<HubInner>,
+    cmd_rx: mpsc::UnboundedReceiver<HubCmd>,
+    event_tx: broadcast::Sender<StreamEvent>,
+}
+
+/// Bind-safe worker holder. Construction is side-effect free; `start` is the only
+/// operation that releases the vendor supervisor after the listener is ready.
+pub struct StockStreamWorkerStarter {
+    worker: Mutex<Option<StockStreamWorker>>,
+}
+
+impl StockStreamWorkerStarter {
+    pub fn new(worker: StockStreamWorker) -> Self {
+        Self {
+            worker: Mutex::new(Some(worker)),
+        }
+    }
+    pub fn start(&self) {
+        if let Some(worker) = self.worker.lock().expect("worker mutex").take() {
+            worker.spawn();
+        }
+    }
+}
+impl StockStreamWorker {
+    pub fn spawn(self) {
+        tokio::spawn(async move {
+            if let Err(e) = connection_loop(self.inner, self.cmd_rx, self.event_tx).await {
+                error!(error=%e,"stock stream hub exited");
+            }
+        });
     }
 }
 
@@ -192,7 +238,7 @@ async fn run_session(
         "params": inner.api_key,
     });
     write
-        .send(Message::Text(auth.to_string().into()))
+        .send(Message::Text(auth.to_string()))
         .await
         .map_err(|e| AppError::Massive(format!("ws auth send: {e}")))?;
 
@@ -282,7 +328,7 @@ async fn handle_text(
                 *authorized = true;
                 info!("stock websocket authenticated");
                 // Flush pending subscribes
-                let cmds: Vec<_> = pending.drain(..).collect();
+                let cmds = std::mem::take(pending);
                 for cmd in cmds {
                     if let HubCmd::Subscribe(syms) = cmd {
                         send_subscribe(write, &syms).await?;
@@ -320,7 +366,7 @@ async fn send_subscribe(
     });
     info!(symbols = ?symbols, "ws subscribe");
     write
-        .send(Message::Text(msg.to_string().into()))
+        .send(Message::Text(msg.to_string()))
         .await
         .map_err(|e| AppError::Massive(format!("ws subscribe: {e}")))?;
     Ok(())
@@ -343,7 +389,7 @@ async fn send_unsubscribe(
         "params": params.join(","),
     });
     write
-        .send(Message::Text(msg.to_string().into()))
+        .send(Message::Text(msg.to_string()))
         .await
         .map_err(|e| AppError::Massive(format!("ws unsubscribe: {e}")))?;
     Ok(())

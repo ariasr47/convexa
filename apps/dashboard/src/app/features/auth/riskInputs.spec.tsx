@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider } from './AuthContext';
 import { AuthDialogProvider } from './AuthDialogProvider';
 import { RISK_INPUTS_COPY as C } from './copy';
+import { THEME_PAINT_KEY } from './firstPaintTheme';
 import { RiskInputsSection } from './RiskInputsSection';
 import {
   installAuthBackend,
@@ -49,6 +50,15 @@ function mountSignedIn() {
       <RiskInputsSection />
     </Mount>,
   );
+}
+
+function nonThemeDurableEntries(): Array<[string, string | null]> {
+  return Array.from({ length: localStorage.length }, (_, index) => {
+    const key = localStorage.key(index);
+    return [key ?? '', key === null ? null : localStorage.getItem(key)] as [string, string | null];
+  })
+    .filter(([key]) => key !== THEME_PAINT_KEY)
+    .sort(([a], [b]) => a.localeCompare(b));
 }
 
 describe('the section helper — egress disclosure precedes BOTH fields (AC-16, U-1/U-1b)', () => {
@@ -212,7 +222,11 @@ describe('anonymous — aria-disabled + still-focusable, never the HTML disabled
     account.focus();
     expect(account).toHaveFocus();
     expect(backend.calls.settingsPut).toBe(0);
-    expect(localStorage.length).toBe(0);
+    expect(localStorage.getItem(THEME_PAINT_KEY)).not.toBeNull();
+    localStorage.setItem('convexa.settings.poison', 'must be observed');
+    expect(nonThemeDurableEntries()).toEqual([['convexa.settings.poison', 'must be observed']]);
+    localStorage.removeItem('convexa.settings.poison');
+    expect(nonThemeDurableEntries()).toEqual([]);
   });
 });
 

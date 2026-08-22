@@ -37,7 +37,7 @@ Optional later: **staging** = prod-like Railway service with synthetic users onl
 Use a single label:
 
 ```text
-APP_ENV=dev|test|prod
+APP_ENV=dev|test|prod|staging
 ```
 
 Host variable groups (Railway, GitHub Actions, local files) should set the same name.
@@ -138,3 +138,16 @@ cp apps/api/.env.example apps/api/.env
 npm run serve:api
 curl -sS http://127.0.0.1:8000/api/health
 ```
+
+## Production runtime guardrails
+
+Production is fail-closed before the API listener binds. Set `APP_ENV=prod`, build with
+`--features postgres`, provide `DATABASE_URL`, an explicit `ALLOWED_BROWSER_ORIGINS`,
+`METRICS_SECRET_TOKEN` (base64url, at least 32 decoded bytes), addressed session/encryption key
+maps, and `SESSION_CHAIN_ARCHIVE_BODY_ROOT`. Production does not fall back to JSON, SQLite,
+memory, wildcard CORS, or ephemeral key material.
+
+The archive-root probe proves only path reachability and writeability. For release evidence, keep
+replicas at one during startup, run `api-rust production-volume-drill prepare`, replace/restart the
+service, then run `verify` and retain the generated receipt with before/after platform evidence.
+Health is not volume-durability proof; deployment and QA evidence remain required for AC7/AC26.

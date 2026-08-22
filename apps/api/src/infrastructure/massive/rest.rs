@@ -11,6 +11,8 @@ use quant_engine::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 /// HTTP client for Massive REST (`https://api.massive.com`).
@@ -19,6 +21,7 @@ pub struct MassiveRestClient {
     http: reqwest::Client,
     api_key: String,
     base: String,
+    requests: Arc<AtomicU64>,
 }
 
 impl MassiveRestClient {
@@ -31,7 +34,13 @@ impl MassiveRestClient {
             http,
             api_key: cfg.massive_api_key.clone(),
             base: cfg.rest_base.clone(),
+            requests: Arc::new(AtomicU64::new(0)),
         })
+    }
+
+    /// Number of outbound vendor HTTP attempts made through this client instance.
+    pub fn request_count(&self) -> u64 {
+        self.requests.load(Ordering::Relaxed)
     }
 
     /// Fetch full options chain + phase-correct GEX spot (Python-compatible).
@@ -675,6 +684,7 @@ impl MassiveRestClient {
         // Redact key in logs
         let safe = url.split("apiKey=").next().unwrap_or(url);
         debug!(url = %safe, "massive GET");
+        self.requests.fetch_add(1, Ordering::Relaxed);
         let resp = self.http.get(url).send().await?;
         let status = resp.status();
         if !status.is_success() {

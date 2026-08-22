@@ -1,0 +1,1 @@
+{"status":"ok","service":"api-rust","durable_store":"postgres","metrics_auth":"required"}
