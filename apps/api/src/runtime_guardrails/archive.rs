@@ -111,14 +111,13 @@ fn uuid_bytes() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{mpsc, Arc, Condvar, Mutex};
 
     #[derive(Clone, Copy)]
     enum InjectedFault {
         ReadOnly,
         NonFlushable,
         Readback,
-        Timed,
     }
 
     struct FaultPort {
@@ -131,9 +130,6 @@ mod tests {
             *self.sentinel.lock().unwrap() = Some(sentinel.to_path_buf());
             if matches!(self.fault, InjectedFault::ReadOnly) {
                 return Err(ArchiveProbeFailure::Unreachable);
-            }
-            if matches!(self.fault, InjectedFault::Timed) {
-                std::thread::sleep(Duration::from_millis(100));
             }
             Ok(())
         }
@@ -152,6 +148,78 @@ mod tests {
             Ok(())
         }
     }
+
+    struct BlockingPort {
+        sentinel: Arc<Mutex<Option<PathBuf>>>,
+        entered: mpsc::SyncSender<()>,
+        release: Arc<(Mutex<bool>, Condvar)>,
+        finished: mpsc::SyncSender<()>,
+    }
+
+    impl ArchiveProbePort for BlockingPort {
+        fn before_create(&self, sentinel: &Path) -> Result<(), ArchiveProbeFailure> {
+            *self.sentinel.lock().unwrap() = Some(sentinel.to_path_buf());
+            self.entered.send(()).unwrap();
+            let (released, wake) = &*self.release;
+            let mut released = released.lock().unwrap();
+            while !*released {
+                released = wake.wait(released).unwrap();
+            }
+            Ok(())
+        }
+    }
+
+    impl Drop for BlockingPort {
+        fn drop(&mut self) {
+            let _ = self.finished.send(());
+        }
+    }
+
+    async fn receive_bounded(
+        receiver: mpsc::Receiver<()>,
+        label: &'static str,
+    ) -> Result<(), mpsc::RecvTimeoutError> {
+        tokio::task::spawn_blocking(move || receiver.recv_timeout(Duration::from_secs(2)))
+            .await
+            .unwrap_or_else(|error| panic!("{label} signal waiter must join: {error}"))
+    }
+
+    async fn assert_blocked_probe_times_out_and_cleans(root: &Path) {
+        let sentinel = Arc::new(Mutex::new(None));
+        let release = Arc::new((Mutex::new(false), Condvar::new()));
+        let (entered_tx, entered_rx) = mpsc::sync_channel(1);
+        let (finished_tx, finished_rx) = mpsc::sync_channel(1);
+        let result = ArchiveRootProbe::run_with_port(
+            root,
+            Duration::from_millis(10),
+            BlockingPort {
+                sentinel: Arc::clone(&sentinel),
+                entered: entered_tx,
+                release: Arc::clone(&release),
+                finished: finished_tx,
+            },
+        )
+        .await;
+
+        let entered = receive_bounded(entered_rx, "blocking fault entered").await;
+        let (released, wake) = &*release;
+        *released.lock().unwrap() = true;
+        wake.notify_all();
+        let finished = receive_bounded(finished_rx, "timed task finished").await;
+
+        assert!(entered.is_ok(), "blocking fault entered signal must arrive");
+        assert!(finished.is_ok(), "timed task finished signal must arrive");
+        assert_eq!(result, Err(ArchiveProbeFailure::TimedOut));
+        let path = sentinel
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("blocking fault must observe the sentinel path");
+        assert!(!path.exists(), "timed task must clean its sentinel");
+        assert!(std::fs::read_dir(root).unwrap().next().is_none());
+        let _ = std::fs::remove_dir(root);
+    }
+
     #[tokio::test]
     async fn probe_flushes_and_cleans_sentinel() {
         let root = std::env::temp_dir().join(format!("convexa-archive-probe-{}", uuid_bytes()));
@@ -179,19 +247,11 @@ mod tests {
 
         let timeout_root =
             std::env::temp_dir().join(format!("convexa-archive-timeout-{}", uuid_bytes()));
-        assert_eq!(
-            ArchiveRootProbe::run(&timeout_root, Duration::ZERO).await,
-            Err(ArchiveProbeFailure::TimedOut)
-        );
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        if timeout_root.exists() {
-            assert!(std::fs::read_dir(&timeout_root).unwrap().next().is_none());
-            let _ = std::fs::remove_dir(timeout_root);
-        }
+        assert_blocked_probe_times_out_and_cleans(&timeout_root).await;
     }
 
     #[tokio::test]
-    async fn injected_read_only_non_flushable_readback_and_timeout_faults_cleanup() {
+    async fn injected_read_only_non_flushable_and_readback_faults_cleanup() {
         for (fault, expected) in [
             (InjectedFault::ReadOnly, ArchiveProbeFailure::Unreachable),
             (InjectedFault::NonFlushable, ArchiveProbeFailure::Unusable),
@@ -214,26 +274,5 @@ mod tests {
             }
             let _ = std::fs::remove_dir(&root);
         }
-
-        let root = std::env::temp_dir().join(format!("convexa-archive-time-port-{}", uuid_bytes()));
-        let sentinel = Arc::new(Mutex::new(None));
-        let result = ArchiveRootProbe::run_with_port(
-            &root,
-            Duration::from_millis(10),
-            FaultPort {
-                fault: InjectedFault::Timed,
-                sentinel: Arc::clone(&sentinel),
-            },
-        )
-        .await;
-        assert_eq!(result, Err(ArchiveProbeFailure::TimedOut));
-        tokio::time::sleep(Duration::from_millis(150)).await;
-        if let Some(path) = sentinel.lock().unwrap().as_ref() {
-            assert!(
-                !path.exists(),
-                "timed task must eventually clean its sentinel"
-            );
-        }
-        let _ = std::fs::remove_dir(&root);
     }
 }
