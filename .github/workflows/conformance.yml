@@ -90,6 +90,7 @@ jobs:
 
       - name: Serve api-rust (JSON stores, registration open)
         env:
+          APP_ENV: dev
           # Dummy vendor key — conformance specs here do not hit Massive.
           MASSIVE_API_KEY: ci-conformance-dummy-key-not-for-live-vendor
           AUTH_SESSION_SIGNING_KEY: ci-conformance-signing-key-32b!!
