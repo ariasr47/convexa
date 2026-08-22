@@ -193,6 +193,33 @@ async fn drop_database(admin: &sqlx::PgPool, name: &str) {
         .await;
 }
 
+fn run_release_migrations(database_url: &str, stage: &str) {
+    let output = std::process::Command::new(env!("CARGO_BIN_EXE_api-rust"))
+        .arg("postgres-migrate")
+        .env("DATABASE_URL", database_url)
+        .env_remove("APP_ENV")
+        .output()
+        .expect("spawn explicit release migration owner");
+    assert!(
+        output.status.success(),
+        "stage={stage}: explicit release migration failed; stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let terminal = String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .find(|record| record.get("kind").and_then(|value| value.as_str()) == Some("terminal"))
+        .expect("explicit release migration emits one terminal object");
+    assert!(
+        matches!(
+            terminal.get("outcome").and_then(|value| value.as_str()),
+            Some("work applied" | "already current")
+        ),
+        "stage={stage}: unexpected migration terminal: {terminal}"
+    );
+}
+
 fn assert_production_runtime_shape() {
     assert_eq!(
         tokio::runtime::Handle::current().runtime_flavor(),
@@ -232,6 +259,7 @@ async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
     }
 
     let fresh_url = database_url(&base, &fresh_name);
+    run_release_migrations(&fresh_url, "fresh_database");
     let fresh = Pg::connect_strict(&fresh_url)
         .await
         .expect("fresh database reaches current schema");
@@ -291,11 +319,13 @@ async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
         .await
         .unwrap();
     drop(repair_pool);
+    run_release_migrations(&partial_url, "corrected_partial_database");
     Pg::connect_strict(&partial_url)
         .await
         .expect("corrected single-owner retry reaches current schema");
 
     let future_url = database_url(&base, &future_name);
+    run_release_migrations(&future_url, "future_database_baseline");
     let future = Pg::connect_strict(&future_url).await.unwrap();
     let future_version = compiled_migrations()
         .iter()
@@ -329,6 +359,7 @@ async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
         .expect("same release accepts schema after future marker is corrected");
 
     let persistence_url = database_url(&base, &persistence_name);
+    run_release_migrations(&persistence_url, "persistence_database");
     let persistence_root = std::env::temp_dir().join(owned_name("persistence_root"));
     let _persistence_env = production_env(&persistence_url, &persistence_root);
     let config = api_rust::config::Config::from_env().expect("valid production harness config");
