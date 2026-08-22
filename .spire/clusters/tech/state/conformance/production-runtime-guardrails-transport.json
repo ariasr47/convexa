@@ -1,15 +1,52 @@
 {
-  "executed_at": "2026-08-22T03:39:58.879073400+00:00",
-  "executor": "backend-executioner",
+  "executed_at": "2026-08-22T08:20:56Z",
+  "executor": "backend-executioner-ci",
   "feature": "production-runtime-guardrails",
-  "git_sha": "local",
+  "git_sha": "a88c698cd7b896f67a61f74c1fe80b92216b303f",
   "local_tests": {
-    "reason": "TEST_DATABASE_URL is not configured",
-    "result": "UNVERIFIABLE"
+    "command": "cargo test -p api-rust --features postgres --test production_runtime_guardrails_postgres -- --nocapture",
+    "evidence": {
+      "broken_replacement_refusal": "PASS",
+      "cookie": "PASS",
+      "cors": "PASS",
+      "current_schema": "PASS",
+      "fresh_schema": "PASS",
+      "future_schema_refusal": "PASS",
+      "health": "PASS",
+      "invalid_startup_refusal": "PASS",
+      "metrics_200": "PASS",
+      "metrics_401": "PASS",
+      "no_listener_on_schema_failure": "PASS",
+      "no_origin": "PASS",
+      "partial_schema_refusal": "PASS",
+      "redis_isolation": "PASS",
+      "replacement_persistence": "PASS"
+    },
+    "locator": "https://github.com/ariasr47/convexa/actions/runs/32561799229/job/97004403311",
+    "result": "PASS"
   },
   "migration_startup_owner": {
-    "result": "PENDING"
+    "captured_at": "2026-08-22T08:22:00Z",
+    "deployment_id": "ee6cd1e0-7b56-4079-86b0-cf16bf6eb4e0",
+    "environment_id": "a5d6a500-97fd-4b32-adc6-12212502fd32",
+    "evidence": {
+      "deployment_events": "railway://deployment/ee6cd1e0-7b56-4079-86b0-cf16bf6eb4e0/events",
+      "service_config": "railway://deployment/ee6cd1e0-7b56-4079-86b0-cf16bf6eb4e0/service-config",
+      "startup_logs": "railway://deployment/ee6cd1e0-7b56-4079-86b0-cf16bf6eb4e0/logs?filter=production-startup-phase"
+    },
+    "git_sha": "a88c698cd7b896f67a61f74c1fe80b92216b303f",
+    "listener_bound": "2026-08-22T08:21:34.870660288Z",
+    "operator": "codex-deployment-operator",
+    "project_id": "6c79afe3-ee0c-4d48-b544-b4014fe3d87c",
+    "replica_count": 1,
+    "result": "PASS",
+    "schema_preflight_finished": "2026-08-22T08:21:34.854254279Z",
+    "schema_preflight_started": "2026-08-22T08:21:34.788939212Z",
+    "service_id": "169482d9-cf0e-4048-a6bc-0fe136b989f8",
+    "startup_ids": [
+      "1bccb2c85a8bb7549d4e2c85c795bc4f"
+    ]
   },
-  "result": "INCOMPLETE",
+  "result": "PASS",
   "schema_version": 1
 }

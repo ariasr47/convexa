@@ -86,6 +86,14 @@ read-only, off trader routes. `quant-engine` does not import it.
 JSON/sqlite under `data/`. Research CLIs in `services/research/` **Authorizes: nothing** on
 the live score.
 
+**Production profile:** Railway/release startup requires explicit `APP_ENV`, Postgres schema
+preflight, a writable/flushed archive-body root, addressed signing/encryption key rings, a valid
+operator metrics token, exact HTTPS browser origins, and secure cookie policy before any listener or
+worker starts. Production metrics are operator-token gated; CORS is an exact-origin allowlist. The
+API runs as UID `10001`, one startup owner/replica applies embedded migrations, and archive bodies use
+the mounted `/data/session-chain-archive` root. The release gate retains same-SHA Postgres CI,
+startup-owner, live conformance, and volume-replacement receipts.
+
 ## 2b. Frontend architecture
 <!-- shard: tags=frontend,ui -->
 **Frontend** (`apps/dashboard/` in the Nx monorepo, React 19 + Vite + MUI/Emotion):

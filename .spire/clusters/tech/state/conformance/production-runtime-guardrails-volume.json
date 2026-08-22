@@ -1,0 +1,23 @@
+{
+  "after_evidence": "railway://deployment/69df81ee-5fae-4245-add4-5acbd128e2de/logs",
+  "before_evidence": "railway://deployment/2d693ba8-fae0-44e2-9cef-da115cbf2f5c/logs",
+  "cleanup": true,
+  "deployment_after": "69df81ee-5fae-4245-add4-5acbd128e2de",
+  "deployment_before": "2d693ba8-fae0-44e2-9cef-da115cbf2f5c",
+  "environment_id": "a5d6a500-97fd-4b32-adc6-12212502fd32",
+  "executor": "codex-deployment-operator",
+  "feature": "production-runtime-guardrails",
+  "git_sha": "a88c698cd7b896f67a61f74c1fe80b92216b303f",
+  "mount_path": "/data/session-chain-archive",
+  "project_id": "6c79afe3-ee0c-4d48-b544-b4014fe3d87c",
+  "restart_kind": "redeploy",
+  "result": "PASS",
+  "schema_version": 1,
+  "sentinel_locator": ".convexa-volume-sentinel-03cf1aa51c54d2bb6b6b9f49",
+  "service_id": "169482d9-cf0e-4048-a6bc-0fe136b989f8",
+  "verified_at": "2026-08-22T08:17:31.054429170Z",
+  "verified_sha256": "062c43f6ef852d85be28f025fb46fcf23e361da708d307bfc30f3367c9912d48",
+  "volume_id": "b0b181af-3e6b-4491-a2b2-4f6d603a3169",
+  "written_at": "2026-08-22T08:16:58.828055709Z",
+  "written_sha256": "062c43f6ef852d85be28f025fb46fcf23e361da708d307bfc30f3367c9912d48"
+}
