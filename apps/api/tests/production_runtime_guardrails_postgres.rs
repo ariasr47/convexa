@@ -144,8 +144,26 @@ async fn drop_database(admin: &sqlx::PgPool, name: &str) {
         .await;
 }
 
-#[tokio::test]
+fn assert_production_runtime_shape() {
+    assert_eq!(
+        tokio::runtime::Handle::current().runtime_flavor(),
+        tokio::runtime::RuntimeFlavor::MultiThread,
+        "production AppState coverage must use the same multithread runtime contract as #[tokio::main]"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn postgres_harness_runtime_supports_production_blocking_adapters() {
+    assert_production_runtime_shape();
+    assert_eq!(
+        tokio::task::block_in_place(|| "blocking-adapter-entered"),
+        "blocking-adapter-entered"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn production_schema_matrix_uses_real_postgres_and_refuses_drift() {
+    assert_production_runtime_shape();
     let base = std::env::var("TEST_DATABASE_URL").expect(
         "TEST_DATABASE_URL must be configured; production schema coverage cannot skip or simulate Postgres",
     );
