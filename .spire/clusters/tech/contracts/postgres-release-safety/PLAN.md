@@ -671,12 +671,13 @@ blob, schema, secret, and forbidden-live-input mutation coverage.
 cargo check -p api-rust --all-targets --features postgres
 cargo build -p api-rust --release --features postgres
 docker build -f apps/api/Dockerfile -t convexa-api:postgres-release-safety .
-docker run --rm convexa-api:postgres-release-safety /app/api-rust postgres-migrate --help
+docker run --rm convexa-api:postgres-release-safety api-rust postgres-migrate --help
 ```
 
-Expected: all commands exit 0; the image contains the command and still runs as uid 10001. The help run
-requires no secret and prints no embedded credential. A real command run receives `DATABASE_URL` only at
-runtime.
+Expected: all commands exit 0; the image installs its sole executable at
+`/usr/local/bin/api-rust`, the exact bare Railway executable `api-rust` resolves from the standard
+runtime path, and the image still runs as uid 10001. The help run requires no secret and prints no
+embedded credential. A real command run receives `DATABASE_URL` only at runtime.
 
 ### V7 — Live generic interface conformance
 

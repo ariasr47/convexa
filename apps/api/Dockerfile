@@ -64,7 +64,7 @@ RUN apt-get update \
     && chown -R appuser:appuser /app
 
 WORKDIR /app
-COPY --from=builder /src/target/release/api-rust /app/api-rust
+COPY --from=builder /src/target/release/api-rust /usr/local/bin/api-rust
 COPY apps/api/config/universe.json /app/universe.json
 
 ENV RUST_LOG=info,api_rust=info \
@@ -78,4 +78,4 @@ ENV RUST_LOG=info,api_rust=info \
 
 USER appuser
 EXPOSE 8000
-CMD ["sh", "-c", "export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /app/api-rust serve"]
+CMD ["sh", "-c", "export HTTP_BIND=0.0.0.0:${PORT:-8000}; exec /usr/local/bin/api-rust serve"]
