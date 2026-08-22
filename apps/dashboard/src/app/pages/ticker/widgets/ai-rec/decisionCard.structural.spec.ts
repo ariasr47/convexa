@@ -5,6 +5,22 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const featureDir = resolve(process.cwd(), 'src/app/pages/ticker/widgets/ai-rec');
+const DECISION_CARD_BASE = 'f41fe37';
+const DECISION_CARD_SHIP = '3b165c8';
+
+function changedPaths(base: string, head: string): string[] {
+  return execFileSync('git', ['diff', '--name-only', `${base}..${head}`], { encoding: 'utf8' })
+    .split(/\r?\n/)
+    .filter(Boolean);
+}
+
+function violatesDecisionCardOwnership(changed: readonly string[]): boolean {
+  return (
+    changed.some((file) => /^(?:apps\/api|libs\/api)(?:\/|$)/.test(file)) ||
+    changed.some((file) => /^apps\/dashboard\/.*(?:api|client|store)(?:\/|\.)/i.test(file))
+  );
+}
+
 const isExcluded = (file: string) =>
   /\.spec\.(?:ts|tsx)$|\.test\.(?:ts|tsx)$|(?:^|[\\/])(?:fixtures?|__fixtures__)(?:[\\/]|\.)/i.test(
     file,
@@ -65,14 +81,21 @@ describe('AI recommendation decision-card structural boundaries', () => {
   });
 
   it('changed-path ownership excludes backend and dashboard API/client/store modules', () => {
-    const changed = execFileSync('git', ['diff', '--name-only', 'c678dc1..HEAD'], {
-      encoding: 'utf8',
-    })
-      .split(/\r?\n/)
-      .filter(Boolean);
-    expect(changed.some((file) => /^(?:apps\/api|libs\/api)(?:\/|$)/.test(file))).toBe(false);
     expect(
-      changed.some((file) => /^apps\/dashboard\/.*(?:api|client|store)(?:\/|\.)/i.test(file)),
+      execFileSync('git', ['merge-base', '--is-ancestor', DECISION_CARD_BASE, DECISION_CARD_SHIP]),
+    ).toBeDefined();
+    const changed = changedPaths(DECISION_CARD_BASE, DECISION_CARD_SHIP);
+    expect(changed.length).toBeGreaterThan(0);
+    expect(violatesDecisionCardOwnership(changed)).toBe(false);
+    expect(violatesDecisionCardOwnership(['apps/api/src/server.rs'])).toBe(true);
+    expect(violatesDecisionCardOwnership(['libs/api/src/convexa.ts'])).toBe(true);
+    expect(
+      violatesDecisionCardOwnership(['apps/dashboard/src/app/features/auth/settingsStore.ts']),
+    ).toBe(true);
+    expect(
+      violatesDecisionCardOwnership([
+        'apps/dashboard/src/app/pages/ticker/widgets/ai-rec/DecisionCard.tsx',
+      ]),
     ).toBe(false);
   });
 

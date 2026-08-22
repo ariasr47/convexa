@@ -310,6 +310,11 @@ ALTER TABLE session_chain_archive
     ),
 ];
 
+/// Compiled migration truth used by production preflight and evidence tooling.
+pub fn compiled_migrations() -> &'static [(i64, &'static str, &'static str)] {
+    MIGRATIONS
+}
+
 /// Apply all pending migrations. Safe to call on every boot.
 pub async fn apply(pool: &PgPool) -> AppResult<()> {
     sqlx::query(

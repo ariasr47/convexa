@@ -31,11 +31,19 @@ pub async fn health(State(state): State<AppState>) -> Json<Value> {
         .into_iter()
         .map(|(symbol, n)| json!({ "symbol": symbol, "n": n }))
         .collect();
+    #[cfg(feature = "postgres")]
+    let durable_store = if state.pg.is_some() {
+        "postgres"
+    } else {
+        "json"
+    };
+    #[cfg(not(feature = "postgres"))]
+    let durable_store = "json";
     Json(json!({
         "status": "ok",
         "service": "api-rust",
         "price_cache": state.prices.backend_name(),
-        "durable_store": crate::db::backend_label(),
+        "durable_store": durable_store,
         "data_feed": state.config.data_feed.as_str(),
         "gex_kernel": quant_engine::gex_kernel_name(),
         "scanner": {
@@ -124,8 +132,21 @@ pub async fn cache_metrics(
 }
 
 pub(crate) fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+    use subtle::ConstantTimeEq;
+    let expected_bytes = match URL_SAFE_NO_PAD.decode(expected) {
+        Ok(v) if v.len() >= 32 => v,
+        _ => return false,
+    };
+    let check = |candidate: &str| {
+        URL_SAFE_NO_PAD
+            .decode(candidate.trim())
+            .map(|got| got.ct_eq(&expected_bytes).into())
+            .unwrap_or(false)
+    };
     if let Some(v) = headers.get("x-metrics-token").and_then(|h| h.to_str().ok()) {
-        if v.trim() == expected {
+        if check(v) {
             return true;
         }
     }
@@ -138,10 +159,53 @@ pub(crate) fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) 
             .strip_prefix("Bearer ")
             .or_else(|| v.strip_prefix("bearer "))
         {
-            if rest.trim() == expected {
+            if check(rest) {
                 return true;
             }
         }
     }
     false
+}
+
+#[cfg(test)]
+mod production_metrics_tests {
+    use super::*;
+    use axum::http::{header, HeaderMap, HeaderValue};
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use base64::Engine;
+
+    #[test]
+    fn metrics_authentication_matrix_accepts_only_exact_decoded_token() {
+        let expected = URL_SAFE_NO_PAD.encode([11_u8; 32]);
+        let wrong = URL_SAFE_NO_PAD.encode([12_u8; 32]);
+        for headers in [
+            HeaderMap::new(),
+            HeaderMap::from_iter([(
+                header::AUTHORIZATION,
+                HeaderValue::from_str(&format!("Bearer {wrong}")).unwrap(),
+            )]),
+            HeaderMap::from_iter([(
+                header::AUTHORIZATION,
+                HeaderValue::from_static("Bearer malformed"),
+            )]),
+            HeaderMap::from_iter([(
+                axum::http::HeaderName::from_static("x-metrics-token"),
+                HeaderValue::from_str(&wrong).unwrap(),
+            )]),
+        ] {
+            assert!(!metrics_token_ok(&headers, &expected));
+        }
+
+        let bearer = HeaderMap::from_iter([(
+            header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {expected}")).unwrap(),
+        )]);
+        assert!(metrics_token_ok(&bearer, &expected));
+        let direct = HeaderMap::from_iter([(
+            axum::http::HeaderName::from_static("x-metrics-token"),
+            HeaderValue::from_str(&expected).unwrap(),
+        )]);
+        assert!(metrics_token_ok(&direct, &expected));
+        assert!(!metrics_token_ok(&direct, "documented-placeholder-token"));
+    }
 }

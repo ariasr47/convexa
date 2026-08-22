@@ -11,7 +11,9 @@
 #
 # NO SECRETS ARE BAKED IN. Inject at runtime (Railway Variables).
 #
-# Required: MASSIVE_API_KEY, AUTH_SESSION_SIGNING_KEY, AI_KEY_ENCRYPTION_KEY
+# Required in production: APP_ENV=prod, MASSIVE_API_KEY, DATABASE_URL,
+# ALLOWED_BROWSER_ORIGINS, METRICS_SECRET_TOKEN, addressed session/encryption key maps,
+# SESSION_CHAIN_ARCHIVE_BODY_ROOT. Legacy key names may remain during rotation overlap.
 # Multi-instance: DATABASE_URL=${{Postgres.DATABASE_URL}}  (this image enables postgres)
 # Optional: REDIS_URL, GOOGLE_*, ANTHROPIC_API_KEY, POSITIONS_PROVIDER=stub, …
 # ============================================================================

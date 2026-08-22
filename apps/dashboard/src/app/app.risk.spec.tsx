@@ -307,12 +307,15 @@ describe('bare /ticker — default_ticker preference wins over the SPY fallback'
 // =================================================================================================
 describe('operator-vs-trader path separation', () => {
   it('"/_ops/metrics" renders WITHOUT the trader shell/nav (own chrome)', async () => {
+    const operatorModule = await import('@/pages/operator-metrics/operator-metrics');
+    expect(typeof operatorModule.OperatorMetrics).toBe('function');
+
     renderAt('/_ops/metrics');
-    expect(
-      await screen.findByText(/Operator Metrics/, undefined, { timeout: 10_000 }),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('route-fallback')).not.toBeInTheDocument());
+    expect(await screen.findByText(/Operator Metrics/)).toBeInTheDocument();
     expect(screen.queryByTestId('app-shell')).toBeNull();
     expect(screen.queryByTestId('nav-ticker')).toBeNull();
+    expectNoOpsLink();
   });
 });
 

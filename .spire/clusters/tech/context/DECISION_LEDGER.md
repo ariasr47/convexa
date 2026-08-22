@@ -894,6 +894,13 @@ be exactly it.
 | `absent-is-not-none` | chain-archive-object-store | S | missing object = `session book unreadable`; unset BODY_ROOT = `session archive not storing` | yes |
 | `no-secrets-in-image` | chain-archive-object-store | S | body files contain no API keys; dial is env path | yes |
 | `cited-code-is-verified-not-assumed` | chain-archive-object-store | S | unique-per-put locator; v12 drops BYTEA; ring store Non-move | yes |
+| `production-fails-closed` | production-runtime-guardrails | I | **NEW KEY (1st instance).** `APP_ENV=prod` is a hard runtime profile: missing durable persistence, stable cryptographic keys, protected operator metrics, explicit origin policy, or secure cookie settings prevents readiness; development/test fallbacks remain explicit non-production behavior. | yes |
+| `secret-encrypted-at-rest` | production-runtime-guardrails | I | stored AI credentials must survive planned encryption-key rotation without plaintext persistence or browser exposure | yes |
+| `structural-over-prose-enforcement` | production-runtime-guardrails | I | unsafe production configuration is rejected by typed startup validation and tests, not deployment documentation alone | yes |
+| `production-fails-closed` | production-runtime-guardrails | C | production validation is a typed pre-bind boundary; explicit mode, Postgres/current schema, archive-root probe, metrics token, exact HTTPS origins, first-party cookies, and stable key rings are readiness prerequisites | yes |
+| `secret-encrypted-at-rest` | production-runtime-guardrails | C | versioned AES-GCM envelopes write with one active key and read only the addressed retired/legacy key; missing historical material degrades to no usable credential without overwriting ciphertext | yes |
+| `no-secrets-in-image` | production-runtime-guardrails | C | key rings, database URL, origin policy, and metrics token remain runtime-injected; diagnostics and receipts carry names/ids/classes only, never configured values | yes |
+| `operator-vs-trader-path-separation` | production-runtime-guardrails | C | startup validation and authenticated metrics remain outside trader routes; no dashboard surface, vendor fetch, bundle/SSE mutation, or scoring input is introduced | yes |
 
 > **GATE S tally — chain-archive-object-store (2026-08-20).** **NO new graduations.** Conformance
 > `state/conformance/chain-archive-object-store.json`. Keep-paid-books builds complete; #5 clock running.

@@ -232,11 +232,16 @@ impl Config {
             .map(PathBuf::from)
             .unwrap_or_else(|_| workspace_root.join("data/auth.sqlite3"));
         let auth_session_signing_key = env::var("AUTH_SESSION_SIGNING_KEY").unwrap_or_else(|_| {
-            // Ephemeral per-process key when unset (cookies reset on restart).
-            use rand::RngCore;
-            let mut b = [0u8; 32];
-            rand::thread_rng().fill_bytes(&mut b);
-            hex::encode(b)
+            if env::var("APP_ENV").ok().as_deref() == Some("prod") {
+                // Production uses the validated addressed ring and must never construct
+                // ephemeral signing material during raw configuration acquisition.
+                String::new()
+            } else {
+                use rand::RngCore;
+                let mut b = [0u8; 32];
+                rand::thread_rng().fill_bytes(&mut b);
+                hex::encode(b)
+            }
         });
         let auth_cookie_secure = env::var("AUTH_COOKIE_SECURE")
             .map(|v| {
@@ -424,6 +429,42 @@ fn parse_symbol_list(raw: &str) -> Vec<String> {
     out
 }
 
+fn env_flag_default_true(key: &str) -> bool {
+    env::var(key)
+        .map(|v| {
+            !matches!(
+                v.to_ascii_lowercase().as_str(),
+                "0" | "false" | "no" | "off"
+            )
+        })
+        .unwrap_or(true)
+}
+
+fn default_session_archive_path(ring: &Path) -> PathBuf {
+    ring.parent().unwrap_or(ring).join("session_chain_archive")
+}
+
+/// Trimmed env path; unset/empty → `None` (never invents a default).
+pub fn parse_optional_path_env(key: &str) -> Option<PathBuf> {
+    env::var(key)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from)
+}
+
+/// True when `candidate` equals `other` or is a nested descendant of it.
+pub fn path_equals_or_nests(candidate: &Path, other: &Path) -> bool {
+    let c = candidate.components().collect::<Vec<_>>();
+    let o = other.components().collect::<Vec<_>>();
+    c == o || (c.starts_with(&o) && c.len() > o.len())
+}
+
+/// Body root must not equal or nest under the ring store or the index Json dir.
+pub fn body_root_conflicts(body_root: &Path, ring: &Path, index: &Path) -> bool {
+    path_equals_or_nests(body_root, ring) || path_equals_or_nests(body_root, index)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -511,40 +552,4 @@ mod tests {
             &index
         ));
     }
-}
-
-fn env_flag_default_true(key: &str) -> bool {
-    env::var(key)
-        .map(|v| {
-            !matches!(
-                v.to_ascii_lowercase().as_str(),
-                "0" | "false" | "no" | "off"
-            )
-        })
-        .unwrap_or(true)
-}
-
-fn default_session_archive_path(ring: &Path) -> PathBuf {
-    ring.parent().unwrap_or(ring).join("session_chain_archive")
-}
-
-/// Trimmed env path; unset/empty → `None` (never invents a default).
-pub fn parse_optional_path_env(key: &str) -> Option<PathBuf> {
-    env::var(key)
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .map(PathBuf::from)
-}
-
-/// True when `candidate` equals `other` or is a nested descendant of it.
-pub fn path_equals_or_nests(candidate: &Path, other: &Path) -> bool {
-    let c = candidate.components().collect::<Vec<_>>();
-    let o = other.components().collect::<Vec<_>>();
-    c == o || (c.starts_with(&o) && c.len() > o.len())
-}
-
-/// Body root must not equal or nest under the ring store or the index Json dir.
-pub fn body_root_conflicts(body_root: &Path, ring: &Path, index: &Path) -> bool {
-    path_equals_or_nests(body_root, ring) || path_equals_or_nests(body_root, index)
 }

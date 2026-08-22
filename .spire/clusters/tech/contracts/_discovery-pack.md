@@ -298,6 +298,72 @@
 
 ---
 
+## Program — keep-paid-books (owner-directed 2026-08-19)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Grouping only — **not** a pipeline feature. Owner said put all seven briefing
+recommendations in the pool and work them **one by one**. Each build still
+earns its own `BRIEF.md` via GATE I. Theme: `prove-the-edge`.
+Outcome: the $199 Options book we already fetch survives as a dated research
+corpus, then we measure it; do **not** buy hist-chain to paper over prune.
+
+| # | Item | Shape | Status |
+|---|---|---|---|
+| 1 | `session-chain-archive` — 1 book / symbol / ET day prune cannot delete | pipeline feature | **SHIPPED 2026-08-20** |
+| 2 | `liquid-names-session-capture` — SPY/QQQ/IWM session book even if gex-cache is warm | pipeline feature | **SHIPPED 2026-08-20** |
+| 3 | `paid-book-join-smoke` — run `batch-backtest` then `replay-outcome-join` on a real corpus | chore (no BRIEF) | **DONE 2026-08-20** |
+| 4 | `weekly-digest-lab-ritual` — `join-outcomes` → `score-lab --horizon 1d` on SPY/QQQ/IWM | habit (runbook exists) | **RAN 2026-08-20** (keep weekly) |
+| 5 | `session-corpus-wait` — 4–6 ET weeks of archived session books before a real time-split | wait / gate, not a build | **clock started 2026-08-20** |
+| 6 | `ai-rec-lab-p4` — frozen AI export packs / multi-model lab | pipeline feature (later) | blocked-on boring P2–P3 + #5 |
+| 7 | `chain-archive-object-store` — session bodies off app-Postgres BYTEA | pipeline feature (later) | **SHIPPED 2026-08-20** |
+
+Do **not** bundle remaining items into one BRIEF. Do **not** start P7 vendor hist-chain.
+
+## Last GATE I — 2026-08-20 (canon repair → `project-context-s2-is-python-era`)
+<!-- atlas: theme=the-machine horizon=now -->
+Owner picked Architecture canon after keep-paid-books builds drained.
+**Chosen → `project-context-s2-is-python-era`.** Inline conductor repair (no council —
+the file being repaired is what a council would read). `PROJECT_CONTEXT.md` §2 backend
+rewritten against `api-rust` + `quant-engine`; Python named only as archived. §2 split
+into `## 2` backend (~60 lines) + `## 2b` frontend (~131) for shard size.
+**No product code.** Push still deploy.
+
+## Last GATE S — 2026-08-20 (`chain-archive-object-store` — session bodies off OLTP)
+> [discovery: 6 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE S — 2026-08-20 (`liquid-names-session-capture` — SPY/QQQ/IWM despite warm cache)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (keep-paid-books #2) → council (D1=A same-day retry) → PLAN (B1–B8 · F1–F2)
+→ both lanes → **GATE Q PASS 25/0/0**. Archived to `_archive/liquid-names-session-capture/`.
+Conformance re-pin promoted. **No new canon graduation expected.** Working tree uncommitted;
+push is deploy. **Next in program → `paid-book-join-smoke` (chore).**
+
+## Last GATE S — 2026-08-20 (`session-chain-archive` — prune-proof session books)
+> [discovery: 7 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE I — 2026-08-20 (keep-paid-books #2 → `liquid-names-session-capture`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner `ship it and continue`. **Chosen → `liquid-names-session-capture`.** Brief at
+`.spire/clusters/tech/contracts/liquid-names-session-capture/BRIEF.md`.
+**Backend / research; trader UI out of scope.**
+**Why it won:** #1 shipped a prune-proof archive, but a warm gex-cache never hands a
+`VendorBundle` to capture — QA observed QQQ as honest `no session book`. The names
+score-lab already uses are the ones missing paid session books. Do not bundle object-store
+or hist-chain. Cite live Rust.
+
+## Last GATE I — 2026-08-19 (keep-paid-books program → `session-chain-archive`)
+> [discovery: 10 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
+## Last GATE I — 2026-08-18 (d) (after back-test eval → `replay-outcome-join`)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Owner said `go` (next **build**, not a docs runbook) after the P0–P3 evaluation.
+**Chosen → `replay-outcome-join`.** **SHIPPED 2026-08-19** (see Last GATE S below).
+Brief archived at `_archive/replay-outcome-join/BRIEF.md`.
+
+## Last GATE S — 2026-08-19 (`replay-outcome-join` — labels on replayed paid books)
+<!-- atlas: theme=prove-the-edge horizon=now -->
+Full pipeline: GATE I (`go` after back-test eval) → council (D1=A capture-time `p0`) →
+PLAN (B1–B10 · F1) → crash-recovery GATE R → both lanes → **GATE Q PASS 35/0/0**.
+Archived to `_archive/replay-outcome-join/`. Conformance re-pin of `_research` routes
+promoted. **No new canon graduation expected** (tally next). Working tree still
+uncommitted; push is deploy. Pipeline drained; next move is GATE I (`go`).
+
 ## Last GATE S — 2026-08-18 (`batch-backtest-cli` — P3 replay of stored books)
 <!-- atlas: theme=prove-the-edge horizon=now -->
 Full pipeline: GATE I (`go` after capture) → council (D1=A refuse hollow split) → PLAN
@@ -359,6 +425,26 @@ read they act on, and whether they pay BYO when a cheaper pool was intended.
 Grok to use Convexa's cheaper pool." Architect names a buildable mechanism or blocks that
 arm. `project-context-s2-is-python-era` still unpaid; this BRIEF cites live Rust paths.
 
+## Hygiene 2026-08-20 (Vercel React review batch — not a pipeline feature)
+<!-- atlas: theme=the-machine horizon=now -->
+Owner asked for the hygiene batch after a Vite/React skill review. **Not GATE I.**
+Paid in this pass: (1) Vite analogue of `optimizePackageImports` for `@mui/material`
+(`tools/vite-mui-path-imports.mjs`); (2) `cargo fmt -p api-rust -p quant-engine` so
+`--check` is green; (3) `ports:free` IPv6 (`netstat -ano` both families; never :8001);
+(4) `ci-standing-red` retired — local `npm run ci` analogue + e2e 52/52 + cargo test
+green 2026-08-20; origin Frontend job already green 2026-08-16.
+**Follow-on four, owner-named same day:** `mui-dev-eslint-path-imports` (source rewrite
++ ESLint lock + VS Code auto-import exclude; Vite plugin stays out of `vite.config.mts`
+because `tools/` is outside the dashboard module boundary) · `god-module-split-trade-entry-portfolio`
+(FE only: `openTypes` / `useContractLive` / `FillModeToggle` / `AiRecPanelBlocks`) ·
+`widget-variant-not-boolean` (`bodyPad` + `bodyVariant`, no `noBodyPad`) ·
+`toSorted-on-new-sorts` (production sorts + `tsconfig` `lib: es2023`) ·
+`light-theme-first-paint` (blocking `data-theme` + paper canvas) ·
+`eslint-warning-hygiene` (dashboard lint 0 warnings). Remaining review
+findings stay in §B (`hygiene-review-2026-08-20` cluster) so GATE I can resurface
+them. `project-context-s2-is-python-era` was repaired the same calendar day (canon
+§2 Axum/`api-rust`).
+
 ## Last GATE S — 2026-08-17 (b) (`rec-plan-scope-caption` — §9.5 half two closed)
 > [discovery: 8 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Last GATE S — 2026-08-17 (owner-directed archive of two live FE folders)
@@ -397,10 +483,11 @@ the design — the caption must not become standing chrome on `local_rules`.
 **Flagged RISING for a FOURTH consecutive gate, still not chosen:**
 `degradation-visibility` (decision-impact N/A). Do not re-derive a fifth time — it needs
 an owner override if it is ever to run.
-**Hygiene batch still unpaid** (`ci-standing-red` weakened by HEAD CI green 2026-08-16,
-not retired · `ports-free-is-ipv4-only` · `cargo-fmt-whole-crate-drift` · the :8000 orphan).
+**Hygiene batch 2026-08-20:** `ci-standing-red` retired · `ports-free-is-ipv4-only` closed
+· `cargo-fmt-whole-crate-drift` closed. The :8000 *access-denied orphan* can still outlive
+`taskkill` (Windows file lock) — see §B `ports-orphan-access-denied`.
 **X4 (ledger checkpoint) still blocked** on N≥20 closed outcomes.
-**`project-context-s2-is-python-era` still unpaid** — fix before the next backend feature.
+**`project-context-s2-is-python-era` repaired 2026-08-20** (canon §2).
 
 ## Last GATE I — 2026-08-14 (pre-registered successor re-tested and CONFIRMED → `rec-absence-literals-hole`; scope revised UP to six fields + both lanes)
 <!-- atlas: theme=trust-the-signal horizon=now -->
@@ -1162,7 +1249,7 @@ tooling — judged on operational value). The export/alerting/persistence rest o
 ## Last GATE I — 2026-06-22 (pipeline had drained; 4 features archived)
 > [discovery: 12 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
 ## Pool
-> [discovery: 1184 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
+> [discovery: 1355 lines elided — over the discovery byte budget; read context/BACKLOG.md for the full section, or memory_query]
 # Open Threads (session snapshot)
 
 > Unresolved decisions / deferred work carried out of a long working session. Pairs with
@@ -1271,6 +1358,14 @@ decision (Databento Blue Ocean, or Webull supplement).
 > [discovery: 18 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7ai. rec-plan-scope-caption — plan-row scope caption (SHIPPED + ARCHIVED 2026-08-17 — FE-only)
 > [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ap. chain-archive-object-store — session bodies off app OLTP (SHIPPED + ARCHIVED 2026-08-20)
+> [discovery: 17 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7ao. liquid-names-session-capture — SPY/QQQ/IWM session books despite warm cache (SHIPPED + ARCHIVED 2026-08-20)
+> [discovery: 17 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7an. session-chain-archive — one paid book per ET day, prune-proof (SHIPPED + ARCHIVED 2026-08-20)
+> [discovery: 17 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+## 7am. replay-outcome-join — labels on replayed paid books (SHIPPED + ARCHIVED 2026-08-19)
+> [discovery: 16 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
@@ -1293,8 +1388,9 @@ decision (Databento Blue Ocean, or Webull supplement).
   (commits `c852ab9`, `188f e21`, `c917466`, `4633656`, `64058c4`, `ace8a0a`). **Update 2026-08-17:**
   HEAD `593f601` CI Frontend job **succeeded** (lint · typecheck · test · build · e2e) and Conformance
   + Deploy smoke succeeded — the 2026-08-13/14 "frontend job is standing-red" claim is **stale as of
-  that run**. BACKLOG §B `ci-standing-red` stays until a dedicated hygiene pass retires the item; do
-  not treat one green HEAD as proof the five-file baseline can never regress. Historical (both red
+  that run**. BACKLOG §B `ci-standing-red` **retired 2026-08-20** (hygiene batch; local full
+  frontend+backend analogue green the same day). Do not treat one green HEAD as proof the
+  five-file baseline can never regress. Historical (both red
   BEFORE the 08-13 push): (a) lint warnings policy + 5 accepted pre-existing red specs; (b)
   conformance **local auth-gated leg** exits 2 at signup bootstrap. The 2026-07-28 wording below is history:
   *(a) conformance sweep not in CI; (b) push ≠ deploy, applied by hand — both now false.*
@@ -1587,4 +1683,4 @@ be exactly it.
   already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 662 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 704 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

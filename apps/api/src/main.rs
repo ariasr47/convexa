@@ -80,6 +80,11 @@ enum Commands {
         #[arg(long)]
         bind: Option<String>,
     },
+    /// Validate mounted-volume continuity across an operator-managed restart/redeploy.
+    ProductionVolumeDrill {
+        #[command(subcommand)]
+        phase: VolumeDrillPhase,
+    },
     /// P0 research: join structure-history samples to forward daily outcomes (Massive aggs).
     ///
     /// Default symbols SPY,QQQ. Writes a JSON artifact under data/research/ and, when
@@ -195,6 +200,36 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand, Debug)]
+enum VolumeDrillPhase {
+    Prepare {
+        #[arg(long)]
+        volume_id: String,
+        #[arg(long)]
+        mount_path: PathBuf,
+        #[arg(long)]
+        state_file: PathBuf,
+    },
+    Verify {
+        #[arg(long)]
+        volume_id: String,
+        #[arg(long)]
+        mount_path: PathBuf,
+        #[arg(long)]
+        state_file: PathBuf,
+        #[arg(long)]
+        receipt: PathBuf,
+        #[arg(long)]
+        restart_kind: String,
+        #[arg(long)]
+        executor: String,
+        #[arg(long)]
+        before_evidence: String,
+        #[arg(long)]
+        after_evidence: String,
+    },
+}
+
 #[derive(Debug, Deserialize)]
 struct FixtureOptions {
     min_days_to_expiry: Option<f64>,
@@ -259,6 +294,16 @@ fn load_dotenv() {
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    if let Err(violation) = guard_host_mode_before_dotenv() {
+        let refusal = api_rust::runtime_guardrails::config::BootstrapRefusal {
+            violations: vec![violation],
+        };
+        eprintln!(
+            "{}",
+            api_rust::runtime_guardrails::diagnostics::render(&refusal)
+        );
+        return ExitCode::from(1);
+    }
     load_dotenv();
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -274,6 +319,27 @@ async fn main() -> ExitCode {
             ExitCode::from(1)
         }
     }
+}
+
+fn guard_host_mode_before_dotenv() -> Result<
+    api_rust::runtime_guardrails::RuntimeMode,
+    api_rust::runtime_guardrails::BootstrapViolation,
+> {
+    let railway = [
+        "RAILWAY_PROJECT_ID",
+        "RAILWAY_ENVIRONMENT_ID",
+        "RAILWAY_SERVICE_ID",
+        "RAILWAY_DEPLOYMENT_ID",
+    ]
+    .iter()
+    .any(|name| std::env::var_os(name).is_some());
+    api_rust::runtime_guardrails::classify_mode(
+        std::env::var("APP_ENV").ok().as_deref(),
+        api_rust::runtime_guardrails::HostContext {
+            railway,
+            release: !cfg!(debug_assertions),
+        },
+    )
 }
 
 async fn run(cli: Cli) -> anyhow::Result<()> {
@@ -456,11 +522,31 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             }
         }
         Commands::Serve { bind } => {
+            let railway = [
+                "RAILWAY_PROJECT_ID",
+                "RAILWAY_ENVIRONMENT_ID",
+                "RAILWAY_SERVICE_ID",
+                "RAILWAY_DEPLOYMENT_ID",
+            ]
+            .iter()
+            .any(|k| std::env::var_os(k).is_some());
+            let mode = api_rust::runtime_guardrails::classify_mode(
+                std::env::var("APP_ENV").ok().as_deref(),
+                api_rust::runtime_guardrails::HostContext {
+                    railway,
+                    release: !cfg!(debug_assertions),
+                },
+            )
+            .map_err(|e| anyhow::anyhow!(e.render()))?;
+            tracing::info!(?mode, "runtime mode selected");
             let mut cfg = Config::from_env()?;
             if let Some(b) = bind {
                 cfg.http_bind = b;
             }
             server::serve(cfg).await?;
+        }
+        Commands::ProductionVolumeDrill { phase } => {
+            production_volume_drill(phase)?;
         }
         Commands::JoinOutcomes {
             symbols,
@@ -521,6 +607,85 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
             json,
         } => {
             cmd_replay_outcome_join(replay, labels, out, &horizons, json).await?;
+        }
+    }
+    Ok(())
+}
+
+fn production_volume_drill(phase: VolumeDrillPhase) -> anyhow::Result<()> {
+    use sha2::{Digest, Sha256};
+    use std::fs::{self, OpenOptions};
+    use std::io::{Read, Write};
+    let required = |k: &str| std::env::var(k).map_err(|_| anyhow::anyhow!("{k} is required"));
+    let identity = || -> anyhow::Result<serde_json::Value> {
+        Ok(serde_json::json!({
+            "project_id": required("RAILWAY_PROJECT_ID")?, "environment_id": required("RAILWAY_ENVIRONMENT_ID")?,
+            "service_id": required("RAILWAY_SERVICE_ID")?, "deployment_id": required("RAILWAY_DEPLOYMENT_ID")?,
+            "git_sha": required("RELEASE_GIT_SHA")?
+        }))
+    };
+    match phase {
+        VolumeDrillPhase::Prepare {
+            volume_id,
+            mount_path,
+            state_file,
+        } => {
+            let id = identity()?;
+            fs::create_dir_all(&mount_path)?;
+            let locator = format!(
+                ".convexa-volume-sentinel-{}",
+                hex::encode(rand::random::<[u8; 12]>())
+            );
+            let path = mount_path.join(&locator);
+            let mut f = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)?;
+            let bytes = b"convexa production volume drill v1";
+            f.write_all(bytes)?;
+            f.sync_all()?;
+            let hash = hex::encode(Sha256::digest(bytes));
+            fs::write(
+                &state_file,
+                serde_json::to_vec_pretty(
+                    &serde_json::json!({"schema_version":1,"feature":"production-runtime-guardrails","volume_id":volume_id,"mount_path":mount_path,"sentinel_locator":locator,"written_sha256":hash,"written_at":chrono::Utc::now().to_rfc3339(),"identity":id}),
+                )?,
+            )?;
+        }
+        VolumeDrillPhase::Verify {
+            volume_id,
+            mount_path,
+            state_file,
+            receipt,
+            restart_kind,
+            executor,
+            before_evidence,
+            after_evidence,
+        } => {
+            let id = identity()?;
+            let before: serde_json::Value = serde_json::from_slice(&fs::read(&state_file)?)?;
+            let locator = before["sentinel_locator"]
+                .as_str()
+                .ok_or_else(|| anyhow::anyhow!("invalid state"))?;
+            if before["volume_id"] != volume_id
+                || before["identity"]["git_sha"] != id["git_sha"]
+                || before["identity"]["project_id"] != id["project_id"]
+            {
+                anyhow::bail!("volume identity mismatch");
+            }
+            if before["identity"]["deployment_id"] == id["deployment_id"] {
+                anyhow::bail!("deployment must change before verify");
+            }
+            let path = mount_path.join(locator);
+            let mut data = Vec::new();
+            fs::File::open(&path)?.read_to_end(&mut data)?;
+            let hash = hex::encode(Sha256::digest(&data));
+            if hash != before["written_sha256"] {
+                anyhow::bail!("sentinel hash mismatch");
+            }
+            fs::remove_file(&path)?;
+            let out = serde_json::json!({"schema_version":1,"feature":"production-runtime-guardrails","result":"PASS","git_sha":id["git_sha"],"project_id":id["project_id"],"environment_id":id["environment_id"],"service_id":id["service_id"],"deployment_before":before["identity"]["deployment_id"],"deployment_after":id["deployment_id"],"volume_id":volume_id,"mount_path":mount_path,"sentinel_locator":locator,"written_sha256":before["written_sha256"],"verified_sha256":hash,"written_at":before["written_at"],"verified_at":chrono::Utc::now().to_rfc3339(),"restart_kind":restart_kind,"executor":executor,"cleanup":true,"before_evidence":before_evidence,"after_evidence":after_evidence});
+            fs::write(receipt, serde_json::to_vec_pretty(&out)?)?;
         }
     }
     Ok(())

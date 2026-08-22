@@ -196,27 +196,96 @@ pub enum AiSlot {
 
 pub const CREDENTIAL_KIND_BROKER: &str = "broker_webull";
 
+type BrokerCacheInvalidator = std::sync::Arc<dyn Fn(&str) + Send + Sync>;
+
 #[derive(Clone)]
 pub struct AuthService {
     store: AuthStore,
     cfg: AuthConfig,
+    signing_ring: Option<super::cookies::SigningKeyRing>,
+    encryption_ring: Option<super::crypto::EncryptionKeyRing>,
     demo_seed_email: Option<String>,
     /// Best-effort: drop broker book cache when credential rotates/deletes.
-    broker_cache_invalidator: Option<std::sync::Arc<dyn Fn(&str) + Send + Sync>>,
+    broker_cache_invalidator: Option<BrokerCacheInvalidator>,
 }
 
 impl AuthService {
     pub fn new(store: AuthStore, cfg: AuthConfig) -> Self {
+        super::cookies::warn_if_ephemeral();
+        super::crypto::warn_if_ephemeral();
         Self {
             store,
             cfg,
+            signing_ring: super::cookies::SigningKeyRing::from_env(),
+            encryption_ring: super::crypto::EncryptionKeyRing::from_env(),
             demo_seed_email: None,
             broker_cache_invalidator: None,
         }
     }
 
-    pub fn set_broker_cache_invalidator(&mut self, f: std::sync::Arc<dyn Fn(&str) + Send + Sync>) {
+    pub fn set_broker_cache_invalidator(&mut self, f: BrokerCacheInvalidator) {
         self.broker_cache_invalidator = Some(f);
+    }
+
+    fn encrypt_secret(&self, value: &str) -> Result<String, String> {
+        if let Some(ring) = &self.encryption_ring {
+            ring.encrypt(value)
+                .map_err(|_| "encrypt failed".to_string())
+        } else {
+            crate::services::auth::crypto::encrypt(value)
+        }
+    }
+
+    fn decrypt_credential(
+        &self,
+        rec: &crate::services::auth::store::CredentialRecord,
+    ) -> Option<String> {
+        if let Some(ring) = &self.encryption_ring {
+            match ring.decrypt(&rec.ciphertext) {
+                Ok(crate::services::auth::crypto::Decryption::Active(value)) => Some(value),
+                Ok(crate::services::auth::crypto::Decryption::RewrapRequired {
+                    plaintext,
+                    source,
+                }) => {
+                    let next = match ring.encrypt(&plaintext) {
+                        Ok(next) => next,
+                        Err(_) => {
+                            tracing::warn!(
+                                event = "credential_rewrap_failed",
+                                source = ?source,
+                                key_id = ?crate::services::auth::crypto::envelope_key_id(&rec.ciphertext),
+                                "credential rewrap failed"
+                            );
+                            return Some(plaintext);
+                        }
+                    };
+                    if self
+                        .store
+                        .set_credential(&rec.user_id, &rec.kind, &next, &rec.last4, &rec.provider)
+                        .is_err()
+                    {
+                        tracing::warn!(
+                            event = "credential_rewrap_failed",
+                            source = ?source,
+                            key_id = ?crate::services::auth::crypto::envelope_key_id(&rec.ciphertext),
+                            "credential rewrap failed"
+                        );
+                    }
+                    Some(plaintext)
+                }
+                Err(failure) => {
+                    tracing::warn!(
+                        event = "credential_decrypt_failed",
+                        failure = failure.as_str(),
+                        key_id = ?crate::services::auth::crypto::envelope_key_id(&rec.ciphertext),
+                        "credential decrypt failed"
+                    );
+                    None
+                }
+            }
+        } else {
+            crate::services::auth::crypto::decrypt(&rec.ciphertext)
+        }
     }
 
     fn invalidate_broker_cache(&self, user_id: &str) {
@@ -247,7 +316,10 @@ impl AuthService {
     }
 
     pub fn signed_cookie_value(&self, session_id: &str) -> String {
-        cookies::sign_cookie(session_id, &self.cfg.signing_key)
+        self.signing_ring
+            .as_ref()
+            .map(|r| r.sign(session_id))
+            .unwrap_or_else(|| cookies::sign_cookie(session_id, &self.cfg.signing_key))
     }
 
     fn identity(&self, user: Option<&UserRecord>) -> IdentityShape {
@@ -297,7 +369,14 @@ impl AuthService {
     }
 
     fn resolve_session_inner(&self, cookie_value: Option<&str>) -> Result<ResolvedSession, ()> {
-        let sid = cookies::unsign_cookie(cookie_value, &self.cfg.signing_key).ok_or(())?;
+        let sid = if let Some(ring) = &self.signing_ring {
+            match ring.verify(cookie_value) {
+                cookies::CookieVerification::Valid { session_id } => session_id,
+                cookies::CookieVerification::Anonymous => return Err(()),
+            }
+        } else {
+            cookies::unsign_cookie(cookie_value, &self.cfg.signing_key).ok_or(())?
+        };
         let sess = self.store.get_session(&sid).map_err(|_| ())?.ok_or(())?;
         let now = now_secs();
         if sess.revoked || now >= sess.expires_at || now >= sess.absolute_expires_at {
@@ -410,7 +489,15 @@ impl AuthService {
     }
 
     pub fn logout(&self, cookie_value: Option<&str>) {
-        if let Some(sid) = cookies::unsign_cookie(cookie_value, &self.cfg.signing_key) {
+        let signed_sid = if let Some(ring) = &self.signing_ring {
+            match ring.verify(cookie_value) {
+                cookies::CookieVerification::Valid { session_id } => Some(session_id),
+                cookies::CookieVerification::Anonymous => None,
+            }
+        } else {
+            cookies::unsign_cookie(cookie_value, &self.cfg.signing_key)
+        };
+        if let Some(sid) = signed_sid {
             let _ = self.store.revoke_session(&sid);
         }
     }
@@ -548,7 +635,7 @@ impl AuthService {
                 return AiSlot::Unusable;
             }
         };
-        match crate::services::auth::crypto::decrypt(&rec.ciphertext) {
+        match self.decrypt_credential(&rec) {
             Some(pt) => AiSlot::Ready { plaintext: pt },
             None => AiSlot::Unusable,
         }
@@ -684,7 +771,7 @@ impl AuthService {
         } else {
             raw.to_string()
         };
-        match crate::services::auth::crypto::encrypt(raw) {
+        match self.encrypt_secret(raw) {
             Ok(ct) => {
                 if let Err(e) =
                     self.store
@@ -888,7 +975,7 @@ impl AuthService {
             key.to_string()
         };
         let blob = serde_json::json!({ "app_key": key, "app_secret": secret }).to_string();
-        match crate::services::auth::crypto::encrypt(&blob) {
+        match self.encrypt_secret(&blob) {
             Ok(ct) => {
                 if let Err(e) = self.store.set_credential(
                     &user.id,
@@ -943,7 +1030,7 @@ impl AuthService {
             .get_credential(user_id, CREDENTIAL_KIND_BROKER, BROKER_PROVIDER)
             .ok()
             .flatten()?;
-        let pt = crate::services::auth::crypto::decrypt(&rec.ciphertext)?;
+        let pt = self.decrypt_credential(&rec)?;
         let v: serde_json::Value = serde_json::from_str(&pt).ok()?;
         let key = v.get("app_key")?.as_str()?.to_string();
         let secret = v.get("app_secret")?.as_str()?.to_string();
@@ -956,6 +1043,13 @@ impl AuthService {
     #[cfg(test)]
     pub fn test_store(&self) -> &AuthStore {
         &self.store
+    }
+
+    /// Clone the storage port for restart/conformance harnesses. The clone carries no
+    /// credential value and production callers do not need this seam.
+    #[doc(hidden)]
+    pub fn conformance_store(&self) -> AuthStore {
+        self.store.clone()
     }
 
     fn new_session(&self, user_id: &str) -> Result<String, AuthError> {
@@ -1165,6 +1259,140 @@ mod tests {
         let boot = s.ai_providers_bootstrap(&user);
         assert_eq!(boot["preference"]["provider"], "anthropic");
         assert_eq!(boot["preference"]["model"], out.ai_model.clone().unwrap());
+    }
+
+    #[test]
+    fn retained_ciphertext_is_persistently_rewrapped_before_old_key_removal() {
+        use crate::services::auth::crypto::{EncryptionKeyRing, KeyId};
+        use std::collections::BTreeMap;
+
+        let old_id = KeyId("retired".into());
+        let new_id = KeyId("active".into());
+        let keys = BTreeMap::from([(old_id.clone(), [7_u8; 32]), (new_id.clone(), [9_u8; 32])]);
+        let old_ring = EncryptionKeyRing {
+            active: old_id,
+            keys: keys.clone(),
+            legacy: None,
+        };
+        let old_ciphertext = old_ring.encrypt("rotation-secret").unwrap();
+
+        let mut service = svc(true);
+        service.encryption_ring = Some(EncryptionKeyRing {
+            active: new_id.clone(),
+            keys,
+            legacy: None,
+        });
+        service
+            .store
+            .set_credential(
+                "user-rotation",
+                CREDENTIAL_KIND_AI,
+                &old_ciphertext,
+                "cret",
+                "anthropic",
+            )
+            .unwrap();
+
+        assert!(matches!(
+            service.inspect_ai_slot("user-rotation", "anthropic"),
+            AiSlot::Ready { plaintext } if plaintext == "rotation-secret"
+        ));
+        let persisted = service
+            .store
+            .get_credential("user-rotation", CREDENTIAL_KIND_AI, "anthropic")
+            .unwrap()
+            .unwrap();
+        assert!(persisted.ciphertext.starts_with("v1.active."));
+        assert_ne!(persisted.ciphertext, old_ciphertext);
+
+        service.encryption_ring = Some(EncryptionKeyRing {
+            active: new_id.clone(),
+            keys: BTreeMap::from([(new_id, [9_u8; 32])]),
+            legacy: None,
+        });
+        assert!(matches!(
+            service.inspect_ai_slot("user-rotation", "anthropic"),
+            AiSlot::Ready { plaintext } if plaintext == "rotation-secret"
+        ));
+    }
+
+    #[test]
+    fn failed_rewrap_keeps_the_last_readable_ciphertext_unchanged() {
+        use crate::services::auth::crypto::{EncryptionKeyRing, KeyId};
+        use std::collections::BTreeMap;
+
+        let retired_id = KeyId("retired".into());
+        let retired_key = [7_u8; 32];
+        let old_ciphertext = EncryptionKeyRing {
+            active: retired_id.clone(),
+            keys: BTreeMap::from([(retired_id.clone(), retired_key)]),
+            legacy: None,
+        }
+        .encrypt("last-readable-secret")
+        .unwrap();
+
+        let mut service = svc(true);
+        service.encryption_ring = Some(EncryptionKeyRing {
+            active: KeyId("missing-active".into()),
+            keys: BTreeMap::from([(retired_id, retired_key)]),
+            legacy: None,
+        });
+        service
+            .store
+            .set_credential(
+                "user-rewrap-failure",
+                CREDENTIAL_KIND_AI,
+                &old_ciphertext,
+                "cret",
+                "anthropic",
+            )
+            .unwrap();
+
+        assert!(matches!(
+            service.inspect_ai_slot("user-rewrap-failure", "anthropic"),
+            AiSlot::Ready { plaintext } if plaintext == "last-readable-secret"
+        ));
+        let persisted = service
+            .store
+            .get_credential("user-rewrap-failure", CREDENTIAL_KIND_AI, "anthropic")
+            .unwrap()
+            .unwrap();
+        assert_eq!(persisted.ciphertext, old_ciphertext);
+    }
+
+    #[test]
+    fn unknown_key_failure_leaves_the_envelope_unchanged() {
+        use crate::services::auth::crypto::{EncryptionKeyRing, KeyId};
+        use std::collections::BTreeMap;
+
+        let mut service = svc(true);
+        service.encryption_ring = Some(EncryptionKeyRing {
+            active: KeyId("active".into()),
+            keys: BTreeMap::from([(KeyId("active".into()), [9_u8; 32])]),
+            legacy: None,
+        });
+        let unknown_envelope = "v1.unknown.ZmFrZS1ub25jZQ==.ZmFrZS1jaXBoZXJ0ZXh0";
+        service
+            .store
+            .set_credential(
+                "user-unknown-key",
+                CREDENTIAL_KIND_AI,
+                unknown_envelope,
+                "cret",
+                "anthropic",
+            )
+            .unwrap();
+
+        assert!(matches!(
+            service.inspect_ai_slot("user-unknown-key", "anthropic"),
+            AiSlot::Unusable
+        ));
+        let persisted = service
+            .store
+            .get_credential("user-unknown-key", CREDENTIAL_KIND_AI, "anthropic")
+            .unwrap()
+            .unwrap();
+        assert_eq!(persisted.ciphertext, unknown_envelope);
     }
 
     #[test]

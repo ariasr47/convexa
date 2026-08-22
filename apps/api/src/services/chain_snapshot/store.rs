@@ -67,7 +67,9 @@ pub struct MemoryInner {
 #[derive(Clone)]
 pub struct JsonInner {
     dir: PathBuf,
-    inner: Arc<RwLock<MemoryInner>>,
+    /// Serialize per-file read/modify/write operations without retaining body
+    /// bytes in the pre-bind application state.
+    gate: Arc<RwLock<()>>,
 }
 
 /// Append-only research snapshot store.
@@ -108,10 +110,9 @@ impl ChainSnapshotStore {
 
     pub async fn open_json(dir: &Path) -> AppResult<Self> {
         std::fs::create_dir_all(dir)?;
-        let inner = MemoryInner::load_dir(dir)?;
         Ok(Self::Json(JsonInner {
             dir: dir.to_path_buf(),
-            inner: Arc::new(RwLock::new(inner)),
+            gate: Arc::new(RwLock::new(())),
         }))
     }
 
@@ -130,10 +131,11 @@ impl ChainSnapshotStore {
                 Ok(())
             }
             Self::Json(json) => {
-                let mut guard = json.inner.write().await;
-                let inserted = guard.append(wire, body);
+                let _guard = json.gate.write().await;
+                let mut symbol = MemoryInner::load_symbol(&json.dir, &wire.symbol)?;
+                let inserted = symbol.append(wire, body);
                 if inserted {
-                    guard.persist_symbol(&json.dir, &wire.symbol)?;
+                    symbol.persist_symbol(&json.dir, &wire.symbol)?;
                 }
                 Ok(())
             }
@@ -148,7 +150,10 @@ impl ChainSnapshotStore {
             Self::Disabled => Err(AppError::Config("capture not storing".into())),
             Self::Failing => Ok(Vec::new()),
             Self::Memory(inner) => Ok(inner.read().await.list(&symbol, limit)),
-            Self::Json(json) => Ok(json.inner.read().await.list(&symbol, limit)),
+            Self::Json(json) => {
+                let _guard = json.gate.read().await;
+                Ok(MemoryInner::load_symbol(&json.dir, &symbol)?.list(&symbol, limit))
+            }
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.list(&symbol, limit).await,
         }
@@ -160,7 +165,10 @@ impl ChainSnapshotStore {
             Self::Disabled => Err(AppError::Config("capture not storing".into())),
             Self::Failing => Ok(None),
             Self::Memory(inner) => Ok(inner.read().await.load(&symbol, as_of)),
-            Self::Json(json) => Ok(json.inner.read().await.load(&symbol, as_of)),
+            Self::Json(json) => {
+                let _guard = json.gate.read().await;
+                Ok(MemoryInner::load_symbol(&json.dir, &symbol)?.load(&symbol, as_of))
+            }
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.load(&symbol, as_of).await,
         }
@@ -180,9 +188,10 @@ impl ChainSnapshotStore {
                 Ok(())
             }
             Self::Json(json) => {
-                let mut guard = json.inner.write().await;
-                guard.prune_symbol(&symbol, max_age, max_per);
-                guard.persist_symbol(&json.dir, &symbol)?;
+                let _guard = json.gate.write().await;
+                let mut rows = MemoryInner::load_symbol(&json.dir, &symbol)?;
+                rows.prune_symbol(&symbol, max_age, max_per);
+                rows.persist_symbol(&json.dir, &symbol)?;
                 Ok(())
             }
             #[cfg(feature = "postgres")]
@@ -257,40 +266,35 @@ impl MemoryInner {
         }
     }
 
-    fn load_dir(dir: &Path) -> AppResult<Self> {
+    fn load_symbol(dir: &Path, symbol: &str) -> AppResult<Self> {
         let mut inner = Self::default();
-        if !dir.is_dir() {
+        let symbol = symbol.trim().to_ascii_uppercase();
+        let path = dir.join(format!("{symbol}.json"));
+        if !path.exists() {
             return Ok(inner);
         }
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.extension().and_then(|e| e.to_str()) != Some("json") {
-                continue;
+        let raw = std::fs::read_to_string(&path)?;
+        if raw.trim().is_empty() {
+            return Ok(inner);
+        }
+        let file: JsonSymbolFile = match serde_json::from_str(&raw) {
+            Ok(file) => file,
+            Err(error) => {
+                warn!(path = %path.display(), %error, "chain snapshot json unreadable");
+                return Ok(inner);
             }
-            let raw = std::fs::read_to_string(&path)?;
-            if raw.trim().is_empty() {
-                continue;
-            }
-            let file: JsonSymbolFile = match serde_json::from_str(&raw) {
-                Ok(f) => f,
-                Err(e) => {
-                    warn!(path = %path.display(), error = %e, "chain snapshot json unreadable");
-                    continue;
+        };
+        for rec in file.entries {
+            match rec.into_row() {
+                Ok(row) => {
+                    inner
+                        .by_symbol
+                        .entry(row.symbol.clone())
+                        .or_default()
+                        .insert(row.identity_key(), row);
                 }
-            };
-            for rec in file.entries {
-                match rec.into_row() {
-                    Ok(row) => {
-                        inner
-                            .by_symbol
-                            .entry(row.symbol.clone())
-                            .or_default()
-                            .insert(row.identity_key(), row);
-                    }
-                    Err(e) => {
-                        warn!(path = %path.display(), error = %e, "chain snapshot entry skipped")
-                    }
+                Err(error) => {
+                    warn!(path = %path.display(), %error, "chain snapshot entry skipped")
                 }
             }
         }
@@ -464,5 +468,65 @@ mod tests {
         store.append(&w1, &b1).await.unwrap();
         store.append(&w2, &b2).await.unwrap();
         assert_eq!(store.list("SPY", None).await.unwrap().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn json_store_construction_does_not_read_snapshot_bodies() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "convexa-chain-snapshot-lazy-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let poison = dir.join("POISON.json");
+        std::fs::create_dir(&poison).unwrap();
+
+        // Construction is on the pre-bind path. A body-shaped entry that cannot
+        // be read must therefore remain untouched until that symbol is queried.
+        let store = ChainSnapshotStore::open_json(&dir).await.unwrap();
+
+        // Anti-vacuity: the same poison must bite once the named symbol is
+        // actually accessed, proving the constructor did not merely ignore it.
+        assert!(store.list("POISON", None).await.is_err());
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn lazy_json_store_preserves_append_load_and_prune_across_reopen() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "convexa-chain-snapshot-semantics-{}-{nonce}",
+            std::process::id()
+        ));
+        let (w1, b1) = wire_at("SPY", 20, 1);
+        let (w2, b2) = wire_at("SPY", 10, 2);
+
+        let store = ChainSnapshotStore::open_json(&dir).await.unwrap();
+        store.append(&w1, &b1).await.unwrap();
+        store.append(&w2, &b2).await.unwrap();
+        drop(store);
+
+        let reopened = ChainSnapshotStore::open_json(&dir).await.unwrap();
+        assert_eq!(reopened.list("SPY", None).await.unwrap().len(), 2);
+        assert_eq!(reopened.load("SPY", w1.as_of).await.unwrap().unwrap(), b1);
+        reopened
+            .prune_symbol("SPY", Duration::from_secs(1_209_600), 1)
+            .await
+            .unwrap();
+        drop(reopened);
+
+        let pruned = ChainSnapshotStore::open_json(&dir).await.unwrap();
+        let listed = pruned.list("SPY", None).await.unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].as_of, w2.as_of);
+        assert_eq!(pruned.load("SPY", w2.as_of).await.unwrap().unwrap(), b2);
+        drop(pruned);
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

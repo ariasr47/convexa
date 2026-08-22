@@ -1,0 +1,139 @@
+{
+  "conflicts": [
+    {
+      "quote": "Production readiness requires the declared durable database and archive-body store to be configured and reachable.",
+      "source": "pm",
+      "why": "The API can prove that a configured filesystem path is reachable, writable, flushable, and removable before bind, but it cannot prove from inside the process that the path survives host replacement. Treating that probe as proof of durability would make readiness claim more than the mechanism establishes.",
+      "proposal": "Define runtime readiness as requiring an explicit archive-body path that passes a bounded write/fsync/remove probe, and require deployment evidence that the path is a mounted persistent volume; if runtime-provable remote durability is required instead, pull the deferred object-store feature into scope.",
+      "kind": "technical",
+      "conflict_id": "8d713030b4831c8ae3eba091dd8a26d19d6854c63ebb5b9c37f8f584d26cd6b6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Rotation issue: `API-key rotation: retain every key required to read existing encrypted credentials.`",
+      "source": "ux",
+      "why": "Startup cannot know that every key required by stored credentials is present unless ciphertext key identifiers are indexed or the entire credential corpus is scanned; legacy unversioned ciphertext provides no key identifier at all. The current scope future-dates rotation-progress reporting, so this diagnostic cannot truthfully be emitted merely from key-ring parsing.",
+      "proposal": "Use the rotation refusal line only for statically invalid key-ring structure, with wording that describes that structure; treat a missing historical key discovered during use as the existing no-usable-credential outcome until a later indexed rotation-progress mechanism can prove safe retirement.",
+      "kind": "technical",
+      "conflict_id": "f90ec10dc8b7fe12fb564b43d5a601f28a730f45d3648d43bf9a7524ffc850b6",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "This proves reachability and writeability, not persistence across host replacement; the deployment lane must still prove the path is a mounted durable volume by a restart/redeploy drill.",
+      "source": "architect",
+      "why": "The BRIEF and Product position say a production process cannot become ready with a non-durable archive-body store, but this mechanism can approve an explicit writable path on an ephemeral filesystem and postpone the only persistence proof to another feature.",
+      "proposal": "Either make a mounted-volume persistence drill ship evidence for this feature, require a production storage mechanism whose durability is independently identifiable, or narrow the product claim from durable archive-body storage to an explicit writable path; the owner must choose that scope boundary.",
+      "kind": "product",
+      "conflict_id": "ba81492e6074b4b510db46fc9702061ae333fde959ee207509de6f2ecf4e24f0",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Allowed browser origins: configure one or more explicit origins.",
+      "source": "ux",
+      "why": "This exact diagnostic is false when the list already contains an explicit valid origin but also contains a wildcard, malformed entry, or non-HTTPS production origin; the operator has already done what the message asks and is not told which rule failed.",
+      "proposal": "Keep the stable Allowed browser origins label but select a closed, value-free reason for missing or empty, wildcard present, malformed origin, or HTTPS required; never echo the configured origin value.",
+      "kind": "technical",
+      "conflict_id": "c5747bb607ad47a303355939a182b2d9f5632c45ff6fcae17b5bbf750d182ee1",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "API-key rotation: retain every key required to read existing encrypted credentials.",
+      "source": "ux",
+      "why": "No position defines a bootstrap scan that can prove which removed key is still required by the stored credential corpus, and legacy unversioned ciphertext has no key identifier. Presenting this as a startup refusal would claim knowledge the validator may not possess.",
+      "proposal": "Use the rotation refusal only for structurally provable ring errors such as missing active identity, duplicates, malformed material, or a required configured legacy decoder; if a removed key is discovered only during decryption, preserve the existing no-usable-credential outcome and emit a secret-free operational event instead.",
+      "kind": "technical",
+      "conflict_id": "74b754e16c355b9e4c718c30ac1c2fa55c268feedc6da1a32fbb0b50880376b4",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A Railway runtime marker forces the production arm and conflicts with an explicit development declaration.",
+      "source": "architect",
+      "why": "A Railway marker identifies the hosting platform, not whether that environment is production, preview, or staging. Treating every Railway process as production contradicts Product's explicit-mode behavior and would make the operator label \"production\" assert more than the marker establishes.",
+      "proposal": "Require one recognized explicit runtime mode on Railway and in release builds; refuse startup when it is missing or unrecognized instead of deriving production from the provider marker alone.",
+      "kind": "technical",
+      "conflict_id": "f27f5a0e9af8681a6ade2217073f212cc32d2a25a1f6d00c9ed25e9da845ada7",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Production readiness requires the declared durable database and archive-body store to be configured and reachable. Local-disk or process-memory fallbacks are not production substitutes.",
+      "source": "pm",
+      "why": "The architecture position concedes that its create/write/fsync/remove probe proves only path reachability and writeability, not persistence across host replacement. The startup output therefore cannot truthfully call that check a durable-store validation, and the process-level criterion cannot guarantee the quoted product outcome without an additional source of durability evidence.",
+      "proposal": "Have the human choose either a remote/durability-identifying store in this feature, or narrow the startup claim to an explicit writable archive path and make mounted-volume durability a separately named deployment acceptance criterion and drill.",
+      "kind": "product",
+      "conflict_id": "68d42b1fbae30ecf2523753f1e775a2525e5f73d3cd1b9d860f4453dc0e6dd86",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A cross-site cookie policy that is incompatible with secure transport is rejected at startup.",
+      "source": "pm",
+      "why": "This wording implies that a compatible cross-site cookie policy may be accepted, while Architecture fixes the same-site mode to the current first-party Pages-proxy flow. UX cannot supply truthful cookie-policy remediation copy until the supported deployment topology is singular.",
+      "proposal": "Decide whether production is first-party only. If it is, reject cross-site policy outright and say so; if secure cross-site deployment is supported, Architecture must define the accepted case and UX can name its exact requirement.",
+      "kind": "product",
+      "conflict_id": "29f22b3580519a9f7553ed963bc5b391c2f3b33a28f2db0d79cf6a86dc4bd615",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Does a deployment-proven persistent mounted volume satisfy the archive-body durability requirement for this feature, or must remote object storage be brought into scope?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: During session-signing key rotation, must existing authenticated sessions remain valid through the overlap, or is rotation allowed to revoke them?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: May the API-key-rotation refusal wording distinguish a malformed key ring from a historical key that is discovered missing only when a credential is used?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: what mechanism, if any, proves before bind that SESSION_CHAIN_ARCHIVE_BODY_ROOT survives a Railway restart or replacement rather than merely accepting writes?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: which existing authenticated response boundary can refresh a session cookie after successful retired-key or legacy-key verification, and what is the fallback if none can?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: can the origin and key-ring diagnostics use closed reason variants under the approved category labels instead of one exact generic sentence per category?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does the current scope treat every Railway environment as production, or must preview and staging declare their mode explicitly?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does a platform-mounted archive volume proven by a deployment drill satisfy the durable archive-body outcome, or must this feature include a remotely durable store?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: is any cross-site cookie deployment supported in this feature, or is the production topology strictly first-party?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: can startup refusal be limited to invalid key-ring structure while a missing retired key discovered from stored ciphertext keeps Product's runtime no-usable-credential outcome, allowing UX to withdraw the Rotation configuration refused state?"
+    }
+  ],
+  "agree_count": {
+    "architect": 4,
+    "pm": 5,
+    "ux": 3
+  }
+}
