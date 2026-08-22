@@ -1,6 +1,7 @@
 #![cfg(feature = "postgres")]
 
 //! Real process/database evidence. TEST_DATABASE_URL is mandatory; these tests never skip.
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use reqwest::StatusCode;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -44,14 +45,14 @@ async fn admin() -> PgPool {
         .expect("connect TEST_DATABASE_URL")
 }
 async fn create(pool: &PgPool, db: &str) {
-    sqlx::query(&format!(r#"CREATE DATABASE \"{db}\""#))
+    sqlx::query(&format!(r#"CREATE DATABASE "{db}""#))
         .execute(pool)
         .await
         .expect("create disposable database");
 }
 async fn drop_db(pool: &PgPool, db: &str) {
     let _=sqlx::query("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=$1 AND pid<>pg_backend_pid()").bind(db).execute(pool).await;
-    let _ = sqlx::query(&format!(r#"DROP DATABASE IF EXISTS \"{db}\""#))
+    let _ = sqlx::query(&format!(r#"DROP DATABASE IF EXISTS "{db}""#))
         .execute(pool)
         .await;
 }
@@ -107,7 +108,10 @@ fn port() -> u16 {
     let l = TcpListener::bind("127.0.0.1:0").expect("reserve port");
     l.local_addr().unwrap().port()
 }
-fn env(c: &mut Command, db: &str, p: u16) {
+fn env(c: &mut Command, db: &str, p: u16, root: &std::path::Path) {
+    let session = URL_SAFE_NO_PAD.encode([51_u8; 32]);
+    let encryption = URL_SAFE_NO_PAD.encode([52_u8; 32]);
+    let metrics = URL_SAFE_NO_PAD.encode([53_u8; 32]);
     c.envs([
         (String::from("APP_ENV"), String::from("prod")),
         (String::from("DATABASE_URL"), db.into()),
@@ -120,17 +124,14 @@ fn env(c: &mut Command, db: &str, p: u16) {
             String::from("ALLOWED_BROWSER_ORIGINS"),
             String::from("https://app.example"),
         ),
-        (
-            String::from("METRICS_SECRET_TOKEN"),
-            String::from("metrics-test"),
-        ),
+        (String::from("METRICS_SECRET_TOKEN"), metrics),
         (
             String::from("AUTH_SESSION_ACTIVE_KEY_ID"),
             String::from("active"),
         ),
         (
             String::from("AUTH_SESSION_KEYS_JSON"),
-            String::from(r#"{"active":"c2Vzc2lvbg=="}"#),
+            format!(r#"{{"active":"{session}"}}"#),
         ),
         (
             String::from("AUTH_SESSION_SIGNING_KEY"),
@@ -142,24 +143,33 @@ fn env(c: &mut Command, db: &str, p: u16) {
         ),
         (
             String::from("AI_KEY_ENCRYPTION_KEYS_JSON"),
-            String::from(r#"{"enc":"ZW5j"}"#),
+            format!(r#"{{"enc":"{encryption}"}}"#),
         ),
         (
             String::from("AI_KEY_ENCRYPTION_KEY"),
             String::from("legacy-encryption"),
         ),
-        (String::from("AUTH_COOKIE_SECURE"), String::from("false")),
+        (String::from("AUTH_COOKIE_SECURE"), String::from("true")),
         (String::from("AUTH_COOKIE_HTTP_ONLY"), String::from("true")),
         (String::from("AUTH_COOKIE_SAMESITE"), String::from("Lax")),
         (String::from("AUTH_REGISTRATION_OPEN"), String::from("true")),
         (
             String::from("SESSION_CHAIN_ARCHIVE_ENABLED"),
-            String::from("false"),
+            String::from("true"),
         ),
         (
-            String::from("CHAIN_SNAPSHOT_ENABLED"),
-            String::from("false"),
+            String::from("SESSION_CHAIN_ARCHIVE_BODY_ROOT"),
+            root.join("archive-bodies").to_string_lossy().into_owned(),
         ),
+        (
+            String::from("SESSION_CHAIN_ARCHIVE_STORE_PATH"),
+            root.join("archive-index").to_string_lossy().into_owned(),
+        ),
+        (
+            String::from("CHAIN_SNAPSHOT_STORE_PATH"),
+            root.join("snapshot-ring").to_string_lossy().into_owned(),
+        ),
+        (String::from("CHAIN_SNAPSHOT_ENABLED"), String::from("true")),
         (String::from("WARM_ENABLED"), String::from("false")),
         (String::from("SCAN_ENABLED"), String::from("false")),
         (
@@ -172,17 +182,35 @@ fn env(c: &mut Command, db: &str, p: u16) {
 struct Running {
     child: Child,
     port: u16,
+    _root: FixtureRoot,
+}
+
+struct FixtureRoot(PathBuf);
+
+impl Drop for FixtureRoot {
+    fn drop(&mut self) {
+        let temp = std::env::temp_dir();
+        assert!(self.0.starts_with(&temp));
+        assert!(self
+            .0
+            .file_name()
+            .is_some_and(|name| name.to_string_lossy().starts_with("release_serve_root_")));
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
 }
 fn serve(db: &str) -> Running {
     let p = port();
+    let root = FixtureRoot(std::env::temp_dir().join(name("serve_root")));
+    std::fs::create_dir(&root.0).expect("create production storage fixture");
     let mut c = Command::new(bin());
     c.args(["serve", "--bind", &format!("127.0.0.1:{p}")])
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
-    env(&mut c, db, p);
+    env(&mut c, db, p, &root.0);
     Running {
         child: c.spawn().expect("spawn api-rust serve"),
         port: p,
+        _root: root,
     }
 }
 async fn health(p: u16) -> bool {
@@ -212,6 +240,33 @@ fn stop(r: Running) -> Output {
     let mut c = r.child;
     let _ = c.kill();
     c.wait_with_output().expect("collect process output")
+}
+
+async fn wait_for_exit(r: Running, bound: Duration) -> Output {
+    let mut r = r;
+    let deadline = tokio::time::Instant::now() + bound;
+    loop {
+        if r.child
+            .try_wait()
+            .expect("observe api-rust serve")
+            .is_some()
+        {
+            return r.child.wait_with_output().expect("collect process output");
+        }
+        if tokio::time::Instant::now() >= deadline {
+            let _ = r.child.kill();
+            let output = r
+                .child
+                .wait_with_output()
+                .expect("collect timed-out output");
+            panic!(
+                "api-rust serve did not refuse before the observation deadline; stdout={} stderr={}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        sleep(Duration::from_millis(50)).await;
+    }
 }
 
 #[test]
@@ -250,11 +305,15 @@ fn two_release_processes_have_one_owner_and_contender_rereads() {
         let x = Command::new(bin())
             .args(["postgres-migrate"])
             .env("DATABASE_URL", &d)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
             .spawn()
             .unwrap();
         let y = Command::new(bin())
             .args(["postgres-migrate"])
             .env("DATABASE_URL", &d)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
             .spawn()
             .unwrap();
         let xo = x.wait_with_output().unwrap();
@@ -332,7 +391,7 @@ fn serve_refusal_matrix_is_read_only_pre_bind_pre_worker() {
         let before = fp(&d).await;
         let r = serve(&d);
         let p = r.port;
-        let out = stop(r);
+        let out = wait_for_exit(r, Duration::from_secs(25)).await;
         assert!(!out.status.success());
         assert!(String::from_utf8_lossy(&out.stderr)
             .contains("Startup refused: required PostgreSQL migrations are missing."));
@@ -366,5 +425,5 @@ fn simultaneous_serve_processes_are_read_only() {
 #[test]
 fn same_revision_missing_migrations_negative_control_is_closed() {
     let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(async{let _fixture=base();let sha=std::env::var("RELEASE_GIT_SHA").expect("RELEASE_GIT_SHA is required");assert!(sha.len()==40&&sha.bytes().all(|b|b.is_ascii_hexdigit())&&sha.chars().all(|c|!c.is_ascii_uppercase()));let a=admin().await;let n=name("negative");create(&a,&n).await;let d=url(&base(),&n);let before=fp(&d).await;let r=serve(&d);let p=r.port;let out=stop(r);let after=fp(&d).await;assert!(!out.status.success());assert!(!health(p).await);assert_eq!(before,after);if let Some(path)=std::env::var_os("POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT"){let v=serde_json::json!({"schema_version":1,"feature":"postgres-release-safety","git_sha":sha,"precondition":"migrations missing","command":"api-rust serve","exit_status":out.status.code().unwrap_or(1),"startup_message":"Startup refused: required PostgreSQL migrations are missing.","listener_bound":false,"workers_started":false,"database_fingerprint_before":before,"database_fingerprint_after":after});std::fs::write(path,serde_json::to_vec(&v).unwrap()).unwrap();}drop_db(&a,&n).await;});
+    rt.block_on(async{let _fixture=base();let sha=std::env::var("RELEASE_GIT_SHA").expect("RELEASE_GIT_SHA is required");assert!(sha.len()==40&&sha.bytes().all(|b|b.is_ascii_hexdigit())&&sha.chars().all(|c|!c.is_ascii_uppercase()));let a=admin().await;let n=name("negative");create(&a,&n).await;let d=url(&base(),&n);let before=fp(&d).await;let r=serve(&d);let p=r.port;let out=wait_for_exit(r,Duration::from_secs(25)).await;let after=fp(&d).await;assert!(!out.status.success());let startup_message="Startup refused: required PostgreSQL migrations are missing.";assert!(String::from_utf8_lossy(&out.stderr).contains(startup_message));assert!(!health(p).await);assert_eq!(before,after);if let Some(path)=std::env::var_os("POSTGRES_RELEASE_NEGATIVE_CONTROL_OUT"){let v=serde_json::json!({"schema_version":1,"feature":"postgres-release-safety","git_sha":sha,"precondition":"migrations missing","command":"api-rust serve","exit_status":out.status.code().unwrap_or(1),"startup_message":startup_message,"listener_bound":false,"workers_started":false,"database_fingerprint_before":before,"database_fingerprint_after":after});std::fs::write(path,serde_json::to_vec(&v).unwrap()).unwrap();}drop_db(&a,&n).await;});
 }

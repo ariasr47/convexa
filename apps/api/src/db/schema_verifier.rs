@@ -84,7 +84,7 @@ pub async fn verify_pool(
     manifest: &ValidatedManifest,
 ) -> Result<(), VerificationFailure> {
     let exists: Option<String> =
-        sqlx::query_scalar("SELECT to_regclass('public.schema_migrations')")
+        sqlx::query_scalar("SELECT to_regclass('public.schema_migrations')::text")
             .fetch_one(pool)
             .await
             .map_err(|_| VerificationFailure::Unverifiable)?;
@@ -131,7 +131,7 @@ pub(crate) async fn verify_connection(
     manifest: &ValidatedManifest,
 ) -> Result<HistoryState, VerificationFailure> {
     let exists: Option<String> =
-        sqlx::query_scalar("SELECT to_regclass('public.schema_migrations')")
+        sqlx::query_scalar("SELECT to_regclass('public.schema_migrations')::text")
             .fetch_one(&mut *connection)
             .await
             .map_err(|_| VerificationFailure::Unverifiable)?;
