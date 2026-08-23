@@ -473,7 +473,7 @@ function compileCandidateConsumers(schemaBytes) {
     ];
     dashboardConfig.include = [
       ...(dashboardConfig.include ?? []),
-      '../../libs/api/src/**/*.ts',
+      '../../libs/api/src/index.ts',
     ];
     writeFileSync(dashboardConfigPath, JSON.stringify(dashboardConfig, null, 2));
     for (const config of ['libs/api/tsconfig.lib.json', 'apps/dashboard/tsconfig.app.json']) {
