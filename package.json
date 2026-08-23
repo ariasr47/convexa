@@ -34,6 +34,7 @@
     "api:router-integration:baseline:candidate": "node tools/api-router-integration-baseline.mjs candidate",
     "api:router-integration:baseline:accept": "node tools/api-router-integration-baseline.mjs accept",
     "api:router-integration:candidate": "node tools/api-router-integration-baseline.mjs compare",
+    "api:router-integration:rollback": "node tools/api-router-integration-rollback.mjs",
     "api:router-integration:compile-probe": "node tools/api-router-integration-compile-probe.mjs",
     "api:contract:generate": "node tools/api-contract.mjs generate",
     "api:contract:check": "node tools/api-contract.mjs check",
