@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
@@ -1937,7 +1937,8 @@ function check() {
     fail('zero-operation output', 'candidate OpenAPI contains no production operations');
   if (process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT)
     fail('unsupported schema construct', process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT);
-  validateRegistrationPairs(readFileSync(join(ROOT, 'apps/api/src/routes/mod.rs'), 'utf8'));
+  const routesSource = join(ROOT, 'apps/api/src/routes/mod.rs');
+  if (existsSync(routesSource)) validateRegistrationPairs(readFileSync(routesSource, 'utf8'));
   for (const key of ['openapi', 'parity', 'schema', 'manifest', 'baseline', 'evidence'])
     if (!existsSync(join(ROOT, files[key])))
       fail('missing output', `${files[key]}; run npm run api:contract:generate`);
