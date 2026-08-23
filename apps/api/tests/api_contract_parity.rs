@@ -13,7 +13,7 @@ use serde_json::Value;
 use tower::ServiceExt;
 
 fn document() -> Value {
-    serde_json::to_value(routes::openapi()).expect("contract serializes")
+    serde_json::to_value(routes::openapi().expect("valid production contract graph")).expect("contract serializes")
 }
 
 fn concrete_path(template: &str) -> String {
@@ -805,7 +805,7 @@ async fn http_parity_harness_observes_all_operations() {
         )
         .await
         .unwrap();
-    let app = routes::router(state.clone());
+    let app = routes::router(state.clone()).expect("valid production contract graph");
     let catalog = source_owned_http_catalog();
     let session_cookie = provision_parity_session(&app).await;
     let session_value = session_cookie
@@ -1117,7 +1117,7 @@ async fn cookie_and_gate_http_parity_flow_is_explicit() {
     let state = AppState::for_runtime_guardrail_tests("parity-test-token".into())
         .await
         .expect("hermetic runtime state");
-    let app = routes::router(state);
+    let app = routes::router(state).expect("valid production contract graph");
     let email = format!("parity-{}@example.test", std::process::id());
     let password = "parity-password-123";
     let signup = Request::builder()
@@ -1235,7 +1235,7 @@ async fn oauth_callback_uses_injected_exchange_and_sets_secure_session_cookie() 
     });
     let state_token = format!("oauth-state-{}", std::process::id());
     remember_state(&state_token);
-    let app = routes::router(state);
+    let app = routes::router(state).expect("valid production contract graph");
     let response = app
         .oneshot(
             Request::builder()
@@ -1565,7 +1565,7 @@ async fn runtime_boundary_fixtures_are_concrete() {
         .expect("inspectable chain store")
         .len();
     let anonymous_before = state.auth.session_status(None).authenticated;
-    let app = routes::router(state.clone());
+    let app = routes::router(state.clone()).expect("valid production contract graph");
     let fallback = app
         .clone()
         .oneshot(

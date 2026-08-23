@@ -37,7 +37,7 @@ async fn state_and_router() -> (AppState, axum::Router) {
         )
         .await
         .expect("session book seed");
-    let router = routes::router(state.clone());
+    let router = routes::router(state.clone()).expect("valid production contract graph");
     (state, router)
 }
 
@@ -48,7 +48,7 @@ async fn failing_store_router() -> (AppState, axum::Router) {
     )
     .await
     .expect("hermetic failing-store state");
-    let router = routes::router(state.clone());
+    let router = routes::router(state.clone()).expect("valid production contract graph");
     (state, router)
 }
 
@@ -481,7 +481,7 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
 
     let callback_token = "contract-google-callback-state";
     remember_state(callback_token);
-    let callback_router = routes::router(callback_state.clone());
+    let callback_router = routes::router(callback_state.clone()).expect("valid production contract graph");
     let callback = callback_router
         .oneshot(
             Request::builder()

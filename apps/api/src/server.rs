@@ -64,7 +64,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
     };
 
     let worker_state = state.clone();
-    let app = router_with_cors(state, cors_layer());
+    let app = router_with_cors(state, cors_layer())?;
 
     let addr: SocketAddr = bind
         .parse()
@@ -168,22 +168,24 @@ fn cors_layer() -> CorsLayer {
     }
 }
 
-fn router_with_cors(state: AppState, cors: CorsLayer) -> axum::Router {
+fn router_with_cors(state: AppState, cors: CorsLayer) -> AppResult<axum::Router> {
     let limiter = state.rate_limiter.clone();
     routes::router(state)
+        .map_err(|error| crate::error::AppError::Config(format!("incomplete contract coverage: {error}")))
+        .map(|router| router
         .layer(middleware::from_fn_with_state(
             limiter,
             rate_limit_middleware,
         ))
         .layer(cors)
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http()))
 }
 
 /// Build the real production HTTP stack for transport conformance tests.
 ///
 /// This does not bind a socket or start a worker; handlers, middleware, and CORS are
 /// the same values consumed by [`serve`].
-pub fn production_router(state: AppState, allowed: Vec<String>) -> axum::Router {
+pub fn production_router(state: AppState, allowed: Vec<String>) -> AppResult<axum::Router> {
     router_with_cors(state, production_cors_layer(allowed))
 }
 

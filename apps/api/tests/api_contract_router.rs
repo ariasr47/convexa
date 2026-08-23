@@ -26,7 +26,7 @@ fn operation_pairs(document: &utoipa::openapi::OpenApi) -> Vec<(String, String)>
 
 #[test]
 fn contract_openapi_has_exact_pre_cutover_operation_set() {
-    let document = routes::openapi();
+    let document = routes::openapi().expect("valid production contract graph");
     let mut actual = operation_pairs(&document);
     actual.sort();
     assert_eq!(actual.len(), 52);
@@ -54,7 +54,7 @@ fn contract_openapi_has_exact_pre_cutover_operation_set() {
 
 #[test]
 fn contract_openapi_operation_ids_are_unique_and_specialized_boundaries_are_closed() {
-    let document = routes::openapi();
+    let document = routes::openapi().expect("valid production contract graph");
     let mut ids = std::collections::HashSet::new();
     for item in document.paths.paths.values() {
         for operation in [
@@ -116,11 +116,11 @@ fn pure_openapi_export_is_byte_stable() {
         }
     }
     let first =
-        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi()).unwrap()))
+        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi().unwrap()).unwrap()))
             .unwrap()
             + "\n";
     let second =
-        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi()).unwrap()))
+        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi().unwrap()).unwrap()))
             .unwrap()
             + "\n";
     assert_eq!(first.as_bytes(), second.as_bytes());
@@ -131,27 +131,20 @@ fn pure_openapi_export_is_byte_stable() {
 fn runtime_and_openapi_are_built_from_one_registered_graph() {
     let source = include_str!("../src/routes/mod.rs");
     assert!(source.contains("pub fn contract_router()"));
-    assert!(source.contains("contract_router().split_for_parts()"));
+    assert!(source.contains("contract_router()?.split_for_parts()"));
     let graph_source = source
         .split("#[utoipa::path(")
         .next()
         .expect("contract router source");
-    assert_eq!(
-        graph_source
-            .lines()
-            .filter(|line| line.contains(".routes(routes!(")
-                && !line.contains("contract_test_operation"))
-            .count(),
-        52
-    );
+    assert_eq!(graph_source.match_indices("add!(").count() - 1, 52);
     assert!(!source.contains("\n    Router::new()"));
-    assert!(!source.contains(".route("));
+    assert!(!source.contains("utoipa_axum"));
 }
 
 #[test]
 fn disposable_route_graph_mutation_changes_runtime_and_openapi_together() {
-    let baseline = routes::contract_router().split_for_parts().1;
-    let mutated = routes::contract_router_with_test_operation()
+    let baseline = routes::contract_router().unwrap().split_for_parts().1;
+    let mutated = routes::contract_router_with_test_operation().unwrap()
         .split_for_parts()
         .1;
     let baseline_pairs = operation_pairs(&baseline);

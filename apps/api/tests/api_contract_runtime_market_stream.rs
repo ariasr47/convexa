@@ -102,7 +102,7 @@ async fn app() -> (axum::Router, AppState) {
         .subscribe(&["SPY".to_owned()])
         .await
         .expect("pre-register fixture symbol");
-    let router = routes::router(state.clone());
+    let router = routes::router(state.clone()).expect("valid production contract graph");
     (router, state)
 }
 
@@ -528,7 +528,7 @@ async fn stream_capacity_refusal_is_503_with_retry_guidance() {
         .subscribe(&["SPY".to_owned()])
         .await
         .expect("pre-register capacity fixture symbol");
-    let app = routes::router(state.clone());
+    let app = routes::router(state.clone()).expect("valid production contract graph");
 
     let first = get(&app, "/api/stream/prices?symbols=SPY").await;
     assert_eq!(first.status(), StatusCode::OK);

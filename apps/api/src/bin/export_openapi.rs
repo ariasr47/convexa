@@ -23,7 +23,13 @@ fn canonicalize(value: Value) -> Value {
 }
 
 fn main() {
-    let document = serde_json::to_value(routes::openapi()).expect("OpenAPI document serializes");
+    let document = match routes::openapi() {
+        Ok(document) => serde_json::to_value(document).expect("OpenAPI document serializes"),
+        Err(error) => {
+            eprintln!("incomplete contract coverage: {error}");
+            std::process::exit(1);
+        }
+    };
     let canonical = canonicalize(document);
     let output = serde_json::to_string_pretty(&canonical).expect("canonical OpenAPI serializes");
     println!("{output}");

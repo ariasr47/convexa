@@ -168,7 +168,7 @@ async fn production_real_router_transport_cookie_restart_event_and_isolation_mat
         })
         .await;
 
-    let app = production_router(state.clone(), vec!["https://app.example".into()]);
+    let app = production_router(state.clone(), vec!["https://app.example".into()]).expect("valid production contract graph");
     let metrics_before = serde_json::to_value(state.gex_cache.metrics_snapshot().await).unwrap();
     let scan_before = serde_json::to_value(state.scan.read_rows(None).await).unwrap();
     let vendor_before = state.massive.request_count();
