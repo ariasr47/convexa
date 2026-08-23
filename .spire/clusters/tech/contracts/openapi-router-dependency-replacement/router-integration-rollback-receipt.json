@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "result": "PASS",
+  "pre_revision": "7d5095f5a60f49400884813540e3349f8026df80",
+  "replacement_revision": "10031355104238da0b9b309af3b397355f26bd51",
+  "rollback_tree_revision": "7d5095f5a60f49400884813540e3349f8026df80",
+  "replacement_patch_sha256": "83b6b4b2c6a35238ac5bb24f6577c93ac64c80c1b22e4b05c2c57c822b2e075f",
+  "data_root": "<external-data-root>",
+  "data_before": {
+    "present": true,
+    "files": 2,
+    "sha256": "edd4a6006be5c5d45bd159f4d012dc81b88079e1a47d75e010d2ba86a4d8bff0"
+  },
+  "data_after": {
+    "present": true,
+    "files": 2,
+    "sha256": "edd4a6006be5c5d45bd159f4d012dc81b88079e1a47d75e010d2ba86a4d8bff0"
+  },
+  "residual_tracked_changes": 0
+}
