@@ -3,14 +3,11 @@ use axum::{
     routing::{delete, get, head, options, patch, post, put, trace, MethodRouter},
     Router,
 };
-use utoipa::{
-    openapi::{
-        info::{ContactBuilder, InfoBuilder, LicenseBuilder},
-        path::{HttpMethod, Operation, PathItem, Paths},
-        schema::{Components, Schema},
-        OpenApi, RefOr,
-    },
-    Path,
+use utoipa::openapi::{
+    info::{ContactBuilder, InfoBuilder, LicenseBuilder},
+    path::{HttpMethod, Operation, PathItem, Paths},
+    schema::{Components, Schema},
+    OpenApi, RefOr,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -29,7 +26,6 @@ pub struct ContractRouter<S> {
 }
 
 pub(crate) struct RoutePackage<S> {
-    handler: &'static str,
     path: String,
     methods: Vec<HttpMethod>,
     operation: Operation,
@@ -96,7 +92,6 @@ where
         metadata_path
     };
     Ok(RoutePackage {
-        handler: handler_name,
         path,
         methods: methods.clone(),
         operation,
@@ -130,7 +125,7 @@ impl<S: Clone + Send + Sync + 'static> ContractRouter<S> {
         }
     }
 
-    pub fn route(mut self, package: RoutePackage<S>) -> Result<Self, ContractGraphError> {
+    pub(crate) fn route(mut self, package: RoutePackage<S>) -> Result<Self, ContractGraphError> {
         for method in &package.methods {
             let name = method_name(method);
             if self
