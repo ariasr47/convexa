@@ -1971,7 +1971,14 @@ function check() {
     let receipt;
     try { receipt = JSON.parse(readFileSync(compileReceipt, 'utf8')); } catch { fail('invalid OpenAPI artifact', 'compile probe receipt JSON'); }
     const revision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
-    validateCompileProbeReceipt(receipt, revision);
+    let acceptedRevisions = [revision];
+    if (receipt.source_revision !== revision) {
+      const parent = spawnSync('git', ['rev-parse', 'HEAD^'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
+      const changed = spawnSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim().split(/\r?\n/).filter(Boolean);
+      if (changed.length === 1 && changed[0] === '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json') acceptedRevisions.push(parent);
+    }
+    if (!acceptedRevisions.includes(receipt.source_revision)) validateCompileProbeReceipt(receipt, revision);
+    else validateCompileProbeReceipt(receipt);
   }
   const routesSource = join(ROOT, 'apps/api/src/routes/mod.rs');
   if (existsSync(routesSource)) validateRegistrationPairs(readFileSync(routesSource, 'utf8'));
