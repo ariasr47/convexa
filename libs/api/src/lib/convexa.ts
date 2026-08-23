@@ -14,7 +14,9 @@ export type IvSkew = components['schemas']['IvSkewWire'];
 
 /** Cross-tenor ATM-IV curve (ignores the DTE filter). `points` ascending by dte; sparse/absent
  *  tenors are omitted, never faked. `state` is server-emitted. */
-export type TermStructure = components['schemas']['TermStructureWire'];
+export type TermStructure = Omit<components['schemas']['TermStructureWire'], 'state'> & {
+  state: 'contango' | 'backwardation' | 'flat';
+};
 
 /** Projected-dealer-flow charm limb (dealer-flow-projection INTERFACE_CONTRACT §payload). Window-scoped
  *  (moves with the DTE filter, like net_gex/net_dex). All values pre-computed on the wire — the FE never
@@ -80,12 +82,24 @@ export type FlowVsPositioningRead = components['schemas']['FlowVsPositioningWire
 export type AtrHorizon = components['schemas']['AtrHorizonWire'];
 
 /** Average-true-range read — null when ALL horizons are null OR the read raised. */
-export type AtrRead = components['schemas']['AtrReadWire'];
+export type AtrRead = Omit<components['schemas']['AtrReadWire'], 'atr_5d' | 'atr_14d' | 'atr_30d'> & {
+  atr_5d: components['schemas']['AtrHorizonWire'] | null;
+  atr_14d: components['schemas']['AtrHorizonWire'] | null;
+  atr_30d: components['schemas']['AtrHorizonWire'] | null;
+};
 
 /** The AI context pack. Null only when ALL FOUR children are null OR the wrapper raised. The KEY is
  *  always present on a post-feature backend; it is OPTIONAL on `MarketState` so pre-feature payloads
  *  type-check (consumers read `m.market_context ?? null`). */
-export type MarketContextPack = components['schemas']['MarketContextPackWire'];
+export type MarketContextPack = Omit<
+  components['schemas']['MarketContextPackWire'],
+  'trend_momentum' | 'gex_profile_shape' | 'flow_vs_positioning' | 'atr'
+> & {
+  trend_momentum: components['schemas']['TrendMomentumWire'] | null;
+  gex_profile_shape: components['schemas']['GexProfileShapeWire'] | null;
+  flow_vs_positioning: components['schemas']['FlowVsPositioningWire'] | null;
+  atr: AtrRead | null;
+};
 
 // ---- IV rank — iv-rank INTERFACE_CONTRACT §3 ----------------------------------------------------
 // One additive, independently-nullable nested object on `market_state`, mirroring
@@ -109,7 +123,13 @@ export type IvRankBand = 'premium_rich' | 'neutral' | 'premium_cheap';
 /** How the sampled IV was derived (self-describing basis, `model-read-carries-its-assumptions`). */
 export type IvBasis = 'interpolated_30d' | 'nearest_tenor';
 
-export type IvRankRead = components['schemas']['IvRankReadWire'];
+export type IvRankRead = Omit<
+  components['schemas']['IvRankReadWire'],
+  'iv_basis' | 'basis_dte'
+> & {
+  iv_basis: string;
+  basis_dte: number;
+};
 
 type MarketWire = components['schemas']['MarketWire'];
 /** Validated market-state projection used by the existing presentation code. The wire remains
@@ -296,7 +316,8 @@ export type StrikeRow = components['schemas']['MarketStrike'];
 
 export type Setup = components['schemas']['MarketSetup'];
 
-export type OpportunityTier = 'dormant' | 'watch' | 'actionable' | 'prime' | 'avoid';
+// The generated wire is intentionally open; consumers apply their own closed display maps.
+export type OpportunityTier = string;
 
 /**
  * Presentation/domain projection of the generated market wire. The transport authority remains
@@ -375,7 +396,9 @@ export interface Meta {
   timings?: MetaTimings;
 }
 
-export type Expiration = components['schemas']['MarketExpiration'];
+export type Expiration = Omit<components['schemas']['MarketExpiration'], 'dte'> & {
+  dte: number | null;
+};
 
 export type OffExchangeLevel = components['schemas']['OffExchangeLevelWire'];
 
@@ -482,12 +505,21 @@ export type ThemePref = 'dark' | 'light' | 'system';
 // validation (AC-36). The effective dollar cap is derived exactly once, server-side — the client
 // performs NO arithmetic on the owner's entered values.
 export type CapUnit = 'usd' | 'percent';
-export type PerTradeCap = components['schemas']['PerTradeCapBody'];
+export type PerTradeCap = Omit<components['schemas']['PerTradeCapBody'], 'unit'> & {
+  unit: CapUnit;
+};
 export type EffectiveDollarCapState = 'derived' | 'not_derivable' | 'not_set';
 export type NotDerivableReason = 'percent_without_account_size';
 export type EffectiveDollarCap = components['schemas']['EffectiveDollarCapBody'];
 export type RiskInputsState = 'set' | 'not_set';
-export type RiskInputs = components['schemas']['RiskInputsBody'];
+export type RiskInputs = Omit<
+  components['schemas']['RiskInputsBody'],
+  'per_trade_cap' | 'state' | 'account_size'
+> & {
+  account_size: number | null;
+  per_trade_cap?: PerTradeCap | null;
+  state: RiskInputsState;
+};
 
 /** The owner-entered PATCH shape for `PUT /api/auth/settings` — each fact independently clearable
  *  (send `null` to clear). Distinct from the read shape `RiskInputs`: the effective cap / storage
@@ -511,7 +543,11 @@ function themeFromWire(value: string): ThemePref {
 }
 
 function settingsFromWire(value: AuthSettingsWire): UserSettings {
-  return { ...value, theme: themeFromWire(value.theme) };
+  return {
+    ...value,
+    theme: themeFromWire(value.theme),
+    risk_inputs: value.risk_inputs == null ? value.risk_inputs : projectRiskInputs(value.risk_inputs),
+  };
 }
 
 /** Authenticated identity (never the raw email as id; `id` is opaque + stable). */
@@ -762,13 +798,16 @@ function projectStrategy(
 function projectRiskInputs(value: {
   state: string;
   account_size?: number | null;
-  per_trade_cap?: PerTradeCap | null;
+  per_trade_cap?: { unit: string; value: number } | null;
 }): RiskInputs {
   const state: RiskInputsState = value.state === 'set' ? 'set' : 'not_set';
   return {
     state,
     account_size: value.account_size ?? null,
-    per_trade_cap: value.per_trade_cap ?? null,
+    per_trade_cap:
+      value.per_trade_cap == null
+        ? null
+        : { ...value.per_trade_cap, unit: value.per_trade_cap.unit as CapUnit },
     effective_dollar_cap: {
       state: 'not_set',
       value: null,
@@ -883,8 +922,10 @@ function projectRecommendation(wire: RecommendationWire): RecResponse {
   return {
     status: wire.status,
     ticker: wire.ticker,
-    as_of: wire.as_of,
-    pinned_fingerprint: wire.pinned_fingerprint,
+    as_of: wire.as_of ?? null,
+    ...(wire.pinned_fingerprint == null
+      ? {}
+      : { pinned_fingerprint: wire.pinned_fingerprint }),
     stale_born: wire.stale_born,
     persona: { id: persona.id ?? null, name: persona.name },
     gate: {
@@ -966,7 +1007,7 @@ function projectRecommendation(wire: RecommendationWire): RecResponse {
     grounding: projectGrounding(wire.grounding),
     unavailable_reason: wire.unavailable_reason,
     authorized: wire.authorized,
-    availability: wire.availability,
+    availability: wire.availability as { in_app_enabled: boolean },
     scenarios: wire.scenarios
       ? {
           enabled: wire.scenarios.enabled,
@@ -1335,16 +1376,38 @@ export type MetricsLatency = components['schemas']['MetricsLatency'];
 export type MetricsStage = components['schemas']['MetricsStage'];
 export type MetricsCache = components['schemas']['MetricsCache'];
 export type MetricsVendor = components['schemas']['MetricsVendor'];
-export type MetricsScope = components['schemas']['MetricsScope'];
+export type MetricsScope = Omit<components['schemas']['MetricsScope'], 'stages'> & {
+  stages: Array<Omit<components['schemas']['MetricsStage'], 'kind' | 'stage'> & {
+    kind: StageKind;
+    stage: StageName;
+  }>;
+};
 export type RecentTrace = components['schemas']['RecentTrace'];
-export type MetricsAggregate = components['schemas']['MetricsWire'];
+export type MetricsAggregate = Omit<
+  components['schemas']['MetricsWire'],
+  'window' | 'global' | 'per_ticker'
+> & {
+  window: {
+    size_desc: string;
+    uptime_seconds: number;
+    request_count: number;
+  };
+  global: MetricsScope;
+  per_ticker: Record<string, MetricsScope>;
+};
 
 /** Read-only operator metrics readout. Side-effect-free: GETs the readout only — never triggers a
  *  bundle fetch, recompute, or cache mutation. Throws on any non-2xx (caller → "Metrics readout
  *  unavailable."). */
 export async function fetchMetrics(): Promise<MetricsAggregate> {
   const result = await http.GET('/api/_metrics');
-  return dataOf(result, 'Metrics readout failed');
+  const value = dataOf(result, 'Metrics readout failed');
+  return {
+    ...value,
+    window: value.operator,
+    global: value.global as MetricsScope,
+    per_ticker: value.per_ticker as Record<string, MetricsScope>,
+  } as MetricsAggregate;
 }
 
 // ---- Trader personas (prompt-layer projection only; assembled FE-side, locus PINNED FE-rendered) ----
@@ -1539,8 +1602,8 @@ export interface RecCap {
 export interface RecResponseDomain {
   status?: RecStatusKind | string | null;
   ticker?: string | null;
-  as_of?: string | null;
-  pinned_fingerprint?: string | null;
+  as_of: string | null;
+  pinned_fingerprint?: string;
   stale_born?: boolean | null;
   persona: RecPersona;
   gate: RecGate;
@@ -1788,7 +1851,7 @@ export type RecExport = RecExportDomain;
 
 /** Gating + cap + availability without requesting a rec (INTERFACE §1.3). Side-effect-free, 200. */
 interface RecStatusDomain {
-  availability?: { in_app_enabled: boolean } | null;
+  availability: { in_app_enabled: boolean };
   gate: RecGate;
   cap: RecCap;
   powering?: RecPowering | null;
@@ -2052,7 +2115,7 @@ export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
   const wire = dataOf(result, 'Status unavailable');
   const projected = projectRecommendation(wire);
   return {
-    availability: projected.availability,
+    availability: projected.availability as { in_app_enabled: boolean },
     gate: projected.gate,
     cap: projected.cap,
     powering: projected.powering,
