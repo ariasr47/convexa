@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
@@ -90,3 +92,28 @@ test('real baseline CLI dispatches through canonical file URL', () => {
   assert.notEqual(result.status, 0);
   assert.match(`${result.stdout}\n${result.stderr}`, /usage: api-router-integration-baseline\.mjs <candidate\|accept\|compare>/);
 });
+
+test('real candidate CLI executes npm evidence without command shim', () => {
+  const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
+  const sourceRevision = execFileSync('git', ['stash', 'create', 'b1c-runner-oracle'], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8' }).trim();
+  assert.match(sourceRevision, /^[0-9a-f]{40}$/);
+  const out = `.tmp/b1c-runner-${process.pid}.json`;
+  const result = spawnSync(process.execPath, [script, 'candidate', '--source-revision', sourceRevision, '--out', out], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8', shell: false, env: { ...process.env } });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.equal(JSON.parse(readFileSync(resolve(import.meta.dirname, '..', out), 'utf8')).source.revision, sourceRevision);
+  rmSync(resolve(import.meta.dirname, '..', out), { force: true });
+});
+
+  for (const [name, value] of [['missing npm CLI path', undefined], ['invalid npm CLI path', 'C:/does/not/exist/npm-cli.js']]) {
+  test(`real candidate rejects ${name}`, () => {
+    const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
+    const out = `.tmp/b1c-invalid-${process.pid}.json`;
+    const sourceRevision = execFileSync('git', ['stash', 'create', 'b1c-invalid-oracle'], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8' }).trim();
+    const env = { ...process.env };
+    if (value === undefined) delete env.npm_execpath; else env.npm_execpath = value;
+    const result = spawnSync(process.execPath, [script, 'candidate', '--source-revision', sourceRevision, '--out', out], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8', shell: false, env });
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stdout}\n${result.stderr}`, /npm CLI path is missing or invalid/);
+    assert.equal(existsSync(resolve(import.meta.dirname, '..', out)), false);
+  });
+}

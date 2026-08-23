@@ -1,7 +1,7 @@
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, unlinkSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, unlinkSync, realpathSync, statSync } from 'node:fs';
+import { basename, dirname, join, resolve, isAbsolute } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const BASELINE_PATH = 'apps/api/openapi/router-integration-prechange-baseline.json';
@@ -56,14 +56,36 @@ function ensurePinnedClean(revision) {
   const result = spawnSync('git', ['diff', '--quiet', revision, '--', ...PINNED_SOURCE_PATHS], { cwd: ROOT });
   if (result.status !== 0) fail('pinned source is dirty relative to source revision');
 }
+function npmCliPath(env = process.env) {
+  const supplied = env.npm_execpath;
+  if (!supplied || !isAbsolute(supplied)) fail('npm CLI path is missing or invalid');
+  let canonical;
+  try { canonical = realpathSync(supplied); } catch { fail('npm CLI path is missing or invalid'); }
+  if (!statSync(canonical).isFile() || basename(canonical).toLowerCase() !== 'npm-cli.js') fail('npm CLI path is missing or invalid');
+  return canonical;
+}
 function runEvidence() {
-  const result = spawnSync('npm.cmd', ['run', 'api:contract:check'], {
-    cwd: ROOT, encoding: 'utf8', env: { ...process.env, API_CONTRACT_EXECUTE_EVIDENCE: '1' },
+  const npmCli = npmCliPath();
+  const result = spawnSync(process.execPath, [npmCli, 'run', 'api:contract:check'], {
+    cwd: ROOT, encoding: 'utf8', shell: false, env: { ...process.env, API_CONTRACT_EXECUTE_EVIDENCE: '1' },
   });
-  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
-  if (result.status !== 0) fail(`contract evidence runner failed: ${output.split('\n').find(Boolean) ?? 'unknown'}`);
-  const response = [...output.matchAll(/CONTRACT_EVIDENCE_OUTCOME\s+(\S+)\s/g)].map((m) => m[1]);
-  const direct = [...output.matchAll(/DIRECT_HTTP_EVIDENCE_OUTCOME\s+(.+?)\s+\{/g)].map((m) => m[1]);
+  const checkOutput = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+  if (result.error || result.status !== 0) fail(`contract evidence runner failed: ${result.error?.code ?? checkOutput.split('\n').find(Boolean) ?? 'unknown'}`);
+  const commands = [
+    ['cargo', ['test', '-p', 'api-rust', '--test', 'api_contract_parity', 'boundary_evidence_', '--', '--nocapture']],
+    ['cargo', ['test', '-p', 'api-rust', '--test', 'api_contract_parity', '--', '--nocapture']],
+    ['cargo', ['test', '-p', 'api-rust', '--test', 'api_contract_runtime_auth_research', '--', '--nocapture']],
+    ['cargo', ['test', '-p', 'api-rust', '--test', 'api_contract_runtime_market_stream', '--', '--nocapture']],
+  ];
+  const outputs = commands.map(([command, argv]) => {
+    const run = spawnSync(command, argv, { cwd: ROOT, encoding: 'utf8', shell: false });
+    if (run.error || run.status !== 0) fail(`contract evidence runner failed: ${run.error?.code ?? run.stderr ?? 'unknown'}`);
+    return `${run.stdout ?? ''}\n${run.stderr ?? ''}`;
+  });
+  const responseOutput = outputs[0];
+  const directOutput = outputs.slice(1).join('\n');
+  const response = [...responseOutput.matchAll(/CONTRACT_EVIDENCE_OUTCOME\s+(\S+)\s/g)].map((m) => m[1]);
+  const direct = [...directOutput.matchAll(/DIRECT_HTTP_EVIDENCE_OUTCOME\s+(.+?)\s+\{/g)].map((m) => m[1]);
   if (response.length !== 181 || new Set(response).size !== 181) fail(`response evidence set (${response.length}/181)`);
   if (direct.length !== 87 || new Set(direct).size !== 87) fail(`direct HTTP evidence set (${direct.length}/87)`);
   return { response, direct };
