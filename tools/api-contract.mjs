@@ -474,6 +474,15 @@ function compileCandidateConsumers(schemaBytes) {
     dashboardConfig.include = [
       ...(dashboardConfig.include ?? []),
       '../../libs/api/src/index.ts',
+      '../../libs/api/src/lib/**/*.ts',
+      '../../libs/api/src/generated/**/*.ts',
+    ];
+    dashboardConfig.exclude = [
+      ...(dashboardConfig.exclude ?? []),
+      '../../libs/api/src/**/*.spec.ts',
+      '../../libs/api/src/**/*.test.ts',
+      '../../libs/api/src/**/*.spec.tsx',
+      '../../libs/api/src/**/*.test.tsx',
     ];
     writeFileSync(dashboardConfigPath, JSON.stringify(dashboardConfig, null, 2));
     for (const config of ['libs/api/tsconfig.lib.json', 'apps/dashboard/tsconfig.app.json']) {
