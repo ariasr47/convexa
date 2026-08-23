@@ -2,7 +2,7 @@
   "schema_version": 1,
   "probe_id": "openapi-router-integration-all-52",
   "result": "PASS",
-  "source_revision": "f004e716baaf8040308b65da646c8395de60946f",
+  "source_revision": "fc62fcc0f819a28894ad5ffcb32f7d61dc73df8f",
   "command": "npm run api:router-integration:compile-probe",
   "probe_tool_path": "tools/api-router-integration-compile-probe.mjs",
   "probe_tool_sha256": "d9b85afcd992c81d5e70dd9ded624a2b2ef7495275540e65db9b3b53175c33b2",
