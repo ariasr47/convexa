@@ -481,7 +481,8 @@ async fn google_oauth_runtime_evidence_preserves_state_and_session_effects() {
 
     let callback_token = "contract-google-callback-state";
     remember_state(callback_token);
-    let callback_router = routes::router(callback_state.clone()).expect("valid production contract graph");
+    let callback_router =
+        routes::router(callback_state.clone()).expect("valid production contract graph");
     let callback = callback_router
         .oneshot(
             Request::builder()

@@ -171,14 +171,18 @@ fn cors_layer() -> CorsLayer {
 fn router_with_cors(state: AppState, cors: CorsLayer) -> AppResult<axum::Router> {
     let limiter = state.rate_limiter.clone();
     routes::router(state)
-        .map_err(|error| crate::error::AppError::Config(format!("incomplete contract coverage: {error}")))
-        .map(|router| router
-        .layer(middleware::from_fn_with_state(
-            limiter,
-            rate_limit_middleware,
-        ))
-        .layer(cors)
-        .layer(TraceLayer::new_for_http()))
+        .map_err(|error| {
+            crate::error::AppError::Config(format!("incomplete contract coverage: {error}"))
+        })
+        .map(|router| {
+            router
+                .layer(middleware::from_fn_with_state(
+                    limiter,
+                    rate_limit_middleware,
+                ))
+                .layer(cors)
+                .layer(TraceLayer::new_for_http())
+        })
 }
 
 /// Build the real production HTTP stack for transport conformance tests.

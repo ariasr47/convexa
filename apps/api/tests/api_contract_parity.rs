@@ -13,7 +13,8 @@ use serde_json::Value;
 use tower::ServiceExt;
 
 fn document() -> Value {
-    serde_json::to_value(routes::openapi().expect("valid production contract graph")).expect("contract serializes")
+    serde_json::to_value(routes::openapi().expect("valid production contract graph"))
+        .expect("contract serializes")
 }
 
 fn concrete_path(template: &str) -> String {
