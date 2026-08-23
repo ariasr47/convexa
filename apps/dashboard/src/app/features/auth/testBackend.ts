@@ -696,7 +696,7 @@ export function installAuthBackend(initial: Partial<AuthBackendState> = {}): Aut
             account_size: accountSize,
             per_trade_cap: perTradeCap,
             state: accountSize != null || perTradeCap != null ? 'set' : 'not_set',
-            effective_dollar_cap: deriveEffectiveDollarCap(accountSize, perTradeCap),
+            effective_dollar_cap: deriveEffectiveDollarCap(accountSize ?? null, perTradeCap),
             updated_at: Date.now(),
           };
         }

@@ -97,7 +97,7 @@ export const termTip = (t: TermStructure) => {
   const near = t.points[0];
   const far = t.points[t.points.length - 1];
   return (
-    `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
+    `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state === 'contango' || t.state === 'backwardation' || t.state === 'flat' ? t.state : 'flat']} Near (${near?.dte}d) ` +
     `${t.near_iv.toFixed(1)}% vs far (${far?.dte}d) ${t.far_iv.toFixed(1)}%. Cross-tenor by ` +
     `definition (ignores the expiration filter). Single snapshot, no history.`
   );

@@ -9,7 +9,10 @@ export const http = createClient<paths>({
   credentials: 'same-origin',
   // Preserve the facade's observable fetch seam while openapi-fetch owns request typing.
   fetch: async (request) => {
-    const headers = Object.fromEntries(request.headers.entries());
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
     const preserveSignal = request.headers.has('x-convexa-preserve-signal');
     delete headers['x-convexa-preserve-signal'];
     const path = new URL(request.url).pathname;

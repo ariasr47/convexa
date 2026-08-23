@@ -23,4 +23,5 @@ export const WORD: Record<OpportunityTier, string> = {
   watch: 'Watch',
   actionable: 'Actionable',
   prime: 'Prime',
+  avoid: 'Avoid',
 };

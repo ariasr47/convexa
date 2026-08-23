@@ -90,7 +90,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     fetchRecStatus(ticker)
       .then((s: RecStatus) => {
         if (cancelled) return;
-        setInAppEnabled(s.availability.in_app_enabled);
+        setInAppEnabled(s.availability?.in_app_enabled ?? false);
         setPowering(s.powering ?? null);
         // INTERFACE §2: the wire always carries `scenarios` post-feature; an absent field (older
         // backend) degrades to disabled — zero scenario surface (AC-34), never a throw.

@@ -20,7 +20,30 @@ const scopeData = (): MetricsScope => ({
 
 const aggregate = (): MetricsAggregate => ({
   instrumentation_enabled: true,
-  window: { size_desc: '5m', uptime_seconds: 100, request_count: 7 },
+  window: '5m',
+  operator: {
+    ai_meter_scope: 'test',
+    history_samples: 0,
+    request_count: 7,
+    scan_rows: 0,
+    size_desc: '5m',
+    uptime_seconds: 100,
+  },
+  gex_cache: {
+    entries: 0,
+    expirations: 0,
+    hit_rate: 0,
+    hits: 0,
+    misses: 0,
+    sets: 0,
+    ttl_default_secs: 0,
+    ttl_liquid_secs: 0,
+    warm_errors: 0,
+    warm_refreshes: 0,
+    warm_symbols: [],
+  },
+  metrics_auth: 'test',
+  recent_traces: [],
   global: scopeData(),
   per_ticker: {},
 });

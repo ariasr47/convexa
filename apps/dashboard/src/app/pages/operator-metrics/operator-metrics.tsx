@@ -4,7 +4,7 @@
  * never triggers a bundle fetch or any compute. Honest-presentation: no fabricated/zeroed number
  * as real (empty → `—`), `skipped` shown as skipped, low headroom is factual & non-alerting.
  */
-import { MetricsScope, RecentTrace, StageKind, StageName } from '@convexa/api';
+import { MetricsScope, RecentTrace, StageName } from '@convexa/api';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Alert from '@mui/material/Alert';
@@ -32,7 +32,14 @@ import { useLatencyTrend } from './useLatencyTrend';
 
 const fmtMs = (n: number | null | undefined) =>
   n == null ? '—' : n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`;
-const ioCpu = (kind: StageKind) => (kind.startsWith('io_') ? 'I/O' : 'CPU');
+const ioCpu = (kind: string) => (kind.startsWith('io_') ? 'I/O' : 'CPU');
+const isStageName = (stage: string): stage is StageName =>
+  stage === 'vendor_fetch' ||
+  stage === 'engine_build' ||
+  stage === 'off_exchange' ||
+  stage === 'signals' ||
+  stage === 'persist' ||
+  stage === 'serialize_wrap';
 function fmtUptime(s: number): string {
   if (s < 60) return `${Math.round(s)}s`;
   const m = Math.floor(s / 60),
@@ -102,7 +109,7 @@ function ScopeView({ scope }: { scope: MetricsScope }) {
           {scope.stages.map((s) => (
             <TableRow key={s.stage}>
               <TableCell>
-                <Tooltip arrow title={STAGE_DOC[s.stage]}>
+                <Tooltip arrow title={isStageName(s.stage) ? STAGE_DOC[s.stage] : s.stage}>
                   <span style={{ borderBottom: '1px dotted', cursor: 'help' }}>{s.stage}</span>
                 </Tooltip>
               </TableCell>
@@ -277,7 +284,7 @@ export function OperatorMetrics() {
       </Alert>
     );
   } else if (data) {
-    const empty = data.window.request_count === 0;
+    const empty = data.operator.request_count === 0;
     body = (
       <Stack spacing={2}>
         {/* Latency trend — first child; its poll loop is the page's single fetcher. */}
@@ -297,8 +304,8 @@ export function OperatorMetrics() {
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {/* `size_desc` already reads "last ~500 req" — no hardcoded prefix (the "last last"
                     fix, redesign-stage-0 §4.2; also un-garbles the degraded payloads). */}
-                Rolling window: {data.window.size_desc} · uptime{' '}
-                {fmtUptime(data.window.uptime_seconds)} · resets on restart (ephemeral baseline).
+                Rolling window: {data.operator.size_desc} · uptime{' '}
+                {fmtUptime(data.operator.uptime_seconds)} · resets on restart (ephemeral baseline).
               </Typography>
             </Stack>
 
@@ -317,7 +324,7 @@ export function OperatorMetrics() {
                         variant="caption"
                         sx={{ color: 'text.secondary' }}
                       >
-                        · requests: {num(data.window.request_count)}
+                        · requests: {num(data.operator.request_count)}
                       </Typography>
                     </Typography>
                     <ScopeView scope={data.global} />

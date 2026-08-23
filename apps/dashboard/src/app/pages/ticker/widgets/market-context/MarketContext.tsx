@@ -399,9 +399,9 @@ function AtrCard({ read }: { read: AtrRead | null }) {
         <EmptyLine text={MC_ATR_EMPTY} testid="mc-atr-empty" />
       ) : (
         <>
-          <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d} testid="mc-atr-5d" />
-          <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d} testid="mc-atr-14d" />
-          <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d} testid="mc-atr-30d" />
+          <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d ?? null} testid="mc-atr-5d" />
+          <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d ?? null} testid="mc-atr-14d" />
+          <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d ?? null} testid="mc-atr-30d" />
           <BasisLine
             text={mcAtrBasis(read.as_of_session, read.close_basis)}
             testid="mc-atr-basis"
@@ -440,10 +440,10 @@ export function MarketContext({ pack }: Props) {
                 gap: 2,
               }}
             >
-              <TrendMomentumCard read={pack.trend_momentum} />
-              <ShapeCard read={pack.gex_profile_shape} />
-              <FlowCard read={pack.flow_vs_positioning} />
-              <AtrCard read={pack.atr} />
+              <TrendMomentumCard read={pack.trend_momentum ?? null} />
+              <ShapeCard read={pack.gex_profile_shape ?? null} />
+              <FlowCard read={pack.flow_vs_positioning ?? null} />
+              <AtrCard read={pack.atr ?? null} />
             </Box>
 
             {/* Widget-level advisory footer — always present with a non-null pack (Default + L1–L4);

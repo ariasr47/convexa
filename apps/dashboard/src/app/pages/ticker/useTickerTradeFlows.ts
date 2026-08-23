@@ -83,8 +83,8 @@ export function useTickerTradeFlows(opts: {
       const scenario = rec.scenario ?? null;
       const provenance: OrderProvenance = {
         source: scenario ? 'ai_scenario' : 'ai_rec',
-        rec_fingerprint: rec.pinned_fingerprint,
-        rec_as_of: rec.as_of,
+        rec_fingerprint: rec.pinned_fingerprint ?? undefined,
+        rec_as_of: rec.as_of ?? undefined,
         persona: { id: rec.persona.id, name: rec.persona.name },
         ...(scenario ? { scenario_id: scenario.id, scenario_name: scenario.name } : {}),
         trigger_source_text: rec.strategy.entry_trigger ?? null,
@@ -95,7 +95,7 @@ export function useTickerTradeFlows(opts: {
         provenance: {
           source: scenario ? 'ai_scenario' : 'ai_rec',
           personaName: rec.persona.name,
-          asOf: rec.as_of,
+          asOf: rec.as_of ?? null,
           ...(scenario ? { scenarioName: scenario.name } : {}),
         },
         stale: aiRec.stale,

@@ -28,6 +28,10 @@ import { useSettings } from './useSettings';
 
 const MONO = typographyTokens.monoFontFamily;
 
+function isCapUnit(value: string): value is CapUnit {
+  return value === 'usd' || value === 'percent';
+}
+
 /** Field label — matches the auth-modal / Settings uppercase idiom. */
 function FieldLabel({ children }: { children: ReactNode }) {
   return (
@@ -67,7 +71,8 @@ export function RiskInputsSection() {
   useEffect(() => {
     setAccountDraft(formatAmount(stored?.account_size ?? null));
     setCapDraft(formatAmount(stored?.per_trade_cap?.value ?? null));
-    setCapUnit(stored?.per_trade_cap?.unit ?? 'percent');
+    const unit = stored?.per_trade_cap?.unit ?? 'percent';
+    if (isCapUnit(unit)) setCapUnit(unit);
   }, [stored?.account_size, stored?.per_trade_cap?.value, stored?.per_trade_cap?.unit]);
 
   const anonymous = !auth.authenticated;

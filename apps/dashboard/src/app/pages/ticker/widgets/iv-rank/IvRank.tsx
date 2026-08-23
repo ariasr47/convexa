@@ -113,8 +113,8 @@ function BasisLine({ read }: { read: IvRankRead }) {
           read.window_sessions,
           read.window_cap,
           read.sample_count,
-          read.iv_basis,
-          read.basis_dte,
+          read.iv_basis ?? '',
+          read.basis_dte ?? 0,
         )}
       </Typography>
       <Tooltip title={IVR_TIP_BASIS} arrow placement="top">
