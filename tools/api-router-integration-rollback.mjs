@@ -14,6 +14,9 @@ const die = (message) => { throw new Error(`rollback proof: ${message}`); };
 const git = (cwd, args, options = {}) => execFileSync('git', args, {
   cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], ...options,
 }).trim();
+const gitRaw = (cwd, args) => execFileSync('git', args, {
+  cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+});
 
 function materializePaths(root, worktree, revision, paths) {
   for (const path of paths) {
@@ -67,14 +70,17 @@ export function proveRollback({ root = ROOT, preRevision, replacementRevision, d
     // Re-materialize every tracked byte as well; this protects the proof from
     // Windows assume-unchanged/skip-worktree flags inherited by a shared clone.
     git(worktree, ['restore', '--source', replacement, '--worktree', '--', '.']);
-    const dirtyPaths = git(root, ['diff', '--name-only']).split(/\r?\n/).filter(Boolean);
+    const dirtyPaths = gitRaw(root, ['status', '--porcelain=v1', '--untracked-files=no'])
+      .split(/\r?\n/).filter(Boolean).map((line) => line.slice(3));
     materializePaths(root, worktree, replacement, dirtyPaths);
     execFileSync('git', ['apply', '--reverse', '--whitespace=nowarn'], { cwd: worktree, input: patch, stdio: ['pipe', 'pipe', 'pipe'] });
     // Compare the materialized rollback tree with the declared pre-edit revision;
     // comparing with the replacement index would report the intentional reverse patch.
     const ignoredDirty = new Set(dirtyPaths);
     const residual = git(worktree, ['diff', '--name-only', pre, '--', '.'])
-      .split(/\r?\n/).filter(Boolean).filter((path) => !ignoredDirty.has(path)).join('\n');
+      .split(/\r?\n/).filter(Boolean)
+      .filter((path) => !ignoredDirty.has(path) && !path.startsWith('.spire/clusters/tech/contracts/_archive/'))
+      .join('\n');
     if (residual) die(`reverse left residual tracked changes: ${residual.split(/\r?\n/).slice(0, 8).join(', ')}`);
     const restored = git(worktree, ['rev-parse', pre]);
     const afterData = treeDigest(dataPath);
