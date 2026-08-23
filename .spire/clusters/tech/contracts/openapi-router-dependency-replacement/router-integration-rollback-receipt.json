@@ -2,9 +2,9 @@
   "schema_version": 1,
   "result": "PASS",
   "pre_revision": "7d5095f5a60f49400884813540e3349f8026df80",
-  "replacement_revision": "f5d0207911dae6c7e6b50a0c743709fac8969ba2",
+  "replacement_revision": "3047da0b103e2f7951df0b687e286b5bda01987f",
   "rollback_tree_revision": "7d5095f5a60f49400884813540e3349f8026df80",
-  "replacement_patch_sha256": "25fecd484a1311c3df13c33336df52cd9f0a1f4f3a77bda3f58ec44a0785dd96",
+  "replacement_patch_sha256": "739bc23be63e6e5301af03118f8e4a15f1fe245b5750928001dc8d5357e9a574",
   "data_root": "<external-data-root>",
   "data_before": {
     "present": true,
@@ -17,5 +17,5 @@
     "sha256": "edd4a6006be5c5d45bd159f4d012dc81b88079e1a47d75e010d2ba86a4d8bff0"
   },
   "residual_tracked_changes": 0,
-  "ignored_dirty_paths": 65
+  "ignored_dirty_paths": 66
 }
