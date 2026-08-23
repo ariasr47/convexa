@@ -459,7 +459,7 @@ function compileCandidateConsumers(schemaBytes) {
     // The disposable candidate deliberately aliases the staged shared facade from a
     // sibling project, so widen only this generated config to type-check that declared
     // input; never mutate the source config or omit files from the candidate.
-    dashboardConfig.compilerOptions.rootDir = '.';
+    dashboardConfig.compilerOptions.rootDir = '../..';
     dashboardConfig.compilerOptions.paths = {
       ...(dashboardConfig.compilerOptions.paths ?? {}),
       '@convexa/api': ['../../libs/api/src/index.ts'],
