@@ -86,6 +86,24 @@ test('baseline shape validator rejects altered counts', () => {
   assert.throws(() => validateBaselineShape({}), /schema/);
 });
 
+test('baseline shape rejects real source, artifact, OpenAPI, and evidence poisons', () => {
+  const clean = {
+    schema_version: 1, baseline_id: 'openapi-router-integration-prechange', source: { revision: 'a'.repeat(40) },
+    capture: { tool_sha256: 'b'.repeat(64) }, artifacts: ARTIFACT_PATHS.map((path) => ({ path, raw_sha256: 'c'.repeat(64) })),
+    openapi_version: '3.1.0', openapi_info: { title: 'legacy' },
+    evidence: { response_conversion: { count: 181, id_set_sha256: 'd'.repeat(64) }, direct_http: { count: 87, id_set_sha256: 'e'.repeat(64) } },
+  };
+  const mutations = [
+    (x) => { x.source.revision = 'not-a-revision'; },
+    (x) => { x.artifacts[0].raw_sha256 = 'bad'; },
+    (x) => { x.openapi_version = '3.0.3'; },
+    (x) => { x.evidence.response_conversion.count = 180; },
+    (x) => { x.evidence.direct_http.id_set_sha256 = 'bad'; },
+  ];
+  for (const mutate of mutations) { const poisoned = structuredClone(clean); mutate(poisoned); assert.throws(() => validateBaselineShape(poisoned), /schema/); }
+  assert.doesNotThrow(() => validateBaselineShape(clean));
+});
+
 for (const [name, value] of [
   ['source revision', 'not-a-sha'],
   ['OpenAPI version', '3.0.0'],
@@ -102,6 +120,11 @@ test('exports non-writing command helpers', async () => {
   const mod = await import('./api-router-integration-baseline.mjs');
   for (const name of ['buildCandidate', 'acceptBaseline', 'compareBaseline'])
     assert.equal(typeof mod[name], 'function');
+});
+
+test('accept path refuses a repeated write to the immutable baseline', async () => {
+  const mod = await import('./api-router-integration-baseline.mjs');
+  assert.throws(() => mod.acceptBaseline({ candidate: 'apps/api/openapi/router-integration-prechange-baseline.json', reviewContract: 'contract', reviewerProvenance: 'repeat' }), /already exists|overwrite/);
 });
 
 test('post-cutover comparator accepts the exact frozen B3-B7 delta', () => {
