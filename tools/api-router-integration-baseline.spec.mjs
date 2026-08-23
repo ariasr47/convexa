@@ -136,7 +136,8 @@ test('real candidate CLI executes npm evidence without command shim', () => {
   const sourceRevision = execFileSync('git', ['stash', 'create', 'b1c-runner-oracle'], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8' }).trim();
   assert.match(sourceRevision, /^[0-9a-f]{40}$/);
   const out = `.tmp/b1c-runner-${process.pid}.json`;
-  const result = spawnSync(process.execPath, [script, 'candidate', '--source-revision', sourceRevision, '--out', out], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8', shell: false, env: { ...process.env } });
+  const npmCli = process.env.npm_execpath ?? resolve(process.execPath, '..', 'node_modules', 'npm', 'bin', 'npm-cli.js');
+  const result = spawnSync(process.execPath, [script, 'candidate', '--source-revision', sourceRevision, '--out', out], { cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8', shell: false, env: { ...process.env, npm_execpath: npmCli } });
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.equal(JSON.parse(readFileSync(resolve(import.meta.dirname, '..', out), 'utf8')).source.revision, sourceRevision);
   rmSync(resolve(import.meta.dirname, '..', out), { force: true });
