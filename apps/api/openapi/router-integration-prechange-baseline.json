@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "baseline_id": "openapi-router-integration-prechange",
+  "source": {
+    "revision": "69500b4cbed39531fc1084885e1d75a6b22ca26e"
+  },
+  "capture": {
+    "tool_path": "tools/api-router-integration-baseline.mjs",
+    "tool_sha256": "c627587b099c07428385860df3cb17dafcffcf30511289b6b433f7934b68b105",
+    "candidate_command": "npm run api:router-integration:baseline:candidate -- --source-revision 69500b4cbed39531fc1084885e1d75a6b22ca26e --out .tmp/openapi-router-integration-prechange-candidate.json",
+    "accept_command": "npm run api:router-integration:baseline:accept",
+    "review_contract": ".spire/clusters/tech/contracts/openapi-router-dependency-replacement/INTERFACE_CONTRACT.md",
+    "reviewer_provenance": "operator-approved-openapi-router-replacement-2026-08-23",
+    "captured_at_utc": "2026-08-23T11:41:07.263Z"
+  },
+  "artifacts": [
+    {
+      "path": "apps/api/openapi/convexa.openapi.json",
+      "raw_sha256": "deec24e279c03c93c2af8da8f5ee3e694f188f5a3cca3ee7ce803f9ac17b9f87"
+    },
+    {
+      "path": "libs/api/src/generated/schema.ts",
+      "raw_sha256": "724181c0d47cae9a3a7032eecfa21901c310f1406aab26e9b14735c43a352e9c"
+    },
+    {
+      "path": "apps/api/openapi/parity-coverage.json",
+      "raw_sha256": "c7f23f6ca20157d82efeb66f1fdb3662cc5d7a5096c331b29166562e6832c01b"
+    },
+    {
+      "path": "apps/api/openapi/generated-artifacts.manifest.json",
+      "raw_sha256": "b7b501c2852d433ebf08053b25c13763617d24f48914a08e180ca33b75015949"
+    }
+  ],
+  "openapi_version": "3.1.0",
+  "openapi_info": {
+    "contact": {
+      "email": "juha7kukkonen@gmail.com",
+      "name": "Juha Kukkonen"
+    },
+    "description": "Utoipa's axum bindings for seamless integration for the two",
+    "license": {
+      "identifier": "MIT OR Apache-2.0",
+      "name": "MIT OR Apache-2.0"
+    },
+    "title": "utoipa-axum",
+    "version": "0.2.0"
+  },
+  "evidence": {
+    "response_conversion": {
+      "count": 181,
+      "id_set_sha256": "5b6f38303bfafde8639d830baf2446aa02ed7dbc11a21e7b1333fd7caad34c72"
+    },
+    "direct_http": {
+      "count": 87,
+      "id_set_sha256": "660a900c64d689d9f75e66d20f527c9612d7698ca30d8cf1b5c17177eddcce2e"
+    }
+  }
+}
