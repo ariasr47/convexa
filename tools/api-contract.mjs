@@ -378,7 +378,10 @@ function json(value, filepath = 'artifact.json') {
   if (!existsSync(prettierCli))
     fail('generation tooling failure', 'prettier binary is not installed');
   const source = `${JSON.stringify(canonical(value), null, 2)}\n`;
+  // Resolve formatter plugins from the declared toolchain installation, not from
+  // an incidental clean-checkout cwd that may have no node_modules yet.
   return run(process.execPath, [prettierCli, '--parser', 'json', '--stdin-filepath', filepath], {
+    cwd: TOOLCHAIN_ROOT,
     input: source,
   });
 }
