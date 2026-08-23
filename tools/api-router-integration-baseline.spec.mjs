@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import {
   BASELINE_PATH,
@@ -76,3 +79,14 @@ test('exports non-writing command helpers', async () => {
     assert.equal(typeof mod[name], 'function');
 });
 
+test('real baseline CLI dispatches through canonical file URL', () => {
+  const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
+  const canonical = pathToFileURL(script).href;
+  assert.equal(canonical, new URL('./api-router-integration-baseline.mjs', import.meta.url).href);
+  if (process.platform === 'win32') assert.match(canonical, /^file:\/\/\/[A-Za-z]:\//);
+  const result = spawnSync(process.execPath, [script], {
+    cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8',
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(`${result.stdout}\n${result.stderr}`, /usage: api-router-integration-baseline\.mjs <candidate\|accept\|compare>/);
+});

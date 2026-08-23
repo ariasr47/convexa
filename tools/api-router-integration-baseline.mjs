@@ -2,6 +2,7 @@ import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, unlinkSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export const BASELINE_PATH = 'apps/api/openapi/router-integration-prechange-baseline.json';
 export const ARTIFACT_PATHS = Object.freeze([
@@ -120,7 +121,10 @@ export function compareBaseline() {
   return true;
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replaceAll('\\', '/')}`) {
+const isMain = process.argv[1] !== undefined
+  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+
+if (isMain) {
   const command = process.argv[2]; const flags = args(process.argv.slice(3));
   if (command === 'candidate') buildCandidate({ sourceRevision: flags['source-revision'], out: flags.out });
   else if (command === 'accept') acceptBaseline({ candidate: flags.candidate, reviewContract: flags['review-contract'], reviewerProvenance: flags['reviewer-provenance'] });
