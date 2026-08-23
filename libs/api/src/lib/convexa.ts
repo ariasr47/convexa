@@ -546,7 +546,7 @@ function settingsFromWire(value: AuthSettingsWire): UserSettings {
   return {
     ...value,
     theme: themeFromWire(value.theme),
-    risk_inputs: value.risk_inputs == null ? value.risk_inputs : projectRiskInputs(value.risk_inputs),
+    risk_inputs: value.risk_inputs as RiskInputs | undefined,
   };
 }
 
