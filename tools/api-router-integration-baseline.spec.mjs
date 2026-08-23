@@ -12,6 +12,9 @@ import {
   PINNED_SOURCE_PATHS,
   canonicalIdSetHash,
   validateBaselineShape,
+  APPROVED_REPLACEMENT_REVISION,
+  ALLOWED_POSTCUTOVER_DELTA,
+  validatePostcutoverDelta,
 } from './api-router-integration-baseline.mjs';
 
 test('declares the immutable baseline and four artifact paths', () => {
@@ -79,6 +82,21 @@ test('exports non-writing command helpers', async () => {
   const mod = await import('./api-router-integration-baseline.mjs');
   for (const name of ['buildCandidate', 'acceptBaseline', 'compareBaseline'])
     assert.equal(typeof mod[name], 'function');
+});
+
+test('post-cutover comparator accepts the exact frozen B3-B7 delta', () => {
+  assert.equal(APPROVED_REPLACEMENT_REVISION, '7d5095f5a60f49400884813540e3349f8026df80');
+  assert.equal(ALLOWED_POSTCUTOVER_DELTA.length, 13);
+  assert.doesNotThrow(() => validatePostcutoverDelta({
+    sourceRevision: '69500b4cbed39531fc1084885e1d75a6b22ca26e',
+  }));
+});
+
+test('post-cutover comparator rejects an unrelated revision delta', () => {
+  assert.throws(() => validatePostcutoverDelta({
+    sourceRevision: '140297d',
+    approvedRevision: APPROVED_REPLACEMENT_REVISION,
+  }), /approved replacement delta|baseline history/);
 });
 
 test('real baseline CLI dispatches through canonical file URL', () => {

@@ -16,6 +16,16 @@ export const PINNED_SOURCE_PATHS = Object.freeze([
   ...ARTIFACT_PATHS, 'apps/api/openapi/precutover-operation-baseline.json',
   'libs/api/src/generated/schema.ts', 'tools/api-contract.mjs', 'package.json', 'package-lock.json',
 ]);
+export const APPROVED_REPLACEMENT_REVISION = '7d5095f5a60f49400884813540e3349f8026df80';
+export const ALLOWED_POSTCUTOVER_DELTA = Object.freeze([
+  ['M', 'Cargo.lock'], ['M', 'apps/api/Cargo.toml'], ['M', 'apps/api/src/bin/export_openapi.rs'],
+  ['A', 'apps/api/src/routes/contract_router.rs'], ['M', 'apps/api/src/routes/mod.rs'],
+  ['M', 'apps/api/src/server.rs'], ['M', 'apps/api/tests/api_contract_gate_isolation.rs'],
+  ['M', 'apps/api/tests/api_contract_parity.rs'], ['M', 'apps/api/tests/api_contract_router.rs'],
+  ['M', 'apps/api/tests/api_contract_runtime_auth_research.rs'],
+  ['M', 'apps/api/tests/api_contract_runtime_market_stream.rs'],
+  ['M', 'apps/api/tests/production_runtime_guardrails.rs'], ['M', 'tools/api-contract.mjs'],
+]);
 const ROOT = resolve(import.meta.dirname, '..');
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const canonical = (value) => `${JSON.stringify(value, null, 2)}\n`;
@@ -56,6 +66,27 @@ function ensurePinnedClean(revision) {
   const result = spawnSync('git', ['diff', '--quiet', revision, '--', ...PINNED_SOURCE_PATHS], { cwd: ROOT });
   if (result.status !== 0) fail('pinned source is dirty relative to source revision');
 }
+function git(root, args) {
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) fail(`baseline history: ${result.stderr?.trim() || args.join(' ')}`);
+  return result.stdout.trim();
+}
+function requireCommit(root, revision) { git(root, ['cat-file', '-e', `${revision}^{commit}`]); }
+export function validatePostcutoverDelta({ root = ROOT, sourceRevision, approvedRevision = APPROVED_REPLACEMENT_REVISION } = {}) {
+  requireCommit(root, sourceRevision); requireCommit(root, approvedRevision);
+  const actual = git(root, ['diff', '--name-status', sourceRevision, approvedRevision])
+    .split(/\r?\n/).filter(Boolean).map((line) => {
+      const [status, ...parts] = line.split('\t'); return [status, parts.join('\t')];
+    });
+  const expected = [...ALLOWED_POSTCUTOVER_DELTA].sort((a, b) => a[1].localeCompare(b[1]));
+  const expectedPaths = new Set(expected.map(([, path]) => path));
+  const protectedActual = actual.filter(([, path]) => PINNED_SOURCE_PATHS.some((prefix) => path === prefix || path.startsWith(`${prefix}/`)));
+  const observed = protectedActual.filter(([, path]) => expectedPaths.has(path)).sort((a, b) => a[1].localeCompare(b[1]));
+  const unexpected = protectedActual.filter(([, path]) => !expectedPaths.has(path) && path !== BASELINE_PATH);
+  if (unexpected.length) fail('pinned source is dirty relative to approved replacement delta');
+  if (JSON.stringify(observed) !== JSON.stringify(expected)) fail('pinned source is dirty relative to approved replacement delta');
+  return true;
+}
 function npmCliPath(env = process.env) {
   const supplied = env.npm_execpath;
   if (!supplied || !isAbsolute(supplied)) fail('npm CLI path is missing or invalid');
@@ -91,10 +122,10 @@ function runEvidence() {
   return { response, direct };
 }
 
-export function buildCandidate({ sourceRevision = fullRevision(), out } = {}) {
+export function buildCandidate({ sourceRevision = fullRevision(), out, sourceGuard = ensurePinnedClean } = {}) {
   if (!out) fail('--out is required');
   if (!/^[0-9a-f]{40}$/i.test(sourceRevision)) fail('source revision must be a full 40-hex SHA');
-  ensurePinnedClean(sourceRevision);
+  sourceGuard(sourceRevision);
   const evidence = runEvidence();
   const openapi = JSON.parse(read('apps/api/openapi/convexa.openapi.json'));
   const toolBytes = read('tools/api-router-integration-baseline.mjs');
@@ -127,6 +158,7 @@ export function acceptBaseline({ candidate, reviewContract, reviewerProvenance }
   const target = join(ROOT, BASELINE_PATH);
   if (existsSync(target)) fail('baseline already exists; refusing overwrite');
   const data = JSON.parse(readFileSync(resolve(ROOT, candidate), 'utf8')); validateBaselineShape(data);
+  ensurePinnedClean(data.source.revision);
   if (data.capture.reviewer_provenance === 'pending-review') data.capture.reviewer_provenance = reviewerProvenance;
   data.capture.review_contract = reviewContract;
   const temp = `${target}.tmp-${process.pid}`; mkdirSync(dirname(target), { recursive: true });
@@ -135,7 +167,8 @@ export function acceptBaseline({ candidate, reviewContract, reviewerProvenance }
 
 export function compareBaseline() {
   const baseline = JSON.parse(read(BASELINE_PATH)); validateBaselineShape(baseline);
-  const current = buildCandidate({ sourceRevision: baseline.source.revision, out: join('.tmp', `router-candidate-${process.pid}.json`) });
+  validatePostcutoverDelta({ sourceRevision: baseline.source.revision });
+  const current = buildCandidate({ sourceRevision: baseline.source.revision, out: join('.tmp', `router-candidate-${process.pid}.json`), sourceGuard: () => {} });
   for (let i = 0; i < ARTIFACT_PATHS.length; i++) if (current.artifacts[i].raw_sha256 !== baseline.artifacts[i].raw_sha256) fail('contract drift');
   if (JSON.stringify(current.openapi_info) !== JSON.stringify(baseline.openapi_info) ||
       current.openapi_version !== baseline.openapi_version ||
