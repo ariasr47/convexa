@@ -8,6 +8,7 @@ mod book;
 mod broker;
 mod candidates;
 mod contract;
+pub(crate) mod contract_router;
 mod demo;
 mod health;
 pub(crate) mod market;
@@ -18,32 +19,134 @@ mod research_session_books;
 mod scan;
 mod stream;
 mod ticker;
-pub(crate) mod contract_router;
 
 use crate::state::AppState;
 use axum::{http::StatusCode, response::Response, Router};
+use contract_router::{contract_route, ContractGraphError, ContractRouter};
 use utoipa::openapi::{schema::ComponentsBuilder, security::SecurityRequirement, OpenApi};
 use utoipa::{PartialSchema, ToSchema};
-use contract_router::{contract_route, ContractGraphError, ContractRouter};
 
 /// Build the complete runtime/OpenAPI graph. Every production operation is
 /// registered once through the handler that owns its response contract.
 pub fn contract_router() -> Result<ContractRouter<AppState>, ContractGraphError> {
     let mut router = ContractRouter::new();
-    macro_rules! add { ($handler:path, $metadata:path) => { router = router.route(contract_route!($handler, $metadata)?)?; }; }
-    add!(demo::progressive_demo_root, demo::__path_progressive_demo_root); add!(demo::progressive_demo_alias, demo::__path_progressive_demo_alias);
-    add!(health::health_alias, health::__path_health_alias); add!(health::api_health, health::__path_api_health); add!(health::metrics_contract, health::__path_metrics_contract);
-    add!(research_chain_snapshots::list_snapshots_contract, research_chain_snapshots::__path_list_snapshots_contract); add!(research_chain_snapshots::load_snapshot_contract, research_chain_snapshots::__path_load_snapshot_contract);
-    add!(research_session_books::list_session_books_contract, research_session_books::__path_list_session_books_contract); add!(research_session_books::load_session_book_contract, research_session_books::__path_load_session_book_contract);
-    add!(book::get_book, book::__path_get_book); add!(book::put_book, book::__path_put_book); add!(price::get_price, price::__path_get_price); add!(price::get_prices, price::__path_get_prices);
-    add!(market::get_ticker_bundle, market::__path_get_ticker_bundle); add!(ticker::stream_progressive, ticker::__path_stream_progressive); add!(market::get_market_data, market::__path_get_market_data); add!(market::get_signals, market::__path_get_signals); add!(market::get_strike_profile, market::__path_get_strike_profile);
-    add!(contract::get_tracked_contract, contract::__path_get_tracked_contract); add!(candidates::get_candidates, candidates::__path_get_candidates); add!(market::get_personas, market::__path_get_personas);
-    add!(auth::session_status, auth::__path_session_status); add!(auth::signup, auth::__path_signup); add!(auth::login, auth::__path_login); add!(auth::logout, auth::__path_logout); add!(auth::get_settings, auth::__path_get_settings); add!(auth::put_settings, auth::__path_put_settings); add!(auth::get_ai_key, auth::__path_get_ai_key); add!(auth::put_ai_key, auth::__path_put_ai_key); add!(auth::delete_ai_key, auth::__path_delete_ai_key); add!(auth::google_start, auth::__path_google_start); add!(auth::google_callback, auth::__path_google_callback); add!(auth::grok_start, auth::__path_grok_start); add!(auth::grok_callback, auth::__path_grok_callback); add!(auth::grok_delete, auth::__path_grok_delete);
-    add!(broker::get_credential, broker::__path_get_credential); add!(broker::put_credential, broker::__path_put_credential); add!(broker::delete_credential, broker::__path_delete_credential); add!(broker::get_book, broker::__path_get_book); add!(broker::refresh_book, broker::__path_refresh_book);
-    add!(recommendation::post_recommendation, recommendation::__path_post_recommendation); add!(recommendation::get_export, recommendation::__path_get_export); add!(recommendation::get_status, recommendation::__path_get_status); add!(recommendation::sim_trade_gate, recommendation::__path_sim_trade_gate);
-    add!(scan::get_scan_contract, scan::__path_get_scan_contract); add!(scan::get_scan_view_contract, scan::__path_get_scan_view_contract); add!(scan::put_scan_view_contract, scan::__path_put_scan_view_contract); add!(scan::get_scan_universe_contract, scan::__path_get_scan_universe_contract); add!(scan::get_scan_all_contract, scan::__path_get_scan_all_contract); add!(scan::get_structure_history_contract, scan::__path_get_structure_history_contract);
-    add!(stream::stream_prices, stream::__path_stream_prices); add!(stream::stream_ticker, stream::__path_stream_ticker);
-    if std::env::var_os("API_CONTRACT_TEST_EXTRA_OPERATION").is_some() { add!(contract_test_operation, __path_contract_test_operation); }
+    macro_rules! add {
+        ($handler:path, $metadata:path) => {
+            router = router.route(contract_route!($handler, $metadata)?)?;
+        };
+    }
+    add!(
+        demo::progressive_demo_root,
+        demo::__path_progressive_demo_root
+    );
+    add!(
+        demo::progressive_demo_alias,
+        demo::__path_progressive_demo_alias
+    );
+    add!(health::health_alias, health::__path_health_alias);
+    add!(health::api_health, health::__path_api_health);
+    add!(health::metrics_contract, health::__path_metrics_contract);
+    add!(
+        research_chain_snapshots::list_snapshots_contract,
+        research_chain_snapshots::__path_list_snapshots_contract
+    );
+    add!(
+        research_chain_snapshots::load_snapshot_contract,
+        research_chain_snapshots::__path_load_snapshot_contract
+    );
+    add!(
+        research_session_books::list_session_books_contract,
+        research_session_books::__path_list_session_books_contract
+    );
+    add!(
+        research_session_books::load_session_book_contract,
+        research_session_books::__path_load_session_book_contract
+    );
+    add!(book::get_book, book::__path_get_book);
+    add!(book::put_book, book::__path_put_book);
+    add!(price::get_price, price::__path_get_price);
+    add!(price::get_prices, price::__path_get_prices);
+    add!(market::get_ticker_bundle, market::__path_get_ticker_bundle);
+    add!(
+        ticker::stream_progressive,
+        ticker::__path_stream_progressive
+    );
+    add!(market::get_market_data, market::__path_get_market_data);
+    add!(market::get_signals, market::__path_get_signals);
+    add!(
+        market::get_strike_profile,
+        market::__path_get_strike_profile
+    );
+    add!(
+        contract::get_tracked_contract,
+        contract::__path_get_tracked_contract
+    );
+    add!(
+        candidates::get_candidates,
+        candidates::__path_get_candidates
+    );
+    add!(market::get_personas, market::__path_get_personas);
+    add!(auth::session_status, auth::__path_session_status);
+    add!(auth::signup, auth::__path_signup);
+    add!(auth::login, auth::__path_login);
+    add!(auth::logout, auth::__path_logout);
+    add!(auth::get_settings, auth::__path_get_settings);
+    add!(auth::put_settings, auth::__path_put_settings);
+    add!(auth::get_ai_key, auth::__path_get_ai_key);
+    add!(auth::put_ai_key, auth::__path_put_ai_key);
+    add!(auth::delete_ai_key, auth::__path_delete_ai_key);
+    add!(auth::google_start, auth::__path_google_start);
+    add!(auth::google_callback, auth::__path_google_callback);
+    add!(auth::grok_start, auth::__path_grok_start);
+    add!(auth::grok_callback, auth::__path_grok_callback);
+    add!(auth::grok_delete, auth::__path_grok_delete);
+    add!(broker::get_credential, broker::__path_get_credential);
+    add!(broker::put_credential, broker::__path_put_credential);
+    add!(broker::delete_credential, broker::__path_delete_credential);
+    add!(broker::get_book, broker::__path_get_book);
+    add!(broker::refresh_book, broker::__path_refresh_book);
+    add!(
+        recommendation::post_recommendation,
+        recommendation::__path_post_recommendation
+    );
+    add!(
+        recommendation::get_export,
+        recommendation::__path_get_export
+    );
+    add!(
+        recommendation::get_status,
+        recommendation::__path_get_status
+    );
+    add!(
+        recommendation::sim_trade_gate,
+        recommendation::__path_sim_trade_gate
+    );
+    add!(scan::get_scan_contract, scan::__path_get_scan_contract);
+    add!(
+        scan::get_scan_view_contract,
+        scan::__path_get_scan_view_contract
+    );
+    add!(
+        scan::put_scan_view_contract,
+        scan::__path_put_scan_view_contract
+    );
+    add!(
+        scan::get_scan_universe_contract,
+        scan::__path_get_scan_universe_contract
+    );
+    add!(
+        scan::get_scan_all_contract,
+        scan::__path_get_scan_all_contract
+    );
+    add!(
+        scan::get_structure_history_contract,
+        scan::__path_get_structure_history_contract
+    );
+    add!(stream::stream_prices, stream::__path_stream_prices);
+    add!(stream::stream_ticker, stream::__path_stream_ticker);
+    if std::env::var_os("API_CONTRACT_TEST_EXTRA_OPERATION").is_some() {
+        add!(contract_test_operation, __path_contract_test_operation);
+    }
     Ok(router)
 }
 
@@ -59,9 +162,13 @@ async fn contract_test_operation() -> &'static str {
 
 /// Disposable mutation seam used by the route-graph preservation test. It registers the extra
 /// operation through the same ContractRouter graph; no parallel inventory or exporter list exists.
-pub fn contract_router_with_test_operation() -> Result<ContractRouter<AppState>, ContractGraphError> {
+pub fn contract_router_with_test_operation() -> Result<ContractRouter<AppState>, ContractGraphError>
+{
     let router = contract_router()?;
-    router.route(contract_route!(contract_test_operation, __path_contract_test_operation)?)
+    router.route(contract_route!(
+        contract_test_operation,
+        __path_contract_test_operation
+    )?)
 }
 
 /// Build the runtime router from the same graph used for OpenAPI.

@@ -115,14 +115,16 @@ fn pure_openapi_export_is_byte_stable() {
             other => other,
         }
     }
-    let first =
-        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi().unwrap()).unwrap()))
-            .unwrap()
-            + "\n";
-    let second =
-        serde_json::to_string_pretty(&canonical(serde_json::to_value(routes::openapi().unwrap()).unwrap()))
-            .unwrap()
-            + "\n";
+    let first = serde_json::to_string_pretty(&canonical(
+        serde_json::to_value(routes::openapi().unwrap()).unwrap(),
+    ))
+    .unwrap()
+        + "\n";
+    let second = serde_json::to_string_pretty(&canonical(
+        serde_json::to_value(routes::openapi().unwrap()).unwrap(),
+    ))
+    .unwrap()
+        + "\n";
     assert_eq!(first.as_bytes(), second.as_bytes());
     let _: Value = serde_json::from_str(&first).unwrap();
 }
@@ -144,7 +146,8 @@ fn runtime_and_openapi_are_built_from_one_registered_graph() {
 #[test]
 fn disposable_route_graph_mutation_changes_runtime_and_openapi_together() {
     let baseline = routes::contract_router().unwrap().split_for_parts().1;
-    let mutated = routes::contract_router_with_test_operation().unwrap()
+    let mutated = routes::contract_router_with_test_operation()
+        .unwrap()
         .split_for_parts()
         .1;
     let baseline_pairs = operation_pairs(&baseline);
@@ -168,15 +171,18 @@ fn exporter_has_no_runtime_dependencies() {
 
 #[test]
 fn router_integration_compile_probe_emits_execution_receipt() {
-    println!("ROUTER_INTEGRATION_COMPILE_PROBE {}", serde_json::json!({
-        "schema_version": 1,
-        "probe_id": "openapi-router-integration-all-52",
-        "verdict": "PASS",
-        "registration_count": 52,
-        "pairing": {"result": "PASS", "observed_unique_pair_count": 52},
-        "traits": {"path": "PASS", "tags": "PASS", "schema_references": "PASS"},
-        "methods": {"GET":"PASS","PUT":"PASS","POST":"PASS","DELETE":"PASS","OPTIONS":"PASS","HEAD":"PASS","PATCH":"PASS","TRACE":"PASS"},
-        "invalid_graph_outcomes": 0,
-        "witnesses": ["stream::stream_ticker / stream::__path_stream_ticker", "auth::get_settings / auth::__path_get_settings", "recommendation::post_recommendation / recommendation::__path_post_recommendation"]
-    }));
+    println!(
+        "ROUTER_INTEGRATION_COMPILE_PROBE {}",
+        serde_json::json!({
+            "schema_version": 1,
+            "probe_id": "openapi-router-integration-all-52",
+            "verdict": "PASS",
+            "registration_count": 52,
+            "pairing": {"result": "PASS", "observed_unique_pair_count": 52},
+            "traits": {"path": "PASS", "tags": "PASS", "schema_references": "PASS"},
+            "methods": {"GET":"PASS","PUT":"PASS","POST":"PASS","DELETE":"PASS","OPTIONS":"PASS","HEAD":"PASS","PATCH":"PASS","TRACE":"PASS"},
+            "invalid_graph_outcomes": 0,
+            "witnesses": ["stream::stream_ticker / stream::__path_stream_ticker", "auth::get_settings / auth::__path_get_settings", "recommendation::post_recommendation / recommendation::__path_post_recommendation"]
+        })
+    );
 }
