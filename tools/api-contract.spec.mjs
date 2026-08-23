@@ -14,6 +14,7 @@ import {
   validateOpenapi,
   validateParity,
   validateRegistrationPairs,
+  validateForbiddenPackages,
 } from './api-contract.mjs';
 
 const tool = new URL('./api-contract.mjs', import.meta.url);
@@ -28,6 +29,22 @@ test('api contract tool exists and exposes generate/check commands', () => {
 test('normal gate discovers the complete 52 registration pairing set', () => {
   const source = readFileSync(join(fileURLToPath(new URL('..', import.meta.url)), 'apps/api/src/routes/mod.rs'), 'utf8');
   assert.equal(validateRegistrationPairs(source).length, 52);
+});
+
+test('forbidden route-integration packages are rejected in manifests, lockfile, and resolved set', () => {
+  const manifest = readFileSync('apps/api/Cargo.toml', 'utf8');
+  const lock = readFileSync('Cargo.lock', 'utf8');
+  assert.doesNotThrow(() => validateForbiddenPackages({ cargoManifest: manifest, cargoLock: lock }));
+  for (const packageName of ['utoipa-axum', 'paste']) {
+    assert.throws(
+      () => validateForbiddenPackages({ cargoManifest: `${manifest}\n${packageName} = \"1.0.0\"`, cargoLock: lock }),
+      new RegExp(`forbidden package ${packageName}`),
+    );
+    assert.throws(
+      () => validateForbiddenPackages({ cargoManifest: manifest, cargoLock: lock, resolvedPackages: [`name = \"${packageName}\"`] }),
+      new RegExp(`forbidden package ${packageName}`),
+    );
+  }
 });
 
 const openapi = JSON.parse(readFileSync('apps/api/openapi/convexa.openapi.json', 'utf8'));
@@ -140,6 +157,32 @@ test('runtime route registration mutation changes exporter inventory and fails p
     encoding: 'utf8',
   });
   assert.equal(restored.status, 0);
+});
+
+test('simultaneous runtime/OpenAPI omission cannot masquerade as a clean graph', () => {
+  const source = readFileSync('apps/api/src/routes/mod.rs', 'utf8');
+  const poisoned = source.replace(/add!\(stream::stream_ticker, stream::__path_stream_ticker\);\s*/, '');
+  assert.throws(() => validateRegistrationPairs(poisoned), /registration pairing count/);
+  const mutated = structuredClone(openapi);
+  delete mutated.paths['/api/stream/prices'];
+  const operations = Object.entries(mutated.paths).flatMap(([path, item]) =>
+    Object.keys(item)
+      .filter((method) => ['get', 'post', 'put', 'delete', 'patch', 'head', 'options'].includes(method))
+      .map((method) => ({ method: method.toUpperCase(), path })),
+  );
+  assert.throws(() => validateParity(parity, operations, mutated), /incomplete contract coverage/);
+});
+
+test('pairing gate rejects every real companion poison and restores clean source', () => {
+  const source = readFileSync('apps/api/src/routes/mod.rs', 'utf8');
+  const poisons = [
+    source.replace('stream::stream_ticker, stream::__path_stream_ticker', 'stream::stream_ticker, stream::__path_stream_prices'),
+    source.replace('add!(stream::stream_ticker, stream::__path_stream_ticker);', ''),
+    source.replace('add!(stream::stream_ticker, stream::__path_stream_ticker);', 'add!(stream::stream_ticker, stream::__path_stream_ticker); add!(stream::stream_ticker, stream::__path_stream_ticker);'),
+    source.replace('stream::__path_stream_ticker', 'stream::__path_wrong_stream_ticker'),
+  ];
+  for (const poisoned of poisons) assert.throws(() => validateRegistrationPairs(poisoned), /incomplete contract coverage/);
+  assert.equal(validateRegistrationPairs(source).length, 52);
 });
 test('manifest has exactly four paths', () =>
   assert.deepEqual(

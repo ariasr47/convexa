@@ -169,10 +169,20 @@ export function compareBaseline() {
   const baseline = JSON.parse(read(BASELINE_PATH)); validateBaselineShape(baseline);
   validatePostcutoverDelta({ sourceRevision: baseline.source.revision });
   const current = buildCandidate({ sourceRevision: baseline.source.revision, out: join('.tmp', `router-candidate-${process.pid}.json`), sourceGuard: () => {} });
-  for (let i = 0; i < ARTIFACT_PATHS.length; i++) if (current.artifacts[i].raw_sha256 !== baseline.artifacts[i].raw_sha256) fail('contract drift');
-  if (JSON.stringify(current.openapi_info) !== JSON.stringify(baseline.openapi_info) ||
-      current.openapi_version !== baseline.openapi_version ||
-      JSON.stringify(current.evidence) !== JSON.stringify(baseline.evidence)) fail('contract drift');
+  validateCandidateAgainstBaseline(current, baseline);
+  return true;
+}
+
+export function validateCandidateAgainstBaseline(candidate, baseline) {
+  validateBaselineShape(baseline);
+  if (!candidate || !Array.isArray(candidate.artifacts) || candidate.artifacts.length !== ARTIFACT_PATHS.length)
+    fail('contract drift');
+  for (let i = 0; i < ARTIFACT_PATHS.length; i++)
+    if (candidate.artifacts[i].path !== baseline.artifacts[i].path || candidate.artifacts[i].raw_sha256 !== baseline.artifacts[i].raw_sha256)
+      fail('contract drift');
+  if (candidate.openapi_version !== baseline.openapi_version ||
+      JSON.stringify(candidate.openapi_info) !== JSON.stringify(baseline.openapi_info) ||
+      JSON.stringify(candidate.evidence) !== JSON.stringify(baseline.evidence)) fail('contract drift');
   return true;
 }
 

@@ -25,6 +25,7 @@ export const RESULT_CATEGORIES = Object.freeze([
   'generation tooling failure',
   'generated-client compilation failure',
 ]);
+const FORBIDDEN_ROUTE_INTEGRATION_PACKAGES = Object.freeze(['utoipa-axum', 'paste']);
 export const COVERAGE_WARNING =
   'Coverage note: the four-call live conformance block is supplementary; response-envelope conversions are exhaustive, typed schemas are enforced through the Rust-to-OpenAPI-to-TypeScript graph, and direct HTTP evidence is risk-tiered across every source-derived operation.';
 const DEFAULT_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -74,6 +75,29 @@ const requiredManifest = [
   ],
 ];
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
+export function validateForbiddenPackages({ cargoManifest, cargoLock, resolvedPackages = [] }) {
+  const haystacks = [cargoManifest, cargoLock, ...resolvedPackages].map((value) => String(value ?? ''));
+  for (const packageName of FORBIDDEN_ROUTE_INTEGRATION_PACKAGES) {
+    // Match actual TOML package/dependency records, not prose mentioning the removed chain.
+    const packageRecord = new RegExp(`(?:^|\\n)\\s*(?:name\\s*=\\s*\\"${packageName}\\"|${packageName.replace('-', '\\-')}\\s*=)`, 'm');
+    if (haystacks.some((text) => packageRecord.test(text)))
+      throw new Error(`incomplete contract coverage: forbidden package ${packageName}`);
+  }
+  return true;
+}
+export function validateCompileProbeReceipt(receipt, currentRevision = null) {
+  const failReceipt = (detail) => { throw new Error(`incomplete contract coverage: compile probe receipt ${detail}`); };
+  if (!receipt || receipt.schema_version !== 1 || receipt.probe_id !== 'openapi-router-integration-all-52' || receipt.result !== 'PASS') failReceipt('header');
+  if (currentRevision && receipt.source_revision !== currentRevision) failReceipt('stale source revision');
+  if (receipt.command !== 'npm run api:router-integration:compile-probe' || receipt.probe_tool_path !== 'tools/api-router-integration-compile-probe.mjs' || receipt.utoipa_version !== '5.5.0') failReceipt('command/tool/version');
+  if (!/^[a-f0-9]{64}$/.test(receipt.probe_tool_sha256 ?? '') || receipt.registration_count !== 52 || !/^[a-f0-9]{64}$/.test(receipt.operation_set_sha256 ?? '')) failReceipt('counts or hashes');
+  if (receipt.pairing_guard?.result !== 'PASS' || receipt.pairing_guard?.observed_unique_pair_count !== 52) failReceipt('pairing');
+  for (const name of ['path', 'tags', 'schema_references']) if (receipt.metadata_traits?.[name] !== 'PASS') failReceipt(`trait ${name}`);
+  for (const method of ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH', 'TRACE']) if (receipt.method_filters?.[method] !== 'PASS') failReceipt(`method ${method}`);
+  for (const witness of ['sse', 'stateful_auth', 'declared_error']) if (receipt.witnesses?.[witness]?.result !== 'PASS' || typeof receipt.witnesses[witness].pair !== 'string') failReceipt(`witness ${witness}`);
+  if (receipt.invalid_graph_outcomes !== 0) failReceipt('invalid graph outcomes');
+  return true;
+}
 const RISK_CLASSES = [
   'success-json',
   'declared-error-json',
@@ -1937,6 +1961,18 @@ function check() {
     fail('zero-operation output', 'candidate OpenAPI contains no production operations');
   if (process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT)
     fail('unsupported schema construct', process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT);
+  if (existsSync(join(ROOT, 'apps/api/Cargo.toml')) && existsSync(join(ROOT, 'Cargo.lock')))
+    validateForbiddenPackages({
+      cargoManifest: readFileSync(join(ROOT, 'apps/api/Cargo.toml'), 'utf8'),
+      cargoLock: readFileSync(join(ROOT, 'Cargo.lock'), 'utf8'),
+    });
+  const compileReceipt = join(ROOT, '.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json');
+  if (existsSync(compileReceipt)) {
+    let receipt;
+    try { receipt = JSON.parse(readFileSync(compileReceipt, 'utf8')); } catch { fail('invalid OpenAPI artifact', 'compile probe receipt JSON'); }
+    const revision = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).stdout.trim();
+    validateCompileProbeReceipt(receipt, revision);
+  }
   const routesSource = join(ROOT, 'apps/api/src/routes/mod.rs');
   if (existsSync(routesSource)) validateRegistrationPairs(readFileSync(routesSource, 'utf8'));
   for (const key of ['openapi', 'parity', 'schema', 'manifest', 'baseline', 'evidence'])

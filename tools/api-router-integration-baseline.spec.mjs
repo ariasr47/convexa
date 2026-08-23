@@ -15,6 +15,7 @@ import {
   APPROVED_REPLACEMENT_REVISION,
   ALLOWED_POSTCUTOVER_DELTA,
   validatePostcutoverDelta,
+  validateCandidateAgainstBaseline,
 } from './api-router-integration-baseline.mjs';
 
 test('declares the immutable baseline and four artifact paths', () => {
@@ -35,6 +36,25 @@ test('canonical evidence hashing sorts IDs and includes one newline', () => {
 
 test('canonical evidence hashing rejects duplicate IDs', () => {
   assert.throws(() => canonicalIdSetHash(['same', 'same']), /duplicate evidence identifier/);
+});
+
+test('independent candidate comparator rejects every byte, version, metadata, and evidence mutation', () => {
+  const baseline = {
+    schema_version: 1, baseline_id: 'openapi-router-integration-prechange', source: { revision: 'a'.repeat(40) },
+    capture: { tool_sha256: 'b'.repeat(64) }, artifacts: ARTIFACT_PATHS.map((path) => ({ path, raw_sha256: 'c'.repeat(64) })),
+    openapi_version: '3.1.0', openapi_info: { title: 'legacy', version: '0.2.0' },
+    evidence: { response_conversion: { count: 181, id_set_sha256: 'd'.repeat(64) }, direct_http: { count: 87, id_set_sha256: 'e'.repeat(64) } },
+  };
+  const candidate = structuredClone(baseline);
+  assert.doesNotThrow(() => validateCandidateAgainstBaseline(candidate, baseline));
+  const mutations = [
+    (x) => { x.artifacts[0].raw_sha256 = 'f'.repeat(64); },
+    (x) => { x.openapi_version = '3.0.3'; },
+    (x) => { x.openapi_info.title = 'poison'; },
+    (x) => { x.evidence.response_conversion.id_set_sha256 = 'f'.repeat(64); },
+    (x) => { x.evidence.direct_http.count = 86; },
+  ];
+  for (const mutate of mutations) { const poisoned = structuredClone(candidate); mutate(poisoned); assert.throws(() => validateCandidateAgainstBaseline(poisoned, baseline), /contract drift/); }
 });
 
 test('baseline shape validator accepts the closed schema', () => {
