@@ -176,7 +176,7 @@ export function TickerToolbar({
             {expirations.map((e) => (
               <MenuItem key={e.date} value={e.date}>
                 <Checkbox checked={checked.includes(e.date)} />
-                <ListItemText primary={e.date} secondary={dteLabel(e.dte ?? null)} />
+                <ListItemText primary={e.date} secondary={dteLabel(e.dte)} />
               </MenuItem>
             ))}
           </Select>

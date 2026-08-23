@@ -36,7 +36,7 @@ export type OrderSource = 'ai_rec' | 'ai_scenario' | 'manual';
 export interface OrderProvenance {
   source: OrderSource;
   /** The rec's `pinned_fingerprint`. */
-  rec_fingerprint?: string;
+  rec_fingerprint?: string | null;
   /** The rec's `as_of` snapshot identity. */
   rec_as_of?: string | null;
   persona?: { id: string | null; name: string };

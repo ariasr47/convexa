@@ -23,6 +23,7 @@ import {
   IVR_BAND_DISPLAY,
   ivrBandDisplay,
   ivrBasisLine,
+  termTip,
   LIVE_TAPE_SUBTITLE_LIVE,
   LIVE_TAPE_SUBTITLE_OFFLINE,
   MC_BALANCE_DISPLAY,
@@ -121,6 +122,29 @@ describe('ivrBasisLine — closed basis branch', () => {
     expect(unknown).not.toContain('23d'); // no fabricated tenor claim
     // Identical to the clean branch regardless of the (ignored) DTE — closed, not interpolating.
     expect(unknown).toBe(ivrBasisLine(130, 252, 130, 'interpolated_30d', 999));
+  });
+
+  it('preserves absent basis fields without fabricating an empty basis or zero tenor', () => {
+    const absent = ivrBasisLine(130, 252, 130, undefined, undefined);
+    expect(absent).toContain('~30-day constant-maturity IV.');
+    expect(absent).not.toContain('~0d');
+    const nearestWithoutDte = ivrBasisLine(130, 252, 130, 'nearest_tenor', null);
+    expect(nearestWithoutDte).toContain('nearest-tenor IV');
+    expect(nearestWithoutDte).not.toMatch(/~\d+d/);
+  });
+});
+
+describe('termTip — unknown state remains unknown', () => {
+  it('does not relabel an absent or unknown server state as flat', () => {
+    const term = {
+      state: undefined,
+      points: [{ dte: 7, atm_iv: 20, expiration: '2026-07-18' }],
+      near_iv: 20,
+      far_iv: 20,
+      slope: 0,
+    } as any;
+    expect(termTip(term)).not.toContain('Flat.');
+    expect(termTip({ ...term, state: 'mystery' })).not.toContain('Flat.');
   });
 });
 

@@ -174,7 +174,7 @@ export const cooldownCaption = (remaining: number) =>
   'A fresh entry read rarely changes inside a minute, and the data refreshes about every 60 seconds. ' +
   `Available again in ${remaining}s.`;
 /** Stale strip — a newer snapshot has arrived; the read is from {as_of}. */
-export const staleStrip = (asOf: string | null) =>
+export const staleStrip = (asOf: string | null | undefined) =>
   `A newer snapshot has arrived. This read is from ${asOf ?? 'an earlier snapshot'}. ` +
   'Refresh analysis when you’re ready.';
 /** Stale-born strip — generated off an already-stale bundle ({data_age}). */

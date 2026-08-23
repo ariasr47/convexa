@@ -330,7 +330,7 @@ export function DecisionCard({
           data-testid="decision-degraded"
         >
           {presentation.resultState === 'stale_newer_snapshot'
-            ? staleStrip(rec.as_of ?? null)
+            ? staleStrip(rec.as_of)
             : presentation.resultState === 'stale_at_generation'
               ? staleBornStrip(dataAge ?? 'older data')
               : SUPERSEDED_STRIP}

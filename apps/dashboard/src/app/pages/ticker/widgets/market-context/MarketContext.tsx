@@ -235,7 +235,7 @@ function BasisLine({ text, testid }: { text: string; testid: string }) {
 }
 
 /** Trend & momentum — three independently-nullable label rows + the as-of/window basis line. */
-function TrendMomentumCard({ read }: { read: TrendMomentumRead | null }) {
+function TrendMomentumCard({ read }: { read: TrendMomentumRead | null | undefined }) {
   return (
     <SubCard title={MC_TI_TITLE} info={MC_TIP_TI_CARD} testid="mc-ti">
       {read == null ? (
@@ -280,7 +280,7 @@ function TrendMomentumCard({ read }: { read: TrendMomentumRead | null }) {
 }
 
 /** Gamma profile shape — all-or-null read; an unknown enum degrades ONLY that row's label cell. */
-function ShapeCard({ read }: { read: GexProfileShapeRead | null }) {
+function ShapeCard({ read }: { read: GexProfileShapeRead | null | undefined }) {
   return (
     <SubCard title={MC_SHAPE_TITLE} info={MC_TIP_SHAPE_CARD} testid="mc-shape">
       {read == null ? (
@@ -326,7 +326,7 @@ function ShapeCard({ read }: { read: GexProfileShapeRead | null }) {
 
 /** Flow vs positioning · today — two independently-nullable sub-components + the pinned
  *  unsigned/no-side flow-basis line (always visible with the card). */
-function FlowCard({ read }: { read: FlowVsPositioningRead | null }) {
+function FlowCard({ read }: { read: FlowVsPositioningRead | null | undefined }) {
   return (
     <SubCard title={MC_FLOW_TITLE} info={MC_TIP_FLOW_CARD} testid="mc-flow">
       {read == null ? (
@@ -369,7 +369,7 @@ function AtrRow({
   testid,
 }: {
   rowLabel: string;
-  horizon: AtrHorizon | null;
+  horizon: AtrHorizon | null | undefined;
   testid: string;
 }) {
   return (
@@ -392,16 +392,16 @@ function AtrRow({
 
 /** Average true range — three independently-nullable horizons + the as-of/close basis line. The
  *  card-level ⓘ carries the ATR tooltip (method + never-a-stop framing). */
-function AtrCard({ read }: { read: AtrRead | null }) {
+function AtrCard({ read }: { read: AtrRead | null | undefined }) {
   return (
     <SubCard title={MC_ATR_TITLE} info={MC_TIP_ATR_CARD} testid="mc-atr">
       {read == null ? (
         <EmptyLine text={MC_ATR_EMPTY} testid="mc-atr-empty" />
       ) : (
         <>
-          <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d ?? null} testid="mc-atr-5d" />
-          <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d ?? null} testid="mc-atr-14d" />
-          <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d ?? null} testid="mc-atr-30d" />
+          <AtrRow rowLabel={MC_ROW_ATR_5D} horizon={read.atr_5d} testid="mc-atr-5d" />
+          <AtrRow rowLabel={MC_ROW_ATR_14D} horizon={read.atr_14d} testid="mc-atr-14d" />
+          <AtrRow rowLabel={MC_ROW_ATR_30D} horizon={read.atr_30d} testid="mc-atr-30d" />
           <BasisLine
             text={mcAtrBasis(read.as_of_session, read.close_basis)}
             testid="mc-atr-basis"
@@ -440,10 +440,10 @@ export function MarketContext({ pack }: Props) {
                 gap: 2,
               }}
             >
-              <TrendMomentumCard read={pack.trend_momentum ?? null} />
-              <ShapeCard read={pack.gex_profile_shape ?? null} />
-              <FlowCard read={pack.flow_vs_positioning ?? null} />
-              <AtrCard read={pack.atr ?? null} />
+              <TrendMomentumCard read={pack.trend_momentum} />
+              <ShapeCard read={pack.gex_profile_shape} />
+              <FlowCard read={pack.flow_vs_positioning} />
+              <AtrCard read={pack.atr} />
             </Box>
 
             {/* Widget-level advisory footer — always present with a non-null pack (Default + L1–L4);

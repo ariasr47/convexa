@@ -96,7 +96,7 @@ export interface OrderPlan {
   provenance: {
     source: 'ai_rec' | 'ai_scenario';
     personaName: string;
-    asOf: string | null;
+    asOf: string | null | undefined;
     scenarioName?: string;
   };
   /** Newer bundle since the rec's pin ⇒ the D8-5 strip (proceed allowed, AC-10). */

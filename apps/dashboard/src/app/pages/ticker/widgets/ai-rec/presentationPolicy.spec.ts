@@ -134,6 +134,13 @@ describe('deriveAiRecPresentation', () => {
       'missing_key',
     );
   });
+  it('absent deployment availability is not the explicit disabled state', () => {
+    const absent = deriveAiRecPresentation(input({ inAppEnabled: undefined }));
+    const nulled = deriveAiRecPresentation(input({ inAppEnabled: null }));
+    expect(absent.requestState).toBe('idle');
+    expect(nulled.requestState).toBe('idle');
+    expect(absent.requestState).not.toBe('missing_key');
+  });
   it('scenario bypasses deployment key gate', () => {
     expect(
       deriveAiRecPresentation(input({ inAppEnabled: false, scenarioSelected: true })).requestState,
