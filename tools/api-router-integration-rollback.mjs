@@ -85,7 +85,9 @@ export function proveRollback({ root = ROOT, preRevision, replacementRevision, d
       replacement_revision: replacement,
       rollback_tree_revision: restored,
       replacement_patch_sha256: sha256(patch),
-      data_root: dataDir.replaceAll('\\', '/'),
+      data_root: dataPath.startsWith(`${root}${'\\'}`) || dataPath.startsWith(`${root}/`)
+        ? relative(root, dataPath).replaceAll('\\', '/')
+        : '<external-data-root>',
       data_before: beforeData,
       data_after: afterData,
       residual_tracked_changes: 0,
