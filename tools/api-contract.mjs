@@ -468,6 +468,10 @@ function compileCandidateConsumers(schemaBytes) {
       ...(dashboardConfig.compilerOptions.lib ?? []),
       'dom.iterable',
     ];
+    dashboardConfig.include = [
+      ...(dashboardConfig.include ?? []),
+      '../../libs/api/src/**/*.ts',
+    ];
     writeFileSync(dashboardConfigPath, JSON.stringify(dashboardConfig, null, 2));
     for (const config of ['libs/api/tsconfig.lib.json', 'apps/dashboard/tsconfig.app.json']) {
       const result = spawnSync(
