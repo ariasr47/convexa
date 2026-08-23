@@ -13,6 +13,7 @@ import {
   validateEvidenceOutcome,
   validateOpenapi,
   validateParity,
+  validateRegistrationPairs,
 } from './api-contract.mjs';
 
 const tool = new URL('./api-contract.mjs', import.meta.url);
@@ -22,6 +23,11 @@ test('api contract tool exists and exposes generate/check commands', () => {
   const result = spawnSync(process.execPath, [fileURLToPath(tool), 'check'], { encoding: 'utf8' });
   assert.equal(result.status, 0);
   assert.match(`${result.stdout}${result.stderr}`, /API contract check passed/);
+});
+
+test('normal gate discovers the complete 52 registration pairing set', () => {
+  const source = readFileSync(join(fileURLToPath(new URL('..', import.meta.url)), 'apps/api/src/routes/mod.rs'), 'utf8');
+  assert.equal(validateRegistrationPairs(source).length, 52);
 });
 
 const openapi = JSON.parse(readFileSync('apps/api/openapi/convexa.openapi.json', 'utf8'));

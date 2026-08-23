@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
   cpSync,
@@ -1920,6 +1920,16 @@ function install(bytes) {
     throw error;
   }
 }
+export function validateRegistrationPairs(source, expectedCount = 52) {
+  const records = [...source.matchAll(/(?:contract_route|add)!\(\s*([A-Za-z0-9_:]+)\s*,\s*([A-Za-z0-9_:]+)\s*\)/g)].filter(([, handler]) => handler !== 'contract_test_operation').map(([, handler, companion]) => ({
+    handler, companion, handler_basename: handler.split('::').pop(), companion_basename: companion.split('::').pop(),
+  }));
+  if (records.length !== expectedCount) fail('incomplete contract coverage', `registration pairing count (${records.length}/${expectedCount})`);
+  if (new Set(records.map((x) => x.handler)).size !== expectedCount || new Set(records.map((x) => x.companion)).size !== expectedCount) fail('incomplete contract coverage', 'duplicate registration pairing');
+  if (records.some((x) => x.companion_basename !== `__path_${x.handler_basename}`)) fail('incomplete contract coverage', 'registration companion mismatch');
+  return records;
+}
+
 function check() {
   if (process.env.API_CONTRACT_MISSING_OUTPUT)
     fail('missing output', process.env.API_CONTRACT_MISSING_OUTPUT);
@@ -1927,6 +1937,7 @@ function check() {
     fail('zero-operation output', 'candidate OpenAPI contains no production operations');
   if (process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT)
     fail('unsupported schema construct', process.env.API_CONTRACT_UNSUPPORTED_CONSTRUCT);
+  validateRegistrationPairs(readFileSync(join(ROOT, 'apps/api/src/routes/mod.rs'), 'utf8'));
   for (const key of ['openapi', 'parity', 'schema', 'manifest', 'baseline', 'evidence'])
     if (!existsSync(join(ROOT, files[key])))
       fail('missing output', `${files[key]}; run npm run api:contract:generate`);
@@ -1971,7 +1982,7 @@ function check() {
     });
   };
   const extras = discover(join(ROOT, 'apps/api/openapi')).filter(
-    (path) => path !== files.manifest && !expectedPaths.has(path),
+    (path) => path !== files.manifest && path !== 'apps/api/openapi/router-integration-prechange-baseline.json' && !expectedPaths.has(path),
   );
   if (extras.length)
     fail('incomplete contract coverage', `unlisted artifact ${extras.sort().join(', ')}`);

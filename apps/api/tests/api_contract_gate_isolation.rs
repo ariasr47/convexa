@@ -132,3 +132,9 @@ fn production_runtime_isolation_has_no_generator_or_contract_artifacts() {
     let package = read("apps/api/Cargo.toml");
     assert!(package.contains("default-run = \"api-rust\""));
 }
+
+#[test]
+fn router_integration_gate_requires_history_and_probe_inputs() {
+    assert!(read("apps/api/openapi/router-integration-prechange-baseline.json").contains("openapi-router-integration-prechange"));
+    assert!(read("tools/api-router-integration-compile-probe.mjs").contains("ROUTER_INTEGRATION_COMPILE_PROBE"));
+}
