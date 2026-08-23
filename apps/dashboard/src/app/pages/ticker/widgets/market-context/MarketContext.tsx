@@ -235,7 +235,7 @@ function BasisLine({ text, testid }: { text: string; testid: string }) {
 }
 
 /** Trend & momentum — three independently-nullable label rows + the as-of/window basis line. */
-function TrendMomentumCard({ read }: { read: TrendMomentumRead | null | undefined }) {
+function TrendMomentumCard({ read }: { read: TrendMomentumRead | null }) {
   return (
     <SubCard title={MC_TI_TITLE} info={MC_TIP_TI_CARD} testid="mc-ti">
       {read == null ? (
@@ -280,7 +280,7 @@ function TrendMomentumCard({ read }: { read: TrendMomentumRead | null | undefine
 }
 
 /** Gamma profile shape — all-or-null read; an unknown enum degrades ONLY that row's label cell. */
-function ShapeCard({ read }: { read: GexProfileShapeRead | null | undefined }) {
+function ShapeCard({ read }: { read: GexProfileShapeRead | null }) {
   return (
     <SubCard title={MC_SHAPE_TITLE} info={MC_TIP_SHAPE_CARD} testid="mc-shape">
       {read == null ? (
@@ -326,7 +326,7 @@ function ShapeCard({ read }: { read: GexProfileShapeRead | null | undefined }) {
 
 /** Flow vs positioning · today — two independently-nullable sub-components + the pinned
  *  unsigned/no-side flow-basis line (always visible with the card). */
-function FlowCard({ read }: { read: FlowVsPositioningRead | null | undefined }) {
+function FlowCard({ read }: { read: FlowVsPositioningRead | null }) {
   return (
     <SubCard title={MC_FLOW_TITLE} info={MC_TIP_FLOW_CARD} testid="mc-flow">
       {read == null ? (
@@ -369,7 +369,7 @@ function AtrRow({
   testid,
 }: {
   rowLabel: string;
-  horizon: AtrHorizon | null | undefined;
+  horizon: AtrHorizon | null;
   testid: string;
 }) {
   return (
@@ -392,7 +392,7 @@ function AtrRow({
 
 /** Average true range — three independently-nullable horizons + the as-of/close basis line. The
  *  card-level ⓘ carries the ATR tooltip (method + never-a-stop framing). */
-function AtrCard({ read }: { read: AtrRead | null | undefined }) {
+function AtrCard({ read }: { read: AtrRead | null }) {
   return (
     <SubCard title={MC_ATR_TITLE} info={MC_TIP_ATR_CARD} testid="mc-atr">
       {read == null ? (

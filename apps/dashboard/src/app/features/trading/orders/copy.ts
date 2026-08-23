@@ -19,7 +19,7 @@ export const GATE_SIGN_IN = 'Sign in to place a simulated order.';
 export const DIALOG_TITLE = 'Simulated order — act on this rec';
 
 /** §3.1-3 provenance line variants. */
-export const provenanceAiRead = (persona: string, asOf: string | null | undefined) =>
+export const provenanceAiRead = (persona: string, asOf: string | null) =>
   `From AI read · ${persona} · as of ${asOf ?? 'unknown snapshot'}`;
 export const provenanceScenario = (name: string) => `From scripted scenario · ${name}`;
 
@@ -84,7 +84,7 @@ export const scriptedStrip = (name: string) =>
   `pipeline. Not a real AI read.`;
 
 /** D8-5 — stale rec at Act. */
-export const staleRecDisclosure = (asOf: string | null | undefined) =>
+export const staleRecDisclosure = (asOf: string | null) =>
   `Newer data has arrived since this read was pinned (as of ${asOf ?? 'unknown snapshot'}). The ` +
   `plan below reflects that older snapshot; the trigger still evaluates against live data only.`;
 
@@ -171,7 +171,7 @@ export const DETAIL_PLAN = 'PLAN AS PLACED';
 export const DETAIL_LIFECYCLE = 'LIFECYCLE';
 export const detailScenarioSource = (name: string, id: string) =>
   `Scripted scenario · ${name} (${id})`;
-export const detailPinned = (fingerprint: string, asOf: string | null | undefined) =>
+export const detailPinned = (fingerprint: string, asOf: string | null) =>
   `Pinned to ${fingerprint} · as of ${asOf ?? 'unknown snapshot'}`;
 
 // ---- §6 — the scenario picker (operator-only, flag-gated) ----------------------------------------

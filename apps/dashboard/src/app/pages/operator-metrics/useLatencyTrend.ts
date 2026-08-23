@@ -99,8 +99,8 @@ export function useLatencyTrend() {
     setLoading(false);
 
     const now = Date.now();
-    const req = agg.operator.request_count,
-      up = agg.operator.uptime_seconds;
+    const req = agg.window.request_count,
+      up = agg.window.uptime_seconds;
     const prev = prevMarkers.current;
     const restart = !!prev && (req < prev.req || up < prev.up);
     const stale = !!prev && !restart && req === prev.req && agg.instrumentation_enabled;

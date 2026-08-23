@@ -63,7 +63,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
   // (which carries the gating snapshot at response time). `inAppEnabled` only ever comes from status.
   const [gate, setGate] = useState<RecGate>(DEFAULT_GATE);
   const [cap, setCap] = useState<RecCap>(DEFAULT_CAP);
-  const [inAppEnabled, setInAppEnabled] = useState<boolean | null>(true);
+  const [inAppEnabled, setInAppEnabled] = useState(true);
   const [statusReady, setStatusReady] = useState(false);
   const [powering, setPowering] = useState<RecPowering | null>(null);
   // Scenario advertisement — driven ENTIRELY off the wire (never assumed). Default = disabled.
@@ -90,7 +90,7 @@ export function useAiRecommendation(ticker: string, bundle: TickerBundle | null,
     fetchRecStatus(ticker)
       .then((s: RecStatus) => {
         if (cancelled) return;
-        setInAppEnabled(s.availability?.in_app_enabled ?? null);
+        setInAppEnabled(s.availability.in_app_enabled);
         setPowering(s.powering ?? null);
         // INTERFACE §2: the wire always carries `scenarios` post-feature; an absent field (older
         // backend) degrades to disabled — zero scenario surface (AC-34), never a throw.

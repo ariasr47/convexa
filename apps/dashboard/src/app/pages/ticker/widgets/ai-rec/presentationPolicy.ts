@@ -32,7 +32,7 @@ export interface PresentationInput {
   stale: boolean;
   signedIn: boolean;
   canCreateOrder: boolean;
-  inAppEnabled: boolean | null | undefined;
+  inAppEnabled: boolean;
   cap: RecCap;
   cooldownRemaining: number;
   readinessGateState: 'available' | 'no_fresh_edge';
@@ -119,7 +119,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
     requestState =
       responseKeyState(rec) ??
       (scenarioSelected ? null : poweringRequestState(input.poweringReason)) ??
-      (input.inAppEnabled === false && !scenarioSelected ? 'missing_key' : null) ??
+      (!input.inAppEnabled && !scenarioSelected ? 'missing_key' : null) ??
       (input.cap.over_limit && !scenarioSelected ? 'daily_cap' : null) ??
       (input.cooldownRemaining > 0 && !scenarioSelected ? 'cooldown' : null) ??
       (input.readinessGateState === 'no_fresh_edge' ? 'no_edge' : null) ??
@@ -152,7 +152,7 @@ export function deriveAiRecPresentation(input: PresentationInput): AiRecPresenta
   const unavailableRetryGate =
     requestState === 'unavailable' &&
     signedIn &&
-    input.inAppEnabled === true &&
+    input.inAppEnabled &&
     input.readinessGateState === 'available' &&
     (scenarioSelected || (input.cooldownRemaining <= 0 && !input.cap.over_limit));
 

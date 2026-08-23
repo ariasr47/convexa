@@ -96,12 +96,8 @@ export const skewTip = (s: IvSkew) =>
 export const termTip = (t: TermStructure) => {
   const near = t.points[0];
   const far = t.points[t.points.length - 1];
-  const stateClause =
-    t.state === 'contango' || t.state === 'backwardation' || t.state === 'flat'
-      ? TERM_STATE_CLAUSE[t.state]
-      : null;
   return (
-    `ATM implied vol across expirations. ${stateClause ? `${stateClause} ` : ''}Near (${near?.dte}d) ` +
+    `ATM implied vol across expirations. ${TERM_STATE_CLAUSE[t.state]} Near (${near?.dte}d) ` +
     `${t.near_iv.toFixed(1)}% vs far (${far?.dte}d) ${t.far_iv.toFixed(1)}%. Cross-tenor by ` +
     `definition (ignores the expiration filter). Single snapshot, no history.`
   );
@@ -125,7 +121,7 @@ export function sampleTermPoints(points: TermStructure['points']): TermStructure
 }
 
 /** Conventional DTE label: 0 = expires today (0DTE), 1 = tomorrow, else N days. */
-export function dteLabel(dte: number | null | undefined): string | undefined {
+export function dteLabel(dte: number | null): string | undefined {
   if (dte == null) return undefined;
   if (dte <= 0) return 'expires today · 0DTE';
   if (dte === 1) return '1 day to expiry';
@@ -454,12 +450,12 @@ export const ivrBasisLine = (
   sessions: number,
   windowCap: number,
   count: number,
-  ivBasis: string | null | undefined,
-  basisDte: number | null | undefined,
+  ivBasis: string,
+  basisDte: number,
 ): string => {
   const head = `Over ${sessions} of the last ${windowCap} sessions · ${count} samples · `;
   if (ivBasis === 'nearest_tenor') {
-    return `${head}nearest-tenor IV${basisDte == null ? '' : ` (~${basisDte}d)`} — clean 30-day basis unavailable this day.`;
+    return `${head}nearest-tenor IV (~${basisDte}d) — clean 30-day basis unavailable this day.`;
   }
   // 'interpolated_30d' AND any unknown basis → the clean CM30 wording, no fabricated DTE.
   return `${head}~30-day constant-maturity IV.`;

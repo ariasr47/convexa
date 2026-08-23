@@ -80,11 +80,8 @@ function collectTsFiles(dir: string): string[] {
   const out: string[] = [];
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
     const p = resolve(dir, ent.name);
-    if (ent.isDirectory()) {
-      // Generated OpenAPI declarations are data, not callable trader/client sources.
-      if (dir === API_LIB_SRC && ent.name === 'generated') continue;
-      out.push(...collectTsFiles(p));
-    } else if (/\.(ts|tsx)$/.test(ent.name) && !/\.(spec|test)\.(ts|tsx)$/.test(ent.name)) {
+    if (ent.isDirectory()) out.push(...collectTsFiles(p));
+    else if (/\.(ts|tsx)$/.test(ent.name) && !/\.(spec|test)\.(ts|tsx)$/.test(ent.name)) {
       out.push(p);
     }
   }
@@ -197,9 +194,6 @@ describe('F2 · no session-archive chrome on trader sources (AC-15)', () => {
   it('@convexa/api production sources do not grow a session-books / _research helper', () => {
     const files = collectTsFiles(API_LIB_SRC);
     expect(files.length).toBeGreaterThan(0);
-    expect(files).not.toContain(resolve(API_LIB_SRC, 'generated', 'schema.ts'));
-    expect(files).toContain(CONVEXA_CLIENT);
-    expect(files).toContain(resolve(API_LIB_SRC, 'lib', 'client.ts'));
     const offenders: string[] = [];
     for (const file of files) {
       const src = readFileSync(file, 'utf8');

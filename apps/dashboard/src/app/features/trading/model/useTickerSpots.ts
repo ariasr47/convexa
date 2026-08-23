@@ -46,9 +46,9 @@ export function useTickerSpots(
 ): TickerSpots {
   const [spots, setSpots] = useState<Record<string, number>>({});
 
-  const focused = up(bundle?.market_state?.ticker ?? focusedFallback) || null;
-  const focusedSpot = bundle?.market_state?.price ?? null;
-  const servedAt = bundle?.meta?.served_at;
+  const focused = up(bundle?.market_state.ticker ?? focusedFallback) || null;
+  const focusedSpot = bundle?.market_state.price ?? null;
+  const servedAt = bundle?.meta.served_at;
 
   // The de-duplicated FOREIGN set, as one sorted string — the `trackKey` shape the contract fan-out
   // uses, so this effect re-arms on exactly the same terms and never from its own writes.

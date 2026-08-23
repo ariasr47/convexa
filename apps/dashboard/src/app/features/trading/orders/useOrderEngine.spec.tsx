@@ -89,7 +89,7 @@ function makeBundle(): TickerBundle {
       distances: {},
       setups: [],
       opportunity_score: 0,
-      opportunity_tier: 'watch',
+      opportunity_tier: 'dormant',
       prime_prompt_eligible: false,
     },
     strike_profile: { ticker: 'TSLA', spot: 250, strikes: [] },
