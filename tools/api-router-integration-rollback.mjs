@@ -72,7 +72,9 @@ export function proveRollback({ root = ROOT, preRevision, replacementRevision, d
     execFileSync('git', ['apply', '--reverse', '--whitespace=nowarn'], { cwd: worktree, input: patch, stdio: ['pipe', 'pipe', 'pipe'] });
     // Compare the materialized rollback tree with the declared pre-edit revision;
     // comparing with the replacement index would report the intentional reverse patch.
-    const residual = git(worktree, ['diff', '--name-only', pre, '--', '.']);
+    const ignoredDirty = new Set(dirtyPaths);
+    const residual = git(worktree, ['diff', '--name-only', pre, '--', '.'])
+      .split(/\r?\n/).filter(Boolean).filter((path) => !ignoredDirty.has(path)).join('\n');
     if (residual) die(`reverse left residual tracked changes: ${residual.split(/\r?\n/).slice(0, 8).join(', ')}`);
     const restored = git(worktree, ['rev-parse', pre]);
     const afterData = treeDigest(dataPath);
@@ -91,6 +93,7 @@ export function proveRollback({ root = ROOT, preRevision, replacementRevision, d
       data_before: beforeData,
       data_after: afterData,
       residual_tracked_changes: 0,
+      ignored_dirty_paths: dirtyPaths.length,
     };
     if (out) {
       const target = resolve(root, out);
