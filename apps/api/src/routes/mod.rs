@@ -18,6 +18,7 @@ mod research_session_books;
 mod scan;
 mod stream;
 mod ticker;
+pub(crate) mod contract_router;
 
 use crate::state::AppState;
 use axum::{http::StatusCode, response::Response, Router};
