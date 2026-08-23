@@ -23,5 +23,5 @@ const poisons = {
 for (const [name, mutate] of Object.entries(poisons)) test(`rejects ${name} poison`, () => {
   const poisoned = structuredClone(cleanReceipt);
   const changed = mutate(poisoned);
-  assert.throws(() => validateCompileProbeReceipt(changed ?? poisoned), /compile probe receipt/);
+  assert.throws(() => validateCompileProbeReceipt(changed === undefined ? poisoned : changed, cleanReceipt.source_revision), /compile probe receipt/);
 });

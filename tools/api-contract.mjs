@@ -91,6 +91,7 @@ export function validateCompileProbeReceipt(receipt, currentRevision = null) {
   if (currentRevision && receipt.source_revision !== currentRevision) failReceipt('stale source revision');
   if (receipt.command !== 'npm run api:router-integration:compile-probe' || receipt.probe_tool_path !== 'tools/api-router-integration-compile-probe.mjs' || receipt.utoipa_version !== '5.5.0') failReceipt('command/tool/version');
   if (!/^[a-f0-9]{64}$/.test(receipt.probe_tool_sha256 ?? '') || receipt.registration_count !== 52 || !/^[a-f0-9]{64}$/.test(receipt.operation_set_sha256 ?? '')) failReceipt('counts or hashes');
+  if (existsSync(join(ROOT, receipt.probe_tool_path)) && receipt.probe_tool_sha256 !== sha(readFileSync(join(ROOT, receipt.probe_tool_path)))) failReceipt('tool hash');
   if (receipt.pairing_guard?.result !== 'PASS' || receipt.pairing_guard?.observed_unique_pair_count !== 52) failReceipt('pairing');
   for (const name of ['path', 'tags', 'schema_references']) if (receipt.metadata_traits?.[name] !== 'PASS') failReceipt(`trait ${name}`);
   for (const method of ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'HEAD', 'PATCH', 'TRACE']) if (receipt.method_filters?.[method] !== 'PASS') failReceipt(`method ${method}`);
