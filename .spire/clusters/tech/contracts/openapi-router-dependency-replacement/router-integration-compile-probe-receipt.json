@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "probe_id": "openapi-router-integration-all-52",
+  "result": "PASS",
+  "source_revision": "cb4633caa6a4ffbe967e70e0d216b85153981be3",
+  "command": "npm run api:router-integration:compile-probe",
+  "probe_tool_path": "tools/api-router-integration-compile-probe.mjs",
+  "probe_tool_sha256": "d9b85afcd992c81d5e70dd9ded624a2b2ef7495275540e65db9b3b53175c33b2",
+  "utoipa_version": "5.5.0",
+  "registration_count": 52,
+  "operation_set_sha256": "5b6f38303bfafde8639d830baf2446aa02ed7dbc11a21e7b1333fd7caad34c72",
+  "pairing_guard": {
+    "observed_unique_pair_count": 52,
+    "result": "PASS"
+  },
+  "metadata_traits": {
+    "path": "PASS",
+    "schema_references": "PASS",
+    "tags": "PASS"
+  },
+  "method_filters": {
+    "DELETE": "PASS",
+    "GET": "PASS",
+    "HEAD": "PASS",
+    "OPTIONS": "PASS",
+    "PATCH": "PASS",
+    "POST": "PASS",
+    "PUT": "PASS",
+    "TRACE": "PASS"
+  },
+  "witnesses": {
+    "sse": {
+      "pair": "stream::stream_ticker / stream::__path_stream_ticker",
+      "result": "PASS"
+    },
+    "stateful_auth": {
+      "pair": "auth::get_settings / auth::__path_get_settings",
+      "result": "PASS"
+    },
+    "declared_error": {
+      "pair": "recommendation::post_recommendation / recommendation::__path_post_recommendation",
+      "result": "PASS"
+    }
+  },
+  "invalid_graph_outcomes": 0,
+  "toolchain": {
+    "rustc_vv_sha256": "7fad09dd8c16d49de37932475436003b5b1763c1015c5ce081ad7692db368ca3",
+    "cargo_version": "cargo 1.97.1 (c980f4866 2026-06-30)"
+  }
+}
