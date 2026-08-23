@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "baseline_id": "api-contract-generation-precutover",
+  "source": {
+    "revision": "e1e0be78ccf90922bee411c7dc1e5471940dbce5",
+    "router_path": "apps/api/src/routes/mod.rs",
+    "router_sha256": "253475e45705224ed5eda360d2e08c4bb6a6d68e6be87be688e7dad8e8528678"
+  },
+  "capture": {
+    "tool_path": "tools/api-contract-baseline.mjs",
+    "tool_sha256": "9a29f14de79664c897fb4dcd0dab45efc40b86d88ae88c449eaaf58a557f331f",
+    "parser": "rust-axum-route-registration-v1",
+    "candidate_command": "npm run api:contract:baseline:candidate -- --source-revision e1e0be78ccf90922bee411c7dc1e5471940dbce5 --out .tmp/api-contract-baseline-candidate.json",
+    "accept_command": "npm run api:contract:baseline:accept -- --initial --candidate .tmp/api-contract-baseline-candidate.json --review-contract .spire/clusters/tech/contracts/api-contract-generation/INTERFACE_CONTRACT.md --reason api-contract-generation-precutover --reviewer-provenance initial-review",
+    "commands": [
+      "npm run api:contract:baseline:candidate -- --source-revision e1e0be78ccf90922bee411c7dc1e5471940dbce5 --out .tmp/api-contract-baseline-candidate.json"
+    ],
+    "captured_at_utc": "2026-08-22T15:14:08.503Z",
+    "operation_count": 52
+  },
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_metrics"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}/snapshot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/session-books/{symbol}/book"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/auth/ai-key"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/ai-key"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/auth/ai-key"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/google/callback"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/google/start"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/auth/grok"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/grok/callback"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/grok/start"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/session"
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/settings"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/auth/settings"
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/signup"
+    },
+    {
+      "method": "GET",
+      "path": "/api/book"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/book"
+    },
+    {
+      "method": "GET",
+      "path": "/api/broker/book"
+    },
+    {
+      "method": "POST",
+      "path": "/api/broker/book/refresh"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/broker/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/broker/credential"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/broker/credential"
+    },
+    {
+      "method": "GET",
+      "path": "/api/candidates/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/contract/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/health"
+    },
+    {
+      "method": "GET",
+      "path": "/api/market-data"
+    },
+    {
+      "method": "GET",
+      "path": "/api/personas"
+    },
+    {
+      "method": "POST",
+      "path": "/api/positions/sim-trade/gate"
+    },
+    {
+      "method": "GET",
+      "path": "/api/price/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/prices"
+    },
+    {
+      "method": "POST",
+      "path": "/api/recommendation/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/export/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/recommendation/status/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/{symbol}/history"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/all"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/universe"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scan/view"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/scan/view"
+    },
+    {
+      "method": "GET",
+      "path": "/api/signals"
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/stream/prices"
+    },
+    {
+      "method": "GET",
+      "path": "/api/strike-profile"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ticker/{ticker}/progressive"
+    },
+    {
+      "method": "GET",
+      "path": "/demo"
+    },
+    {
+      "method": "GET",
+      "path": "/health"
+    }
+  ],
+  "acceptance": {
+    "mode": "initial-precutover",
+    "review_contract": ".spire/clusters/tech/contracts/api-contract-generation/INTERFACE_CONTRACT.md",
+    "candidate_sha256": "eddbed8b4c09a114df2cc86f6c3ba3a8e35a5e125157a2eaac105c99a4a131cd",
+    "reason": "api-contract-generation-precutover",
+    "reviewer_provenance": "GATE-I-interface-inventory-reviewed-2026-08-22"
+  }
+}
