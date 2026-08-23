@@ -51,10 +51,10 @@ where H: Handler<T, S> + Clone + Send + Sync + 'static, T: 'static, S: Clone + S
     router
 }
 
-pub(crate) fn package_from_metadata<S, T, H>(handler_name: &'static str, metadata_path: &'static str, methods: Vec<HttpMethod>, operation: Operation, schemas: Vec<(String, RefOr<Schema>)>, handler: H) -> Result<RoutePackage<S>, ContractGraphError>
+pub(crate) fn package_from_metadata<S, T, H>(handler_name: &'static str, metadata_path: String, methods: Vec<HttpMethod>, operation: Operation, schemas: Vec<(String, RefOr<Schema>)>, handler: H) -> Result<RoutePackage<S>, ContractGraphError>
 where H: Handler<T, S> + Clone + Send + Sync + 'static, T: 'static, S: Clone + Send + Sync + 'static {
     if methods.is_empty() { return Err(ContractGraphError::UnsupportedOrEmptyMethod { handler: handler_name }); }
-    let path = if metadata_path.is_empty() { "/" } else { metadata_path }.to_owned();
+    let path = if metadata_path.is_empty() { "/".to_owned() } else { metadata_path };
     Ok(RoutePackage { handler: handler_name, path, methods: methods.clone(), operation, schemas, method_router: route_method(&methods, handler) })
 }
 
@@ -114,7 +114,7 @@ mod tests {
             .operation_id(Some("test_operation"))
             .build();
         let package = package_from_metadata::<(), _, _>(
-            "test_handler", "/test", vec![HttpMethod::Get], operation, Vec::new(), test_handler,
+            "test_handler", "/test".to_owned(), vec![HttpMethod::Get], operation, Vec::new(), test_handler,
         ).expect("package");
         let router = ContractRouter::<()>::new().route(package).expect("route");
         let (_, openapi) = router.split_for_parts();
@@ -126,7 +126,7 @@ mod tests {
     fn empty_metadata_methods_fail_before_graph_mutation() {
         let operation = utoipa::openapi::path::OperationBuilder::new().build();
         let result = package_from_metadata::<(), _, _>(
-            "test_handler", "/test", Vec::new(), operation, Vec::new(), test_handler,
+            "test_handler", "/test".to_owned(), Vec::new(), operation, Vec::new(), test_handler,
         );
         assert!(matches!(result, Err(ContractGraphError::UnsupportedOrEmptyMethod { .. })));
     }

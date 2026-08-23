@@ -778,7 +778,7 @@ mod response_conversion_tests {
 
     #[test]
     fn generated_stream_openapi_is_enum_owned_and_preserves_retry_after() {
-        let document = serde_json::to_value(crate::routes::openapi()).expect("OpenAPI serializes");
+        let document = serde_json::to_value(crate::routes::openapi().expect("valid production contract graph")).expect("OpenAPI serializes");
         for path in ["/api/stream/prices", "/api/stream/{ticker}"] {
             let responses = document["paths"][path]["get"]["responses"]
                 .as_object()
