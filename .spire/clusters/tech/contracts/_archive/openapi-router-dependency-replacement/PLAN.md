@@ -20,10 +20,13 @@ Nx 23; Vitest; Docker; PostgreSQL 17; GitHub Actions.
   access classification, request/response/error/event shape, status, meaningful header, media type,
   cookie, redirect, SSE behavior, public `@convexa/api` semantic, score, quant result, route, link,
   copy, component state, or visual.
-- The pre-edit order is immutable: B0 commits the inherited prerequisite bytes, B1 commits the
-  capture tooling, and B2 adds the accepted baseline in a baseline-only commit whose parent is the
-  recorded source revision. B3 and later must not start until that relationship is proven.
-- The B0 checkpoint is path-scoped and reviewed. Never use `git add -A`, `git add .`, a provider-root
+- Preserve the immutable committed chain exactly: `25cf594` (B0) → `140297d` (B1) → `55d299c`
+  (B1a) → `071734e` (B1b) → `69500b4` (B1c) → `3ed0657` (B2) → `098856e` (B3) →
+  `86570e8` (B4) → `41fcb0c` (B5) → `c9dddb8` (B6) → `b284171` and `7d5095f` (B7).
+  Preserve B7a `96aad2b` as its child; B7b is an append-only child of `96aad2b`. Never amend, squash,
+  rebase, reset, or recreate history.
+- All existing checkpoints were path-scoped and reviewed; B7b is likewise path-scoped. Never use
+  `git add -A`, `git add .`, a provider-root
   path, or a broad `.spire/**` path. Leave unrelated `.claude/**`, `.codex/**`, `.grok/**`, provider
   installation bytes, context edits, and dashboard product-source edits unstaged.
 - `ContractRouter<S>` has exactly two fields: `axum::Router<S>` and
@@ -130,6 +133,13 @@ The machine-checkable block is intentionally unchanged from the approved `api-co
 
 ### B0-preedit-source — Commit the reviewed inherited prerequisite state
 
+**Execution status:** already committed as `25cf594`; preserve it verbatim. Do not rerun, amend,
+squash, rebase, reset, or expand this commit. Its reviewed scope intentionally did not add the four
+pre-edit `apps/api/openapi` artifact files now owned exclusively by B1a.
+
+The numbered steps below are the accepted audit record for that existing checkpoint, not commands to
+replay. Execution resumes at B1a after the B0/B1 history probes pass.
+
 **Files:** existing prerequisite diffs only: `.github/dependabot.yml`;
 `.github/workflows/ci.yml`; `.github/workflows/conformance.yml`;
 `.github/workflows/deploy-smoke.yml`; `.github/workflows/supply-chain.yml`; `.gitignore`;
@@ -176,9 +186,15 @@ working-tree byte.
    Expected: commit succeeds; unrelated paths remain unstaged. Do not push.
 
 **Reviewer probe:** compare the commit path list with both predecessor plans; unrelated working bytes
-must remain unstaged.
+must remain unstaged. `git cat-file -e 25cf594^{commit}` must succeed; history repair is append-only.
 
 ### B1-baseline-tool — Add the immutable capture/compare tool before replacement
+
+**Execution status:** already committed as `140297d`, whose parent chain includes `25cf594`; preserve
+it verbatim. Do not rerun its commit step or amend, squash, rebase, reset, or recreate either commit.
+
+The numbered steps below are the accepted audit record for that existing checkpoint, not commands to
+replay. Execution resumes at B1a after its reviewer probe passes.
 
 **Files:** create `tools/api-router-integration-baseline.mjs`; create
 `tools/api-router-integration-baseline.spec.mjs`; modify `package.json` scripts only.
@@ -275,24 +291,342 @@ the historical first-add relationship plus current candidate bytes and evidence 
 **Reviewer probe:** dirty pinned input refuses; dirty unrelated provider input stays unstaged and does
 not alter candidate bytes.
 
+### B1a-preedit-artifacts — Append the four existing pre-edit artifacts to source history
+
+**Execution status:** already committed as `55d299c`, whose parent is `140297d`; preserve it verbatim.
+The numbered steps below are its accepted audit record, not commands to replay. Execution resumes at
+B1b; do not amend, squash, rebase, reset, or recreate any existing checkpoint.
+
+**Files:** add existing `apps/api/openapi/convexa.openapi.json`;
+`apps/api/openapi/generated-artifacts.manifest.json`;
+`apps/api/openapi/parity-coverage.json`;
+`apps/api/openapi/precutover-operation-baseline.json` only.
+
+**Interfaces:** consumes the exact already-generated, untracked pre-edit bytes and produces the
+artifact checkpoint consumed by B1b. It changes no file byte, owns no generated rewrite, and leaves all
+unrelated user/provider changes unstaged.
+
+1. Require `HEAD` exactly `140297d`, verify `25cf594` and `140297d` are commits, require an empty
+   index, and record hashes before staging. A different HEAD, a missing artifact, or any staged path
+   is GATE Z; do not rewrite history to recover.
+
+   ```powershell
+   $expectedParent = '140297d'
+   if ((git rev-parse --short=7 HEAD).Trim() -ne $expectedParent) { throw 'B1 HEAD mismatch' }
+   git cat-file -e '25cf594^{commit}'
+   git cat-file -e '140297d^{commit}'
+   if (@(git diff --cached --name-only).Count -ne 0) { throw 'index must be empty before B1a' }
+   $artifactPaths = @(
+     'apps/api/openapi/convexa.openapi.json'
+     'apps/api/openapi/generated-artifacts.manifest.json'
+     'apps/api/openapi/parity-coverage.json'
+     'apps/api/openapi/precutover-operation-baseline.json'
+   )
+   $before = @{}
+   foreach ($path in $artifactPaths) {
+     if (!(Test-Path -LiteralPath $path -PathType Leaf)) { throw "missing pre-edit artifact: $path" }
+     $before[$path] = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+   }
+   npm run api:contract:check
+   ```
+
+   Expected: commit checks and contract check exit `0`; the artifact hashes are captured without a
+   write. Unrelated dirty paths are allowed because the index and staging checks are path-scoped.
+2. Stage exactly the four literal paths, compare the complete index path set, and review it:
+
+   ```powershell
+   git add -- $artifactPaths
+   $staged = @(git diff --cached --name-only)
+   if (@(Compare-Object ($artifactPaths | Sort-Object) ($staged | Sort-Object)).Count -ne 0) {
+     throw 'B1a staged path set mismatch'
+   }
+   git diff --cached --check
+   git diff --cached --stat
+   git diff --cached --name-status
+   ```
+
+   Expected: exactly four added artifact paths and no other staged path. If the set differs, do not
+   commit; unstage only the four B1a-owned paths and stop without touching any unexpected path.
+3. Prove staging did not rewrite the working bytes, then create one append-only commit:
+
+   ```powershell
+   foreach ($path in $artifactPaths) {
+     $after = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+     if ($after -cne $before[$path]) { throw "pre-edit artifact changed: $path" }
+   }
+   git commit -m "chore(api): checkpoint pre-edit contract artifacts"
+   $sourceRevision = (git rev-parse HEAD).Trim()
+   if ((git rev-parse "$sourceRevision^").Trim() -ne (git rev-parse 140297d).Trim()) {
+     throw 'B1a parent is not preserved B1'
+   }
+   $committed = @(git diff-tree --no-commit-id --name-only -r $sourceRevision)
+   if (@(Compare-Object ($artifactPaths | Sort-Object) ($committed | Sort-Object)).Count -ne 0) {
+     throw 'B1a commit path set mismatch'
+   }
+   foreach ($path in $artifactPaths) {
+     if ((git rev-parse "${sourceRevision}:$path").Trim() -ne (git hash-object -- $path).Trim()) {
+       throw "B1a committed blob mismatch: $path"
+     }
+   }
+   ```
+
+   Expected: a single child of `140297d` adds exactly the four unchanged bytes; unrelated dirty paths
+   remain unstaged. Preserve the full `$sourceRevision` as B1a's identity for B1b. Do not push.
+
+**Reviewer probe:** the B1a parent is `140297d`, its complete path list is exactly the four **Files**,
+each committed blob equals the working pre-edit byte, and neither preserved commit was rewritten.
+
+### B1b-baseline-entrypoint-repair — Make the real baseline CLI dispatch cross-platform
+
+**Execution status:** already committed as `071734e`, whose parent is `55d299c`; preserve it verbatim.
+The numbered steps below are its accepted audit record, not commands to replay. Execution resumes at
+B1c; do not amend, squash, rebase, reset, or recreate any existing checkpoint.
+
+**Files:** modify `tools/api-router-integration-baseline.mjs` and
+`tools/api-router-integration-baseline.spec.mjs` only.
+
+**Interfaces:** preserves the existing exported helpers and CLI arguments while making direct
+`node tools/api-router-integration-baseline.mjs <candidate|accept|compare>` invocation dispatch on
+Windows and POSIX. It produces the entrypoint-repair checkpoint consumed by B1c.
+
+1. Require `HEAD` exactly `55d299c`, an empty index, and no task-owned working diff. Add one real-process
+   test using only Node standard-library APIs (`spawnSync`, `resolve`, `pathToFileURL`) that resolves
+   the tool path, proves Windows canonical form is `file:///C:/...` when `process.platform === 'win32'`,
+   spawns `process.execPath` with the real tool and no command, and requires non-zero status plus the
+   existing `usage: api-router-integration-baseline.mjs <candidate|accept|compare>` diagnostic.
+
+   ```js
+   import { spawnSync } from 'node:child_process';
+   import { resolve } from 'node:path';
+   import { pathToFileURL } from 'node:url';
+
+   test('real baseline CLI dispatches through canonical file URL', () => {
+     const script = resolve(import.meta.dirname, 'api-router-integration-baseline.mjs');
+     const canonical = pathToFileURL(script).href;
+     assert.equal(canonical, new URL('./api-router-integration-baseline.mjs', import.meta.url).href);
+     if (process.platform === 'win32') assert.match(canonical, /^file:\/\/\/[A-Za-z]:\//);
+     const result = spawnSync(process.execPath, [script], {
+       cwd: resolve(import.meta.dirname, '..'), encoding: 'utf8',
+     });
+     assert.notEqual(result.status, 0);
+     assert.match(`${result.stdout}\n${result.stderr}`,
+       /usage: api-router-integration-baseline\.mjs <candidate\|accept\|compare>/);
+   });
+   ```
+2. Run the focused oracle before implementation:
+
+   ```powershell
+   node --test --test-name-pattern="real baseline CLI dispatches through canonical file URL" tools/api-router-integration-baseline.spec.mjs
+   ```
+
+   Expected RED on Windows: the real child exits `0` with no usage diagnostic because the committed
+   `file://C:/...` comparison does not equal canonical `file:///C:/...`. A failure caused by a mock,
+   import-only call, missing executable, or synthetic argv is not the required oracle.
+3. Import `pathToFileURL` from `node:url` and replace only the main-module predicate:
+
+   ```js
+   const isMain = process.argv[1] !== undefined
+     && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+
+   if (isMain) {
+     const command = process.argv[2];
+     const flags = args(process.argv.slice(3));
+     if (command === 'candidate') buildCandidate({ sourceRevision: flags['source-revision'], out: flags.out });
+     else if (command === 'accept') acceptBaseline({ candidate: flags.candidate, reviewContract: flags['review-contract'], reviewerProvenance: flags['reviewer-provenance'] });
+     else if (command === 'compare') compareBaseline();
+     else fail('usage: api-router-integration-baseline.mjs <candidate|accept|compare>');
+   }
+   ```
+
+   Use no URL string construction, platform branch, dependency, command wrapper, or changed helper/
+   baseline semantics.
+4. Run the focused oracle green, then all baseline-tool tests and existing contract-tool tests:
+
+   ```powershell
+   node --test --test-name-pattern="real baseline CLI dispatches through canonical file URL" tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-contract-baseline.spec.mjs tools/api-contract.spec.mjs
+   npm run api:contract:check
+   ```
+
+   Expected: the named test passes and nonmatching tests are skipped by the focused filter;
+   baseline-tool `12/12`, existing contract tools `69/69`, and contract check all pass; the four
+   generated artifacts are unchanged. The real CLI now fails closed on missing or invalid commands.
+5. Stage exactly the two **Files**, run `git diff --cached --check`, review the full cached diff and
+   exact path set, then commit `fix(api): dispatch router baseline CLI on Windows`. Verify the new full
+   revision's parent is `55d299c` and its commit path set is exactly those two files. Leave unrelated
+   paths unstaged and do not push.
+
+   ```powershell
+   $repairPaths = @('tools/api-router-integration-baseline.mjs','tools/api-router-integration-baseline.spec.mjs')
+   git add -- $repairPaths
+   $staged = @(git diff --cached --name-only)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($staged | Sort-Object)).Count -ne 0) { throw 'B1b staged path set mismatch' }
+   git diff --cached --check
+   git diff --cached
+   git commit -m "fix(api): dispatch router baseline CLI on Windows"
+   $b1b = (git rev-parse HEAD).Trim()
+   if ((git rev-parse "$b1b^").Trim() -ne (git rev-parse 55d299c).Trim()) { throw 'B1b parent mismatch' }
+   $committed = @(git diff-tree --no-commit-id --name-only -r $b1b)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($committed | Sort-Object)).Count -ne 0) { throw 'B1b commit path set mismatch' }
+   ```
+
+**Reviewer probe:** rerun the real-process test on Windows and Ubuntu; direct CLI invocation reaches
+the existing dispatcher, while importing the module remains non-dispatching and all prior tests pass.
+
+### B1c-baseline-npm-runner-repair — Execute npm evidence through Node without a command shim
+
+**Files:** modify `tools/api-router-integration-baseline.mjs` and
+`tools/api-router-integration-baseline.spec.mjs` only.
+
+**Interfaces:** preserves candidate/accept/compare arguments and evidence parsing. `runEvidence`
+resolves and validates the npm CLI JavaScript entrypoint, then executes it with `process.execPath` and
+`shell: false`. B1c produces the final pre-edit `source.revision` consumed by B2.
+
+1. Require `HEAD` exactly `071734e`, an empty index, and no task-owned diff. Add a real candidate-CLI
+   child-process test. It obtains a source commit matching the tracked working tree with non-mutating
+   `git stash create`, runs the actual tool through `process.execPath`, and expects a candidate file.
+   On Windows, first prove the legacy control returns `error.code === 'EINVAL'`:
+
+   ```js
+   const legacy = spawnSync('npm.cmd', ['--version'], { cwd: ROOT, encoding: 'utf8', shell: false });
+   if (process.platform === 'win32') assert.equal(legacy.error?.code, 'EINVAL');
+   const sourceRevision = execFileSync('git', ['stash', 'create', 'b1c-runner-oracle'], {
+     cwd: ROOT, encoding: 'utf8',
+   }).trim();
+   assert.match(sourceRevision, /^[0-9a-f]{40}$/);
+   const out = `.tmp/b1c-runner-${process.pid}.json`;
+   const result = spawnSync(process.execPath, [SCRIPT, 'candidate',
+     '--source-revision', sourceRevision, '--out', out], {
+     cwd: ROOT, encoding: 'utf8', shell: false, env: { ...process.env },
+   });
+   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+   assert.equal(JSON.parse(readFileSync(resolve(ROOT, out), 'utf8')).source.revision, sourceRevision);
+   rmSync(resolve(ROOT, out), { force: true });
+   ```
+
+   Add two real-CLI cases that delete `npm_execpath` or set it to a nonexistent absolute
+   `npm-cli.js`; each must fail non-zero with `npm CLI path is missing or invalid` and create no output.
+2. Set `$env:npm_execpath` to the installed canonical npm CLI, then run the candidate child test before
+   implementation:
+
+   ```powershell
+   $env:npm_execpath = (Resolve-Path (Join-Path (npm root -g) 'npm/bin/npm-cli.js')).Path
+   node --test --test-name-pattern="real candidate CLI executes npm evidence without command shim" tools/api-router-integration-baseline.spec.mjs
+   ```
+
+   Expected RED on this Windows host: the inner `npm.cmd` spawn returns `EINVAL`; the real candidate
+   exits non-zero and creates no candidate. A mock, source-only assertion, or synthetic status is not
+   the required oracle.
+3. Add `realpathSync` and `statSync` to the existing `node:fs` import and `basename`/`isAbsolute` to
+   `node:path`. Resolve the runner and replace the `npm.cmd` spawn exactly as follows:
+
+   ```js
+   function npmCliPath(env = process.env) {
+     const supplied = env.npm_execpath;
+     if (!supplied || !isAbsolute(supplied)) fail('npm CLI path is missing or invalid');
+     let canonical;
+     try { canonical = realpathSync(supplied); }
+     catch { fail('npm CLI path is missing or invalid'); }
+     if (!statSync(canonical).isFile() || basename(canonical).toLowerCase() !== 'npm-cli.js')
+       fail('npm CLI path is missing or invalid');
+     return canonical;
+   }
+
+   function runEvidence() {
+     const npmCli = npmCliPath();
+     const result = spawnSync(process.execPath, [npmCli, 'run', 'api:contract:check'], {
+       cwd: ROOT, encoding: 'utf8', shell: false,
+       env: { ...process.env, API_CONTRACT_EXECUTE_EVIDENCE: '1' },
+     });
+     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
+     if (result.error || result.status !== 0)
+       fail(`contract evidence runner failed: ${result.error?.code ?? output.split('\n').find(Boolean) ?? 'unknown'}`);
+     const response = [...output.matchAll(/CONTRACT_EVIDENCE_OUTCOME\s+(\S+)\s/g)].map((m) => m[1]);
+     const direct = [...output.matchAll(/DIRECT_HTTP_EVIDENCE_OUTCOME\s+(.+?)\s+\{/g)].map((m) => m[1]);
+     if (response.length !== 181 || new Set(response).size !== 181)
+       fail(`response evidence set (${response.length}/181)`);
+     if (direct.length !== 87 || new Set(direct).size !== 87)
+       fail(`direct HTTP evidence set (${direct.length}/87)`);
+     return { response, direct };
+   }
+   ```
+
+   Do not use a shell, `.cmd`/`.ps1`, PATH lookup, user-controlled extra arguments, dependency, or
+   fallback. Missing, relative, nonexistent, non-file, or non-`npm-cli.js` paths fail before spawn.
+4. Run the three focused runner cases, all existing tests, a real candidate, and the independent check:
+
+   ```powershell
+   node --test --test-name-pattern="npm evidence|npm CLI path" tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-contract-baseline.spec.mjs tools/api-contract.spec.mjs
+   $sourceRevision = (git stash create b1c-candidate-source).Trim()
+   npm run api:router-integration:baseline:candidate -- --source-revision $sourceRevision --out .tmp/b1c-candidate.json
+   npm run api:contract:check
+   ```
+
+   Expected: three focused cases pass; baseline-tool `15/15`, existing contract tools `69/69`, real
+   candidate, and check pass; candidate evidence is exactly 181/87 and all generated artifacts remain
+   unchanged. Remove only `.tmp/b1c-candidate.json` after recording its result.
+5. Stage exactly the two **Files**, inspect `git diff --cached --check` and the full cached diff, compare
+   the staged path set to the two literal paths, and commit
+   `fix(api): run baseline evidence through npm CLI`. Verify the new full commit's parent is `071734e`
+   and its complete path set is exactly the two **Files**. Leave unrelated paths unstaged; do not push.
+
+   ```powershell
+   $repairPaths = @('tools/api-router-integration-baseline.mjs','tools/api-router-integration-baseline.spec.mjs')
+   git add -- $repairPaths
+   $staged = @(git diff --cached --name-only)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($staged | Sort-Object)).Count -ne 0) { throw 'B1c staged path set mismatch' }
+   git diff --cached --check
+   git diff --cached
+   git commit -m "fix(api): run baseline evidence through npm CLI"
+   $b1c = (git rev-parse HEAD).Trim()
+   if ((git rev-parse "$b1c^").Trim() -ne (git rev-parse 071734e).Trim()) { throw 'B1c parent mismatch' }
+   $committed = @(git diff-tree --no-commit-id --name-only -r $b1c)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($committed | Sort-Object)).Count -ne 0) { throw 'B1c commit path set mismatch' }
+   ```
+
+**Reviewer probe:** Windows and Ubuntu real candidate processes execute the validated npm CLI JS with
+Node and `shell:false`; missing/invalid CLI paths fail closed, imports remain non-dispatching, and the
+four generated artifacts do not change.
+
 ### B2-baseline-checkpoint — Capture and commit the baseline-only child
 
 **Files:** create `apps/api/openapi/router-integration-prechange-baseline.json` only.
 
-**Interfaces:** consumes the committed B1 revision and produces the immutable migration oracle whose
-first-add commit has that revision as its parent.
+**Interfaces:** consumes the committed B1c revision and produces the immutable migration oracle whose
+`source.revision` is B1c and whose first-add commit has B1c as its sole parent.
 
-1. Require B0/B1 committed, no staged paths, and no pinned source diff against HEAD. Capture the source
-   revision and candidate:
+1. Require preserved B0/B1/B1a/B1b and committed B1c, no staged paths, and no pinned source diff
+   against HEAD. Capture B1c as the source revision, prove all append-only commits, and produce the candidate:
 
    ```powershell
+   $artifactPaths = @(
+     'apps/api/openapi/convexa.openapi.json'
+     'apps/api/openapi/generated-artifacts.manifest.json'
+     'apps/api/openapi/parity-coverage.json'
+     'apps/api/openapi/precutover-operation-baseline.json'
+   )
    $sourceRevision = (git rev-parse HEAD).Trim()
    if ($sourceRevision -notmatch '^[0-9a-f]{40}$') { throw 'full source revision required' }
+   $b1a = (git rev-parse 55d299c).Trim()
+   $b1b = (git rev-parse 071734e).Trim()
+   if ((git rev-parse "$b1a^").Trim() -ne (git rev-parse 140297d).Trim()) { throw 'B1a history mismatch' }
+   $b1aPaths = @(git diff-tree --no-commit-id --name-only -r $b1a)
+   if (@(Compare-Object ($artifactPaths | Sort-Object) ($b1aPaths | Sort-Object)).Count -ne 0) { throw 'B1a path set mismatch' }
+   $repairPaths = @('tools/api-router-integration-baseline.mjs','tools/api-router-integration-baseline.spec.mjs')
+   if ((git rev-parse "$b1b^").Trim() -ne $b1a) { throw 'B1b history mismatch' }
+   $b1bPaths = @(git diff-tree --no-commit-id --name-only -r $b1b)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($b1bPaths | Sort-Object)).Count -ne 0) { throw 'B1b path set mismatch' }
+   if ((git rev-parse "$sourceRevision^").Trim() -ne $b1b) { throw 'source revision is not the B1c child' }
+   $b1cPaths = @(git diff-tree --no-commit-id --name-only -r $sourceRevision)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($b1cPaths | Sort-Object)).Count -ne 0) { throw 'source revision is not B1c' }
    npm run api:router-integration:baseline:candidate -- --source-revision $sourceRevision --out .tmp/openapi-router-integration-prechange-candidate.json
    ```
 
-   Expected: exit `0`; candidate only under `.tmp`; contract evidence executed exactly 181 and 87;
-   working artifact hashes unchanged.
+   Expected: the real CLI exits `0`; candidate only under `.tmp`; `source.revision` is the full B1c commit;
+   contract evidence executed exactly 181 and 87; working artifact hashes unchanged.
 2. Review the candidate against `INTERFACE_CONTRACT.md`, then accept with the already recorded operator
    approval provenance:
 
@@ -660,6 +994,254 @@ itself.
 
 **Reviewer probe:** every poison fails normal check in a disposable copy; restored bytes pass.
 
+### B7a-postcutover-baseline-comparator-repair — Separate strict capture from bounded comparison
+
+**Execution status:** already committed as `96aad2b`, whose parent is `7d5095f`; preserve it verbatim.
+Its numbered steps are the accepted audit record, not commands to replay. B7b exclusively owns the
+two remaining router-source integration bytes.
+
+**Files:** modify `tools/api-router-integration-baseline.mjs` and
+`tools/api-router-integration-baseline.spec.mjs` only.
+
+**Interfaces:** candidate capture and accept retain strict equality with baseline `source.revision`.
+Post-cutover `compare` instead validates the exact approved B3–B7 delta through `7d5095f`, then
+independently proves unchanged artifacts, OpenAPI metadata, 181/87 identity hashes, Cargo removal, and
+baseline history. It permits no general dirty-source bypass.
+
+1. Require `HEAD` exactly `7d5095f`, an empty index, and clean task-owned paths; leave the existing
+   B7b-owned `apps/api/src/**` integration changes untouched. Add 10 `post-cutover comparator` tests. The
+   positive fixture is a clean detached worktree/temp Git fixture rooted at B1c `69500b4`, applies the
+   exact committed B2–B7 ancestry, and presents this exact B3–B7 protected delta with unchanged four
+   artifact hashes, complete OpenAPI metadata, and 181/87 counts and ID-set hashes:
+
+   ```js
+   export const APPROVED_REPLACEMENT_REVISION =
+     '7d5095f5a60f49400884813540e3349f8026df80';
+   export const ALLOWED_POSTCUTOVER_DELTA = Object.freeze([
+     ['M', 'Cargo.lock'],
+     ['M', 'apps/api/Cargo.toml'],
+     ['M', 'apps/api/src/bin/export_openapi.rs'],
+     ['A', 'apps/api/src/routes/contract_router.rs'],
+     ['M', 'apps/api/src/routes/mod.rs'],
+     ['M', 'apps/api/src/server.rs'],
+     ['M', 'apps/api/tests/api_contract_gate_isolation.rs'],
+     ['M', 'apps/api/tests/api_contract_parity.rs'],
+     ['M', 'apps/api/tests/api_contract_router.rs'],
+     ['M', 'apps/api/tests/api_contract_runtime_auth_research.rs'],
+     ['M', 'apps/api/tests/api_contract_runtime_market_stream.rs'],
+     ['M', 'apps/api/tests/production_runtime_guardrails.rs'],
+     ['M', 'tools/api-contract.mjs'],
+   ]);
+   ```
+
+   Negative fixtures cover a missing/extra/status-changed delta path; tracked or untracked unrelated
+   API source drift; non-removal Cargo edits or either forbidden package; each artifact/OpenAPI field;
+   response/direct missing, extra, duplicate, relabeled, or count-preserving substituted IDs; mutated/
+   deleted baseline; wrong first-add parent/blob/source revision; and missing/rewritten/shallow history.
+2. Run the positive fixture focused before implementation:
+
+   ```powershell
+   node --test --test-name-pattern="post-cutover comparator accepts exact B3-B7 delta" tools/api-router-integration-baseline.spec.mjs
+   ```
+
+   Expected RED: current `compareBaseline` routes through strict `ensurePinnedClean` and rejects the
+   authorized replacement delta even though fixture artifacts/metadata/181/87 identities are equal.
+3. Keep `buildCandidate` strict and make `acceptBaseline` call the same strict pinned-source and
+   untracked-path check against `candidate.source.revision` before writing. Add a comparison-only
+   validator with these mechanics:
+
+   ```js
+   export function validatePostcutoverDelta({
+     root = ROOT,
+     sourceRevision,
+     approvedRevision = APPROVED_REPLACEMENT_REVISION,
+   }) {
+     requireCommit(root, sourceRevision);
+     requireCommit(root, approvedRevision);
+     requireAncestor(root, sourceRevision, approvedRevision);
+     requireAncestor(root, approvedRevision, fullRevision(root));
+     requireExactNameStatus(root, sourceRevision, approvedRevision,
+       PINNED_SOURCE_PATHS, ALLOWED_POSTCUTOVER_DELTA);
+     requireExactCargoRemoval(root, sourceRevision, approvedRevision, {
+       manifestLine: 'utoipa-axum = "=0.2.0"',
+       removedPackages: [['utoipa-axum', '0.2.0'], ['paste', '1.0.15']],
+       retainedUtoipa: '5.5.0',
+     });
+   }
+   ```
+
+   The validator freezes the source-to-approved transition at `7d5095f`; B7b separately owns its
+   append-only two-file integration child. Cargo validation reconstructs source files with `git show` and accepts
+   only deletion of the one manifest dependency, the `api-rust` lock reference, and exact
+   `utoipa-axum 0.2.0`/`paste 1.0.15` records—no addition, version, checksum, or other package delta.
+4. Extract the current closed-schema construction and atomic output statements byte-for-byte into
+   private `materializeCandidate({ sourceRevision, out, evidence })`, then split observation from
+   source policy without weakening capture:
+
+   ```js
+   function observeCandidate({ sourceRevision, out, sourceGuard }) {
+     sourceGuard(sourceRevision);
+     return materializeCandidate({ sourceRevision, out, evidence: runEvidence() });
+   }
+   export function buildCandidate(options = {}) {
+     return observeCandidate({ ...options, sourceGuard: ensurePinnedClean });
+   }
+   export function compareBaseline() {
+     const baseline = readAndValidateBaselineHistory();
+     const current = observeCandidate({
+       sourceRevision: baseline.source.revision,
+       out: join('.tmp', `router-candidate-${process.pid}.json`),
+       sourceGuard: (revision) => validatePostcutoverDelta({ sourceRevision: revision }),
+     });
+     validateObservedCompatibility(baseline, current);
+     return true;
+   }
+   ```
+
+   `readAndValidateBaselineHistory` requires the unique first-add commit, its parent equal to the full
+   B1c revision, current bytes equal to the first-added blob, the historical B1c tool/artifact hashes,
+   OpenAPI version/full `info`, and reachable unmodified ancestry. `validateObservedCompatibility`
+   compares all four raw hashes and exact metadata plus both 181/87 count/hash objects. Any failure is
+   non-zero and non-writing; only completed compatibility comparison emits `contract drift`.
+5. Run the 10 focused tests and all existing suites in a clean detached worktree; B7b separately proves
+   that the two source bytes used by integration verification are committed:
+
+   ```powershell
+   node --test --test-name-pattern="post-cutover comparator" tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-router-integration-baseline.spec.mjs
+   node --test tools/api-contract-baseline.spec.mjs tools/api-contract.spec.mjs
+   npm run api:router-integration:candidate
+   npm run api:contract:check
+   ```
+
+   Expected: focused `10/10`, baseline-tool `25/25`, existing contract tools `69/69`; candidate/check
+   exit `0` in the clean verification worktree with unchanged 52/181/87/four artifacts. Every negative
+   fixture fails before restored green; this result does not bless uncommitted router-source residue.
+6. Stage exactly the two **Files**, verify the full staged path set/diff, run
+   `git diff --cached --check`, and commit `fix(api): allow bounded postcutover baseline comparison`.
+   Verify its parent is `7d5095f` and its complete commit path set is exactly the tool/spec pair. Leave
+   all unrelated changes unstaged; do not push.
+
+   ```powershell
+   $repairPaths = @('tools/api-router-integration-baseline.mjs','tools/api-router-integration-baseline.spec.mjs')
+   git add -- $repairPaths
+   $staged = @(git diff --cached --name-only)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($staged | Sort-Object)).Count -ne 0) { throw 'B7a staged path set mismatch' }
+   git diff --cached --check
+   git diff --cached
+   git commit -m "fix(api): allow bounded postcutover baseline comparison"
+   $b7a = (git rev-parse HEAD).Trim()
+   if ((git rev-parse "$b7a^").Trim() -ne (git rev-parse 7d5095f).Trim()) { throw 'B7a parent mismatch' }
+   $committed = @(git diff-tree --no-commit-id --name-only -r $b7a)
+   if (@(Compare-Object ($repairPaths | Sort-Object) ($committed | Sort-Object)).Count -ne 0) { throw 'B7a commit path set mismatch' }
+   ```
+
+**Reviewer probe:** capture and accept still reject the cutover delta; compare validates the exact
+`69500b4..7d5095f` transition and unchanged compatibility evidence. B7b independently proves and owns
+the only authorized post-`96aad2b` router-source integration commit.
+
+### B7b-committed-tree-integration-repair — Commit the exact router type-integration residue
+
+**Files:** modify existing `apps/api/src/routes/contract_router.rs` and
+`apps/api/src/routes/stream.rs` only. Add no test, fixture, receipt, or generated file.
+
+**Interfaces:** commits the exact already-reviewed 5-addition/5-deletion working diff: metadata paths
+use the owned `String` returned by `utoipa::Path::path()`, and the existing stream contract test unwraps
+fallible `routes::openapi()`. It changes no route, metadata value, handler, response, or runtime behavior.
+
+1. Require `HEAD` exactly `96aad2b`, an empty index, and the complete source diff path set exactly the
+   two **Files**. Review `git diff --check`, `git diff --stat` (`2 files`, `5 insertions`, `5 deletions`),
+   and the full diff. It must contain only: `metadata_path: &'static str` → `String`; owned root fallback;
+   two test literals gaining `.to_owned()`; and
+   `routes::openapi()` gaining `.expect("valid production contract graph")`. Record a binary patch hash;
+   any extra byte is GATE Z.
+
+   ```powershell
+   $integrationPaths = @('apps/api/src/routes/contract_router.rs','apps/api/src/routes/stream.rs')
+   $changed = @(git diff --name-only -- $integrationPaths)
+   if (@(Compare-Object ($integrationPaths | Sort-Object) ($changed | Sort-Object)).Count -ne 0) { throw 'B7b working path set mismatch' }
+   git diff --check -- $integrationPaths
+   git diff --stat -- $integrationPaths
+   git diff -- $integrationPaths
+   $candidatePatchHash = (git diff --binary -- $integrationPaths | git hash-object --stdin).Trim()
+   if ($candidatePatchHash -ne 'c5cf03cbffe9d072a5a92826cfbf247ad36972f4') { throw 'B7b candidate bytes changed' }
+   ```
+2. Create a disposable detached worktree at clean committed `96aad2b` and run the RED proof before
+   applying the candidate:
+
+   ```powershell
+   $verifyRoot = Join-Path ([IO.Path]::GetTempPath()) "convexa-b7b-$PID"
+   if (Test-Path -LiteralPath $verifyRoot) { throw 'B7b verification path already exists' }
+   git worktree add --detach $verifyRoot 96aad2b
+   Push-Location $verifyRoot
+   cargo check -p api-rust --all-targets --features postgres --locked --offline
+   cargo test -p api-rust routes::contract_router:: --locked --offline -- --nocapture
+   cargo test -p api-rust generated_stream_openapi_is_enum_owned_and_preserves_retry_after --locked --offline -- --nocapture
+   npm run api:router-integration:candidate
+   Pop-Location
+   ```
+
+   Expected: non-zero from the clean HEAD tree. Rust reports the real `utoipa::Path::path()` `String`
+   versus `&'static str` mismatch and the stream test's unhandled fallible OpenAPI result; candidate
+   cannot obtain green 52/181/87 evidence. Record command/status/diagnostics without editing that tree.
+3. Pipe the exact reviewed two-file binary diff into `git -C $verifyRoot apply --index -`, verify its
+   hash/path set matches step 1, and create a disposable child commit. Run the same four commands plus
+   `npm run api:contract:check`; expected all green with unchanged generated artifacts. Remove only the
+   disposable worktree after recording the RED/GREEN evidence.
+
+   ```powershell
+   git diff --binary -- $integrationPaths | git -C $verifyRoot apply --index -
+   $applied = @(git -C $verifyRoot diff --cached --name-only)
+   if (@(Compare-Object ($integrationPaths | Sort-Object) ($applied | Sort-Object)).Count -ne 0) { throw 'disposable candidate path mismatch' }
+   $appliedPatchHash = (git -C $verifyRoot diff --cached --binary | git hash-object --stdin).Trim()
+   if ($appliedPatchHash -ne $candidatePatchHash) { throw 'disposable candidate byte mismatch' }
+   git -C $verifyRoot commit -m "test: verify committed router integration repair"
+   Push-Location $verifyRoot
+   cargo test -p api-rust routes::contract_router:: --locked --offline -- --nocapture
+   cargo test -p api-rust generated_stream_openapi_is_enum_owned_and_preserves_retry_after --locked --offline -- --nocapture
+   npm run api:router-integration:candidate
+   npm run api:contract:check
+   Pop-Location
+   git worktree remove --force $verifyRoot
+   ```
+4. Back in the shared checkout, recompute the patch hash and require equality with step 1. Stage exactly
+   the two literal paths, verify the complete index path set and cached diff, then commit:
+
+   ```powershell
+   $integrationPaths = @('apps/api/src/routes/contract_router.rs','apps/api/src/routes/stream.rs')
+   git add -- $integrationPaths
+   $staged = @(git diff --cached --name-only)
+   if (@(Compare-Object ($integrationPaths | Sort-Object) ($staged | Sort-Object)).Count -ne 0) { throw 'B7b staged path set mismatch' }
+   git diff --cached --check
+   git diff --cached
+   git commit -m "fix(api): commit router integration type repairs"
+   $b7b = (git rev-parse HEAD).Trim()
+   if ((git rev-parse "$b7b^").Trim() -ne (git rev-parse 96aad2b).Trim()) { throw 'B7b parent mismatch' }
+   $committed = @(git diff-tree --no-commit-id --name-only -r $b7b)
+   if (@(Compare-Object ($integrationPaths | Sort-Object) ($committed | Sort-Object)).Count -ne 0) { throw 'B7b commit path set mismatch' }
+   ```
+
+   Leave every provider/UI/receipt/plan change unstaged. Do not amend, squash, rebase, reset, or push.
+5. From the committed B7b tree, run focused router and stream tests, candidate/check, full Rust suites,
+   and task-owned cleanliness:
+
+   ```powershell
+   cargo test -p api-rust routes::contract_router:: --locked --offline -- --nocapture
+   cargo test -p api-rust generated_stream_openapi_is_enum_owned_and_preserves_retry_after --locked --offline -- --nocapture
+   npm run api:router-integration:candidate
+   npm run api:contract:check
+   cargo test -p api-rust -p quant-engine --locked --offline
+   cargo check -p api-rust --all-targets --features postgres --locked --offline
+   git diff --exit-code -- apps/api/src/routes/contract_router.rs apps/api/src/routes/stream.rs
+   git diff --cached --exit-code -- apps/api/src/routes/contract_router.rs apps/api/src/routes/stream.rs
+   ```
+
+   Expected: every command exits `0`; candidate/check report unchanged 52/181/87/four artifacts; and
+   both task-owned source files have zero staged or unstaged diff from committed HEAD.
+
+**Reviewer probe:** a fresh checkout of B7b—not the residue-bearing working tree—passes the focused,
+candidate/check, and full Rust commands; its commit contains exactly the reviewed 5/5 two-file delta.
+
 ### B8-backend-closer — Serve the candidate and write only live conformance
 
 **Files:** create
@@ -700,19 +1282,24 @@ chain. There is one backend closer and no frontend closer.
 
 | Task | Lane | Paths | Depends on | Independent |
 |---|---|---|---|---|
-| B0-preedit-source | backend | `.github/workflows/**`; `.supply-chain/**`; `apps/api/src/**`; `apps/api/tests/**`; `apps/api/openapi/**`; `libs/api/**`; `tools/api-contract-baseline.mjs`; `tools/api-contract-baseline.spec.mjs`; `tools/api-contract.mjs`; `tools/api-contract.spec.mjs`; `tools/supply-chain/**`; `package.json`; `package-lock.json`; `Cargo.lock`; `apps/api/Cargo.toml`; `deny.toml`; `.spire/clusters/tech/contracts/_archive/api-contract-generation/**`; `.spire/clusters/tech/contracts/supply-chain-automation/**`; `.spire/clusters/tech/contracts/openapi-router-dependency-replacement/**` | — | no |
+| B0-preedit-source | backend | `.github/workflows/**`; `.supply-chain/**`; `apps/api/src/**`; `apps/api/tests/**`; `libs/api/**`; `tools/api-contract-baseline.mjs`; `tools/api-contract-baseline.spec.mjs`; `tools/api-contract.mjs`; `tools/api-contract.spec.mjs`; `tools/supply-chain/**`; `package.json`; `package-lock.json`; `Cargo.lock`; `apps/api/Cargo.toml`; `deny.toml`; `.spire/clusters/tech/contracts/_archive/api-contract-generation/**`; `.spire/clusters/tech/contracts/supply-chain-automation/**`; `.spire/clusters/tech/contracts/openapi-router-dependency-replacement/**` | — | no |
 | B1-baseline-tool | backend | `tools/api-router-integration-baseline.mjs`; `tools/api-router-integration-baseline.spec.mjs`; `package.json` | B0-preedit-source | no |
-| B2-baseline-checkpoint | backend | `apps/api/openapi/router-integration-prechange-baseline.json` | B1-baseline-tool | no |
+| B1a-preedit-artifacts | backend | `apps/api/openapi/convexa.openapi.json`; `apps/api/openapi/generated-artifacts.manifest.json`; `apps/api/openapi/parity-coverage.json`; `apps/api/openapi/precutover-operation-baseline.json` | B1-baseline-tool | no |
+| B1b-baseline-entrypoint-repair | backend | `tools/api-router-integration-baseline.mjs`; `tools/api-router-integration-baseline.spec.mjs` | B1a-preedit-artifacts | no |
+| B1c-baseline-npm-runner-repair | backend | `tools/api-router-integration-baseline.mjs`; `tools/api-router-integration-baseline.spec.mjs` | B1b-baseline-entrypoint-repair | no |
+| B2-baseline-checkpoint | backend | `apps/api/openapi/router-integration-prechange-baseline.json` | B1c-baseline-npm-runner-repair | no |
 | B3-contract-router | backend | `apps/api/src/routes/contract_router.rs`; `apps/api/src/routes/mod.rs` | B2-baseline-checkpoint | no |
 | B4-registration-cutover | backend | `apps/api/src/routes/mod.rs`; `apps/api/src/server.rs`; `apps/api/src/bin/export_openapi.rs`; `apps/api/tests/api_contract_router.rs`; `apps/api/tests/api_contract_parity.rs`; `apps/api/tests/api_contract_runtime_auth_research.rs`; `apps/api/tests/api_contract_runtime_market_stream.rs`; `apps/api/tests/production_runtime_guardrails.rs` | B3-contract-router | no |
 | B5-compile-probe | backend | `tools/api-router-integration-compile-probe.mjs`; `tools/api-router-integration-compile-probe.spec.mjs`; `apps/api/tests/api_contract_router.rs`; `package.json` | B4-registration-cutover | no |
 | B6-dependency-removal | backend | `apps/api/Cargo.toml`; `Cargo.lock` | B5-compile-probe | no |
 | B7-normal-gates | backend | `tools/api-contract.mjs`; `tools/api-contract.spec.mjs`; `apps/api/tests/api_contract_gate_isolation.rs`; `.github/workflows/ci.yml`; `.github/workflows/conformance.yml`; `.spire/clusters/tech/contracts/openapi-router-dependency-replacement/router-integration-compile-probe-receipt.json` | B6-dependency-removal | no |
-| B8-backend-closer | backend | `.spire/clusters/tech/contracts/openapi-router-dependency-replacement/conformance-receipt.json` | B0-preedit-source, B1-baseline-tool, B2-baseline-checkpoint, B3-contract-router, B4-registration-cutover, B5-compile-probe, B6-dependency-removal, B7-normal-gates | no |
+| B7a-postcutover-baseline-comparator-repair | backend | `tools/api-router-integration-baseline.mjs`; `tools/api-router-integration-baseline.spec.mjs` | B7-normal-gates | no |
+| B7b-committed-tree-integration-repair | backend | `apps/api/src/routes/contract_router.rs`; `apps/api/src/routes/stream.rs` | B7a-postcutover-baseline-comparator-repair | no |
+| B8-backend-closer | backend | `.spire/clusters/tech/contracts/openapi-router-dependency-replacement/conformance-receipt.json` | B0-preedit-source, B1-baseline-tool, B1a-preedit-artifacts, B1b-baseline-entrypoint-repair, B1c-baseline-npm-runner-repair, B2-baseline-checkpoint, B3-contract-router, B4-registration-cutover, B5-compile-probe, B6-dependency-removal, B7-normal-gates, B7a-postcutover-baseline-comparator-repair, B7b-committed-tree-integration-repair | no |
 
 ## Verification track
 
-Run V0–V8 from the workspace root before GATE Q. Missing history, Cargo deny, Docker, PostgreSQL,
+Run V0–V9 from the workspace root before GATE Q. Missing history, Cargo deny, Docker, PostgreSQL,
 isolated-copy, or live-server evidence is `UNVERIFIABLE`, never PASS.
 
 ### V0 — Immutable history and dirty-worktree isolation
@@ -720,30 +1307,92 @@ isolated-copy, or live-server evidence is `UNVERIFIABLE`, never PASS.
 ```powershell
 $baselinePath = 'apps/api/openapi/router-integration-prechange-baseline.json'
 $baseline = Get-Content -Raw $baselinePath | ConvertFrom-Json
+$b0 = (git rev-parse 25cf594).Trim()
+$b1 = (git rev-parse 140297d).Trim()
+$b1a = (git rev-parse 55d299c).Trim()
+$b1b = (git rev-parse 071734e).Trim()
+$b1c = (git rev-parse 69500b4).Trim()
+$b2 = (git rev-parse 3ed0657).Trim()
+$fixedTail = @('098856e','86570e8','41fcb0c','c9dddb8','b284171','7d5095f') | ForEach-Object { (git rev-parse $_).Trim() }
+git cat-file -e "$b0^{commit}"
+git cat-file -e "$b1^{commit}"
+git cat-file -e "$b1a^{commit}"
+git cat-file -e "$b1b^{commit}"
+git cat-file -e "$b1c^{commit}"
+git cat-file -e "$b2^{commit}"
+if ((git rev-parse "$b1^").Trim() -ne $b0) { throw 'preserved B0/B1 history mismatch' }
+if ((git rev-parse "$b1a^").Trim() -ne $b1) { throw 'preserved B1a history mismatch' }
+if ((git rev-parse "$b1b^").Trim() -ne $b1a) { throw 'preserved B1b history mismatch' }
+if ((git rev-parse "$b1c^").Trim() -ne $b1b) { throw 'preserved B1c history mismatch' }
+if ((git rev-parse "$b2^").Trim() -ne $b1c) { throw 'preserved B2 history mismatch' }
+$previous = $b2
+foreach ($revision in $fixedTail) {
+  if ((git rev-parse "$revision^").Trim() -ne $previous) { throw 'preserved B3-B7 history mismatch' }
+  $previous = $revision
+}
+$artifactPaths = @(
+  'apps/api/openapi/convexa.openapi.json'
+  'apps/api/openapi/generated-artifacts.manifest.json'
+  'apps/api/openapi/parity-coverage.json'
+  'apps/api/openapi/precutover-operation-baseline.json'
+)
+$b1aPaths = @(git diff-tree --no-commit-id --name-only -r $b1a)
+if (@(Compare-Object ($artifactPaths | Sort-Object) ($b1aPaths | Sort-Object)).Count -ne 0) {
+  throw 'B1a path set mismatch'
+}
+$sourceRevision = $baseline.source.revision
+if ($sourceRevision -notmatch '^[0-9a-f]{40}$') { throw 'baseline source revision is not full' }
+if ($sourceRevision -ne $b1c) { throw 'baseline source revision is not preserved B1c' }
+$repairPaths = @('tools/api-router-integration-baseline.mjs','tools/api-router-integration-baseline.spec.mjs')
+$b1bPaths = @(git diff-tree --no-commit-id --name-only -r $b1b)
+if (@(Compare-Object ($repairPaths | Sort-Object) ($b1bPaths | Sort-Object)).Count -ne 0) {
+  throw 'B1b path set mismatch'
+}
+if ((git rev-parse "$b1c^").Trim() -ne $b1b) { throw 'B1c parent is not preserved B1b' }
+$b1cPaths = @(git diff-tree --no-commit-id --name-only -r $b1c)
+if (@(Compare-Object ($repairPaths | Sort-Object) ($b1cPaths | Sort-Object)).Count -ne 0) {
+  throw 'B1c source revision path set mismatch'
+}
 $firstAdd = (git log --diff-filter=A --format='%H' -- $baselinePath | Select-Object -Last 1).Trim()
+if ($firstAdd -ne $b2) { throw 'baseline first-add is not preserved B2' }
 $parent = (git rev-parse "$firstAdd^").Trim()
-if ($parent -ne $baseline.source.revision) { throw 'baseline first-add parent mismatch' }
+if ($parent -ne $sourceRevision) { throw 'baseline first-add parent/source mismatch' }
 $historical = git show "${firstAdd}:$baselinePath"
 if (($historical -join "`n") + "`n" -cne (Get-Content -Raw $baselinePath)) { throw 'baseline blob mutated' }
+$b7a = (git log -1 --format='%H' -- $repairPaths).Trim()
+if ($b7a -ne (git rev-parse 96aad2b).Trim()) { throw 'B7a revision mismatch' }
+if ((git rev-parse "$b7a^").Trim() -ne $fixedTail[-1]) { throw 'B7a parent is not preserved B7 tip' }
+$b7aPaths = @(git diff-tree --no-commit-id --name-only -r $b7a)
+if (@(Compare-Object ($repairPaths | Sort-Object) ($b7aPaths | Sort-Object)).Count -ne 0) { throw 'B7a path set mismatch' }
+$integrationPaths = @('apps/api/src/routes/contract_router.rs','apps/api/src/routes/stream.rs')
+$b7b = (git rev-parse HEAD).Trim()
+if ((git rev-parse "$b7b^").Trim() -ne $b7a) { throw 'B7b parent is not preserved B7a' }
+$b7bPaths = @(git diff-tree --no-commit-id --name-only -r $b7b)
+if (@(Compare-Object ($integrationPaths | Sort-Object) ($b7bPaths | Sort-Object)).Count -ne 0) { throw 'B7b path set mismatch' }
 git diff --cached --name-only
 git status --short
 ```
 
-Expected: one first-add commit; parent equals the full recorded source revision; current bytes equal the
-first-added blob. No unrelated provider/user path is staged. Reordered capture, wrong parent, later
-baseline mutation/deletion, and shallow history each fail the candidate and ordinary check.
+Expected: the immutable chain through `7d5095f -> 96aad2b -> B7b` is intact; B2 remains the unique
+baseline first-add child of B1c; repair commits own exactly their declared paths; current baseline bytes
+equal the first-added blob. No unrelated path is staged. Reordered capture, wrong parent, later
+mutation/deletion, or shallow/rewritten history fails.
 
 ### V1 — Tooling, pairing, compile receipt, and normal-gate mutation matrix
 
 ```powershell
 node --test tools/api-contract-baseline.spec.mjs
+$env:npm_execpath = (Resolve-Path (Join-Path (npm root -g) 'npm/bin/npm-cli.js')).Path
 node --test tools/api-router-integration-baseline.spec.mjs
 node --test tools/api-router-integration-compile-probe.spec.mjs
 node --test tools/api-contract.spec.mjs
 cargo test -p api-rust --test api_contract_gate_isolation --locked --offline -- --nocapture
+git diff --exit-code -- apps/api/src/routes/contract_router.rs apps/api/src/routes/stream.rs
 ```
 
-Expected: `12/12`, `20/20`, `12/12`, and `75/75`; Rust exits `0`. Positive parser control discovers 52.
+Expected: `12/12`, `25/25`, `12/12`, and `75/75`; Rust exits `0`. The baseline suite includes the
+real-CLI, npm-runner, exact post-cutover delta, strict-capture, and drift/history oracles; the positive
+parser control discovers 52; the exact B7b source paths have no unstaged residue.
 Swapped/missing/duplicated/misnamed pairs, 51/53 graphs, invalid graph categories, poisoned history,
 artifact/metadata/ID-set changes, receipt changes, and forbidden package mutations each go red before
 their restored control goes green.
@@ -752,13 +1401,15 @@ their restored control goes green.
 
 ```powershell
 cargo test -p api-rust routes::contract_router:: --locked --offline -- --nocapture
+cargo test -p api-rust generated_stream_openapi_is_enum_owned_and_preserves_retry_after --locked --offline -- --nocapture
 cargo test -p api-rust --test api_contract_router --locked --offline -- --nocapture
 cargo tree -p api-rust --locked --offline -i axum
 ```
 
-Expected: all tests exit `0`; all eight methods and three metadata traits pass; same-path/different-method
-merges; duplicate same-method and operation identity refuse transactionally; exactly 52 production
-operations remain; one Axum `0.8.9` is resolved; no `utoipa-axum` or `paste` line appears.
+Expected: all tests exit `0`; owned metadata `String` paths and fallible OpenAPI test integration pass;
+all eight methods and three metadata traits pass; same-path/different-method merges; duplicate
+same-method and operation identity refuse transactionally; exactly 52 production operations remain;
+one Axum `0.8.9` is resolved; no `utoipa-axum` or `paste` line appears.
 
 ### V3 — Independent candidate/check and unchanged artifact bytes
 
@@ -767,13 +1418,16 @@ $sourceRevision = (Get-Content -Raw apps/api/openapi/router-integration-prechang
 npm run api:router-integration:candidate
 npm run api:contract:check
 npm run api:contract:check
+$strictCapture = npm run api:router-integration:baseline:candidate -- --source-revision $sourceRevision --out .tmp/postcutover-capture-must-not-exist.json 2>&1
+if ($LASTEXITCODE -eq 0 -or (Test-Path .tmp/postcutover-capture-must-not-exist.json)) { throw 'capture cleanliness was weakened' }
 git diff --exit-code $sourceRevision -- apps/api/openapi/convexa.openapi.json libs/api/src/generated/schema.ts apps/api/openapi/parity-coverage.json apps/api/openapi/generated-artifacts.manifest.json
 git diff --exit-code -- apps/api/openapi/convexa.openapi.json libs/api/src/generated/schema.ts apps/api/openapi/parity-coverage.json apps/api/openapi/generated-artifacts.manifest.json
 ```
 
-Expected: both independent comparators exit `0`; two checks are non-writing; the existing clean and
-coverage lines are unchanged; both diffs are empty. OpenAPI remains `3.1.0` with the complete historical
-`info` object; manifest bytes and all four raw hashes equal the oracle.
+Expected in a clean B7a verification worktree: comparator and both checks exit `0` and are non-writing;
+strict capture rejects the post-cutover delta and writes nothing; both artifact diffs are empty.
+OpenAPI remains `3.1.0` with complete historical `info`; all four hashes and 181/87 ID hashes equal the
+oracle. The two B7b integration files are committed and clean rather than verification-only residue.
 
 ### V4 — Exact 181 response conversions and 87 direct HTTP outcomes
 
@@ -792,7 +1446,7 @@ if ($LASTEXITCODE -ne 0 -or $directIds.Count -ne 87 -or @($directIds | Sort-Obje
 Expected: 181 unique production conversion outcomes and 87 unique requests through the production
 Tower/Axum graph. Their canonical set hashes equal both parity-declared sets and the pre-edit oracle;
 auth, cookies, redirects, SSE, errors, absence, memory/durable effects, operator isolation, and fallback/
-implicit-method families retain their approved outcomes.
+implicit-method families retain their approved outcomes from the clean committed B7b tree.
 
 ### V5 — Cargo removal, Cargo deny, shared client, and `NO_UI_CHANGE`
 
@@ -824,11 +1478,12 @@ npm run build
 npm run ci
 docker build -f apps/api/Dockerfile -t convexa-api:openapi-router-replacement .
 docker run --rm convexa-api:openapi-router-replacement sh -c "test ! -e /app/convexa.openapi.json && test ! -e /app/node_modules"
+git diff --exit-code -- apps/api/src/routes/contract_router.rs apps/api/src/routes/stream.rs
 ```
 
 Expected: all exit `0`; production+Postgres binary builds from the proven locked graph; image remains
 non-root and contains no generation packages/artifacts; score/tier/fingerprint and quant golden tests
-stay byte-identical; no persistence migration or data mutation is introduced.
+stay byte-identical; no persistence migration or data mutation is introduced; B7b source is committed.
 
 ### V7 — Four-call live conformance and no public tooling surface
 
@@ -844,7 +1499,7 @@ return existing fallback behavior. This is supplementary and does not replace V2
 
 ### V8 — Rollback and atomic failure
 
-In a disposable branch/worktree, revert B3–B7 as one complete replacement and require the B2 pre-edit
+In a disposable branch/worktree, revert B3–B7b as one complete replacement and require the B2 pre-edit
 contract gates to pass; verify persisted user/market stores are byte-identical before/after. Restore only
 the four generated artifacts over changed source and require `contract drift`. Interrupt generation at
 each install stage and require the prior five mutable artifact/evidence bytes intact. Restore the
@@ -877,9 +1532,9 @@ After B8, launch a fresh QA role against all 24 ACs. QA writes only `QA_REPORT.m
 | AC-03 | B2, B4, B7 | V0, V2–V4 |
 | AC-04 | B4, B7 | V1–V2 |
 | AC-05 | B3, B4, B7 | V1–V2 |
-| AC-06 | B2, B3, B7 | V0, V3 |
-| AC-07 | B2, B7 | V1, V4 |
-| AC-08 | B2, B4, B7 | V1, V4 |
+| AC-06 | B2, B3, B7, B7a | V0, V3 |
+| AC-07 | B2, B7, B7a | V1, V4 |
+| AC-08 | B2, B4, B7, B7a | V1, V4 |
 | AC-09 | B8 | V7 |
 | AC-10 | B4, B7 | V4, V7 |
 | AC-11 | B4, B7 | V4, V7 |
@@ -887,12 +1542,12 @@ After B8, launch a fresh QA role against all 24 ACs. QA writes only `QA_REPORT.m
 | AC-13 | B4, B7 | V4–V5 |
 | AC-14 | B4 | V6 |
 | AC-15 | B7 | V5 |
-| AC-16 | B1, B7 | V1, V3, V8 |
+| AC-16 | B1, B7, B7a | V1, V3, V8 |
 | AC-17 | B1, B5, B7 | V1, V3–V5 |
 | AC-18 | B8 | V5, V7 |
 | AC-19 | B4, B8 | V7 |
 | AC-20 | B0, B8 | V5 |
 | AC-21 | B4, B6, B8 | V5–V7, V9 |
 | AC-22 | B4, B8 | V6, V8 |
-| AC-23 | B0, B1, B2, B7 | V0–V1 |
-| AC-24 | B3, B4, B5, B7 | V1–V2 |
+| AC-23 | B0, B1, B1a, B1b, B1c, B2, B7, B7a | V0–V1, V3 |
+| AC-24 | B3, B4, B5, B7, B7b | V1–V2, V6 |

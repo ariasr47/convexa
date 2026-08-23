@@ -934,6 +934,15 @@ be exactly it.
 > `absent-is-not-none`). Conformance JSON promoted to `state/conformance/chain-snapshot-capture.json`.
 > P3 batch-backtest CLI is now unblocked (was blocked-on durable capture).
 
+| `structural-over-prose-enforcement` | openapi-router-dependency-replacement | S | one repository-owned graph pairs runtime handlers with utoipa metadata; 52/181/87 mutations and forbidden-package reintroduction fail the normal gate | yes |
+| `cited-code-is-verified-not-assumed` | openapi-router-dependency-replacement | S | pre-edit source/artifact hashes and the compiled 52-route receipt bind replacement claims to observed repository bytes | yes |
+| `absent-is-not-none` | openapi-router-dependency-replacement | S | generated-client compatibility preserves missing/null/empty/zero/false distinctions without changing dashboard runtime source | yes |
+
+> **GATE S tally — openapi-router-dependency-replacement (2026-08-23).** **NO new graduations.**
+> Honored already-promoted keys (`structural-over-prose-enforcement` ·
+> `cited-code-is-verified-not-assumed` · `absent-is-not-none`). Conformance JSON promoted to
+> `state/conformance/openapi-router-dependency-replacement.json`.
+
 > **GATE S tally — ai-providers (2026-08-18).** **NO new graduations.** All honored keys are already
 > promoted canon. New watch-list key `user-subscription-not-operator-pool` (1 feature, binding).
 > Conformance JSON promoted to `state/conformance/ai-providers.json`. AC-9/10/14/15 stay

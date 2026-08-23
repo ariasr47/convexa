@@ -505,6 +505,17 @@ startup-owner, live conformance, and volume-replacement receipts.
 
 ## 6. Current feature state (works end-to-end)
 <!-- shard: tags=features,state,observability,darkpool,ghost-trade,dex,personas,metrics -->
+- **Repository-owned route/OpenAPI integration (`openapi-router-dependency-replacement`, BE + shared client, shipped 2026-08-23)** —
+  removed `utoipa-axum` and its transitive unmaintained `paste` dependency while retaining direct
+  `utoipa` 5.5.0. One `ContractRouter` graph still owns the same 52 source-derived operations; the
+  four generated API artifacts remain byte-identical, with 181 response-conversion and 87 direct-HTTP
+  evidence cases. Dashboard runtime source is unchanged. QA PASS 24/0/0; conformance 4/4.
+- **Generated API contract (`api-contract-generation`, BE + shared client, shipped 2026-08-22)** —
+  the source-derived 52-operation Axum graph deterministically exports OpenAPI 3.1 and checked
+  `@convexa/api` TypeScript schema/client bytes. Immutable pre-cutover and generated-artifact
+  manifests reject drift/co-omission; schema-v2 evidence executes 181 response conversions and 87
+  direct HTTP outcomes. Native EventSource remains the SSE lifecycle boundary. No new docs route,
+  endpoint, auth, scoring, or trader-visible behavior. QA PASS 42/0/0; conformance 4/4.
 - **Session body store (`chain-archive-object-store`, BE + structural FE, shipped 2026-08-20)** —
   session-archive bodies live on `SESSION_CHAIN_ARCHIVE_BODY_ROOT` (unique-per-put files); the app
   DB keeps identity + locator only. Missing object is `session book unreadable`. Ring BYTEA
