@@ -1,0 +1,44 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "PASS",
+  "mode": "live",
+  "source": ".spire/clusters/tech/contracts/api-contract-generation/INTERFACE_CONTRACT.md",
+  "base_url": "http://127.0.0.1:8000",
+  "auth": null,
+  "checked_at": "2026-08-23T04:42:39Z",
+  "summary": {
+    "pass": 4,
+    "fail": 0,
+    "total": 4
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "verdict": "PASS",
+      "required_checked": 12,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "verdict": "PASS",
+      "required_checked": 12,
+      "failures": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/session",
+      "verdict": "PASS",
+      "required_checked": 5,
+      "failures": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "verdict": "PASS",
+      "required_checked": 1,
+      "failures": []
+    }
+  ]
+}

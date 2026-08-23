@@ -1,0 +1,5 @@
+{
+  "status": 404,
+  "kind": "fallback-not-found",
+  "body": { "detail": "not found" }
+}

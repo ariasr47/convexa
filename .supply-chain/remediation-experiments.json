@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "candidate_evidence_pending",
+  "before_package_lock_sha256": "ed4e7a490d81ee90dea4385bd374b1f90973e59db1171304fd09ff6aa9adad91",
+  "after_package_lock_sha256": "d5be2a6c335a22da7c2fc197f8685f7889705ffd8c20b6fc1a7b736532979656",
+  "required_check_set_sha256": "90377d547ae25c3895cb57fa599308e965bef617a5a11642ee26e762409c22f0",
+  "experiments": [
+    {
+      "experiment_id": "nx-brace-expansion",
+      "direct_anchor": "nx@23.1.1",
+      "before_path": ["nx@23.1.1", "brace-expansion@5.0.8"],
+      "after_path": ["nx@23.1.1", "brace-expansion@5.0.9"],
+      "constraint": "nx>brace-expansion=5.0.9"
+    },
+    {
+      "experiment_id": "postcss-nanoid",
+      "direct_anchor": "postcss@8.5.25",
+      "before_path": ["postcss@8.5.25", "nanoid@3.3.16"],
+      "after_path": ["postcss@8.5.25", "nanoid@3.3.18"],
+      "constraint": "postcss>nanoid=3.3.18"
+    }
+  ],
+  "locally_observed": {
+    "npm_audit_full": "pass",
+    "npm_audit_production": "pass",
+    "format": "pass_feature_scope",
+    "lint": "pass",
+    "typecheck": "pass",
+    "test": "pass",
+    "playwright_e2e": "pass",
+    "build": "pass",
+    "promoted_conformance": "pass"
+  },
+  "hosted_required": [
+    "api_docker_build",
+    "dashboard_docker_build",
+    "postgres_real_database_tests",
+    "accepted_revision_ci"
+  ]
+}

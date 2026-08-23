@@ -17,21 +17,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  supply-chain:
+    name: Supply-chain policy
+    uses: ./.github/workflows/supply-chain.yml
+    with:
+      contract_event: ${{ github.event_name == 'pull_request' && 'pull_request' || 'default_branch' }}
+      contract_revision: ${{ github.event.pull_request.head.sha || github.sha }}
+      contract_path: policy
+    permissions:
+      contents: read
+      actions: read
+
   frontend:
     name: Frontend (lint · typecheck · test · build · e2e)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           filter: tree:0
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
+
+      - name: API contract check
+        run: npm run api:contract:check
 
       # Scoped Prettier (package.json) — never bare `nx format:write` (repo-wide hazard).
       - name: Format check
@@ -56,7 +71,7 @@ jobs:
 
       - name: Upload Vitest log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: vitest-log
           path: ${{ runner.temp }}/vitest.log
@@ -81,10 +96,10 @@ jobs:
 
   backend:
     name: Backend (cargo test · release+postgres)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17.10-trixie@sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -97,30 +112,44 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           filter: tree:0
+          persist-credentials: false
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked Node dependencies
+        run: npm ci
+
+      - name: API contract check
+        run: npm run api:contract:check
+
+      - name: Install baseline Rust 1.97.1
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # reviewed-commit-2026-08-05
+        with:
+          toolchain: 1.97.1
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@aa7c1c80a07a27a84c0aa76d0cef0aad3830e330 # v2.7.8
         with:
           workspaces: |
             . -> target
 
       # Default features (JSON stores) — full unit/integration surface for api-rust + quant-engine.
       - name: Cargo test
-        run: cargo test -p api-rust -p quant-engine
+        run: cargo test -p api-rust -p quant-engine --locked
 
       - name: Production runtime guardrails (postgres)
-        run: cargo test -p api-rust --features postgres --test production_runtime_guardrails_postgres -- --nocapture
+        run: cargo test -p api-rust --features postgres --test production_runtime_guardrails_postgres --locked -- --nocapture
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/convexa_test
 
       - name: PostgreSQL release safety
-        run: cargo test -p api-rust --features postgres --test postgres_release_safety_postgres -- --nocapture
+        run: cargo test -p api-rust --features postgres --test postgres_release_safety_postgres --locked -- --nocapture
         env:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/convexa_test
           RELEASE_GIT_SHA: ${{ github.sha }}
@@ -128,7 +157,7 @@ jobs:
 
       - name: Upload PostgreSQL release safety evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: postgres-release-negative-control
           path: ${{ runner.temp }}/postgres-release-negative-control.json
@@ -136,4 +165,4 @@ jobs:
 
       # Matches Railway/Docker production image (`--features postgres`).
       - name: Cargo release build (postgres)
-        run: cargo build -p api-rust --release --features postgres
+        run: cargo build -p api-rust --release --features postgres --locked

@@ -54,18 +54,24 @@ docs/             Design notes
 
 ## Getting started
 
+### Candidate toolchain status
+
+**Candidate — qualification pending:** Node `24.19.0`, npm `11.17.0`, and Rust `1.98.0`.
+Current accepted selectors remain in force until candidate binding is complete. Install the locked dependency
+graph with `npm ci`. Policy, qualification state, reproduction steps, remediation, and limits live in
+[Supply-chain operations](docs/SUPPLY_CHAIN.md).
+
 ### Prerequisites
 
-- **Node.js** (LTS; developed with Node 24 via [nvm](https://github.com/coreybutler/nvm-windows) on Windows) + npm
-- **Node.js ≥ 24** (recommended: **26.7** — see `.nvmrc`; `nvm use`)
-- **Rust** stable via [rustup](https://rustup.rs/) for `apps/api`
+- The repository's current accepted Node/npm/Rust selectors (`nvm use` reads `.nvmrc`)
+- [rustup](https://rustup.rs/) for the Rust backend
 - A **Massive API key** for live market data (see _Configuration_)
 
 ### Install
 
 ```bash
-nvm use          # reads .nvmrc → Node 26.7.x
-npm install
+nvm use          # reads the current accepted .nvmrc selector
+npm ci           # installs the exact package-lock.json graph
 
 # Rust backend is a Cargo workspace member (libs/quant-engine + apps/api).
 ```

@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 description = "Convexa Rust backend — Axum service scaffold (Phase 2: Massive + price path)"
+default-run = "api-rust"
 
 [lib]
 name = "api_rust"
@@ -46,6 +47,8 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+utoipa = { version = "=5.5.0", features = ["axum_extras", "auto_into_responses"] }
+utoipa-axum = "=0.2.0"
 url = "2"
 
 [dev-dependencies]

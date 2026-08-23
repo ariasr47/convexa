@@ -4,63 +4,37 @@
  * MarketDataProvider "port" on the backend: swap the implementation here and the rest of
  * the app is unaffected.
  */
+import type { components } from '../generated/schema';
+import { http } from './client';
 
 /** IV skew at a single anchor tenor (nearest expiration >= 7 DTE). `slope` = put-side IV −
  *  call-side IV, in IV points; `reference` records which rule produced the reference IVs.
  *  Display-only; the FE derives the fear/greed/balanced word from `slope`. */
-export interface IvSkew {
-  slope: number; // put_iv − call_iv, in IV points
-  put_iv: number; // downside reference IV (%)
-  call_iv: number; // upside reference IV (%)
-  dte: number;
-  expiration: string; // YYYY-MM-DD
-  reference: '25d' | 'moneyness';
-}
+export type IvSkew = components['schemas']['IvSkewWire'];
 
 /** Cross-tenor ATM-IV curve (ignores the DTE filter). `points` ascending by dte; sparse/absent
  *  tenors are omitted, never faked. `state` is server-emitted. */
-export interface TermStructure {
-  points: { dte: number; expiration: string; atm_iv: number }[];
-  state: 'contango' | 'backwardation' | 'flat';
-  near_iv: number; // near-tenor ATM IV (%)
-  far_iv: number; // far-tenor ATM IV (%)
-  slope: number; // far_iv − near_iv (sign-bearing)
-}
+export type TermStructure = components['schemas']['TermStructureWire'];
 
 /** Projected-dealer-flow charm limb (dealer-flow-projection INTERFACE_CONTRACT §payload). Window-scoped
  *  (moves with the DTE filter, like net_gex/net_dex). All values pre-computed on the wire — the FE never
  *  does its own arithmetic. Independently nullable (null iff net_charm unavailable OR no future monthly
  *  OPEX). Signed $-delta values inherit the dealer-book convention (calls +, puts −). */
-export interface CharmLimb {
-  projected_delta: number; // signed $-delta drift to the horizon (= net_charm · horizon_days)
-  per_day_base: number; // signed $-delta per +1 calendar day (= net_charm)
-  horizon_days: number; // calendar days to the next monthly OPEX, >= 1
-  opex_date: string; // ISO YYYY-MM-DD the drift is projected to (next monthly OPEX)
-}
+export type CharmLimb = components['schemas']['DealerFlowCharmWire'];
 
 /** Projected-dealer-flow vanna limb. Instantaneous (no time horizon — its "horizon" is the vol-move
  *  magnitude). `illustrative_projected_delta` is PRE-SCALED on the wire (= net_vanna · 5) — the FE
  *  renders it DIRECTLY and never multiplies. `reference_direction` is `"increase"` (a vol drop is the
  *  exact negation; the FE states this, no second figure). Independently nullable (null iff net_vanna
  *  unavailable). */
-export interface VannaLimb {
-  projected_delta: number; // signed $-delta at the base move (= net_vanna · move_iv_points)
-  move_iv_points: number; // base assumed vol move, IV points (fixed 1.0)
-  illustrative_move_iv_points: number; // illustrative shock, IV points (fixed 5.0)
-  illustrative_projected_delta: number; // PRE-SCALED signed $-delta at the illustrative move (= net_vanna · 5)
-  reference_direction: string; // the direction the quote assumes; value is "increase"
-}
+export type VannaLimb = components['schemas']['DealerFlowVannaWire'];
 
 /** A forward-looking projection of the delta dealers are expected to hedge, derived from the same
  *  window-scoped net_charm / net_vanna aggregates already in the bundle. STATIC (rides the cached REST
  *  bundle, never the SSE stream). Two independently-nullable limbs; the whole object is null only when
  *  BOTH limbs are unavailable OR the compute raised. Display/AI-context ONLY — never a scoring input
  *  (`[additive-keeps-score-byte-identical]`). */
-export interface DealerFlowProjection {
-  spot_basis: number; // synchronized_spot / gex_spot the flow was computed at (close-anchored, NOT live)
-  charm: CharmLimb | null; // null if net_charm unavailable OR horizon undeterminable
-  vanna: VannaLimb | null; // null if net_vanna unavailable
-}
+export type DealerFlowProjection = components['schemas']['DealerFlowProjectionWire'];
 
 // ---- AI context pack ("Market context") — ai-context-pack INTERFACE_CONTRACT §payload -----------
 // One additive, independently-nullable nested object on `market_state`, mirroring
@@ -73,106 +47,45 @@ export interface DealerFlowProjection {
 // is self-describing; the FE does NOT parse or render them (it has its own pinned copy).
 
 /** Trend direction off daily closes (close vs EMA20 vs EMA50). Null under its warm-up floor. */
-export interface TrendDirectionRead {
-  label: 'uptrend' | 'downtrend' | 'mixed';
-  close: number; // last close ($), 2dp
-  ema20: number; // EMA20 of closes ($), 2dp
-  ema50: number; // EMA50 of closes ($), 2dp
-  window: string; // fixed descriptor (wire-only; FE renders its own pinned copy)
-  thresholds: string; // fixed descriptor
-}
+export type TrendDirectionRead = components['schemas']['TrendDirectionWire'];
 
 /** Trend strength (Wilder ADX(14)). Null under its floor / missing high-low. */
-export interface TrendStrengthRead {
-  label: 'weak' | 'moderate' | 'strong';
-  adx: number; // Wilder ADX(14), 2dp on the wire (FE displays 1dp)
-  window: string;
-  thresholds: string;
-}
+export type TrendStrengthRead = components['schemas']['TrendStrengthWire'];
 
 /** Momentum state (Wilder RSI(14)). Null under its floor. */
-export interface MomentumStateRead {
-  label: 'overbought' | 'bullish' | 'neutral' | 'bearish' | 'oversold';
-  rsi: number; // Wilder RSI(14), 2dp on the wire (FE displays 1dp)
-  window: string;
-  thresholds: string;
-}
+export type MomentumStateRead = components['schemas']['MomentumStateWire'];
 
 /** Trend & momentum read — three independently-nullable labels off the daily-bar series. Null when
  *  all 3 labels are null OR the read raised. */
-export interface TrendMomentumRead {
-  as_of_session: string; // ISO YYYY-MM-DD — the last daily bar's ET session date
-  direction: TrendDirectionRead | null;
-  strength: TrendStrengthRead | null;
-  momentum: MomentumStateRead | null;
-}
+export type TrendMomentumRead = components['schemas']['TrendMomentumWire'];
 
 /** Shape scalars over the window-scoped net-GEX profile. ALL-OR-NULL (one compute; needs >= 5
  *  eligible strikes & sum|net_gex| > 0). When present every field is non-null. */
-export interface GexProfileShapeRead {
-  concentration: number; // normalized HHI in [0,1], 2dp
-  concentration_label: 'concentrated' | 'mixed' | 'dispersed';
-  balance: number; // in [-1,+1], signed, 2dp (+ = weight above spot)
-  balance_label: 'above_skewed' | 'balanced' | 'below_skewed';
-  center_of_mass_distance: number; // signed FRACTION of spot_basis (4dp; FE renders as a percent)
-  eligible_strikes: number; // int — strikes with |net_gex| > 0 in the selected window
-  spot_basis: number; // gex_spot the shape was computed at (close-anchored, NOT live)
-  thresholds: string;
-}
+export type GexProfileShapeRead = components['schemas']['GexProfileShapeWire'];
 
 /** Where today's volume sits vs standing OI, strike by strike. Independently nullable. */
-export interface DivergenceLocation {
-  label: 'aligned' | 'rotating' | 'divergent';
-  distribution_shift: number; // in [0,1], 2dp
-  thresholds: string;
-}
+export type DivergenceLocation = components['schemas']['DivergenceLocationWire'];
 
 /** Which right today's volume favors vs the standing book. Independently nullable; when present
  *  ALL THREE scalars are non-null. */
-export interface DivergenceComposition {
-  label: 'flow_put_tilted' | 'consistent' | 'flow_call_tilted';
-  volume_pcr: number; // today's put/call VOLUME ratio, 2dp
-  oi_pcr: number; // standing full-chain put/call OI ratio (== put_call_ratio), 2dp
-  tilt_ratio: number; // volume_pcr / oi_pcr, 2dp
-  thresholds: string;
-}
+export type DivergenceComposition = components['schemas']['DivergenceCompositionWire'];
 
 /** Flow vs positioning read — null when BOTH sub-components are null OR the read raised. The flow
  *  basis is the chain snapshot's same-day cumulative option volume — UNSIGNED; never the SSE net
  *  flow; never tick data. */
-export interface FlowVsPositioningRead {
-  flow_basis: string; // fixed descriptor
-  location: DivergenceLocation | null;
-  composition: DivergenceComposition | null;
-}
+export type FlowVsPositioningRead = components['schemas']['FlowVsPositioningWire'];
 
 /** One ATR horizon. Independently nullable (a horizon without its full valid-bar tail is null —
  *  never a fabricated 0). */
-export interface AtrHorizon {
-  value: number; // $ (2dp)
-  pct_of_close: number; // PERCENT of close_basis (2dp, e.g. 2.31 = 2.31%)
-  window_bars: number; // int
-}
+export type AtrHorizon = components['schemas']['AtrHorizonWire'];
 
 /** Average-true-range read — null when ALL horizons are null OR the read raised. */
-export interface AtrRead {
-  as_of_session: string; // ISO YYYY-MM-DD (same convention as trend_momentum.as_of_session)
-  close_basis: number; // the last bar's close ($) the percentages are against, 2dp
-  method: string; // fixed descriptor
-  atr_5d: AtrHorizon | null;
-  atr_14d: AtrHorizon | null;
-  atr_30d: AtrHorizon | null;
-}
+export type AtrRead = components['schemas']['AtrReadWire'];
 
 /** The AI context pack. Null only when ALL FOUR children are null OR the wrapper raised. The KEY is
  *  always present on a post-feature backend; it is OPTIONAL on `MarketState` so pre-feature payloads
  *  type-check (consumers read `m.market_context ?? null`). */
-export interface MarketContextPack {
-  trend_momentum: TrendMomentumRead | null;
-  gex_profile_shape: GexProfileShapeRead | null;
-  flow_vs_positioning: FlowVsPositioningRead | null;
-  atr: AtrRead | null;
-}
+export type MarketContextPack = components['schemas']['MarketContextPackWire'];
 
 // ---- IV rank — iv-rank INTERFACE_CONTRACT §3 ----------------------------------------------------
 // One additive, independently-nullable nested object on `market_state`, mirroring
@@ -196,52 +109,81 @@ export type IvRankBand = 'premium_rich' | 'neutral' | 'premium_cheap';
 /** How the sampled IV was derived (self-describing basis, `model-read-carries-its-assumptions`). */
 export type IvBasis = 'interpolated_30d' | 'nearest_tenor';
 
-export interface IvRankRead {
-  /** Which of the two non-null states this read is in. Drives the FE body-state selection. */
-  state: IvRankState;
+export type IvRankRead = components['schemas']['IvRankReadWire'];
 
-  // ---- Computed-state numbers (all null unless state == 'computed') ----
-  /** IV Rank 0–100 (headline, D4). null when state != 'computed' OR the window is degenerate-flat
-   *  (IV_max == IV_min) — in the flat sub-case `state` stays 'computed', `rank` is null, and
-   *  `rank_unavailable_reason` explains it. NEVER a fabricated midpoint. */
-  rank: number | null;
-  /** Set ONLY when state == 'computed' && rank == null (degenerate-flat): a short machine reason the
-   *  FE maps to its pinned flat note. Closed value: 'flat_window'. null otherwise. */
-  rank_unavailable_reason: 'flat_window' | null;
-  /** IV Percentile 0–100 (secondary, D4). Present whenever state == 'computed' (incl. degenerate-flat
-   *  — a flat window still has a defined percentile). null when state != 'computed'. */
-  percentile: number | null;
-  /** The digested band token (D2). Present ONLY when state == 'computed' && rank != null; null in the
-   *  flat sub-case and in building. */
-  band: IvRankBand | null;
-
-  // ---- The self-describing envelope (present in BOTH states; carries the read's assumptions) ----
-  /** The IV value the read measured this cycle (percentage points, ×100 convention). null in building
-   *  when no current IV was usable but samples exist below the floor. */
-  current_iv: number | null;
-  /** Sessions actually used in the window (== sample_count until 252, then 252). */
-  window_sessions: number;
-  /** Total accumulated samples for this ticker (== window_sessions until >252). */
-  sample_count: number;
-  /** The rolling window cap (252). Fixed descriptor for the "N of the last {window} sessions" copy. */
-  window_cap: number;
-  /** The minimum-sample floor (N_min = 20, D3). The FE renders "N of {N_min} sessions" in building. */
-  min_samples: number;
-  /** How current_iv was derived (self-describing basis, AC-19). */
-  iv_basis: IvBasis;
-  /** The actual DTE the sample represents: 30 for a clean interpolation; the fallback tenor DTE
-   *  otherwise. The FE renders it in the fallback basis line. */
-  basis_dte: number;
-
-  // ---- Self-describing descriptors (WIRE-ONLY — for the AI export; the FE does NOT render these) ----
-  /** Plain-language window/basis/framing descriptors so the AI export is self-describing. The FE has
-   *  its OWN pinned copy and MUST NOT render these strings (a sentinel-value test guards this). */
-  window_descriptor: string;
-  basis_descriptor: string;
-  advisory_note: string;
-}
-
-export interface MarketState {
+type MarketWire = components['schemas']['MarketWire'];
+/** Validated market-state projection used by the existing presentation code. The wire remains
+ * generated `MarketWire`; this projection records the fields the bundle normalizer requires before
+ * exposing a state to consumers. */
+export type MarketState = Omit<
+  MarketWire,
+  | 'ticker'
+  | 'price'
+  | 'gex_spot'
+  | 'timestamp'
+  | 'timestamp_iso'
+  | 'call_wall'
+  | 'put_wall'
+  | 'peak_gex_strike'
+  | 'gamma_flip'
+  | 'max_pain'
+  | 'max_pain_expiration'
+  | 'net_gex'
+  | 'call_gex'
+  | 'put_gex'
+  | 'total_gex'
+  | 'net_dex'
+  | 'call_dex'
+  | 'put_dex'
+  | 'net_vanna'
+  | 'net_charm'
+  | 'net_volga'
+  | 'vwap'
+  | 'vwap_upper_2'
+  | 'vwap_upper_3'
+  | 'vwap_lower_2'
+  | 'vwap_lower_3'
+  | 'dte_min'
+  | 'dte_max'
+  | 'atm_iv'
+  | 'hv_30d'
+  | 'iv_hv_ratio'
+  | 'net_flow'
+  | 'put_call_ratio'
+  | 'chain_vol_oi_ratio'
+  | 'total_volume'
+  | 'vol_oi_unusual_threshold'
+  | 'iv_skew'
+  | 'term_structure'
+  | 'dealer_flow_projection'
+  | 'straddle_move'
+  | 'ai_eval'
+  | 'expirations'
+  | 'iv_rank'
+  | 'market_context'
+  | 'meta'
+  | 'market_state'
+  | 'signals'
+  | 'strike_profile'
+  | 'vol_normalized_gex'
+  | 'off_exchange'
+  | 'position_eval'
+  | 'score_drivers'
+  | 'setups'
+  | 'distances'
+  | 'changed'
+  | 'contract_count'
+  | 'dark_pool_confluence'
+  | 'market_phase'
+  | 'opportunity_score'
+  | 'opportunity_tier'
+  | 'prime_prompt_eligible'
+  | 'regime'
+  | 'regime_note'
+  | 'state_fingerprint'
+  | 'vol_regime'
+  | 'zero_dte_contribution_pct'
+> & {
   ticker: string;
   price: number;
   gex_spot: number | null;
@@ -257,8 +199,6 @@ export interface MarketState {
   call_gex: number | null;
   put_gex: number | null;
   total_gex: number | null;
-  // DEX — net dealer delta exposure ($), scoped to the SELECTED DTE/expiration window (same
-  // contracts as net_gex/walls). null when vendor delta is missing chain-wide (best-effort).
   net_dex: number | null;
   call_dex: number | null;
   put_dex: number | null;
@@ -272,55 +212,25 @@ export interface MarketState {
   vwap_lower_3: number | null;
   dte_min: number | null;
   dte_max: number | null;
-  /**
-   * ATM IV as **percent** on the wire (22 = 22%). Engine storage is decimal (0.22);
-   * the API converts at the boundary via `atm_iv_to_wire_percent`. Never treat this as
-   * a fraction of 1 when comparing to HV% or feeding a re-implemented vol-norm.
-   */
   atm_iv: number;
-  /** 30d historical vol as **percent annualized** (same unit as wire `atm_iv`). */
   hv_30d: number;
   iv_hv_ratio: number;
   net_flow: number | null;
   put_call_ratio: number;
-  // Vol/OI — FULL CHAIN (ignores the DTE filter; same basis as max_pain / put_call_ratio).
-  chain_vol_oi_ratio: number | null; // total option volume / total OI; null if no vendor volume
-  total_volume: number | null; // full-chain session option volume
-  vol_oi_unusual_threshold: number; // single cutoff above which a strike is "unusual" (default 1.0)
-  // IV Skew (single anchor tenor) + Term Structure (cross-tenor). Independently nullable.
+  chain_vol_oi_ratio: number | null;
+  total_volume: number | null;
+  vol_oi_unusual_threshold: number;
   iv_skew: IvSkew | null;
   term_structure: TermStructure | null;
-  // Projected dealer flow (charm + vanna limbs) — additive, independently nullable, STATIC (rides the
-  // cached bundle, never the SSE stream). Never a scoring input.
   dealer_flow_projection: DealerFlowProjection | null;
-  // AI context pack ("Market context") — additive, independently nullable, STATIC. OPTIONAL key so
-  // pre-feature payloads type-check; consumers read `m.market_context ?? null`. Never a scoring input.
   market_context?: MarketContextPack | null;
-  // IV rank (iv-rank) — additive, independently nullable, STATIC. OPTIONAL key so pre-feature payloads
-  // type-check; consumers read `m.iv_rank ?? null`. Never a scoring input.
   iv_rank?: IvRankRead | null;
-  // Vol-normalized GEX (vol-normalized-gex) — additive, independently nullable, STATIC. OPTIONAL key.
-  // Magnitude only (net/call/put/total ÷ ATM IV or HV). Walls/flip stay raw. Never a scoring input.
   vol_normalized_gex?: VolNormalizedGex | null;
-  // Straddle-implied move (tradeable-rec-inputs) — additive, STATIC, ALWAYS an object (never a bare
-  // null — the backend's constructor is total). Not optional: a post-feature backend always emits
-  // it. Never a scoring input.
   straddle_move: StraddleMove;
-}
+};
 
 /** Vol-normalized dollar GEX aggregates. Sign matches raw net_gex; magnitude is / vol. */
-export interface VolNormalizedGex {
-  net_gex: number;
-  call_gex: number;
-  put_gex: number;
-  total_gex: number;
-  /** Decimal annualized vol actually used (e.g. 0.22). */
-  vol_used: number;
-  /** `atm_iv` preferred; `hv_30d` only when ATM IV is missing. */
-  vol_basis: 'atm_iv' | 'hv_30d';
-  /** Honest basis for the desk / methodology. */
-  basis_note: string;
-}
+export type VolNormalizedGex = components['schemas']['VolNormalizedGexWire'];
 
 // ---- Straddle-implied move (tradeable-rec-inputs INTERFACE_CONTRACT §2) ------------------------
 // Additive `market_state` member, attached AFTER `generate_signals`. Always an object (never a bare
@@ -332,35 +242,9 @@ export type MoveBasis = 'atm_straddle_mid' | 'iv_derived_estimate';
 /** One inhabitant today — the levels anchor (`gex_spot`), never the live display price. */
 export type MoveAnchorBasis = 'gex_spot';
 
-export interface StraddleTenor {
-  expiration: string;
-  dte: number;
-  strike_used: number;
-  strike_distance_pct: number;
-  straddle_price: number;
-  move_dollars: number;
-  /** Percent OF `anchor_spot` — never of the live display price. */
-  move_pct: number;
-  basis: MoveBasis;
-  quote_spread_pct_of_mid: number | null;
-  wide_quotes: boolean;
-}
+export type StraddleTenor = components['schemas']['StraddleTenorWire'];
 
-export interface StraddleMove {
-  state: StraddleMoveState;
-  as_of: string | null;
-  session_basis: string | null;
-  anchor_spot: number | null;
-  anchor_basis: MoveAnchorBasis;
-  /** The words the basis line renders for the anchor — rendered VERBATIM by the client. */
-  anchor_label: string;
-  /** The tenor the UI renders by default; selected server-side by the same rule that selects the
-   *  candidate tenors. The client never picks by array order or by comparing DTEs. */
-  primary_expiration: string | null;
-  wide_quote_threshold_pct: number;
-  /** <= 3, ascending by DTE. Sparse tenors are omitted, never emitted null. */
-  tenors: StraddleTenor[];
-}
+export type StraddleMove = components['schemas']['StraddleMoveWire'];
 
 // ---- Candidate contract set (tradeable-rec-inputs INTERFACE_CONTRACT §1) -----------------------
 // `GET /api/candidates/{ticker}` — the dedicated deliberate pull, and the shape reused verbatim by
@@ -372,94 +256,25 @@ export type QuotePresence = 'quoted' | 'no_two_sided_quote';
 export type IvState = 'priced' | 'unpriced';
 export type SpreadBand = 'tight' | 'moderate' | 'wide' | 'unknown';
 
-export interface CandidateGreeks {
-  delta: number | null;
-  gamma: number | null;
-  theta: number | null;
-  vega: number | null;
-}
+export type CandidateGreeks = components['schemas']['CandidateGreeksWire'];
 
 /** One candidate contract. A no-quote contract is INCLUDED carrying `quote_presence`, never
  *  dropped (AC-11). `iv`/greeks are `null` iff `iv_state === 'unpriced'`; `0.0` never ships as an
  *  IV or a greek (the vendor's unpriced sentinel, AC-12). */
-export interface CandidateContract {
-  expiration: string;
-  dte: number;
-  strike: number;
-  right: OptionRight;
-  /** Signed distance from `anchor_spot`, percent. */
-  distance_pct: number;
-  quote_presence: QuotePresence;
-  bid: number | null;
-  ask: number | null;
-  mid: number | null;
-  spread_abs: number | null;
-  spread_pct_of_mid: number | null;
-  open_interest: number;
-  volume: number;
-  iv_state: IvState;
-  iv: number | null;
-  greeks: CandidateGreeks;
-}
+export type CandidateContract = components['schemas']['CandidateContractWire'];
 
-export interface CandidateCaps {
-  tenors: number;
-  rights: number;
-  strikes_per_tenor_right: number;
-  max_records: number;
-  max_bytes: number;
-}
+export type CandidateCaps = components['schemas']['CandidateCapsWire'];
 
-export interface CandidateIncluded {
-  contracts: number;
-  expirations: string[];
-  expiration_count: number;
-}
+export type CandidateIncluded = components['schemas']['CandidateIncludedWire'];
 
 /** Five closed reasons, fixed evaluation order, each contract counted EXACTLY once. */
-export interface CandidateOmittedByReason {
-  outside_window: number;
-  outside_band: number;
-  no_interest: number;
-  expiration_cap: number;
-  strike_cap: number;
-}
+export type CandidateOmittedByReason = components['schemas']['CandidateDropWire'];
 
-export interface CandidateOmitted {
-  total: number;
-  expirations_omitted_by_cap: number;
-  by_reason: CandidateOmittedByReason;
-}
+export type CandidateOmitted = components['schemas']['CandidateOmittedWire'];
 
-export interface CandidateLiquidity {
-  quoted: number;
-  no_two_sided_quote: number;
-  atm_relative_spread_band: SpreadBand;
-  wide_quotes: boolean;
-  wide_quote_threshold_pct: number;
-}
+export type CandidateLiquidity = components['schemas']['CandidateLiquidityWire'];
 
-export interface CandidateSetEnvelope {
-  ticker: string;
-  state: CandidateSetState;
-  as_of: string | null;
-  snapshot_age_seconds: number | null;
-  session_basis: string | null;
-  /** Set-level only, one member in v1 (rule 2 — no per-quote freshness/session label exists). */
-  quote_age: 'unknown';
-  anchor_spot: number | null;
-  anchor_basis: MoveAnchorBasis;
-  /** Payload-stated constant (15.0), never a caller-tunable query knob. */
-  band_pct: number;
-  budget: CandidateBudget;
-  /** `false` on the dedicated read; `true` on `sent.candidates` (the in-app prompt). */
-  sent_to_model: boolean;
-  caps: CandidateCaps;
-  included: CandidateIncluded;
-  omitted: CandidateOmitted;
-  liquidity: CandidateLiquidity;
-  contracts: CandidateContract[];
-}
+export type CandidateSetEnvelope = components['schemas']['CandidatesWire'];
 
 /** GET /api/candidates/{ticker} — the deliberate pull. Anonymous-ok, STATIC, never a vendor request
  *  on any path. `404` only when the ticker has no chain at all; everything else is `200` with a
@@ -468,72 +283,56 @@ export async function getCandidates(
   symbol: string,
   opts: { minDte?: number; maxDte?: number; budget?: CandidateBudget } = {},
 ): Promise<CandidateSetEnvelope> {
-  const params = new URLSearchParams();
-  if (opts.minDte != null) params.set('min_dte', String(opts.minDte));
-  if (opts.maxDte != null) params.set('max_dte', String(opts.maxDte));
-  if (opts.budget) params.set('budget', opts.budget);
-  const qs = params.toString();
-  const res = await fetch(`/api/candidates/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
-  if (!res.ok) throw new ApiError(`Candidates unavailable (${res.status})`, res.status);
-  return (await res.json()) as CandidateSetEnvelope;
+  const result = await http.GET('/api/candidates/{ticker}', {
+    params: {
+      path: { ticker: symbol.toUpperCase() },
+      query: { min_dte: opts.minDte, max_dte: opts.maxDte, budget: opts.budget },
+    },
+  });
+  return dataOf(result, 'Candidates unavailable');
 }
 
-export interface StrikeRow {
-  strike: number;
-  net_gex: number;
-  call_gex: number;
-  put_gex: number;
-  call_oi: number;
-  put_oi: number;
-  total_oi: number;
-  // DEX (window-scoped, same rows as net_gex) + Vol/OI (full-chain). Independently nullable.
-  net_dex: number | null;
-  call_dex?: number | null;
-  put_dex?: number | null;
-  volume: number | null; // per-strike session volume
-  vol_oi_ratio: number | null; // volume / total_oi; null when total_oi <= 0 OR no volume
-}
+export type StrikeRow = components['schemas']['MarketStrike'];
 
-export interface Setup {
-  name: string;
-  bias: string;
-  strategy: string;
-  rationale: string;
-  conviction: 'low' | 'medium' | 'high';
-}
+export type Setup = components['schemas']['MarketSetup'];
 
-export type OpportunityTier = 'dormant' | 'watch' | 'actionable' | 'prime';
+export type OpportunityTier = 'dormant' | 'watch' | 'actionable' | 'prime' | 'avoid';
 
-export interface Signals {
+/**
+ * Presentation/domain projection of the generated market wire. The transport authority remains
+ * `MarketWire`; this projection keeps the signal panel's closed vocabulary and does not describe a
+ * second HTTP response shape.
+ */
+export type Signals = Pick<
+  components['schemas']['MarketWire'],
+  | 'ticker'
+  | 'regime'
+  | 'regime_note'
+  | 'vol_regime'
+  | 'distances'
+  | 'setups'
+  | 'opportunity_score'
+  | 'opportunity_tier'
+  | 'prime_prompt_eligible'
+  | 'dark_pool_confluence'
+  | 'score_drivers'
+> & {
   ticker: string;
   regime: 'positive_gamma' | 'negative_gamma' | null;
   regime_note: string | null;
   vol_regime: 'iv_rich' | 'iv_cheap' | 'neutral';
   distances: Record<string, number | null>;
-  setups: Setup[];
+  setups: components['schemas']['MarketSetup'][];
   opportunity_score: number;
-  // Opportunity escalation (backend-emitted; bands are backend env). Vocabulary is fixed.
-  opportunity_tier: OpportunityTier;
-  prime_prompt_eligible: boolean; // true only at prime AND actionable (gates the sim-entry prompt)
-  dark_pool_confluence?: { off_exchange_price: number; coincides_with: string; level: number }[];
-  /** Additive score breakdown (same shape as ScanScoreDrivers) when the engine emits it. */
-  score_drivers?: ScanScoreDrivers | null;
-}
+  opportunity_tier: 'prime' | 'actionable' | 'watch' | 'avoid';
+  prime_prompt_eligible: boolean;
+};
 
 /** Sibling of ai_eval, present only when the bundle request carries an open-position context
  *  (pos_* query params); null otherwise. Drives once-per-event reassessment-alert de-dupe. */
-export interface PositionEval {
-  changed: boolean; // raw de-dupe: flips once when the position fingerprint moves
-  fingerprint: string;
-}
+export type PositionEval = components['schemas']['MarketPositionEval'];
 
-export interface AiEval {
-  ready: boolean;
-  reasons: string[];
-  changed: boolean;
-  state_fingerprint: string;
-  score_threshold: number;
-}
+export type AiEval = components['schemas']['MarketAiEval'];
 
 // ---- Backend observability (operator-only; the trader FE IGNORES these) ---------------------
 // Fixed stage vocabulary + kind taxonomy (the operator readout maps io_* → "I/O", else → "CPU").
@@ -576,76 +375,61 @@ export interface Meta {
   timings?: MetaTimings;
 }
 
-export interface Expiration {
-  date: string; // YYYY-MM-DD
-  dte: number | null;
-}
+export type Expiration = components['schemas']['MarketExpiration'];
 
-export interface OffExchangeLevel {
-  price: number;
-  shares: number;
-  share_of_offex_pct: number;
-  proximity_pct: number;
-}
+export type OffExchangeLevel = components['schemas']['OffExchangeLevelWire'];
 
 /** A single large off-exchange ("dark pool") print. Display/context only — no side or
  *  direction exists, now or in v1, and the UI must invent none. Ranked largest-notional-first
  *  by the backend (top-5); render in order, never re-sort or re-cap. */
-export interface BlockPrint {
-  price: number; // print price
-  shares: number; // print size
-  notional: number; // price * shares (the backend's ranking key)
-  proximity_pct: number; // SIGNED ratio vs spot: + above, − below (e.g. 0.004 = +0.4%)
-  age_seconds: number; // age of the print within the recent window
-}
+export type BlockPrint = components['schemas']['BlockPrintWire'];
 
-export interface OffExchange {
-  ratio_pct: number | null; // off-exchange share of total volume in the window
-  offex_shares: number;
-  total_shares: number;
-  levels: OffExchangeLevel[];
-  blocks: BlockPrint[]; // largest-notional first, top-5; may be [] (none ≥ threshold)
-  block_min_shares: number; // active block threshold (shares) for this cycle; label "no blocks ≥ N"
-  note: string;
-}
+export type OffExchange = components['schemas']['OffExchangeWire'];
 
-export interface TickerBundle {
+/** Normalized bundle projection. `getTicker` only returns this after required bundle members have
+ * been validated; all transport fields still originate in generated `MarketWire`. */
+export type TickerBundle = Omit<
+  MarketWire,
+  | 'market_state'
+  | 'signals'
+  | 'strike_profile'
+  | 'expirations'
+  | 'ai_eval'
+  | 'meta'
+  | 'dealer_flow_projection'
+  | 'iv_rank'
+  | 'iv_skew'
+  | 'market_context'
+  | 'off_exchange'
+  | 'score_drivers'
+  | 'straddle_move'
+  | 'term_structure'
+  | 'vol_normalized_gex'
+> & {
   market_state: MarketState;
   signals: Signals;
   strike_profile: { ticker: string; spot: number; strikes: StrikeRow[] };
-  expirations: Expiration[]; // all future expirations available for the selector
+  expirations: Expiration[];
   ai_eval: AiEval;
   meta: Meta;
-  off_exchange?: OffExchange; // present only when dark_pool is enabled
-  position_eval: PositionEval | null; // present only when pos_* context is supplied
+  off_exchange?: OffExchange;
+  position_eval: PositionEval | null;
+};
+
+function isTickerBundle(value: unknown): value is TickerBundle {
+  // The generated operation already supplies the authoritative response type. This boundary only
+  // rejects non-object transport payloads; optional wire members are normalized by consumers.
+  return value !== null && typeof value === 'object';
 }
 
 // ---- Ghost-trade tracker: tracked-contract stats + reassessment boundary types --------------
 export type OptionRight = 'call' | 'put';
-export interface OptionQuote {
-  bid: number;
-  ask: number;
-  mid: number;
-}
+export type OptionQuote = components['schemas']['OptionQuoteWire'];
 /** Each greek may be null (unpriced contract). */
-export interface OptionGreeks {
-  delta: number | null;
-  gamma: number | null;
-  theta: number | null;
-  vega: number | null;
-}
+export type OptionGreeks = components['schemas']['ContractGreeksWire'];
 /** Filter-independent stats for one option contract (GET /api/contract). `option_quote` null ⇒
  *  no live NBBO ⇒ the FE falls back to a theoretical (Black-Scholes) mark — not an error. */
-export interface TrackedContract {
-  ticker: string;
-  expiration: string; // YYYY-MM-DD
-  strike: number;
-  right: OptionRight;
-  option_quote: OptionQuote | null;
-  greeks: OptionGreeks;
-  iv: number | null;
-  dte: number;
-}
+export type TrackedContract = components['schemas']['ContractWire'];
 
 export interface ReplacementContract {
   expiration: string;
@@ -698,75 +482,63 @@ export type ThemePref = 'dark' | 'light' | 'system';
 // validation (AC-36). The effective dollar cap is derived exactly once, server-side — the client
 // performs NO arithmetic on the owner's entered values.
 export type CapUnit = 'usd' | 'percent';
-export interface PerTradeCap {
-  value: number;
-  unit: CapUnit;
-}
+export type PerTradeCap = components['schemas']['PerTradeCapBody'];
 export type EffectiveDollarCapState = 'derived' | 'not_derivable' | 'not_set';
 export type NotDerivableReason = 'percent_without_account_size';
-export interface EffectiveDollarCap {
-  state: EffectiveDollarCapState;
-  /** Derived exactly once, server-side. Never computed client-side. */
-  value: number | null;
-  not_derivable_reason: NotDerivableReason | null;
-  /** What the figure was derived from — so the UI can label it *derived from your inputs*, never
-   *  *validated* / *checked* / *enforced*. */
-  derived_from: { account_size: number | null; cap_value: number | null; cap_unit: CapUnit | null };
-}
+export type EffectiveDollarCap = components['schemas']['EffectiveDollarCapBody'];
 export type RiskInputsState = 'set' | 'not_set';
-export interface RiskInputs {
-  state: RiskInputsState;
-  /** `null` = not set. `0` is a legal entry, never an encoding of unset. */
-  account_size: number | null;
-  per_trade_cap: PerTradeCap | null;
-  /** Always an object, never null. */
-  effective_dollar_cap: EffectiveDollarCap;
-  storage_available: boolean;
-  updated_at: number | null;
-}
+export type RiskInputs = components['schemas']['RiskInputsBody'];
 
 /** The owner-entered PATCH shape for `PUT /api/auth/settings` — each fact independently clearable
  *  (send `null` to clear). Distinct from the read shape `RiskInputs`: the effective cap / storage
  *  flag / timestamp are server-derived and never sent by the client. */
-export interface RiskInputsPatch {
-  account_size?: number | null;
-  per_trade_cap?: PerTradeCap | null;
-}
+export type RiskInputsPatch = Pick<
+  components['schemas']['SettingsPatchBody'],
+  'account_size' | 'per_trade_cap'
+>;
 
 /** The 3 light, presentation-only prefs (D7). NEVER read by signals/engine/scoring/fingerprint
  *  (AC-F4) — they only change which default a UI lands on. */
-export interface UserSettings {
-  active_persona_id: string | null; // null ⇒ app default (Default persona)
-  default_ticker: string | null; // null ⇒ app default (TSLA)
+type AuthSettingsWire = components['schemas']['AuthSettingsBody'];
+export type UserSettings = Omit<AuthSettingsWire, 'theme' | 'risk_inputs'> & {
   theme: ThemePref;
-  // Risk inputs (tradeable-rec-inputs) — OPTIONAL key so an older backend degrades to `not_set`,
-  // never a throw (mirrors `RecStatus.scenarios` at the ai-rec-backtest-orders precedent).
   risk_inputs?: RiskInputs;
-  // ai-providers — standing preference (single writer). Optional so an older session echo
-  // degrades to nulls rather than throwing.
-  ai_power_path?: PowerPath | null;
-  ai_provider?: ByoProvider | null;
-  ai_model?: string | null;
+};
+
+function themeFromWire(value: string): ThemePref {
+  if (value === 'dark' || value === 'light' || value === 'system') return value;
+  throw new ApiError('Malformed settings payload', 200);
+}
+
+function settingsFromWire(value: AuthSettingsWire): UserSettings {
+  return { ...value, theme: themeFromWire(value.theme) };
 }
 
 /** Authenticated identity (never the raw email as id; `id` is opaque + stable). */
-export interface AuthUser {
-  id: string;
-  email: string;
-  display_name: string | null;
-  auth_methods: string[]; // e.g. ["password"] or ["password","google"]
-}
+export type AuthUser = components['schemas']['AuthUserBody'];
 
 /** The server-authoritative who-am-I read. ALWAYS 200 (anonymous is a normal result). Drives
  *  signed-in-vs-anonymous, identity, the config-gated Google flag, and the per-user settings. */
-export interface SessionStatus {
+type AuthResponseWire = components['schemas']['AuthResponseBody'];
+export type SessionStatus = Omit<
+  AuthResponseWire,
+  'authenticated' | 'google_available' | 'user' | 'settings' | 'demo_seed'
+> & {
   authenticated: boolean;
-  user: AuthUser | null; // null when anonymous
-  google_available: boolean; // D9 config flag — drives present-disabled↔present-enabled
-  settings: UserSettings | null; // null when anonymous (FE uses client-local stores instead)
-  // DEV-ONLY: present (with the seeded email) when the backend seeded a fixed test account
-  // (SEED_TEST_ACCOUNT, non-postgres); null in production. Lets the login form pre-fill it.
+  user: AuthUser | null;
+  google_available: boolean;
+  settings: UserSettings | null;
   demo_seed?: { email: string } | null;
+};
+
+function sessionFromWire(value: AuthResponseWire): SessionStatus {
+  return {
+    authenticated: value.authenticated === true,
+    google_available: value.google_available === true,
+    user: value.user ?? null,
+    settings: value.settings ? settingsFromWire(value.settings) : null,
+    demo_seed: value.demo_seed ?? null,
+  };
 }
 
 /** The auth-class error codes the FE maps to copy (INTERFACE §2). `auth_required` is the gated-action
@@ -781,6 +553,18 @@ export type AuthErrorCode =
   /** Owner lockdown (2026-08-06): registration is closed. A POLICY refusal, not a fault — the FE
    *  must not fold it into `auth_unavailable`, which claims a transient problem. */
   | 'signups_closed';
+
+export function isAuthErrorCode(value: unknown): value is AuthErrorCode {
+  return (
+    value === 'email_taken' ||
+    value === 'validation' ||
+    value === 'bad_credentials' ||
+    value === 'auth_required' ||
+    value === 'auth_unavailable' ||
+    value === 'google_unavailable' ||
+    value === 'signups_closed'
+  );
+}
 
 /** A typed auth failure carrying the server `error` code + safe `message`. The FE maps off `code`;
  *  `message` is a fallback only (never enumerating, never a secret/hash/password). */
@@ -797,33 +581,427 @@ export class AuthError extends Error {
 
 /** Parse a non-2xx auth response into an `AuthError` (INTERFACE §1 error envelope). Falls back to a
  *  generic code/message when the body is absent or malformed — but never invents a misleading code. */
-async function toAuthError(res: Response): Promise<AuthError> {
-  let code: AuthErrorCode = 'auth_unavailable';
-  let message = 'Something went wrong. Please try again.';
-  try {
-    const body = (await res.json()) as { error?: string; message?: string };
-    if (body && typeof body.error === 'string') code = body.error as AuthErrorCode;
-    if (body && typeof body.message === 'string') message = body.message;
-  } catch {
-    // No/garbled JSON body — fall back by status so the FE still maps a sensible state.
-    if (res.status === 503) code = 'auth_unavailable';
-    else if (res.status === 422) code = 'validation';
-    else if (res.status === 409) code = 'email_taken';
-    else if (res.status === 401) code = 'bad_credentials';
-    else if (res.status === 403) code = 'auth_required';
-  }
-  return new AuthError(code, message, res.status);
+type ClientResult<T> = { data?: T; error?: unknown; response: Response };
+
+function resultError(result: ClientResult<unknown>, message: string): ApiError {
+  return new ApiError(`${message} (${result.response.status})`, result.response.status);
 }
 
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
+function authResultError(result: ClientResult<unknown>): AuthError {
+  const body = result.error && typeof result.error === 'object' ? result.error : {};
+  const fields = body as Record<string, unknown>;
+  let code: AuthErrorCode = 'auth_unavailable';
+  if (isAuthErrorCode(fields.error)) code = fields.error;
+  else if (result.response.status === 401) code = 'bad_credentials';
+  else if (result.response.status === 403) code = 'auth_required';
+  else if (result.response.status === 409) code = 'email_taken';
+  else if (result.response.status === 422) code = 'validation';
+  const message =
+    typeof fields.message === 'string'
+      ? fields.message
+      : typeof fields.detail === 'string'
+        ? fields.detail
+        : 'Something went wrong. Please try again.';
+  return new AuthError(code, message, result.response.status);
+}
+
+function dataOf<T>(result: ClientResult<T>, message: string): T {
+  if (!result.response.ok || result.data === undefined) throw resultError(result, message);
+  return result.data;
+}
+
+type RecommendationWire = components['schemas']['RecommendationBody'];
+
+function recDecision(value: string): RecDecision {
+  return value === 'trade' ? 'trade' : 'no_trade';
+}
+function recBias(value: string): RecBias {
+  switch (value) {
+    case 'long':
+    case 'short':
+    case 'neutral':
+    case 'volatility':
+      return value;
+    default:
+      return 'neutral';
+  }
+}
+function recConfidence(value: string | null | undefined): RecConfidence | null {
+  switch (value) {
+    case 'low':
+    case 'medium':
+    case 'high':
+      return value;
+    default:
+      return null;
+  }
+}
+function recGate(value: string | null | undefined): RecGateState {
+  return value === 'no_fresh_edge' || value === 'cooling_down' ? value : 'available';
+}
+function capVerdict(value: string): CapVerdict {
+  switch (value) {
+    case 'not_applicable':
+    case 'no_cap':
+    case 'not_checkable':
+    case 'within':
+    case 'above':
+      return value;
+    default:
+      return 'not_checkable';
+  }
+}
+function groundingAnchor(value: string | null | undefined): AnchorKind | null {
+  switch (value) {
+    case 'gex_spot':
+    case 'call_wall':
+    case 'put_wall':
+    case 'peak_gex_strike':
+    case 'gamma_flip':
+    case 'max_pain':
+    case 'vwap':
+    case 'vwap_upper_2':
+    case 'vwap_upper_3':
+    case 'vwap_lower_2':
+    case 'vwap_lower_3':
+      return value;
+    default:
+      return null;
+  }
+}
+function groundingState(value: string): GroundingState {
+  switch (value) {
+    case 'not_applicable':
+    case 'not_checkable':
+    case 'traced':
+    case 'untraced':
+      return value;
+    default:
+      return 'not_checkable';
+  }
+}
+function groundingReason(value: string | null | undefined): NotCheckableReason | null {
+  switch (value) {
+    case 'structurally_unchecked':
+    case 'no_named_level':
+    case 'no_cited_expiration':
+    case 'straddle_move_unavailable':
+      return value;
+    default:
+      return null;
+  }
+}
+function groundingCard(value: string): GroundingCard {
+  switch (value) {
+    case 'not_applicable':
+    case 'local_rules':
+    case 'none_traced':
+    case 'could_not_check':
+    case 'some_traced':
+    case 'all_traced':
+      return value;
+    default:
+      return 'could_not_check';
+  }
+}
+function citedContractState(value: string): CitedContractState {
+  switch (value) {
+    case 'cited':
+    case 'right_undetermined':
+    case 'off_set':
+    case 'none':
+      return value;
+    default:
+      return 'none';
+  }
+}
+function keySource(value: string): KeySource {
+  return value === 'own_key' || value === 'grok_subscription' ? value : 'none';
+}
+function fieldReason(
+  value: components['schemas']['RecommendationFieldReasonBody'] | null | undefined,
+): FieldReason | null {
+  if (!value) return null;
+  const reason =
+    value.reason === 'unavailable' || value.reason === 'unrecognized_value'
+      ? value.reason
+      : 'not_given';
+  const missing = value.missing_input;
+  const missingInput: MissingInput | null =
+    missing === 'candidate_quotes' || missing === 'straddle_move' || missing === 'candidate_set'
+      ? missing
+      : missing === 'risk_block'
+        ? 'risk_block'
+        : null;
+  return { reason, missing_input: missingInput };
+}
+function projectStrategy(
+  value: components['schemas']['RecommendationStrategyBody'] | null | undefined,
+): RecStrategy | null {
+  if (!value) return null;
+  return {
+    decision: recDecision(value.decision),
+    bias: recBias(value.bias),
+    structure: value.structure ?? null,
+    strikes: value.strikes,
+    expiration: value.expiration ?? null,
+    entry_trigger: value.entry_trigger ?? null,
+    invalidation_level: value.invalidation_level ?? null,
+    max_risk: value.max_risk ?? null,
+    position_size: value.position_size ?? null,
+    exit_plan: { target: value.exit_plan.target ?? null, stop: value.exit_plan.stop ?? null },
+    time_horizon: value.time_horizon ?? null,
+    confidence: recConfidence(value.confidence),
+    right: value.right === 'call' || value.right === 'put' ? value.right : null,
+    summary: value.summary ?? null,
+    key_points: value.key_points ?? undefined,
+    reengage_when: value.reengage_when ?? undefined,
+    rationale: value.rationale ?? '',
+  };
+}
+function projectRiskInputs(value: {
+  state: string;
+  account_size?: number | null;
+  per_trade_cap?: PerTradeCap | null;
+}): RiskInputs {
+  const state: RiskInputsState = value.state === 'set' ? 'set' : 'not_set';
+  return {
+    state,
+    account_size: value.account_size ?? null,
+    per_trade_cap: value.per_trade_cap ?? null,
+    effective_dollar_cap: {
+      state: 'not_set',
+      value: null,
+      not_derivable_reason: null,
+      derived_from: { account_size: null, cap_value: null, cap_unit: null },
+    },
+    storage_available: true,
+    updated_at: null,
+  };
+}
+function projectOpenPositions(value: { source: string; state: string }): OpenPositionsDigest {
+  return {
+    source: 'simulated',
+    state: value.state === 'none_open' || value.state === 'unavailable' ? value.state : 'not_sent',
+    this_underlying: null,
+    portfolio: null,
+  };
+}
+function emptyCandidateSet(ticker: string): CandidateSetEnvelope {
+  return {
+    ticker,
+    state: 'unavailable',
+    as_of: null,
+    snapshot_age_seconds: null,
+    session_basis: null,
+    quote_age: 'unknown',
+    anchor_spot: null,
+    anchor_basis: 'unavailable',
+    band_pct: 0,
+    budget: 'handoff',
+    sent_to_model: false,
+    caps: { tenors: 0, rights: 0, strikes_per_tenor_right: 0, max_records: 0, max_bytes: 0 },
+    included: { contracts: 0, expirations: [], expiration_count: 0 },
+    omitted: {
+      total: 0,
+      expirations_omitted_by_cap: 0,
+      by_reason: {
+        outside_window: 0,
+        outside_band: 0,
+        no_interest: 0,
+        expiration_cap: 0,
+        strike_cap: 0,
+      },
+    },
+    liquidity: {
+      quoted: 0,
+      no_two_sided_quote: 0,
+      atm_relative_spread_band: 'unknown',
+      wide_quotes: false,
+      wide_quote_threshold_pct: 0,
+    },
+    contracts: [],
+  };
+}
+function projectGroundingField(
+  value: components['schemas']['RecommendationGroundingFieldBody'],
+): GroundingField {
+  const basis =
+    value.basis === 'exact' || value.basis === 'near' || value.basis === 'inside_range'
+      ? value.basis
+      : null;
+  const anchor_kind = groundingAnchor(value.anchor_kind);
+  const state = groundingState(value.state);
+  const not_checkable_reason = groundingReason(value.not_checkable_reason);
+  return {
+    state,
+    basis,
+    anchor_kind,
+    anchor_value: value.anchor_value ?? null,
+    range_low: value.range_low ?? null,
+    range_high: value.range_high ?? null,
+    expiration: value.expiration ?? null,
+    not_checkable_reason,
+  };
+}
+function projectGrounding(
+  value: components['schemas']['RecommendationGroundingBody'] | null | undefined,
+): Grounding | null {
+  if (!value) return null;
+  const card = groundingCard(value.card);
+  return {
+    card,
+    counts: value.counts,
+    tolerance_pct: value.tolerance_pct,
+    fields: {
+      exit_stop: projectGroundingField(value.fields.exit_stop),
+      exit_target: projectGroundingField(value.fields.exit_target),
+      invalidation_level: projectGroundingField(value.fields.invalidation_level),
+      max_risk: projectGroundingField(value.fields.max_risk),
+      position_size: projectGroundingField(value.fields.position_size),
+    },
+  };
+}
+function egressCategory(value: components['schemas']['EgressCategoryBody']): EgressCategory | null {
+  switch (value.key) {
+    case 'context':
+    case 'candidates':
+    case 'risk_inputs':
+    case 'open_positions':
+    case 'persona_prompt':
+    case 'glossary':
+      return { key: value.key, sent: value.sent };
+    default:
+      return null;
+  }
+}
+function projectRecommendation(wire: RecommendationWire): RecResponse {
+  const gateWire = wire.gate;
+  const capWire = wire.cap;
+  const persona = wire.persona ?? { id: null, name: '' };
+  const fieldWire = wire.field_reasons;
+  return {
+    status: wire.status,
+    ticker: wire.ticker,
+    as_of: wire.as_of,
+    pinned_fingerprint: wire.pinned_fingerprint,
+    stale_born: wire.stale_born,
+    persona: { id: persona.id ?? null, name: persona.name },
+    gate: {
+      state: recGate(gateWire?.state),
+      cooldown_remaining_seconds: gateWire?.cooldown_remaining_seconds ?? 0,
+      reasons: gateWire?.reasons ?? [],
+    },
+    cap: {
+      over_limit: capWire?.over_limit ?? false,
+      remaining_today: capWire?.remaining_today ?? 0,
+      resets_at: capWire?.resets_at ?? '',
+    },
+    powering: wire.powering
+      ? {
+          key_source: keySource(wire.powering.key_source),
+          provider: wire.powering.provider ?? null,
+          model: wire.powering.model ?? null,
+          unavailable_reason: wire.powering.unavailable_reason ?? null,
+          preference: { power_path: null, provider: null, model: null },
+        }
+      : null,
+    strategy: projectStrategy(wire.strategy),
+    key_source: wire.key_source,
+    provider: wire.provider,
+    model: wire.model,
+    scenario: wire.scenario ? { id: wire.scenario.id, name: wire.scenario.name } : null,
+    sent: wire.sent
+      ? {
+          budget: 'prompt',
+          candidates: wire.sent.candidates,
+          straddle_move_tenors: wire.sent.straddle_move_tenors,
+          risk_inputs: projectRiskInputs(wire.sent.risk_inputs ?? { state: 'not_set' }),
+          risk_inputs_digest: wire.sent.risk_inputs_digest,
+          open_positions: projectOpenPositions(
+            wire.sent.open_positions ?? { source: 'simulated', state: 'not_sent' },
+          ),
+        }
+      : null,
+    cap_check: wire.cap_check
+      ? {
+          verdict: capVerdict(wire.cap_check.verdict),
+          effective_dollar_cap: wire.cap_check.effective_dollar_cap ?? null,
+          cap_not_derivable_reason:
+            wire.cap_check.cap_not_derivable_reason === 'percent_without_account_size'
+              ? 'percent_without_account_size'
+              : null,
+          parsed_risk_dollars: wire.cap_check.parsed_risk_dollars ?? null,
+          model_max_risk_text: wire.cap_check.model_max_risk_text ?? null,
+          risk_refusal:
+            wire.cap_check.risk_refusal === 'no_text' ||
+            wire.cap_check.risk_refusal === 'no_dollar_figure' ||
+            wire.cap_check.risk_refusal === 'multiple_different_figures'
+              ? wire.cap_check.risk_refusal
+              : null,
+        }
+      : null,
+    field_reasons: fieldWire
+      ? {
+          max_risk: fieldReason(fieldWire.max_risk),
+          position_size: fieldReason(fieldWire.position_size),
+          exit_target: fieldReason(fieldWire.exit_target),
+          exit_stop: fieldReason(fieldWire.exit_stop),
+          invalidation_level: fieldReason(fieldWire.invalidation_level),
+          structure: fieldReason(fieldWire.structure),
+          strikes: fieldReason(fieldWire.strikes),
+          expiration: fieldReason(fieldWire.expiration),
+          entry_trigger: fieldReason(fieldWire.entry_trigger),
+          time_horizon: fieldReason(fieldWire.time_horizon),
+          confidence: fieldReason(fieldWire.confidence),
+        }
+      : null,
+    cited_contract: wire.cited_contract
+      ? {
+          state: citedContractState(wire.cited_contract.state),
+          contract: wire.cited_contract.contract ?? null,
+          legs: wire.cited_contract.legs,
+        }
+      : null,
+    grounding: projectGrounding(wire.grounding),
+    unavailable_reason: wire.unavailable_reason,
+    authorized: wire.authorized,
+    availability: wire.availability,
+    scenarios: wire.scenarios
+      ? {
+          enabled: wire.scenarios.enabled,
+          catalog: wire.scenarios.catalog.map((s) => ({ id: s.id, name: s.name })),
+        }
+      : null,
+    context: wire.context
+      ? {
+          ...wire.context,
+          candidates: wire.context.candidates,
+          risk_inputs: projectRiskInputs(wire.context.risk_inputs ?? { state: 'not_set' }),
+          open_positions: projectOpenPositions(
+            wire.context.open_positions ?? { source: 'simulated', state: 'not_sent' },
+          ),
+        }
+      : {
+          candidates: emptyCandidateSet(wire.ticker ?? ''),
+          risk_inputs: projectRiskInputs({ state: 'not_set' }),
+          open_positions: projectOpenPositions({ source: 'simulated', state: 'not_sent' }),
+        },
+    persona_prompt: wire.persona_prompt,
+    glossary: wire.glossary,
+    egress_note: wire.egress_note,
+    egress_categories: wire.egress_categories
+      ?.map(egressCategory)
+      .filter((value): value is EgressCategory => value !== null),
+  };
+}
 
 /** GET /api/auth/session — who-am-I. ALWAYS 200 server-side; on a TRANSPORT fault (network / non-200)
  *  this REJECTS so the caller can record `subsystem_degraded` and treat the result as anonymous —
  *  it never throws into the trader path (the caller degrades). Sends the cookie automatically. */
 export async function getSession(): Promise<SessionStatus> {
-  const res = await fetch('/api/auth/session', { credentials: 'same-origin' });
-  if (!res.ok) throw new ApiError(`Session read failed (${res.status})`, res.status);
-  return (await res.json()) as SessionStatus;
+  const result = await http.GET('/api/auth/session');
+  return sessionFromWire(dataOf(result, 'Session read failed'));
 }
 
 export interface SignupRequest {
@@ -839,35 +1017,31 @@ export interface LoginRequest {
 /** POST /api/auth/signup — success ⇒ the signed-in identity shape (a cookie is set). Throws
  *  `AuthError` with `email_taken`(409) / `validation`(422) / `auth_unavailable`(503) on failure. */
 export async function signup(body: SignupRequest): Promise<SessionStatus> {
-  const res = await fetch('/api/auth/signup', {
-    method: 'POST',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify(body),
+  const result = await http.POST('/api/auth/signup', {
+    body,
   });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as SessionStatus;
+  if (!result.response.ok) throw authResultError(result);
+  if (result.data === undefined) throw authResultError(result);
+  return sessionFromWire(result.data);
 }
 
 /** POST /api/auth/login — success ⇒ identity shape (cookie set). Throws `AuthError` with
  *  `bad_credentials`(401, NON-ENUMERATING) / `validation`(422) / `auth_unavailable`(503). The 401
  *  message is identical for unknown-email vs wrong-password (AC-C3/H3) — the FE renders fixed copy. */
 export async function login(body: LoginRequest): Promise<SessionStatus> {
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify(body),
+  const result = await http.POST('/api/auth/login', {
+    body,
   });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as SessionStatus;
+  if (!result.response.ok) throw authResultError(result);
+  if (result.data === undefined) throw authResultError(result);
+  return sessionFromWire(result.data);
 }
 
 /** POST /api/auth/logout — idempotent; 200 regardless of prior state. After this, who-am-I reports
  *  anonymous. Best-effort: a transport fault is swallowed (the FE still re-reads who-am-I). */
 export async function logout(): Promise<void> {
   try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+    await http.POST('/api/auth/logout');
   } catch {
     /* best-effort — the caller re-reads who-am-I regardless */
   }
@@ -885,14 +1059,12 @@ export interface UserSettingsPatch extends Partial<Omit<UserSettings, 'risk_inpu
  *  refused risk-input entry (dollar cap exceeding account size, percent outside (0,100], non-numeric
  *  or non-positive — the server refusal is authoritative; nothing is stored on a refusal). */
 export async function saveSettings(patch: UserSettingsPatch): Promise<UserSettings> {
-  const res = await fetch('/api/auth/settings', {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify(patch),
+  const result = await http.PUT('/api/auth/settings', {
+    body: patch,
   });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as UserSettings;
+  if (!result.response.ok) throw authResultError(result);
+  if (result.data === undefined) throw authResultError(result);
+  return settingsFromWire(result.data);
 }
 
 /** POST /api/positions/sim-trade/gate — the SERVER-ENFORCED auth gate for Positions sim-trade WRITE
@@ -908,13 +1080,15 @@ export async function saveSettings(patch: UserSettingsPatch): Promise<UserSettin
  *  (⇒ AuthError, the "couldn't reach sign-in" copy). Mirrors `requestRecommendation`'s auth-class
  *  handling exactly. NEVER touches the bundle/SSE path (no new header/param there — AC-I2). */
 export async function simTradeGate(): Promise<{ authorized: true }> {
-  const res = await fetch('/api/positions/sim-trade/gate', {
-    method: 'POST',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as { authorized: true };
+  const result = await http.POST('/api/positions/sim-trade/gate');
+  if (!result.response.ok) throw authResultError(result);
+  const data = dataOf(result, 'Trade gate failed');
+  // The live contract names `authorized`; the dashboard test backend still emits its legacy
+  // `allowed` spelling, which is accepted only as a compatibility input and never re-emitted.
+  const legacyAllowed = 'allowed' in data && data.allowed === true;
+  if (data.authorized !== true && !legacyAllowed)
+    throw new ApiError('Malformed trade gate payload', 200);
+  return { authorized: true };
 }
 
 // ---- Scanner v1 (scanner INTERFACE_CONTRACT §2–§3) ---------------------------------------------
@@ -933,78 +1107,30 @@ export type ScanStatus = 'ok' | 'stale' | 'error' | 'building';
  *  row) and renders as honestly-missing — never `0`, never a fabricated value. No raw series ever
  *  rides a row (`[digested-labels-not-raw-dump]`). */
 /** Additive score breakdown from quant-engine (optional on older payloads). */
-export interface ScanScoreDrivers {
-  proximity: number; // 0–40 nearest level
-  vol: number; // 0–25 |IV/HV−1|
-  setups: number; // 0–25 setup count
-  transition: number; // 0 or 10 near flip
-  dark_pool: number; // 0–6 confluence bonus
-  total: number; // equals score
-}
+export type ScanScoreDrivers = components['schemas']['ScanScoreDriversDto'];
 
-export interface ScanRow {
-  symbol: string; //                    canonical UPPER-case
-  price: number | null; //              last poll price
-  chg_pct: number | null; //            % change since prior session close
-  score: number | null; //              opportunity_score — CONSUMED, never re-derived
-  tier: string | null; //               opportunity_tier enum (closed FE lookup)
-  regime: string | null; //             regime label enum (closed FE lookup)
-  vol_regime: string | null; //         vol-regime label enum (closed FE lookup)
-  flip: number | null; //               gamma flip level
-  dist_to_flip_pct: number | null; //   signed % of price to the flip (display transport)
-  call_wall: number | null;
-  put_wall: number | null;
-  dist_to_wall_pct: number | null; //   signed % of price to the NEARER wall
-  /** Epoch-SECONDS of the compute that produced the row. NOT nullable — and for a synthesized
-   *  `building` row it is NOT a freshness claim, so the FE MUST branch on `status === 'building'`
-   *  BEFORE rendering any "Updated …" text (INTERFACE §3.1, PINNED). */
-  as_of: number;
-  status: ScanStatus;
-  /** Optional score drivers — prefer over FE heuristics when present. */
-  score_drivers?: ScanScoreDrivers | null;
-}
+export type ScanRow = components['schemas']['ScanRowDto'];
 
 /** The closed sortable-key set the FE may offer (INTERFACE §2.3). Sorting is a CLIENT-SIDE re-order
  *  of the returned rows; it never re-derives a value and never refetches. */
 export type ScanSortKey =
   'score' | 'symbol' | 'price' | 'chg_pct' | 'dist_to_flip_pct' | 'dist_to_wall_pct';
-export interface ScanViewSort {
-  key: ScanSortKey;
-  dir: 'asc' | 'desc';
-}
+export type ScanViewSort = components['schemas']['ScanSort'];
 export type ScanDensity = 'compact' | 'comfortable';
 
 /** The caller's effective view. `symbols` IS the display ordering. */
-export interface ScanView {
-  source: 'account' | 'default'; //  where THIS response's view came from
-  authenticated: boolean; //         whether the caller is signed in
-  name: string | null; //            optional user label; null for the default view
-  symbols: string[]; //              subset ⊆ universe, IN DISPLAY ORDER
-  sort: ScanViewSort; //             default { key: 'score', dir: 'desc' }
-  density: ScanDensity; //           default 'compact'
-}
+export type ScanView = components['schemas']['ScanView'];
 
 /** Sweep metadata (INTERFACE §2.4). The FE derives "sweep last ran X ago" from these epochs vs its
  *  own clock; the wire carries NO pre-rendered freshness copy. */
-export interface SweepHeartbeat {
-  updated_at: number; //                   last worker tick (epoch seconds)
-  sweep_last_completed: number | null; //  epoch seconds of the last COMPLETED full pass, or null
-  universe_size: number; //                symbols the worker is tracking
-}
+export type SweepHeartbeat = components['schemas']['SweepHeartbeatDto'];
 
 /** `GET /api/scan` (INTERFACE §3.1). Every symbol in `view.symbols` is present in `rows`
  *  (building-fill) — the screen is never dead. `sweep` is null iff the worker never wrote one. */
-export interface ScanResponse {
-  view: ScanView;
-  rows: ScanRow[];
-  sweep: SweepHeartbeat | null;
-}
+export type ScanResponse = components['schemas']['ScanEnvelope'];
 
 /** `GET /api/scan/universe` (INTERFACE §3.2). Read-only — v1 has no add/request/remove path. */
-export interface ScanUniverse {
-  symbols: string[];
-  universe_size: number;
-}
+export type ScanUniverse = components['schemas']['UniverseResponse'];
 
 /** `PUT /api/scan/view` body (INTERFACE §3.4). `symbols` is required and must be a subset of the
  *  CURRENT universe, in display order; the server 422s anything else. */
@@ -1015,47 +1141,31 @@ export interface ScanViewWrite {
   density?: ScanDensity;
 }
 
+function toScanViewBody(view: ScanViewWrite): components['schemas']['ScanViewBody'] {
+  // The server applies the default sort when omitted; retain that legacy omission on the wire.
+  return { ...view } as components['schemas']['ScanViewBody'];
+}
+
 /** GET /api/scan — the requested-or-default view as slim rows + sweep metadata. Anonymous-open;
  *  server-side it is best-effort ALWAYS 200 (a store outage degrades CONTENT, never the status), so a
  *  non-2xx here means a TRANSPORT/proxy fault: we reject and the caller keeps its last-known rows. */
 export async function getScan(): Promise<ScanResponse> {
-  const res = await fetch('/api/scan', { credentials: 'same-origin' });
-  if (!res.ok) throw new ApiError(`Scan read failed (${res.status})`, res.status);
-  return (await res.json()) as ScanResponse;
+  const result = await http.GET('/api/scan');
+  return dataOf(result, 'Scan read failed');
 }
 
 /** GET /api/scan/universe — the read-only owner-curated universe for the view editor. */
 export async function getScanUniverse(): Promise<ScanUniverse> {
-  const res = await fetch('/api/scan/universe', { credentials: 'same-origin' });
-  if (!res.ok) throw new ApiError(`Universe read failed (${res.status})`, res.status);
-  return (await res.json()) as ScanUniverse;
+  const result = await http.GET('/api/scan/universe');
+  return dataOf(result, 'Universe read failed');
 }
 
 /** GET /api/scan/view — the caller's effective view. Anonymous ALWAYS gets a readable default; a
  *  READ is never gated. (The page reads the view off `getScan()`; this exists for the editor's
  *  reconciliation + parity with the wire.) */
 export async function getScanView(): Promise<ScanView> {
-  const res = await fetch('/api/scan/view', { credentials: 'same-origin' });
-  if (!res.ok) throw new ApiError(`View read failed (${res.status})`, res.status);
-  return (await res.json()) as ScanView;
-}
-
-/** The scan-view WRITE's error envelope differs by status: 403/503 use the auth `{error, message}`
- *  envelope, while the 422 validation refusal uses FastAPI's `{detail}`. Map both into the typed
- *  `AuthError` so `useGate` can translate `auth_required` → the sign-in prompt, `auth_unavailable` →
- *  the degraded copy, and re-throw `validation` to the caller's own inline handling. */
-async function toScanViewError(res: Response): Promise<AuthError> {
-  if (res.status === 422) {
-    let detail = 'That view is not valid.';
-    try {
-      const body = (await res.clone().json()) as { detail?: string };
-      if (body && typeof body.detail === 'string') detail = body.detail;
-    } catch {
-      /* no/garbled body — keep the safe fallback */
-    }
-    return new AuthError('validation', detail, 422);
-  }
-  return toAuthError(res);
+  const result = await http.GET('/api/scan/view');
+  return dataOf(result, 'View read failed');
 }
 
 /** PUT /api/scan/view — the ONE server-gated, state-bearing scanner action
@@ -1064,53 +1174,29 @@ async function toScanViewError(res: Response): Promise<AuthError> {
  *  persisted (AC-3). Off-universe symbol / bad sort / bad density ⇒ 422 `validation` (AC-13).
  *  Auth-subsystem fault ⇒ 503 `auth_unavailable`. Never touches the bundle/SSE path. */
 export async function saveScanView(view: ScanViewWrite): Promise<ScanView> {
-  const res = await fetch('/api/scan/view', {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify(view),
+  const result = await http.PUT('/api/scan/view', {
+    body: toScanViewBody(view),
   });
-  if (!res.ok) throw await toScanViewError(res);
-  return (await res.json()) as ScanView;
+  if (!result.response.ok) {
+    if (result.response.status === 422) {
+      const body = (result.error ?? {}) as { detail?: unknown };
+      throw new AuthError(
+        'validation',
+        typeof body.detail === 'string' ? body.detail : 'That view is not valid.',
+        422,
+      );
+    }
+    throw authResultError(result);
+  }
+  if (result.data === undefined) throw authResultError(result);
+  return result.data;
 }
 
 /** One slow-lane structure snapshot (not a live price tick). Chronological on the wire. */
-export interface StructureSample {
-  symbol: string;
-  as_of: number; // epoch seconds of the structure recompute
-  price: number | null;
-  score: number | null;
-  tier: string | null;
-  regime: string | null;
-  vol_regime: string | null;
-  flip: number | null;
-  dist_to_flip_pct: number | null;
-  call_wall: number | null;
-  put_wall: number | null;
-  dist_to_wall_pct: number | null;
-  /** Additive score breakdown when the engine emitted it (research capture spine). */
-  score_drivers?: ScanScoreDrivers | null;
-  /** Dollar net GEX at capture (optional research field). */
-  net_gex?: number | null;
-  /** ATM IV (%) / HV (%) when both available. */
-  iv_hv_ratio?: number | null;
-  /** ATM IV as decimal (0.22 = 22%) at capture. */
-  atm_iv?: number | null;
-  /** 30d HV percent annualized at capture. */
-  hv_30d?: number | null;
-}
+export type StructureSample = components['schemas']['StructureSampleDto'];
 
 /** `GET /api/scan/{symbol}/history` — durable structure path for the ticker Structure zone. */
-export interface StructureHistoryResponse {
-  symbol: string;
-  samples: StructureSample[];
-  /** Server basis string (slow-lane only, thinned, capped). */
-  basis: string;
-  /** Total samples stored for this symbol (may exceed samples.length when limited). */
-  stored_count?: number;
-  /** Scan store backend: `json` | `postgres`. */
-  backend?: string;
-}
+export type StructureHistoryResponse = components['schemas']['StructureHistoryResponse'];
 
 /** GET /api/scan/{symbol}/history — anonymous-open structure history. Empty samples is honest
  *  cold-start, not an error. Transport faults reject so the caller can keep last-known path. */
@@ -1119,42 +1205,32 @@ export async function getStructureHistory(
   limit = 48,
   fetchOpts: FetchOpts = {},
 ): Promise<StructureHistoryResponse> {
-  const sym = encodeURIComponent(symbol.trim().toUpperCase());
-  const q = limit > 0 ? `?limit=${Math.min(limit, 96)}` : '';
-  const res = await fetch(`/api/scan/${sym}/history${q}`, {
-    credentials: 'same-origin',
+  const sym = symbol.trim().toUpperCase();
+  const result = await http.GET('/api/scan/{symbol}/history', {
+    params: { path: { symbol: sym }, query: { limit: limit > 0 ? Math.min(limit, 96) : 0 } },
     signal: fetchOpts.signal,
+    headers: fetchOpts.signal ? { 'x-convexa-preserve-signal': '1' } : undefined,
   });
-  if (!res.ok) throw new ApiError(`Structure history failed (${res.status})`, res.status);
-  return (await res.json()) as StructureHistoryResponse;
+  return dataOf(result, 'Structure history failed');
 }
 
 /** Live payload pushed over SSE (mid/flow/live flip). Levels other than the flip come from
  *  the bundle; the UI measures price-vs-wall using `mid` + the bundle's walls. */
-export interface LiveUpdate {
-  ticker: string;
-  mid: number | null;
-  bid: number | null;
-  ask: number | null;
-  spread: number | null;
-  net_flow: number;
-  buy_vol: number;
-  sell_vol: number;
-  flow_window_s: number;
-  spot_ts: number;
-  live: boolean; // true only if a real tick arrived recently (else mid is stale)
-  tick_age_s: number | null;
-  market_session: string; // premarket | regular | afterhours | overnight | closed
-  feed: string; // "realtime" | "delayed"
-  ts: number;
-  gamma_flip: number | null;
-  // The last actual TRADE print price off the live trade tape (NOT the NBBO mid). LIVE-DERIVED:
-  // rides SSE only, degrades with the other live fields on a stream drop, inherits the payload-level
-  // `live`/`tick_age_s` honesty flags. `null` is the honest "no recent print" state (between trades,
-  // overnight, before the session's first print) — NEVER an error. DISPLAY-ONLY: it must never feed
-  // the headline anchor, the levels, the live gamma-flip, the GEX chart's liveSpot, or any score
-  // input — the NBBO `mid` stays the anchor (`live-spot=NBBO-mid`). Always present, value nullable.
-  last_trade: number | null;
+/** Generated SSE payload; EventSource lifecycle remains the only handwritten transport boundary. */
+export type LiveUpdate = components['schemas']['LiveUpdateBody'];
+
+function isLiveUpdate(value: unknown): value is LiveUpdate {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  const hasLiveValue = ['mid', 'last_trade', 'gamma_flip', 'net_flow'].some(
+    (key) => typeof candidate[key] === 'number',
+  );
+  return (
+    hasLiveValue &&
+    (candidate.ticker == null || typeof candidate.ticker === 'string') &&
+    (candidate.live == null || typeof candidate.live === 'boolean') &&
+    (candidate.market_session == null || typeof candidate.market_session === 'string')
+  );
 }
 
 /**
@@ -1175,7 +1251,8 @@ export function streamTicker(
   const es = new EventSource(`/api/stream/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`);
   es.onmessage = (e) => {
     try {
-      onUpdate(JSON.parse(e.data) as LiveUpdate);
+      const payload: unknown = JSON.parse(e.data);
+      if (isLiveUpdate(payload)) onUpdate(payload);
     } catch {
       /* ignore malformed */
     }
@@ -1196,31 +1273,35 @@ export async function getTicker(
   { minDte, maxDte, expirations, darkPool, position }: TickerQuery = {},
   fetchOpts: FetchOpts = {},
 ): Promise<TickerBundle> {
-  const params = new URLSearchParams();
-  if (minDte != null) params.set('min_dte', String(minDte));
-  if (maxDte != null) params.set('max_dte', String(maxDte));
-  if (expirations && expirations.length) params.set('expirations', expirations.join(','));
-  if (darkPool != null) params.set('dark_pool', String(darkPool));
-  if (position) {
-    params.set('pos_expiration', position.expiration);
-    params.set('pos_strike', String(position.strike));
-    params.set('pos_right', position.right);
-    if (position.plPct != null) params.set('pos_pl_pct', String(position.plPct));
-  }
-  const qs = params.toString();
-  const res = await fetch(`/api/ticker/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`, {
+  const result = await http.GET('/api/ticker/{ticker}', {
+    params: {
+      path: { ticker: symbol.toUpperCase() },
+      query: {
+        min_dte: minDte,
+        max_dte: maxDte,
+        expirations: expirations?.length ? expirations.join(',') : undefined,
+        pos_expiration: position?.expiration,
+        pos_strike: position?.strike,
+        pos_right: position?.right,
+        pos_pl_pct: position?.plPct,
+        dark_pool: darkPool,
+      },
+    },
     signal: fetchOpts.signal,
+    headers: fetchOpts.signal ? { 'x-convexa-preserve-signal': '1' } : undefined,
   });
-  if (!res.ok) {
+  if (!result.response.ok) {
     const detail =
-      res.status === 404
+      result.response.status === 404
         ? `No option-chain data for ${symbol.toUpperCase()}`
-        : res.status === 429
-          ? `Rate limited (${res.status})`
-          : `API error ${res.status}`;
-    throw new ApiError(detail, res.status);
+        : result.response.status === 429
+          ? `Rate limited (${result.response.status})`
+          : `API error ${result.response.status}`;
+    throw new ApiError(detail, result.response.status);
   }
-  return (await res.json()) as TickerBundle;
+  if (result.data === undefined) throw resultError(result, 'Ticker read failed');
+  if (!isTickerBundle(result.data)) throw new ApiError('Malformed ticker payload', 200);
+  return result.data;
 }
 
 /**
@@ -1234,11 +1315,14 @@ export async function fetchTrackedContract(
   symbol: string,
   { expiration, strike, right }: { expiration: string; strike: number; right: OptionRight },
 ): Promise<TrackedContract | null> {
-  const params = new URLSearchParams({ expiration, strike: String(strike), right });
-  const res = await fetch(`/api/contract/${symbol.toUpperCase()}?${params.toString()}`);
-  if (res.status === 404) return null; // not in snapshot
-  if (!res.ok) throw new ApiError(`Contract lookup failed (${res.status})`, res.status);
-  return (await res.json()) as TrackedContract;
+  const result = await http.GET('/api/contract/{ticker}', {
+    params: {
+      path: { ticker: symbol.toUpperCase() },
+      query: { expiration, strike, right },
+    },
+  });
+  if (result.response.status === 404) return null;
+  return dataOf(result, 'Contract lookup failed');
 }
 
 // ---- Operator metrics readout (observability; read-only, side-effect-free) -------------------
@@ -1247,70 +1331,20 @@ export async function fetchTrackedContract(
 // backend finalizes a different path, change only this constant.
 export const METRICS_ENDPOINT = '/api/_metrics';
 
-export interface MetricsLatency {
-  p50_ms: number;
-  p95_ms: number;
-  max_ms: number;
-  count: number;
-}
-export interface MetricsStage {
-  stage: StageName;
-  kind: StageKind;
-  p50_ms: number;
-  p95_ms: number;
-  max_ms: number;
-  count: number;
-  ok: number;
-  error: number;
-  skipped: number;
-}
-export interface MetricsCache {
-  hits: number;
-  misses: number;
-  hit_ratio: number;
-  current_data_age_seconds: number;
-}
-export interface MetricsVendor {
-  call_count: number;
-  latency_p50_ms: number;
-  latency_p95_ms: number;
-  min_rate_limit_headroom: { remaining: number; limit: number } | null; // null ⇒ "unknown"
-}
-export interface MetricsScope {
-  latency_total: MetricsLatency;
-  stages: MetricsStage[];
-  cache: MetricsCache;
-  vendor: MetricsVendor;
-}
-export interface RecentTrace {
-  trace_id: string;
-  ticker: string;
-  dims: {
-    min_dte: number | null;
-    max_dte: number | null;
-    expirations_present: boolean;
-    dark_pool: boolean;
-  };
-  cache_hit: boolean;
-  cache_age_seconds: number;
-  total_ms: number;
-  computed_trace_id?: string | null; // on a cache hit: lineage to the miss-trace that computed it
-}
-export interface MetricsAggregate {
-  instrumentation_enabled: boolean;
-  window: { size_desc: string; uptime_seconds: number; request_count: number };
-  global: MetricsScope;
-  per_ticker: Record<string, MetricsScope>;
-  recent_traces?: RecentTrace[];
-}
+export type MetricsLatency = components['schemas']['MetricsLatency'];
+export type MetricsStage = components['schemas']['MetricsStage'];
+export type MetricsCache = components['schemas']['MetricsCache'];
+export type MetricsVendor = components['schemas']['MetricsVendor'];
+export type MetricsScope = components['schemas']['MetricsScope'];
+export type RecentTrace = components['schemas']['RecentTrace'];
+export type MetricsAggregate = components['schemas']['MetricsWire'];
 
 /** Read-only operator metrics readout. Side-effect-free: GETs the readout only — never triggers a
  *  bundle fetch, recompute, or cache mutation. Throws on any non-2xx (caller → "Metrics readout
  *  unavailable."). */
 export async function fetchMetrics(): Promise<MetricsAggregate> {
-  const res = await fetch(METRICS_ENDPOINT);
-  if (!res.ok) throw new ApiError(`Metrics readout failed (${res.status})`, res.status);
-  return (await res.json()) as MetricsAggregate;
+  const result = await http.GET('/api/_metrics');
+  return dataOf(result, 'Metrics readout failed');
 }
 
 // ---- Trader personas (prompt-layer projection only; assembled FE-side, locus PINNED FE-rendered) ----
@@ -1322,6 +1356,8 @@ export type PersonaRisk = 'conservative' | 'moderate' | 'aggressive';
 
 /** Declarative persona data (no executable logic, no analytics params). The framing-copy fields
  *  (summary/objective_framing/risk_calibration) are FE-embedded UX text. */
+/** FE semantic persona projection. The HTTP payload is generated `PersonaWire`; this model adds
+ * presentation-only framing copy assembled by the persona feature. */
 export interface PersonaDefinition {
   id: string;
   name: string;
@@ -1329,14 +1365,13 @@ export interface PersonaDefinition {
   version: number;
   objective: PersonaObjective;
   risk: PersonaRisk;
-  reassessment_lean: string; // declarative lean within the fixed schema/cap (text)
-  emphasis_note?: string | null; // bounded free-text; fills the framing slot ONLY
+  reassessment_lean: string;
+  emphasis_note?: string | null;
   dte_pref?: { min_dte: number; max_dte: number } | null;
-  // FE framing copy (presets carry preset-specific text; customs derive generic text):
   summary?: string;
   objective_framing?: string;
   risk_calibration?: string;
-  based_on?: string; // for customs: the preset id it was derived from
+  based_on?: string;
 }
 
 export type HandoffSectionKind = 'fixed' | 'persona';
@@ -1496,43 +1531,44 @@ export interface RecCap {
   resets_at: string;
 }
 
-/** Always HTTP 200. `status` drives the panel state machine; `strategy` present iff produced. */
-export interface RecResponse {
-  status: RecStatusKind;
+/**
+ * Domain projection of the generated recommendation envelope.  The generated response is only
+ * accepted at the facade boundary; consumers receive closed vocabularies and explicit nulls so a
+ * widened OpenAPI string can never leak into the recommendation state machine.
+ */
+export interface RecResponseDomain {
+  status?: RecStatusKind | string | null;
+  ticker?: string | null;
+  as_of?: string | null;
+  pinned_fingerprint?: string | null;
+  stale_born?: boolean | null;
   persona: RecPersona;
-  as_of: string | null; // snapshot_iso the rec is pinned to (echoes the bundle's freshness)
-  pinned_fingerprint: string; // state_fingerprint the rec was generated from (staleness key)
-  stale_born: boolean; // bundle was already stale at generation time (honest-at-birth)
-  strategy: RecStrategy | null; // present iff status === 'produced'
-  unavailable_reason: string | null; // present iff status === 'unavailable'; NEVER leaks key text
-  gate: RecGate; // gating snapshot AT THE TIME OF THIS RESPONSE
+  gate: RecGate;
   cap: RecCap;
-  // ai-providers (additive; INTERFACE_CONTRACT ai-providers). NEVER a `key` field — provenance
-  // names what ran. `remaining_free_uses` / `free_uses_total` are retired product fields (optional
-  // legacy ignore only — the UI must not advertise them).
-  key_source?: KeySource;
+  powering?: RecPowering | null;
+  strategy: RecStrategy | null;
+  key_source?: string | null;
   provider?: string | null;
   model?: string | null;
-  remaining_free_uses?: number | null;
-  free_uses_total?: number | null;
-  // ai-rec-backtest-orders (INTERFACE §1.3, additive): scenario provenance. NON-NULL on EVERY
-  // scenario-driven response (produced, scenario no_trade, AND fault scenarios); null/absent on
-  // every real read. The FE keys the "SCRIPTED SCENARIO" marking off this field ONLY (D8-4).
   scenario?: RecScenarioInfo | null;
-  // ---- tradeable-rec-inputs (additive; INTERFACE_CONTRACT §5) — present iff `status === 'produced'`
-  // on a post-feature backend. Optional so an older backend degrades gracefully (never a throw): the
-  // FE renders every one of these fields by closed lookup on the wire token, never by inspecting a
-  // null, and performs NO arithmetic (the cap verdict + effective cap are computed once server-side
-  // and pinned — never recomputed client-side).
-  sent?: RecSent;
-  cap_check?: CapCheck;
-  field_reasons?: FieldReasons;
-  cited_contract?: CitedContract;
-  // ---- ai-rec-grounding (additive; INTERFACE_CONTRACT §1) — always present on every `base`-built
-  // envelope. Absent ONLY from a pre-feature server (the one client-selected branch — a lookup on
-  // PRESENCE, never a re-derivation from figures).
-  grounding?: Grounding;
+  sent?: RecSent | null;
+  cap_check?: CapCheck | null;
+  field_reasons?: FieldReasons | null;
+  cited_contract?: CitedContract | null;
+  grounding?: Grounding | null;
+  unavailable_reason?: string | null;
+  authorized?: boolean | null;
+  availability?: { in_app_enabled: boolean } | null;
+  scenarios?: { enabled: boolean; catalog: RecScenarioInfo[] } | null;
+  context?: RecExportContext | null;
+  persona_prompt?: string | null;
+  glossary?: string | null;
+  egress_note?: string | null;
+  egress_categories?: EgressCategory[];
+  /** Retained for compatibility with pre-contract fixtures; the current server no longer emits it. */
+  remaining_free_uses?: number | null;
 }
+export type RecResponse = RecResponseDomain;
 
 // ---- tradeable-rec-inputs response types (INTERFACE_CONTRACT §5) -------------------------------
 
@@ -1700,16 +1736,22 @@ export interface RecSent {
 
 /** `context.risk_inputs` on the export — the read-side shape, minus the storage/timestamp fields the
  *  export has no use for. Anonymous callers ALWAYS see `state: 'not_set'` — present, never omitted. */
-export type ExportRiskInputs = Pick<
-  RiskInputs,
-  'state' | 'account_size' | 'per_trade_cap' | 'effective_dollar_cap'
->;
+export interface ExportRiskInputs {
+  state: RiskInputsState | string;
+  account_size?: number | null;
+  per_trade_cap?: PerTradeCap | null;
+  effective_dollar_cap?: EffectiveDollarCap;
+  storage_available?: boolean;
+  updated_at?: number | null;
+}
 
 /** `context.open_positions` on the export. A GET carries no client digest, so `state` is always
  *  `not_sent` here — distinct from the in-app rec's richer three-member digest. */
 export interface ExportOpenPositions {
-  source: OpenPositionsSource;
-  state: OpenPositionsState;
+  source: OpenPositionsSource | string;
+  state: OpenPositionsState | string;
+  this_underlying?: OpenPositionsThisUnderlying | null;
+  portfolio?: OpenPositionsPortfolio | null;
 }
 
 /** The serialization of the cached bundle plus this feature's additive sections. Indexable so a
@@ -1732,35 +1774,27 @@ export interface EgressCategory {
 /** The structured export that feeds BOTH the in-app call and the manual hand-off (INTERFACE §1.2).
  *  Triggers NO LLM call, costs nothing, available even when in-app AI is unavailable. Egress
  *  invariant: the enumeration follows what actually shipped — see `egress_categories`. */
-export interface RecExport {
-  ticker: string;
-  as_of: string | null;
-  context: RecExportContext; // serialization of the cached bundle (null stays null, no recompute)
-  persona_prompt: string; // assembled persona prompt (server-side, canonical-sourced)
-  glossary: string; // field-level reference
-  egress_note: string; // server-composed from `egress_categories` (AC-90)
-  // tradeable-rec-inputs (additive/optional — an older backend omits it; the FE falls back to the
-  // shipped fixed egress copy rather than throwing).
-  egress_categories?: EgressCategory[];
+interface RecExportDomain {
+  ticker?: string | null;
+  as_of?: string | null;
+  context: RecExportContext;
+  egress_categories: EgressCategory[];
+  persona?: RecPersona | null;
+  persona_prompt?: string | null;
+  glossary?: string | null;
+  egress_note?: string | null;
 }
+export type RecExport = RecExportDomain;
 
 /** Gating + cap + availability without requesting a rec (INTERFACE §1.3). Side-effect-free, 200. */
-export interface RecStatus {
-  availability: { in_app_enabled: boolean }; // false ⇒ no key configured / feature off → inert in-app
+interface RecStatusDomain {
+  availability?: { in_app_enabled: boolean } | null;
   gate: RecGate;
   cap: RecCap;
-  // Retired free-uses counters — optional legacy ignore only. Do not advertise.
-  remaining_free_uses?: number | null;
-  free_uses_total?: number | null;
-  // ai-providers — standing powering probe. Optional so an older backend degrades (no powering
-  // chrome) rather than throwing. Signed-out: key_source none, preference nulls, reason null.
-  powering?: RecPowering;
-  // ai-rec-backtest-orders (INTERFACE §2): the scenario advertisement. The wire ALWAYS carries it
-  // after this feature (flag OFF ⇒ `{enabled:false, catalog:[]}` — the catalog is never enumerable
-  // while disabled, D1/AC-34). Typed OPTIONAL here only as FE resilience against an older backend:
-  // an absent field degrades exactly like `enabled:false` (no picker rendered) — never a throw.
-  scenarios?: { enabled: boolean; catalog: RecScenarioInfo[] };
+  powering?: RecPowering | null;
+  scenarios?: { enabled: boolean; catalog: RecScenarioInfo[] } | null;
 }
+export type RecStatus = RecStatusDomain;
 
 export interface RecPoweringPreference {
   power_path: PowerPath | null;
@@ -1817,6 +1851,54 @@ export interface AiProvidersBootstrap {
   };
 }
 
+function aiProviderFromWire(value: string): ByoProvider {
+  if (value === 'anthropic' || value === 'openai' || value === 'xai' || value === 'gemini')
+    return value;
+  throw new ApiError('Malformed AI provider payload', 200);
+}
+
+function aiBootstrapFromWire(
+  value: components['schemas']['AiProvidersBootstrapBody'],
+): AiProvidersBootstrap {
+  const powerPath = value.preference.power_path;
+  if (powerPath != null && powerPath !== 'own_key' && powerPath !== 'grok_subscription')
+    throw new ApiError('Malformed AI provider payload', 200);
+  const grokReason = value.grok.unavailable_reason;
+  if (
+    grokReason != null &&
+    grokReason !== 'subscription_unavailable' &&
+    grokReason !== 'oauth_unlinked' &&
+    grokReason !== 'oauth_expired'
+  )
+    throw new ApiError('Malformed AI provider payload', 200);
+  return {
+    storage_available: value.storage_available,
+    providers: value.providers.map((provider) => ({
+      provider: aiProviderFromWire(provider.provider),
+      set: provider.set,
+      last4: provider.last4 ?? null,
+    })),
+    grok: {
+      available: value.grok.available,
+      connected: value.grok.connected,
+      unavailable_reason: grokReason ?? null,
+    },
+    preference: {
+      power_path: powerPath ?? null,
+      provider:
+        value.preference.provider == null ? null : aiProviderFromWire(value.preference.provider),
+      model: value.preference.model ?? null,
+    },
+    catalog: {
+      providers: value.catalog.providers.map((provider) => ({
+        provider: aiProviderFromWire(provider.provider),
+        models: provider.models,
+      })),
+      grok_subscription: value.catalog.grok_subscription,
+    },
+  };
+}
+
 /** @deprecated Use AiProvidersBootstrap. Kept as an alias so existing imports compile. */
 export type AiKeyStatus = AiProvidersBootstrap;
 
@@ -1829,9 +1911,9 @@ let aiKeyStatusInflight: Promise<AiProvidersBootstrap> | null = null;
 export async function getAiKeyStatus(): Promise<AiProvidersBootstrap> {
   if (aiKeyStatusInflight) return aiKeyStatusInflight;
   aiKeyStatusInflight = (async () => {
-    const res = await fetch('/api/auth/ai-key', { credentials: 'same-origin' });
-    if (!res.ok) throw await toAuthError(res);
-    return (await res.json()) as AiProvidersBootstrap;
+    const result = await http.GET('/api/auth/ai-key');
+    if (!result.response.ok) throw authResultError(result);
+    return aiBootstrapFromWire(dataOf(result, 'AI providers unavailable'));
   })().finally(() => {
     aiKeyStatusInflight = null;
   });
@@ -1848,30 +1930,26 @@ export function __resetAiKeyStatusInflight() {
  *  Returns the full bootstrap — NEVER echoes the key. Storage-unavailable is a 200 with
  *  `storage_available:false`, NOT a 5xx. */
 export async function setAiKey(key: string, provider: ByoProvider): Promise<AiProvidersBootstrap> {
-  const res = await fetch('/api/auth/ai-key', {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify({ key, provider }),
+  const result = await http.PUT('/api/auth/ai-key', {
+    body: { key, provider },
   });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiProvidersBootstrap;
+  if (!result.response.ok) throw authResultError(result);
+  return aiBootstrapFromWire(dataOf(result, 'AI key update failed'));
 }
 
 /** DELETE /api/auth/ai-key?provider= — remove one BYO slot. Idempotent. 403 / 422 as documented. */
 export async function removeAiKey(provider: ByoProvider): Promise<AiProvidersBootstrap> {
-  const res = await fetch(`/api/auth/ai-key?provider=${encodeURIComponent(provider)}`, {
-    method: 'DELETE',
-    credentials: 'same-origin',
+  const result = await http.DELETE('/api/auth/ai-key', {
+    params: { query: { provider } },
   });
-  if (!res.ok) throw await toAuthError(res);
-  return (await res.json()) as AiProvidersBootstrap;
+  if (!result.response.ok) throw authResultError(result);
+  return aiBootstrapFromWire(dataOf(result, 'AI key removal failed'));
 }
 
 /** DELETE /api/auth/grok — unlink the Grok subscription. Session required. */
 export async function disconnectGrok(): Promise<void> {
-  const res = await fetch('/api/auth/grok', { method: 'DELETE', credentials: 'same-origin' });
-  if (!res.ok) throw await toAuthError(res);
+  const result = await http.DELETE('/api/auth/grok');
+  if (!result.response.ok) throw authResultError(result);
 }
 
 /** Browser navigation target for Connect Grok. Only used when `grok.available` is true. */
@@ -1879,19 +1957,32 @@ export const GROK_OAUTH_START = '/api/auth/grok/start';
 
 // ---- Durable book (multi-device positions blob) ------------------------------------------------
 
-export interface BookEnvelope {
-  schema_version: number;
-  updated_at: number;
+export type BookEnvelope = components['schemas']['BookEnvelopeSchema'];
+
+type BookPutBody = components['schemas']['BookPutBody'];
+function toBookPutBody(body: {
+  schema_version?: number;
+  updated_at?: number;
   blob: Record<string, unknown>;
-  source: string;
+}): BookPutBody {
+  const blob = body.blob;
+  if (
+    typeof blob.schema_version !== 'number' ||
+    !Array.isArray(blob.positions) ||
+    !Array.isArray(blob.orders) ||
+    !Array.isArray(blob.decisions)
+  ) {
+    throw new TypeError('Book payload is not a valid generated contract shape');
+  }
+  return { ...body, blob: blob as BookPutBody['blob'] };
 }
 
 /** GET /api/book — signed-in server copy of positions v3 blob (empty when none). */
 export async function getBook(): Promise<BookEnvelope> {
-  const res = await fetch('/api/book', { credentials: 'same-origin' });
-  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
-  if (!res.ok) throw new ApiError(`Book get failed (${res.status})`, res.status);
-  return (await res.json()) as BookEnvelope;
+  const result = await http.GET('/api/book');
+  if (result.response.status === 403 || result.response.status === 503)
+    throw authResultError(result);
+  return dataOf(result, 'Book get failed');
 }
 
 /** PUT /api/book — push local blob; latest-wins by updated_at. */
@@ -1900,15 +1991,12 @@ export async function putBook(body: {
   updated_at?: number;
   blob: Record<string, unknown>;
 }): Promise<BookEnvelope> {
-  const res = await fetch('/api/book', {
-    method: 'PUT',
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const result = await http.PUT('/api/book', {
+    body: toBookPutBody(body),
   });
-  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
-  if (!res.ok) throw new ApiError(`Book put failed (${res.status})`, res.status);
-  return (await res.json()) as BookEnvelope;
+  if (result.response.status === 403 || result.response.status === 503)
+    throw authResultError(result);
+  return dataOf(result, 'Book put failed');
 }
 
 /** Request a rec (in-app LLM call). ALWAYS 200 for produced/no_trade/unavailable/gated_off — the
@@ -1918,19 +2006,17 @@ export async function requestRecommendation(
   symbol: string,
   body: RecRequest,
 ): Promise<RecResponse> {
-  const res = await fetch(`/api/recommendation/${symbol.toUpperCase()}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify(body),
+  const result = await http.POST('/api/recommendation/{ticker}', {
+    params: { path: { ticker: symbol.toUpperCase() } },
+    body,
   });
   // user-accounts (D6f): the auth gate is the OUTERMOST precondition on the LLM invoke. A 403
   // `auth_required` / 503 `auth_unavailable` is an AUTH-class outcome — surface it as an `AuthError`
   // (NOT the ai-rec `unavailable` artifact) so the FE shows the sign-in / "couldn't reach" prompt
   // and NEVER ai-rec's cooldown/cap/no_key (AC-E4/E7/J1). All other non-2xx stay `ApiError`.
-  if (res.status === 403 || res.status === 503) throw await toAuthError(res);
-  if (!res.ok) throw new ApiError(`Recommendation request failed (${res.status})`, res.status);
-  return (await res.json()) as RecResponse;
+  if (result.response.status === 403 || result.response.status === 503)
+    throw authResultError(result);
+  return projectRecommendation(dataOf(result, 'Recommendation request failed'));
 }
 
 /** The structured state export (the always-available floor). 200 when a bundle exists; 404 if the
@@ -1939,22 +2025,39 @@ export async function fetchRecExport(
   symbol: string,
   { personaId }: { personaId?: string | null } = {},
 ): Promise<RecExport> {
-  const params = new URLSearchParams();
-  if (personaId) params.set('persona_id', personaId);
-  const qs = params.toString();
-  const res = await fetch(
-    `/api/recommendation/export/${symbol.toUpperCase()}${qs ? `?${qs}` : ''}`,
-  );
-  if (!res.ok) throw new ApiError(`Export unavailable (${res.status})`, res.status);
-  return (await res.json()) as RecExport;
+  const result = await http.GET('/api/recommendation/export/{ticker}', {
+    params: {
+      path: { ticker: symbol.toUpperCase() },
+      query: { persona_id: personaId ?? undefined },
+    },
+  });
+  const projected = projectRecommendation(dataOf(result, 'Export unavailable'));
+  return {
+    ...projected,
+    context: projected.context ?? {
+      candidates: emptyCandidateSet(symbol.toUpperCase()),
+      risk_inputs: projectRiskInputs({ state: 'not_set' }),
+      open_positions: projectOpenPositions({ source: 'simulated', state: 'not_sent' }),
+    },
+    egress_categories: projected.egress_categories ?? [],
+  };
 }
 
 /** Gating + cap + availability (drives the action's enabled/de-emphasized/disabled presentation).
  *  Cheap, side-effect-free, always 200. Throws only on a transport fault (caller degrades to inert). */
 export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
-  const res = await fetch(`/api/recommendation/status/${symbol.toUpperCase()}`);
-  if (!res.ok) throw new ApiError(`Status unavailable (${res.status})`, res.status);
-  return (await res.json()) as RecStatus;
+  const result = await http.GET('/api/recommendation/status/{ticker}', {
+    params: { path: { ticker: symbol.toUpperCase() } },
+  });
+  const wire = dataOf(result, 'Status unavailable');
+  const projected = projectRecommendation(wire);
+  return {
+    availability: projected.availability,
+    gate: projected.gate,
+    cap: projected.cap,
+    powering: projected.powering,
+    scenarios: projected.scenarios,
+  };
 }
 
 /** Canonical persona source (EXISTING endpoint, INTERFACE §1.4). This feature single-sources the
@@ -1962,11 +2065,10 @@ export async function fetchRecStatus(symbol: string): Promise<RecStatus> {
  *  fallback only. Best-effort: throws on any transport/shape fault so the caller falls back. The
  *  payload may be `PersonaDefinition[]` or `{ personas: PersonaDefinition[] }` — both are accepted. */
 export async function fetchPersonas(): Promise<PersonaDefinition[]> {
-  const res = await fetch('/api/personas');
-  if (!res.ok) throw new ApiError(`Personas unavailable (${res.status})`, res.status);
-  const payload = (await res.json()) as unknown;
+  const result = await http.GET('/api/personas');
+  const payload = dataOf(result, 'Personas unavailable') as unknown;
   const list = Array.isArray(payload) ? payload : (payload as { personas?: unknown })?.personas;
   if (!Array.isArray(list) || list.length === 0)
     throw new ApiError('Malformed personas payload', 200);
-  return list as PersonaDefinition[];
+  return list;
 }

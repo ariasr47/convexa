@@ -1,0 +1,9 @@
+# R3 — PM reconciliation: openapi-router-dependency-replacement
+
+1. **ACCEPT — evidence-bounded advisory wording.** Resulting product wording: “Ship an internal maintenance replacement that removes the dependency chain responsible for the named `RUSTSEC-2024-0436` unmaintained advisory while preserving every externally observable API, application, and contributor-workflow behavior established by `api-contract-generation`.” No `vulnerable`, `secure`, `safe`, `vulnerability-free`, or broader advisory-remediation claim is authorized.
+
+2. **ACCEPT — locked graph absence followed by runtime proof.** Resulting product wording: “Given a locked resolved Cargo graph already proven to contain neither `utoipa-axum` nor `paste`, the resulting production binary starts and serves the established compatibility probes successfully.” Package absence is a build-graph fact, not a runtime-availability claim.
+
+3. **ACCEPT — production inventory wording.** Resulting product wording: “Before-and-after contract comparison reports the same 52 source-derived production operations with no addition, removal, method change, or path change, and the existing independent baseline remains accepted without a behavior-change approval.” This wording does not imply that operator, research, authentication, or currently unconsumed operations are publicly accessible or publicly documented.
+
+4. **ACCEPT — active documentation rule.** Resulting product wording: “Active repository documentation remains unchanged unless this implementation makes a live instruction factually false. If it does, only the inaccurate active instruction is corrected with neutral repository-owned route/OpenAPI integration wording; historical archived contracts remain unchanged.” No documentation edit is required merely to narrate the dependency removal.

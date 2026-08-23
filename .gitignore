@@ -82,6 +82,7 @@ Thumbs.db
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
 test-output
+.supply-chain/out/
 
 # Rust / API local secrets & runtime data
 apps/api/.env

@@ -15,6 +15,47 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use tracing::{debug, info, warn};
 
+/// Return a diagnostic URL that never carries vendor credentials.
+///
+/// Keep this at the request/error boundary: reqwest includes the request URL in
+/// some transport errors, so sanitising only the explicit debug field is not
+/// sufficient. Unknown query parameters are retained for useful context.
+fn safe_vendor_url(raw: &str) -> String {
+    let Some((prefix, query)) = raw.split_once('?') else {
+        return raw.to_owned();
+    };
+    let safe_query = query
+        .split('&')
+        .filter(|part| {
+            let key = part.split_once('=').map_or(*part, |(key, _)| key);
+            !matches!(
+                key.to_ascii_lowercase().as_str(),
+                "apikey" | "api_key" | "token" | "access_token"
+            )
+        })
+        .collect::<Vec<_>>();
+    if safe_query.is_empty() {
+        prefix.to_owned()
+    } else {
+        format!("{prefix}?{}", safe_query.join("&"))
+    }
+}
+
+fn safe_http_failure(error: &reqwest::Error, url: &str) -> String {
+    let kind = if error.is_timeout() {
+        "timeout"
+    } else if error.is_connect() {
+        "connect"
+    } else if error.is_request() {
+        "request"
+    } else if error.is_status() {
+        "status"
+    } else {
+        "transport"
+    };
+    format!("{kind} failure for {}", safe_vendor_url(url))
+}
+
 /// HTTP client for Massive REST (`https://api.massive.com`).
 #[derive(Debug, Clone)]
 pub struct MassiveRestClient {
@@ -681,11 +722,15 @@ impl MassiveRestClient {
     }
 
     async fn get_json<T: for<'de> Deserialize<'de>>(&self, url: &str) -> AppResult<T> {
-        // Redact key in logs
-        let safe = url.split("apiKey=").next().unwrap_or(url);
+        let safe = safe_vendor_url(url);
         debug!(url = %safe, "massive GET");
         self.requests.fetch_add(1, Ordering::Relaxed);
-        let resp = self.http.get(url).send().await?;
+        let resp = self
+            .http
+            .get(url)
+            .send()
+            .await
+            .map_err(|error| AppError::Massive(safe_http_failure(&error, url)))?;
         let status = resp.status();
         if !status.is_success() {
             let text = resp.text().await.unwrap_or_default();
@@ -695,6 +740,47 @@ impl MassiveRestClient {
             )));
         }
         Ok(resp.json().await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{safe_vendor_url, MassiveRestClient};
+    use std::sync::{atomic::AtomicU64, Arc};
+
+    #[test]
+    fn vendor_url_diagnostics_remove_all_credential_query_values() {
+        let canary = "synthetic-secret-canary-7f2a";
+        let raw = format!(
+            "https://api.massive.invalid/v3/snapshot?limit=250&apiKey={canary}&token={canary}&ticker=SPY"
+        );
+        let safe = safe_vendor_url(&raw);
+        assert!(!safe.contains(canary));
+        assert!(!safe.to_ascii_lowercase().contains("apikey="));
+        assert!(!safe.to_ascii_lowercase().contains("token="));
+        assert!(safe.contains("limit=250"));
+        assert!(safe.contains("ticker=SPY"));
+    }
+
+    #[tokio::test]
+    async fn request_failure_boundary_never_exposes_vendor_canary() {
+        let canary = "synthetic-secret-canary-7f2a";
+        let client = MassiveRestClient {
+            http: reqwest::Client::new(),
+            api_key: canary.into(),
+            base: "http://127.0.0.1:1".into(),
+            requests: Arc::new(AtomicU64::new(0)),
+        };
+        let error = client
+            .get_json::<serde_json::Value>(&format!(
+                "http://127.0.0.1:1/v3/snapshot?apiKey={canary}"
+            ))
+            .await
+            .expect_err("closed test port must fail");
+        let diagnostic = error.to_string();
+        assert!(diagnostic.contains("connect failure"));
+        assert!(!diagnostic.contains(canary));
+        assert!(!diagnostic.to_ascii_lowercase().contains("apikey="));
     }
 }
 

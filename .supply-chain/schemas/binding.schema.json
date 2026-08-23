@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "git_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "npm", "rust"],
+      "properties": {
+        "node": { "type": "string" },
+        "npm": { "type": "string" },
+        "rust": { "type": "string" }
+      }
+    },
+    "parity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nvmrc",
+        "package_metadata",
+        "rust_toolchain",
+        "crate_rust_version",
+        "ci",
+        "dockerfiles",
+        "actions_full_sha",
+        "images_tag_and_digest",
+        "root_locks_only"
+      ],
+      "properties": {
+        "nvmrc": { "type": "boolean" },
+        "package_metadata": { "type": "boolean" },
+        "rust_toolchain": { "type": "boolean" },
+        "crate_rust_version": { "type": "boolean" },
+        "ci": { "type": "boolean" },
+        "dockerfiles": { "type": "boolean" },
+        "actions_full_sha": { "type": "boolean" },
+        "images_tag_and_digest": { "type": "boolean" },
+        "root_locks_only": { "type": "boolean" }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "accepted_revision_sha",
+    "qualification_ref",
+    "qualification_sha256",
+    "base_revision_sha",
+    "candidate_revision_id",
+    "accepted_selector_set_sha256",
+    "candidate_selector_set_sha256",
+    "accepted_ci_ref",
+    "accepted_ci_sha256",
+    "accepted_ci_run_key",
+    "accepted_ci_required_check_set_sha256",
+    "accepted_ci_complete",
+    "accepted_ci_outcome",
+    "detected",
+    "locks",
+    "locks_match_qualification",
+    "parity",
+    "complete",
+    "outcome"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_kind": { "const": "toolchain_binding" },
+    "accepted_revision_sha": { "$ref": "#/$defs/git_sha" },
+    "qualification_ref": { "const": "artifact:toolchain-qualification#/receipt" },
+    "qualification_sha256": { "$ref": "#/$defs/sha256" },
+    "base_revision_sha": { "$ref": "#/$defs/git_sha" },
+    "candidate_revision_id": { "$ref": "#/$defs/sha256" },
+    "accepted_selector_set_sha256": { "$ref": "#/$defs/sha256" },
+    "candidate_selector_set_sha256": { "$ref": "#/$defs/sha256" },
+    "accepted_ci_ref": { "const": "artifact:accepted-revision-ci#/receipt" },
+    "accepted_ci_sha256": { "$ref": "#/$defs/sha256" },
+    "accepted_ci_run_key": { "$ref": "#/$defs/sha256" },
+    "accepted_ci_required_check_set_sha256": { "$ref": "#/$defs/sha256" },
+    "accepted_ci_complete": { "type": "boolean" },
+    "accepted_ci_outcome": { "enum": ["pass", "fail", "blocked"] },
+    "detected": { "$ref": "#/$defs/versions" },
+    "locks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["package", "cargo"],
+      "properties": {
+        "package": { "$ref": "#/$defs/sha256" },
+        "cargo": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "locks_match_qualification": { "type": "boolean" },
+    "parity": { "$ref": "#/$defs/parity" },
+    "complete": { "type": "boolean" },
+    "outcome": { "enum": ["pass", "fail", "blocked"] },
+    "reason_code": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+  }
+}

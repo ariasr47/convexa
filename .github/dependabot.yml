@@ -1,0 +1,85 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps/npm"
+    labels: ["dependencies", "ecosystem:npm", "owner:security"]
+    reviewers: ["ariasr47"]
+    groups:
+      npm-react-runtime:
+        patterns: ["react", "react-dom", "react-router-dom", "recharts"]
+        update-types: ["minor", "patch"]
+      npm-mui-emotion:
+        patterns: ["@mui/*", "@emotion/*"]
+        update-types: ["minor", "patch"]
+      npm-nx:
+        patterns: ["nx", "@nx/*"]
+        update-types: ["minor", "patch"]
+      npm-vite-vitest:
+        patterns: ["vite", "vitest", "@vitejs/*", "@vitest/*"]
+        exclude-patterns: ["@nx/*"]
+        update-types: ["minor", "patch"]
+      npm-playwright-testing:
+        patterns: ["@playwright/*", "@testing-library/*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps/cargo"
+    labels: ["dependencies", "ecosystem:cargo", "owner:security"]
+    reviewers: ["ariasr47"]
+    groups:
+      cargo-axum-runtime:
+        patterns: ["axum", "tokio", "tokio-stream", "tower", "tower-http", "futures-util"]
+        update-types: ["minor", "patch"]
+      cargo-http-tls:
+        patterns: ["reqwest", "rustls*", "tokio-tungstenite", "url"]
+        update-types: ["minor", "patch"]
+      cargo-sqlx-postgres:
+        patterns: ["sqlx", "sqlx-*"]
+        update-types: ["minor", "patch"]
+      cargo-crypto-auth:
+        patterns: ["aes-gcm", "argon2", "hmac", "sha1", "sha2", "subtle", "rand"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps/actions"
+    labels: ["dependencies", "ecosystem:actions", "owner:build"]
+    reviewers: ["ariasr47"]
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: docker
+    directory: "/apps/api"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps/docker-api"
+    labels: ["dependencies", "ecosystem:docker", "owner:build"]
+    reviewers: ["ariasr47"]
+
+  - package-ecosystem: docker
+    directory: "/apps/dashboard"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps/docker-dashboard"
+    labels: ["dependencies", "ecosystem:docker", "owner:build"]
+    reviewers: ["ariasr47"]

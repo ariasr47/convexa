@@ -7,6 +7,7 @@ use base64::Engine;
 use regex::Regex;
 use serde::Serialize;
 use std::sync::OnceLock;
+use std::{future::Future, pin::Pin, sync::Arc};
 use tracing::warn;
 
 pub const PASSWORD_MIN_LENGTH: usize = 8;
@@ -207,7 +208,17 @@ pub struct AuthService {
     demo_seed_email: Option<String>,
     /// Best-effort: drop broker book cache when credential rotates/deletes.
     broker_cache_invalidator: Option<BrokerCacheInvalidator>,
+    google_exchange_override: Option<GoogleExchangeOverride>,
 }
+
+type GoogleExchangeOverride = Arc<
+    dyn Fn(
+            String,
+        ) -> Pin<
+            Box<dyn Future<Output = Result<super::google_oauth::GoogleIdentity, String>> + Send>,
+        > + Send
+        + Sync,
+>;
 
 impl AuthService {
     pub fn new(store: AuthStore, cfg: AuthConfig) -> Self {
@@ -220,7 +231,18 @@ impl AuthService {
             encryption_ring: super::crypto::EncryptionKeyRing::from_env(),
             demo_seed_email: None,
             broker_cache_invalidator: None,
+            google_exchange_override: None,
         }
+    }
+
+    /// Test-only dependency seam: production keeps the real Google exchange; router tests may
+    /// inject a deterministic identity without mutating process environment or global state.
+    pub fn set_google_exchange_override<F, Fut>(&mut self, exchange: F)
+    where
+        F: Fn(String) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = Result<super::google_oauth::GoogleIdentity, String>> + Send + 'static,
+    {
+        self.google_exchange_override = Some(Arc::new(move |code| Box::pin(exchange(code))));
     }
 
     pub fn set_broker_cache_invalidator(&mut self, f: BrokerCacheInvalidator) {
@@ -295,7 +317,7 @@ impl AuthService {
     }
 
     fn google_available_flag(&self) -> bool {
-        super::google_oauth::available()
+        self.google_exchange_override.is_some() || super::google_oauth::available()
     }
 
     pub fn cookie_name(&self) -> &'static str {
@@ -895,9 +917,12 @@ impl AuthService {
         let code = code
             .filter(|c| !c.is_empty())
             .ok_or_else(|| validation("Missing authorization code."))?;
-        let identity = super::google_oauth::exchange(code)
-            .await
-            .map_err(|_| auth_unavailable())?;
+        let identity = if let Some(exchange) = &self.google_exchange_override {
+            exchange(code.to_string()).await
+        } else {
+            super::google_oauth::exchange(code).await
+        }
+        .map_err(|_| auth_unavailable())?;
 
         // 1. Known Google identity
         let mut user = self

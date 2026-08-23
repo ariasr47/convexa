@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "actions": {
+    "actions/checkout": "11bd71901bbe5b1630ceea73d27597364c9af683",
+    "actions/download-artifact": "d3f86a106a0bac45b974a628896c90dbdf5c8093",
+    "actions/setup-node": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+    "actions/upload-artifact": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+    "docker/setup-buildx-action": "e468171a9de216ec08956ac3ada2f0791b6bd435",
+    "dtolnay/rust-toolchain": "6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772",
+    "Swatinem/rust-cache": "aa7c1c80a07a27a84c0aa76d0cef0aad3830e330"
+  },
+  "images": [
+    "docker/dockerfile:1.26.0@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32",
+    "rust:1-bookworm@sha256:e70e2eec3d495fd5c8e0be74adda86507dfac7f51a724fbf9813ff59b2b247c7",
+    "debian:bookworm-20260803-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241",
+    "node:24-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43",
+    "fholzer/nginx-brotli:v1.28.0@sha256:d08726c7ce39fb7e1853f317358c175e5536d5b76706eea12f9041fa2f5171a0"
+  ]
+}

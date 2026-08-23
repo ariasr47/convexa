@@ -1,0 +1,60 @@
+{
+  "conflicts": [
+    {
+      "quote": "Ship an internal maintenance replacement that removes the known vulnerable dependency chain while preserving every externally observable API, application, and contributor-workflow behavior established by `api-contract-generation`.",
+      "source": "pm",
+      "why": "`RUSTSEC-2024-0436` is classified by the RustSec record as an informational `unmaintained` advisory for `paste`, not as a vulnerability advisory. Calling the chain vulnerable asserts a security property the named evidence does not establish and conflicts with the evidence-bounded terminology in the UX position.",
+      "proposal": "Describe the outcome as removing the dependency chain responsible for the named unmaintained RustSec finding, and bind success to the advisory ID plus manifest and resolved-package-set absence; make no broader vulnerability claim.",
+      "kind": "technical",
+      "conflict_id": "196875871f102fec32c549746e9d383bb23f41a2870ccc11c2f01e112247cc78",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "After all checks pass, the production build starts and serves the established compatibility probes with the removed integration packages unavailable at runtime.",
+      "source": "pm",
+      "why": "`utoipa-axum` and `paste` are compile-time Cargo packages, not dynamically loaded runtime packages, so their being 'unavailable at runtime' is not a separately observable or technically meaningful condition for the statically built service. The enforceable boundaries are absence from manifests and the resolved build graph before compilation, followed by startup and compatibility probes of that candidate binary.",
+      "proposal": "Require the production binary to be built from the locked resolved graph proven to exclude both packages, then start that binary and run the established compatibility probes; retain a separate runtime-independence check only for actual generation tools or files that could otherwise be consulted after build.",
+      "kind": "technical",
+      "conflict_id": "14564e74b72eb4477da4cbdb03c3bd99e648faed261b9b12082bd7409602f6cd",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Before-and-after contract comparison reports the same 52 public operations with no addition, removal, method change, or path change, and the existing independent baseline remains accepted without a behavior-change approval.",
+      "source": "pm",
+      "why": "The preserved 52-operation inventory is the source-derived production runtime/contract inventory, not a set of 52 publicly accessible or publicly documented operations. It includes operator-token, operator/research, authentication, and currently unconsumed surfaces, while the brief explicitly forbids a public documentation endpoint. Calling every row public changes the access and audience meaning of the datum.",
+      "proposal": "Replace `52 public operations` with `52 source-derived production operations` or `the existing 52-operation runtime/contract inventory`. Preserve the same method/path and baseline criterion, and keep operator/research access labels and the no-public-documentation state unchanged.",
+      "kind": "technical",
+      "conflict_id": "158168cf1be74d324a77c9b993b93cbe34c2442c45c1efd88a6b0978442abef8",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Is the product claim intentionally limited to removal of the named unmaintained advisory and its dependency chain, with no broader vulnerability claim?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Because the architecture requires no new wrapper command, should the conditional wrapper success sentence be omitted entirely?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: which existing contract-check result category will each unsupported/empty method-metadata, duplicate path-method, and duplicate operation-identity construction failure use, so contributor diagnostics preserve the closed vocabulary instead of exposing a new `closed construction failure` label?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does `no new copy` require active repository documentation to remain byte-identical, or may an active sentence be corrected only if this implementation makes it factually false? The inspected `libs/api/README.md` does not name the removed dependencies, so the UX recommendation is no documentation edit unless a real stale instruction is found."
+    }
+  ],
+  "agree_count": {
+    "architect": 3,
+    "pm": 4,
+    "ux": 4
+  }
+}

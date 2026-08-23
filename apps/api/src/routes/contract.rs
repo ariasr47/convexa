@@ -4,25 +4,145 @@ use crate::error::AppError;
 use crate::services::analytics::load_analytics;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::{NaiveDate, Utc};
 use quant_engine::ContractType;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use utoipa::{IntoResponses, ToSchema};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::IntoParams)]
 pub struct ContractQuery {
     pub expiration: String,
     pub strike: f64,
     pub right: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ContractWire {
+    pub ticker: String,
+    pub expiration: String,
+    pub strike: f64,
+    pub right: String,
+    pub option_quote: Option<OptionQuoteWire>,
+    pub greeks: ContractGreeksWire,
+    pub iv: Option<f64>,
+    pub dte: f64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct OptionQuoteWire {
+    pub bid: f64,
+    pub ask: f64,
+    pub mid: f64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ContractGreeksWire {
+    pub delta: f64,
+    pub gamma: f64,
+    pub theta: f64,
+    pub vega: f64,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, IntoResponses)]
+pub enum ContractResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(ContractWire),
+    #[response(status = 400, content_type = "text/plain")]
+    BadRequest(crate::openapi::WireError),
+    #[response(status = 404, content_type = "application/json")]
+    NotFound(crate::openapi::WireError),
+    #[response(status = 502, content_type = "application/json")]
+    Upstream(crate::openapi::WireError),
+}
+
+impl IntoResponse for ContractResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::BadRequest(error) => (
+                axum::http::StatusCode::BAD_REQUEST,
+                [(axum::http::header::CONTENT_TYPE, "text/plain")],
+                serde_json::to_string(&error).expect("WireError serializes"),
+            )
+                .into_response(),
+            Self::NotFound(error) => {
+                (axum::http::StatusCode::NOT_FOUND, Json(error)).into_response()
+            }
+            Self::Upstream(error) => {
+                (axum::http::StatusCode::BAD_GATEWAY, Json(error)).into_response()
+            }
+        }
+    }
+}
+
+/// Route-owned representative success conversion for contract-boundary evidence.
+pub(crate) fn contract_representative_response() -> Response {
+    ContractResponse::Ok(ContractWire {
+        ticker: "SPY".into(),
+        expiration: "2099-01-01".into(),
+        strike: 100.0,
+        right: "call".into(),
+        option_quote: Some(OptionQuoteWire {
+            bid: 1.0,
+            ask: 1.2,
+            mid: 1.1,
+        }),
+        greeks: ContractGreeksWire {
+            delta: 0.5,
+            gamma: 0.01,
+            theta: -0.01,
+            vega: 0.1,
+        },
+        iv: Some(0.2),
+        dte: 30.0,
+    })
+    .into_response()
+}
+
+pub(crate) fn contract_representative_for(
+    status: axum::http::StatusCode,
+    boundary: &str,
+) -> Response {
+    if !boundary.starts_with("GET /api/contract/{ticker} ") {
+        panic!("unknown contract response-conversion boundary: {boundary}");
+    }
+    match status {
+        axum::http::StatusCode::OK => contract_representative_response(),
+        axum::http::StatusCode::BAD_REQUEST => {
+            ContractResponse::BadRequest(crate::openapi::WireError {
+                error: "invalid_query".into(),
+                message: "contract query could not be parsed".into(),
+            })
+            .into_response()
+        }
+        axum::http::StatusCode::NOT_FOUND => {
+            AppError::NotFound("contract not in current snapshot".into()).into_response()
+        }
+        axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
+            AppError::Config("right must be call or put".into()).into_response()
+        }
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
+            AppError::Config("contract route internal failure".into()).into_response()
+        }
+        axum::http::StatusCode::BAD_GATEWAY => {
+            AppError::Massive("contract provider unavailable".into()).into_response()
+        }
+        axum::http::StatusCode::SERVICE_UNAVAILABLE => {
+            AppError::Redis("contract cache unavailable".into()).into_response()
+        }
+        _ => panic!("unknown contract response status {status}"),
+    }
+}
+
 /// Tracked-contract stats from the full warm chain (no new vendor fetch when warm).
+#[utoipa::path(get, path = "/api/contract/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), ContractQuery), responses(ContractResponse))]
 pub async fn get_tracked_contract(
     State(state): State<AppState>,
     Path(ticker): Path<String>,
     Query(q): Query<ContractQuery>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<ContractResponse, AppError> {
     let sym = ticker.trim().to_ascii_uppercase();
     if sym.is_empty() {
         return Err(AppError::NotFound("empty ticker".into()));
@@ -77,21 +197,24 @@ pub async fn get_tracked_contract(
         None
     };
 
-    Ok(Json(json!({
-        "ticker": sym,
-        "expiration": exp10,
-        "strike": q.strike,
-        "right": right_label,
-        "option_quote": option_quote,
-        "greeks": {
-            "delta": g.delta,
-            "gamma": g.gamma,
-            "theta": g.theta,
-            "vega": g.vega,
-        },
-        "iv": iv,
-        "dte": dte_days(&exp10),
-    })))
+    Ok(ContractResponse::Ok(
+        serde_json::from_value(json!({
+            "ticker": sym,
+            "expiration": exp10,
+            "strike": q.strike,
+            "right": right_label,
+            "option_quote": option_quote,
+            "greeks": {
+                "delta": g.delta,
+                "gamma": g.gamma,
+                "theta": g.theta,
+                "vega": g.vega,
+            },
+            "iv": iv,
+            "dte": dte_days(&exp10),
+        }))
+        .expect("contract wire matches closed schema"),
+    ))
 }
 
 fn dte_days(exp10: &str) -> f64 {
@@ -100,4 +223,65 @@ fn dte_days(exp10: &str) -> f64 {
     };
     let today = Utc::now().date_naive();
     (exp - today).num_days() as f64
+}
+
+#[cfg(test)]
+mod response_conversion_tests {
+    use super::*;
+    use axum::body::to_bytes;
+    use axum::http::{header, StatusCode};
+
+    #[tokio::test]
+    async fn contract_boundaries_convert_typed_query_and_app_error_variants() {
+        let cases = [
+            (StatusCode::OK, "application/json", "ticker"),
+            (StatusCode::BAD_REQUEST, "text/plain", "invalid_query"),
+            (StatusCode::NOT_FOUND, "application/json", "not found:"),
+            (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "application/json",
+                "must be",
+            ),
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "application/json",
+                "config:",
+            ),
+            (StatusCode::BAD_GATEWAY, "application/json", "massive:"),
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "application/json",
+                "redis:",
+            ),
+        ];
+        let boundary_prefix = "GET /api/contract/{ticker}";
+        for (status, media, marker) in cases {
+            let boundary = format!("{boundary_prefix} {} {media} public", status.as_u16());
+            let response = contract_representative_for(status, &boundary);
+            assert_eq!(response.status(), status);
+            assert!(response.headers()[header::CONTENT_TYPE]
+                .to_str()
+                .unwrap()
+                .starts_with(media));
+            let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+            let body = String::from_utf8(body.to_vec()).unwrap();
+            assert!(body.contains(marker), "{boundary}: {body}");
+        }
+    }
+
+    #[test]
+    fn every_declared_contract_response_variant_has_its_own_status() {
+        let error = || crate::openapi::WireError {
+            error: "typed".into(),
+            message: "typed payload".into(),
+        };
+        assert_eq!(
+            ContractResponse::NotFound(error()).into_response().status(),
+            StatusCode::NOT_FOUND
+        );
+        assert_eq!(
+            ContractResponse::Upstream(error()).into_response().status(),
+            StatusCode::BAD_GATEWAY
+        );
+    }
 }

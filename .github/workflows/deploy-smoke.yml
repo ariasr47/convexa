@@ -21,7 +21,7 @@ concurrency:
 jobs:
   smoke:
     name: Prod smoke (health · ticker · scan)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Resolve API origin
         id: origin
@@ -45,7 +45,7 @@ jobs:
         run: |
           set -euo pipefail
           body=$(curl -fsS "${{ steps.origin.outputs.api }}/api/health")
-          echo "$body" | tee /tmp/health.json
+          printf '%s' "$body" > /tmp/health.json
           echo "$body" | grep -q '"status":"ok"'
           echo "$body" | grep -q 'api-rust'
           # Board must have durable scores after cold catch-up / RTH (empty desk regression).

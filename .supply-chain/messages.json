@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "messages": {
+    "pass": {
+      "template": "Passed — No policy violations or advisories were reported in the declared scope.",
+      "params": []
+    },
+    "pass_with_advisories": {
+      "template": "Passed with advisories — No blocking policy violations were found.",
+      "params": []
+    },
+    "fail": {
+      "template": "Failed — {count} blocking policy violation(s) were found.",
+      "params": ["count"]
+    },
+    "blocked": {
+      "template": "Blocked — {check_name} did not produce a trustworthy result. No pass result is available.",
+      "params": ["check_name"]
+    },
+    "skipped": {
+      "template": "Skipped — {check_name} did not run. Authorized by {rule_id}. Reason: {reason}.",
+      "params": ["check_name", "rule_id", "reason"]
+    },
+    "inventory_association": {
+      "template": "CycloneDX lock-derived dependency inventory generated and schema-validated for dependencies associated with GitHub-built {target} at revision {sha}, subject digest {digest}.",
+      "params": ["target", "sha", "digest"]
+    },
+    "inventory_non_observation": {
+      "template": "Syft did not observe or catalog the subject bytes; the digest is an association key.",
+      "params": []
+    }
+  }
+}

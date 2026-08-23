@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "git_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "npm", "rust"],
+      "properties": {
+        "node": { "type": "string" },
+        "npm": { "type": "string" },
+        "rust": { "type": "string" }
+      }
+    },
+    "parity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nvmrc",
+        "package_metadata",
+        "rust_toolchain",
+        "crate_rust_version",
+        "ci",
+        "dockerfiles",
+        "actions_full_sha",
+        "images_tag_and_digest",
+        "root_locks_only"
+      ],
+      "properties": {
+        "nvmrc": { "type": "boolean" },
+        "package_metadata": { "type": "boolean" },
+        "rust_toolchain": { "type": "boolean" },
+        "crate_rust_version": { "type": "boolean" },
+        "ci": { "type": "boolean" },
+        "dockerfiles": { "type": "boolean" },
+        "actions_full_sha": { "type": "boolean" },
+        "images_tag_and_digest": { "type": "boolean" },
+        "root_locks_only": { "type": "boolean" }
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "base_revision_sha",
+    "candidate_patch_sha256",
+    "candidate_tree_sha256",
+    "candidate_revision_id",
+    "bootstrap",
+    "candidate",
+    "detected",
+    "inputs",
+    "parity",
+    "checks",
+    "locks_unchanged",
+    "complete",
+    "outcome"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_kind": { "const": "toolchain_qualification" },
+    "base_revision_sha": { "$ref": "#/$defs/git_sha" },
+    "candidate_patch_sha256": { "$ref": "#/$defs/sha256" },
+    "candidate_tree_sha256": { "$ref": "#/$defs/sha256" },
+    "candidate_revision_id": { "$ref": "#/$defs/sha256" },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_id", "version", "sha256", "selection_source"],
+      "properties": {
+        "tool_id": { "const": "candidate-bootstrap" },
+        "version": { "type": "string" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "selection_source": { "const": "candidate-toolchain.json" }
+      }
+    },
+    "candidate": { "$ref": "#/$defs/versions" },
+    "detected": { "$ref": "#/$defs/versions" },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package_lock_sha256",
+        "cargo_lock_sha256",
+        "policy_sha256",
+        "action_pin_set_sha256",
+        "image_pin_set_sha256"
+      ],
+      "properties": {
+        "package_lock_sha256": { "$ref": "#/$defs/sha256" },
+        "cargo_lock_sha256": { "$ref": "#/$defs/sha256" },
+        "policy_sha256": { "$ref": "#/$defs/sha256" },
+        "action_pin_set_sha256": { "$ref": "#/$defs/sha256" },
+        "image_pin_set_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "parity": { "$ref": "#/$defs/parity" },
+    "checks": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "command_id", "state", "evidence_sha256"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "command_id": { "type": "string" },
+          "state": { "enum": ["pass", "fail", "blocked"] },
+          "evidence_sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "locks_unchanged": { "type": "boolean" },
+    "complete": { "type": "boolean" },
+    "outcome": { "enum": ["pass", "fail", "blocked"] },
+    "reason_code": { "type": "string", "pattern": "^[a-z0-9-]+$" }
+  }
+}

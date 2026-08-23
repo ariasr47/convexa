@@ -1,0 +1,158 @@
+{
+  "schema_version": 2,
+  "boundaries": [
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol} 500 application/json operator-token",
+      "test": "research_chain_snapshot_list_store_fault_is_production_500_conversion",
+      "fixture": "hermetic AppState with injected failing ChainSnapshotStore",
+      "setup": "AppState::for_runtime_guardrail_tests_with_chain_store + production router",
+      "request": "GET /api/_research/chain-snapshots/SPY with x-metrics-token",
+      "expected_response": {"status": 500, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol} 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded SPY snapshot",
+      "setup": "real ChainSnapshotStore memory append via production wire serializer",
+      "request": "GET /api/_research/chain-snapshots/SPY with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol} 400 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "production router and real query extractor",
+      "request": "GET /api/_research/chain-snapshots/SPY?limit=0 with x-metrics-token",
+      "expected_response": {"status": 400, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol} 401 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState",
+      "setup": "production router without operator header",
+      "request": "GET /api/_research/chain-snapshots/SPY",
+      "expected_response": {"status": 401, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol}/snapshot 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded SPY snapshot",
+      "setup": "real ChainSnapshotStore memory append",
+      "request": "GET /api/_research/chain-snapshots/SPY/snapshot?as_of=2020-01-02T17:00:00.000000001Z with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/chain-snapshots/{symbol}/snapshot 404 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState without requested timestamp",
+      "setup": "real store lookup through production router",
+      "request": "GET /api/_research/chain-snapshots/SPY/snapshot?as_of=2021-01-01T00:00:00Z with x-metrics-token",
+      "expected_response": {"status": 404, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-books/{symbol}/book 422 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded session archive",
+      "setup": "real query validation through production router",
+      "request": "GET /api/_research/session-books/SPY/book with x-metrics-token",
+      "expected_response": {"status": 422, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/_research/session-books/{symbol}/book 200 application/json operator-token",
+      "test": "operator_research_runtime_evidence_covers_success_validation_auth_and_miss",
+      "fixture": "hermetic AppState with seeded session archive",
+      "setup": "real SessionChainArchive memory insert via production wire serializer",
+      "request": "GET /api/_research/session-books/SPY/book?et_date=2020-01-02 with x-metrics-token",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "operator-token", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "POST /api/auth/login 401 application/json public",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "hermetic in-memory auth store without requested account",
+      "setup": "production signup/login handler via router",
+      "request": "POST /api/auth/login with unknown email and wrong password",
+      "expected_response": {"status": 401, "media_type": "application/json", "security_mode": "public", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "POST /api/auth/signup 200 application/json public",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "hermetic in-memory auth store",
+      "setup": "real signup creates account and session",
+      "request": "POST /api/auth/signup with valid deterministic credentials",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "public", "header_names": ["set-cookie"], "header_value_policies": {"set-cookie": "set;secure;httponly;samesite=lax"}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "user-created", "memory": "session-created", "cookie": "set"}
+    },
+    {
+      "boundary_id": "GET /api/auth/settings 200 application/json session",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "session returned by real signup",
+      "setup": "production settings handler with session cookie",
+      "request": "GET /api/auth/settings with signup cookie",
+      "expected_response": {"status": 200, "media_type": "application/json", "security_mode": "session", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "PUT /api/auth/settings 422 application/json session",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "session returned by real signup",
+      "setup": "production settings validation path",
+      "request": "PUT /api/auth/settings with invalid theme",
+      "expected_response": {"status": 422, "media_type": "application/json", "security_mode": "session", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/broker/credential 403 application/json session",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "hermetic router without session cookie",
+      "setup": "production broker credential gate",
+      "request": "GET /api/broker/credential anonymously",
+      "expected_response": {"status": 403, "media_type": "application/json", "security_mode": "session", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/book 403 application/json session",
+      "test": "auth_runtime_evidence_preserves_non_enumerating_and_authenticated_gates",
+      "fixture": "hermetic router without session cookie",
+      "setup": "production book gate",
+      "request": "GET /api/book anonymously",
+      "expected_response": {"status": 403, "media_type": "application/json", "security_mode": "session", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "PUT /api/scan/view 503 application/json session",
+      "test": "scan_runtime_evidence_rejects_unauthenticated_write_and_bad_shape",
+      "fixture": "hermetic AppState with no tracked universe",
+      "setup": "production scan view handler after auth gate",
+      "request": "PUT /api/scan/view with signed-in session and empty symbols",
+      "expected_response": {"status": 503, "media_type": "application/json", "security_mode": "session", "header_names": [], "header_value_policies": {}, "body_category": "json", "body_valid": true, "body_meaning": "json"},
+      "effect_assertion": {"durable": "none", "memory": "none", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/auth/google/start 307 no-body oauth-state",
+      "test": "google_oauth_runtime_evidence_preserves_state_and_session_effects",
+      "fixture": "hermetic AppState with test-only Google authorization configuration",
+      "setup": "production Google start handler through Tower router",
+      "request": "GET /api/auth/google/start",
+      "expected_response": {"status": 307, "media_type": null, "security_mode": "oauth-state", "header_names": ["location"], "header_value_policies": {"location": "relative-or-https"}, "body_category": "redirect", "body_valid": true, "body_meaning": "empty"},
+      "effect_assertion": {"durable": "none", "memory": "oauth-state-created", "cookie": "none"}
+    },
+    {
+      "boundary_id": "GET /api/auth/google/callback 307 no-body oauth-state",
+      "test": "google_oauth_runtime_evidence_preserves_state_and_session_effects",
+      "fixture": "pre-created Google identity with deterministic exchange override",
+      "setup": "production Google callback handler through Tower router",
+      "request": "GET /api/auth/google/callback?code=callback-code&state=contract-google-callback-state",
+      "expected_response": {"status": 307, "media_type": null, "security_mode": "oauth-state", "header_names": ["location", "set-cookie"], "header_value_policies": {"location": "relative-or-https", "set-cookie": "set;secure;httponly;samesite=lax"}, "body_category": "redirect", "body_valid": true, "body_meaning": "empty"},
+      "effect_assertion": {"durable": "none", "memory": "session-created", "cookie": "set"}
+    }
+  ]
+}

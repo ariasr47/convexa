@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_kind",
+    "revision_sha",
+    "event",
+    "path",
+    "run_key",
+    "complete",
+    "aggregate",
+    "checks",
+    "subjects",
+    "receipts",
+    "rule_id"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "report_kind": { "const": "supply_chain_artifacts" },
+    "revision_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "event": { "enum": ["default_branch", "schedule", "workflow_dispatch"] },
+    "path": { "const": "artifacts" },
+    "run_key": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "complete": { "type": "boolean" },
+    "aggregate": { "enum": ["pass", "pass_with_advisories", "fail", "blocked"] },
+    "checks": { "type": "array" },
+    "subjects": { "type": "array", "maxItems": 2 },
+    "receipts": { "type": "array", "maxItems": 2 },
+    "rule_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

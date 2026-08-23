@@ -16,6 +16,7 @@ pub mod domain;
 pub mod error;
 pub mod infrastructure;
 pub mod middleware;
+pub mod openapi;
 pub mod routes;
 pub mod runtime_guardrails;
 pub mod server;

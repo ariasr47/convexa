@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "revision_sha",
+    "event",
+    "path",
+    "run_key",
+    "complete",
+    "aggregate",
+    "reason_code",
+    "children"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_kind": { "const": "supply_chain_aggregate" },
+    "revision_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "event": { "enum": ["pull_request", "default_branch", "schedule", "workflow_dispatch"] },
+    "path": { "enum": ["policy", "artifacts"] },
+    "run_key": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "complete": { "type": "boolean" },
+    "aggregate": { "enum": ["pass", "pass_with_advisories", "fail", "blocked"] },
+    "reason_code": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "children": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_sha256", "capability_receipt_count", "artifact_required"],
+      "properties": {
+        "policy_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "capability_receipt_count": { "const": 33 },
+        "artifact_required": { "type": "boolean" }
+      }
+    }
+  }
+}

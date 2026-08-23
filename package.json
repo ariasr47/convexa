@@ -11,7 +11,8 @@
     "dev": "nx run-many -t serve -p api,@convexa/dashboard",
     "serve:api": "nx serve api",
     "serve:dashboard": "nx serve @convexa/dashboard",
-    "build": "nx run-many -t build -p api,@convexa/dashboard --configuration=production",
+    "build": "npm run api:contract:check && npm run build:targets",
+    "build:targets": "nx run-many -t build -p api,@convexa/dashboard --configuration=production",
     "build:dev": "nx run-many -t build -p api,@convexa/dashboard --configuration=development",
     "build:prod": "npm run build",
     "build:dashboard": "nx build @convexa/dashboard --configuration=production",
@@ -28,11 +29,22 @@
     "graph": "nx graph",
     "ports:free": "node tools/free-ports.mjs",
     "test:tools": "node --test tools/*.spec.mjs",
+    "api:contract:baseline:candidate": "node tools/api-contract-baseline.mjs candidate",
+    "api:contract:baseline:accept": "node tools/api-contract-baseline.mjs accept",
+    "api:contract:generate": "node tools/api-contract.mjs generate",
+    "api:contract:check": "node tools/api-contract.mjs check",
     "worktree:link": "node tools/link-workspace.mjs",
-    "ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run check:bundle",
+    "ci": "npm run api:contract:check && npm run ci:targets",
+    "ci:targets": "npm run lint && npm run typecheck && npm run test && npm run build:targets && npm run check:bundle",
     "conformance:public": "node .claude/tools/interface_conformance.mjs --spec .spire/clusters/tech/state/conformance/public-surface.json --url",
     "conformance:scanner": "node .claude/tools/interface_conformance.mjs --spec .spire/clusters/tech/state/conformance/scanner.json --url",
-    "conformance:auth": "node .claude/tools/interface_conformance.mjs --spec .spire/clusters/tech/state/conformance/auth-gated.json --auth-signup --url"
+    "conformance:auth": "node .claude/tools/interface_conformance.mjs --spec .spire/clusters/tech/state/conformance/auth-gated.json --auth-signup --url",
+    "supply-chain:candidate": "node tools/supply-chain/bootstrap-candidate.mjs",
+    "supply-chain:toolchain": "node tools/supply-chain/toolchain.mjs",
+    "supply-chain:policy": "node tools/supply-chain/policy.mjs",
+    "supply-chain:artifacts": "node tools/supply-chain/artifacts.mjs",
+    "supply-chain:poison": "node tools/supply-chain/capabilities.mjs",
+    "supply-chain:verify": "node tools/supply-chain/verify.mjs"
   },
   "workspaces": ["apps/*", "libs/*"],
   "dependencies": {
@@ -57,6 +69,7 @@
     "@nx/vite": "23.1.1",
     "@nx/vitest": "23.1.1",
     "@playwright/test": "^1.62.1",
+    "openapi-typescript": "7.13.0",
     "@swc-node/register": "1.12.1",
     "@swc/core": "1.15.47",
     "@swc/helpers": "0.5.23",
@@ -82,9 +95,13 @@
     "prettier-plugin-packagejson": "^3.0.2",
     "rollup-plugin-visualizer": "7.0.1",
     "tslib": "^2.8.1",
-    "typescript": "~5.9.3",
+    "typescript": "5.9.3",
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0",
     "vitest": "~4.1.10"
+  },
+  "overrides": {
+    "nx": { "brace-expansion": "5.0.9" },
+    "postcss": { "nanoid": "3.3.18" }
   }
 }

@@ -287,3 +287,9 @@ docker run --rm -p 8000:8000 \
   -e PUBLIC_RATE_LIMIT_PER_MIN=120 \
   convexa-api
 ```
+
+## Supply-chain prerequisite
+
+Before a release, run the current-revision supply-chain policy and artifact checks described in
+[SUPPLY_CHAIN.md](SUPPLY_CHAIN.md). A pass is required for the eligible GitHub-built evidence; this evidence
+does not identify bytes independently rebuilt or deployed by Railway or Cloudflare.

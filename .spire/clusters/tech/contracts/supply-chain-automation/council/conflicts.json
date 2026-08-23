@@ -1,0 +1,487 @@
+{
+  "conflicts": [
+    {
+      "quote": "Every resolved scan result renders exactly one of `Passed`, `Failed`, `Blocked`, or `Skipped`, with the machine outcome as the sole source; required missing/errored/timed-out checks cannot render pass or skipped.",
+      "source": "ux",
+      "why": "[SCA-R2-A01][owner ruling required: yes] This four-state vocabulary omits PM's required `pass with advisories`, while PM also uses `blocked` for both a completed prohibited finding and inability to evaluate. Those meanings cannot be rendered one-to-one from one closed machine state: a completed policy violation has evidence and remediation, whereas a scanner outage has no policy result. Collapsing them destroys failure isolation and makes the aggregate incapable of preserving PM's visible advisory debt.",
+      "proposal": "Adopt five machine states: `pass`, `advisory`, `fail`, `blocked`, and policy-authorized `skipped`. `fail` means evaluation completed and found a prohibited condition; `blocked` means no trustworthy result; both reject a required gate. `advisory` may advance only under the PM's owned, dated policy. The owner must rule whether the visible aggregate preserves all five labels or deliberately collapses some while retaining distinct machine states.",
+      "kind": "product",
+      "conflict_id": "401978c1df635cd0f3e1a52de95eabef9b330f3e40647687de1bbf2cf8e98eb7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Two clean, supported environments evaluating the same revision must select the same exact toolchains, resolve the same dependency identities and versions, reach the same policy classification, and produce the same SBOM component identity set.",
+      "source": "pm",
+      "why": "[SCA-R2-A02][owner ruling required: no] Same revision is insufficient to guarantee the last two identities. A current advisory database can change after a disclosure, so classification is intentionally time-varying. The API Dockerfile also installs an OS package from a live Debian repository, so two image rebuilds can have different OS component sets even after pinning the base digest. Source-lock component identity and final-image component identity are different claims.",
+      "proposal": "Require identical toolchain and dependency identities for the same revision and locks. Require identical policy classification only for the same revision, policy, scanner, and advisory-database snapshot. Require a source SBOM to reproduce the lock-derived component set, but bind each image SBOM to the exact image digest actually scanned instead of requiring independent rebuilds to have the same image component set.",
+      "kind": "technical",
+      "conflict_id": "0daa0b904efa19a3e6adc5d066649f2b875526d6421424f7ac5a4bda27edfcf2",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every deployable artifact that passes policy has its own SBOM tied to the source revision and the artifact actually produced.",
+      "source": "pm",
+      "why": "[SCA-R2-A03][owner ruling required: yes] `deployable artifact` is not yet a closed target set. GitHub can build an API image, dashboard image, and dashboard archive, but current Railway and Cloudflare production paths independently rebuild from source. A GitHub-generated SBOM cannot truthfully describe those host-built subjects, and replacing that release path is explicitly out of PM scope.",
+      "proposal": "Name the required in-scope targets explicitly: the GitHub-built API image digest and dashboard build archive, plus a dashboard image only if that image remains a supported deployable. State that these are candidate-build SBOMs, not deployed-byte provenance. If the owner requires SBOMs for the actual Railway/Cloudflare subjects now, expand scope to make deployment consume the exact GitHub-built immutable artifacts.",
+      "kind": "product",
+      "conflict_id": "9ab2c6128de7f43144ae7a234d699689caf7731b77021284c3172967ee6cc74c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Adopt exactly **Node 24.19.0, npm 11.17.0, and Rust 1.98.0**.",
+      "source": "architect",
+      "why": "[SCA-R2-A04][owner ruling required: no] I withdraw this as an already-approved tuple. The versions are correctly identified as current Node LTS/npm and Rust stable on 2026-08-22, but the BRIEF requires capability verification before implementation is locked, and I did not run the complete application, production-feature Rust, Playwright, or both production-image builds under that exact tuple. PM's stronger formulation is `supported by the application`, not merely upstream-supported.",
+      "proposal": "Treat Node 24.19.0/npm 11.17.0/Rust 1.98.0 as the candidate tuple. Lock it only after clean locked installs, the existing full CI/conformance-relevant battery, the Postgres release tests, and both production builds pass without weakening assertions or changing application behavior. A failed candidate causes version selection to be revisited; it does not authorize widening to moving channels.",
+      "kind": "technical",
+      "conflict_id": "0b8164cc8b5d92d246748bf6f7c83148c6b98006c96a31509ea278084a555ed6",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Use **Renovate** as the one proposal engine.",
+      "source": "architect",
+      "why": "[SCA-R2-A05][owner ruling required: no for baseline] I withdraw Renovate as the default. Current native Dependabot supports npm, Cargo, Docker, GitHub Actions, named groups, and multi-ecosystem groups; the BRIEF requires grouped dependency proposals, not automatic edits to every toolchain pin file. Adding an external Renovate app creates another availability, permission, and trust boundary without a demonstrated requirement. Its custom managers are an advantage only if automatic `.nvmrc` and `rust-toolchain.toml` proposals are separately required.",
+      "proposal": "Use Dependabot for bounded npm, Cargo, Docker, and GitHub Actions proposals, no auto-merge, with majors isolated and coupled families grouped. Move exact Node/Rust toolchain pins through explicit reviewed maintenance PRs. Choose Renovate only if PM/owner expands automation to arbitrary pin files and accepts the external app boundary.",
+      "kind": "technical",
+      "conflict_id": "c052fa60076464168820fa1f3c3a550ecd11936df202e4a0f25d4e081eba7342",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "CodeQL advanced setup covers only live languages and live source: `javascript-typescript` for the dashboard, shared client, Pages function, and repository Node tools; `rust` for `apps/api` and `libs/quant-engine`; and `actions` for `.github/workflows`.",
+      "source": "architect",
+      "why": "[SCA-R2-A06][owner ruling required: no for baseline; yes only for a plan/repository move] I withdraw CodeQL as a required baseline mechanism. CodeQL does support JavaScript/TypeScript, Rust, and GitHub Actions, but the live repository is verified private and user-owned (`ariasr47/convexa`) with no Code Security state exposed. GitHub documents private code scanning as available to eligible organization-owned repositories with Code Security, not this current hosting shape. A supported language does not make the service available.",
+      "proposal": "Do not place CodeQL in required checks for the current repository. Before R4, select an exact-version CI-local source scanner only after verifying its JavaScript/TypeScript and Rust rules and offline exit/report semantics; otherwise narrow the source-scan claim to the source/config surfaces actually covered by the selected tools. CodeQL becomes an optional replacement if the repository becomes public or moves to an eligible licensed organization.",
+      "kind": "technical",
+      "conflict_id": "53db3f530cda47ae5ba5a44e38122bfea2cbad02bde6092f9ebf6e6391c54d39",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "GitHub dependency review runs on pull requests to reject a newly introduced vulnerable dependency, disallowed license, or prohibited source before it reaches the full graph.",
+      "source": "architect",
+      "why": "[SCA-R2-A07][owner ruling required: no for baseline] I withdraw this mechanism for the same verified hosting reason. GitHub dependency review is available to public repositories or eligible organization-owned private repositories with Code Security; the current private user-owned repository cannot be assumed eligible. It also compares dependency changes and would not disposition the already-present Nx/PostCSS findings by itself.",
+      "proposal": "Make exact-version local npm and Cargo policy commands plus a lockfile-diff/source guard the required PR mechanism. Use broadly available Dependabot alerts/version PRs as proposal input, not as the sole gate. Add dependency review later only when repository eligibility is proven.",
+      "kind": "technical",
+      "conflict_id": "5f8aba1053ee4ce650a8f8977e6b277d0e676fdaf7b04b76521f7cb7ed127492",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Use **Trivy** as the common repository/config/image policy engine and **Gitleaks** for repository-history and PR-diff secret detection.",
+      "source": "architect",
+      "why": "[SCA-R2-A08][owner ruling required: no] `common repository` overstates and overlaps the selected policy boundaries. Trivy dependency/license results would duplicate npm audit and cargo-deny with different advisory identifiers and exception behavior, while Trivy is not a substitute for source SAST. Duplicated authorities can classify the same package differently and make PM's single policy outcome nondeterministic.",
+      "proposal": "Give each tool a non-overlapping authority: npm audit plus npm license/source guard for the npm lock; cargo-deny for Cargo advisories/licenses/sources; Trivy for Docker/config and final-image OS/application findings; Gitleaks for repository/history secrets; and one separately verified source scanner if feasible. Cross-reference duplicate observations in evidence, but only the owning policy engine classifies each surface.",
+      "kind": "technical",
+      "conflict_id": "b2dfc7315cfa3f50c35c4b48e3ed7ea811b2eb69758defaf64bebfb5175090b6",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep Nx at 23.1.1, override only the vulnerable Nx edge to `brace-expansion@5.0.9`, and override the compatible PostCSS edge to `nanoid@3.3.18`; regenerate the lock, run `npm ci`, run both full and production-only audits, and run the complete existing CI battery.",
+      "source": "architect",
+      "why": "[SCA-R2-A09][owner ruling required: no] I withdraw the word `compatible` and the imperative to land these overrides before proof. `nanoid@3.3.18` satisfies PostCSS's semver range, but Nx pins `brace-expansion@5.0.8` exactly, so an npm override intentionally defeats upstream's exact selection. It is a reasonable candidate and still safer than npm's blind Nx 23\u219222 downgrade, but it is not vouched until the regenerated graph and complete Nx/application battery pass. The findings also include CI/build tooling, so `dev-only` alone is not an isolation argument.",
+      "proposal": "Evaluate the two surgical overrides as a bounded remediation experiment with before/after lock paths, both audits, lint/typecheck/unit/e2e/build, API contract generation, and production-image builds. If proof passes, retain exact overrides with comments and bot removal tracking. If it fails, keep Nx 23.1.1 and carry only the exact GHSAs through PM's visible, owned, expiring advisory mechanism while awaiting upstream fixes; never run `npm audit fix --force` or downgrade the Nx major automatically.",
+      "kind": "technical",
+      "conflict_id": "2a19784414ff85bdab589f80d2dfd7afe5aef07dba57f9b606cb452f1cc9545d",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "On trusted default-branch/release events, GitHub artifact attestation signs build provenance and the SBOM association for the exact API image digest and dashboard build archive.",
+      "source": "architect",
+      "why": "[SCA-R2-A10][owner ruling required: yes] I withdraw GitHub attestation from baseline. The repository is private and user-owned, and GitHub documents private artifact attestations as requiring Enterprise Cloud. PM also explicitly future-dates cryptographic signing/external transparency, while the BRIEF requires traceable machine-verifiable SBOMs but does not require a signed transparency claim. Keeping this would add a paid hosting prerequisite and still would not attest the independently rebuilt production subjects.",
+      "proposal": "In scope, bind each SBOM to revision and exact artifact digest through a schema-validated CycloneDX document, SHA-256 manifest, workflow identity/run link, and retained machine-readable receipt; independently test mismatch rejection. Future-date cryptographic attestation until an eligible plan exists and the deployment consumes the attested subject, unless the owner explicitly expands scope and budget now.",
+      "kind": "product",
+      "conflict_id": "e4814a6e0ebdcfbbc423371836fa575560004f7d6ee457e6e893105b7678061c",
+      "raised_by": "architect",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Adopt exactly **Node 24.19.0, npm 11.17.0, and Rust 1.98.0**.",
+      "source": "architect",
+      "why": "[PM-C01] The releases' current/LTS status is a verifiable fact, but adopting them as Convexa's supported tuple is a design conclusion that the position does not support with a complete repository build, test, e2e, contract-generation, container-build, and Rust-postgres receipt. Latest is not the same as compatible. Owner ruling: not required; this is technical feasibility.",
+      "proposal": "Treat this tuple as the candidate, run the complete current battery and both production builds under it, and lock the exact tuple only after the evidence is green; otherwise choose the newest supported tuple that passes without changing product behavior.",
+      "kind": "technical",
+      "conflict_id": "7dd322ef081bab91928e0bd551545122d6ebdfd83a4e6f2cfbe8509ec8d077bb",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep Nx at 23.1.1, override only the vulnerable Nx edge to `brace-expansion@5.0.9`, and override the compatible PostCSS edge to `nanoid@3.3.18`; regenerate the lock, run `npm ci`, run both full and production-only audits, and run the complete existing CI battery.",
+      "source": "architect",
+      "why": "[PM-C02] Calling the two replacements compatible before the regenerated graph and full battery pass turns an implementation hypothesis into a contract fact. A reviewed override may be valid, but the brief expressly rejects dependency rewriting merely to make a scan green. Owner ruling: not required; compatibility is technical.",
+      "proposal": "Record each exact override as a candidate remediation. Permit it only when upstream constraints accept it, the lock remains coherent, the full current battery passes, and the resulting graph is independently rescanned; otherwise keep the direct versions and use the short-lived exact advisory disposition while an upstream release is tested.",
+      "kind": "technical",
+      "conflict_id": "eea54d448de8dddf5f2810351d0a81728d492926d54c59b3973655fb900289dc",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Development dependencies fail on high or critical advisories; moderate/low findings remain visible and enter scheduled remediation rather than silently disappearing.",
+      "source": "architect",
+      "why": "[PM-C03] Severity alone is an unsafe product boundary: a development tool can generate shipped bytes, execute untrusted pull-request input, or hold CI credentials, while a high finding may be unreachable from those effects. This also leaves the current Nx findings vulnerable to repeated short exceptions without an effect-based exit. Owner ruling: required; this is the organization's risk-acceptance policy.",
+      "proposal": "Use severity as prioritization, not the sole gate. Block any unexcepted advisory that affects shipped output, CI credentials, untrusted-change execution, or release integrity; allow a development-only advisory only with evidence of isolation, a named owner, a non-silent review date, an upstream/remediation link, and an expiry whose renewal requires a new explicit decision.",
+      "kind": "product",
+      "conflict_id": "24c7f24b99f1f265c6bfae9e083a2bf3843c6d6fb89f4884fbbca72cc455b026",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The normal allow set is permissive licenses already expected in this stack (MIT, Apache-2.0 including LLVM exception, BSD-2-Clause, BSD-3-Clause, ISC, Zlib, Unicode-3.0, CC0-1.0, and approved data-only attribution licenses); MPL-2.0 is permitted only under its file-level terms.",
+      "source": "architect",
+      "why": "[PM-C04] Architecture can implement SPDX evaluation, but it cannot approve the organization's license risk. The phrase 'approved data-only attribution licenses' is also not a closed, independently enforceable category. Owner ruling: required; license acceptance and notice obligations are product/legal policy.",
+      "proposal": "Inventory the licenses actually present, present a closed allow/review/deny table with notice obligations, and have the owner approve it. Unknown or unparseable expressions remain blocking until that ruling; the mechanism must not infer approval.",
+      "kind": "product",
+      "conflict_id": "bae6830242e59a2c6664fd7d2e20ac02a779c12aead344b7486cfc30ce0b560d",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On trusted default-branch/release events, GitHub artifact attestation signs build provenance and the SBOM association for the exact API image digest and dashboard build archive.",
+      "source": "architect",
+      "why": "[PM-C05] Cryptographic provenance attestation is not required by the brief, adds permissions and plan/administration dependencies, and cannot establish the currently deployed Railway or Cloudflare bytes. My R1 explicitly future-dated signing; bringing it into this tranche is scope inflation unless its incremental value is chosen deliberately. Owner ruling: required.",
+      "proposal": "Keep in scope a machine-verifiable SBOM plus revision, tool, policy, lock, and artifact-digest receipt. Defer signed attestations until deployment consumes the exact immutable GitHub-built subjects, unless the owner explicitly expands this feature and accepts the added administration and permissions.",
+      "kind": "product",
+      "conflict_id": "6f905a72f94e06ea4863775ee36ceb27520b13f52af694fb79c892d5867745c9",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Trivy scans Dockerfiles, Compose, Railway config, GitHub workflow configuration, the repository dependency surfaces, and each final API/dashboard image by digest.",
+      "source": "architect",
+      "why": "[PM-C06] The dashboard container is not the current Cloudflare Pages deployment artifact, so calling it a final dashboard image risks producing strong evidence for an artifact the product does not ship while leaving the Pages-built static output unbound. Owner ruling: not required to correct the factual target description; deployed-byte provenance would require a separate product ruling.",
+      "proposal": "Name the API container image and GitHub-built dashboard distribution archive as build evidence subjects, treat the dashboard Docker image only as a container surface when it is actually built, and state that neither result proves the independently rebuilt Railway/Cloudflare deployed bytes.",
+      "kind": "technical",
+      "conflict_id": "cc6018813865fc5241d52f58e1a5d49bf8ea07e16dd25e4a00f9efc610dee9eb",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Syft, pinned by exact version and checksum, generates CycloneDX 1.6 JSON for the root dependency source and for each built image by immutable digest.",
+      "source": "architect",
+      "why": "[PM-C07] The brief requires machine-verifiable SBOMs, but it does not require both a repository-source inventory and duplicate per-image inventories. Each extra artifact creates a completeness claim, retention burden, and mismatch state. Owner ruling: required because the additional source SBOM is a scope/value choice.",
+      "proposal": "Require an SBOM for each GitHub-built deployable subject. Add the root source SBOM only if the architect demonstrates a product-relevant coverage gap that the per-subject SBOMs cannot expose and defines the distinct claim it supports.",
+      "kind": "product",
+      "conflict_id": "4b8da7b444061cfe6764f798beb33735833678416b2dee5c985ca4c6c512fadf",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume the PM lane treats every required security check and the pin-parity check as branch-protection requirements, not informational dashboards; if any is optional, \u201cnormal GitHub gates reject policy drift\u201d is not met.",
+      "source": "architect",
+      "why": "[PM-C08] 'Required' does not mean 'runs on every event.' Pull requests, scheduled freshness scans, default-branch monitoring, and artifact-specific release checks have different available subjects and trust. A scheduled advisory refresh cannot be a pending PR branch-protection check, and an image/SBOM check cannot run before its subject exists. Owner ruling: required because event-to-gate policy controls delivery throughput and risk.",
+      "proposal": "Define an event matrix: PRs block on pin/lock parity, introduced-dependency review, applicable full-graph policy, changed/current source-config checks, and existing build/test gates; scheduled/default-branch runs refresh full advisory and secret/source evidence and create a release-blocking red state; release/artifact runs block on the exact built subject's image scan, SBOM, and receipt. No required result may be silently skipped on an event where it applies.",
+      "kind": "product",
+      "conflict_id": "78aa522804dde4cdefeee000ec2457b21571b9c2759bf5d066fce5abd526e134",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every resolved scan result renders exactly one of `Passed`, `Failed`, `Blocked`, or `Skipped`, with the machine outcome as the sole source; required missing/errored/timed-out checks cannot render pass or skipped.",
+      "source": "ux",
+      "why": "[PM-C09] This closed set cannot represent the PM-required 'pass with advisories' state, while its use of 'Blocked' means evaluation failure rather than the aggregate delivery decision. Conflating check execution with release eligibility either hides accepted advisory debt or labels a completed policy violation and an unavailable scanner with the same meaning. Owner ruling: required because this is the operator-visible risk vocabulary.",
+      "proposal": "Use two explicit layers: per-check execution/result states such as passed, violations-found, evaluation-blocked, and policy-authorized skipped; and aggregate delivery states pass, pass-with-advisories, and blocked. A completed allowed advisory renders pass-with-advisories; an unavailable required check and a prohibited finding both block delivery but retain their different causes.",
+      "kind": "product",
+      "conflict_id": "40145f0c324ec828c9d501460d509ad32f30695c4ab0be22ee9f3fb8339f0047",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A failed result presents each finding with a sanitized subject, detected condition, policy rule, evidence pointer, and concrete next step; absent source locations are not invented.",
+      "source": "ux",
+      "why": "[PM-C10] The proposed finding presentation omits the remediation owner and, for advisories/exceptions, the review or expiry date. A concrete next step without accountable ownership still produces an ownerless red gate and allows advisory debt to become permanent. Owner ruling: required because remediation accountability is a product operating rule.",
+      "proposal": "Add remediation owner to every blocker and advisory. Add next review/decision date to advisories and owner, approver, and expiry to active exceptions; missing or overdue ownership data must itself block under the approved policy.",
+      "kind": "product",
+      "conflict_id": "10dcfae979a78a534494142ff215f908586dcdd69f4c3a43e5a07b5982f93c51",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Add one pre-deploy prerequisite/link in `docs/DEPLOY_RUNBOOK.md`: the current revision's required supply-chain checks and SBOM evidence must have accepted results.",
+      "source": "ux",
+      "why": "[PM-C11] Without a subject limitation, this copy implies the SBOM evidence vouches for what Railway and Cloudflare deploy, which the architect correctly shows is impossible under their current host-side rebuilds. Owner ruling: not required to correct the unsupported claim; an owner ruling is required only if deployed-byte provenance is added to scope.",
+      "proposal": "State that the prerequisite accepts the source revision and named GitHub-built evidence subjects only, and explicitly disclose that current Railway/Cloudflare deployed bytes are independently rebuilt and not proven by that SBOM.",
+      "kind": "technical",
+      "conflict_id": "8dbdfe269bb018f3760442e36424f9c629f55552973950df79627c4ce6e01397",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Each deployable artifact that reaches a policy-passing build has a machine-verifiable SBOM tied to that revision and to the artifact actually produced.",
+      "source": "pm",
+      "why": "[PM-C12] I withdraw this unqualified R1 claim. It can be defended for named GitHub-built subjects, but not for the artifacts currently rebuilt and deployed by Railway and Cloudflare. The architect's deployment-boundary statement is stronger and should control synthesis. Owner ruling: required only for the choice between narrowing the claim and expanding deployment scope.",
+      "proposal": "Narrow the criterion to each named GitHub-built deployable subject and disclose the host rebuild boundary. If the owner requires deployed-byte SBOM/provenance now, add immutable-artifact deployment as an explicit scope expansion rather than pretending the current hosts consume the subjects.",
+      "kind": "product",
+      "conflict_id": "59e99f2ed96a91abbb4e1e126e8d6fe153107d1b8b3700a7eed2f0fa185d7eba",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Two clean, supported environments evaluating the same revision must select the same exact toolchains, resolve the same dependency identities and versions, reach the same policy classification, and produce the same SBOM component identity set.",
+      "source": "pm",
+      "why": "[PM-C13] I withdraw the policy-classification clause as written. Fresh advisory data intentionally makes an unchanged revision change from green to red; environment reproducibility and time-varying security knowledge are different promises. The architect's explicit advisory-database revision is the stronger account. Owner ruling: not required; this is a technical correction.",
+      "proposal": "Require identical toolchains, dependency identities, and SBOM component identity for the same revision. Require the same policy result only when scanner version, policy revision, and advisory-database revision are also held constant; otherwise record those versions and allow newly published advisories to change the result fail-closed.",
+      "kind": "technical",
+      "conflict_id": "2d1c5cc829866479ba0d3c74fd63ee3c0067b78f7df375ade9d96bafdbefde6a",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "3. **Required gates:** make the approved policy, reproducibility checks, reports, and SBOM checks required on pull requests and the protected main branch.",
+      "source": "pm",
+      "why": "[PM-C14] I withdraw this event-agnostic rollout claim. It demands artifact evidence before some subjects exist and fails to distinguish PR-introduced drift from scheduled advisory freshness and release-subject validation. The UX state model and architect data flow are stronger when applied through an event matrix. Owner ruling: required because the exact blocking matrix is a delivery-risk decision.",
+      "proposal": "Adopt the PR/scheduled-default/release matrix proposed in PM-C08, with each applicable required check fail-closed and no event using an older revision's result as a substitute.",
+      "kind": "product",
+      "conflict_id": "deadd20c6e55141a57f536ea40b7b9c1c4a0d59672bedea36b493191a5799bf7",
+      "raised_by": "pm",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "A closed three-outcome vocabulary: **pass**, **pass with advisories**, and **blocked**.",
+      "source": "pm",
+      "why": "[UX-C01] Owner ruling: required. This vocabulary overloads `blocked` with two meanings that require different recovery: a completed policy evaluation that found a prohibited condition, and an evaluation that produced no trustworthy result. It also omits an authorized per-surface `skipped` state, while GitHub has no native `pass with advisories` check conclusion. This would make the machine state, visible copy, and branch-protection result disagree. This also self-revises UX R1: its `pass|fail|blocked|skipped` set likewise omitted the PM's stronger need to keep allowed advisories visible if the owner permits them to proceed.",
+      "proposal": "Use report outcomes `pass|pass_with_advisories|fail|blocked`, plus `skipped` only as a declared surface completion state. Map `pass` and owner-approved `pass_with_advisories` to GitHub success, with the latter visibly labeled in the summary and warning annotations; map `fail` and `blocked` to GitHub failure. A required or unauthorized skip makes the aggregate `blocked`. The owner must rule whether any advisory class may proceed at all and, if yes, name those classes.",
+      "kind": "product",
+      "conflict_id": "008ded8db3c7dcc3c3086cff6447fbe5adfec034b210362e1b83dc691151e07c",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Development dependencies fail on high or critical advisories; moderate/low findings remain visible and enter scheduled remediation rather than silently disappearing.",
+      "source": "architect",
+      "why": "[UX-C02] Owner ruling: required. Severity plus the `development` label does not support the implied policy meaning. The PM correctly notes that development tooling can produce shipped bytes or handle CI credentials, while a high advisory can also be isolated from those paths. Copy cannot call a condition blocking or advisory until the policy records the relevant effect/reachability evidence; otherwise the same package label is being renamed into a risk decision.",
+      "proposal": "Make severity an input, not the sole classification. Shipped/runtime and release-integrity impact block under the owner-approved policy; a development-only advisory may become `pass_with_advisories` only when the report carries the evidence, owner, rationale, and review/expiry date the PM requires. Unknown impact is `blocked`, not advisory.",
+      "kind": "product",
+      "conflict_id": "d8ea28f54a2b45a112839b1fd71ce36fd9dad1a9f1768a78439651b64c33ecba",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "On trusted default-branch/release events, GitHub artifact attestation signs build provenance and the SBOM association for the exact API image digest and dashboard build archive.",
+      "source": "architect",
+      "why": "[UX-C03] Owner ruling: required. The PM explicitly future-dates cryptographic signing/build provenance, and the BRIEF requires machine-verifiable SBOMs but does not require attestation. Adding GitHub attestation also introduces hosted-feature eligibility and trusted-event permissions that the architect acknowledges are not yet verified. This is scope expansion, not merely stronger wording.",
+      "proposal": "Keep in scope the target/revision binding, schema validation, artifact digest, generator version, and machine-readable receipt. Defer attestation/signing unless the owner expands scope after repository eligibility and cost are verified. If expanded, label the subject narrowly as a GitHub-built artifact, never the currently deployed Railway/Cloudflare bytes.",
+      "kind": "product",
+      "conflict_id": "768604565bb69ea244bfc2807150f3311ed7c56e5fd7729243563097c254bdea",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "As a release owner, I want a machine-verifiable report and software bill of materials tied to the exact revision and shipped artifact so that I can prove what was evaluated and what was built.",
+      "source": "pm",
+      "why": "[UX-C04] Owner ruling: required. `Shipped artifact` is not supported by the current deployment path: the architect establishes that Railway and Cloudflare rebuild outside the GitHub artifact boundary. Using `shipped` would tell the release owner that evidence covers deployed bytes when it covers only a GitHub-built deployable subject.",
+      "proposal": "For this feature, say `GitHub-built deployable artifact` and expose its immutable digest. If the owner requires evidence for deployed bytes now, expand scope so Railway/Cloudflare consume or prove identity with that exact subject; only then may summaries say `shipped artifact`.",
+      "kind": "product",
+      "conflict_id": "cbb8c977b784745892d15ec57ecf4df80963d0be3280bb8d972203a8fd6aa0a5",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "These are patch replacements inside the affected dependency families, not application dependency rewrites.",
+      "source": "architect",
+      "why": "[UX-C05] Owner ruling: not required. An npm `overrides` change plus regenerated lockfile does rewrite dependency resolution. Calling it `not ... rewrites` withdraws the very fact reviewers need, even if the change is intentional, bounded, and preferable to a major Nx downgrade. The BRIEF prohibits silent rewrites by scanning tools; it does not require pretending a reviewed proposal made no graph change.",
+      "proposal": "Call these `explicit reviewed transitive overrides that change the resolved lock graph without changing the direct Nx/Vite versions`. Show the before/after transitive versions, the advisory identifier, the override entry, and locked-test evidence. Keep scanner execution read-only after the proposal creates that reviewed input.",
+      "kind": "technical",
+      "conflict_id": "b75a3050c2a691371f7ae2af1faf9d904acdd69c28c2b08ec726cace4937f9c0",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Reports are artifacts, not runtime data, and contain paths/identifiers but no environment values or secret material.",
+      "source": "architect",
+      "why": "[UX-C06] Owner ruling: not required. This is an outcome claim with no named sanitization boundary. Secret scanners can include matched snippets, and tool diagnostics can echo arguments, URLs, or environment-derived text. Gitleaks/Trivy/CodeQL/cargo-deny output is not secret-safe merely because it is an artifact. The claim cannot be emitted until the retained bytes, annotations, and logs are proven sanitized.",
+      "proposal": "Define a publication adapter that consumes raw tool output in ephemeral job storage, removes secret/snippet fields and credential-bearing URL material, emits a closed sanitized report, and uploads only that report. Add a synthetic canary secret and credentialized-URL fixture proving the retained report, job summary, annotations, artifact metadata, and captured log excerpt contain neither value. Use `Some diagnostic text was redacted before publication.` only when the adapter records an actual redaction.",
+      "kind": "technical",
+      "conflict_id": "768f4a87fddd0ec12fa1ed3b392a147e7824ecfbfa0a80612d5d033103f61645",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "An SBOM missing either npm or Cargo components, or referring to a digest different from the scanned artifact, fails publication.",
+      "source": "architect",
+      "why": "[UX-C07] Owner ruling: not required. This applies a root-source expectation to every per-artifact SBOM. A dashboard image is not required to contain Cargo components, and an API runtime image is not required to contain npm components. The rule would either falsely block valid target-specific SBOMs or encourage one combined inventory whose scope no longer matches the artifact named in the copy.",
+      "proposal": "Define expected component families per target. The root source/dependency SBOM may require both root npm and root Cargo lock coverage; each image/archive SBOM must match its own immutable subject and target-specific component expectations. The summary names target and coverage separately and never calls one SBOM repository-complete.",
+      "kind": "technical",
+      "conflict_id": "d847e530dab51455688828dca78ab3b207a9723985834b7e6ff7718773e05e81",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Two clean, supported environments evaluating the same revision must select the same exact toolchains, resolve the same dependency identities and versions, reach the same policy classification, and produce the same SBOM component identity set.",
+      "source": "pm",
+      "why": "[UX-C08] Owner ruling: not required. `Same revision` is insufficient to vouch for the same policy classification because the architect intentionally allows fresh advisory data to make an unchanged revision red. The sentence also lacks the same scanner/policy/advisory-database inputs needed for a reproducibility claim. Without those qualifiers, a legitimate new advisory looks like nondeterminism.",
+      "proposal": "Require the same classification and SBOM identity set only for the same revision, declared targets, pinned tools, policy revision, lockfiles/base-image digests, and advisory-data revision. Separately require fresh scheduled runs to record their advisory-data revision and allow a newer database to change classification without changing dependency identity.",
+      "kind": "technical",
+      "conflict_id": "ff0a1c7f12ea4eef412d0c0a114ce646b63572cb6c6e62a55604f14e98e5b1ea",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A generated proposal is never merged without an explicit human approval and never triggers an automatic production deployment.",
+      "source": "pm",
+      "why": "[UX-C09] Owner ruling: required. The first clause fits the brief; the second contradicts the current documented release process, where an approved merge to `main` can trigger Railway and Cloudflare continuous deployment. Preventing deployment for dependency PRs would replace or condition the existing release process, which the PM separately places out of scope.",
+      "proposal": "Require human approval and prohibit bot auto-merge. After a human merges, preserve the existing main-branch deployment behavior unless the owner explicitly expands this feature to add a distinct release hold. Copy should say `This proposal has not been merged`; it should not promise what happens after an approved merge unless that release behavior is changed.",
+      "kind": "product",
+      "conflict_id": "f72b4d767734d10719252c67e01a778ea288214e624a9445f93ab1387275147f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A blocked GitHub check summary identifies each blocker, its owner, its next action, and the retained evidence without requiring a reviewer to search raw logs.",
+      "source": "pm",
+      "why": "[UX-C10] Owner ruling: required. Rendering every image, dependency, or source finding inline can turn the summary into another raw report, burying the first actionable cause and exceeding practical GitHub summary/annotation limits. Complete evidence and an understandable summary are separate jobs.",
+      "proposal": "Keep every blocker, owner reference, action code, and evidence pointer in the sanitized machine-readable report. In the GitHub summary, group by check/policy rule/owner, show total counts and a bounded actionable sample, then link the complete report. Always show every distinct blocked surface and every distinct recovery action even when individual findings are collapsed. The owner should rule the desired inline cap or grouping policy.",
+      "kind": "product",
+      "conflict_id": "0974a0565f8ec51c3cfbbe3729dd608b4059090cf6c39d04ba50f77b836cb748",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "GitHub dependency review runs on pull requests to reject a newly introduced vulnerable dependency, disallowed license, or prohibited source before it reaches the full graph.",
+      "source": "architect",
+      "why": "[UX-C11] Owner ruling: not required for the capability check. The repository currently contains no dependency-review gate, and the position supplies no repository visibility/plan receipt proving the hosted feature can run with the named coverage. The BRIEF requires selected-tool capabilities and limits to be verified before implementation is locked; the architect's own risk acknowledges this dependency.",
+      "proposal": "Make hosted dependency review and CodeQL/attestation use conditional on a pre-implementation capability receipt for this repository. If unavailable, select a pinned local mechanism for the required advisory/license/source behavior and document the narrower coverage. An owner ruling is needed only if satisfying the feature would require a paid-plan or visibility change.",
+      "kind": "technical",
+      "conflict_id": "930f93d3cda5a4632933b7dc6366b339bb4742930bf2cd41a075d53f38ae2696",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A dependency proposal body exposes ecosystem, configured group, base revision, each supported package delta, touched manifest/lockfile, required evidence status, and a review-next-step; it never calls an unmerged update approved, compatible, safe, or fixed without supporting evidence.",
+      "source": "ux",
+      "why": "[UX-C12] Owner ruling: not required. This self-revises UX R1. Renovate can own stable proposal facts, but the selected design does not establish that it can continuously rewrite custom PR-body fields with live GitHub check status and evidence links. Duplicating dynamic status in the bot body creates drift from native checks and the generated job summary.",
+      "proposal": "Keep ecosystem, configured group, base revision, package deltas, touched manifests/locks, grouping reason, and review-next-step in the Renovate body. Let GitHub's native check list and the supply-chain job summary own live outcome and evidence status. The body may link to the workflow category or runbook, but it must not mirror transient results unless a tested updater mechanism is selected.",
+      "kind": "technical",
+      "conflict_id": "7a81080cc381b4017fa532a1f463d9ce212e6b4e73a1b966d7006d1c2618a9bd",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Should the owner-facing outcome model preserve five distinct states (`pass`, `advisory`, `fail`, `blocked`, `skipped`), or should any be deliberately collapsed after their machine meanings remain distinct?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Which exact artifacts are required SBOM targets in this feature\u2014GitHub-built API image, dashboard archive, dashboard container image, or the independently rebuilt Railway/Cloudflare production subjects?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Is automatic maintenance of arbitrary toolchain pin files a product requirement, or is grouped automation limited to npm, Cargo, Docker, and GitHub Actions dependencies so native Dependabot is sufficient?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Does scope permit a repository plan/ownership change for private Code Security and attestations, or must every required gate work on the current private user-owned repository?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: If the owner retains `pass with advisories`, what exact operator label and aggregate ordering will distinguish it from both zero-violation `Passed` and release-blocking `Failed`?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A01] Architect: what complete, current-repository receipt will prove the candidate Node/npm/Rust tuple before the versions become contract facts?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A02] Architect: can each proposed transitive npm override be shown accepted by upstream constraints and independently rescanned after the full battery, without any audit-fix command?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A03] Architect: which selected tools and GitHub features are actually available under this repository's current visibility and plan, and what minimum capability-preserving fallback exists for each unavailable feature?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A04] Architect: which exact GitHub-built subjects can be built once, scanned, described by an SBOM, and retained without implying identity with the Railway/Cloudflare rebuilds?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A05] Architect: can the event matrix reuse one result per revision/subject where trust permits, or would it duplicate expensive full scans across PR, default-branch, schedule, and release events?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A06] Architect: what structural rule makes an exception renewal a new reviewed decision rather than an edit that silently extends permanent debt?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A07] UX: how will the summary render per-check execution state separately from aggregate pass, pass-with-advisories, and blocked delivery state without presenting advisory debt as clean?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A08] UX: where will remediation owner, advisory review date, and exception approver/expiry appear without forcing a reviewer into raw artifacts?"
+    },
+    {
+      "from": "pm",
+      "ask": "[PM-A09] UX: can the deploy runbook state the GitHub-subject versus Railway/Cloudflare deployed-byte limitation adjacent to the prerequisite rather than burying it in the detailed runbook?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: Will the owner permit any `pass_with_advisories` result to merge/release, and if so, which exact evidence-backed advisory classes may proceed?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: What checked-in adapter normalizes npm, cargo-deny, Trivy, Gitleaks, CodeQL/dependency-review, SBOM validation, and tool/service failures into the closed report vocabulary and GitHub conclusion mapping?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: What repository visibility/plan capability receipt proves that the proposed GitHub dependency-review, CodeQL Rust/Actions, artifact-attestation, and provenance features are available with the claimed scopes?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: What exact sanitizer fields and poison fixtures prove retained reports, annotations, summaries, logs, artifact metadata, and SBOM metadata cannot publish secret values or credential-bearing URLs?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: Does `shipped artifact` mean the GitHub-built deployable subject in this tranche, or must Railway and Cloudflare consume/prove identity with that exact subject now?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: What bounded summary grouping or inline finding cap preserves complete evidence without turning the GitHub job summary into the full scanner report?"
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 10,
+    "ux": 6
+  }
+}

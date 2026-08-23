@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "actions": [
+    {
+      "action_code": "upgrade_dependency",
+      "template": "Upgrade the affected dependency and regenerate its reviewed lockfile."
+    },
+    {
+      "action_code": "replace_dependency",
+      "template": "Replace the affected dependency and regenerate its reviewed lockfile."
+    },
+    {
+      "action_code": "repair_policy_input",
+      "template": "Repair the malformed or incomplete policy input, then rerun this revision."
+    },
+    {
+      "action_code": "restore_allowed_source",
+      "template": "Restore the dependency to an allowed source with verified integrity."
+    },
+    {
+      "action_code": "refresh_tool_data",
+      "template": "Refresh the pinned tool data and rerun this revision."
+    },
+    {
+      "action_code": "rerun_current_revision",
+      "template": "Rerun the complete supply-chain path for this revision."
+    },
+    {
+      "action_code": "rebuild_subject",
+      "template": "Rebuild the named subject once and regenerate digest-bound evidence."
+    },
+    {
+      "action_code": "repair_sanitizer",
+      "template": "Repair the publication sanitizer and rerun every poison channel."
+    },
+    {
+      "action_code": "review_license_obligation",
+      "template": "Review the recorded license obligation before its expiry date."
+    }
+  ]
+}

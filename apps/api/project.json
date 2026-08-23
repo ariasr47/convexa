@@ -13,6 +13,14 @@
       },
       "cache": false
     },
+    "api-contract-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/api-contract.mjs check",
+        "cwd": "{workspaceRoot}"
+      },
+      "cache": false
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
@@ -28,10 +36,12 @@
         }
       },
       "defaultConfiguration": "production",
+      "dependsOn": ["api-contract-check"],
       "cache": false
     },
     "test": {
       "executor": "nx:run-commands",
+      "dependsOn": ["api-contract-check"],
       "options": {
         "command": "cargo test -p api-rust -p quant-engine",
         "cwd": "{workspaceRoot}"

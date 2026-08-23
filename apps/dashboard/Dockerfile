@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.26.0@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 # ============================================================================
 # Convexa dashboard (React 19 + Vite + MUI) — multi-stage image.
 #
@@ -22,7 +22,7 @@
 # ----------------------------------------------------------------------------
 # Stage 1 — builder: install the workspace + build the dashboard through Nx.
 # ----------------------------------------------------------------------------
-FROM node:24-alpine AS builder
+FROM node:24-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS builder
 WORKDIR /app
 
 # Bring in the whole (dockerignore-filtered) workspace, then install. We copy
@@ -42,7 +42,7 @@ RUN npx nx build @convexa/dashboard --configuration=production
 # fholzer/nginx-brotli includes static + dynamic brotli modules. Listens on 80 by
 # default; we override the server block to 8080 for compose/k8s parity with the
 # previous unprivileged image (map host ports as needed).
-FROM fholzer/nginx-brotli:v1.28.0
+FROM fholzer/nginx-brotli:v1.28.0@sha256:d08726c7ce39fb7e1853f317358c175e5536d5b76706eea12f9041fa2f5171a0
 
 # SPA + /api proxy + static compression config.
 COPY apps/dashboard/nginx.conf /etc/nginx/conf.d/default.conf

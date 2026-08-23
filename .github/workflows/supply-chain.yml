@@ -1,0 +1,189 @@
+name: Supply-chain evidence
+
+on:
+  workflow_call:
+    inputs:
+      contract_event:
+        description: Closed contract event inherited from the caller
+        required: true
+        type: string
+      contract_revision:
+        description: Original pull-request head or default-branch revision
+        required: true
+        type: string
+      contract_path:
+        description: Closed evidence path inherited from the caller
+        required: true
+        type: string
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      path:
+        description: Current-revision evidence path
+        required: true
+        default: policy
+        type: choice
+        options: [policy, artifacts]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: supply-chain-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    outputs:
+      event: ${{ steps.identity.outputs.event }}
+      path: ${{ steps.identity.outputs.path }}
+      run-key: ${{ steps.identity.outputs.run-key }}
+      revision: ${{ steps.identity.outputs.revision }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event_name == 'workflow_call' && inputs.contract_revision || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - id: identity
+        env:
+          DISPATCH_PATH: ${{ github.event_name == 'workflow_call' && inputs.contract_path || inputs.path }}
+          EVENT_NAME: ${{ github.event_name == 'workflow_call' && inputs.contract_event || github.event_name }}
+          REVISION_SHA: ${{ github.event_name == 'workflow_call' && inputs.contract_revision || github.sha }}
+        run: |
+          event="$EVENT_NAME"
+          if [ "$event" = "push" ]; then event="default_branch"; fi
+          if [ "$event" != "pull_request" ] && [ "$event" != "default_branch" ] && [ "$event" != "schedule" ] && [ "$event" != "workflow_dispatch" ]; then exit 2; fi
+          path="policy"
+          if [ "$event" = "default_branch" ]; then path="artifacts"; fi
+          if [ "$event" = "workflow_dispatch" ]; then path="${DISPATCH_PATH:-policy}"; fi
+          if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "default_branch" ]; then path="${DISPATCH_PATH:-policy}"; fi
+          if [ "$path" != "policy" ] && [ "$path" != "artifacts" ]; then exit 2; fi
+          subjects=""
+          if [ "$path" = "artifacts" ]; then subjects="api-production-image,dashboard-distribution-archive"; fi
+          key=$(node --input-type=module -e "import {runKey} from './tools/supply-chain/run-key.mjs'; const ids=process.argv[4]?process.argv[4].split(','):[]; process.stdout.write(runKey(process.argv[1],process.argv[2],process.argv[3],ids));" "$event" "$REVISION_SHA" "$path" "$subjects")
+          echo "event=$event" >> "$GITHUB_OUTPUT"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          echo "run-key=$key" >> "$GITHUB_OUTPUT"
+          echo "revision=$REVISION_SHA" >> "$GITHUB_OUTPUT"
+
+  policy:
+    needs: identity
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Acquire checksum-verified policy tools
+        run: node tools/supply-chain/acquire-tools.mjs
+      - name: Run complete policy surface
+        run: npm run supply-chain:policy -- --event "${{ needs.identity.outputs.event }}" --path "${{ needs.identity.outputs.path }}" --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/policy-report.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: supply-chain-policy-${{ github.run_id }}
+          path: .supply-chain/out/policy-report.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Render sanitized policy summary
+        if: always()
+        run: node tools/supply-chain/render-summary.mjs --report .supply-chain/out/policy-report.json --output "$GITHUB_STEP_SUMMARY"
+
+  capabilities:
+    needs: identity
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - run: npm ci
+      - run: node tools/supply-chain/acquire-tools.mjs
+      - name: Execute capability poison set
+        run: npm run supply-chain:poison
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: supply-chain-capabilities-${{ github.run_id }}
+          path: .supply-chain/out/capability-receipts.json
+          if-no-files-found: error
+          retention-days: 30
+
+  artifacts:
+    needs: identity
+    if: needs.identity.outputs.path == 'artifacts'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - run: npm ci
+      - run: node tools/supply-chain/acquire-tools.mjs
+      - name: Build each named subject once and bind evidence
+        env:
+          GITHUB_RUN_ID_SAFE: ${{ github.run_id }}
+        run: npm run supply-chain:artifacts -- --event "${{ needs.identity.outputs.event }}" --path artifacts --run-key "${{ needs.identity.outputs.run-key }}" > .supply-chain/out/artifact-report.json
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: supply-chain-artifacts-${{ github.run_id }}
+          path: |
+            .supply-chain/out/artifact-report.json
+            .supply-chain/out/api-production-image.oci.tar
+            .supply-chain/out/dashboard-distribution.tar
+            .supply-chain/out/api-dependency-inventory.cdx.json
+            .supply-chain/out/dashboard-dependency-inventory.cdx.json
+            .supply-chain/out/api-inventory-receipt.json
+            .supply-chain/out/dashboard-inventory-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    needs: [identity, policy, capabilities, artifacts]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.identity.outputs.revision }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: supply-chain-*-${{ github.run_id }}
+          path: .supply-chain/out/aggregate-input
+      - name: Validate current-run children and decide
+        run: node tools/supply-chain/aggregate-receipts.mjs --dir .supply-chain/out/aggregate-input --revision "${{ needs.identity.outputs.revision }}" --event "${{ needs.identity.outputs.event }}" --path "${{ needs.identity.outputs.path }}" --run-key "${{ needs.identity.outputs.run-key }}"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: supply-chain-aggregate-${{ github.run_id }}
+          path: .supply-chain/out/aggregate-input/aggregate-report.json
+          if-no-files-found: error
+          retention-days: 30

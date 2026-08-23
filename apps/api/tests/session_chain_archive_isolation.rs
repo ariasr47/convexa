@@ -96,7 +96,8 @@ fn session_archive_public_api_has_no_prune_method() {
 #[test]
 fn research_session_books_mounted_under_api_research_only() {
     let root = workspace_root();
-    let routes = fs::read_to_string(root.join("apps/api/src/routes/mod.rs")).unwrap();
+    let routes =
+        fs::read_to_string(root.join("apps/api/src/routes/research_session_books.rs")).unwrap();
     assert!(routes.contains("/api/_research/session-books/{symbol}"));
     assert!(routes.contains("/api/_research/session-books/{symbol}/book"));
     let ticker = fs::read_to_string(root.join("apps/api/src/routes/ticker.rs")).unwrap();

@@ -1,5 +1,7 @@
 //! Scanner read/write API — Python `/api/scan*` wire shape + auth-gated view.
+#![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
+use crate::openapi::RouteResponse;
 use crate::routes::auth::{cookie_opt, require_user};
 use crate::services::auth::AuthError;
 use crate::services::scanner::projection::project_building;
@@ -12,6 +14,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 const SCAN_SORT_KEYS: &[&str] = &[
     "score",
@@ -24,31 +27,153 @@ const SCAN_SORT_KEYS: &[&str] = &[
 const SCAN_SORT_DIRS: &[&str] = &["asc", "desc"];
 const SCAN_DENSITIES: &[&str] = &["compact", "comfortable"];
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ScanView {
     pub symbols: Vec<String>,
     pub source: String,
     pub authenticated: bool,
     pub name: Option<String>,
     pub sort: ScanSort,
+    #[schema(value_type = ScanDensitySchema)]
     pub density: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ScanDensitySchema {
+    Compact,
+    Comfortable,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ScanSort {
+    #[schema(value_type = ScanSortKeySchema)]
     pub key: String,
+    #[schema(value_type = ScanSortDirSchema)]
     pub dir: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+pub enum ScanSortKeySchema {
+    #[serde(rename = "score")]
+    Score,
+    #[serde(rename = "symbol")]
+    Symbol,
+    #[serde(rename = "price")]
+    Price,
+    #[serde(rename = "chg_pct")]
+    ChgPct,
+    #[serde(rename = "dist_to_flip_pct")]
+    DistToFlipPct,
+    #[serde(rename = "dist_to_wall_pct")]
+    DistToWallPct,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum ScanSortDirSchema {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ScanEnvelope {
     pub view: ScanView,
-    pub rows: Vec<ScanRow>,
-    pub sweep: Option<crate::services::scanner::SweepHeartbeat>,
+    pub rows: Vec<ScanRowDto>,
+    #[schema(required = true)]
+    pub sweep: Option<SweepHeartbeatDto>,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ScanScoreDriversDto {
+    pub proximity: i32,
+    pub vol: i32,
+    pub setups: i32,
+    pub transition: i32,
+    pub dark_pool: i32,
+    pub total: i32,
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ScanRowDto {
+    pub symbol: String,
+    #[schema(required = true)]
+    pub price: Option<f64>,
+    #[schema(required = true)]
+    pub chg_pct: Option<f64>,
+    #[schema(required = true)]
+    pub score: Option<f64>,
+    #[schema(required = true)]
+    pub tier: Option<String>,
+    #[schema(required = true)]
+    pub regime: Option<String>,
+    #[schema(required = true)]
+    pub vol_regime: Option<String>,
+    #[schema(required = true)]
+    pub flip: Option<f64>,
+    #[schema(required = true)]
+    pub dist_to_flip_pct: Option<f64>,
+    #[schema(required = true)]
+    pub call_wall: Option<f64>,
+    #[schema(required = true)]
+    pub put_wall: Option<f64>,
+    #[schema(required = true)]
+    pub dist_to_wall_pct: Option<f64>,
+    pub as_of: f64,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score_drivers: Option<ScanScoreDriversDto>,
+}
+
+impl From<ScanRow> for ScanRowDto {
+    fn from(r: ScanRow) -> Self {
+        Self {
+            symbol: r.symbol,
+            price: r.price,
+            chg_pct: r.chg_pct,
+            score: r.score,
+            tier: r.tier,
+            regime: r.regime,
+            vol_regime: r.vol_regime,
+            flip: r.flip,
+            dist_to_flip_pct: r.dist_to_flip_pct,
+            call_wall: r.call_wall,
+            put_wall: r.put_wall,
+            dist_to_wall_pct: r.dist_to_wall_pct,
+            as_of: r.as_of,
+            status: r.status,
+            score_drivers: r.score_drivers.map(|d| ScanScoreDriversDto {
+                proximity: d.proximity,
+                vol: d.vol,
+                setups: d.setups,
+                transition: d.transition,
+                dark_pool: d.dark_pool,
+                total: d.total,
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct SweepHeartbeatDto {
+    pub updated_at: f64,
+    #[schema(required = true)]
+    pub sweep_last_completed: Option<f64>,
+    pub universe_size: usize,
+}
+
+impl From<crate::services::scanner::SweepHeartbeat> for SweepHeartbeatDto {
+    fn from(h: crate::services::scanner::SweepHeartbeat) -> Self {
+        Self {
+            updated_at: h.updated_at,
+            sweep_last_completed: h.sweep_last_completed,
+            universe_size: h.universe_size,
+        }
+    }
 }
 
 /// FE wire (`ScanUniverse`): `{ symbols, universe_size }` — not the internal universe.json shape.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UniverseResponse {
     pub symbols: Vec<String>,
     pub universe_size: usize,
@@ -57,12 +182,282 @@ pub struct UniverseResponse {
     pub default_view: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ScanViewBody {
     pub symbols: Option<Vec<String>>,
     pub name: Option<String>,
+    #[schema(value_type = ScanSort)]
     pub sort: Option<serde_json::Value>,
     pub density: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, IntoResponses)]
+pub enum ScanJsonResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(ScanEnvelope),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum ScanUniverseResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(UniverseResponse),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum ScanViewGetResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(ScanView),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum StructureHistoryGetResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(StructureHistoryResponse),
+}
+
+#[allow(dead_code)]
+#[derive(Debug, IntoResponses)]
+pub enum ScanMutationResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(ScanView),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(AuthErrorBody),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(AuthErrorBody),
+    #[response(status = 409, content_type = "application/json")]
+    Conflict(AuthErrorBody),
+    #[response(status = 422, content_type = "application/json")]
+    Unprocessable(DetailBody),
+    #[response(status = 503, content_type = "application/json")]
+    Unavailable(DetailBody),
+}
+
+impl IntoResponse for ScanJsonResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for ScanUniverseResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for ScanViewGetResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for StructureHistoryGetResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for ScanMutationResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (StatusCode::OK, Json(body)).into_response(),
+            Self::Unauthorized(body) => (StatusCode::UNAUTHORIZED, Json(body)).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
+            Self::Conflict(body) => (StatusCode::CONFLICT, Json(body)).into_response(),
+            Self::Unprocessable(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+            Self::Unavailable(body) => {
+                (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+fn representative_view() -> ScanView {
+    ScanView {
+        symbols: vec!["SPY".into()],
+        source: "default".into(),
+        authenticated: false,
+        name: None,
+        sort: ScanSort {
+            key: "score".into(),
+            dir: "desc".into(),
+        },
+        density: "compact".into(),
+    }
+}
+
+fn representative_scan_envelope() -> ScanEnvelope {
+    ScanEnvelope {
+        view: representative_view(),
+        rows: Vec::new(),
+        sweep: None,
+    }
+}
+
+fn representative_auth_error(kind: &str) -> AuthErrorBody {
+    AuthErrorBody {
+        error: kind.into(),
+        message: "scan view request was rejected".into(),
+    }
+}
+
+/// Execute one explicitly identified scanner boundary through its concrete route response enum.
+/// Matching the complete canonical ID prevents one successful/error conversion from being relabeled.
+pub(crate) fn contract_representative_response(boundary: &str) -> Option<Response> {
+    let response = match boundary {
+        "GET /api/scan 200 application/json optional-session"
+        | "GET /api/scan/all 200 application/json optional-session" => {
+            ScanJsonResponse::Ok(representative_scan_envelope()).into_response()
+        }
+        "GET /api/scan/{symbol}/history 200 application/json public" => {
+            StructureHistoryGetResponse::Ok(StructureHistoryResponse {
+                symbol: "SPY".into(),
+                samples: Vec::new(),
+                basis: STRUCTURE_HISTORY_BASIS,
+                stored_count: 0,
+                backend: "json",
+            })
+            .into_response()
+        }
+        "GET /api/scan/universe 200 application/json public" => {
+            ScanUniverseResponse::Ok(UniverseResponse {
+                symbols: vec!["SPY".into()],
+                universe_size: 1,
+                default_view: vec!["SPY".into()],
+            })
+            .into_response()
+        }
+        "GET /api/scan/view 200 application/json optional-session" => {
+            ScanViewGetResponse::Ok(representative_view()).into_response()
+        }
+        "PUT /api/scan/view 200 application/json session" => {
+            ScanMutationResponse::Ok(representative_view()).into_response()
+        }
+        "PUT /api/scan/view 401 application/json session" => {
+            ScanMutationResponse::Unauthorized(representative_auth_error("unauthorized"))
+                .into_response()
+        }
+        "PUT /api/scan/view 403 application/json session" => {
+            ScanMutationResponse::Forbidden(representative_auth_error("forbidden")).into_response()
+        }
+        "PUT /api/scan/view 409 application/json session" => {
+            ScanMutationResponse::Conflict(representative_auth_error("conflict")).into_response()
+        }
+        "PUT /api/scan/view 422 application/json session" => {
+            ScanMutationResponse::Unprocessable(DetailBody {
+                detail: "symbols must be a non-empty subset of the tracked universe.".into(),
+            })
+            .into_response()
+        }
+        "PUT /api/scan/view 503 application/json session" => {
+            ScanMutationResponse::Unavailable(DetailBody {
+                detail: "scan universe unavailable.".into(),
+            })
+            .into_response()
+        }
+        _ => return None,
+    };
+    Some(response)
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AuthErrorBody {
+    pub error: String,
+    pub message: String,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DetailBody {
+    pub detail: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/scan",
+    operation_id = "scan_get",
+    responses(ScanJsonResponse)
+)]
+pub async fn get_scan_contract(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<ScanJsonResponse> {
+    get_scan(State(state), headers).await.into_response().into()
+}
+
+#[utoipa::path(get, path = "/api/scan/{symbol}/history", operation_id = "scan_history", params(("symbol" = String, Path), HistoryQuery), responses(StructureHistoryGetResponse))]
+pub async fn get_structure_history_contract(
+    State(state): State<AppState>,
+    Path(symbol): Path<String>,
+    Query(q): Query<HistoryQuery>,
+) -> RouteResponse<StructureHistoryGetResponse> {
+    get_structure_history(State(state), Path(symbol), Query(q))
+        .await
+        .into_response()
+        .into()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/scan/view",
+    operation_id = "scan_view_get",
+    responses(ScanViewGetResponse)
+)]
+pub async fn get_scan_view_contract(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<ScanViewGetResponse> {
+    get_scan_view(State(state), headers)
+        .await
+        .into_response()
+        .into()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/scan/universe",
+    operation_id = "scan_universe",
+    responses(ScanUniverseResponse)
+)]
+pub async fn get_scan_universe_contract(
+    State(state): State<AppState>,
+) -> RouteResponse<ScanUniverseResponse> {
+    get_scan_universe(State(state)).await.into_response().into()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/scan/all",
+    operation_id = "scan_all",
+    responses(ScanJsonResponse)
+)]
+pub async fn get_scan_all_contract(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<ScanJsonResponse> {
+    get_scan_all(State(state), headers)
+        .await
+        .into_response()
+        .into()
+}
+
+#[utoipa::path(put, path = "/api/scan/view", operation_id = "scan_view_put", request_body = ScanViewBody, responses(ScanMutationResponse))]
+pub async fn put_scan_view_contract(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<ScanViewBody>,
+) -> RouteResponse<ScanMutationResponse> {
+    put_scan_view(State(state), headers, Json(body))
+        .await
+        .into()
 }
 
 fn auth_err(e: AuthError) -> Response {
@@ -194,27 +589,91 @@ async fn fill_rows(state: &AppState, symbols: &[String]) -> Vec<ScanRow> {
 /// GET /api/scan
 pub async fn get_scan(State(state): State<AppState>, headers: HeaderMap) -> Json<ScanEnvelope> {
     let view = effective_view(&state, &headers).await;
-    let rows = fill_rows(&state, &view.symbols).await;
-    let sweep = state.scan.read_heartbeat().await;
+    let rows = fill_rows(&state, &view.symbols)
+        .await
+        .into_iter()
+        .map(ScanRowDto::from)
+        .collect();
+    let sweep = state
+        .scan
+        .read_heartbeat()
+        .await
+        .map(SweepHeartbeatDto::from);
     Json(ScanEnvelope { view, rows, sweep })
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct HistoryQuery {
     /// Max samples (default 48, hard-capped at store MAX).
     pub limit: Option<usize>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct StructureHistoryResponse {
     pub symbol: String,
-    pub samples: Vec<StructureSample>,
+    pub samples: Vec<StructureSampleDto>,
     /// Honest basis copy for the desk (FE may surface or ignore).
     pub basis: &'static str,
     /// Total samples stored for this symbol (may exceed `samples.len()` when limited).
     pub stored_count: i64,
     /// Scan store backend that holds the diary (`json` | `postgres`).
     pub backend: &'static str,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct StructureSampleDto {
+    pub symbol: String,
+    pub as_of: f64,
+    pub price: Option<f64>,
+    pub score: Option<f64>,
+    pub tier: Option<String>,
+    pub regime: Option<String>,
+    pub vol_regime: Option<String>,
+    pub flip: Option<f64>,
+    pub dist_to_flip_pct: Option<f64>,
+    pub call_wall: Option<f64>,
+    pub put_wall: Option<f64>,
+    pub dist_to_wall_pct: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score_drivers: Option<ScanScoreDriversDto>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub net_gex: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub iv_hv_ratio: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub atm_iv: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hv_30d: Option<f64>,
+}
+impl From<StructureSample> for StructureSampleDto {
+    fn from(s: StructureSample) -> Self {
+        Self {
+            symbol: s.symbol,
+            as_of: s.as_of,
+            price: s.price,
+            score: s.score,
+            tier: s.tier,
+            regime: s.regime,
+            vol_regime: s.vol_regime,
+            flip: s.flip,
+            dist_to_flip_pct: s.dist_to_flip_pct,
+            call_wall: s.call_wall,
+            put_wall: s.put_wall,
+            dist_to_wall_pct: s.dist_to_wall_pct,
+            score_drivers: s.score_drivers.map(|d| ScanScoreDriversDto {
+                proximity: d.proximity,
+                vol: d.vol,
+                setups: d.setups,
+                transition: d.transition,
+                dark_pool: d.dark_pool,
+                total: d.total,
+            }),
+            net_gex: s.net_gex,
+            iv_hv_ratio: s.iv_hv_ratio,
+            atm_iv: s.atm_iv,
+            hv_30d: s.hv_30d,
+        }
+    }
 }
 
 const STRUCTURE_HISTORY_BASIS: &str =
@@ -252,7 +711,7 @@ pub async fn get_structure_history(
     };
     Json(StructureHistoryResponse {
         symbol,
-        samples,
+        samples: samples.into_iter().map(StructureSampleDto::from).collect(),
         basis: STRUCTURE_HISTORY_BASIS,
         stored_count,
         backend,
@@ -295,7 +754,12 @@ pub async fn get_scan_all(State(state): State<AppState>, headers: HeaderMap) -> 
         let sb = b.score.unwrap_or(f64::NEG_INFINITY);
         sb.partial_cmp(&sa).unwrap_or(std::cmp::Ordering::Equal)
     });
-    let sweep = state.scan.read_heartbeat().await;
+    let sweep = state
+        .scan
+        .read_heartbeat()
+        .await
+        .map(SweepHeartbeatDto::from);
+    let rows = rows.into_iter().map(ScanRowDto::from).collect();
     Json(ScanEnvelope { view, rows, sweep })
 }
 
@@ -420,4 +884,99 @@ fn normalize_view_body(
         }),
         None,
     )
+}
+
+#[cfg(test)]
+mod response_conversion_tests {
+    use super::*;
+
+    fn assert_declared<R: IntoResponses>(response: Response, status: StatusCode) {
+        assert_eq!(response.status(), status);
+        let declared = R::responses();
+        let declaration = declared
+            .get(&status.as_u16().to_string())
+            .unwrap_or_else(|| panic!("missing declared response {status}"));
+        let declaration = match declaration {
+            utoipa::openapi::RefOr::T(response) => response,
+            utoipa::openapi::RefOr::Ref(reference) => {
+                panic!("unexpected response reference: {}", reference.ref_location)
+            }
+        };
+        assert!(declaration.content.contains_key("application/json"));
+        assert_eq!(
+            response
+                .headers()
+                .get(axum::http::header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .and_then(|value| value.split(';').next()),
+            Some("application/json")
+        );
+    }
+
+    #[test]
+    fn read_enum_conversions_match_into_responses() {
+        assert_declared::<ScanJsonResponse>(
+            ScanJsonResponse::Ok(representative_scan_envelope()).into_response(),
+            StatusCode::OK,
+        );
+        assert_declared::<ScanUniverseResponse>(
+            ScanUniverseResponse::Ok(UniverseResponse {
+                symbols: vec!["SPY".into()],
+                universe_size: 1,
+                default_view: Vec::new(),
+            })
+            .into_response(),
+            StatusCode::OK,
+        );
+        assert_declared::<ScanViewGetResponse>(
+            ScanViewGetResponse::Ok(representative_view()).into_response(),
+            StatusCode::OK,
+        );
+        assert_declared::<StructureHistoryGetResponse>(
+            StructureHistoryGetResponse::Ok(StructureHistoryResponse {
+                symbol: "SPY".into(),
+                samples: Vec::new(),
+                basis: STRUCTURE_HISTORY_BASIS,
+                stored_count: 0,
+                backend: "json",
+            })
+            .into_response(),
+            StatusCode::OK,
+        );
+    }
+
+    #[test]
+    fn mutation_enum_conversions_match_into_responses() {
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Ok(representative_view()).into_response(),
+            StatusCode::OK,
+        );
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Unauthorized(representative_auth_error("unauthorized"))
+                .into_response(),
+            StatusCode::UNAUTHORIZED,
+        );
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Forbidden(representative_auth_error("forbidden")).into_response(),
+            StatusCode::FORBIDDEN,
+        );
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Conflict(representative_auth_error("conflict")).into_response(),
+            StatusCode::CONFLICT,
+        );
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Unprocessable(DetailBody {
+                detail: "invalid scan view".into(),
+            })
+            .into_response(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        );
+        assert_declared::<ScanMutationResponse>(
+            ScanMutationResponse::Unavailable(DetailBody {
+                detail: "scan universe unavailable".into(),
+            })
+            .into_response(),
+            StatusCode::SERVICE_UNAVAILABLE,
+        );
+    }
 }

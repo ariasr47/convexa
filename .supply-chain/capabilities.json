@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "capabilities": [
+    "npm-audit.full-lock-json",
+    "npm-license.spdx-inventory",
+    "npm-lock.source-integrity",
+    "cargo-deny.advisories-licenses-sources-bans",
+    "gitleaks.history-range-json",
+    "trivy.config-json",
+    "trivy.api-image-digest-json",
+    "syft.api-lock-inventory-cyclonedx",
+    "syft.dashboard-lock-inventory-cyclonedx",
+    "normalizer.strict-aggregate",
+    "sanitizer.all-publication-channels"
+  ]
+}
