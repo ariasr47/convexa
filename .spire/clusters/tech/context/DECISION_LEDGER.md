@@ -976,3 +976,12 @@ be exactly it.
 > `absent-is-not-none` · `digested-labels-not-raw-dump` · `additive-keeps-score-byte-identical` ·
 > `live-vs-static-isolation` · `theme-token-discipline` · `single-motion-moment`).
 > `NO_BACKEND_CHANGE` — no conformance JSON promoted. **`ai-rec-grounding` SPEC §9.5 recorded closed.**
+
+| `structural-over-prose-enforcement` | browser-quality-gates | S | closed inventories/readiness, mutation-tested failure controls, hashed artifacts, and aggregate settlement make missing, skipped, flaky, unsafe, or silently updated browser evidence fail | yes |
+| `cited-code-is-verified-not-assumed` | browser-quality-gates | S | engine/project/runtime identities and local evidence are recorded exactly; unavailable hosted Ubuntu execution remains NOT RUN rather than inferred from local success | yes |
+| `theme-token-discipline` | browser-quality-gates | S | D7/D8 accessibility repairs use existing mode-aware theme slots; no global token/palette or unrelated presentation amendment was authorized | yes |
+
+> **GATE S tally — browser-quality-gates (2026-08-24).** **NO new graduations.** All three
+> binding keys were already promoted canon. `NO_BACKEND_CHANGE`, so no conformance JSON was promoted.
+> Fresh independent QA passed 45/0/0; hosted Ubuntu evidence remains honestly NOT RUN until GitHub
+> runner access returns.

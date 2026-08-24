@@ -1162,6 +1162,15 @@ conformance, and volume-replacement receipts.
   PostgreSQL 17, same-revision negative controls, immutable config validation, exact Railway terminal
   equality, one live replica, and independent health conformance all passed (QA 29/0/0). Standalone
   conformance: `state/conformance/postgres-release-safety.json`.
+- **Browser quality gates (`browser-quality-gates`, frontend/repository tooling, shipped 2026-08-24)** —
+  `npm run browser:quality` is the one read-only aggregate for four closed Playwright tiers: retained
+  Chromium 52/52, five journeys across Chromium/Firefox/WebKit 15/15, axe plus keyboard/reflow behavior
+  16/16, and six current-platform visual comparisons 6/6. Closed manifests/readiness, mutation-tested
+  failure controls, distinct hashed artifacts, and zero-flaky accounting prevent silent selection or
+  evidence loss. Visual updates are a separate authorization → candidates → acceptance → two-clean-run
+  workflow; normal checks cannot rewrite baselines. Fresh QA passed 45/0/0 with no Critical findings.
+  Hosted Ubuntu evidence remains `NOT RUN` until GitHub runner access returns. `NO_BACKEND_CHANGE`;
+  contracts at `_archive/browser-quality-gates/`.
 
 ## 7. Conventions
 <!-- shard: tags=conventions,env,run,config,vendor -->

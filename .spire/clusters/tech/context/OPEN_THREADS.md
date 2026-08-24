@@ -1543,6 +1543,29 @@ Does not replace `score-lab` or `batch-backtest`. `NO_UI_CHANGE`. Contracts at
 - `project-context-s2-is-python-era` still unpaid.
 - Sibling `grounding_isolation` suite red remains out-of-feature.
 
+## 7aq. Browser quality gates (SHIPPED + ARCHIVED 2026-08-24 — frontend/repository tooling)
+
+**What shipped.** One read-only Playwright quality aggregate now proves the retained 52-test Chromium
+inventory, five compatibility journeys across Chromium/Firefox/WebKit (15 arms), nine axe scans plus
+seven accessibility behavior sequences (16 arms), and six deterministic current-platform visual
+comparisons. Closed manifests, readiness predicates, mutation controls, artifact hashing, and distinct
+summary roots make missing, skipped, flaky, misidentified, unsafe, or silently updated evidence fail.
+Visual changes require separate owner authorization, candidate, acceptance, and two-run stability
+receipts; compare commands cannot update baselines. The narrowly authorized D7/D8 accessibility repairs
+changed no API, quant/scoring behavior, durable state, route, global theme token, or motion system.
+`NO_BACKEND_CHANGE`; contracts at `_archive/browser-quality-gates/`.
+
+**Verification.** Fresh GATE Q PASS 45/0/0: Chromium 52/52, compatibility 15/15,
+accessibility 16/16, visual 6/6, browser tooling 113/113, repository tooling 130/130, dashboard
+2,010/2,010, plus API/Rust, lint, typecheck, format, production build, bundle, isolation, artifact
+safety, and repeated visual stability. No Critical findings. Hosted Ubuntu/browser artifact publication
+remains honestly `NOT RUN` while GitHub runner/billing access is unavailable; local verification is not
+presented as hosted evidence.
+
+### Seams left open
+- Run the existing hosted aggregate and protected Linux candidate workflow when GitHub runner access
+  returns; do not synthesize Linux baselines from Windows.
+
 ## 8. Smaller deferred items (proposed, not implemented)
 - **Toast → an app-root `ToastProvider`** (owner idea, 2026-07-16): belongs at `app.tsx` providers, **NOT**
   `AppShell` (the landing page is outside the shell, so a shell-mounted provider can't serve it).
