@@ -920,6 +920,12 @@ be exactly it.
 > OPEN_THREADS §9 pointer. All other keys logged by this feature were already promoted canon.
 > Conformance JSON promoted to `state/conformance/postgres-release-safety.json`.
 
+| `production-fails-closed` | chain-snapshot-local-store | I | production snapshot capture selects the filesystem explicitly, requires exact `/data/chain_snapshots`, and proves write/sync/readback durability before workers or listener; no Postgres or ephemeral fallback | yes |
+| `best-effort-isolated-or-null` | chain-snapshot-local-store | I | runtime filesystem capture/prune failure remains outside trader/scanner response paths and cannot change score, tier, fingerprint, or SSE behavior | yes |
+| `no-secrets-in-image` | chain-snapshot-local-store | I | backend and root are runtime configuration; files, diagnostics, and export receipts exclude credentials, database URLs, API keys, and captured bodies | yes |
+| `operator-vs-trader-path-separation` | chain-snapshot-local-store | I | filesystem list/load preserves the existing operator research routes, makes zero vendor calls, and adds no trader surface | yes |
+| `structural-over-prose-enforcement` | chain-snapshot-local-store | I | a closed backend enum, production startup validation, immutable publish rules, and read-only export tests enforce the cutover mechanically | yes |
+
 > **GATE S tally — chain-archive-object-store (2026-08-20).** **NO new graduations.** Conformance
 > `state/conformance/chain-archive-object-store.json`. Keep-paid-books builds complete; #5 clock running.
 

@@ -1116,6 +1116,7 @@ pub fn progress_line(phase: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::ChainSnapshotBackend;
     use crate::services::chain_snapshot::wire::{fixture_probe_bundle, serialize_capture, to_wire};
     use serde_json::json;
     use std::collections::HashSet;
@@ -1162,6 +1163,8 @@ mod tests {
             chain_snapshot_max_per_symbol: 48,
             chain_snapshot_store_path: store,
             chain_snapshot_enabled: false,
+            chain_snapshot_backend: ChainSnapshotBackend::Disabled,
+            chain_snapshot_backend_explicit: false,
             session_chain_archive_enabled: false,
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,

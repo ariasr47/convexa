@@ -61,6 +61,7 @@ or microservices without a measured bottleneck and a separate owner decision.
 |---|---|---|---|
 | 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
 | 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 2a | `chain-snapshot-local-store` — move the bounded full-chain research ring from Postgres BYTEA to the API persistent volume | backend/infra incident feature | **PROMOTED 2026-08-24 — owner-directed after production Postgres disk exhaustion** |
 | 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **NEXT — owner directed; starts after #2 archive** |
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |

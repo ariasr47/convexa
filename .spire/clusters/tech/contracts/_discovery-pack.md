@@ -129,6 +129,12 @@
   via env** (host Variables / Pages env), values owner-entered; images run **non-root**. *(containerize-apps
   — the Dockerfiles + `.dockerignore`; persistent-db — `DATABASE_URL` via env; deploy — the real Railway
   registry push + the Pages Function reading `API_ORIGIN` from env. 3 binding.)*
+- **`[production-fails-closed]`** (promoted 2026-08-22, 2 binding) — a production process proves every
+  required durable and configuration prerequisite **before** workers or a network listener start.
+  Missing, stale, divergent, unavailable, or unverifiable state is a startup refusal, never a silent
+  development fallback. Production runtime configuration and schema readiness are explicit typed
+  boundaries; release migrations run in a separate serialized command, while normal serve remains
+  read-only. *(production-runtime-guardrails; postgres-release-safety.)*
 - **`[single-shared-sim-entry-dialog]`** (promoted 2026-07-02, 2 binding; **NARROWED to SIM-ONLY
   2026-07-16**) — every **simulated** entry flow (ghost trade, positions, act-on-rec/orders) launches **THE
   one shared `app/features/trading/TradeEntryDialog`**. A new **sim** entry shape is an additive **variant**
@@ -328,8 +334,8 @@ or microservices without a measured bottleneck and a separate owner decision.
 | # | Item | Shape | Status |
 |---|---|---|---|
 | 1 | `production-runtime-guardrails` — fail-closed prod config, restricted CORS, stable/versioned secret keys | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
-| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **NEXT — unblocked by #1** |
-| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | queued after #2 |
+| 2 | `postgres-release-safety` — real Postgres CI, migration serialization/atomicity, release migration command | backend/infra feature | **SHIPPED + ARCHIVED 2026-08-22** |
+| 3 | `api-contract-generation` — generated OpenAPI plus checked TypeScript client/types | both-lane tooling feature | **NEXT — owner directed; starts after #2 archive** |
 | 4 | `supply-chain-automation` — dependency updates, review, Rust audit/deny, CodeQL-supported surfaces, image scan, SBOM | CI/security feature | queued after #3 |
 | 5 | `capacity-baseline` — API/SSE load and soak harness with checked thresholds and mocked vendors | backend/test feature | queued after #4 |
 | 6 | `remote-archive-body-store` — S3-compatible immutable body store behind the shipped body-store port | backend/infra feature | queued after #5; existing filesystem store remains fallback |
@@ -341,6 +347,15 @@ or microservices without a measured bottleneck and a separate owner decision.
 Current-state corrections folded into the program: CI/CD and production smoke already exist;
 session bodies already sit outside app Postgres on a filesystem body-store. Their successors
 harden those capabilities rather than rebuilding them.
+
+## Last GATE S — 2026-08-22 (`postgres-release-safety` — serialized release migrations)
+<!-- atlas: theme=the-machine horizon=now -->
+Full pipeline completed with **GATE Q PASS 29/0/0**, independent live conformance 1/1, real
+PostgreSQL 17 migration/refusal matrices, and a repository/process receipt matched to direct Railway
+deployment evidence. The release image now exposes one canonical non-root executable; Railway runs
+the exact migration command before one healthy replica starts, and production serve remains
+read-only/fail-closed against schema drift. Archived to `_archive/postgres-release-safety/`;
+standalone conformance promoted. Program advances to #3 `api-contract-generation`.
 
 ## Last GATE S — 2026-08-22 (`production-runtime-guardrails` — fail-closed production profile)
 > [discovery: 6 lines elided — closed history; read context/BACKLOG.md for the full section, or memory_query]
@@ -1337,7 +1352,7 @@ decision (Databento Blue Ocean, or Webull supplement).
 ## 7j. Persistent datastore — in-memory → Postgres (SHIPPED + ARCHIVED — backend infra fast-path)
 > [discovery: 31 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7k. Deploy — Railway + Cloudflare Pages + system-6 go-live review (SHIPPED artifacts; live-deploy owner-applied)
-> [discovery: 58 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 67 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7l. Convexa redesign — full FE re-skin to the Figma DS (SHIPPED + ARCHIVED — merged to main)
 > [discovery: 25 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 ## 7m. Ticker UX-polish program + ai-rec structured display (SHIPPED + ARCHIVED — FE-only, catch-up QA)
@@ -1485,7 +1500,7 @@ decision (Databento Blue Ocean, or Webull supplement).
   true multi-session block history needs a heavier batched pull. Future.
 
 ## 9. Resolved decisions (do NOT revisit)
-> [discovery: 125 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
+> [discovery: 129 lines elided — closed history; read context/OPEN_THREADS.md for the full section, or memory_query]
 # DECISION LEDGER — compounding memory (standing reference)
 
 > How the system gets wiser per feature. The conveyor between a one-off decision and the shared
@@ -1538,6 +1553,7 @@ decision (Databento Blue Ocean, or Webull supplement).
 | `server-side-gate-enforcement` | an access gate on a state/cost-bearing action is enforced **server-side** (the server is the boundary of record), never FE-only; the FE check is for UX, not enforcement — a bypassed client check must still be rejected by the server | CONTEXT §5 · THREADS §9 | 2026-06-29 | user-accounts (AC-E7 catch), byo-ai-key (2 binding) |
 | `secret-encrypted-at-rest` | a stored recoverable secret (a user/third-party API key, broker token, etc.) is **ENCRYPTED at rest** (symmetric, server-side key — NOT hashed), and **never logged / returned in a response / sent to the browser**; write-only from the client (masked hint only) + rotate/delete; persisted as **ciphertext only** (the crypto boundary sits before the store); a decrypt-fail is treated as no-usable-secret, never a leak | CONTEXT §5 · THREADS §9 | 2026-06-29 | byo-ai-key, persistent-db (2 binding) |
 | `no-secrets-in-image` | a build/deploy artifact (container image, pushed repo) carries **NO secret**: `.dockerignore` excludes `.env*`/`.venv`/credential files, no `COPY .env`, no secret literal, no hardcoded backend URL; ALL config + secrets injected at **runtime via env** (host Variables / Pages env), values owner-entered; images run **non-root** | CONTEXT §5 · THREADS §9 | 2026-06-29 | containerize-apps, persistent-db, deploy (3 binding) |
+| `production-fails-closed` | a production process proves every required durable/configuration prerequisite before workers or a listener start; missing, stale, divergent, unavailable, or unverifiable state is a startup refusal, never a development fallback | CONTEXT §5 · THREADS §9 | **2026-08-22** | production-runtime-guardrails, postgres-release-safety (2 binding). Graduated by `ledger_tally` at `postgres-release-safety` GATE S |
 | `single-shared-sim-entry-dialog` | **SIM-ONLY (narrowed 2026-07-16).** Every **simulated** entry flow (ghost trade, positions, act-on-rec/orders) launches THE one shared `app/features/trading/TradeEntryDialog`; a new **sim** entry shape is an additive VARIANT of it (props/modes), never a forked second dialog; dead forks are deleted with zero-importer proof. **A REAL-money entry surface is explicitly OUT of scope and MUST be a separate component** — see the narrowing note under the table | CONTEXT §5 · THREADS §9 | 2026-07-02 · narrowed 2026-07-16 | sim-entry-unification, ai-rec-backtest-orders (2 binding); narrowed by owner canon review |
 | `loss-free-durable-migration` | when a durable client store's key/shape changes, existing user data is carried forward **loss-free** — read-new-else-old, promote-forward, **never-delete**, idempotent, never-throw — composing with any prior version chain; a corrupt/unreadable blob degrades to empty **without destroying the original** | CONTEXT §5 · THREADS §9 | **2026-07-16 (SEVERITY path, 1 instance)** | rebrand-convexa (the `resolveDurable` helper + the positions v1→v2 chain). Promoted by owner canon review on severity, not recurrence: ~5 durable localStorage stores hold the user's entire trading history with **no server backup**; violation = silent, total, irreversible loss. |
 | `score-change-is-deliberate-and-measured` | the `opportunity_score`/`tier`/gate **MAY** evolve — but **only deliberately**: via an explicit score-changing feature that states its rationale, records a **before/after on real tickers**, and **version-bumps** the fingerprint basis. A score change is **never** a side effect of an additive feature (that is `additive-keeps-score-byte-identical`), and never lands unmeasured | CONTEXT §5 · THREADS §9 | **2026-07-16 (owner canon review)** | The counterpart `additive-keeps-score-byte-identical` lacked: 8 enrichment features shipped (dex-voloi-skew-term, dealer-flow-projection, ai-context-pack, iv-rank, …) and **none could reach the score**, which went unchanged for 210 commits. Fills the gap; does not weaken the additive rule. |
@@ -1709,4 +1725,4 @@ be exactly it.
   already in Promoted canon.)_
 
 ## Ledger (append-only — one row per binding decision instance)
-> [discovery: 711 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]
+> [discovery: 728 lines elided — over the discovery byte budget; read context/DECISION_LEDGER.md for the full section, or memory_query]

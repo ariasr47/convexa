@@ -1,0 +1,23 @@
+{
+  "tool": "interface_conformance",
+  "verdict": "UNVERIFIABLE",
+  "mode": "sample",
+  "source": ".spire/clusters/tech/contracts/chain-snapshot-local-store/INTERFACE_CONTRACT.md",
+  "base_url": null,
+  "auth": null,
+  "checked_at": "2026-08-24T18:32:13Z",
+  "summary": {
+    "pass": 1,
+    "fail": 0,
+    "total": 1
+  },
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}",
+      "verdict": "PASS",
+      "required_checked": 12,
+      "failures": []
+    }
+  ]
+}

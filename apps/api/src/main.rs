@@ -26,7 +26,7 @@
 //! cargo run -p api-rust -- score-lab --outcomes data/research/outcomes_....json --horizon 1d
 //! ```
 
-use api_rust::config::Config;
+use api_rust::config::{ChainSnapshotBackend, Config};
 use api_rust::infrastructure::redis::PriceCache;
 use api_rust::server;
 use api_rust::services::{run_gex_on_chain, run_price_stream};
@@ -83,6 +83,16 @@ enum Commands {
     /// Apply the compiled PostgreSQL schema as an explicit release operation.
     #[cfg(feature = "postgres")]
     PostgresMigrate,
+    /// Read-only, resumable export of legacy chain snapshots to the filesystem store.
+    #[cfg(feature = "postgres")]
+    ExportChainSnapshots {
+        #[arg(long)]
+        root: PathBuf,
+        #[arg(long)]
+        receipt: PathBuf,
+        #[arg(long, default_value_t = 32)]
+        batch: i64,
+    },
     /// Validate mounted-volume continuity across an operator-managed restart/redeploy.
     ProductionVolumeDrill {
         #[command(subcommand)]
@@ -398,6 +408,8 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
                 chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .join("../../data/chain_snapshots"),
                 chain_snapshot_enabled: false,
+                chain_snapshot_backend: ChainSnapshotBackend::Disabled,
+                chain_snapshot_backend_explicit: false,
                 session_chain_archive_enabled: false,
                 session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                     .join("../../data/session_chain_archive"),
@@ -554,6 +566,24 @@ async fn run(cli: Cli) -> anyhow::Result<()> {
         }
         #[cfg(feature = "postgres")]
         Commands::PostgresMigrate => unreachable!("postgres-migrate is dispatched before run"),
+        #[cfg(feature = "postgres")]
+        Commands::ExportChainSnapshots {
+            root,
+            receipt,
+            batch,
+        } => {
+            let cfg = Config::from_env()?;
+            let url = cfg
+                .database_url
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("DATABASE_URL is required"))?;
+            let pg = api_rust::db::postgres::Pg::connect(url).await?;
+            let source = api_rust::db::pg_chain_snapshot::PgChainSnapshotStore::new(pg);
+            api_rust::services::chain_snapshot::export::export_chain_snapshots(
+                &source, &root, &receipt, batch,
+            )
+            .await?;
+        }
         Commands::ProductionVolumeDrill { phase } => {
             production_volume_drill(phase)?;
         }
@@ -896,6 +926,8 @@ async fn cmd_score_lab(
             chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("../../data/chain_snapshots"),
             chain_snapshot_enabled: false,
+            chain_snapshot_backend: ChainSnapshotBackend::Disabled,
+            chain_snapshot_backend_explicit: false,
             session_chain_archive_enabled: false,
             session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("../../data/session_chain_archive"),
@@ -1114,6 +1146,8 @@ async fn cmd_batch_backtest(
         chain_snapshot_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../data/chain_snapshots"),
         chain_snapshot_enabled: false,
+        chain_snapshot_backend: ChainSnapshotBackend::Disabled,
+        chain_snapshot_backend_explicit: false,
         session_chain_archive_enabled: false,
         session_chain_archive_store_path: PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../../data/session_chain_archive"),

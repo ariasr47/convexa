@@ -1,6 +1,6 @@
 //! Axum HTTP server bootstrap.
 
-use crate::config::Config;
+use crate::config::{ChainSnapshotBackend, Config};
 use crate::error::AppResult;
 use crate::middleware::rate_limit_middleware;
 use crate::routes;
@@ -49,6 +49,21 @@ pub async fn serve(config: Config) -> AppResult<()> {
                         .into(),
                 )
             })?;
+            if config.chain_snapshot_backend == ChainSnapshotBackend::Filesystem
+                && config.chain_snapshot_enabled
+            {
+                crate::runtime_guardrails::archive::ArchiveRootProbe::run(
+                    &config.chain_snapshot_store_path,
+                    Duration::from_secs(10),
+                )
+                .await
+                .map_err(|_| {
+                    crate::error::AppError::Config(
+                        "Production startup refused\nChain snapshot root: the configured path must be writable and flushable before startup."
+                            .into(),
+                    )
+                })?;
+            }
             AppState::new_production(config, schema.pg).await?
         }
         #[cfg(not(feature = "postgres"))]
@@ -117,6 +132,7 @@ pub async fn serve(config: Config) -> AppResult<()> {
 fn validate_production_profile(
     config: &Config,
 ) -> AppResult<crate::runtime_guardrails::config::ProductionRuntime> {
+    validate_snapshot_storage(config)?;
     use std::collections::HashMap;
     let keys = [
         "APP_ENV",
@@ -152,7 +168,67 @@ fn validate_production_profile(
                 .into(),
         ));
     }
+    if let Some(body_root) = config.session_chain_archive_body_root.as_ref() {
+        if crate::config::path_equals_or_nests(&config.chain_snapshot_store_path, body_root)
+            || crate::config::path_equals_or_nests(body_root, &config.chain_snapshot_store_path)
+        {
+            return Err(crate::error::AppError::Config(
+                "Production startup refused\nChain snapshot root conflicts with session archive body root."
+                    .into(),
+            ));
+        }
+    }
+    if crate::config::path_equals_or_nests(
+        &config.chain_snapshot_store_path,
+        &config.session_chain_archive_store_path,
+    ) || crate::config::path_equals_or_nests(
+        &config.session_chain_archive_store_path,
+        &config.chain_snapshot_store_path,
+    ) {
+        return Err(crate::error::AppError::Config(
+            "Production startup refused\nChain snapshot root conflicts with session archive index."
+                .into(),
+        ));
+    }
     Ok(validated)
+}
+
+fn validate_snapshot_storage(config: &Config) -> AppResult<()> {
+    let backend = config.chain_snapshot_backend;
+    if config.chain_snapshot_enabled
+        && (!config.chain_snapshot_backend_explicit || backend != ChainSnapshotBackend::Filesystem)
+    {
+        return Err(crate::error::AppError::Config(
+            "Production startup refused\nChain snapshot backend must explicitly select filesystem."
+                .into(),
+        ));
+    }
+    if config.chain_snapshot_enabled
+        && backend == ChainSnapshotBackend::Filesystem
+        && config.chain_snapshot_store_path != std::path::Path::new("/data/chain_snapshots")
+    {
+        return Err(crate::error::AppError::Config("Production startup refused\nChain snapshot root: configure exact /data/chain_snapshots.".into()));
+    }
+    if crate::config::path_equals_or_nests(
+        &config.chain_snapshot_store_path,
+        &config.session_chain_archive_store_path,
+    ) || crate::config::path_equals_or_nests(
+        &config.session_chain_archive_store_path,
+        &config.chain_snapshot_store_path,
+    ) || config
+        .session_chain_archive_body_root
+        .as_ref()
+        .is_some_and(|body| {
+            crate::config::path_equals_or_nests(&config.chain_snapshot_store_path, body)
+                || crate::config::path_equals_or_nests(body, &config.chain_snapshot_store_path)
+        })
+    {
+        return Err(crate::error::AppError::Config(
+            "Production startup refused\nChain snapshot root overlaps session archive storage."
+                .into(),
+        ));
+    }
+    Ok(())
 }
 
 fn cors_layer() -> CorsLayer {
@@ -386,5 +462,67 @@ mod cors_tests {
                 .headers()
                 .contains_key("access-control-allow-origin"));
         }
+    }
+}
+
+#[cfg(test)]
+mod snapshot_validation_tests {
+    use super::*;
+    use crate::config::ChainSnapshotBackend;
+    use std::path::PathBuf;
+
+    fn config() -> Config {
+        crate::state::test_stub_config()
+    }
+
+    #[test]
+    fn production_requires_explicit_filesystem_and_exact_underscore_path() {
+        let mut cfg = config();
+        cfg.chain_snapshot_enabled = true;
+        cfg.chain_snapshot_backend_explicit = false;
+        assert!(validate_snapshot_storage(&cfg).is_err());
+        cfg.chain_snapshot_backend_explicit = true;
+        cfg.chain_snapshot_backend = ChainSnapshotBackend::Filesystem;
+        cfg.chain_snapshot_store_path = PathBuf::from("/data/chain-snapshots");
+        assert!(validate_snapshot_storage(&cfg).is_err());
+        cfg.chain_snapshot_store_path = PathBuf::from("/data/chain_snapshots");
+        assert!(validate_snapshot_storage(&cfg).is_ok());
+    }
+
+    #[test]
+    fn production_rejects_both_index_and_body_overlap_directions() {
+        let mut cfg = config();
+        cfg.chain_snapshot_enabled = true;
+        cfg.chain_snapshot_backend_explicit = true;
+        cfg.chain_snapshot_backend = ChainSnapshotBackend::Filesystem;
+        cfg.chain_snapshot_store_path = PathBuf::from("/data/chain_snapshots");
+        cfg.session_chain_archive_store_path = PathBuf::from("/data/chain_snapshots/archive");
+        assert!(validate_snapshot_storage(&cfg).is_err());
+        cfg.session_chain_archive_store_path = PathBuf::from("/data/session_chain_archive");
+        cfg.session_chain_archive_body_root = Some(PathBuf::from("/data/chain_snapshots/bodies"));
+        assert!(validate_snapshot_storage(&cfg).is_err());
+        cfg.session_chain_archive_body_root = Some(PathBuf::from("/data/archive"));
+        cfg.chain_snapshot_store_path = PathBuf::from("/data/archive/snapshots");
+        assert!(validate_snapshot_storage(&cfg).is_err());
+    }
+
+    #[test]
+    fn production_requires_backend_and_absolute_exact_root_before_serving() {
+        let mut cfg = config();
+        cfg.chain_snapshot_enabled = true;
+        cfg.chain_snapshot_backend = ChainSnapshotBackend::Disabled;
+        cfg.chain_snapshot_backend_explicit = true;
+        assert!(validate_snapshot_storage(&cfg).is_err());
+
+        cfg.chain_snapshot_backend = ChainSnapshotBackend::Filesystem;
+        cfg.chain_snapshot_backend_explicit = false;
+        assert!(validate_snapshot_storage(&cfg).is_err());
+
+        cfg.chain_snapshot_backend_explicit = true;
+        cfg.chain_snapshot_store_path = PathBuf::from("data/chain_snapshots");
+        assert!(validate_snapshot_storage(&cfg).is_err());
+
+        cfg.chain_snapshot_store_path = PathBuf::from("/data/chain_snapshots");
+        assert!(validate_snapshot_storage(&cfg).is_ok());
     }
 }

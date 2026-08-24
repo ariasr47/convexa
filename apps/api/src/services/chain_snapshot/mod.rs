@@ -4,6 +4,9 @@
 //! Capture write failure never fails bundle / scan / SSE.
 
 mod capture;
+#[cfg(feature = "postgres")]
+pub mod export;
+mod filesystem;
 mod store;
 pub mod wire;
 
