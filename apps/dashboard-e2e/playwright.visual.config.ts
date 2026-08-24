@@ -1,6 +1,12 @@
 import { sharedConfig } from './playwright.shared.config';
+
+const config = sharedConfig('visual');
 export default {
-  ...sharedConfig('visual'),
+  ...config,
+  use: {
+    ...config.use,
+    launchOptions: { args: ['--disable-gpu'] },
+  },
   testDir: './src/quality',
   testMatch: ['visual.spec.ts'],
   retries: 0,
