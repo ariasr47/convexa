@@ -920,6 +920,23 @@ be exactly it.
 > OPEN_THREADS §9 pointer. All other keys logged by this feature were already promoted canon.
 > Conformance JSON promoted to `state/conformance/postgres-release-safety.json`.
 
+| `production-fails-closed` | chain-snapshot-local-store | I | production snapshot capture selects the filesystem explicitly, requires exact `/data/chain_snapshots`, and proves write/sync/readback durability before workers or listener; no Postgres or ephemeral fallback | yes |
+| `best-effort-isolated-or-null` | chain-snapshot-local-store | I | runtime filesystem capture/prune failure remains outside trader/scanner response paths and cannot change score, tier, fingerprint, or SSE behavior | yes |
+| `no-secrets-in-image` | chain-snapshot-local-store | I | backend and root are runtime configuration; files, diagnostics, and export receipts exclude credentials, database URLs, API keys, and captured bodies | yes |
+| `operator-vs-trader-path-separation` | chain-snapshot-local-store | I | filesystem list/load preserves the existing operator research routes, makes zero vendor calls, and adds no trader surface | yes |
+| `structural-over-prose-enforcement` | chain-snapshot-local-store | I | a closed backend enum, production startup validation, immutable publish rules, and read-only export tests enforce the cutover mechanically | yes |
+| `production-fails-closed` | chain-snapshot-local-store | S | hosted startup refused a root-owned snapshot directory before listener/workers; after UID 10001 ownership and a real flush/readback probe, the same pinned image started with exact `/data/chain_snapshots` | yes |
+| `best-effort-isolated-or-null` | chain-snapshot-local-store | S | QA forced append/prune faults without changing bundle success, scanner continuation, SSE, score, tier, or fingerprint; hosted capture remained isolated on the filesystem | yes |
+| `no-secrets-in-image` | chain-snapshot-local-store | S | the non-root pinned image received selector/path/database credentials only at runtime; receipts and diagnostics retained only closed counts, timestamps, ids, and result classes | yes |
+| `operator-vs-trader-path-separation` | chain-snapshot-local-store | S | independent conformance passed all four research list/load arms with zero Massive calls and no dashboard/runtime interface change | yes |
+| `structural-over-prose-enforcement` | chain-snapshot-local-store | S | closed selector, exact-path validation, no-clobber immutable publish, mutation-tested read-only export, and pre-bind durability probe made the unsafe transition fail visibly | yes |
+
+> **GATE S tally — chain-snapshot-local-store (2026-08-24).** **NO new graduations.** All five
+> binding keys were already promoted canon. Conformance JSON promoted to
+> `state/conformance/chain-snapshot-local-store.json`. Hosted QA passed 14/14 after filesystem growth
+> and a fixed Postgres watermark were observed independently; legacy rows remain intact pending a
+> separately authorized reclamation.
+
 > **GATE S tally — chain-archive-object-store (2026-08-20).** **NO new graduations.** Conformance
 > `state/conformance/chain-archive-object-store.json`. Keep-paid-books builds complete; #5 clock running.
 

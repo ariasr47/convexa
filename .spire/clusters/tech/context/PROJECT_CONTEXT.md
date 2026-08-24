@@ -60,7 +60,8 @@ auth, or Massive client.
 the structure anchor; last-trade is display-only. SSE is trader-page scoped on the client.
 
 **Capture / research stores:** `services/chain_snapshot/` — append-only paid `VendorBundle` ring
-(48/symbol **and** 14d). `services/session_chain_archive/` — prune-proof `(symbol, et_date)`
+(48/symbol **and** 14d), explicitly selected in production as a file-per-snapshot store on
+`/data/chain_snapshots` (not app-Postgres BYTEA). `services/session_chain_archive/` — prune-proof `(symbol, et_date)`
 session books; **bodies** on `SESSION_CHAIN_ARCHIVE_BODY_ROOT` (not app-Postgres BYTEA). Research
 list/load: `GET /api/_research/chain-snapshots/*` and `GET /api/_research/session-books/*` (zero
 Massive; Pages trader origin **404s** `/api/_research` like `/api/_metrics`).
@@ -90,9 +91,10 @@ the live score.
 preflight, a writable/flushed archive-body root, addressed signing/encryption key rings, a valid
 operator metrics token, exact HTTPS browser origins, and secure cookie policy before any listener or
 worker starts. Production metrics are operator-token gated; CORS is an exact-origin allowlist. The
-API runs as UID `10001`, one startup owner/replica applies embedded migrations, and archive bodies use
-the mounted `/data/session-chain-archive` root. The release gate retains same-SHA Postgres CI,
-startup-owner, live conformance, and volume-replacement receipts.
+API runs as UID `10001`, one startup owner/replica applies embedded migrations, archive bodies use
+the mounted `/data/session-chain-archive` root, and chain snapshots use the independently probed
+`/data/chain_snapshots` root. The release gate retains same-SHA Postgres CI, startup-owner, live
+conformance, and volume-replacement receipts.
 
 ## 2b. Frontend architecture
 <!-- shard: tags=frontend,ui -->
@@ -551,6 +553,14 @@ startup-owner, live conformance, and volume-replacement receipts.
   `/api/_research/chain-snapshots` makes **zero** vendor calls; Pages trader origin **404s** that
   prefix like `/api/_metrics`. Warmer / 25s refresh is **excluded**. Score/tier/fingerprint
   unchanged. QA PASS 28/0/0; independent conformance 4/4. Unblocks P3 batch-backtest CLI.
+- **Filesystem chain-snapshot store (`chain-snapshot-local-store`, BE, shipped 2026-08-24)** —
+  production chain snapshots no longer write `BYTEA` rows to app Postgres. A closed runtime selector
+  requires `filesystem` plus exact `/data/chain_snapshots`; startup probes write/flush/readback before
+  any worker or listener and refuses rather than falling back. The file-per-snapshot store preserves
+  immutable/idempotent identities, zero-vendor research reads, and the 14-day/48-per-symbol policy.
+  A read-only bounded export reconciled all 1,169 legacy rows with zero failures; legacy rows remain
+  intact pending separately authorized reclamation. Hosted cutover QA PASS 14/14; independent
+  conformance 4/4; filesystem advanced while the Postgres watermark stayed fixed.
 - **AI providers (`ai-providers`, FE+BE, shipped 2026-08-18)** — Settings "AI providers" replaces the
   Anthropic-only key panel. A signed-in trader stores **one BYO ciphertext per** closed provider
   (Anthropic / OpenAI / Gemini / Grok), always sees a **named model** from a closed catalog, and

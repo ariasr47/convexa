@@ -78,7 +78,8 @@ pub enum ChainSnapshotStore {
     Disabled,
     Memory(Arc<RwLock<MemoryInner>>),
     Json(JsonInner),
-    /// Test double: every store operation fails with a deterministic backend fault.
+    Filesystem(super::filesystem::FilesystemInner),
+    /// Test double: append/load fail deterministically; list stays empty.
     Failing,
     #[cfg(feature = "postgres")]
     Postgres(crate::db::pg_chain_snapshot::PgChainSnapshotStore),
@@ -120,6 +121,12 @@ impl ChainSnapshotStore {
         }))
     }
 
+    pub async fn open_filesystem(dir: &Path) -> AppResult<Self> {
+        Ok(Self::Filesystem(
+            super::filesystem::FilesystemInner::open(dir).await?,
+        ))
+    }
+
     #[cfg(feature = "postgres")]
     pub fn open_postgres(pg: crate::db::postgres::Pg) -> Self {
         info!(backend = "postgres", "chain snapshot store: postgres");
@@ -143,6 +150,7 @@ impl ChainSnapshotStore {
                 }
                 Ok(())
             }
+            Self::Filesystem(fs) => fs.append(wire, body).await,
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.append(wire, body).await,
         }
@@ -162,6 +170,7 @@ impl ChainSnapshotStore {
                 let _guard = json.gate.read().await;
                 Ok(MemoryInner::load_symbol(&json.dir, &symbol)?.list(&symbol, limit))
             }
+            Self::Filesystem(fs) => fs.list(&symbol, limit).await,
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.list(&symbol, limit).await,
         }
@@ -177,6 +186,7 @@ impl ChainSnapshotStore {
                 let _guard = json.gate.read().await;
                 Ok(MemoryInner::load_symbol(&json.dir, &symbol)?.load(&symbol, as_of))
             }
+            Self::Filesystem(fs) => fs.load(&symbol, as_of).await,
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.load(&symbol, as_of).await,
         }
@@ -202,6 +212,7 @@ impl ChainSnapshotStore {
                 rows.persist_symbol(&json.dir, &symbol)?;
                 Ok(())
             }
+            Self::Filesystem(fs) => fs.prune(&symbol, max_age, max_per).await,
             #[cfg(feature = "postgres")]
             Self::Postgres(pg) => pg.prune_symbol(&symbol, max_age, max_per).await,
         }
@@ -535,6 +546,63 @@ mod tests {
         assert_eq!(listed[0].as_of, w2.as_of);
         assert_eq!(pruned.load("SPY", w2.as_of).await.unwrap().unwrap(), b2);
         drop(pruned);
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn filesystem_store_is_immutable_restartable_and_rejects_conflicts() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("convexa-chain-snapshot-fs-{nonce}"));
+        let (wire, body) = wire_at("A/B", 1, 7);
+        let store = ChainSnapshotStore::open_filesystem(&dir).await.unwrap();
+        store.append(&wire, &body).await.unwrap();
+        store.append(&wire, &body).await.unwrap();
+        assert_eq!(store.load("a/b", wire.as_of).await.unwrap().unwrap(), body);
+        assert_eq!(store.list("A/B", None).await.unwrap().len(), 1);
+        let mut conflict = wire.clone();
+        conflict.market.synchronized_spot += 1.0;
+        let conflict_body = serialize_capture(&conflict).unwrap();
+        assert!(store.append(&conflict, &conflict_body).await.is_err());
+        let mut source_conflict = wire.clone();
+        source_conflict.source = MarketDataSourceKind::LiveMassive;
+        let source_body = serialize_capture(&source_conflict).unwrap();
+        assert!(store.append(&source_conflict, &source_body).await.is_err());
+        drop(store);
+        let reopened = ChainSnapshotStore::open_filesystem(&dir).await.unwrap();
+        assert_eq!(
+            reopened.load("A/B", wire.as_of).await.unwrap().unwrap(),
+            body
+        );
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn filesystem_store_prunes_by_age_and_count_without_reading_all_bodies() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("convexa-chain-snapshot-fs-prune-{nonce}"));
+        let store = ChainSnapshotStore::open_filesystem(&dir).await.unwrap();
+        let old_wire = to_wire(&fixture_probe_bundle(
+            "SPY",
+            Utc::now() - chrono::Duration::days(20),
+        ));
+        let old_body = serialize_capture(&old_wire).unwrap();
+        store.append(&old_wire, &old_body).await.unwrap();
+        for i in 0..4 {
+            let (wire, body) = wire_at("SPY", 40 - i * 10, i as u32);
+            store.append(&wire, &body).await.unwrap();
+        }
+        store
+            .prune_symbol("SPY", Duration::from_secs(1_209_600), 2)
+            .await
+            .unwrap();
+        assert_eq!(store.list("SPY", None).await.unwrap().len(), 2);
+        assert!(store.load("SPY", old_wire.as_of).await.unwrap().is_none());
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }

@@ -1,6 +1,6 @@
 //! Shared application state for the Axum server.
 
-use crate::config::{body_root_conflicts, Config};
+use crate::config::{body_root_conflicts, ChainSnapshotBackend, Config};
 use crate::domain::{LivePrice, MarketPhase};
 use crate::error::AppResult;
 use crate::infrastructure::massive::MassiveRestClient;
@@ -496,6 +496,8 @@ pub(crate) fn test_stub_config() -> Config {
         chain_snapshot_max_per_symbol: 48,
         chain_snapshot_store_path: PathBuf::from("data/chain_snapshots"),
         chain_snapshot_enabled: true,
+        chain_snapshot_backend: ChainSnapshotBackend::Filesystem,
+        chain_snapshot_backend_explicit: false,
         session_chain_archive_enabled: true,
         session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
         session_chain_archive_body_root: None,
@@ -509,29 +511,26 @@ pub(crate) fn test_stub_config() -> Config {
 #[cfg(feature = "postgres")]
 async fn open_chain_snapshot_store(
     config: &Config,
-    pg: Option<crate::db::postgres::Pg>,
+    _pg: Option<crate::db::postgres::Pg>,
 ) -> ChainSnapshotStore {
-    if !config.chain_snapshot_enabled {
+    if !config.chain_snapshot_enabled
+        || config.chain_snapshot_backend == ChainSnapshotBackend::Disabled
+    {
         info!("chain snapshot store: disabled");
         return ChainSnapshotStore::disabled();
     }
-    if let Some(p) = pg {
-        let store = ChainSnapshotStore::open_postgres(p);
-        if let Err(e) = store.plant_conformance_seed().await {
-            warn!(error = %e, "chain snapshot conformance seed skipped");
-        }
-        return store;
-    }
-    open_chain_snapshot_json(config).await
+    open_chain_snapshot_filesystem(config).await
 }
 
 #[cfg(not(feature = "postgres"))]
 async fn open_chain_snapshot_store(config: &Config, _pg: ()) -> ChainSnapshotStore {
-    if !config.chain_snapshot_enabled {
+    if !config.chain_snapshot_enabled
+        || config.chain_snapshot_backend == ChainSnapshotBackend::Disabled
+    {
         info!("chain snapshot store: disabled");
         return ChainSnapshotStore::disabled();
     }
-    open_chain_snapshot_json(config).await
+    open_chain_snapshot_filesystem(config).await
 }
 
 fn session_archive_body_root_or_disabled(config: &Config) -> Option<&std::path::PathBuf> {
@@ -627,20 +626,17 @@ async fn open_session_chain_archive_json(config: &Config) -> SessionChainArchive
     }
 }
 
-async fn open_chain_snapshot_json(config: &Config) -> ChainSnapshotStore {
-    match ChainSnapshotStore::open_json(&config.chain_snapshot_store_path).await {
+async fn open_chain_snapshot_filesystem(config: &Config) -> ChainSnapshotStore {
+    match ChainSnapshotStore::open_filesystem(&config.chain_snapshot_store_path).await {
         Ok(store) => {
-            info!(
-                path = %config.chain_snapshot_store_path.display(),
-                "chain snapshot store: json"
-            );
+            info!(path = %config.chain_snapshot_store_path.display(), "chain snapshot store: filesystem");
             if let Err(e) = store.plant_conformance_seed().await {
                 warn!(error = %e, "chain snapshot conformance seed skipped");
             }
             store
         }
         Err(e) => {
-            warn!(error = %e, "chain snapshot store open failed; capture not storing");
+            warn!(error = %e, "chain snapshot filesystem store open failed; capture not storing");
             ChainSnapshotStore::disabled()
         }
     }
@@ -922,6 +918,8 @@ mod tests {
             chain_snapshot_max_per_symbol: 48,
             chain_snapshot_store_path: PathBuf::from("data/chain_snapshots"),
             chain_snapshot_enabled: true,
+            chain_snapshot_backend: ChainSnapshotBackend::Filesystem,
+            chain_snapshot_backend_explicit: false,
             session_chain_archive_enabled: true,
             session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
             session_chain_archive_body_root: None,
@@ -995,6 +993,59 @@ mod tests {
         let store = open_session_chain_archive_json(&config).await;
         let err = store.list("SPY", None).await.unwrap_err();
         assert!(err.to_string().contains("session archive not storing"));
+    }
+
+    #[tokio::test]
+    async fn enabled_filesystem_selection_writes_to_root_even_when_database_url_exists() {
+        let root = std::env::temp_dir().join(format!(
+            "convexa-state-filesystem-selection-{}",
+            std::process::id()
+        ));
+        let mut config = test_config();
+        config.chain_snapshot_store_path = root.clone();
+        config.chain_snapshot_backend = ChainSnapshotBackend::Filesystem;
+        config.chain_snapshot_backend_explicit = true;
+        config.database_url = Some("postgresql://must-not-select-snapshot-adapter".into());
+        let store = open_chain_snapshot_store(&config, {
+            #[cfg(feature = "postgres")]
+            {
+                None
+            }
+            #[cfg(not(feature = "postgres"))]
+            {
+                ()
+            }
+        })
+        .await;
+        assert!(store.is_enabled());
+        assert!(root.exists());
+        assert!(!store.list("SPY", None).await.unwrap().is_empty());
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn disabled_selection_never_creates_snapshot_root() {
+        let root = std::env::temp_dir().join(format!(
+            "convexa-state-disabled-selection-{}",
+            std::process::id()
+        ));
+        let mut config = test_config();
+        config.chain_snapshot_store_path = root.clone();
+        config.chain_snapshot_backend = ChainSnapshotBackend::Disabled;
+        config.chain_snapshot_backend_explicit = true;
+        let store = open_chain_snapshot_store(&config, {
+            #[cfg(feature = "postgres")]
+            {
+                None
+            }
+            #[cfg(not(feature = "postgres"))]
+            {
+                ()
+            }
+        })
+        .await;
+        assert!(!store.is_enabled());
+        assert!(!root.exists());
     }
 }
 

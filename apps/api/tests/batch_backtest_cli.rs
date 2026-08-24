@@ -1,5 +1,6 @@
 //! Hermetic integration harness for batch-backtest-cli (SPEC §7 / PLAN B9).
 
+use api_rust::config::ChainSnapshotBackend;
 use api_rust::services::analytics::{compute_from_port, AnalyticsComputeParams};
 use api_rust::services::chain_snapshot::wire::{
     as_of_string, fixture_probe_bundle, serialize_capture, to_wire, CONFORMANCE_SEED_AS_OF,
@@ -79,6 +80,8 @@ fn dummy_config(store: PathBuf) -> api_rust::Config {
         chain_snapshot_max_per_symbol: 48,
         chain_snapshot_store_path: store,
         chain_snapshot_enabled: false,
+        chain_snapshot_backend: ChainSnapshotBackend::Disabled,
+        chain_snapshot_backend_explicit: false,
         session_chain_archive_enabled: false,
         session_chain_archive_store_path: PathBuf::from("data/session_chain_archive"),
         session_chain_archive_body_root: None,
