@@ -42,6 +42,17 @@ export function validateChildEvidence({
       status: 'incomplete',
     };
   }
+  if (result.status === 'incomplete') {
+    return {
+      target: child.target,
+      execution_key: `${runId}:${child.target}`,
+      invocation_count: 1,
+      exit_code: result.exit_code ?? 1,
+      summary_path: summaryPathRelative,
+      summary_sha256: summarySha,
+      status: 'incomplete',
+    };
+  }
   const identityMatches =
     summary.gate === child.gate && summary.run_id === runId && summary.source_revision === source;
   const status =

@@ -8,6 +8,11 @@ const require = createRequire(__filename);
 const ROOT = path.resolve(process.cwd());
 const sha256 = (file: string) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const chromiumTestId = (file: string, titlePath: string[]) =>
+  crypto
+    .createHash('sha256')
+    .update(`pre-feature-52-v1\0${file}\0${titlePath.join('\0')}`)
+    .digest('hex');
 const relative = (file: string) => path.relative(ROOT, file).replaceAll(path.sep, '/');
 const runtime = () => {
   const browserFile = path.join(ROOT, 'node_modules/playwright-core/browsers.json');
@@ -122,14 +127,27 @@ export class QualityReporter implements Reporter {
     const title = test.titlePath();
     const identifier =
       title.at(-1) ?? path.basename(test.location.file, path.extname(test.location.file));
-    const record: Record<string, unknown> = {
-      identity: title,
-      file: relative(test.location.file),
-      project: test.parent?.project()?.name ?? 'chromium',
-      status,
-      retry: result.retry,
-      artifact_paths: attachmentPaths,
-    };
+    const file = relative(test.location.file);
+    const project = test.parent?.project()?.name ?? 'chromium';
+    const record: Record<string, unknown> =
+      this.gate === 'chromium'
+        ? {
+            test_id: chromiumTestId(file, title.slice(3)),
+            file,
+            title_path: title.slice(3),
+            project,
+            status,
+            retries: result.retry,
+            artifact_paths: attachmentPaths,
+          }
+        : {
+            identity: title,
+            file,
+            project,
+            status,
+            retry: result.retry,
+            artifact_paths: attachmentPaths,
+          };
     if (this.gate === 'visual') {
       const expected = `apps/dashboard-e2e/src/quality/snapshots/${process.platform}/chromium/${identifier}.png`;
       const expectedFile = path.join(ROOT, expected);

@@ -103,6 +103,17 @@ test('child evidence validates identity, status and artifact hash after settleme
   });
   assert.equal(missing.status, 'incomplete');
   assert.equal(missing.summary_sha256, null);
+  const stale = validateChildEvidence({
+    child,
+    result: { exit_code: 1, status: 'incomplete' },
+    runId: base.run_id,
+    source: base.source_revision,
+    root: 'C:/workspace',
+    summaryReader: () => base,
+    hashReader: () => 'b'.repeat(64),
+  });
+  assert.equal(stale.status, 'incomplete');
+  assert.equal(stale.summary_sha256, 'b'.repeat(64));
 });
 
 test('aggregate receipt has the exact declared fields and status precedence', () => {

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { loadManifest } from './lib/manifest.mjs';
 import { readSummary, validateSummary } from './lib/summary.mjs';
 
 function artifact(root) {
@@ -15,6 +16,14 @@ function artifact(root) {
   };
 }
 function base(root) {
+  const scenarios = [
+    'landing',
+    'ticker-desktop',
+    'ticker-offline-mobile',
+    'positions-dense',
+    'scanner-dense',
+    'ai-recommendation',
+  ];
   return {
     schema_version: 1,
     gate: 'visual',
@@ -31,40 +40,107 @@ function base(root) {
     browser_revision: '1234',
     host_platform: process.platform,
     artifacts: [artifact(root)],
-    scenarios: Array.from({ length: 6 }, (_, i) => ({ id: `scenario-${i}` })),
+    scenarios: scenarios.map((scenario_id) => ({
+      identity: ['chromium', 'visual.spec.ts', scenario_id],
+      file: 'apps/dashboard-e2e/src/quality/visual.spec.ts',
+      project: 'chromium',
+      status: 'passed',
+      retry: 0,
+      artifact_paths: [],
+      scenario_id,
+      expected_path: null,
+      expected_sha256: null,
+      actual_path: null,
+      actual_sha256: null,
+      diff_path: null,
+      diff_sha256: null,
+    })),
   };
 }
 
 test('strict visual summary validates arithmetic, inventory and file hash', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const summary = base(root);
-  assert.doesNotThrow(() => validateSummary(summary, { root }));
+  assert.doesNotThrow(() => validateSummary(summary, { root, manifest: loadManifest() }));
 });
 test('Chromium summary accepts scalar inventory identity and project fields', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
-  const common = base(root);
+  const common = { ...base(root), gate: 'chromium', selected: 52, executed: 52, passed: 52 };
   delete common.scenarios;
   const summary = {
     ...common,
-    gate: 'chromium',
     inventory_id: 'pre-feature-52-v1',
     project: 'chromium',
-    tests: Array.from({ length: 52 }, (_, i) => ({ id: `test-${i}` })),
+    tests: loadManifest().full_chromium.tests.map((record) => ({
+      test_id: record.test_id,
+      file: record.file,
+      title_path: record.title_path,
+      project: 'chromium',
+      status: 'passed',
+      retries: 0,
+      artifact_paths: [],
+    })),
   };
-  assert.doesNotThrow(() => validateSummary(summary, { root }));
+  assert.doesNotThrow(() => validateSummary(summary, { root, manifest: loadManifest() }));
+});
+test('summary rejects exact-count and identity mutations', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
+  const manifest = loadManifest();
+  const common = { ...base(root), gate: 'chromium', selected: 52, executed: 52, passed: 52 };
+  delete common.scenarios;
+  const records = manifest.full_chromium.tests.map((record) => ({
+    test_id: record.test_id,
+    file: record.file,
+    title_path: record.title_path,
+    project: 'chromium',
+    status: 'passed',
+    retries: 0,
+    artifact_paths: [],
+  }));
+  const summary = {
+    ...common,
+    inventory_id: 'pre-feature-52-v1',
+    project: 'chromium',
+    tests: records,
+  };
+  const options = { root, manifest };
+  assert.throws(() => validateSummary({ ...summary, selected: 51 }, options));
+  assert.throws(() =>
+    validateSummary({ ...summary, tests: [...records.slice(0, -1), { ...records[0] }] }, options),
+  );
+  const missing = { ...records[0] };
+  delete missing.retries;
+  assert.throws(() =>
+    validateSummary({ ...summary, tests: [missing, ...records.slice(1)] }, options),
+  );
+  assert.throws(() =>
+    validateSummary(
+      { ...summary, tests: [{ ...records[0], project: 'firefox' }, ...records.slice(1)] },
+      options,
+    ),
+  );
 });
 test('summary rejects unknown keys, zero selection and hash mismatch', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const summary = base(root);
-  assert.throws(() => validateSummary({ ...summary, nope: true }, { root }));
-  assert.throws(() => validateSummary({ ...summary, selected: 0 }, { root }));
+  assert.throws(() =>
+    validateSummary({ ...summary, nope: true }, { root, manifest: loadManifest() }),
+  );
+  assert.throws(() =>
+    validateSummary({ ...summary, selected: 0 }, { root, manifest: loadManifest() }),
+  );
   summary.artifacts[0].sha256 = '0'.repeat(64);
-  assert.throws(() => validateSummary(summary, { root }));
+  assert.throws(() => validateSummary(summary, { root, manifest: loadManifest() }));
 });
 test('summary rejects flaky or not-run pass', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const summary = base(root);
-  assert.throws(() => validateSummary({ ...summary, flaky: 1, passed: 5, executed: 6 }, { root }));
+  assert.throws(() =>
+    validateSummary(
+      { ...summary, flaky: 1, passed: 5, executed: 6 },
+      { root, manifest: loadManifest() },
+    ),
+  );
 });
 test('readSummary rejects source/path escape', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
