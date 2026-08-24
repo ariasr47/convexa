@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "win32-ai-analysis-d786f0d-retry-20260824",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "d786f0d8415a978077952db11d457eaf6c9402d1",
+  "platform": "win32",
+  "created_at": "2026-08-24T16:26:58.002Z",
+  "failed_compare": {
+    "run_id": "local-1787584759275-b2280872",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/summary.json",
+    "summary_sha256": "4cb9775b88534e2e1cf760207e8681dce3124914257eef5656bb3de55e1a05ac"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/landing-expected.png",
+      "expected_sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/landing.png",
+      "actual_sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ticker-desktop-expected.png",
+      "expected_sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ticker-desktop.png",
+      "actual_sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ticker-offline-mobile-expected.png",
+      "expected_sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ticker-offline-mobile.png",
+      "actual_sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/positions-dense-expected.png",
+      "expected_sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/positions-dense.png",
+      "actual_sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/scanner-dense-expected.png",
+      "expected_sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/scanner-dense.png",
+      "actual_sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ai-recommendation-expected.png",
+      "expected_sha256": "88b2383ead4165f43618c6f416603707d63f96927e2866254e87bdbe3974dbb7",
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ai-recommendation.png",
+      "actual_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "diff_path": "apps/dashboard-e2e/visual-review/evidence/win32-ai-analysis-d786f0d-20260824/ai-recommendation-diff.png",
+      "diff_sha256": "d4409464159cd87bbb3c8d09790ceb17b3c004ba5e2b84e35de95e5c11d6ba8e"
+    }
+  ]
+}
