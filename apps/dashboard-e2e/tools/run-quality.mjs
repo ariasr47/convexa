@@ -31,7 +31,12 @@ export function validateChildEvidence({
   try {
     summary = summaryReader(summaryPath, { root });
     summarySha = hashReader(summaryPath);
-  } catch {
+  } catch (error) {
+    console.error(
+      `[quality] ${child.target} evidence invalid at ${summaryPathRelative}: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
     return {
       target: child.target,
       execution_key: `${runId}:${child.target}`,

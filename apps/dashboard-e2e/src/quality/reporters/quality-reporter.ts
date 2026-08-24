@@ -1,18 +1,41 @@
 import type { FullConfig, Reporter, Suite, TestCase, TestResult } from '@playwright/test/reporter';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 
-const require = createRequire(__filename);
 const ROOT = path.resolve(process.cwd());
 const sha256 = (file: string) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const chromiumTestId = (file: string, titlePath: string[]) =>
-  crypto
-    .createHash('sha256')
-    .update(`pre-feature-52-v1\0${file}\0${titlePath.join('\0')}`)
-    .digest('hex');
+const qualityManifest = JSON.parse(
+  fs.readFileSync(path.join(ROOT, 'apps/dashboard-e2e/src/quality/manifest.json'), 'utf8'),
+) as {
+  full_chromium: {
+    tests: Array<{ test_id: string; file: string; title_path: string[]; project: string }>;
+  };
+  accessibility: { behaviors: Array<{ id: string }> };
+};
+export function mapChromiumIdentity(file: string, titlePath: string[], project: string) {
+  const matches = qualityManifest.full_chromium.tests.filter(
+    (record) =>
+      record.file === file &&
+      record.project === project &&
+      JSON.stringify(record.title_path) === JSON.stringify(titlePath),
+  );
+  if (matches.length !== 1)
+    throw new Error(
+      `Chromium manifest identity did not uniquely match ${file} ${titlePath.join(' › ')}`,
+    );
+  return matches[0].test_id;
+}
+export function mapAccessibilityBehaviorId(titlePath: string[]) {
+  const title = titlePath.find((value) => /^A11Y-B[1-7](?:\b|\s)/.test(value));
+  const id = title?.match(/^(A11Y-B[1-7])(?:\b|\s)/)?.[1];
+  if (!id || !qualityManifest.accessibility.behaviors.some((record) => record.id === id))
+    throw new Error(
+      `Accessibility behavior manifest identity did not match ${titlePath.join(' › ')}`,
+    );
+  return id;
+}
 const relative = (file: string) => path.relative(ROOT, file).replaceAll(path.sep, '/');
 const runtime = () => {
   const browserFile = path.join(ROOT, 'node_modules/playwright-core/browsers.json');
@@ -23,7 +46,13 @@ const runtime = () => {
     (browserData.browsers ?? []).map((entry) => [entry.name, entry]),
   );
   return {
-    playwright_version: require('@playwright/test/package.json').version as string,
+    playwright_version: (
+      JSON.parse(
+        fs.readFileSync(path.join(ROOT, 'node_modules/@playwright/test/package.json'), 'utf8'),
+      ) as {
+        version: string;
+      }
+    ).version,
     browser_revision: browser.chromium?.revision ?? 'unknown',
     host_platform: process.platform,
   };
@@ -132,7 +161,7 @@ export class QualityReporter implements Reporter {
     const record: Record<string, unknown> =
       this.gate === 'chromium'
         ? {
-            test_id: chromiumTestId(file, title.slice(3)),
+            test_id: mapChromiumIdentity(file, title.slice(3), project),
             file,
             title_path: title.slice(3),
             project,
@@ -166,7 +195,7 @@ export class QualityReporter implements Reporter {
       Object.assign(
         record,
         title.some((x) => x.startsWith('A11Y-B'))
-          ? { behavior_id: identifier }
+          ? { behavior_id: mapAccessibilityBehaviorId(title) }
           : { scan_id: identifier },
       );
     this.records.push(record);
