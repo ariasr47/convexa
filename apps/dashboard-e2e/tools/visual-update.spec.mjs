@@ -146,6 +146,57 @@ test('candidate update uses private shell-free exact six selection and leaves hu
   );
 });
 
+test('candidate update accepts one changed PNG when the final tree is exactly the six authorized paths', () => {
+  const fixture = makeFixture();
+  const snapshotRoot = path.join(
+    fixture.root,
+    'apps/dashboard-e2e/src/quality/snapshots/win32/chromium',
+  );
+  for (const scenario of fixture.manifest.visual.scenarios.slice(0, -1)) {
+    fs.mkdirSync(snapshotRoot, { recursive: true });
+    fs.writeFileSync(path.join(snapshotRoot, `${scenario.id}.png`), `accepted-${scenario.id}`);
+  }
+  const result = runCandidateUpdate({
+    root: fixture.root,
+    authorizationPath: fixture.relative,
+    spawn: () => {
+      fs.writeFileSync(
+        path.join(snapshotRoot, 'ai-recommendation.png'),
+        'changed-ai-recommendation',
+      );
+      return { status: 0 };
+    },
+  });
+  assert.equal(result.candidates.length, 6);
+});
+
+test('candidate update rejects seventh or missing final PNG and rolls back', () => {
+  for (const mode of ['extra', 'missing']) {
+    const fixture = makeFixture();
+    const snapshotRoot = path.join(
+      fixture.root,
+      'apps/dashboard-e2e/src/quality/snapshots/win32/chromium',
+    );
+    assert.throws(() =>
+      runCandidateUpdate({
+        root: fixture.root,
+        authorizationPath: fixture.relative,
+        spawn: () => {
+          fs.mkdirSync(snapshotRoot, { recursive: true });
+          for (const scenario of fixture.manifest.visual.scenarios) {
+            if (mode === 'missing' && scenario.id === 'ai-recommendation') continue;
+            fs.writeFileSync(path.join(snapshotRoot, `${scenario.id}.png`), scenario.id);
+          }
+          if (mode === 'extra')
+            fs.writeFileSync(path.join(snapshotRoot, 'unexpected.png'), 'extra');
+          return { status: 0 };
+        },
+      }),
+    );
+    assert.ok(!fs.existsSync(snapshotRoot) || fs.readdirSync(snapshotRoot).length === 0);
+  }
+});
+
 test('candidate update rolls back partial or surplus writes', () => {
   const fixture = makeFixture();
   assert.throws(() =>

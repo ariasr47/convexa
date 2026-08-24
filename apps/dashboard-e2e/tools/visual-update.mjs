@@ -144,10 +144,8 @@ export function runCandidateUpdate({ authorizationPath, spawn = spawnSync, root 
       (key) => before.get(key) !== after.get(key),
     );
     const expected = selected.map((id) => `${id}.png`).sort();
-    if (
-      changed.length !== expected.length ||
-      changed.slice().sort().join('|') !== expected.join('|')
-    )
+    const final = [...after.keys()].sort();
+    if (final.join('|') !== expected.join('|') || changed.some((key) => !expected.includes(key)))
       throw new Error('candidate PNG write set mismatch');
     if (
       !sameTree(
