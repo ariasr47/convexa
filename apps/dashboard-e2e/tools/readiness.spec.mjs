@@ -30,3 +30,30 @@ test('readiness rejects empty, wrong, forbidden, and zero-count states', () => {
   `;
   assert.doesNotThrow(() => run(source));
 });
+
+test('readiness mutation matrix rejects every closed positive and forbidden predicate shape', () => {
+  const source = `
+    import { assertReady } from './apps/dashboard-e2e/src/quality/readiness.ts';
+    const base = { ready: [{ selector: '[data-ready]', count: 1, text: 'Mounted' }], forbidden: [{ selector: '[data-forbidden]' }] };
+    function pageFor(mode) {
+      return { locator(selector) {
+        const positive = selector === '[data-ready]';
+        const present = positive ? !['missing', 'skipped', 'zero'].includes(mode) : mode === 'forbidden-present';
+        const text = mode === 'blank' ? '' : mode === 'generic' || mode === 'wrong-state' ? 'Other' : 'Mounted';
+        return {
+          async waitFor({ state } = {}) {
+            if (!present || (positive && mode === 'wrong-state' && state === 'visible')) throw new Error('predicate not satisfied');
+          },
+          async count() { return present ? 1 : 0; },
+          first() { return this; },
+          async innerText() { return text; },
+        };
+      }};
+    }
+    await assertReady(pageFor('valid'), base);
+    for (const mode of ['missing', 'skipped', 'zero', 'blank', 'generic', 'wrong-state', 'forbidden-present']) {
+      try { await assertReady(pageFor(mode), base); process.exit(10); } catch {}
+    }
+  `;
+  assert.doesNotThrow(() => run(source));
+});

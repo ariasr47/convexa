@@ -18,6 +18,26 @@ test('browser workflow invokes the aggregate once and publishes four distinct ro
   for (const gate of PUBLICATION_GATES)
     assert.match(workflow, new RegExp(`path: apps/dashboard-e2e/test-output/playwright/${gate}`));
   assert.doesNotMatch(workflow, /run: npm run browser:(chromium|compat|a11y|visual)\b/);
+  assert.match(workflow, /npx playwright install --with-deps chromium firefox webkit/);
+  for (const gate of PUBLICATION_GATES) {
+    const publication = new RegExp(
+      `if: always\\(\\)[\\s\\S]{0,500}path: apps/dashboard-e2e/test-output/playwright/${gate}`,
+    );
+    assert.match(workflow, publication);
+  }
+});
+
+test('Linux visual candidates remain manually dispatched, read-only, and cannot publish to git', () => {
+  const workflow = fs.readFileSync(
+    new URL('../../../.github/workflows/browser-visual-linux-candidates.yml', import.meta.url),
+    'utf8',
+  );
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /pull_request:|push:/);
+  assert.match(workflow, /permissions:\s*\n\s+contents: read/);
+  assert.match(workflow, /npx playwright install --with-deps chromium/);
+  assert.match(workflow, /npm run browser:visual:update -- --authorization/);
+  assert.doesNotMatch(workflow, /contents: write/);
 });
 
 test('publication validator requires all four non-empty roots and matching summaries', () => {

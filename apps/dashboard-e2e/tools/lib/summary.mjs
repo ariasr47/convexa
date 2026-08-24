@@ -26,7 +26,7 @@ const HEX64 = /^[a-f0-9]{64}$/;
 const expected = {
   chromium: ['inventory_id', 'project', 'tests'],
   compatibility: ['arms'],
-  accessibility: ['scans', 'behaviors', 'findings'],
+  accessibility: ['disclaimer', 'scans', 'behaviors', 'findings'],
   visual: ['scenarios'],
 };
 const err = (s) => {
@@ -95,8 +95,19 @@ export function validateSummary(summary, options = {}) {
     if (!fs.existsSync(absolute) || sha256File(absolute) !== artifact.sha256) err('artifact hash');
   }
   for (const key of extras)
-    if (key !== 'inventory_id' && key !== 'project' && !Array.isArray(summary[key]))
+    if (
+      key !== 'inventory_id' &&
+      key !== 'project' &&
+      key !== 'disclaimer' &&
+      !Array.isArray(summary[key])
+    )
       err(`${key} inventory`);
+  if (
+    summary.gate === 'accessibility' &&
+    summary.disclaimer !==
+      'Automated WCAG-oriented scanning is not a complete manual accessibility audit or assistive-technology certification.'
+  )
+    err('accessibility disclaimer');
   if (
     summary.gate === 'chromium' &&
     (summary.inventory_id !== 'pre-feature-52-v1' ||

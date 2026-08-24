@@ -15,6 +15,16 @@ for (const scenario of visualScenarios) {
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     await assertReady(page, scenario);
+    if (process.env.BROWSER_QUALITY_VISUAL_DRIFT === '1') {
+      await page.evaluate(() => {
+        const marker = document.createElement('div');
+        marker.dataset.qualityVisualDrift = 'intentional-negative-control';
+        marker.textContent = 'visual drift negative control';
+        marker.style.cssText =
+          'position:fixed;inset:0;z-index:2147483647;background:#ff00ff;color:#000;font:32px monospace';
+        document.body.append(marker);
+      });
+    }
     expect(
       await page.evaluate(() => ({
         locale: navigator.language,

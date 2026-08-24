@@ -1,8 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { applyWaivers, hasBlockingAxeFinding, validateWaivers } from './a11y';
 import { accessibilityScenarios, journeys } from './fixtures/scenarios';
 import { installScenario, pauseWatchdogAtFuture } from './fixtures/strict-fixture';
 import { assertReady } from './readiness';
+
+const waiverFile = path.resolve(process.cwd(), 'apps/dashboard-e2e/src/quality/a11y-waivers.json');
+const waivers = validateWaivers(JSON.parse(fs.readFileSync(waiverFile, 'utf8')));
 
 for (const scenario of accessibilityScenarios) {
   test(scenario.id, async ({ page }, testInfo) => {
@@ -31,22 +37,22 @@ for (const scenario of accessibilityScenarios) {
     if (scenario.id === 'A11Y-9') await page.clock.resume();
     await page.evaluate(() => document.fonts.ready);
     const results = await new AxeBuilder({ page }).analyze();
+    const findings = results.violations.flatMap((violation) =>
+      violation.nodes.map((node) => ({
+        scan_id: scenario.id,
+        route: scenario.route,
+        state: scenario.id,
+        rule_id: violation.id,
+        impact: violation.impact ?? null,
+        help_url: violation.helpUrl,
+        target_selector: node.target.join(', '),
+        waived: false,
+        waiver_id: null,
+      })),
+    );
+    const evaluatedFindings = applyWaivers(findings, waivers);
     await testInfo.attach('axe-findings.json', {
-      body: JSON.stringify(
-        results.violations.flatMap((violation) =>
-          violation.nodes.map((node) => ({
-            scan_id: scenario.id,
-            route: scenario.route,
-            state: scenario.id,
-            rule_id: violation.id,
-            impact: violation.impact,
-            help_url: violation.helpUrl,
-            target_selector: node.target.join(', '),
-            waived: false,
-            waiver_id: null,
-          })),
-        ),
-      ),
+      body: JSON.stringify(evaluatedFindings),
       contentType: 'application/json',
     });
     if (scenario.id === 'A11Y-3') {
@@ -75,9 +81,9 @@ for (const scenario of accessibilityScenarios) {
       expect(violation.nodes.length).toBeGreaterThan(0);
     }
     expect(
-      results.violations.filter((x) => x.impact === 'serious' || x.impact === 'critical'),
+      hasBlockingAxeFinding(evaluatedFindings),
       `${scenario.id} has blocking axe findings`,
-    ).toHaveLength(0);
+    ).toBe(false);
     expect(requestState.unexpected, `${scenario.id} rejected unexpected traffic`).toEqual([]);
   });
 }
@@ -93,6 +99,13 @@ test.describe('A11Y behavioral sequences', () => {
     const skipLink = page.getByTestId('skip-to-main');
     const skipBox = await skipLink.boundingBox();
     expect(skipBox?.y ?? -1).toBeGreaterThanOrEqual(0);
+    await expect.poll(() => skipLink.evaluate((node) => node.matches(':focus-visible'))).toBe(true);
+    expect(
+      await skipLink.evaluate((node) => {
+        const outline = getComputedStyle(node).outline;
+        return outline !== 'none' && !/^0(?:px)? /.test(outline);
+      }),
+    ).toBe(true);
     await page.keyboard.press('Enter');
     await expect(page.locator('main#main-content')).toBeFocused();
     const url = new URL(page.url());
@@ -117,6 +130,11 @@ test.describe('A11Y behavioral sequences', () => {
     await page.goto(scenario.route);
     await expect(page.getByTestId('require-auth-wall')).toBeVisible();
     const opener = page.getByTestId('require-auth-signin');
+    const openerIdentity = await opener.evaluate((node) => {
+      (window as Window & { __authOpener?: HTMLElement }).__authOpener = node as HTMLElement;
+      return node.isConnected;
+    });
+    expect(openerIdentity).toBe(true);
     await opener.focus();
     await opener.press('Enter');
     const dialog = page.getByTestId('auth-dialog');
@@ -128,6 +146,15 @@ test.describe('A11Y behavioral sequences', () => {
       "Those credentials didn't match. Check your email and password and try again.",
     );
     await page.keyboard.press('Escape');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.activeElement ===
+            (window as Window & { __authOpener?: HTMLElement }).__authOpener,
+        ),
+      )
+      .toBe(true);
     await expect(opener).toBeFocused();
   });
   test('A11Y-B4 dense disclosure keyboard toggle and viewport bounds', async ({ page }) => {
@@ -207,7 +234,15 @@ test.describe('A11Y behavioral sequences', () => {
     await expect(zoomPage.getByTestId('portfolio-panel')).toBeVisible();
     for (const control of ['open-entry', 'tab-live', 'leg-disclosure-toggle']) {
       const target = zoomPage.getByTestId(control).first();
-      await target.focus();
+      let found = false;
+      for (let presses = 0; presses < 48 && !found; presses += 1) {
+        await zoomPage.keyboard.press('Tab');
+        found = await zoomPage.evaluate(
+          (testId) => document.activeElement?.getAttribute('data-testid') === testId,
+          control,
+        );
+      }
+      expect(found, `${control} was not reached by keyboard Tab`).toBe(true);
       await expect
         .poll(() =>
           target.evaluate((el) => {

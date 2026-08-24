@@ -248,6 +248,8 @@ export class QualityReporter implements Reporter {
     else if (this.gate === 'compatibility') summary.arms = this.records;
     else if (this.gate === 'accessibility')
       Object.assign(summary, {
+        disclaimer:
+          'Automated WCAG-oriented scanning is not a complete manual accessibility audit or assistive-technology certification.',
         scans: this.records.filter(
           (x) => String(x.identity).includes('A11Y-') && !String(x.identity).includes('A11Y-B'),
         ),

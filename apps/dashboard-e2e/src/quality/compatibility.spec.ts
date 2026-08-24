@@ -5,6 +5,13 @@ import { assertReady } from './readiness';
 
 for (const scenario of journeys) {
   test(scenario.id, async ({ page }) => {
+    if (
+      process.env.BROWSER_QUALITY_POISON_COMPAT === '1' &&
+      scenario.id === 'ticker-stream-loss' &&
+      test.info().project.name === 'webkit'
+    ) {
+      throw new Error('intentional compatibility poison: webkit · ticker-stream-loss');
+    }
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     if (scenario.id === 'ticker-stream-loss') {

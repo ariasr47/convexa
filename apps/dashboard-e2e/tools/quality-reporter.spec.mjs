@@ -25,6 +25,10 @@ test('accessibility reporter retains axe finding fields and attachment evidence'
   assert.match(source, /attachment\.name === 'axe-findings\.json'/);
   assert.match(source, /artifact_path: artifact\.path/);
   assert.match(source, /findings: this\.findings/);
+  assert.match(
+    source,
+    /Automated WCAG-oriented scanning is not a complete manual accessibility audit or assistive-technology certification/,
+  );
   assert.doesNotMatch(source, /findings: \[\]/);
 });
 

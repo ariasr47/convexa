@@ -4,6 +4,7 @@ export const ALLOWED = [
   'apps/dashboard-e2e/',
   '.github/workflows/ci.yml',
   '.github/workflows/browser-visual-linux-candidates.yml',
+  '.gitattributes',
 ];
 export const D7_PRODUCT_ALLOWLIST = [
   'apps/dashboard/src/app/shared/ui/Widget/Widget.tsx',

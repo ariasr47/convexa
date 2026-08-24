@@ -107,13 +107,17 @@ export async function installScenario(page: import('@playwright/test').Page, sce
       return route.abort('blockedbyclient');
     }
     if (url.pathname === '/api/stream/prices') {
-      const payload = assertScannerStreamPayload({
-        prices: {
-          SPY: { price: 500, ts: Date.parse(scenario.now) / 1000 },
-          QQQ: { price: 490, ts: Date.parse(scenario.now) / 1000 },
-          NVDA: { price: 480, ts: Date.parse(scenario.now) / 1000 },
-        },
-      });
+      const payload = assertScannerStreamPayload(
+        process.env.BROWSER_QUALITY_MALFORMED_SCANNER === '1'
+          ? { prices: {} }
+          : {
+              prices: {
+                SPY: { price: 500, ts: Date.parse(scenario.now) / 1000 },
+                QQQ: { price: 490, ts: Date.parse(scenario.now) / 1000 },
+                NVDA: { price: 480, ts: Date.parse(scenario.now) / 1000 },
+              },
+            },
+      );
       return route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
@@ -137,6 +141,15 @@ export async function installScenario(page: import('@playwright/test').Page, sce
       });
     }
     if (url.pathname.startsWith('/api/')) {
+      if (
+        process.env.BROWSER_QUALITY_MALFORMED_SCANNER === '1' &&
+        scenario.route === '/scanner' &&
+        url.pathname === '/api/scan'
+      ) {
+        // This is a browser-executed malformed Scanner event.  The strict fixture
+        // rejects it before the app can silently render an empty/healthy state.
+        assertScannerStreamPayload({ prices: {} });
+      }
       const key = `${request.method()} ${url.pathname}${url.search}` as keyof typeof scenario.rest;
       let response = scenario.rest[key];
       if (scenario.id === 'A11Y-7' && key === 'GET /api/scan') {
