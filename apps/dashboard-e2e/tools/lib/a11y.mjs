@@ -5,6 +5,7 @@ export function validateWaivers(waivers) {
   return waivers.map((value) => {
     if (
       !value ||
+      typeof value.waiver_id !== 'string' ||
       !ID.test(value.waiver_id) ||
       ids.has(value.waiver_id) ||
       !['axe_false_positive', 'third_party_uncontrolled'].includes(value.type) ||

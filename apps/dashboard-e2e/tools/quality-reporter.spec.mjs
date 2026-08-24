@@ -17,6 +17,17 @@ test('visual reporter maps named actual/diff attachments instead of first PNG', 
   assert.match(source, /includes\('A11Y-'\) && !String\(x\.identity\)\.includes\('A11Y-B'\)/);
 });
 
+test('accessibility reporter retains axe finding fields and attachment evidence', () => {
+  const source = fs.readFileSync(
+    path.resolve('apps/dashboard-e2e/src/quality/reporters/quality-reporter.ts'),
+    'utf8',
+  );
+  assert.match(source, /attachment\.name === 'axe-findings\.json'/);
+  assert.match(source, /artifact_path: artifact\.path/);
+  assert.match(source, /findings: this\.findings/);
+  assert.doesNotMatch(source, /findings: \[\]/);
+});
+
 test('real reporter identity helpers map manifest Chromium and all behavior IDs', () => {
   const script = `
     import fs from 'node:fs';

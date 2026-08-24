@@ -12,7 +12,7 @@ test.describe.configure({ retries: 0 });
 for (const scenario of visualScenarios) {
   test(scenario.id, async ({ page }) => {
     await installVisualFrameController(page);
-    await installScenario(page, scenario);
+    const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     await assertReady(page, scenario);
     expect(
@@ -63,5 +63,6 @@ for (const scenario of visualScenarios) {
       maxDiffPixels: 0,
       maxDiffPixelRatio: 0,
     });
+    expect(requestState.unexpected, `${scenario.id} rejected unexpected traffic`).toEqual([]);
   });
 }

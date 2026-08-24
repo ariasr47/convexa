@@ -17,6 +17,14 @@ test('scanner fixture uses the application prices SSE envelope and keeps stream 
   assert.match(fixture, /url\.pathname === '\/api\/stream\/prices'/);
   assert.match(fixture, /prices:\s*\{/);
   assert.doesNotMatch(fixture, /url\.pathname\.startsWith\('\/api\/stream\/'\)/);
+  assert.match(fixture, /assertScannerStreamPayload/);
+  assert.match(fixture, /malformed Scanner SSE payload/);
+});
+
+test('malformed Scanner SSE payload is a readiness failure, not a product fallback', () => {
+  assert.match(fixture, /missing prices envelope/);
+  assert.match(fixture, /invalid quote/);
+  assert.doesNotMatch(fixture, /catch\s*\{\s*return\s+payload/);
 });
 
 test('retained Chromium maps the quality port to both server and client URL', () => {

@@ -5,7 +5,7 @@ import { installScenario, pauseWatchdogAtFuture } from './fixtures/strict-fixtur
 import { assertReady } from './readiness';
 
 for (const scenario of accessibilityScenarios) {
-  test(scenario.id, async ({ page }) => {
+  test(scenario.id, async ({ page }, testInfo) => {
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     if (scenario.id === 'A11Y-9') {
@@ -31,6 +31,24 @@ for (const scenario of accessibilityScenarios) {
     if (scenario.id === 'A11Y-9') await page.clock.resume();
     await page.evaluate(() => document.fonts.ready);
     const results = await new AxeBuilder({ page }).analyze();
+    await testInfo.attach('axe-findings.json', {
+      body: JSON.stringify(
+        results.violations.flatMap((violation) =>
+          violation.nodes.map((node) => ({
+            scan_id: scenario.id,
+            route: scenario.route,
+            state: scenario.id,
+            rule_id: violation.id,
+            impact: violation.impact,
+            help_url: violation.helpUrl,
+            target_selector: node.target.join(', '),
+            waived: false,
+            waiver_id: null,
+          })),
+        ),
+      ),
+      contentType: 'application/json',
+    });
     if (scenario.id === 'A11Y-3') {
       const grips = page.locator('.widget__grip');
       await expect(grips).toHaveCount(4);
@@ -60,6 +78,7 @@ for (const scenario of accessibilityScenarios) {
       results.violations.filter((x) => x.impact === 'serious' || x.impact === 'critical'),
       `${scenario.id} has blocking axe findings`,
     ).toHaveLength(0);
+    expect(requestState.unexpected, `${scenario.id} rejected unexpected traffic`).toEqual([]);
   });
 }
 
@@ -71,6 +90,9 @@ test.describe('A11Y behavioral sequences', () => {
     await expect(page.getByTestId('settings-page')).toBeVisible();
     await page.keyboard.press('Tab');
     await expect(page.getByTestId('skip-to-main')).toBeFocused();
+    const skipLink = page.getByTestId('skip-to-main');
+    const skipBox = await skipLink.boundingBox();
+    expect(skipBox?.y ?? -1).toBeGreaterThanOrEqual(0);
     await page.keyboard.press('Enter');
     await expect(page.locator('main#main-content')).toBeFocused();
     const url = new URL(page.url());
@@ -134,6 +156,11 @@ test.describe('A11Y behavioral sequences', () => {
     const cards = page.getByTestId('scan-card');
     await expect(cards).toHaveCount(3);
     await expect(cards.first()).toHaveAttribute('href', /\/ticker\//);
+    await cards.first().focus();
+    await page.keyboard.press('Tab');
+    await expect(cards.nth(1)).toBeFocused();
+    await expect(cards.first()).toHaveAccessibleDescription(/.+/);
+    await expect(cards.first().locator('[tabindex]:not([tabindex="-1"])')).toHaveCount(0);
     await cards.nth(1).press('Enter');
     await expect(page).toHaveURL(/\/ticker\//);
   });
@@ -180,8 +207,6 @@ test.describe('A11Y behavioral sequences', () => {
     await expect(zoomPage.getByTestId('portfolio-panel')).toBeVisible();
     for (const control of ['open-entry', 'tab-live', 'leg-disclosure-toggle']) {
       const target = zoomPage.getByTestId(control).first();
-      await target.scrollIntoViewIfNeeded();
-      await target.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'nearest' }));
       await target.focus();
       await expect
         .poll(() =>

@@ -63,3 +63,22 @@ test('waivers reject broad or expired records', () => {
     ]),
   );
 });
+
+test('waivers reject every missing required evidence field', () => {
+  const waiver = {
+    waiver_id: 'w1',
+    type: 'axe_false_positive',
+    scan_id: 'A11Y-1',
+    rule_id: 'x',
+    target_selector: '#x',
+    evidence: 'fixture evidence',
+    rationale: 'fixture reason',
+    owner: 'qa',
+    removal_condition: 'fixed',
+    expires_at: '2099-01-01T00:00:00Z',
+  };
+  for (const field of Object.keys(waiver)) {
+    const poisoned = { ...waiver, [field]: undefined };
+    assert.throws(() => validateWaivers([poisoned]));
+  }
+});

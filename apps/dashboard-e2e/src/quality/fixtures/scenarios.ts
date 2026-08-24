@@ -352,6 +352,7 @@ const base = (
     }),
     'GET /api/scan/SPY/history?limit=48': response({ history: [] }),
     'GET /api/personas': response([]),
+    'GET /api/broker/credential': response({ set: false, last4: null, storage_available: true }),
     'GET /api/recommendation/status/SPY': response({
       availability: { in_app_enabled: id === 'ai-recommendation' },
       gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },

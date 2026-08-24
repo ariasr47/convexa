@@ -98,6 +98,7 @@ export class QualityReporter implements Reporter {
   private selected = 0;
   private records: Array<Record<string, unknown>> = [];
   private artifacts: Array<{ path: string; sha256: string }> = [];
+  private findings: Array<Record<string, unknown>> = [];
   private results = new Map<string, TestResult>();
   private configRoot = ROOT;
 
@@ -144,6 +145,17 @@ export class QualityReporter implements Reporter {
       const role = visualAttachmentRole(attachment);
       if (role === 'actual') actualArtifact = artifact;
       if (role === 'diff') diffArtifact = artifact;
+      if (this.gate === 'accessibility' && attachment.name === 'axe-findings.json') {
+        const findings = JSON.parse(fs.readFileSync(attachment.path, 'utf8'));
+        if (!Array.isArray(findings)) throw new Error('axe findings attachment must be an array');
+        for (const finding of findings) {
+          if (!finding || typeof finding !== 'object') throw new Error('invalid axe finding');
+          this.findings.push({
+            ...(finding as Record<string, unknown>),
+            artifact_path: artifact.path,
+          });
+        }
+      }
     }
     const status =
       result.status === 'skipped' || result.status === 'interrupted'
@@ -240,7 +252,7 @@ export class QualityReporter implements Reporter {
           (x) => String(x.identity).includes('A11Y-') && !String(x.identity).includes('A11Y-B'),
         ),
         behaviors: this.records.filter((x) => String(x.identity).includes('A11Y-B')),
-        findings: [],
+        findings: this.findings,
       });
     else summary.scenarios = this.records;
     const output = path.resolve(

@@ -20,6 +20,23 @@ export type Scenario = {
   forbidden: readonly Predicate[];
 };
 
+export function assertScannerStreamPayload(payload: unknown) {
+  if (!payload || typeof payload !== 'object' || !('prices' in payload))
+    throw new Error('malformed Scanner SSE payload: missing prices envelope');
+  const prices = (payload as { prices?: unknown }).prices;
+  if (!prices || typeof prices !== 'object' || Object.keys(prices).length === 0)
+    throw new Error('malformed Scanner SSE payload: empty prices envelope');
+  for (const [symbol, quote] of Object.entries(prices)) {
+    if (
+      !quote ||
+      typeof quote !== 'object' ||
+      typeof (quote as { price?: unknown }).price !== 'number'
+    )
+      throw new Error(`malformed Scanner SSE payload: invalid quote ${symbol}`);
+  }
+  return payload as { prices: Record<string, { price: number; ts: number }> };
+}
+
 export const strictTest = base.extend<{ scenario: Scenario }>({
   scenario: async (_fixtures, use, testInfo) => {
     throw new Error(`scenario fixture requires a manifest scenario: ${testInfo.title}`);
@@ -90,16 +107,17 @@ export async function installScenario(page: import('@playwright/test').Page, sce
       return route.abort('blockedbyclient');
     }
     if (url.pathname === '/api/stream/prices') {
+      const payload = assertScannerStreamPayload({
+        prices: {
+          SPY: { price: 500, ts: Date.parse(scenario.now) / 1000 },
+          QQQ: { price: 490, ts: Date.parse(scenario.now) / 1000 },
+          NVDA: { price: 480, ts: Date.parse(scenario.now) / 1000 },
+        },
+      });
       return route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
-        body: `data: ${JSON.stringify({
-          prices: {
-            SPY: { price: 500, ts: Date.parse(scenario.now) / 1000 },
-            QQQ: { price: 490, ts: Date.parse(scenario.now) / 1000 },
-            NVDA: { price: 480, ts: Date.parse(scenario.now) / 1000 },
-          },
-        })}\n\n`,
+        body: `data: ${JSON.stringify(payload)}\n\n`,
       });
     }
     if (url.pathname === '/api/stream/SPY' && scenario.stream !== 'none') {

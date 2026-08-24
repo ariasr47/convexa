@@ -1,6 +1,6 @@
 import { themeForPref } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PositionCard } from './PositionCard';
 
@@ -45,5 +45,9 @@ describe('position trend help semantics', () => {
       'focusable',
       'false',
     );
+    fireEvent.mouseOver(help);
+    const descriptionId = help.getAttribute('aria-describedby');
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId ?? '')).toHaveTextContent(/trend/i);
   });
 });
