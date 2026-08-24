@@ -13,6 +13,10 @@
 
 # Spire kit + product memory: receipts are machine-compared byte-for-byte.
 .spire/**           text eol=lf
+# Render evidence is binary and must never pass through line-ending filters.
+.spire/**/*.jpeg    binary
+.spire/**/*.jpg     binary
+.spire/**/*.png     binary
 
 # Host adapters: these carry the installed kit artifacts whose sha256 the
 # installation receipt pins.
