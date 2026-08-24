@@ -87,6 +87,8 @@ pub struct Config {
     pub chain_snapshot_store_path: PathBuf,
     /// False → `capture not storing` (env off or store failed to open).
     pub chain_snapshot_enabled: bool,
+    pub chain_snapshot_backend: ChainSnapshotBackend,
+    pub chain_snapshot_backend_explicit: bool,
     /// False → `session archive not storing` (env off or store failed to open).
     pub session_chain_archive_enabled: bool,
     /// JSON sibling directory (must not equal or nest under `chain_snapshot_store_path`).
@@ -102,6 +104,29 @@ pub struct Config {
     pub max_live_subscribers: usize,
     /// Workspace root (for fixture paths).
     pub workspace_root: PathBuf,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChainSnapshotBackend {
+    Filesystem,
+    Disabled,
+}
+
+impl ChainSnapshotBackend {
+    fn from_env() -> Result<Self, AppError> {
+        match env::var("CHAIN_SNAPSHOT_BACKEND")
+            .unwrap_or_else(|_| "filesystem".into())
+            .trim()
+            .to_ascii_lowercase()
+            .as_str()
+        {
+            "filesystem" => Ok(Self::Filesystem),
+            "disabled" => Ok(Self::Disabled),
+            other => Err(AppError::Config(format!(
+                "CHAIN_SNAPSHOT_BACKEND must be filesystem or disabled, got {other}"
+            ))),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -325,6 +350,8 @@ impl Config {
                 )
             })
             .unwrap_or(true);
+        let chain_snapshot_backend_explicit = env::var("CHAIN_SNAPSHOT_BACKEND").is_ok();
+        let chain_snapshot_backend = ChainSnapshotBackend::from_env()?;
         let session_chain_archive_enabled = env_flag_default_true("SESSION_CHAIN_ARCHIVE_ENABLED");
         let liquid_session_ensure_enabled = env_flag_default_true("LIQUID_SESSION_ENSURE_ENABLED");
         // S5c: 0 disables either ceiling (Python convention). Unset → Python defaults 50 / 500.
@@ -377,6 +404,8 @@ impl Config {
             chain_snapshot_max_per_symbol,
             chain_snapshot_store_path,
             chain_snapshot_enabled,
+            chain_snapshot_backend,
+            chain_snapshot_backend_explicit,
             session_chain_archive_enabled,
             session_chain_archive_store_path,
             session_chain_archive_body_root,

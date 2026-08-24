@@ -12,6 +12,14 @@ use chrono::{DateTime, Utc};
 use sqlx::Row;
 use std::time::Duration;
 
+#[derive(Debug, Clone)]
+pub struct LegacySnapshotRow {
+    pub symbol: String,
+    pub as_of: DateTime<Utc>,
+    pub source: MarketDataSourceKind,
+    pub body: Vec<u8>,
+}
+
 #[derive(Clone)]
 pub struct PgChainSnapshotStore {
     pg: Pg,
@@ -20,6 +28,49 @@ pub struct PgChainSnapshotStore {
 impl PgChainSnapshotStore {
     pub fn new(pg: Pg) -> Self {
         Self { pg }
+    }
+
+    /// Read-only bounded page for the operator export. This method has no write query.
+    pub async fn export_batch(&self, offset: i64, limit: i64) -> AppResult<Vec<LegacySnapshotRow>> {
+        let rows = sqlx::query(
+            r#"SELECT symbol, as_of, source, body FROM chain_snapshots
+               ORDER BY symbol ASC, as_of_ns ASC LIMIT $1 OFFSET $2"#,
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pg.pool)
+        .await
+        .map_err(|e| AppError::Config(format!("chain_snapshots export: {e}")))?;
+        rows.into_iter()
+            .map(|r| {
+                let as_of_s: String = r
+                    .try_get("as_of")
+                    .map_err(|e| AppError::Config(format!("chain_snapshots export as_of: {e}")))?;
+                let as_of = DateTime::parse_from_rfc3339(&as_of_s)
+                    .map_err(|e| AppError::Config(format!("chain_snapshots export as_of: {e}")))?
+                    .with_timezone(&Utc);
+                let source_name: String = r
+                    .try_get("source")
+                    .map_err(|e| AppError::Config(format!("chain_snapshots export source: {e}")))?;
+                let source = match source_name.as_str() {
+                    "live_massive" => MarketDataSourceKind::LiveMassive,
+                    "fixture" => MarketDataSourceKind::Fixture,
+                    other => {
+                        return Err(AppError::Config(format!(
+                            "chain_snapshots export unknown source: {other}"
+                        )))
+                    }
+                };
+                Ok(LegacySnapshotRow {
+                    symbol: r.try_get("symbol").unwrap_or_default(),
+                    as_of,
+                    source,
+                    body: r.try_get("body").map_err(|e| {
+                        AppError::Config(format!("chain_snapshots export body: {e}"))
+                    })?,
+                })
+            })
+            .collect()
     }
 
     pub async fn append(&self, wire: &ChainSnapshotWire, body: &[u8]) -> AppResult<()> {
