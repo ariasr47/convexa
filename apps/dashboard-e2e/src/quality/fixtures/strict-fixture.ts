@@ -21,10 +21,10 @@ export type Scenario = {
 };
 
 export const strictTest = base.extend<{ scenario: Scenario }>({
-  scenario: async ({}, use, testInfo) => {
+  scenario: async (_fixtures, use, testInfo) => {
     throw new Error(`scenario fixture requires a manifest scenario: ${testInfo.title}`);
   },
-  page: async ({ page, scenario }, use) => {
+  page: async ({ page, scenario }, fixtureUse) => {
     const unexpected: string[] = [];
     await page.clock.install({ time: new Date(scenario.now) });
     await page.context().addInitScript(
@@ -56,7 +56,7 @@ export const strictTest = base.extend<{ scenario: Scenario }>({
       unexpected.push(request.url());
       return route.abort('blockedbyclient');
     });
-    await use(page);
+    await fixtureUse(page);
     if (unexpected.length) throw new Error(`unexpected requests: ${unexpected.join(', ')}`);
   },
 });

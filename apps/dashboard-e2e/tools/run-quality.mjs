@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { CHILDREN, validateChildCatalog } from './lib/aggregate.mjs';
+import { ROOT } from './lib/repository-root.mjs';
 
 if (process.argv.length !== 2) {
   console.error('browser quality aggregate accepts no arguments');
@@ -14,11 +15,11 @@ const runId = process.env.BROWSER_QUALITY_RUN_ID ?? crypto.randomUUID();
 const source =
   process.env.BROWSER_QUALITY_SOURCE_REVISION ??
   execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: path.resolve(import.meta.dirname, '..', '..'),
+    cwd: ROOT,
     encoding: 'utf8',
   }).trim();
 const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const cwd = path.resolve(import.meta.dirname, '..', '..');
+const cwd = ROOT;
 const children = targets.map(
   (target, index) =>
     new Promise((resolve) => {

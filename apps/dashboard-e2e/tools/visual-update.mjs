@@ -11,11 +11,6 @@ import { validateAuthorization } from './lib/visual-review.mjs';
 
 export { ROOT };
 
-const reviewRoot = path.join(ROOT, 'apps', 'dashboard-e2e', 'visual-review');
-const snapshotRoot = path.join(ROOT, 'apps', 'dashboard-e2e', 'src', 'quality', 'snapshots');
-const authRoot = path.join(reviewRoot, 'authorizations');
-const acceptanceRoot = path.join(reviewRoot, 'acceptances');
-
 function treeHashes(dir) {
   if (!fs.existsSync(dir)) return new Map();
   const out = new Map();

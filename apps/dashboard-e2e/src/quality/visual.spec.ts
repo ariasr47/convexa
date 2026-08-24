@@ -24,11 +24,18 @@ for (const scenario of visualScenarios) {
     ).toMatchObject({ locale: 'en-US', width: scenario.viewport.width, scale: 1 });
     if (scenario.id === 'positions-dense') {
       const toggle = page.getByTestId('leg-disclosure-toggle').first();
-      if (await toggle.count()) await toggle.click();
+      await expect(toggle).toBeVisible();
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.getByTestId('leg-line').first()).toBeVisible();
     }
     if (scenario.id === 'ai-recommendation') {
-      const opener = page.getByTestId('ai-rec-analysis-opener');
-      if (await opener.count()) await opener.click();
+      await page.getByRole('button', { name: 'Analyze current snapshot' }).click();
+      await expect(page.getByTestId('ai-rec-decision-card')).toBeVisible();
+      const opener = page.getByRole('button', { name: 'Full analysis & data' });
+      await expect(opener).toBeVisible();
+      await opener.click();
+      await expect(page.getByRole('dialog', { name: /Full analysis & data/ })).toBeVisible();
     }
     if (scenario.id === 'ticker-offline-mobile') {
       await page.clock.fastForward(15_000);

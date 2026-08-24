@@ -386,7 +386,7 @@ export function cellContent(
           <Box
             component="span"
             data-testid="trend-help"
-            tabIndex={0}
+            tabIndex={-1}
             sx={{ display: 'inline-flex' }}
           >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
