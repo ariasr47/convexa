@@ -134,7 +134,7 @@ dependencies = [
  "hex",
  "hmac 0.13.0",
  "quant-engine",
- "rand 0.8.7",
+ "rand 0.10.2",
  "redis",
  "regex",
  "reqwest",
