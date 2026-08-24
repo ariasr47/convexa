@@ -17,6 +17,7 @@ test('visual capture owns the frame controller and fixed capture timestamp seam'
       visual.indexOf('await freezeVisualFrame'),
   );
   assert.match(visual, /pending: 0/);
+  assert.ok(visual.indexOf('await page.screenshot') < visual.indexOf('toHaveScreenshot'));
   assert.match(
     fs.readFileSync('apps/dashboard-e2e/src/quality/fixtures/scenarios.ts', 'utf8'),
     /captureAt: FIXTURE_CAPTURE_AT/,

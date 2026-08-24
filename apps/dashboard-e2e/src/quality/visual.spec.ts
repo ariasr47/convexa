@@ -48,6 +48,7 @@ for (const scenario of visualScenarios) {
         ),
       )
       .toEqual({ frozen: true, pending: 0 });
+    await page.screenshot({ animations: 'disabled', caret: 'hide' });
     await expect(page).toHaveScreenshot(`${scenario.id}.png`, {
       animations: 'disabled',
       caret: 'hide',
