@@ -26,7 +26,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
   const fixture = path.join(dir, 'npm-cli-fixture.mjs');
   fs.writeFileSync(
     fixture,
-    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nfs.appendFileSync(${JSON.stringify(log)}, target + ':' + process.env.BROWSER_QUALITY_PORT + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
+    `import fs from 'node:fs';\nconst target = process.argv.find((x) => x.startsWith('dashboard-e2e:'));\nconst childRoot = process.env.NX_INVOCATION_ROOT_PID ?? String(process.pid);\nfs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ target, port: process.env.BROWSER_QUALITY_PORT, childRoot, runId: process.env.BROWSER_QUALITY_RUN_ID, marker: process.env.QUALITY_TEST_MARKER }) + '\\n');\nprocess.exit(target.endsWith(':visual') ? 7 : 0);\n`,
   );
 
   const results = await Promise.all(
@@ -35,7 +35,7 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       execPath: process.execPath,
       npmCliPath: fixture,
       cwd: dir,
-      env: {},
+      env: { NX_INVOCATION_ROOT_PID: 'aggregate-parent', QUALITY_TEST_MARKER: 'preserved' },
       runId: 'run-spawn-test',
       source: 'a'.repeat(40),
     }),
@@ -54,16 +54,22 @@ test('Windows aggregate uses real shell-free child launches and preserves spawn 
       .readFileSync(log, 'utf8')
       .trim()
       .split('\n')
-      .map((line) => line.split(':'))
-      .map(([scope, name, port]) => [`${scope}:${name}`, port]),
+      .map((line) => JSON.parse(line))
+      .map((entry) => [entry.target, entry]),
   );
   assert.equal(logged.size, 4);
-  assert.deepEqual(Object.fromEntries(logged), {
+  assert.deepEqual(Object.fromEntries([...logged].map(([target, entry]) => [target, entry.port])), {
     'dashboard-e2e:e2e': '4210',
     'dashboard-e2e:compat': '4211',
     'dashboard-e2e:a11y': '4212',
     'dashboard-e2e:visual': '4213',
   });
+  for (const entry of logged.values()) {
+    assert.notEqual(entry.childRoot, 'aggregate-parent');
+    assert.match(entry.childRoot, /^\d+$/);
+    assert.equal(entry.runId, 'run-spawn-test');
+    assert.equal(entry.marker, 'preserved');
+  }
 
   const spawnErrors = await Promise.all(
     spawnQualityChildren({

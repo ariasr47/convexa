@@ -19,6 +19,10 @@ export function spawnQualityChildren({
   source = '0'.repeat(40),
 } = {}) {
   validateChildCatalog(children);
+  const childEnv = { ...env };
+  // Give each child Nx invocation its own tracker root; inheriting the aggregate root triggers
+  // recursive-invocation detection when sibling webServer tasks start.
+  delete childEnv.NX_INVOCATION_ROOT_PID;
   const invocation = npmInvocation({
     platform,
     execPath,
@@ -41,7 +45,7 @@ export function spawnQualityChildren({
             shell: false,
             stdio: 'inherit',
             env: {
-              ...env,
+              ...childEnv,
               NX_DAEMON: 'false',
               BROWSER_QUALITY_RUN_ID: runId,
               BROWSER_QUALITY_SOURCE_REVISION: source,
