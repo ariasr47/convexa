@@ -42,7 +42,7 @@ RUN npx nx build @convexa/dashboard --configuration=production
 # fholzer/nginx-brotli includes static + dynamic brotli modules. Listens on 80 by
 # default; we override the server block to 8080 for compose/k8s parity with the
 # previous unprivileged image (map host ports as needed).
-FROM fholzer/nginx-brotli:v1.28.0@sha256:d08726c7ce39fb7e1853f317358c175e5536d5b76706eea12f9041fa2f5171a0
+FROM fholzer/nginx-brotli:v1.31.1@sha256:b2649c1bdc5299063e595498e3bde08e72f8f7c5917b3dd2366e8137a7a853b8
 
 # SPA + /api proxy + static compression config.
 COPY apps/dashboard/nginx.conf /etc/nginx/conf.d/default.conf
