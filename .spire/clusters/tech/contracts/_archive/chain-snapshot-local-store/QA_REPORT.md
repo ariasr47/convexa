@@ -13,10 +13,10 @@
 | Forced filesystem append/prune faults never change bundle HTTP success, scanner continuation, SSE, score, tier, or fingerprint. | PASS | RUN:qa.capture_tests,RUN:backend.test_cmd |
 | Filesystem list/load, including miss/corrupt cases, makes zero Massive calls. | PASS | RUN:backend.test_cmd,RUN:qa.interface_conformance |
 | The operator export streams multiple/sub-second identities in bounded batches, verifies destination identity/length/SHA-256, is resumable/idempotent, and exits non-zero on any missing, unreadable, or conflicting row. | PASS | RUN:qa.export_unit_tests,RUN:qa.postgres_test_compile,ORACLE:linux_receipt_durability_audit |
-| Export/cutover executes no `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `VACUUM`, table drop, or schema change against Postgres `chain_snapshots`; source count and bytes remain unchanged until separately authorized. | UNVERIFIABLE | RUN:qa.postgres_test_compile,ORACLE:test_database_url_unavailable |
+| Export/cutover executes no `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `VACUUM`, table drop, or schema change against Postgres `chain_snapshots`; source count and bytes remain unchanged until separately authorized. | PASS | RUN:qa.postgres_no_growth,RUN:qa.hosted_filesystem_growth |
 | Backend/path selection is runtime configuration; snapshot material and export receipts contain no API keys, bodies, database URLs, or credentials; no secret is baked into the image. | PASS | RUN:qa.export_unit_tests,RUN:backend.build_cmd,ORACLE:critical_sweep_no_findings |
-| The release receipt records complete zero-error export, durable-root probe PASS, filesystem reopen PASS, interface conformance PASS, and Postgres no-growth proof before production capture is returned to true. | UNVERIFIABLE | ARTIFACT:.spire/clusters/tech/contracts/chain-snapshot-local-store/conformance-receipt-qa.json,ORACLE:hosted_release_receipt_unavailable |
+| The release receipt records complete zero-error export, durable-root probe PASS, filesystem reopen PASS, interface conformance PASS, and Postgres no-growth proof before production capture is returned to true. | PASS | ARTIFACT:.spire/clusters/tech/contracts/chain-snapshot-local-store/RELEASE_EVIDENCE.md,ARTIFACT:.spire/clusters/tech/contracts/chain-snapshot-local-store/conformance-receipt-qa.json,ORACLE:hosted_release_receipt_complete |
 
-SUMMARY: 12 PASS / 0 FAIL / 2 UNVERIFIABLE
+SUMMARY: 14 PASS / 0 FAIL / 0 UNVERIFIABLE
 NOTE: VISUAL_EVIDENCE_UNAVAILABLE
-GATE Q: FAIL
+GATE Q: PASS

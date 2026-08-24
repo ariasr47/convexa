@@ -1,0 +1,85 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}",
+      "path_params": { "symbol": "SPY" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "snapshots": "array",
+        "snapshots[].symbol": "string",
+        "snapshots[].as_of": "string",
+        "snapshots[].source": "string",
+        "store": "string",
+        "detail": "string|null",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}",
+      "path_params": { "symbol": "ZZZZNOPE" },
+      "query": {},
+      "required": {
+        "symbol": "string",
+        "count": "number",
+        "snapshots": "array",
+        "store": "string",
+        "detail": "string",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}/snapshot",
+      "path_params": { "symbol": "ZZZZNOPE" },
+      "query": { "as_of": "2000-01-01T00:00:00.000000000Z" },
+      "expect_status": 404,
+      "required": {
+        "error": "string",
+        "detail": "string",
+        "symbol": "string",
+        "store": "string",
+        "vendor_called": "boolean"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/_research/chain-snapshots/{symbol}/snapshot",
+      "path_params": { "symbol": "SPY" },
+      "query": { "as_of": "1970-01-01T00:00:00.000000001Z" },
+      "expect_status": 200,
+      "required": {
+        "symbol": "string",
+        "as_of": "string",
+        "source": "string",
+        "store": "string",
+        "vendor_called": "boolean",
+        "framing": "string",
+        "provenance": "string",
+        "license": "string",
+        "market": "object",
+        "market.ticker": "string",
+        "market.synchronized_spot": "number",
+        "market.current_spot": "number",
+        "market.timestamp": "number",
+        "market.atm_iv": "number",
+        "market.atm_iv_expiration": "string|null",
+        "market.atm_iv_dte": "number|null",
+        "market.market_phase": "string",
+        "market.contracts": "array",
+        "daily_bars": "array",
+        "minutes": "array",
+        "trades": "array"
+      }
+    }
+  ]
+}
