@@ -27,6 +27,11 @@ test('visual Chromium uses deterministic software rendering', () => {
   assert.match(visualConfig, /launchOptions:\s*\{\s*args:\s*\['--disable-gpu'\]\s*\}/);
 });
 
+test('authorized visual updates use the Playwright 1.62 snapshot mode', () => {
+  assert.match(visualConfig, /BROWSER_QUALITY_AUTHORIZED_UPDATE === '1' \? 'all' : 'none'/);
+  assert.doesNotMatch(visualConfig, /BROWSER_QUALITY_AUTHORIZED_UPDATE === '1' \? true/);
+});
+
 test('non-visual specs and shared configuration do not install the visual controller', () => {
   assert.doesNotMatch(shared, /visual-frame/);
   assert.doesNotMatch(compat, /visual-frame/);

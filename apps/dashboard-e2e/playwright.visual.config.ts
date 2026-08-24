@@ -10,7 +10,7 @@ export default {
   testDir: './src/quality',
   testMatch: ['visual.spec.ts'],
   retries: 0,
-  updateSnapshots: process.env.BROWSER_QUALITY_AUTHORIZED_UPDATE === '1' ? true : 'none',
+  updateSnapshots: process.env.BROWSER_QUALITY_AUTHORIZED_UPDATE === '1' ? 'all' : 'none',
   snapshotPathTemplate: '{testDir}/snapshots/{platform}/{projectName}/{arg}{ext}',
   expect: {
     toHaveScreenshot: {
