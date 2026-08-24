@@ -382,10 +382,15 @@ export function cellContent(
     case 'trend': {
       if (p.status !== 'open') return dashCell(TREND_TIP);
       return (
-        <Tooltip arrow title={TREND_TIP}>
-          <span>
+        <Tooltip arrow describeChild title={TREND_TIP}>
+          <Box
+            component="span"
+            data-testid="trend-help"
+            tabIndex={0}
+            sx={{ display: 'inline-flex' }}
+          >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
-          </span>
+          </Box>
         </Tooltip>
       );
     }

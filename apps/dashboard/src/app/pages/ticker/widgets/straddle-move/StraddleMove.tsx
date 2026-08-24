@@ -39,7 +39,7 @@ interface Props {
 
 function EmptyLine({ text, testid }: { text: string; testid: string }) {
   return (
-    <Typography variant="body2" data-testid={testid} sx={{ color: 'text.disabled' }}>
+    <Typography variant="body2" data-testid={testid} sx={{ color: 'text.secondary' }}>
       {text}
     </Typography>
   );

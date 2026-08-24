@@ -95,7 +95,15 @@ export function ChgCell({ row }: { row: ScanRow }) {
  *  Tooltip carries 1–2 plain-language drivers from closed wire fields ("why this row").
  *  Optional poll-to-poll delta is NEUTRAL (structure change, not P/L direction).
  *  tabIndex=0 so keyboard users can focus and open the tip (spine #6). */
-export function ScoreCell({ row, delta }: { row: ScanRow; delta?: PollDelta | null }) {
+export function ScoreCell({
+  row,
+  delta,
+  focusableHelp = true,
+}: {
+  row: ScanRow;
+  delta?: PollDelta | null;
+  focusableHelp?: boolean;
+}) {
   const why = whyThisRow(row);
   const d =
     delta?.scoreDelta != null && Number.isFinite(delta.scoreDelta)
@@ -103,12 +111,12 @@ export function ScoreCell({ row, delta }: { row: ScanRow; delta?: PollDelta | nu
       : '';
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
-      <Tooltip arrow title={why} describeChild>
+      <Tooltip arrow title={why} describeChild={focusableHelp}>
         <Typography
           component="span"
-          tabIndex={0}
+          {...(focusableHelp ? { tabIndex: 0 } : {})}
           data-testid="cell-score"
-          aria-label={SCAN_COPY.whyScoreAria}
+          {...(focusableHelp ? { 'aria-label': SCAN_COPY.whyScoreAria } : {})}
           sx={{
             ...MONO,
             fontSize: 'inherit',

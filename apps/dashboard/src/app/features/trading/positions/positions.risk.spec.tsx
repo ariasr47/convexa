@@ -29,7 +29,7 @@ import { themeForPref } from '@/shared/theme/theme';
 import type { LiveUpdate, StrikeRow, TickerBundle, TrackedContract } from '@convexa/api';
 import { streamTicker } from '@convexa/api';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 // broker-connect: the Broker tab's S1 CTA is a router deep-link (`/settings#brokerage`), so the
@@ -698,6 +698,46 @@ describe('positions · no-real-order-path', () => {
     const brokerMentions = screen.queryAllByText(/broker/i);
     expect(brokerMentions).toHaveLength(1);
     expect(brokerMentions[0].closest('[data-testid="tab-live"]')).not.toBeNull();
+  });
+
+  it('AC-43/45 keeps disclosure contrast and uses visual-viewport minimum deltas', async () => {
+    const user = userEvent.setup();
+    installBackend();
+    renderHarness();
+    await openManual(user, '5');
+    const disclosure = screen.getByTestId('positions-disclosure');
+    expect(getComputedStyle(disclosure).color).toBe(theme.palette.text.secondary);
+
+    const scrollBy = vi.fn();
+    const oldViewport = window.visualViewport;
+    const oldScrollBy = window.scrollBy;
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: { offsetLeft: 100, offsetTop: 50, width: 640, height: 450, scale: 2 },
+    });
+    Object.defineProperty(window, 'scrollBy', { configurable: true, value: scrollBy });
+    try {
+      for (const testid of ['open-entry', 'tab-live']) {
+        const control = screen.getByTestId(testid);
+        vi.spyOn(control, 'getBoundingClientRect').mockReturnValue({
+          left: 110,
+          right: 210,
+          top: 600,
+          bottom: 640,
+          width: 100,
+          height: 40,
+          x: 110,
+          y: 600,
+          toJSON: () => ({}),
+        });
+        fireEvent.focus(control);
+      }
+      expect(scrollBy).toHaveBeenCalledTimes(2);
+      expect(scrollBy).toHaveBeenLastCalledWith({ left: 0, top: 140, behavior: 'auto' });
+    } finally {
+      Object.defineProperty(window, 'visualViewport', { configurable: true, value: oldViewport });
+      Object.defineProperty(window, 'scrollBy', { configurable: true, value: oldScrollBy });
+    }
   });
 });
 

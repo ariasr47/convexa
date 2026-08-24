@@ -44,6 +44,7 @@ interface Props {
   onSuccess?: () => void;
   /** Optional in-context reason line shown at the top of the dialog (e.g. the gated-action prompt). */
   reason?: string;
+  onExited?: () => void;
 }
 
 interface FieldErrors {
@@ -52,7 +53,15 @@ interface FieldErrors {
   form?: string; // non-field banner (bad-credentials / auth-unavailable / duplicate-email)
 }
 
-export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reason }: Props) {
+export function AuthDialog({
+  open,
+  mode,
+  onClose,
+  onModeChange,
+  onSuccess,
+  reason,
+  onExited,
+}: Props) {
   const auth = useAuth();
   // Full-screen sheet on phones; centered dialog at sm+.
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
@@ -75,6 +84,19 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
       setPassword('');
     }
   }, [open, mode, auth.demoSeed]);
+
+  useEffect(() => {
+    if (!open || submitting) return;
+    const onDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onDocumentKeyDown, true);
+    return () => document.removeEventListener('keydown', onDocumentKeyDown, true);
+  }, [open, onClose, submitting]);
 
   const c = mode === 'signup' ? AUTH_COPY.signup : AUTH_COPY.login;
   // Title matches the Figma AuthModal ("Welcome back" on login; the copy source's `login.title`
@@ -151,8 +173,17 @@ export function AuthDialog({ open, mode, onClose, onModeChange, onSuccess, reaso
       fullScreen={fullScreen}
       maxWidth="xs"
       fullWidth
+      disableRestoreFocus
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !submitting) {
+          event.stopPropagation();
+          onClose();
+        }
+      }}
       data-testid="auth-dialog"
       slotProps={{
+        root: { onTransitionExited: onExited },
+        transition: { onExited },
         // Elevated slate card (raised above the page) + crisp border + dialog shadow, per the Figma.
         paper: {
           sx: {

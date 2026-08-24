@@ -46,7 +46,7 @@ export const TermStructureCard = memo(function TermStructureCard({
         }}
       >
         {unavailable || !termStructure ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled', p: 2 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', p: 2 }}>
             Term structure unavailable this cycle.
           </Typography>
         ) : (

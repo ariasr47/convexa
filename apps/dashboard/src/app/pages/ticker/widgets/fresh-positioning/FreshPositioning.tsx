@@ -39,11 +39,11 @@ export function FreshPositioning({
     >
       <Box>
         {chainVolOiRatio == null ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Vol/OI unavailable this cycle.
           </Typography>
         ) : unusualStrikes.length === 0 ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             No strikes above the {fmtThresh(volOiThreshold)}× Vol/OI cutoff this session.
           </Typography>
         ) : (

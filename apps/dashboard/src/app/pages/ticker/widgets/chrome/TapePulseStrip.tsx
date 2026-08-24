@@ -209,7 +209,7 @@ export function TapePulseStrip({ structureMid, height = 88 }: TapePulseStripProp
               component="span"
               variant="caption"
               data-testid="tape-stream-state"
-              sx={{ color: 'text.disabled', whiteSpace: 'nowrap' }}
+              sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}
             >
               {tape.streamOffline ? '⏸ Stream offline' : 'Stream off'}
             </Typography>

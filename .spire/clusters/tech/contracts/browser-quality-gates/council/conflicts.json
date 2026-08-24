@@ -1,0 +1,211 @@
+{
+  "conflicts": [
+    {
+      "quote": "A bounded eight-image baseline: public landing at desktop dark; populated ticker at desktop dark and light; dense Scanner at the compact viewport dark and light; dense Positions at the compact viewport dark and light; and ticker stream-offline at desktop dark.",
+      "source": "pm",
+      "why": "The PM position makes exactly eight images build-binding in AC-15, while the UX position makes exactly six images build-binding in UX-14 and names a materially different risk set. One closed manifest cannot satisfy both set-equality requirements.",
+      "proposal": "Ratify one inventory before synthesis. I recommend the UX six-case inventory because it keeps the brief's small-set boundary while covering clustered GEX labels, live-offline isolation, dense responsive books, scanner last-known data, and the dense AI analysis sheet; whichever inventory is chosen must be the sole manifest used by checks and updates.",
+      "kind": "product",
+      "conflict_id": "c11759e1f7b3dc417f96d4e32e321b2322811ff191d463534e02d499d350a174",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A signed-in trader can navigate among Positions, Scanner, and Settings, including browser Back and Forward, without a document reload.",
+      "source": "pm",
+      "why": "The PM position allocates one of exactly five journeys to signed-in multi-route navigation, while the UX position allocates one of exactly five to the signed-out protected-route and dialog-focus path and folds Back/Forward into the public Landing-to-Ticker journey. Implementing both lists unchanged requires a sixth journey or silently drops a promised path.",
+      "proposal": "Keep exactly five by folding Back/Forward and route-parameter binding into the public Landing-to-Ticker journey, retaining the signed-out auth-wall/dialog-focus journey, and covering signed-in Settings in the accessibility matrix rather than as a separate compatibility journey.",
+      "kind": "product",
+      "conflict_id": "feaca82f10e5044ce31c7404907262832e350c54289b40e587138eb49d2c3b3c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "After explicit owner/design-review approval, run `npm run browser:visual:update`.",
+      "source": "ux",
+      "why": "The PM position says reviewers accept or reject the resulting version-controlled image changes, so a single approval event cannot both precede candidate creation and approve the exact bytes produced afterward.",
+      "proposal": "Use two explicit decisions: an owner/design reviewer first authorizes candidate generation after inspecting the failed comparison artifacts, then normal code review accepts or rejects the generated baseline bytes; neither decision is implied by the update command.",
+      "kind": "product",
+      "conflict_id": "8f8e73c7d6feb73fe44a17f0bb18db433cde5ea8c03d108c62113275ef2d588f",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Because product UI changes are outside this brief, discovery of one requires GATE Z rather than a silent exclusion.",
+      "source": "pm",
+      "why": "As an unconditional rule, this conflicts with the UX position's narrow third-party-node exclusion path and the architecture position's exact rule-and-target waiver for a proven scanner false positive. Those cases are not grandfathered product violations, but the quoted wording sends them to GATE Z without distinguishing them.",
+      "proposal": "Send every real in-scope serious or critical product finding to GATE Z. Permit only a proven scanner false positive or third-party node to use an exact waiver that names rule, selector, reason, owner, removal condition, and expiry; broad, unowned, or non-expiring exclusions remain forbidden.",
+      "kind": "product",
+      "conflict_id": "a11ca9442f8a4c52f8ef7855b340f35c52a87d4dff4fc7f6be65ef2b61cf06ca",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Declare one first-party Browserslist policy at the workspace root for the current and previous stable Chrome, Edge, Firefox, desktop Safari, and iOS Safari families, excluding dead/unsupported browsers.",
+      "source": "architect",
+      "why": "This makes current and previous branded-browser families the declared support promise, while the PM position limits tested assurance to the browser engines pinned by the locked Playwright release and explicitly declines Safari, Edge, device, and version certification. The broader promise changes support scope and user expectations beyond the evidence this feature produces.",
+      "proposal": "Use the pinned Chromium, Firefox, and WebKit engines as the tested support promise. If a Browserslist declaration is still wanted, label it separately as emitted-code intent rather than evidence that the named branded-browser families were behaviorally tested.",
+      "kind": "product",
+      "conflict_id": "dde9bba21f02b9f78de386eeeb77f37503ecf937ad9388c43f066ab93b851b85",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The bounded set should exercise five technical journeys: public boot, client-side routing, content-full Ticker with an isolated stream loss, authenticated Positions with dense/expanded content, and authenticated Scanner with dense responsive content.",
+      "source": "architect",
+      "why": "The PM position makes the exact five-journey inventory a product cost boundary and names a different allocation, including signed-in navigation across Positions, Scanner, and Settings and a keyboard expansion journey. Treating the selection as five technical categories leaves the promised user journeys ambiguous and permits scope drift.",
+      "proposal": "Adopt one explicitly enumerated five-journey inventory in the synthesized spec; the PM proposal should be the default unless the owner chooses a different allocation of the fixed five-journey budget.",
+      "kind": "product",
+      "conflict_id": "8cdb81538aa9d64ca39ed10750701541a839a027d384f2267abf067d5e1dfc4b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Signed-out protected-route entry proving the auth wall appears, then the shared sign-in dialog's keyboard entry/close/return-focus path.",
+      "source": "ux",
+      "why": "This consumes one of the fixed five compatibility slots with a signed-out auth-wall journey that is not in the PM's exact five, while the PM inventory instead reserves a slot for signed-in navigation among Positions, Scanner, and Settings. Choosing which journey carries the bounded cross-engine promise is a scope and user-value decision.",
+      "proposal": "Keep exactly five journeys and have the owner choose between the signed-out auth-wall journey and the PM's signed-in multi-route navigation journey; do not silently combine them into a larger sixth journey or drop another promised journey.",
+      "kind": "product",
+      "conflict_id": "3f6fdcf50584eca5ff344af821c79843e68d8d9dbd0656b265ac3586c337d07b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep the baseline inventory closed and small: six viewport screenshots covering Landing desktop in both schemes, content-full Ticker mobile in both schemes, dense Positions at the 900px risk band, and degraded Scanner mobile in the opposite scheme.",
+      "source": "architect",
+      "why": "The PM position scopes exactly eight approved baselines and protects both schemes for dense Positions and Scanner plus a desktop stream-offline Ticker state. Six materially changes the risk coverage and ongoing review cost, so architecture cannot narrow it unilaterally.",
+      "proposal": "Use the PM's eight-image inventory unless the owner explicitly selects a six-image cost boundary; whichever count is chosen must be a closed, named inventory with over-collection and missing-baseline failures.",
+      "kind": "product",
+      "conflict_id": "71350b6d1e31aee31866e476ccee15feaad1d4688e764e0d5ec5135b82321e28",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The bounded baseline set is six high-risk compositions:",
+      "source": "ux",
+      "why": "The UX six-image set conflicts with the PM's exact eight-image scope in both count and selected states, adding AI recommendation analysis while removing some dual-theme dense-state coverage. That is a priority and visual-risk allocation decision, not a wording refinement.",
+      "proposal": "Have the owner select one closed visual inventory; the PM recommends the eight-image set, after which UX should provide review guidance for precisely those chosen compositions without adding or substituting cases.",
+      "kind": "product",
+      "conflict_id": "e6256fbb15be13e682c253b49fcff0d479407750d7d4351e7c08b38ae9d29466",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Declare one first-party Browserslist policy at the workspace root for the current and previous stable\nChrome, Edge, Firefox, desktop Safari, and iOS Safari families, excluding dead/unsupported browsers.",
+      "source": "architect",
+      "why": "This creates a branded-browser and moving stable-release product support promise, while the PM and UX positions limit the evidence claim to the Chromium, Firefox, and WebKit versions installed by the locked Playwright toolchain. Browserslist resolution is emitted-code intent, not evidence that those named vendor releases completed the browser journeys.",
+      "proposal": "Keep the published promise engine-scoped to the locked Playwright projects; if the owner wants a separate current/previous Chrome, Edge, Firefox, Safari, and iOS Safari support commitment, rule it explicitly with its evidence and maintenance cost.",
+      "kind": "product",
+      "conflict_id": "864a0979ac7cbbf50b127b2f2d2b614be8483175ec15ec27256f87c6db3620f5",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The bounded set should exercise five technical journeys: public boot, client-side routing,\ncontent-full Ticker with an isolated stream loss, authenticated Positions with dense/expanded content,\nand authenticated Scanner with dense responsive content.",
+      "source": "architect",
+      "why": "This spends two of the five slots on public boot and routing and omits the signed-out protected-route and sign-in-dialog path in the UX matrix. Because every lane caps secondary engines at exactly five journeys, both inventories cannot stand unchanged.",
+      "proposal": "Choose one closed five-journey product inventory; preserve the UX path that combines public landing, Ticker navigation, Back/Forward, and route binding so one slot remains for the signed-out auth-wall and dialog keyboard path.",
+      "kind": "product",
+      "conflict_id": "86547b8ed8b6fa3b44988844ef251cfeb4dad07849cde76fc6d69d53d95409d9",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A signed-in trader can navigate among Positions, Scanner, and Settings, including browser Back and\n   Forward, without a document reload.",
+      "source": "pm",
+      "why": "This PM journey is not one of the UX five: UX assigns that slot to signed-out protected-route entry and the shared sign-in dialog's keyboard, close, and return-focus behavior. With an exact five-journey cap, including both expands scope or removes another named journey.",
+      "proposal": "Have the owner choose whether the fifth cross-engine risk is signed-in multi-route navigation including Settings or signed-out auth-wall/dialog behavior, then publish only that closed five-journey set.",
+      "kind": "product",
+      "conflict_id": "1cead2972fcba03acbccfae1f792e316646b549a67cabed75d074bbacbf31af4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Automated WCAG-oriented scanning over representative states: public landing in both schemes; a\n  populated public ticker; authenticated Settings; dense authenticated Positions; dense authenticated\n  Scanner at the compact viewport; Scanner empty; ticker cold-load error; and ticker stream-offline with\n  retained static content.",
+      "source": "pm",
+      "why": "This scoped matrix omits UX's named Ticker loading and stale-after-success states, signed-out auth wall and open dialog, Scanner worker-down/last-known state, and Settings validation/error state. Adding them is a material scope expansion; silently dropping them leaves the UX state matrix and AC mapping unsupported.",
+      "proposal": "Rule one representative accessibility matrix explicitly: either adopt the PM set and withdraw the extra UX state claims, or authorize the added degraded/dialog states and their deterministic fixtures.",
+      "kind": "product",
+      "conflict_id": "0f8f324d8bdf0c72ae7bd89d533f3c0dbd08c3ae30385aaeca17cccd75356e7f",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A bounded eight-image baseline: public landing at desktop dark; populated ticker at desktop dark and\n  light; dense Scanner at the compact viewport dark and light; dense Positions at the compact viewport\n  dark and light; and ticker stream-offline at desktop dark.",
+      "source": "pm",
+      "why": "The PM inventory has eight images and different viewport/theme/state compositions from UX's six-case inventory, including no AI recommendation analysis sheet and no 393px Landing capture. These are mutually exclusive closed manifests, not additive suggestions.",
+      "proposal": "Choose one closed visual-risk manifest and its exact count; UX recommends the six named compositions because they cover mobile/default, dense, offline, chart-label, and analysis-sheet risks without duplicating both schemes per route.",
+      "kind": "product",
+      "conflict_id": "b699ea7d09a4ab646c586d56ca7ae4c5c09ad65e1e5a8b98b391119e82f91314",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Keep the baseline inventory closed and small: six viewport screenshots covering Landing desktop in both\nschemes, content-full Ticker mobile in both schemes, dense Positions at the 900px risk band, and degraded\nScanner mobile in the opposite scheme.",
+      "source": "architect",
+      "why": "Although the count matches UX, the cases do not: this set spends four images duplicating Landing and Ticker across schemes, uses different Positions and Scanner widths/states, and omits the dense AI recommendation analysis composition. A set-equality gate cannot enforce both manifests.",
+      "proposal": "After the owner selects the product-risk compositions, architecture should enforce that single scenario/viewport/theme/state manifest exactly rather than deriving a different six-case set.",
+      "kind": "product",
+      "conflict_id": "63dddee65fc592c2b2e4cae8644b9d853f39f29193546e476b682af824318fde",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "CI installs all three pinned Playwright engines with system dependencies, then runs full Chromium,\ncompatibility, accessibility, and visual checks as separately named steps.",
+      "source": "architect",
+      "why": "PM requires the hosted workflow to invoke the documented check-only aggregate command, while this mechanism invokes constituent gates as separate workflow steps. Without one authority, local aggregate and hosted selection can drift or execute the suite twice.",
+      "proposal": "Use one shared check-only target graph as the authority: CI may expose constituent reporting, but its selected gates must resolve from the same aggregate dependency set used locally and must execute each gate once.",
+      "kind": "technical",
+      "conflict_id": "2643d4bd5563a480466e77b81d35135f6e2acd6081fdad637d43f7014310dfd4",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: which single visual inventory is binding\u2014PM's eight cases or UX's six cases\u2014and which named scenarios survive that choice?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: may a proven axe false positive or narrowly owned third-party node use the constrained waiver mechanism, or must every serious/critical result enter GATE Z regardless of cause?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: confirm whether baseline review is intentionally two-stage\u2014authorization to generate candidates followed by review of the generated bytes\u2014or specify the one approval event that has authority."
+    },
+    {
+      "from": "architect",
+      "ask": "PM and UX: confirm that signed-in Settings navigation moves out of the five-engine compatibility set when the signed-out auth-wall/dialog-focus journey moves in."
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: Can the strict fixture and readiness boundary execute the PM's eight visual states and named accessibility states without product-source changes, live services, or wall-clock dependencies; if not, which specific state is infeasible?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: Which existing shipped semantic anchors can identify loading, cold-error, stale-after-success, stream-offline, dense, and empty states without adding trader-visible copy or test-only runtime behavior?"
+    }
+  ],
+  "agree_count": {
+    "architect": 5,
+    "pm": 5,
+    "ux": 4
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "authorization_id",
+    "decision",
+    "state",
+    "actor",
+    "source_revision",
+    "platform",
+    "created_at",
+    "failed_compare",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "authorization_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$" },
+    "decision": { "const": "authorize_candidate_generation" },
+    "state": { "const": "authorized" },
+    "source_revision": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "platform": { "enum": ["win32", "linux"] },
+    "actor": {
+      "type": "object",
+      "required": ["id", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["owner", "design_reviewer"] }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$"
+    },
+    "failed_compare": {
+      "type": "object",
+      "required": ["run_id", "summary_path", "summary_sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "run_id": { "type": "string", "minLength": 2 },
+        "summary_path": { "type": "string" },
+        "summary_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "expected_path",
+          "expected_sha256",
+          "actual_path",
+          "actual_sha256",
+          "diff_path",
+          "diff_sha256"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "scenario_id": { "type": "string" },
+          "expected_path": { "type": ["string", "null"] },
+          "expected_sha256": { "type": ["string", "null"] },
+          "actual_path": { "type": "string" },
+          "actual_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "diff_path": { "type": ["string", "null"] },
+          "diff_sha256": { "type": ["string", "null"] }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

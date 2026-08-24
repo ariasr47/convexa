@@ -27,13 +27,11 @@ describe('TapePulseStrip responsive header', () => {
 
   it('renders offline tape, status, and structure as separate wrapping header fields', () => {
     publishLiveTape({ ticker: 'SPCX', live: null, streamOffline: true });
-
     render(
       <ThemeProvider theme={themeForPref('dark')}>
         <TapePulseStrip structureMid={146.15} />
       </ThemeProvider>,
     );
-
     const header = screen.getByTestId('tape-pulse-header');
     expect(getComputedStyle(header).display).toBe('flex');
     expect(getComputedStyle(header).flexWrap).toBe('wrap');

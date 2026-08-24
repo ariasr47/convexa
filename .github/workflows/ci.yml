@@ -84,15 +84,49 @@ jobs:
       - name: Bundle size gate
         run: npm run check:bundle
 
-      # Chromium only (matches playwright.config.ts). Separate from unit tests so the
-      # browser does not contend with Vitest workers for CPU.
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Browser quality engine install
+        run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: E2E (Playwright)
-        run: npx nx run dashboard-e2e:e2e
+      - name: Browser quality gate
+        run: npm run browser:quality
         env:
           CI: true
+
+      - name: Upload Chromium browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-quality-chromium
+          path: apps/dashboard-e2e/test-output/playwright/chromium
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload compatibility browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-quality-compatibility
+          path: apps/dashboard-e2e/test-output/playwright/compatibility
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload accessibility browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-quality-accessibility
+          path: apps/dashboard-e2e/test-output/playwright/accessibility
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload visual browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-quality-visual
+          path: apps/dashboard-e2e/test-output/playwright/visual
+          retention-days: 7
+          if-no-files-found: error
 
   backend:
     name: Backend (cargo test · release+postgres)

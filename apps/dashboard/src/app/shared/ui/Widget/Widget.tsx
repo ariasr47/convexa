@@ -180,10 +180,10 @@ export function Widget({
     >
       {/* Drag grip — AFFORDANCE ONLY. Visible only when selected (not on every hover). */}
       {!inOverlay && !quiet && (
-        <Tooltip arrow title="Rearrange (coming soon)">
+        <Tooltip arrow describeChild title="Rearrange (coming soon)">
           <Box
             component="span"
-            aria-label="Rearrange (coming soon)"
+            aria-hidden="true"
             className="widget__grip"
             sx={{
               display: 'inline-flex',
@@ -226,10 +226,7 @@ export function Widget({
           )}
         </Stack>
         {subtitle && (
-          <Typography
-            variant="body2"
-            sx={{ color: 'text.secondary', mt: 0.25, ...(quiet ? { opacity: 0.85 } : null) }}
-          >
+          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
             {subtitle}
           </Typography>
         )}

@@ -1,0 +1,673 @@
+{
+  "schema_version": 1,
+  "support_policy_id": "playwright-engines-1.62.1",
+  "full_chromium": {
+    "inventory_id": "pre-feature-52-v1",
+    "tests": [
+      {
+        "test_id": "d38f0e9816f51aa1922817ddad296f9fcfffdcb98335c43716eb971b1cf4f276",
+        "file": "apps/dashboard-e2e/src/e2e/app-loads.spec.ts",
+        "title_path": ["app shell", "loads"],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e1a04a045e5bfb75832ebc08fa7d45ad5bb356e672e814c9caa451d757517836",
+        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
+        "title_path": [
+          "broker grouping",
+          "AC-37 — 393px, a group EXPANDED, no horizontal overflow"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "c9994eb28d0cea033d1d030a51b03443a7cbb9bbac61f80952fbae33679c907e",
+        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
+        "title_path": [
+          "broker grouping",
+          "AC-36 — the group control carries exactly ONE focus indicator"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "084ce42b1399f80f6bfbd0748eef8f2010bfa8ae84148fd6bed358bf5678a451",
+        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
+        "title_path": [
+          "broker grouping",
+          "AC-4 — the populated (collapsed) tab names no shape, on real rendered text"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "bff70436d79e0878f40cca1ff46476356fc9723d2421b7c78acdd545018c8900",
+        "file": "apps/dashboard-e2e/src/e2e/broker-grouping.spec.ts",
+        "title_path": [
+          "broker grouping",
+          "AC-7 / AC-26 — collapsed on load, and collapsed again after a reload"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ceb8b89449b11ff70bf4288b4d8e7dc080f49b69ff9fdd0268ecb3aa6be30e76",
+        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
+        "title_path": [
+          "broker tab",
+          "signed out: the route wall stands in front of the Broker tab and NO broker request is issued"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "3f264d0b74617b442700b3894d71d75a7ad2634490d6854470f1a5eab100c2ac",
+        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
+        "title_path": [
+          "broker tab",
+          "signed in, no credential: the honest S1 not-connected state — never an empty table"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "3077686a1e2143446a496fc26bfaf9cf137af1a106495a5bfa991cac87364416",
+        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
+        "title_path": [
+          "broker tab",
+          "a populated tab never claims `live`: the freshness word appears only inside the negation phrase"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5337a3afacd5f5b75f8727b5bb207e84f3ec2880a61e095a5c00178c60c5f545",
+        "file": "apps/dashboard-e2e/src/e2e/broker.spec.ts",
+        "title_path": [
+          "broker tab",
+          "393px: the populated Broker tab does not overflow horizontally"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "17368bd9989383c8b0ae86287a827d73238534d56e8a660322e401244dbfc0f6",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": ["client-side navigation", "the nav links route WITHOUT a page reload"],
+        "project": "chromium"
+      },
+      {
+        "test_id": "603e2eaf77a9c4ccbe1cff4fdd0affea1b2dde109de990e181708da1cbc4c87b",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "browser Back and Forward are wired to the router"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "abed0faa0276960dbc63186b106a03f905a65f9ebb21cad118d534ce08f70a18",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": [
+          "client-side navigation",
+          "the /ticker redirect resolves to the default symbol"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "23721165a95be1a59301afcc9b11d143b6a0bc2572c109ab5b9092de977b1790",
+        "file": "apps/dashboard-e2e/src/e2e/navigation.spec.ts",
+        "title_path": ["client-side navigation", "a URL parameter reaches the page it addresses"],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5d77b45b96e452faf0cc75e4cdf2975e6d9dee3e00d55fa17ac63f57fd88916b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "AI recommendation decision card",
+          "393x852 dark: analysis is a single full-width sheet without page overflow"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "b77781e84b7a254534284fbc8fb1a778b0c96be74be071f5a85b4987fc80f4c8",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "AI recommendation decision card",
+          "393x852 light: analysis is a single full-width sheet without page overflow"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "28021b11cda48f2b1f8eb1d2fdd897bb9241589b124a496ebcb4b8e2a72365b8",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "AI recommendation decision card",
+          "1440x900 dark: decision hierarchy is visible while ticker context remains visible"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "31878b53cd78d7c8db41591a25f23179b5f3521b5b36b24c4905594734ae4db0",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "AI recommendation decision card",
+          "1440x900 light: decision hierarchy is visible while ticker context remains visible"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "484bd1c533289b50b054ac19594cfab622d0beea7897773dafc346c6ea6cb7dc",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "AI recommendation decision card",
+          "keyboard focus enters, contains, escapes, and returns to the analysis opener"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "74e5fbfc25b5f26a13840fc70921d825a78669592770f3adbe73a65285e35e71",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/ fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "5d35e7e8fecd1f83bce0ad2d70ae6358924b274daed7186c85c82d789822d235",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/ticker/TSLA fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "65c3d010653523ee711a488b9a0e0cc8f3b850a46ec806db85708b90c73bb796",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/positions fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "74d51819b4ac796dda15f9bf5f195dfebbb0b19f937cd1e8c282995de63f6519",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/scanner fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ccad4808bb5f407d8abe772ff644aa2b7817e7c8110d613e54cf323335124c4e",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/settings fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "cfd117e0d763331cdbdde658e7568b526c009661522d9c3c2718451ea357487c",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "tradeable-rec-inputs — a produced, OVER-CAP rec with a cited contract fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4432eb2b8d764f9728664e8a29f8558ce41a040b2fc547fd133b6f8b3ebd33bb",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "ai-rec-grounding — the densest grounding card fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "13ab5a23b0f512100f8ae6b330c3974a885126c11da78149fdefb3f1588c0ad7",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "tradeable-rec-inputs — the Settings Risk inputs panel fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "93faf0960c2aa4acd6e144866475d161d88b9d2e5e87bedbee75dbc3e5d2f3ae",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/scanner collapses the dense table to cards below sm (no clipped columns at 393px)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0be5e71e96f2c5a0c442bbe8cc8ab6b00489cfeb080030e0312c5eb3f7f4884e",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "/positions fits at 393px with a SEEDED book — cards, five-item footers, the risk slot"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0fc9af092a783d66ec111b66b7bcbcfcbbb593ddeff1ae4956c1903d882e43b6",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "a 4-leg disclosure EXPANDED at 393px still does not overflow"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "0db7b30f1d92b34c2f715c444b501aa7b160496858f28a207c8e41958e3fd93d",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · dark scheme",
+          "below md the nav collapses: hamburger present, no inline nav row"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "a07100e8b95c52816367b4dbcdea7dc138e302550df05cf49a630c8f3a602aeb",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/ fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e7d9bc77388b87db0b3b01776ba4b9d9641a713d1b288c036312ba94b1932e6a",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/ticker/TSLA fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "8e91a762d0f8415e0aeb68d4420a5ea484f2d646eb8d6cae2049284b0dd97572",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/positions fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "17a8f691e47457ec9d3afa42289286dc31cdb186fb4d22397b568eff6d1ae1aa",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/scanner fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "32ff31033bd2e80771dd5246d4eb06e95133ee99f55e2d13fa9738ddec8f79c8",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/settings fits the viewport (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "150930d90f2cdc6e261dc48c3425617144a81a3e0d928aaddd334840ab119512",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "tradeable-rec-inputs — a produced, OVER-CAP rec with a cited contract fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "528cf3b4483e1c52bcf9fbdc3df09ab8fdc05cff4e3e5c5867aedb69c987fd50",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "ai-rec-grounding — the densest grounding card fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "1d4dd77057ed94a67a67cdb2323a86e03bd9869b1f3fcbdb8465cfd5b90c49e8",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "tradeable-rec-inputs — the Settings Risk inputs panel fits at 393px"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "630ba937315c134fa7fec9452e8df025a411ae1a518b7d74964add5e0e2dfb1b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/scanner collapses the dense table to cards below sm (no clipped columns at 393px)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ebbad933f4017def0f404c80677d8a6cb674c0f5b9295cb6866281de2772bcc4",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "/positions fits at 393px with a SEEDED book — cards, five-item footers, the risk slot"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "6c0de2e96abbff75551363e16fd7b8f6e88f80d1daecdfe97985f85de6bd9a9b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "a 4-leg disclosure EXPANDED at 393px still does not overflow"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "acba1dd7f0f1de4cccbbc15ecc49e145c112cf780a5d58ea92c71956368b62d0",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "393px no-overflow · light scheme",
+          "below md the nav collapses: hamburger present, no inline nav row"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "edcc7f9f649981551c40b1083e27e51d505655d0efe8e82c5bccc439307196a8",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/ fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "a2ededaf488a534a8a862af255c55a944fed8fb67a7effb7805e5318eaa30b0c",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/ticker/TSLA fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "ba6b76aa5c157232bce85c9a4a573786e82074ca4638980f4df25ba46f755ba6",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/positions fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "60370297f52e1d5491af7a103890e590156a74cc9937aea039a351361991383b",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/scanner fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "51cf214e57e988dfe55380a529bc3c55171d7f0a2a2c64916511b7b85613ae65",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "md 900 no-overflow · dark scheme",
+          "/settings fits 900px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "8dc40ab637cb2fafda536508d11ed429cbb1a4659ffc39ee31602102e7600bea",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/ fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "e6244c325af9c49927dbc2fb4cc6b4680278a9b5a58b222ce3f0490c4c4fa10f",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/ticker/TSLA fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "4c8c431bcb5fa5d0e3f911c23253ee1ba3ee35f2b01ad00b720f96cb99498c7c",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/positions fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "9f0870208fafc6a0a795fb18704cdf3f56d3e3eed595664f84c51ff84fc3fff1",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/scanner fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      },
+      {
+        "test_id": "a480bcf9652952208ce8a8e19f96f3dc540e81119bbbbe2e1601a972bb74da8d",
+        "file": "apps/dashboard-e2e/src/e2e/no-overflow.spec.ts",
+        "title_path": [
+          "lg 1280 no-overflow · dark scheme",
+          "/settings fits 1280px (scrollWidth <= innerWidth)"
+        ],
+        "project": "chromium"
+      }
+    ]
+  },
+  "compatibility": {
+    "journeys": [
+      {
+        "id": "landing-ticker-navigation",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/",
+        "auth": "anonymous"
+      },
+      {
+        "id": "ticker-stream-loss",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/ticker/SPY",
+        "auth": "anonymous"
+      },
+      {
+        "id": "signed-out-auth-dialog",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/positions",
+        "auth": "anonymous"
+      },
+      {
+        "id": "dense-positions",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/positions",
+        "auth": "authenticated"
+      },
+      {
+        "id": "dense-scanner",
+        "file": "apps/dashboard-e2e/src/quality/compatibility.spec.ts",
+        "route": "/scanner",
+        "auth": "authenticated"
+      }
+    ],
+    "projects": ["chromium", "firefox", "webkit"]
+  },
+  "accessibility": {
+    "scans": [
+      {
+        "id": "A11Y-1",
+        "route": "/",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-2",
+        "route": "/",
+        "colorScheme": "light",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-3",
+        "route": "/ticker/SPY",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-4",
+        "route": "/settings",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-5",
+        "route": "/positions",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-6",
+        "route": "/scanner",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-7",
+        "route": "/scanner",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-8",
+        "route": "/ticker/SPY",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      },
+      {
+        "id": "A11Y-9",
+        "route": "/ticker/SPY",
+        "colorScheme": "dark",
+        "ready": ["app-shell"],
+        "forbidden": ["route-fallback"]
+      }
+    ],
+    "behaviors": [
+      {
+        "id": "A11Y-B1",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B2",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B3",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B4",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B5",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B6",
+        "project": "chromium"
+      },
+      {
+        "id": "A11Y-B7",
+        "project": "chromium"
+      }
+    ],
+    "waiver_path": "apps/dashboard-e2e/src/quality/a11y-waivers.json"
+  },
+  "visual": {
+    "scenarios": [
+      {
+        "id": "landing",
+        "route": "/",
+        "viewport": {
+          "width": 393,
+          "height": 852
+        },
+        "colorScheme": "dark",
+        "project": "chromium"
+      },
+      {
+        "id": "ticker-desktop",
+        "route": "/ticker/SPY",
+        "viewport": {
+          "width": 1280,
+          "height": 900
+        },
+        "colorScheme": "dark",
+        "project": "chromium"
+      },
+      {
+        "id": "ticker-offline-mobile",
+        "route": "/ticker/SPY",
+        "viewport": {
+          "width": 393,
+          "height": 852
+        },
+        "colorScheme": "light",
+        "project": "chromium"
+      },
+      {
+        "id": "positions-dense",
+        "route": "/positions",
+        "viewport": {
+          "width": 393,
+          "height": 852
+        },
+        "colorScheme": "dark",
+        "project": "chromium"
+      },
+      {
+        "id": "scanner-dense",
+        "route": "/scanner",
+        "viewport": {
+          "width": 900,
+          "height": 900
+        },
+        "colorScheme": "light",
+        "project": "chromium"
+      },
+      {
+        "id": "ai-recommendation",
+        "route": "/ticker/SPY",
+        "viewport": {
+          "width": 393,
+          "height": 852
+        },
+        "colorScheme": "light",
+        "project": "chromium"
+      }
+    ],
+    "project": "chromium",
+    "threshold": 0
+  },
+  "artifact_roots": {
+    "chromium": "apps/dashboard-e2e/test-output/playwright/chromium",
+    "compatibility": "apps/dashboard-e2e/test-output/playwright/compatibility",
+    "accessibility": "apps/dashboard-e2e/test-output/playwright/accessibility",
+    "visual": "apps/dashboard-e2e/test-output/playwright/visual"
+  }
+}

@@ -120,7 +120,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
           data-testid="card-structure-chip"
           sx={{
             fontSize: '0.7rem',
-            color: 'text.disabled',
+            color: 'text.secondary',
             border: '1px solid',
             borderColor: 'divider',
             borderRadius: '5px',
@@ -212,7 +212,7 @@ export function PositionCard({ view, ctx, streamOffline, onClose }: PositionCard
               {dollars(view.max_loss.dollars)}
             </Box>
           ) : (
-            <Box component="span" sx={{ color: 'text.disabled' }} data-testid="card-max-loss">
+            <Box component="span" sx={{ color: 'text.secondary' }} data-testid="card-max-loss">
               {MAX_LOSS_WITHHELD_META[view.max_loss.reason].label}
             </Box>
           )}

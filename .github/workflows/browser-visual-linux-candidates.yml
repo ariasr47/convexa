@@ -1,0 +1,43 @@
+name: Browser visual Linux candidates
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_revision:
+        description: 40-hex source revision to capture
+        required: true
+        type: string
+      authorization_path:
+        description: Repository authorization receipt path
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  candidates:
+    environment: visual-baseline-candidate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.source_revision }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Generate authorized Linux candidates
+        run: npm run browser:visual:update -- --authorization "${{ inputs.authorization_path }}"
+      - name: Upload Linux candidate set
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: browser-visual-linux-candidates
+          path: |
+            apps/dashboard-e2e/src/quality/snapshots/linux/**/*.png
+            apps/dashboard-e2e/visual-review/candidate-sets/*.json
+          if-no-files-found: error

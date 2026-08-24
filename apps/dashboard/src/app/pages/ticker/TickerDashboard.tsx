@@ -121,7 +121,7 @@ function BoardZoneLabel({
         letterSpacing: first ? '0.06em' : '0.08em',
         textTransform: 'uppercase',
         color: 'text.secondary',
-        opacity: first ? 0.8 : zone === 'context' ? 0.75 : 1,
+        opacity: first ? 0.8 : 1,
         borderTop: first ? 'none' : '1px solid',
         borderColor: 'divider',
       }}

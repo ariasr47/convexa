@@ -28,6 +28,7 @@ import { typographyTokens } from '@/shared/theme/tokens';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
+import type { FocusEvent } from 'react';
 import {
   LEGS_TIP,
   MAX_LOSS_ASSUMPTION,
@@ -36,6 +37,22 @@ import {
   SHORT_LEG_TIP,
 } from './labels';
 import type { PositionView } from './view';
+
+function revealFocusedControl(event: FocusEvent<HTMLElement>) {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const left = viewport.offsetLeft;
+  const top = viewport.offsetTop;
+  const right = left + viewport.width;
+  const bottom = top + viewport.height;
+  const intersects =
+    rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+  if (intersects) return;
+  const dx = rect.right <= left ? rect.left - left : rect.left >= right ? rect.right - right : 0;
+  const dy = rect.bottom <= top ? rect.top - top : rect.top >= bottom ? rect.bottom - bottom : 0;
+  window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
+}
 
 /** 0.8rem = 12.8px — above the 11px floor, in the mono data face with tabular numerals. */
 const LEG_MONO = {
@@ -79,6 +96,7 @@ export function LegDisclosureButton({
       aria-expanded={expanded}
       aria-controls={panelId}
       onClick={onToggle}
+      onFocus={revealFocusedControl}
       data-testid="leg-disclosure-toggle"
       sx={{
         display: isCard ? 'flex' : 'inline-flex',
