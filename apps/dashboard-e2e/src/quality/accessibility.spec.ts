@@ -6,8 +6,12 @@ import { assertReady } from './readiness';
 
 for (const scenario of accessibilityScenarios) {
   test(scenario.id, async ({ page }) => {
-    await installScenario(page, scenario);
+    const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
+    if (scenario.id === 'A11Y-9') {
+      await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+      requestState.releaseInitialStream();
+    }
     await assertReady(page, scenario);
     if (scenario.id === 'A11Y-5') {
       await expect
@@ -69,7 +73,8 @@ test.describe('A11Y behavioral sequences', () => {
     expect(url.hash).toBe('');
   });
   test('A11Y-B2 native actions and polite waitlist announcement', async ({ page }) => {
-    await installScenario(page, accessibilityScenarios[0]);
+    const requestState = await installScenario(page, accessibilityScenarios[0]);
+    expect(() => requestState.releaseInitialStream()).toThrow(/not armed/);
     await page.goto('/');
     await expect(page.getByTestId('cta-primary')).toHaveAttribute('href', '/scanner');
     await expect(page.getByTestId('cta-secondary')).toHaveAttribute('href', '/ticker');
@@ -128,8 +133,11 @@ test.describe('A11Y behavioral sequences', () => {
     await expect(page).toHaveURL(/\/ticker\//);
   });
   test('A11Y-B6 offline degradation retains non-colour cues', async ({ page }) => {
-    await installScenario(page, accessibilityScenarios[8]);
+    const scenario = accessibilityScenarios[8];
+    const requestState = await installScenario(page, scenario);
     await page.goto('/ticker/SPY');
+    await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+    requestState.releaseInitialStream();
     await expect(page.getByTestId('command-deck')).toBeVisible();
     await expect(page.getByTestId('last-trade')).toContainText('● Last trade');
     await expect(page.getByTestId('tape-stream-state')).toHaveCount(0);
@@ -140,6 +148,7 @@ test.describe('A11Y behavioral sequences', () => {
     await expect(page.getByTestId('last-trade')).toContainText('⏸ Last trade');
     await expect(page.getByText('⚠ Live offline — reconnecting…')).toBeVisible();
     await expect(page.getByText('● live')).toHaveCount(0);
+    expect(() => requestState.releaseInitialStream()).toThrow(/already released/);
   });
   test('A11Y-B7 reduced motion, zoom and mobile reflow preconditions', async ({ browser }) => {
     const motionContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });

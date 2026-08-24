@@ -21,7 +21,7 @@ import { sharedConfig } from './playwright.shared.config';
  * (the built app) is the CI counterpart, matching the previous `ciWebServerCommand`.
  */
 
-const PORT = 4200;
+const PORT = Number(process.env['BROWSER_QUALITY_PORT'] ?? 4200);
 const baseURL = process.env['BASE_URL'] || `http://localhost:${PORT}`;
 
 const config = {

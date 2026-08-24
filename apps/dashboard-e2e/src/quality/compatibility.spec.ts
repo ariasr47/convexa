@@ -7,6 +7,10 @@ for (const scenario of journeys) {
   test(scenario.id, async ({ page }) => {
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
+    if (scenario.id === 'ticker-stream-loss') {
+      await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+      requestState.releaseInitialStream();
+    }
     await assertReady(page, scenario);
     if (scenario.id === 'landing-ticker-navigation') {
       await page.evaluate(() => {

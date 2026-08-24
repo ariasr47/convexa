@@ -11,11 +11,24 @@ const scenarios = readFileSync(
   'utf8',
 );
 const a11y = readFileSync(new URL('../src/quality/accessibility.spec.ts', import.meta.url), 'utf8');
+const chromiumConfig = readFileSync(new URL('../playwright.config.ts', import.meta.url), 'utf8');
 
 test('scanner fixture uses the application prices SSE envelope and keeps stream routes narrow', () => {
   assert.match(fixture, /url\.pathname === '\/api\/stream\/prices'/);
   assert.match(fixture, /prices:\s*\{/);
   assert.doesNotMatch(fixture, /url\.pathname\.startsWith\('\/api\/stream\/'\)/);
+});
+
+test('retained Chromium maps the quality port to both server and client URL', () => {
+  assert.match(
+    chromiumConfig,
+    /const PORT = Number\(process\.env\['BROWSER_QUALITY_PORT'\] \?\? 4200\)/,
+  );
+  assert.match(
+    chromiumConfig,
+    /const baseURL = process\.env\['BASE_URL'\] \|\| `http:\/\/localhost:\$\{PORT\}`/,
+  );
+  assert.match(chromiumConfig, /\.\.\.sharedConfig\('chromium'\)/);
 });
 
 test('book fixture does not present a newer empty server book', () => {
@@ -30,6 +43,18 @@ test('anonymous behavioral arm is built from an anonymous scenario', () => {
 });
 
 test('watchdog arm advances the full 15-second window before offline assertions', () => {
+  assert.match(
+    fixture,
+    /const watchdogArm = scenario\.id === 'ticker-stream-loss' \|\| scenario\.id === 'A11Y-9'/,
+  );
+  assert.match(fixture, /await streamReady/);
+  assert.match(fixture, /releaseInitialStream/);
+  assert.match(a11y, /page\.clock\.pauseAt\(new Date\(Date\.parse\(scenario\.now\) \+ 1_000\)\)/);
+  assert.match(
+    readFileSync(new URL('../src/quality/compatibility.spec.ts', import.meta.url), 'utf8'),
+    /requestState\.releaseInitialStream\(\)/,
+  );
+  assert.doesNotMatch(fixture, /new Date\(\)|Date\.now\(\)/);
   assert.match(a11y, /fastForward\(14_000\)/);
   assert.match(a11y, /fastForward\(1_000\)/);
 });

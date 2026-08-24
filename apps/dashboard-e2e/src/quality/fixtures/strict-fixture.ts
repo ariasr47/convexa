@@ -64,6 +64,14 @@ export const strictTest = base.extend<{ scenario: Scenario }>({
 export async function installScenario(page: import('@playwright/test').Page, scenario: Scenario) {
   const unexpected: string[] = [];
   let tickerStreamDelivered = false;
+  const watchdogArm = scenario.id === 'ticker-stream-loss' || scenario.id === 'A11Y-9';
+  let releaseStream: (() => void) | undefined;
+  let streamReleased = false;
+  const streamReady = watchdogArm
+    ? new Promise<void>((resolve) => {
+        releaseStream = resolve;
+      })
+    : undefined;
   await page.setViewportSize(scenario.viewport);
   await page.emulateMedia({ colorScheme: scenario.colorScheme, reducedMotion: 'reduce' });
   await page.clock.install({ time: new Date(scenario.now) });
@@ -103,6 +111,7 @@ export async function installScenario(page: import('@playwright/test').Page, sce
         });
       }
       tickerStreamDelivered = true;
+      if (watchdogArm && streamReady) await streamReady;
       return route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
@@ -149,7 +158,17 @@ export async function installScenario(page: import('@playwright/test').Page, sce
     }
     return route.continue();
   });
-  return { unexpected };
+  return {
+    unexpected,
+    releaseInitialStream: () => {
+      if (!watchdogArm || !releaseStream)
+        throw new Error(`initial ticker stream release is not armed for ${scenario.id}`);
+      if (streamReleased)
+        throw new Error(`initial ticker stream already released for ${scenario.id}`);
+      streamReleased = true;
+      releaseStream();
+    },
+  };
 }
 
 export { assertReady };
