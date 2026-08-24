@@ -44,6 +44,7 @@ yarn.lock
 **/tests/fixtures/**
 apps/api/config/**
 libs/quant-engine/tests/fixtures/**
+apps/dashboard-e2e/visual-review/evidence/**
 
 # --- Env & local secrets (never format, never touch) ---
 .env
