@@ -40,6 +40,19 @@ test('strict visual summary validates arithmetic, inventory and file hash', () =
   const summary = base(root);
   assert.doesNotThrow(() => validateSummary(summary, { root }));
 });
+test('Chromium summary accepts scalar inventory identity and project fields', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
+  const common = base(root);
+  delete common.scenarios;
+  const summary = {
+    ...common,
+    gate: 'chromium',
+    inventory_id: 'pre-feature-52-v1',
+    project: 'chromium',
+    tests: Array.from({ length: 52 }, (_, i) => ({ id: `test-${i}` })),
+  };
+  assert.doesNotThrow(() => validateSummary(summary, { root }));
+});
 test('summary rejects unknown keys, zero selection and hash mismatch', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'summary-'));
   const summary = base(root);

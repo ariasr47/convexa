@@ -5,9 +5,17 @@ export type Gate = 'chromium' | 'compatibility' | 'accessibility' | 'visual';
 
 export function sharedConfig(gate: Gate) {
   const port = Number(process.env.BROWSER_QUALITY_PORT ?? 4200);
+  const workerValue = process.env.BROWSER_QUALITY_WORKERS;
+  const workers = workerValue === undefined ? undefined : Number(workerValue);
+  if (
+    workerValue !== undefined &&
+    (!Number.isInteger(workers) || (workers as number) < 1 || (workers as number) > 16)
+  )
+    throw new Error('BROWSER_QUALITY_WORKERS must be an integer from 1 through 16');
   const baseURL = process.env.BASE_URL ?? `http://localhost:${port}`;
   return defineConfig({
     fullyParallel: true,
+    ...(workers === undefined ? {} : { workers }),
     forbidOnly: Boolean(process.env.CI),
     failOnFlakyTests: true,
     retries: process.env.CI ? 1 : 0,

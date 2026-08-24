@@ -6,6 +6,78 @@ import { pathToFileURL } from 'node:url';
 import { CHILDREN, validateChildCatalog } from './lib/aggregate.mjs';
 import { npmInvocation } from './lib/process.mjs';
 import { ROOT } from './lib/repository-root.mjs';
+import { hashFile, readSummary } from './lib/summary.mjs';
+
+const QUALITY_SUMMARY_ROOT = path.join(ROOT, 'apps/dashboard-e2e/test-output/playwright');
+
+export function validateChildEvidence({
+  child,
+  result,
+  runId,
+  source,
+  root = ROOT,
+  summaryReader = readSummary,
+  hashReader = hashFile,
+}) {
+  const summaryPath = path.join(
+    root,
+    'apps/dashboard-e2e/test-output/playwright',
+    child.gate,
+    'summary.json',
+  );
+  const summaryPathRelative = path.relative(root, summaryPath).replaceAll(path.sep, '/');
+  let summary;
+  let summarySha;
+  try {
+    summary = summaryReader(summaryPath, { root });
+    summarySha = hashReader(summaryPath);
+  } catch {
+    return {
+      target: child.target,
+      execution_key: `${runId}:${child.target}`,
+      invocation_count: 1,
+      exit_code: result.exit_code ?? 1,
+      summary_path: summaryPathRelative,
+      summary_sha256: null,
+      status: 'incomplete',
+    };
+  }
+  const identityMatches =
+    summary.gate === child.gate && summary.run_id === runId && summary.source_revision === source;
+  const status =
+    identityMatches && result.exit_code === 0 && summary.status === 'pass'
+      ? 'pass'
+      : summary.status === 'incomplete'
+        ? 'incomplete'
+        : 'fail';
+  return {
+    target: child.target,
+    execution_key: `${runId}:${child.target}`,
+    invocation_count: 1,
+    exit_code: result.exit_code ?? 1,
+    summary_path: summaryPathRelative,
+    summary_sha256: summarySha,
+    status,
+  };
+}
+
+export function buildQualityReceipt({ runId, source, startedAt, completedAt, children }) {
+  const status = children.every((child) => child.status === 'pass')
+    ? 'pass'
+    : children.some((child) => child.status === 'incomplete')
+      ? 'incomplete'
+      : 'fail';
+  return {
+    schema_version: 1,
+    gate: 'quality',
+    run_id: runId,
+    source_revision: source,
+    started_at: startedAt,
+    completed_at: completedAt,
+    status,
+    children,
+  };
+}
 
 export function spawnQualityChildren({
   children = CHILDREN,
@@ -50,6 +122,7 @@ export function spawnQualityChildren({
               BROWSER_QUALITY_RUN_ID: runId,
               BROWSER_QUALITY_SOURCE_REVISION: source,
               BROWSER_QUALITY_PORT: String(port),
+              BROWSER_QUALITY_WORKERS: '1',
             },
           });
         } catch (error) {
@@ -67,44 +140,38 @@ export function spawnQualityChildren({
 }
 
 export async function runQuality({ spawnOptions = {} } = {}) {
+  const startedAt = new Date().toISOString();
   const runId = process.env.BROWSER_QUALITY_RUN_ID ?? crypto.randomUUID();
   const source =
     process.env.BROWSER_QUALITY_SOURCE_REVISION ??
     execFileSync('git', ['rev-parse', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim();
   const children = spawnQualityChildren({ ...spawnOptions, runId, source });
   const results = await Promise.allSettled(children);
-  const failed = results.some(
-    (result) => result.status !== 'fulfilled' || result.value.exit_code !== 0,
+  const childResults = results.map((result, index) =>
+    result.status === 'fulfilled'
+      ? validateChildEvidence({ child: CHILDREN[index], result: result.value, runId, source })
+      : validateChildEvidence({
+          child: CHILDREN[index],
+          result: { exit_code: 1 },
+          runId,
+          source,
+          summaryReader: () => {
+            throw result.reason;
+          },
+        }),
   );
-  const output = path.join(ROOT, 'apps/dashboard-e2e/test-output/playwright/quality');
+  const output = path.join(QUALITY_SUMMARY_ROOT, 'quality');
   fs.mkdirSync(output, { recursive: true });
-  fs.writeFileSync(
-    path.join(output, 'summary.json'),
-    JSON.stringify(
-      {
-        schema_version: 1,
-        gate: 'quality',
-        run_id: runId,
-        source_revision: source,
-        status: failed ? 'fail' : 'pass',
-        children: results.map((r) =>
-          r.status === 'fulfilled'
-            ? { ...r.value, execution_key: `${runId}:${r.value.target}` }
-            : {
-                target: 'unknown',
-                execution_key: `${runId}:unknown`,
-                invocation_count: 1,
-                exit_code: 1,
-                status: 'incomplete',
-                error: String(r.reason),
-              },
-        ),
-      },
-      null,
-      2,
-    ) + '\n',
-  );
-  return failed ? 1 : 0;
+  const completedAt = new Date().toISOString();
+  const receipt = buildQualityReceipt({
+    runId,
+    source,
+    startedAt,
+    completedAt,
+    children: childResults,
+  });
+  fs.writeFileSync(path.join(output, 'summary.json'), JSON.stringify(receipt, null, 2) + '\n');
+  return receipt.status === 'pass' ? 0 : 1;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {

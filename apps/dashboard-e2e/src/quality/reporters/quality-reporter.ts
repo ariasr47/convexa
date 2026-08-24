@@ -29,6 +29,18 @@ const gateCounts: Record<string, number> = {
   accessibility: 16,
   visual: 6,
 };
+export type VisualAttachmentRole = 'expected' | 'actual' | 'diff' | undefined;
+export function visualAttachmentRole(attachment: {
+  name?: string;
+  path?: string;
+}): VisualAttachmentRole {
+  if (!attachment.path) return undefined;
+  const value = `${attachment.name ?? ''} ${path.basename(attachment.path)}`.toLowerCase();
+  if (/(^|[-_. ])expected([-. _]|$)/.test(value)) return 'expected';
+  if (/(^|[-_. ])actual([-. _]|$)/.test(value)) return 'actual';
+  if (/(^|[-_. ])diff([-. _]|$)/.test(value)) return 'diff';
+  return undefined;
+}
 const atomicWrite = (file: string, value: unknown) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
@@ -36,7 +48,11 @@ const atomicWrite = (file: string, value: unknown) => {
   try {
     fs.renameSync(temporary, file);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST' && (error as NodeJS.ErrnoException).code !== 'EPERM') throw error;
+    if (
+      (error as NodeJS.ErrnoException).code !== 'EEXIST' &&
+      (error as NodeJS.ErrnoException).code !== 'EPERM'
+    )
+      throw error;
     fs.rmSync(file, { force: true });
     fs.renameSync(temporary, file);
   }
@@ -77,6 +93,7 @@ export class QualityReporter implements Reporter {
     this.results.set(key, result);
     const attachmentPaths: string[] = [];
     let actualArtifact: { path: string; sha256: string } | undefined;
+    let diffArtifact: { path: string; sha256: string } | undefined;
     for (const [index, attachment] of result.attachments.entries()) {
       if (!attachment.path || !fs.existsSync(attachment.path)) continue;
       const destination = path.resolve(
@@ -90,8 +107,9 @@ export class QualityReporter implements Reporter {
       const artifact = { path: relative(destination), sha256: sha256(destination) };
       this.artifacts.push(artifact);
       attachmentPaths.push(artifact.path);
-      if (!actualArtifact && path.extname(attachment.path).toLowerCase() === '.png')
-        actualArtifact = artifact;
+      const role = visualAttachmentRole(attachment);
+      if (role === 'actual') actualArtifact = artifact;
+      if (role === 'diff') diffArtifact = artifact;
     }
     const status =
       result.status === 'skipped' || result.status === 'interrupted'
@@ -121,8 +139,8 @@ export class QualityReporter implements Reporter {
         expected_sha256: fs.existsSync(expectedFile) ? sha256(expectedFile) : null,
         actual_path: actualArtifact?.path ?? null,
         actual_sha256: actualArtifact?.sha256 ?? null,
-        diff_path: null,
-        diff_sha256: null,
+        diff_path: diffArtifact?.path ?? null,
+        diff_sha256: diffArtifact?.sha256 ?? null,
       });
     } else if (this.gate === 'compatibility')
       Object.assign(record, { journey_id: identifier, engine: record.project });
@@ -171,7 +189,9 @@ export class QualityReporter implements Reporter {
     else if (this.gate === 'compatibility') summary.arms = this.records;
     else if (this.gate === 'accessibility')
       Object.assign(summary, {
-        scans: this.records.filter((x) => String(x.identity).includes('A11Y-')),
+        scans: this.records.filter(
+          (x) => String(x.identity).includes('A11Y-') && !String(x.identity).includes('A11Y-B'),
+        ),
         behaviors: this.records.filter((x) => String(x.identity).includes('A11Y-B')),
         findings: [],
       });

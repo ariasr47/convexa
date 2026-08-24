@@ -11,6 +11,10 @@ for (const scenario of accessibilityScenarios) {
     if (scenario.id === 'A11Y-9') {
       await pauseWatchdogAtFuture(page);
       requestState.releaseInitialStream();
+      await expect(page.getByTestId('command-deck')).toBeVisible();
+      await expect(page.getByTestId('last-trade')).toContainText('● Last trade');
+      await page.clock.fastForward(14_000);
+      await page.clock.fastForward(1_000);
     }
     await assertReady(page, scenario);
     if (scenario.id === 'A11Y-5') {
@@ -24,6 +28,7 @@ for (const scenario of accessibilityScenarios) {
         )
         .toEqual(['fixture-position-0', 'fixture-position-1', 'fixture-position-2']);
     }
+    if (scenario.id === 'A11Y-9') await page.clock.resume();
     await page.evaluate(() => document.fonts.ready);
     const results = await new AxeBuilder({ page }).analyze();
     if (scenario.id === 'A11Y-3') {

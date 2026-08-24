@@ -62,7 +62,9 @@ export function validateSummary(summary, options = {}) {
     const absolute = repositoryPath(options.root ?? process.cwd(), artifact.path);
     if (!fs.existsSync(absolute) || sha256File(absolute) !== artifact.sha256) err('artifact hash');
   }
-  for (const key of extras) if (!Array.isArray(summary[key])) err(`${key} inventory`);
+  for (const key of extras)
+    if (key !== 'inventory_id' && key !== 'project' && !Array.isArray(summary[key]))
+      err(`${key} inventory`);
   if (
     summary.gate === 'chromium' &&
     (summary.inventory_id !== 'pre-feature-52-v1' ||
