@@ -172,3 +172,8 @@ export async function installScenario(page: import('@playwright/test').Page, sce
 }
 
 export { assertReady };
+
+export async function pauseWatchdogAtFuture(page: import('@playwright/test').Page) {
+  const current = await page.evaluate(() => Date.now());
+  await page.clock.pauseAt(new Date(current + 60_000));
+}

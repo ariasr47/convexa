@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { journeys } from './fixtures/scenarios';
-import { installScenario } from './fixtures/strict-fixture';
+import { installScenario, pauseWatchdogAtFuture } from './fixtures/strict-fixture';
 import { assertReady } from './readiness';
 
 for (const scenario of journeys) {
@@ -8,7 +8,7 @@ for (const scenario of journeys) {
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     if (scenario.id === 'ticker-stream-loss') {
-      await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+      await pauseWatchdogAtFuture(page);
       requestState.releaseInitialStream();
     }
     await assertReady(page, scenario);

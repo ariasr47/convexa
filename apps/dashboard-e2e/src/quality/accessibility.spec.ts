@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { accessibilityScenarios, journeys } from './fixtures/scenarios';
-import { installScenario } from './fixtures/strict-fixture';
+import { installScenario, pauseWatchdogAtFuture } from './fixtures/strict-fixture';
 import { assertReady } from './readiness';
 
 for (const scenario of accessibilityScenarios) {
@@ -9,7 +9,7 @@ for (const scenario of accessibilityScenarios) {
     const requestState = await installScenario(page, scenario);
     await page.goto(scenario.route);
     if (scenario.id === 'A11Y-9') {
-      await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+      await pauseWatchdogAtFuture(page);
       requestState.releaseInitialStream();
     }
     await assertReady(page, scenario);
@@ -136,7 +136,7 @@ test.describe('A11Y behavioral sequences', () => {
     const scenario = accessibilityScenarios[8];
     const requestState = await installScenario(page, scenario);
     await page.goto('/ticker/SPY');
-    await page.clock.pauseAt(new Date(Date.parse(scenario.now) + 1_000));
+    await pauseWatchdogAtFuture(page);
     requestState.releaseInitialStream();
     await expect(page.getByTestId('command-deck')).toBeVisible();
     await expect(page.getByTestId('last-trade')).toContainText('● Last trade');

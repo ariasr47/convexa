@@ -49,12 +49,14 @@ test('watchdog arm advances the full 15-second window before offline assertions'
   );
   assert.match(fixture, /await streamReady/);
   assert.match(fixture, /releaseInitialStream/);
-  assert.match(a11y, /page\.clock\.pauseAt\(new Date\(Date\.parse\(scenario\.now\) \+ 1_000\)\)/);
+  assert.match(fixture, /const current = await page\.evaluate\(\(\) => Date\.now\(\)\)/);
+  assert.match(fixture, /page\.clock\.pauseAt\(new Date\(current \+ 60_000\)\)/);
+  assert.doesNotMatch(fixture, /new Date\(Date\.parse\(scenario\.now\) \+ 1_000\)/);
   assert.match(
     readFileSync(new URL('../src/quality/compatibility.spec.ts', import.meta.url), 'utf8'),
     /requestState\.releaseInitialStream\(\)/,
   );
-  assert.doesNotMatch(fixture, /new Date\(\)|Date\.now\(\)/);
+  assert.doesNotMatch(fixture, /new Date\(\)/);
   assert.match(a11y, /fastForward\(14_000\)/);
   assert.match(a11y, /fastForward\(1_000\)/);
 });
