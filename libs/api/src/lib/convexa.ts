@@ -82,7 +82,10 @@ export type FlowVsPositioningRead = components['schemas']['FlowVsPositioningWire
 export type AtrHorizon = components['schemas']['AtrHorizonWire'];
 
 /** Average-true-range read — null when ALL horizons are null OR the read raised. */
-export type AtrRead = Omit<components['schemas']['AtrReadWire'], 'atr_5d' | 'atr_14d' | 'atr_30d'> & {
+export type AtrRead = Omit<
+  components['schemas']['AtrReadWire'],
+  'atr_5d' | 'atr_14d' | 'atr_30d'
+> & {
   atr_5d: components['schemas']['AtrHorizonWire'] | null;
   atr_14d: components['schemas']['AtrHorizonWire'] | null;
   atr_30d: components['schemas']['AtrHorizonWire'] | null;
@@ -123,10 +126,7 @@ export type IvRankBand = 'premium_rich' | 'neutral' | 'premium_cheap';
 /** How the sampled IV was derived (self-describing basis, `model-read-carries-its-assumptions`). */
 export type IvBasis = 'interpolated_30d' | 'nearest_tenor';
 
-export type IvRankRead = Omit<
-  components['schemas']['IvRankReadWire'],
-  'iv_basis' | 'basis_dte'
-> & {
+export type IvRankRead = Omit<components['schemas']['IvRankReadWire'], 'iv_basis' | 'basis_dte'> & {
   iv_basis: string;
   basis_dte: number;
 };
@@ -923,9 +923,7 @@ function projectRecommendation(wire: RecommendationWire): RecResponse {
     status: wire.status,
     ticker: wire.ticker,
     as_of: wire.as_of ?? null,
-    ...(wire.pinned_fingerprint == null
-      ? {}
-      : { pinned_fingerprint: wire.pinned_fingerprint }),
+    ...(wire.pinned_fingerprint == null ? {} : { pinned_fingerprint: wire.pinned_fingerprint }),
     stale_born: wire.stale_born,
     persona: { id: persona.id ?? null, name: persona.name },
     gate: {
@@ -1377,10 +1375,12 @@ export type MetricsStage = components['schemas']['MetricsStage'];
 export type MetricsCache = components['schemas']['MetricsCache'];
 export type MetricsVendor = components['schemas']['MetricsVendor'];
 export type MetricsScope = Omit<components['schemas']['MetricsScope'], 'stages'> & {
-  stages: Array<Omit<components['schemas']['MetricsStage'], 'kind' | 'stage'> & {
-    kind: StageKind;
-    stage: StageName;
-  }>;
+  stages: Array<
+    Omit<components['schemas']['MetricsStage'], 'kind' | 'stage'> & {
+      kind: StageKind;
+      stage: StageName;
+    }
+  >;
 };
 export type RecentTrace = components['schemas']['RecentTrace'];
 export type MetricsAggregate = Omit<

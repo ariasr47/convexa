@@ -24,9 +24,9 @@ import {
   setAiKey,
   streamTicker,
   type LiveUpdate,
+  type RecStatus,
   type ScanResponse,
   type ScanView,
-  type RecStatus,
 } from './convexa';
 
 function stubFetch(impl: (url: string, init?: RequestInit) => Response | Promise<Response>) {
@@ -55,7 +55,10 @@ afterEach(() => {
 
 describe('generated optional availability boundary', () => {
   it('keeps absent, null, and explicit false distinguishable', () => {
-    const absent = { gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] }, cap: { over_limit: false, remaining_today: 0, resets_at: '' } } as unknown as RecStatus;
+    const absent = {
+      gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+      cap: { over_limit: false, remaining_today: 0, resets_at: '' },
+    } as unknown as RecStatus;
     const nulled = { ...absent, availability: null } as unknown as RecStatus;
     const disabled = { ...absent, availability: { in_app_enabled: false } } as unknown as RecStatus;
     expect('availability' in absent).toBe(false);
