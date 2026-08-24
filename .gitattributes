@@ -29,3 +29,8 @@
 apps/api/openapi/*.json text eol=lf
 apps/api/tests/fixtures/api_contract/*.json text eol=lf
 libs/api/src/generated/*.ts text eol=lf
+
+# Browser visual-review receipts and source patches are SHA-256-bound evidence.
+apps/dashboard-e2e/visual-review/**/*.json  text eol=lf
+apps/dashboard-e2e/visual-review/**/*.patch text eol=lf
+apps/dashboard-e2e/src/quality/snapshots/**/*.png binary
