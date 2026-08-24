@@ -82,7 +82,7 @@ function collectTsFiles(dir: string): string[] {
   const out: string[] = [];
   for (const ent of readdirSync(dir, { withFileTypes: true })) {
     const p = resolve(dir, ent.name);
-    if (ent.isDirectory()) out.push(...collectTsFiles(p));
+    if (ent.isDirectory() && ent.name !== 'generated') out.push(...collectTsFiles(p));
     else if (/\.(ts|tsx)$/.test(ent.name) && !/\.(spec|test)\.(ts|tsx)$/.test(ent.name)) {
       out.push(p);
     }

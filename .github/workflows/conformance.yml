@@ -12,7 +12,7 @@ on:
     branches: [main]
   schedule:
     # ~06:15 UTC daily (after US overnight batch noise settles)
-    - cron: '15 6 * * *'
+    - cron: "15 6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -25,13 +25,23 @@ concurrency:
 jobs:
   prod-public:
     name: Prod public surface
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install locked Node dependencies
+        run: npm ci
+
+      - name: API contract check
+        run: npm run api:contract:check
 
       - name: Resolve API origin
         id: origin
@@ -68,25 +78,37 @@ jobs:
 
   local-auth:
     name: Local API + auth-gated
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
+          cache: npm
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install locked Node dependencies
+        run: npm ci
+
+      - name: API contract check
+        run: npm run api:contract:check
+
+      - name: Install baseline Rust 1.97.1
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # reviewed-commit-2026-08-05
+        with:
+          toolchain: 1.97.1
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@aa7c1c80a07a27a84c0aa76d0cef0aad3830e330 # v2.7.8
         with:
           workspaces: |
             . -> target
 
       - name: Build api-rust
-        run: cargo build -p api-rust --release
+        run: cargo build -p api-rust --release --locked
 
       - name: Serve api-rust (JSON stores, registration open)
         env:
@@ -95,12 +117,12 @@ jobs:
           MASSIVE_API_KEY: ci-conformance-dummy-key-not-for-live-vendor
           AUTH_SESSION_SIGNING_KEY: ci-conformance-signing-key-32b!!
           AI_KEY_ENCRYPTION_KEY: ci-conformance-ai-key-material-32b!
-          AUTH_REGISTRATION_OPEN: 'true'
-          AUTH_COOKIE_SECURE: 'false'
-          SCAN_ENABLED: '0'
-          WARM_ENABLED: '0'
-          PUBLIC_RATE_LIMIT_PER_MIN: '0'
-          HTTP_BIND: '127.0.0.1:18000'
+          AUTH_REGISTRATION_OPEN: "true"
+          AUTH_COOKIE_SECURE: "false"
+          SCAN_ENABLED: "0"
+          WARM_ENABLED: "0"
+          PUBLIC_RATE_LIMIT_PER_MIN: "0"
+          HTTP_BIND: "127.0.0.1:18000"
           RUST_LOG: warn,api_rust=info
         run: |
           set -euo pipefail

@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "owners": [
+    { "owner_id": "build", "display_name": "Build and delivery", "github_login": "ariasr47" },
+    { "owner_id": "security", "display_name": "Security policy", "github_login": "ariasr47" }
+  ]
+}

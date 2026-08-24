@@ -79,7 +79,7 @@ pub enum ChainSnapshotStore {
     Memory(Arc<RwLock<MemoryInner>>),
     Json(JsonInner),
     Filesystem(super::filesystem::FilesystemInner),
-    /// Test double: append always fails; list/load stay empty.
+    /// Test double: append/load fail deterministically; list stays empty.
     Failing,
     #[cfg(feature = "postgres")]
     Postgres(crate::db::pg_chain_snapshot::PgChainSnapshotStore),
@@ -100,6 +100,10 @@ impl ChainSnapshotStore {
 
     pub fn is_enabled(&self) -> bool {
         !matches!(self, Self::Disabled)
+    }
+
+    pub(crate) fn is_failing_fixture(&self) -> bool {
+        matches!(self, Self::Failing)
     }
 
     pub fn as_enabled(&self) -> Option<&Self> {
@@ -156,6 +160,10 @@ impl ChainSnapshotStore {
         let symbol = symbol.trim().to_ascii_uppercase();
         match self {
             Self::Disabled => Err(AppError::Config("capture not storing".into())),
+            // A failing store models write/load faults while remaining inspectable for
+            // post-failure assertions. Capture callers use list to prove that an injected
+            // append failure did not create a row, so the failure fixture must return an empty
+            // listing rather than mask the original append error.
             Self::Failing => Ok(Vec::new()),
             Self::Memory(inner) => Ok(inner.read().await.list(&symbol, limit)),
             Self::Json(json) => {
@@ -172,7 +180,7 @@ impl ChainSnapshotStore {
         let symbol = symbol.trim().to_ascii_uppercase();
         match self {
             Self::Disabled => Err(AppError::Config("capture not storing".into())),
-            Self::Failing => Ok(None),
+            Self::Failing => Err(AppError::Other(anyhow::anyhow!("injected load failure"))),
             Self::Memory(inner) => Ok(inner.read().await.load(&symbol, as_of)),
             Self::Json(json) => {
                 let _guard = json.gate.read().await;

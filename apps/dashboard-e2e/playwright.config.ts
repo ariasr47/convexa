@@ -1,6 +1,5 @@
-import { workspaceRoot } from '@nx/devkit';
-import { nxE2EPreset } from '@nx/playwright/preset';
-import { defineConfig, devices } from '@playwright/test';
+import { devices } from '@playwright/test';
+import { sharedConfig } from './playwright.shared.config';
 
 /**
  * Playwright e2e config for the dashboard.
@@ -22,34 +21,40 @@ import { defineConfig, devices } from '@playwright/test';
  * (the built app) is the CI counterpart, matching the previous `ciWebServerCommand`.
  */
 
-const PORT = 4200;
+const PORT = Number(process.env['BROWSER_QUALITY_PORT'] ?? 4200);
 const baseURL = process.env['BASE_URL'] || `http://localhost:${PORT}`;
 
-export default defineConfig({
-  ...nxE2EPreset(__filename, { testDir: './src/e2e' }),
+const config = {
+  ...sharedConfig('chromium'),
+  testDir: './src/e2e',
+  testMatch: [
+    'app-loads.spec.ts',
+    'broker-grouping.spec.ts',
+    'broker.spec.ts',
+    'navigation.spec.ts',
+    'no-overflow.spec.ts',
+  ],
+  reporter: [
+    ['list'],
+    [
+      './src/quality/reporters/quality-reporter.ts',
+      {
+        gate: 'chromium',
+        output: 'apps/dashboard-e2e/test-output/playwright/chromium/summary.json',
+      },
+    ],
+  ],
 
   // The unit suite runs on the same machine; e2e already gets its own CI step so the browser does
   // not contend with the vitest workers (that contention flaked the unit tests under Cypress).
-  fullyParallel: true,
-  forbidOnly: !!process.env['CI'],
-  retries: process.env['CI'] ? 1 : 0,
-
   use: {
+    ...sharedConfig('chromium').use,
     baseURL,
     // The trace viewer is the main practical win of this migration for CI triage: a failed run
     // carries DOM snapshots, network and console rather than just a stack.
     trace: 'on-first-retry',
   },
 
-  webServer: {
-    command: process.env['CI']
-      ? `npx nx run @convexa/dashboard:serve-static --port=${PORT}`
-      : `npx nx run @convexa/dashboard:serve`,
-    url: baseURL,
-    reuseExistingServer: !process.env['CI'],
-    cwd: workspaceRoot,
-    timeout: 180_000,
-  },
-
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-});
+};
+export default config as any;

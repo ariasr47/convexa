@@ -24,11 +24,27 @@ import type { LiveUpdate, TickerBundle } from '@convexa/api';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Snackbar from '@mui/material/Snackbar';
-import { useState } from 'react';
+import { useState, type FocusEvent } from 'react';
 import { PositionsPanel } from './PositionsPanel';
 import { OpenPositionInput, usePortfolio } from './usePortfolio';
 
 type Portfolio = ReturnType<typeof usePortfolio>;
+
+function revealFocusedControl(event: FocusEvent<HTMLElement>) {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const left = viewport.offsetLeft;
+  const top = viewport.offsetTop;
+  const right = left + viewport.width;
+  const bottom = top + viewport.height;
+  const intersects =
+    rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+  if (intersects) return;
+  const dx = rect.right <= left ? rect.left - left : rect.left >= right ? rect.right - right : 0;
+  const dy = rect.bottom <= top ? rect.top - top : rect.top >= bottom ? rect.bottom - bottom : 0;
+  window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
+}
 
 interface Props {
   pf: Portfolio;
@@ -111,7 +127,13 @@ export function PortfolioPanel({
   });
 
   return (
-    <Box data-testid="portfolio-panel">
+    <Box
+      data-testid="portfolio-panel"
+      sx={{
+        '& [data-testid="positions-disclosure"]': { color: 'text.secondary !important' },
+        '& [data-testid^="tr-family-empty-"]': { color: 'text.secondary !important' },
+      }}
+    >
       {/* Underline tabs — directly under the page header (no outer Card chrome). */}
       <Box sx={{ display: 'flex', borderBottom: '1px solid', borderColor: 'divider', mt: '20px' }}>
         <Box
@@ -143,6 +165,7 @@ export function PortfolioPanel({
           type="button"
           onClick={() => setTab('live')}
           data-testid="tab-live"
+          onFocus={revealFocusedControl}
           sx={{ ...tabSx(tab === 'live', 'primary.main', 'text.secondary'), ml: '18px' }}
         >
           Broker

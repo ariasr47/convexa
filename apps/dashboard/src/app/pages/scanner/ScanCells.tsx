@@ -95,34 +95,49 @@ export function ChgCell({ row }: { row: ScanRow }) {
  *  Tooltip carries 1–2 plain-language drivers from closed wire fields ("why this row").
  *  Optional poll-to-poll delta is NEUTRAL (structure change, not P/L direction).
  *  tabIndex=0 so keyboard users can focus and open the tip (spine #6). */
-export function ScoreCell({ row, delta }: { row: ScanRow; delta?: PollDelta | null }) {
+export function ScoreCell({
+  row,
+  delta,
+  focusableHelp = true,
+}: {
+  row: ScanRow;
+  delta?: PollDelta | null;
+  focusableHelp?: boolean;
+}) {
   const why = whyThisRow(row);
   const d =
     delta?.scoreDelta != null && Number.isFinite(delta.scoreDelta)
       ? fmtDelta(delta.scoreDelta, 0)
       : '';
+  const score = (
+    <Typography
+      component="span"
+      {...(focusableHelp ? { tabIndex: 0 } : {})}
+      data-testid="cell-score"
+      aria-label={SCAN_COPY.whyScoreAria}
+      sx={{
+        ...MONO,
+        fontSize: 'inherit',
+        fontWeight: 600,
+        color: 'text.primary',
+        cursor: 'help',
+        borderBottom: '1px dotted',
+        borderColor: 'divider',
+        borderRadius: '2px',
+      }}
+    >
+      {dash(row.score, fmtScore)}
+    </Typography>
+  );
   return (
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
-      <Tooltip arrow title={why} describeChild>
-        <Typography
-          component="span"
-          tabIndex={0}
-          data-testid="cell-score"
-          aria-label={SCAN_COPY.whyScoreAria}
-          sx={{
-            ...MONO,
-            fontSize: 'inherit',
-            fontWeight: 600,
-            color: 'text.primary',
-            cursor: 'help',
-            borderBottom: '1px dotted',
-            borderColor: 'divider',
-            borderRadius: '2px',
-          }}
-        >
-          {dash(row.score, fmtScore)}
-        </Typography>
-      </Tooltip>
+      {focusableHelp ? (
+        <Tooltip arrow title={why}>
+          {score}
+        </Tooltip>
+      ) : (
+        score
+      )}
       {d ? (
         <Typography
           component="span"

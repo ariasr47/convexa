@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "before_package_lock_sha256",
+    "after_package_lock_sha256",
+    "required_check_set_sha256",
+    "experiments",
+    "locally_observed",
+    "hosted_required"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "status": { "const": "candidate_evidence_pending" },
+    "before_package_lock_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "after_package_lock_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "required_check_set_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "experiments": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["experiment_id", "direct_anchor", "before_path", "after_path", "constraint"],
+        "properties": {
+          "experiment_id": { "enum": ["nx-brace-expansion", "postcss-nanoid"] },
+          "direct_anchor": { "type": "string" },
+          "before_path": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+          "after_path": { "type": "array", "minItems": 2, "items": { "type": "string" } },
+          "constraint": { "type": "string" }
+        }
+      }
+    },
+    "locally_observed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "npm_audit_full",
+        "npm_audit_production",
+        "format",
+        "lint",
+        "typecheck",
+        "test",
+        "playwright_e2e",
+        "build",
+        "promoted_conformance"
+      ],
+      "properties": {
+        "npm_audit_full": { "const": "pass" },
+        "npm_audit_production": { "const": "pass" },
+        "format": { "const": "pass_feature_scope" },
+        "lint": { "const": "pass" },
+        "typecheck": { "const": "pass" },
+        "test": { "const": "pass" },
+        "playwright_e2e": { "const": "pass" },
+        "build": { "const": "pass" },
+        "promoted_conformance": { "const": "pass" }
+      }
+    },
+    "hosted_required": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    }
+  }
+}

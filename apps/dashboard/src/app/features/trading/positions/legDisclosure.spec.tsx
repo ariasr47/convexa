@@ -17,7 +17,7 @@
 import type { MarkResult } from '@/features/trading/model/mark';
 import { themeForPref } from '@/shared/theme/theme';
 import { ThemeProvider } from '@mui/material/styles';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DerivedGroup } from './derive';
@@ -259,5 +259,49 @@ describe('the leg disclosure', () => {
     expect(
       toPx(getComputedStyle(screen.getByTestId('leg-max-loss-note')).fontSize),
     ).toBeGreaterThanOrEqual(11);
+  });
+
+  it('AC-45 uses the visual viewport minimum delta and never layout scrolling', () => {
+    const scrollBy = vi.fn();
+    const oldViewport = window.visualViewport;
+    const oldScrollBy = window.scrollBy;
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: { offsetLeft: 100, offsetTop: 50, width: 640, height: 450, scale: 2 },
+    });
+    Object.defineProperty(window, 'scrollBy', { configurable: true, value: scrollBy });
+    try {
+      renderRows([viewOf(FX_SHORT_VERTICAL)]);
+      const toggle = screen.getByTestId('leg-disclosure-toggle');
+      vi.spyOn(toggle, 'getBoundingClientRect').mockReturnValue({
+        left: 110,
+        right: 210,
+        top: 200,
+        bottom: 240,
+        width: 100,
+        height: 40,
+        x: 110,
+        y: 200,
+        toJSON: () => ({}),
+      });
+      fireEvent.focus(toggle);
+      expect(scrollBy).not.toHaveBeenCalled();
+      vi.spyOn(toggle, 'getBoundingClientRect').mockReturnValue({
+        left: 110,
+        right: 210,
+        top: 600,
+        bottom: 640,
+        width: 100,
+        height: 40,
+        x: 110,
+        y: 600,
+        toJSON: () => ({}),
+      });
+      fireEvent.focus(toggle);
+      expect(scrollBy).toHaveBeenCalledWith({ left: 0, top: 140, behavior: 'auto' });
+    } finally {
+      Object.defineProperty(window, 'visualViewport', { configurable: true, value: oldViewport });
+      Object.defineProperty(window, 'scrollBy', { configurable: true, value: oldScrollBy });
+    }
   });
 });

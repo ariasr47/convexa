@@ -1,0 +1,63 @@
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import test from 'node:test';
+import { runPromotedConformance } from './run-promoted-conformance.mjs';
+
+test('conformance requires an exact loopback URL', async () => {
+  for (const url of [
+    undefined,
+    'https://example.com',
+    'http://localhost:3000',
+    'http://127.0.0.1.evil',
+  ])
+    assert.equal((await runPromotedConformance({ url })).state, 'blocked');
+});
+test('all four standalone specs execute with exact interface runner argv', async () => {
+  const calls = [];
+  const result = await runPromotedConformance({
+    url: 'http://127.0.0.1:3000',
+    runner: async (executable, argv) => {
+      calls.push({ executable, argv });
+      return { raw_exit_code: 0, raw_output_sha256: 'a'.repeat(64) };
+    },
+  });
+  assert.equal(result.state, 'pass');
+  assert.equal(result.results.length, 4);
+  assert.deepEqual(
+    calls.map((x) => x.argv.slice(0, 2)),
+    result.results.map((x) => ['.codex/tools/interface_conformance.mjs', '--spec']),
+  );
+  assert.equal(calls.filter((x) => x.argv.includes('--auth-signup')).length, 1);
+  assert.equal(
+    calls
+      .find((x) => x.argv.includes('--auth-signup'))
+      .argv.some((x) => x.endsWith('auth-gated.json')),
+    true,
+  );
+});
+test('one failed spec yields fail and one unavailable spec yields blocked', async () => {
+  let n = 0;
+  const failed = await runPromotedConformance({
+    url: 'http://127.0.0.1:1',
+    runner: async () => ({ raw_exit_code: ++n === 2 ? 1 : 0, raw_output_sha256: 'a'.repeat(64) }),
+  });
+  assert.equal(failed.state, 'fail');
+  n = 0;
+  const blocked = await runPromotedConformance({
+    url: 'http://127.0.0.1:1',
+    runner: async () => ({ raw_exit_code: ++n === 3 ? 2 : 0, raw_output_sha256: 'a'.repeat(64) }),
+  });
+  assert.equal(blocked.state, 'blocked');
+});
+test('CLI emits one JSON document without child output', () => {
+  const run = spawnSync(
+    process.execPath,
+    ['tools/supply-chain/run-promoted-conformance.mjs', '--url', 'http://127.0.0.1:1'],
+    { encoding: 'utf8' },
+  );
+  assert.equal(run.status, 2);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.results.length, 4);
+  assert.doesNotMatch(run.stdout, /Usage:|at node:|ECONNREFUSED/);
+  assert.equal(run.stderr, '');
+});

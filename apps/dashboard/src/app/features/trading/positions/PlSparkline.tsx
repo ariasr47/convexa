@@ -77,6 +77,7 @@ export function PlSparkline({ samples, offline }: { samples: PlSample[]; offline
 
   return (
     <Box
+      component="span"
       sx={{ width: W, height: H, opacity: offline ? 0.5 : 1, lineHeight: 0 }}
       data-testid="trend-sparkline"
       data-points={plotted.length}
@@ -88,6 +89,7 @@ export function PlSparkline({ samples, offline }: { samples: PlSample[]; offline
         width={W}
         height={H}
         aria-hidden
+        focusable="false"
         sx={{ display: 'block' }}
       >
         {paths.map((d, i) => (

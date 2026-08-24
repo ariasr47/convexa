@@ -1,0 +1,10 @@
+# OpenAPI router dependency replacement — brief
+
+Goal:            Remove the published `utoipa-axum` dependency and its transitive `paste@1.0.15` advisory by replacing only the route/OpenAPI integration seam with a repository-owned, behavior-preserving mechanism. Preserve the existing Axum runtime graph, deterministic OpenAPI 3.1 artifact, generated TypeScript contract, 52-operation inventory, 181 response-conversion cases, 87 direct-HTTP cases, auth/cookie/SSE/error semantics, and four-call live conformance without adding a documentation endpoint or product UI.
+Decision impact: N/A — internal security/correctness. Completion is observable when `cargo deny check advisories licenses sources bans` has no `RUSTSEC-2024-0436` finding, `utoipa-axum` and `paste` are absent from both manifests and the resolved Cargo graph, and all existing contract/runtime/application gates remain green.
+Feasibility:     pass
+Effort:          M
+Invariant watch: [structural-over-prose-enforcement], [server-side-gate-enforcement], [production-fails-closed], [no-secrets-in-image], [best-effort-isolated-or-null], [additive-keeps-score-byte-identical], [operator-vs-trader-path-separation], [absent-is-not-none]
+Context tags:    architecture,backend,security,tooling,api,testing
+Source:          Supply-chain automation GATE-Q blocker `RUSTSEC-2024-0436` and the operator's authorization to take the larger routing/OpenAPI replacement path.
+Considered:      Wait for an upstream `utoipa-axum` release replacing `paste` (culled: the operator chose the immediate replacement); pin unreleased upstream Git (culled: violates the approved-source policy and immutable published-release boundary); suppress or waive the RustSec advisory (culled: security findings must fail closed and no exception was authorized); replace `utoipa-axum` with a repository-owned integration over existing Axum + `utoipa` primitives (CHOSEN); replace the entire OpenAPI stack or hand-author the document (culled: unnecessary compatibility risk and would weaken the existing typed route-owned contract).

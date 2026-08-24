@@ -262,7 +262,6 @@ export function SettingsPage() {
               <TextField
                 fullWidth
                 size="small"
-                aria-label={C.defaultTicker}
                 helperText={C.defaultTickerHelper}
                 value={tickerDraft}
                 onChange={(e) => setTickerDraft(e.target.value)}
@@ -274,7 +273,9 @@ export function SettingsPage() {
                   }
                 }}
                 disabled={!auth.ready}
-                slotProps={{ htmlInput: { 'data-testid': 'settings-ticker' } }}
+                slotProps={{
+                  htmlInput: { 'aria-label': C.defaultTicker, 'data-testid': 'settings-ticker' },
+                }}
               />
             </Box>
 

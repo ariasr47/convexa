@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "advisories": { "npm": { "max": "0" }, "cargo": { "deny": true } },
+  "sources": { "npm": ["https://registry.npmjs.org/"], "cargo": ["crates.io", "workspace"] },
+  "retention_days": 30
+}

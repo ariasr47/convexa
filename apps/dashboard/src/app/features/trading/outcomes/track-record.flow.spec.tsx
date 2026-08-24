@@ -75,6 +75,18 @@ describe('the journey starts: nothing has closed yet (AC-E1)', () => {
   });
 });
 
+describe('AC-43 empty family contrast', () => {
+  it('keeps every empty-family explanation on the readable secondary theme slot', () => {
+    seedStores({ positions: [position({ id: 'open-only', status: 'open' })] });
+    mount();
+    const nodes = screen.getAllByTestId(/^tr-family-empty-/);
+    expect(nodes).toHaveLength(5);
+    for (const node of nodes) {
+      expect(getComputedStyle(node).color).not.toBe('rgba(0, 0, 0, 0.38)');
+    }
+  });
+});
+
 describe('history builds (AC-E2, AC-E3, AC-E4)', () => {
   it('AC-E4 — day one: every cell is building, the lead explainer renders, and NO rate exists anywhere', () => {
     const { positions, decisions } = outcomes(3, { winners: 3 });

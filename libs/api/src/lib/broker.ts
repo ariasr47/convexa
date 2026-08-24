@@ -16,7 +16,9 @@
  * Write-only credential grammar (§5): no response ever carries the key, the secret, or ciphertext —
  * only the masked last-4 hint of the App Key.
  */
-import { ApiError, AuthError, type AuthErrorCode } from './convexa';
+import type { components } from '../generated/schema';
+import { http } from './client';
+import { ApiError, AuthError, isAuthErrorCode, type AuthErrorCode } from './convexa';
 
 // ---- Closed vocabularies (§3) -------------------------------------------------------------------
 
@@ -36,6 +38,94 @@ export type BrokerAttemptOutcome = 'ok' | BrokerFailureCause;
 
 export type BrokerBookState = 'ok' | 'empty' | 'unknown';
 export type BrokerBookBasis = 'fresh' | 'cache';
+
+type BrokerBookWire = components['schemas']['BrokerBookBody'];
+type BrokerFactWire = components['schemas']['BrokerFactBody'];
+type BrokerLegWire = components['schemas']['BrokerLegBody'];
+type BrokerPositionWire = components['schemas']['BrokerPositionBody'];
+
+function brokerFactFromWire(value: BrokerFactWire): BrokerFact {
+  if (value.state !== 'supplied' && value.state !== 'not_supplied' && value.state !== 'unparseable')
+    throw new ApiError('Malformed broker book payload', 200);
+  return value.value == null ? { state: value.state } : { state: value.state, value: value.value };
+}
+
+function brokerLegFromWire(value: BrokerLegWire): BrokerLeg {
+  if (value.kind !== 'equity' && value.kind !== 'option')
+    throw new ApiError('Malformed broker book payload', 200);
+  if (value.right != null && value.right !== 'call' && value.right !== 'put')
+    throw new ApiError('Malformed broker book payload', 200);
+  return {
+    kind: value.kind,
+    symbol: value.symbol,
+    underlying: value.underlying,
+    ...(value.expiry == null ? {} : { expiry: value.expiry }),
+    ...(value.strike == null ? {} : { strike: value.strike }),
+    ...(value.right == null ? {} : { right: value.right }),
+    quantity: value.quantity,
+    ...(value.multiplier == null ? {} : { multiplier: value.multiplier }),
+    cost_basis: brokerFactFromWire(value.cost_basis),
+    broker_mark: brokerFactFromWire(value.broker_mark),
+  };
+}
+
+function brokerPositionFromWire(value: BrokerPositionWire): BrokerPosition {
+  if (
+    value.fidelity !== 'exact' &&
+    value.fidelity !== 'partial' &&
+    value.fidelity !== 'unrecognized'
+  )
+    throw new ApiError('Malformed broker book payload', 200);
+  return {
+    broker_position_id: value.broker_position_id,
+    fidelity: value.fidelity,
+    ...(value.fidelity_notes == null ? {} : { fidelity_notes: value.fidelity_notes }),
+    legs: value.legs.map(brokerLegFromWire),
+    unrealized_pl: brokerFactFromWire(value.unrealized_pl),
+  };
+}
+
+function brokerBookFromWire(value: BrokerBookWire): BrokerBook {
+  if (value.state !== 'ok' && value.state !== 'empty' && value.state !== 'unknown')
+    throw new ApiError('Malformed broker book payload', 200);
+  if (value.basis != null && value.basis !== 'fresh' && value.basis !== 'cache')
+    throw new ApiError('Malformed broker book payload', 200);
+  const reason = value.reason;
+  const validReason =
+    reason === undefined ||
+    reason === null ||
+    reason === 'no_credential_stored' ||
+    reason === 'broker_unreachable' ||
+    reason === 'rate_limited' ||
+    reason === 'credential_rejected' ||
+    reason === 'credential_unreadable' ||
+    reason === 'adapter_fault';
+  if (!validReason) throw new ApiError('Malformed broker book payload', 200);
+  const outcome = value.last_attempt_outcome;
+  const validOutcome =
+    outcome === undefined ||
+    outcome === null ||
+    outcome === 'ok' ||
+    outcome === 'broker_unreachable' ||
+    outcome === 'rate_limited' ||
+    outcome === 'credential_rejected' ||
+    outcome === 'credential_unreadable' ||
+    outcome === 'adapter_fault';
+  if (!validOutcome) throw new ApiError('Malformed broker book payload', 200);
+  return {
+    state: value.state,
+    ...(reason == null ? {} : { reason }),
+    ...(value.as_of == null ? {} : { as_of: value.as_of }),
+    ...(value.basis == null ? {} : { basis: value.basis }),
+    ...(value.stale_after_seconds == null
+      ? {}
+      : { stale_after_seconds: value.stale_after_seconds }),
+    ...(value.account_ref == null ? {} : { account_ref: value.account_ref }),
+    positions: value.positions.map(brokerPositionFromWire),
+    ...(value.last_attempt_at == null ? {} : { last_attempt_at: value.last_attempt_at }),
+    ...(outcome == null ? {} : { last_attempt_outcome: outcome }),
+  };
+}
 
 // ---- Record shapes (§4) ---------------------------------------------------------------------------
 
@@ -124,27 +214,23 @@ export interface BrokerBook {
 
 /** Masked-hint read — the ONLY credential datum the FE ever receives. `last4` = last 4 of the
  *  App Key (the secret is never hinted); `null` when not set. */
-export interface BrokerCredentialHint {
-  set: boolean;
-  last4: string | null;
-  storage_available: boolean;
-}
-
-const JSON_HEADERS = { 'Content-Type': 'application/json' };
+export type BrokerCredentialHint = components['schemas']['BrokerCredentialHintBody'];
 
 /** Non-2xx on a broker surface is the AUTH GATE (401/403) or a validation refusal (422) — never a
  *  broker fault (those are typed states inside a 200). Mapped to `AuthError` so callers share the
  *  existing auth-class handling; the body is never echoed (it can carry no secret, but the grammar
  *  stays write-only regardless). */
-async function toBrokerGateError(res: Response): Promise<AuthError> {
+function toBrokerGateError(result: { response: Response; error?: unknown }): AuthError {
+  const res = result.response;
   let code: AuthErrorCode = 'auth_unavailable';
   if (res.status === 401 || res.status === 403) code = 'auth_required';
   else if (res.status === 422) code = 'validation';
   let message = 'Something went wrong. Please try again.';
   try {
-    const body = (await res.json()) as { error?: string; message?: string };
-    if (body && typeof body.error === 'string') code = body.error as AuthErrorCode;
-    if (body && typeof body.message === 'string') message = body.message;
+    const body = result.error && typeof result.error === 'object' ? result.error : {};
+    const fields = body as Record<string, unknown>;
+    if (typeof fields.error === 'string' && isAuthErrorCode(fields.error)) code = fields.error;
+    if (typeof fields.message === 'string') message = fields.message;
   } catch {
     /* keep the status-derived code */
   }
@@ -153,9 +239,10 @@ async function toBrokerGateError(res: Response): Promise<AuthError> {
 
 /** GET /api/broker/credential — masked-hint read (S2's "credential stored" client knowledge). */
 export async function fetchBrokerCredential(): Promise<BrokerCredentialHint> {
-  const res = await fetch('/api/broker/credential', { credentials: 'same-origin' });
-  if (!res.ok) throw await toBrokerGateError(res);
-  return (await res.json()) as BrokerCredentialHint;
+  const result = await http.GET('/api/broker/credential');
+  if (!result.response.ok) throw toBrokerGateError(result);
+  if (result.data === undefined) throw toBrokerGateError(result);
+  return result.data;
 }
 
 /** PUT /api/broker/credential — set/replace (rotate = overwrite, no history). BOTH halves or a
@@ -165,25 +252,21 @@ export async function putBrokerCredential(body: {
   app_key: string;
   app_secret: string;
 }): Promise<BrokerCredentialHint> {
-  const res = await fetch('/api/broker/credential', {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    credentials: 'same-origin',
-    body: JSON.stringify(body),
+  const result = await http.PUT('/api/broker/credential', {
+    body,
   });
-  if (!res.ok) throw await toBrokerGateError(res);
-  return (await res.json()) as BrokerCredentialHint;
+  if (!result.response.ok) throw toBrokerGateError(result);
+  if (result.data === undefined) throw toBrokerGateError(result);
+  return result.data;
 }
 
 /** DELETE /api/broker/credential — idempotent. Also invalidates the server-side book cache (a
  *  deleted credential never leaves a ghost book — AC-3). */
 export async function deleteBrokerCredential(): Promise<BrokerCredentialHint> {
-  const res = await fetch('/api/broker/credential', {
-    method: 'DELETE',
-    credentials: 'same-origin',
-  });
-  if (!res.ok) throw await toBrokerGateError(res);
-  return (await res.json()) as BrokerCredentialHint;
+  const result = await http.DELETE('/api/broker/credential');
+  if (!result.response.ok) throw toBrokerGateError(result);
+  if (result.data === undefined) throw toBrokerGateError(result);
+  return result.data;
 }
 
 // ---- Book endpoints (§6) ----------------------------------------------------------------------------
@@ -192,13 +275,17 @@ export async function deleteBrokerCredential(): Promise<BrokerCredentialHint> {
  *  No credential ⇒ `state: unknown`, `reason: no_credential_stored` — a 200 product state.
  *  A transport/non-2xx failure REJECTS (`ApiError`/`AuthError`); the caller degrades honestly. */
 export async function fetchBrokerBook(): Promise<BrokerBook> {
-  const res = await fetch('/api/broker/book', { credentials: 'same-origin' });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403 || res.status === 422)
-      throw await toBrokerGateError(res);
-    throw new ApiError(`Broker book read failed (${res.status})`, res.status);
+  const result = await http.GET('/api/broker/book');
+  if (!result.response.ok) {
+    if ([401, 403, 422].includes(result.response.status)) throw toBrokerGateError(result);
+    throw new ApiError(
+      `Broker book read failed (${result.response.status})`,
+      result.response.status,
+    );
   }
-  return (await res.json()) as BrokerBook;
+  if (result.data === undefined)
+    throw new ApiError('Broker book read failed (empty response)', 200);
+  return brokerBookFromWire(result.data);
 }
 
 /** POST /api/broker/book/refresh — FORCE-FETCH semantics (C4): always REQUESTS a fresh broker
@@ -206,14 +293,11 @@ export async function fetchBrokerBook(): Promise<BrokerBook> {
  *  retry parameter). All outcomes are 200 + envelope; the FE distinguishes fresh / throttled /
  *  failed from `basis` + `last_attempt_*` movement (see `useBrokerBook`). */
 export async function refreshBrokerBook(): Promise<BrokerBook> {
-  const res = await fetch('/api/broker/book/refresh', {
-    method: 'POST',
-    credentials: 'same-origin',
-  });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403 || res.status === 422)
-      throw await toBrokerGateError(res);
-    throw new ApiError(`Broker refresh failed (${res.status})`, res.status);
+  const result = await http.POST('/api/broker/book/refresh');
+  if (!result.response.ok) {
+    if ([401, 403, 422].includes(result.response.status)) throw toBrokerGateError(result);
+    throw new ApiError(`Broker refresh failed (${result.response.status})`, result.response.status);
   }
-  return (await res.json()) as BrokerBook;
+  if (result.data === undefined) throw new ApiError('Broker refresh failed (empty response)', 200);
+  return brokerBookFromWire(result.data);
 }

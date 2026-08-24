@@ -198,7 +198,7 @@ function FamilyView({ family, sourcesComplete }: { family: CellFamily; sourcesCo
         <Typography
           variant="body2"
           data-testid={`tr-family-empty-${family.key}`}
-          sx={{ color: 'text.disabled' }}
+          sx={{ color: 'text.secondary' }}
         >
           {trFamilyEmpty(family.key)}
         </Typography>

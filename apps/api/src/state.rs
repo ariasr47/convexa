@@ -383,6 +383,22 @@ impl AppState {
         .await
     }
 
+    /// Hermetic router state with an injected chain store. This is a testability seam for
+    /// exercising route-owned store-fault conversions without changing production startup or
+    /// fabricating a response outside the production router.
+    pub async fn for_runtime_guardrail_tests_with_chain_store(
+        metrics_token: String,
+        chain_snapshots: ChainSnapshotStore,
+    ) -> AppResult<Self> {
+        let mut config = test_stub_config();
+        config.auth_cookie_secure = true;
+        config.auth_cookie_samesite = "Lax".into();
+        config.metrics_secret_token = Some(metrics_token);
+        config.chain_snapshot_enabled = chain_snapshots.is_enabled();
+        config.session_chain_archive_enabled = true;
+        Self::for_tests_with_config(config, chain_snapshots, SessionChainArchive::memory()).await
+    }
+
     async fn for_tests_with_config(
         config: Config,
         chain_snapshots: ChainSnapshotStore,

@@ -1,0 +1,280 @@
+{
+  "conflicts": [
+    {
+      "quote": "Against the pinned pre-cutover fixtures, each inventoried ordinary operation returns the same externally observable status, headers with contract meaning, and response body before and after migration.",
+      "source": "pm",
+      "why": "My architecture position names representative typed-DTO fixtures plus existing conformance, which is a narrower proof than PM's every-operation parity requirement. Both scopes cannot be presented as the ship bar, and several current operations contain time-, redirect-, session-, or live-derived values that require explicit normalization or injected fixtures before exhaustive comparison is mechanically meaningful.",
+      "proposal": "Prefer the stronger inventory-driven bar if the human accepts its cost: assign every inventoried operation a hermetic parity case, compare exact status and contract-meaningful headers, and compare bodies after only a reviewed set-equality-pinned normalization for genuinely nondeterministic values. Otherwise the SPEC must explicitly choose risk-tiered representative runtime parity while retaining exhaustive static route/schema coverage; it may not silently call representative coverage exhaustive.",
+      "kind": "product",
+      "conflict_id": "e4c0cbdddb505a8835df7dce34abe907798cc5d3278f024edb312be6955c81f4",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Use the documented manual-adapter path or change the schema.",
+      "source": "ux",
+      "why": "As written, this makes a manual adapter sound like a recovery path after generation did not complete. That conflicts with fail-closed drift: an unchanged prior artifact cannot become current merely because an adapter exists, and an ad hoc adapter would recreate handwritten contract authority outside the checked graph.",
+      "proposal": "Say that incomplete generation always remains failed. A manual adapter is usable only after its operation is still contract-described, its exception is added to the set-equality-pinned allowlist with an owning test, and the full artifact/client generation reruns successfully; otherwise the only recovery is changing the Rust wire shape or generator support.",
+      "kind": "technical",
+      "conflict_id": "8b1bda5146941df0b8750847b979ab3de2b3eaa92bff19981d5c2effc85b7daa",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "If connectivity is established as the cause, add: `A required tool or dependency could not be reached.`",
+      "source": "ux",
+      "why": "The canonical generate/check path is required to be offline after declared toolchain dependencies are installed. Treating connectivity as an expected generation failure mode would permit the implementation to fetch a schema, generator, live API, or dependency during the contract step and weaken deterministic/offline enforcement.",
+      "proposal": "Reserve connectivity guidance for a separate dependency-install/bootstrap step outside generate/check. During canonical generation, a network attempt is itself a tooling-policy failure; missing local executables or packages should be reported as local setup failures without suggesting that contract generation normally reaches the network.",
+      "kind": "technical",
+      "conflict_id": "d3d68368d7aafbb161b9e71cf8cb334dc82e00a56152b6105946c7ec70afec0d",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "include rollback guidance that restores the last checked artifacts and public boundary without changing runtime endpoint, auth, or SSE behavior.",
+      "source": "ux",
+      "why": "Restoring only generated artifacts and the public TypeScript boundary while leaving a changed Rust contract creates the exact stale state the drift gate must reject. The feature is an atomic cutover, so artifact-only rollback is not a coherent recovery mechanism.",
+      "proposal": "Document rollback as reverting the complete atomic repository change, or restoring the matching Rust contract, OpenAPI artifact, generated tree, and facade together. The check must pass after rollback; no instruction should recommend checking out generated output alone to silence a failure.",
+      "kind": "technical",
+      "conflict_id": "f9f46e45401243b7f5a3bf15f21cf02a52cfaf1912c46aba95efa6e552d0c190",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Every checked generated TypeScript file carries the generated-file banner and canonical commands, and a generated file cannot be mistaken for an editable source file.",
+      "source": "ux",
+      "why": "The selected TypeScript generator has not yet been proven in this repository to inject an identical configurable banner into every emitted file. My R1 also asserted a banner without naming whether the pinned generator, a supported plugin hook, or a deterministic postprocessor provides it; that mechanism gap must not become an untestable acceptance claim.",
+      "proposal": "During the generator lane-check, prove a supported header/template hook first. If absent, prepend the exact banner in one deterministic repository-owned postprocessing pass before hashing and assert it on every generated text file; generated non-text assets, if any, need a directory manifest rather than byte corruption. If neither route is stable, UX must permit a generated-directory sentinel plus import-boundary lint instead of per-file copy.",
+      "kind": "technical",
+      "conflict_id": "a80c842fc4eb2480087620fd0032944becc35349ec3b5aa7cac77b68ec36e23d",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A supported negative fixture for an unsupported schema construct stops generation and reports `unsupported`, the construct identifier, a repo-relative source location, and the manual-or-schema recovery path; it does not call the API contract invalid.",
+      "source": "ux",
+      "why": "Neither utoipa macro expansion nor the selected TypeScript generator has been shown to expose a stable machine-readable error containing all four requested facts. Raw compiler/generator diagnostics cannot simply be relabeled without a classifier, and guessing a source location would violate diagnostic truthfulness.",
+      "proposal": "Make repository-owned schema-policy validation the mechanism for known unsupported constructs, with stable categories and stored repo-relative operation/source metadata. Preserve unknown compiler/generator failures as tooling failures with their safe raw diagnostic; require a source location only when the tool actually supplies or the policy index records it.",
+      "kind": "technical",
+      "conflict_id": "51c13008ccb3439a4cc8dc4cafaa8bf414a68fa3c837bab8ba1e7e3eb6b78791",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Compared with a hand-authored document, this removes the second route list; compared with `aide`, it is the smaller change for the current macro-and-Serde style and has direct Axum 0.8 support.",
+      "source": "architect",
+      "why": "R1-architect \u00a7Grounded seam presents the selected mechanism as the settled smaller compatible choice, but the next sentence says that exact workspace combination has not compiled and is a lane-check. The choice cannot be binding while its decisive compatibility premise remains unobserved.",
+      "proposal": "Treat the mechanism choice as provisional until a minimal workspace compile/export spike proves the pinned Rust libraries and the pinned TypeScript generator work together; if that proof cannot happen before synthesis, raise GATE Z instead of passing the uncertainty to broad migration.",
+      "kind": "technical",
+      "conflict_id": "39e7ebbcf600d9660ba21bcdee20f764491b837f9700ed12917de40aecc1795b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Preserve behavioral conformance independently of generation: existing live-router conformance remains, and representative typed DTO fixtures compare actual HTTP status, headers, JSON, cookie attributes, and SSE data events to the pre-feature behavior.",
+      "source": "architect",
+      "why": "R1-architect \u00a7Checked-drift gates does not define what 'representative' covers, so this evidence can pass while an inventoried operation, non-success outcome, cookie effect, or stream boundary changes silently. That is weaker than the brief's preservation promise, although it need not imply one test per operation or criterion.",
+      "proposal": "Tie risk-based parity evidence to the approved operation inventory: every operation must be accounted for, with external parity observation at each materially distinct status/transport boundary and explicit coverage for auth, cookie, SSE, absent/null/empty, and operator isolation risks. One high-level conformance flow may cover many rows.",
+      "kind": "technical",
+      "conflict_id": "97caa19ae3e606038072373f485811c74f755d1893065d4a006e8bc37c1e5363",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "**PM:** the developer workflow may require reviewed manual adapters for constructs the selected generator cannot express, provided each exception is explicit and does not silently weaken drift detection.",
+      "source": "ux",
+      "why": "R1-ux \u00a7Assumptions turns generator inability into a general escape hatch. That can narrow the chosen product from Rust\u2192OpenAPI\u2192generated TypeScript authority back to handwritten request/response contracts, even when the exception is well documented.",
+      "proposal": "Permit manual adapters only for behavior OpenAPI does not establish, such as browser stream lifecycle or an explicitly free-form non-wire boundary. A typed HTTP request, response, error, security, or event payload that the selected chain cannot express blocks the mechanism or requires changing it; it is not eligible for a manual contract exception.",
+      "kind": "product",
+      "conflict_id": "6c98f56c0c6797d7fb259d1873a72005b2632fb31327fbce3800d61222b0f63d",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`API contract check could not run: required generated artifact is missing: {repo-relative-path}.`",
+      "source": "ux",
+      "why": "R1-ux applies this copy to the combined 'Missing or empty generated output' state. An existing artifact that contains zero operations is not missing; reporting it as missing hides a contract-enumeration or validation failure and collapses two independently actionable degraded states.",
+      "proposal": "Keep a missing-artifact refusal for absent files and add a separate zero-operation/invalid-output refusal that states generation produced no production operations and directs the contributor to repair contract enumeration before regenerating.",
+      "kind": "product",
+      "conflict_id": "00aadbd59341933939ad6158e469b03f0ac1ecc29263173ec63ea3d3beb5a9a5",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`Generating API contract\u2026` or `Checking API contract drift\u2026` only when the command has enough delay to warrant progress copy.",
+      "source": "ux",
+      "why": "R1-ux \u00a7Complete developer-facing states uses 'enough delay' without an observable threshold, so a stranger cannot determine whether the running state is required or whether an implementation passes.",
+      "proposal": "Remove the running-message requirement from ship criteria for this one-shot command, or have UX name a measurable threshold and output behavior. Success and each refusal state remain independently required regardless of command duration.",
+      "kind": "product",
+      "conflict_id": "547baf64e6ffed4ab49c69533562e604ec1bb71bc46dfa08427bc1756295b94b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`libs/api/README.md` presents source of truth, generate, check, result interpretation, generated/manual boundaries, migration, troubleshooting, and ownership in that order, replacing the current Nx-only boilerplate.",
+      "source": "ux",
+      "why": "R1-ux UX-02 makes an exact section order ship-blocking without showing user value from that order. The product need is discoverable canonical commands, truthful state meanings, boundaries, recovery, and ownership; freezing their sequence adds review scope and brittleness without protecting contract drift.",
+      "proposal": "Require all named information to be present, concise, and discoverable from the package entry documentation, but leave section order to review unless evidence establishes that a particular sequence is load-bearing.",
+      "kind": "product",
+      "conflict_id": "174b9b4428c34263fe9e2d0e339fd0d0e3537896f4d88ec933438bbe564f4164",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Existing endpoint behavior, authentication semantics, cookie handling, SSE lifecycle behavior, public `@convexa/api` import compatibility, and trader-visible output remain unchanged through the migration.",
+      "source": "ux",
+      "why": "R1-ux UX-17 combines at least six outcomes that fail independently and require different evidence. A single pass/fail result can conceal a changed denial status, cookie effect, stream lifecycle, import boundary, or visible trader state, and it buries degraded streaming/authentication behavior in a happy-path preservation claim.",
+      "proposal": "Split this into independent criteria for ordinary HTTP parity, authentication/status parity, cookie/session effects, SSE open-close-reconnect and dropped-stream behavior, public import compatibility, and trader-visible parity. Mark the silent boundaries test and visible intentional presentation review, with shared high-level evidence allowed.",
+      "kind": "product",
+      "conflict_id": "5e827c20bc827d6c7596a8f6013e596364d90fcb7e0d1fd587882b050ab32aa3",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Generate an SSE SDK operation from the event-stream response, but preserve the existing `@convexa/api` subscription contract through a thin facade.",
+      "source": "architect",
+      "why": "In `council/R1-architect.md` \u00a7Request, response, error, SSE, and cookie coverage, this is stated as a settled requirement even though the same paragraph marks generator recognition of the event-stream operation `[lane-check]`. The UX copy cannot truthfully tell contributors that an SSE SDK operation exists before that check passes, and my own R1 sentence that the transport always remains manual is equally too categorical.",
+      "proposal": "Make the contract boundary unconditional and the transport mechanism conditional: OpenAPI must cover the stream request, data-event shape, pre-stream failures, media type, and relevant headers; the stable facade preserves lifecycle behavior. Generate and use an SSE SDK operation only if the pinned generator produces it and parity tests prove open/consume/close/reconnect/no-duplicate semantics. Otherwise generate the event types and retain the native EventSource adapter. Documentation names the observed branch without claiming OpenAPI defines browser lifecycle.",
+      "kind": "technical",
+      "conflict_id": "bbb110d4aecf86160d1319a1fb629e0c8b69adc186b9469d2b5860413ed458c0",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Any difference, missing file, extra generated file, schema-less JSON operation, duplicate operation identity, or generation/typecheck failure exits non-zero and prints the exact stale paths.",
+      "source": "architect",
+      "why": "In `council/R1-architect.md` \u00a7Checked-drift gates and non-vacuous enforcement, `stale paths` is made the diagnostic for materially different states. A schema-policy violation, duplicate operation identity, generator crash, and TypeScript compile failure are not necessarily stale files and may have no stale path at all. Calling them stale would assert that a byte comparison completed and found drift when it did not.",
+      "proposal": "Keep the shared non-zero refusal, but emit one stable result category: `contract drift` with changed repo-relative artifact paths; `missing output` with missing repo-relative paths; `unsupported or incomplete contract coverage` with the operation/construct and source location; `generation tooling failure` with stage; or `generated-client compilation failure` with compiler location. Only the completed byte comparison may use `stale` or `match` language.",
+      "kind": "technical",
+      "conflict_id": "d8f28f6dc91b5d0245daf041173692b43e62cbbf06800d81baab11012549d436",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "The artifact and client contain no secrets and are included in existing secret scanning/image hygiene checks.",
+      "source": "architect",
+      "why": "In `council/R1-architect.md` \u00a7Deterministic artifact and TypeScript generation, this is phrased as an existing verified mechanism. The inspected normal workflow and root scripts do not identify an existing repository-wide secret scanner for these new paths; image hygiene and a schema-policy heuristic are not the same proof. The copy therefore overclaims both present coverage and the absolute result `contain no secrets`.",
+      "proposal": "Withdraw `existing secret scanning` unless the architect names and source-verifies the exact normal-gate mechanism and its path coverage. The synthesized requirement should instead say that generated artifacts are created without runtime values/examples and that a named negative test scans their committed bytes for forbidden credential values, environment values, production origins, and absolute machine paths; completion evidence may claim only what that check establishes.",
+      "kind": "technical",
+      "conflict_id": "5ec10cebeec21ff1593bd2eed1c8d33a5975b39ca193956c7645c35929f961f7",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Contributor-facing failure output that identifies whether the problem is generation failure, missing output, stale output, invalid contract coverage, or client compilation, and states the recovery action.",
+      "source": "pm",
+      "why": "In `council/R1-pm.md` \u00a7Scope / In, `invalid contract coverage` has no vouched meaning. It can be read as `the Rust API contract is invalid`, `the OpenAPI artifact failed policy validation`, or `the selected generator cannot represent a valid construct`. Those states have different owners and recovery, so one label would misdirect contributors and violate the brief's requirement to choose the generation boundary honestly.",
+      "proposal": "Replace `invalid contract coverage` with two explicit states: `unsupported schema construct` when the selected chain cannot represent a valid source construct, and `incomplete contract coverage` when an inventoried operation or required response/security/media shape is absent from the artifact. Reserve `invalid OpenAPI artifact` for a completed OpenAPI validation failure. Give each state its own recovery action.",
+      "kind": "product",
+      "conflict_id": "94ace541491e829be4d44c33a4d8e58ecdc11420c7b43ff0d89ed658585b48b9",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "`API client migration is incomplete. One or more consumers still use the handwritten boundary.`",
+      "source": "ux",
+      "why": "I withdraw this sentence from `council/R1-ux.md` \u00a7Complete developer-facing states. The architect deliberately retains a handwritten semantic compatibility facade for error classes, special return semantics, request coalescing, and SSE lifecycle while removing handwritten wire declarations. A consumer correctly importing `@convexa/api` can therefore use a handwritten facade after migration without representing incomplete work.",
+      "proposal": "Define the state by duplicate authority, not by handwritten code: `API client migration is incomplete. One or more migrated wire shapes are still maintained outside generated output, or a consumer imports a generated internal path.` Report only the violating repo-relative declarations/imports. A handwritten facade that delegates to generated functions/types and declares no wire shape is compatible with `Migration complete`.",
+      "kind": "technical",
+      "conflict_id": "4da32e0f06d1d45bae1fdd4c6e24fbf5742c06a60f271cd8da8a059803b1b3bc",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    },
+    {
+      "quote": "Generation did not complete. Use the documented manual-adapter path or change the schema.",
+      "source": "ux",
+      "why": "I withdraw this unconditional recovery sentence from `council/R1-ux.md` \u00a7Complete developer-facing states. It makes a manual adapter sound like an available escape for any unsupported schema, while PM requires every production operation to remain contract-described and Architect permits only narrow reviewed allowlists for genuinely free-form/bodyless or transport-lifecycle boundaries. An arbitrary manual fallback could silently restore the second source of truth this feature exists to remove.",
+      "proposal": "Use `Generation did not complete. Change the contract representation or the pinned generation chain, then rerun.` by default. Show `Manual adapter required` only for a human-approved exception class that remains represented in OpenAPI, is named in a set-equality-pinned exception catalog, identifies its verification, and does not duplicate a generated wire shape. The human must rule which exception classes, if any beyond SSE lifecycle, are product-acceptable.",
+      "kind": "product",
+      "conflict_id": "939210608a0b6b4dec99b92e3467495e46fe2352af3c56679812734ad0167f3d",
+      "raised_by": "ux",
+      "self_revision": true,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Does the approved parity inventory include every route registered in the production Axum router\u2014including demo/HTML, aliases, research, redirects, and currently unconsumed operations\u2014or only ordinary production operations plus explicitly named specialized surfaces?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Is exhaustive per-operation runtime body parity worth the fixture/time-injection cost, or may synthesis use exhaustive static contract coverage plus risk-tiered runtime parity for nondeterministic and external-integration operations?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: If the pinned generator cannot inject the exact notice into every emitted file through a supported hook, will a deterministic postprocessor satisfy the per-file requirement, and may non-text outputs use a generated-directory sentinel?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: Will you narrow connectivity copy to dependency installation/bootstrap so the canonical generate/check commands can truthfully promise zero network access?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can the pinned Rust and TypeScript mechanism compile/export spike be completed before R4, including one SSE operation, one authenticated error response, and one nullable-versus-omitted shape?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: what externally checkable inventory is the completeness oracle for registered routes, including implicit framework methods and fallback/not-found behavior, without creating a second handwritten route list?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: which current operation/status/transport boundaries are outside existing live-router conformance, and what risk-based parity evidence will cover each gap?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: will you restrict 'manual adapter' to transport/lifecycle behavior outside OpenAPI authority and withdraw it as a fallback for typed HTTP wire shapes?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: will you separate missing output, zero-operation output, unsupported contract shape, stale output, and pre-comparison tooling failure into distinct messages and criteria?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: does the selected generator support an identical canonical-command banner on every emitted TypeScript file without post-processing generator output; if not, which single orientation surface preserves the user value?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: after the utoipa/@hey-api lane checks, which exact stable result categories can the canonical command distinguish, and can Nx/GitHub preserve those categories rather than flattening every non-zero result into one failed step?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: does the pinned generator actually emit a usable SSE operation for Convexa's event-stream schema, or must the accepted design generate event DTOs only and retain native EventSource transport?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: what existing named secret-scanning gate, if any, covers the proposed OpenAPI path and `libs/api/src/generated/`; if none, which explicit artifact-content negative check will replace that unsupported claim?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: beyond the SSE lifecycle facade, which classes of manual adapter are acceptable product scope, if any, without weakening the promise that Rust-derived OpenAPI is the complete HTTP contract?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: should contributor copy expose `unsupported schema construct`, `incomplete contract coverage`, and `invalid OpenAPI artifact` as three distinct states, or is one of those intentionally out of scope?"
+    }
+  ],
+  "agree_count": {
+    "architect": 6,
+    "pm": 7,
+    "ux": 7
+  }
+}

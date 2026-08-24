@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "status": "candidate",
+  "node": "24.19.0",
+  "npm": "11.17.0",
+  "rust": "1.98.0",
+  "allowed_selector_paths": [
+    ".nvmrc",
+    ".npmrc",
+    "package.json",
+    "Cargo.toml",
+    "apps/api/Cargo.toml",
+    "libs/quant-engine/Cargo.toml",
+    "rust-toolchain.toml",
+    "apps/api/Dockerfile",
+    "apps/dashboard/Dockerfile",
+    ".github/workflows/ci.yml",
+    ".github/workflows/conformance.yml",
+    ".github/workflows/supply-chain.yml"
+  ]
+}

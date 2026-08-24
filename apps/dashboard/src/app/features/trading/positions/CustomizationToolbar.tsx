@@ -28,7 +28,7 @@ import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useState, type ReactNode } from 'react';
+import { useState, type FocusEvent, type ReactNode } from 'react';
 import { FaultedBanner, Refused } from './FaultedBanner';
 import { MERGE_NOTICE, MERGE_NOTICE_EXPORT, SAVED_VIEW_TIP, staleViewNotice } from './labels';
 import type { SimPosition } from './leg';
@@ -38,6 +38,22 @@ import type { usePortfolio } from './usePortfolio';
 type Portfolio = ReturnType<typeof usePortfolio>;
 
 const STATUSES: PositionStatus[] = ['open', 'pending', 'closed', 'cancelled'];
+
+function revealFocusedControl(event: FocusEvent<HTMLElement>) {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const rect = event.currentTarget.getBoundingClientRect();
+  const left = viewport.offsetLeft;
+  const top = viewport.offsetTop;
+  const right = left + viewport.width;
+  const bottom = top + viewport.height;
+  const intersects =
+    rect.right > left && rect.left < right && rect.bottom > top && rect.top < bottom;
+  if (intersects) return;
+  const dx = rect.right <= left ? rect.left - left : rect.left >= right ? rect.right - right : 0;
+  const dy = rect.bottom <= top ? rect.top - top : rect.top >= bottom ? rect.bottom - bottom : 0;
+  window.scrollBy({ left: dx, top: dy, behavior: 'auto' });
+}
 // REVISION 2 — Group shows None · Ticker · Structure only (the inline Expiry option is dropped to
 // match the frame). The `expiry` axis remains reachable in `derive.ts` for later; only the UI option
 // and the GroupAxis member go (ruling #10).
@@ -250,7 +266,7 @@ function Segmented<T extends string>({
       {leadingLabel && (
         <Typography
           component="span"
-          sx={{ fontSize: '0.6875rem', color: 'text.disabled', pl: '4px', pr: '2px' }}
+          sx={{ fontSize: '0.6875rem', color: 'text.secondary', pl: '4px', pr: '2px' }}
         >
           {leadingLabel}
         </Typography>
@@ -358,7 +374,7 @@ export function CustomizationToolbar({
             color: 'text.primary',
           }}
         >
-          <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.disabled' }}>
+          <Typography component="span" sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>
             View
           </Typography>
           <Typography component="span" sx={{ fontSize: '0.8rem', fontWeight: 600 }}>
@@ -498,6 +514,7 @@ export function CustomizationToolbar({
             // refusal out of reach of both keyboard and mouse. `Refused` owns that treatment.
             disabled={!faulted && !canOpenEntry}
             data-testid="open-entry"
+            onFocus={revealFocusedControl}
             sx={{
               bgcolor: 'primary.main',
               color: 'primary.contrastText',

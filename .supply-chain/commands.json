@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "commands": [
+    { "command_id": "npm_ci", "executable": "npm", "argv": ["ci"], "working_directory": "." },
+    {
+      "command_id": "cargo_locked",
+      "executable": "cargo",
+      "argv": ["metadata", "--locked", "--format-version", "1"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "api_contract",
+      "executable": "npm",
+      "argv": ["run", "api:contract:check"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "format",
+      "executable": "npm",
+      "argv": ["run", "format:check"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "lint",
+      "executable": "npm",
+      "argv": ["run", "lint"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "typecheck",
+      "executable": "npm",
+      "argv": ["run", "typecheck"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "node_tool_tests",
+      "executable": "npm",
+      "argv": ["run", "test:tools"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "frontend_unit",
+      "executable": "npx",
+      "argv": ["nx", "test", "@convexa/dashboard", "--", "--run"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "shared_client_unit",
+      "executable": "npx",
+      "argv": ["nx", "test", "@convexa/api", "--", "--run"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "playwright_e2e",
+      "executable": "npx",
+      "argv": ["nx", "run", "dashboard-e2e:e2e"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "dashboard_production_build",
+      "executable": "npx",
+      "argv": ["nx", "build", "@convexa/dashboard", "--configuration=production"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "bundle_budget",
+      "executable": "npm",
+      "argv": ["run", "check:bundle"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "rust_default_tests",
+      "executable": "cargo",
+      "argv": ["test", "-p", "api-rust", "-p", "quant-engine", "--locked"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "rust_postgres_tests",
+      "executable": "cargo",
+      "argv": ["test", "-p", "api-rust", "--features", "postgres", "--locked"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "production_runtime_guardrails",
+      "executable": "cargo",
+      "argv": [
+        "test",
+        "-p",
+        "api-rust",
+        "--features",
+        "postgres",
+        "--test",
+        "production_runtime_guardrails_postgres",
+        "--locked",
+        "--",
+        "--nocapture"
+      ],
+      "working_directory": "."
+    },
+    {
+      "command_id": "postgres_release_safety",
+      "executable": "cargo",
+      "argv": [
+        "test",
+        "-p",
+        "api-rust",
+        "--features",
+        "postgres",
+        "--test",
+        "postgres_release_safety_postgres",
+        "--locked",
+        "--",
+        "--nocapture"
+      ],
+      "working_directory": "."
+    },
+    {
+      "command_id": "rust_release_build",
+      "executable": "cargo",
+      "argv": ["build", "-p", "api-rust", "--release", "--features", "postgres", "--locked"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "api_docker_build",
+      "executable": "docker",
+      "argv": [
+        "buildx",
+        "build",
+        "--file",
+        "apps/api/Dockerfile",
+        "--output",
+        "type=oci,dest={TEMP}/api.oci.tar",
+        "."
+      ],
+      "working_directory": "."
+    },
+    {
+      "command_id": "dashboard_docker_build",
+      "executable": "docker",
+      "argv": [
+        "buildx",
+        "build",
+        "--file",
+        "apps/dashboard/Dockerfile",
+        "--output",
+        "type=oci,dest={TEMP}/dashboard.oci.tar",
+        "."
+      ],
+      "working_directory": "."
+    },
+    {
+      "command_id": "application_conformance",
+      "executable": "node",
+      "argv": ["tools/supply-chain/run-promoted-conformance.mjs", "--url", "{CONFORMANCE_URL}"],
+      "working_directory": "."
+    },
+    {
+      "command_id": "score_tier_gate_fingerprint_identity",
+      "executable": "cargo",
+      "argv": ["test", "-p", "api-rust", "--test", "score_identity", "--locked"],
+      "working_directory": "."
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 //! Zero Massive I/O. Token gate matches `GET /api/_metrics` (not session-cookie auth).
 
 use super::health::metrics_token_ok;
+use crate::openapi::RouteResponse;
 use crate::services::chain_snapshot::wire::{
     as_of_string, deserialize_capture, parse_as_of, ChainSnapshotWire,
 };
@@ -13,9 +14,11 @@ use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicU64, Ordering};
+use utoipa::{IntoParams, IntoResponses, ToSchema};
 
 /// Incremented only if a research handler were to call Massive — must stay 0.
 #[allow(dead_code)]
@@ -82,21 +85,297 @@ fn store_error_body(reason: &str) -> Value {
     })
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct ListQuery {
     pub limit: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct LoadQuery {
     pub as_of: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
-struct ListSnapshotRow {
+#[derive(Debug, Serialize, ToSchema)]
+pub(crate) struct ListSnapshotRow {
     symbol: String,
     as_of: String,
     source: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ResearchErrorBody {
+    pub error: String,
+    pub detail: String,
+    pub vendor_called: bool,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotListBody {
+    pub symbol: String,
+    pub count: usize,
+    pub snapshots: Vec<ListSnapshotRow>,
+    pub store: String,
+    pub detail: Option<String>,
+    pub vendor_called: bool,
+    pub framing: String,
+    pub provenance: String,
+    pub license: String,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotContractDto {
+    pub strike_price: f64,
+    pub contract_type: String,
+    pub open_interest: f64,
+    pub expiration_date: String,
+    pub implied_volatility: f64,
+    pub greeks: Option<SnapshotGreeksDto>,
+    pub volume: Option<f64>,
+    pub bid: Option<f64>,
+    pub ask: Option<f64>,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotGreeksDto {
+    pub gamma: Option<f64>,
+    pub delta: Option<f64>,
+    pub theta: Option<f64>,
+    pub vega: Option<f64>,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotMarketDto {
+    pub ticker: String,
+    pub synchronized_spot: f64,
+    pub current_spot: f64,
+    pub timestamp: i64,
+    pub atm_iv: f64,
+    pub atm_iv_expiration: Option<String>,
+    pub atm_iv_dte: Option<f64>,
+    pub contracts: Vec<SnapshotContractDto>,
+    pub market_phase: String,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotDailyBarDto {
+    pub close: Option<f64>,
+    pub high: Option<f64>,
+    pub low: Option<f64>,
+    pub session: Option<String>,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotMinuteDto {
+    pub session: String,
+    pub hour: u32,
+    pub minute: u32,
+    pub vw: f64,
+    pub v: f64,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotTradeDto {
+    pub price: f64,
+    pub size: f64,
+    pub timestamp_ns: i64,
+    pub off_exchange: bool,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotHitBody {
+    pub symbol: String,
+    pub as_of: String,
+    pub source: String,
+    pub store: String,
+    pub vendor_called: bool,
+    pub framing: String,
+    pub provenance: String,
+    pub license: String,
+    pub market: SnapshotMarketDto,
+    pub daily_bars: Vec<SnapshotDailyBarDto>,
+    pub minutes: Vec<SnapshotMinuteDto>,
+    pub trades: Vec<SnapshotTradeDto>,
+}
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SnapshotMissBody {
+    pub error: String,
+    pub detail: String,
+    pub symbol: String,
+    pub store: String,
+    pub vendor_called: bool,
+}
+
+#[allow(dead_code)]
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, IntoResponses)]
+pub enum ListSnapshotsResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(SnapshotListBody),
+    #[response(status = 400, content_type = "application/json")]
+    BadRequest(ResearchErrorBody),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(ResearchErrorBody),
+    #[response(status = 500, content_type = "application/json")]
+    Internal(ResearchErrorBody),
+}
+
+impl IntoResponse for ListSnapshotsResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(v) => (StatusCode::OK, Json(v)).into_response(),
+            Self::BadRequest(v) => (StatusCode::BAD_REQUEST, Json(v)).into_response(),
+            Self::Unauthorized(v) => (StatusCode::UNAUTHORIZED, Json(v)).into_response(),
+            Self::Internal(v) => (StatusCode::INTERNAL_SERVER_ERROR, Json(v)).into_response(),
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, IntoResponses)]
+pub enum LoadSnapshotResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(SnapshotHitBody),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(ResearchErrorBody),
+    #[response(status = 404, content_type = "application/json")]
+    NotFound(SnapshotMissBody),
+    #[response(status = 422, content_type = "application/json")]
+    Unprocessable(ResearchErrorBody),
+    #[response(status = 500, content_type = "application/json")]
+    Internal(ResearchErrorBody),
+}
+
+impl IntoResponse for LoadSnapshotResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(v) => (StatusCode::OK, Json(v)).into_response(),
+            Self::Unauthorized(v) => (StatusCode::UNAUTHORIZED, Json(v)).into_response(),
+            Self::NotFound(v) => (StatusCode::NOT_FOUND, Json(v)).into_response(),
+            Self::Unprocessable(v) => (StatusCode::UNPROCESSABLE_ENTITY, Json(v)).into_response(),
+            Self::Internal(v) => (StatusCode::INTERNAL_SERVER_ERROR, Json(v)).into_response(),
+        }
+    }
+}
+
+pub(crate) fn contract_list_representative_response() -> Response {
+    ListSnapshotsResponse::Ok(SnapshotListBody {
+        symbol: "SPY".into(),
+        count: 0,
+        snapshots: Vec::new(),
+        store: "json".into(),
+        detail: None,
+        vendor_called: false,
+        framing: "contract".into(),
+        provenance: "contract".into(),
+        license: "contract".into(),
+    })
+    .into_response()
+}
+
+pub(crate) fn contract_load_representative_response() -> Response {
+    LoadSnapshotResponse::Ok(SnapshotHitBody {
+        symbol: "SPY".into(),
+        as_of: "2099-01-01T00:00:00Z".into(),
+        source: "contract".into(),
+        store: "json".into(),
+        vendor_called: false,
+        framing: "contract".into(),
+        provenance: "contract".into(),
+        license: "contract".into(),
+        market: SnapshotMarketDto {
+            ticker: "SPY".into(),
+            synchronized_spot: 100.0,
+            current_spot: 100.0,
+            timestamp: 0,
+            atm_iv: 0.2,
+            atm_iv_expiration: None,
+            atm_iv_dte: None,
+            contracts: Vec::new(),
+            market_phase: "contract".into(),
+        },
+        daily_bars: Vec::new(),
+        minutes: Vec::new(),
+        trades: Vec::new(),
+    })
+    .into_response()
+}
+
+pub(crate) fn contract_representative_for(
+    status: axum::http::StatusCode,
+    boundary: &str,
+) -> Response {
+    let error = |error: &str, detail: &str| ResearchErrorBody {
+        error: error.into(),
+        detail: detail.into(),
+        vendor_called: false,
+    };
+    if boundary.starts_with("GET /api/_research/chain-snapshots/{symbol}/snapshot ") {
+        return match status {
+            StatusCode::OK => contract_load_representative_response(),
+            StatusCode::UNAUTHORIZED => LoadSnapshotResponse::Unauthorized(error(
+                "metrics_unauthorized",
+                "operator token required",
+            ))
+            .into_response(),
+            StatusCode::NOT_FOUND => LoadSnapshotResponse::NotFound(SnapshotMissBody {
+                error: "no_stored_snapshot".into(),
+                detail: "no stored snapshot for SPY".into(),
+                symbol: "SPY".into(),
+                store: "miss".into(),
+                vendor_called: false,
+            })
+            .into_response(),
+            StatusCode::UNPROCESSABLE_ENTITY => LoadSnapshotResponse::Unprocessable(error(
+                "as_of_unparseable",
+                "as_of must be RFC3339",
+            ))
+            .into_response(),
+            StatusCode::INTERNAL_SERVER_ERROR => LoadSnapshotResponse::Internal(error(
+                "stored_snapshot_unreadable",
+                "stored snapshot unreadable",
+            ))
+            .into_response(),
+            _ => panic!("unknown chain snapshot load response status {status}"),
+        };
+    }
+    if boundary.starts_with("GET /api/_research/chain-snapshots/{symbol} ") {
+        return match status {
+            StatusCode::OK => contract_list_representative_response(),
+            StatusCode::BAD_REQUEST => {
+                ListSnapshotsResponse::BadRequest(error("invalid_limit", "limit must be >= 1"))
+                    .into_response()
+            }
+            StatusCode::UNAUTHORIZED => ListSnapshotsResponse::Unauthorized(error(
+                "metrics_unauthorized",
+                "operator token required",
+            ))
+            .into_response(),
+            StatusCode::INTERNAL_SERVER_ERROR => ListSnapshotsResponse::Internal(error(
+                "stored_snapshot_unreadable",
+                "capture not storing",
+            ))
+            .into_response(),
+            _ => panic!("unknown chain snapshot list response status {status}"),
+        };
+    }
+    panic!("unknown chain snapshot response-conversion boundary: {boundary}")
+}
+
+#[utoipa::path(get, path = "/api/_research/chain-snapshots/{symbol}", operation_id = "research_chain_snapshots_list", params(("symbol" = String, Path), ListQuery), responses(ListSnapshotsResponse))]
+pub async fn list_snapshots_contract(
+    State(state): State<AppState>,
+    Path(symbol): Path<String>,
+    Query(q): Query<ListQuery>,
+    headers: HeaderMap,
+) -> RouteResponse<ListSnapshotsResponse> {
+    list_snapshots(State(state), Path(symbol), Query(q), headers)
+        .await
+        .into()
+}
+
+#[utoipa::path(get, path = "/api/_research/chain-snapshots/{symbol}/snapshot", operation_id = "research_chain_snapshot_load", params(("symbol" = String, Path), LoadQuery), responses(LoadSnapshotResponse))]
+pub async fn load_snapshot_contract(
+    State(state): State<AppState>,
+    Path(symbol): Path<String>,
+    Query(q): Query<LoadQuery>,
+    headers: HeaderMap,
+) -> RouteResponse<LoadSnapshotResponse> {
+    load_snapshot(State(state), Path(symbol), Query(q), headers)
+        .await
+        .into()
 }
 
 impl From<&SnapshotMeta> for ListSnapshotRow {
@@ -146,6 +425,25 @@ pub async fn list_snapshots(
                 .into_response();
         }
     };
+
+    // The deterministic failing-store fixture exposes read faults through `load` while keeping
+    // `list` inspectable for capture tests that assert no row was appended. Production stores do
+    // not take this branch; the route still observes the real store error conversion.
+    if listed.is_empty() && state.chain_snapshots.is_failing_fixture() {
+        if let Err(e) = state
+            .chain_snapshots
+            .load(&symbol, Utc.timestamp_opt(0, 0).single().expect("epoch"))
+            .await
+        {
+            let reason = e.to_string();
+            let reason = reason.strip_prefix("config: ").unwrap_or(&reason);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(store_error_body(reason)),
+            )
+                .into_response();
+        }
+    }
 
     let snapshots: Vec<ListSnapshotRow> = listed.iter().map(ListSnapshotRow::from).collect();
     let count = snapshots.len();
@@ -394,5 +692,65 @@ mod tests {
         )
         .await;
         assert_eq!(research_vendor_call_count(), before);
+    }
+
+    #[tokio::test]
+    async fn research_snapshot_registry_converts_every_declared_enum_variant() {
+        let cases = [
+            (
+                "GET /api/_research/chain-snapshots/{symbol} 200 application/json operator-token",
+                StatusCode::OK,
+                "snapshots",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol} 400 application/json operator-token",
+                StatusCode::BAD_REQUEST,
+                "invalid_limit",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol} 401 application/json operator-token",
+                StatusCode::UNAUTHORIZED,
+                "metrics_unauthorized",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol} 500 application/json operator-token",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "stored_snapshot_unreadable",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol}/snapshot 200 application/json operator-token",
+                StatusCode::OK,
+                "market",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol}/snapshot 401 application/json operator-token",
+                StatusCode::UNAUTHORIZED,
+                "metrics_unauthorized",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol}/snapshot 404 application/json operator-token",
+                StatusCode::NOT_FOUND,
+                "no_stored_snapshot",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol}/snapshot 422 application/json operator-token",
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "as_of_unparseable",
+            ),
+            (
+                "GET /api/_research/chain-snapshots/{symbol}/snapshot 500 application/json operator-token",
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "stored_snapshot_unreadable",
+            ),
+        ];
+        for (boundary, status, marker) in cases {
+            let response = contract_representative_for(status, boundary);
+            let (actual_status, body) = body_json(response).await;
+            assert_eq!(actual_status, status, "{boundary}");
+            assert!(
+                body.to_string().contains(marker),
+                "{boundary} must serialize its distinct typed payload: {body}"
+            );
+        }
     }
 }

@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "gate": "visual",
+  "run_id": "local-1787584759275-b2280872",
+  "source_revision": "d786f0d8415a978077952db11d457eaf6c9402d1",
+  "selected": 6,
+  "executed": 6,
+  "passed": 5,
+  "failed": 1,
+  "flaky": 0,
+  "not_run": 0,
+  "status": "fail",
+  "playwright_version": "1.62.1",
+  "browser_revision": "1234",
+  "host_platform": "win32",
+  "artifacts": [
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-0-ai-recommendation.png",
+      "sha256": "88b2383ead4165f43618c6f416603707d63f96927e2866254e87bdbe3974dbb7"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-1-ai-recommendation-actual.png",
+      "sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-2-ai-recommendation-diff.png",
+      "sha256": "d4409464159cd87bbb3c8d09790ceb17b3c004ba5e2b84e35de95e5c11d6ba8e"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-3-test-failed-1.png",
+      "sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-4-error-context.md",
+      "sha256": "77bd24cf2a26b583f687f232bf2be4df41a4385c15fd2723cbd0e48f7f7bb48e"
+    },
+    {
+      "path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-5-trace.zip",
+      "sha256": "2b600e742f7a48817a3fb918453957214dbd472698f1f20fdbb830d57104be42"
+    }
+  ],
+  "scenarios": [
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "landing"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "landing",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/landing.png",
+      "expected_sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-offline-mobile"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-offline-mobile.png",
+      "expected_sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "scanner-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "scanner-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/scanner-dense.png",
+      "expected_sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ticker-desktop"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "ticker-desktop",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-desktop.png",
+      "expected_sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "positions-dense"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "passed",
+      "retry": 0,
+      "artifact_paths": [],
+      "scenario_id": "positions-dense",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/positions-dense.png",
+      "expected_sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8",
+      "actual_path": null,
+      "actual_sha256": null,
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "identity": [
+        "",
+        "chromium",
+        "visual.spec.ts",
+        "ai-recommendation"
+      ],
+      "file": "apps/dashboard-e2e/src/quality/visual.spec.ts",
+      "project": "chromium",
+      "status": "failed",
+      "retry": 0,
+      "artifact_paths": [
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-0-ai-recommendation.png",
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-1-ai-recommendation-actual.png",
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-2-ai-recommendation-diff.png",
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-3-test-failed-1.png",
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-4-error-context.md",
+        "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-5-trace.zip"
+      ],
+      "scenario_id": "ai-recommendation",
+      "expected_path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ai-recommendation.png",
+      "expected_sha256": "88b2383ead4165f43618c6f416603707d63f96927e2866254e87bdbe3974dbb7",
+      "actual_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-1-ai-recommendation-actual.png",
+      "actual_sha256": "abe4f38480153d8189e8c7ebe286c9874b81921dd2e8bfb0b7305a1c43040a48",
+      "diff_path": "apps/dashboard-e2e/test-output/playwright/visual/attachments/5-2-ai-recommendation-diff.png",
+      "diff_sha256": "d4409464159cd87bbb3c8d09790ceb17b3c004ba5e2b84e35de95e5c11d6ba8e"
+    }
+  ]
+}

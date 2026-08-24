@@ -4,5 +4,56 @@
   "projectType": "application",
   "implicitDependencies": ["@convexa/dashboard"],
   "tags": ["scope:frontend", "type:e2e"],
-  "targets": {}
+  "targets": {
+    "e2e": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/run-gate.mjs chromium",
+        "forwardAllArgs": false
+      },
+      "cache": false
+    },
+    "compat": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/run-gate.mjs compatibility",
+        "forwardAllArgs": false
+      },
+      "cache": false
+    },
+    "a11y": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/run-gate.mjs accessibility",
+        "forwardAllArgs": false
+      },
+      "cache": false
+    },
+    "visual": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/run-gate.mjs visual",
+        "forwardAllArgs": false
+      },
+      "cache": false
+    },
+    "visual-update": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/visual-update.mjs",
+        "forwardAllArgs": true
+      },
+      "cache": false,
+      "parallelism": false
+    },
+    "quality": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node apps/dashboard-e2e/tools/run-quality.mjs",
+        "forwardAllArgs": false
+      },
+      "cache": false,
+      "dependsOn": []
+    }
+  }
 }

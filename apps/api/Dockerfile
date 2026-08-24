@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.26.0@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
 # ============================================================================
 # Convexa api — production image (Axum / Tokio).
 #
@@ -20,7 +20,7 @@
 
 # ---- build ----
 # Cargo.lock pulls crates that need rustc ≥1.88 (e.g. home@0.5, icu_*@2.2).
-FROM rust:1-bookworm AS builder
+FROM rust:1-bookworm@sha256:e70e2eec3d495fd5c8e0be74adda86507dfac7f51a724fbf9813ff59b2b247c7 AS builder
 WORKDIR /src
 
 COPY Cargo.toml Cargo.lock ./
@@ -55,7 +55,7 @@ RUN touch libs/quant-engine/src/lib.rs apps/api/src/lib.rs apps/api/src/main.rs 
     && strip target/release/api-rust
 
 # ---- runtime ----
-FROM debian:bookworm-slim
+FROM debian:bookworm-20260803-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \

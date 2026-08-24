@@ -44,11 +44,11 @@ export function OffExchangeBlocks({ offExchange, structureAgeSeconds = null }: P
     >
       <Box>
         {!offExchange ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Off-exchange data unavailable this cycle.
           </Typography>
         ) : !offExchange.blocks?.length ? (
-          <Typography variant="body2" sx={{ color: 'text.disabled' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             No blocks ≥{' '}
             {(offExchange.block_min_shares ?? BLOCK_MIN_SHARES_DISPLAY).toLocaleString()} shares in
             the recent window.

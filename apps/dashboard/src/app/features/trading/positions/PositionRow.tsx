@@ -76,6 +76,17 @@ const MONO = {
   fontSize: '0.86rem',
   letterSpacing: 0,
 } as const;
+const VISUALLY_HIDDEN = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  p: 0,
+  m: -1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
 
 /** UNSIGNED dollars — the qualifier word or the column header carries the direction. */
 const dollars = (n: number) => `$${Math.abs(Math.round(n))}`;
@@ -382,10 +393,19 @@ export function cellContent(
     case 'trend': {
       if (p.status !== 'open') return dashCell(TREND_TIP);
       return (
-        <Tooltip arrow title={TREND_TIP}>
-          <span>
+        <Tooltip arrow describeChild title={TREND_TIP}>
+          <Box
+            component="span"
+            data-testid="trend-help"
+            aria-describedby={`trend-help-description-${p.id}`}
+            tabIndex={-1}
+            sx={{ display: 'inline-flex' }}
+          >
             <PlSparkline samples={ctx.trend} offline={streamOffline} />
-          </span>
+            <Box component="span" id={`trend-help-description-${p.id}`} sx={VISUALLY_HIDDEN}>
+              {TREND_TIP}
+            </Box>
+          </Box>
         </Tooltip>
       );
     }

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "capability_id", "probes"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "capability_id": { "type": "string" },
+    "probes": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case", "state", "exit_code"],
+        "properties": {
+          "case": { "type": "string" },
+          "state": { "type": "string" },
+          "exit_code": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

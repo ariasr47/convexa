@@ -72,7 +72,7 @@ interface Props {
 /** A muted "unavailable this cycle" line (`text.disabled`) — the ONLY whole-read empty render. */
 function EmptyLine({ text, testid }: { text: string; testid: string }) {
   return (
-    <Typography variant="body2" data-testid={testid} sx={{ color: 'text.disabled' }}>
+    <Typography variant="body2" data-testid={testid} sx={{ color: 'text.secondary' }}>
       {text}
     </Typography>
   );

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "accepted_revision_sha",
+    "event",
+    "path",
+    "subject_set_sha256",
+    "run_key",
+    "required_check_set_sha256",
+    "checks",
+    "complete",
+    "outcome"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "receipt_kind": { "const": "accepted_revision_ci" },
+    "accepted_revision_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "event": { "enum": ["pull_request", "default_branch"] },
+    "path": { "const": "policy" },
+    "subject_set_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "run_key": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "required_check_set_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "checks": {
+      "type": "array",
+      "minItems": 21,
+      "maxItems": 21,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["check_id", "state", "evidence_sha256"],
+        "properties": {
+          "check_id": { "type": "string", "pattern": "^[a-z0-9_]+$" },
+          "state": { "enum": ["pass", "fail", "blocked"] },
+          "evidence_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "complete": { "type": "boolean" },
+    "outcome": { "enum": ["pass", "fail", "blocked"] }
+  }
+}

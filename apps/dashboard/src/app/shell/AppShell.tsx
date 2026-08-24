@@ -31,6 +31,10 @@ export function AppShell() {
         component="a"
         href="#main-content"
         data-testid="skip-to-main"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('main-content')?.focus();
+        }}
         sx={(theme) => ({
           position: 'absolute',
           left: 0,

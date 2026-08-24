@@ -17,10 +17,14 @@ import {
   getScan,
   getScanUniverse,
   getStructureHistory,
+  getTicker,
   removeAiKey,
   requestRecommendation,
   saveScanView,
   setAiKey,
+  streamTicker,
+  type LiveUpdate,
+  type RecStatus,
   type ScanResponse,
   type ScanView,
 } from './convexa';
@@ -49,6 +53,20 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('generated optional availability boundary', () => {
+  it('keeps absent, null, and explicit false distinguishable', () => {
+    const absent = {
+      gate: { state: 'available', cooldown_remaining_seconds: 0, reasons: [] },
+      cap: { over_limit: false, remaining_today: 0, resets_at: '' },
+    } as unknown as RecStatus;
+    const nulled = { ...absent, availability: null } as unknown as RecStatus;
+    const disabled = { ...absent, availability: { in_app_enabled: false } } as unknown as RecStatus;
+    expect('availability' in absent).toBe(false);
+    expect(nulled.availability).toBeNull();
+    expect(disabled.availability?.in_app_enabled).toBe(false);
+  });
+});
+
 describe('requestRecommendation', () => {
   it('POSTs to /api/recommendation/{ticker} with only identifiers + gating context — NO key', async () => {
     const fetchFn = stubFetch(() => ok({ status: 'produced' }));
@@ -73,6 +91,28 @@ describe('requestRecommendation', () => {
   it('throws ApiError on a transport fault (the hook catches → unavailable, never the page)', async () => {
     stubFetch(() => new Response('', { status: 502 }));
     await expect(requestRecommendation('TSLA', REQ)).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('getTicker generated query compatibility', () => {
+  it('omits optional filters when callers leave them unset', async () => {
+    const f = stubFetch(() => ok({}));
+    await getTicker('tsla');
+    expect(String(f.mock.calls[0][0])).toBe('/api/ticker/TSLA');
+  });
+
+  it('serializes every legacy optional filter through the generated operation', async () => {
+    const f = stubFetch(() => ok({}));
+    await getTicker('tsla', {
+      minDte: 7,
+      maxDte: 45,
+      expirations: ['2026-01-16', '2026-02-20'],
+      darkPool: true,
+      position: { expiration: '2026-01-16', strike: 420, right: 'call', plPct: 12.5 },
+    });
+    expect(String(f.mock.calls[0][0])).toBe(
+      '/api/ticker/TSLA?min_dte=7&max_dte=45&expirations=2026-01-16%2C2026-02-20&pos_expiration=2026-01-16&pos_strike=420&pos_right=call&pos_pl_pct=12.5&dark_pool=true',
+    );
   });
 });
 
@@ -380,5 +420,68 @@ describe('scanner client', () => {
       code: 'validation',
       message: "'ZZZZ' is not in the tracked universe.",
     });
+  });
+
+  it('streamTicker has one native subscription and isolates heartbeat, malformed data, drops, and reconnects', () => {
+    class FakeEventSource {
+      static instances: FakeEventSource[] = [];
+      readonly url: string;
+      closed = false;
+      messageAssignments = 0;
+      private messageHandler: ((event: MessageEvent) => void) | null = null;
+      constructor(url: string) {
+        this.url = url;
+        FakeEventSource.instances.push(this);
+      }
+      set onmessage(handler: ((event: MessageEvent) => void) | null) {
+        this.messageAssignments += 1;
+        this.messageHandler = handler;
+      }
+      emit(data: string) {
+        if (!this.closed) this.messageHandler?.({ data } as MessageEvent);
+      }
+      fail() {
+        // Native EventSource keeps the same subscription and retries after a drop.
+      }
+      close() {
+        this.closed = true;
+      }
+    }
+    const valid = {
+      ticker: 'SPY',
+      feed: 'fixture',
+      market_session: 'open',
+      live: true,
+      buy_vol: 1,
+      flow_window_s: 15,
+      net_flow: 2,
+      sell_vol: 3,
+      spot_ts: 4,
+      ts: 5,
+    };
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const updates: LiveUpdate[] = [];
+    const unsubscribe = streamTicker('spy', {}, (update) => updates.push(update));
+    const [source] = FakeEventSource.instances;
+    expect(FakeEventSource.instances).toHaveLength(1);
+    expect(source.url).toBe('/api/stream/SPY');
+    expect(source.messageAssignments).toBe(1);
+
+    source.emit(''); // browser-delivered heartbeat/comment equivalent
+    source.emit('{not-json');
+    source.emit(JSON.stringify({ ticker: 'SPY' })); // malformed object, not a live event
+    expect(updates).toHaveLength(0);
+
+    source.emit(JSON.stringify(valid));
+    source.fail();
+    source.emit(JSON.stringify({ ...valid, ts: 6 })); // reconnect uses the same listener
+    expect(updates.map(({ ts }) => ts)).toEqual([5, 6]);
+
+    unsubscribe();
+    expect(source.closed).toBe(true);
+    unsubscribe();
+    expect(source.closed).toBe(true); // idempotent close; no second subscription/listener
+    source.emit(JSON.stringify({ ...valid, ts: 7 }));
+    expect(updates.map(({ ts }) => ts)).toEqual([5, 6]);
   });
 });

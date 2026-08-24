@@ -1,10 +1,385 @@
 //! Liveness / readiness + cache metrics.
 
+use crate::openapi::RouteResponse;
 use crate::state::AppState;
 use axum::extract::State;
+use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
+use utoipa::{IntoResponses, ToSchema};
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthWire {
+    pub status: String,
+    pub service: String,
+    pub price_cache: String,
+    pub durable_store: String,
+    pub data_feed: String,
+    pub gex_kernel: String,
+    pub scanner: HealthScanner,
+    pub rate_limit: HealthRateLimit,
+    pub ai_meter: HealthAiMeter,
+    pub metrics_auth: String,
+    pub warm: HealthWarm,
+    pub gex_cache: HealthCacheMetrics,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthScanner {
+    pub enabled: bool,
+    pub embedded: bool,
+    pub market_hours_only: bool,
+    pub universe_size: usize,
+    pub board: HealthBoard,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthBoard {
+    pub rows: usize,
+    pub by_status: std::collections::BTreeMap<String, usize>,
+    pub priced: usize,
+    pub scored: usize,
+    pub history_samples: usize,
+    pub history_backend: String,
+    pub history_symbols: usize,
+    pub history_top: Vec<HealthHistoryTop>,
+    pub sweep_last_completed: Option<f64>,
+    pub heartbeat_updated_at: Option<f64>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthHistoryTop {
+    pub symbol: String,
+    pub n: usize,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthRateLimit {
+    pub public_per_min: u32,
+    pub enabled: bool,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthAiMeter {
+    pub scope: String,
+    pub daily_cap: u32,
+    pub note: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthWarm {
+    pub enabled: bool,
+    pub symbols: Vec<String>,
+    pub interval_secs: u64,
+    pub concurrency: usize,
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum HealthResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(HealthWire),
+}
+
+impl IntoResponse for HealthResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+        }
+    }
+}
+
+/// Build the smallest valid health wire response for boundary-conversion checks.
+/// This deliberately uses the route's production response enum, keeping the conversion proof
+/// coupled to the same `HealthWire` serializer used by the live handler.
+pub(crate) fn contract_representative_response() -> Response {
+    HealthResponse::Ok(HealthWire {
+        status: "ok".into(),
+        service: "api-rust".into(),
+        price_cache: "memory".into(),
+        durable_store: "json".into(),
+        data_feed: "fixture".into(),
+        gex_kernel: "contract".into(),
+        scanner: HealthScanner {
+            enabled: false,
+            embedded: true,
+            market_hours_only: false,
+            universe_size: 0,
+            board: HealthBoard {
+                rows: 0,
+                by_status: BTreeMap::new(),
+                priced: 0,
+                scored: 0,
+                history_samples: 0,
+                history_backend: "json".into(),
+                history_symbols: 0,
+                history_top: Vec::new(),
+                sweep_last_completed: None,
+                heartbeat_updated_at: None,
+            },
+        },
+        rate_limit: HealthRateLimit {
+            public_per_min: 0,
+            enabled: false,
+        },
+        ai_meter: HealthAiMeter {
+            scope: "contract".into(),
+            daily_cap: 0,
+            note: "contract".into(),
+        },
+        metrics_auth: "open".into(),
+        warm: HealthWarm {
+            enabled: false,
+            symbols: Vec::new(),
+            interval_secs: 0,
+            concurrency: 0,
+        },
+        gex_cache: HealthCacheMetrics {
+            hits: 0,
+            misses: 0,
+            sets: 0,
+            expirations: 0,
+            warm_refreshes: 0,
+            warm_errors: 0,
+            hit_rate: 0.0,
+            entries: 0,
+            warm_symbols: Vec::new(),
+            ttl_default_secs: 0,
+            ttl_liquid_secs: 0,
+        },
+    })
+    .into_response()
+}
+
+pub(crate) fn contract_representative_response_for(
+    status: axum::http::StatusCode,
+    boundary: &str,
+) -> Response {
+    match (boundary, status) {
+        (id, axum::http::StatusCode::OK) if id.starts_with("GET /api/_metrics ") => {
+            contract_metrics_response()
+        }
+        (id, axum::http::StatusCode::UNAUTHORIZED) if id.starts_with("GET /api/_metrics ") => {
+            contract_metrics_unauthorized_response()
+        }
+        (id, axum::http::StatusCode::OK)
+            if id.starts_with("GET /api/health ") || id.starts_with("GET /health ") =>
+        {
+            contract_representative_response()
+        }
+        _ => panic!("unknown health response-conversion boundary: {boundary}"),
+    }
+}
+
+#[utoipa::path(get, path = "/api/health", operation_id = "api_health")]
+pub async fn api_health(State(state): State<AppState>) -> HealthResponse {
+    let Json(body) = health(State(state)).await;
+    HealthResponse::Ok(serde_json::from_value(body).expect("health wire matches closed schema"))
+}
+
+#[utoipa::path(
+    get,
+    path = "/health",
+    operation_id = "health_alias",
+    responses(HealthResponse)
+)]
+pub async fn health_alias(State(state): State<AppState>) -> HealthResponse {
+    api_health(State(state)).await
+}
+
+#[allow(dead_code)]
+#[derive(Debug, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+pub enum MetricsResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(MetricsWire),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(crate::openapi::WireError),
+}
+
+impl IntoResponse for MetricsResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => (axum::http::StatusCode::OK, Json(body)).into_response(),
+            Self::Unauthorized(error) => {
+                (axum::http::StatusCode::UNAUTHORIZED, Json(error)).into_response()
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsWire {
+    pub instrumentation_enabled: bool,
+    pub window: String,
+    pub global: MetricsScope,
+    pub per_ticker: BTreeMap<String, MetricsScope>,
+    pub recent_traces: Vec<RecentTrace>,
+    pub gex_cache: HealthCacheMetrics,
+    pub operator: MetricsOperator,
+    pub metrics_auth: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsScope {
+    pub latency_total: MetricsLatency,
+    pub stages: Vec<MetricsStage>,
+    pub cache: MetricsCache,
+    pub vendor: MetricsVendor,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsLatency {
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub max_ms: f64,
+    pub count: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsStage {
+    pub stage: String,
+    pub kind: String,
+    pub p50_ms: f64,
+    pub p95_ms: f64,
+    pub max_ms: f64,
+    pub count: u64,
+    pub ok: u64,
+    pub error: u64,
+    pub skipped: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsCache {
+    pub hits: u64,
+    pub misses: u64,
+    pub hit_ratio: f64,
+    pub current_data_age_seconds: f64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsVendor {
+    pub call_count: u64,
+    pub latency_p50_ms: f64,
+    pub latency_p95_ms: f64,
+    pub min_rate_limit_headroom: Option<MetricsRateLimitHeadroom>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsRateLimitHeadroom {
+    pub remaining: u64,
+    pub limit: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RecentTrace {
+    pub trace_id: String,
+    pub ticker: String,
+    pub dims: MetricsTraceDims,
+    pub cache_hit: bool,
+    #[schema(required = true)]
+    pub cache_age_seconds: f64,
+    pub total_ms: f64,
+    pub computed_trace_id: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsTraceDims {
+    #[schema(required = true)]
+    pub min_dte: Option<f64>,
+    #[schema(required = true)]
+    pub max_dte: Option<f64>,
+    pub expirations_present: bool,
+    pub dark_pool: bool,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct HealthCacheMetrics {
+    pub hits: u64,
+    pub misses: u64,
+    pub sets: u64,
+    pub expirations: u64,
+    pub warm_refreshes: u64,
+    pub warm_errors: u64,
+    pub hit_rate: f64,
+    pub entries: usize,
+    pub warm_symbols: Vec<String>,
+    pub ttl_default_secs: u64,
+    pub ttl_liquid_secs: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MetricsOperator {
+    pub scan_rows: usize,
+    pub history_samples: usize,
+    pub ai_meter_scope: String,
+    pub request_count: u64,
+    pub size_desc: String,
+    pub uptime_seconds: u64,
+}
+
+fn contract_metrics_scope() -> MetricsScope {
+    MetricsScope {
+        latency_total: MetricsLatency {
+            p50_ms: 0.0,
+            p95_ms: 0.0,
+            max_ms: 0.0,
+            count: 0,
+        },
+        stages: Vec::new(),
+        cache: MetricsCache {
+            hits: 0,
+            misses: 0,
+            hit_ratio: 0.0,
+            current_data_age_seconds: 0.0,
+        },
+        vendor: MetricsVendor {
+            call_count: 0,
+            latency_p50_ms: 0.0,
+            latency_p95_ms: 0.0,
+            min_rate_limit_headroom: None,
+        },
+    }
+}
+
+fn contract_metrics_response() -> Response {
+    MetricsResponse::Ok(MetricsWire {
+        instrumentation_enabled: false,
+        window: "15m".into(),
+        global: contract_metrics_scope(),
+        per_ticker: BTreeMap::new(),
+        recent_traces: Vec::new(),
+        gex_cache: HealthCacheMetrics {
+            hits: 0,
+            misses: 0,
+            sets: 0,
+            expirations: 0,
+            warm_refreshes: 0,
+            warm_errors: 0,
+            hit_rate: 0.0,
+            entries: 0,
+            warm_symbols: Vec::new(),
+            ttl_default_secs: 0,
+            ttl_liquid_secs: 0,
+        },
+        operator: MetricsOperator {
+            scan_rows: 0,
+            history_samples: 0,
+            ai_meter_scope: "process".into(),
+            request_count: 0,
+            size_desc: "empty".into(),
+            uptime_seconds: 0,
+        },
+        metrics_auth: "required".into(),
+    })
+    .into_response()
+}
+
+fn contract_metrics_unauthorized_response() -> Response {
+    MetricsResponse::Unauthorized(crate::openapi::WireError {
+        error: "metrics_unauthorized".into(),
+        message: "operator token required".into(),
+    })
+    .into_response()
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/_metrics",
+    operation_id = "api_metrics",
+    responses(MetricsResponse)
+)]
+pub async fn metrics_contract(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+) -> RouteResponse<MetricsResponse> {
+    cache_metrics(State(state), headers).await.into()
+}
 
 pub async fn health(State(state): State<AppState>) -> Json<Value> {
     let metrics = state.gex_cache.metrics_snapshot().await;
@@ -121,14 +496,33 @@ pub async fn cache_metrics(
             "scan_rows": scan_rows.len(),
             "history_samples": history_samples,
             "ai_meter_scope": crate::services::recommendation::meter_scope_label(),
+            "request_count": 0,
+            "size_desc": "unknown",
+            "uptime_seconds": 0,
         })
     };
     Json(json!({
+        // Instrumentation is intentionally disabled until the bounded trace collector is enabled;
+        // the closed empty scope still gives operators a stable, typed response.
+        "instrumentation_enabled": false,
+        "window": "15m",
+        "global": empty_metrics_scope(),
+        "per_ticker": {},
+        "recent_traces": [],
         "gex_cache": metrics,
         "operator": board,
         "metrics_auth": if state.config.metrics_secret_token.is_some() { "required" } else { "open" },
     }))
     .into_response()
+}
+
+fn empty_metrics_scope() -> Value {
+    json!({
+        "latency_total": { "p50_ms": 0.0, "p95_ms": 0.0, "max_ms": 0.0, "count": 0 },
+        "stages": [],
+        "cache": { "hits": 0, "misses": 0, "hit_ratio": 0.0, "current_data_age_seconds": 0.0 },
+        "vendor": { "call_count": 0, "latency_p50_ms": 0.0, "latency_p95_ms": 0.0, "min_rate_limit_headroom": null }
+    })
 }
 
 pub(crate) fn metrics_token_ok(headers: &axum::http::HeaderMap, expected: &str) -> bool {
@@ -207,5 +601,72 @@ mod production_metrics_tests {
         )]);
         assert!(metrics_token_ok(&direct, &expected));
         assert!(!metrics_token_ok(&direct, "documented-placeholder-token"));
+    }
+}
+
+#[cfg(test)]
+mod contract_inference_tests {
+    use super::__path_api_health;
+    use super::{contract_representative_response_for, HealthResponse};
+    use axum::body::to_bytes;
+    use axum::http::{header, StatusCode};
+    use serde_json::Value;
+    use utoipa::{IntoResponses, OpenApi};
+
+    #[derive(utoipa::OpenApi)]
+    #[openapi(paths(api_health))]
+    struct HealthApi;
+
+    #[test]
+    fn concrete_health_response_owns_emitted_response_set() {
+        let expected = HealthResponse::responses();
+        assert!(
+            expected.contains_key("200"),
+            "health preserves the pre-cutover 200 status"
+        );
+        let document = HealthApi::openapi();
+        let operation = document
+            .paths
+            .paths
+            .get("/api/health")
+            .and_then(|path| path.get.as_ref())
+            .expect("health operation emitted");
+        assert_eq!(
+            operation.responses.responses.keys().collect::<Vec<_>>(),
+            expected.keys().collect::<Vec<_>>()
+        );
+    }
+
+    #[tokio::test]
+    async fn route_owned_health_and_metrics_variants_convert_distinct_envelopes() {
+        let cases = [
+            (
+                "GET /api/health 200 application/json public",
+                StatusCode::OK,
+                "status",
+            ),
+            (
+                "GET /api/_metrics 200 application/json operator-token",
+                StatusCode::OK,
+                "instrumentation_enabled",
+            ),
+            (
+                "GET /api/_metrics 401 application/json operator-token",
+                StatusCode::UNAUTHORIZED,
+                "error",
+            ),
+        ];
+
+        for (boundary, expected_status, required_field) in cases {
+            let response = contract_representative_response_for(expected_status, boundary);
+            assert_eq!(response.status(), expected_status);
+            assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
+            let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+            let json: Value = serde_json::from_slice(&body).unwrap();
+            assert!(
+                json.get(required_field).is_some(),
+                "{boundary} must serialize its concrete DTO variant"
+            );
+        }
     }
 }

@@ -13,6 +13,10 @@
 
 # Spire kit + product memory: receipts are machine-compared byte-for-byte.
 .spire/**           text eol=lf
+# Render evidence is binary and must never pass through line-ending filters.
+.spire/**/*.jpeg    binary
+.spire/**/*.jpg     binary
+.spire/**/*.png     binary
 
 # Host adapters: these carry the installed kit artifacts whose sha256 the
 # installation receipt pins.
@@ -23,3 +27,15 @@
 # Source scanned by structural guards that match on "\n" (see F-2 above).
 *.rs                text eol=lf
 *.mjs               text eol=lf
+
+# API contract artifacts are raw-byte oracles and must not be rewritten by a
+# Windows checkout before the non-writing manifest check compares them.
+apps/api/openapi/*.json text eol=lf
+apps/api/tests/fixtures/api_contract/*.json text eol=lf
+libs/api/src/generated/*.ts text eol=lf
+
+# Browser visual-review receipts and source patches are SHA-256-bound evidence.
+apps/dashboard-e2e/visual-review/**/*.json  text eol=lf
+apps/dashboard-e2e/visual-review/**/*.patch text eol=lf
+apps/dashboard-e2e/visual-review/**/*.png   binary
+apps/dashboard-e2e/src/quality/snapshots/**/*.png binary

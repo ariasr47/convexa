@@ -1,0 +1,5 @@
+{
+  "status": 405,
+  "kind": "implicit-method",
+  "body": { "detail": "method not allowed" }
+}

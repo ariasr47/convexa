@@ -104,7 +104,8 @@ fn spawn_capture_not_referenced_from_warmer_or_refresh_analytics() {
 #[test]
 fn trader_routes_do_not_mount_research_chain_snapshots_under_ticker_or_scan() {
     let root = workspace_root();
-    let routes = fs::read_to_string(root.join("apps/api/src/routes/mod.rs")).unwrap();
+    let routes =
+        fs::read_to_string(root.join("apps/api/src/routes/research_chain_snapshots.rs")).unwrap();
     assert!(
         routes.contains("/api/_research/chain-snapshots/{symbol}"),
         "research list must be mounted under /api/_research/"

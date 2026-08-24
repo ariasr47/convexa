@@ -143,7 +143,7 @@ export function PositionsPanel({
       <Typography
         component="p"
         data-testid="positions-disclosure"
-        sx={{ fontSize: '0.72rem', color: 'text.disabled', m: '0 0 12px', lineHeight: 1.5 }}
+        sx={{ fontSize: '0.72rem', color: 'text.secondary', m: '0 0 12px', lineHeight: 1.5 }}
       >
         {AUTH_COPY.positions.disclosure}
       </Typography>

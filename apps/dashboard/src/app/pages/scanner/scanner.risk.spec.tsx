@@ -260,6 +260,30 @@ describe('navigation only', () => {
     expect(cards.map((c) => c.getAttribute('href'))).toEqual(['/ticker/SPY', '/ticker/QQQ']);
     expect(screen.getByTestId('scan-cards').querySelectorAll('button')).toHaveLength(0);
   });
+
+  it('mobile cards are consecutive link stops while score help remains described', async () => {
+    const user = userEvent.setup();
+    const rows = [makeRow({ symbol: 'SPY' }), makeRow({ symbol: 'QQQ' })];
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <ScanCardList rows={rows} nowS={NOW} flashActive />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const cards = screen.getAllByTestId('scan-card');
+    expect(cards[0].querySelector('[data-testid="cell-score"]')).not.toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(cards[0]).toHaveAttribute('aria-describedby');
+    (cards[0] as HTMLElement).focus();
+    await user.tab();
+    expect(cards[1]).toHaveFocus();
+    const descriptionId = cards[0].getAttribute('aria-describedby');
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId ?? '')?.textContent).toContain('Prime tier');
+  });
 });
 
 // =================================================================================================

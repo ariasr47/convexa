@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "authorization_id": "win32-stable-six-7128017-20260824",
+  "decision": "authorize_candidate_generation",
+  "state": "authorized",
+  "actor": {
+    "id": "workspace-owner",
+    "role": "owner"
+  },
+  "source_revision": "71280172e6ae181d23ab0aea11bbcd14411cf8c8",
+  "platform": "win32",
+  "created_at": "2026-08-24T06:42:28.498Z",
+  "failed_compare": {
+    "run_id": "local-1787553729756-637311e2",
+    "summary_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/summary.json",
+    "summary_sha256": "d7be3e78c64642ed2957699ed3cb130ee8cd043b2fcea0fea358eeaadaa1ce7d"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "landing",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/landing.png",
+      "actual_sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/ticker-desktop.png",
+      "actual_sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/ticker-offline-mobile.png",
+      "actual_sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "positions-dense",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/positions-dense.png",
+      "actual_sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/scanner-dense.png",
+      "actual_sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b",
+      "diff_path": null,
+      "diff_sha256": null
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "expected_path": null,
+      "expected_sha256": null,
+      "actual_path": "apps/dashboard-e2e/visual-review/evidence/win32-stable-six-7128017-20260824/ai-recommendation.png",
+      "actual_sha256": "88b2383ead4165f43618c6f416603707d63f96927e2866254e87bdbe3974dbb7",
+      "diff_path": null,
+      "diff_sha256": null
+    }
+  ]
+}

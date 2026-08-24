@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "fixture_contract": "Each closed capability is executed with pass, policy_fail, and unavailable arms through its production adapter. This file is the committed seed whose hash binds every generated isolated fixture.",
+  "arms": ["pass", "policy_fail", "unavailable"],
+  "canary": "SCA_CANARY_SECRET_9f31"
+}

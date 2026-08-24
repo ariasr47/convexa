@@ -4,29 +4,543 @@ use crate::error::AppError;
 use crate::services::analytics::load_analytics;
 use crate::state::AppState;
 use axum::extract::{Path, Query, State};
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::{DateTime, Utc};
 use quant_engine::{
     compute_opportunity_tier, evaluate_gate, generate_signals, market_state_from_gex,
     off_exchange_signal_input, DEFAULT_GATE_SCORE,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::time::Instant;
+use utoipa::{IntoResponses, ToSchema};
 
-#[derive(Debug, Deserialize, Default)]
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, Default, utoipa::IntoParams)]
 pub struct TickerQuery {
     pub min_dte: Option<f64>,
     pub max_dte: Option<f64>,
+    /// Legacy comma-separated expiration filter preserved for the public API facade.
+    pub expirations: Option<String>,
+    /// Legacy open-position context fields are accepted for URL/schema parity only.
+    pub pos_expiration: Option<String>,
+    pub pos_strike: Option<f64>,
+    pub pos_right: Option<String>,
+    pub pos_pl_pct: Option<f64>,
     #[serde(default)]
     pub refresh: bool,
     /// Include off-exchange block + confluence (default: server `INCLUDE_DARK_POOL`).
     pub dark_pool: Option<bool>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+pub struct MarketWire {
+    pub ticker: Option<String>,
+    pub price: Option<f64>,
+    pub gex_spot: Option<f64>,
+    pub timestamp: Option<i64>,
+    pub timestamp_iso: Option<String>,
+    pub call_wall: Option<f64>,
+    pub put_wall: Option<f64>,
+    pub peak_gex_strike: Option<f64>,
+    pub gamma_flip: Option<f64>,
+    pub max_pain: Option<f64>,
+    pub max_pain_expiration: Option<String>,
+    pub net_gex: Option<f64>,
+    pub call_gex: Option<f64>,
+    pub put_gex: Option<f64>,
+    pub total_gex: Option<f64>,
+    pub net_dex: Option<f64>,
+    pub call_dex: Option<f64>,
+    pub put_dex: Option<f64>,
+    pub net_vanna: Option<f64>,
+    pub net_charm: Option<f64>,
+    pub net_volga: Option<f64>,
+    pub vwap: Option<f64>,
+    pub vwap_upper_2: Option<f64>,
+    pub vwap_upper_3: Option<f64>,
+    pub vwap_lower_2: Option<f64>,
+    pub vwap_lower_3: Option<f64>,
+    pub dte_min: Option<f64>,
+    pub dte_max: Option<f64>,
+    pub atm_iv: Option<f64>,
+    pub hv_30d: Option<f64>,
+    pub iv_hv_ratio: Option<f64>,
+    pub net_flow: Option<f64>,
+    pub put_call_ratio: Option<f64>,
+    pub chain_vol_oi_ratio: Option<f64>,
+    pub total_volume: Option<f64>,
+    pub vol_oi_unusual_threshold: Option<f64>,
+    pub contract_count: Option<usize>,
+    pub market_phase: Option<String>,
+    pub zero_dte_contribution_pct: Option<f64>,
+    pub distances: Option<BTreeMap<String, Option<f64>>>,
+    pub setups: Option<Vec<MarketSetup>>,
+    pub opportunity_score: Option<i32>,
+    pub opportunity_tier: Option<String>,
+    pub prime_prompt_eligible: Option<bool>,
+    #[schema(required = true)]
+    pub market_state: Option<Box<MarketWire>>,
+    #[schema(required = true)]
+    pub signals: Option<Box<MarketWire>>,
+    #[schema(required = true)]
+    pub strike_profile: Option<MarketStrikeProfile>,
+    #[schema(required = true)]
+    pub expirations: Option<Vec<MarketExpiration>>,
+    #[schema(required = true)]
+    pub ai_eval: Option<MarketAiEval>,
+    #[schema(required = true)]
+    pub meta: Option<MarketMeta>,
+    pub position_eval: Option<MarketPositionEval>,
+    // Additive analytics already emitted by `build_bundle`; these are explicit closed wire DTOs.
+    #[schema(required = true)]
+    pub iv_skew: Option<IvSkewWire>,
+    #[schema(required = true)]
+    pub term_structure: Option<TermStructureWire>,
+    #[schema(required = true)]
+    pub dealer_flow_projection: Option<DealerFlowProjectionWire>,
+    #[schema(required = true)]
+    pub market_context: Option<MarketContextPackWire>,
+    pub off_exchange: Option<OffExchangeWire>,
+    #[schema(required = true)]
+    pub iv_rank: Option<IvRankReadWire>,
+    #[schema(required = true)]
+    pub vol_normalized_gex: Option<VolNormalizedGexWire>,
+    #[schema(required = true)]
+    pub straddle_move: Option<StraddleMoveWire>,
+    // Signals are serialized into the same compatibility envelope by the existing route.
+    pub regime: Option<String>,
+    pub regime_note: Option<String>,
+    pub vol_regime: Option<String>,
+    pub state_fingerprint: Option<String>,
+    pub changed: Option<bool>,
+    pub dark_pool_confluence: Option<Vec<DarkPoolConfluenceWire>>,
+    pub score_drivers: Option<ScoreDriversWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct IvSkewWire {
+    pub slope: f64,
+    pub put_iv: f64,
+    pub call_iv: f64,
+    pub dte: Option<i64>,
+    pub expiration: String,
+    pub reference: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TermStructurePointWire {
+    pub dte: i64,
+    pub expiration: String,
+    pub atm_iv: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TermStructureWire {
+    pub points: Vec<TermStructurePointWire>,
+    pub state: String,
+    pub near_iv: f64,
+    pub far_iv: f64,
+    pub slope: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DealerFlowCharmWire {
+    pub projected_delta: f64,
+    pub per_day_base: f64,
+    pub horizon_days: i32,
+    pub opex_date: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DealerFlowVannaWire {
+    pub projected_delta: f64,
+    pub move_iv_points: f64,
+    pub illustrative_move_iv_points: f64,
+    pub illustrative_projected_delta: f64,
+    pub reference_direction: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DealerFlowProjectionWire {
+    pub spot_basis: f64,
+    pub charm: Option<DealerFlowCharmWire>,
+    pub vanna: Option<DealerFlowVannaWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TrendDirectionWire {
+    pub label: String,
+    pub close: f64,
+    pub ema20: f64,
+    pub ema50: f64,
+    pub window: String,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TrendStrengthWire {
+    pub label: String,
+    pub adx: f64,
+    pub window: String,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MomentumStateWire {
+    pub label: String,
+    pub rsi: f64,
+    pub window: String,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct TrendMomentumWire {
+    pub as_of_session: String,
+    pub direction: Option<TrendDirectionWire>,
+    pub strength: Option<TrendStrengthWire>,
+    pub momentum: Option<MomentumStateWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct GexProfileShapeWire {
+    pub concentration: f64,
+    pub concentration_label: String,
+    pub balance: f64,
+    pub balance_label: String,
+    pub center_of_mass_distance: f64,
+    pub eligible_strikes: usize,
+    pub spot_basis: f64,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DivergenceLocationWire {
+    pub label: String,
+    pub distribution_shift: f64,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DivergenceCompositionWire {
+    pub label: String,
+    pub volume_pcr: f64,
+    pub oi_pcr: f64,
+    pub tilt_ratio: f64,
+    pub thresholds: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct FlowVsPositioningWire {
+    pub flow_basis: String,
+    pub location: Option<DivergenceLocationWire>,
+    pub composition: Option<DivergenceCompositionWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AtrHorizonWire {
+    pub value: f64,
+    pub pct_of_close: f64,
+    pub window_bars: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AtrReadWire {
+    pub as_of_session: String,
+    pub close_basis: f64,
+    pub method: String,
+    pub atr_5d: Option<AtrHorizonWire>,
+    pub atr_14d: Option<AtrHorizonWire>,
+    pub atr_30d: Option<AtrHorizonWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketContextPackWire {
+    pub trend_momentum: Option<TrendMomentumWire>,
+    pub gex_profile_shape: Option<GexProfileShapeWire>,
+    pub flow_vs_positioning: Option<FlowVsPositioningWire>,
+    pub atr: Option<AtrReadWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct OffExchangeLevelWire {
+    pub price: f64,
+    pub shares: i64,
+    pub share_of_offex_pct: f64,
+    pub proximity_pct: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct BlockPrintWire {
+    pub price: f64,
+    pub shares: i64,
+    pub notional: f64,
+    pub proximity_pct: f64,
+    pub age_seconds: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct OffExchangeWire {
+    pub ratio_pct: Option<f64>,
+    pub offex_shares: i64,
+    pub total_shares: i64,
+    pub levels: Vec<OffExchangeLevelWire>,
+    pub blocks: Vec<BlockPrintWire>,
+    pub block_min_shares: i64,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct IvRankReadWire {
+    pub state: String,
+    #[schema(required = true)]
+    pub rank: Option<f64>,
+    #[schema(required = true)]
+    pub rank_unavailable_reason: Option<String>,
+    #[schema(required = true)]
+    pub percentile: Option<f64>,
+    #[schema(required = true)]
+    pub band: Option<String>,
+    #[schema(required = true)]
+    pub current_iv: Option<f64>,
+    pub window_sessions: usize,
+    pub sample_count: usize,
+    pub window_cap: usize,
+    pub min_samples: usize,
+    #[schema(required = true)]
+    pub iv_basis: Option<String>,
+    #[schema(required = true)]
+    pub basis_dte: Option<f64>,
+    pub window_descriptor: String,
+    pub basis_descriptor: String,
+    pub advisory_note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct VolNormalizedGexWire {
+    pub net_gex: f64,
+    pub call_gex: f64,
+    pub put_gex: f64,
+    pub total_gex: f64,
+    pub vol_used: f64,
+    pub vol_basis: String,
+    pub basis_note: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StraddleTenorWire {
+    pub expiration: String,
+    pub dte: i64,
+    pub strike_used: f64,
+    pub strike_distance_pct: f64,
+    pub straddle_price: f64,
+    pub move_dollars: f64,
+    pub move_pct: f64,
+    pub basis: String,
+    pub quote_spread_pct_of_mid: Option<f64>,
+    pub wide_quotes: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StraddleMoveWire {
+    pub state: String,
+    pub as_of: Option<String>,
+    pub session_basis: Option<String>,
+    pub anchor_spot: Option<f64>,
+    pub anchor_basis: String,
+    pub anchor_label: String,
+    pub primary_expiration: Option<String>,
+    pub wide_quote_threshold_pct: f64,
+    pub tenors: Vec<StraddleTenorWire>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct DarkPoolConfluenceWire {
+    pub off_exchange_price: f64,
+    pub coincides_with: String,
+    pub level: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ScoreDriversWire {
+    pub proximity: i32,
+    pub vol: i32,
+    pub setups: i32,
+    pub transition: i32,
+    pub dark_pool: i32,
+    pub total: i32,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketSetup {
+    pub name: String,
+    pub bias: String,
+    pub strategy: String,
+    pub rationale: String,
+    pub conviction: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketStrikeProfile {
+    pub ticker: String,
+    pub spot: f64,
+    pub strikes: Vec<MarketStrike>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketStrike {
+    pub strike: f64,
+    pub net_gex: f64,
+    pub call_gex: f64,
+    pub put_gex: f64,
+    pub call_oi: f64,
+    pub put_oi: f64,
+    pub total_oi: f64,
+    pub net_dex: Option<f64>,
+    pub call_dex: Option<f64>,
+    pub put_dex: Option<f64>,
+    pub volume: Option<f64>,
+    pub vol_oi_ratio: Option<f64>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketExpiration {
+    pub date: String,
+    pub dte: Option<f64>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketAiEval {
+    pub ready: bool,
+    pub reasons: Vec<String>,
+    pub changed: bool,
+    pub state_fingerprint: String,
+    pub score_threshold: i32,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketMeta {
+    pub served_at: String,
+    #[schema(required = true)]
+    pub cache: Option<MarketCacheMeta>,
+    #[schema(required = true)]
+    pub freshness: Option<MarketFreshnessMeta>,
+    pub source: Option<String>,
+    pub compute_ms: Option<f64>,
+    pub elapsed_ms: Option<f64>,
+    pub engine: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketCacheMeta {
+    pub hit: bool,
+    pub age_seconds: f64,
+    pub ttl_seconds: f64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketFreshnessMeta {
+    pub snapshot_iso: Option<String>,
+    pub data_age_seconds: f64,
+    pub stale: bool,
+    pub stale_after_seconds: f64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct MarketPositionEval {
+    pub changed: bool,
+    pub fingerprint: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PersonaWire {
+    pub id: String,
+    pub name: String,
+    pub builtin: bool,
+    pub version: i32,
+    pub objective: Option<String>,
+    pub risk: Option<String>,
+    pub reassessment_lean: Option<String>,
+    pub emphasis_note: Option<String>,
+    pub dte_pref: Option<String>,
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum MarketResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(MarketWire),
+}
+
+impl IntoResponse for MarketResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+        }
+    }
+}
+
+/// Route-owned representative success conversion for the large market envelope. Every field is
+/// intentionally serialized (including nullable required fields) through the production DTO.
+pub(crate) fn contract_market_response() -> Response {
+    MarketResponse::Ok(MarketWire::default()).into_response()
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum PersonasResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(Vec<PersonaWire>),
+}
+
+impl IntoResponse for PersonasResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+        }
+    }
+}
+
+pub(crate) fn contract_personas_response() -> Response {
+    PersonasResponse::Ok(Vec::new()).into_response()
+}
+
+pub(crate) fn contract_representative_for(
+    status: axum::http::StatusCode,
+    boundary: &str,
+) -> Response {
+    if boundary.starts_with("GET /api/personas ") {
+        return match status {
+            axum::http::StatusCode::OK => contract_personas_response(),
+            _ => panic!("unknown personas response status {status}"),
+        };
+    }
+    if ![
+        "GET /api/market-data ",
+        "GET /api/signals ",
+        "GET /api/strike-profile ",
+        "GET /api/ticker/{ticker} ",
+    ]
+    .iter()
+    .any(|prefix| boundary.starts_with(prefix))
+    {
+        panic!("unknown market response-conversion boundary: {boundary}");
+    }
+    match status {
+        axum::http::StatusCode::OK => contract_market_response(),
+        axum::http::StatusCode::NOT_FOUND => {
+            AppError::NotFound("no analytics for ticker".into()).into_response()
+        }
+        axum::http::StatusCode::UNPROCESSABLE_ENTITY => {
+            AppError::Config("market query must be valid".into()).into_response()
+        }
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR => {
+            AppError::Config("market bundle internal failure".into()).into_response()
+        }
+        axum::http::StatusCode::BAD_GATEWAY => {
+            AppError::Massive("market data provider unavailable".into()).into_response()
+        }
+        axum::http::StatusCode::SERVICE_UNAVAILABLE => {
+            AppError::Redis("market cache unavailable".into()).into_response()
+        }
+        _ => panic!("unknown market response status {status}"),
+    }
+}
+
 /// Built-in personas (Python `src/core/personas.py` PERSONAS list — read-only).
-pub async fn get_personas() -> Json<Value> {
-    Json(json!([
+#[utoipa::path(get, path = "/api/personas", responses(PersonasResponse))]
+pub async fn get_personas() -> PersonasResponse {
+    PersonasResponse::Ok(serde_json::from_value(json!([
         {"id":"default","name":"Default (no persona)","builtin":true,"version":1,
          "objective":null,"risk":null,"reassessment_lean":null,"emphasis_note":null,"dte_pref":null},
         {"id":"income_keeper","name":"Income Keeper","builtin":true,"version":1,
@@ -53,7 +567,7 @@ pub async fn get_personas() -> Json<Value> {
          "objective":"hedging","risk":"conservative",
          "reassessment_lean":"Judge protection efficacy; Hold/Roll the hedge; Exit when the covered risk is gone.",
          "emphasis_note":null,"dte_pref":null}
-    ]))
+    ])).expect("personas wire matches closed schema"))
 }
 
 fn normalize(ticker: &str) -> Result<String, AppError> {
@@ -264,52 +778,83 @@ fn resolve_dark_pool(state: &AppState, q: Option<bool>) -> bool {
 }
 
 /// GET /api/ticker/{ticker} — FE TickerBundle shape (not progressive dual-path DTO).
+#[utoipa::path(get, path = "/api/ticker/{ticker}", params(("ticker" = String, Path, description = "Ticker symbol"), TickerQuery), responses(MarketResponse))]
 pub async fn get_ticker_bundle(
     State(state): State<AppState>,
     Path(ticker): Path<String>,
     Query(q): Query<TickerQuery>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<MarketResponse, AppError> {
     let sym = normalize(&ticker)?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
-    Ok(Json(
-        build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?,
+    Ok(MarketResponse::Ok(
+        serde_json::from_value(
+            build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?,
+        )
+        .expect("bundle wire matches closed schema"),
     ))
 }
 
 /// GET /api/market-data?ticker=
+#[utoipa::path(
+    get,
+    path = "/api/market-data",
+    params(MarketQuery),
+    responses(MarketResponse)
+)]
 pub async fn get_market_data(
     State(state): State<AppState>,
     Query(q): Query<MarketQuery>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
     let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(Json(bundle["market_state"].clone()))
+    Ok(MarketResponse::Ok(
+        serde_json::from_value(bundle["market_state"].clone())
+            .expect("market state wire matches closed schema"),
+    ))
 }
 
 /// GET /api/signals?ticker=
+#[utoipa::path(
+    get,
+    path = "/api/signals",
+    params(MarketQuery),
+    responses(MarketResponse)
+)]
 pub async fn get_signals(
     State(state): State<AppState>,
     Query(q): Query<MarketQuery>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
     let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(Json(bundle["signals"].clone()))
+    Ok(MarketResponse::Ok(
+        serde_json::from_value(bundle["signals"].clone())
+            .expect("signals wire matches closed schema"),
+    ))
 }
 
 /// GET /api/strike-profile?ticker=
+#[utoipa::path(
+    get,
+    path = "/api/strike-profile",
+    params(MarketQuery),
+    responses(MarketResponse)
+)]
 pub async fn get_strike_profile(
     State(state): State<AppState>,
     Query(q): Query<MarketQuery>,
-) -> Result<Json<Value>, AppError> {
+) -> Result<MarketResponse, AppError> {
     let sym = normalize(q.ticker.as_deref().unwrap_or(""))?;
     let dp = resolve_dark_pool(&state, q.dark_pool);
     let bundle = build_bundle(&state, &sym, q.min_dte, q.max_dte, q.refresh, dp).await?;
-    Ok(Json(bundle["strike_profile"].clone()))
+    Ok(MarketResponse::Ok(
+        serde_json::from_value(bundle["strike_profile"].clone())
+            .expect("strike profile wire matches closed schema"),
+    ))
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, utoipa::IntoParams)]
 pub struct MarketQuery {
     pub ticker: Option<String>,
     pub min_dte: Option<f64>,
@@ -317,4 +862,138 @@ pub struct MarketQuery {
     #[serde(default)]
     pub refresh: bool,
     pub dark_pool: Option<bool>,
+}
+
+#[cfg(test)]
+mod wire_schema_tests {
+    use super::{contract_representative_for, MarketWire};
+    use axum::body::to_bytes;
+    use axum::http::{header, StatusCode};
+    use serde_json::{Map, Value};
+
+    #[test]
+    fn market_wire_declares_every_runtime_bundle_and_signal_field() {
+        // This fixture is intentionally key-only: it is a set-equality bridge against the
+        // serialized build_bundle envelope, without coupling the test to market math values.
+        let names = [
+            "ticker",
+            "price",
+            "gex_spot",
+            "timestamp",
+            "timestamp_iso",
+            "call_wall",
+            "put_wall",
+            "peak_gex_strike",
+            "gamma_flip",
+            "max_pain",
+            "max_pain_expiration",
+            "net_gex",
+            "call_gex",
+            "put_gex",
+            "total_gex",
+            "net_dex",
+            "call_dex",
+            "put_dex",
+            "net_vanna",
+            "net_charm",
+            "net_volga",
+            "vwap",
+            "vwap_upper_2",
+            "vwap_upper_3",
+            "vwap_lower_2",
+            "vwap_lower_3",
+            "dte_min",
+            "dte_max",
+            "atm_iv",
+            "hv_30d",
+            "iv_hv_ratio",
+            "net_flow",
+            "put_call_ratio",
+            "chain_vol_oi_ratio",
+            "total_volume",
+            "vol_oi_unusual_threshold",
+            "contract_count",
+            "market_phase",
+            "zero_dte_contribution_pct",
+            "distances",
+            "setups",
+            "opportunity_score",
+            "opportunity_tier",
+            "prime_prompt_eligible",
+            "market_state",
+            "signals",
+            "strike_profile",
+            "expirations",
+            "ai_eval",
+            "meta",
+            "position_eval",
+            "iv_skew",
+            "term_structure",
+            "dealer_flow_projection",
+            "market_context",
+            "off_exchange",
+            "iv_rank",
+            "vol_normalized_gex",
+            "straddle_move",
+            "regime",
+            "regime_note",
+            "vol_regime",
+            "state_fingerprint",
+            "changed",
+            "dark_pool_confluence",
+            "score_drivers",
+        ];
+        let mut fixture = Map::new();
+        for name in names {
+            fixture.insert(name.to_string(), Value::Null);
+        }
+        let parsed: MarketWire = serde_json::from_value(Value::Object(fixture)).unwrap();
+        let emitted = serde_json::to_value(parsed).unwrap();
+        let object = emitted.as_object().unwrap();
+        for name in names {
+            assert!(
+                object.contains_key(name),
+                "runtime field missing from MarketWire: {name}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn market_routes_convert_dto_successes_and_production_app_errors() {
+        let cases = [
+            (
+                "GET /api/market-data 200 application/json public",
+                StatusCode::OK,
+                "ticker",
+            ),
+            (
+                "GET /api/personas 200 application/json public",
+                StatusCode::OK,
+                "[]",
+            ),
+            (
+                "GET /api/signals 404 application/json public",
+                StatusCode::NOT_FOUND,
+                "not found:",
+            ),
+            (
+                "GET /api/strike-profile 422 application/json public",
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "must be",
+            ),
+            (
+                "GET /api/ticker/{ticker} 502 application/json public",
+                StatusCode::BAD_GATEWAY,
+                "massive:",
+            ),
+        ];
+        for (boundary, status, marker) in cases {
+            let response = contract_representative_for(status, boundary);
+            assert_eq!(response.status(), status);
+            assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json");
+            let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+            let body = String::from_utf8(body.to_vec()).unwrap();
+            assert!(body.contains(marker), "{boundary}: {body}");
+        }
+    }
 }

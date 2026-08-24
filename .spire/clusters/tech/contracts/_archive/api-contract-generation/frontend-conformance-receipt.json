@@ -1,0 +1,59 @@
+{
+  "feature": "api-contract-generation",
+  "task": "F4-frontend-closer",
+  "revision": "e1e0be78ccf90922bee411c7dc1e5471940dbce5",
+  "refresh": "post-enum-migration generated artifact/manifest",
+  "verdict": "PASS",
+  "scope": "frontend/shared-client execution evidence only; receipt-only write",
+  "commands": [
+    {"command": "npm run api:contract:check", "exit": 0, "result": "API contract check passed; schema-v2 warning emitted"},
+    {"command": "npx prettier --check libs/api/README.md --ignore-unknown", "exit": 0},
+    {"command": "npx tsc -p libs/api/tsconfig.lib.json --noEmit", "exit": 0},
+    {"command": "npx vitest run --config libs/api/vite.config.mts --run --reporter=dot", "exit": 0, "tests": "4 files, 38 passed"},
+    {"command": "npx tsc -p apps/dashboard/tsconfig.app.json --noEmit", "exit": 0},
+    {"command": "npx vite build --config apps/dashboard/vite.config.mts --mode production", "exit": 0},
+    {"command": "npx vitest run --config vite.config.mts --run --reporter=dot (cwd apps/dashboard)", "exit": 0, "tests": "176 files, 2001 passed"}
+  ],
+  "generated_artifact_counts": {
+    "schema_version": 2,
+    "source_operations": 52,
+    "material_response_boundaries": 181,
+    "response_conversion_evidence": 181,
+    "direct_http_evidence": 85,
+    "direct_http_scenarios": 52
+  },
+  "authority_and_sse": {
+    "verdict": "PASS",
+    "generated_types_wire_authority": true,
+    "generated_deep_import_count": 0,
+    "unchecked_http_response_casts": 0,
+    "manual_boundary": {
+      "set_equality": "1/1",
+      "entry": {"method": "GET", "path": "/api/stream/{ticker}", "adapter": "libs/api/src/lib/convexa.ts#streamTicker"}
+    },
+    "lifecycle": ["heartbeat", "malformed_event_isolation", "automatic_reconnect", "drop_degrades_live_only", "close_unsubscribe"]
+  },
+  "named_exports": {"verdict": "PASS", "evidence": "shared API suite 38/38 passed"},
+  "readme_truth": {
+    "verdict": "PASS",
+    "edited": true,
+    "counts_read_from": "apps/api/openapi/parity-coverage.json",
+    "hierarchy": "exhaustive response-envelope conversion; exact schemas via Rust DTO/IntoResponses to deterministic OpenAPI to generated TypeScript compilation; risk-tiered direct HTTP across every source-derived operation with high-risk bodies/effects; four-call live block supplementary",
+    "stale_179_boundary_claim": false,
+    "coverage_warning_exact": true,
+    "checks": ["Rust route graph source of truth", "canonical generate/check and closed result meanings", "native EventSource sole manual boundary", "migration/troubleshooting/rollback/ownership guidance", "schema-v2 coverage hierarchy and generated counts", "supplementary live block warning"]
+  },
+  "journeys": {
+    "verdict": "PASS",
+    "covered": ["landing", "ticker", "scanner", "positions", "settings", "operator isolation", "native EventSource lifecycle"],
+    "evidence": "dashboard 176 files, 2001 tests passed"
+  },
+  "no_ui_change": true,
+  "visual_inspection": {"verdict": "NOT_APPLICABLE", "reason": "SPEC §4 is NO_UI_CHANGE; dashboard consumer tests and production build were exercised."},
+  "cleanup": {"feature_temp_dir_absent": true, "port_8000_existing_process_left_untouched": true, "port_4200_existing_process_left_untouched": true},
+  "notes": [
+    "All receipt counts were read from the current generated parity artifact; no endpoint/evidence catalog was duplicated in the README.",
+    "No product UI, backend, tool, contract, or provider files were changed by this closer; the receipt and shared-client README are the only closer outputs.",
+    "The exact amended coverage warning is present byte-for-byte in the README and emitted by api:contract:check."
+  ]
+}

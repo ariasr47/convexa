@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "candidate_set_id": "305e5846c9f5877a3758bd462747e94f",
+  "authorization_id": "win32-stable-six-7128017-20260824",
+  "state": "candidates_written",
+  "generated_by": {
+    "actor_id": "visual-update",
+    "command": "npm run browser:visual:update"
+  },
+  "source_revision": "71280172e6ae181d23ab0aea11bbcd14411cf8c8",
+  "platform": "win32",
+  "manifest_sha256": "c51dc3bd92cc091086f51b3f26b98fc40b39783047b41aa2ef0c720152c560ff",
+  "generated_at": "2026-08-24T06:43:04.970Z",
+  "candidates": [
+    {
+      "scenario_id": "landing",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/landing.png",
+      "sha256": "837a123fe5a4ba97ea43b6a95fa29c4a6fccfb9008a25596b7682da872720ec2"
+    },
+    {
+      "scenario_id": "ticker-desktop",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-desktop.png",
+      "sha256": "e160356c603dc36e180425f43694abf89afeb053e2e5d13c2cbd41647541c1eb"
+    },
+    {
+      "scenario_id": "ticker-offline-mobile",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ticker-offline-mobile.png",
+      "sha256": "eb365fd9945f3d03a713ea51a15a1ba44e4aaf26b191ddf5ff8db02c8c18f175"
+    },
+    {
+      "scenario_id": "positions-dense",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/positions-dense.png",
+      "sha256": "4303acfe56911757d530588ee2d576bdcdf2db6f901b7ed5a93f3417b8b07bf8"
+    },
+    {
+      "scenario_id": "scanner-dense",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/scanner-dense.png",
+      "sha256": "25d10e356ccf073a9e383967047d13d6714c35f2e707d9149cbd2b20baf32f0b"
+    },
+    {
+      "scenario_id": "ai-recommendation",
+      "path": "apps/dashboard-e2e/src/quality/snapshots/win32/chromium/ai-recommendation.png",
+      "sha256": "88b2383ead4165f43618c6f416603707d63f96927e2866254e87bdbe3974dbb7"
+    }
+  ]
+}

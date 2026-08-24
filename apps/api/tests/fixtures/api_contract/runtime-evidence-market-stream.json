@@ -1,0 +1,150 @@
+{
+  "schema_version": 2,
+  "owner": "apps/api/tests/api_contract_runtime_market_stream.rs",
+  "entries": [
+    {
+      "boundary_id": "GET /api/prices 200 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "warm-price-cache",
+      "setup": "AppState::for_runtime_guardrail_tests with warm SPY price and analytics caches",
+      "request": "GET /api/prices?symbols=SPY,UNKNOWN",
+      "expected_response": {"status":200,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/prices 422 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "invalid-query",
+      "setup": "hermetic AppState with pre/post semantic-state snapshots",
+      "request": "GET /api/prices?symbols=",
+      "expected_response": {"status":422,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/price/{ticker} 200 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "warm-price-cache",
+      "setup": "SPY LivePrice in the production PriceCache seam",
+      "request": "GET /api/price/SPY",
+      "expected_response": {"status":200,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/market-data 200 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "warm-analytics-cache",
+      "setup": "SPY AnalyticsSnapshot in the production GexCache seam",
+      "request": "GET /api/market-data?ticker=SPY",
+      "expected_response": {"status":200,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/market-data 404 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "missing-ticker",
+      "setup": "hermetic AppState with pre/post semantic-state snapshots",
+      "request": "GET /api/market-data",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/signals 404 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "missing-ticker",
+      "setup": "hermetic AppState with pre/post semantic-state snapshots",
+      "request": "GET /api/signals",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/strike-profile 404 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "missing-ticker",
+      "setup": "hermetic AppState with pre/post semantic-state snapshots",
+      "request": "GET /api/strike-profile",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/contract/{ticker} 422 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "invalid-contract-right",
+      "setup": "SPY warm analytics cache with pre/post semantic-state snapshots",
+      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=bad",
+      "expected_response": {"status":422,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/contract/{ticker} 404 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "missing-contract",
+      "setup": "SPY snapshot with no matching contract and pre/post semantic-state snapshots",
+      "request": "GET /api/contract/SPY?expiration=1970-01-16&strike=100&right=call",
+      "expected_response": {"status":404,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/candidates/{ticker} 502 application/json public",
+      "test": "market_price_contract_and_candidate_runtime_matrix",
+      "fixture": "vendor-fault",
+      "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
+      "request": "GET /api/candidates/UNKNOWN",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/recommendation/status/{ticker} 502 application/json optional-session",
+      "test": "recommendation_and_stream_runtime_failures_are_meaningful",
+      "fixture": "vendor-fault",
+      "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
+      "request": "GET /api/recommendation/status/UNKNOWN",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"optional-session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/recommendation/export/{ticker} 502 application/json optional-session",
+      "test": "recommendation_and_stream_runtime_failures_are_meaningful",
+      "fixture": "vendor-fault",
+      "setup": "UNKNOWN ticker with hermetic Massive seam and pre/post semantic-state snapshots",
+      "request": "GET /api/recommendation/export/UNKNOWN",
+      "expected_response": {"status":502,"media_type":"application/json","security_mode":"optional-session","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/stream/prices 200 text/event-stream public",
+      "test": "recommendation_and_stream_runtime_failures_are_meaningful",
+      "fixture": "live-stream-first-frame",
+      "setup": "dormant StockStreamHub with SPY pre-registered and measured subscriber baseline",
+      "request": "GET /api/stream/prices?symbols=SPY",
+      "expected_response": {"status":200,"media_type":"text/event-stream","security_mode":"public","header_names":["cache-control"],"header_value_policies":{"cache-control":"exact:no-cache"},"body_category":"sse","body_valid":true,"body_meaning":"sse"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/stream/prices 422 application/json public",
+      "test": "recommendation_and_stream_runtime_failures_are_meaningful",
+      "fixture": "invalid-symbols",
+      "setup": "hermetic AppState with pre/post semantic-state snapshots",
+      "request": "GET /api/stream/prices?symbols=!!!",
+      "expected_response": {"status":422,"media_type":"application/json","security_mode":"public","header_names":[],"header_value_policies":{},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/stream/prices 503 application/json public",
+      "test": "stream_capacity_refusal_is_503_with_retry_guidance",
+      "fixture": "capacity-ceiling",
+      "setup": "LiveCapacity::new(0,1) with one admitted subscriber and measured pre/post count",
+      "request": "GET /api/stream/prices?symbols=QQQ",
+      "expected_response": {"status":503,"media_type":"application/json","security_mode":"public","header_names":["retry-after"],"header_value_policies":{"retry-after":"exact:30"},"body_category":"json","body_valid":true,"body_meaning":"json"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    },
+    {
+      "boundary_id": "GET /api/stream/{ticker} 200 text/event-stream public",
+      "test": "recommendation_and_stream_runtime_failures_are_meaningful",
+      "fixture": "live-stream-first-frame",
+      "setup": "dormant StockStreamHub with SPY pre-registered and measured subscriber baseline",
+      "request": "GET /api/stream/SPY",
+      "expected_response": {"status":200,"media_type":"text/event-stream","security_mode":"public","header_names":["cache-control"],"header_value_policies":{"cache-control":"exact:no-cache"},"body_category":"sse","body_valid":true,"body_meaning":"sse"},
+      "effect_assertion": {"durable":"none","memory":"none","cookie":"none"}
+    }
+  ]
+}

@@ -18,6 +18,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
+import { useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { useAuthDialog } from './AuthDialogProvider';
@@ -54,6 +55,7 @@ function wallCopy(surface: string): { unlocks: string; freePath: string } {
 export function RequireAuth({ children, surface }: Props) {
   const { ready, authenticated } = useAuth();
   const { openAuth } = useAuthDialog();
+  const signInRef = useRef<HTMLButtonElement>(null);
   const copy = wallCopy(surface);
 
   // Hold the wall back until who-am-I resolves, or a signed-in user sees a sign-in prompt flash
@@ -89,7 +91,8 @@ export function RequireAuth({ children, surface }: Props) {
           >
             <Button
               variant="contained"
-              onClick={() => openAuth()}
+              ref={signInRef}
+              onClick={() => openAuth({ returnFocus: signInRef.current })}
               data-testid="require-auth-signin"
             >
               {AUTH_COPY.account.signIn}

@@ -1,5 +1,7 @@
 //! Auth HTTP surface — Python `/api/auth/*` wire shape.
+#![allow(dead_code)] // OpenAPI DTOs and response enums are exporter-only schema markers.
 
+use crate::openapi::RouteResponse;
 use crate::services::auth::{
     auth_required, settings_auth_required, AuthError as AuthErr, AuthService, SettingsPatch,
     COOKIE_NAME,
@@ -9,26 +11,214 @@ use axum::extract::{Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::Json;
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use utoipa::{IntoParams, IntoResponses, ToSchema};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct SignupBody {
     pub email: String,
     pub password: String,
     pub display_name: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginBody {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct PerTradeCapBody {
+    pub value: f64,
+    pub unit: String,
+}
+
+/// Settings patch preserves absent versus explicit null without exposing an unconstrained JSON
+/// object in the HTTP contract.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SettingsPatchBody {
+    pub active_persona_id: Option<String>,
+    pub default_ticker: Option<String>,
+    pub theme: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub account_size: Option<Option<f64>>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub per_trade_cap: Option<Option<PerTradeCapBody>>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub ai_power_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub ai_provider: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub ai_model: Option<Option<String>>,
+}
+
+fn deserialize_double_option<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    let value = Value::deserialize(deserializer)?;
+    if value.is_null() {
+        Ok(Some(None))
+    } else {
+        serde_json::from_value(value)
+            .map(|parsed| Some(Some(parsed)))
+            .map_err(serde::de::Error::custom)
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AuthResponseBody {
+    pub authenticated: Option<bool>,
+    pub user: Option<AuthUserBody>,
+    pub google_available: Option<bool>,
+    pub settings: Option<AuthSettingsBody>,
+    pub demo_seed: Option<DemoSeedBody>,
+    pub storage_available: Option<bool>,
+    pub providers: Option<Vec<AiProviderSlotBody>>,
+    pub grok: Option<GrokStatusBody>,
+    pub preference: Option<AiPreferenceBody>,
+    pub catalog: Option<CatalogBody>,
+    pub set: Option<bool>,
+    pub last4: Option<String>,
+}
+
+/// Exact identity response used by session, signup, and login.  Keep this separate from the
+/// broader auth bootstrap envelope: generated clients rely on these four identity fields being
+/// present even when their values are null for an anonymous session.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SessionStatusBody {
+    pub authenticated: bool,
+    pub google_available: bool,
+    #[schema(required = true)]
+    pub user: Option<AuthUserBody>,
+    #[schema(required = true)]
+    pub settings: Option<AuthSettingsBody>,
+    pub demo_seed: Option<DemoSeedBody>,
+}
+
+/// Exact settings read/write response; the server always returns a complete saved settings bag.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UserSettingsBody {
+    pub active_persona_id: Option<String>,
+    pub default_ticker: Option<String>,
+    pub theme: String,
+    pub risk_inputs: RiskInputsBody,
+    pub ai_power_path: Option<String>,
+    pub ai_provider: Option<String>,
+    pub ai_model: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AiProvidersBootstrapBody {
+    pub storage_available: bool,
+    pub providers: Vec<AiProviderSlotBody>,
+    pub grok: GrokStatusBody,
+    pub preference: AiPreferenceBody,
+    pub catalog: CatalogBody,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LogoutBody {
+    pub authenticated: bool,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AuthUserBody {
+    pub id: String,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub auth_methods: Vec<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DemoSeedBody {
+    pub email: String,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AuthSettingsBody {
+    pub active_persona_id: Option<String>,
+    pub default_ticker: Option<String>,
+    pub theme: String,
+    pub risk_inputs: RiskInputsBody,
+    pub ai_power_path: Option<String>,
+    pub ai_provider: Option<String>,
+    pub ai_model: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RiskInputsBody {
+    pub state: String,
+    pub account_size: Option<f64>,
+    pub per_trade_cap: Option<PerTradeCapBody>,
+    pub effective_dollar_cap: EffectiveDollarCapBody,
+    pub storage_available: bool,
+    pub updated_at: Option<f64>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EffectiveDollarCapBody {
+    pub state: String,
+    pub value: Option<f64>,
+    pub not_derivable_reason: Option<String>,
+    pub derived_from: DerivedFromBody,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DerivedFromBody {
+    pub account_size: Option<f64>,
+    pub cap_value: Option<f64>,
+    pub cap_unit: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AiProviderSlotBody {
+    pub provider: String,
+    pub set: bool,
+    pub last4: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GrokStatusBody {
+    pub available: bool,
+    pub connected: bool,
+    pub unavailable_reason: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AiPreferenceBody {
+    pub power_path: Option<String>,
+    pub provider: Option<String>,
+    pub model: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CatalogBody {
+    pub providers: Vec<CatalogProviderBody>,
+    pub grok_subscription: CatalogProviderBody,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CatalogProviderBody {
+    pub provider: String,
+    pub models: Vec<CatalogModelBody>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CatalogModelBody {
+    pub id: String,
+    pub recommended: bool,
 }
 
 /// Double-optional over the wire: KEY ABSENT ⇒ outer `None` (no change); KEY PRESENT AS `null` ⇒
 /// `Some(None)` (clear); KEY PRESENT with a value ⇒ `Some(Some(value))` (set). `0` is a legal
 /// entered `account_size`, never coerced to "unset" — the double-`Option` type is what makes that
 /// distinction possible (AC-36).
+#[allow(dead_code)]
 fn double_optional_f64(body: &Value, key: &str) -> Option<Option<f64>> {
     body.get(key).map(|v| v.as_f64())
 }
@@ -37,6 +227,7 @@ fn double_optional_f64(body: &Value, key: &str) -> Option<Option<f64>> {
 /// A present-but-malformed object (missing `value`/`unit`) is treated as "field not present"
 /// (no change) rather than silently clearing — the server-side `validate` refusal path in
 /// `risk.rs` is reserved for well-typed-but-out-of-range entries, not shape errors.
+#[allow(dead_code)]
 fn double_optional_cap(body: &Value) -> Option<Option<(f64, String)>> {
     let v = body.get("per_trade_cap")?;
     if v.is_null() {
@@ -47,7 +238,7 @@ fn double_optional_cap(body: &Value) -> Option<Option<(f64, String)>> {
     Some(Some((value, unit)))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct AiKeyBody {
     /// Raw API key (write-only). Never echoed.
     pub key: String,
@@ -55,9 +246,798 @@ pub struct AiKeyBody {
     pub provider: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, ToSchema, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct AiKeyQuery {
     pub provider: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct GrokCallbackQuery {
+    pub code: Option<String>,
+    pub state: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct GoogleCallbackQuery {
+    pub code: Option<String>,
+    pub state: Option<String>,
+}
+
+#[allow(dead_code)]
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, IntoResponses)]
+pub enum AuthResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(AuthResponseBody),
+    #[response(status = 307, headers(("Location" = String), ("Set-Cookie" = String)))]
+    Redirect,
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(crate::openapi::WireError),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(crate::openapi::WireError),
+    #[response(status = 409, content_type = "application/json")]
+    Conflict(crate::openapi::WireError),
+    #[response(status = 422, content_type = "application/json")]
+    Validation(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum SessionStatusResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(SessionStatusBody),
+}
+
+#[derive(Debug, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+pub enum SignupResponse {
+    #[response(status = 200, headers(("Set-Cookie" = String)), content_type = "application/json")]
+    Ok(SessionStatusBody),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(crate::openapi::WireError),
+    #[response(status = 409, content_type = "application/json")]
+    Conflict(crate::openapi::WireError),
+    #[response(status = 422, content_type = "application/json")]
+    Validation(crate::openapi::WireError),
+    #[response(status = 503, content_type = "application/json")]
+    Unavailable(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+pub enum LoginResponse {
+    #[response(status = 200, headers(("Set-Cookie" = String)), content_type = "application/json")]
+    Ok(SessionStatusBody),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(crate::openapi::WireError),
+    #[response(status = 422, content_type = "application/json")]
+    Validation(crate::openapi::WireError),
+    #[response(status = 503, content_type = "application/json")]
+    Unavailable(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+pub enum SettingsReadResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(UserSettingsBody),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(crate::openapi::WireError),
+    #[response(status = 503, content_type = "application/json")]
+    Unavailable(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+#[allow(clippy::large_enum_variant)]
+pub enum SettingsWriteResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(UserSettingsBody),
+    #[response(status = 401, content_type = "application/json")]
+    Unauthorized(crate::openapi::WireError),
+    #[response(status = 422, content_type = "application/json")]
+    Validation(crate::openapi::WireError),
+    #[response(status = 503, content_type = "application/json")]
+    Unavailable(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum AiProvidersReadResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(AiProvidersBootstrapBody),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum AiProvidersWriteResponse {
+    #[response(status = 200, content_type = "application/json")]
+    Ok(AiProvidersBootstrapBody),
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(crate::openapi::WireError),
+    #[response(status = 422, content_type = "application/json")]
+    Validation(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum LogoutResponse {
+    #[response(status = 200, headers(("Set-Cookie" = String)), content_type = "application/json")]
+    Ok(LogoutBody),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum AuthUnavailableResponse {
+    #[response(status = 403, content_type = "application/json")]
+    Forbidden(crate::openapi::WireError),
+    #[response(status = 409, content_type = "application/json")]
+    Conflict(crate::openapi::WireError),
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum OAuthRedirectResponse {
+    #[response(status = 307, headers(("Location" = String), ("Set-Cookie" = String)))]
+    Redirect,
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum OAuthLocationResponse {
+    #[response(status = 307, headers(("Location" = String)))]
+    Redirect,
+}
+
+#[derive(Debug, IntoResponses)]
+pub enum GoogleStartResponse {
+    #[response(status = 307, headers(("Location" = String)))]
+    Redirect,
+    #[response(status = 409, content_type = "application/json")]
+    Conflict(crate::openapi::WireError),
+}
+
+const CONTRACT_COOKIE: &str = "gf_session=representative; Path=/; HttpOnly; SameSite=Lax; Secure";
+
+fn wire_error(code: &str, message: &str) -> crate::openapi::WireError {
+    crate::openapi::WireError {
+        error: code.into(),
+        message: message.into(),
+    }
+}
+
+fn response_with_cookie(mut response: Response) -> Response {
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        HeaderValue::from_static(CONTRACT_COOKIE),
+    );
+    response
+}
+
+fn response_with_cleared_cookie(mut response: Response) -> Response {
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        HeaderValue::from_static("gf_session=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax; Secure"),
+    );
+    response
+}
+
+fn oauth_redirect_response() -> Response {
+    response_with_cookie(Redirect::temporary("/auth/callback-complete").into_response())
+}
+
+fn location_redirect_response() -> Response {
+    Redirect::temporary("/auth/callback-complete").into_response()
+}
+
+macro_rules! json_error_into_response {
+    ($enum:ident { $($variant:ident => $status:ident),+ $(,)? }) => {
+        impl IntoResponse for $enum {
+            fn into_response(self) -> Response {
+                match self {
+                    $(Self::$variant(body) => (StatusCode::$status, Json(body)).into_response(),)+
+                }
+            }
+        }
+    };
+}
+
+impl IntoResponse for AuthResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Redirect => oauth_redirect_response(),
+            Self::Unauthorized(body) => (StatusCode::UNAUTHORIZED, Json(body)).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
+            Self::Conflict(body) => (StatusCode::CONFLICT, Json(body)).into_response(),
+            Self::Validation(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for SessionStatusResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for SignupResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => response_with_cookie(Json(body).into_response()),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
+            Self::Conflict(body) => (StatusCode::CONFLICT, Json(body)).into_response(),
+            Self::Validation(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+            Self::Unavailable(body) => {
+                (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for LoginResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => response_with_cookie(Json(body).into_response()),
+            Self::Unauthorized(body) => (StatusCode::UNAUTHORIZED, Json(body)).into_response(),
+            Self::Validation(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+            Self::Unavailable(body) => {
+                (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for SettingsReadResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Unauthorized(body) => (StatusCode::UNAUTHORIZED, Json(body)).into_response(),
+            Self::Unavailable(body) => {
+                (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for SettingsWriteResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Unauthorized(body) => (StatusCode::UNAUTHORIZED, Json(body)).into_response(),
+            Self::Validation(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+            Self::Unavailable(body) => {
+                (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for AiProvidersReadResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
+        }
+    }
+}
+
+impl IntoResponse for AiProvidersWriteResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => Json(body).into_response(),
+            Self::Forbidden(body) => (StatusCode::FORBIDDEN, Json(body)).into_response(),
+            Self::Validation(body) => {
+                (StatusCode::UNPROCESSABLE_ENTITY, Json(body)).into_response()
+            }
+        }
+    }
+}
+
+impl IntoResponse for LogoutResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Ok(body) => response_with_cleared_cookie(Json(body).into_response()),
+        }
+    }
+}
+
+json_error_into_response!(AuthUnavailableResponse {
+    Forbidden => FORBIDDEN,
+    Conflict => CONFLICT,
+});
+
+impl IntoResponse for OAuthRedirectResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Redirect => oauth_redirect_response(),
+        }
+    }
+}
+
+impl IntoResponse for OAuthLocationResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Redirect => location_redirect_response(),
+        }
+    }
+}
+
+impl IntoResponse for GoogleStartResponse {
+    fn into_response(self) -> Response {
+        match self {
+            Self::Redirect => location_redirect_response(),
+            Self::Conflict(body) => (StatusCode::CONFLICT, Json(body)).into_response(),
+        }
+    }
+}
+
+fn representative_session() -> SessionStatusBody {
+    SessionStatusBody {
+        authenticated: false,
+        google_available: true,
+        user: None,
+        settings: None,
+        demo_seed: None,
+    }
+}
+
+fn representative_auth_response() -> AuthResponseBody {
+    AuthResponseBody {
+        authenticated: Some(false),
+        user: None,
+        google_available: Some(true),
+        settings: None,
+        demo_seed: None,
+        storage_available: Some(true),
+        providers: None,
+        grok: None,
+        preference: None,
+        catalog: None,
+        set: None,
+        last4: None,
+    }
+}
+
+fn representative_settings() -> UserSettingsBody {
+    UserSettingsBody {
+        active_persona_id: None,
+        default_ticker: Some("SPY".into()),
+        theme: "system".into(),
+        risk_inputs: RiskInputsBody {
+            state: "not-configured".into(),
+            account_size: None,
+            per_trade_cap: None,
+            effective_dollar_cap: EffectiveDollarCapBody {
+                state: "not-derivable".into(),
+                value: None,
+                not_derivable_reason: Some("risk inputs are incomplete".into()),
+                derived_from: DerivedFromBody {
+                    account_size: None,
+                    cap_value: None,
+                    cap_unit: None,
+                },
+            },
+            storage_available: true,
+            updated_at: None,
+        },
+        ai_power_path: None,
+        ai_provider: None,
+        ai_model: None,
+    }
+}
+
+fn representative_ai_providers() -> AiProvidersBootstrapBody {
+    AiProvidersBootstrapBody {
+        storage_available: true,
+        providers: vec![AiProviderSlotBody {
+            provider: "openai".into(),
+            set: false,
+            last4: None,
+        }],
+        grok: GrokStatusBody {
+            available: false,
+            connected: false,
+            unavailable_reason: Some("not connected".into()),
+        },
+        preference: AiPreferenceBody {
+            power_path: None,
+            provider: None,
+            model: None,
+        },
+        catalog: CatalogBody {
+            providers: vec![CatalogProviderBody {
+                provider: "openai".into(),
+                models: vec![CatalogModelBody {
+                    id: "representative-model".into(),
+                    recommended: true,
+                }],
+            }],
+            grok_subscription: CatalogProviderBody {
+                provider: "xai".into(),
+                models: Vec::new(),
+            },
+        },
+    }
+}
+
+/// Construct the explicit route-owned enum variant for one persisted auth boundary.
+/// The boundary key is used only for selection and is never serialized into the response.
+pub(crate) fn contract_representative_response(boundary_id: &str) -> Option<Response> {
+    let rejected = || wire_error("request_rejected", "authentication request was rejected");
+    Some(match boundary_id {
+        "GET /api/auth/session 200 application/json optional-session" => {
+            SessionStatusResponse::Ok(representative_session()).into_response()
+        }
+
+        "POST /api/auth/signup 200 application/json public" => {
+            SignupResponse::Ok(representative_session()).into_response()
+        }
+        "POST /api/auth/signup 403 application/json public" => {
+            SignupResponse::Forbidden(rejected()).into_response()
+        }
+        "POST /api/auth/signup 409 application/json public" => {
+            SignupResponse::Conflict(rejected()).into_response()
+        }
+        "POST /api/auth/signup 422 application/json public" => {
+            SignupResponse::Validation(rejected()).into_response()
+        }
+        "POST /api/auth/signup 503 application/json public" => {
+            SignupResponse::Unavailable(rejected()).into_response()
+        }
+
+        "POST /api/auth/login 200 application/json public" => {
+            LoginResponse::Ok(representative_session()).into_response()
+        }
+        "POST /api/auth/login 401 application/json public" => {
+            LoginResponse::Unauthorized(rejected()).into_response()
+        }
+        "POST /api/auth/login 422 application/json public" => {
+            LoginResponse::Validation(rejected()).into_response()
+        }
+        "POST /api/auth/login 503 application/json public" => {
+            LoginResponse::Unavailable(rejected()).into_response()
+        }
+
+        "POST /api/auth/logout 200 application/json optional-session" => {
+            LogoutResponse::Ok(LogoutBody {
+                authenticated: false,
+            })
+            .into_response()
+        }
+
+        "GET /api/auth/settings 200 application/json session" => {
+            SettingsReadResponse::Ok(representative_settings()).into_response()
+        }
+        "GET /api/auth/settings 401 application/json session" => {
+            SettingsReadResponse::Unauthorized(rejected()).into_response()
+        }
+        "GET /api/auth/settings 503 application/json session" => {
+            SettingsReadResponse::Unavailable(rejected()).into_response()
+        }
+        "PUT /api/auth/settings 200 application/json session" => {
+            SettingsWriteResponse::Ok(representative_settings()).into_response()
+        }
+        "PUT /api/auth/settings 401 application/json session" => {
+            SettingsWriteResponse::Unauthorized(rejected()).into_response()
+        }
+        "PUT /api/auth/settings 422 application/json session" => {
+            SettingsWriteResponse::Validation(rejected()).into_response()
+        }
+        "PUT /api/auth/settings 503 application/json session" => {
+            SettingsWriteResponse::Unavailable(rejected()).into_response()
+        }
+
+        "GET /api/auth/ai-key 200 application/json session"
+        | "DELETE /api/auth/grok 200 application/json session" => {
+            AiProvidersReadResponse::Ok(representative_ai_providers()).into_response()
+        }
+        "GET /api/auth/ai-key 403 application/json session"
+        | "DELETE /api/auth/grok 403 application/json session" => {
+            AiProvidersReadResponse::Forbidden(rejected()).into_response()
+        }
+
+        "PUT /api/auth/ai-key 200 application/json session"
+        | "DELETE /api/auth/ai-key 200 application/json session" => {
+            AiProvidersWriteResponse::Ok(representative_ai_providers()).into_response()
+        }
+        "PUT /api/auth/ai-key 403 application/json session"
+        | "DELETE /api/auth/ai-key 403 application/json session" => {
+            AiProvidersWriteResponse::Forbidden(rejected()).into_response()
+        }
+        "PUT /api/auth/ai-key 422 application/json session"
+        | "DELETE /api/auth/ai-key 422 application/json session" => {
+            AiProvidersWriteResponse::Validation(rejected()).into_response()
+        }
+
+        "GET /api/auth/grok/start 403 application/json session" => {
+            AuthUnavailableResponse::Forbidden(rejected()).into_response()
+        }
+        "GET /api/auth/grok/start 409 application/json session" => {
+            AuthUnavailableResponse::Conflict(rejected()).into_response()
+        }
+        "GET /api/auth/google/callback 307 no-body oauth-state" => {
+            OAuthRedirectResponse::Redirect.into_response()
+        }
+        "GET /api/auth/grok/callback 307 no-body public" => {
+            OAuthLocationResponse::Redirect.into_response()
+        }
+        "GET /api/auth/google/start 307 no-body oauth-state" => {
+            GoogleStartResponse::Redirect.into_response()
+        }
+        "GET /api/auth/google/start 409 application/json oauth-state" => {
+            GoogleStartResponse::Conflict(rejected()).into_response()
+        }
+        _ => return None,
+    })
+}
+
+#[cfg(test)]
+mod response_conversion_tests {
+    use super::*;
+    use axum::body::to_bytes;
+    use utoipa::openapi::RefOr;
+
+    async fn assert_declared<R>(variant: R, expected_status: StatusCode)
+    where
+        R: IntoResponse + IntoResponses,
+    {
+        let declarations = R::responses();
+        let declared = declarations
+            .get(&expected_status.as_u16().to_string())
+            .unwrap_or_else(|| panic!("missing declaration for {expected_status}"));
+        let RefOr::T(declared) = declared else {
+            panic!("owned response declaration must be inline")
+        };
+
+        let response = variant.into_response();
+        assert_eq!(response.status(), expected_status);
+        for name in declared.headers.keys() {
+            assert!(
+                response.headers().contains_key(name),
+                "{expected_status} conversion omitted declared {name} header"
+            );
+        }
+        let actual_media = response
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .map(|value| value.split(';').next().unwrap_or(value).to_string());
+        let declared_media = declared
+            .content
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>();
+        if declared_media.is_empty() {
+            assert_eq!(actual_media, None);
+        } else {
+            assert!(actual_media
+                .as_deref()
+                .is_some_and(|media| declared_media.contains(&media)));
+        }
+
+        let bytes = to_bytes(response.into_body(), 1024 * 1024)
+            .await
+            .expect("representative body is bounded");
+        if actual_media.as_deref() == Some("application/json") {
+            let value: serde_json::Value =
+                serde_json::from_slice(&bytes).expect("declared JSON is valid JSON");
+            assert!(value.is_object(), "typed JSON response is an object");
+        } else if declared_media.is_empty() {
+            assert!(bytes.is_empty(), "redirect response remains bodyless");
+        }
+    }
+
+    fn err() -> crate::openapi::WireError {
+        wire_error("test_error", "representative refusal")
+    }
+
+    #[tokio::test]
+    async fn every_auth_enum_variant_matches_its_into_responses_envelope() {
+        assert_declared(
+            AuthResponse::Ok(representative_auth_response()),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(AuthResponse::Redirect, StatusCode::TEMPORARY_REDIRECT).await;
+        assert_declared(AuthResponse::Unauthorized(err()), StatusCode::UNAUTHORIZED).await;
+        assert_declared(AuthResponse::Forbidden(err()), StatusCode::FORBIDDEN).await;
+        assert_declared(AuthResponse::Conflict(err()), StatusCode::CONFLICT).await;
+        assert_declared(
+            AuthResponse::Validation(err()),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
+
+        assert_declared(
+            SessionStatusResponse::Ok(representative_session()),
+            StatusCode::OK,
+        )
+        .await;
+
+        assert_declared(SignupResponse::Ok(representative_session()), StatusCode::OK).await;
+        assert_declared(SignupResponse::Forbidden(err()), StatusCode::FORBIDDEN).await;
+        assert_declared(SignupResponse::Conflict(err()), StatusCode::CONFLICT).await;
+        assert_declared(
+            SignupResponse::Validation(err()),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
+        assert_declared(
+            SignupResponse::Unavailable(err()),
+            StatusCode::SERVICE_UNAVAILABLE,
+        )
+        .await;
+
+        assert_declared(LoginResponse::Ok(representative_session()), StatusCode::OK).await;
+        assert_declared(LoginResponse::Unauthorized(err()), StatusCode::UNAUTHORIZED).await;
+        assert_declared(
+            LoginResponse::Validation(err()),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
+        assert_declared(
+            LoginResponse::Unavailable(err()),
+            StatusCode::SERVICE_UNAVAILABLE,
+        )
+        .await;
+
+        assert_declared(
+            SettingsReadResponse::Ok(representative_settings()),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(
+            SettingsReadResponse::Unauthorized(err()),
+            StatusCode::UNAUTHORIZED,
+        )
+        .await;
+        assert_declared(
+            SettingsReadResponse::Unavailable(err()),
+            StatusCode::SERVICE_UNAVAILABLE,
+        )
+        .await;
+
+        assert_declared(
+            SettingsWriteResponse::Ok(representative_settings()),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(
+            SettingsWriteResponse::Unauthorized(err()),
+            StatusCode::UNAUTHORIZED,
+        )
+        .await;
+        assert_declared(
+            SettingsWriteResponse::Validation(err()),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
+        assert_declared(
+            SettingsWriteResponse::Unavailable(err()),
+            StatusCode::SERVICE_UNAVAILABLE,
+        )
+        .await;
+
+        assert_declared(
+            AiProvidersReadResponse::Ok(representative_ai_providers()),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(
+            AiProvidersReadResponse::Forbidden(err()),
+            StatusCode::FORBIDDEN,
+        )
+        .await;
+        assert_declared(
+            AiProvidersWriteResponse::Ok(representative_ai_providers()),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(
+            AiProvidersWriteResponse::Forbidden(err()),
+            StatusCode::FORBIDDEN,
+        )
+        .await;
+        assert_declared(
+            AiProvidersWriteResponse::Validation(err()),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        )
+        .await;
+
+        assert_declared(
+            LogoutResponse::Ok(LogoutBody {
+                authenticated: false,
+            }),
+            StatusCode::OK,
+        )
+        .await;
+        assert_declared(
+            AuthUnavailableResponse::Forbidden(err()),
+            StatusCode::FORBIDDEN,
+        )
+        .await;
+        assert_declared(
+            AuthUnavailableResponse::Conflict(err()),
+            StatusCode::CONFLICT,
+        )
+        .await;
+        assert_declared(
+            OAuthRedirectResponse::Redirect,
+            StatusCode::TEMPORARY_REDIRECT,
+        )
+        .await;
+        assert_declared(
+            OAuthLocationResponse::Redirect,
+            StatusCode::TEMPORARY_REDIRECT,
+        )
+        .await;
+        assert_declared(
+            GoogleStartResponse::Redirect,
+            StatusCode::TEMPORARY_REDIRECT,
+        )
+        .await;
+        assert_declared(GoogleStartResponse::Conflict(err()), StatusCode::CONFLICT).await;
+    }
+
+    #[tokio::test]
+    async fn representative_registry_is_explicit_and_does_not_serialize_boundary_labels() {
+        let boundary = "POST /api/auth/signup 200 application/json public";
+        let response = contract_representative_response(boundary).expect("known boundary");
+        assert_eq!(response.status(), StatusCode::OK);
+        let cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .expect("signup representative sets cookie");
+        assert!(cookie.contains("Secure"));
+        assert!(cookie.contains("HttpOnly"));
+        assert!(cookie.contains("SameSite=Lax"));
+        let body = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+        assert!(!String::from_utf8_lossy(&body).contains(boundary));
+
+        let redirect =
+            contract_representative_response("GET /api/auth/google/start 307 no-body oauth-state")
+                .expect("known redirect boundary");
+        assert_eq!(
+            redirect.headers().get(header::LOCATION).unwrap(),
+            "/auth/callback-complete"
+        );
+        assert!(
+            redirect.headers().get(header::SET_COOKIE).is_none(),
+            "Google start keeps OAuth state in server memory, not a cookie"
+        );
+        let callback = contract_representative_response(
+            "GET /api/auth/google/callback 307 no-body oauth-state",
+        )
+        .expect("known callback boundary");
+        assert!(callback
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.contains("gf_session=representative")));
+        let logout = contract_representative_response(
+            "POST /api/auth/logout 200 application/json optional-session",
+        )
+        .expect("known logout boundary");
+        assert!(logout
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.contains("Max-Age=0")));
+        assert!(
+            contract_representative_response("GET /api/auth/missing 200 no-body public").is_none()
+        );
+    }
 }
 
 fn closed_byo_provider(raw: Option<&str>) -> Result<&'static str, AuthErr> {
@@ -129,9 +1109,30 @@ mod production_cookie_tests {
         assert!(value.contains("; Max-Age=0"));
         assert!(!value.to_ascii_lowercase().contains("domain="));
     }
+
+    #[test]
+    fn auth_success_schema_is_closed() {
+        let schema =
+            serde_json::to_value(<AuthResponseBody as utoipa::PartialSchema>::schema()).unwrap();
+        assert!(schema.as_object().is_some_and(|o| !o.is_empty()));
+    }
+
+    #[test]
+    fn settings_patch_keeps_omitted_and_explicit_null_distinct() {
+        let omitted: SettingsPatchBody = serde_json::from_str("{}").unwrap();
+        let cleared: SettingsPatchBody = serde_json::from_str("{\"account_size\":null}").unwrap();
+        assert_eq!(omitted.account_size, None);
+        assert_eq!(cleared.account_size, Some(None));
+    }
 }
 
 /// GET /api/auth/session — always 200 identity shape.
+#[utoipa::path(
+    get,
+    path = "/api/auth/session",
+    operation_id = "auth_session",
+    responses(SessionStatusResponse)
+)]
 pub async fn session_status(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -141,7 +1142,15 @@ pub async fn session_status(
 }
 
 /// POST /api/auth/signup
-pub async fn signup(State(state): State<AppState>, Json(body): Json<SignupBody>) -> Response {
+#[utoipa::path(post, path = "/api/auth/signup", operation_id = "auth_signup", request_body = SignupBody, responses(SignupResponse))]
+pub async fn signup(
+    State(state): State<AppState>,
+    Json(body): Json<SignupBody>,
+) -> RouteResponse<SignupResponse> {
+    signup_http(State(state), Json(body)).await.into()
+}
+
+async fn signup_http(State(state): State<AppState>, Json(body): Json<SignupBody>) -> Response {
     match auth(&state).signup(&body.email, &body.password, body.display_name.as_deref()) {
         Ok((identity, sid)) => {
             let signed = auth(&state).signed_cookie_value(&sid);
@@ -155,7 +1164,15 @@ pub async fn signup(State(state): State<AppState>, Json(body): Json<SignupBody>)
 }
 
 /// POST /api/auth/login
-pub async fn login(State(state): State<AppState>, Json(body): Json<LoginBody>) -> Response {
+#[utoipa::path(post, path = "/api/auth/login", operation_id = "auth_login", request_body = LoginBody, responses(LoginResponse))]
+pub async fn login(
+    State(state): State<AppState>,
+    Json(body): Json<LoginBody>,
+) -> RouteResponse<LoginResponse> {
+    login_http(State(state), Json(body)).await.into()
+}
+
+async fn login_http(State(state): State<AppState>, Json(body): Json<LoginBody>) -> Response {
     match auth(&state).login(&body.email, &body.password) {
         Ok((identity, sid)) => {
             let signed = auth(&state).signed_cookie_value(&sid);
@@ -169,7 +1186,20 @@ pub async fn login(State(state): State<AppState>, Json(body): Json<LoginBody>) -
 }
 
 /// POST /api/auth/logout — idempotent 200.
-pub async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Response {
+#[utoipa::path(
+    post,
+    path = "/api/auth/logout",
+    operation_id = "auth_logout",
+    responses(LogoutResponse)
+)]
+pub async fn logout(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<LogoutResponse> {
+    logout_http(State(state), headers).await.into()
+}
+
+async fn logout_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let cookie = cookie_from_headers(&headers);
     auth(&state).logout(cookie.as_deref());
     let mut res = (
@@ -185,7 +1215,20 @@ pub async fn logout(State(state): State<AppState>, headers: HeaderMap) -> Respon
 }
 
 /// GET /api/auth/settings
-pub async fn get_settings(State(state): State<AppState>, headers: HeaderMap) -> Response {
+#[utoipa::path(
+    get,
+    path = "/api/auth/settings",
+    operation_id = "auth_get_settings",
+    responses(SettingsReadResponse)
+)]
+pub async fn get_settings(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<SettingsReadResponse> {
+    get_settings_http(State(state), headers).await.into()
+}
+
+async fn get_settings_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
@@ -199,17 +1242,28 @@ pub async fn get_settings(State(state): State<AppState>, headers: HeaderMap) -> 
 
 /// PUT /api/auth/settings — accepts raw JSON so `account_size`/`per_trade_cap` can distinguish
 /// "absent" (no change) from "present as null" (clear) — a shape a typed `Option<T>` cannot carry.
+#[utoipa::path(put, path = "/api/auth/settings", operation_id = "auth_put_settings", request_body = SettingsPatchBody, responses(SettingsWriteResponse))]
 pub async fn put_settings(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Json(body): Json<Value>,
+    Json(body): Json<SettingsPatchBody>,
+) -> RouteResponse<SettingsWriteResponse> {
+    put_settings_http(State(state), headers, Json(body))
+        .await
+        .into()
+}
+
+async fn put_settings_http(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<SettingsPatchBody>,
 ) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
         return auth_err(settings_auth_required());
     };
-    if body.get("ai_model").is_some_and(|v| v.is_null()) {
+    if body.ai_model == Some(None) {
         return auth_err(AuthErr {
             status: 422,
             code: "validation",
@@ -217,25 +1271,15 @@ pub async fn put_settings(
         });
     }
     let patch = SettingsPatch {
-        active_persona_id: body
-            .get("active_persona_id")
-            .and_then(|v| v.as_str())
-            .map(String::from),
-        default_ticker: body
-            .get("default_ticker")
-            .and_then(|v| v.as_str())
-            .map(String::from),
-        theme: body.get("theme").and_then(|v| v.as_str()).map(String::from),
+        active_persona_id: body.active_persona_id,
+        default_ticker: body.default_ticker,
+        theme: body.theme,
         scan_view: None,
-        risk_account_size: double_optional_f64(&body, "account_size"),
-        per_trade_cap: double_optional_cap(&body),
-        ai_power_path: body
-            .get("ai_power_path")
-            .map(|v| v.as_str().map(String::from)),
-        ai_provider: body
-            .get("ai_provider")
-            .map(|v| v.as_str().map(String::from)),
-        ai_model: body.get("ai_model").map(|v| v.as_str().map(String::from)),
+        risk_account_size: body.account_size,
+        per_trade_cap: body.per_trade_cap.map(|cap| cap.map(|v| (v.value, v.unit))),
+        ai_power_path: body.ai_power_path,
+        ai_provider: body.ai_provider,
+        ai_model: body.ai_model,
     };
     match auth(&state).write_settings(&user, patch) {
         Ok(s) => (StatusCode::OK, Json(s)).into_response(),
@@ -263,7 +1307,20 @@ pub fn cookie_opt(headers: &HeaderMap) -> Option<String> {
 // ---------------------------------------------------------------------------
 
 /// GET /api/auth/ai-key — full bootstrap (matrix + grok + preference + catalog).
-pub async fn get_ai_key(State(state): State<AppState>, headers: HeaderMap) -> Response {
+#[utoipa::path(
+    get,
+    path = "/api/auth/ai-key",
+    operation_id = "auth_get_ai_key",
+    responses(AiProvidersReadResponse)
+)]
+pub async fn get_ai_key(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<AiProvidersReadResponse> {
+    get_ai_key_http(State(state), headers).await.into()
+}
+
+async fn get_ai_key_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
@@ -277,7 +1334,18 @@ pub async fn get_ai_key(State(state): State<AppState>, headers: HeaderMap) -> Re
 }
 
 /// PUT /api/auth/ai-key — encrypt+store one provider slot; returns full bootstrap.
+#[utoipa::path(put, path = "/api/auth/ai-key", operation_id = "auth_put_ai_key", request_body = AiKeyBody, responses(AiProvidersWriteResponse))]
 pub async fn put_ai_key(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<AiKeyBody>,
+) -> RouteResponse<AiProvidersWriteResponse> {
+    put_ai_key_http(State(state), headers, Json(body))
+        .await
+        .into()
+}
+
+async fn put_ai_key_http(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(body): Json<AiKeyBody>,
@@ -304,7 +1372,24 @@ pub async fn put_ai_key(
 }
 
 /// DELETE /api/auth/ai-key?provider= — scoped, idempotent.
+#[utoipa::path(
+    delete,
+    path = "/api/auth/ai-key",
+    operation_id = "auth_delete_ai_key",
+    params(AiKeyQuery),
+    responses(AiProvidersWriteResponse)
+)]
 pub async fn delete_ai_key(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(q): Query<AiKeyQuery>,
+) -> RouteResponse<AiProvidersWriteResponse> {
+    delete_ai_key_http(State(state), headers, Query(q))
+        .await
+        .into()
+}
+
+async fn delete_ai_key_http(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(q): Query<AiKeyQuery>,
@@ -323,25 +1408,42 @@ pub async fn delete_ai_key(
 }
 
 /// GET /api/auth/grok/start — 409 until xAI user-OAuth is verified (never 302 to a fabricated URL).
-pub async fn grok_start(State(state): State<AppState>, headers: HeaderMap) -> Response {
+#[utoipa::path(
+    get,
+    path = "/api/auth/grok/start",
+    operation_id = "auth_grok_start",
+    responses(AuthUnavailableResponse)
+)]
+pub async fn grok_start(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<AuthUnavailableResponse> {
+    grok_start_http(State(state), headers).await.into()
+}
+
+async fn grok_start_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
     if let Err(r) = require_user(&state, &headers) {
         return r;
     }
     auth_err(auth(&state).grok_start_blocked())
 }
 
-#[derive(Debug, Deserialize)]
-pub struct GrokCallbackQuery {
-    #[allow(dead_code)]
-    pub code: Option<String>,
-    #[allow(dead_code)]
-    pub state: Option<String>,
-    #[allow(dead_code)]
-    pub error: Option<String>,
+/// GET /api/auth/grok/callback — arm unavailable: redirect home with error, no token persist.
+#[utoipa::path(
+    get,
+    path = "/api/auth/grok/callback",
+    operation_id = "auth_grok_callback",
+    params(GrokCallbackQuery),
+    responses(OAuthLocationResponse)
+)]
+pub async fn grok_callback(
+    State(state): State<AppState>,
+    Query(_q): Query<GrokCallbackQuery>,
+) -> RouteResponse<OAuthLocationResponse> {
+    grok_callback_http(State(state), Query(_q)).await.into()
 }
 
-/// GET /api/auth/grok/callback — arm unavailable: redirect home with error, no token persist.
-pub async fn grok_callback(
+async fn grok_callback_http(
     State(state): State<AppState>,
     Query(_q): Query<GrokCallbackQuery>,
 ) -> Response {
@@ -351,7 +1453,20 @@ pub async fn grok_callback(
 }
 
 /// DELETE /api/auth/grok — unlink; clear path if it was grok_subscription.
-pub async fn grok_delete(State(state): State<AppState>, headers: HeaderMap) -> Response {
+#[utoipa::path(
+    delete,
+    path = "/api/auth/grok",
+    operation_id = "auth_grok_delete",
+    responses(AiProvidersReadResponse)
+)]
+pub async fn grok_delete(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> RouteResponse<AiProvidersReadResponse> {
+    grok_delete_http(State(state), headers).await.into()
+}
+
+async fn grok_delete_http(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let cookie = cookie_from_headers(&headers);
     let resolved = auth(&state).resolve_session(cookie.as_deref());
     let Some(user) = resolved.user else {
@@ -365,21 +1480,39 @@ pub async fn grok_delete(State(state): State<AppState>, headers: HeaderMap) -> R
 // ---------------------------------------------------------------------------
 
 /// GET /api/auth/google/start — 302 to Google, or 409 google_unavailable.
-pub async fn google_start(State(state): State<AppState>) -> Response {
+#[utoipa::path(
+    get,
+    path = "/api/auth/google/start",
+    operation_id = "auth_google_start",
+    responses(GoogleStartResponse)
+)]
+pub async fn google_start(State(state): State<AppState>) -> RouteResponse<GoogleStartResponse> {
+    google_start_http(State(state)).await.into()
+}
+
+async fn google_start_http(State(state): State<AppState>) -> Response {
     match auth(&state).google_start_url() {
         Ok(url) => Redirect::temporary(&url).into_response(),
         Err(e) => auth_err(e),
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct GoogleCallbackQuery {
-    pub code: Option<String>,
-    pub state: Option<String>,
+/// GET /api/auth/google/callback — exchange code, set cookie, redirect to app.
+#[utoipa::path(
+    get,
+    path = "/api/auth/google/callback",
+    operation_id = "auth_google_callback",
+    params(GoogleCallbackQuery),
+    responses(OAuthRedirectResponse)
+)]
+pub async fn google_callback(
+    State(state): State<AppState>,
+    Query(q): Query<GoogleCallbackQuery>,
+) -> RouteResponse<OAuthRedirectResponse> {
+    google_callback_http(State(state), Query(q)).await.into()
 }
 
-/// GET /api/auth/google/callback — exchange code, set cookie, redirect to app.
-pub async fn google_callback(
+async fn google_callback_http(
     State(state): State<AppState>,
     Query(q): Query<GoogleCallbackQuery>,
 ) -> Response {

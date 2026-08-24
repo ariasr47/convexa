@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "tool_id": "candidate-bootstrap",
+      "version": "1.0.0",
+      "source_kind": "repository",
+      "source_locator": "tools/supply-chain/bootstrap-candidate.mjs",
+      "sha256": "7d446f44173a8ce374430b0b98f93918bc4b4d0517e3b7d08bcc0401449800e5",
+      "platform": "linux-x64",
+      "capabilities": ["normalizer.strict-aggregate"]
+    },
+    {
+      "tool_id": "npm",
+      "version": "11.17.0",
+      "source_kind": "bundled_with_node",
+      "source_locator": "https://nodejs.org/dist/v24.19.0/node-v24.19.0-linux-x64.tar.xz",
+      "sha256": "14b342e71204f811bde6153be8e04b62aef63c236fef92b55f9c83154b409647",
+      "platform": "linux-x64",
+      "capabilities": ["npm-audit.full-lock-json"]
+    },
+    {
+      "tool_id": "npm-license-inventory",
+      "version": "1.0.0",
+      "source_kind": "repository",
+      "source_locator": "tools/supply-chain/policy/npm-license.mjs",
+      "sha256": "65a85d5caa28446344cc207f7a2864a0a72cd8f78db88a912e1be7ba29fc2c7b",
+      "platform": "linux-x64",
+      "capabilities": ["npm-license.spdx-inventory"]
+    },
+    {
+      "tool_id": "npm-lock-guard",
+      "version": "1.0.0",
+      "source_kind": "repository",
+      "source_locator": "tools/supply-chain/policy/npm-lock.mjs",
+      "sha256": "c21a543e9b86d22795b1e1f16e072720bac80d78fae77cd29e02e1704f1bf4e0",
+      "platform": "linux-x64",
+      "capabilities": ["npm-lock.source-integrity"]
+    },
+    {
+      "tool_id": "cargo-deny",
+      "version": "0.20.2",
+      "source_kind": "external_download",
+      "source_locator": "https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz",
+      "sha256": "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f",
+      "platform": "linux-x64",
+      "capabilities": ["cargo-deny.advisories-licenses-sources-bans"]
+    },
+    {
+      "tool_id": "gitleaks",
+      "version": "8.30.1",
+      "source_kind": "external_download",
+      "source_locator": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+      "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+      "platform": "linux-x64",
+      "capabilities": ["gitleaks.history-range-json"]
+    },
+    {
+      "tool_id": "trivy",
+      "version": "0.74.0",
+      "source_kind": "external_download",
+      "source_locator": "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.tar.gz",
+      "sha256": "2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a",
+      "platform": "linux-x64",
+      "capabilities": ["trivy.config-json", "trivy.api-image-digest-json"]
+    },
+    {
+      "tool_id": "syft",
+      "version": "1.51.0",
+      "source_kind": "external_download",
+      "source_locator": "https://github.com/anchore/syft/releases/download/v1.51.0/syft_1.51.0_linux_amd64.tar.gz",
+      "sha256": "2a2e837a2c8d59ec9af5472ee22d3b04ee463c4e44476ecf993fd1e5ab6ebc7f",
+      "platform": "linux-x64",
+      "capabilities": [
+        "syft.api-lock-inventory-cyclonedx",
+        "syft.dashboard-lock-inventory-cyclonedx"
+      ]
+    },
+    {
+      "tool_id": "normalizer",
+      "version": "1.0.0",
+      "source_kind": "repository",
+      "source_locator": "tools/supply-chain/normalize.mjs",
+      "sha256": "5e7c8b4284836043396700a4efa0ee323be571bbf475c19c716ee3c0fe89e078",
+      "platform": "linux-x64",
+      "capabilities": ["normalizer.strict-aggregate"]
+    },
+    {
+      "tool_id": "sanitizer",
+      "version": "1.0.0",
+      "source_kind": "repository",
+      "source_locator": "tools/supply-chain/sanitize.mjs",
+      "sha256": "8f511d0bcea15189f0cd713c175b6b2eb54854b054ca60756935d3f35950764e",
+      "platform": "linux-x64",
+      "capabilities": ["sanitizer.all-publication-channels"]
+    }
+  ]
+}

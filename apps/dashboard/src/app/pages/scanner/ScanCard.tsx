@@ -9,8 +9,10 @@
  */
 import type { ScanRow } from '@convexa/api';
 import Box from '@mui/material/Box';
+import { useId } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import type { PollDelta } from './format';
+import { whyThisRow } from './labels';
 import {
   ChgCell,
   LabelCell,
@@ -36,10 +38,24 @@ const factSx = { display: 'flex', flexDirection: 'column' as const, gap: '2px', 
 const factLabelSx = { fontSize: '0.6875rem', color: 'text.secondary' };
 
 export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
+  const scoreDescriptionId = useId();
+  const visuallyHidden = {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    p: 0,
+    m: -1,
+    overflow: 'hidden',
+    clip: 'rect(0 0 0 0)',
+    whiteSpace: 'nowrap',
+    border: 0,
+  } as const;
   return (
     <Box
       component={RouterLink}
       to={`/ticker/${row.symbol}`}
+      aria-describedby={scoreDescriptionId}
+      tabIndex={0}
       data-testid="scan-card"
       data-symbol={row.symbol}
       data-status={row.status}
@@ -88,7 +104,10 @@ export function ScanCard({ row, nowS, flashActive, delta }: ScanCardProps) {
           Score
         </Box>
         <Box component="span" sx={{ fontSize: '1.05rem' }}>
-          <ScoreCell row={row} delta={delta} />
+          <ScoreCell row={row} delta={delta} focusableHelp={false} />
+          <Box component="span" id={scoreDescriptionId} sx={visuallyHidden}>
+            {whyThisRow(row)}
+          </Box>
         </Box>
       </Box>
 
