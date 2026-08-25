@@ -277,7 +277,7 @@ fn capacity_unavailable() -> Response {
 async fn admit_sse(state: &AppState, symbols: &[String]) -> Result<SubscriberGuard, Response> {
     match state
         .live_capacity
-        .admit_and_subscribe(&state.stock_hub, symbols)
+        .admit_and_subscribe_with_probe(&state.stock_hub, symbols, &state.lifecycle_probe)
         .await
     {
         Ok(g) => Ok(g),
@@ -354,8 +354,15 @@ async fn stream_prices_http(
     let prices_cache = state.prices.clone();
 
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(32);
+    let lifecycle = state.lifecycle_probe.clone();
     tokio::spawn(async move {
         let _guard = guard;
+        // The response body is the still-open request for an SSE stream. The
+        // middleware guard covers admission/headers; this continuation keeps
+        // the request lifecycle observed until the client disconnects.
+        let _request_guard = lifecycle.request();
+        let _task_guard = lifecycle.tokio_task();
+        let _sse_guard = lifecycle.sse_task();
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 
         let mut latest: HashMap<String, (f64, i64)> = HashMap::new();
@@ -471,6 +478,8 @@ async fn stream_ticker_http(
     let (tx, rx_out) = mpsc::channel::<Result<Event, Infallible>>(16);
     tokio::spawn(async move {
         let _guard = guard;
+        let _request_guard = lifecycle.request();
+        let _tokio_task_guard = lifecycle.tokio_task();
         let _task_guard = lifecycle.sse_task();
         let _ = tx.send(Ok(Event::default().comment("connected"))).await;
 

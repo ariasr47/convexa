@@ -46,6 +46,7 @@ pub async fn cli(
         Some(CapacityAction::Failure { stage }) => {
             runner::run_setup_failure(Profile::Normal, &stage).await
         }
+        Some(CapacityAction::Malformed { field }) => runner::run_malformed_report(&field),
         None => {
             runner::run(match profile {
                 CapacityProfileArg::Normal => Profile::Normal,
@@ -75,6 +76,11 @@ pub enum CapacityAction {
     Failure {
         #[arg(long)]
         stage: String,
+    },
+    #[command(hide = true)]
+    Malformed {
+        #[arg(long)]
+        field: String,
     },
 }
 

@@ -38,7 +38,7 @@ redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
 regex = "1.13.1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { workspace = true }
-serde_json = { workspace = true }
+serde_json = { workspace = true, features = ["preserve_order"] }
 sha2 = "0.11.0"
 subtle = "2"
 # Optional: enable with `--features postgres` (Docker/Railway). Pure Rust via rustls —

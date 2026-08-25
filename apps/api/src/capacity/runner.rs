@@ -249,7 +249,10 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                                 handles_or_fds: resource
                                     .handles_or_fds
                                     .saturating_sub(life.active_sse_tasks),
-                                tokio_tasks: life.tokio_tasks,
+                                // SSE workers are reported separately; exclude those transport tasks from
+                                // the general Tokio-task ceiling so the 32-client stream hold does not look
+                                // like a scheduler leak. Any other spawned task remains visible here.
+                                tokio_tasks: life.tokio_tasks.saturating_sub(life.active_sse_tasks),
                                 active_requests: life.active_requests,
                                 active_subscribers: life.active_subscribers,
                                 active_sse_tasks: life.active_sse_tasks,
@@ -548,8 +551,98 @@ fn target_revision() -> String {
         .unwrap_or_default()
 }
 
+const TOP_LEVEL_ORDER: &[&str] = &[
+    "schema_version",
+    "feature",
+    "profile",
+    "profile_version",
+    "seed",
+    "revision",
+    "environment",
+    "claim",
+    "manifest",
+    "scenarios",
+    "summary",
+];
+const ENVIRONMENT_ORDER: &[&str] = &[
+    "os",
+    "arch",
+    "logical_cpus",
+    "rustc",
+    "sampler",
+    "sampler_semantic",
+];
+const SCENARIO_ORDER: &[&str] = &[
+    "id",
+    "status",
+    "expected_outcome",
+    "observations",
+    "thresholds",
+    "failures",
+    "diagnostics",
+];
+const SUMMARY_ORDER: &[&str] = &[
+    "verdict",
+    "elapsed_ms",
+    "failed_scenarios",
+    "missing_required_observations",
+    "forbidden_connector_attempts",
+    "cleanup",
+    "launch_error",
+    "failure_stage",
+];
+const CLEANUP_ORDER: &[&str] = &["children", "acknowledged", "forced"];
+const THRESHOLDS_ORDER: &[&str] = &["required_observations", "status"];
+const STATUS_ORDER: &[&str] = &["observed", "unit", "direction", "threshold"];
+
+fn canonicalize_value(value: &Value, key: Option<&str>) -> Value {
+    match value {
+        Value::Number(number)
+            if key.is_some_and(|name| name.to_ascii_lowercase().contains("latenc")) =>
+        {
+            let rounded = number
+                .as_f64()
+                .map(|n| (n * 1_000.0).round() / 1_000.0)
+                .unwrap_or(0.0);
+            json!(rounded)
+        }
+        Value::Array(values) => Value::Array(
+            values
+                .iter()
+                .map(|child| canonicalize_value(child, key))
+                .collect(),
+        ),
+        Value::Object(object) => {
+            let order = match key {
+                None => TOP_LEVEL_ORDER,
+                Some("environment") => ENVIRONMENT_ORDER,
+                Some("summary") => SUMMARY_ORDER,
+                Some("cleanup") => CLEANUP_ORDER,
+                Some("thresholds") => THRESHOLDS_ORDER,
+                Some("status") if object.contains_key("observed") => STATUS_ORDER,
+                _ if object.contains_key("expected_outcome") => SCENARIO_ORDER,
+                _ => &[],
+            };
+            let mut output = serde_json::Map::new();
+            for name in order {
+                if let Some(child) = object.get(*name) {
+                    output.insert((*name).to_owned(), canonicalize_value(child, Some(name)));
+                }
+            }
+            for (name, child) in object {
+                if !output.contains_key(name) {
+                    output.insert(name.clone(), canonicalize_value(child, Some(name)));
+                }
+            }
+            Value::Object(output)
+        }
+        _ => value.clone(),
+    }
+}
+
 pub fn canonical_report_bytes(value: &Value) -> anyhow::Result<Vec<u8>> {
-    let mut bytes = serde_json::to_vec(value)?;
+    let canonical = canonicalize_value(value, None);
+    let mut bytes = serde_json::to_vec(&canonical)?;
     while bytes.last() == Some(&b'\n') {
         bytes.pop();
     }
@@ -872,6 +965,50 @@ pub async fn run_setup_failure(profile: Profile, stage: &str) -> anyhow::Result<
     report["summary"]["verdict"] = json!("did_not_pass");
     atomic_replace_value(&report_path(profile), &serde_json::to_vec(&report)?)?;
     anyhow::bail!("capacity setup failure: {stage}")
+}
+
+/// Process-level atomicity control used by the completeness matrix. It attempts
+/// to promote one malformed copy of the retained final report; validation must
+/// reject it before the sibling temp file can be renamed over the final bytes.
+pub fn run_malformed_report(field: &str) -> anyhow::Result<()> {
+    let path = report_path(Profile::Normal);
+    let original = std::fs::read(&path)?;
+    let mut malformed: Value = serde_json::from_slice(&original)?;
+    match field {
+        "scenario" => {
+            malformed["scenarios"]
+                .as_array_mut()
+                .ok_or_else(|| anyhow::anyhow!("scenarios is not an array"))?
+                .pop();
+        }
+        "observation" => {
+            malformed["scenarios"][0]
+                .as_object_mut()
+                .ok_or_else(|| anyhow::anyhow!("scenario is not an object"))?
+                .remove("observations");
+        }
+        "threshold" => {
+            malformed["scenarios"][0]
+                .as_object_mut()
+                .ok_or_else(|| anyhow::anyhow!("scenario is not an object"))?
+                .remove("thresholds");
+        }
+        "verdict" => {
+            malformed["summary"]
+                .as_object_mut()
+                .ok_or_else(|| anyhow::anyhow!("summary is not an object"))?
+                .remove("verdict");
+        }
+        other => anyhow::bail!("unknown malformed field: {other}"),
+    }
+    let bytes = serde_json::to_vec(&malformed)?;
+    if atomic_replace_value(&path, &bytes).is_ok() {
+        anyhow::bail!("malformed {field} report was unexpectedly promoted")
+    }
+    if std::fs::read(&path)? != original {
+        anyhow::bail!("malformed {field} report replaced the final bytes")
+    }
+    anyhow::bail!("malformed {field} report rejected; final bytes retained")
 }
 
 /// Build the same complete report envelope used by the live runner around one
@@ -1474,7 +1611,7 @@ pub fn build_report(profile: Profile, elapsed_ms: u64) -> Value {
     })
 }
 
-fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
+pub fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
     // The report module validates the legacy shape; this runner's closed shape is
     // validated here before using the same sibling-temp/rename discipline.
     let value: Value = serde_json::from_slice(bytes)?;

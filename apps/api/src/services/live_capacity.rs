@@ -191,10 +191,25 @@ impl LiveCapacity {
         hub: &StockStreamHub,
         wanted: &[String],
     ) -> Result<SubscriberGuard, LiveCapacityKind> {
+        self.admit_and_subscribe_with_probe(hub, wanted, &LifecycleProbe::disabled())
+            .await
+    }
+
+    /// Admit a subscriber while recording it in the harness lifecycle counters.
+    ///
+    /// The disabled probe used by the production path keeps this equivalent to
+    /// [`Self::admit_and_subscribe`]; the fixture harness passes its enabled probe
+    /// so subscriber recovery is observed at the real admission boundary.
+    pub async fn admit_and_subscribe_with_probe(
+        &self,
+        hub: &StockStreamHub,
+        wanted: &[String],
+        probe: &LifecycleProbe,
+    ) -> Result<SubscriberGuard, LiveCapacityKind> {
         let _serial = self.serial.lock().await;
         let missing = hub.missing_count(wanted).await;
         let hub_n = hub.symbol_count().await;
-        let guard = self.try_admit(hub_n, missing)?;
+        let guard = self.try_admit_with_probe(hub_n, missing, probe)?;
         if let Err(e) = hub.subscribe(wanted).await {
             warn!(error = %e, "hub subscribe after capacity admit");
         }

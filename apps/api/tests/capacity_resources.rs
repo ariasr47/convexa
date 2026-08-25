@@ -3,6 +3,12 @@ use api_rust::capacity::{
 };
 use serde_json::{json, Value};
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
+
+fn report_test_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
 
 #[test]
 fn canonical_report_serialization_is_byte_identical() {
@@ -24,6 +30,37 @@ fn canonical_report_has_closed_scenario_order() {
         assert!(row["thresholds"].is_object());
         assert!(row["status"].is_string());
     }
+}
+
+#[test]
+fn canonical_report_has_contract_order_and_latency_rounding() {
+    let mut report = runner::build_report(Profile::Normal, 1);
+    report["scenarios"][0]["observations"] = json!({"latencies_ms": [1.23456, 9.87654]});
+    let bytes = runner::canonical_report_bytes(&report).unwrap();
+    let text = String::from_utf8(bytes.clone()).unwrap();
+    let keys = [
+        "schema_version",
+        "feature",
+        "profile",
+        "profile_version",
+        "seed",
+        "revision",
+        "environment",
+        "claim",
+        "manifest",
+        "scenarios",
+        "summary",
+    ];
+    let mut prior = 0;
+    for key in keys {
+        let at = text.find(&format!("\"{key}\"")).unwrap();
+        assert!(at >= prior, "top-level key {key} out of order");
+        prior = at;
+    }
+    assert!(text.contains("1.235"));
+    assert!(text.contains("9.877"));
+    assert!(!text.contains("1.23456"));
+    assert_eq!(bytes, runner::canonical_report_bytes(&report).unwrap());
 }
 
 #[test]
@@ -104,6 +141,7 @@ fn evaluator_fails_missing_threshold_input() {
 
 #[test]
 fn setup_failure_matrix_retains_complete_reports_and_nonzero_processes() {
+    let _lock = report_test_lock().lock().unwrap();
     for stage in [
         "missing_fixture",
         "unsupported_sampling",
@@ -130,6 +168,29 @@ fn setup_failure_matrix_retains_complete_reports_and_nonzero_processes() {
             .all(|row| { row["status"] == "did_not_pass" && row["observations"].is_object() }));
         assert!(runner::validate_report_value(&retained).is_ok());
         assert!(runner::validate_report_value(&report).is_ok());
+    }
+}
+
+#[test]
+fn malformed_report_process_cannot_replace_prior_final_bytes() {
+    let _lock = report_test_lock().lock().unwrap();
+    let path = runner::report_path(Profile::Normal);
+    let prior = runner::canonical_report_bytes(&runner::build_report(Profile::Normal, 1)).unwrap();
+    runner::atomic_replace_value(&path, &prior).unwrap();
+    let retained = std::fs::read(&path).unwrap();
+    for field in ["scenario", "observation", "threshold", "verdict"] {
+        let result = Command::new(env!("CARGO_BIN_EXE_api-rust"))
+            .args(["capacity-baseline", "malformed", "--field", field])
+            .output()
+            .expect("malformed control process starts");
+        assert!(!result.status.success(), "{field} unexpectedly passed");
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            retained,
+            "{field} replaced report"
+        );
+        let value: Value = serde_json::from_slice(&retained).unwrap();
+        assert!(runner::validate_report_value(&value).is_ok());
     }
 }
 

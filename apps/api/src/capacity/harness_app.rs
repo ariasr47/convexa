@@ -7,6 +7,9 @@ use crate::services::market_data::{
     load_fixture_dir, load_fixture_file, FixtureCatalog, MarketDataPort,
 };
 use crate::state::AppState;
+use axum::extract::Request;
+use axum::middleware::{self, Next};
+use axum::response::Response;
 use axum::Router;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -94,13 +97,24 @@ pub async fn build(input: CapacityAppInput) -> AppResult<FixtureApp> {
     };
     state.live_capacity = crate::services::live_capacity::LiveCapacity::new(0, 32);
     state.lifecycle_probe = LifecycleProbe::enabled();
-    let router =
-        routes::router(state.clone()).map_err(|e| crate::error::AppError::Config(e.to_string()))?;
+    let probe = state.lifecycle_probe.clone();
+    let router = routes::router(state.clone())
+        .map_err(|e| crate::error::AppError::Config(e.to_string()))?
+        .layer(middleware::from_fn_with_state(probe, lifecycle_middleware));
     Ok(FixtureApp {
         state,
         producer,
         router,
     })
+}
+
+async fn lifecycle_middleware(
+    axum::extract::State(probe): axum::extract::State<LifecycleProbe>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let _request_guard = probe.request();
+    next.run(request).await
 }
 
 pub async fn serve(input: CapacityAppInput) -> AppResult<(SocketAddr, oneshot::Sender<()>)> {
