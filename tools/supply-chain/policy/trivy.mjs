@@ -69,7 +69,7 @@ function classify(run, scope, findingFields) {
   }
   if (report?.SchemaVersion !== 2) return blocked('trivy-schema-version', run.raw_output_sha256);
   if (
-    !(report.Results === null || Array.isArray(report.Results)) ||
+    !(report.Results === undefined || report.Results === null || Array.isArray(report.Results)) ||
     (report.Results ?? []).some(
       (result) =>
         !result ||

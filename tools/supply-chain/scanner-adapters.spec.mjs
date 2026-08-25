@@ -132,6 +132,14 @@ test('Trivy image validates clean and finding-bearing JSON reports', async () =>
     runner: async () => run(0, JSON.stringify({ SchemaVersion: 2, Results: null })),
   });
   assert.equal(clean.state, 'pass');
+  const cleanWithOmittedResults = await runTrivyImage({
+    executable: '/tools/trivy',
+    digest: `sha256:${'a'.repeat(64)}`,
+    input: 'image.oci.tar',
+    runner: async () => run(0, JSON.stringify({ SchemaVersion: 2 })),
+  });
+  assert.equal(cleanWithOmittedResults.state, 'pass');
+  assert.equal(cleanWithOmittedResults.count, 0);
   const finding = await runTrivyImage({
     executable: '/tools/trivy',
     digest: `sha256:${'a'.repeat(64)}`,

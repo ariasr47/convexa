@@ -45,6 +45,12 @@ const toolByCapability = Object.freeze({
   'sanitizer.all-publication-channels': 'sanitizer',
 });
 
+export function trivyGithubPatCanary() {
+  // Trivy v0.74's built-in github-pat rule requires a 36-character alphanumeric suffix.
+  // Keep the prefix split in source so this deterministic fake is only assembled in the fixture.
+  return ['gh', 'p_', '0123456789', 'abcdefghijklmnopqrstuvwxyz'].join('');
+}
+
 export async function buildCapabilityReceipts({
   capabilities = CAPABILITY_IDS,
   resolveTool,
@@ -334,9 +340,7 @@ async function productionAdapter(capabilityId, fixture, tool) {
       );
       await fs.writeFile(
         path.join(root, 'probe.txt'),
-        arm === 'pass'
-          ? 'safe\n'
-          : `token=${['ghp_', '0123456789abcdefghijklmnopqrstuvwx'].join('')}\n`,
+        arm === 'pass' ? 'safe\n' : `token=${trivyGithubPatCanary()}\n`,
       );
       const archive = path.join(root, 'probe.oci.tar'),
         build = await spawnCaptured(
