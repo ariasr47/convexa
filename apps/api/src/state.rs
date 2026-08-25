@@ -70,7 +70,11 @@ pub struct AppState {
 
 impl AppState {
     pub fn massive(&self) -> AppResult<&MassiveRestClient> {
-        self.massive.as_ref().ok_or_else(|| crate::error::AppError::Config("live Massive client unavailable in fixture harness".into()))
+        self.massive.as_ref().ok_or_else(|| {
+            crate::error::AppError::Config(
+                "live Massive client unavailable in fixture harness".into(),
+            )
+        })
     }
     pub async fn new(config: Config) -> AppResult<Self> {
         #[cfg(feature = "postgres")]

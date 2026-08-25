@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "connectors": [
+    {"id":"massive_rest","path":"apps/api/src/infrastructure/massive/rest.rs","signature":"MassiveRestClient::new"},
+    {"id":"massive_websocket","path":"apps/api/src/infrastructure/massive/ws.rs","signature":"connect_async"},
+    {"id":"redis","path":"apps/api/src/infrastructure/redis/price_cache.rs","signature":"redis::Client"},
+    {"id":"postgres_pool","path":"apps/api/src/db/postgres.rs","signature":"PgPoolOptions"},
+    {"id":"postgres_migration_connection","path":"apps/api/src/db/migration_runner.rs","signature":"PgPoolOptions"},
+    {"id":"llm_http","path":"apps/api/src/services/llm.rs","signature":"reqwest::Client"},
+    {"id":"google_oauth_http","path":"apps/api/src/services/auth/google_oauth.rs","signature":"reqwest::Client"}
+  ]
+}

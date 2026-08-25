@@ -33,11 +33,25 @@ pub async fn cli(
 ) -> anyhow::Result<()> {
     match action {
         Some(CapacityAction::SelfTest { case }) => self_test::run(case),
-        Some(CapacityAction::Child { .. }) => anyhow::bail!("capacity child mode is private"),
-        None => runner::run(match profile {
-            CapacityProfileArg::Normal => Profile::Normal,
-            CapacityProfileArg::Extended => Profile::Extended,
-        }),
+        Some(CapacityAction::Child {
+            child,
+            fixture_dir,
+            iv_fault,
+        }) => {
+            runner::child(
+                child.ok_or_else(|| anyhow::anyhow!("child id is required"))?,
+                fixture_dir.ok_or_else(|| anyhow::anyhow!("fixture directory is required"))?,
+                iv_fault,
+            )
+            .await
+        }
+        None => {
+            runner::run(match profile {
+                CapacityProfileArg::Normal => Profile::Normal,
+                CapacityProfileArg::Extended => Profile::Extended,
+            })
+            .await
+        }
     }
 }
 
@@ -52,7 +66,9 @@ pub enum CapacityAction {
         #[arg(long)]
         child: Option<String>,
         #[arg(long)]
-        control_fd: Option<u32>,
+        fixture_dir: Option<std::path::PathBuf>,
+        #[arg(long, default_value_t = false)]
+        iv_fault: bool,
     },
 }
 

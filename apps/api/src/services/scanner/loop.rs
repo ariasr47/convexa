@@ -193,13 +193,16 @@ pub fn spawn(state: AppState, universe: UniverseConfig, cfg: LoopConfig) {
                     };
                     let snaps = match state.massive() {
                         Ok(massive) => match massive.fetch_stock_snapshots(&universe).await {
-                        Ok(m) => m,
+                            Ok(m) => m,
+                            Err(e) => {
+                                warn!(error = %e, "scanner fast tick: snapshot poll failed");
+                                Default::default()
+                            }
+                        },
                         Err(e) => {
-                            warn!(error = %e, "scanner fast tick: snapshot poll failed");
+                            warn!(error = %e, "scanner fast tick unavailable");
                             Default::default()
                         }
-                        },
-                        Err(e) => { warn!(error = %e, "scanner fast tick unavailable"); Default::default() }
                     };
                     {
                         let mut guard = st.lock().await;

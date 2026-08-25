@@ -46,7 +46,13 @@ pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
     if status == 404 {
-        return Ok(SseResponse { outcome: SseOutcome::ExpectedFixtureNotFound, status, retry_after, first_data: None, latency: started.elapsed() });
+        return Ok(SseResponse {
+            outcome: SseOutcome::ExpectedFixtureNotFound,
+            status,
+            retry_after,
+            first_data: None,
+            latency: started.elapsed(),
+        });
     }
     if status == 503 && retry_after.as_deref() == Some("30") {
         return Ok(SseResponse {
@@ -71,15 +77,30 @@ pub async fn connect(url: &str, timeout: Duration) -> anyhow::Result<SseResponse
     let deadline = Instant::now() + timeout;
     let first_data = loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() { break None; }
-        let Some(chunk) = tokio::time::timeout(remaining, response.chunk()).await?? else { break None; };
+        if remaining.is_zero() {
+            break None;
+        }
+        let Some(chunk) = tokio::time::timeout(remaining, response.chunk()).await?? else {
+            break None;
+        };
         bytes.extend_from_slice(&chunk);
-        if bytes.len() > 256 * 1024 { break None; }
-        let found = bytes.split(|b| *b == b'\n').filter_map(|line| line.strip_prefix(b"data: ")).find_map(|line| serde_json::from_slice(line).ok());
-        if found.is_some() { break found; }
+        if bytes.len() > 256 * 1024 {
+            break None;
+        }
+        let found = bytes
+            .split(|b| *b == b'\n')
+            .filter_map(|line| line.strip_prefix(b"data: "))
+            .find_map(|line| serde_json::from_slice(line).ok());
+        if found.is_some() {
+            break found;
+        }
     };
     Ok(SseResponse {
-        outcome: if first_data.is_some() { SseOutcome::Accepted } else { SseOutcome::UnexpectedError },
+        outcome: if first_data.is_some() {
+            SseOutcome::Accepted
+        } else {
+            SseOutcome::UnexpectedError
+        },
         status,
         retry_after,
         first_data,

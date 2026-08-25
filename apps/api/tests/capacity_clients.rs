@@ -5,8 +5,7 @@ fn runner_report_has_closed_shape_and_thirteen_rows() {
     let report = runner::build_report(Profile::Normal, 0);
     assert_eq!(report["feature"], "capacity-baseline");
     assert_ne!(
-        report["summary"]["verdict"],
-        "pass",
+        report["summary"]["verdict"], "pass",
         "an unexecuted runner must fail closed"
     );
     assert_eq!(report["scenarios"].as_array().unwrap().len(), 13);
@@ -14,17 +13,10 @@ fn runner_report_has_closed_shape_and_thirteen_rows() {
 }
 
 #[test]
-fn self_test_commands_fail_closed_without_executed_controls() {
-    for case in [
-        CapacitySelfTestCase::ConnectorPoison,
-        CapacitySelfTestCase::OptionalFault,
-        CapacitySelfTestCase::ByteIdentity,
-    ] {
-        assert!(
-            api_rust::capacity::self_test::run(case).is_err(),
-            "self-test {case:?} must not pass without measured controls"
-        );
-    }
+fn executed_isolation_controls_pass_and_unimplemented_identity_fails_closed() {
+    assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::ConnectorPoison).is_ok());
+    assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::OptionalFault).is_ok());
+    assert!(api_rust::capacity::self_test::run(CapacitySelfTestCase::ByteIdentity).is_err());
 }
 
 #[test]

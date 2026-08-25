@@ -88,6 +88,41 @@ pub enum ChildId {
     E,
 }
 
+impl ChildId {
+    pub const ALL: [Self; 7] = [
+        Self::A,
+        Self::B,
+        Self::C,
+        Self::D1,
+        Self::D2,
+        Self::D3,
+        Self::E,
+    ];
+    pub const fn token(self) -> &'static str {
+        match self {
+            Self::A => "A",
+            Self::B => "B",
+            Self::C => "C",
+            Self::D1 => "D1",
+            Self::D2 => "D2",
+            Self::D3 => "D3",
+            Self::E => "E",
+        }
+    }
+    pub fn parse(value: &str) -> Option<Self> {
+        match value {
+            "A" => Some(Self::A),
+            "B" => Some(Self::B),
+            "C" => Some(Self::C),
+            "D1" => Some(Self::D1),
+            "D2" => Some(Self::D2),
+            "D3" => Some(Self::D3),
+            "E" => Some(Self::E),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PhaseBudget {
     pub preflight: Duration,
