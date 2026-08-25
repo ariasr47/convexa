@@ -1,0 +1,355 @@
+{
+  "conflicts": [
+    {
+      "quote": "During the 10-minute combined soak at REST concurrency 16 and 32 held streams, REST p95 stays at or below 1,000 ms, with zero unexpected REST errors and zero unexpected stream disconnects.",
+      "source": "pm",
+      "why": "My R1 makes a 60-second mixed soak mandatory in the normal gate and moves longer execution to an optional 15-minute profile; that cannot satisfy a requirement that the normal verification path itself include this 10-minute scenario.",
+      "proposal": "Have the human choose the gate-cost policy; the closest implementation to PM's position is to make the 10-minute combined soak mandatory, retain any three-minute profile only as a supplementary developer check, and keep both on one manifest/evaluator/report implementation.",
+      "kind": "product",
+      "conflict_id": "4b8471a54b8feb68bc3cce1d4ae781827ed7c9e100966ea8114417170ee88ea7",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "After warm-up, 200 fixture-backed REST requests at concurrency 16 produce p95 latency at or below 250 ms, no observation above 1,000 ms, and zero unexpected errors.",
+      "source": "pm",
+      "why": "My R1 specifies 100 serial measured cache hits, so it exercises neither PM's request count nor its concurrency and cannot be treated as evidence for this acceptance criterion.",
+      "proposal": "Use the PM workload as the closed warm scenario\u2014200 measured requests at concurrency 16 after discarded warm-ups\u2014and preserve the architect's cache-state precondition and immutable observation/evaluator split.",
+      "kind": "product",
+      "conflict_id": "5bccaee120695a570e862e2c9ce18722f413f8c87d114e5b8f9be8c7a7a1bc7c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Under 320 fixture-backed REST requests at concurrency 32, p95 latency is at or below 1,500 ms, no observation exceeds 5,000 ms, and no unexpected error occurs.",
+      "source": "pm",
+      "why": "My R1 proposes two 32-request parallel phases and a 3,000 ms p95 ceiling; the count and threshold define a materially different workload and verdict.",
+      "proposal": "Make PM's 320-request/concurrency-32 workload and thresholds the required parallel scenario; retain the single-cold-identity coalescing burst only as a separately named additional scenario if its gate cost is accepted.",
+      "kind": "product",
+      "conflict_id": "51c1446cd5244eec63428cb1357557c1a0d94ea3bcdfcab9042e17513e05f65c",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "macOS support, hosted-runner comparison, 30-minute and overnight endurance profiles, multi-replica exercises, and production-telemetry correlation require separate approval and evidence.",
+      "source": "pm",
+      "why": "My R1 requires a macOS resource adapter in v1, while PM explicitly future-dates macOS support; both scopes cannot govern the same required-observation manifest.",
+      "proposal": "Limit v1 required adapters and conformance evidence to Windows 11 and Linux x64, while keeping the sampler port extensible so macOS can be added only after separate approval.",
+      "kind": "product",
+      "conflict_id": "adb59fcddf483cebb61d2952ba78f1701865f535fab3f6c0acbb63a9894ba5cc",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "When the service attempts any forbidden external connection during a scenario, that scenario and the overall run fail even if all latency and error thresholds otherwise pass.",
+      "source": "pm",
+      "why": "My typed fixture assembler, credential stripping, loopback target validation, and live-provider audit guard close the known market-data path, but they do not by themselves observe an arbitrary direct socket introduced later by another dependency on both Windows and Linux; the universal claim currently lacks a named portable enforcement mechanism.",
+      "proposal": "Either narrow the claim to the complete source-verified outbound connector graph and inject a deny-all connector with a poison test, or explicitly add platform sandbox/firewall adapters that deny and audit every non-loopback child-process connection; planning must source-verify which mechanism is feasible before the universal criterion stands.",
+      "kind": "technical",
+      "conflict_id": "3e08bf190ef5197ec672fbc6cd769c96bf09311f18b3fe9f336d1290e2b2d6f0",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Thirty seconds after all generated traffic drains, no harness-owned request or stream remains active; handles/descriptors and runtime tasks are each no more than 2 above baseline; and resident memory is no more than 64 MiB above baseline.",
+      "source": "pm",
+      "why": "My R1 evaluates a 10-second grace, exact subscriber/task return to baseline, and a memory ceiling of the larger of 16 MiB or 10 percent; the observation time and pass thresholds are different and cannot both be the single versioned recovery policy.",
+      "proposal": "Have the human select one recovery policy; the closest synthesis to PM is a 30-second required checkpoint with PM's ceilings, while retaining exact harness-owned subscriber/request accounting as an additional leak invariant when the lifecycle probe can measure it without changing runtime semantics.",
+      "kind": "product",
+      "conflict_id": "d8d92ca7d2ed59e329fd57da59a9892b1e19d3ae9ffed30c4d8144a9348204e9",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "All are `test` because each can silently regress while the existing product still looks normal; no separate UX test matrix is proposed.",
+      "source": "ux",
+      "why": "PM's final criteria classify the bounded-claim guidance and trader-visible no-change criterion as review, so UX's all-test disposition contradicts the acceptance owner and would leave the verification plan with two authorities.",
+      "proposal": "Split the evidence: automated tests and structural empty-diff/route guards cover machine-observable invariants, while PM's review rows remain for the operator-facing claim boundary and before/after trader-visible equivalence.",
+      "kind": "product",
+      "conflict_id": "93181348ac1149b9b6e4b36d93c756bf95c758cb02933fc73ef7fe331d1d280f",
+      "raised_by": "architect",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume PM accepts a mandatory local profile capped at three minutes plus an optional 15-minute profile; if PM requires the full soak on every normal verification, the gate-cost design and scenario counts must change.",
+      "source": "architect",
+      "why": "The PM position requires the 10-minute combined soak in the normal local verification path and sets 15 minutes as the total target; replacing that with a one-minute normal soak and making 15 minutes optional materially weakens the release evidence and changes scope.",
+      "proposal": "Keep the 10-minute combined soak mandatory within the 15-minute total target unless the architect demonstrates that this is infeasible, then present the human with an explicit duration-versus-gate-cost decision rather than silently shortening the scenario.",
+      "kind": "product",
+      "conflict_id": "f00bd27c0268213121d501f0632d5e08a3f130d06fcd3f6ae9f229443bed25b9",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Linux, macOS, and Windows adapters are required; an unavailable adapter is a failed required observation, never a skipped check.",
+      "source": "architect",
+      "why": "The PM scope supports Windows 11 and Linux x64 in v1 and explicitly future-dates macOS; making macOS required expands the approved platform scope and could block the feature on work not selected for this release.",
+      "proposal": "Require complete observations and fail unavailable measurements on Windows 11 and Linux x64, while leaving macOS support for the separately approved future scope.",
+      "kind": "product",
+      "conflict_id": "93643b269b975a1a6f686850c90d552da8cfafa63bfc6aed095aebb412a3db09",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "REST warm: prime one representative single-ticker request, discard five warm-ups, then measure 100 serial cache-hit requests.",
+      "source": "architect",
+      "why": "The PM position defines 200 measured warm requests at concurrency 16; 100 serial requests do not exercise or evidence the selected warm-load guardrail.",
+      "proposal": "Use the PM workload of 200 measured warm requests at concurrency 16, retaining bounded warm-up observations only as setup rather than as a replacement workload.",
+      "kind": "product",
+      "conflict_id": "af0b823df3a83cba62011e51cbd53245bffdb56f63a56da4255fba739263d663",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "REST parallel: launch 32 clients simultaneously against one cold identity to exercise request coalescing, then 32 clients across eight warm identities to exercise shared read capacity.",
+      "source": "architect",
+      "why": "The PM position requires 320 requests at concurrency 32; the proposed two groups of 32 requests change the amount and composition of evidence without an approved product tradeoff.",
+      "proposal": "Retain 320 total requests at concurrency 32 and let architecture distribute those requests across representative identities only if the resulting scenario still measures the selected parallel guardrail.",
+      "kind": "product",
+      "conflict_id": "ae57512a010bceb52689e6a41b13dbd0d0a2078dd42ec92bb76396dce778f968",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "SSE churn: run ten connect/hold/disconnect waves at one quarter of configured capacity, with all clients closing from both orderly and abrupt sides.",
+      "source": "architect",
+      "why": "The PM position requires ten full waves of 32 clients; quarter-capacity waves reduce the selected recovery pressure, while adding abrupt closes changes the scenario beyond the approved clean-disconnect requirement.",
+      "proposal": "Keep ten full 32-client connect/disconnect waves as the required scenario; treat abrupt-close coverage as additive only if it does not replace or make the required full-capacity clean-close evidence infeasible.",
+      "kind": "product",
+      "conflict_id": "2c8988979a79a6770a2b041f3f00a2d6d6c33142393fc350db109199ba9b0d0a",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Warm REST must have zero unexpected errors, p95 at or below 250 ms, and p99 at or below 500 ms.",
+      "source": "architect",
+      "why": "The selected PM guardrail is p95 at or below 250 ms with no individual observation above 1,000 ms; substituting a p99 ceiling changes both the measured statistic and the breach boundary.",
+      "proposal": "Retain the p95 and per-observation maximum selected by PM; record p99 as supplemental evidence only unless the human explicitly adds it as a blocking guardrail.",
+      "kind": "product",
+      "conflict_id": "c4d3fc962c75232ed3e33c9c3890a1816272d2cb33a4751985db720b7e37d0cd",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Cold REST must have zero unexpected errors and p95 at or below 2 seconds.",
+      "source": "architect",
+      "why": "The PM position selects cold p95 at or below 3,000 ms and no observation above 5,000 ms; a 2-second p95 omits the maximum and makes the blocking threshold materially stricter without a product ruling.",
+      "proposal": "Use the selected 3,000 ms p95 and 5,000 ms per-observation maximum until measured implementation evidence is presented for an explicit human threshold revision.",
+      "kind": "product",
+      "conflict_id": "7d95da8c88ed838f4204ee98ff49412d9d4e8fba16738bde4f3b310d6e949e15",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Both parallel phases must complete every request, have zero unexpected errors, p95 at or below 3 seconds, and finish within 5 seconds wall time.",
+      "source": "architect",
+      "why": "The PM position selects a 1,500 ms parallel p95 and a 5,000 ms per-observation maximum; the architect instead doubles the p95 ceiling and introduces a different whole-phase limit.",
+      "proposal": "Keep the 1,500 ms p95 and 5,000 ms per-observation maximum as blocking guardrails, with whole-phase duration recorded as supplemental evidence unless the human changes the threshold set.",
+      "kind": "product",
+      "conflict_id": "a7bd5b4b44ab27453b39cd8683ca24b53157cadf6357781d1f60976e4c14144d",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Accepted SSE connects must have p95 at or below 500 ms; the over-cap refusal must arrive within 500 ms; accepted streams must not disconnect unexpectedly.",
+      "source": "architect",
+      "why": "Connection latency and disconnect behavior align, but the PM position selects a 1,000 ms refusal ceiling; tightening refusal to 500 ms is an unapproved change to the blocking threshold.",
+      "proposal": "Retain the 1,000 ms blocking refusal ceiling and optionally report the 500 ms result as non-blocking evidence until the human explicitly revises the guardrail.",
+      "kind": "product",
+      "conflict_id": "85c6881770c1f44d7dbaac40790d540f9fa6dacf8ecdbd0a189ad40e223ff01b",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Quiescent resident memory, defined as the median of the last three samples, may be at most baseline plus the larger of 16 MiB or 10 percent, and three successive post-wave quiet samples may not rise by more than 4 MiB total.",
+      "source": "architect",
+      "why": "The PM position selects memory ceilings of 128 MiB above baseline during soak and 64 MiB above baseline 30 seconds after drain; the architect proposes different sampling semantics and much tighter ceilings, so the same observation could receive opposite verdicts.",
+      "proposal": "Use the PM soak and 30-second recovery ceilings for the blocking verdict; retain median and slope observations as diagnostics unless the human explicitly chooses the architect's stricter policy.",
+      "kind": "product",
+      "conflict_id": "8683910536a413ee0404ba22915fc329cd10aeb2ce4617023e34da5ce5405d68",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "All are `test` because each can silently regress while the existing product still looks normal; no separate UX test matrix is proposed.",
+      "source": "ux",
+      "why": "A blanket automated-test designation conflicts with risk-based verification: machine report, isolation, threshold, and recovery behavior can regress silently and need tests, while the intentional absence of new trader-facing controls, copy, and workflows is directly observable and is appropriately verified by review.",
+      "proposal": "Keep automated verification for silent harness and isolation regressions, and keep review for the trader-visible no-change criterion; a structural source-diff guard may supplement but should not replace that review.",
+      "kind": "technical",
+      "conflict_id": "2d71310ab01f2670c84a9f6b5f836149ccf16eeb4f7b65f35d06381d5cae6502",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume UX/Tech Writer owns the exact CLI command names, report member names, diagnostic wording, and operator remediation text; if those are not supplied, the synthesizer must define them without altering the technical report contents described here.",
+      "source": "architect",
+      "why": "UX explicitly places final machine-report field names outside its lane, while command and member names are technical contract concerns; leaving ownership ambiguous risks either an invented UI-style contract or missing executable/report vocabulary.",
+      "proposal": "Have the synthesizer bind technical command and report-member names from the architecture shape, while UX owns claim-safe operator wording and diagnostic comprehensibility.",
+      "kind": "technical",
+      "conflict_id": "320413c46a6a4a3a0c6348215a1123aca55d4a43de1756c2ea49029f823ff635",
+      "raised_by": "pm",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A 10-minute combined soak at REST concurrency 16 with 32 held stream clients.",
+      "source": "pm",
+      "why": "This mandatory normal-path soak cannot coexist with the architect's requirement that the complete normal profile finish within three minutes and use a 60-second mandatory short soak, while treating a longer profile as separately selectable.",
+      "proposal": "Ask the human to choose one binding normal-gate duration and soak duration, then retain any longer run as a clearly named optional profile rather than blending the two positions.",
+      "kind": "product",
+      "conflict_id": "519e3275e76096a5373d1bfe22294cc2dac5f9de8c18978503cfe936ea831aff",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Linux, macOS, and Windows adapters are required; an unavailable adapter is a failed required observation, never a skipped check.",
+      "source": "architect",
+      "why": "PM places only Windows 11 and Linux x64 in v1 and explicitly future-dates macOS, so this sentence expands supported-platform scope beyond the product position.",
+      "proposal": "Ask the human to decide whether macOS is a v1 supported platform or a future-dated adapter; whichever scope is chosen must make unsupported required measurements fail honestly on supported platforms.",
+      "kind": "product",
+      "conflict_id": "21ea7f5d4a1204c9ce5a896b2085407dfa4c04f89c6efa5c86ddddecb6c1a1eb",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "REST warm: prime one representative single-ticker request, discard five warm-ups, then measure 100 serial cache-hit requests.",
+      "source": "architect",
+      "why": "PM requires 200 warm requests at concurrency 16, so the positions define different workloads and would produce non-comparable evidence under the same 'warm' label.",
+      "proposal": "Have the human select one v1 warm workload, or explicitly name serial-warm and concurrent-warm as separate required scenarios with independent thresholds and report rows.",
+      "kind": "product",
+      "conflict_id": "89da6d69fe60c69f632087afc4ac7e7152c95928fc4cffb38e44603a7860b1bf",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Cold REST must have zero unexpected errors and p95 at or below 2 seconds.",
+      "source": "architect",
+      "why": "PM sets cold p95 at 3,000 ms and adds a 5,000 ms per-observation ceiling; a single cold verdict cannot honestly claim conformance to both threshold policies without declaring which policy is binding.",
+      "proposal": "Ask the human to choose the canonical cold p95 and maximum-observation guardrails; report the selected thresholds beside the measurements rather than silently applying the stricter value.",
+      "kind": "product",
+      "conflict_id": "4163323d4522a77f9cd95ba2e4c70a56a919cda8d4130c7def4de97bcae22b6d",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "REST parallel: launch 32 clients simultaneously against one cold identity to exercise request coalescing, then 32 clients across eight warm identities to exercise shared read capacity.",
+      "source": "architect",
+      "why": "PM instead specifies 320 requests at concurrency 32 under one parallel criterion, with a 1,500 ms p95; the workload identity, request count, cache condition, and threshold are not the same claim.",
+      "proposal": "Ask the human whether v1 needs both coalesced-cold and shared-warm parallel scenarios or one 320-request scenario, then give every retained scenario its own unambiguous name and threshold row.",
+      "kind": "product",
+      "conflict_id": "dcff0b301e277495b10c6401eae7b2d51208b88467fea4485456be0d7385a402",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Accepted SSE connects must have p95 at or below 500 ms; the over-cap refusal must arrive within 500 ms; accepted streams must not disconnect unexpectedly.",
+      "source": "architect",
+      "why": "PM permits the over-cap refusal to take up to 1,000 ms, so the same refusal observation would pass one position and fail the other.",
+      "proposal": "Ask the human to choose the refusal-latency ceiling and encode that one value in the versioned threshold policy and report.",
+      "kind": "product",
+      "conflict_id": "7d0bb97aa65947fe1fde0b5c4af5b6141a6c611c3d12b6938d7cbbe30df3dddf",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "Quiescent resident memory, defined as the median of the last three samples, may be at most baseline plus the larger of 16 MiB or 10 percent, and three successive post-wave quiet samples may not rise by more than 4 MiB total.",
+      "source": "architect",
+      "why": "PM defines different soak and recovery memory ceilings of baseline plus 128 MiB and 64 MiB, with recovery observed after 30 seconds; these policies can return different verdicts and use different observation bases.",
+      "proposal": "Ask the human to choose one canonical soak/recovery memory policy, while architecture retains exact subscriber, task, and descriptor recovery as separate evidence rather than using memory alone as a leak claim.",
+      "kind": "product",
+      "conflict_id": "37602a720e720e001ac97ecad364a4f762bd5c2000139c564e6d4cb40c4b589a",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "I assume UX/Tech Writer owns the exact CLI command names, report member names, diagnostic wording, and operator remediation text; if those are not supplied, the synthesizer must define them without altering the technical report contents described here.",
+      "source": "architect",
+      "why": "This assigns machine interface and command naming to the UX lane even though there is no user-facing surface and the UX position explicitly limits itself to claim integrity; final report members and CLI names are technical contract decisions, while UX can review diagnostic and remediation wording.",
+      "proposal": "Architecture should own stable command and report-schema names; UX should own the exact human-readable diagnostics, remediation language, units, and bounded-claim wording without changing machine semantics.",
+      "kind": "technical",
+      "conflict_id": "9540723d2dc7fbb4c2bb1ae60d1de1274253608a828cdebe414f945c3fae9b68",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    },
+    {
+      "quote": "A reviewer exercising the trader application before and after this feature observes no new or changed trader-facing control, copy, status, workflow, score, recommendation, or stream behavior.",
+      "source": "pm",
+      "why": "Marking this negative-space invariant as review-only leaves a silent UI, payload, scoring, recommendation, or SSE regression unguarded; the verification rule assigns silently regressing invariants to automated tests.",
+      "proposal": "Split AC-21 so visible unchanged trader presentation receives review where useful, while zero dashboard/client-contract diff and unchanged scoring, recommendation, and stream invariants are verified by automated tests.",
+      "kind": "technical",
+      "conflict_id": "1076250f65ebda667cb1ddf096be8d1677359855bf26eb983d8773e5eb135e30",
+      "raised_by": "ux",
+      "self_revision": false,
+      "quote_verified": true
+    }
+  ],
+  "asks": [
+    {
+      "from": "architect",
+      "ask": "PM: Are the 10-minute soak, 200-request warm load, 320-request parallel load, and stated resource ceilings binding normal-gate scope, or may a shorter mandatory profile plus an optional extended profile satisfy the product goal?"
+    },
+    {
+      "from": "architect",
+      "ask": "PM: Should v1 support only Windows 11 and Linux x64, with macOS merely an extension seam, as your future-dated scope states?"
+    },
+    {
+      "from": "architect",
+      "ask": "UX: What exact operator-facing guidance must accompany the machine report to satisfy the local-baseline-not-production-capacity claim without creating any trader-facing surface?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can the required 10-minute combined load, 30-second recovery observation, report emission, and setup complete inside the 15-minute total target on both Windows 11 and Linux x64; if not, which measured phase is the feasibility constraint?"
+    },
+    {
+      "from": "pm",
+      "ask": "Architect: can Windows 11 and Linux x64 provide comparable required observations for resident memory, handles or descriptors, runtime tasks, and active harness-owned requests or streams without treating an unsupported sample as passing?"
+    },
+    {
+      "from": "pm",
+      "ask": "UX: what operator-facing wording should identify an expected cap refusal and expected fixture not-found outcome without making either read as an unexpected service failure or as successful data delivery?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: which source-read seam can distinguish orderly client closure, abrupt client loss, accepted-stream recovery, and cap refusal without adding a trader or operator HTTP route?"
+    },
+    {
+      "from": "ux",
+      "ask": "Architect: can the fixture-only child assembly make every non-loopback connection structurally unreachable on both Windows 11 and Linux x64, and what observation proves the guard is non-vacuous?"
+    },
+    {
+      "from": "ux",
+      "ask": "PM: does 'every accepted client closes cleanly' describe service-side resource recovery after both orderly and abrupt client endings, or does it exclude the architect's abrupt-close churn cases?"
+    }
+  ],
+  "agree_count": {
+    "architect": 3,
+    "pm": 4,
+    "ux": 4
+  }
+}
