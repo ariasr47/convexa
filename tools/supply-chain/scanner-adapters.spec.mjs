@@ -148,3 +148,54 @@ test('Trivy image validates clean and finding-bearing JSON reports', async () =>
   assert.equal(finding.state, 'fail');
   assert.equal(finding.count, 1);
 });
+
+test('Trivy reports granular allow-listed malformed reasons without raw output', async () => {
+  const canary = 'SCA_TRIVY_RAW_CANARY_DO_NOT_PUBLISH';
+  const cases = [
+    ['empty', run(0, '  \n'), 'trivy-empty-output'],
+    ['parse', run(0, `{${canary}`), 'trivy-json-parse'],
+    [
+      'schema-version',
+      run(0, JSON.stringify({ SchemaVersion: 1, Results: null })),
+      'trivy-schema-version',
+    ],
+    [
+      'results-object',
+      run(0, JSON.stringify({ SchemaVersion: 2, Results: {} })),
+      'trivy-results-shape',
+    ],
+    [
+      'finding-field-object',
+      run(0, JSON.stringify({ SchemaVersion: 2, Results: [{ Secrets: {} }] })),
+      'trivy-results-shape',
+    ],
+    [
+      'exit-one-without-findings',
+      run(1, JSON.stringify({ SchemaVersion: 2, Results: null })),
+      'trivy-exit-count-mismatch',
+    ],
+    [
+      'exit-zero-with-findings',
+      run(
+        0,
+        JSON.stringify({
+          SchemaVersion: 2,
+          Results: [{ Secrets: [{ RuleID: 'test' }] }],
+        }),
+      ),
+      'trivy-exit-count-mismatch',
+    ],
+  ];
+
+  for (const [label, toolRun, expectedReason] of cases) {
+    const result = await runTrivyImage({
+      executable: '/tools/trivy',
+      digest: `sha256:${'a'.repeat(64)}`,
+      input: 'image.oci.tar',
+      runner: async () => toolRun,
+    });
+    assert.equal(result.state, 'blocked', label);
+    assert.equal(result.rule_id, expectedReason, label);
+    assert.doesNotMatch(JSON.stringify(result), new RegExp(canary), label);
+  }
+});

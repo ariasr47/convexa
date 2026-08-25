@@ -59,14 +59,29 @@ export async function runTrivyImage({
 }
 function classify(run, scope, findingFields) {
   if (run.state === 'blocked') return blocked('trivy-unavailable', run.raw_output_sha256);
+  if (typeof run.output !== 'string' || !run.output.trim())
+    return blocked('trivy-empty-output', run.raw_output_sha256);
   let report;
   try {
     report = JSON.parse(run.output);
-    if (report?.SchemaVersion !== 2 || !(report.Results === null || Array.isArray(report.Results)))
-      throw new TypeError('trivy-report');
   } catch {
-    return blocked('trivy-malformed', run.raw_output_sha256);
+    return blocked('trivy-json-parse', run.raw_output_sha256);
   }
+  if (report?.SchemaVersion !== 2) return blocked('trivy-schema-version', run.raw_output_sha256);
+  if (
+    !(report.Results === null || Array.isArray(report.Results)) ||
+    (report.Results ?? []).some(
+      (result) =>
+        !result ||
+        typeof result !== 'object' ||
+        Array.isArray(result) ||
+        findingFields.some(
+          (field) =>
+            result[field] !== undefined && result[field] !== null && !Array.isArray(result[field]),
+        ),
+    )
+  )
+    return blocked('trivy-results-shape', run.raw_output_sha256);
   const count = (report.Results ?? []).reduce(
     (total, result) =>
       total +
@@ -92,7 +107,7 @@ function classify(run, scope, findingFields) {
       count,
       raw_output_sha256: run.raw_output_sha256,
     };
-  return blocked('trivy-malformed', run.raw_output_sha256);
+  return blocked('trivy-exit-count-mismatch', run.raw_output_sha256);
 }
 export function classifyTrivy(result) {
   if (!result || result.unavailable) return blocked('trivy-unavailable');
