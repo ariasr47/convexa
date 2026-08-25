@@ -249,12 +249,18 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                             );
                             if fd_jump {
                                 // Request guards can drop just before Hyper closes
-                                // the accepted socket. Sample for up to one
-                                // second through active -> quiescent transition;
-                                // a persistent leak stays high in every sample.
+                                // the accepted socket. Allow one bounded window
+                                // to reach quiescence, then a separate bounded
+                                // window for transport sockets to close.
                                 let mut settle_life_after = life_after;
                                 let mut settle_trace = Vec::new();
-                                for _ in 0..10 {
+                                let mut settle_reached_quiescence =
+                                    lifecycle_is_quiescent(life_after);
+                                let mut settle_lifecycle_quiescent = true;
+                                for _ in 0..TRANSPORT_PRE_SETTLE_SAMPLES {
+                                    if settle_reached_quiescence {
+                                        break;
+                                    }
                                     tokio::time::sleep(std::time::Duration::from_millis(
                                         TRANSPORT_SETTLE_MILLIS,
                                     ))
@@ -268,17 +274,43 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                                     settle_life_after = settled_life;
                                     let settled_quiescent = lifecycle_is_quiescent(settled_life);
                                     settle_trace.push((settled.handles_or_fds, settled_quiescent));
-                                    if !settled_quiescent
-                                        && settle_trace.iter().any(|(_, quiescent)| *quiescent)
-                                    {
-                                        break;
+                                    if settled_quiescent {
+                                        settle_reached_quiescence = true;
                                     }
                                 }
-                                if let Some(settled_handles) = settled_handles_from_trace(
-                                    resource.handles_or_fds,
-                                    &settle_trace,
-                                ) {
-                                    resource.handles_or_fds = settled_handles;
+                                if settle_reached_quiescence {
+                                    for _ in 0..TRANSPORT_POST_SETTLE_SAMPLES {
+                                        tokio::time::sleep(std::time::Duration::from_millis(
+                                            TRANSPORT_SETTLE_MILLIS,
+                                        ))
+                                        .await;
+                                        let Ok(settled) =
+                                            super::resources::sample_pid(std::process::id())
+                                        else {
+                                            settle_lifecycle_quiescent = false;
+                                            break;
+                                        };
+                                        let settled_life = state.lifecycle_probe.snapshot();
+                                        settle_life_after = settled_life;
+                                        let settled_quiescent =
+                                            lifecycle_is_quiescent(settled_life);
+                                        settle_trace
+                                            .push((settled.handles_or_fds, settled_quiescent));
+                                        if !settled_quiescent {
+                                            settle_lifecycle_quiescent = false;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    settle_lifecycle_quiescent = false;
+                                }
+                                if settle_lifecycle_quiescent {
+                                    if let Some(settled_handles) = settled_handles_from_trace(
+                                        resource.handles_or_fds,
+                                        &settle_trace,
+                                    ) {
+                                        resource.handles_or_fds = settled_handles;
+                                    }
                                 }
                                 life_after = settle_life_after;
                             }
@@ -364,6 +396,8 @@ fn normalize_handles_or_fds(
 }
 
 const TRANSPORT_SETTLE_MILLIS: u64 = 100;
+const TRANSPORT_PRE_SETTLE_SAMPLES: usize = 10;
+const TRANSPORT_POST_SETTLE_SAMPLES: usize = 10;
 
 fn lifecycle_is_quiescent(life: crate::services::live_capacity::LifecycleSnapshot) -> bool {
     life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0
@@ -1944,6 +1978,10 @@ mod protocol_tests {
             Some(17)
         );
         assert_eq!(
+            settled_handles_from_trace(26, &[(26, true), (17, true)]),
+            Some(17)
+        );
+        assert_eq!(
             settled_handles_from_trace(49, &[(49, true), (49, true), (49, true)]),
             Some(49)
         );
@@ -1983,7 +2021,14 @@ mod protocol_tests {
     fn transport_settle_probe_interval_and_total_window_are_bounded() {
         assert_eq!(TRANSPORT_SETTLE_MILLIS, 100);
         assert!(TRANSPORT_SETTLE_MILLIS < 1_000);
-        assert_eq!(TRANSPORT_SETTLE_MILLIS * 10, 1_000);
+        assert_eq!(
+            TRANSPORT_SETTLE_MILLIS * TRANSPORT_PRE_SETTLE_SAMPLES as u64,
+            1_000
+        );
+        assert_eq!(
+            TRANSPORT_SETTLE_MILLIS * TRANSPORT_POST_SETTLE_SAMPLES as u64,
+            1_000
+        );
     }
 
     #[test]
