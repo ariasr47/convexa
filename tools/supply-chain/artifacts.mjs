@@ -265,7 +265,15 @@ export async function runArtifacts({
       path.join(out, 'dashboard-dependency-inventory.cdx.json'),
       dashboardInventoryBytes,
     );
-    stage = 'receipt-build';
+    stage = 'api-receipt-component-set';
+    const apiComponentSetSha256 = componentSetHash(cargoExpected);
+    stage = 'api-receipt-inventory-hash';
+    const apiInventorySha256 = sha(apiInventoryBytes);
+    stage = 'api-receipt-seeds';
+    const apiRequiredSeedsPresent = API_SEEDS.every((seed) =>
+      cargoExpected.some((component) => component.name === seed),
+    );
+    stage = 'api-receipt-assemble';
     const apiReceipt = receipt({
       subjectId: 'api-production-image',
       kind: 'oci_image',
@@ -274,15 +282,26 @@ export async function runArtifacts({
       runKey,
       buildRunId,
       version: '1.51.0',
-      inventoryBytes: apiInventoryBytes,
+      inventorySha256: apiInventorySha256,
       policySha256,
-      components: cargoExpected,
-      seeds: API_SEEDS,
+      componentCount: cargoExpected.length,
+      componentSetSha256: apiComponentSetSha256,
+      requiredSeedCount: API_SEEDS.length,
+      requiredSeedsPresent: apiRequiredSeedsPresent,
       sourceInputsSha256,
       byteScan: scan.raw_output_sha256,
       archiveValidation: null,
       validation: apiValidation.state,
     });
+    stage = 'dashboard-receipt-component-set';
+    const dashboardComponentSetSha256 = componentSetHash(dashboardExpected);
+    stage = 'dashboard-receipt-inventory-hash';
+    const dashboardInventorySha256 = sha(dashboardInventoryBytes);
+    stage = 'dashboard-receipt-seeds';
+    const dashboardRequiredSeedsPresent = DASHBOARD_SEEDS.every((seed) =>
+      dashboardExpected.some((component) => component.name === seed),
+    );
+    stage = 'dashboard-receipt-assemble';
     const dashboardReceipt = receipt({
       subjectId: 'dashboard-distribution-archive',
       kind: 'file_archive',
@@ -291,10 +310,12 @@ export async function runArtifacts({
       runKey,
       buildRunId,
       version: '1.51.0',
-      inventoryBytes: dashboardInventoryBytes,
+      inventorySha256: dashboardInventorySha256,
       policySha256,
-      components: dashboardExpected,
-      seeds: DASHBOARD_SEEDS,
+      componentCount: dashboardExpected.length,
+      componentSetSha256: dashboardComponentSetSha256,
+      requiredSeedCount: DASHBOARD_SEEDS.length,
+      requiredSeedsPresent: dashboardRequiredSeedsPresent,
       sourceInputsSha256,
       byteScan: null,
       archiveValidation: canonicalSha256(dashboardValidation),
@@ -354,16 +375,17 @@ function receipt({
   runKey,
   buildRunId,
   version,
-  inventoryBytes,
+  inventorySha256,
   policySha256,
-  components,
-  seeds,
+  componentCount,
+  componentSetSha256,
+  requiredSeedCount,
+  requiredSeedsPresent,
   sourceInputsSha256,
   byteScan,
   archiveValidation,
   validation,
 }) {
-  const setHash = componentSetHash(components);
   return {
     schema_version: 1,
     receipt_kind: 'associated_dependency_inventory',
@@ -380,18 +402,18 @@ function receipt({
     subject_bytes_observed_by_generator: false,
     format: 'CycloneDX 1.6 JSON dependency inventory',
     schema_version_declared: '1.6',
-    inventory_sha256: sha(inventoryBytes),
+    inventory_sha256: inventorySha256,
     policy_sha256,
     validation,
     component_families:
       subjectId === 'api-production-image'
         ? ['convexa-workspace', 'cargo-normal-build']
         : ['convexa-workspace', 'npm-production-closure'],
-    component_count: components.length,
-    component_oracle_sha256: setHash,
-    component_identity_set_sha256: setHash,
-    required_seed_count: seeds.length,
-    required_seeds_present: seeds.every((seed) => components.some((x) => x.name === seed)),
+    component_count: componentCount,
+    component_oracle_sha256: componentSetSha256,
+    component_identity_set_sha256: componentSetSha256,
+    required_seed_count: requiredSeedCount,
+    required_seeds_present: requiredSeedsPresent,
     source_inputs_sha256: sourceInputsSha256,
     byte_scan_evidence_sha256: byteScan,
     archive_validation_sha256: archiveValidation,
