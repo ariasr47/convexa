@@ -34,7 +34,11 @@ pub fn run(case: super::CapacitySelfTestCase) -> anyhow::Result<()> {
                     return Ok(());
                 }
                 Err(error) => {
-                    let body = json!({"schema_version":1,"case":case_name,"claim":CLAIM,"verdict":"did_not_pass","failure":error.to_string()});
+                    let message = error.to_string();
+                    let body = message
+                        .strip_prefix("identity evidence: ")
+                        .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+                        .unwrap_or_else(|| json!({"schema_version":1,"case":case_name,"claim":CLAIM,"verdict":"did_not_pass","failure":message}));
                     super::identity::write_canonical_receipt(&body)?;
                     return Err(error);
                 }

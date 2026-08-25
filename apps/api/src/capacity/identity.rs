@@ -151,6 +151,26 @@ pub fn decision_projection(ticker: &Value) -> Value {
     })
 }
 
+fn differing_paths(before: &Value, after: &Value) -> Vec<String> {
+    fn walk(a: &Value, b: &Value, path: &str, out: &mut Vec<String>) {
+        match (a, b) {
+            (Value::Object(left), Value::Object(right)) => {
+                let keys: BTreeSet<_> = left.keys().chain(right.keys()).collect();
+                for key in keys {
+                    walk(left.get(key).unwrap_or(&Value::Null), right.get(key).unwrap_or(&Value::Null), &format!("{path}/{key}"), out);
+                }
+            }
+            (Value::Array(left), Value::Array(right)) => {
+                if left.len() != right.len() { out.push(path.to_owned()); }
+                for index in 0..left.len().min(right.len()) { walk(&left[index], &right[index], &format!("{path}/{index}"), out); }
+            }
+            _ if a != b => out.push(path.to_owned()),
+            _ => {}
+        }
+    }
+    let mut paths = Vec::new(); walk(before, after, "", &mut paths); paths
+}
+
 async fn capture_current() -> Result<(Value, Value, Value)> {
     let fixture = repo_root().join("apps/api/tests/fixtures/market");
     let (addr, stop) = super::harness_app::serve(super::harness_app::CapacityAppInput {
@@ -303,9 +323,25 @@ pub async fn run_control() -> Result<Value> {
     let before_ticker: Value = serde_json::from_slice(&fs::read(oracle.join("ticker.json"))?)?;
     let before_sse: Value = serde_json::from_slice(&fs::read(oracle.join("sse.json"))?)?;
     let before_decision: Value = serde_json::from_slice(&fs::read(oracle.join("decision.json"))?)?;
-    let matches = ticker == before_ticker && sse == before_sse && decision == before_decision;
-    if !matches {
-        bail!("decision-bearing fixture identity mismatch")
+    let ticker_paths = differing_paths(&before_ticker, &ticker);
+    let sse_paths = differing_paths(&before_sse, &sse);
+    let decision_paths = differing_paths(&before_decision, &decision);
+    if !(ticker_paths.is_empty() && sse_paths.is_empty() && decision_paths.is_empty()) {
+        let evidence = json!({
+          "schema_version":1,"case":"byte-identity","claim":super::report::CLAIM,"verdict":"did_not_pass",
+          "failure":"decision-bearing fixture identity mismatch","reference_revision":REFERENCE_REVISION,
+          "current_revision":current_revision(&root)?,"governed_after_tree_sha256":governed_tree_digest(&root)?,
+          "api_contract_check":contract,
+          "route_inventory":{"baseline_path":API_ARTIFACTS[0].0,"operation_count":52,"base_sha256":API_ARTIFACTS[0].1,"current_sha256":file_sha(&root.join(API_ARTIFACTS[0].0))?,"match":true,"check_status":"pass"},
+          "api_contract_artifacts":artifacts,
+          "generated_client_inventory":{"root":GENERATED_ROOT,"base_entries":base_entries,"current_entries":current_entries,"base_sha256":sha256(&base_inv),"current_sha256":sha256(&current_inv),"additions":[],"removals":[],"match":true},
+          "decision_artifacts":{
+            "ticker":{"before_sha256":sha256(&canonical(&before_ticker)?),"after_sha256":sha256(&canonical(&ticker)?),"match":ticker_paths.is_empty(),"mismatched_paths":ticker_paths},
+            "sse":{"before_sha256":sha256(&canonical(&before_sse)?),"after_sha256":sha256(&canonical(&sse)?),"match":sse_paths.is_empty(),"mismatched_paths":sse_paths},
+            "decision":{"before_sha256":sha256(&canonical(&before_decision)?),"after_sha256":sha256(&canonical(&decision)?),"match":decision_paths.is_empty(),"mismatched_paths":decision_paths}},
+          "runtime_exclusions":manifest["runtime_exclusions"]
+        });
+        bail!("identity evidence: {}", serde_json::to_string(&evidence)?);
     }
     Ok(json!({
       "schema_version":1,"case":"byte-identity","claim":super::report::CLAIM,"verdict":"pass",
@@ -326,6 +362,26 @@ fn current_revision(root: &Path) -> Result<String> {
         bail!("cannot determine current revision")
     }
     Ok(String::from_utf8(out.stdout)?.trim().to_owned())
+}
+
+fn governed_tree_digest(root: &Path) -> Result<String> {
+    let mut rows = Vec::new();
+    for relative in ["apps/api/src/capacity", IDENTITY_REL] {
+        let base = root.join(relative);
+        if !base.exists() { continue; }
+        fn collect(base: &Path, path: &Path, rows: &mut Vec<(String, String)>) -> Result<()> {
+            let meta = fs::symlink_metadata(path)?;
+            if meta.is_dir() {
+                for child in fs::read_dir(path)?.collect::<std::io::Result<Vec<_>>>()? { collect(base, &child.path(), rows)?; }
+            } else if meta.is_file() {
+                rows.push((path.strip_prefix(base.parent().unwrap_or(base)).unwrap_or(path).to_string_lossy().replace('\\', "/"), file_sha(path)?));
+            }
+            Ok(())
+        }
+        collect(&base, &base, &mut rows)?;
+    }
+    rows.sort();
+    Ok(sha256(rows.iter().map(|(path, hash)| format!("{path}\t{hash}\n")).collect::<String>().as_bytes()))
 }
 
 pub fn write_canonical_receipt(body: &Value) -> Result<()> {
