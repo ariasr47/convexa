@@ -1142,9 +1142,108 @@ fn build_report_from_evidence(
     report
 }
 
+pub fn report_path(profile: Profile) -> PathBuf {
+    let name = match profile {
+        Profile::Normal => "capacity-baseline-normal.json",
+        Profile::Extended => "capacity-baseline-extended.json",
+    };
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("data/capacity")
+        .join(name)
+}
+
+fn scenario(_profile: Profile, id: ScenarioId) -> Value {
+    let spec = manifest(_profile)
+        .scenarios
+        .into_iter()
+        .find(|s| s.id == id)
+        .expect("manifest scenario");
+    let expected = match id {
+        ScenarioId::RestExpectedNotFound => "expected_fixture_not_found",
+        ScenarioId::SseCapacityRefusal => "expected_capacity_refusal",
+        _ => "accepted",
+    };
+    // A report is retained even when execution is unavailable, but absence of
+    // observations is represented as a failure. Never synthesize measurements.
+    let observations = json!({});
+    json!({
+        "id": id.token(), "status": "did_not_pass", "expected_outcome": expected,
+        "observations": observations, "thresholds": {"required_observations": spec.required_observations},
+        "failures": ["workload execution is not implemented; required observations are missing"],
+        "diagnostics": ["No child process, loopback client, sampler, or control was executed."]
+    })
+}
+
+pub fn build_report(profile: Profile, elapsed_ms: u64) -> Value {
+    let manifest_value = serde_json::to_value(manifest(profile)).expect("manifest serializes");
+    let scenarios = ScenarioId::ALL
+        .into_iter()
+        .map(|id| scenario(profile, id))
+        .collect::<Vec<_>>();
+    json!({
+        "schema_version": 1, "feature": "capacity-baseline",
+        "profile": match profile { Profile::Normal => "normal", Profile::Extended => "extended" },
+        "profile_version": "1", "seed": 20260820_i64, "revision": target_revision(),
+        "environment": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH,
+            "logical_cpus": std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
+            "rustc": option_env!("RUSTC_VERSION").unwrap_or("unknown"),
+            "sampler": if cfg!(windows) {"windows"} else {"linux"},
+            "sampler_semantic": if cfg!(windows) {"handles"} else {"file_descriptors"}},
+        "claim": CLAIM, "manifest": manifest_value, "scenarios": scenarios,
+        "summary": {"verdict": "did_not_pass", "elapsed_ms": elapsed_ms,
+            "failed_scenarios": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
+            "missing_required_observations": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
+            "forbidden_connector_attempts": [],
+            "cleanup": {"children": CHILDREN, "acknowledged": false, "forced": false}}
+    })
+}
+
+fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
+    // The report module validates the legacy shape; this runner's closed shape is
+    // validated here before using the same sibling-temp/rename discipline.
+    let value: Value = serde_json::from_slice(bytes)?;
+    validate_report_value(&value)?;
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("report has no parent"))?;
+    std::fs::create_dir_all(parent)?;
+    let tmp = parent.join(format!(
+        ".{}.tmp-{}",
+        path.file_name().unwrap_or_default().to_string_lossy(),
+        std::process::id()
+    ));
+    std::fs::write(&tmp, canonical_report_bytes(&value)?)?;
+    std::fs::rename(tmp, path)?;
+    Ok(())
+}
+
+fn validate_report_value(value: &Value) -> anyhow::Result<()> {
+    if value.get("claim").and_then(Value::as_str) != Some(CLAIM)
+        || !value
+            .get("revision")
+            .and_then(Value::as_str)
+            .is_some_and(valid_revision)
+        || value
+            .get("scenarios")
+            .and_then(Value::as_array)
+            .map_or(true, |v| v.len() != 13)
+        || value["scenarios"].as_array().is_some_and(|rows| {
+            rows.iter().any(|row| {
+                row.get("id").and_then(Value::as_str).is_none()
+                    || row.get("status").and_then(Value::as_str).is_none()
+                    || row.get("observations").and_then(Value::as_object).is_none()
+            })
+        })
+    {
+        anyhow::bail!("capacity report validation failed")
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod protocol_tests {
     use super::*;
+
     #[test]
     fn protocol_is_jsonl_round_trippable_and_tagged() {
         let command = ParentCommand::Sample { sequence: 7 };
@@ -1242,102 +1341,4 @@ mod protocol_tests {
         assert!(soak_collection_complete(Profile::Normal, true, 60));
         assert!(!soak_collection_complete(Profile::Extended, false, 900));
     }
-}
-
-pub fn report_path(profile: Profile) -> PathBuf {
-    let name = match profile {
-        Profile::Normal => "capacity-baseline-normal.json",
-        Profile::Extended => "capacity-baseline-extended.json",
-    };
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("data/capacity")
-        .join(name)
-}
-
-fn scenario(_profile: Profile, id: ScenarioId) -> Value {
-    let spec = manifest(_profile)
-        .scenarios
-        .into_iter()
-        .find(|s| s.id == id)
-        .expect("manifest scenario");
-    let expected = match id {
-        ScenarioId::RestExpectedNotFound => "expected_fixture_not_found",
-        ScenarioId::SseCapacityRefusal => "expected_capacity_refusal",
-        _ => "accepted",
-    };
-    // A report is retained even when execution is unavailable, but absence of
-    // observations is represented as a failure. Never synthesize measurements.
-    let observations = json!({});
-    json!({
-        "id": id.token(), "status": "did_not_pass", "expected_outcome": expected,
-        "observations": observations, "thresholds": {"required_observations": spec.required_observations},
-        "failures": ["workload execution is not implemented; required observations are missing"],
-        "diagnostics": ["No child process, loopback client, sampler, or control was executed."]
-    })
-}
-
-pub fn build_report(profile: Profile, elapsed_ms: u64) -> Value {
-    let manifest_value = serde_json::to_value(manifest(profile)).expect("manifest serializes");
-    let scenarios = ScenarioId::ALL
-        .into_iter()
-        .map(|id| scenario(profile, id))
-        .collect::<Vec<_>>();
-    json!({
-        "schema_version": 1, "feature": "capacity-baseline",
-        "profile": match profile { Profile::Normal => "normal", Profile::Extended => "extended" },
-        "profile_version": "1", "seed": 20260820_i64, "revision": target_revision(),
-        "environment": {"os": std::env::consts::OS, "arch": std::env::consts::ARCH,
-            "logical_cpus": std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1),
-            "rustc": option_env!("RUSTC_VERSION").unwrap_or("unknown"),
-            "sampler": if cfg!(windows) {"windows"} else {"linux"},
-            "sampler_semantic": if cfg!(windows) {"handles"} else {"file_descriptors"}},
-        "claim": CLAIM, "manifest": manifest_value, "scenarios": scenarios,
-        "summary": {"verdict": "did_not_pass", "elapsed_ms": elapsed_ms,
-            "failed_scenarios": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
-            "missing_required_observations": ScenarioId::ALL.iter().map(|id| id.token()).collect::<Vec<_>>(),
-            "forbidden_connector_attempts": [],
-            "cleanup": {"children": CHILDREN, "acknowledged": false, "forced": false}}
-    })
-}
-
-fn atomic_replace_value(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
-    // The report module validates the legacy shape; this runner's closed shape is
-    // validated here before using the same sibling-temp/rename discipline.
-    let value: Value = serde_json::from_slice(bytes)?;
-    validate_report_value(&value)?;
-    let parent = path
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("report has no parent"))?;
-    std::fs::create_dir_all(parent)?;
-    let tmp = parent.join(format!(
-        ".{}.tmp-{}",
-        path.file_name().unwrap_or_default().to_string_lossy(),
-        std::process::id()
-    ));
-    std::fs::write(&tmp, canonical_report_bytes(&value)?)?;
-    std::fs::rename(tmp, path)?;
-    Ok(())
-}
-
-fn validate_report_value(value: &Value) -> anyhow::Result<()> {
-    if value.get("claim").and_then(Value::as_str) != Some(CLAIM)
-        || !value
-            .get("revision")
-            .and_then(Value::as_str)
-            .is_some_and(valid_revision)
-        || value
-            .get("scenarios")
-            .and_then(Value::as_array)
-            .map_or(true, |v| v.len() != 13)
-        || value["scenarios"].as_array().is_some_and(|rows| {
-            rows.iter().any(|row| {
-                row.get("id").and_then(Value::as_str).is_none()
-                    || row.get("status").and_then(Value::as_str).is_none()
-                    || row.get("observations").and_then(Value::as_object).is_none()
-            })
-        })
-    {
-        anyhow::bail!("capacity report validation failed")
-    }
-    Ok(())
 }
