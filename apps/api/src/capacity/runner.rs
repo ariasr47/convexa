@@ -609,7 +609,23 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
         match workload {
             Ok(Ok(mut rows)) => {
                 if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
-                    soak["resource_samples"] = json!(soak_samples.iter().map(|tick| json!({"baseline": baselines, "baseline_aggregate": aggregate_samples(&baselines), "children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})).collect::<Vec<_>>());
+                    let resource_samples = soak_samples
+                        .iter()
+                        .map(|tick| {
+                            json!({"baseline": baselines, "baseline_aggregate": aggregate_samples(&baselines), "children": tick.iter().map(|(id,s)| json!({"child":id.token(),"sample":s})).collect::<Vec<_>>(), "aggregate": aggregate_samples(tick)})
+                        })
+                        .collect::<Vec<_>>();
+                    soak["resource_samples"] = json!(resource_samples);
+                    if profile == Profile::Extended {
+                        if let Ok(raw) =
+                            super::evaluate::quiescent_rss_slope_mib_per_min(&resource_samples)
+                        {
+                            soak["quiescent_rss_slope_mib_per_min"] =
+                                json!(super::evaluate::rounded_milli(raw));
+                        } else {
+                            soak["quiescent_rss_slope_mib_per_min"] = Value::Null;
+                        }
+                    }
                 }
                 evidence = rows
             }
@@ -788,23 +804,56 @@ async fn rest_many(
     addr: std::net::SocketAddr,
     symbols: Vec<String>,
     concurrency: usize,
-) -> Vec<super::rest::RestResponse> {
+) -> RestBatch {
     let client = match super::rest::RestClient::new() {
         Ok(c) => c,
-        Err(_) => return Vec::new(),
+        Err(_) => {
+            return RestBatch {
+                responses: Vec::new(),
+                transport_errors: symbols.len() as u32,
+                unexpected_response_errors: 0,
+            }
+        }
     };
     let mut out = Vec::new();
+    let mut transport_errors = 0;
+    let mut unexpected_response_errors = 0;
     for chunk in symbols.chunks(concurrency.max(1)) {
         let futures = chunk.iter().map(|symbol| {
             let url = format!("http://{addr}/api/ticker/{symbol}");
             let client = client.clone();
             async move { client.request(&url).await }
         });
-        for result in join_all(futures).await.into_iter().flatten() {
-            out.push(result);
+        for result in join_all(futures).await {
+            match result {
+                Ok(response) => {
+                    if response.outcome == super::rest::RestOutcome::UnexpectedError {
+                        unexpected_response_errors += 1;
+                    }
+                    out.push(response);
+                }
+                Err(_) => transport_errors += 1,
+            }
         }
     }
-    out
+    RestBatch {
+        responses: out,
+        transport_errors,
+        unexpected_response_errors,
+    }
+}
+
+#[derive(Debug, Default)]
+struct RestBatch {
+    responses: Vec<super::rest::RestResponse>,
+    transport_errors: u32,
+    unexpected_response_errors: u32,
+}
+
+impl RestBatch {
+    fn unexpected_errors(&self) -> u32 {
+        self.transport_errors + self.unexpected_response_errors
+    }
 }
 
 async fn open_streams(
@@ -889,10 +938,12 @@ async fn lane_a(
         .map(|scenario| scenario.soak_seconds)
         .unwrap_or_default();
     let mut soak_latencies = Vec::new();
+    let mut soak_errors = 0;
     let mut held = Some(held);
     for second in 0..soak_secs {
-        let responses = rest_many(addr, vec!["SYN".into(); 16], 16).await;
-        soak_latencies.extend(responses.into_iter().map(|r| r.latency));
+        let batch = rest_many(addr, vec!["SYN".into(); 16], 16).await;
+        soak_errors += batch.unexpected_errors();
+        soak_latencies.extend(batch.responses.into_iter().map(|r| r.latency));
         if second + 1 == hold_secs {
             // The SSE hold is deliberately the first 60 seconds of either
             // profile; extended evidence continues as mixed REST soak after
@@ -913,7 +964,7 @@ async fn lane_a(
         ),
         (
             ScenarioId::MixedSoak,
-            json!({"latencies_ms": soak_latencies.iter().map(|d| d.as_secs_f64()*1000.0).collect::<Vec<_>>(), "unexpected_errors": 0, "unexpected_disconnects": 0, "resource_samples": []}),
+            json!({"latencies_ms": soak_latencies.iter().map(|d| d.as_secs_f64()*1000.0).collect::<Vec<_>>(), "unexpected_errors": soak_errors, "unexpected_disconnects": 0, "resource_samples": []}),
         ),
     ]))
 }
@@ -984,9 +1035,12 @@ async fn lane_d(
     let _ = rest_many(d2, vec!["SYN".into(); 5], 5).await;
     let warm = rest_many(d2, vec!["SYN".into(); 200], 16).await;
     let coalesced = rest_many(d2, vec!["SYN".into(); 32], 32).await;
-    let mut shared = Vec::new();
+    let mut shared = RestBatch::default();
     for _ in 0..10 {
-        shared.extend(rest_many(d3, vec!["SYN".into(); 32], 32).await);
+        let batch = rest_many(d3, vec!["SYN".into(); 32], 32).await;
+        shared.transport_errors += batch.transport_errors;
+        shared.unexpected_response_errors += batch.unexpected_response_errors;
+        shared.responses.extend(batch.responses);
     }
     let ms = |rows: &[super::rest::RestResponse]| {
         rows.iter()
@@ -996,7 +1050,7 @@ async fn lane_d(
     Ok(BTreeMap::from([
         (
             ScenarioId::RestCold,
-            json!({"latencies_ms": ms(&cold), "unexpected_errors": cold.iter().filter(|r| matches!(r.outcome, super::rest::RestOutcome::UnexpectedError)).count()}),
+            json!({"latencies_ms": ms(&cold.responses), "unexpected_errors": cold.unexpected_errors()}),
         ),
         (
             ScenarioId::RestExpectedNotFound,
@@ -1004,15 +1058,15 @@ async fn lane_d(
         ),
         (
             ScenarioId::RestWarmConcurrent,
-            json!({"latencies_ms": ms(&warm), "unexpected_errors": 0}),
+            json!({"latencies_ms": ms(&warm.responses), "unexpected_errors": warm.unexpected_errors()}),
         ),
         (
             ScenarioId::RestColdCoalesced,
-            json!({"latencies_ms": ms(&coalesced), "unexpected_errors": 0}),
+            json!({"latencies_ms": ms(&coalesced.responses), "unexpected_errors": coalesced.unexpected_errors()}),
         ),
         (
             ScenarioId::RestSharedCapacity,
-            json!({"latencies_ms": ms(&shared), "unexpected_errors": 0}),
+            json!({"latencies_ms": ms(&shared.responses), "unexpected_errors": shared.unexpected_errors()}),
         ),
     ]))
 }
@@ -1352,5 +1406,20 @@ mod protocol_tests {
         assert!(!soak_collection_complete(Profile::Normal, true, 59));
         assert!(soak_collection_complete(Profile::Normal, true, 60));
         assert!(!soak_collection_complete(Profile::Extended, false, 900));
+    }
+
+    #[test]
+    fn rest_batch_counts_transport_and_unexpected_response_errors() {
+        let batch = RestBatch {
+            responses: vec![crate::capacity::rest::RestResponse {
+                outcome: crate::capacity::rest::RestOutcome::UnexpectedError,
+                status: reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+                body: None,
+                latency: std::time::Duration::from_millis(1),
+            }],
+            transport_errors: 1,
+            unexpected_response_errors: 1,
+        };
+        assert_eq!(batch.unexpected_errors(), 2);
     }
 }

@@ -31,6 +31,55 @@ pub fn nearest_rank_ms(values: &[Duration], percentile: u8) -> Result<f64, Evide
     Ok(sorted[rank.saturating_sub(1).min(sorted.len() - 1)])
 }
 
+/// Computes ordinary least-squares RSS slope over one-second resource ticks
+/// that are quiescent across all harness lifecycle counters.
+pub fn quiescent_rss_slope_mib_per_min(samples: &[Value]) -> Result<f64, String> {
+    let mut points = Vec::new();
+    for (index, sample) in samples.iter().enumerate() {
+        let aggregate = sample
+            .get("aggregate")
+            .and_then(Value::as_object)
+            .ok_or_else(|| "resource sample aggregate missing".to_string())?;
+        let rss = aggregate
+            .get("rss_bytes")
+            .and_then(Value::as_f64)
+            .filter(|value| value.is_finite())
+            .ok_or_else(|| "resource sample RSS missing or non-finite".to_string())?;
+        let quiescent = ["active_requests", "active_subscribers", "active_sse_tasks"]
+            .into_iter()
+            .all(|key| aggregate.get(key).and_then(Value::as_u64) == Some(0));
+        if quiescent {
+            points.push((index as f64, rss));
+        }
+    }
+    if points.len() < 2 {
+        return Err("fewer than two quiescent resource samples".into());
+    }
+    let mean_x = points.iter().map(|(x, _)| x).sum::<f64>() / points.len() as f64;
+    let mean_y = points.iter().map(|(_, y)| y).sum::<f64>() / points.len() as f64;
+    let denominator = points
+        .iter()
+        .map(|(x, _)| (x - mean_x).powi(2))
+        .sum::<f64>();
+    if denominator <= 0.0 {
+        return Err("quiescent sample timestamps are not distinct".into());
+    }
+    let bytes_per_second = points
+        .iter()
+        .map(|(x, y)| (x - mean_x) * (y - mean_y))
+        .sum::<f64>()
+        / denominator;
+    let slope = bytes_per_second * 60.0 / (1024.0 * 1024.0);
+    slope
+        .is_finite()
+        .then_some(slope)
+        .ok_or_else(|| "quiescent RSS slope is non-finite".into())
+}
+
+pub fn rounded_milli(value: f64) -> f64 {
+    (value * 1000.0).round() / 1000.0
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScenarioResult {
     pub id: ScenarioId,
@@ -490,19 +539,54 @@ pub fn evaluate_json(profile: Profile, id: ScenarioId, o: &Value) -> (bool, Vec<
                     json!(n),
                 );
             }
-            if profile == Profile::Extended
-                && o.get("quiescent_rss_slope_mib_per_min")
-                    .and_then(Value::as_f64)
-                    .is_none_or(|v| v > 1.0)
-            {
-                failure(
-                    &mut f,
-                    "quiescent_rss_slope_mib_per_min",
-                    o.get("quiescent_rss_slope_mib_per_min").cloned(),
-                    "MiB/min",
-                    "<=",
-                    json!(1),
-                );
+            if profile == Profile::Extended {
+                let reported = o
+                    .get("quiescent_rss_slope_mib_per_min")
+                    .and_then(Value::as_f64);
+                match o.get("resource_samples").and_then(Value::as_array) {
+                    Some(samples) => match quiescent_rss_slope_mib_per_min(samples) {
+                        Ok(raw) => {
+                            if reported.is_none_or(|value| {
+                                !value.is_finite() || (value - rounded_milli(raw)).abs() > 0.000_001
+                            }) {
+                                failure(
+                                    &mut f,
+                                    "quiescent_rss_slope_mib_per_min",
+                                    o.get("quiescent_rss_slope_mib_per_min").cloned(),
+                                    "MiB/min",
+                                    "= rounded OLS",
+                                    json!(rounded_milli(raw)),
+                                );
+                            }
+                            if raw > 1.0 {
+                                failure(
+                                    &mut f,
+                                    "quiescent_rss_slope_raw_mib_per_min",
+                                    Some(json!(raw)),
+                                    "MiB/min",
+                                    "<=",
+                                    json!(1),
+                                );
+                            }
+                        }
+                        Err(_) => failure(
+                            &mut f,
+                            "quiescent_rss_slope_mib_per_min",
+                            reported.map(Value::from),
+                            "MiB/min",
+                            "valid OLS",
+                            Value::Null,
+                        ),
+                    },
+                    None => failure(
+                        &mut f,
+                        "quiescent_rss_slope_mib_per_min",
+                        reported.map(Value::from),
+                        "MiB/min",
+                        "valid OLS",
+                        Value::Null,
+                    ),
+                }
             }
         }
         ScenarioId::OptionalComputeFault => {
@@ -560,4 +644,71 @@ pub fn evaluate_json(profile: Profile, id: ScenarioId, o: &Value) -> (bool, Vec<
         t.insert(k.into(), v);
     }
     (f.is_empty(), f, Value::Object(t.into_iter().collect()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn samples_for_slope(mib_per_minute: f64, count: usize) -> Vec<Value> {
+        (0..count)
+            .map(|index| {
+                json!({
+                    "aggregate": {
+                        "rss_bytes": 100.0 * 1024.0 * 1024.0 + mib_per_minute * 1024.0 * 1024.0 / 60.0 * index as f64,
+                        "active_requests": 0,
+                        "active_subscribers": 0,
+                        "active_sse_tasks": 0
+                    }
+                })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn quiescent_ols_accepts_flat_and_negative_slopes() {
+        assert!(
+            quiescent_rss_slope_mib_per_min(&samples_for_slope(0.0, 4))
+                .unwrap()
+                .abs()
+                < 1e-9
+        );
+        assert!(quiescent_rss_slope_mib_per_min(&samples_for_slope(-0.25, 4)).unwrap() < 0.0);
+    }
+
+    #[test]
+    fn quiescent_ols_preserves_raw_threshold_boundary() {
+        let raw = quiescent_rss_slope_mib_per_min(&samples_for_slope(1.0004, 4)).unwrap();
+        assert!(raw > 1.0);
+        assert_eq!(rounded_milli(raw), 1.0);
+        assert!(quiescent_rss_slope_mib_per_min(&samples_for_slope(1.25, 4)).unwrap() > 1.0);
+    }
+
+    #[test]
+    fn quiescent_ols_requires_two_valid_quiescent_samples() {
+        assert!(quiescent_rss_slope_mib_per_min(&samples_for_slope(0.0, 1)).is_err());
+        assert!(
+            quiescent_rss_slope_mib_per_min(&[json!({"aggregate": {"rss_bytes": 1.0}})]).is_err()
+        );
+    }
+
+    #[test]
+    fn extended_evaluator_recomputes_raw_slope_before_rounding() {
+        let mut passing = json!({
+            "latencies_ms": vec![1.0; 14_400],
+            "unexpected_errors": 0,
+            "unexpected_disconnects": 0,
+            "resource_samples": samples_for_slope(0.0, 900),
+            "quiescent_rss_slope_mib_per_min": 0.0
+        });
+        assert!(evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &passing).0);
+
+        passing["resource_samples"] = json!(samples_for_slope(1.0004, 900));
+        let (passed, failures, _) =
+            evaluate_json(Profile::Extended, ScenarioId::MixedSoak, &passing);
+        assert!(!passed);
+        assert!(failures
+            .iter()
+            .any(|failure| failure.contains("quiescent_rss_slope_raw")));
+    }
 }
