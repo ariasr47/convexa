@@ -10,7 +10,7 @@ import {
 } from './component-oracle.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 import { spawnCaptured } from './lib/process.mjs';
-import { rawSha256Digest, subjectDigest } from './oci.mjs';
+import { rawSha256Digest, subjectDigest, withExtractedOciArchive } from './oci.mjs';
 import { runTrivyImage } from './policy/trivy.mjs';
 import { runKey as computeRunKey } from './run-key.mjs';
 import { generateInventoryWithSyft, validateInventory } from './syft-inventory.mjs';
@@ -209,7 +209,9 @@ export async function runArtifacts({
         expected: dashboardExpected,
         runner,
       }),
-      runTrivyImage({ executable: trivy, digest: apiDigest, input: apiArchive, cwd: root }),
+      withExtractedOciArchive(apiBytes, (layout) =>
+        runTrivyImage({ executable: trivy, digest: apiDigest, input: layout, cwd: root }),
+      ),
     ]);
     if (
       apiGenerated.state === 'blocked' ||

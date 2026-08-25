@@ -8,6 +8,11 @@ const LICENSE_HASHES = Object.freeze({
   },
 });
 
+export function canonicalLockSha256(bytes) {
+  if (!Buffer.isBuffer(bytes)) throw new TypeError('invalid lock bytes');
+  return sha256(Buffer.from(bytes.toString('utf8').replaceAll('\r\n', '\n'), 'utf8'));
+}
+
 export async function inspectLicenseInventory(
   lock,
   lockSha256,

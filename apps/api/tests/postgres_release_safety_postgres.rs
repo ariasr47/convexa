@@ -235,6 +235,22 @@ fn port() -> u16 {
     let l = TcpListener::bind("127.0.0.1:0").expect("reserve port");
     l.local_addr().unwrap().port()
 }
+fn distinct_ports() -> (u16, u16) {
+    let first = port();
+    loop {
+        let second = port();
+        if second != first {
+            return (first, second);
+        }
+    }
+}
+#[test]
+fn simultaneous_serve_port_pair_is_always_distinct() {
+    for _ in 0..32 {
+        let (x, y) = distinct_ports();
+        assert_ne!(x, y);
+    }
+}
 fn listener_bound(p: u16) -> bool {
     std::net::TcpStream::connect(("127.0.0.1", p)).is_ok()
 }
@@ -343,7 +359,9 @@ impl Drop for FixtureRoot {
     }
 }
 fn serve(db: &str) -> Running {
-    let p = port();
+    serve_on_port(db, port())
+}
+fn serve_on_port(db: &str, p: u16) -> Running {
     let root = FixtureRoot(std::env::temp_dir().join(name("serve_root")));
     std::fs::create_dir(&root.0).expect("create production storage fixture");
     let mut c = Command::new(bin());
@@ -731,8 +749,9 @@ fn simultaneous_serve_processes_are_read_only() {
         let d = url(&base(), &n);
         assert!(migrate(&d, &[]).status.success());
         let before = fp(&d).await;
-        let x = serve(&d);
-        let y = serve(&d);
+        let (x_port, y_port) = distinct_ports();
+        let x = serve_on_port(&d, x_port);
+        let y = serve_on_port(&d, y_port);
         assert!(health(x.port).await);
         assert!(health(y.port).await);
         let xo = stop(x);

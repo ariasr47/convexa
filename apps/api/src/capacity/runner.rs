@@ -239,7 +239,6 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                 match super::resources::sample_pid(std::process::id()) {
                     Ok(resource) => {
                         let life_after = state.lifecycle_probe.snapshot();
-                        #[cfg(target_os = "linux")]
                         let (resource, life_after) = {
                             let mut resource = resource;
                             let mut life_after = life_after;
@@ -249,7 +248,10 @@ pub async fn child(child: String, fixture_dir: PathBuf, iv_fault: bool) -> anyho
                                 // settle point, then use a lower sample only when
                                 // lifecycle remains quiescent; a persistent leak
                                 // stays visible in both samples.
-                                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                                tokio::time::sleep(std::time::Duration::from_millis(
+                                    TRANSPORT_SETTLE_MILLIS,
+                                ))
+                                .await;
                                 if let Ok(settled) =
                                     super::resources::sample_pid(std::process::id())
                                 {
@@ -317,9 +319,10 @@ fn normalize_handles_or_fds(
     // The sampler sees intentional transport descriptors as well as leaked
     // descriptors. Linux reports both REST and SSE sockets in /proc/<pid>/fd,
     // so subtract the complete active-request floor exactly once. Windows
-    // keeps the prior handle policy and removes only the one-for-one SSE task
-    // floor. With no active lifecycle counters, the raw sampler value remains
-    // visible to the unchanged +8 leak threshold.
+    // exposes both the request transport and its SSE task as handles, so remove
+    // both independently vouched lifecycle floors. With no active lifecycle
+    // counters, the raw sampler value remains visible to the unchanged +8 leak
+    // threshold.
     if cfg!(target_os = "linux") {
         observed_handles_or_fds.saturating_sub(
             lifecycle_before
@@ -329,18 +332,21 @@ fn normalize_handles_or_fds(
     } else {
         observed_handles_or_fds.saturating_sub(
             lifecycle_before
-                .active_sse_tasks
-                .max(lifecycle_after.active_sse_tasks),
+                .active_requests
+                .max(lifecycle_after.active_requests)
+                + lifecycle_before
+                    .active_sse_tasks
+                    .max(lifecycle_after.active_sse_tasks),
         )
     }
 }
 
-#[cfg(target_os = "linux")]
+const TRANSPORT_SETTLE_MILLIS: u64 = 100;
+
 fn lifecycle_is_quiescent(life: crate::services::live_capacity::LifecycleSnapshot) -> bool {
     life.active_requests == 0 && life.active_subscribers == 0 && life.active_sse_tasks == 0
 }
 
-#[cfg(target_os = "linux")]
 fn settled_quiescent_handles(first: u64, second: u64) -> u64 {
     first.min(second)
 }
@@ -800,6 +806,10 @@ async fn command_control(
     command: ParentCommand,
 ) -> anyhow::Result<()> {
     let mut child = control.lock().await;
+    write_command(&mut child, command).await
+}
+
+async fn write_command(child: &mut ChildControl, command: ParentCommand) -> anyhow::Result<()> {
     let mut line = serde_json::to_vec(&command)?;
     line.push(b'\n');
     child.stdin.write_all(&line).await?;
@@ -885,11 +895,15 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
             children.iter().map(|c| (child_id(c), c.addr)).collect();
         let b_control = children[1].control.clone();
         let c_control = children[2].control.clone();
-        let mut workload = Box::pin(execute_lanes(profile, addresses, b_control, c_control));
+        // Keep the workload independently scheduled while the coordinator
+        // awaits a sampling transaction. B/C are intentionally shared: if the
+        // selected sampler waits on a control lock held by a paused inline
+        // workload future, neither side can make progress.
+        let mut workload = tokio::spawn(execute_lanes(profile, addresses, b_control, c_control));
         let controls: Vec<_> = children.iter().map(|c| (c.id, c.control.clone())).collect();
         let mut soak_samples = Vec::new();
         let sample_cadence_start = tokio::time::Instant::now();
-        let workload = tokio::time::timeout(workload_timeout(profile), async {
+        let workload_outcome = tokio::time::timeout(workload_timeout(profile), async {
             let mut workload_result = None;
             loop {
                 if soak_collection_complete(
@@ -900,20 +914,26 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
                     break workload_result.expect("workload completion recorded");
                 }
                 tokio::select! {
-                    result = &mut workload, if workload_result.is_none() => workload_result = Some(result),
+                    result = &mut workload, if workload_result.is_none() => {
+                        workload_result = Some(result.map_err(|error| {
+                            anyhow::anyhow!("capacity workload task failed: {error}")
+                        })?);
+                    },
                     _ = tokio::time::sleep_until(cadence_deadline(sample_cadence_start, soak_samples.len() + 1)), if soak_samples.len() < mixed_soak_sample_target(profile) => {
                         let sequence = 10_000 + soak_samples.len() as u64;
                         let mut tick = BTreeMap::new();
-                        for (id, control) in &controls {
-                            command_control(control, ParentCommand::Sample { sequence }).await?;
-                            if let Some(sample) = receive_sample_control(control, *id, sequence).await? { tick.insert(*id, sample); }
+                        let samples = join_all(controls.iter().map(|(id, control)| {
+                            lifecycle_sample_control(control, *id, sequence)
+                        })).await;
+                        for ((id, _), sample) in controls.iter().zip(samples) {
+                            if let Some(sample) = sample? { tick.insert(*id, sample); }
                         }
                         if tick.len() == CHILDREN.len() { soak_samples.push(tick); }
                     }
                 }
             }
         }).await;
-        match workload {
+        match workload_outcome {
             Ok(Ok(mut rows)) => {
                 if let Some(soak) = rows.get_mut(&ScenarioId::MixedSoak) {
                     let resource_samples = soak_samples
@@ -944,6 +964,7 @@ pub async fn run(profile: Profile) -> anyhow::Result<()> {
                 );
             }
             Err(_) => {
+                workload.abort();
                 evidence.insert(ScenarioId::MixedSoak, json!({"timeout": true}));
             }
         };
@@ -1158,6 +1179,14 @@ async fn receive_sample_control(
     sequence: u64,
 ) -> anyhow::Result<Option<ResourceSample>> {
     let mut child = control.lock().await;
+    receive_sample_locked(&mut child, child_id, sequence).await
+}
+
+async fn receive_sample_locked(
+    child: &mut ChildControl,
+    child_id: ChildId,
+    sequence: u64,
+) -> anyhow::Result<Option<ResourceSample>> {
     let event =
         tokio::time::timeout(std::time::Duration::from_secs(2), child.events.recv()).await?;
     Ok(match event {
@@ -1194,8 +1223,13 @@ async fn lifecycle_sample_control(
     id: ChildId,
     sequence: u64,
 ) -> anyhow::Result<Option<ResourceSample>> {
-    command_control(control, ParentCommand::Sample { sequence }).await?;
-    receive_sample_control(control, id, sequence).await
+    // Hold one child's control lock across the complete request/response pair.
+    // Workload lifecycle probes and the one-second sampler share B/C; making
+    // the exchange atomic prevents either consumer from stealing the other's
+    // sequence-tagged event and waiting forever for a response already read.
+    let mut child = control.lock().await;
+    write_command(&mut child, ParentCommand::Sample { sequence }).await?;
+    receive_sample_locked(&mut child, id, sequence).await
 }
 
 async fn rest_many(
@@ -1843,7 +1877,7 @@ mod protocol_tests {
 
     #[cfg(target_os = "windows")]
     #[test]
-    fn windows_handle_normalization_preserves_sse_only_policy() {
+    fn windows_handle_normalization_removes_request_and_sse_transport_floor() {
         let before = crate::services::live_capacity::LifecycleSnapshot {
             active_requests: 14,
             active_subscribers: 0,
@@ -1856,7 +1890,7 @@ mod protocol_tests {
             active_sse_tasks: 8,
             tokio_tasks: 0,
         };
-        assert_eq!(normalize_handles_or_fds(38, before, after), 6);
+        assert_eq!(normalize_handles_or_fds(80, before, after), 34);
 
         let quiet = crate::services::live_capacity::LifecycleSnapshot {
             active_requests: 0,
@@ -1867,7 +1901,6 @@ mod protocol_tests {
         assert_eq!(normalize_handles_or_fds(38, quiet, quiet), 38);
     }
 
-    #[cfg(target_os = "linux")]
     #[test]
     fn quiescent_fd_settle_selects_socket_close_but_not_persistent_growth() {
         assert_eq!(settled_quiescent_handles(49, 17), 17);
@@ -1880,6 +1913,12 @@ mod protocol_tests {
                 tokio_tasks: 0,
             }
         ));
+    }
+
+    #[test]
+    fn transport_settle_window_is_bounded_below_the_one_second_cadence() {
+        assert_eq!(TRANSPORT_SETTLE_MILLIS, 100);
+        assert!(TRANSPORT_SETTLE_MILLIS < 1_000);
     }
 
     #[test]

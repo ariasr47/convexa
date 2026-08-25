@@ -6,7 +6,7 @@ import { verifyOrAcquireTools } from './acquire-tools.mjs';
 import { canonicalSha256 } from './lib/canonical.mjs';
 import { spawnCaptured } from './lib/process.mjs';
 import { normalize } from './normalize.mjs';
-import { subjectDigest } from './oci.mjs';
+import { subjectDigest, withExtractedOciArchive } from './oci.mjs';
 import { runCargoDeny } from './policy/cargo-deny.mjs';
 import { runGitleaks } from './policy/gitleaks.mjs';
 import { runNpmAudit } from './policy/npm-audit.mjs';
@@ -331,9 +331,12 @@ async function productionAdapter(capabilityId, fixture, tool) {
           { cwd: root, timeoutMs: 300000 },
         );
       if (build.raw_exit_code !== 0) return blocked();
-      const digest = subjectDigest(await fs.readFile(archive));
-      return wrap(
-        await runTrivyImage({ executable: tool.executable, digest, input: archive, cwd: root }),
+      const archiveBytes = await fs.readFile(archive),
+        digest = subjectDigest(archiveBytes);
+      return withExtractedOciArchive(archiveBytes, async (layout) =>
+        wrap(
+          await runTrivyImage({ executable: tool.executable, digest, input: layout, cwd: root }),
+        ),
       );
     });
   if (capabilityId.startsWith('syft.')) {
